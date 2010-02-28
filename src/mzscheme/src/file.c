@@ -2379,29 +2379,30 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd, char *path)
 #endif
 #ifdef WINDOWS_FILE_HANDLES
   BY_HANDLE_FILE_INFORMATION info;
+  HANDLE fdh = (HANDLE)fd;
 
   errid = 0;
   if (path) {
-    fd = CreateFileW(WIDE_PATH(path),
-                     0, /* not even read access => just get info */
-                     FILE_SHARE_READ | FILE_SHARE_WRITE,
-                     NULL,
-                     OPEN_EXISTING,
-                     FILE_FLAG_BACKUP_SEMANTICS,
-                     NULL);
-    if (fd == INVALID_HANDLE_VALUE) {
+    fdh = CreateFileW(WIDE_PATH(path),
+                      0, /* not even read access => just get info */
+                      FILE_SHARE_READ | FILE_SHARE_WRITE,
+                      NULL,
+                      OPEN_EXISTING,
+                      FILE_FLAG_BACKUP_SEMANTICS,
+                      NULL);
+    if (fdh == INVALID_HANDLE_VALUE) {
       errid = GetLastError();
     }
   }
 
-  if (fd == INVALID_HANDLE_VALUE) {
+  if (fdh == INVALID_HANDLE_VALUE) {
     /* errid is set */
   } else {
-    if (!GetFileInformationByHandle((HANDLE)fd, &info))
+    if (!GetFileInformationByHandle(fdh, &info))
       errid = GetLastError();
     
     if (path)
-      CloseHandle(fd);
+      CloseHandle(fdh);
   }
 
   if (!errid) {

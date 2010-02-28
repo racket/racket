@@ -222,6 +222,11 @@ static int main_after_stack(void *data);
 START_XFORM_SKIP;
 # endif
 
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+extern long _tls_index;
+static __declspec(thread) void *tls_space;
+#endif
+
 int MAIN(int argc, MAIN_char **MAIN_argv)
 {
 #ifdef DOS_FILE_SYSTEM
@@ -231,6 +236,9 @@ int MAIN(int argc, MAIN_char **MAIN_argv)
 # endif
   load_delayed_dll(NULL, "libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
+# ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+  scheme_register_tls_space(&tls_space, _tls_index);
+# endif
 #endif
 
   return main_after_dlls(argc, MAIN_argv);

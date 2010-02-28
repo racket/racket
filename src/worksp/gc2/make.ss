@@ -208,12 +208,14 @@
 
 (c-compile "../../mzscheme/gc2/gc2.c" "xsrc/gc2.obj"
            (append
+	    (list "../mzconfig.h")
 	    (map (lambda (f) (build-path "../../mzscheme/" f))
 		 '("include/scheme.h"
+		   "include/schthread.h"
+		   "src/schpriv.h"
 		   "src/stypes.h"))
 	    (map (lambda (f) (build-path "../../mzscheme/gc2/" f))
 		 '("gc2.c"
-		   "compact.c"
 		   "newgc.c"
 		   "vm_win.c"
 		   "sighand.c"
@@ -222,9 +224,7 @@
 		   "gc2_obj.h")))
 	   (string-append
 	    "/D GC2_AS_EXPORT "
-	    (if accounting-gc?
-		"/D NEWGC_BTC_ACCOUNT "
-		"/D USE_COMPACT_3M_GC ")
+	    "/D NEWGC_BTC_ACCOUNT "
 	    (if backtrace-gc?
 		"/D MZ_GC_BACKTRACE "
 		"")

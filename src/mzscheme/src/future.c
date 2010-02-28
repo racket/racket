@@ -155,6 +155,43 @@ void scheme_init_futures(Scheme_Env *env)
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef DEBUG_FUTURES 
+#define DO_LOG(pr) do { pthread_t self; self = pthread_self(); fprintf(stderr, "%x:%s:%s:%d ", (unsigned) self, __FILE__, __FUNCTION__, __LINE__); pr; fprintf(stderr, "\n"); fflush(stdout); } while(0)
+#define LOG0(t) DO_LOG(fprintf(stderr, t))
+#define LOG(t, a) DO_LOG(fprintf(stderr, t, a))
+#define LOG2(t, a, b) DO_LOG(fprintf(stderr, t, a, b))
+#define LOG3(t, a, b, c) DO_LOG(fprintf(stderr, t, a, b, c))
+#define LOG4(t, a, b, c, d) DO_LOG(fprintf(stderr, t, a, b, c, d))
+#define LOG_THISCALL LOG(__FUNCTION__)
+#else
+#define LOG0(t)
+#define LOG(t, a)
+#define LOG2(t, a, b)
+#define LOG3(t, a, b, c)
+#define LOG4(t, a, b, c, d)
+#define LOG_THISCALL
+#endif
+
+#define LOG_RTCALL_VOID_VOID_3ARGS(f) LOG("(function=%p)", f)
+#define LOG_RTCALL_ALLOC(f) LOG("(function=%p)", f)
+#define LOG_RTCALL_OBJ_INT_POBJ_OBJ(f,a,b,c) LOG4("(function = %p, a=%p, b=%d, c=%p)", f, a, b, c)
+#define LOG_RTCALL_OBJ_INT_POBJ_VOID(a,b,c) LOG3("(%p, %d, %p)", a, b,c)
+#define LOG_RTCALL_INT_OBJARR_OBJ(a,b) LOG2("(%d, %p)", a, b)
+#define LOG_RTCALL_LONG_OBJ_OBJ(a,b) LOG2("(%ld, %p)", a, b)
+#define LOG_RTCALL_OBJ_OBJ(a) LOG("(%p)", a)
+#define LOG_RTCALL_OBJ_OBJ_OBJ(a,b) LOG2("(%p, %p)", a, b)
+#define LOG_RTCALL_SNCD_OBJ(a) LOG("(%p)", a)
+#define LOG_RTCALL_OBJ_VOID(a) LOG("(%p)", a)
+#define LOG_RTCALL_LONG_OBJ(a) LOG("(%ld)", a)
+#define LOG_RTCALL_BUCKET_OBJ_INT_VOID(a,b,c) LOG3("(%p, %p, %d)", a, b, c)
+#define LOG_RTCALL_INT_INT_POBJ_VOID(a,b,c) LOG3("(%d, %d, %p)", a, b, c)
+#define LOG_RTCALL_OBJ_OBJ_MZST(a,b) LOG2("(%p, %p)", a, b)
+#define LOG_RTCALL_BUCKET_VOID(a) LOG("(%p)", a)
+#define LOG_RTCALL_POBJ_LONG_OBJ(a,b) LOG2("(%p, %ld)", a, b)
+#define LOG_RTCALL_INT_POBJ_INT_OBJ(a,b,c) LOG3("(%d, %p, %d)", a, b, c)
+#define LOG_RTCALL_INT_POBJ_OBJ_OBJ(a,b,c) LOG3("(%d, %p, %p)", a, b, c)
+#define LOG_RTCALL_ENV_ENV_VOID(a,b) LOG2("(%p, %p)", a, b) 
+
 static Scheme_Object *future(int argc, Scheme_Object *argv[]);
 static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
@@ -451,7 +488,13 @@ void scheme_future_block_until_gc()
       *(fs->pool_threads[i]->stack_boundary_pointer) += INITIAL_C_STACK_SIZE;
     }
   }
+#ifdef _MSC_VER
+  __asm { 
+    mfence 
+  }
+#else
   asm("mfence");
+#endif
 
   mzrt_mutex_lock(fs->future_mutex);
   while (fs->gc_not_ok) {
@@ -660,9 +703,9 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
         //Release the lock so other threads can manipulate the queue
         //while the runtime call executes
         mzrt_mutex_unlock(fs->future_mutex);
-        LOG("Invoking primitive %p on behalf of future %d...", ft->rt_prim, ft->id);
+        LOG2("Invoking primitive %p on behalf of future %d...", ft->rt_prim, ft->id);
         invoke_rtcall(fs, ft);
-        LOG("done.\n");
+        LOG0("done.\n");
       }
     else
       {
@@ -778,7 +821,7 @@ void *worker_thread_future_loop(void *arg)
     ft = get_pending_future(fs);
 
     if (ft) {
-      LOG("Got a signal that a future is pending...");
+      LOG0("Got a signal that a future is pending...");
         
       //Work is available for this thread
       ft->status = RUNNING;

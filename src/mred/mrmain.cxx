@@ -315,6 +315,10 @@ int main(int argc, char *argv[])
 
 static int wm_is_mred;
 
+# ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+# endif
+
 static BOOL CALLBACK CheckWindow(HWND wnd, LPARAM param)
 {
   int i, len, gl;
@@ -629,9 +633,10 @@ int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
   return scheme_main_stack_setup(1, WinMain_after_stack, &wma);
 }
 
-# ifdef MZ_PRECISE_GC
-START_XFORM_SKIP;
-# endif
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+extern "C" long _tls_index;
+static __declspec(thread) void *tls_space;
+#endif
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
@@ -642,6 +647,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
   load_delayed_dll(NULL, "libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
   load_delayed_dll(NULL, "libmred" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
+# ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+  scheme_register_tls_space(&tls_space, _tls_index);
+# endif
 
   return WinMain_dlls_ready(hInstance, hPrevInstance, ignored, nCmdShow);
 }

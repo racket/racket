@@ -128,54 +128,6 @@ extern unsigned long scheme_rtcall_alloc(const char *who, int src_type);
 
 #endif 
 
-#ifdef DEBUG_FUTURES 
-#define LOG(a...) do { pthread_t self; self = pthread_self(); fprintf(stderr, "%x:%s:%s:%d ", (unsigned) self, __FILE__, __FUNCTION__, __LINE__); fprintf(stderr, a); fprintf(stderr, "\n"); fflush(stdout); } while(0)
-#define LOG_THISCALL LOG(__FUNCTION__)
-
-#define LOG_RTCALL_VOID_VOID_3ARGS(f) LOG("(function=%p)", f)
-#define LOG_RTCALL_ALLOC(f) LOG("(function=%p)", f)
-#define LOG_RTCALL_OBJ_INT_POBJ_OBJ(f,a,b,c) LOG("(function = %p, a=%p, b=%d, c=%p)", f, a, b, c)
-#define LOG_RTCALL_OBJ_INT_POBJ_VOID(a,b,c) LOG("(%p, %d, %p)", a, b,c)
-#define LOG_RTCALL_INT_OBJARR_OBJ(a,b) LOG("(%d, %p)", a, b)
-#define LOG_RTCALL_LONG_OBJ_OBJ(a,b) LOG("(%ld, %p)", a, b)
-#define LOG_RTCALL_OBJ_OBJ(a) LOG("(%p)", a)
-#define LOG_RTCALL_OBJ_OBJ_OBJ(a,b) LOG("(%p, %p)", a, b)
-#define LOG_RTCALL_SNCD_OBJ(a) LOG("(%p)", a)
-#define LOG_RTCALL_OBJ_VOID(a) LOG("(%p)", a)
-#define LOG_RTCALL_LONG_OBJ(a) LOG("(%ld)", a)
-#define LOG_RTCALL_BUCKET_OBJ_INT_VOID(a,b,c) LOG("(%p, %p, %d)", a, b, c)
-#define LOG_RTCALL_INT_INT_POBJ_VOID(a,b,c) LOG("(%d, %d, %p)", a, b, c)
-#define LOG_RTCALL_OBJ_OBJ_MZST(a,b) LOG("(%p, %p)", a, b)
-#define LOG_RTCALL_BUCKET_VOID(a) LOG("(%p)", a)
-#define LOG_RTCALL_POBJ_LONG_OBJ(a,b) LOG("(%p, %ld)", a, b)
-#define LOG_RTCALL_INT_POBJ_INT_OBJ(a,b,c) LOG("(%d, %p, %d)", a, b, c)
-#define LOG_RTCALL_INT_POBJ_OBJ_OBJ(a,b,c) LOG("(%d, %p, %p)", a, b, c)
-#define LOG_RTCALL_ENV_ENV_VOID(a,b) LOG("(%p, %p)", a, b) 
-#else
-#define LOG(a...)
-#define LOG_THISCALL
-
-#define LOG_RTCALL_VOID_VOID_3ARGS(f)
-#define LOG_RTCALL_ALLOC(f)
-#define LOG_RTCALL_OBJ_INT_POBJ_OBJ(f,a,b,c)
-#define LOG_RTCALL_OBJ_INT_POBJ_VOID(a,b,c)
-#define LOG_RTCALL_INT_OBJARR_OBJ(a,b)
-#define LOG_RTCALL_LONG_OBJ_OBJ(a,b)
-#define LOG_RTCALL_OBJ_OBJ(a)
-#define LOG_RTCALL_OBJ_OBJ_OBJ(a,b)
-#define LOG_RTCALL_SNCD_OBJ(a)
-#define LOG_RTCALL_OBJ_VOID(a)
-#define LOG_RTCALL_LONG_OBJ(a)
-#define LOG_RTCALL_BUCKET_OBJ_INT_VOID(a,b,c)
-#define LOG_RTCALL_INT_INT_POBJ_VOID(a,b,c)
-#define LOG_RTCALL_OBJ_OBJ_MZST(a,b)
-#define LOG_RTCALL_BUCKET_VOID(a)
-#define LOG_RTCALL_POBJ_LONG_OBJ(a,b)
-#define LOG_RTCALL_INT_POBJ_INT_OBJ(a,b,c)
-#define LOG_RTCALL_INT_POBJ_OBJ_OBJ(a,b,c)
-#define LOG_RTCALL_ENV_ENV_VOID(a,b) 
-#endif
-
 extern void *scheme_on_demand_jit_code;
 extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
 

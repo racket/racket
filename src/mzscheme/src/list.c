@@ -1119,32 +1119,32 @@ length_prim (int argc, Scheme_Object *argv[])
 }
 
 Scheme_Object *
-scheme_append (Scheme_Object *lst1, Scheme_Object *lst2)
+scheme_append(Scheme_Object *l1, Scheme_Object *l2)
 {
   Scheme_Object *first, *last, *orig1, *v;
 
-  orig1 = lst1;
+  orig1 = l1;
 
   first = last = NULL;
-  while (SCHEME_PAIRP(lst1)) {
-    v = cons(SCHEME_CAR(lst1), scheme_null);
+  while (SCHEME_PAIRP(l1)) {
+    v = cons(SCHEME_CAR(l1), scheme_null);
     if (!first)
       first = v;
     else
       SCHEME_CDR(last) = v;
     last = v;
-    lst1 = SCHEME_CDR(lst1);
+    l1 = SCHEME_CDR(l1);
 
     SCHEME_USE_FUEL(1);
   }
 
-  if (!SCHEME_NULLP(lst1))
+  if (!SCHEME_NULLP(l1))
     scheme_wrong_type("append", "proper list", -1, 0, &orig1);
 
   if (!last)
-    return lst2;
+    return l2;
 
-  SCHEME_CDR(last) = lst2;
+  SCHEME_CDR(last) = l2;
 
   return first;
 }

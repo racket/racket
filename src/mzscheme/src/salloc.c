@@ -55,8 +55,13 @@ THREAD_LOCAL_DECL(static int *dgc_count);
 THREAD_LOCAL_DECL(static int dgc_size);
 
 #ifdef USE_THREAD_LOCAL
-# ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+# if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
 pthread_key_t scheme_thread_local_key;
+# elif defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
+unsigned long scheme_tls_delta;
+int scheme_tls_index;
+# elif defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS_FUNC)
+DWORD scheme_thread_local_key;
 # else
 SHARED_OK THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 # endif
@@ -199,13 +204,15 @@ static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, vo
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
 /* This allows for places gc unit tests to switch the Thread_Local_Variables and simulate places */
-void scheme_set_thread_local_variables(Thread_Local_Variables *tlvs) {
+void scheme_set_thread_local_variables(Thread_Local_Variables *tlvs) XFORM_SKIP_PROC
+{
   pthread_setspecific(scheme_thread_local_key, tlvs);
 }
 #endif
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) && defined(INLINE_GETSPECIFIC_ASSEMBLY_CODE)
-static void macosx_get_thread_local_key_for_assembly_code() {
+static void macosx_get_thread_local_key_for_assembly_code() XFORM_SKIP_PROC
+{
   /* Our [highly questionable] strategy for inlining pthread_getspecific() is taken from 
      the Go implementation (see "http://golang.org/src/libcgo/darwin_386.c").
      In brief, we assume that thread-local variables are going to be
@@ -243,7 +250,20 @@ static void macosx_get_thread_local_key_for_assembly_code() {
 }
 #endif
 
-void scheme_setup_thread_local_key_if_needed() {
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC
+{
+  scheme_tls_delta = (unsigned long)tls_space;
+  scheme_tls_index = tls_index;
+}
+Thread_Local_Variables *scheme_external_get_thread_local_variables() XFORM_SKIP_PROC
+{
+  return scheme_get_thread_local_variables();
+}
+#endif
+
+void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
+{
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 # ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
 #  if defined(linux)
@@ -272,6 +292,17 @@ void scheme_setup_thread_local_key_if_needed() {
       abort();
     }
 # endif
+#endif
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+    {
+      void **base;
+
+      __asm { mov ecx, FS:[0x2C]
+              mov base, ecx }
+      scheme_tls_delta -= (unsigned long)base[scheme_tls_index];
+      scheme_tls_index *= sizeof(void*);
+      
+    }
 #endif
 }
 
@@ -336,11 +367,17 @@ void* scheme_dbg_get_thread_local_variables() XFORM_SKIP_PROC {
 
 void scheme_init_os_thread() XFORM_SKIP_PROC
 {
-#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+#if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) || defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
   Thread_Local_Variables *vars;
   vars = (Thread_Local_Variables *)malloc(sizeof(Thread_Local_Variables));
   memset(vars, 0, sizeof(Thread_Local_Variables));
+# ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
   pthread_setspecific(scheme_thread_local_key, vars);
+# elif defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
+  *scheme_get_thread_local_variables_ptr() = vars;
+# else
+  TlsSetValue(scheme_thread_local_key, vars);
+# endif
 #endif
 #ifdef OS_X
 # ifdef MZ_PRECISE_GC

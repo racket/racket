@@ -304,7 +304,7 @@ THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdout_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stderr_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdin_port);
 
-THREAD_LOCAL_DECL(fd_set *scheme_fd_set);
+THREAD_LOCAL_DECL(struct mz_fd_set *scheme_fd_set);
 
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdin)(void) = NULL;
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdout)(void) = NULL;
@@ -680,7 +680,7 @@ Scheme_Object * scheme_make_eof (void)
 void scheme_alloc_global_fdset() {
 #ifdef USE_FAR_MZ_FDCALLS
   REGISTER_SO(scheme_fd_set);
-  scheme_fd_set = scheme_alloc_fdset_array(3, 0);
+  scheme_fd_set = (struct mz_fd_set *)scheme_alloc_fdset_array(3, 0);
 #endif
 }
 
@@ -8439,6 +8439,8 @@ static long ITimer(void)
   XFORM_SKIP_PROC
 {
   WaitForSingleObject(itimer_semaphore, INFINITE);
+
+  scheme_init_os_thread();
 
   while (1) {
     if (WaitForSingleObject(itimer_semaphore, itimer_delay / 1000) == WAIT_TIMEOUT) {

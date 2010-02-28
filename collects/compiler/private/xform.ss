@@ -955,7 +955,7 @@
         (define asm-commands
           ;; When outputting, add newline before these syms
           ;; (for __asm blocks in Windows)
-          '(mov shl shld shr shrd sar lock setc))
+          '(mov shl shld shr shrd sar lock setc add))
         
         (define (get-constructor v)
           (cond

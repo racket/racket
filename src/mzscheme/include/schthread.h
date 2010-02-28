@@ -19,10 +19,17 @@
 #ifndef SCHEME_THREADLOCAL_H
 #define SCHEME_THREADLOCAL_H
 
+#include "mzconfig.h"
+
+# ifdef __cplusplus
+extern "C" {
+# endif
+
 #if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES)
 # define USE_THREAD_LOCAL
 # if _MSC_VER
-#  define THREAD_LOCAL __declspec(thread)
+#  define THREAD_LOCAL /* empty */
+#  define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 # elif defined(OS_X) || (defined(linux) && defined(MZ_USES_SHARED_LIB))
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
@@ -96,10 +103,6 @@ typedef long objhead;
 
 /* **************************************** */
 
-#if MZ_USE_FUTURES
-# include <pthread.h>
-#endif
-
 typedef struct Thread_Local_Variables {
   void **GC_variable_stack_;
   struct NewGC *GC_;
@@ -152,7 +155,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *scheme_orig_stdout_port_;
   struct Scheme_Object *scheme_orig_stderr_port_;
   struct Scheme_Object *scheme_orig_stdin_port_;
-  struct fd_set *scheme_fd_set_;
+  struct mz_fd_set *scheme_fd_set_;
   struct Scheme_Custodian *new_port_cust_;
   int external_event_fd_;
   int put_external_event_fd_;
@@ -327,11 +330,50 @@ END_XFORM_SKIP;
 XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
 #  endif
 # endif
+#elif defined(IMPLEMENT_THREAD_LOCAL_VIA_PROCEDURE)
+/* Using external scheme_get_thread_local_variables() procedure */
+MZ_EXTERN Thread_Local_Variables *scheme_get_thread_local_variables();
+# ifdef MZ_XFORM
+XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
+# endif
+#elif defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
+# ifdef MZ_XFORM
+START_XFORM_SKIP;
+# endif
+MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables();
+# ifdef __mzscheme_private__
+/* In the MzScheme DLL, need thread-local to be fast: */
+MZ_EXTERN unsigned long scheme_tls_delta;
+#  ifdef MZ_USE_WIN_TLS_VIA_DLL
+MZ_EXTERN int scheme_tls_index;
+#  endif
+static __inline Thread_Local_Variables **scheme_get_thread_local_variables_ptr() {
+  __asm { mov eax, FS:[0x2C]
+#  ifdef MZ_USE_WIN_TLS_VIA_DLL
+          add eax, scheme_tls_index
+#  endif
+          mov eax, [eax]
+          add eax, scheme_tls_delta }
+  /* result is in eax */
+}
+static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
+  return *scheme_get_thread_local_variables_ptr();
+}
+# else
+/* Outside the MzScheme DLL, slower thread-local is ok: */
+static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
+  return scheme_external_get_thread_local_variables();
+}
+# endif
+# ifdef MZ_XFORM
+END_XFORM_SKIP;
+XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
+# endif
 #else
 /* Using `THREAD_LOCAL' variable: */
 MZ_EXTERN THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 # define scheme_get_thread_local_variables() (&scheme_thread_locals)
-#ifdef MZ_XFORM
+# ifdef MZ_XFORM
 XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 # endif
 #endif
@@ -533,5 +575,9 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #endif
 
 /* **************************************** */
+
+# ifdef __cplusplus
+}
+# endif
 
 #endif

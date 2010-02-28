@@ -1776,6 +1776,9 @@ MZ_EXTERN int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _m
 typedef int (*Scheme_Env_Main)(Scheme_Env *env, int argc, char **argv);
 MZ_EXTERN int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char **argv);
 
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
+MZ_EXTERN void scheme_register_tls_space(void *tls_space, int _tls_index);
+#endif
 
 MZ_EXTERN void scheme_register_static(void *ptr, long size);
 #if defined(MUST_REGISTER_GLOBALS) || defined(GC_MIGHT_USE_REGISTERED_STATICS)

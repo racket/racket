@@ -34,5 +34,7 @@
 /* whether getaddrinfo works */
 #define HAVE_GETADDRINFO 1
 
+/* Enable futures: */
+#define MZ_USE_FUTURES
 
 #endif

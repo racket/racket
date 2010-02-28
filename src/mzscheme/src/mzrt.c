@@ -35,7 +35,7 @@ START_XFORM_SUSPEND;
 # endif
 #endif
 
-#ifndef MZ_PRECISE_GC
+#if !defined(MZ_PRECISE_GC) && !defined(WIN32)
 int GC_pthread_join(pthread_t thread, void **retval);
 int GC_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void * arg);
 int GC_pthread_detach(pthread_t thread);
@@ -84,12 +84,13 @@ static void rungdb() {
 #endif
 }
 
+#ifndef WIN32
 static void segfault_handler(int signal_num) {
   pid_t pid = getpid();
   fprintf(stderr, "sig# %i pid# %i\n", signal_num, pid);
   rungdb();
 }
-
+#endif
 
 void mzrt_set_segfault_debug_handler()
 {
@@ -117,10 +118,6 @@ void mzrt_sleep(int seconds)
   }
 #endif
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SUSPEND;
-#endif
 
 /***********************************************************************/
 /*                Atomic Ops                                           */
@@ -154,14 +151,14 @@ MZ_INLINE uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter) {
 /*                Threads                                              */
 /***********************************************************************/
 typedef struct mzrt_thread_stub_data {
-  void * (*start_proc)(void *);
+  mz_proc_thread_start start_proc;
   void *data;
   mz_proc_thread *thread;
 } mzrt_thread_stub_data;
 
 void *mzrt_thread_stub(void *data){
   mzrt_thread_stub_data *stub_data  = (mzrt_thread_stub_data*) data;
-  void * (*start_proc)(void *)        = stub_data->start_proc;
+  mz_proc_thread_start start_proc     = stub_data->start_proc;
   void *start_proc_data               = stub_data->data;
   scheme_init_os_thread();
   proc_thread_self                    = stub_data->thread;
@@ -171,9 +168,17 @@ void *mzrt_thread_stub(void *data){
   return start_proc(start_proc_data);
 }
 
+#ifdef WIN32
+DWORD WINAPI mzrt_win_thread_stub(void *data)
+{
+  return (DWORD)mzrt_thread_stub(data);
+}
+#endif
+
+
 mzrt_thread_id mz_proc_thread_self() {
 #ifdef WIN32
-#error !!!mz_proc_thread_id not implemented!!!
+  return GetCurrentThread();
 #else
   return pthread_self();
 #endif
@@ -214,7 +219,7 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
   stub_data->data       = data;
   stub_data->thread     = thread;
 #   ifdef WIN32
-  thread->threadid = CreateThread(NULL, stacksize, mzrt_thread_stub, stub_data, 0, NULL);
+  thread->threadid = CreateThread(NULL, stacksize, mzrt_win_thread_stub, stub_data, 0, NULL);
 #   else
   pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #   endif
@@ -253,8 +258,7 @@ void * mz_proc_thread_wait(mz_proc_thread *thread) {
 
 int mz_proc_thread_detach(mz_proc_thread *thread) {
 #ifdef WIN32
-  DWORD rc;
-  return (void *) rc;
+  return CloseHandle(thread->threadid);
 #else
   int rc;
 #   ifndef MZ_PRECISE_GC
@@ -285,10 +289,6 @@ void mz_proc_thread_exit(void *rc) {
 /* Unix **************************************************************/
 
 #ifndef WIN32
-
-#ifdef MZ_XFORM
-START_XFORM_SUSPEND;
-#endif
 
 struct mzrt_rwlock {
   pthread_rwlock_t lock;
@@ -439,73 +439,11 @@ int mzrt_sema_destroy(mzrt_sema *s)
   return 0;
 }
 
-/****************** PROCESS THREAD MAIL BOX *******************************/
-
-pt_mbox *pt_mbox_create() {
-  pt_mbox *mbox = (pt_mbox *)malloc(sizeof(pt_mbox));
-  mbox->count = 0;
-  mbox->in    = 0;
-  mbox->out   = 0;
-  mzrt_mutex_create(&mbox->mutex);
-  mzrt_cond_create(&mbox->nonempty);
-  mzrt_cond_create(&mbox->nonfull);
-  return mbox;
-}
-
-void pt_mbox_send(pt_mbox *mbox, int type, void *payload, pt_mbox *origin) {
-  mzrt_mutex_lock(mbox->mutex);
-  while ( mbox->count == 5 ) {
-    mzrt_cond_wait(mbox->nonfull, mbox->mutex);
-  }
-  mbox->queue[mbox->in].type = type;
-  mbox->queue[mbox->in].payload = payload;
-  mbox->queue[mbox->in].origin = origin;
-  mbox->in = (mbox->in + 1) % 5;
-  mbox->count++;
-  mzrt_cond_signal(mbox->nonempty);
-  mzrt_mutex_unlock(mbox->mutex);
-}
-
-void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin){
-  mzrt_mutex_lock(mbox->mutex);
-  while ( mbox->count == 0 ) {
-    mzrt_cond_wait(mbox->nonempty, mbox->mutex);
-  }
-  *type    = mbox->queue[mbox->out].type;
-  *payload = mbox->queue[mbox->out].payload;
-  *origin  = mbox->queue[mbox->out].origin;
-  mbox->out = (mbox->out + 1) % 5;
-  mbox->count--;
-  mzrt_cond_signal(mbox->nonfull);
-  mzrt_mutex_unlock(mbox->mutex);
-}
-
-void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload) {
-  pt_mbox *return_origin;
-  pt_mbox_send(mbox, type, payload, origin);
-  pt_mbox_recv(origin, return_type, return_payload, &return_origin);
-}
-
-void pt_mbox_destroy(pt_mbox *mbox) {
-  mzrt_mutex_destroy(mbox->mutex);
-  mzrt_cond_destroy(mbox->nonempty);
-  mzrt_cond_destroy(mbox->nonfull);
-  free(mbox);
-}
-
-#ifdef MZ_XFORM
-END_XFORM_SUSPEND;
-#endif
-
 #endif
 
 /* Windows **************************************************************/
 
 #ifdef WIN32
-
-#ifdef MZ_XFORM
-START_XFORM_SUSPEND;
-#endif
 
 typedef struct mzrt_rwlock {
   HANDLE readEvent;
@@ -617,63 +555,154 @@ int mzrt_mutex_create(mzrt_mutex **mutex) {
 }
 
 int mzrt_mutex_lock(mzrt_mutex *mutex) {
-  EnterCriticalSection(&(*mutex)->critical_section);
+  EnterCriticalSection(&mutex->critical_section);
   return 0;
 }
 
 int mzrt_mutex_trylock(mzrt_mutex *mutex) {
-  if (!TryEnterCriticalSection(&(*mutex)->critical_section))
-    return 1;
+  /* FIXME: TryEnterCriticalSection() requires NT:
+     if (!TryEnterCriticalSection(&mutex->critical_section))
+       return 1; */
   return 0;
 }
 
 int mzrt_mutex_unlock(mzrt_mutex *mutex) {
-  LeaveCriticalSection(&(*mutex)->critical_section);
+  LeaveCriticalSection(&mutex->critical_section);
   return 0;
 }
 
 int mzrt_mutex_destroy(mzrt_mutex *mutex) {
-  DeleteCriticalSection(&(*mutex)->critical_section);
+  DeleteCriticalSection(&mutex->critical_section);
   return 0;
 }
 
 struct mzrt_cond {
-  pthread_cond_t cond;
+  int nothing;
 };
 
 int mzrt_cond_create(mzrt_cond **cond) {
-  *cond = malloc(sizeof(mzrt_cond));
-  return pthread_cond_init(&(*cond)->cond, NULL);
+  return 0;
 }
 
 int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex) {
-  return pthread_cond_wait(&cond->cond, &mutex->mutex);
+  return 0;
 }
 
-int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex) {
-  return pthread_cond_timedwait(&cond->cond, &mutex->mutex);
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long secs, long nsecs) {
+  return 0;
 }
 
 int mzrt_cond_signal(mzrt_cond *cond) {
-  return pthread_cond_signal(&cond->cond);
+  return 0;
 }
 
 int mzrt_cond_broadcast(mzrt_cond *cond) {
-  return pthread_cond_broadcast(&cond->cond);
+  return 0;
 }
 
 int mzrt_cond_destroy(mzrt_cond *cond) {
-  return pthread_cond_destroy(&cond->cond);
+  return 0;
 }
+
+struct mzrt_sema {
+  HANDLE ws;
+};
+
+int mzrt_sema_create(mzrt_sema **_s, int v)
+{
+  mzrt_sema *s;
+  HANDLE ws;
+
+  s = (mzrt_sema *)malloc(sizeof(mzrt_sema));
+  ws = CreateSemaphore(NULL, v, 32000, NULL);
+  s->ws = ws;
+  *_s = s;
+
+  return 0;
+}
+
+int mzrt_sema_wait(mzrt_sema *s)
+{
+  WaitForSingleObject(s->ws, INFINITE);
+  return 0;
+}
+
+int mzrt_sema_post(mzrt_sema *s)
+{
+  ReleaseSemaphore(s->ws, 1, NULL);  
+  return 0;
+}
+
+int mzrt_sema_destroy(mzrt_sema *s)
+{
+  CloseHandle(s->ws);
+  free(s);
+
+  return 0;
+}
+
+#endif
+
+/****************** PROCESS THREAD MAIL BOX *******************************/
+
+pt_mbox *pt_mbox_create() {
+  pt_mbox *mbox = (pt_mbox *)malloc(sizeof(pt_mbox));
+  mbox->count = 0;
+  mbox->in    = 0;
+  mbox->out   = 0;
+  mzrt_mutex_create(&mbox->mutex);
+  mzrt_cond_create(&mbox->nonempty);
+  mzrt_cond_create(&mbox->nonfull);
+  return mbox;
+}
+
+void pt_mbox_send(pt_mbox *mbox, int type, void *payload, pt_mbox *origin) {
+  mzrt_mutex_lock(mbox->mutex);
+  while ( mbox->count == 5 ) {
+    mzrt_cond_wait(mbox->nonfull, mbox->mutex);
+  }
+  mbox->queue[mbox->in].type = type;
+  mbox->queue[mbox->in].payload = payload;
+  mbox->queue[mbox->in].origin = origin;
+  mbox->in = (mbox->in + 1) % 5;
+  mbox->count++;
+  mzrt_cond_signal(mbox->nonempty);
+  mzrt_mutex_unlock(mbox->mutex);
+}
+
+void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin){
+  mzrt_mutex_lock(mbox->mutex);
+  while ( mbox->count == 0 ) {
+    mzrt_cond_wait(mbox->nonempty, mbox->mutex);
+  }
+  *type    = mbox->queue[mbox->out].type;
+  *payload = mbox->queue[mbox->out].payload;
+  *origin  = mbox->queue[mbox->out].origin;
+  mbox->out = (mbox->out + 1) % 5;
+  mbox->count--;
+  mzrt_cond_signal(mbox->nonfull);
+  mzrt_mutex_unlock(mbox->mutex);
+}
+
+void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload) {
+  pt_mbox *return_origin;
+  pt_mbox_send(mbox, type, payload, origin);
+  pt_mbox_recv(origin, return_type, return_payload, &return_origin);
+}
+
+void pt_mbox_destroy(pt_mbox *mbox) {
+  mzrt_mutex_destroy(mbox->mutex);
+  mzrt_cond_destroy(mbox->nonempty);
+  mzrt_cond_destroy(mbox->nonfull);
+  free(mbox);
+}
+
+/************************************************************************/
+/************************************************************************/
+/************************************************************************/
 
 #ifdef MZ_XFORM
 END_XFORM_SUSPEND;
 #endif
-
-#endif
-
-/************************************************************************/
-/************************************************************************/
-/************************************************************************/
 
 #endif

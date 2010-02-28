@@ -12054,7 +12054,7 @@ static void on_demand_with_args(Scheme_Object **in_argv)
 
 static void on_demand()
 {
-  return on_demand_with_args(MZ_RUNSTACK);
+  on_demand_with_args(MZ_RUNSTACK);
 }
 
 static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
