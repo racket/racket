@@ -145,7 +145,7 @@ at least theoretically.
       (pretty-print (print-convert s))
       (newline))))
 
-(define custom-printer (make-parameter #f))
+(define custom-printer (make-parameter #t))
   
 (define-syntax (define-struct/printer stx)
   (syntax-parse stx
