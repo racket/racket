@@ -14,6 +14,7 @@
                      (prefix-in a: "private/helpers.ss"))
          scheme/splicing
          scheme/stxparam
+         unstable/location
          "private/arrow.ss"
          "private/base.ss"
          "private/guts.ss")
@@ -311,7 +312,7 @@
                                             '(struct name)
                                             'cant-happen
                                             (quote #,av-id)
-                                            (quote-syntax #,av-id)))))]
+                                            (quote-srcloc #,av-id)))))]
                          ;; a list of variables, one for each super field
                          [(super-fields ...) (generate-temporaries super-fields)]
                          ;; the contract for a super field is any/c becuase the
@@ -343,7 +344,7 @@
                                                     guard
                                                     (current-contract-region) blame-id
                                                     (quote maker)
-                                                    (quote-syntax maker))))))))))]
+                                                    (quote-srcloc maker))))))))))]
     [(_ name . bad-fields)
      (identifier? #'name)
      (syntax-error "expected a list of field name/contract pairs"
@@ -380,15 +381,15 @@
        (syntax-case stx (set!)
          [(set! i arg)
           (quasisyntax/loc stx
-            (set! id (contract ctc arg neg pos (quote id) (quote-syntax id))))]
+            (set! id (contract ctc arg neg pos (quote id) (quote-srcloc id))))]
          [(f arg ...)
           (quasisyntax/loc stx
-            ((contract ctc id pos neg (quote id) (quote-syntax id))
+            ((contract ctc id pos neg (quote id) (quote-srcloc id))
              arg ...))]
          [ident
           (identifier? (syntax ident))
           (quasisyntax/loc stx
-            (contract ctc id pos neg (quote id) (quote-syntax id)))])))))
+            (contract ctc id pos neg (quote id) (quote-srcloc id)))])))))
 
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
@@ -511,7 +512,7 @@
                                       blame-id
                                       'cant-happen
                                       (quote free-var)
-                                      (quote-syntax free-var))
+                                      (quote-srcloc free-var))
                             ...
                             (values)))
                    (define-syntaxes (free-var-id ...)
@@ -576,7 +577,7 @@
                                   blame-id
                                   'cant-happen
                                   (quote free-var)
-                                  (quote-syntax free-var))
+                                  (quote-srcloc free-var))
                         ...
                         (values)))
                (define-syntaxes (free-var-id ...)
@@ -594,7 +595,7 @@
                                   blame-stx
                                   'cant-happen
                                   (quote marked-p)
-                                  (quote-syntax marked-p))
+                                  (quote-srcloc marked-p))
                         ...
                         (values)))
                (define-syntaxes (p ...)
