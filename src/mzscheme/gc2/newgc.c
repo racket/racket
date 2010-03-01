@@ -134,7 +134,7 @@ static void marking_rmp_debug(NewGC *gc, void *info);
 #define GCVERBOSEPAGE(msg, page) /* EMPTY */
 #endif
 
-THREAD_LOCAL_DECL(static NewGC *GC);
+THREAD_LOCAL_DECL(static NewGC *GC_instance);
 #define GCTYPE NewGC
 #define GC_get_GC() (GC_instance)
 #define GC_set_GC(gc) (GC_instance = gc)
