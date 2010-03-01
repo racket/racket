@@ -10,6 +10,8 @@
 
 @title[#:tag "futures"]{Futures for Parallelism}
 
+@guideintro["effective-futures"]{futures}
+
 @note-lib[scheme/future]
 
 @margin-note{Currently, parallel support for @scheme[future] is
