@@ -24,7 +24,7 @@
 ;; data structures for remembering things on recursive calls
 (define (empty-set) '())
 
-(define current-seen (make-parameter (empty-set)))
+(define current-seen (make-parameter (empty-set) #;pair?))
 
 (define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
 (define (remember s t A) (cons (seen-before s t) A))
@@ -301,8 +301,10 @@
                      (subtype* A0 other t*)
                      (fail! s t)))]
 	      ;; for unions, we check the cross-product
-	      [((Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
-	      [(s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
+	      [((Union: es) t) (or (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)
+                                   (fail! s t))]
+	      [(s (Union: es)) (or (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)
+                                   (fail! s t))]
 	      ;; subtyping on immutable structs is covariant
 	      [((Struct: nm _ flds #f _ _ _ _) (Struct: nm _ flds* #f _ _ _ _))
 	       (subtypes* A0 flds flds*)]

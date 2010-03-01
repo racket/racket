@@ -6,7 +6,7 @@
 (require (private base-env prims type-annotation 
 		  base-types-extra
 		  base-env-numeric
-		  base-env-indexing-old)
+		  base-env-indexing)
 	 (typecheck typechecker)
 	 (rep type-rep filter-rep object-rep)
          (rename-in (types utils union convenience)
@@ -791,6 +791,10 @@
         [tc-e (let: ([x : (U (Vectorof Number) String) (vector 1 2 3)])
                 (if (vector? x) (vector-ref x 0) (string-length x)))
          -Number]
+        [tc-e (let ()
+                (define: foo : (Integer * -> Integer) +)
+                (foo 1 2 3 4 5))
+              -Integer]
         )
   (test-suite
    "check-type tests"

@@ -20,7 +20,7 @@
 
 (define (empty-set) '())  
 
-(define current-seen (make-parameter (empty-set)))
+(define current-seen (make-parameter (empty-set) #;pair?))
 
 (define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
 (define (remember s t A) (cons (seen-before s t) A))

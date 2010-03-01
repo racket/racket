@@ -1,9 +1,10 @@
 #lang scheme/base
 
 (require scheme/contract
+         unstable/location
          (for-syntax scheme/base
                      syntax/kerncase 
-                     syntax/parse
+                     syntax/parse                     
                      "../utils/tc-utils.ss"
                      (prefix-in tr: "../private/typed-renaming.ss")))
 
@@ -43,15 +44,15 @@
                 (contract cnt 
                           (get-alternate nm.r)
                           '(interface for #,(syntax->datum #'nm))
-                          'never-happen
+                          (current-contract-region)
                           (quote nm)
-                          (quote-syntax nm))))]
+                          (quote-srcloc nm))))]
     [(require/contract (orig-nm:renameable nm:id) cnt lib)
      #`(begin (require (only-in lib [orig-nm orig-nm.r]))
               (define-ignored nm 
                 (contract cnt 
                           (get-alternate orig-nm.r) 
                           '#,(syntax->datum #'nm)
-                          'never-happen
+                          (current-contract-region)
                           (quote nm)
-                          (quote-syntax nm))))]))
+                          (quote-srcloc nm))))]))
