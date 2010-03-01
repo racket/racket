@@ -8680,9 +8680,9 @@ static int slept_fd;
 static void *sleep_fds;
 static void (*sleep_sleep)(float seconds, void *fds);
 
-static void *do_watch()
+static void *do_watch(void *other)
 {
-  scheme_init_os_thread();
+  scheme_init_os_thread_like(other);
   while (1) {
     pt_sema_wait(&sleeping_sema);
 
@@ -8699,7 +8699,7 @@ void scheme_start_sleeper_thread(void (*given_sleep)(float seconds, void *fds), 
     pt_sema_init(&sleeping_sema);
     pt_sema_init(&done_sema);
 
-    if (pthread_create(&watcher, NULL, do_watch, NULL)) {
+    if (pthread_create(&watcher, NULL, do_watch, scheme_get_os_thread_like())) {
       scheme_log_abort("pthread_create failed");
       abort();
     }

@@ -272,7 +272,7 @@ fun.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc \
 				$(srcdir)/future.h
 future.@LTO@: $(COMMON_HEADERS) $(srcdir)/future.h $(SCONFIG) \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/mzrt.c \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/mzrt.h \
         $(srcdir)/jit_ts_future_glue.c $(srcdir)/jit_ts_runtime_glue.c $(srcdir)/jit_ts_protos.h
 hash.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
@@ -291,6 +291,7 @@ list.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  
 module.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
+mzrt.@LTO@: $(COMMON_HEADERS)
 network.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
 numarith.@LTO@: $(COMMON_HEADERS) \

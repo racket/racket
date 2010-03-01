@@ -311,6 +311,9 @@ void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
 				 Scheme_Object *obj, int constant,
 				 int primitive);
 
+void *scheme_get_os_thread_like();
+void scheme_init_os_thread_like(void *);
+
 /*========================================================================*/
 /*                                constants                               */
 /*========================================================================*/

@@ -365,12 +365,25 @@ void* scheme_dbg_get_thread_local_variables() XFORM_SKIP_PROC {
 }
 #endif
 
-void scheme_init_os_thread() XFORM_SKIP_PROC
+void *scheme_get_os_thread_like()
+{
+#if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) || defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
+  return scheme_get_thread_local_variables();
+#else
+  return NULL;
+#endif
+}
+
+void scheme_init_os_thread_like(void *other) XFORM_SKIP_PROC
 {
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) || defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
   Thread_Local_Variables *vars;
-  vars = (Thread_Local_Variables *)malloc(sizeof(Thread_Local_Variables));
-  memset(vars, 0, sizeof(Thread_Local_Variables));
+  if (other)
+    vars = (Thread_Local_Variables *)other;
+  else {
+    vars = (Thread_Local_Variables *)malloc(sizeof(Thread_Local_Variables));
+    memset(vars, 0, sizeof(Thread_Local_Variables));
+  }
 # ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
   pthread_setspecific(scheme_thread_local_key, vars);
 # elif defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
@@ -384,6 +397,11 @@ void scheme_init_os_thread() XFORM_SKIP_PROC
   GC_attach_current_thread_exceptions_to_handler();
 # endif
 #endif
+}
+
+void scheme_init_os_thread() XFORM_SKIP_PROC
+{
+  return scheme_init_os_thread_like(NULL);
 }
 
 /************************************************************************/
