@@ -1361,7 +1361,7 @@ name @scheme[sexp-name] when signaling a contract violation.}
 
 @defparam[current-blame-format
           proc 
-          (-> blame? any/c string?)]{
+          (-> blame? any/c string? string?)]{
 
 This is a parameter that is used when constructing a
 contract violation error. Its value is procedure that
