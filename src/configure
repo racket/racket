@@ -5935,7 +5935,13 @@ case $OS in
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4"
     fi
 
-    enable_futures_by_default=yes
+    case `$UNAME -m` in
+      i386)
+       enable_futures_by_default=yes
+       ;;
+      *)
+       ;;
+    esac
 
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
 
