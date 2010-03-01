@@ -1375,6 +1375,26 @@ returns a string that is put into the contract error
 message. Note that the value is often already included in
 the message that indicates the violation.
 
+@defexamples[#:eval (contract-eval)
+(define (show-blame-error blame value message)
+  (string-append
+   "Contract Violation!\n"
+   (format "Guilty Party: ~a\n" (blame-positive blame))
+   (format "Innocent Party: ~a\n" (blame-negative blame))
+   (format "Contracted Value Name: ~a\n" (blame-value blame))
+   (format "Contract Location: ~s\n" (blame-source blame))
+   (format "Contract Name: ~a\n" (blame-contract blame))
+   (format "Offending Value: ~s\n" value)
+   (format "Offense: ~a\n" message)))
+[current-blame-format show-blame-error]
+(define/contract (f x)
+  (-> integer? integer?)
+  (/ x 2))
+(f 2)
+(f 1)
+(f 1/2)
+]
+
 }
 
 
