@@ -291,8 +291,10 @@
        (tc-error "Union: bad syntax")]
       [(t:Vectorof . rest)
        (tc-error "Vectorof: bad syntax")]
-      [(t:mu . rest) 
+      [((~and (~datum mu) t:mu) . rest) 
        (tc-error "mu: bad syntax")]
+      [(t:mu . rest) 
+       (tc-error "Rec: bad syntax")]
       [(t ... t:-> . rest)
        (tc-error "->: bad syntax")]
       [(id arg args ...)
