@@ -31,7 +31,7 @@ detects an attempt to perform an operation that is too complex for the
 system to run safely in parallel. Similarly, work in a future is
 suspended if it depends in some way on the current continuation, such
 as raising an exception. A suspended computation for a future is
-resumed when @scheme[touch] is applied to the future descriptor.
+resumed when @scheme[touch] is applied to the future.
 
 ``Safe'' parallel execution of a future means that all operations
 provided by the system must be able to enforce contracts and produce
@@ -52,7 +52,7 @@ in parallel. See also @guidesecref["effective-futures"].
 @defproc[(touch [f future?]) any]
 )]{
 
- The @scheme[future] procedure returns a future-descriptor value that
+ The @scheme[future] procedure returns a future value that
  encapsulates @scheme[thunk]. The @scheme[touch] function forces the
  evaluation of the @scheme[thunk] inside the given future, returning
  the values produced by @scheme[thunk]. After @scheme[touch] forces
