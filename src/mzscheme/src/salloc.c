@@ -217,7 +217,7 @@ static void macosx_get_thread_local_key_for_assembly_code() XFORM_SKIP_PROC
      the Go implementation (see "http://golang.org/src/libcgo/darwin_386.c").
      In brief, we assume that thread-local variables are going to be
      accessed via the gs segment register at offset 0x48 (i386) or 0x60 (x86_64),
-     and we also hardwire the thread-local key 0x108. Here we have to try to get
+     and we also hardwire the thread-local key 0x110. Here we have to try to get
      that particular key and double-check that it worked. */
   pthread_key_t unwanted[16];
   int num_unwanted = 0;
@@ -227,11 +227,11 @@ static void macosx_get_thread_local_key_for_assembly_code() XFORM_SKIP_PROC
       fprintf(stderr, "pthread key create failed\n");
       abort();
     }
-    if (scheme_thread_local_key == 0x108)
+    if (scheme_thread_local_key == 0x110)
       break;
     else {
-      if (num_unwanted == 16) {
-        fprintf(stderr, "pthread key create never produced 0x108 for inline hack\n");
+      if (num_unwanted == 24) {
+        fprintf(stderr, "pthread key create never produced 0x110 for inline hack\n");
         abort();
       }
       unwanted[num_unwanted++] = scheme_thread_local_key;

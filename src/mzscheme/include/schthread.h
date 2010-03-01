@@ -303,9 +303,9 @@ static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
   Thread_Local_Variables *x = NULL;
 #  if defined(OS_X)
 #   if defined(__x86_64__)
-  asm volatile("movq %%gs:0x8A0, %0" : "=r"(x));
+  asm volatile("movq %%gs:0x8E0, %0" : "=r"(x));
 #   else
-  asm volatile("movl %%gs:0x468, %0" : "=r"(x));
+  asm volatile("movl %%gs:0x488, %0" : "=r"(x));
 #   endif
 #  elif defined(linux) && defined(MZ_USES_SHARED_LIB)
 #   if defined(__x86_64__)

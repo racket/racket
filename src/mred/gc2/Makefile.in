@@ -71,6 +71,8 @@ XFORMXX = $(XFORM_CMD) --cpp "$(CXXCPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o
 XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o
 XFORMDEP = $(srcdir)/../../mzscheme/gc2/xform.ss $(srcdir)/../../mzscheme/gc2/xform-mod.ss $(srcdir)/../../mzscheme/gc2/gc2.h
 
+NONPRECOMPDEP =  $(srcdir)/../../mzscheme/include/schthread.h
+
 WXBDIR=../../wxxt
 WXMACBDIR=../../wxmac/src
 
@@ -359,7 +361,7 @@ macxsrc/wx_image.cc: $(WXMACDIR)/../utils/image/src/wx_image.cc $(XFORMDEP) $(MA
 	$(XFORMWP) macxsrc/wx_image.cc $(WXMACDIR)/../utils/image/src/wx_image.cc
 macxsrc/wx_xbm.cc: $(WXMACDIR)/../utils/image/src/wx_xbm.cc $(XFORMDEP) $(MACXPRECOMPDEP)
 	$(XFORMWP) macxsrc/wx_xbm.cc $(WXMACDIR)/../utils/image/src/wx_xbm.cc
-macxsrc/simpledrop.cc: $(srcdir)/../../mac/mzscheme/simpledrop.cpp $(XFORMDEP)
+macxsrc/simpledrop.cc: $(srcdir)/../../mac/mzscheme/simpledrop.cpp $(NONPRECOMPDEP) $(XFORMDEP)
 	$(XFORMXX) macxsrc/simpledrop.cc $(srcdir)/../../mac/mzscheme/simpledrop.cpp
 
 wx_xt_XFORMPRECOMP = 
@@ -370,7 +372,7 @@ XFORMPRECOMPDEP =
 xsrc/wxscheme.cc: $(srcdir)/../wxs/wxscheme.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxscheme.cc $(srcdir)/../wxs/wxscheme.cxx
 
-xsrc/xcglue.c: $(srcdir)/../../mzscheme/utils/xcglue.c $(XFORMDEP)
+xsrc/xcglue.c: $(srcdir)/../../mzscheme/utils/xcglue.c $(NONPRECOMPDEP) $(XFORMDEP)
 	$(XFORM) xsrc/xcglue.c $(srcdir)/../../mzscheme/utils/xcglue.c
 
 

@@ -174,7 +174,7 @@ fun.@LTO@: $(srcdir)/fun.c
 	$(CC) $(CFLAGS) -c $(srcdir)/fun.c -o fun.@LTO@
 future.@LTO@: $(srcdir)/future.c
 	$(CC) $(CFLAGS) -c $(srcdir)/future.c -o future.@LTO@
-gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h
+gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h $(srcdir)/../include/schthread.h
 	$(CC) $(CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
 hash.@LTO@: $(srcdir)/hash.c
 	$(CC) $(CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
@@ -271,7 +271,7 @@ file.@LTO@: $(COMMON_HEADERS) \
 fun.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc \
 				$(srcdir)/future.h
-future.@LTO@: $(srcdir)/schpriv.h $(srcdir)/future.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+future.@LTO@: $(COMMON_HEADERS) $(srcdir)/future.h $(SCONFIG) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/mzrt.c \
         $(srcdir)/jit_ts_future_glue.c $(srcdir)/jit_ts_runtime_glue.c $(srcdir)/jit_ts_protos.h
 hash.@LTO@: $(COMMON_HEADERS) \
