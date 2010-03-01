@@ -369,10 +369,12 @@
                                           `(cons ,(recur k) ,(recur v))))]
                                       [constructor
                                        (cond
-                                         [(hash-table? expr 'weak 'equal) 'weak-hash]
+                                         [(hash-table? expr 'weak 'equal) 'make-weak-hash]
                                          [(hash-table? expr 'equal) 'make-hash]
-                                         [(hash-table? expr 'weak) 'weak-hasheq]
-                                         [else 'hasheq])])
+                                         [(hash-table? expr 'weak 'eqv) 'make-weak-hasheqv]
+                                         [(hash-table? expr 'eqv) 'make-hasheqv]
+                                         [(hash-table? expr 'weak) 'make-weak-hasheq]
+                                         [(hash-table? expr) 'make-hasheq])])
                                   (if (null? contents)
                                       `(,constructor)
                                       `(,constructor (list ,@contents))))]
