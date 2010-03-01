@@ -163,6 +163,7 @@
                   '(cons 3/2+3/2i empty))
      
      (make-same-test (vector 0 0 0 0 0 0 0 0 0 0) '(vector 0 0 0 0 0 0 0 0 0 0))
+     (make-same-test (vector-immutable 1 2 3 4 5) '(vector-immutable 1 2 3 4 5))
      (make-same-test #t 'true)
      (make-same-test #f 'false)
      
@@ -171,6 +172,7 @@
      (make-same-test (delay 1) '(delay ...))
      (make-same-test (let () (define-struct a (a) #:inspector (make-inspector)) (make-a 3)) '(make-a 3))
      (make-same-test (box 3) '(box 3))
+     (make-same-test (box-immutable 4) '(box-immutable 4))
      (make-pctest null 'empty 'empty 'empty '`() '`() '`() 'empty)
      (make-same-test add1 'add1)
      (make-same-test (void) '(void))

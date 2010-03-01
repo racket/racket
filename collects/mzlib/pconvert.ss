@@ -356,7 +356,11 @@
                                        `(cons ,(recur (mcar expr)) ,(recur (mcdr expr)))))
                                     `(mcons ,(recur (mcar expr)) ,(recur (mcdr expr))))]
                                [(weak-box? expr) `(make-weak-box ,(recur (weak-box-value expr)))]
-                               [(box? expr) `(box ,(recur (unbox expr)))]
+                               [(box? expr)
+                                `(,(if (immutable? expr)
+                                       'box-immutable
+                                       'box)
+                                  ,(recur (unbox expr)))]
                                [(hash-table? expr) 
                                 (let ([contents
                                        (hash-table-map
@@ -372,7 +376,11 @@
                                   (if (null? contents)
                                       `(,constructor)
                                       `(,constructor (list ,@contents))))]
-                               [(vector? expr) `(vector ,@(map recur (vector->list expr)))]
+                               [(vector? expr) 
+                                `(,(if (immutable? expr)
+                                       'vector-immutable
+                                       'vector)
+                                  ,@(map recur (vector->list expr)))]
                                [(symbol? expr) `',expr]
                                [(keyword? expr) `',expr]
                                [(string? expr) expr]
