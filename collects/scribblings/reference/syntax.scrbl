@@ -11,7 +11,8 @@
                      scheme/provide
                      scheme/nest
                      scheme/package
-                     scheme/splicing))
+                     scheme/splicing
+                     scheme/runtime-path))
 
 @(define require-eval (make-base-eval))
 @(define syntax-eval
@@ -1078,11 +1079,11 @@ aliens
   will get the @scheme[scheme/base] bindings that match the regexp,
   and renamed to use ``camel case.''}
 
-@defform[(path-up rel-string)]{
+@defform[(path-up rel-string ...)]{
 
-This specifies a path to a module named @scheme[rel-string] in a
-similar way to using @scheme[rel-string] directly, except that if the
-required module file is not found there, it is searched in the parent
+This specifies paths to module named by the @scheme[rel-string]s in a
+similar way to using the @scheme[rel-string]s directly, except that if the
+required module files are not found there, they are searched for in the parent
 directory (in @filepath{../@scheme[_rel-string]}), and then in
 the grand-parent directory, going all the way up to the root.  (Note
 that the usual caveats hold for a macro that depends on files that it
@@ -1092,16 +1093,16 @@ of the compiled form.)
 This form is useful in setting up a ``project environment''.  For
 example, you can write a @filepath{config.ss} file in the root
 directory of your project with:
-@verbatim[#:indent 2]{
-  #lang scheme/base
+@schememod[
+  scheme/base
   (require scheme/require-syntax (for-syntax "utils/in-here.ss"))
   ;; require form for my utilities
   (provide utils-in)
   (define-require-syntax utils-in in-here-transformer)
-}
+]
 and in @filepath{utils/in-here.ss} in the root:
-@verbatim[#:indent 2]{
-  #lang scheme/base
+@schememod[
+  scheme/base
   (require scheme/runtime-path)
   (provide in-here-transformer)
   (define-runtime-path here ".")
@@ -1111,7 +1112,7 @@ and in @filepath{utils/in-here.ss} in the root:
        (identifier? #'sym)
        (let ([path (build-path here (format "~a.ss" (syntax-e #'sym)))])
          (datum->syntax stx `(file ,(path->string path)) stx))]))
-}
+]
 Finally, you can use it via @scheme[path-up]:
 @schemeblock[
   (require scheme/require (path-up "config.ss") (utils-in foo))]
