@@ -270,6 +270,7 @@ Scheme_Env *scheme_restart_instance() {
   scheme_init_port_config();
   scheme_init_port_fun_config();
   scheme_init_error_config();
+  scheme_init_logger_config();
 #ifndef NO_SCHEME_EXNS
   scheme_init_exn_config();
 #endif
