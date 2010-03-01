@@ -3,6 +3,6 @@
 #lang scheme
 (require typed/scheme)
 
-((with-type (Number -> Number)
+((with-type #:result (Number -> Number)
    (lambda: ([x : Number]) (add1 x)))
  #f)

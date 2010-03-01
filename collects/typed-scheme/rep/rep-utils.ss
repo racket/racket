@@ -25,7 +25,7 @@
 
 (provide == defintern hash-id (for-syntax fold-target))
 
-(define-struct Rep (seq free-vars free-idxs stx))
+(define-struct Rep (seq free-vars free-idxs stx) #:transparent)
 
 (define-for-syntax fold-target #'fold-target)
 (define-for-syntax default-fields (list #'seq #'free-vars #'free-idxs #'stx))

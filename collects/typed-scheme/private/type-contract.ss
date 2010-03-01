@@ -57,6 +57,7 @@
       (define (t->c/neg t #:seen [structs-seen structs-seen]) (loop t (not pos?) (not from-typed?) structs-seen))
       (define (t->c/fun f #:method [method? #f])
         (match f
+          [(Function: (list (top-arr:))) #'procedure?]
           [(Function: arrs)
            (let ()           
              (define (f a)
@@ -90,11 +91,15 @@
                      #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*)
                      #'(dom* ... . -> . rng*))))
              (unless (no-duplicates (for/list ([t arrs])
-                                      (match t [(arr: dom _ _ _ _) (length dom)])))
+                                      (match t
+                                        [(arr: dom _ _ _ _) (length dom)]
+                                        ;; is there something more sensible here?
+                                        [(top-arr:) (int-err "got top-arr")])))
                (exit (fail)))
              (match (map f arrs)
                [(list e) e]
-               [l #`(case-> #,@l)]))]))
+               [l #`(case-> #,@l)]))]
+          [_ (int-err "not a function" f)]))
       (match ty
         [(or (App: _ _ _) (Name: _)) (t->c (resolve-once ty))]
         ;; any/c doesn't provide protection in positive position

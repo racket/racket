@@ -5,6 +5,7 @@
 (require typed/scheme)
 
 (let ([x 'hello])
-  (with-type String
-    #:freevars ([x String])
-    (string-append x ", world")))
+  (with-type
+   #:result String
+   #:freevars ([x String])
+   (string-append x ", world")))

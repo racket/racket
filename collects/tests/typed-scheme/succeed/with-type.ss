@@ -1,9 +1,18 @@
 #lang scheme
 (require typed/scheme)
 
-(with-type Number 3)
+(with-type #:result Number 3)
 
 (let ([x "hello"])
-  (with-type String
+  (with-type #:result String
     #:freevars ([x String])
     (string-append x ", world")))
+
+(with-type ([fun (Number -> Number)]
+            [val Number])
+  (define (fun x) x)
+  (define val 17))
+
+(fun val)
+val
+

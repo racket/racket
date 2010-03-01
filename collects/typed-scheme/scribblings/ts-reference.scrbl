@@ -337,28 +337,43 @@ Examples:
 
 The @scheme[with-type] for allows for localized Typed Scheme regions in otherwise untyped code.
 
-@defform/subs[(with-type type fv-clause body ...+)
+@defform*/subs[[(with-type result-spec fv-clause body ...+)
+                (with-type export-spec fv-clause body ...+)]
               ([fv-clause code:blank
-                          (code:line #:freevars ([id fv-type] ...))])]{
-Checks that @scheme[body ...+] has the type @scheme[type].  The @scheme[id]s are assumed to 
-have the types ascribed to them; these types are converted to contracts and checked dynamically.
-Uses of the result value are also appropriately checked by a contract generated from 
+                          (code:line #:freevars ([id fv-type] ...))]
+               [result-spec (code:line #:result type)]
+               [export-spec ([export-id export-type] ...)])]{
+The first form, an expression, checks that @scheme[body ...+] has the type @scheme[type].  
+Uses of the result value are appropriately checked by a contract generated from 
 @scheme[type].
+
+The second form, which can be used as a definition, checks that each of the @scheme[export-id]s 
+has the specified type.  These types are also enforced in the surrounding code with contracts.
+
+The @scheme[id]s are assumed to 
+have the types ascribed to them; these types are converted to contracts and checked dynamically.
 
 @examples[#:eval the-eval
 (with-type Number 3)
 
-((with-type (Number -> Number)
+((with-type #:result (Number -> Number)
    (lambda: ([x : Number]) (add1 x)))
  #f)
 
 (let ([x "hello"])
-  (with-type String
+  (with-type #:result String
     #:freevars ([x String])
     (string-append x ", world")))
 
 (let ([x 'hello])
-  (with-type String
+  (with-type #:result String
     #:freevars ([x String])
-    (string-append x ", world")))]
+    (string-append x ", world")))
+
+(with-type ([fun (Number -> Number)]
+            [val Number])
+  (define (fun x) x)
+  (define val 17))
+
+(fun val)]
 }

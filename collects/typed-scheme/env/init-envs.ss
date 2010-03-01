@@ -41,10 +41,10 @@
     [(? (lambda (e) (or (LatentFilter? e)
                         (LatentObject? e)
                         (PathElem? e)))
-        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq vals))) 
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx vals)))
      `(,(gen-constructor tag) ,@(map sub vals))]
-    [(? (lambda (e) (or (Type? e)))
-        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag key seq vals))) 
+    [(? Type?
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
      `(,(gen-constructor tag) ,@(map sub vals))]
     [_ (basic v)]))
 

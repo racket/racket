@@ -126,8 +126,6 @@ at least theoretically.
 ;; - 1 printers have to be defined at the same time as the structs
 ;; - 2 we want to support things printing corectly even when the custom printer is off
 
-(define-for-syntax printing? #t)
-
 (define-syntax-rule (defprinter t ...)
   (begin
     (define t (box (lambda _ (error (format "~a not yet defined" 't))))) ...
@@ -147,16 +145,14 @@ at least theoretically.
       (pretty-print (print-convert s))
       (newline))))
 
-(define custom-printer (make-parameter #t))
+(define custom-printer (make-parameter #f))
   
 (define-syntax (define-struct/printer stx)
   (syntax-parse stx
     [(form name (flds ...) printer:expr)
      #`(define-struct name (flds ...) 
          #:property prop:custom-write 
-         #,(if printing? 
-               #'(lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))
-               #'pseudo-printer)
+         (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))
          #:inspector #f)]))
 
 

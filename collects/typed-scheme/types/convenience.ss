@@ -2,7 +2,7 @@
 (require "../utils/utils.ss"
          (rep type-rep filter-rep object-rep)
          (utils tc-utils)
-         "abbrev.ss"
+         "abbrev.ss" (only-in scheme/contract current-blame-format)
 	 (types comparison printer union subtype utils)
          scheme/list scheme/match scheme/promise
          (for-syntax syntax/parse scheme/base)
@@ -13,7 +13,6 @@
          ;; these should all eventually go away
          make-Name make-ValuesDots make-Function
          (rep-out filter-rep object-rep))
-
 
 (define (one-of/c . args)
   (apply Un (map -val args)))
@@ -47,7 +46,7 @@
 
 (define In-Syntax
   (-mu e
-       (*Un -Boolean -Symbol -String -Keyword -Char -Number (-val null)
+       (*Un (-val null) -Boolean -Symbol -String -Keyword -Char -Number 
             (make-Vector (-Syntax e))
             (make-Box (-Syntax e))
             (-lst (-Syntax e))
@@ -57,8 +56,8 @@
 
 (define (-Sexpof t)
   (-mu sexp
-       (Un -Number -Boolean -Symbol -String -Keyword -Char
-           (-val '())
+       (Un (-val '())
+           -Number -Boolean -Symbol -String -Keyword -Char           
            (-pair sexp sexp)
            (make-Vector sexp)
            (make-Box sexp)
