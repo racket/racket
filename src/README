@@ -382,7 +382,7 @@ oskglue.inc for details (grep for `hardwire').
 
 At a mininum, to port MzScheme to a new platform, edit
 mzscheme/sconfig.h to provide a platform-specific compilation
-information. As dsitributed, mzscheme/sconfig.h contains
+information. As distributed, mzscheme/sconfig.h contains
 configurations for the following platforms:
 
               Windows (x86)
