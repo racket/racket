@@ -4815,7 +4815,7 @@ scheme_make_file_input_port(FILE *fp)
 #ifdef MZ_FDS
 
 # ifdef WINDOWS_FILE_HANDLES
-static long WindowsFDReader(Win_FD_Input_Thread *th);
+static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th);
 static void WindowsFDICleanup(Win_FD_Input_Thread *th);
 typedef BOOL (WINAPI* CSI_proc)(HANDLE);
 
@@ -5421,7 +5421,7 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
 
 # ifdef WINDOWS_FILE_HANDLES
 
-static long WindowsFDReader(Win_FD_Input_Thread *th)
+static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
   XFORM_SKIP_PROC
 {
   DWORD toget, got;
@@ -5811,7 +5811,7 @@ scheme_make_file_output_port(FILE *fp)
 #ifdef MZ_FDS
 
 #ifdef WINDOWS_FILE_HANDLES
-static long WindowsFDWriter(Win_FD_Output_Thread *oth);
+static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth);
 static void WindowsFDOCleanup(Win_FD_Output_Thread *oth);
 #endif
 
@@ -6619,7 +6619,7 @@ static void flush_if_output_fds(Scheme_Object *o, Scheme_Close_Custodian_Client 
 
 #ifdef WINDOWS_FILE_HANDLES
 
-static long WindowsFDWriter(Win_FD_Output_Thread *oth)
+static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
   XFORM_SKIP_PROC
 {
   DWORD towrite, wrote, start;
@@ -8434,18 +8434,24 @@ int scheme_get_external_event_fd(void)
 static HANDLE itimer;
 static OS_SEMAPHORE_TYPE itimer_semaphore;
 static long itimer_delay;
+typedef struct {
+  int volatile *fuel_counter_ptr;
+  unsigned long volatile *jit_stack_boundary_ptr;
+} Win_Itimer_Data;
 
-static long ITimer(void)
+static long WINAPI ITimer(void *data)
   XFORM_SKIP_PROC
 {
+  Win_Itimer_Data *d = (Win_Itimer_Data *)data;
+
   WaitForSingleObject(itimer_semaphore, INFINITE);
 
   scheme_init_os_thread();
 
   while (1) {
     if (WaitForSingleObject(itimer_semaphore, itimer_delay / 1000) == WAIT_TIMEOUT) {
-      scheme_fuel_counter = 0;
-      scheme_jit_stack_boundary = (unsigned long)-1;
+      *d->fuel_counter_ptr = 0;
+      *d->jit_stack_boundary_ptr = (unsigned long)-1;
       WaitForSingleObject(itimer_semaphore, INFINITE);
     }
   }
@@ -8456,7 +8462,12 @@ static void scheme_start_itimer_thread(long usec)
   DWORD id;
 
   if (!itimer) {
-    itimer = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)ITimer, NULL, 0, &id);
+    Win_Itimer_Data *d;
+    d = malloc(sizeof(Win_Itimer_Data));
+    d->fuel_counter_ptr = &scheme_fuel_counter;
+    d->jit_stack_boundary_ptr = &scheme_jit_stack_boundary;
+    itimer = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)ITimer, 
+			  d, 0, &id);
     itimer_semaphore = CreateSemaphore(NULL, 0, 1, NULL);
     scheme_remember_thread(itimer, 0);
   }
