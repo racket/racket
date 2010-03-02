@@ -77,8 +77,9 @@ enum {
 };
 
 enum {
-  SIZE_CLASS_MED_PAGE   = 1,
-  SIZE_CLASS_BIG_PAGE   = 2,
+  SIZE_CLASS_SMALL_PAGE      = 0,
+  SIZE_CLASS_MED_PAGE        = 1,
+  SIZE_CLASS_BIG_PAGE        = 2,
   SIZE_CLASS_BIG_PAGE_MARKED = 3,
 };
 
@@ -93,6 +94,11 @@ static const char *type_name[PAGE_TYPES] = {
 
 
 #include "newgc.h"
+
+THREAD_LOCAL_DECL(static NewGC *GC_instance);
+#define GCTYPE NewGC
+#define GC_get_GC() (GC_instance)
+#define GC_set_GC(gc) (GC_instance = gc)
 
 #ifdef MZ_USE_PLACES
 static NewGC *MASTERGC;
@@ -109,6 +115,19 @@ inline static int postmaster_and_master_gc(NewGC *gc) {
 inline static int postmaster_and_place_gc(NewGC *gc) {
   return (MASTERGC && gc != MASTERGC);
 }
+#endif
+
+#if defined(MZ_USE_PLACES)
+/*
+# define DEBUG_GC_PAGES
+# define MASTER_ALLOC_DEBUG
+# define KILLING_DEBUG
+*/
+#endif
+
+#if defined(MZ_USE_PLACES) && defined(DEBUG_GC_PAGES)
+inline static size_t real_page_size(mpage* page);
+
 static FILE *GCVERBOSEFH;
 static FILE* gcdebugOUT() {
   if (GCVERBOSEFH) { fflush(GCVERBOSEFH); }
@@ -116,28 +135,26 @@ static FILE* gcdebugOUT() {
   return GCVERBOSEFH;
 }
 
-inline static size_t real_page_size(mpage* page);
-#ifdef DEBUG_GC_PAGES
-static void GCVERBOSEPAGE(const char *msg, mpage* page) {
-  fprintf(gcdebugOUT(), "%s %p %p %p\n", msg, page, page->addr, (void*)((long)page->addr + real_page_size(page)));
+static void GCVERBOSEprintf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(gcdebugOUT(), fmt, ap);
+    va_end(ap);
 }
-#else
-#define GCVERBOSEPAGE(msg, page) /* EMPTY */
-#endif
 
-/* #define KILLING_DEBUG */
-#ifdef KILLING_DEBUG
+static void GCVERBOSEPAGE(const char *msg, mpage* page) {
+  NewGC *gc = GC_get_GC();
+  if(postmaster_and_master_gc(gc)) {
+    GCVERBOSEprintf("%s %p %p %p\n", msg, page, page->addr, (void*)((long)page->addr + real_page_size(page)));
+  }
+}
+# ifdef KILLING_DEBUG
 static void killing_debug(NewGC *gc, void *info);
-static void marking_rmp_debug(NewGC *gc, void *info);
-#endif
+# endif
 #else
-#define GCVERBOSEPAGE(msg, page) /* EMPTY */
+# define GCVERBOSEPAGE(msg, page) /* EMPTY */
 #endif
 
-THREAD_LOCAL_DECL(static NewGC *GC_instance);
-#define GCTYPE NewGC
-#define GC_get_GC() (GC_instance)
-#define GC_set_GC(gc) (GC_instance = gc)
 
 
 #include "msgprint.c"
@@ -727,7 +744,6 @@ inline static void *medium_page_realloc_dead_slot(NewGC *gc, const int sz, const
   return 0;
 }
 #if defined(linux)
-/* #define MASTER_ALLOC_DEBUG */
 #if defined(MASTER_ALLOC_DEBUG)
 #include <execinfo.h>
 #include <stdio.h>
@@ -786,9 +802,9 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
 
       objptr = OBJHEAD_TO_OBJPTR(info);
     }
-#ifdef MASTER_ALLOC_DEBUG
+#ifdef defined(DEBUG_GC_PAGES) && defined(MASTER_ALLOC_DEBUG)
   if (postmaster_and_master_gc(gc)) {
-    fprintf(gcdebugOUT(), "MASTERGC_allocate_medium %zi %i %i %i %i %p\n", request_size_bytes, type, sz, pos, 1 << (pos +3), objptr);
+    GCVERBOSEprintf("MASTERGC_allocate_medium %zi %i %i %i %i %p\n", request_size_bytes, type, sz, pos, 1 << (pos +3), objptr);
     /* print_libc_backtrace(gcdebugOUT()); */
   }
 #endif
@@ -956,7 +972,7 @@ inline static void *allocate(const size_t request_size, const int type)
     {
       /* NewGC *gc = GC_get_GC(); */
       void * objptr = OBJHEAD_TO_OBJPTR(info);
-      /* fprintf(gcdebugOUT(), "ALLOCATE page %p %zi %i %p\n", gc->gen0.curr_alloc_page->addr, request_size, type,  objptr); */
+      /* GCVERBOSEprintf("ALLOCATE page %p %zi %i %p\n", gc->gen0.curr_alloc_page->addr, request_size, type,  objptr); */
       ASSERT_VALID_OBJPTR(objptr);
       return objptr;
     }
@@ -1861,10 +1877,16 @@ static void Master_collect() {
 
       if (have_collected == 1) {
         printf("%i READY\n", i);
+#if defined(DEBUG_GC_PAGES)
+        GCVERBOSEprintf("%i READY\n", i);
+#endif
       }
       else if ( have_collected == 0) {
         void *signal_fd = MASTERGCINFO->signal_fds[i];
         printf("%i NOT COLLECTED\n", i);
+#if defined(DEBUG_GC_PAGES)
+        GCVERBOSEprintf("%i NOT COLLECTED\n", i);
+#endif
         children_ready = 0;
         MASTERGCINFO->have_collected[i] = -1;
         if (signal_fd >= 0 ) { 
@@ -1873,6 +1895,9 @@ static void Master_collect() {
       }
       else {
         printf("%i SIGNALED BUT NOT COLLECTED\n", i);
+#if defined(DEBUG_GC_PAGES)
+        GCVERBOSEprintf("%i SIGNALED BUT NOT COLLECTED\n", i);
+#endif
         children_ready = 0;
       }
     }
@@ -1881,11 +1906,15 @@ static void Master_collect() {
         MASTERGCINFO->have_collected[i] = 0;
       }
       printf("START MASTER COLLECTION\n");
-      fprintf(gcdebugOUT(), "START MASTER COLLECTION\n");
+#if defined(DEBUG_GC_PAGES)
+      GCVERBOSEprintf("START MASTER COLLECTION\n");
+#endif
       MASTERGC->major_places_gc = 0;
       garbage_collect(MASTERGC, 1, 0);
       printf("END MASTER COLLECTION\n");
-      fprintf(gcdebugOUT(), "END MASTER COLLECTION\n");
+#if defined(DEBUG_GC_PAGES)
+      GCVERBOSEprintf("END MASTER COLLECTION\n");
+#endif
     }
   }
 
@@ -3008,13 +3037,15 @@ static void repair_heap(NewGC *gc)
   int master_has_switched = postmaster_and_master_gc(gc);
 #endif
 
+  
   for(i = 0; i < PAGE_TYPES; i++) {
     for(page = gc->gen1_pages[i]; page; page = page->next) {
 #ifdef MZ_USE_PLACES
-      if (master_has_switched || page->marked_on) {
+      if (master_has_switched || page->marked_on)
 #else
-      if (page->marked_on) {
+      if (page->marked_on)
 #endif
+      {
         page->has_new = 0;
         /* these are guaranteed not to be protected */
         if(page->size_class)  {
@@ -3136,10 +3167,11 @@ static void repair_heap(NewGC *gc)
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
     for (page = gc->med_pages[i]; page; page = page->next) {
 #ifdef MZ_USE_PLACES
-      if (master_has_switched || page->marked_on) {
+      if (master_has_switched || page->marked_on)
 #else
-      if (page->marked_on) {
+      if (page->marked_on)
 #endif
+      {
         void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
         void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
         
