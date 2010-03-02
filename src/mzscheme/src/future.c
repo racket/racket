@@ -1007,7 +1007,6 @@ unsigned long scheme_rtcall_alloc(const char *who, int src_type)
   future_t *future;
   unsigned long retval;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
-  Scheme_Future_State *fs = scheme_future_state;
   long align;
   
   align = GC_alloc_alignment();
@@ -1017,8 +1016,12 @@ unsigned long scheme_rtcall_alloc(const char *who, int src_type)
     long cur;
     cur = GC_gen0_alloc_page_ptr;
     if (cur < (fts->gen0_start + (fts->gen0_size - 1) * align)) {
-      cur &= ~(align - 1);
-      cur += align + fts->gen0_initial_offset;
+      if (cur & (align - 1)) {
+        /* round up to next page boundary */
+        cur &= ~(align - 1);
+        cur += align;
+      }
+      cur += fts->gen0_initial_offset;
       return cur;
     }
   }
@@ -1042,11 +1045,11 @@ unsigned long scheme_rtcall_alloc(const char *who, int src_type)
     retval = future->alloc_retval;
     future->alloc_retval = 0;
 
-    fts->gen0_start = retval;
-    fts->gen0_initial_offset = retval & (align - 1);
-
-    if (*fs->gc_counter_ptr == future->alloc_retval_counter)
+    if (fts->worker_gc_counter == future->alloc_retval_counter) {
+      fts->gen0_start = retval;
+      fts->gen0_initial_offset = retval & (align - 1);
       break;
+    }
   }
 
   return retval;
