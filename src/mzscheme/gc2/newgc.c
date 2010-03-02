@@ -115,6 +115,7 @@ inline static int postmaster_and_master_gc(NewGC *gc) {
 inline static int postmaster_and_place_gc(NewGC *gc) {
   return (MASTERGC && gc != MASTERGC);
 }
+static void master_collect_initiate();
 #endif
 
 #if defined(MZ_USE_PLACES)
@@ -600,8 +601,7 @@ static inline void* REMOVE_BIG_PAGE_PTR_TAG(void *p) {
 
 void GC_check_master_gc_request() {
 #ifdef MZ_USE_PLACES 
-  NewGC *gc = GC_get_GC();
-  if (MASTERGC && MASTERGC->major_places_gc == 1 && MASTERGCINFO->have_collected[gc->place_id] != 1) {
+  if (MASTERGC && MASTERGC->major_places_gc == 1) {
     GC_gcollect();
   }
 #endif
@@ -611,7 +611,7 @@ static inline void gc_if_needed_account_alloc_size(NewGC *gc, size_t allocate_si
   if((gc->gen0.current_size + allocate_size) >= gc->gen0.max_size) {
 #ifdef MZ_USE_PLACES 
     if (postmaster_and_master_gc(gc)) {
-      MASTERGC->major_places_gc = 1;
+      master_collect_initiate();
     }
     else {
 #endif
@@ -802,7 +802,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
 
       objptr = OBJHEAD_TO_OBJPTR(info);
     }
-#ifdef defined(DEBUG_GC_PAGES) && defined(MASTER_ALLOC_DEBUG)
+#if defined(DEBUG_GC_PAGES) && defined(MASTER_ALLOC_DEBUG)
   if (postmaster_and_master_gc(gc)) {
     GCVERBOSEprintf("MASTERGC_allocate_medium %zi %i %i %i %i %p\n", request_size_bytes, type, sz, pos, 1 << (pos +3), objptr);
     /* print_libc_backtrace(gcdebugOUT()); */
@@ -1106,8 +1106,9 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
   mpage *prev = NULL;
   unsigned long alloced_size = 0;
 
+
   /* first, make sure the big pages pointer is clean */
-  gc->gen0.big_pages = NULL; 
+  GC_ASSERT(gc->gen0.big_pages == NULL);
 
   /* reset any parts of gen0 we're keeping */
   while(work && (alloced_size < new_size)) {
@@ -1848,6 +1849,7 @@ void GC_write_barrier(void *p)
 static void NewGCMasterInfo_initialize() {
   MASTERGCINFO = ofm_malloc_zero(sizeof(NewGCMasterInfo));
   mzrt_rwlock_create(&MASTERGCINFO->cangc);
+  mzrt_sema_create(&MASTERGCINFO->wait_sema, 0);
 }
 
 static void NewGCMasterInfo_cleanup() {
@@ -1860,66 +1862,97 @@ static void NewGCMasterInfo_set_have_collected(NewGC *gc) {
   MASTERGCINFO->have_collected[gc->place_id] = 1;
 }
 
-static void Master_collect() {
 
-  NewGC *gc = GC_get_GC();
-  if (premaster_or_master_gc(gc)) return; /* master shouldn't attempt to start itself */
-
-  GC_switch_to_master_gc();
-  GC_LOCK_DEBUG("MGCLOCK Master_collect\n");
-  
-  if ( MASTERGC->major_places_gc ) {
+/* signals every place to do a full gc at then end of 
+   garbage_collect the places will call 
+   wait_if_master_in_progress and
+   rendezvous for a master gc */
+static void master_collect_initiate() {
+  if (MASTERGC->major_places_gc == 0) {
     int i = 0;
-    int children_ready = 1;
     int maxid = MASTERGCINFO->next_GC_id;
-    for (i=1; i < maxid; i++) {
-      int have_collected = MASTERGCINFO->have_collected[i];
+    MASTERGC->major_places_gc = 1;
 
-      if (have_collected == 1) {
-        printf("%i READY\n", i);
-#if defined(DEBUG_GC_PAGES)
-        GCVERBOSEprintf("%i READY\n", i);
-#endif
+    for (i=1; i < maxid; i++) {
+      void *signal_fd = MASTERGCINFO->signal_fds[i];
+      MASTERGCINFO->have_collected[i] = -1;
+      if (signal_fd >= 0 ) { 
+        scheme_signal_received_at(signal_fd);
       }
-      else if ( have_collected == 0) {
-        void *signal_fd = MASTERGCINFO->signal_fds[i];
-        printf("%i NOT COLLECTED\n", i);
 #if defined(DEBUG_GC_PAGES)
-        GCVERBOSEprintf("%i NOT COLLECTED\n", i);
-#endif
-        children_ready = 0;
-        MASTERGCINFO->have_collected[i] = -1;
-        if (signal_fd >= 0 ) { 
-          scheme_signal_received_at(signal_fd);
-        }
-      }
-      else {
-        printf("%i SIGNALED BUT NOT COLLECTED\n", i);
-#if defined(DEBUG_GC_PAGES)
-        GCVERBOSEprintf("%i SIGNALED BUT NOT COLLECTED\n", i);
-#endif
-        children_ready = 0;
-      }
-    }
-    if (children_ready) {
-      for (i=0; i < maxid; i++) {
-        MASTERGCINFO->have_collected[i] = 0;
-      }
-      printf("START MASTER COLLECTION\n");
-#if defined(DEBUG_GC_PAGES)
-      GCVERBOSEprintf("START MASTER COLLECTION\n");
-#endif
-      MASTERGC->major_places_gc = 0;
-      garbage_collect(MASTERGC, 1, 0);
-      printf("END MASTER COLLECTION\n");
-#if defined(DEBUG_GC_PAGES)
-      GCVERBOSEprintf("END MASTER COLLECTION\n");
+      printf("%i SIGNALED BUT NOT COLLECTED\n", i);
+      GCVERBOSEprintf("%i SIGNALED BUT NOT COLLECTED\n", i);
 #endif
     }
   }
+}
 
-  GC_LOCK_DEBUG("UNMGCLOCK Master_collect\n");
-  GC_switch_back_from_master(gc);
+
+static void wait_if_master_in_progress(NewGC *gc) {
+  if (MASTERGC->major_places_gc == 1) {
+    int last_one_here = 1;
+
+    mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
+    GC_LOCK_DEBUG("MGCLOCK GC_switch_to_master_gc\n");
+    {
+      int i = 0;
+      int maxid = MASTERGCINFO->next_GC_id;
+
+      NewGCMasterInfo_set_have_collected(gc);
+      for (i=1; i < maxid; i++) {
+        int have_collected = MASTERGCINFO->have_collected[i];
+        if (have_collected == 1) {
+#if defined(DEBUG_GC_PAGES)
+            printf("%i READY\n", i);
+            GCVERBOSEprintf("%i READY\n", i);
+#endif
+        }
+        else {
+#if defined(DEBUG_GC_PAGES)
+          printf("%i SIGNALED BUT NOT COLLECTED\n", i);
+          GCVERBOSEprintf("%i SIGNALED BUT NOT COLLECTED\n", i);
+#endif
+          last_one_here = 0; 
+        }
+      }
+    }
+    if (last_one_here) {
+      int i = 0;
+      int maxid = MASTERGCINFO->next_GC_id;
+      NewGC *saved_gc;
+      
+      GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
+      mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+
+
+      saved_gc = GC_switch_to_master_gc();
+      {
+#if defined(DEBUG_GC_PAGES)
+        printf("START MASTER COLLECTION\n");
+        GCVERBOSEprintf("START MASTER COLLECTION\n");
+#endif
+        MASTERGC->major_places_gc = 0;
+        garbage_collect(MASTERGC, 1, 0);
+#if defined(DEBUG_GC_PAGES)
+        printf("END MASTER COLLECTION\n");
+        GCVERBOSEprintf("END MASTER COLLECTION\n");
+#endif
+
+        /* wake everyone back up */  
+        for (i=2; i < maxid; i++) {
+          mzrt_sema_post(MASTERGCINFO->wait_sema);
+        }
+      }
+      GC_switch_back_from_master(saved_gc);
+    }
+    else {
+      GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
+      mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+
+      /* wait on semaphonre */
+      mzrt_sema_wait(MASTERGCINFO->wait_sema);
+    }
+  }
 }
 
 static void NewGCMasterInfo_get_next_id(NewGC *newgc) {
@@ -2176,7 +2209,7 @@ void GC_mark(const void *const_p)
   gc = GC_get_GC();
   if(!(page = pagemap_find_page(gc->page_maps, p))) {
 #ifdef MZ_USE_PLACES
-    if (!MASTERGC || !(page = pagemap_find_page(MASTERGC->page_maps, p)))
+    if (!MASTERGC || !MASTERGC->major_places_gc || !(page = pagemap_find_page(MASTERGC->page_maps, p)))
 #endif
     {
       GCDEBUG((DEBUGOUTF,"Not marking %p (no page)\n",p));
@@ -2210,6 +2243,8 @@ void GC_mark(const void *const_p)
         if(page->prev) page->prev->next = page->next; else
           gc->gen0.big_pages = page->next;
         if(page->next) page->next->prev = page->prev;
+        
+        GCVERBOSEPAGE("MOVING BIG PAGE TO GEN1", page);
 
         backtrace_new_page(gc, page);
 
@@ -2377,7 +2412,7 @@ static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table
     p = REMOVE_BIG_PAGE_PTR_TAG(pp);
     page = pagemap_find_page(pagemap, p);
 #ifdef MZ_USE_PLACES
-    if (!page) {
+    if (!page && MASTERGC && MASTERGC->major_places_gc) {
       page = pagemap_find_page(MASTERGC->page_maps, p);
     }
 #endif
@@ -3242,6 +3277,8 @@ inline static void gen0_free_big_pages(NewGC *gc) {
   PageMap pagemap = gc->page_maps;
 
   for(work = gc->gen0.big_pages; work; work = next) {
+    GCVERBOSEPAGE("FREEING BIG PAGE", work);
+ 
     next = work->next;
     pagemap_remove(pagemap, work);
     free_pages(gc, work->addr, round_to_apage_size(work->size));
@@ -3273,6 +3310,7 @@ static void clean_up_heap(NewGC *gc)
           GCVERBOSEPAGE("Cleaning up BIGPAGE", work);
           gen1_free_mpage(pagemap, work);
         } else {
+          GCVERBOSEPAGE("clean_up_heap BIG PAGE ALIVE", work);
           pagemap_add(pagemap, work);
           work->back_pointers = work->marked_on = 0;
           memory_in_use += work->size;
@@ -3463,7 +3501,11 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
     gc->full_needed_for_finalization= 0;
     gc->gc_full = 1;
   }
-
+#ifdef DEBUG_GC_PAGES
+  if (gc->gc_full == 1) {
+    GCVERBOSEprintf("GC_FULL gc: %p MASTER: %p\n", gc, MASTERGC);
+  }
+#endif
   gc->number_of_gc_runs++; 
   INIT_DEBUG_FILE(); DUMP_HEAP();
 
@@ -3691,13 +3733,10 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {
-    if (gc->gc_full) { 
-      NewGCMasterInfo_set_have_collected(gc);
-    }
     /* printf("UN RD MGCLOCK garbage_collect %i\n", gc->place_id); */
     mzrt_rwlock_unlock(MASTERGCINFO->cangc);
     if (gc->gc_full) { 
-      Master_collect();
+       wait_if_master_in_progress(gc);
     }
   }
 #endif

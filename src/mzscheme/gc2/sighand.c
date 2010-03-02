@@ -47,8 +47,12 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
   int m = 0;
 #endif
   if (si->si_code != SEGV_ACCERR) { /*SEGV_MAPERR*/
-    
-    printf("SIGSEGV si_code %i fault on addr %p\n", c, p);
+    if (c == SEGV_MAPERR) {
+      printf("SIGSEGV MAPERR si_code %i fault on addr %p\n", c, p);
+    }
+    else {
+      printf("SIGSEGV ?????? SI_CODE %i fault on addr %p\n", c, p);
+    }
 #if WAIT_FOR_GDB
     launchgdb();
 #endif

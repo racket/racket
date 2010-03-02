@@ -91,6 +91,7 @@ typedef struct NewGCMasterInfo {
   unsigned char *have_collected;
   void **signal_fds;
   mzrt_rwlock *cangc;
+  mzrt_sema *wait_sema;
 } NewGCMasterInfo;
 #endif
 
