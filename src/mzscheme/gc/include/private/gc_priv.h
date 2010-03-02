@@ -414,7 +414,7 @@ extern GC_warn_proc GC_current_warn_proc;
 	  || defined (HAS_PPC_THREAD_STATE64___R0) \
 	  || defined (HAS_X86_THREAD_STATE32___EAX) \
 	  || defined (HAS_X86_THREAD_STATE64___RAX) \
-          || defined (__DARWIN_UNIX03)
+          || __DARWIN_UNIX03
 #         define THREAD_FLD(x) __ ## x
 #       else
 #         define THREAD_FLD(x) x

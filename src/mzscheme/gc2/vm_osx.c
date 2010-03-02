@@ -35,6 +35,12 @@ static int designate_modified(void *p);
 int designate_modified(void *p);
 #endif
 
+#if __DARWIN_UNIX03
+# define THREAD_FLD(x) __ ## x
+#else
+# define THREAD_FLD(x) x
+#endif
+
 #if defined(MZ_USE_PLACES) && defined (MZ_PRECISE_GC)
 typedef struct OSXThreadData {
   struct OSXThreadData *next;
@@ -283,7 +289,7 @@ kern_return_t GC_catch_exception_raise(mach_port_t port,
     mach_msg_type_number_t exc_state_count = x86_EXCEPTION_STATE64_COUNT;
     (void)thread_get_state(thread_port, x86_EXCEPTION_STATE64, (natural_t*)&exc_state,
                            &exc_state_count);
-    p = (void *)exc_state.__faultvaddr;
+    p = (void *)exc_state. THREAD_FLD(faultvaddr);
 #endif
 
 #if defined(MZ_USE_PLACES) && defined (MZ_PRECISE_GC)
