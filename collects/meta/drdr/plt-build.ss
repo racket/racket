@@ -6,9 +6,20 @@
          "run-collect.ss"
          "cache.ss"
          "dirstruct.ss"
+         "replay.ss"
          "notify.ss"
          "path-utils.ss"
+         "sema.ss"
          "svn.ss")
+
+(define current-env (make-parameter (make-immutable-hash empty)))
+(define-syntax-rule (with-env ([env-expr val-expr] ...) expr ...)
+  (parameterize ([current-env
+                  (for/fold ([env (current-env)])
+                    ([k (in-list (list env-expr ...))]
+                     [v (in-list (list val-expr ...))])
+                    (hash-set env k v))])
+    expr ...))
 
 (define (build-revision rev)
   (define rev-dir (revision-dir rev))
@@ -27,50 +38,45 @@
    (lambda ()
      (notify! "Removing checkout directory: ~a" co-dir)
      (safely-delete-directory co-dir)
-     ; XXX Give it its own timeout
-     (parameterize ([current-subprocess-timeout-seconds (current-make-install-timeout-seconds)])
-       (svn-checkout
-        (plt-repository) rev
-        (path->string co-dir)))))
+     (local [(define repo (plt-repository))
+             (define to-dir 
+               (path->string co-dir))]
+       (notify! "Checking out ~a@~a into ~a"
+                repo rev to-dir)
+       (run/collect/wait/log
+        ; XXX Give it its own timeout
+        #:timeout (current-make-install-timeout-seconds)
+        #:env (current-env)
+        (build-path log-dir "svn-checkout")
+        (svn-path)
+        (list 
+         "checkout"
+         "--quiet"
+         "-r" (number->string rev)
+         repo
+         to-dir)))))
   ;; Make the build directory
   (make-directory* build-dir)
   ;; Run Configure, Make, Make Install
   (parameterize ([current-directory build-dir])
     (run/collect/wait/log
+     #:timeout (current-subprocess-timeout-seconds)
+     #:env (current-env)
      (build-path log-dir "src" "build" "configure")
-     (path->string (build-path src-dir "configure")))
-    (parameterize ([current-subprocess-timeout-seconds (current-make-timeout-seconds)])
-      (run/collect/wait/log
-       (build-path log-dir "src" "build" "make")
-       (make-path) "-j" (number->string (number-of-cpus))))
-    (parameterize ([current-subprocess-timeout-seconds (current-make-install-timeout-seconds)])
-      (run/collect/wait/log
-       (build-path log-dir "src" "build" "make-install")
-       (make-path) "-j" (number->string (number-of-cpus)) "install"))
-    #;(parameterize ([current-subprocess-timeout-seconds (current-make-install-timeout-seconds)])
-        (run/collect/wait/log
-         (build-path log-dir "src" "build" "setup-plt-no-docs")
-         setup-plt-path "--no-docs"))
-    #;(parameterize ([current-subprocess-timeout-seconds (current-make-install-timeout-seconds)])
-        (run/collect/wait/log
-         (build-path log-dir "src" "build" "setup-plt")
-         setup-plt-path)))
-  ;; Test Futures
-  (make-directory* futures-build-dir)
-  ;; Run Configure, Make, Test
-  (parameterize ([current-directory futures-build-dir])
+     (path->string (build-path src-dir "configure"))
+     empty)
     (run/collect/wait/log
-     (build-path log-dir "src" "futures-build" "configure")
-     (path->string (build-path src-dir "configure")) "--enable-futures")
-    (parameterize ([current-subprocess-timeout-seconds (current-make-timeout-seconds)]
-                   [current-directory (build-path futures-build-dir "mzscheme")])
-      (run/collect/wait/log
-       (build-path log-dir "src" "futures-build" "mzscheme" "make")
-       (make-path) "-j" (number->string (number-of-cpus)))
-      (run/collect/wait/log
-       (build-path log-dir "src" "futures-build" "mzscheme" "futures-startup-test")
-       (path->string (build-path futures-build-dir "mzscheme" "mzscheme3m")) "-e" "(printf \"startedup\n\")")
-      )))
+     #:timeout (current-make-timeout-seconds)
+     #:env (current-env)
+     (build-path log-dir "src" "build" "make")
+     (make-path) 
+     (list "-j" (number->string (number-of-cpus))))
+    (run/collect/wait/log
+     #:timeout (current-make-install-timeout-seconds)
+     #:env (current-env)
+     (build-path log-dir "src" "build" "make-install")
+     (make-path) 
+     (list "-j" (number->string (number-of-cpus)) "install"))))
 
 (define (call-with-temporary-directory thunk)
   (define tempdir (symbol->string (gensym 'tmpdir)))
@@ -85,10 +91,44 @@
 (define-syntax-rule (with-temporary-directory e)
   (call-with-temporary-directory (lambda () e)))
 
-(define (semaphore-wait* sema how-many)
-  (unless (zero? how-many)
-    (semaphore-wait sema)
-    (semaphore-wait* sema (sub1 how-many))))
+(define (with-running-program command args thunk)
+  (define-values (new-command new-args)
+    (command+args+env->command+args
+     #:env (current-env)
+     command args))
+  (define-values
+    (the-process stdout stdin stderr)
+    (apply subprocess
+           #f #;(current-error-port) 
+           #f
+           #f #;(current-error-port)
+           new-command new-args))
+  ; Die if this program does
+  (define parent
+    (current-thread))
+  (define waiter
+    (thread
+     (lambda ()
+       (subprocess-wait the-process)
+       (printf "Killing parent because wrapper is dead...~n")
+       (kill-thread parent))))
+  
+  ; Run without stdin
+  (close-output-port stdin)
+  
+  (begin0
+    ; Run the thunk
+    (thunk)
+    
+    ; Close the output ports
+    (close-input-port stdout)
+    (close-input-port stderr)
+    
+    ; Kill the guard
+    (kill-thread waiter)
+    
+    ; Kill the process
+    (subprocess-kill the-process #t)))
 
 (define-runtime-path package-list "pkgs")
 (define (planet-packages)
@@ -133,7 +173,9 @@
                             (local [(define log-pth (trunk->log pth))]
                               (if (file-exists? log-pth)
                                   (semaphore-post dir-sema)
-                                  (local [(define pth-timeout (path-timeout pth))
+                                  (local [(define pth-timeout 
+                                            (or (path-timeout pth)
+                                                (current-subprocess-timeout-seconds)))
                                           (define pth-cmd/general (path-command-line pth))
                                           (define pth-cmd
                                             (match pth-cmd/general
@@ -153,17 +195,17 @@
                                         (submit-job!
                                          test-workers
                                          (lambda ()
-                                           ; XXX Maybe this should destroy the old home and copy in a new one
-                                           ;     Otherwise it is a source of randomness
-                                           (with-temporary-directory
-                                               (parameterize ([current-subprocess-timeout-seconds pth-timeout])
-                                                 (apply run/collect/wait/log log-pth 
-                                                        "/usr/bin/env"
-                                                        (format "DISPLAY=~a"
-                                                                (format ":~a" (+ XSERVER-OFFSET (current-worker))))
-                                                        (format "HOME=~a"
-                                                                (home-dir (current-worker)))
-                                                        (pth-cmd))))
+                                           (define l (pth-cmd))
+                                           (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))]
+                                                      ["HOME" (home-dir (current-worker))])
+                                             ; XXX Maybe this should destroy the old home and copy in a new one
+                                             ;     Otherwise it is a source of randomness
+                                             (with-temporary-directory
+                                                 (run/collect/wait/log log-pth 
+                                                                       #:timeout pth-timeout
+                                                                       #:env (current-env)
+                                                                       (first l)
+                                                                       (rest l))))
                                            (semaphore-post dir-sema)))
                                         (semaphore-post dir-sema)))))))
                       files)
@@ -174,26 +216,32 @@
                (write-cache! dir-log (current-seconds))
                (semaphore-post upper-sema)))))))
   ; Some setup
-  ; XXX Give it its own timeout
-  (parameterize ([current-subprocess-timeout-seconds (current-make-install-timeout-seconds)])
-    (for ([pp (in-list (planet-packages))])
-      (match pp
-        [`(,auth ,pkg ,majn ,minn ,ver)
-         (define maj (number->string majn))
-         (define min (number->string minn))
-         (run/collect/wait/log 
-          (build-path log-dir "planet" auth pkg maj min)
-          planet-path "install" auth pkg maj min)])))  
+  (for ([pp (in-list (planet-packages))])
+    (match pp
+      [`(,auth ,pkg ,majn ,minn ,ver)
+       (define maj (number->string majn))
+       (define min (number->string minn))
+       (run/collect/wait/log 
+        ; XXX Give it its own timeout
+        #:timeout (current-make-install-timeout-seconds)
+        #:env (current-env)
+        (build-path log-dir "planet" auth pkg maj min)
+        planet-path 
+        (list "install" auth pkg maj min))]))
   (run/collect/wait/log 
+   #:timeout (current-subprocess-timeout-seconds)
+   #:env (current-env)
    (build-path log-dir "src" "build" "set-browser.ss")
-   mzscheme-path "-t" (path->string* (build-path (drdr-directory) "set-browser.ss")))
+   mzscheme-path 
+   (list "-t" (path->string* (build-path (drdr-directory) "set-browser.ss"))))
   ; Make home directories
   (cache/file/timestamp
    (build-path rev-dir "homedir-dup")
    (lambda ()
      (notify! "Copying home directory for each worker")
      (for ([i (in-range (number-of-cpus))])
-       (copy-directory/files (getenv "HOME") (home-dir i)))))
+       (with-handlers ([exn:fail? void])
+         (copy-directory/files (hash-ref (current-env) "HOME") (home-dir i))))))
   ; And go
   (notify! "Starting testing")
   (test-directory collects-pth top-sema)
@@ -204,32 +252,8 @@
 
 (define (home-dir i)
   (format "~a~a"
-          (getenv "HOME")
+          (hash-ref (current-env) "HOME")
           i))
-
-(define-syntax (with-env stx)
-  (syntax-case stx ()
-    [(_ ([env-expr val-expr] ...) expr ...)
-     (with-syntax ([(env-val ...) (generate-temporaries #'(env-expr ...))]
-                   [(old-env-val ...) (generate-temporaries #'(env-expr ...))]
-                   [(new-env-val ...) (generate-temporaries #'(env-expr ...))])
-       (syntax/loc stx
-         (local [(define env-val env-expr)
-                 ...
-                 (define old-env-val (getenv env-val))
-                 ...
-                 (define new-env-val val-expr)
-                 ...]
-           (dynamic-wind
-            (lambda ()
-              (putenv env-val new-env-val)
-              ...)
-            (lambda ()
-              expr ...)
-            (lambda ()
-              (when old-env-val
-                (putenv env-val old-env-val))
-              ...)))))]))
 
 (define (recur-many i r f)
   (if (zero? i)
@@ -281,7 +305,7 @@
                        (safely-delete-directory (format "/tmp/.tX~a-lock" i))
                        (safely-delete-directory (build-path tmp-dir (format ".tX~a-lock" i)))
                        (with-running-program
-                           (Xvfb-path) (list (format ":~a" i) "-screen" "0" "800x600x24")
+                           (Xvfb-path) (list (format ":~a" i) "-screen" "0" "800x600x24" "-ac" "-br" "-bs" "-kb")
                          (lambda ()
                            (with-running-program
                                (fluxbox-path) (list "-display" (format ":~a" i) "-rc" "/home/jay/.fluxbox/init")

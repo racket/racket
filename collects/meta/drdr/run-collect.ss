@@ -4,8 +4,14 @@
          "rewriting.ss"
          "cache.ss")
 
-(define current-subprocess-timeout-seconds
-  (make-parameter (* 60 10)))
+(define (command+args+env->command+args 
+         #:env env
+         cmd args)
+  (values "/usr/bin/env"
+          (append (for/list ([(k v) (in-hash env)])
+                    (format "~a=~a" k v))
+                  (list* cmd
+                         args))))
 
 (define (read-until-evt port-evt k)
   (if port-evt
@@ -16,19 +22,26 @@
                         (k bs))))
       never-evt))
 
-(define (run/collect/wait command . args)
+(define (run/collect/wait 
+         #:env env
+         #:timeout timeout
+         command args)
   (define start-time 
     (current-inexact-milliseconds))
   
   ; Run the command
+  (define-values (new-command new-args)
+    (command+args+env->command+args
+     #:env env
+     command args))
   (define command-line
     (list* command args))
   (define-values
     (the-process stdout stdin stderr)
     (apply subprocess
            #f #f #f 
-           command 
-           args))
+           new-command 
+           new-args))
   
   (notify! "Running: ~a ~S" command args)  
   
@@ -39,7 +52,7 @@
   (local
     [(define the-alarm
        (alarm-evt (+ (current-inexact-milliseconds)
-                     (* 1000 (current-subprocess-timeout-seconds)))))
+                     (* 1000 timeout))))
      (define (slurp-output-evt loop stdout stderr log)
        (choice-evt
         (read-until-evt stdout
@@ -84,55 +97,28 @@
     
     final-status))
 
-(define (run/collect/wait/log log-path . rcw-args)
+(define (run/collect/wait/log log-path command 
+                              #:timeout timeout 
+                              #:env env
+                              args)
   (define ran? #f)
   (cache/file
    log-path
    (lambda ()
      (set! ran? #t)
      (rewrite-status
-      (apply run/collect/wait rcw-args))))
+      (run/collect/wait
+       #:timeout timeout
+       #:env env
+       command args))))
   ran?)
 
-(define (with-running-program command args thunk)
-  (define-values
-    (the-process stdout stdin stderr)
-    (apply subprocess
-           (current-error-port) #f
-           (current-error-port)
-           command 
-           args))
-  ; Die if this program does
-  (define parent
-    (current-thread))
-  (define waiter
-    (thread
-     (lambda ()
-       (subprocess-wait the-process)
-       (printf "Killing parent because wrapper is dead...~n")
-       (kill-thread parent))))
-  
-  ; Run without stdin
-  (close-output-port stdin)
-  
-  (begin0
-    ; Run the thunk
-    (thunk)
-    
-    ; Close the output ports
-    #;(close-input-port stdout)
-    #;(close-input-port stderr)
-    
-    ; Kill the guard
-    (kill-thread waiter)
-    
-    ; Kill the process
-    (subprocess-kill the-process #t)))
-
-(provide
- (all-from-out "status.ss"))
 (provide/contract
- [current-subprocess-timeout-seconds (parameter/c exact-nonnegative-integer?)]
- [with-running-program (string? (listof string?) (-> any) . -> . any)]
- [run/collect/wait ((string?) () #:rest (listof string?) . ->* . status?)]
- [run/collect/wait/log ((path-string? string?) () #:rest (listof string?) . ->* . boolean?)])
+ [command+args+env->command+args 
+  (string? (listof string?) #:env (hash/c string? string?) . -> . (values string? (listof string?)))]
+ [run/collect/wait/log 
+  (path-string? string? 
+                #:env (hash/c string? string?) 
+                #:timeout exact-nonnegative-integer? 
+                (listof string?) 
+                . -> . boolean?)])

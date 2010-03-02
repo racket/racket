@@ -4,6 +4,9 @@
 (define number-of-cpus
   (make-parameter 1))
 
+(define current-subprocess-timeout-seconds
+  (make-parameter (* 60 10)))
+
 (define plt-directory
   (make-parameter (build-path (current-directory))))
 
@@ -81,6 +84,7 @@
   (path-timing-log p))
 
 (provide/contract
+ [current-subprocess-timeout-seconds (parameter/c exact-nonnegative-integer?)]
  [number-of-cpus (parameter/c exact-nonnegative-integer?)]
  [current-rev (parameter/c (or/c false/c exact-nonnegative-integer?))]
  [previous-rev (parameter/c (or/c false/c exact-nonnegative-integer?))]

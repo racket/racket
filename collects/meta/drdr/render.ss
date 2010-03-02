@@ -9,7 +9,7 @@
          "cache.ss"
          (except-in "dirstruct.ss"
                     revision-trunk-dir)
-         "run-collect.ss"
+         "status.ss"
          "monitor-svn.ss"
          "metadata.ss"
          "formats.ss"

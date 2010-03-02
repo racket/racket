@@ -1,6 +1,5 @@
 #lang scheme
-(require "run-collect.ss"
-         "path-utils.ss"
+(require "path-utils.ss"
          "svn.ss")
 
 (define (testable-file? pth)
@@ -26,16 +25,11 @@
           (regexp-split #rx" " s))]))
 
 (define (path-timeout a-path)
-  (match 
-      (with-handlers ([exn:fail? (lambda (x) #f)])
-        (string->number (svn-property-value/root a-path SVN-PROP:timeout)))
-    [#f
-     (current-subprocess-timeout-seconds)]
-    [(? number? n)
-     n]))
+  (with-handlers ([exn:fail? (lambda (x) #f)])
+    (string->number (svn-property-value/root a-path SVN-PROP:timeout))))
 
 (provide/contract
  [SVN-PROP:command-line string?]
  [SVN-PROP:timeout string?]
  [path-command-line (path-string? . -> . (or/c (listof string?) false/c))]
- [path-timeout (path-string? . -> . exact-nonnegative-integer?)])
+ [path-timeout (path-string? . -> . (or/c exact-nonnegative-integer? false/c))])

@@ -5,6 +5,7 @@
          "notify.ss"
          "path-utils.ss"
          "dirstruct.ss"
+         "sema.ss"
          "cache.ss")
 
 (define test-workers (make-job-queue (number-of-cpus)))
@@ -83,7 +84,6 @@
   (find-files (revision-log-dir start-revision)
               empty))
 
-(for ([i (in-range how-many-files)])
-  (semaphore-wait count-sema))
+(semaphore-wait* count-sema how-many-files)
 
 (stop-job-queue! test-workers)

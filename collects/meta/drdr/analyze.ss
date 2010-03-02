@@ -6,7 +6,7 @@
          "notify.ss"
          "cache.ss"
          "dirstruct.ss"
-         "run-collect.ss"
+         "status.ss"
          "path-utils.ss"
          "rendering.ss")
 (provide (all-from-out "rendering.ss"))
@@ -90,6 +90,14 @@
 (define responsible-ht/c
   (hash/c string? (hash/c symbol? (listof path?))))
 
+(define (responsible-ht->status-ht diff)
+  (for/hash ([id (in-list responsible-ht-severity)])
+    (define id-l
+      (for*/list ([(_ ht) (in-hash diff)]
+                [f (in-list (hash-ref ht id empty))])
+        f))
+    (values id (remove-duplicates id-l))))
+
 (provide/contract
  [rendering->responsible-ht
   (exact-positive-integer? rendering? . -> . responsible-ht/c)]
@@ -160,21 +168,26 @@
                                   (list
                                    (format "~a:" committer)
                                    (format "You are receiving this email because the DrDr test of revision ~a (which you committed) contained a NEW condition that may need inspecting." cur-rev)
-                                   (for*/list ([(r ht) (in-hash diff)]
-                                               [(id files) (in-hash ht)]
-                                               [f (in-list files)])
-                                     (format "\t~a (~a)" (path->url f) id))
+                                   (let ([diff-smash (responsible-ht->status-ht diff)])
+                                     (for/list ([(id paths) (in-hash diff-smash)]
+                                                #:when (not (symbol=? id 'changes)))
+                                       (if (empty? paths)
+                                           empty
+                                           (list (format "\t~a" id)
+                                                 (for/list ([f (in-list paths)])
+                                                   (format "\t\t~a" (path->url f)))
+                                                 ""))))
                                    "")
                                   empty)
                               (for/list ([r (in-list responsibles)])
-                                (list (format "~a:" r)
-                                      "You are receiving this email because a file you are responsible for has a condition that may need inspecting."
-                                      (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
-                                                 #:when (not (symbol=? id 'changes)))
-                                        (list (format "\t~a:" id)
-                                              (for/list ([f (in-list files)])
-                                                (format "\t\t~a" (path->url f)))
-                                              ""))
+                                (list* (format "~a:" r)
+                                       "You are receiving this email because a file you are responsible for has a condition that may need inspecting."
+                                       (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
+                                                  #:when (not (symbol=? id 'changes)))
+                                         (list (format "\t~a:" id)
+                                               (for/list ([f (in-list files)])
+                                                 (format "\t\t~a" (path->url f)))
+                                               ""))
                                       ""))))))
   
   (send-mail-message "drdr"
@@ -248,10 +261,10 @@
                   #f))
             (define responsible 
               (or (svn-property-value/root (trunk-path log-pth) plt:responsible)
-                  (and (regexp-match #rx"^/planet" (path->string* log-pth))
+                  (and (regexp-match #rx"/planet/" (path->string* log-pth))
                        "jay")
                   ; XXX maybe mflatt, eli, or tewk
-                  (and (regexp-match #rx"^/src" (path->string* log-pth))
+                  (and (regexp-match #rx"/src/" (path->string* log-pth))
                        "jay")
                   "unknown"))
             (define lc

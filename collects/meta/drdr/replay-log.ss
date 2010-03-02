@@ -1,7 +1,7 @@
 #lang scheme
 (require "replay.ss"
          "cache.ss"
-         "run-collect.ss")
+         "status.ss")
 
 ; XXX Rewrite to work with logs in dbm
 

@@ -1,7 +1,6 @@
 #lang scheme
 
-(require "run-collect.ss"
-         "cache.ss"
+(require "cache.ss"
          "dirstruct.ss"
          "svn.ss"
          "monitor-svn.ss")

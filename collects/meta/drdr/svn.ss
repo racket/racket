@@ -1,7 +1,5 @@
 #lang scheme
 (require xml
-         "run-collect.ss"
-         "replay.ss"
          "notify.ss"
          (prefix-in ffi: (planet jaymccarthy/svn-prop)))
 
@@ -181,24 +179,3 @@
  [struct svn-change 
          ([action symbol?]
           [path path-string?])])
-
-(define (svn-checkout repo rev to-dir)
-  (notify! "Checking out ~a@~a into ~a"
-           repo rev to-dir)
-  (local
-    [(define svn-status
-       (run/collect/wait
-        (svn-path)
-        "checkout"
-        "--quiet"
-        "-r" (number->string rev)
-        repo
-        to-dir))]
-    (unless (and (exit? svn-status)
-                 (zero? (exit-code svn-status)))
-      (printf "Replaying SVN output:~n")
-      (replay-status svn-status)
-      (error 'svn-checkout "Error on checkout!"))))
-
-(provide/contract
- [svn-checkout (string? exact-nonnegative-integer? string? . -> . void)])
