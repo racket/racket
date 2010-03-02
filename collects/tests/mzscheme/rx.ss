@@ -1580,6 +1580,8 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Test unicode-property patterns
 
+(test '((0 . 2)) regexp-match-positions #px#".\\p{L}" #"0X")
+
 (let ([just-once? #t]
       [kcrl (make-known-char-range-list)]
       [ht (make-hasheq)]

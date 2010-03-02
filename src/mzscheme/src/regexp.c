@@ -3509,9 +3509,9 @@ regmatch(Regwork *rw, rxpos prog)
 	bottom = (data >> 6) & 0x3F;
 	top = data & 0x3F;
 	
-	NEED_INPUT(rw, rw->input, 1);
-	if (rw->input < rw->input_end) {
-	  c = UCHAR(rw->instr[rw->input]);
+	NEED_INPUT(rw, is, 1);
+	if (is < rw->input_end) {
+	  c = UCHAR(rw->instr[is]);
 	  if (c < 128) {
 	    v = c;
 	    pos = 1;
@@ -3525,9 +3525,9 @@ regmatch(Regwork *rw, rxpos prog)
 		break;
 	      } else if (v < -1)
 		return 0;
-	      NEED_INPUT(rw, rw->input, pos+1);
-	      if (rw->input + pos < rw->input_end) {
-		buf[pos] = rw->instr[rw->input + pos];
+	      NEED_INPUT(rw, is, pos+1);
+	      if (is + pos < rw->input_end) {
+		buf[pos] = rw->instr[is + pos];
 		pos++;
 	      } else
 		return 0;
