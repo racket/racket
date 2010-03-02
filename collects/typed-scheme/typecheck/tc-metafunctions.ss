@@ -63,7 +63,8 @@
     [(FilterSet: f+ f-)
      (lcombine
       (apply append (for/list ([f f+]) (abo ids keys f)))
-      (apply append (for/list ([f f-]) (abo ids keys f))))]))
+      (apply append (for/list ([f f-]) (abo ids keys f))))]
+    [(NoFilter:) (lcombine null null)]))
 
 (d/c (abo xs idxs f)
   ((listof identifier?) (listof index/c) Filter/c . -> . (or/c null? (list/c LatentFilter/c)))

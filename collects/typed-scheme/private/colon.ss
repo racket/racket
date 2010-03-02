@@ -11,7 +11,7 @@
 (define-syntax (: stx)
   (define-syntax-class arr
     (pattern x:id
-             #:fail-unless (eq? (syntax-e #'x '->)) #f
+             #:fail-unless (eq? (syntax-e #'x) '->) #f
              #:fail-unless (printf "id: ~a ~a~n"
                                    (identifier-binding #'All-kw) 
                                    (identifier-transformer-binding #'All-kw)) 
