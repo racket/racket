@@ -1202,7 +1202,6 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
   if (scheme_setjmp(newbuf)) {
     mzrt_mutex_lock(fs->future_mutex);
     future->no_retval = 1;
-    future->work_completed = 1;
     //Signal the waiting worker thread that it
     //can continue running machine code
     mzrt_sema_post(future->can_continue_sema);

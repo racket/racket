@@ -3463,6 +3463,12 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   mz_patch_branch(refslow);
   __END_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
 
+  generate_pause_for_gc_and_retry(jitter,
+                                  0,  /* in short jumps */
+                                  JIT_R0, /* expose R0 to GC */
+                                  refagain); /* retry code pointer */
+  CHECK_LIMIT();
+
   jitter->flostack_offset = offset;
   jitter->flostack_space = space;
 
@@ -3544,10 +3550,6 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
 
   mz_flostack_restore(jitter, 0, 0, 1, 1);
 
-  generate_pause_for_gc_and_retry(jitter,
-                                  0,  /* in short jumps */
-                                  JIT_R0, /* expose R0 to GC */
-                                  refagain); /* retry code pointer */
   CHECK_LIMIT();
 
   if (args_already_in_place) {
