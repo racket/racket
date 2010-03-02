@@ -61,6 +61,10 @@ extern "C" {
 # define CAST_GCPP /* empty */
 #endif
 
+#ifdef MZ_PRECISE_GC
+# undef USE_SENORA_GC
+#endif
+
 #ifdef USE_SENORA_GC
 struct GC_Set *cpp_objects;
 typedef void (*GC_finalization_proc)(void *, void *);
