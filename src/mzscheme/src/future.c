@@ -385,6 +385,8 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   memset(fts, 0, sizeof(Scheme_Future_Thread_State));
   fts->id = i;
 
+  fts->gen0_size = 1;
+
   params.shared_GC = GC_instance;
   params.fts = fts;
   params.fs = fs;
@@ -411,8 +413,6 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   mz_proc_thread_create_w_stacksize(worker_thread_future_loop, &params, INITIAL_C_STACK_SIZE);
   mzrt_sema_wait(params.ready_sema);
   mzrt_sema_destroy(params.ready_sema);
-
-  fts->gen0_size = 1;
 	
   scheme_register_static(&fts->current_ft, sizeof(void*));
   scheme_register_static(params.scheme_current_runstack_ptr, sizeof(void*));
