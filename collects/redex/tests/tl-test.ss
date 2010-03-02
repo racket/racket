@@ -1090,6 +1090,22 @@
                   [(~> a b) (==> a b)])
                  #rx"~> relation is not defined")
   
+  (test-syn-err  (reduction-relation
+                  grammar
+                  (==> 1 2)
+                  with
+                  [(--> a b)
+                   (==> a (+ 3 b))])
+                 #rx"expected identifier")
+  
+  (test-syn-err  (reduction-relation
+                  grammar
+                  (==> 1 2)
+                  with
+                  [(--> a b)
+                   (==> (+ 3 a) b)])
+                 #rx"expected identifier")
+  
   (test-syn-err (define-language bad-lang1 (e name)) #rx"name")
   (test-syn-err (define-language bad-lang2 (name x)) #rx"name")
   (test-syn-err (define-language bad-lang3 (x_y x)) #rx"cannot have _")

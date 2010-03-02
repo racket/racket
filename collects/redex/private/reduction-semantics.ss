@@ -486,6 +486,20 @@
       (for-each (λ (shortcut)
                   (syntax-case shortcut ()
                     [((rhs-arrow rhs-from rhs-to)
+                      (lhs-arrow a b))
+                     (not (identifier? #'a))
+                     (raise-syntax-error
+                      orig-name
+                      "malformed shortcut, expected identifier"
+                      shortcut #'a)]
+                    [((rhs-arrow rhs-from rhs-to)
+                      (lhs-arrow a b))
+                     (not (identifier? #'b))
+                     (raise-syntax-error
+                      orig-name
+                      "malformed shortcut, expected identifier"
+                      shortcut #'b)]
+                    [((rhs-arrow rhs-from rhs-to)
                       (lhs-arrow lhs-from lhs-to))
                      (begin
                        (table-cons! withs #'lhs-arrow #'rhs-arrow)
