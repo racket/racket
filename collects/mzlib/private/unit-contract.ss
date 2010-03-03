@@ -148,9 +148,7 @@
               #:projection
               (λ (blame)
                 (λ (unit-tmp)
-                  (unless (unit? unit-tmp)
-                    (raise-blame-error blame unit-tmp "value is not a unit"))
-                  (contract-check-sigs 
+                  (unit/c-first-order-check 
                    unit-tmp
                    (vector-immutable
                     (cons 'import-name
@@ -183,18 +181,15 @@
                                   #'blame)))))))
               #:first-order
               (λ (v)
-                (and (unit? v)
-                     (with-handlers ([exn:fail:contract? (λ () #f)])
-                       (contract-check-sigs 
-                        v
-                        (vector-immutable
-                         (cons 'import-name
-                               (vector-immutable import-key ...)) ...)
-                        (vector-immutable 
-                         (cons 'export-name 
-                               (vector-immutable export-key ...)) ...)
-                        (list #f "not-used") 'not-used null))
-                     #t)))))))]))
+                (unit/c-first-order-check 
+                 v
+                 (vector-immutable
+                  (cons 'import-name
+                        (vector-immutable import-key ...)) ...)
+                 (vector-immutable 
+                  (cons 'export-name 
+                        (vector-immutable export-key ...)) ...)
+                 #f)))))))]))
 
 (define-syntax/err-param (unit/c stx)
   (syntax-case stx ()
@@ -202,35 +197,38 @@
      (let ([name (syntax-local-infer-name stx)])
        (unit/c/core name #'sstx))]))
 
-(define (contract-check-helper sub-sig super-sig import? val blame)
-  (define t (make-hash))
-  (let loop ([i (sub1 (vector-length sub-sig))])
-    (when (>= i 0)
-      (let ([v (cdr (vector-ref sub-sig i))])
-        (let loop ([j (sub1 (vector-length v))])
-          (when (>= j 0)
-            (let ([vj (vector-ref v j)])
-              (hash-set! t vj
-                               (if (hash-ref t vj #f)
-                                   'amb
-                                   #t)))
-            (loop (sub1 j)))))
-      (loop (sub1 i))))
-  (let loop ([i (sub1 (vector-length super-sig))])
-    (when (>= i 0)
-      (let* ([v0 (vector-ref (cdr (vector-ref super-sig i)) 0)]
-             [r (hash-ref t v0 #f)])
-        (when (not r)
-          (let ([sub-name (car (vector-ref super-sig i))])
-            (raise-blame-error
-             blame val
-             (cond
-               [import?
-                (format "contract does not list import ~a" sub-name)]
-              [else
-                (format "unit must export signature ~a" sub-name)])))))
-      (loop (sub1 i)))))
-
-(define (contract-check-sigs unit expected-imports expected-exports blame)
-    (contract-check-helper expected-imports (unit-import-sigs unit) #t unit blame)
-    (contract-check-helper (unit-export-sigs unit) expected-exports #f unit blame))
+(define (unit/c-first-order-check val expected-imports expected-exports blame)
+  (let/ec return
+    (define (failed str . args)
+      (if blame
+          (apply raise-blame-error blame val str args)
+          (return #f)))
+    (define (check-sig-subset sub-sig super-sig import?)
+      (define t (make-hash))
+      (let loop ([i (sub1 (vector-length sub-sig))])
+        (when (>= i 0)
+          (let ([v (cdr (vector-ref sub-sig i))])
+            (let loop ([j (sub1 (vector-length v))])
+              (when (>= j 0)
+                (let ([vj (vector-ref v j)])
+                  (hash-set! t vj
+                             (if (hash-ref t vj #f)
+                                 'amb
+                                 #t)))
+                (loop (sub1 j)))))
+          (loop (sub1 i))))
+      (let loop ([i (sub1 (vector-length super-sig))])
+        (when (>= i 0)
+          (let* ([v0 (vector-ref (cdr (vector-ref super-sig i)) 0)]
+                 [r (hash-ref t v0 #f)])
+            (when (not r)
+              (let ([sub-name (car (vector-ref super-sig i))])
+                (if import?
+                    (failed "contract does not list import ~a" sub-name)
+                    (failed "unit must export signature ~a" sub-name)))))
+          (loop (sub1 i)))))
+    (unless (unit? val)
+      (failed "not a unit"))
+    (check-sig-subset expected-imports (unit-import-sigs val) #t)
+    (check-sig-subset (unit-export-sigs val) expected-exports #f)
+    #t))
