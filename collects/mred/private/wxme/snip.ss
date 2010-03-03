@@ -817,7 +817,7 @@
   (define filetype 0) ; file != #f => type of file, otherwise loaded 1 => XBM and 2 => XPM
   (define bm #f)
   (define mask #f)
-  (define relative-path? #f)
+  (define is-relative-path? #f)
 
   (define w 0.0)
   (define h 0.0)
@@ -929,7 +929,7 @@
       (send f put viewh)
       (send f put viewdx)
       (send f put viewdy)
-      (send f put (if relative-path? 1 0))
+      (send f put (if is-relative-path? 1 0))
       
       (when write-mode
         ;; inline the image
@@ -965,10 +965,10 @@
                          [bool? [rel-path? #f]]
                          [bool? [inline? #t]])
     (do-set-bitmap #f #f #f)
-
+    
     (let* ([rel-path? (and rel-path?
                            name
-                           (relative-path? rel-path?))]
+                           (relative-path? name))]
            [name (if rel-path?
                      name
                      (and name (path->complete-path name)))])
@@ -976,7 +976,7 @@
             (if rel-path?
                 (add-flag s-flags USES-BUFFER-PATH)
                 (remove-flag s-flags USES-BUFFER-PATH)))
-      
+
       (let ([name (and name (if (string? name)
                                 (string->path name)
                                 name))])
@@ -998,7 +998,6 @@
                                                              (path->complete-path base))))))))
                                    (current-directory)))
                               name)])
-
             (let ([nbm (dynamic-wind
                            begin-busy-cursor
                            (lambda ()
@@ -1006,7 +1005,6 @@
                            end-busy-cursor)])
               (when (send nbm ok?)
                 (do-set-bitmap nbm #f #f))))))
-      
       ;; for refresh:
       (set-bitmap bm mask)))
 
@@ -1015,7 +1013,7 @@
         ((send d do-copy-to #f)
          filename
          filetype
-         relative-path?
+         is-relative-path?
          vieww
          viewh
          viewdx
@@ -1026,7 +1024,7 @@
                            -bm -mask)
           (set! filename -filename)
           (set! filetype -filetype)
-          (set! relative-path? -relative-path?)
+          (set! is-relative-path? -relative-path?)
           (set! vieww -vieww)
           (set! viewh -viewh)
           (set! viewdx -viewdx)
@@ -1038,7 +1036,7 @@
 
   (def/public (get-filename [maybe-box? [rel? #f]])
     (when rel?
-      (set-box! rel? (and filename relative-path?)))
+      (set-box! rel? (and filename is-relative-path?)))
     filename)
   
   (def/public (get-filetype)
@@ -1159,7 +1157,7 @@
   (def/override (set-admin [(make-or-false snip-admin%) a])
     (when (not (eq? a s-admin))
       (super set-admin a))
-    (when (and s-admin relative-path? filename)
+    (when (and s-admin is-relative-path? filename)
       (load-file filename filetype #t))))
 
 ;; ------------------------------------------------------------
