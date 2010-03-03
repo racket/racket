@@ -1282,7 +1282,7 @@
  (test-engine-undock-report "Testresultate abdocken")
   ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "Test aktivieren")
-  (test-engine-disable-tests "Tests deaktivieren Tests")
+  (test-engine-disable-tests "Tests deaktivieren")
   
   (test-engine-ran-1-test "1 Test gelaufen.")
   (test-engine-ran-1-check "1 Check gelaufen.")
