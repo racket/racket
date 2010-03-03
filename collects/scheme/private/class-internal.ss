@@ -4031,9 +4031,7 @@
    (cond
      [(not (object? v)) #f]
      [(class? c) ((class-object? (class-orig-cls c)) ((object-unwrapper v) v))]
-     [(interface? c)
-      (and (object? v)
-           (implementation? (object-ref ((object-unwrapper v) v)) c))]
+     [(interface? c) (implementation? (object-ref ((object-unwrapper v) v)) c)]
      [else (raise-type-error 'is-a? "class or interface" 1 v c)])))
 
 (define (subclass? v c)
