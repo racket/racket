@@ -173,9 +173,11 @@
 (define (get-decls+defs chunks strict?
                         #:context [ctx (current-syntax-context)])
   (parameterize ((current-syntax-context ctx))
-    (decls-create-defs (get-decls chunks strict?))))
+    (let*-values ([(decls defs1) (get-decls chunks strict?)]
+                  [(decls defs2) (decls-create-defs decls)])
+      (values decls (append defs1 defs2)))))
 
-;; get-decls : chunks -> DeclEnv
+;; get-decls : chunks -> (values DeclEnv (listof syntax))
 (define (get-decls chunks strict?)
   (define lits (options-select-value chunks '#:literals #:default null))
   (define litsets (options-select-value chunks '#:literal-sets #:default null))
@@ -184,8 +186,28 @@
   (define literals
     (append-lits+litsets (check-literals-bound lits strict?)
                          litsets))
-  (define convention-rules (apply append (cons localconvs convs)))
-  (new-declenv literals #:conventions convention-rules))
+  (define-values (convs-rules convs-defs)
+    (for/fold ([convs-rules null] [convs-defs null])
+        ([conv-entry convs])
+      (let* ([c (car conv-entry)]
+             [args (cdr conv-entry)]
+             [get-parser-id (conventions-get-procedures c)]
+             [rules ((conventions-get-rules c))])
+        (values (append rules convs-rules)
+                (cons (make-conventions-def (map cadr rules) get-parser-id args)
+                      convs-defs)))))
+  (define convention-rules (append localconvs convs-rules))
+  (values (new-declenv literals #:conventions convention-rules)
+          (reverse convs-defs)))
+
+;; make-conventions-def : (listof den:delay) id (listof syntax) -> syntax
+(define (make-conventions-def dens get-procedures-id args)
+  (with-syntax ([(parser ...) (map den:delayed-parser dens)]
+                [get-procedures get-procedures-id]
+                [(arg ...) args])
+    #'(define-values (parser ...)
+        (let-values ([(parsers descriptions) (get-procedures arg ...)])
+          (apply values parsers)))))
 
 (define (check-literals-bound lits strict?)
   (define phase (syntax-local-phase-level))
@@ -229,7 +251,7 @@
             ;; to allow forward references
             (with-syntax ([parser (generate-temporary class)]
                           [description (generate-temporary class)])
-              (values (make den:delayed #'parser #'get-description class)
+              (values (make den:delayed #'parser #'description class)
                       (list #`(define-values (parser description)
                                 (curried-stxclass-procedures
                                  #,class #,args)))))])]
@@ -891,26 +913,26 @@
 
 ;; grab-decls : (listof chunk) DeclEnv
 ;;           -> (values DeclEnv (listof chunk))
-(define (grab-decls chunks decls)
+(define (grab-decls chunks decls0)
   (define (add-decl stx decls)
     (syntax-case stx ()
       [(#:declare name sc)
        (identifier? #'sc)
-       (add-decl* #'name #'sc null)]
+       (add-decl* decls #'name #'sc null)]
       [(#:declare name (sc expr ...))
        (identifier? #'sc)
-       (add-decl* #'name #'sc (syntax->list #'(expr ...)))]
+       (add-decl* decls #'name #'sc (syntax->list #'(expr ...)))]
       [(#:declare name bad-sc)
        (wrong-syntax #'bad-sc
                      "expected syntax class name (possibly with parameters)")]))
-  (define (add-decl* id sc-name args)
+  (define (add-decl* decls id sc-name args)
     (declenv-put-stxclass decls id sc-name args))
   (define (loop chunks decls)
     (match chunks
       [(cons (cons '#:declare decl-stx) rest)
        (loop rest (add-decl decl-stx decls))]
       [_ (values decls chunks)]))
-  (loop chunks decls))
+  (loop chunks decls0))
 
 
 ;; ----
@@ -989,23 +1011,28 @@
     (list (datum->syntax lctx (car entry) srcctx)
           (cadr entry))))
 
+;; returns (listof (cons Conventions (listof syntax)))
 (define (check-conventions-list stx ctx)
   (unless (stx-list? stx)
     (raise-syntax-error #f "expected conventions list" ctx stx))
   (for/list ([x (stx->list stx)])
     (check-conventions x ctx)))
 
+;; returns (cons Conventions (listof syntax))
 (define (check-conventions stx ctx)
-  (define (elaborate conventions-id)
+  (define (elaborate conventions-id args)
     (let ([cs (syntax-local-value/catch conventions-id conventions?)])
       (unless cs
         (raise-syntax-error #f "expected identifier defined as a conventions"
                             ctx conventions-id))
-      (conventions-rules cs)))
+      (cons cs args)))
   (syntax-case stx ()
+    [(conventions arg ...)
+     (identifier? #'conventions)
+     (elaborate #'conventions (syntax->list #'(arg ...)))]
     [conventions
      (identifier? #'conventions)
-     (elaborate #'conventions)]
+     (elaborate #'conventions null)]
     [_
      (raise-syntax-error "expected conventions entry" ctx stx)]))
 
@@ -1019,9 +1046,12 @@
 ;; returns (list regexp DeclEntry)
 (define (check-conventions-rule stx ctx)
   (define (check-conventions-pattern x blame)
-    (cond [(symbol? x) (regexp (string-append "^" (regexp-quote (symbol->string x)) "$"))]
+    (cond [(symbol? x)
+           (regexp (string-append "^" (regexp-quote (symbol->string x)) "$"))]
           [(regexp? x) x]
-          [else (raise-syntax-error #f  "expected identifier convention pattern" ctx blame)]))
+          [else
+           (raise-syntax-error #f "expected identifier convention pattern"
+                               ctx blame)]))
   (define (check-sc-expr x rx)
     (syntax-case x ()
       [sc

@@ -92,26 +92,52 @@
 
 (define-syntax (define-conventions stx)
   (syntax-case stx ()
-    [(define-conventions name rule ...)
-     (begin
-       (unless (identifier? #'name)
-         (raise-syntax-error #f "expected identifier" stx #'name))
-       (with-syntax ([([entry (def ...)] ...)
-                      (for/list ([line (check-conventions-rules #'(rule ...) stx)])
-                        (let ([rx (car line)]
-                              [den (cadr line)])
-                          (let-values ([(den defs) (create-aux-def den)])
-                            (list #`(list (quote #,rx)
-                                          (make-den:delayed
-                                           (quote-syntax #,(den:delayed-parser den))
-                                           (quote-syntax #,(den:delayed-description den))
-                                           (quote-syntax #,(den:delayed-class den))))
-                                  defs))))])
+    [(define-conventions (name param ...) rule ...)
+     (let ([params (syntax->list #'(param ...))])
+       (for ([x (syntax->list #'(name param ...))])
+         (unless (identifier? x)
+           (raise-syntax-error #f "expected identifier" stx x)))
+       (let ()
+         (define rules (check-conventions-rules #'(rule ...) stx))
+         (define rxs (map car rules))
+         (define dens0 (map cadr rules))
+         (define den+defs-list
+           (for/list ([den0 dens0])
+             (let-values ([(den defs) (create-aux-def den0)])
+               (cons den defs))))
+         (define dens (map car den+defs-list))
+         (define defs (apply append (map cdr den+defs-list)))
+
+         (define/with-syntax (rx ...) rxs)
+         (define/with-syntax (def ...) defs)
+         (define/with-syntax (parser ...)
+           (map den:delayed-parser dens))
+         (define/with-syntax (description ...)
+           (map den:delayed-description dens))
+         (define/with-syntax (class-name ...)
+           (map den:delayed-class dens))
+
          #'(begin
-             def ... ...
              (define-syntax name
                (make-conventions
-                (list entry ...))))))]))
+                (quote-syntax get-procedures)
+                (lambda ()
+                  (let ([class-names (list (quote-syntax class-name) ...)])
+                    (map list
+                         (list 'rx ...)
+                         (map make-den:delayed
+                              (generate-temporaries class-names)
+                              (generate-temporaries class-names)
+                              class-names))))))
+             (define get-procedures
+               (lambda (param ...)
+                 def ...
+                 (values (list parser ...)
+                         (list description ...)))))))]
+
+    [(define-conventions name rule ...)
+     (identifier? #'name)
+     #'(define-conventions (name) rule ...)]))
 
 (define-syntax (define-literal-set stx)
   (syntax-case stx ()
@@ -182,7 +208,7 @@
 (define-syntax (debug-rhs stx)
   (syntax-case stx ()
     [(debug-rhs rhs)
-     (let ([rhs (parse-rhs #'rhs #t #:context stx)])
+     (let ([rhs (parse-rhs #'rhs #f #f #:context stx)])
        #`(quote #,rhs))]))
 
 (define-syntax (debug-pattern stx)

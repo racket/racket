@@ -561,7 +561,7 @@ An Expectation is one of
 (define (frontier->sexpr dfc)
   (match (invert-dfc dfc)
     [(make dfc:empty _) '()]
-    [(make dfc:car p _) (cons 0 (frontier->sexpr p))]
+    [(make dfc:car p _) (cons 'car (frontier->sexpr p))]
     [(make dfc:cdr p n) (cons n (frontier->sexpr p))]
     [(make dfc:pre p _) (cons 'pre (frontier->sexpr p))]
     [(make dfc:post p _) (cons 'post (frontier->sexpr p))]))

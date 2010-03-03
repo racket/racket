@@ -40,9 +40,13 @@
 
 (define-pred-stxclass identifier symbol?)
 (define-pred-stxclass boolean boolean?)
-(define-pred-stxclass str string?)
 (define-pred-stxclass character char?)
 (define-pred-stxclass keyword keyword?)
+
+(define-syntax-class str #:attributes () #:opaque
+  #:description "string"
+  (pattern x
+           #:fail-unless (string? (syntax-e #'x)) #f))
 
 (define-pred-stxclass number number?)
 (define-pred-stxclass integer integer?)

@@ -46,20 +46,6 @@
 
 ;; ----
 
-#|
-
-syntax-class protocol
----------------------
-
-for  syntax-class SC with args (P ...)
-
-if commit? = #t
-  parser : Stx P ... -> (U list expectation)
-if commit? = #f
-  parser : Stx ((U list expect) FailFunction -> Answer) P ... -> Answer
-
-|#
-
 ;; (parse:rhs RHS (SAttr ...) (id ...) id boolean)
 ;;   : expr[(values ParseFunction DescriptionFunction)]
 ;; Takes a list of the relevant attrs; order is significant!

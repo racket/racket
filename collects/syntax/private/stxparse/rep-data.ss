@@ -22,6 +22,31 @@
          (struct-out literalset))
 
 #|
+
+NOTES
+
+syntax-class protocol
+---------------------
+
+Two kinds of syntax class: commit? = #t, commit? = #f
+
+let syntax-class SC have params (P ...)
+  if commit? = #t
+    parser : Stx P ... -> (U list expectation)
+  if commit? = #f
+    parser : Stx ((U list expect) FailFunction -> Answer) P ... -> Answer
+
+
+conventions
+-----------
+
+let conventions C have params (P ...)
+  get-procedures :
+    (P ... -> (values (listof ParserFun) (listof DescriptionFun)))
+
+|#
+
+#|
 A stxclass is
   (make-sc symbol (listof symbol) (list-of SAttr) identifier identifier boolean boolean)
 |#
@@ -60,10 +85,10 @@ A SideClause is one of
 
 #|
 A Conventions is
-  (make-conventions (listof ConventionRule))
+  (make-conventions id (-> (listof ConventionRule)))
 A ConventionRule is (list regexp DeclEntry)
 |#
-(define-struct conventions (rules) #:transparent)
+(define-struct conventions (get-procedures get-rules) #:transparent)
 
 #|
 A LiteralSet is
