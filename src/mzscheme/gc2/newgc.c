@@ -1192,15 +1192,23 @@ inline static int marked(NewGC *gc, void *p)
 
   if(!p) return 0;
   if(!(page = pagemap_find_page(gc->page_maps, p))) return 1;
-  if (page->size_class) {
-    if (page->size_class > 1) {
-      return (page->size_class > 2);
-    }
-  } else if (page->generation) {
-    if((NUM(page->addr) + page->previous_size) > NUM(p)) 
+  switch(page->size_class) {
+    case SIZE_CLASS_BIG_PAGE_MARKED:
       return 1;
+    case SIZE_CLASS_SMALL_PAGE:
+      if (page->generation) {
+        if((NUM(page->addr) + page->previous_size) > NUM(p)) 
+          return 1;
+      }
+      /* else FALLTHROUGH */
+    case SIZE_CLASS_MED_PAGE: /* FALLTHROUGH */
+    case SIZE_CLASS_BIG_PAGE:
+      return OBJPTR_TO_OBJHEAD(p)->mark;
+      break;
+    default:
+      fprintf(stderr, "ABORTING! INVALID SIZE_CLASS %i\n", page->size_class);
+      exit(EXIT_FAILURE);
   }
-  return OBJPTR_TO_OBJHEAD(p)->mark;
 }
 
 /*****************************************************************************/
