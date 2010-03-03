@@ -1048,7 +1048,8 @@ See also @method[text% caret-hidden?] and @method[editor<%> lock].
                       [end (or/c exact-nonnegative-integer? 'same) 'same]
                       [scroll-ok? any/c #t])
               void?]
-             [(insert [n exact-nonnegative-integer?]
+             [(insert [n (and/c exact-nonnegative-integer?
+                                (<=/c (string-length str)))]
                       [str string?]
                       [start exact-nonnegative-integer?]
                       [end (or/c exact-nonnegative-integer? 'same) 'same]
@@ -1056,7 +1057,8 @@ See also @method[text% caret-hidden?] and @method[editor<%> lock].
               void?]
              [(insert [str string?])
               void?]
-             [(insert [n exact-nonnegative-integer?]
+             [(insert [n (and/c exact-nonnegative-integer?
+                                (<=/c (string-length str)))]
                       [str string?])
               void?]
              [(insert [snip (is-a?/c snip%)]
