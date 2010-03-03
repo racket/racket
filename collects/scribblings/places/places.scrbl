@@ -20,10 +20,12 @@ hardware threads.
 
 @defmodule[scheme/place]{}
 
-@defproc[(place [module-path module-path?] [start-proc proc?] [place-channel place-ch?]) place?]{
+@defproc[(place [module-path module-path?] [start-proc proc?] [place-channel place-channel?]) place?]{
   Starts running @scheme[start-proc] in parallel. scheme[start-proc] must
-  be a function defined in @scheme[module-path].  The @scheme[place]
-  procedure returns immediately with a place descriptor value.
+  be a function defined in @scheme[module-path].  Each place is created with a scheme[place-channel]
+  that permits communication with the place originator.  This initial channel can be overridden with
+  an optional scheme[place-channel] argument.  The @scheme[place]
+  procedure returns immediately with a place descriptor value representing the newly constructed place.
 }
 
 @defproc[(place-wait [p place?]) exact-integer?]{
@@ -32,19 +34,19 @@ hardware threads.
 }
 
 @defproc[(place? [x any/c]) boolean?]{
-  Returns @scheme[#t] if @scheme[x] is a place.
+  Returns @scheme[#t] if @scheme[x] is a place object.
 }
 
-@defproc[(place-ch-send [ch place-ch?] [x any/c]) void]{
+@defproc[(place-channel-send [ch place-channel?] [x any/c]) void]{
   Sends an immutable message @scheme[x] on channel @scheme[ch].
 }
 
-@defproc[(place-ch-recv [p place-ch?]) any/c]{
+@defproc[(place-channel-recv [p place-channel?]) any/c]{
   Returns an immutable message received on channel @scheme[ch].
 }
 
-@defproc[(place-ch? [x any/c]) boolean?]{
-  Returns @scheme[#t] if @scheme[x] is a place-ch.
+@defproc[(place-channel? [x any/c]) boolean?]{
+  Returns @scheme[#t] if @scheme[x] is a place-channel object.
 }
 
 @section[#:tag "example"]{How Do I Keep Those Cores Busy?}
@@ -53,15 +55,15 @@ This code launches two places passing 1 and 2 as the initial channels
 and then waits for the places to complete and return.
 
 @schemeblock[
-    (let ((pls (map (lambda (x) (place "place_worker.ss" 'place-main x))
+    (let ((pls (map (lambda (x) (place "place-worker.ss" 'place-main x))
                   (list 1 2))))
        (map place-wait pls))
 ]
 
-This is the code for the place_worker.ss module that each place will execute.
+This is the code for the place-worker.ss module that each place will execute.
 
 @schemeblock[
-(module place_worker scheme
+(module place-worker scheme
   (provide place-main)
 
   (define (place-main x)
@@ -76,9 +78,9 @@ Places can only communicate by passing immutable messages on place-channels.
 @section[#:tag "logging"]{Architecture and Garbage Collection}
 
 Immutable messages communicated on place-channels are first copied to a shared
-garbage collector called the master.  The master waits on a barrier until all places garbage
-collectors have collected.  Once the master is released it collects and resets
-the barrier.
+garbage collector called the master.  Places are allowed to garbage collect
+independently of one another.  The master collector, however, has to pause all
+mutators before it can collect garbage.
 
 @section[#:tag "compiling"]{Enabling Places in MzScheme Builds}
 

@@ -18,7 +18,7 @@ static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so);
 static Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]);
-static Scheme_Object *scheme_place_ch_p(int argc, Scheme_Object *args[]);
+static Scheme_Object *scheme_place_channel_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *args[]);
 
 Scheme_Object *scheme_place_async_channel_create();
@@ -66,9 +66,9 @@ void scheme_init_place(Scheme_Env *env)
   PLACE_PRIM_W_ARITY("place-sleep",    scheme_place_sleep, 1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",     scheme_place_wait,  1, 1, plenv);
   PLACE_PRIM_W_ARITY("place?",         scheme_place_p,     1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-ch-send",  scheme_place_send,  1, 2, plenv);
-  PLACE_PRIM_W_ARITY("place-ch-recv",  scheme_place_recv,  1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-ch?",      scheme_place_ch_p,  1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-channel-send",  scheme_place_send,  1, 2, plenv);
+  PLACE_PRIM_W_ARITY("place-channel-recv",  scheme_place_recv,  1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-channel?",      scheme_place_channel_p,  1, 1, plenv);
 
 #ifdef MZ_USE_PLACES
   REGISTER_SO(scheme_def_place_exit_proc);
@@ -515,7 +515,7 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
     scheme_place_async_send((Scheme_Place_Async_Channel *) args[0], mso);
   }
   else {
-    scheme_wrong_count_m("place-ch-send", 1, 2, argc, args, 0);
+    scheme_wrong_count_m("place-channel-send", 1, 2, argc, args, 0);
   }
   return scheme_true;
 }
@@ -525,7 +525,7 @@ Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
     return scheme_place_async_recv((Scheme_Place_Async_Channel *) args[0]);
   }
   else {
-    scheme_wrong_count_m("place-ch-recv", 1, 2, argc, args, 0);
+    scheme_wrong_count_m("place-channel-recv", 1, 2, argc, args, 0);
   }
   return scheme_true;
 }
@@ -624,7 +624,7 @@ Scheme_Object *scheme_place_async_channel_create() {
   return (Scheme_Object *)ch;
 }
 
-static Scheme_Object *scheme_place_ch_p(int argc, Scheme_Object *args[])
+static Scheme_Object *scheme_place_channel_p(int argc, Scheme_Object *args[])
 {
   return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_async_channel_type) ? scheme_true : scheme_false;
 }
