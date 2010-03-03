@@ -50,7 +50,7 @@ When a @scheme[bits] byte string is provided: Creates a monochrome
                             [y real?]
                             [width (integer-in 1 10000)]
                             [height (integer-in 1 10000)]
-                            [pixels (and/c byte-string? mutable?)]
+                            [pixels (and/c bytes? mutable?)]
                             [alpha? any/c #f])
            void?]{
 
