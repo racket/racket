@@ -59,13 +59,15 @@
 ;; internal.
 
 (module time mzscheme
-  (require srfi/8/receive
+  (require scheme/serialize
+           srfi/8/receive
 	   srfi/29
 	   srfi/optional)
   (provide time-tai time-utc time-monotonic time-thread time-process time-duration time-gc
 	   current-date current-julian-day current-modified-julian-day current-time time-resolution
            ;; Time object and accessors
            make-time time? time-type time-nanosecond 
+           deserialize-info:tm:time-v0
            time-second set-time-type! set-time-nanosecond! set-time-second!
            copy-time
 	   ;; Time comparison
@@ -75,6 +77,7 @@
            ;; Date object and accessors
 	   ;; date structure is provided by core PLT Scheme, we just extended tu support miliseconds:
            srfi:make-date srfi:date?
+           deserialize-info:tm:date-v0
 	   date-nanosecond srfi:date-second srfi:date-minute srfi:date-hour srfi:date-day srfi:date-month
            srfi:date-year date-zone-offset
 	   ;; This are not part of the date structure (as they are in the original PLT Scheme's date)
@@ -268,7 +271,28 @@
   
   (define-values (tm:time make-time time? tm:time-ref tm:time-set!)
     (make-struct-type 
-     'tm:time #f 3 0 #f null (make-inspector) #f null))
+     'tm:time #f 3 0 #f
+     (list (cons prop:serializable
+                 (make-serialize-info
+                  (lambda (t)
+                    (vector (time-type t)
+                            (time-nanosecond t)
+                            (time-second t)))
+                  #'deserialize-info:tm:time-v0
+                  #f
+                  (or (current-load-relative-directory) 
+                      (current-directory)))))
+     (make-inspector) #f null))
+  
+  (define deserialize-info:tm:time-v0
+    (make-deserialize-info
+     make-time
+     (lambda ()
+       (let ([t0 (make-time #f #f #f)])
+         (values t0 (lambda (t1)
+                      (set-time-type!       t0 (time-type t1))
+                      (set-time-nanosecond! t0 (time-nanosecond t1))
+                      (set-time-second!     t0 (time-second t1))))))))
   
   (define (time-type t)       (tm:time-ref t 0))
   (define (time-nanosecond t) (tm:time-ref t 1))
@@ -587,7 +611,39 @@
   ;; -- Date Structures
   (define-values (tm:date srfi:make-date srfi:date? tm:date-ref tm:date-set!)
     (make-struct-type 
-     'tm:date #f 8 0 #f null (make-inspector) #f null))
+     'tm:date #f 8 0 #f
+     (list (cons prop:serializable
+                 (make-serialize-info
+                  (lambda (d)
+                    (vector (date-nanosecond  d)
+                            (srfi:date-second d)
+                            (srfi:date-minute d)
+                            (srfi:date-hour   d)
+                            (srfi:date-day    d)
+                            (srfi:date-month  d)
+                            (srfi:date-year   d)
+                            (date-zone-offset d)))
+                  #'deserialize-info:tm:date-v0
+                  #f
+                  (or (current-load-relative-directory) 
+                      (current-directory)))))
+     (make-inspector) #f null))
+  
+  (define deserialize-info:tm:date-v0
+    (make-deserialize-info
+     srfi:make-date
+     (lambda ()
+       (let ([d0 (srfi:make-date #f #f #f #f #f #f #f #f)])
+         (values d0 (lambda (d1)
+                      (tm:set-date-nanosecond!  d1 (date-nanosecond  d0))
+                      (tm:set-date-second!      d1 (srfi:date-second d0))
+                      (tm:set-date-minute!      d1 (srfi:date-minute d0))
+                      (tm:set-date-hour!        d1 (srfi:date-hour   d0))
+                      (tm:set-date-day!         d1 (srfi:date-day    d0))
+                      (tm:set-date-month!       d1 (srfi:date-month  d0))
+                      (tm:set-date-year!        d1 (srfi:date-year   d0))
+                      (tm:set-date-zone-offset! d1 (date-zone-offset d0))))))))
+  
   ;; PLT Scheme date structure has the following:
   ;;   * second : 0 to 61 (60 and 61 are for unusual leap-seconds)
   ;;   * minute : 0 to 59
