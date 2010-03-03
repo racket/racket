@@ -11,6 +11,15 @@
 
 (define-struct set (ht)
   #:omit-define-syntaxes
+  #:property prop:custom-write
+  (lambda (s port write?)
+    (define print (if write? write display))
+    (write-string "#<set:" port)
+    (set-for-each s 
+                  (lambda (e) 
+                    (write-string " " port)
+                    (print e port)))
+    (write-string ">" port))
   #:property prop:equal+hash (list 
                               (lambda (set1 set2 =?)
                                 (=? (set-ht set1) (set-ht set2)))
