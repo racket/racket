@@ -466,8 +466,13 @@
   (define-splicing-syntax-class result-clause
     #:description "a results clause"
     [pattern (~seq #:result ctc:expr)])
+  (define-splicing-syntax-class rcs
+    #:attributes ([ctc 1])
+    #:description "a non-empty sequence of result clauses"
+    [pattern (~seq rc:result-clause ...+)
+             #:with (ctc ...) #'(rc.ctc ...)])
   (syntax-parse stx
-    [(_ (~optional :region-clause #:defaults ([region #'region])) blame:id rc:result-clause fv:fvs . body)
+    [(_ (~optional :region-clause #:defaults ([region #'region])) blame:id rc:rcs fv:fvs . body)
      (if (not (eq? (syntax-local-context) 'expression))
          (quasisyntax/loc stx (#%expression #,stx))
          (let*-values ([(intdef) (syntax-local-make-definition-context)]
@@ -477,16 +482,14 @@
                         (values (syntax->list #'(fv.var ...))
                                 (syntax->list #'(fv.ctc ...)))])
            (define (add-context stx)
-             (let ([ctx-added-stx (local-expand #`(quote #,stx)
-                                                ctx
-                                                (list #'quote)
-                                                intdef)])
+             (let ([ctx-added-stx (local-expand #`(quote #,stx) ctx (list #'quote) intdef)])
                (syntax-case ctx-added-stx ()
                  [(_ expr) #'expr])))
            (syntax-local-bind-syntaxes free-vars #f intdef)
            (internal-definition-context-seal intdef)
            (with-syntax ([blame-stx #''(region blame)]
                          [blame-id (generate-temporary)]
+                         [(res ...) (generate-temporaries #'(rc.ctc ...))]
                          [(free-var ...) free-vars]
                          [(free-var-id ...) (add-context #`#,free-vars)]
                          [(free-ctc-id ...) (map cid-marker free-vars)]
@@ -496,10 +499,11 @@
                                               free-vars)])
              (with-syntax ([new-stx (add-context #'(syntax-parameterize 
                                                     ([current-contract-region (λ (stx) #'blame-stx)])
-                                                    (contract (verify-contract 'with-contract rc.ctc)
-                                                              (let () . body)
-                                                              blame-stx
-                                                              blame-id)))])
+                                                    (let-values ([(res ...) (let () . body)])
+                                                      (values (contract (verify-contract 'with-contract rc.ctc)
+                                                                        res
+                                                                        blame-stx
+                                                                        blame-id) ...))))])
                (quasisyntax/loc stx
                  (let ()
                    (define-values (free-ctc-id ...)

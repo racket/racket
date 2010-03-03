@@ -745,7 +745,7 @@ ensure that the exported functions are treated parametrically.
 
 @defform*/subs[
  [(with-contract blame-id (wc-export ...) free-var-list ... body ...+)
-  (with-contract blame-id result-spec free-var-list ... body ...+)]
+  (with-contract blame-id result-spec ...+ free-var-list ... body ...+)]
  ([wc-export
    (id contract-expr)]
   [result-spec
@@ -762,9 +762,10 @@ list are protected with the corresponding contract.  The @scheme[body] of
 the form allows definition/expression interleaving if its context does.
 
 The second @scheme[with-contract] form must appear in expression position.
-The result of the final @scheme[body] expression is contracted with
-the contract listed in the @scheme[result-spec].  The sequence of @scheme[body]
-forms is treated as for @scheme[let].
+The final @scheme[body] expression should return the same number of values
+as the number of @scheme[result-spec]s, and each returned value is contracted
+with the contract listed in its respective @scheme[result-spec].
+The sequence of @scheme[body] forms is treated as for @scheme[let].
 
 The @scheme[blame-id] is used for the positive positions of
 contracts paired with exported @scheme[id]s.  Contracts broken
