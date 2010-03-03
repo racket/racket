@@ -18,7 +18,7 @@ See
                              'thumb]
                  [direction (one-of/c 'horizontal 'vertical) 'vertical]
                  [position (integer-in 0 10000) 0]
-                 [time-stamp (and/c exact? integer?) 0])]{
+                 [time-stamp exact-integer? 0])]{
 
 See the corresponding @scheme[get-] and @scheme[set-] methods for
  information about @scheme[event-type], @scheme[direction], @scheme[position],

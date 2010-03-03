@@ -21,9 +21,9 @@ See also @|mousekeydiscuss|.
                  [control-down any/c #f]
                  [meta-down any/c #f]
                  [alt-down any/c #f]
-                 [x (and/c exact? integer?) 0]
-                 [y (and/c exact? integer?) 0]
-                 [time-stamp (and/c exact? integer?) 0]
+                 [x exact-integer? 0]
+                 [y exact-integer? 0]
+                 [time-stamp exact-integer? 0]
                  [caps-down any/c #f])]{
 
 See the corresponding @schemeidfont{get-} and @schemeidfont{set-}
@@ -264,7 +264,7 @@ Returns @scheme[#t] if the Shift key was down for the event.
 }
 
 @defmethod[(get-x)
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Returns the x-position of the mouse at the time of the event, in the
  target's window's (client-area) coordinate system.
@@ -272,7 +272,7 @@ Returns the x-position of the mouse at the time of the event, in the
 }
 
 @defmethod[(get-y)
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Returns the y-position of the mouse at the time of the event in the
  target's window's (client-area) coordinate system.
@@ -371,7 +371,7 @@ Sets whether the Shift key was down for the event.
 
 }
 
-@defmethod[(set-x [pos (and/c exact? integer?)])
+@defmethod[(set-x [pos exact-integer?])
            void?]{
 
 Sets the x-position of the mouse at the time of the event in the
@@ -379,7 +379,7 @@ Sets the x-position of the mouse at the time of the event in the
 
 }
 
-@defmethod[(set-y [pos (and/c exact? integer?)])
+@defmethod[(set-y [pos exact-integer?])
            void?]{
 
 Sets the y-position of the mouse at the time of the event in the

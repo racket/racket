@@ -230,7 +230,7 @@ Starts a sequence.
 
 @defmethod[(begin-write-header-footer-to-file [f (is-a?/c editor-stream-out%)]
                                               [name string?]
-                                              [buffer (box/c (and/c exact? integer?))])
+                                              [buffer (box/c exact-integer?)])
            void?]{
 
 This method must be called before writing any special header data to a
@@ -369,7 +369,7 @@ Destroys the undo history of the editor.
 }
 
 @defmethod[(copy [extend? any/c #f]
-                 [time (and/c exact? integer?) 0])
+                 [time exact-integer? 0])
            void?]{
 
 Copies @techlink{item}s into the clipboard. If @scheme[extend?] is not
@@ -413,7 +413,7 @@ style list is copied and the copy is installed as the style list for
 }
 
 @defmethod[(cut [extend? any/c #f]
-                [time (and/c exact? integer?) 0])
+                [time exact-integer? 0])
            void?]{
 
 Copies and then deletes the currently selected @techlink{item}s. If
@@ -466,7 +466,7 @@ See @xmethod[text% do-copy] or @xmethod[pasteboard% do-copy].}
                                         'kill 'select-all 'insert-text-box 
                                         'insert-pasteboard-box 'insert-image)]
                               [recursive? any/c #t]
-                              [time (and/c exact? integer?) 0])
+                              [time exact-integer? 0])
            void?]{
 
 Performs a generic edit command. The @scheme[op] argument must be a
@@ -532,7 +532,7 @@ See @method[editor<%> begin-edit-sequence].
 }
 
 @defmethod[(end-write-header-footer-to-file [f (is-a?/c editor-stream-out%)]
-                                            [buffer-value (and/c exact? integer?)])
+                                            [buffer-value exact-integer?])
            void?]{
 
 This method must be called after writing any special header data to a
@@ -1061,7 +1061,7 @@ Returns @scheme[#t] if the editor is currently being printed through
 the @method[editor<%> print] method, @scheme[#f] otherwise.}
 
 
-@defmethod[(kill [time (and/c exact? integer?) 0])
+@defmethod[(kill [time exact-integer? 0])
            void?]{
 
 In a text editor, cuts to the end of the current line, or cuts a
@@ -1674,7 +1674,7 @@ Propagates the flag to any snip with the editor-local focus. If no
 }}
 
 
-@defmethod[(paste [time (and/c exact? integer?) 0])
+@defmethod[(paste [time exact-integer? 0])
            void?]{
 
 Pastes the current contents of the clipboard into the editor.
@@ -1693,7 +1693,7 @@ See also @method[editor<%> get-paste-text-only].
 }
 
 
-@defmethod[(paste-x-selection [time (and/c exact? integer?) 0])
+@defmethod[(paste-x-selection [time exact-integer? 0])
            void?]{
 
 Like @method[editor<%> paste], but under X, uses the X selection

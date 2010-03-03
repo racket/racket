@@ -17,7 +17,7 @@ An in-stream base---possibly an @scheme[editor-stream-in-bytes-base%]
 }
 
 
-@defmethod*[([(get [v (box/c (and/c exact? integer?))])
+@defmethod*[([(get [v (box/c exact-integer?)])
               (is-a?/c editor-stream-in%)]
              [(get [v (box/c real?)])
               (is-a?/c editor-stream-in%)])]{
@@ -45,13 +45,13 @@ Like @method[editor-stream-in% get-unterminated-bytes], but the last
 }
 
 @defmethod[(get-exact)
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Returns the next integer value in the stream.
 
 }
 
-@defmethod[(get-fixed [v (box/c (and/c exact? integer?))])
+@defmethod[(get-fixed [v (box/c exact-integer?)])
            (is-a?/c editor-stream-in%)]{
 
 @boxisfill[(scheme v) @elem{a fixed-size integer from the stream obtained through 
@@ -60,7 +60,7 @@ Returns the next integer value in the stream.
 }
 
 @defmethod[(get-fixed-exact)
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Gets a fixed-sized integer from the stream. See
 @method[editor-stream-out% put-fixed] for more information.

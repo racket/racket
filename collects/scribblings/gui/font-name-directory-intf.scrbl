@@ -99,7 +99,7 @@ The mapping for face names can be overridden (on all platforms)
 
 @defmethod[(find-family-default-font-id [family (one-of/c 'default 'decorative 'roman 'script 
                                                           'swiss 'modern 'symbol 'system)])
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Gets the font ID representing the default font for a family. See
 @scheme[font%] for information about font families.
@@ -109,7 +109,7 @@ Gets the font ID representing the default font for a family. See
 @defmethod[(find-or-create-font-id [name string?]
                                    [family (one-of/c 'default 'decorative 'roman 'script 
                                                      'swiss 'modern 'symbol 'system)])
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Gets the face name for a font ID, initializing the mapping for
  the face name if necessary.
@@ -119,7 +119,7 @@ Font ID are useful only as mapping indices for
 
 }
 
-@defmethod[(get-face-name [font-id (and/c exact? integer?)])
+@defmethod[(get-face-name [font-id exact-integer?])
            (or/c string? false/c)]{
 
 Gets the face name for a font ID. If the font ID corresponds to
@@ -127,7 +127,7 @@ Gets the face name for a font ID. If the font ID corresponds to
 
 }
 
-@defmethod[(get-family [font-id (and/c exact? integer?)])
+@defmethod[(get-family [font-id exact-integer?])
            (one-of/c 'default 'decorative 'roman 'script 
                      'swiss 'modern 'symbol 'system)]{
 
@@ -139,7 +139,7 @@ Gets the family for a font ID. See
 @defmethod[(get-font-id [name string?]
                         [family (one-of/c 'default 'decorative 'roman 'script 
                                           'swiss 'modern 'symbol 'system)])
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Gets the font ID for a face name paired with a default family. If the
  mapping for the given pair is not already initialized, @scheme[0] is
@@ -151,7 +151,7 @@ Font ID are useful only as mapping indices for
 
 }
 
-@defmethod[(get-post-script-name [font-id (and/c exact? integer?)]
+@defmethod[(get-post-script-name [font-id exact-integer?]
                                  [weight (one-of/c 'normal 'bold 'light)]
                                  [style (one-of/c 'normal 'italic 'slant)])
            (or/c string? false/c)]{
@@ -166,7 +166,7 @@ See @scheme[font%] for information about @scheme[weight] and
 
 }
 
-@defmethod[(get-screen-name [font-id (and/c exact? integer?)]
+@defmethod[(get-screen-name [font-id exact-integer?]
                             [weight (one-of/c 'normal 'bold 'light)]
                             [style (one-of/c 'normal 'italic 'slant)])
            (or/c string? false/c)]{
@@ -180,7 +180,7 @@ See @scheme[font%] for information about @scheme[weight] and
 
 }
 
-@defmethod[(set-post-script-name [font-id (and/c exact? integer?)]
+@defmethod[(set-post-script-name [font-id exact-integer?]
                                  [weight (one-of/c 'normal 'bold 'light)]
                                  [style (one-of/c 'normal 'italic 'slant)]
                                  [name string?])
@@ -194,7 +194,7 @@ See @scheme[font%] for information about @scheme[weight] and @scheme[style].
 
 }
 
-@defmethod[(set-screen-name [font-id (and/c exact? integer?)]
+@defmethod[(set-screen-name [font-id exact-integer?]
                             [weight (one-of/c 'normal 'bold 'light)]
                             [style (one-of/c 'normal 'italic 'slant)]
                             [name string?])

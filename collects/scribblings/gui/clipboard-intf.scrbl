@@ -28,7 +28,7 @@ Generic data is always retrieved from the clipboard as a byte
  clipboard formats is determined by the current clipboard owner.
 
 
-@defmethod[(get-clipboard-bitmap [time (and/c exact? integer?)])
+@defmethod[(get-clipboard-bitmap [time exact-integer?])
            (or/c (is-a?/c bitmap%) false/c)]{
 
 Gets the current clipboard contents as a bitmap (Windows, Mac OS X),
@@ -44,7 +44,7 @@ See @|timediscuss| for a discussion of the @scheme[time] argument.  If
 }
 
 @defmethod[(get-clipboard-data [format string]
-                               [time (and/c exact? integer?)])
+                               [time exact-integer?])
            (or/c bytes? string? false/c)]{
 
 Gets the current clipboard contents in a specific format, returning
@@ -65,7 +65,7 @@ See @|timediscuss| for a discussion of the @scheme[time] argument.  If
 
 }
 
-@defmethod[(get-clipboard-string [time (and/c exact? integer?)])
+@defmethod[(get-clipboard-string [time exact-integer?])
            (or/c string false/c)]{
 
 Gets the current clipboard contents as simple text, returning
@@ -89,7 +89,7 @@ Returns @scheme[#t] if @scheme[owner] currently owns the clipboard,
 
 
 @defmethod[(set-clipboard-bitmap [new-bitmap (is-a?/c bitmap%)]
-                                 [time (and/c exact? integer?)])
+                                 [time exact-integer?])
            void?]{
 
 Changes the current clipboard contents to @scheme[new-bitmap] (Windows, Mac OS X)
@@ -102,7 +102,7 @@ See @|timediscuss| for
 }
 
 @defmethod[(set-clipboard-client [new-owner (is-a?/c clipboard-client%)]
-                                 [time (and/c exact? integer?)])
+                                 [time exact-integer?])
            void?]{
 
 Changes the clipboard-owning client: sets the client to
@@ -118,7 +118,7 @@ See @|timediscuss| for a discussion of the @scheme[time] argument. If
 }
 
 @defmethod[(set-clipboard-string [new-text string]
-                                 [time (and/c exact? integer?)])
+                                 [time exact-integer?])
            void?]{
 
 Changes the current clipboard contents to @scheme[new-text],

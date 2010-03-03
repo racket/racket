@@ -141,7 +141,7 @@ families.
 }
 
 @defmethod[(get-font-id)
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Gets the font's ID, for use with a
 @scheme[font-name-directory<%>]. The ID is determined by the font's

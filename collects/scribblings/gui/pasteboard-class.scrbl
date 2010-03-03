@@ -500,7 +500,7 @@ Deletes @scheme[snip] when provided, or deletes the currently selected
 
 
 @defmethod[#:mode override 
-           (do-copy [time (and/c exact? integer?)]
+           (do-copy [time exact-integer?]
                     [extend? any/c])
            void?]{
 
@@ -525,7 +525,7 @@ Copies the current selection, extending the current clipboard contexts
 
 
 @defmethod[#:mode override
-           (do-paste [time (and/c exact? integer?)])
+           (do-paste [time exact-integer?])
            void?]{
 @methspec{
 
@@ -547,7 +547,7 @@ Pastes.
 
 
 @defmethod[#:mode override
-           (do-paste-x-selection [time (and/c exact? integer?)])
+           (do-paste-x-selection [time exact-integer?])
            void?]{
 @methspec{
 

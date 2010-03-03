@@ -51,7 +51,7 @@ A snip class name should usually have the form @scheme["((lib ...)
 }
 
 @defmethod[(get-version)
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Returns the version of this snip class. When attempting to load a file
  containing a snip with the same class name but a different version,
@@ -98,7 +98,7 @@ Returns @scheme[#t].
 
 
 @defmethod[(reading-version [stream (is-a?/c editor-stream-in%)])
-           (and/c exact? integer?)]{
+           exact-integer?]{
 
 Returns the version number specified for this snip class for snips
  currently being read from the given stream.
@@ -114,7 +114,7 @@ Sets the class's name. See also @method[snip-class% get-classname].
 }
 
 
-@defmethod[(set-version [v (and/c exact? integer?)])
+@defmethod[(set-version [v exact-integer?])
            void?]{
 
 Sets the version of this class. See @method[snip-class% get-version].

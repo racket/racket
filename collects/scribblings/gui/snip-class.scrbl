@@ -151,7 +151,7 @@ Creates and returns a copy of this snip. The @method[snip% copy]
                                             'insert-text-box 'insert-pasteboard-box 
                                             'insert-image)]
                               [recursive? any/c #t]
-                              [time (and/c exact? integer?) 0])
+                              [time exact-integer? 0])
            void?]{
 
 See @xmethod[editor<%> do-edit-operation].

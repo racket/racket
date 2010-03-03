@@ -351,7 +351,7 @@ When @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 
 @defmethod[#:mode extend
            (copy [extend? any/c #f]
-                 [time (and/c exact? integer?) 0]
+                 [time exact-integer? 0]
                  [start (or/c exact-nonnegative-integer? 'start) 'start]
                  [end (or/c exact-nonnegative-integer? 'end) 'end])
            void?]{
@@ -382,7 +382,7 @@ In addition to the default @xmethod[editor<%> copy-self-to] work,
 
 @defmethod[#:mode override
            (cut [extend? any/c #f]
-                [time (and/c exact? integer?) 0]
+                [time exact-integer? 0]
                 [start (or/c exact-nonnegative-integer? 'start) 'start]
                 [end (or/c exact-nonnegative-integer? 'end) 'end])
            void?]{
@@ -425,7 +425,7 @@ Deletes the specified range or the currently selected text (when no
 @defmethod[#:mode override
            (do-copy [start exact-nonnegative-integer?]
                     [end exact-nonnegative-integer?]
-                    [time (and/c exact? integer?)]
+                    [time exact-integer?]
                     [extend? any/c])
            void?]{
 @methspec{
@@ -449,7 +449,7 @@ Copy the data from @scheme[start] to @scheme[end], extending the current
 
 @defmethod[#:mode override
            (do-paste [start exact-nonnegative-integer?]
-                     [time (and/c exact? integer?)])
+                     [time exact-integer?])
            void?]{
 @methspec{
 
@@ -471,7 +471,7 @@ Pastes into the @techlink{position} @scheme[start].
 
 @defmethod[#:mode override
            (do-paste-x-selection [start exact-nonnegative-integer?]
-                                 [time (and/c exact? integer?)])
+                                 [time exact-integer?])
            void?]{
 @methspec{
 
@@ -1112,9 +1112,9 @@ See also @method[text% get-styles-sticky].
 
 
 @defmethod*[#:mode override
-            ([(kill [time (and/c exact? integer?) 0])
+            ([(kill [time exact-integer? 0])
               void?]
-             [(kill [time (and/c exact? integer?)]
+             [(kill [time exact-integer?]
                     [start exact-nonnegative-integer?]
                     [end exact-nonnegative-integer?])
               void?])]{
@@ -1563,7 +1563,7 @@ If the paragraph starts with invisible @techlink{item}s and @scheme[visible?] is
 
 
 @defmethod[#:mode override
-           (paste [time (and/c exact? integer?) 0]
+           (paste [time exact-integer? 0]
                   [start (or/c exact-nonnegative-integer? 'start 'end) 'start]
                   [end (or/c exact-nonnegative-integer? 'same) 'same])
            void?]{
@@ -1605,7 +1605,7 @@ If the previous operation on the editor was not a paste, calling
 
 
 @defmethod[#:mode override
-           (paste-x-selection [time (and/c exact? integer?)]
+           (paste-x-selection [time exact-integer?]
                               [start (or/c exact-nonnegative-integer? 'start 'end) 'start]
                               [end (or/c exact-nonnegative-integer? 'same) 'same])
            void?]{

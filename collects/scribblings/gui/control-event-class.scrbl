@@ -11,7 +11,7 @@ A @scheme[control-event%] object contains information about a
                                        'list-box 'list-box-dclick 'text-field 
                                        'text-field-enter 'slider 'radio-box 
                                        'menu-popdown 'menu-popdown-none 'tab-panel)]
-                [time-stamp (and/c exact? integer?) 0])]{
+                [time-stamp exact-integer? 0])]{
 
 The @scheme[event-type] argument is one of the following:
 @itemize[

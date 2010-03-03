@@ -54,7 +54,7 @@ This method is called by @scheme[write-editor-global-header].
               (is-a?/c editor-stream-out%)]
              [(put [v bytes?])
               (is-a?/c editor-stream-out%)]
-             [(put [v (and/c exact? integer?)])
+             [(put [v exact-integer?])
               (is-a?/c editor-stream-out%)]
              [(put [v real?])
               (is-a?/c editor-stream-out%)])]{
@@ -77,7 +77,7 @@ If @scheme[n] is not supplied and @scheme[v] is a byte string, then
 }
 
 
-@defmethod[(put-fixed [v (and/c exact? integer?)])
+@defmethod[(put-fixed [v exact-integer?])
            (is-a?/c editor-stream-out%)]{
 
 Puts a fixed-sized integer into the stream. This method is needed
