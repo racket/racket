@@ -3695,11 +3695,15 @@
     (values (λ (class name)
               (let* ([p (check-and-get-index 'class-field-accessor class name)]
                      [ref (vector-ref (class-ext-field-refs class) p)])
-                (λ (o) (ref ((object-unwrapper o) o)))))
+                (λ (o) (if (object? o)
+                           (ref ((object-unwrapper o) o))
+                           (raise-type-error 'class-field-accessor "object" o)))))
             (λ (class name)
               (let* ([p (check-and-get-index 'class-field-mutator class name)]
                      [set (vector-ref (class-ext-field-sets class) p)])
-                (λ (o v) (set ((object-unwrapper o) o) v)))))))
+                (λ (o v) (if (object? o)
+                             (set ((object-unwrapper o) o) v)
+                             (raise-type-error 'class-field-mutator "object" o))))))))
 
 (define-struct generic (name applicable))
 
