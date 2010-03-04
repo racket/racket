@@ -473,3 +473,8 @@ See also @scheme[get-resource].}
 @defproc[(label-string? [v any/c]) boolean?]{
   Returns @scheme[#t] if @scheme[v] is a string whose length is less than or equal to @scheme[200].                                             
 }
+
+@defproc[(key-code-symbol? [v any/c]) boolean?]{
+  Returns @scheme[#t] if the argument is a symbol that can be returned by
+  @scheme[key-event%]'s method @method[key-event% get-key-code].
+}

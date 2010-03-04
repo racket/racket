@@ -320,4 +320,5 @@
 	   current-ps-cmap-file-paths
 	   hide-cursor-until-moved
            system-position-ok-before-cancel?
-           label-string?))
+           label-string?
+           key-code-symbol?))
