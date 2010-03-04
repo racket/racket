@@ -9,14 +9,15 @@
 
 A @deftech{set} represents a set of distinct elements. For a given
 set, elements are equivalent via @scheme[equal?], @scheme[eqv?], or
-@scheme[eq?]. Two sets are @scheme[equal?] they use the same
+@scheme[eq?]. Two sets are @scheme[equal?] when they use the same
 key-comparison procedure (@scheme[equal?], @scheme[eqv?], or
 @scheme[eq?]) and have equivalent elements. A set can be used as a
 @tech{sequence} (see @secref["sequences"]).
 
-For sets that contain elements that are mutated, then operations on
-the set become unpredictable in much the same way that @tech{hash
-table} operations are unpredictable when keys are mutated.
+Operations on sets that contain elements that are mutated are
+unpredictable in much the same way that @tech{hash table} operations are
+unpredictable when keys are mutated.
+
 
 @note-lib-only[scheme/set]
 
@@ -51,7 +52,7 @@ to a later element takes precedence over the later element.}
 
 @defproc[(set-empty? [set set?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[set] has no members, @scheme[@f]
+Returns @scheme[#t] if @scheme[set] has no members, @scheme[#f]
 otherwise.}
 
 @defproc[(set-member? [set set?] [v any/c]) boolean?]{
@@ -65,8 +66,8 @@ otherwise.}
 time'' set operations actually require @math{O(log N)} time for a set
 of size @math{N}.}
 
-Produces a set that includes @scheme[v] plus all elements of of
-@scheme[set]. This operation runs constant time.}
+Produces a set that includes @scheme[v] plus all elements of
+@scheme[set]. This operation runs in constant time.}
 
 
 @defproc[(set-remove [set set?] [v any/c]) set?]{
