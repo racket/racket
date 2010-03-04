@@ -227,9 +227,11 @@
          [body
           (let loop ([stx stx]
                      [to-not-be-in main])
-            (syntax-case stx (side-condition where fresh)
+            (syntax-case stx (fresh)
               [() body]
-              [((where x e) y ...)
+              [((-where x e) y ...)
+               (or (free-identifier=? #'-where #'where)
+                   (free-identifier=? #'-where #'where/hidden))
                (let-values ([(names names/ellipses) (extract-names lang-nts 'reduction-relation #t #'x)])
                  (with-syntax ([(cpat) (generate-temporaries '(compiled-pattern))]
                                [side-conditions-rewritten (rewrite-side-conditions/check-errs
@@ -264,7 +266,9 @@
                                             mtchs)]
                                  [else (error 'unknown-where-mode "~s" where-mode)])
                                #f))))))]
-              [((side-condition s ...) y ...)
+              [((-side-condition s ...) y ...)
+               (or (free-identifier=? #'-side-condition #'side-condition)
+                   (free-identifier=? #'-side-condition #'side-condition/hidden))
                #`(and s ... #,(loop #'(y ...) to-not-be-in))]
               [((fresh x) y ...)
                (identifier? #'x)
@@ -402,7 +406,7 @@
                        (cond
                          [(null? stuffs) (values label (reverse scs/withs) (reverse fvars))]
                          [else
-                          (syntax-case (car stuffs) (where fresh variable-not-in)
+                          (syntax-case (car stuffs) (fresh variable-not-in)
                             [(fresh xs ...) 
                              (loop (cdr stuffs)
                                    label
@@ -429,13 +433,17 @@
                                                          #'y)])))
                                                   (syntax->list #'(xs ...))))
                                     fvars))]
-                            [(where x e)
+                            [(-where x e)
+                             (or (free-identifier=? #'-where #'where)
+                                 (free-identifier=? #'-where #'where/hidden))
                              (loop (cdr stuffs)
                                    label
                                    (cons #`(cons #,(to-lw/proc #'x) #,(to-lw/proc #'e))
                                          scs/withs)
                                    fvars)]
-                            [(side-condition sc)
+                            [(-side-condition sc)
+                             (or (free-identifier=? #'-side-condition #'side-condition)
+                                 (free-identifier=? #'-side-condition #'side-condition/hidden))
                              (loop (cdr stuffs)
                                    label
                                    (cons (to-lw/uq/proc #'sc) scs/withs)
@@ -769,7 +777,7 @@
               (cond
                 [(null? extras) '()]
                 [else
-                 (syntax-case (car extras) (side-condition fresh where)
+                 (syntax-case (car extras) (fresh)
                    [name 
                     (or (identifier? (car extras))
                         (string? (syntax-e (car extras))))
@@ -823,11 +831,17 @@
                                                           #'x)]))
                                  (syntax->list #'(var ...)))
                             (loop (cdr extras)))]
-                   [(side-condition exp ...)
+                   [(-side-condition exp ...)
+                    (or (free-identifier=? #'-side-condition #'side-condition)
+                        (free-identifier=? #'-side-condition #'side-condition/hidden))
                     (cons (car extras) (loop (cdr extras)))]
-                   [(where x e)
+                   [(-where x e)
+                    (or (free-identifier=? #'-where #'where)
+                        (free-identifier=? #'-where #'where/hidden))
                     (cons (car extras) (loop (cdr extras)))]
-                   [(where . x)
+                   [(-where . x)
+                    (or (free-identifier=? #'-where #'where)
+                        (free-identifier=? #'-where #'where/hidden))
                     (raise-syntax-error orig-name "malformed where clause" stx (car extras))]
                    [_
                     (raise-syntax-error orig-name "unknown extra" stx (car extras))])]))])
@@ -1037,7 +1051,9 @@
 
 ;; Intermediate structures recording clause "extras" for typesetting.
 (define-struct metafunc-extra-side-cond (expr))
+(define-struct (metafunc-extra-side-cond/hidden metafunc-extra-side-cond) ())
 (define-struct metafunc-extra-where (lhs rhs))
+(define-struct (metafunc-extra-where/hidden metafunc-extra-where) ())
 (define-struct metafunc-extra-fresh (vars))
 
 (define-syntax (in-domain? stx)
@@ -1273,7 +1289,9 @@
                                                                          (map (λ (hm)
                                                                                 (map
                                                                                  (λ (lst)
-                                                                                   (syntax-case lst (side-condition where unquote)
+                                                                                   (syntax-case lst (unquote
+                                                                                                     side-condition where
+                                                                                                     side-condition/hidden where/hidden)
                                                                                      [(where pat (unquote (f _ _)))
                                                                                       (and (or (identifier? #'pat)
                                                                                                (andmap identifier? (syntax->list #'pat)))
@@ -1289,8 +1307,14 @@
                                                                                      [(where pat exp)
                                                                                       #`(make-metafunc-extra-where
                                                                                          #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
+                                                                                     [(where/hidden pat exp)
+                                                                                      #`(make-metafunc-extra-where/hidden
+                                                                                         #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
                                                                                      [(side-condition x)
                                                                                       #`(make-metafunc-extra-side-cond
+                                                                                         #,(to-lw/uq/proc #'x))]
+                                                                                     [(side-condition/hidden x)
+                                                                                      #`(make-metafunc-extra-side-cond/hidden
                                                                                          #,(to-lw/uq/proc #'x))]))
                                                                                  (reverse (syntax->list hm))))
                                                                               (syntax->list #'(... seq-of-tl-side-cond/binds)))]
@@ -1417,14 +1441,22 @@
      (λ (stuffs)
        (for-each
         (λ (stuff)
-          (syntax-case stuff (where side-condition)
+          (syntax-case stuff (where side-condition where/hidden side-condition/hidden)
             [(side-condition tl-side-conds ...) 
              (void)]
+            [(side-condition/hidden tl-side-conds ...) 
+             (void)]
             [(where x e)
+             (void)]
+            [(where/hidden x e)
              (void)]
             [(where . args)
              (raise-syntax-error 'define-metafunction 
                                  "malformed where clause"
+                                 stuff)]
+            [(where/hidden . args)
+             (raise-syntax-error 'define-metafunction 
+                                 "malformed where/hidden clause"
                                  stuff)]
             [_
              (raise-syntax-error 'define-metafunction 
@@ -2153,7 +2185,9 @@
          (struct-out metafunc-case)
          
          (struct-out metafunc-extra-side-cond)
+         (struct-out metafunc-extra-side-cond/hidden)
          (struct-out metafunc-extra-where)
+         (struct-out metafunc-extra-where/hidden)
          (struct-out metafunc-extra-fresh)
          
          (struct-out binds))

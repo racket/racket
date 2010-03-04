@@ -792,26 +792,32 @@
                                             (* 2 sep)))))
                                   lhss rhss linebreak-list))]
          [scs (map (lambda (eqn)
-                     (if (null? (list-ref eqn 1))
+                     (let ([scs (filter (lambda (v)
+                                          (not (or (metafunc-extra-side-cond/hidden? v)
+                                                   (metafunc-extra-where/hidden? v))))
+                                        (reverse (list-ref eqn 1)))])
+                     (if (null? scs)
                          #f
-                         (let-values ([(fresh where/sc) (partition metafunc-extra-fresh? (list-ref eqn 1))])
+                         (let-values ([(fresh where/sc) (partition metafunc-extra-fresh? scs)])
                            (side-condition-pict (foldl (λ (clause picts) 
-                                                         (foldr (λ (l ps) (cons (wrapper->pict l) ps))
-                                                                picts (metafunc-extra-fresh-vars clause)))
+                                                          (foldr (λ (l ps) (cons (wrapper->pict l) ps))
+                                                                 picts (metafunc-extra-fresh-vars clause)))
                                                        '() fresh)
                                                 (map (match-lambda
-                                                       [(struct metafunc-extra-where (lhs rhs))
-                                                        (cons (wrapper->pict lhs) (wrapper->pict rhs))]
-                                                       [(struct metafunc-extra-side-cond (expr))
-                                                        (wrapper->pict expr)])
+                                                      [(struct metafunc-extra-where (lhs rhs))
+                                                       (cons (wrapper->pict lhs) (wrapper->pict rhs))]
+                                                      [(struct metafunc-extra-side-cond (expr))
+                                                       (wrapper->pict expr)])
                                                      where/sc)
                                                 (if (memq style '(up-down/vertical-side-conditions
-                                                                  left-right/vertical-side-conditions))
+                                                                  left-right/vertical-side-conditions
+                                                                  left-right*/vertical-side-conditions))
                                                     0
                                                     (if (memq style '(up-down/compact-side-conditions
-                                                                      left-right/compact-side-conditions))
+                                                                      left-right/compact-side-conditions
+                                                                      left-right*/compact-side-conditions))
                                                         max-line-w/pre-sc
-                                                        +inf.0))))))
+                                                        +inf.0)))))))
                    eqns)])
     (case style
       [(left-right left-right/vertical-side-conditions left-right/compact-side-conditions left-right/beside-side-conditions)
