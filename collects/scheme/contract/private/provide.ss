@@ -1,9 +1,7 @@
 #lang scheme/base
 
 (provide provide/contract 
-         (for-syntax make-provide/contract-transformer)
-         get-contract
-         has-contract?)
+         (for-syntax make-provide/contract-transformer))
 
 (require (for-syntax scheme/base
                      scheme/list

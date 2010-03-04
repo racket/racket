@@ -40,6 +40,10 @@ v4 todo:
 
 (define-syntax-parameter making-a-method #f)
 
+(define-struct contracted-function (proc ctc)
+  #:property prop:procedure 0
+  #:property prop:contracted 1)
+
 (define-syntax (unconstrained-domain-> stx)
   (syntax-case stx ()
     [(_ rngs ...)
@@ -49,26 +53,30 @@ v4 todo:
                    [(res-x ...) (generate-temporaries #'(rngs ...))])
        #'(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
            (let ([proj-x (contract-projection rngs-x)] ...)
-             (make-contract
-              #:name
-              (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...)
-              #:projection
-              (λ (blame)
-                (let ([p-app-x (proj-x blame)] ...)
-                  (λ (val)
-                    (if (procedure? val)
-                        (make-keyword-procedure
-                         (λ (kwds kwd-vals . args)
-                           (let-values ([(res-x ...) (keyword-apply val kwds kwd-vals args)])
-                             (values (p-app-x res-x) ...)))
-                         (λ args
-                           (let-values ([(res-x ...) (apply val args)])
-                             (values (p-app-x res-x) ...))))
-                        (raise-blame-error blame
-                                           val
-                                           "expected a procedure")))))
-              #:first-order
-              procedure?))))]))
+             (define ctc
+               (make-contract
+                #:name
+                (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...)
+                #:projection
+                (λ (blame)
+                  (let ([p-app-x (proj-x blame)] ...)
+                    (λ (val)
+                      (if (procedure? val)
+                          (make-contracted-function
+                           (make-keyword-procedure
+                            (λ (kwds kwd-vals . args)
+                              (let-values ([(res-x ...) (keyword-apply val kwds kwd-vals args)])
+                                (values (p-app-x res-x) ...)))
+                            (λ args
+                              (let-values ([(res-x ...) (apply val args)])
+                                (values (p-app-x res-x) ...))))
+                           ctc)
+                          (raise-blame-error blame
+                                             val
+                                             "expected a procedure")))))
+                #:first-order
+                procedure?))
+             ctc)))]))
 
 
 ;              
@@ -132,9 +140,10 @@ v4 todo:
                                              optional-kwds-proj)])
              (apply func
                     (λ (val mtd?)
-                       (if has-rest?
-                         (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords blame)
-                         (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords blame)))
+                      (if has-rest?
+                          (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords blame)
+                          (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords blame)))
+                    ctc
                     (append partial-doms partial-optional-doms 
                             partial-mandatory-kwds partial-optional-kwds
                             partial-ranges))))))
@@ -358,10 +367,10 @@ v4 todo:
                        (syntax (lambda args body))))]
                     [use-any? use-any?])
         (with-syntax ([outer-lambda
-                       #`(lambda (chk dom-names ... kwd-names ... rng-names ...)
-                           (lambda (val)
-                             (chk val #,(syntax-parameter-value #'making-a-method))
-                             inner-lambda))])
+                       #`(lambda (chk ctc dom-names ... kwd-names ... rng-names ...)
+                            (lambda (val)
+                              (chk val #,(syntax-parameter-value #'making-a-method))
+                              (make-contracted-function inner-lambda ctc)))])
           (values
            (syntax 
             (build--> '->
@@ -615,7 +624,8 @@ v4 todo:
                             #'(list rng-ctc ...))
                           #''())
                     #,(if rng-ctc #f #t)
-                    (λ (chk mandatory-dom-proj ...  
+                    (λ (chk ctc
+                            mandatory-dom-proj ...  
                             #,@(if rest-ctc
                                    #'(rest-proj)
                                    #'())
@@ -625,39 +635,42 @@ v4 todo:
                             rng-proj ...)
                       (λ (f)
                         (chk f #,(syntax-parameter-value #'making-a-method))
-                        #,(add-name-prop
-                           (syntax-local-infer-name stx)
-                           #`(λ (this-parameter ...
-                                 mandatory-dom-arg ... 
-                                 [optional-dom-arg unspecified-dom] ... 
-                                 mandatory-dom-kwd/var-seq ... 
-                                 optional-dom-kwd/var-seq ...
-                                 #,@(if rest-ctc #'rest #'()))
-                               (let*-values ([(kwds kwd-args) (values '() '())]
-                                             [(kwds kwd-args) (if (eq? unspecified-dom rev-sorted-dom-kwd-arg)
-                                                                  (values kwds kwd-args)
-                                                                  (values (cons 'rev-sorted-dom-kwd kwds)
-                                                                          (cons (rev-sorted-dom-kwd-proj rev-sorted-dom-kwd-arg)
-                                                                                kwd-args)))] 
-                                             ...
-                                             [(opt-args) #,(if rest-ctc 
-                                                               #'(rest-proj rest)
-                                                               #''())]
-                                             [(opt-args) (if (eq? unspecified-dom rev-optional-dom-arg)
-                                                             opt-args
-                                                             (cons (rev-optional-dom-proj rev-optional-dom-arg) opt-args))]
-                                             ...)
-                                 #,(let ([call 
-                                          (if (null? (syntax->list #'(rev-sorted-dom-kwd ...)))
-                                              #'(apply f this-parameter ... (mandatory-dom-proj mandatory-dom-arg) ... opt-args)
-                                              #'(keyword-apply f this-parameter ... kwds kwd-args (mandatory-dom-proj mandatory-dom-arg) ... opt-args))])
-                                     (if rng-ctc
-                                         #`(apply-projections ((rng rng-proj) ...)
-                                                              #,call)
-                                         #;
-                                         #`(let-values ([(rng ...) #,call])
-                                             (values (rng-proj rng) ...))
-                                         call))))))))))))))]))
+                        (make-contracted-function
+                         #,(maybe-a-method/name
+                            (add-name-prop
+                             (syntax-local-infer-name stx)
+                             #`(λ (this-parameter ...
+                                   mandatory-dom-arg ... 
+                                   [optional-dom-arg unspecified-dom] ... 
+                                   mandatory-dom-kwd/var-seq ... 
+                                   optional-dom-kwd/var-seq ...
+                                   #,@(if rest-ctc #'rest #'()))
+                                 (let*-values ([(kwds kwd-args) (values '() '())]
+                                               [(kwds kwd-args) (if (eq? unspecified-dom rev-sorted-dom-kwd-arg)
+                                                                    (values kwds kwd-args)
+                                                                    (values (cons 'rev-sorted-dom-kwd kwds)
+                                                                            (cons (rev-sorted-dom-kwd-proj rev-sorted-dom-kwd-arg)
+                                                                                  kwd-args)))] 
+                                               ...
+                                               [(opt-args) #,(if rest-ctc 
+                                                                 #'(rest-proj rest)
+                                                                 #''())]
+                                               [(opt-args) (if (eq? unspecified-dom rev-optional-dom-arg)
+                                                               opt-args
+                                                               (cons (rev-optional-dom-proj rev-optional-dom-arg) opt-args))]
+                                               ...)
+                                   #,(let ([call 
+                                            (if (null? (syntax->list #'(rev-sorted-dom-kwd ...)))
+                                                #'(apply f this-parameter ... (mandatory-dom-proj mandatory-dom-arg) ... opt-args)
+                                                #'(keyword-apply f this-parameter ... kwds kwd-args (mandatory-dom-proj mandatory-dom-arg) ... opt-args))])
+                                       (if rng-ctc
+                                           #`(apply-projections ((rng rng-proj) ...)
+                                                                #,call)
+                                           #;
+                                           #`(let-values ([(rng ...) #,call])
+                                               (values (rng-proj rng) ...))
+                                           call))))))
+                         ctc))))))))))]))
            
 (define-syntax (->* stx) #`(syntax-parameterize ((making-a-method #f)) #,(->*/proc/main stx)))
 
@@ -983,15 +996,17 @@ v4 todo:
                                        (loop (cdr results) (cdr result-contracts)))]))))))]
                           [else
                            (thunk)])))))])
-            (procedure-reduce-keyword-arity
-             (make-keyword-procedure kwd-proc
-                                     ((->d-name-wrapper ->d-stct)
-                                      (λ args
-                                        (apply kwd-proc '() '() args))))
-             
-             arity 
-             (->d-mandatory-keywords ->d-stct)
-             (->d-keywords ->d-stct))))))))
+            (make-contracted-function
+             (procedure-reduce-keyword-arity
+              (make-keyword-procedure kwd-proc
+                                      ((->d-name-wrapper ->d-stct)
+                                       (λ args
+                                         (apply kwd-proc '() '() args))))
+              
+              arity 
+              (->d-mandatory-keywords ->d-stct)
+              (->d-keywords ->d-stct))
+             ->d-stct)))))))
 
 (define (build-values-string desc dep-pre-args)
   (cond
@@ -1231,12 +1246,15 @@ v4 todo:
                           (list rng-proj ...)
                           '(spec ...)
                           (λ (chk
+                              ctc
                               #,@(apply append (map syntax->list (syntax->list #'((dom-proj-x ...) ...))))
                               #,@(apply append (map syntax->list (syntax->list #'((rng-proj-x ...) ...)))))
                             (λ (f)
                               (chk f #,(syntax-parameter-value #'making-a-method))
-                              (case-lambda
-                                [formals body] ...)))))))]))
+                              (make-contracted-function
+                               (case-lambda
+                                [formals body] ...)
+                               ctc)))))))]))
 
 ;; dom-ctcs : (listof (listof contract))
 ;; rst-ctcs : (listof contract)
@@ -1267,11 +1285,12 @@ v4 todo:
                        (for-each 
                         (λ (dom-length has-rest?)
                            (if has-rest?
-                             (check-procedure/more val mtd? dom-length '() '() blame)
-                             (check-procedure val mtd? dom-length 0 '() '() blame)))
+                               (check-procedure/more val mtd? dom-length '() '() blame)
+                               (check-procedure val mtd? dom-length 0 '() '() blame)))
                         specs rst-ctcs)]))])
              (apply (case->-wrapper ctc)
                     chk
+                    ctc
                     projs)))))
    #:name
    (λ (ctc)

@@ -11,9 +11,7 @@ improve method arity mismatch contract violation error messages?
 
 (provide contract
          recursive-contract
-         current-contract-region
-         has-contract?
-         get-contract)
+         current-contract-region)
 
 (require (for-syntax scheme/base)
          scheme/stxparam
@@ -42,26 +40,9 @@ improve method arity mismatch contract violation error messages?
 (define (apply-contract c v pos neg name loc)
   (let* ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
-    (remember-contract
-     (((contract-projection c)
-       (make-blame loc name (contract-name c) pos neg #t))
-      v)
-     c)))
-
-(define-struct contracted-function (f contract) #:property prop:procedure 0)
-(define (remember-contract f contract)
-  (cond
-    [(parameter? f) f]
-    [(procedure? f) (make-contracted-function f contract)]
-    [else f]))
-
-(define (has-contract? x) (contracted-function? x))
-(define (get-contract x) 
-  (unless (has-contract? x)
-    (raise-type-error 'get-contract
-                      "<has-contract>"
-                      x))
-  (contracted-function-contract x))
+    (((contract-projection c)
+      (make-blame loc name (contract-name c) pos neg #t))
+     v)))
 
 (define-syntax (recursive-contract stx)
   (syntax-case stx ()

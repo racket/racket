@@ -1328,13 +1328,14 @@ flat contracts.}
 
 Extracts the predicate from a flat contract.}
 
-@defproc[(get-contract [v has-contract?]) contract?]{
-  Returns the contract attached to @scheme[v], if any.                                                     
+@defproc[(value-contract [v has-contract?]) contract?]{
+  Returns the contract attached to @scheme[v], if recorded.
+  Otherwise it returns @scheme[#f].
 }
 
 @defproc[(has-contract? [v any/c]) boolean?]{
-  Returns @scheme[#t] if @scheme[v] is a function that
-  has a contract attached to it.
+  Returns @scheme[#t] if @scheme[v] is a value that
+  has a recorded contract attached to it.
 }
 
 @defproc[(contract-first-order-passes? [contract contract?]

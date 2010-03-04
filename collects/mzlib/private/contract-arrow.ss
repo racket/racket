@@ -22,6 +22,10 @@
          opt->*
          unconstrained-domain->)
 
+(define-struct contracted-function (proc ctc)
+  #:property prop:procedure 0
+  #:property prop:contracted 1)
+
 (define-syntax (unconstrained-domain-> stx)
   (syntax-case stx ()
     [(_ rngs ...)
@@ -31,19 +35,23 @@
                    [(res-x ...) (generate-temporaries #'(rngs ...))])
        #'(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
            (let ([proj-x (contract-projection rngs-x)] ...)
-             (make-contract
-              #:name
-              (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...)
-              #:projection
-              (λ (blame)
-                (let ([p-app-x (proj-x blame)] ...)
-                  (λ (val)
-                    (if (procedure? val)
-                        (λ args
-                          (let-values ([(res-x ...) (apply val args)])
-                            (values (p-app-x res-x) ...)))
-                        (raise-blame-error blame val "expected a procedure")))))
-              #:first-order procedure?))))]))
+             (define ctc
+               (make-contract
+                #:name
+                (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...)
+                #:projection
+                (λ (blame)
+                  (let ([p-app-x (proj-x blame)] ...)
+                    (λ (val)
+                      (if (procedure? val)
+                          (make-contracted-function
+                           (λ args
+                             (let-values ([(res-x ...) (apply val args)])
+                               (values (p-app-x res-x) ...)))
+                           ctc)
+                          (raise-blame-error blame val "expected a procedure")))))
+                #:first-order procedure?))
+             ctc)))]))
 
 (define (build--> name doms doms-rest rngs kwds quoted-kwds rng-any? func)
   (let ([doms/c (map (λ (dom) (coerce-contract name dom)) doms)]
@@ -88,6 +96,7 @@
                       (if has-rest?
                         (check-procedure/more val dom-length '() mandatory-keywords blame)
                         (check-procedure val dom-length 0 '() mandatory-keywords blame)))
+                   ctc
                    (append partial-doms partial-ranges partial-kwds))))))
 
    #:name
@@ -263,10 +272,10 @@
                     [use-any? use-any?])
         (with-syntax ([outer-lambda
                        (syntax
-                        (lambda (chk dom-names ... rng-names ... kwd-names ...)
+                        (lambda (chk ctc dom-names ... rng-names ... kwd-names ...)
                           (lambda (val)
                             (chk val)
-                            inner-lambda)))])
+                            (make-contracted-function inner-lambda ctc))))])
           (values
            (syntax (build--> '->
                              (list dom-ctcs ...)
@@ -323,10 +332,10 @@
                                                    (syntax (lambda args body))))])
                       (with-syntax ([outer-lambda 
                                      (syntax
-                                      (lambda (chk dom-x ... rst-x rng-x ... dom-kwd-ctc-id ...)
+                                      (lambda (chk ctc dom-x ... rst-x rng-x ... dom-kwd-ctc-id ...)
                                         (lambda (val)
                                           (chk val)
-                                          inner-lambda)))])
+                                          (make-contracted-function inner-lambda ctc))))])
                         (values (syntax (build--> '->*
                                                   (list doms ...)
                                                   rst
@@ -353,10 +362,10 @@
                                                  (syntax (lambda args body))))])
                     (with-syntax ([outer-lambda 
                                    (syntax
-                                    (lambda (chk dom-x ... rst-x ignored dom-kwd-ctc-id ...)
+                                    (lambda (chk ctc dom-x ... rst-x ignored dom-kwd-ctc-id ...)
                                       (lambda (val)
                                         (chk val)
-                                        inner-lambda)))])
+                                        (make-contracted-function inner-lambda ctc))))])
                       (values (syntax (build--> '->*
                                                 (list doms ...)
                                                 rst

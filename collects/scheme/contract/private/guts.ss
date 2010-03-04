@@ -39,10 +39,25 @@
          contract-first-order
          contract-first-order-passes?
          
+         prop:contracted
+         has-contract?
+         value-contract
+         
          ;; for opters
          check-flat-contract
          check-flat-named-contract
          any)
+
+(define-values (prop:contracted has-contract? value-contract)
+  (let-values ([(prop pred get)
+                (make-struct-type-property
+                 'prop:contracted
+                 (lambda (v si)
+                   (if (number? v)
+                       (let ([ref (cadddr si)])
+                         (lambda (s) (ref s v)))
+                       (lambda (s) v))))])
+    (values prop pred (λ (v) (if (pred v) ((get v) v) #f)))))
 
 (define-syntax (any stx)
   (raise-syntax-error 'any "use of 'any' outside of an arrow contract" stx))
