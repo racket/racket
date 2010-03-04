@@ -463,16 +463,14 @@
              #:fail-when (check-duplicate-identifier (syntax->list #'(var ...)))
              (format "duplicate exported name ~a" 
                      (syntax-e (check-duplicate-identifier (syntax->list #'(var ...)))))])
-  (define-splicing-syntax-class result-clause
-    #:description "a results clause"
-    [pattern (~seq #:result ctc:expr)])
-  (define-splicing-syntax-class rcs
+  (define-splicing-syntax-class results-clause
     #:attributes ([ctc 1])
-    #:description "a non-empty sequence of result clauses"
-    [pattern (~seq rc:result-clause ...+)
-             #:with (ctc ...) #'(rc.ctc ...)])
+    #:description "a results clause"
+    [pattern (~seq #:result c:expr)
+	     #:with (ctc ...) #'(c)]
+    [pattern (~seq #:results (ctc:expr ...))])
   (syntax-parse stx
-    [(_ (~optional :region-clause #:defaults ([region #'region])) blame:id rc:rcs fv:fvs . body)
+    [(_ (~optional :region-clause #:defaults ([region #'region])) blame:id rc:results-clause fv:fvs . body)
      (if (not (eq? (syntax-local-context) 'expression))
          (quasisyntax/loc stx (#%expression #,stx))
          (let*-values ([(intdef) (syntax-local-make-definition-context)]

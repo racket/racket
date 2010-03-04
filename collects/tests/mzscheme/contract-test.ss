@@ -3045,20 +3045,23 @@
       (λ (x) 5))
      #t)
    "top-level")
+
+  (test/spec-passed
+   'with-contract-exp-values-1
+   '(let-values ([() (with-contract r #:results () (values))])
+      1))
   
   (test/spec-passed
    'with-contract-exp-values-1
    '(let-values ([(x y) (with-contract r
-                          #:result number?
-                          #:result string?
+                          #:results (number? string?)
                           (values 3 "foo"))])
       1))
 
   (test/spec-failed
    'with-contract-exp-values-2
    '(let-values ([(x y) (with-contract r
-                          #:result number?
-                          #:result string?
+                          #:results (number? string?)
                           (values "bar" "foo"))])
       1)
    "(region r)")
@@ -3066,8 +3069,7 @@
   (test/spec-passed
    'with-contract-exp-values-3
    '(let-values ([(x y) (with-contract r
-                          #:result number?
-                          #:result string?
+                          #:results (number? string?)
                           (define (f) (values 3 "foo"))
                           (f))])
       1))
