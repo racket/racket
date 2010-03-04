@@ -87,13 +87,17 @@
           (cond [(equal? super #t) '()] ;; no super type exists
                 [(equal? super #f) '()] ;; super type is unknown
                 [else (cons super (get-lineage super))])))
+      (unless pred
+        (raise-syntax-error 'match (format "structure ~a does not have an associated predicate"
+                                           (syntax->datum struct-name))
+                            stx struct-name))
       (let* (;; the accessors come in reverse order
              [acc (reverse acc)]
              ;; remove the first element, if it's #f
              [acc (cond [(null? acc) acc]
                         [(not (car acc)) (cdr acc)]
                         [else acc])])
-        (make-Struct id
+        (make-Struct pred
                      (syntax-property 
                       pred 
                       'disappeared-use (list struct-name))

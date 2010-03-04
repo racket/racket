@@ -2,7 +2,7 @@
 
 (require scheme/match 
 	 scheme/mpair
-         scheme/control
+         scheme/control scheme/foreign
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match)
          (only-in srfi/13 string-contains)
@@ -623,5 +623,15 @@
 		  [`#s((bar foo 3) ,x ,y ,z ,w)
 		      (list x y z)])
 	   ))
+   (comp "Gotcha!"
+         (let ()
+           (define-cstruct _pose
+             ([x _double*]
+              [y _double*]
+              [a _double*]))
+           
+           (match (make-pose 1 2 3)
+             [(struct pose (x y a)) "Gotcha!"]
+             [else "Epic fail!"])))
 
 ))
