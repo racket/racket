@@ -661,7 +661,7 @@ If the editor is displayed in a single canvas, then the canvas's
 
 }}
 
-@defmethod[(get-filename [temp (box/c (or/c any/c #f)) #f])
+@defmethod[(get-filename [temp (box/c (or/c any/c #f)) (box #f)])
            (or/c path-string? #f)]{
 
 Returns the path name of the last file saved from or loaded into this
@@ -1933,7 +1933,7 @@ See also @method[editor<%> in-edit-sequence?].
 
 
 @defmethod[(release-snip [snip (is-a?/c snip%)])
-           void?]{
+           boolean?]{
 
 Requests that the specified snip be deleted and released from the
  editor. If this editor is not the snip's owner or if the snip cannot
