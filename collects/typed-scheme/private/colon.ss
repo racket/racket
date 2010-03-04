@@ -39,6 +39,9 @@
   (define (err str . sub)
     (apply raise-syntax-error '|type declaration| str stx sub))  
   (syntax-parse stx*
+    [_ 
+     #:when (eq? 'expression (syntax-local-context))
+     (err "must be used in a definition context")]
     [(_ i:id ty)
      (syntax-property (internal (syntax/loc stx (:-internal i ty)))
                       'disappeared-use #'i)]
