@@ -1,6 +1,9 @@
 #lang scheme/base
 
-(provide provide/contract (for-syntax make-provide/contract-transformer))
+(provide provide/contract 
+         (for-syntax make-provide/contract-transformer)
+         get-contract
+         has-contract?)
 
 (require (for-syntax scheme/base
                      scheme/list
@@ -67,7 +70,6 @@
            ;; In case of partial expansion for module-level and internal-defn contexts,
            ;; delay expansion until it's a good time to lift expressions:
            (quasisyntax/loc stx (#%expression #,stx)))))))
-
 
 (define-syntax (provide/contract provide-stx)
   (syntax-case provide-stx (struct)
