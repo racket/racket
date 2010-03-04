@@ -940,23 +940,15 @@ inserts the resulting snip into the editor.
 }
 
 
-@defmethod*[([(insert-file [filename path-string?]
-                           [format (or/c 'guess 'same 'copy 'standard
-                                         'text 'text-force-cr) 'guess]
-                           [show-errors? any/c #t])
-              boolean?]
-             [(insert-file [port input-port?]
-                           [format (or/c 'guess 'same 'copy 'standard
-                                         'text 'text-force-cr) 'guess]
-                           [show-errors? any/c #t])
-              boolean?])]{
+@defmethod[(insert-file [filename path-string?]
+                        [format (or/c 'guess 'same 'copy 'standard
+                                      'text 'text-force-cr) 'guess]
+                        [show-errors? any/c #t])
+           boolean?]{
 
 Inserts the content of a file or port into the editor (at the current
  selection @techlink{position} in @scheme[text%] editors).  The result
  is @scheme[#t]; if an error occurs, an exception is raised.
-
-If @scheme[port] is supplied, it must support position setting with
-@scheme[file-position].
 
 For information on @scheme[format], see @method[editor<%> load-file].
 The @scheme[show-errors?] argument is no longer used.
@@ -994,8 +986,6 @@ calling
                         [replace-styles? any/c #t])
            (or/c 'standard 'text 'text-force-cr)]{
 
-Use @method[editor<%> insert-file], instead.
-
 Inserts the content of a port into the editor (at the current
  selection @techlink{position} in @scheme[text%] editors) without wrapping
  the insert operations as an edit sequence. The result is the actual
@@ -1010,6 +1000,8 @@ For information on @scheme[format], see
 
 if @scheme[replace-styles?] is true, then styles in the current style
  list are replaced by style specifications in @scheme[port]'s stream.
+
+See also @method[editor<%> insert-file].
 }
 
 @defmethod[(invalidate-bitmap-cache [x real? 0.0]
