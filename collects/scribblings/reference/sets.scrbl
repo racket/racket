@@ -4,13 +4,10 @@
 
 @title[#:tag "sets"]{Sets}
 
-@(define (mutable-key-caveat)
-  @elemref['(caveat "mutable-keys")]{caveat concerning mutable keys})
-
 A @deftech{set} represents a set of distinct elements. For a given
 set, elements are equivalent via @scheme[equal?], @scheme[eqv?], or
 @scheme[eq?]. Two sets are @scheme[equal?] when they use the same
-key-comparison procedure (@scheme[equal?], @scheme[eqv?], or
+element-comparison procedure (@scheme[equal?], @scheme[eqv?], or
 @scheme[eq?]) and have equivalent elements. A set can be used as a
 @tech{sequence} (see @secref["sequences"]).
 
