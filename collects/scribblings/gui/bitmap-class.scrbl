@@ -240,7 +240,7 @@ The given @scheme[gl-config%] object is copied, so that changes to
 
 }
 
-@defmethod[(set-loaded-mask [mask (or/c (is-a?/c bitmap%) false/c)])
+@defmethod[(set-loaded-mask [mask (is-a?/c bitmap%)])
            void?]{
 
 See @method[bitmap% get-loaded-mask].
