@@ -5543,19 +5543,29 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
               e = SCHEME_CDR(e);
               if (!scheme_compiled_propagate_ok(e, info)
-                  && scheme_is_statically_proc(e, info))
-                e = scheme_make_noninline_proc(e);
-
-              if (OPT_LIMIT_FUNCTION_RESIZE) {
-                if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type))
-                  new_sz = scheme_closure_body_size((Scheme_Closure_Data *)e, 0, NULL);
+                  && scheme_is_statically_proc(e, info)) {
+                /* If we previously installed a procedure for inlining,
+                   don't replace that with a worse approximation. */
+                Scheme_Object *old_e;
+                old_e = scheme_hash_get(info->top_level_consts, rpos);
+                if (SAME_TYPE(SCHEME_TYPE(old_e), scheme_compiled_unclosed_procedure_type))
+                  e = NULL;
                 else
-                  new_sz = 0;
-              } else
-                new_sz = 0;
+                  e = scheme_make_noninline_proc(e);
+              }
 
-              if (!new_sz || !old_sz || (new_sz < 4 * old_sz))
-                scheme_hash_set(info->top_level_consts, rpos, e);
+              if (e) {
+                if (OPT_LIMIT_FUNCTION_RESIZE) {
+                  if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type))
+                    new_sz = scheme_closure_body_size((Scheme_Closure_Data *)e, 0, NULL);
+                  else
+                    new_sz = 0;
+                } else
+                  new_sz = 0;
+                
+                if (!new_sz || !old_sz || (new_sz < 4 * old_sz))
+                  scheme_hash_set(info->top_level_consts, rpos, e);
+              }
             }
           }
 
