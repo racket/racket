@@ -111,14 +111,10 @@
            on-edit-sequence
            after-edit-sequence
            on-display-size)
-
-  (define is-locked-for-read? #f)
-  (define is-locked-for-flow? #f)
-  (define is-locked-for-write? #f)
   
-  (define read-locked? #f)
-  (define flow-locked? #f)
-  (define write-locked? #f)
+  (define read-locked? #t)
+  (define flow-locked? #t)
+  (define write-locked? #t)
 
   (define hilite-on? #t)
 
@@ -333,7 +329,15 @@
   (define tabs (list->vector tab-stops))
   
   (make-only-snip)
-
+  
+  (set! read-locked? #f)
+  (set! flow-locked? #f)
+  (set! write-locked? #f)
+  ;;; from here on, it is only method definitions, 
+  ;;; so we can unlock the editor now. If code with
+  ;;; effects is added below, be sure to move the
+  ;;; unlocking.
+  
   (def/override (~)
     (set! word-break-map standard-wordbreak)
     (let loop ([snip snips])
