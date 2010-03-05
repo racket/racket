@@ -3,7 +3,7 @@
 (module m typed-scheme
   (define x ({inst make-hash Symbol Number}))
   (hash-ref! x 'key (lambda () 1))
-  (hash-ref x 'key 7)
+  (hash-ref x 'key (lambda () 7))
   (provide x))
 
 (module n scheme
