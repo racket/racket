@@ -280,13 +280,14 @@
 
     ;; expand/compile-time-evals
 
-    [(Wrap ecte (e1 e2 locals first second))
+    [(Wrap ecte (e1 e2 locals first second locals2))
      (R [#:pattern ?form]
         [#:pass1]
         [LocalActions ?form locals]
         [Expr ?form first]
         [#:pass2]
-        [Expr ?form second])]
+        [Expr ?form second]
+        [LocalActions ?form locals2])]
 
     ;; Lifts
 

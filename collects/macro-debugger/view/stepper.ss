@@ -433,16 +433,17 @@
            (and first
                 (let ([e1 (wderiv-e1 first)])
                   (make-lift-deriv e1 e2 first lifted-stx second))))]
-        [(Wrap ecte (e1 e2 locals first second))
+        [(Wrap ecte (e1 e2 '() first second locals2))
+         ;; Only adjust if no locals...
          (let ([first (adjust-deriv/lift first)])
            (and first
                 (let ([e1 (wderiv-e1 first)])
-                  (make ecte e1 e2 locals first second))))]
+                  (make ecte e1 e2 '() first second locals2))))]
         [else (adjust-deriv/top deriv)]))
 
     ;; adjust-deriv/top : Derivation -> Derivation
     (define/private (adjust-deriv/top deriv)
-      (if (or (not deriv)
+      (if (or (not (base? deriv))
               (syntax-original? (wderiv-e1 deriv))
               (p:module? deriv))
           deriv

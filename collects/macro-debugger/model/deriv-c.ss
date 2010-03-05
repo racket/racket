@@ -169,6 +169,6 @@
 
 
 ;; ECTE represents expand/compile-time-evals
-;; (make-ecte stx ?stx (listof LocalAction) Deriv Deriv)
+;; (make-ecte stx ?stx (listof LocalAction) Deriv Deriv (listof LocalAction))
 
-(define-struct (ecte deriv) (locals first second) #:transparent)
+(define-struct (ecte deriv) (locals first second locals2) #:transparent)

@@ -68,10 +68,12 @@
    (productions/I
 
     (ExpandCTE
-     ;; The 'Eval' is there for---I believe---lazy phase 1 initialization.
-     [(visit start (? Eval) (? CheckImmediateMacro/Lifts) top-non-begin start (? EE) return)
-      (make ecte $1 $8 $3 $4 $7)]
-     [(visit start Eval CheckImmediateMacro/Lifts top-begin (? NextExpandCTEs) return)
+     ;; The first 'Eval' is there for---I believe---lazy phase 1 initialization.
+     [(visit start (? Eval) (? CheckImmediateMacro/Lifts)
+             top-non-begin start (? EE) (? Eval) return)
+      (make ecte $1 $9 $3 $4 $7 $8)]
+     [(visit start Eval CheckImmediateMacro/Lifts
+             top-begin (? NextExpandCTEs) return)
       (begin
         (unless (list? $6)
           (error "NextExpandCTEs returned non-list ~s" $6))
@@ -80,7 +82,8 @@
                     (make lderiv (cdr (stx->list $5))
                           (and $7 (cdr (stx->list $7)))
                           #f
-                          $6))))])
+                          $6))
+              null))])
 
     (CheckImmediateMacro/Lifts
      [((? CheckImmediateMacro))

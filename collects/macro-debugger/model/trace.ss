@@ -115,6 +115,7 @@
          (begin
            (emit 'top-non-begin)
            (let ([e (expand-syntax e1)])
+             ;; Must set to void to avoid catching DrScheme's annotations...
              (parameterize ((current-expand-observe void))
                (eval-compile-time-part e))
              e))]))
