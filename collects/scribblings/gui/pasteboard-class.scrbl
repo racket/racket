@@ -457,16 +457,16 @@ Returns @scheme[#t].
 
 
 @defmethod*[#:mode override
-            ([(change-style [style (or/c (is-a?/c style<%>) false/c)]
-                            [snip (or/c (is-a?/c snip%) false/c) #f])
-              void?]
-             [(change-style [delta (or/c (is-a?/c style-delta%) false/c)]
-                            [snip (is-a?/c snip%) #f])
+            ([(change-style [style (or/c (is-a?/c style-delta%) (is-a?/c style<%>) #f)]
+                            [snip (or/c (is-a?/c snip%) #f) #f])
               void?])]{
 
-Changes the style of @scheme[style] to a specific style or by applying
+Changes the style of @scheme[snip] to a specific style or by applying
  a style delta.  If @scheme[snip] is @scheme[#f], then all currently
- selected snips are changed. See also @xmethod[editor<%> change-style].
+ selected snips are changed. If @scheme[style] is @scheme[#f], then 
+ the default style is used, according to @method[editor<%> default-style-name].
+ 
+ See also @xmethod[editor<%> change-style].
 
 When a @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 
