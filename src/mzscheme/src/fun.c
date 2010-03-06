@@ -976,7 +976,7 @@ typedef struct {
   mzshort base_closure_size; /* doesn't include top-level (if any) */
   mzshort *base_closure_map;
   char *flonum_map; /* NULL when has_flomap set => no flonums */
-  char has_tl, has_flomap;
+  char has_tl, has_flomap, has_nonleaf;
   int body_size, body_psize;
 } Closure_Info;
 
@@ -1048,6 +1048,7 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, i
     cl->has_tl = 0;
   cl->body_size = info->size;
   cl->body_psize = info->psize;
+  cl->has_nonleaf = info->has_nonleaf;
   
   info->size++;
 
@@ -1240,7 +1241,8 @@ Scheme_Object *scheme_sfs_closure(Scheme_Object *expr, SFS_Info *info, int self_
   return expr;
 }
 
-int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign, Optimize_Info *info)
+int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign, 
+                             Optimize_Info *info, int *is_leaf)
 {
   int i;
   Closure_Info *cl;
@@ -1254,6 +1256,9 @@ int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign, Optimi
 	return -1;
     }
   }
+
+  if (is_leaf)
+    *is_leaf = !cl->has_nonleaf;
 
   return cl->body_size + ((info && info->use_psize) ? cl->body_psize : 0);
 }

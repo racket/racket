@@ -2570,6 +2570,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     /* Check for inlining: */
     if (SCHEME_LOCAL_POS(le) >= nested_count)
       le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le) - nested_count, &offset, &single_use, 0, 0, &psize);
+    else
+      info->has_nonleaf = 1;
   }
 
   if (le) {
@@ -2603,9 +2605,13 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         || ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
             && (argc + 1 >= data->num_params))
         || (!app && !app2 && !app3)) {
-      int threshold;
+      int threshold, is_leaf;
 
-      sz = scheme_closure_body_size(data, 1, info);
+      sz = scheme_closure_body_size(data, 1, info, &is_leaf);
+      if (is_leaf) {
+        /* encourage inlining of leaves: */
+        sz >>= 2;
+      }
       threshold = info->inline_fuel * (2 + argc);
 
       if ((sz >= 0) && (single_use || (sz <= threshold))) {
@@ -2616,16 +2622,19 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
           sub_info = info;
 	le = scheme_optimize_clone(0, data->code, sub_info, offset, data->num_params);
 	if (le) {
-	  LOG_INLINE(fprintf(stderr, "Inline %d %d %s\n", sz, single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
+	  LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
+                             single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
           return apply_inlined(le, data, info, argc, app, app2, app3, context,
                                nested_count, orig_le, prev, prev_offset);
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
+          info->has_nonleaf = 1;
         }
       } else {
-        LOG_INLINE(fprintf(stderr, "No fuel %s %d*%d/%d %d\n", data->name ? scheme_write_to_string(data->name, NULL) : "???", 
-                           sz, threshold,
+        LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", data->name ? scheme_write_to_string(data->name, NULL) : "???", 
+                           sz, is_leaf, threshold,
                            info->inline_fuel, info->use_psize));
+        info->has_nonleaf = 1;
       }
     } else {
       /* Issue warning below */
@@ -2653,6 +2662,9 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     if (psize <= (info->inline_fuel * (argc + 2)))
       info->psize += psize;
   }
+
+  if (!le)
+    info->has_nonleaf = 1;
 
   if (bad_app) {
     int len;
@@ -4025,6 +4037,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
       val = scheme_optimize_info_lookup(info, pos, NULL, NULL, 
                                         (context & OPT_CONTEXT_NO_SINGLE) ? 0 : 1, 
                                         context, NULL);
+      
       if (val) {
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;

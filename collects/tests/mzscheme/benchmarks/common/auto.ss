@@ -37,6 +37,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define (clean-up-o1 bm)
     (delete-file (format "~a.o1" bm)))
 
+  (define (mk-mzscheme bm) (void))
+  #;
   (define (mk-mzscheme bm)
     (unless (directory-exists? "compiled")
       (make-directory "compiled"))
@@ -47,7 +49,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
                       (build-path "compiled" (path-add-suffix name #".zo"))))))
 
   (define (clean-up-zo bm)
-    (delete-directory/files "compiled"))
+    (when (directory-exists? "compiled")
+      (delete-directory/files "compiled")))
 
   (define (clean-up-nothing bm)
     (void))

@@ -3732,6 +3732,8 @@ void scheme_optimize_info_done(Optimize_Info *info)
   info->next->size += info->size;
   info->next->psize += info->psize;
   info->next->vclock = info->vclock;
+  if (info->has_nonleaf)
+    info->next->has_nonleaf = 1;
 }
 
 /*========================================================================*/

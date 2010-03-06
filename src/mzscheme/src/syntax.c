@@ -2832,7 +2832,7 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_unclosed_procedure_type)) {
     int sz;
-    sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 1, info);
+    sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 1, info, NULL);
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
   }
@@ -3004,7 +3004,7 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
 static int expr_size(Scheme_Object *o, Optimize_Info *info)
 {
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_compiled_unclosed_procedure_type))
-    return scheme_closure_body_size((Scheme_Closure_Data *)o, 0, NULL) + 1;
+    return scheme_closure_body_size((Scheme_Closure_Data *)o, 0, NULL, NULL) + 1;
   else
     return 1;
 }
@@ -3035,7 +3035,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   Scheme_Compiled_Let_Value *clv, *pre_body, *retry_start, *prev_body;
   Scheme_Object *body, *value, *ready_pairs = NULL, *rp_last = NULL, *ready_pairs_start;
   Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL;
-  int i, j, pos, is_rec, not_simply_let_star = 0;
+  int i, j, pos, is_rec, not_simply_let_star = 0, undiscourage;
   int size_before_opt, did_set_value;
   int remove_last_one = 0, inline_fuel;
 
@@ -3187,18 +3187,24 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       body_info->transitive_use_pos = pos + 1;
     }
 
-    if (OPT_DISCOURAGE_EARLY_INLINE) {
-      inline_fuel = info->inline_fuel;
+    if (is_rec && OPT_DISCOURAGE_EARLY_INLINE && !rhs_info->letrec_not_twice
+        && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(pre_body->value))) {
+      inline_fuel = rhs_info->inline_fuel;
       if (inline_fuel > 2)
-        info->inline_fuel = 2;
-    } else
+        rhs_info->inline_fuel = 2;
+      rhs_info->letrec_not_twice++;
+      undiscourage = 1;
+    } else {
       inline_fuel = 0;
+      undiscourage = 0;
+    }
 
     value = scheme_optimize_expr(pre_body->value, rhs_info, 0);
     pre_body->value = value;
 
-    if (OPT_DISCOURAGE_EARLY_INLINE) {
-      info->inline_fuel = inline_fuel;
+    if (undiscourage) {
+      rhs_info->inline_fuel = inline_fuel;
+      --rhs_info->letrec_not_twice;
     }
 
     body_info->transitive_use_pos = 0;
@@ -3264,34 +3270,65 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
     if ((pre_body->count == 1)
 	&& !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
+      int indirect = 0, indirect_binding = 0;
+      
+      while (indirect < 10) {
+        if (SAME_TYPE(SCHEME_TYPE(value), scheme_sequence_type)) {
+          Scheme_Sequence *seq = (Scheme_Sequence *)value;
+          value = seq->array[seq->count - 1];
+          indirect++;
+        } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_let_void_type)) {
+          Scheme_Let_Header *head2 = (Scheme_Let_Header *)value;
+          int i;
+          
+          if (head2->num_clauses < 10) {
+            value = head2->body;
+            for (i = head2->num_clauses; i--; ) {
+              value = ((Scheme_Compiled_Let_Value *)value)->body;
+            }
+          }
+          indirect++;
+          if (head2->count)
+            indirect_binding = 1;
+        } else
+          break;
+      }
 
-      if (SAME_TYPE(SCHEME_TYPE(value), scheme_local_type)) {
-	/* Don't optimize reference to a local binding
-	   that's not available yet, or that's mutable. */
-	int vpos;
-	vpos = SCHEME_LOCAL_POS(value);
-	if ((vpos < head->count) && (vpos >= pos))
-	  value = NULL;
-	else {
-	  /* Convert value back to a pre-optimized local coordinates.
-	     This must be done with respect to body_info, not
-	     rhs_info, because we attach the value to body_info: */
-	  value = scheme_optimize_reverse(body_info, vpos, 1);
+      if (indirect_binding) {
+        /* only allow constants */
+        if (SCHEME_TYPE(value) < _scheme_compiled_values_types_)
+          value = NULL;
+      }
+
+      if (value && SAME_TYPE(SCHEME_TYPE(value), scheme_local_type)) {
+        /* Don't optimize reference to a local binding
+           that's not available yet, or that's mutable. */
+        int vpos;
+        vpos = SCHEME_LOCAL_POS(value);
+        if ((vpos < head->count) && (vpos >= pos))
+          value = NULL;
+        else {
+          /* Convert value back to a pre-optimized local coordinates.
+             This must be done with respect to body_info, not
+             rhs_info, because we attach the value to body_info: */
+          value = scheme_optimize_reverse(body_info, vpos, 1);
           
           /* Double-check that the value is ready, because we might be
              nested in the RHS of a `letrec': */
           if (value)
             if (!scheme_optimize_info_is_ready(body_info, SCHEME_LOCAL_POS(value)))
               value = NULL;
-	}
+        }
       }
 
       if (value && (scheme_compiled_propagate_ok(value, body_info))) {
         int cnt;
+
         if (is_rec)
           cnt = 2;
         else
           cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
+
         scheme_optimize_propagate(body_info, pos, value, cnt == 1);
 	did_set_value = 1;
       } else if (value && !is_rec) {
@@ -3299,14 +3336,16 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
         if (scheme_expr_produces_flonum(value))
           scheme_optimize_produces_flonum(body_info, pos);
-
-        cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
-        if (cnt == 1) {
-          /* used only once; we may be able to shift the expression to the use
-             site, instead of binding to a temporary */
-          last_once_used = scheme_make_once_used(value, pos, body_info->vclock, last_once_used);
-          if (!first_once_used) first_once_used = last_once_used;
-          scheme_optimize_propagate(body_info, pos, (Scheme_Object *)last_once_used, 1);
+        
+        if (!indirect) {
+          cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
+          if (cnt == 1) {
+            /* used only once; we may be able to shift the expression to the use
+               site, instead of binding to a temporary */
+            last_once_used = scheme_make_once_used(value, pos, body_info->vclock, last_once_used);
+            if (!first_once_used) first_once_used = last_once_used;
+            scheme_optimize_propagate(body_info, pos, (Scheme_Object *)last_once_used, 1);
+          }
         }
       }
     }
@@ -3365,34 +3404,38 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	    self_value = SCHEME_CDR(cl_first);
 
             /* Drop old size, and remove old inline fuel: */
-            sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL);
+            sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL, NULL);
             body_info->size -= (sz + 1);
             
             /* Setting letrec_not_twice prevents inlinining
                of letrec bindings in this RHS. There's a small
                chance that we miss some optimizations, but we
                avoid the possibility of N^2 behavior. */
-            body_info->letrec_not_twice = 1;
+            if (!OPT_DISCOURAGE_EARLY_INLINE)
+              body_info->letrec_not_twice++;
             use_psize = body_info->use_psize;
             body_info->use_psize = info->use_psize;
-            
+
             value = scheme_optimize_expr(self_value, body_info, 0);
 
-            body_info->letrec_not_twice = 0;
+            if (!OPT_DISCOURAGE_EARLY_INLINE)
+              --body_info->letrec_not_twice;
             body_info->use_psize = use_psize;
             
             clv->value = value;
 
             if (!(clv->flags[0] & SCHEME_WAS_SET_BANGED)) {
-              /* Register re-optimized as the value for the binding, but
-                 maybe only if it didn't grow too much: */
-              int new_sz;
-              if (OPT_LIMIT_FUNCTION_RESIZE) {
-                new_sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL);
-              } else
-                new_sz = 0;
-              if (new_sz < 4 * sz)
-                scheme_optimize_propagate(body_info, clv->position, value, 0);
+              if (scheme_compiled_propagate_ok(value, body_info)) {
+                /* Register re-optimized as the value for the binding, but
+                   maybe only if it didn't grow too much: */
+                int new_sz;
+                if (OPT_LIMIT_FUNCTION_RESIZE) {
+                  new_sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL, NULL);
+                } else
+                  new_sz = 0;
+                if (new_sz < 4 * sz)
+                  scheme_optimize_propagate(body_info, clv->position, value, 0);
+              }
             }
 
             body_info->transitive_use_pos = 0;
@@ -3737,13 +3780,17 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       num_rec_procs = 0;
   } else {
     /* Sequence of single-value, non-assigned lets? */
+    int some_used = 0;
     clv = (Scheme_Compiled_Let_Value *)head->body;
     for (i = head->num_clauses; i--; clv = (Scheme_Compiled_Let_Value *)clv->body) {
       if (clv->count != 1)
 	break;
       if (clv->flags[0] & SCHEME_WAS_SET_BANGED)
 	break;
+      if (clv->flags[0] & SCHEME_WAS_USED)
+        some_used = 1;
     }
+
     if (i < 0) {
       /* Yes - build chain of Scheme_Let_Ones and we're done: */
       int skip_count = 0, frame_size, lifts_frame_size = 0;

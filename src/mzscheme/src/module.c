@@ -5319,7 +5319,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
   Scheme_Hash_Table *consts = NULL, *ready_table = NULL, *re_consts = NULL;
-  int cont, next_pos_ready = -1, inline_fuel;
+  int cont, next_pos_ready = -1, inline_fuel, is_proc_def;
 
   old_context = info->context;
   info->context = (Scheme_Object *)m;
@@ -5371,15 +5371,29 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   for (i_m = 0; i_m < cnt; i_m++) {
     /* Optimize this expression: */
-    if (OPT_DISCOURAGE_EARLY_INLINE) {
+    e = SCHEME_VEC_ELS(m->body)[i_m];
+
+    is_proc_def = 0;
+    if (OPT_DISCOURAGE_EARLY_INLINE && info->enforce_const) {
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
+	  && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+        Scheme_Object *e2;
+        e2 = (Scheme_Object *)SCHEME_IPTR_VAL(e);
+        e2 = SCHEME_CDR(e2);
+        if (SAME_TYPE(SCHEME_TYPE(e2), scheme_compiled_unclosed_procedure_type))
+          is_proc_def = 1;
+      }
+    }
+
+    if (is_proc_def && OPT_DISCOURAGE_EARLY_INLINE) {
       info->use_psize = 1;
       inline_fuel = info->inline_fuel;
       if (inline_fuel > 2)
         info->inline_fuel = 2;
     } else
       inline_fuel = 0;
-    e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[i_m], info, 0);
-    if (OPT_DISCOURAGE_EARLY_INLINE) {
+    e = scheme_optimize_expr(e, info, 0);
+    if (is_proc_def && OPT_DISCOURAGE_EARLY_INLINE) {
       info->use_psize = 0;
       info->inline_fuel = inline_fuel;
     }
@@ -5523,7 +5537,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               sub_e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
               sub_e = SCHEME_CDR(sub_e);
               if (SAME_TYPE(SCHEME_TYPE(sub_e), scheme_compiled_unclosed_procedure_type))
-                old_sz = scheme_closure_body_size((Scheme_Closure_Data *)sub_e, 0, NULL);
+                old_sz = scheme_closure_body_size((Scheme_Closure_Data *)sub_e, 0, NULL, NULL);
               else
                 old_sz = 0;
             } else
@@ -5557,7 +5571,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               if (e) {
                 if (OPT_LIMIT_FUNCTION_RESIZE) {
                   if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type))
-                    new_sz = scheme_closure_body_size((Scheme_Closure_Data *)e, 0, NULL);
+                    new_sz = scheme_closure_body_size((Scheme_Closure_Data *)e, 0, NULL, NULL);
                   else
                     new_sz = 0;
                 } else

@@ -54,7 +54,7 @@ which are then called when the contract's fields are explored
            ;; call to procedure-closure-contents-eq? work 
            ;; properly
            (λ (e)
-             (let loop ([n 20])
+             (let loop ([n 30])
                (if (zero? n)
                    e
                    #`(if (zero? (random 1))

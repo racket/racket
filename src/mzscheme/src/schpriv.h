@@ -2028,7 +2028,7 @@ typedef struct Optimize_Info
   /* Propagated up and down the chain: */
   int size, vclock, psize;
   short inline_fuel;
-  char letrec_not_twice, enforce_const, use_psize;
+  char letrec_not_twice, enforce_const, use_psize, has_nonleaf;
   Scheme_Hash_Table *top_level_consts;
 
   /* Set by expression optimization: */
@@ -2379,7 +2379,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_de
 Scheme_Object *scheme_clone_closure_compilation(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_shift_closure_compilation(Scheme_Object *obj, int delta, int after_depth);
 
-int scheme_closure_body_size(Scheme_Closure_Data *closure_data, int check_assign, Optimize_Info *info);
+int scheme_closure_body_size(Scheme_Closure_Data *closure_data, int check_assign, Optimize_Info *info, int *is_leaf);
 int scheme_closure_argument_flags(Scheme_Closure_Data *closure_data, int i);
 int scheme_closure_has_top_level(Scheme_Closure_Data *data);
 
