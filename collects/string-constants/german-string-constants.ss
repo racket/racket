@@ -1083,7 +1083,7 @@
  (module-browser-laying-out-graph-label "Graph-Layout")
  (module-browser-open-file-format "~a öffnen")
  (module-browser "Modul-Browser") ;; frame title
- (module-browser... "Modul-Browser...") ;; menu item title
+ (module-browser... "&Modul-Browser...") ;; menu item title
  (module-browser-error-expanding "Fehler beim Expandieren des Programms:\n\n~a")
  (module-browser-show-lib-paths "Dateien anzeigen, die über (lib ..)-Pfade eingebunden wurden")
  (module-browser-progress "Modul-Browser: ~a") ;; prefix in the status line
