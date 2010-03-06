@@ -1184,8 +1184,7 @@ This method does not affect internal locks, as discussed in
 
 }
 
-@defmethod[(locked-for-flow?)
-           boolean?]{
+@defmethod[#:mode public-final (locked-for-flow?) boolean?]{
 
 Reports whether the editor is internally locked for flowing. See
  @|lockdiscuss| for more information.

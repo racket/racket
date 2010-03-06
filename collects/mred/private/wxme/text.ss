@@ -656,7 +656,7 @@
 
   (def/override (locked-for-read?)
     read-locked?)
-  (def/override (locked-for-flow?)
+  (def/override-final (locked-for-flow?)
     flow-locked?)
   (def/override (locked-for-write?)
     write-locked?)
