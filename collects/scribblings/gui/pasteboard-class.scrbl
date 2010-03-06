@@ -611,14 +611,12 @@ The @scheme[x] and @scheme[y] arguments are in editor coordinates. If
 }
 
 
-@defmethod[(get-center [x (box/c real?)]
-                       [y (box/c real?)])
-           void?]{
+@defmethod[(get-center) (values real? real?)]{
 
 Returns the center of the pasteboard in pasteboard coordinates.
 
-The @scheme[x] box is filled with the x-coordinate of the center and
-@scheme[y] is filled with the y-coordinate of the center.
+The first result is the x-coordinate of the center and
+the second result is the y-coordinate of the center.
 
 }
 

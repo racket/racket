@@ -749,7 +749,7 @@
         (not s-admin)
         (send s-admin refresh-delayed?)))
 
-  (def/override (in-edit-sequence?)
+  (def/override-final (in-edit-sequence?)
     (delay-refresh . > . 0))
 
   (def/override (locations-computed?)
