@@ -167,6 +167,7 @@ static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
@@ -499,6 +500,11 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_make_prim_w_arity(procedure_rename,
 						      "procedure-rename",
 						      2, 2),
+			     env);
+  scheme_add_global_constant("procedure->method",
+			     scheme_make_prim_w_arity(procedure_to_method,
+						      "procedure->method",
+						      1, 1),
 			     env);
   scheme_add_global_constant("procedure-closure-contents-eq?",
 			     scheme_make_folding_prim(procedure_equal_closure_p,
@@ -3837,6 +3843,16 @@ static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
   aty = get_or_check_arity(argv[0], -1, NULL);  
 
   return make_reduced_proc(argv[0], aty, argv[1]);
+}
+
+static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[0];
+
+  if (!SCHEME_PROCP(p))
+    scheme_wrong_type("procedure->method", "procedure", 0, argc, argv);
+
+  return p;
 }
 
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
