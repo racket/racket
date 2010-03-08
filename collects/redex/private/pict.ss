@@ -828,11 +828,11 @@
                              (if linebreak?
                                  (list lhs (blank) (blank))
                                  (if (and sc (eq? style 'left-right/beside-side-conditions))
-                                     (list lhs =-pict (hbl-append 10 rhs sc))
+                                     (list lhs =-pict (htl-append 10 rhs sc))
                                      (list lhs =-pict rhs)))
                              (if linebreak?
                                  (let ([p rhs])
-                                   (list (hbl-append sep
+                                   (list (htl-append sep
                                                      =-pict
                                                      (inset p 0 0 (- 5 (pict-width p)) 0))
                                          (blank)
@@ -863,7 +863,7 @@
                (apply append
                       (map (lambda (lhs sc rhs)
                              (cons
-                              (vl-append (hbl-append lhs =-pict) rhs)
+                              (vl-append (htl-append lhs =-pict) rhs)
                               (if (not sc)
                                   null
                                   (list (inset sc 0 0 (- 5 (pict-width sc)) 0)))))
