@@ -1122,6 +1122,13 @@
                                     (string? (style-name column-style)))
                                `([class ,(style-name column-style)])
                                null)
+                         ,@(if (and column-style
+                                    (pair? (style-properties column-style)))
+                               (style->attribs (make-style
+                                                #f
+                                                (filter attributes? 
+                                                        (style-properties column-style))))
+                               null)
                          ,@(if (and (pair? (cdr ds))
                                     (eq? 'cont (cadr ds)))
                                `([colspan

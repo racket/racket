@@ -853,13 +853,16 @@ The following symbols are recognized as cell-@tech{style properties}:
 
  @item{@scheme['vcenter] --- Center the cell content vertically.}
 
-]}
+]
 
+In addition, for HTML output, @scheme[attributes] structures as
+@tech{style properties} can add arbitrary attributes to a cell's
+@tt{<td>} tag.}
 
 @defstruct[table-columns ([styles (listof style?)])]{
 
 Like @scheme[table-cells], but the @scheme[styles] list is duplicated
-for each row in the table. This @tech{style property} is only when a
+for each row in the table. This @tech{style property} is used only when a
 @scheme[table-cells] is not present in a style's list of properties.}
 
 @defproc[(block? [v any/c]) boolean?]{
