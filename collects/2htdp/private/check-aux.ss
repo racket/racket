@@ -1,3 +1,4 @@
+
 #lang scheme
 
 (require htdp/error)
@@ -84,6 +85,7 @@
     [(string? x) true]
     [(symbol? x) true]
     [(number? x) true]
+    [(boolean? x) true]
     [(char? x) true]
     [(pair? x) (and (list? x) (andmap sexp? x))]
     [else false]))
