@@ -3717,6 +3717,7 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
 {
   Scheme_Struct_Type *stype;
   Scheme_Object *a, *proc;
+  int meth_wrap = 0;
 
   stype = ((Scheme_Structure *)obj)->stype;
   a = stype->proc_attr;
@@ -3728,6 +3729,13 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
     *is_method = 1;
     proc = a;
   }
+  
+  /* If we're wrapping the result of procedure->method, we need to
+   * account for that.
+   */
+  if (scheme_reduced_procedure_struct
+      && scheme_is_struct_instance(scheme_reduced_procedure_struct, obj))
+    meth_wrap = ((Scheme_Structure *)obj)->slots[3] == scheme_true;
 
   if (num_rands >= 0) {
     /* num_rands is non-negative => do arity check */
@@ -3735,7 +3743,7 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
 	|| !scheme_check_proc_arity(NULL, num_rands, -1, 0, &obj)) {
       scheme_wrong_count_m((char *)obj,
 			   -1 /* means "name argument is really a proc struct" */, 0,
-			   num_rands, rands, 0 /* methodness internally handled */);
+			   num_rands, rands, meth_wrap);
       return NULL;
     }
   }

@@ -3657,30 +3657,33 @@ void scheme_init_reduced_proc_struct(Scheme_Env *env)
     scheme_reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
                                                                    NULL,
                                                                    (Scheme_Object *)insp,
-                                                                   3, 0,
+                                                                   4, 0,
                                                                    scheme_false,
                                                                    scheme_make_integer(0),
                                                                    NULL);
   }
 }
 
-static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty, Scheme_Object *name)
+static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty, Scheme_Object *name, Scheme_Object *is_meth)
 {
-  Scheme_Object *a[3];
+  Scheme_Object *a[4];
   
   if (SCHEME_STRUCTP(proc)
       && scheme_is_struct_instance(scheme_reduced_procedure_struct, proc)) {
     /* Don't need the intermediate layer */
     if (!name)
       name = ((Scheme_Structure *)proc)->slots[2];
+    if (!is_meth)
+      is_meth = ((Scheme_Structure *)proc)->slots[3];
     proc = ((Scheme_Structure *)proc)->slots[0];
   }
 
   a[0] = proc;
   a[1] = aty;
   a[2] = (name ? name : scheme_false);
+  a[3] = (is_meth ? is_meth : scheme_false);
 
-  return scheme_make_struct_instance(scheme_reduced_procedure_struct, 3, a);
+  return scheme_make_struct_instance(scheme_reduced_procedure_struct, 4, a);
 }
 
 static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
@@ -3825,7 +3828,7 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
   }
 
   /* Construct a procedure that has the given arity. */
-  return make_reduced_proc(argv[0], aty, NULL);
+  return make_reduced_proc(argv[0], aty, NULL, NULL);
 }
 
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
@@ -3842,17 +3845,19 @@ static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
 
   aty = get_or_check_arity(argv[0], -1, NULL);  
 
-  return make_reduced_proc(argv[0], aty, argv[1]);
+  return make_reduced_proc(argv[0], aty, argv[1], NULL);
 }
 
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *p = argv[0];
+  Scheme_Object *p, *aty;
 
-  if (!SCHEME_PROCP(p))
+  if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_type("procedure->method", "procedure", 0, argc, argv);
 
-  return p;
+  aty = get_or_check_arity(argv[0], -1, NULL);  
+
+  return make_reduced_proc(argv[0], aty, NULL, scheme_true);
 }
 
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
