@@ -3850,7 +3850,7 @@ static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *p, *aty;
+  Scheme_Object *aty;
 
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_type("procedure->method", "procedure", 0, argc, argv);

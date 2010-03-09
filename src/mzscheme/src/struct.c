@@ -3730,17 +3730,17 @@ Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands
     proc = a;
   }
   
-  /* If we're wrapping the result of procedure->method, we need to
-   * account for that.
-   */
-  if (scheme_reduced_procedure_struct
-      && scheme_is_struct_instance(scheme_reduced_procedure_struct, obj))
-    meth_wrap = ((Scheme_Structure *)obj)->slots[3] == scheme_true;
-
   if (num_rands >= 0) {
     /* num_rands is non-negative => do arity check */
     if (!SCHEME_PROCP(proc)
 	|| !scheme_check_proc_arity(NULL, num_rands, -1, 0, &obj)) {
+      /* If we're wrapping the result of procedure->method, we need to
+       * account for that.
+       */
+      if (scheme_reduced_procedure_struct
+	  && scheme_is_struct_instance(scheme_reduced_procedure_struct, obj))
+	meth_wrap = SCHEME_TRUEP(((Scheme_Structure *)obj)->slots[3]);
+
       scheme_wrong_count_m((char *)obj,
 			   -1 /* means "name argument is really a proc struct" */, 0,
 			   num_rands, rands, meth_wrap);
