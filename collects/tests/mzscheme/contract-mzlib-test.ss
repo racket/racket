@@ -2716,7 +2716,7 @@ of the contract library does not change over time.
   ;;
   ;; test error message has right format
   ;;
-  #|
+
   (test/spec-passed/result
    'wrong-method-arity-error-message
    '(with-handlers ([exn:fail? exn-message])
@@ -2728,7 +2728,7 @@ of the contract library does not change over time.
             1
             2))
    "procedure m method: expects 1 argument, given 2: 1 2")
-        |#
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; tests object utilities to be sure wrappers work right

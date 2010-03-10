@@ -1870,6 +1870,14 @@
                        
                        make-methods        ; takes field and method accessors
                        make-struct:prim)   ; see "primitive classes", below
+  (define (make-method proc meth-name)
+    (procedure-rename
+     (procedure->method proc)
+     (string->symbol
+      (format "~a method~a~a"
+              meth-name
+              (if name " in " "")
+              (or name "")))))
   
   ;; -- Check superclass --
   (unless (class? super)
@@ -2336,7 +2344,7 @@
                                                    (if (< n 0)
                                                        (void)
                                                        (let* ([p (vector-ref proj-vec n)]
-                                                              [new-m (p m)])
+                                                              [new-m (make-method (p m) id)])
                                                          (vector-set! new-vec n new-m)
                                                          (loop (sub1 n) new-m)))
                                                  (vector-set! int-methods index new-vec))))
@@ -2345,7 +2353,7 @@
                                           (vector-set! super-methods index method)
                                           (vector-set! v (sub1 (vector-length v))
                                                        ;; Apply current inner contract projection
-                                                       ((vector-ref inner-projs index) method))
+                                                       (make-method ((vector-ref inner-projs index) method) id))
                                           (vector-set! beta-methods index v))))
                                   (when (not (vector-ref meth-flags index))
                                     (vector-set! meth-flags index (not make-struct:prim))))
@@ -2672,6 +2680,14 @@
              [obj-name (if name
                            (string->symbol (format "object:~a" name))
                            'object)])
+        (define (make-method proc meth-name)
+          (procedure-rename
+           (procedure->method proc)
+           (string->symbol
+            (format "~a method~a~a"
+                    meth-name
+                    (if name " in " "")
+                    (or name "")))))
         
         (vector-set! supers pos c)
         
@@ -2701,7 +2717,7 @@
             (when c
               (let ([i (hash-ref method-ht m)]
                     [p ((contract-projection c) blame)])
-                (vector-set! methods i (p (vector-ref methods i)))))))
+                (vector-set! methods i (make-method (p (vector-ref methods i)) m))))))
         
         ;; Handle super contracts
         (unless (null? (class/c-supers ctc))
@@ -2713,7 +2729,7 @@
             (when c
               (let ([i (hash-ref method-ht m)]
                     [p ((contract-projection c) blame)])
-                (vector-set! super-methods i (p (vector-ref super-methods i)))))))
+                (vector-set! super-methods i (make-method (p (vector-ref super-methods i)) m))))))
         
         ;; Add inner projections
         (unless (null? (class/c-inners ctc))
@@ -2828,7 +2844,7 @@
                   (vector-set! proj-vec old-idx
                                (compose p (vector-ref proj-vec old-idx)))
                   (vector-set! int-vec new-idx
-                               (p (vector-ref int-vec new-idx)))))))
+                               (make-method (p (vector-ref int-vec new-idx)) m))))))
           
           ;; Now (that things have been extended appropriately) we handle
           ;; inherits.
@@ -2841,7 +2857,7 @@
                        [new-idx (vector-ref dynamic-idxs i)]
                        [int-vec (vector-ref int-methods i)])
                   (vector-set! int-vec new-idx
-                               (p (vector-ref int-vec new-idx))))))))
+                               (make-method (p (vector-ref int-vec new-idx)) m)))))))
         
         c))))
 
@@ -4338,7 +4354,15 @@
          [obj-name (if name
                        (string->symbol (format "wrapper-object:~a" name))
                        'object)])
-    
+    (define (make-method proc meth-name)
+      (procedure-rename
+       (procedure->method proc)
+       (string->symbol
+        (format "~a method~a~a"
+                meth-name
+                (if name " in " "")
+                (or name "")))))
+
     (vector-set! (class-supers c) (class-pos c) c)
     
     ;; --- Make the new object struct ---
@@ -4367,7 +4391,7 @@
         (when c
           (let ([i (hash-ref method-ht m)]
                 [p ((contract-projection c) blame)])
-            (vector-set! meths i (p (vector-ref meths i)))))))
+            (vector-set! meths i (make-method (p (vector-ref meths i)) m))))))
     
     ;; Redirect internal/external field accessors/mutators to old object
     (let ([old-int-refs (class-int-field-refs cls)]
