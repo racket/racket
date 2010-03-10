@@ -1285,7 +1285,25 @@
 	 (test 1 (mk-f) 1 2)
 	 (let ([f (mk-f)])
 	   (test 1 (mk-f) 1 2)
-	   (check-arity-error (mk-f) #t))))))
+	   (check-arity-error (mk-f) #t))))
+     (let* ([f (lambda (a b) a)]
+            [meth (procedure->method f)]
+            [check-arity-error
+             (lambda (f cl?)
+               (test (if cl? '("no clause matching 0 arguments")  '("expects 1 argument") )
+                     regexp-match #rx"expects 1 argument|no clause matching 0 arguments"
+                     (exn-message (with-handlers ([values values])
+                                    ;; Use `apply' to avoid triggering
+                                    ;; compilation of f:
+                                    (apply f '(1))))))])
+       (test 2 procedure-arity meth)
+       (check-arity-error meth #f)
+       (test 1 meth 1 2)
+       (let* ([f (case-lambda [(a b) a] [(c d) c])]
+              [meth (procedure->method f)])
+	 (test 2 procedure-arity meth)
+	 (check-arity-error meth #t)
+	 (test 1 meth 1 2)))))
  '(#t #f))
 
 ;; ------------------------------------------------------------
