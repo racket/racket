@@ -26,7 +26,7 @@ Generates a @tech{nested flow} for a paper abstract.}
 
 @defform[(include-abstract module-path)]{
 
-Similar to @scheme[include-path], but incorporates the document in the
+Similar to @scheme[include-section], but incorporates the document in the
 specified module as an abstract. The document must have no title or
 sub-parts.}
 

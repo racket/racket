@@ -118,7 +118,7 @@ coerced to one.
 
 
 @deftogether[(
-@defproc[(make-styled-paragraph [style any/c][content list?]) paragraph?]
+@defproc[(make-styled-paragraph [content list?][style any/c]) paragraph?]
 @defproc[(styled-paragraph? [v any/c]) boolean?]
 @defproc[(styled-paragraph-style [p paragraph?]) style?]
 )]{
