@@ -457,7 +457,7 @@ Returns @scheme[#t].
 
 
 @defmethod*[#:mode override
-            ([(change-style [style (or/c (is-a?/c style-delta%) (is-a?/c style<%>) #f)]
+            ([(change-style [style (or/c (is-a?/c style-delta%) (is-a?/c style<%>) #f) #f]
                             [snip (or/c (is-a?/c snip%) #f) #f])
               void?])]{
 
