@@ -109,6 +109,31 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #,(syntax-property #'(require/contract nm.spec cnt* lib)
                                 'typechecker:ignore #t)))))]))
 
+(define-syntax (define-predicate stx)
+  (syntax-parse stx 
+    [(_ name:id ty:expr) 
+     #`(begin
+         #,(syntax-property (if (eq? (syntax-local-context) 'top-level)
+                                (let ([typ (parse-type #'ty)])
+                                  #`(define name 
+                                      #,(type->contract 
+                                         typ 
+                                         ;; must be a flat contract
+                                         #:flat #t
+                                         ;; this is for a `require/typed', so the value is not from the typed side
+                                         #:typed-side #f 
+                                         (lambda () (tc-error/stx #'ty "Type ~a could not be converted to a predicate." typ)))))
+                                (syntax-property #'(define name #f)
+                                                 'typechecker:flat-contract-def #'ty))
+                            'typechecker:ignore #t)
+         ;; not a require, this is just the unchecked declaration syntax
+         #,(internal #'(require/typed-internal name (Any -> Boolean : ty))))]))
+
+(define-syntax (:type stx)
+  (syntax-parse stx
+    [(_ ty:expr)
+     #`(display #,(format "~a\n" (parse-type #'ty)))]))
+
 (define-syntax (require/opaque-type stx)
   (define-syntax-class name-exists-kw
     (pattern #:name-exists))

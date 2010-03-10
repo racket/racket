@@ -16,6 +16,7 @@
 	 typed-scheme/private/base-env-indexing
 	 typed-scheme/private/extra-procs
 	 (for-syntax typed-scheme/private/base-types-extra))
-(provide (rename-out [with-handlers: with-handlers])
+(provide (rename-out [with-handlers: with-handlers]
+                     [define-type-alias define-type])
 	 assert with-type
          (for-syntax (all-from-out typed-scheme/private/base-types-extra)))
