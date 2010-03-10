@@ -9,7 +9,7 @@
 (: fact : (Number -> Number))
 (define fact (make-recursive
               (lambda: ([fact : (Number -> Number)])
-                       (lambda: ([n : Number])
-                                (if (zero? n)
+                (lambda: ([n : Number])
+                  (if (zero? n)
                       1
                       (* n (fact (- n 1))))))))

@@ -4,6 +4,7 @@
 
 (require
  "../utils/utils.ss"
+ syntax/parse
  (rep type-rep filter-rep object-rep)
  (typecheck internal-forms)
  (utils tc-utils require-contract)
@@ -18,15 +19,16 @@
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)
+      (syntax-property stx 'typechecker:flat-contract-def)
       (syntax-property stx 'typechecker:contract-def/maker)))
 
 (define (generate-contract-def stx)
-  (define prop (or (syntax-property stx 'typechecker:contract-def)
-                   (syntax-property stx 'typechecker:contract-def/maker)))
+  (define prop (define/fixup-contract? stx))
   (define maker? (syntax-property stx 'typechecker:contract-def/maker))
+  (define flat? (syntax-property stx 'typechecker:flat-contract-def))
   (define typ (parse-type prop))
-  (syntax-case stx (define-values)
-    [(_ (n) __)
+  (syntax-parse stx #:literals (define-values)
+    [(define-values (n) _)
      (let ([typ (if maker?
                     ((Struct-flds (lookup-type-name (Name-id typ))) #f . t:->* . typ)
                     typ)])
@@ -34,6 +36,7 @@
                            typ 
                            ;; this is for a `require/typed', so the value is not from the typed side
                            #:typed-side #f 
+                           #:flat flat?
                            (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
          (syntax/loc stx (define-values (n) cnt))))]
     [_ (int-err "should never happen - not a define-values: ~a" (syntax->datum stx))]))
@@ -49,7 +52,7 @@
   (= (length l) (length (remove-duplicates l))))
 
 
-(define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t])
+(define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t] #:flat [flat? #f])
   (define vars (make-parameter '()))
   (let/ec exit
     (let loop ([ty ty] [pos? #t] [from-typed? from-typed?] [structs-seen null])
@@ -59,6 +62,7 @@
         (match f
           [(Function: (list (top-arr:))) #'procedure?]
           [(Function: arrs)
+           (when flat? (exit (fail)))
            (let ()           
              (define (f a)
                (define-values (dom* opt-dom* rngs* rst)
@@ -129,6 +133,7 @@
         [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
 	[(Poly: vs (and b (Function: _)))
+         (when flat? (exit (fail)))
          (match-let ([(Poly-names: vs-nm _) ty])
            (with-syntax ([(v ...) (generate-temporaries vs-nm)])
              (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
@@ -139,13 +144,15 @@
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
                #`(flat-rec-contract n* #,(t->c b)))))]
-        [(Value: #f) #'false/c]    
+        [(Value: #f) #'false/c]
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
+         (when flat? (exit (fail)))
          (with-syntax ([(fcn-cnts ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
                        [(names ...) name])
            #'(object/c (names fcn-cnts) ...))]
         ;; init args not currently handled by class/c
         [(Class: _ _ (list (list name fcn) ...))
+         (when flat? (exit (fail)))
          (with-syntax ([(fcn-cnts ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
                        [(names ...) name])
            #'class?

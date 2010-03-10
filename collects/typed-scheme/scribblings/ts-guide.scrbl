@@ -141,7 +141,7 @@ represent these using @italic{union types}, written @scheme[(U t1 t2 ...)].
 
 @schememod[
 typed-scheme
-(define-type-alias Tree (U leaf node))
+(define-type Tree (U leaf node))
 (define-struct: leaf ([val : Number]))
 (define-struct: node ([left : Tree] [right : Tree]))
 
@@ -159,7 +159,7 @@ typed-scheme
 ]
 
 In this module, we have defined two new datatypes: @scheme[leaf] and
-@scheme[node].  We've also defined the type alias @scheme[Tree] to be
+@scheme[node].  We've also defined the type name @scheme[Tree] to be
 @scheme[(U node leaf)], which represents a binary tree of numbers.  In
 essence, we are saying that the @scheme[tree-height] function accepts
 a @scheme[Tree], which is either a @scheme[node] or a @scheme[leaf],
@@ -217,7 +217,7 @@ typed-scheme
 (define-struct: Nothing ())
 (define-struct: (a) Just ([v : a]))
 
-(define-type-alias (Maybe a) (U Nothing (Just a)))
+(define-type (Maybe a) (U Nothing (Just a)))
 
 (: find (Number (Listof Number) -> (Maybe Number)))
 (define (find v l)
@@ -241,11 +241,11 @@ one element, whose type is that of the type argument to
 this case) are written before the type name, and can be referred to in
 the types of the fields.
 
-The type alias definiton
+The type definiton
 @schemeblock[
-  (define-type-alias (Maybe a) (U Nothing (Just a)))
+  (define-type (Maybe a) (U Nothing (Just a)))
 ]
-creates a parameterized alias --- @scheme[Maybe] is a potential
+creates a parameterized type --- @scheme[Maybe] is a potential
 container for whatever type is supplied.
 
 The @scheme[find] function takes a number @scheme[v] and list, and

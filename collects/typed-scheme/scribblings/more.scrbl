@@ -152,9 +152,9 @@ variable has type @scheme[(Integer (Listof Integer) -> Integer)].
 
 @section{New Type Names}
 
-Any type can be given a name with @scheme[define-type-alias].  
+Any type can be given a name with @scheme[define-type].  
 
-@schemeblock[(define-type-alias NN (Number -> Number))]
+@schemeblock[(define-type NN (Number -> Number))]
 
 Anywhere the name @scheme[NN] is used, it is expanded to
-@scheme[(Number -> Number)].   Type aliases may not be recursive.
+@scheme[(Number -> Number)].   Type names may not be recursive.

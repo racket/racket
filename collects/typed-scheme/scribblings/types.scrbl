@@ -175,7 +175,7 @@ typed/scheme
 (define-struct: None ())
 (define-struct: (a) Some ([v : a]))
 
-(define-type-alias (Opt a) (U None (Some a)))
+(define-type (Opt a) (U None (Some a)))
 
 (: find (Number (Listof Number) -> (Opt Number)))
 (define (find v l)
@@ -199,11 +199,11 @@ one element, whose type is that of the type argument to
 this case) are written before the type name, and can be referred to in
 the types of the fields.
 
-The type alias definiton
+The type definiton
 @schemeblock[
-  (define-type-alias (Opt a) (U None (Some a)))
+  (define-type (Opt a) (U None (Some a)))
 ]
-creates a parameterized alias --- @scheme[Opt] is a potential
+creates a parameterized type --- @scheme[Opt] is a potential
 container for whatever type is supplied.
 
 The @scheme[find] function takes a number @scheme[v] and list, and

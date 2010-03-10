@@ -206,14 +206,20 @@ structure is a substructure of @scheme[parent].  When
  Like @scheme[define-struct:], but defines an procedural structure.  
  The procdure @scheme[e] is used as the value for @scheme[prop:procedure], and must have type @scheme[proc-t].}
 
-@subsection{Type Aliases}
-@defform*[[(define-type-alias name t)
-	   (define-type-alias (name v ...) t)]]{
+@subsection{Names for Types}
+@defform*[[(define-type name t)
+	   (define-type (name v ...) t)]]{
 The first form defines @scheme[name] as type, with the same meaning as
 @scheme[t].  The second form is equivalent to
-@scheme[(define-type-alias name (All (v ...) t))].  Type aliases may
-refer to other type aliases or types defined in the same module, but
-cycles among type aliases are prohibited.}
+@scheme[(define-type name (All (v ...) t))].  Type names may
+refer to other types defined in the same module, but
+cycles among them are prohibited.}
+
+@subsection{Generating Predicates Automatically}
+@defform[(define-predicate name t)]{
+Defines @scheme[name] as a predicate for the type @scheme[t].
+@scheme[name] has the type @scheme[(Any -> Boolean : t)]. 
+@scheme[t] may not contain function types.}
 
 
 @subsection{Type Annotation and Instantiation}
