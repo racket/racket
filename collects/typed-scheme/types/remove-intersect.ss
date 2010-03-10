@@ -50,6 +50,9 @@
          [(or (list (Pair: _ _) _)
               (list _ (Pair: _ _)))
           #f]
+         [(or (list (Value: '()) (Struct: n _ flds _ _ _ _ _))
+              (list (Struct: n _ flds _ _ _ _ _) (Value: '())))
+          #f]
          [(list (Struct: n _ flds _ _ _ _ _)
                 (Struct: n _ flds* _ _ _ _ _))
           (for/and ([f flds] [f* flds*]) (overlap f f*))]
