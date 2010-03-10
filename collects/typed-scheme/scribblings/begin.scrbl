@@ -70,7 +70,7 @@ represent these using @italic{union types}, written @scheme[(U t1 t2 ...)].
 
 @schememod[
 typed/scheme
-(define-type-alias Tree (U leaf node))
+(define-type Tree (U leaf node))
 (define-struct: leaf ([val : Number]))
 (define-struct: node ([left : Tree] [right : Tree]))
 
@@ -88,7 +88,7 @@ typed/scheme
 ]
 
 In this module, we have defined two new datatypes: @scheme[leaf] and
-@scheme[node].  We've also defined the type alias @scheme[Tree] to be
+@scheme[node].  We've also defined the type name @scheme[Tree] to be
 @scheme[(U node leaf)], which represents a binary tree of numbers.  In
 essence, we are saying that the @scheme[tree-height] function accepts
 a @scheme[Tree], which is either a @scheme[node] or a @scheme[leaf],
