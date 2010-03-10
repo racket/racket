@@ -1023,7 +1023,7 @@
 (provide (rename-out [_bytes* _bytes]))
 (define-fun-syntax _bytes*
   (syntax-id-rules (o)
-    [(_ o n) (type: _bytes
+    [(_ o n) (type: _pointer
               pre:  (make-sized-byte-string (malloc n) n)
               ;; post is needed when this is used as a function output type
               post: (x => (make-sized-byte-string x n)))]
