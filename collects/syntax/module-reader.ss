@@ -216,7 +216,7 @@
               (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(?=\\s|$)" in)])
                 (and spec (let ([s (cadr spec)])
                             (if (equal? s "") #f s)))))])
-    (define (get in export-sym src line col pos mk-fail-thunk)
+    (define (get in export-sym src line col pos spec-as-stx? mk-fail-thunk)
       (define (bad str eof?)
         ((if eof? raise-read-eof-error raise-read-error)
          (let ([msg (format "bad ~a following ~a" module-path-desc self-sym)])
@@ -224,35 +224,48 @@
          src line col pos
          (let-values ([(line col pos2) (port-next-location in)])
            (and pos pos2 (- pos2 pos)))))
-      (define spec (read-spec in))
-      (if (not spec)
-        (bad #f (eof-object? (peek-byte in)))
-        (let ([parsed-spec (spec->module-path spec)])
-          (if parsed-spec
-            (begin ((current-reader-guard) parsed-spec)
-                   (dynamic-require parsed-spec export-sym
-                                    (mk-fail-thunk spec)))
-            (bad spec #f)))))
+      (let*-values ([(spec-line spec-col spec-pos) (port-next-location in)]
+                    [(spec) (read-spec in)]
+                    [(spec-end-line spec-end-col spec-end-pos) (port-next-location in)])
+        (if (not spec)
+            (bad #f (eof-object? (peek-byte in)))
+            (let ([parsed-spec (spec->module-path spec)])
+              (if parsed-spec
+                  (begin 
+                    ((current-reader-guard) parsed-spec)
+                    (values
+                     (dynamic-require parsed-spec export-sym
+                                      (mk-fail-thunk spec))
+                     (if spec-as-stx?
+                         (datum->syntax #f
+                                        parsed-spec
+                                        (vector src spec-line spec-col spec-pos
+                                                (- spec-end-pos spec-pos)))
+                         parsed-spec)))
+                  (bad spec #f))))))
 
     (define (-get-info inp mod line col pos)
-      (let ([r (get inp 'get-info (object-name inp) line col pos
-                    (lambda (spec)
-                      (lambda ()
-                        (lambda (inp mod line col pos)
-                          (lambda (tag defval) defval)))))])
-        (convert-get-info (r inp mod line col pos))))
+      (let-values ([(r next-mod)
+                    (get inp 'get-info (object-name inp) line col pos #f
+                         (lambda (spec)
+                           (lambda ()
+                             (lambda (inp mod line col pos)
+                               (lambda (tag defval) defval)))))])
+        (convert-get-info (r inp next-mod line col pos))))
 
     (define (read-fn in read-sym args src mod line col pos convert)
-      (let ([r (get in read-sym src #|mod|# line col pos
-                    (lambda (spec)
-                      (lambda ()
-                        (error read-sym "cannot find reader for `#lang ~a ~a'"
-                               self-sym
-                               spec))))])
+      (let-values ([(r next-mod)
+                    (get in read-sym src #|mod|# line col pos
+                         (eq? read-sym 'read-syntax)
+                         (lambda (spec)
+                           (lambda ()
+                             (error read-sym "cannot find reader for `#lang ~a ~a'"
+                                    self-sym
+                                    spec))))])
         (let ([r (convert r)])
           (if (and (procedure? r)
                    (procedure-arity-includes? r (+ 5 (length args))))
-            (apply r (append args (list in mod line col pos)))
+            (apply r (append args (list in next-mod line col pos)))
             (apply r (append args (list in)))))))
 
     (define (-read inp mod line col pos)

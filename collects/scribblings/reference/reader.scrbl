@@ -781,7 +781,7 @@ extra source-location information: a @schemeidfont{read} procedure
 accepts either one argument (an input port) or five, and a
 @schemeidfont{read-syntax} procedure accepts either two arguments (a
 name value and an input port) or six. In either case, the four
-optional arguments are the module path (as a syntax object in
+optional arguments are the reader's module path (as a syntax object in
 @scheme[read-syntax] mode) followed by the line (positive exact
 integer or @scheme[#f]), column (non-negative exact integer or
 @scheme[#f]), and position (positive exact integer or @scheme[#f]) of
