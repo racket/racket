@@ -332,8 +332,7 @@ mz-base := "/plt/readme.txt"          ; generated
            (cond (not src) => (collects: "info-domain/")) ; filtered
            (package: "config")
            ;; basic code
-           (collects: "scheme")
-           (collects: "s-exp")
+           (collects: "scheme" "s-exp" "reader")
            ;; include the time-stamp collection when not a public release
            (cond (not release)
                  => (- (collects: "repos-time-stamp/")
