@@ -3,7 +3,7 @@
 (begin
   (require
    scheme/tcp
-   scheme scheme/flonum
+   scheme scheme/flonum scheme/fixnum
    scheme/unsafe/ops
    (only-in rnrs/lists-6 fold-left)
    '#%paramz
