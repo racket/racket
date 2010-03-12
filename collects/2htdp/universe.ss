@@ -44,11 +44,11 @@
   [on-tick (function-with-arity
             1 
             except
-            [(_ x rate) 
-             #'(list (proc> 'on-tick (f2h x) 1) 
-                     (num> 'on-tick rate (lambda (x)
-                                           (and (real? x) (positive? x)))
-                           "pos. number" "rate"))])]
+            [(_ f rate) 
+             #'(list 
+                (proc> 'on-tick (f2h f) 1)
+                (num> 'on-tick rate (lambda (x) (and (real? x) (positive? x)))
+                      "positive number" "rate"))])]
   ;; -- state specifies whether to display the current state 
   [state (expr-with-check bool> "expected a boolean (show state or not)")]
   ;; -- check-with must specify a predicate 
