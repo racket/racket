@@ -58,8 +58,8 @@
      (define-syntax (match-lambda** stx)
        (syntax-parse stx
          [(_ (~and clauses [(pats ...) . rhs]) ...)
-          (with-syntax* ([vars (generate-temporaries (car #'((pats ...) ...)))]
-                         [body #`(match*/derived #'vars #,stx #'(clauses ...))])
+          (with-syntax* ([vars (generate-temporaries (car (syntax-e #'((pats ...) ...))))]
+                         [body #`(match*/derived vars #,stx clauses ...)])
             (syntax/loc stx (lambda vars body)))]))
 
      ;; there's lots of duplication here to handle named let
