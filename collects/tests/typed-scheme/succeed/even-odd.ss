@@ -8,7 +8,7 @@
 (define-type OddParity (Rec Odd (U (Z Odd) (O (Rec Even (U '() (Z Even) (O Odd)))))))
 
 (: append-one (case-lambda (EvenParity -> OddParity)
-                           (OddParity -> EvenParity)
+                           (OddParity -> EvenParity)                           
                            (Bitstring -> Bitstring)))
 (define (append-one l)
   (if (null? l)
@@ -16,3 +16,8 @@
       (if (Z? l) 
           (make-Z (append-one (Z-b l)))
           (make-O (append-one (O-b l))))))
+
+(: bs-id (Bitstring -> Bitstring))
+(define (bs-id x) x)
+
+(define: z : Bitstring (bs-id (append-one null)))

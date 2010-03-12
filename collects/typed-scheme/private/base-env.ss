@@ -11,6 +11,7 @@
  (only-in '#%kernel [apply kernel:apply])
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
+ (only-in mzscheme make-namespace)
  (only-in scheme/match/runtime match:error matchable? match-equality-test)
  (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
              (only-in (rep type-rep) make-HashtableTop make-MPairTop make-BoxTop make-VectorTop)))
@@ -78,10 +79,10 @@
 [cons (-poly (a b)
              (cl->* [->* (list a (-lst a)) (-lst a)]
                     [->* (list a b) (-pair a b)]))]
-[*cons (-poly (a b) (cl->
+#;[*cons (-poly (a b) (cl->
                      [(a b) (-pair a b)]
                      [(a (-lst a)) (-lst a)]))]
-[*list? (make-pred-ty (-lst Univ))]
+#;[*list? (make-pred-ty (-lst Univ))]
 
 [null? (make-pred-ty (-val null))]
 [eof-object? (make-pred-ty (-val eof))]
@@ -142,9 +143,9 @@
 		 ((-lst b) b) . ->... .(-lst c))))]
 [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
                               ((-lst b) b) . ->... . -Void))]
-[fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
+#;[fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
                                ((-lst b) b) . ->... . c))]
-[fold-right (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
+#;[fold-right (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
                                 ((-lst b) b) . ->... . c))]
 [foldl
  (-poly (a b c d)
@@ -189,8 +190,6 @@
 [printf (->* (list -String) Univ -Void)]
 [fprintf (->* (list -Output-Port -String) Univ -Void)]
 [format (->* (list -String) Univ -String)]
-[fst (-poly (a b) (-> (-pair a b) a))]
-[snd (-poly (a b) (-> (-pair a b) b))]
 
 [sleep (N . -> . -Void)]
 
@@ -364,7 +363,7 @@
 [vector-length (-poly (a) ((-vec a) . -> . -Nat))]
 [vector (-poly (a) (->* (list) a (-vec a)))]
 [vector-immutable (-poly (a) (->* (list) a (-vec a)))]
-[vector->vector-immutable (-poly (a) (-> (-vec a) (-vec a)))]
+[vector->immutable-vector (-poly (a) (-> (-vec a) (-vec a)))]
 [vector-fill! (-poly (a) (-> (-vec a) a -Void))]
 ;; [vector->values no good type here]
 

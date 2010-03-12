@@ -699,6 +699,7 @@
         [tc-e (filter even? (filter exact-integer? (list 1 2 3 'foo)))
               (-lst -Integer)]
         
+        #|
         [tc-err (plambda: (a ...) [as : a ... a]
                           (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
                                  3 (list #\c) as))]
@@ -712,7 +713,7 @@
         [tc-e/t (plambda: (a ...) [as : a ... a]
                           (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
                                  3 (list #\c) (map list as)))
-                (-polydots (a) ((list) (a a) . ->... . -Integer))]
+                (-polydots (a) ((list) (a a) . ->... . -Integer))]|#
         
         ;; First is same as second, but with map explicitly instantiated.
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]

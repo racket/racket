@@ -161,7 +161,8 @@ don't depend on any other portion of the system
   (define-syntax-class spec
     #:transparent
     #:attributes (ty id)
-    (pattern [nm:identifier ty]
+    (pattern [nm:identifier ~! ty]
+             #:fail-unless (list? (identifier-template-binding #'nm)) "not a bound identifier"
              #:with id #'#'nm)
     (pattern [e:expr ty]
              #:with id #'e))
