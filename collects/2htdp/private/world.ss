@@ -61,6 +61,7 @@
       
       (init
        (on-key K)        ;; World KeyEvent -> World 
+       (on-release K)    ;; World KeyEvent -> World 
        (on-mouse K)      ;; World Nat Nat MouseEvent -> World 
        (on-receive #f)   ;; (U #f (World S-expression -> World))
        (on-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
@@ -174,7 +175,11 @@
                  (super-new)
                  ;; deal with keyboard events 
                  (define/override (on-char e) 
-                   (when live (pkey (key-event->parts e))))
+                   (when live
+                     (let ([e:str (key-event->parts e)])
+                       (if (string=? e:str "release")
+                           (prelease (key-release->parts e))
+                           (pkey e:str)))))
                  ;; deal with mouse events if live and within range 
                  (define/override (on-event e)
                    (define-values (x y me) (mouse-event->parts e))
@@ -211,6 +216,7 @@
       ;; callbacks 
       (field
        (key    on-key)
+       (release on-release)
        (mouse  on-mouse)
        (rec    on-receive))
       
@@ -278,6 +284,9 @@
       
       ;; key events 
       (def/pub-cback (pkey ke) key)
+      
+      ;; release events 
+      (def/pub-cback (prelease ke) release)
       
       ;; mouse events 
       (def/pub-cback (pmouse x y me) mouse)
@@ -348,7 +357,7 @@
 
 (define aworld%
   (class world% (super-new)
-    (inherit-field world0 tick key mouse rec draw rate width height)
+    (inherit-field world0 tick key release mouse rec draw rate width height)
     (inherit show callback-stop!)
     
     ;; Frame Custodian ->* (-> Void) (-> Void)
@@ -387,6 +396,7 @@
     
     (def/over-cb (ptock tick))
     (def/over-cb (pkey key e))
+    (def/over-cb (prelease release e))
     (def/over-cb (pmouse mouse x y me))
     (def/over-cb (prec rec m))
     

@@ -103,7 +103,6 @@
     "right"
     "up"
     "down"
-    "release"
     "start"
     "cancel"
     "clear"
@@ -146,6 +145,8 @@
   [on-mouse (function-with-arity 4)]
   ;; -- on-key must specify a key event handler 
   [on-key (function-with-arity 2)]
+  ;; -- on-release must specify a release event handler 
+  [on-release (function-with-arity 2)]
   ;; -- on-receive must specify a receive handler 
   [on-receive (function-with-arity 2)]
   ;; -- stop-when must specify a predicate; it may specify a rendering function
