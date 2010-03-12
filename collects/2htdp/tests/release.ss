@@ -8,7 +8,7 @@
             (on-draw (lambda (n)
                        (if (string? n)
                            (text (string-append "stopped: " n) 11 'red)
-                           (circle (+ 100 n) 'solid 'red)))
+                           (text "hold down a" 11 'blue)))
                      500 500)
             (on-tick (lambda (x) (if (string? x) x (add1 x)))
                      r)
@@ -23,3 +23,4 @@
                           (if (key=? "a" key) 
                               1
                               n)))))
+(main 1)
