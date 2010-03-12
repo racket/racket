@@ -257,15 +257,19 @@
   (define (pip-arrows-line dx dy size)
     (arrows-line dx (- dy) size))
 
-  (define (filled-rectangle w h)
+  (define (filled-rectangle w h #:draw-border? [draw-border? #t])
     (dc
      (lambda (dc x y)
-       (let ([b (send dc get-brush)])
+       (let ([b (send dc get-brush)]
+             [p (send dc get-pen)])
          (send dc set-brush (send the-brush-list find-or-create-brush
-				  (send (send dc get-pen) get-color)
+                                  (send p get-color)
                                   'solid))
+         (unless draw-border?
+           (send dc set-pen "black" 1 'transparent))
 	 (send dc draw-rectangle x y w h)
-	 (send dc set-brush b)))
+         (send dc set-brush b)
+         (send dc set-pen p)))
      w
      h))
   

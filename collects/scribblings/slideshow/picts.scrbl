@@ -223,9 +223,16 @@ override settings supplied by the context.}
 Unfilled and filled ellipses.}
 
 @defproc*[([(rectangle [w real?] [h real?]) pict?]
-           [(filled-rectangle [w real?] [h real?]) pict?])]{
+           [(filled-rectangle [w real?]
+                              [h real?] 
+                              [#:draw-border? draw-border? any/c #t])
+            pict?])]{
 
-Unfilled and filled rectangles.}
+Unfilled and filled rectangles.
+
+If @scheme[draw-border?] is @scheme[#f], then the pen is set to be transparent
+before drawing the rectangle.
+}
 
 @defproc*[([(rounded-rectangle [w real?] [h real?] 
                                [corner-radius real? -0.25]
