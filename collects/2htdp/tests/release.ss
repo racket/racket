@@ -18,7 +18,6 @@
                            (if (key=? "a" key)
                                ""
                                n))))
-            #;
             (on-release (lambda (n key)
                           ;; you can release a key only if it was pressed
                           (if (key=? "a" key) 
