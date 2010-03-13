@@ -2448,7 +2448,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   } else {
     ivals   = malloc(nargs * sizeof(ForeignAny));
     avalues = scheme_malloc(nargs * sizeof(void*));
-    offsets = scheme_malloc(nargs * sizeof(long));
+    offsets = scheme_malloc_atomic(nargs * sizeof(long));
   }
   /* iterate on input values and types */
   for (i=0; i<nargs; i++, itypes=SCHEME_CDR(itypes)) {
