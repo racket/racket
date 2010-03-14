@@ -46,13 +46,20 @@
                                       (lambda () (tc-error/stx stx "Type ~a could not be converted to a contract." t)))))
     (define region-tc-result 
       (and expr? (parse-tc-results resty)))
-    (define region-cnt 
-      (and region-tc-result
-           (match region-tc-result 
-             [(tc-result1: t) (type->contract 
-                               t 
-                               #:typed-side #t
-                               (lambda () (tc-error/stx #'region-ty-stx "Type ~a could not be converted to a contract." t)))])))
+    (define region-cnts 
+      (if region-tc-result
+          (match region-tc-result 
+            [(tc-result1: t)
+             (list (type->contract 
+                    t 
+                    #:typed-side #t
+                    (lambda () (tc-error/stx #'region-ty-stx "Type ~a could not be converted to a contract." t))))]
+            [(tc-results: ts)
+             (for/list ([t (in-list ts)])
+               (type->contract
+                t #:typed-side #t
+                (lambda () (tc-error/stx #'region-ty-stx "Type ~a could not be converted to a contract." t))))])
+          null))
     (for ([i (in-list (syntax->list fvids))]
           [ty (in-list fv-types)])
       (register-type i ty))
@@ -98,14 +105,14 @@
                   [(cnt ...) fv-cnts]
                   [(ex-id ...) exids]
                   [(ex-cnt ...) ex-cnts]
-                  [region-cnt region-cnt]
+                  [(region-cnt ...) region-cnts]
                   [body expanded-body]
                   [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))])
       (if expr?
           (quasisyntax/loc stx
             (begin check-syntax-help
                    (with-contract typed-region
-                     #:result region-cnt
+                     #:results (region-cnt ...)
                      #:freevars ([fv.id cnt] ...)                                
                      body)))
           (syntax/loc stx

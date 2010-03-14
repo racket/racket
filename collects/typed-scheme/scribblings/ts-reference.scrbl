@@ -349,8 +349,10 @@ The @scheme[with-type] for allows for localized Typed Scheme regions in otherwis
                           (code:line #:freevars ([id fv-type] ...))]
                [result-spec (code:line #:result type)]
                [export-spec ([export-id export-type] ...)])]{
-The first form, an expression, checks that @scheme[body ...+] has the type @scheme[type].  
-Uses of the result value are appropriately checked by a contract generated from 
+The first form, an expression, checks that @scheme[body ...+] has the type @scheme[type].
+If the last expression in @scheme[body ...+] returns multiple values, @scheme[type] must
+be a type of the form @scheme[(values t ...)].
+Uses of the result values are appropriately checked by contracts generated from 
 @scheme[type].
 
 The second form, which can be used as a definition, checks that each of the @scheme[export-id]s 

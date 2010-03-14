@@ -8,6 +8,10 @@
     #:freevars ([x String])
     (string-append x ", world")))
 
+(define-values (a b)
+  (with-type #:result (values Number String)
+             (values 3 "foo")))
+
 (with-type ([fun (Number -> Number)]
             [val Number])
   (define (fun x) x)
