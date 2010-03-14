@@ -629,6 +629,14 @@ The following @tech{style properties} are currently recognized:
         auxiliary part of the title can be omitted in hyperlinks. See,
         for example, @scheme[secref].}
 
+  @item{@scheme['tt-chars] --- For Latex output, when the @tech{style
+        name} is a string, render the element's content with escapes
+        suitable for Latex @tt{tt} mode.}
+
+  @item{@scheme['exact-chars] --- For Latex output, when the @tech{style
+        name} is a string, render the elements content exactly
+        (without escapes).}
+
 ]}
 
 
