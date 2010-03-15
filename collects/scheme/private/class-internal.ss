@@ -2680,7 +2680,7 @@
                             
                             (class-orig-cls cls)
                             #f #f ; serializer is never set
-                            (class-no-super-init? cls))]
+                            #f)]
              [obj-name (if name
                            (string->symbol (format "object:~a" name))
                            'object)])
