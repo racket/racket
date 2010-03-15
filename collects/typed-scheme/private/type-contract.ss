@@ -151,13 +151,15 @@
                        [(names ...) name])
            #'(object/c (names fcn-cnts) ...))]
         ;; init args not currently handled by class/c
-        [(Class: _ _ (list (list name fcn) ...))
+        [(Class: _ (list (list by-name-init by-name-init-ty _) ...) (list (list name fcn) ...))
          (when flat? (exit (fail)))
-         (with-syntax ([(fcn-cnts ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
-                       [(names ...) name])
+         (with-syntax ([(fcn-cnt ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
+                       [(name ...) name]
+                       [(by-name-cnt ...) (for/list ([t by-name-init-ty]) (t->c/neg t))]
+                       [(by-name-init ...) by-name-init])
            #'class?
            #;
-           #'(class/c (names fcn-cnts) ...))]
+           #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
         [(Struct: nm par flds proc poly? pred? cert acc-ids)
          (cond 

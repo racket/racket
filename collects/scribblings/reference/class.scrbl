@@ -1503,10 +1503,11 @@ Produces a contract for a class.
 
 There are two major categories of contracts listed in a @scheme[class/c]
 form: external and internal contracts. External contracts govern behavior
-when methods or fields are accessed via an object of that class. Internal
-contracts govern behavior when method or fields are accessed within the
-class hierarchy.  This separation allows for stronger contracts for class
-clients and weaker contracts for subclasses.
+when an object is instantiated from a class or when methods or fields are
+accessed via an object of that class. Internal contracts govern behavior
+when method or fields are accessed within the class hierarchy.  This
+separation allows for stronger contracts for class clients and weaker
+contracts for subclasses.
 
 Method contracts must contain an additional initial argument which corresponds
 to the implicit @scheme[this] parameter of the method.  This allows for
