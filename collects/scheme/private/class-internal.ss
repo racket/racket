@@ -2632,6 +2632,7 @@
              [ext-field-sets (if (null? (class/c-fields ctc))
                                  (class-ext-field-sets cls)
                                  (make-vector field-pub-width))]
+             [init (class-init cls)]
              [class-make (if name
                              (make-naming-constructor 
                               struct:class
@@ -2672,7 +2673,7 @@
                             
                             (class-init-args cls)
                             (class-init-mode cls)
-                            (class-init cls)
+                            init
                             
                             (class-orig-cls cls)
                             #f #f ; serializer is never set
@@ -3032,37 +3033,44 @@
   (syntax-case stx ()
     [(_ form ...)
      (let ([parsed-forms (parse-class/c-specs (syntax->list #'(form ...)) #f)])
-       (with-syntax ([methods #`(list #,@(reverse (hash-ref parsed-forms 'methods null)))]
-                     [method-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'method-contracts null)))]
-                     [fields #`(list #,@(reverse (hash-ref parsed-forms 'fields null)))]
-                     [field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'field-contracts null)))]
-                     [inits #`(list #,@(reverse (hash-ref parsed-forms 'inits null)))]
-                     [init-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'init-contracts null)))]
-                     [inherits #`(list #,@(reverse (hash-ref parsed-forms 'inherits null)))]
-                     [inherit-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inherit-contracts null)))]
-                     [inherit-fields #`(list #,@(reverse (hash-ref parsed-forms 'inherit-fields null)))]
-                     [inherit-field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inherit-field-contracts null)))]
-                     [supers #`(list #,@(reverse (hash-ref parsed-forms 'supers null)))]
-                     [super-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'super-contracts null)))]
-                     [inners #`(list #,@(reverse (hash-ref parsed-forms 'inners null)))]
-                     [inner-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inner-contracts null)))]
-                     [overrides #`(list #,@(reverse (hash-ref parsed-forms 'overrides null)))]
-                     [override-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'override-contracts null)))]
-                     [augments #`(list #,@(reverse (hash-ref parsed-forms 'augments null)))]
-                     [augment-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augment-contracts null)))]
-                     [augrides #`(list #,@(reverse (hash-ref parsed-forms 'augrides null)))]
-                     [augride-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augride-contracts null)))])
-         (syntax/loc stx
-           (make-class/c methods method-ctcs
-                         fields field-ctcs
-                         inits init-ctcs
-                         inherits inherit-ctcs
-                         inherit-fields inherit-field-ctcs
-                         supers super-ctcs
-                         inners inner-ctcs
-                         overrides override-ctcs
-                         augments augment-ctcs
-                         augrides augride-ctcs))))]))
+       (let* ([inits (reverse (hash-ref parsed-forms 'inits null))]
+              [init-contracts (reverse (hash-ref parsed-forms 'init-contracts null))]
+              [paired (map cons inits init-contracts)]
+              [sorted-inits (sort paired 
+                                  (lambda (s1 s2) 
+                                    (string<? (symbol->string s1) (symbol->string s2)))
+                                  #:key car)])
+         (with-syntax ([methods #`(list #,@(reverse (hash-ref parsed-forms 'methods null)))]
+                       [method-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'method-contracts null)))]
+                       [fields #`(list #,@(reverse (hash-ref parsed-forms 'fields null)))]
+                       [field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'field-contracts null)))]
+                       [inits #`(list #,@(map car sorted-inits))]
+                       [init-ctcs #`(list #,@(map cdr sorted-inits))]
+                       [inherits #`(list #,@(reverse (hash-ref parsed-forms 'inherits null)))]
+                       [inherit-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inherit-contracts null)))]
+                       [inherit-fields #`(list #,@(reverse (hash-ref parsed-forms 'inherit-fields null)))]
+                       [inherit-field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inherit-field-contracts null)))]
+                       [supers #`(list #,@(reverse (hash-ref parsed-forms 'supers null)))]
+                       [super-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'super-contracts null)))]
+                       [inners #`(list #,@(reverse (hash-ref parsed-forms 'inners null)))]
+                       [inner-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inner-contracts null)))]
+                       [overrides #`(list #,@(reverse (hash-ref parsed-forms 'overrides null)))]
+                       [override-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'override-contracts null)))]
+                       [augments #`(list #,@(reverse (hash-ref parsed-forms 'augments null)))]
+                       [augment-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augment-contracts null)))]
+                       [augrides #`(list #,@(reverse (hash-ref parsed-forms 'augrides null)))]
+                       [augride-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augride-contracts null)))])
+           (syntax/loc stx
+             (make-class/c methods method-ctcs
+                           fields field-ctcs
+                           inits init-ctcs
+                           inherits inherit-ctcs
+                           inherit-fields inherit-field-ctcs
+                           supers super-ctcs
+                           inners inner-ctcs
+                           overrides override-ctcs
+                           augments augment-ctcs
+                           augrides augride-ctcs)))))]))
 
 (define (check-object-contract obj blame methods fields)
   (let/ec return
