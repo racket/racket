@@ -2862,6 +2862,7 @@
         
         (unless (null? (class/c-inits ctc))
           (let ()
+            (define inits+contracts (map cons (class/c-inits ctc) (class/c-init-contracts ctc)))
             (define (grab-same-inits lst)
               (if (null? lst)
                   (values null null)
@@ -2889,8 +2890,7 @@
                              (blame-swap blame))])
                      (loop (cdr init-args)
                            (cdr inits/c)
-                           (cons (cons (car init-arg)
-                                       (p (cdr init-arg)))
+                           (cons (cons (car init-arg) (p (cdr init-arg)))
                                  handled-args)))]
                   [else (loop (cdr init-args)
                               inits/c
@@ -2899,7 +2899,7 @@
              c
              (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
                (let ([init-args
-                      (let loop ([inits/c (map cons (class/c-inits ctc) (class/c-init-contracts ctc))]
+                      (let loop ([inits/c inits+contracts]
                                  [handled-args init-args])
                         (if (null? inits/c)
                             handled-args

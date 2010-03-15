@@ -4650,6 +4650,49 @@
                          'neg)]
            [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))])
       (send (new d%) f)))
+  
+  (test/spec-passed
+   'class/c-higher-order-init-1
+   '(let ([c% (contract (class/c (init [a number?]))
+                        (class object% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (new c% [a 3])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-2
+   '(let ([c% (contract (class/c (init [a number?]))
+                        (class object% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (new c% [a #t])))
+  
+  (test/spec-passed
+   'class/c-higher-order-init-3
+   '(let ([c% (class object% (super-new) (init a))]
+          [d% (contract (class/c (init [a number?] [a string?]))
+                        (class a% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (new c% [a 3] [a "foo"])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-4
+   '(let ([c% (class object% (super-new) (init a))]
+          [d% (contract (class/c (init [a number?] [a string?]))
+                        (class a% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (new c% [a 3] [a 4])))
+  
+  (test/spec-blame
+   'class/c-higher-order-init-5
+   '(let ([c% (class object% (super-new) (init a))]
+          [d% (contract (class/c (init [a number?] [a string?]))
+                        (class a% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (new c% [a "bar"] [a "foo"])))
 
   (test/spec-passed
    'class/c-higher-order-method-1
