@@ -157,8 +157,7 @@
                        [(name ...) name]
                        [(by-name-cnt ...) (for/list ([t by-name-init-ty]) (t->c/neg t))]
                        [(by-name-init ...) by-name-init])
-           #'class?
-           #;
+           #;#'class?           
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
         [(Struct: nm par flds proc poly? pred? cert acc-ids)

@@ -18,7 +18,7 @@
 (dt Text-Field% (Class () 
                        ([parent Any] [callback Any] [label String])
                        ([get-value (-> String)]
-                        [focus (-> String)])))
+                        [focus (-> Void)])))
 (dt Horizontal-Panel% (Class ()
                              ([parent Any] 
                               [stretchable-height Any #t]
