@@ -2861,10 +2861,52 @@
                                (make-method (p (vector-ref int-vec new-idx)) m)))))))
         
         (unless (null? (class/c-inits ctc))
-          (set-class-init! 
-           c
-           (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
-             (init the-obj super-go si_c si_inited? si_leftovers init-args))))
+          (let ()
+            (define (grab-same-inits lst)
+              (if (null? lst)
+                  (values null null)
+                  (let loop ([inits/c (cdr lst)]
+                             [prefix (list (car lst))])
+                    (cond
+                      [(null? inits/c) 
+                       (values (reverse prefix) inits/c)]
+                      [(eq? (car (car inits/c)) (car (car prefix)))
+                       (loop (cdr inits/c)
+                             (cons (car inits/c) prefix))]
+                      [else (values (reverse prefix) inits/c)]))))
+            (define (apply-contracts inits/c init-args)
+              (let loop ([init-args init-args]
+                         [inits/c inits/c]
+                         [handled-args null])
+                (cond
+                  [(null? init-args)
+                   (reverse handled-args)]
+                  [(null? inits/c)
+                   (append (reverse handled-args) init-args)]
+                  [(eq? (car (car inits/c)) (car (car init-args)))
+                   (let ([init-arg (car init-args)]
+                         [p ((contract-projection (cdr (car inits/c))) 
+                             (blame-swap blame))])
+                     (loop (cdr init-args)
+                           (cdr inits/c)
+                           (cons (cons (car init-arg)
+                                       (p (cdr init-arg)))
+                                 handled-args)))]
+                  [else (loop (cdr init-args)
+                              inits/c
+                              (cons (car init-args) handled-args))])))
+            (set-class-init! 
+             c
+             (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
+               (let ([init-args
+                      (let loop ([inits/c (map cons (class/c-inits ctc) (class/c-init-contracts ctc))]
+                                 [handled-args init-args])
+                        (if (null? inits/c)
+                            handled-args
+                            (let-values ([(prefix suffix) (grab-same-inits inits/c)])
+                              (loop suffix
+                                    (apply-contracts prefix init-args)))))])
+                 (init the-obj super-go si_c si_inited? si_leftovers init-args))))))
         
         c))))
 
@@ -2902,7 +2944,7 @@
               'class/c 
               (append
                handled-methods
-               (handle-optional 'init (class/c-inits ctc) (class/c-field-contracts ctc))
+               (handle-optional 'init (class/c-inits ctc) (class/c-init-contracts ctc))
                (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
                (handle-optional 'inherit (class/c-inherits ctc) (class/c-inherit-contracts ctc))
                (handle-optional 'inherit-field (class/c-inherit-fields ctc) (class/c-inherit-field-contracts ctc))
