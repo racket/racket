@@ -1476,13 +1476,15 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
 @section{Object and Class Contracts}
 
 @defform/subs[
-#:literals (field inherit inherit-field super inner override augment augride)
+#:literals (field init init-field inherit inherit-field super inner override augment augride)
 
 (class/c member-spec ...)
 
 ([member-spec
   method-spec
   (field field-spec ...)
+  (init field-spec ...)
+  (init-field field-spec ...)
   (inherit method-spec ...)
   (inherit-field field-spec ...)
   (super method-spec ...)
@@ -1525,6 +1527,13 @@ The external contracts are as follows:
    value contained in that field when accessed via an object of that class.  Since
    fields may be mutated, these contracts are checked on any external access and/or
    mutation of the field.}
+ @item{An initialization argument contract, tagged with @scheme[init], describes the
+   expected behavior of the value paired with that name during class instantiation.
+   The same name can be provided more than once, in which case the first such contract
+   in the @scheme[class/c] form is applied to the first value tagged with that name in
+   the list of initialization arguments, and so on.}
+ @item{The contracts listed in an @scheme[init-field] section are treated as if each
+   contract appeared in an @scheme[init] section and a @scheme[field] section.}
 ]
 
 The internal contracts are as follows:

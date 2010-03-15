@@ -4717,6 +4717,42 @@
            [d%/c (contract (class/c (init [a integer?] [a string?])) d% 'pos 'neg)]
            [d%/c/c (contract (class/c (init [a number?])) d%/c 'pos 'neg)])
       (new d%/c/c [a #t] [a "foo"])))
+  
+  (test/spec-passed
+   'class/c-higher-order-init-field-1
+   '(let ([c% (contract (class/c (init-field [f (-> number? number?)]))
+                        (class object% (super-new) (init-field f) (f 3))
+                        'pos
+                        'neg)])
+      (new c% [f (lambda (x) x)])))
+
+  (test/pos-blame
+   'class/c-higher-order-init-field-2
+   '(let ([c% (contract (class/c (init-field [f (-> number? number?)]))
+                        (class object% (super-new) (init-field f) (f #t))
+                        'pos
+                        'neg)])
+      (new c% [f (lambda (x) x)])))
+
+  (test/neg-blame
+   'class/c-higher-order-init-field-3
+   '(let ([c% (contract (class/c (init-field [f (-> number? number?)]))
+                        (class object% (super-new) (init-field f) (f 3))
+                        'pos
+                        'neg)])
+      (new c% [f (lambda (x) (zero? x))])))
+  
+  ;; Make sure that the original provider of the value is blamed if an
+  ;; init arg is given an invalid value, and then that is retrieved by
+  ;; an external client.
+  (test/neg-blame
+   'class/c-higher-order-init-field-4
+   '(let* ([c% (contract (class/c (init-field [f (-> number? number?)]))
+                         (class object% (super-new) (init-field f))
+                         'pos
+                         'neg)]
+           [o (new c% [f (lambda (x) (zero? x))])])
+      ((get-field f o) 3)))
 
   (test/spec-passed
    'class/c-higher-order-method-1
