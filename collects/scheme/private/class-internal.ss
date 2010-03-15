@@ -2581,11 +2581,13 @@
     (λ (cls)
       (class/c-check-first-order ctc cls blame)
       (let* ([name (class-name cls)]
+             [never-wrapped? (eq? (class-orig-cls cls) cls)]
              ;; Only add a new slot if we're not projecting an already contracted class.
-             [supers (if (eq? (class-orig-cls cls) cls)
-                         (list->vector (append (vector->list (class-supers cls)) (list #f)))
+             [supers (if never-wrapped?
+                         (list->vector (append (vector->list (class-supers cls))
+                                               (list #f)))                           
                          (list->vector (vector->list (class-supers cls))))]
-             [pos (if (eq? (class-orig-cls cls) cls)
+             [pos (if never-wrapped?
                       (add1 (class-pos cls))
                       (class-pos cls))]
              [method-width (class-method-width cls)]
@@ -2632,6 +2634,7 @@
              [ext-field-sets (if (null? (class/c-fields ctc))
                                  (class-ext-field-sets cls)
                                  (make-vector field-pub-width))]
+             [init (class-init cls)]
              [class-make (if name
                              (make-naming-constructor 
                               struct:class
@@ -2670,13 +2673,14 @@
                             'struct:object 'object? 'make-object
                             'field-ref 'field-set!
                             
-                            (class-init-args cls)
-                            (class-init-mode cls)
-                            (class-init cls)
+                            ;; class/c introduced subclasses do not consume init args
+                            null
+                            'normal
+                            #f
                             
                             (class-orig-cls cls)
                             #f #f ; serializer is never set
-                            (class-no-super-init? cls))]
+                            #f)]
              [obj-name (if name
                            (string->symbol (format "object:~a" name))
                            'object)])
@@ -2858,11 +2862,70 @@
                        [int-vec (vector-ref int-methods i)])
                   (vector-set! int-vec new-idx
                                (make-method (p (vector-ref int-vec new-idx)) m)))))))
+
+        ;; Unlike the others, we always want to do this, even if there are no init contracts,
+        ;; since we still need to handle either calling the previous class/c's init or
+        ;; calling continue-make-super appropriately.
+        (let ()
+          ;; zip the inits and contracts together for ordered selection
+          (define inits+contracts (map cons (class/c-inits ctc) (class/c-init-contracts ctc)))
+          ;; grab all the inits+contracts that involve the same init arg
+          ;; (assumes that inits and contracts were sorted in class/c creation)
+          (define (grab-same-inits lst)
+            (if (null? lst)
+                (values null null)
+                (let loop ([inits/c (cdr lst)]
+                           [prefix (list (car lst))])
+                  (cond
+                    [(null? inits/c) 
+                     (values (reverse prefix) inits/c)]
+                    [(eq? (car (car inits/c)) (car (car prefix)))
+                     (loop (cdr inits/c)
+                           (cons (car inits/c) prefix))]
+                    [else (values (reverse prefix) inits/c)]))))
+          ;; run through the list of init-args and apply contracts for same-named
+          ;; init args
+          (define (apply-contracts inits/c init-args)
+            (let loop ([init-args init-args]
+                       [inits/c inits/c]
+                       [handled-args null])
+              (cond
+                [(null? init-args)
+                 (reverse handled-args)]
+                [(null? inits/c)
+                 (append (reverse handled-args) init-args)]
+                [(eq? (car (car inits/c)) (car (car init-args)))
+                 (let ([init-arg (car init-args)]
+                       [p ((contract-projection (cdr (car inits/c))) 
+                           (blame-swap blame))])
+                   (loop (cdr init-args)
+                         (cdr inits/c)
+                         (cons (cons (car init-arg) (p (cdr init-arg)))
+                               handled-args)))]
+                [else (loop (cdr init-args)
+                            inits/c
+                            (cons (car init-args) handled-args))])))
+          (set-class-init! 
+           c
+           (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
+             (let ([init-args
+                    (let loop ([inits/c inits+contracts]
+                               [handled-args init-args])
+                      (if (null? inits/c)
+                          handled-args
+                          (let-values ([(prefix suffix) (grab-same-inits inits/c)])
+                            (loop suffix
+                                  (apply-contracts prefix init-args)))))])
+               ;; Since we never consume init args, we can ignore si_leftovers
+               ;; since init-args is the same.
+               (if never-wrapped?
+                   (super-go the-obj si_c si_inited? init-args null null)
+                   (init the-obj super-go si_c si_inited? init-args init-args))))))
         
         c))))
 
 (define-struct class/c 
-  (methods method-contracts fields field-contracts
+  (methods method-contracts fields field-contracts inits init-contracts
    inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
    overrides override-contracts augments augment-contracts
@@ -2895,6 +2958,7 @@
               'class/c 
               (append
                handled-methods
+               (handle-optional 'init (class/c-inits ctc) (class/c-init-contracts ctc))
                (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
                (handle-optional 'inherit (class/c-inherits ctc) (class/c-inherit-contracts ctc))
                (handle-optional 'inherit-field (class/c-inherit-fields ctc) (class/c-inherit-field-contracts ctc))
@@ -2929,9 +2993,25 @@
       (let-values ([(name ctc) (parse-name-ctc stx)])
         (values (cons name names) (cons ctc ctcs)))))
   (define (parse-spec stx)
-    (syntax-case stx (field inherit inherit-field init super inner override augment augride)
+    (syntax-case stx (field inherit inherit-field init init-field super inner override augment augride)
       [(field f-spec ...)
        (let-values ([(names ctcs) (parse-names-ctcs #'(f-spec ...))])
+         (hash-set! parsed-forms 'fields
+                    (append names (hash-ref parsed-forms 'fields null)))
+         (hash-set! parsed-forms 'field-contracts
+                    (append ctcs (hash-ref parsed-forms 'field-contracts null))))]
+      [(init i-spec ...)
+       (let-values ([(names ctcs) (parse-names-ctcs #'(i-spec ...))])
+         (hash-set! parsed-forms 'inits
+                    (append names (hash-ref parsed-forms 'inits null)))
+         (hash-set! parsed-forms 'init-contracts
+                    (append ctcs (hash-ref parsed-forms 'init-contracts null))))]
+      [(init-field i-spec ...)
+       (let-values ([(names ctcs) (parse-names-ctcs #'(i-spec ...))])
+         (hash-set! parsed-forms 'inits
+                    (append names (hash-ref parsed-forms 'inits null)))
+         (hash-set! parsed-forms 'init-contracts
+                    (append ctcs (hash-ref parsed-forms 'init-contracts null)))
          (hash-set! parsed-forms 'fields
                     (append names (hash-ref parsed-forms 'fields null)))
          (hash-set! parsed-forms 'field-contracts
@@ -3019,6 +3099,8 @@
                      [method-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'method-contracts null)))]
                      [fields #`(list #,@(reverse (hash-ref parsed-forms 'fields null)))]
                      [field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'field-contracts null)))]
+                     [(i ...) (reverse (hash-ref parsed-forms 'inits null))]
+                     [(i-c ...) (reverse (hash-ref parsed-forms 'init-contracts null))]
                      [inherits #`(list #,@(reverse (hash-ref parsed-forms 'inherits null)))]
                      [inherit-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inherit-contracts null)))]
                      [inherit-fields #`(list #,@(reverse (hash-ref parsed-forms 'inherit-fields null)))]
@@ -3034,15 +3116,20 @@
                      [augrides #`(list #,@(reverse (hash-ref parsed-forms 'augrides null)))]
                      [augride-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augride-contracts null)))])
          (syntax/loc stx
-           (make-class/c methods method-ctcs
-                         fields field-ctcs
-                         inherits inherit-ctcs
-                         inherit-fields inherit-field-ctcs
-                         supers super-ctcs
-                         inners inner-ctcs
-                         overrides override-ctcs
-                         augments augment-ctcs
-                         augrides augride-ctcs))))]))
+           (let* ([inits+contracts (sort (list (cons i i-c) ...)
+                                         (lambda (s1 s2) 
+                                           (string<? (symbol->string s1) (symbol->string s2)))
+                                         #:key car)])
+             (make-class/c methods method-ctcs
+                           fields field-ctcs
+                           (map car inits+contracts) (map cdr inits+contracts)
+                           inherits inherit-ctcs
+                           inherit-fields inherit-field-ctcs
+                           supers super-ctcs
+                           inners inner-ctcs
+                           overrides override-ctcs
+                           augments augment-ctcs
+                           augrides augride-ctcs)))))]))
 
 (define (check-object-contract obj blame methods fields)
   (let/ec return

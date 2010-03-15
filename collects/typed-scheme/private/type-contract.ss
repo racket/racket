@@ -15,7 +15,7 @@
  scheme/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list 
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base scheme/contract unstable/poly-c (utils any-wrap)
-	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c object/c class?)))
+	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c init object/c class?)))
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)
@@ -151,13 +151,15 @@
                        [(names ...) name])
            #'(object/c (names fcn-cnts) ...))]
         ;; init args not currently handled by class/c
-        [(Class: _ _ (list (list name fcn) ...))
+        [(Class: _ (list (list by-name-init by-name-init-ty _) ...) (list (list name fcn) ...))
          (when flat? (exit (fail)))
-         (with-syntax ([(fcn-cnts ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
-                       [(names ...) name])
+         (with-syntax ([(fcn-cnt ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
+                       [(name ...) name]
+                       [(by-name-cnt ...) (for/list ([t by-name-init-ty]) (t->c/neg t))]
+                       [(by-name-init ...) by-name-init])
            #'class?
            #;
-           #'(class/c (names fcn-cnts) ...))]
+           #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
         [(Struct: nm par flds proc poly? pred? cert acc-ids)
          (cond 

@@ -4227,6 +4227,31 @@
               (class object% (super-new) (field [n 3]))
               'pos
               'neg))
+  
+  ;; No true first-order tests here, other than just to make
+  ;; sure they're accepted.  For init-field, we can at least
+  ;; make sure the given field is public (which happens
+  ;; naturally by splitting an init-field into init and field).
+  (test/spec-passed
+   'class/c-first-order-init-1
+   '(contract (class/c (init [a number?]))
+              (class object% (super-new) (init a))
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'class/c-first-order-init-field-1
+   '(contract (class/c (init-field [a number?]))
+              (class object% (super-new) (init-field a))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-init-field-2
+   '(contract (class/c (init-field [a number?]))
+              object%
+              'pos
+              'neg))
 
   (test/pos-blame
    'class/c-first-order-inherit-field-1
@@ -4625,6 +4650,109 @@
                          'neg)]
            [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))])
       (send (new d%) f)))
+  
+  (test/spec-passed
+   'class/c-higher-order-init-1
+   '(let ([c% (contract (class/c (init [a number?]))
+                        (class object% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (new c% [a 3])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-2
+   '(let ([c% (contract (class/c (init [a number?]))
+                        (class object% (super-new) (init a))
+                        'pos
+                        'neg)])
+      (new c% [a #t])))
+  
+  (test/spec-passed
+   'class/c-higher-order-init-3
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (contract (class/c (init [a number?] [a string?]))
+                         (class c% (super-new) (init a))
+                         'pos
+                         'neg)])
+      (new d% [a 3] [a "foo"])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-4
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (contract (class/c (init [a number?] [a string?]))
+                         (class c% (super-new) (init a))
+                         'pos
+                         'neg)])
+      (new d% [a 3] [a 4])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-5
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (contract (class/c (init [a number?] [a string?]))
+                         (class c% (super-new) (init a))
+                         'pos
+                         'neg)])
+      (new d% [a "bar"] [a "foo"])))
+  
+  (test/spec-passed
+   'class/c-higher-order-init-6
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (class c% (super-new) (init a))]
+           [d%/c (contract (class/c (init [a integer?] [a string?])) d% 'pos 'neg1)]
+           [d%/c/c (contract (class/c (init [a number?])) d%/c 'pos1 'neg)])
+      (new d%/c/c [a 3] [a "foo"])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-7
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (class c% (super-new) (init a))]
+           [d%/c (contract (class/c (init [a integer?] [a string?])) d% 'pos1 'neg)]
+           [d%/c/c (contract (class/c (init [a number?])) d%/c 'pos 'neg1)])
+      (new d%/c/c [a 3.5] [a "foo"])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-8
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (class c% (super-new) (init a))]
+           [d%/c (contract (class/c (init [a integer?] [a string?])) d% 'pos 'neg)]
+           [d%/c/c (contract (class/c (init [a number?])) d%/c 'pos 'neg)])
+      (new d%/c/c [a #t] [a "foo"])))
+  
+  (test/spec-passed
+   'class/c-higher-order-init-field-1
+   '(let ([c% (contract (class/c (init-field [f (-> number? number?)]))
+                        (class object% (super-new) (init-field f) (f 3))
+                        'pos
+                        'neg)])
+      (new c% [f (lambda (x) x)])))
+
+  (test/pos-blame
+   'class/c-higher-order-init-field-2
+   '(let ([c% (contract (class/c (init-field [f (-> number? number?)]))
+                        (class object% (super-new) (init-field f) (f #t))
+                        'pos
+                        'neg)])
+      (new c% [f (lambda (x) x)])))
+
+  (test/neg-blame
+   'class/c-higher-order-init-field-3
+   '(let ([c% (contract (class/c (init-field [f (-> number? number?)]))
+                        (class object% (super-new) (init-field f) (f 3))
+                        'pos
+                        'neg)])
+      (new c% [f (lambda (x) (zero? x))])))
+  
+  ;; Make sure that the original provider of the value is blamed if an
+  ;; init arg is given an invalid value, and then that is retrieved by
+  ;; an external client.
+  (test/neg-blame
+   'class/c-higher-order-init-field-4
+   '(let* ([c% (contract (class/c (init-field [f (-> number? number?)]))
+                         (class object% (super-new) (init-field f))
+                         'pos
+                         'neg)]
+           [o (new c% [f (lambda (x) (zero? x))])])
+      ((get-field f o) 3)))
 
   (test/spec-passed
    'class/c-higher-order-method-1
