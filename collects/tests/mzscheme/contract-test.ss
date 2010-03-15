@@ -4227,6 +4227,31 @@
               (class object% (super-new) (field [n 3]))
               'pos
               'neg))
+  
+  ;; No true first-order tests here, other than just to make
+  ;; sure they're accepted.  For init-field, we can at least
+  ;; make sure the given field is public (which happens
+  ;; naturally by splitting an init-field into init and field).
+  (test/spec-passed
+   'class/c-first-order-init-1
+   '(contract (class/c (init [a number?]))
+              (class object% (super-new) (init a))
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'class/c-first-order-init-field-1
+   '(contract (class/c (init-field [a number?]))
+              (class object% (super-new) (init-field a))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-init-field-2
+   '(contract (class/c (init-field [a number?]))
+              object%
+              'pos
+              'neg))
 
   (test/pos-blame
    'class/c-first-order-inherit-field-1

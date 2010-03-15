@@ -2862,7 +2862,7 @@
         c))))
 
 (define-struct class/c 
-  (methods method-contracts fields field-contracts
+  (methods method-contracts fields field-contracts inits init-contracts
    inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
    overrides override-contracts augments augment-contracts
@@ -2895,6 +2895,7 @@
               'class/c 
               (append
                handled-methods
+               (handle-optional 'init (class/c-inits ctc) (class/c-field-contracts ctc))
                (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
                (handle-optional 'inherit (class/c-inherits ctc) (class/c-inherit-contracts ctc))
                (handle-optional 'inherit-field (class/c-inherit-fields ctc) (class/c-inherit-field-contracts ctc))
@@ -2929,9 +2930,25 @@
       (let-values ([(name ctc) (parse-name-ctc stx)])
         (values (cons name names) (cons ctc ctcs)))))
   (define (parse-spec stx)
-    (syntax-case stx (field inherit inherit-field init super inner override augment augride)
+    (syntax-case stx (field inherit inherit-field init init-field super inner override augment augride)
       [(field f-spec ...)
        (let-values ([(names ctcs) (parse-names-ctcs #'(f-spec ...))])
+         (hash-set! parsed-forms 'fields
+                    (append names (hash-ref parsed-forms 'fields null)))
+         (hash-set! parsed-forms 'field-contracts
+                    (append ctcs (hash-ref parsed-forms 'field-contracts null))))]
+      [(init i-spec ...)
+       (let-values ([(names ctcs) (parse-names-ctcs #'(i-spec ...))])
+         (hash-set! parsed-forms 'inits
+                    (append names (hash-ref parsed-forms 'inits null)))
+         (hash-set! parsed-forms 'init-contracts
+                    (append ctcs (hash-ref parsed-forms 'init-contracts null))))]
+      [(init-field i-spec ...)
+       (let-values ([(names ctcs) (parse-names-ctcs #'(i-spec ...))])
+         (hash-set! parsed-forms 'inits
+                    (append names (hash-ref parsed-forms 'inits null)))
+         (hash-set! parsed-forms 'init-contracts
+                    (append ctcs (hash-ref parsed-forms 'init-contracts null)))
          (hash-set! parsed-forms 'fields
                     (append names (hash-ref parsed-forms 'fields null)))
          (hash-set! parsed-forms 'field-contracts
@@ -3019,6 +3036,8 @@
                      [method-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'method-contracts null)))]
                      [fields #`(list #,@(reverse (hash-ref parsed-forms 'fields null)))]
                      [field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'field-contracts null)))]
+                     [inits #`(list #,@(reverse (hash-ref parsed-forms 'inits null)))]
+                     [init-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'init-contracts null)))]
                      [inherits #`(list #,@(reverse (hash-ref parsed-forms 'inherits null)))]
                      [inherit-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inherit-contracts null)))]
                      [inherit-fields #`(list #,@(reverse (hash-ref parsed-forms 'inherit-fields null)))]
@@ -3036,6 +3055,7 @@
          (syntax/loc stx
            (make-class/c methods method-ctcs
                          fields field-ctcs
+                         inits init-ctcs
                          inherits inherit-ctcs
                          inherit-fields inherit-field-ctcs
                          supers super-ctcs
