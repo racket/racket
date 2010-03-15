@@ -2860,6 +2860,12 @@
                   (vector-set! int-vec new-idx
                                (make-method (p (vector-ref int-vec new-idx)) m)))))))
         
+        (unless (null? (class/c-inits ctc))
+          (set-class-init! 
+           c
+           (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
+             (init the-obj super-go si_c si_inited? si_leftovers init-args))))
+        
         c))))
 
 (define-struct class/c 
