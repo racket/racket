@@ -4669,30 +4669,54 @@
   
   (test/spec-passed
    'class/c-higher-order-init-3
-   '(let ([c% (class object% (super-new) (init a))]
-          [d% (contract (class/c (init [a number?] [a string?]))
-                        (class a% (super-new) (init a))
-                        'pos
-                        'neg)])
-      (new c% [a 3] [a "foo"])))
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (contract (class/c (init [a number?] [a string?]))
+                         (class c% (super-new) (init a))
+                         'pos
+                         'neg)])
+      (new d% [a 3] [a "foo"])))
   
   (test/neg-blame
    'class/c-higher-order-init-4
-   '(let ([c% (class object% (super-new) (init a))]
-          [d% (contract (class/c (init [a number?] [a string?]))
-                        (class a% (super-new) (init a))
-                        'pos
-                        'neg)])
-      (new c% [a 3] [a 4])))
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (contract (class/c (init [a number?] [a string?]))
+                         (class c% (super-new) (init a))
+                         'pos
+                         'neg)])
+      (new d% [a 3] [a 4])))
   
-  (test/spec-blame
+  (test/neg-blame
    'class/c-higher-order-init-5
-   '(let ([c% (class object% (super-new) (init a))]
-          [d% (contract (class/c (init [a number?] [a string?]))
-                        (class a% (super-new) (init a))
-                        'pos
-                        'neg)])
-      (new c% [a "bar"] [a "foo"])))
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (contract (class/c (init [a number?] [a string?]))
+                         (class c% (super-new) (init a))
+                         'pos
+                         'neg)])
+      (new d% [a "bar"] [a "foo"])))
+  
+  (test/spec-passed
+   'class/c-higher-order-init-6
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (class c% (super-new) (init a))]
+           [d%/c (contract (class/c (init [a integer?] [a string?])) d% 'pos 'neg1)]
+           [d%/c/c (contract (class/c (init [a number?])) d%/c 'pos1 'neg)])
+      (new d%/c/c [a 3] [a "foo"])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-7
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (class c% (super-new) (init a))]
+           [d%/c (contract (class/c (init [a integer?] [a string?])) d% 'pos1 'neg)]
+           [d%/c/c (contract (class/c (init [a number?])) d%/c 'pos 'neg1)])
+      (new d%/c/c [a 3.5] [a "foo"])))
+  
+  (test/neg-blame
+   'class/c-higher-order-init-8
+   '(let* ([c% (class object% (super-new) (init a))]
+           [d% (class c% (super-new) (init a))]
+           [d%/c (contract (class/c (init [a integer?] [a string?])) d% 'pos 'neg)]
+           [d%/c/c (contract (class/c (init [a number?])) d%/c 'pos 'neg)])
+      (new d%/c/c [a #t] [a "foo"])))
 
   (test/spec-passed
    'class/c-higher-order-method-1
