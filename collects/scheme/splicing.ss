@@ -197,7 +197,12 @@
        (syntax-case body (quote)
          [(ls _ _ (quote body))
           (let ([body #'body])
-            (syntax-case body (begin define-values define-syntaxes define-for-syntaxes)
+            (syntax-case body ( begin
+                                define-values
+                                define-syntaxes
+                                define-for-syntaxes
+                                #%require
+                                #%provide )
               [(begin expr ...)
                (syntax/loc body
                  (begin (expand-ssp-body (sp-id ...) (temp-id ...) expr) ...))]
@@ -208,6 +213,8 @@
                      rhs)))]
               [(define-syntaxes . _) body]
               [(define-for-syntaxes . _) body]
+              [(#%require . _) body]
+              [(#%provide . _) body]
               [expr (syntax/loc body
                       (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
                         expr))]))]))]))
