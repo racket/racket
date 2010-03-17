@@ -15,6 +15,7 @@
      (the-eval '(require web-server/http
                          net/url
                          scheme/list 
+                         scheme/promise
                          web-server/dispatch
                          web-server/dispatch/extend))
      the-eval))
@@ -52,7 +53,7 @@ Now when a request is sent to your application, it will be directed to the appro
 @interaction[#:eval dispatch-eval
 (define (url->request u)
   (make-request #"GET" (string->url u) empty
-                empty #f "1.2.3.4" 80 "4.3.2.1"))
+                (delay empty) #f "1.2.3.4" 80 "4.3.2.1"))
 (blog-dispatch 
  (url->request "http://www.chrlsnchrg.com"))
 (blog-dispatch 
