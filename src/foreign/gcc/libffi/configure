@@ -3862,7 +3862,7 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 else
   eval ac_cv_prog_cc_${ac_cc}_c_o=no
 fi
-rm -f core conftest*
+rm -f -r core conftest*
 
 fi
 if eval test \$ac_cv_prog_cc_${ac_cc}_c_o = yes; then
@@ -6275,7 +6275,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -6296,7 +6296,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -11528,7 +11528,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -11549,7 +11549,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -11906,7 +11906,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_os_cray=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_os_cray" >&5
@@ -13344,6 +13344,31 @@ echo "${ECHO_T}$libffi_cv_as_register_pseudo_op" >&6; }
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_AS_REGISTER_PSEUDO_OP 1
+_ACEOF
+
+    fi
+fi
+
+if test x$TARGET = xX86 || test x$TARGET = xX86_64; then
+    { echo "$as_me:$LINENO: checking assembler supports pc related relocs" >&5
+echo $ECHO_N "checking assembler supports pc related relocs... $ECHO_C" >&6; }
+if test "${libffi_cv_as_x86_pcrel+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+	libffi_cv_as_x86_pcrel=yes
+	echo '.text; foo: nop; .data; .long foo-.; .text' > conftest.s
+	if $CC $CFLAGS -c conftest.s 2>&1 | grep -i warning > /dev/null; then
+	    libffi_cv_as_x86_pcrel=no
+	fi
+
+fi
+{ echo "$as_me:$LINENO: result: $libffi_cv_as_x86_pcrel" >&5
+echo "${ECHO_T}$libffi_cv_as_x86_pcrel" >&6; }
+    if test "x$libffi_cv_as_x86_pcrel" = xyes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_AS_X86_PCREL 1
 _ACEOF
 
     fi
