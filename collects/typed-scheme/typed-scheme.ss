@@ -6,7 +6,7 @@
          (for-syntax 
           (except-in syntax/parse id)
           scheme/base
-          (private type-contract)
+          (private type-contract optimize)
           (types utils convenience)
 	  (typecheck typechecker provide-handling)
 	  (env type-environments type-name-env type-alias-env)
@@ -77,7 +77,12 @@
                                        (type-check #'(body2 ...)))]
                          [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))]
                          [(transformed-body ...) (remove-provides #'(body2 ...))])]
-           [with-syntax ([(transformed-body ...) (change-contract-fixups #'(transformed-body ...))])])
+           [with-syntax ([(transformed-body ...) (change-contract-fixups #'(transformed-body ...))])]
+           
+           [with-syntax ([(transformed-body ...) 
+                          (if (optimize?)
+                              (map optimize (syntax->list #'(transformed-body ...)))
+                              #'(transformed-body ...))])])
         (do-time "Typechecked")
         #;(printf "checked ~a~n" module-name)
         #;(printf "created ~a types~n" (count!))

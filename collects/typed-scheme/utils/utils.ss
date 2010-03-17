@@ -14,6 +14,8 @@ at least theoretically.
 (provide reverse-begin)
 
 (provide
+ ;; optimization
+ optimize?
  ;; timing
  start-timing do-time  
  ;; logging
@@ -22,6 +24,8 @@ at least theoretically.
  custom-printer define-struct/printer
  ;; provide macros
  rep utils typecheck infer env private)
+
+(define optimize? (make-parameter #f))
 
 ;; fancy require syntax
 (define-syntax (define-requirer stx)
