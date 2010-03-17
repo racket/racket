@@ -206,7 +206,7 @@
                         #:when (for/and ([seen-var seen])
                                         (not (free-identifier=? bv (car seen-var)))))
                bv)])
-       (with-syntax ([(success? var ...) (append (generate-temporaries '(success?)) vars)])
+       (with-syntax ([(esc* success? var ...) (append (generate-temporaries '(esc* success?)) vars)])
          ;; do the or matching, and bind the results to the appropriate
          ;; variables
          #`(let ([esc* (lambda () (values #f #,@(for/list ([v vars]) #'#f)))])
