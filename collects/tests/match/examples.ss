@@ -633,5 +633,15 @@
            (match (make-pose 1 2 3)
              [(struct pose (x y a)) "Gotcha!"]
              [else "Epic fail!"])))
+   
+   (comp #f
+         (match (list 'a 'b 'c)
+           [(or (list a b)
+                (and (app (lambda _ #f) b)
+                     (or (and (app (lambda _ #f) a)
+                              (list))
+                         (list a))))
+            #t]
+           [_ #f]))
 
 ))

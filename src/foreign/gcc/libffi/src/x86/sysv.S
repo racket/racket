@@ -1,6 +1,5 @@
 /* -----------------------------------------------------------------------
-   sysv.S - Copyright (c) 1996, 1998, 2001, 2002, 2003, 2005, 2008
-   Red Hat, Inc.
+   sysv.S - Copyright (c) 1996, 1998, 2001, 2002, 2003, 2005  Red Hat, Inc.
    
    X86 Foreign Function Interface 
 
@@ -242,20 +241,9 @@ ffi_closure_SYSV:
 
 #if !FFI_NO_RAW_API
 
-/* Precalculate for e.g. the Solaris 10/x86 assembler.  */
-#if FFI_TRAMPOLINE_SIZE == 10
-#define RAW_CLOSURE_CIF_OFFSET 12
-#define RAW_CLOSURE_FUN_OFFSET 16
-#define RAW_CLOSURE_USER_DATA_OFFSET 20
-#elif FFI_TRAMPOLINE_SIZE == 24
-#define RAW_CLOSURE_CIF_OFFSET 24
-#define RAW_CLOSURE_FUN_OFFSET 28
-#define RAW_CLOSURE_USER_DATA_OFFSET 32
-#else
 #define RAW_CLOSURE_CIF_OFFSET ((FFI_TRAMPOLINE_SIZE + 3) & ~3)
 #define RAW_CLOSURE_FUN_OFFSET (RAW_CLOSURE_CIF_OFFSET + 4)
 #define RAW_CLOSURE_USER_DATA_OFFSET (RAW_CLOSURE_FUN_OFFSET + 4)
-#endif
 #define CIF_FLAGS_OFFSET 20
 
 	.align	4
@@ -354,12 +342,10 @@ ffi_closure_raw_SYSV:
 	.long	.LEFDE1-.LASFDE1	/* FDE Length */
 .LASFDE1:
 	.long	.LASFDE1-.Lframe1	/* FDE CIE offset */
-#if defined __PIC__ && defined HAVE_AS_X86_PCREL
+#ifdef __PIC__
 	.long	.LFB1-.	/* FDE initial location */
-#elif defined __PIC__
-	.long	.LFB1 at rel
 #else
-	.long	.LFB1
+	.long	.LFB1	/* FDE initial location */
 #endif
 	.long	.LFE1-.LFB1	/* FDE address range */
 #ifdef __PIC__
@@ -381,10 +367,8 @@ ffi_closure_raw_SYSV:
 	.long	.LEFDE2-.LASFDE2	/* FDE Length */
 .LASFDE2:
 	.long	.LASFDE2-.Lframe1	/* FDE CIE offset */
-#if defined __PIC__ && defined HAVE_AS_X86_PCREL
+#ifdef __PIC__
 	.long	.LFB2-.	/* FDE initial location */
-#elif defined __PIC__
-	.long	.LFB2 at rel
 #else
 	.long	.LFB2
 #endif
@@ -417,10 +401,8 @@ ffi_closure_raw_SYSV:
 	.long	.LEFDE3-.LASFDE3	/* FDE Length */
 .LASFDE3:
 	.long	.LASFDE3-.Lframe1	/* FDE CIE offset */
-#if defined __PIC__ && defined HAVE_AS_X86_PCREL
+#ifdef __PIC__
 	.long	.LFB3-.	/* FDE initial location */
-#elif defined __PIC__
-	.long	.LFB3 at rel
 #else
 	.long	.LFB3
 #endif
