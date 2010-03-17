@@ -37,6 +37,7 @@
 [Keyword -Keyword]
 [Listof -Listof]
 [Vectorof (-poly (a) (make-Vector a))]
+[FlVector -FlVector]
 [Option (-poly (a) (-opt a))]
 [HashTable (-poly (a b) (-HT a b))]
 [Promise (-poly (a) (-Promise a))]
