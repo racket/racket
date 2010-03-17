@@ -17,6 +17,9 @@
       #t
       (error (format "Check (~a ~a ~a) failed" f a b)))) 
 
+;; Check the FlVector type is exported
+(define: v : FlVector (flvector 1. 2. 3.))
+
 (check equal? (flvector 1. 2. 3. 4.) (flvector 1. 2. 3. 4.))
 (check equal? (flvector? (flvector 1. 2. 3.)) #t)
 (check equal? (make-flvector 3 3.0) (flvector 3. 3. 3.))
