@@ -5094,7 +5094,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         simple_rand = (ok_to_move_local(rand)
                        || SCHEME_INTP(rand));
         if (!simple_rand)
-          simple_rand2 = SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type);
+          simple_rand2 = (SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type)
+                          && (SCHEME_GET_LOCAL_FLAGS(rand2) != SCHEME_LOCAL_FLONUM));
         else
           simple_rand2 = 0;
       } else {
