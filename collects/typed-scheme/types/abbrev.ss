@@ -8,6 +8,7 @@
          scheme/list
          scheme/match         
          scheme/promise
+         scheme/flonum
          (prefix-in c: scheme/contract)
          (for-syntax scheme/base syntax/parse)
 	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp))
@@ -98,6 +99,8 @@
 (define -Output-Port (make-Base 'Output-Port #'output-port?))
 (define -Input-Port (make-Base 'Input-Port #'input-port?))
 (define -TCP-Listener (make-Base 'TCP-Listener #'tcp-listener?))
+
+(define -FlVector (make-Base 'FlVector #'flvector?))
 
 (define -Syntax make-Syntax)
 (define -HT make-Hashtable)
