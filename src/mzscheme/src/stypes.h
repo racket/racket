@@ -174,7 +174,7 @@ enum {
   scheme_flvector_type,                 /* 156 */
   scheme_place_type,                    /* 157 */
   scheme_place_async_channel_type,      /* 158 */
-  scheme_engine_type,                   /* 159 */
+  scheme_place_bi_channel_type,         /* 159 */
   scheme_once_used_type,                /* 160 */
 
 #ifdef MZTAG_REQUIRED

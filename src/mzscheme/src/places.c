@@ -22,6 +22,10 @@ static Scheme_Object *scheme_place_channel_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *args[]);
 
 Scheme_Object *scheme_place_async_channel_create();
+Scheme_Object *scheme_place_bi_channel_create();
+Scheme_Object *scheme_place_bi_peer_channel_create(Scheme_Object *orig);
+static void scheme_place_bi_channel_set_signal(Scheme_Object *cho);
+
 void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
 Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch);
 
@@ -143,18 +147,23 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place_data->ready    = ready;
 
   if (argc == 2 || argc == 3 ) {
-    Scheme_Object *channel;
     place_data->module   = args[0];
     place_data->function = args[1];
     place_data->ready    = ready;
     if (argc == 2) {
-      channel = scheme_place_async_channel_create();
+      Scheme_Object *channel;
+      channel = scheme_place_bi_channel_create();
+      place->channel = channel;
+      scheme_place_bi_channel_set_signal(channel);
+      channel = scheme_place_bi_peer_channel_create(channel);
+      place_data->channel = channel;
     }
     else {
+      Scheme_Object *channel;
       channel = args[2];
+      place_data->channel = channel;
+      place->channel = channel;
     }
-    place_data->channel = channel;
-    place->channel = channel;
   }
   else {
     scheme_wrong_count_m("place", 1, 2, argc, args, 0);
@@ -428,6 +437,21 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
     case scheme_null_type:
       new_so = so;
       break;
+    case scheme_vector_type:
+      {
+        Scheme_Object *vec;
+        long i;
+        long size = SCHEME_VEC_SIZE(so);
+        vec = scheme_make_vector(size, 0);
+        for (i = 0; i <size ; i++) {
+          Scheme_Object *tmp;
+          tmp = scheme_places_deep_copy(SCHEME_VEC_ELS(so)[i]);
+          SCHEME_VEC_ELS(vec)[i] = tmp;
+        }
+        SCHEME_SET_IMMUTABLE(vec);
+        new_so = vec;
+      }
+      break;
     case scheme_resolved_module_path_type:
     default:
       scheme_log_abort("cannot copy object");
@@ -463,7 +487,13 @@ static void *place_start_proc(void *data_arg) {
 
   a[0] = scheme_places_deep_copy(place_data->module);
   a[1] = scheme_places_deep_copy(place_data->function);
-  channel = scheme_places_deep_copy(place_data->channel);
+  if (!SAME_TYPE(SCHEME_TYPE(place_data->channel), scheme_place_bi_channel_type)) {
+    channel = scheme_places_deep_copy(place_data->channel);
+  }
+  else {
+    channel = place_data->channel;
+    scheme_place_bi_channel_set_signal(channel);
+  }
 
   mzrt_sema_post(place_data->ready);
   place_data = NULL;
@@ -511,8 +541,15 @@ Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so) {
 Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
   if (argc == 2) {
     Scheme_Object *mso;
+    Scheme_Place_Bi_Channel *ch;
+    if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
+      ch = (Scheme_Place_Bi_Channel *) ((Scheme_Place *) args[0])->channel;
+    }
+    else {
+      ch = (Scheme_Place_Bi_Channel *)args[0];
+    }
     mso = scheme_places_deep_copy_in_master(args[1]);
-    scheme_place_async_send((Scheme_Place_Async_Channel *) args[0], mso);
+    scheme_place_async_send((Scheme_Place_Async_Channel *) ch->sendch, mso);
   }
   else {
     scheme_wrong_count_m("place-channel-send", 1, 2, argc, args, 0);
@@ -522,7 +559,14 @@ Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
 
 Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
   if (argc == 1) {
-    return scheme_place_async_recv((Scheme_Place_Async_Channel *) args[0]);
+    Scheme_Place_Bi_Channel *ch;
+    if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type)) {
+      ch = (Scheme_Place_Bi_Channel *) ((Scheme_Place *) args[0])->channel;
+    }
+    else {
+      ch = (Scheme_Place_Bi_Channel *) args[0];
+    }
+    return scheme_place_async_recv((Scheme_Place_Async_Channel *) ch->recvch);
   }
   else {
     scheme_wrong_count_m("place-channel-recv", 1, 2, argc, args, 0);
@@ -624,9 +668,42 @@ Scheme_Object *scheme_place_async_channel_create() {
   return (Scheme_Object *)ch;
 }
 
+Scheme_Object *scheme_place_bi_channel_create() {
+  Scheme_Object *tmp;
+  Scheme_Place_Bi_Channel *ch;
+
+  ch = GC_master_malloc(sizeof(Scheme_Place_Bi_Channel));
+  ch->so.type = scheme_place_bi_channel_type;
+
+  tmp = scheme_place_async_channel_create();
+  ch->sendch = tmp;
+  tmp = scheme_place_async_channel_create();
+  ch->recvch = tmp;
+  return (Scheme_Object *)ch;
+}
+
+Scheme_Object *scheme_place_bi_peer_channel_create(Scheme_Object *orig) {
+  Scheme_Place_Bi_Channel *ch;
+
+  ch = GC_master_malloc(sizeof(Scheme_Place_Bi_Channel));
+  ch->so.type = scheme_place_bi_channel_type;
+
+  ch->sendch = ((Scheme_Place_Bi_Channel *)orig)->recvch;
+  ch->recvch = ((Scheme_Place_Bi_Channel *)orig)->sendch;
+  return (Scheme_Object *)ch;
+}
+
+static void scheme_place_bi_channel_set_signal(Scheme_Object *cho) {
+  Scheme_Place_Async_Channel *ch;
+  void *signaldescr;
+  signaldescr = scheme_get_signal_handle();
+  ch = (Scheme_Place_Async_Channel *) ((Scheme_Place_Bi_Channel *)cho)->recvch;
+  ch->wakeup_signal = signaldescr;
+}
+
 static Scheme_Object *scheme_place_channel_p(int argc, Scheme_Object *args[])
 {
-  return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_async_channel_type) ? scheme_true : scheme_false;
+  return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_bi_channel_type) ? scheme_true : scheme_false;
 }
 
 
@@ -667,6 +744,16 @@ void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o) {
   }
 }
 
+static int scheme_place_async_ch_ready(Scheme_Place_Async_Channel *ch) {
+  int ready = 0;
+  mzrt_mutex_lock(ch->lock);
+  {
+    if (ch->count > 0) ready = 1;
+  }
+  mzrt_mutex_unlock(ch->lock);
+  return ready;
+}
+
 Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch) {
   Scheme_Object *msg = NULL;
   while(1) {
@@ -682,7 +769,7 @@ Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch) {
     mzrt_mutex_unlock(ch->lock);
     if(msg) break;
     scheme_thread_block(0);
-    scheme_block_until(NULL, NULL, NULL, 0);
+    scheme_block_until((Scheme_Ready_Fun) scheme_place_async_ch_ready, NULL, (Scheme_Object *) ch, 0);
   }
   return msg;
 }
@@ -702,6 +789,7 @@ static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_place_type, place_val);
   GC_REG_TRAV(scheme_place_async_channel_type, place_async_channel_val);
+  GC_REG_TRAV(scheme_place_bi_channel_type, place_bi_channel_val);
 }
 
 END_XFORM_SKIP;

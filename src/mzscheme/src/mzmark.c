@@ -3340,6 +3340,33 @@ static int mark_rb_node_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_PLACES_C
 
+static int place_bi_channel_val_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Bi_Channel));
+}
+
+static int place_bi_channel_val_MARK(void *p) {
+  Scheme_Place_Bi_Channel *pbc = (Scheme_Place_Bi_Channel *)p;
+  gcMARK(pbc->sendch);
+  gcMARK(pbc->recvch);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Bi_Channel));
+}
+
+static int place_bi_channel_val_FIXUP(void *p) {
+  Scheme_Place_Bi_Channel *pbc = (Scheme_Place_Bi_Channel *)p;
+  gcFIXUP(pbc->sendch);
+  gcFIXUP(pbc->recvch);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Bi_Channel));
+}
+
+#define place_bi_channel_val_IS_ATOMIC 0
+#define place_bi_channel_val_IS_CONST_SIZE 1
+
+
 static int place_val_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));

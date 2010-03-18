@@ -3382,6 +3382,12 @@ int scheme_places_register_child(int pid, void *signal_fd, int *status);
 Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 #endif
 
+typedef struct Scheme_Place_Bi_Channel {
+  Scheme_Object so;
+  Scheme_Object *sendch;
+  Scheme_Object *recvch;
+} Scheme_Place_Bi_Channel;
+
 typedef struct Scheme_Place {
   Scheme_Object so;
   void *proc_thread;

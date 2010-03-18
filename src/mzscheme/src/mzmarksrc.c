@@ -1354,6 +1354,16 @@ END hash;
 
 START places;
 
+place_bi_channel_val {
+ mark:
+  Scheme_Place_Bi_Channel *pbc = (Scheme_Place_Bi_Channel *)p;
+  gcMARK(pbc->sendch);
+  gcMARK(pbc->recvch);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Bi_Channel));
+}
+
 place_val {
  mark:
   Scheme_Place *pr = (Scheme_Place *)p;

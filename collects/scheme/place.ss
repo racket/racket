@@ -4,4 +4,7 @@
   (#%provide place
              place-sleep
              place-wait 
+             place-channel-send
+             place-channel-recv
+             place-channel?
              place?))

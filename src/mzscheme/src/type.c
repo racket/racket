@@ -281,7 +281,7 @@ scheme_init_type ()
 #endif
   set_name(scheme_place_type, "<place>");
   set_name(scheme_place_async_channel_type, "<place_async_channel>");
-  set_name(scheme_engine_type, "<engine>");
+  set_name(scheme_place_bi_channel_type, "<place_bidirectional_channel>");
 }
 
 Scheme_Type scheme_make_type(const char *name)
