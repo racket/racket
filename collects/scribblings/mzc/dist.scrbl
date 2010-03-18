@@ -17,7 +17,7 @@ combined files for a distribution. Each command-line argument is an
 executable to include in the distribution, so multiple executables can
 be packaged together. For example, under Windows,
 
-@commandline{mzc --exe-dir geetings hello.exe goodbye.exe}
+@commandline{mzc --exe-dir greetings hello.exe goodbye.exe}
 
 creates a directory @filepath{greetings} (if the directory doesn't
 exist already), and it copies the executables @filepath{hello.exe} and
