@@ -59,4 +59,40 @@
                                               #%provide))))
                  #`(begin #,expanded (doc-begin m-id post-process exprs . body))]
                 [_else
-                 #`(doc-begin m-id post-process (#,expanded . exprs) . body)])))]))]))
+                 #`(doc-begin m-id post-process 
+                              ((pre-part #,expanded body1) . exprs) 
+                              . body)])))]))]))
+
+(define-syntax (pre-part stx)
+  (syntax-case stx ()
+    [(_ s e)
+     (if (string? (syntax-e #'s))
+         #'s
+         (with-syntax ([src (syntax-source #'e)]
+                       [line (syntax-line #'e)]
+                       [col (syntax-column #'e)]
+                       [pos (syntax-position #'e)]
+                       [span (syntax-column #'e)])
+           #'(check-pre-part e (vector 'src 'line 'col 'pos 'span))))]))
+
+(define (check-pre-part v s)
+  (if (pre-part? v)
+      v
+      (error
+       (format
+        "~a: not valid in document body (need a pre-part for decode) in: ~e"
+        (cond
+         [(and (vector-ref s 0)
+               (vector-ref s 1))
+          (format "~a:~a:~a"
+                  (vector-ref s 0)
+                  (vector-ref s 1)
+                  (vector-ref s 2))]
+         [(and (vector-ref s 0)
+               (vector-ref s 3))
+          (format "~a:::~a"
+                  (vector-ref s 0)
+                  (vector-ref s 1)
+                  (vector-ref s 3))]
+         [else 'document])
+        v))))
