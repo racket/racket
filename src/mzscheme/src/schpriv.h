@@ -248,6 +248,7 @@ void scheme_init_foreign_globals();
 void scheme_init_foreign(Scheme_Env *env);
 #endif
 void scheme_init_place(Scheme_Env *env);
+void scheme_init_places_once();
 void scheme_init_futures(Scheme_Env *env);
 
 void scheme_init_print_buffers_places(void);

@@ -49,6 +49,12 @@ hardware threads.
   Returns @scheme[#t] if @scheme[x] is a place-channel object.
 }
 
+@defproc[(place-channel-send/recv [ch place-channel?] [x any/c]) void]{
+  Sends an immutable message @scheme[x] on channel @scheme[ch] and then 
+  waits for a repy message.
+  Returns an immutable message received on channel @scheme[ch].
+}
+
 @section[#:tag "example"]{How Do I Keep Those Cores Busy?}
 
 This code launches two places passing 1 and 2 as the initial channels 
@@ -70,10 +76,19 @@ This is the code for the place-worker.ss module that each place will execute.
    (printf "IN PLACE ~a~n" x)))
 ]
 
+@section[#:tag "place-channels"]{Place Channels}
+@;@defproc[(make-place-channel) channel?]{
+@;Creates and returns a new channel. 
+
+Place channels can be used with @scheme[place-channel-recv], or as a
+@tech{synchronizable event} (see @secref["sync"]) to receive a value
+through the channel. The channel can be used with @scheme[place-channel-send]
+to send a value through the channel.
 
 @section[#:tag "messagepassingparallelism"]{Message Passing Parallelism}
 
 Places can only communicate by passing immutable messages on place-channels.
+Only immutable pairs, vectors, and structs can be communicated across places channels.
 
 @section[#:tag "logging"]{Architecture and Garbage Collection}
 
