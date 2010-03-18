@@ -1512,8 +1512,8 @@ contracts for subclasses.
 Method contracts must contain an additional initial argument which corresponds
 to the implicit @scheme[this] parameter of the method.  This allows for
 contracts which discuss the state of the object when the method is called
-(or, for dependent contracts, in other parts of the contract).  Two alternative
-contract forms, @scheme[->m] and @scheme[->*m], are provided as a shorthand
+(or, for dependent contracts, in other parts of the contract).  Alternative
+contract forms, such as @scheme[->m], are provided as a shorthand
 for writing method contracts.
 
 The external contracts are as follows:
@@ -1581,6 +1581,23 @@ need to be checked.}
 Similar to @scheme[->*], except that the mandatory domain of the resulting contract contains one
 more element than the stated domain, where the first (implicit) argument is contracted with
 @scheme[any/c]. This contract is useful for writing simpler method contracts when no properties
+of @scheme[this] need to be checked.}
+
+@defform[(case->m (-> dom ... rest range) ...)]{
+Similar to @scheme[case->], except that the mandatory domain of each case of the resulting contract
+contains one more element than the stated domain, where the first (implicit) argument is contracted
+with @scheme[any/c]. This contract is useful for writing simpler method contracts when no properties
+of @scheme[this] need to be checked.}
+
+@defform[(->dm (mandatory-dependent-dom ...)
+               (optional-dependent-dom ...)
+               dependent-rest
+               pre-cond
+               dep-range)]{
+Similar to @scheme[->d], except that the mandatory domain of the resulting contract
+contains one more element than the stated domain, where the first (implicit) argument is contracted
+with @scheme[any/c]. In addition, @scheme[this] is appropriately bound in the body of the contract.
+This contract is useful for writing simpler method contracts when no properties
 of @scheme[this] need to be checked.}
 
 @defform/subs[

@@ -39,6 +39,10 @@ v4 todo:
          check-procedure/more)
 
 (define-syntax-parameter making-a-method #f)
+(define-for-syntax (make-this-parameters id)
+  (if (syntax-parameter-value #'making-a-method)
+     (list id)
+     null))
 
 (define-struct contracted-function (proc ctc)
   #:property prop:procedure 0
@@ -301,9 +305,7 @@ v4 todo:
                        [(args ...) (generate-temporaries (syntax (doms ...)))]
                        [(dom-ctc ...) (generate-temporaries (syntax (doms ...)))]
                        [(this-parameter ...)
-                        (if (syntax-parameter-value #'making-a-method)
-                            (generate-temporaries '(this))
-                            '())])
+                        (make-this-parameters (car (generate-temporaries '(this))))])
            (syntax-case* #'last-one (-> any values) module-or-top-identifier=?
              [any
               (with-syntax ([(ignored) (generate-temporaries (syntax (rng)))])
@@ -369,7 +371,7 @@ v4 todo:
         (with-syntax ([outer-lambda
                        #`(lambda (chk ctc dom-names ... kwd-names ... rng-names ...)
                             (lambda (val)
-                              (chk val #,(syntax-parameter-value #'making-a-method))
+                              (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
                               (make-contracted-function inner-lambda ctc)))])
           (values
            (syntax 
@@ -607,9 +609,7 @@ v4 todo:
                (with-syntax ([(rng-proj ...) (generate-temporaries (or rng-ctc '()))]
                              [(rng ...) (generate-temporaries (or rng-ctc '()))]
                              [(this-parameter ...)
-                              (if (syntax-parameter-value #'making-a-method)
-                                  (generate-temporaries '(this))
-                                  '())])
+                              (make-this-parameters (car (generate-temporaries '(this))))])
                  #`(build-->
                     '->*
                     (list mandatory-dom ...)
@@ -634,7 +634,7 @@ v4 todo:
                             optional-dom-kwd-proj ... 
                             rng-proj ...)
                       (λ (f)
-                        (chk f #,(syntax-parameter-value #'making-a-method))
+                        (chk f #,(and (syntax-parameter-value #'making-a-method) #t))
                         (make-contracted-function
                          #,(maybe-a-method/name
                             (add-name-prop
@@ -756,6 +756,21 @@ v4 todo:
         (syntax->list #'(kwd ...))))])
   doms)
 
+(define-for-syntax (make-this-transformer this-arg)
+  (with-syntax ([this-arg this-arg])
+    (make-set!-transformer
+     (λ (sstx)
+       (syntax-case sstx (set!)
+         [(set! id arg)
+          (raise-syntax-error #f 
+                              "can't mutate this"
+                              sstx)]
+         [id
+          (identifier? #'id)
+          (syntax/loc sstx this-arg)]
+         [(id . args)
+          (datum->syntax sstx (cons #'this-arg #'args) sstx)])))))
+
 (define-syntax (->d stx)
   (syntax-case stx ()
     [(_ (raw-mandatory-doms ...)
@@ -773,9 +788,9 @@ v4 todo:
                         #'((optional-kwd optional-kwd-id) ...
                            (mandatory-kwd mandatory-kwd-id) ...)))]
                      [(this-parameter ...)
-                      (if (syntax-parameter-value #'making-a-method)
-                          (list (datum->syntax stx 'this #f))
-                          '())])
+                      (make-this-parameters (if (syntax? (syntax-parameter-value #'making-a-method))
+                                                (car (generate-temporaries '(this)))
+                                                (datum->syntax stx 'this #f)))])
          (let-values ([(id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)])
            (with-syntax ([(dom-params ...)
                           #`(this-parameter ...
@@ -793,7 +808,7 @@ v4 todo:
                               [any #'(() #f)]
                               [[id ctc] #'((id) (ctc))]
                               [x (raise-syntax-error #f "expected binding pair or any" stx #'x)])]
-                           [mtd? (syntax-parameter-value #'making-a-method)])
+                           [mtd? (and (syntax-parameter-value #'making-a-method) #t)])
                (let ([rng-underscores? 
                       (let ([is-underscore?
                              (λ (x) 
@@ -819,35 +834,57 @@ v4 todo:
                                      (syntax->list #'(dom-params ...))))])
                    (when dup
                      (raise-syntax-error #f "duplicate identifier" stx dup)))
-                 #`(syntax-parameterize 
-                    ((making-a-method #f)) 
-                    (build-->d mtd? 
-                               (list (λ (dom-params ...) mandatory-doms) ...)
-                               (list (λ (dom-params ...) optional-doms) ...)
-                               (list (λ (dom-params ...) mandatory-kwd-dom) ...)
-                               (list (λ (dom-params ...) optional-kwd-dom) ...)
-                               #,(if id/rest 
-                                     (with-syntax ([(id rst-ctc) id/rest])
-                                       #`(λ (dom-params ...) rst-ctc))
-                                     #f)
-                               #,(if pre-cond
-                                     #`(λ (dom-params ...) #,pre-cond)
-                                     #f)
-                               #,(syntax-case #'rng-ctcs ()
-                                   [#f #f]
-                                   [(ctc ...) 
-                                    (if rng-underscores?
-                                        #'(box (list (λ (dom-params ...) ctc) ...))
-                                        #'(list (λ (rng-params ... dom-params ...) ctc) ...))])
-                               #,(if post-cond
-                                     #`(λ (rng-params ... dom-params ...) #,post-cond)
-                                     #f)
-                               '(mandatory-kwd ...)
-                               '(optional-kwd ...)
-                               (λ (f) 
-                                 #,(add-name-prop
-                                    (syntax-local-infer-name stx)
-                                    #`(λ args (apply f args))))))))))))]))
+                 #`(let-syntax ([parameterize-this
+                                 (let ([old-param (syntax-parameter-value #'making-a-method)])
+                                   (λ (stx)
+                                     (syntax-case stx ()
+                                       [(_ body) #'body]
+                                       [(_ id body)
+                                        (if (syntax? old-param)
+                                            (with-syntax ([param old-param])
+                                              (syntax/loc stx
+                                                (syntax-parameterize
+                                                    ([param (make-this-transformer #'id)])
+                                                  body)))
+                                            #'body)])))])
+                     (syntax-parameterize 
+                         ((making-a-method #f)) 
+                       (build-->d mtd? 
+                                  (list (λ (dom-params ...)
+                                          (parameterize-this this-parameter ... mandatory-doms)) ...)
+                                  (list (λ (dom-params ...) 
+                                          (parameterize-this this-parameter ... optional-doms)) ...)
+                                  (list (λ (dom-params ...) 
+                                          (parameterize-this this-parameter ... mandatory-kwd-dom)) ...)
+                                  (list (λ (dom-params ...) 
+                                          (parameterize-this this-parameter ... optional-kwd-dom)) ...)
+                                  #,(if id/rest 
+                                        (with-syntax ([(id rst-ctc) id/rest])
+                                          #`(λ (dom-params ...)
+                                              (parameterize-this this-parameter ... rst-ctc)))
+                                        #f)
+                                  #,(if pre-cond
+                                        #`(λ (dom-params ...)
+                                            (parameterize-this this-parameter ... #,pre-cond))
+                                        #f)
+                                  #,(syntax-case #'rng-ctcs ()
+                                      [#f #f]
+                                      [(ctc ...) 
+                                       (if rng-underscores?
+                                           #'(box (list (λ (dom-params ...) 
+                                                          (parameterize-this this-parameter ... ctc)) ...))
+                                           #'(list (λ (rng-params ... dom-params ...)
+                                                     (parameterize-this this-parameter ... ctc)) ...))])
+                                  #,(if post-cond
+                                        #`(λ (rng-params ... dom-params ...)
+                                            (parameterize-this this-parameter ... #,post-cond))
+                                        #f)
+                                  '(mandatory-kwd ...)
+                                  '(optional-kwd ...)
+                                  (λ (f) 
+                                    #,(add-name-prop
+                                       (syntax-local-infer-name stx)
+                                       #`(λ args (apply f args)))))))))))))]))
 
 (define ->d-tail-key (gensym '->d-tail-key))
 
@@ -1200,9 +1237,7 @@ v4 todo:
                                       (generate-temporaries rng)
                                       '())]
                     [(this-parameter ...)
-                     (if (syntax-parameter-value #'making-a-method)
-                         (generate-temporaries '(this))
-                         '())])
+                     (make-this-parameters (car (generate-temporaries '(this))))])
         #`(#,doms
            #,rst
            #,(if rng #`(list #,@rng) #f)
@@ -1250,7 +1285,7 @@ v4 todo:
                               #,@(apply append (map syntax->list (syntax->list #'((dom-proj-x ...) ...))))
                               #,@(apply append (map syntax->list (syntax->list #'((rng-proj-x ...) ...)))))
                             (λ (f)
-                              (chk f #,(syntax-parameter-value #'making-a-method))
+                              (chk f #,(and (syntax-parameter-value #'making-a-method) #t))
                               (make-contracted-function
                                (case-lambda
                                 [formals body] ...)

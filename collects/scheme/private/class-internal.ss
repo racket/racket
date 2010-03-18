@@ -56,7 +56,7 @@
            method-in-interface? interface->method-names class->interface class-info
            (struct-out exn:fail:object)
            make-primitive-class
-           class/c ->m ->*m object/c
+           class/c ->m ->*m ->dm case->m object/c
            
            ;; "keywords":
            private public override augment
@@ -2503,6 +2503,12 @@
 (define-syntax-rule (->*m . stx)
   (syntax-parameterize ([making-a-method #t]) (->* . stx)))
 
+(define-syntax-rule (case->m . stx)
+  (syntax-parameterize ([making-a-method #t]) (case-> . stx)))
+
+(define-syntax-rule (->dm . stx)
+  (syntax-parameterize ([making-a-method #'this-param]) (->d . stx)))
+
 (define (class/c-check-first-order ctc cls blame)
   (let/ec return
     (define (failed str . args)
@@ -4737,5 +4743,5 @@
          method-in-interface? interface->method-names class->interface class-info
          (struct-out exn:fail:object)
          make-primitive-class
-         class/c ->m ->*m object/c)
+         class/c ->m ->*m ->dm case->m object/c)
 

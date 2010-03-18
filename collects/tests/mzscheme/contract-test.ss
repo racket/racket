@@ -5279,6 +5279,120 @@
               (class object% (super-new) (define/public (m x [f "foo"]) x))
               'pos
               'neg))
+  
+  (test/spec-passed
+   '->dm-first-order-1
+   '(contract (class/c [pop (->dm () () #:pre-cond (not (send this empty?)) [_ number?])]
+                       [push (->dm ([arg number?]) () [_ void?] #:post-cond (not (send this empty?)))]
+                       [empty? (->m boolean?)])
+              (class object% (super-new)
+                (define stack null)
+                (define/public (empty?) (null? stack))
+                (define/public (push v) (set! stack (cons v stack)))
+                (define/public (pop) (let ([res (car stack)]) (set! stack (cdr stack)) res)))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   '->dm-first-order-1
+   '(contract (class/c [pop (->dm () () #:pre-cond (not (send this empty?)) [_ number?])]
+                       [push (->dm ([arg number?]) () [_ void?] #:post-cond (not (send this empty?)))]
+                       [empty? (->m boolean?)])
+              (class object% (super-new)
+                (define stack null)
+                (define/public (empty?) (null? stack))
+                (define/public (push v) (set! stack (cons v stack)))
+                (define/public (pop v) (let ([res (car stack)]) (set! stack (cdr stack)) res)))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   '->dm-higher-order-1
+   '(let* ([stack% (contract (class/c [pop (->dm () () #:pre-cond (not (send this empty?)) [_ number?])]
+                                      [push (->dm ([arg number?]) () [_ void?] #:post-cond (not (send this empty?)))]
+                                      [empty? (->m boolean?)])
+                             (class object% (super-new)
+                               (define stack null)
+                               (define/public (empty?) (null? stack))
+                               (define/public (push v) (set! stack (cons v stack)))
+                               (define/public (pop) (let ([res (car stack)]) (set! stack (cdr stack)) res)))
+                             'pos
+                             'neg)]
+           [o (new stack%)])
+      (send o push 4)
+      (send o empty?)
+      (send o pop)))
+
+  (test/pos-blame
+   '->dm-higher-order-2
+   '(let* ([stack% (contract (class/c [pop (->dm () () #:pre-cond (not (send this empty?)) [_ number?])]
+                                      [push (->dm ([arg number?]) () [_ void?] #:post-cond (not (send this empty?)))]
+                                      [empty? (->m boolean?)])
+                             (class object% (super-new)
+                               (define stack null)
+                               (define/public (empty?) (null? stack))
+                               (define/public (push v) (void))
+                               (define/public (pop) (let ([res (car stack)]) (set! stack (cdr stack)) res)))
+                             'pos
+                             'neg)]
+           [o (new stack%)])
+      (send o push 4)
+      (send o empty?)
+      (send o pop)))
+
+  (test/neg-blame
+   '->dm-higher-order-3
+   '(let* ([stack% (contract (class/c [pop (->dm () () #:pre-cond (not (send this empty?)) [_ number?])]
+                                      [push (->dm ([arg number?]) () [_ void?] #:post-cond (not (send this empty?)))]
+                                      [empty? (->m boolean?)])
+                             (class object% (super-new)
+                               (define stack null)
+                               (define/public (empty?) (null? stack))
+                               (define/public (push v) (set! stack (cons v stack)))
+                               (define/public (pop) (let ([res (car stack)]) (set! stack (cdr stack)) res)))
+                             'pos
+                             'neg)]
+           [o (new stack%)])
+      (send o pop)))
+  
+  (test/spec-passed
+   'case->m-first-order-1
+   '(contract (class/c [m (case->m (-> number? number?) (-> number? number? number?))])
+              (class object% (super-new) (define/public (m x [y 3]) (+ x y)))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'case->m-first-order-2
+   '(contract (class/c [m (case->m (-> number? number?) (-> number? number? number?))])
+              (class object% (super-new) (define/public (m x) (+ x y)))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'case->m-higher-order-1
+   '(let ([cls% (contract (class/c [m (case->m (-> number? number?) (-> number? number? number?))])
+                          (class object% (super-new) (define/public (m x [y 3]) (+ x y)))
+                          'pos
+                          'neg)])
+      (send (new cls%) m 3)
+      (send (new cls%) m 3 4)))
+
+  (test/neg-blame
+   'case->m-higher-order-2
+   '(let ([cls% (contract (class/c [m (case->m (-> number? number?) (-> number? number? number?))])
+                          (class object% (super-new) (define/public (m x [y 3]) (+ x y)))
+                          'pos
+                          'neg)])
+      (send (new cls%) m #t)))
+
+  (test/neg-blame
+   'case->m-higher-order-3
+   '(let ([cls% (contract (class/c [m (case->m (-> number? number?) (-> number? number? number?))])
+                          (class object% (super-new) (define/public (m x [y 3]) (+ x y)))
+                          'pos
+                          'neg)])
+      (send (new cls%) m 3 #t)))
 
 ;                                                              
 ;                                                              
