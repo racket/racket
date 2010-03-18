@@ -13356,10 +13356,10 @@ if test "${libffi_cv_as_x86_atrel+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
-	libffi_cv_as_x86_atrel=yes
+	libffi_cv_as_x86_atrel=no
 	echo '.text; foo: nop; .data; .long foo at rel; .text' > conftest.s
-	if $CC $CFLAGS -c conftest.s 2>&1 | grep -i warning > /dev/null; then
-	    libffi_cv_as_x86_atrel=no
+	if $CC $CFLAGS -c conftest.s >/dev/null 2>&1; then
+	    libffi_cv_as_x86_atrel=yes
 	fi
 
 fi
