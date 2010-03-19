@@ -399,7 +399,8 @@
           (send new-list notify-on-change (lambda (which) (style-has-changed which))))
     (set! s-style-list new-list)
     ;; create "Standard" if it's not there:
-    (send s-style-list new-named-style "Standard" (send s-style-list basic-style)))
+    (send s-style-list new-named-style "Standard" (send s-style-list basic-style))
+    (void))
 
   (define/public (style-has-changed which) (void))
   
