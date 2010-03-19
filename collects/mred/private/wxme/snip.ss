@@ -242,7 +242,7 @@
         (if (not str)
             (for ([i (in-range num)])
               (string-set! s i #\.))
-            (string-copy! s 0 str 0 num)))))
+            (string-copy! s 0 str 0 (min num (string-length str) (string-length s)))))))
 
   (def/public (get-text [exact-nonnegative-integer? offset] [exact-integer? num] 
                         [any? [flattened? #f]])
