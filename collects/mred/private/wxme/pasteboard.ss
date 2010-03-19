@@ -1628,7 +1628,8 @@
     (->long (/ (- (+ total-height scroll-step) 1) scroll-step)))
   
   (def/override (find-scroll-line [real? y])
-    (->long (/ y scroll-step)))
+    (let ([y (max 0 y)])
+      (->long (/ y scroll-step))))
 
   (def/public (set-scroll-step [real? s])
     (unless (= scroll-step s)
