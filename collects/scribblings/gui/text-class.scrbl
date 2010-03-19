@@ -873,7 +873,8 @@ Returns the starting @techlink{position} of a given snip or
 
 }
 
-@defmethod[(get-snip-position-and-location [snip (is-a?/c snip%)]
+@defmethod[#:mode public-final
+           (get-snip-position-and-location [snip (is-a?/c snip%)]
                                            [pos (or/c (box/c exact-nonnegative-integer?) #f)]
                                            [x (or/c (box/c real?) #f) #f]
                                            [y (or/c (box/c real?) #f) #f])

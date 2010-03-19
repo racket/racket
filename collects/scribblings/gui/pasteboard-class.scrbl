@@ -969,7 +969,7 @@ Does nothing.
            (on-reorder [snip (is-a?/c snip%)]
                        [to-snip (is-a?/c snip%)]
                        [before? any/c])
-           boolean?]{
+           void?]{
 @methspec{
 
 Called before a snip is moved in the pasteboard's front-to-back snip

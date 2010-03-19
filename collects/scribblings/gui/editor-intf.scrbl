@@ -742,7 +742,7 @@ Gets the maximum display height for the contents of the editor; zero or
 }
 
 @defmethod[(get-max-undo-history)
-           (integer-in 0 100000)]{
+           (or/c (integer-in 0 100000) 'forever)]{
 
 Returns the maximum number of undoables that will be remembered by the
  editor. Note that undoables are counted by insertion, deletion,
@@ -1192,7 +1192,7 @@ Reports whether the editor is internally locked for flowing. See
 }
 
 
-@defmethod[(locked-for-read?)
+@defmethod[#:mode public-final (locked-for-read?)
            boolean?]{
 
 Reports whether the editor is internally locked for reading. See
@@ -1201,7 +1201,7 @@ Reports whether the editor is internally locked for reading. See
 }
 
 
-@defmethod[(locked-for-write?)
+@defmethod[#:mode public-final (locked-for-write?)
            boolean?]{
 
 Reports whether the editor is internally locked for writing. See

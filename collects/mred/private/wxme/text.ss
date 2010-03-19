@@ -654,11 +654,11 @@
       (set! flow-invalid? #t))
     (set! snip-cache-invalid? #t))
 
-  (def/override (locked-for-read?)
+  (def/override-final (locked-for-read?)
     read-locked?)
   (def/override-final (locked-for-flow?)
     flow-locked?)
-  (def/override (locked-for-write?)
+  (def/override-final (locked-for-write?)
     write-locked?)
 
   ;; ----------------------------------------
@@ -2975,8 +2975,8 @@
         (mline-get-line line))]))
 
   
-  (def/public (get-snip-position-and-location [snip% thesnip] [maybe-box? pos] 
-                                              [maybe-box? [x #f]] [maybe-box? [y #f]])
+  (def/public-final (get-snip-position-and-location [snip% thesnip] [maybe-box? pos] 
+                                                    [maybe-box? [x #f]] [maybe-box? [y #f]])
     (cond
      [(not (check-recalc (or x y) #f))
       #f]

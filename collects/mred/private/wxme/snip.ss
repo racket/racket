@@ -295,7 +295,7 @@
                 #f))))
 
   (def/public (set-unmodified)
-    void))
+    (void)))
 
 (defclass internal-snip% snip%
   (super-new)

@@ -983,12 +983,15 @@
   (define/public (change-style . args)
     (case-args
      args
-     [([style-delta% delta])
-      (do-change-style #f delta #f)]
-     [([style-delta% delta] [snip% snip])
-      (do-change-style #f delta snip)]
-     [([style<%> style] [snip% snip])
-      (do-change-style style #f snip)]
+     [()                                  (do-change-style #f    #f    #f)]
+     [([not delta])                       (do-change-style #f    #f    #f)]
+     [([style-delta% delta])              (do-change-style #f    delta #f)]
+     [([style-delta% delta] [snip% snip]) (do-change-style #f    delta snip)]
+     [([style<%> style]     [snip% snip]) (do-change-style style #f    snip)]
+     [([style-delta% delta] [not snip])   (do-change-style #f    delta #f)]
+     [([style<%> style]     [not snip])   (do-change-style style #f    #f)]
+     [([not style]          [snip% snip]) (do-change-style style #f    snip)]
+     [([not style]          [not snip])   (do-change-style #f    #f    snip)]
      (method-name 'pasteboard% 'change-style)))
 
   ;; ----------------------------------------
@@ -1748,7 +1751,7 @@
       (let-values ([(start) snips]
                    [(cx cy) (get-center)])
 
-        (do-buffer-paste cb time)
+        (do-buffer-paste cb time #f)
         
         (if (and s-admin
                  (not (eq? snips start)))

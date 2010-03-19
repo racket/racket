@@ -394,7 +394,7 @@ Returns @scheme[0.0].
 
 
 @defmethod[(get-snipclass)
-           (is-a?/c snip-class%)]{
+           (or/c #f (is-a?/c snip-class%))]{
 
 Returns the snip's class, which is used for file saving and
  cut-and-paste.
