@@ -16,7 +16,7 @@
                           (find-collects-dir)
                           (find-include-dir)))
   
-  (test #t system (format "cc -o embed-in-c embed-in-c.o -lm -ldl ~a"
+  (test #t system (format "cc -o embed-in-c embed-in-c.o -lm -ldl -pthread ~a"
                           (case (system-type 'link)
                             [(framework)
                              (format "-F\"~a\" -framework PLT_MzScheme" lib-dir)]
