@@ -1154,7 +1154,9 @@
     (define/override (on-enable-surrogate text)
       (send text begin-edit-sequence)
       (super on-enable-surrogate text)
-      (send (send text get-keymap) chain-to-keymap keymap #f)
+      (let ([km (send text get-keymap)])
+        (when km
+          (send km chain-to-keymap keymap #f)))
       
       ;; I don't know about these editor flag settings.
       ;; maybe they belong in drscheme?
