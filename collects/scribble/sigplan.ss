@@ -7,13 +7,17 @@
          scribble/latex-properties
          (for-syntax scheme/base))
 
-(provide preprint
+(provide preprint 10pt
          abstract include-abstract
          authorinfo
          conferenceinfo copyrightyear copyrightdata
          category terms keywords)
 
 (define-syntax (preprint stx)
+  (raise-syntax-error #f
+                      "option must appear on the same line as `#lang scribble/sigplan'"
+                      stx))
+(define-syntax (10pt stx)
   (raise-syntax-error #f
                       "option must appear on the same line as `#lang scribble/sigplan'"
                       stx))

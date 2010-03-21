@@ -19,6 +19,20 @@ same line as @hash-lang[], with only whitespace between
   #lang scribble/sigplan @preprint
 }|}
 
+@defidform[10pt]{
+
+Enables the @tt{10pt} option. Use @scheme[10pt] only on the
+same line as @hash-lang[], with only whitespace between
+@schememodname[scribble/sigplan] and @scheme[10pt]:
+
+@verbatim[#:indent 2]|{
+  #lang scribble/sigplan @10pt
+}|
+
+The @scheme[10pt] and @scheme[preprint] options can be
+used together and may appear in any order.
+}
+
 
 @defproc[(abstract [pre-content pre-content?] ...) block?]{
 
