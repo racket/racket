@@ -741,8 +741,7 @@
         (define (open-current-language)
           (when (and language-to-show settings-to-show)
             (cond
-              [(equal? language-to-show 
-                       module-language*language)
+              [(is-a? language-to-show drscheme:module-language:module-language<%>)
                (module-language-selected)]
               [else
                (send languages-hier-list focus) ;; only focus when the module language isn't selected
