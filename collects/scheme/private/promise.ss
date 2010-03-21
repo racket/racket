@@ -30,9 +30,12 @@
 ;; ----------------------------------------------------------------------------
 ;; Forcers
 
-;; force/composable iterates on composable promises
+;; `force/composable' iterates on composable promises
 ;; * (force X) = X for non promises
 ;; * does not deal with multiple values in the composable case
+;; note: measuring time invested divided by the number of lines, this innocent
+;; looking piece of code is by far the leader of that competition -- handle
+;; with extreme care.
 (define (force/composable root)
   (let ([v (pref root)])
     (cond
@@ -69,10 +72,11 @@
       ;; try to make the order efficient, with common cases first
       [(pair? v) (if (null? (unsafe-cdr v)) (unsafe-car v) (apply values v))]
       ;; follow all sharings (and shortcut directly to the right force)
-      [(composable-promise? v) (force/composable v) (force v)]
+      [(composable-promise? v) (force/composable v)]
       [(null? v) (values)]
       [else (error 'force "composable promise with invalid contents: ~e" v)])))
 
+;; convenient utility for any number of stored values or a raised value.
 (define (reify-result v)
   (cond [(pair? v) (if (null? (unsafe-cdr v)) (unsafe-car v) (apply values v))]
         [(null? v) (values)]
@@ -86,7 +90,7 @@
 ;; the ability to know that it is running; the second can be resolved
 ;; with a new kind of `running' value that can be used again, but the
 ;; first cannot be solved.  I still didn't ever see any use for them, so
-;; they're still forbidden.)
+;; they're still forbidden -- throw a "reentrant promise" error.)
 (define (force/generic promise)
   (reify-result
    (let ([v (pref promise)])
