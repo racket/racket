@@ -14,7 +14,6 @@
 (define-syntax (module-begin stx)
   (syntax-case stx ()
     [(_ id . body)
-     (printf "body: ~s\n" #'body)
      (let ([preprint? #f]
            [10pt? #f])
        (let loop ([stuff #'body])
