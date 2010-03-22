@@ -81,7 +81,8 @@ This is the code for the place-worker.ss module that each place will execute.
 @;Creates and returns a new channel. 
 
 Place channels can be used with @scheme[place-channel-recv], or as a
-@tech{synchronizable event} (see @secref["sync"]) to receive a value
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{synchronizable event}
+ (see @secref[#:doc '(lib "scribblings/reference/reference.scrbl") "sync"]) to receive a value
 through the channel. The channel can be used with @scheme[place-channel-send]
 to send a value through the channel.
 
