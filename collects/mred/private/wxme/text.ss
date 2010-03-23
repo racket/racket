@@ -170,14 +170,14 @@
   (define sticky-styles? #t)
   (define overwrite-mode? #f)
 
-  (def/public (set-styles-sticky [bool? s?]) (set! sticky-styles? s?))
+  (def/public (set-styles-sticky [bool? s?]) (set! sticky-styles? (and s? #t)))
   (def/public (get-styles-sticky) sticky-styles?)
 
   (def/public (get-overwrite-mode) overwrite-mode?)
-  (def/public (set-overwrite-mode [bool? v]) (set! overwrite-mode? v))
+  (def/public (set-overwrite-mode [bool? v]) (set! overwrite-mode? (and v #t)))
 
   (def/public (get-sticky-styles) sticky-styles?)
-  (def/public (set-sticky-styles [bool? v]) (set! sticky-styles? v))
+  (def/public (set-sticky-styles [bool? v]) (set! sticky-styles? (and v #t)))
 
   (define need-x-copy? #f)
 

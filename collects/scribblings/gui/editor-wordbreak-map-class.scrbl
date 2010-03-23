@@ -43,7 +43,7 @@ All ASCII alpha-numeric characters are initialized with
 }
 
 @defmethod[(get-map [char char?])
-           (listof symbol?)]{
+           (listof (one-of/c 'caret 'line 'selection 'user1 'user2))]{
 
 Gets the mapping value for @scheme[char].  See
 @scheme[editor-wordbreak-map%] for more information.
@@ -51,7 +51,7 @@ Gets the mapping value for @scheme[char].  See
 }
 
 @defmethod[(set-map [char char?]
-                    [value (listof symbol?)])
+                    [value (listof (one-of/c 'caret 'line 'selection 'user1 'user2))])
            void?]{
 
 

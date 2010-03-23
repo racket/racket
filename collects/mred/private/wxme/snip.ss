@@ -256,7 +256,9 @@
     s-style)
 
   (def/public (copy)
-    (do-copy-to (new snip%)))
+    (let ([s (new snip%)])
+      (do-copy-to s)
+      s))
 
   (define/public (do-copy-to dest)
     (send dest set-s-count s-count)
@@ -549,6 +551,10 @@
       (send f put write-flags)
       (let ([bytes (string->bytes/utf-8 s-buffer 0 s-dtext (+ s-dtext s-count))])
         (send f put (bytes-length bytes) bytes))))
+
+  (def/public (read [exact-nonnegative-integer? len]
+                    [editor-stream-in% f])
+    (s-read len f))
 
   (define/public (s-read len f)
     (unless (len . < . 0) ; tolerate a 0-length snip, to be filtered out later

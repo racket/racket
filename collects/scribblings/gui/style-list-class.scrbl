@@ -123,7 +123,7 @@ The @scheme[like-style] style must be in this style list, otherwise
 
 }
 
-@defmethod[(notify-on-change [f ((or/c (is-a?/c style<%> false/c)) . -> . any)])
+@defmethod[(notify-on-change [f ((or/c (is-a?/c style<%>) #f) . -> . any)])
            any/c]{
 
 Attaches a callback to the style list. The callback is invoked

@@ -1020,10 +1020,11 @@ If the editor is displayed by multiple canvases and @scheme[all?] is
 
 
 @defmethod[(get-wordbreak-map)
-           (is-a?/c editor-wordbreak-map%)]{
+           (or/c (is-a?/c editor-wordbreak-map%) #f)]{
 
 Returns the wordbreaking map that is used by the standard wordbreaking
- function. See @scheme[editor-wordbreak-map%] for more information.
+ function. See @method[text% set-wordbreak-map] and 
+ @scheme[editor-wordbreak-map%] for more information.
 
 }
 

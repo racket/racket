@@ -1066,7 +1066,7 @@
                       (when shift
                         (send shift s-remove-child style)))
                     
-                    (let ([shift (send style get-s-join-shift-style)])
+                    (let ([shift (send plain-style get-s-join-shift-style)])
                       (if shift
                           (begin
                             (send style set-s-join-shift-style shift)

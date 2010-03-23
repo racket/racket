@@ -264,6 +264,7 @@ Matthew
               unlocked)
        
        (get-text [() (x) (x y) (x y z) (x y z p)] unlocked)
+       (get-flattened-text [()] unlocked)
        (get-character [(start)] unlocked)
        (find-wordbreak [(start end reason)] unlocked)
        (save-file [() (filename) (filename format) (filename format show-errors?)] unlocked)
@@ -273,7 +274,10 @@ Matthew
        (num-scroll-lines [()] unlocked)
        (find-scroll-line [(location)] unlocked)
        (style-has-changed [(style)] unlocked)
-       
+
+       (set-paragraph-margins [(para fl l r)] unlocked)
+       (set-paragraph-alignment [(para align)] unlocked)
+
        (change-style [(x) (x y) (x y z) (x y z w)] unlocked)
        (insert [(x) (x y) (x y z) (x y z p) (x y z p q)] unlocked)
        (delete [() (start) (start end) (start end scroll-ok?)] unlocked)
@@ -306,6 +310,7 @@ Matthew
               write-lock)
        
        (get-text [() (x) (x y) (x y z) (x y z p)] write-lock)
+       (get-flattened-text [()] write-lock)
        (get-character [(start)] write-lock)
        (find-wordbreak [(start end reason)] write-lock)
        (save-file [() (filename) (filename format) (filename format show-errors?)] write-lock)
@@ -321,6 +326,7 @@ Matthew
             (not (locked-for-read?)))
 
        (get-text [() (x) (x y) (x y z) (x y z p)] flow-lock)
+       (get-flattened-text [()] flow-lock)
        (get-character [(start)] flow-lock)
        (find-wordbreak [(start end reason)] flow-lock)
        (save-file [() (filename) (filename format) (filename format show-errors?)] flow-lock)

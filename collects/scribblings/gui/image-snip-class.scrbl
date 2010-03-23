@@ -154,7 +154,7 @@ used.}
 @defmethod[#:mode override 
            (resize [w (and/c real? (not/c negative?))]
                    [h (and/c real? (not/c negative?))])
-           void?]{
+           boolean?]{
 
 The bitmap will be cropped to fit in the given dimensions.
 
