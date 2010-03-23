@@ -905,8 +905,8 @@ but constrained to consume @tech{flonums}. The result is always a
 @defproc[(fl> [a inexact-real?][b inexact-real?]) boolean?]
 @defproc[(fl<= [a inexact-real?][b inexact-real?]) boolean?]
 @defproc[(fl>= [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(flmin [a inexact-real?]) inexact-real?]
-@defproc[(flmax [a inexact-real?]) inexact-real?]
+@defproc[(flmin [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(flmax [a inexact-real?][b inexact-real?]) inexact-real?]
 )]{
 
 Like @scheme[=], @scheme[<], @scheme[>], @scheme[<=], @scheme[>=],

@@ -161,19 +161,30 @@
 
 ;; unsafe numeric ops
 [unsafe-flabs fl-unop]
-[unsafe-flsqrt fl-unop]
-
 [unsafe-fl+ fl-op]
 [unsafe-fl- fl-op]
 [unsafe-fl* fl-op]
 [unsafe-fl/ fl-op]
-
 [unsafe-fl= fl-comp]
 [unsafe-fl<= fl-comp]
 [unsafe-fl>= fl-comp]
 [unsafe-fl> fl-comp]
 [unsafe-fl< fl-comp]
-
+[unsafe-flmin fl-op]
+[unsafe-flmax fl-op]
+[unsafe-flround fl-unop]
+[unsafe-flfloor fl-unop]
+[unsafe-flceiling fl-unop]
+[unsafe-fltruncate fl-unop]
+[unsafe-flsin fl-unop]
+[unsafe-flcos fl-unop]
+[unsafe-fltan fl-unop]
+[unsafe-flatan fl-unop]
+[unsafe-flasin fl-unop]
+[unsafe-flacos fl-unop]
+[unsafe-fllog fl-unop]
+[unsafe-flexp fl-unop]
+[unsafe-flsqrt fl-unop]
 
 [unsafe-fx+ fx-op]
 [unsafe-fx- fx-intop]
@@ -226,7 +237,6 @@
 
 ;; safe flonum ops
 [flabs fl-unop]
-[flsqrt fl-unop]
 [fl+ fl-op]
 [fl- fl-op]
 [fl* fl-op]
@@ -236,6 +246,21 @@
 [fl>= fl-comp]
 [fl> fl-comp]
 [fl< fl-comp]
+[flmin fl-op]
+[flmax fl-op]
+[flround fl-unop]
+[flfloor fl-unop]
+[flceiling fl-unop]
+[fltruncate fl-unop]
+[flsin fl-unop]
+[flcos fl-unop]
+[fltan fl-unop]
+[flatan fl-unop]
+[flasin fl-unop]
+[flacos fl-unop]
+[fllog fl-unop]
+[flexp fl-unop]
+[flsqrt fl-unop]
 
 ;; safe flvector ops
 
