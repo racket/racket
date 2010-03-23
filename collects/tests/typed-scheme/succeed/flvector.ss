@@ -19,6 +19,7 @@
 
 ;; Check the FlVector type is exported
 (define: v : FlVector (flvector 1. 2. 3.))
+(define-struct: Foo ([vec : FlVector]) #:transparent)
 
 (check equal? (flvector 1. 2. 3. 4.) (flvector 1. 2. 3. 4.))
 (check equal? (flvector? (flvector 1. 2. 3.)) #t)

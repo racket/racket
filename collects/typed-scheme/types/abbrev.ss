@@ -11,7 +11,7 @@
          scheme/flonum
          (prefix-in c: scheme/contract)
          (for-syntax scheme/base syntax/parse)
-	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp))
+	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp scheme/flonum))
 
 (provide (all-defined-out)
          (rename-out [make-Listof -lst]))
