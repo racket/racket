@@ -240,6 +240,21 @@ if test x$TARGET = xSPARC; then
     fi
 fi
 
+if test x$TARGET = xX86 || test x$TARGET = xX86_64; then
+    AC_CACHE_CHECK([assembler supports pc rel relocs],
+	libffi_cv_as_x86_atrel, [
+	libffi_cv_as_x86_atrel=no
+	echo '.text; foo: nop; .data; .long foo at rel; .text' > conftest.s
+	if $CC $CFLAGS -c conftest.s >/dev/null 2>&1; then
+	    libffi_cv_as_x86_atrel=yes
+	fi
+	])
+    if test "x$libffi_cv_as_x86_atrel" = xyes; then
+	AC_DEFINE(HAVE_AS_X86_ATREL, 1,
+		  [Define if your assembler supports "at rel" addresses.])
+    fi
+fi
+
 AC_CACHE_CHECK([whether .eh_frame section should be read-only],
     libffi_cv_ro_eh_frame, [
 	libffi_cv_ro_eh_frame=no
