@@ -213,6 +213,11 @@
   (let-values ([(prop:unwrap pred acc) (make-struct-type-property 'prop:unwrap)])
     (values prop:unwrap acc)))
 
+(define (unwrap-object o)
+  (if (wrapper-object? o)
+      (wrapper-object-wrapped o)
+      o))
+
 ;;--------------------------------------------------------------------
 ;;  class macros
 ;;--------------------------------------------------------------------
@@ -1184,7 +1189,7 @@
                                      (make-field-map trace-flag
                                                      (quote-syntax the-finder)
                                                      (quote the-obj)
-                                                     (quote-syntax object-unwrapper)
+                                                     (quote-syntax unwrap-object)
                                                      (quote-syntax inherit-field-name)
                                                      (quote-syntax inherit-field-name-localized)
                                                      (quote-syntax inherit-field-accessor)
@@ -1194,7 +1199,7 @@
                                      (make-field-map trace-flag
                                                      (quote-syntax the-finder)
                                                      (quote the-obj)
-                                                     (quote-syntax object-unwrapper)
+                                                     (quote-syntax unwrap-object)
                                                      (quote-syntax local-field)
                                                      (quote-syntax local-field-localized)
                                                      (quote-syntax local-field-accessor)
@@ -3805,13 +3810,13 @@
               (let* ([p (check-and-get-index 'class-field-accessor class name)]
                      [ref (vector-ref (class-ext-field-refs class) p)])
                 (λ (o) (if (object? o)
-                           (ref ((object-unwrapper o) o))
+                           (ref (unwrap-object o))
                            (raise-type-error 'class-field-accessor "object" o)))))
             (λ (class name)
               (let* ([p (check-and-get-index 'class-field-mutator class name)]
                      [set (vector-ref (class-ext-field-sets class) p)])
                 (λ (o v) (if (object? o)
-                             (set ((object-unwrapper o) o) v)
+                             (set (unwrap-object o) v)
                              (raise-type-error 'class-field-mutator "object" o))))))))
 
 (define-struct generic (name applicable))
@@ -4139,8 +4144,8 @@
    (trace (when (object? v) (inspect-event v)))
    (cond
      [(not (object? v)) #f]
-     [(class? c) ((class-object? (class-orig-cls c)) ((object-unwrapper v) v))]
-     [(interface? c) (implementation? (object-ref ((object-unwrapper v) v)) c)]
+     [(class? c) ((class-object? (class-orig-cls c)) (unwrap-object v))]
+     [(interface? c) (implementation? (object-ref (unwrap-object v)) c)]
      [else (raise-type-error 'is-a? "class or interface" 1 v c)])))
 
 (define (subclass? v c)
@@ -4158,7 +4163,7 @@
     (raise-type-error 'object-interface "object" o))
   (trace-begin
    (trace (inspect-event o))
-   (class-self-interface (object-ref ((object-unwrapper o) o)))))
+   (class-self-interface (object-ref (unwrap-object o)))))
 
 (define-traced (object-method-arity-includes? o name cnt)
   (unless (object? o)
@@ -4217,7 +4222,7 @@
     (raise-type-error 'object-info "object" o))
   (trace-begin
    (trace (inspect-event o))
-   (let loop ([c (object-ref ((object-unwrapper o) o))]
+   (let loop ([c (object-ref (unwrap-object o))]
               [skipped? #f])
      (if (struct? ((class-insp-mk c)))
          ;; current inspector can inspect this object
@@ -4257,7 +4262,7 @@
       (raise-type-error 'object->vector "object" in-o))
     (trace-begin
      (trace (inspect-event in-o))
-     (let ([o ((object-unwrapper in-o) in-o)])
+     (let ([o (unwrap-object in-o)])
        (list->vector
         (cons
          (string->symbol (format "object:~a" (class-name (object-ref o))))
@@ -4284,8 +4289,8 @@
     (raise-type-error 'object=? "object" o1))
   (unless (object? o2)
     (raise-type-error 'object=? "object" o2))
-  (eq? ((object-unwrapper o1) o1)
-       ((object-unwrapper o2) o2)))
+  (eq? (unwrap-object o1)
+       (unwrap-object o2)))
 
 ;;--------------------------------------------------------------------
 ;;  primitive classes
@@ -4522,7 +4527,7 @@
 ;; make-wrapper-object: object (listof symbol) (listof contract?) (listof symbol) (listof contract?)
 (define (make-wrapper-object obj blame methods method-contracts fields field-contracts)
   (check-object-contract obj blame methods fields)
-  (let* ([orig-obj ((object-unwrapper obj) obj)]
+  (let* ([orig-obj (unwrap-object obj)]
          [new-cls (make-wrapper-class orig-obj (object-ref obj) blame methods method-contracts fields field-contracts)])
     ((class-make-object new-cls) orig-obj)))
 

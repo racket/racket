@@ -59,7 +59,7 @@
          [(f . args)
           (quasisyntax/loc stx (#,replace-stx . args))])))))
 
-(define (make-field-map trace-flag the-finder the-obj the-unwrapper-access the-binder the-binder-localized
+(define (make-field-map trace-flag the-finder the-obj the-unwrapper the-binder the-binder-localized
                         field-accessor field-mutator field-pos/null)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
     (mk-set!-trans
@@ -73,7 +73,7 @@
                           [trace (syntax/loc stx (set-event obj (quote id) id))]
                           [set (quasisyntax/loc stx
                                  ((unsyntax field-mutator)
-                                  (((unsyntax the-unwrapper-access) obj) obj)
+                                  ((unsyntax the-unwrapper) obj)
                                   (unsyntax-splicing field-pos/null) id))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace set))
@@ -83,7 +83,7 @@
                           [trace (syntax/loc stx (get-event obj (quote id)))]
                           [call (quasisyntax/loc stx
                                   (((unsyntax field-accessor)
-                                    (((unsyntax the-unwrapper-access) obj) obj)
+                                    ((unsyntax the-unwrapper) obj)
                                     (unsyntax-splicing field-pos/null)) . args))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace call))
@@ -93,7 +93,7 @@
                           [trace (syntax/loc stx (get-event obj (quote id)))]
                           [get (quasisyntax/loc stx
                                  ((unsyntax field-accessor) 
-                                  (((unsyntax the-unwrapper-access) obj) obj)
+                                  ((unsyntax the-unwrapper) obj)
                                   (unsyntax-splicing field-pos/null)))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace get))
