@@ -548,10 +548,22 @@ SAFE_FL(fl_gt_eq, "fl>=", >=)
 SAFE_FL_X(fl_min, "flmin", <, argv[0], argv[1])
 SAFE_FL_X(fl_max, "flmax", >, argv[0], argv[1])
 
-#define UNSAFE_FL_X(name, op, fold, T, F, PRE_CHECK)         \
+/* Unsafe FL comparisons. Return boolean */
+#define UNSAFE_FL_COMP(name, op, fold)         \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    if (scheme_current_thread->constant_folding) return (fold(argv[0], argv[1]) ? scheme_true : scheme_false); \
+   if (SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]))   \
+     return scheme_true;                                     \
+   else                                                      \
+     return scheme_false;                                    \
+ }
+
+/* Unsafe FL binary operators. Return flonum */
+#define UNSAFE_FL_BINOP(name, op, fold, T, F, PRE_CHECK)         \
+ static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
+ {                                                           \
+   if (scheme_current_thread->constant_folding) return (fold(argv[0], argv[1])); \
    PRE_CHECK                                                 \
    if (SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]))   \
      return T;                                               \
@@ -559,15 +571,13 @@ SAFE_FL_X(fl_max, "flmax", >, argv[0], argv[1])
      return F;                                               \
  }
 
-#define UNSAFE_FL(name, op, fold) UNSAFE_FL_X(name, op, fold, scheme_true, scheme_false, )
-
-UNSAFE_FL(unsafe_fl_eq, ==, scheme_bin_eq)
-UNSAFE_FL(unsafe_fl_lt, <, scheme_bin_lt)
-UNSAFE_FL(unsafe_fl_gt, >, scheme_bin_gt)
-UNSAFE_FL(unsafe_fl_lt_eq, <=, scheme_bin_lt_eq)
-UNSAFE_FL(unsafe_fl_gt_eq, >=, scheme_bin_gt_eq)
+UNSAFE_FL_COMP(unsafe_fl_eq, ==, scheme_bin_eq)
+UNSAFE_FL_COMP(unsafe_fl_lt, <, scheme_bin_lt)
+UNSAFE_FL_COMP(unsafe_fl_gt, >, scheme_bin_gt)
+UNSAFE_FL_COMP(unsafe_fl_lt_eq, <=, scheme_bin_lt_eq)
+UNSAFE_FL_COMP(unsafe_fl_gt_eq, >=, scheme_bin_gt_eq)
 
 #define CHECK_ARGV0_NAN if (MZ_IS_NAN(SCHEME_DBL_VAL(argv[0]))) return argv[0];
 
-UNSAFE_FL_X(unsafe_fl_min, <, bin_min, argv[0], argv[1], CHECK_ARGV0_NAN)
-UNSAFE_FL_X(unsafe_fl_max, >, bin_max, argv[0], argv[1], CHECK_ARGV0_NAN)
+UNSAFE_FL_BINOP(unsafe_fl_min, <, bin_min, argv[0], argv[1], CHECK_ARGV0_NAN)
+UNSAFE_FL_BINOP(unsafe_fl_max, >, bin_max, argv[0], argv[1], CHECK_ARGV0_NAN)

@@ -185,6 +185,7 @@
 [unsafe-fllog fl-unop]
 [unsafe-flexp fl-unop]
 [unsafe-flsqrt fl-unop]
+[unsafe-fx->fl (-Integer . -> . -Flonum)]
 
 [unsafe-fx+ fx-op]
 [unsafe-fx- fx-intop]
@@ -261,6 +262,7 @@
 [fllog fl-unop]
 [flexp fl-unop]
 [flsqrt fl-unop]
+[->fl (-Integer . -> . -Flonum)]
 
 ;; safe flvector ops
 
