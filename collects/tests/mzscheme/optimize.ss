@@ -1149,5 +1149,41 @@
 (err/rt-test (cwv-2-5-f (lambda () (values 1 2 3)) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Inlining with higher-order functions:
+
+(test 0 'ho1 (let ([x (random 1)])
+               ((let ([fn (add1 (random 1))])
+                  (lambda (c) c))
+                x)))
+(test 0 'ho2 (let ([x (random 1)]
+                   [id (lambda (c) c)])
+               ((let ([fn (add1 (random 1))])
+                  id)
+                x)))
+(test 0 'ho3 (let ([proc (lambda (q)
+                           (let ([fn (add1 (random 1))])
+                             (lambda (c) c)))])
+               (let ([x (random 1)])
+                 ((proc 99) x))))
+(test '(2 0) 'ho4 (let ([y (+ 2 (random 1))])
+                    (let ([x (random 1)])
+                      ((let ([fn (add1 (random 1))])
+                         (lambda (c) (list y c)))
+                       x))))
+(test '(2 0) 'ho5 (let ([y (+ 2 (random 1))])
+                    (let ([x (random 1)]
+                          [id (lambda (c) (list y c))])
+                      ((let ([fn (add1 (random 1))])
+                         id)
+                       x))))
+(test '(2 0) 'ho6 (let ([y (+ 2 (random 1))])
+                    (let ([proc (lambda (q)
+                                  (let ([fn (add1 (random 1))])
+                                    (lambda (c) (list y c))))])
+                      (let ([x (random 1)])
+                        ((proc 98)
+                         x)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -2436,19 +2436,18 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
 {
   Scheme_Let_Header *lh;
   Scheme_Compiled_Let_Value *lv, *prev = NULL;
+  Scheme_Object *val;
   int i, expected;
   int *flags, flag;
 
   expected = data->num_params;
 
   if (!expected) {
-    info = scheme_optimize_info_add_frame(info, nested_count, nested_count, 0);
+    info = scheme_optimize_info_add_frame(info, 0, 0, 0);
     info->inline_fuel >>= 1;
-    if (nested_count) info->vclock++;
     p = scheme_optimize_expr(p, info, context);
     info->next->single_result = info->single_result;
-    if (!nested_count)
-      info->next->preserves_marks = info->preserves_marks;
+    info->next->preserves_marks = info->preserves_marks;
     scheme_optimize_info_done(info);
 
     if (le_prev) {
@@ -2472,7 +2471,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
     if ((i == expected - 1)
         && (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)) {
       int j;
-      Scheme_Object *l = scheme_null, *val;
+      Scheme_Object *l = scheme_null;
 
       for (j = argc; j-- > i; ) {
         if (app)
@@ -2488,14 +2487,16 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
       }
       l = cons(scheme_list_proc, l);
       val = make_application(l);
-      
-      lv->value = val;
     } else if (app)
-      lv->value = app->args[i + 1];
+      val = app->args[i + 1];
     else if (app3)
-      lv->value = (i ? app3->rand2 : app3->rand1);
-    else if (app2)
-      lv->value = app2->rand;
+      val = (i ? app3->rand2 : app3->rand1);
+    else
+      val = app2->rand;
+
+    if (nested_count)
+      val = scheme_optimize_shift(val, nested_count, 0);
+    lv->value = val;
 
     flag = scheme_closure_argument_flags(data, i);
     flags = (int *)scheme_malloc_atomic(sizeof(int));
@@ -2514,7 +2515,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   else
     lh->body = p;
 
-  p = scheme_optimize_lets((Scheme_Object *)lh, info, 1 + nested_count, context);
+  p = scheme_optimize_lets((Scheme_Object *)lh, info, 1, context);
 
   if (le_prev) {
     *((Scheme_Object **)(((char *)le_prev) + prev_offset)) = p;
@@ -2538,7 +2539,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
   long prev_offset = 0;
-  int nested_count = 0;
+  int nested_count = 0, outside_nested = 0;
 
   if (info->inline_fuel < 0)
     return NULL;
@@ -2568,9 +2569,10 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (!optimized_rator && SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
-    if (SCHEME_LOCAL_POS(le) >= nested_count)
+    if (SCHEME_LOCAL_POS(le) >= nested_count) {
       le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le) - nested_count, &offset, &single_use, 0, 0, &psize);
-    else
+      outside_nested = 1;
+    } else
       info->has_nonleaf = 1;
   }
 
@@ -2587,6 +2589,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         }
         if (!le)
           break;
+        outside_nested = 1;
       } else
         break;
     }
@@ -2616,16 +2619,25 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
       if ((sz >= 0) && (single_use || (sz <= threshold))) {
         Optimize_Info *sub_info;
-        if (nested_count)
-          sub_info = scheme_optimize_info_add_frame(info, nested_count, nested_count, 0);
-        else
+        if (nested_count) {
+          sub_info = scheme_optimize_info_add_frame(info, nested_count, nested_count, nested_count);
+          sub_info->vclock++;
+          /* We could propagate bound values in sub_info , but relevant inlining
+             and propagatation has probably already happened when the rator was
+             optimized. */
+        } else
           sub_info = info;
-	le = scheme_optimize_clone(0, data->code, sub_info, offset, data->num_params);
+	le = scheme_optimize_clone(0, data->code, sub_info, 
+                                   offset + (outside_nested ? nested_count : 0), 
+                                   data->num_params);
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
                              single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
-          return apply_inlined(le, data, info, argc, app, app2, app3, context,
-                               nested_count, orig_le, prev, prev_offset);
+          le = apply_inlined(le, data, sub_info, argc, app, app2, app3, context,
+                             nested_count, orig_le, prev, prev_offset);
+          if (nested_count)
+            scheme_optimize_info_done(sub_info);
+          return le;
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
           info->has_nonleaf = 1;
@@ -2857,33 +2869,30 @@ static void reset_rator(Scheme_Object *app, Scheme_Object *a)
 static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rator, Optimize_Info *info, 
                                           int argc, int context)
 {
+  /* Convert ((let (....) E) arg ...) to (let (....) (E arg ...)), in case
+     the `let' is immediately apparent. We check for this pattern again
+     in optimize_for_inline() after optimizing a rator. */
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_compiled_let_void_type)) {
     Scheme_Let_Header *head = (Scheme_Let_Header *)rator;
-
-    if ((head->count == 1) && (head->num_clauses == 1)) {
-      Scheme_Object *body;
-      Scheme_Compiled_Let_Value *clv;
-
-      clv = (Scheme_Compiled_Let_Value *)head->body;
-      body = clv->body;
-      if (SAME_TYPE(SCHEME_TYPE(body), scheme_local_type)
-          && (SCHEME_LOCAL_POS(body) == 0)
-          && scheme_is_compiled_procedure(clv->value, 1, 1)) {
-        
-        reset_rator(app, scheme_false);
-        app = scheme_optimize_shift(app, 1, 0);
-        reset_rator(app, scheme_make_local(scheme_local_type, 0, 0));
-
-        clv->body = app;
-        
-        if (clv->flags[0] & SCHEME_WAS_APPLIED_EXCEPT_ONCE) {
-          clv->flags[0] -= SCHEME_WAS_APPLIED_EXCEPT_ONCE;
-          clv->flags[0] |= SCHEME_WAS_ONLY_APPLIED;
-        }
-        
-        return scheme_optimize_expr(rator, info, context);
-      }
+    Scheme_Compiled_Let_Value *clv = NULL;
+    int i;
+    
+    rator = head->body;
+    for (i = head->num_clauses; i--; ) {
+      clv = (Scheme_Compiled_Let_Value *)rator;
+      rator = clv->body;
     }
+
+    reset_rator(app, scheme_false);
+    app = scheme_optimize_shift(app, head->count, 0);
+    reset_rator(app, rator);
+
+    if (clv)
+      clv->body = app;
+    else
+      head->body = app;
+    
+    return scheme_optimize_expr((Scheme_Object *)head, info, context);
   }
 
   return NULL;
