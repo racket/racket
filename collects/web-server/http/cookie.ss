@@ -16,20 +16,16 @@
  [cookie->header (cookie? . -> . header?)]
  [xexpr-response/cookies ((listof cookie?) pretty-xexpr/c . -> . response/full?)])
 
-(define (set-when-true fn val)
-  (if val
-      (λ (c) (fn c val))
-      (λ (c) c)))
-
-(define-syntax o
+(define-syntax setter
   (syntax-rules ()
-    [(o f) f]
-    [(o f f2 ...) (lambda (x) (o* x f f2 ...))]))
-
-(define-syntax o*
-  (syntax-rules ()
-    [(o* x) x]
-    [(o* x f g ...) (f (o* x g ...))]))
+    [(_ e)
+     e]
+    [(_ e (f arg) . more)
+     (let ([x e])
+       (setter (if arg
+                   (f x arg)
+                   x)
+               . more))]))
 
 (define (make-cookie name val
                      #:comment [comment #f]
@@ -37,12 +33,12 @@
                      #:max-age [max-age #f]
                      #:path    [path #f]
                      #:secure? [secure? #f])
-  ((o (set-when-true cookie:add-comment comment)
-      (set-when-true cookie:add-domain domain)
-      (set-when-true cookie:add-max-age max-age)
-      (set-when-true cookie:add-path path)
-      (set-when-true cookie:secure secure?))
-   (set-cookie name val)))
+  (setter (set-cookie name val)
+          (cookie:add-comment comment)
+          (cookie:add-domain domain)
+          (cookie:add-max-age max-age)
+          (cookie:add-path path)
+          (cookie:secure secure?)))
 
 ;; cookie->header : cookie -> header
 ;; gets the header that will set the given cookie
