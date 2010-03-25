@@ -338,7 +338,7 @@ WARNING: printf is rebound in the body of the unit to always
        (λ () (unless delayed-highlights? 
                (recompute-range-rectangles)))
        'framework:recompute-range-rectangles)
-      (inner void on-reflow))
+      (inner (void) on-reflow))
     
     (define delayed-highlights? #f)
     (define todo void)
