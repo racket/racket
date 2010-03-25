@@ -197,24 +197,25 @@
     (void))))
 
 (define (std-test/text-ui display-context test)
-  (begin0 (fold-test-results
-   (lambda (result seed)
-     ((sequence* (update-counter! result)
-                 (display-test-preamble result)
-                 (display-test-case-name result)
-                 (lambda (hash)
-                   (display-result result)
-                   (display-context result)
-                   hash)
-                 (display-test-postamble result))
-      seed))
-   ((sequence
-      (put-initial-counter)
-      (put-initial-name))
-    (make-empty-hash))
-   test
-   #:fdown (lambda (name seed) ((push-suite-name! name) seed))
-   #:fup (lambda (name kid-seed) ((pop-suite-name!) kid-seed)))))
+  (parameterize ([current-output-port (current-error-port)])
+    (fold-test-results
+     (lambda (result seed)
+       ((sequence* (update-counter! result)
+                   (display-test-preamble result)
+                   (display-test-case-name result)
+                   (lambda (hash)
+                     (display-result result)
+                     (display-context result)
+                     hash)
+                   (display-test-postamble result))
+        seed))
+     ((sequence
+        (put-initial-counter)
+        (put-initial-name))
+      (make-empty-hash))
+     test
+     #:fdown (lambda (name seed) ((push-suite-name! name) seed))
+     #:fup (lambda (name kid-seed) ((pop-suite-name!) kid-seed)))))
 
 (define (display-summary+return monad)
   (monad-value
