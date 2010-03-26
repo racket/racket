@@ -261,7 +261,8 @@
 
 ;; value: token | quoted-string
 (define (rfc2109:value? s)
-  (or (rfc2068:token? s) (rfc2068:quoted-string? s)))
+  (or (rfc2068:token? s) (rfc2068:quoted-string? s)
+      (rfc2068:quoted-string? (convert-to-quoted s))))
 
 ;; convert-to-quoted : string -> quoted-string?
 ;; takes the given string as a particular message, and converts the given
