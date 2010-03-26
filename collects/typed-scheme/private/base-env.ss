@@ -704,3 +704,40 @@
 
 
 ;; mutable pairs
+
+
+;; Byte and String Output (Section 12.3 of the Reference)
+[write-char (cl-> [(-Char) -Void]
+                  [(-Char -Output-Port) -Void])]
+[write-byte (cl-> [(-Nat) -Void]
+                  [(-Nat -Output-Port) -Void])]
+[newline (cl-> [() -Void]
+               [(-Output-Port) -Void])]
+[write-string (cl-> [(-String) -Nat]
+                    [(-String -Output-Port) -Nat]
+                    [(-String -Output-Port -Nat) -Nat]
+                    [(-String -Output-Port -Nat -Nat) -Nat])]
+[write-bytes  (cl-> [(-Bytes) -Nat]
+                    [(-Bytes -Output-Port) -Nat]
+                    [(-Bytes -Output-Port -Nat) -Nat]
+                    [(-Bytes -Output-Port -Nat -Nat) -Nat])]
+[write-bytes-avail  (cl-> [(-Bytes) -Nat]
+                          [(-Bytes -Output-Port) -Nat]
+                          [(-Bytes -Output-Port -Nat) -Nat]
+                          [(-Bytes -Output-Port -Nat -Nat) -Nat])]
+[write-bytes-avail*  (cl-> [(-Bytes) (-opt -Nat)]
+                           [(-Bytes -Output-Port) (-opt -Nat)]
+                           [(-Bytes -Output-Port -Nat) (-opt -Nat)]
+                           [(-Bytes -Output-Port -Nat -Nat) (-opt -Nat)])]
+[write-bytes-avail/enable-break (cl-> [(-Bytes) -Nat]
+                                      [(-Bytes -Output-Port) -Nat]
+                                      [(-Bytes -Output-Port -Nat) -Nat]
+                                      [(-Bytes -Output-Port -Nat -Nat) -Nat])]
+[write-special (cl-> [(Univ) -Boolean]
+                     [(Univ -Output-Port) -Boolean])]
+;; Need event type before we can include these
+;;write-special-avail* 
+;;write-bytes-avail-evt
+;;write-special-evt
+[port-writes-atomic? (-Output-Port . -> . -Boolean)]
+[port-writes-special? (-Output-Port . -> . -Boolean)]
