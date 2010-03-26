@@ -25,7 +25,15 @@ otherwise.}
  Returns @scheme[#t] if @scheme[v] represents a valid domain, @scheme[#f] otherwise.
 }
 
-@defproc[(set-cookie [name string?] [value string?]) cookie?]{
+@defproc[(cookie-name? [v any/c]) boolean?]{
+ Returns @scheme[#t] if @scheme[v] is a valid cookie name string, @scheme[#f] otherwise.
+} 
+ 
+@defproc[(cookie-value? [v any/c]) boolean?]{
+ Returns @scheme[#t] if @scheme[v] is a valid cookie value string, @scheme[#f] otherwise.
+} 
+
+@defproc[(set-cookie [name cookie-name?] [value cookie-value?]) cookie?]{
 
 Creates a new cookie, with default values for required fields.}
 
@@ -74,7 +82,7 @@ Prints @scheme[cookie] to a string. Empty fields do not appear in the
 output except when there is a required default.}
 
 
-@defproc[(get-cookie [name string?] [cookies string?]) (listof string?)]{
+@defproc[(get-cookie [name cookie-name?] [cookies string?]) (listof cookie-value?)]{
 
 Returns a list with all the values (strings) associated with @scheme[name].
 
@@ -86,7 +94,7 @@ initial-request structure, etc.  The @scheme[get-cookie] and
 from a @scheme["Cookie"] field value.}
 
 
-@defproc[(get-cookie/single [name string?] [cookies string?]) (or/c string? false/c)]{
+@defproc[(get-cookie/single [name cookie-name?] [cookies string?]) (or/c cookie-value? false/c)]{
 
 Like @scheme[get-cookie], but returns the just first value string
 associated to @scheme[name], or #f if no association is found.}
