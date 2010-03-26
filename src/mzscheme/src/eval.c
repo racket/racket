@@ -2539,7 +2539,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
   long prev_offset = 0;
-  int nested_count = 0, outside_nested = 0;
+  int nested_count = 0, outside_nested = 0, already_opt = optimized_rator;
 
   if (info->inline_fuel < 0)
     return NULL;
@@ -2569,11 +2569,9 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (!optimized_rator && SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
-    if (SCHEME_LOCAL_POS(le) >= nested_count) {
-      le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le) - nested_count, &offset, &single_use, 0, 0, &psize);
-      outside_nested = 1;
-    } else
-      info->has_nonleaf = 1;
+    le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset, &single_use, 0, 0, &psize);
+    outside_nested = 1;
+    already_opt = 1;
   }
 
   if (le) {
@@ -2590,6 +2588,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         if (!le)
           break;
         outside_nested = 1;
+        already_opt = 1;
       } else
         break;
     }
@@ -2610,6 +2609,12 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         || (!app && !app2 && !app3)) {
       int threshold, is_leaf;
 
+      if (!already_opt) {
+        /* We have an immediate `lambda' that wasn't optimized, yet.
+           Go optimize it, first. */
+        return NULL;
+      }
+
       sz = scheme_closure_body_size(data, 1, info, &is_leaf);
       if (is_leaf) {
         /* encourage inlining of leaves: */
@@ -2620,16 +2625,17 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       if ((sz >= 0) && (single_use || (sz <= threshold))) {
         Optimize_Info *sub_info;
         if (nested_count) {
-          sub_info = scheme_optimize_info_add_frame(info, nested_count, nested_count, nested_count);
+          sub_info = scheme_optimize_info_add_frame(info, nested_count, nested_count, 0);
           sub_info->vclock++;
           /* We could propagate bound values in sub_info , but relevant inlining
              and propagatation has probably already happened when the rator was
              optimized. */
         } else
           sub_info = info;
-	le = scheme_optimize_clone(0, data->code, sub_info, 
+        le = scheme_optimize_clone(0, data->code, sub_info, 
                                    offset + (outside_nested ? nested_count : 0), 
                                    data->num_params);
+
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
                              single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
@@ -2876,7 +2882,7 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
     Scheme_Let_Header *head = (Scheme_Let_Header *)rator;
     Scheme_Compiled_Let_Value *clv = NULL;
     int i;
-    
+
     rator = head->body;
     for (i = head->num_clauses; i--; ) {
       clv = (Scheme_Compiled_Let_Value *)rator;
@@ -4356,7 +4362,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *expr, int delta, int after_d
   /* FIXME: need stack check */
     
   t = SCHEME_TYPE(expr);
-  
+
   switch(t) {
   case scheme_local_type:
   case scheme_local_unbox_type:

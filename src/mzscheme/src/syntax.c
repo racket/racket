@@ -2143,7 +2143,7 @@ apply_values_shift(Scheme_Object *data, int delta, int after_depth)
   SCHEME_CAR(data) = e;
 
   e = scheme_optimize_shift(SCHEME_CDR(data), delta, after_depth);
-  SCHEME_CAR(data) = e;
+  SCHEME_CDR(data) = e;
 
   return scheme_make_syntax_compiled(APPVALS_EXPD, data);
 }
