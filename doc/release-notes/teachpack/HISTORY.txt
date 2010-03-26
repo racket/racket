@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+Versin 4.2.5				  [Fri Mar 26 10:02:11 EDT 2010]
+
+* "release" is no longer a key event; use "release" handler instead 
+
+------------------------------------------------------------------------
 Version 4.2.4				  [Thu Jan 28 12:02:01 EST 2010]
 
 * separated 2htdp/universe from htdp/image
