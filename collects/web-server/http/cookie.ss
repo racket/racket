@@ -7,7 +7,7 @@
          scheme/contract)
 
 (provide/contract 
- [make-cookie ((string? string?) (#:comment (or/c false/c string?)
+ [make-cookie ((cookie-name? cookie-value?) (#:comment (or/c false/c string?)
                                             #:domain (or/c false/c valid-domain?)
                                             #:max-age (or/c false/c exact-nonnegative-integer?)
                                             #:path (or/c false/c string?)

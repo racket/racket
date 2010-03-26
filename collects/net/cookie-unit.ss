@@ -294,13 +294,14 @@
 ;;
 ;; Returns whether this is a valid string to use as the value or the
 ;; name (depending on value?) of an HTTP cookie.
-(define (cookie-string? s [value? #t])
-  (unless (string? s)
-    (error* "string expected, received: ~a" s))
-  (if value?
-      (rfc2109:value? s)
-      ;; name:  token
-      (rfc2068:token? s)))
+(define (cookie-value? s)
+  (and (string? s)
+       (rfc2109:value? s)))
+
+(define (cookie-name? s)
+  (and (string? s) 
+       ;; name:  token
+       (rfc2068:token? s)))
 
 ;; Host names as per RFC 1123 and RFC952, more or less, anyway. :-)
 (define char-set:hostname

@@ -1,5 +1,7 @@
 #lang scheme/signature
 
+cookie-name?
+cookie-value?
 cookie?
 valid-domain?
 set-cookie

@@ -271,7 +271,7 @@ transmission that the server @bold{will not catch}.}
 @defmodule[web-server/http/cookie]{
  This module provides functions to create cookies and responses that set them.
       
- @defproc[(make-cookie [name string?] [value string?]
+ @defproc[(make-cookie [name cookie-name?] [value cookie-value?]
                        [#:comment comment (or/c false/c string?) #f]
                        [#:domain domain (or/c false/c valid-domain?) #f]
                        [#:max-age max-age (or/c false/c exact-nonnegative-integer?) #f]
