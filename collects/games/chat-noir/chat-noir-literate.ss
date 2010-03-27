@@ -2253,13 +2253,7 @@ and reports the results.
                                  'playing 3 (make-posn 0 0) #f)
                      "h")
              (make-world '() (make-posn 1 1)
-                         'playing 3 (make-posn 0 0) #t))
-       (test (change (make-world '() (make-posn 1 1)
-                                 'playing 3 (make-posn 0 0) #t)
-                     "release")
-             (make-world '() (make-posn 1 1) 'playing 3 (make-posn 0 0) #f))]
-
-
+                         'playing 3 (make-posn 0 0) #t))]
 
 
 @chunk[<point-in-this-circle?-tests>
