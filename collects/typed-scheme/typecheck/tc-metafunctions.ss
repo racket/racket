@@ -5,14 +5,18 @@
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
-         (rep type-rep filter-rep) scheme/list
+         (rep type-rep filter-rep rep-utils) scheme/list
          scheme/contract scheme/match unstable/match
          (for-syntax scheme/base))
 
-(provide combine-filter apply-filter abstract-filter abstract-filters combine-props
-         split-lfilters merge-filter-sets values->tc-results tc-results->values)
+;(provide (all-defined-out))
+
+(define-syntax-rule (d/c/p (name . args) c . body)
+  (begin (d/c (name . args) c . body)
+         (p/c [name c])))
 
 ;; this implements the sequence invariant described on the first page relating to Bot
+#;
 (define (lcombine l1 l2)
   (cond [(memq (make-LBot) l1)
          (make-LFilterSet (list (make-LBot)) null)]
@@ -21,31 +25,25 @@
         [else (make-LFilterSet l1 l2)]))
 
 (define (combine l1 l2)
-  (cond [(memq (make-Bot) l1)
-         (make-FilterSet (list (make-Bot)) null)]
-        [(memq (make-Bot) l2)
-         (make-FilterSet null (list (make-Bot)))]
-        [else (make-FilterSet l1 l2)]))
+  (match* (l1 l2) 
+          [(_ (Bot:)) (-FS -top -bot)]
+          [((Bot:) _) (-FS -bot -top)]
+          [(_ _) (-FS l1 l2)]))
 
-(d/c (abstract-filters keys ids results)
-     ((listof index/c) (listof identifier?) tc-results? . -> . (or/c Values? ValuesDots?))
-     (define (mk l [drest #f])
-       (if drest (make-ValuesDots l (car drest) (cdr drest)) (make-Values l)))
+(d/c/p (abstract-filters results)
+     (tc-results? . -> . (or/c Values? ValuesDots?))     
      (match results
        [(tc-results: ts fs os dty dbound)
         (make-ValuesDots 
-         (for/list ([t ts]
-                    [f fs]
-                    [o os])
-           (make-Result t (abstract-filter ids keys f) (abstract-object ids keys o)))
+         (for/list ([t ts] [f fs] [o os])
+           (make-Result t f o))
          dty dbound)]
        [(tc-results: ts fs os)
         (make-Values
-         (for/list ([t ts]
-                    [f fs]
-                    [o os])
-           (make-Result t (abstract-filter ids keys f) (abstract-object ids keys o))))]))
+         (for/list ([t ts] [f fs] [o os])
+           (make-Result t f o)))]))
 
+#;
 (define/contract (abstract-object ids keys o)
   (-> (listof identifier?) (listof index/c) Object? LatentObject?)
   (define (lookup y)
@@ -57,15 +55,17 @@
     [(Path: p (lookup: idx)) (make-LPath p idx)]
     [_ (make-LEmpty)]))
 
+#;
 (d/c (abstract-filter ids keys fs)
   (-> (listof identifier?) (listof index/c) FilterSet/c LatentFilterSet/c)
   (match fs
     [(FilterSet: f+ f-)
-     (lcombine
+     (combine
       (apply append (for/list ([f f+]) (abo ids keys f)))
       (apply append (for/list ([f f-]) (abo ids keys f))))]
-    [(NoFilter:) (lcombine null null)]))
+    [(NoFilter:) (combine -top -top)]))
 
+#;
 (d/c (abo xs idxs f)
   ((listof identifier?) (listof index/c) Filter/c . -> . (or/c null? (list/c LatentFilter/c)))
   (define (lookup y)
@@ -91,32 +91,116 @@
 (define (merge-filter-sets fs)
   (match fs
     [(list (FilterSet: f+ f-) ...)
-     (make-FilterSet (remove-duplicates (apply append f+)) (remove-duplicates (apply append f-)))]))
+     (make-FilterSet (make-AndFilter f+) (make-AndFilter f-))]))
 
-(d/c (apply-filter lfs t o)
-  (-> LatentFilterSet/c Type/c Object? FilterSet/c)
-  (match lfs
-    [(LFilterSet: lf+ lf-)
-     (combine
-      (apply append (for/list ([lf lf+]) (apo lf t o)))
-      (apply append (for/list ([lf lf-]) (apo lf t o))))]))
+(d/c/p (apply-filter fs ids os [polarity #t])
+  (->* (FilterSet/c (listof identifier?) (listof Object?)) (boolean?) FilterSet/c)
+  (match fs
+    [(FilterSet: f+ f-)
+     (combine (subst-filter* f+ ids os polarity) 
+	      (subst-filter* f- ids os polarity))]))
 
-(d/c (apo lf s o)
-  (-> LatentFilter/c Type/c Object? (or/c '() (list/c Filter/c)))
-  (match* (lf s o)
-    [((ImpFilter: as cs) _ _)
-     (match* [(for/list ([a as]) (apo a s o))
-	      (for/list ([c cs]) (apo c s o))]
-       [((list (list a*) ...)
-	 (list (list c*) ...)) (list (make-ImpFilter a* c*))]
-       [(_ _) null])]
-    [((LBot:) _ _) (list (make-Bot))]
-    [((LNotTypeFilter: (? (lambda (t) (subtype s t)) t) (list) _) _ _) (list (make-Bot))]
-    [((LTypeFilter: (? (lambda (t) (not (overlap s t))) t) (list) _) _ _) (list (make-Bot))]
-    [(_ _ (Empty:)) null]
-    [((LTypeFilter: t pi* _) _ (Path: pi x)) (list (make-TypeFilter t (append pi* pi) x))]
-    [((LNotTypeFilter: t pi* _) _ (Path: pi x)) (list (make-NotTypeFilter t (append pi* pi) x))]))
+(d/c/p (apply-type t ids os [polarity #t])
+  (->* (Type/c (listof identifier?) (listof Object?)) (boolean?) Type/c)
+  (for/fold ([t t]) ([i (in-list ids)] [o (in-list os)])
+    (subst-type t i o polarity)))
 
+(d/c/p (apply-object t ids os [polarity #t])
+  (->* (Object? (listof identifier?) (listof Object?)) (boolean?) Object?)
+  (for/fold ([t t]) ([i (in-list ids)] [o (in-list os)])
+    (subst-object t i o polarity)))
+
+(define (subst-filter* f ids os polarity)
+  (-> Filter/c (listof identifier?) (listof Object?) boolean? Filter/c)
+  (for/fold ([f f]) ([i (in-list ids)] [o (in-list os)])
+    (subst-filter f i o polarity)))
+
+(d/c/p (subst-filter-set fs id o polarity)
+       (-> FilterSet? identifier? Object? boolean? FilterSet?)
+  (match fs
+    [(FilterSet: f+ f-)
+     (combine (subst-filter f+ id o polarity) 
+	      (subst-filter f- id o polarity))]))
+
+(define (subst-type t id o polarity)
+  (define (st t) (subst-type t id o polarity))
+  (d/c (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs id o polarity))
+  (type-case (#:Type st 
+	      #:Filter sf
+	      #:Object (lambda (f) (subst-object f id o polarity)))
+	      t))
+
+(define (subst-object t id o polarity)
+  (match t
+    [(NoObject:) t]
+    [(Empty:) t]
+    [(Path: p i)
+     (if (free-identifier=? i id)
+	 (match o
+	   [(Empty:) (make-Empty)]
+	   ;; the result is not from an annotation, so it isn't a NoObject
+	   [(NoObject:) (make-Empty)]
+	   [(Path: p* i*) (make-Path (append p p*) i*)])
+	 t)]))
+
+;; this is the substitution metafunction 
+(d/c/p (subst-filter f id o polarity)
+  (-> Filter/c identifier? Object? boolean? Filter/c)
+  (define (ap f) (subst-filter f o polarity))
+  (define (tf-matcher t p i id o polarity maker)
+    (match o
+      [(or (Empty:) (NoObject:)) (if polarity -top -bot)]
+      [(Path: p* i*)
+       (cond [(free-identifier=? i id)
+	      (maker
+	       (subst-type t id o polarity)
+	       (append p p*) 
+	       i*)]
+	     [(id-free-in? id t) (if polarity -top -bot)]
+	     [else f])]))
+  (match f
+    [(ImpFilter: ant consq)
+     (make-ImpFilter (subst-filter ant id o (not polarity)) (ap consq))]
+    [(AndFilter: fs) (make-AndFilter (map ap fs))]
+    [(OrFilter: fs) (make-OrFilter (map ap fs))]
+    [(Bot:) -bot]
+    [(Top:) -top]
+    [(TypeFilter: t p i)
+     (tf-matcher t p i id o polarity make-TypeFilter)]
+    [(NotTypeFilter: t p i)
+     (tf-matcher t p i id o polarity make-NotTypeFilter)]))
+
+(define (id-free-in? id type)
+  (let/ec 
+   return
+   (define (for-object o)
+     (object-case (#:Type for-type)
+		  o
+		  [#:Path p i
+			  (if (free-identifier=? i id)
+			      (return #t)
+			      o)]))
+   (define (for-filter o)
+     (filter-case (#:Type for-type
+		   #:Filter for-filter)
+		  o
+		  [#:NotTypeFilter t p i
+				   (if (free-identifier=? i id)
+				       (return #t)
+				       o)]
+		  [#:TypeFilter t p i
+				(if (free-identifier=? i id)
+				    (return #t)
+				    o)]))
+   (define (for-type t)
+     (type-case (#:Type for-type
+		 #:Filter for-filter
+		 #:Object for-object)
+		t))
+   (for-type type)))
+
+#|
+#;
 (define/contract (split-lfilters lf idx)  
   (LatentFilterSet/c index/c . -> . LatentFilterSet/c)
   (define (idx= lf)
@@ -133,6 +217,7 @@
 (define-match-expander F-FS:
   (lambda (stx) #'(FilterSet: (list (Bot:)) _)))
 
+#;
 (d/c (combine-filter f1 f2 f3 t2 t3 o2 o3)
   (FilterSet/c FilterSet/c FilterSet/c Type? Type? Object? Object? . -> . tc-results?)
   (define (mk f) (ret (Un t2 t3) f (make-Empty)))
@@ -163,56 +248,28 @@
     [(_ _ _)
      ;; could intersect f2 and f3 here
      (mk (make-FilterSet null null))]))
+|#
 
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
-(define (values->tc-results tc formals)
+(d/c/p (values->tc-results tc)
+  ((or/c Values? ValuesDots?) . -> . tc-results?)
   (match tc
-    [(ValuesDots: (list (Result: ts lfs los) ...) dty dbound)
-     (ret ts
-          (for/list ([lf lfs]) 
-            (or
-             (and (null? formals)
-                  (match lf
-                    [(LFilterSet: lf+ lf-)
-                     (combine (if (memq (make-LBot) lf+) (list (make-Bot)) (list))
-                              (if (memq (make-LBot) lf-) (list (make-Bot)) (list)))]))
-             (merge-filter-sets
-              (for/list ([x formals] [i (in-naturals)])
-                (apply-filter (split-lfilters lf i) Univ (make-Path null x))))))
-          (for/list ([lo los])
-            (or 
-             (for/or ([x formals] [i (in-naturals)])
-               (match lo
-                 [(LEmpty:) #f]
-                 [(LPath: p (== i)) (make-Path p x)]))
-             (make-Empty)))
-          dty dbound)]
-    [(Values: (list (Result: ts lfs los) ...))
-     (ret ts
-          (for/list ([lf lfs]) 
-            (or
-             (and (null? formals)
-                  (match lf
-                    [(LFilterSet: lf+ lf-)
-                     (combine (if (memq (make-LBot) lf+) (list (make-Bot)) (list))
-                              (if (memq (make-LBot) lf-) (list (make-Bot)) (list)))]))
-             (merge-filter-sets
-              (for/list ([x formals] [i (in-naturals)])
-                (apply-filter (split-lfilters lf i) Univ (make-Path null x))))))
-          (for/list ([lo los])
-            (or 
-             (for/or ([x formals] [i (in-naturals)])
-               (match lo
-                 [(LEmpty:) #f]
-                 [(LPath: p (== i)) (make-Path p x)]))
-             (make-Empty))))]))
+    [(ValuesDots: (list (Result: ts fs os) ...) dty dbound)
+     (ret ts fs os dty dbound)]
+    [(Values: (list (Result: ts fs os) ...))
+     (ret ts fs os)]))
 
 (define (tc-results->values tc)
   (match tc
     [(tc-results: ts) (-values ts)]))
 
+(provide combine-props tc-results->values subst-object subst-type)
+
 (define (combine-props new-props old-props)
-  (define-values (new-imps new-atoms) (partition ImpFilter? new-props))
+  (define-values (new-atoms new-formulas) 
+    (partition (lambda (e) (or (TypeFilter? e) (NotTypeFilter? e))) new-props))
+  (values new-formulas new-atoms)
+  #;#;
   (define-values (derived-imps derived-atoms)
     (for/fold 
         ([derived-imps null]

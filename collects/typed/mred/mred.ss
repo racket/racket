@@ -49,7 +49,7 @@
                        [draw-text (String Number Number -> Void)])))
 (dt Color% (Class () () ([red (-> Number)])))
 
-(dt Snip% (Class () () ()))
+(dt Snip% (Class () () ([get-count (-> Integer)])))
 
 (dt Text% (Class ()
 		 ()

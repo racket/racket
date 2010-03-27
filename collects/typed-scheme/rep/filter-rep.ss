@@ -9,15 +9,22 @@
    (λ (e)
      (and (Filter? e) (not (NoFilter? e)) (not (FilterSet? e))))))
 
-(define LatentFilter/c
+(define FilterSet/c
+  (flat-named-contract
+   'FilterSet
+   (λ (e) (or (FilterSet? e) (NoFilter? e)))))
+
+
+#;(define LatentFilter/c
   (flat-named-contract
    'LatentFilter
    (λ (e)
      (and (LatentFilter? e) (not (LFilterSet? e))))))
 
-(provide Filter/c LatentFilter/c FilterSet/c LatentFilterSet/c index/c)
+(provide Filter/c FilterSet/c); LatentFilter/c  LatentFilterSet/c index/c)
 
 (df Bot () [#:fold-rhs #:base])
+(df Top () [#:fold-rhs #:base])
 
 (df TypeFilter ([t Type?] [p (listof PathElem?)] [v identifier?])
   [#:intern (list t p (hash-id v))]
@@ -32,24 +39,29 @@
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
 ;; implication
-(df ImpFilter ([a (non-empty-listof Filter/c)] [c (non-empty-listof Filter/c)])
-    [#:frees (combine-frees (map free-vars* (append a c)))
-	     (combine-frees (map free-idxs* (append a c)))])
+(df ImpFilter ([a Filter/c] [c Filter/c]))
+
+(df AndFilter ([fs (non-empty-listof Filter/c)])
+    [#:fold-rhs (*AndFilter (map filter-rec-id fs))]
+    [#:frees (combine-frees (map free-vars* fs))
+	     (combine-frees (map free-idxs* fs))])
+
+(df OrFilter ([fs (non-empty-listof Filter/c)])
+    [#:fold-rhs (*OrFilter (map filter-rec-id fs))]
+    [#:frees (combine-frees (map free-vars* fs))
+             (combine-frees (map free-idxs* fs))])
 
 (df FilterSet (thn els)
-     [#:frees (combine-frees (map free-vars* (append thn els)))
-	      (combine-frees (map free-idxs* (append thn els)))]
-     [#:fold-rhs (*FilterSet (map filter-rec-id thn) (map filter-rec-id els))]
-     [#:contract (->d ([t (cond [(ormap Bot? t)
-                                 (list/c Bot?)]
-                                [(ormap Bot? e)
-                                 (flat-named-contract "e was Bot" (list/c))]
-                                [else (listof Filter/c)])]
-                       [e (cond [(ormap Bot? e)
-                                 (list/c Bot?)]
-                                [(ormap Bot? t)
-                                 (flat-named-contract "t was Bot" (list/c))]
-                                [else (listof Filter/c)])])
+     [#:contract (->d ([t (cond [(Bot? t)
+                                 Bot?]
+                                [(Bot? e)
+                                 Top?]
+                                [else Filter/c])]
+                       [e (cond [(Bot? e)
+                                 Bot?]
+                                [(Bot? t)
+                                 Top?]
+                                [else Filter/c])])
                       (#:syntax [stx #f])
                       [result FilterSet?])])
 
@@ -57,6 +69,7 @@
 ;; should only be used for parsing type annotations and expected types
 (df NoFilter () [#:fold-rhs #:base])
 
+#|
 (define index/c (or/c natural-number/c keyword?))
 
 (dlf LBot () [#:fold-rhs #:base])
@@ -68,6 +81,8 @@
 (dlf LNotTypeFilter ([t Type?] [p (listof PathElem?)] [idx index/c])
   [#:frees (lambda (frees*) (combine-frees (map (compose make-invariant frees*) (cons t p))))]
   [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p) idx)])
+
+
 
 ;; implication
 (dlf LImpFilter ([a (non-empty-listof LatentFilter/c)] [c (non-empty-listof LatentFilter/c)])
@@ -92,15 +107,11 @@
                       (#:syntax [stx #f])
                       [result LFilterSet?])])
 
-(define FilterSet/c
-  (flat-named-contract
-   'FilterSet
-   (λ (e) (or (FilterSet? e) (NoFilter? e)))))
-
 (define LatentFilterSet/c
   (flat-named-contract
    'LatentFilterSet
    (λ (e) (or (LFilterSet? e)))))
+|#
 
-(define filter-equal? eq?)
+(define (filter-equal? a b) (= (Rep-seq a) (Rep-seq b)))
 (provide filter-equal?)

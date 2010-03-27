@@ -52,36 +52,24 @@
         (alt equal? equal?-able)))
   (match* ((single-value v1) (single-value v2))
     [((tc-result1: t _ o) (tc-result1: (Value: (? ok? val))))
-     (ret -Boolean (apply-filter (make-LFilterSet (list (make-LTypeFilter (-val val) null 0)) (list (make-LNotTypeFilter (-val val) null 0))) t o))]
+     (ret -Boolean
+	  (-FS (-filter-at (-val val) o)
+	       (-not-filter-at (-val val) o)))]
     [((tc-result1: (Value: (? ok? val))) (tc-result1: t _ o))
-     (ret -Boolean (apply-filter (make-LFilterSet (list (make-LTypeFilter (-val val) null 0)) (list (make-LNotTypeFilter (-val val) null 0))) t o))]
+     (ret -Boolean
+	  (-FS (-filter-at (-val val) o)
+	       (-not-filter-at (-val val) o)))]
     [((tc-result1: t _ o)
-      (and (? (lambda _ (free-identifier=? #'member comparator)))
-           (tc-result1: (app untuple (list (and ts (Value: _)) ...)))))
+      (or (and (? (lambda _ (free-identifier=? #'member comparator)))
+	       (tc-result1: (app untuple (list (and ts (Value: _)) ...))))
+	  (and (? (lambda _ (free-identifier=? #'memv comparator)))
+	       (tc-result1: (app untuple (list (and ts (Value: (? eqv?-able))) ...))))
+	  (and (? (lambda _ (free-identifier=? #'memq comparator)))
+	       (tc-result1: (app untuple (list (and ts (Value: (? eq?-able))) ...))))))
      (let ([ty (apply Un ts)])
        (ret (Un (-val #f) t) 
-            (apply-filter 
-             (make-LFilterSet (list (make-LTypeFilter ty null 0))
-                              (list (make-LNotTypeFilter ty null 0)))
-             t o)))]
-    [((tc-result1: t _ o)
-      (and (? (lambda _ (free-identifier=? #'memv comparator)))
-           (tc-result1: (app untuple (list (and ts (Value: (? eqv?-able))) ...)))))
-     (let ([ty (apply Un ts)])
-       (ret (Un (-val #f) t) 
-            (apply-filter 
-             (make-LFilterSet (list (make-LTypeFilter ty null 0))
-                              (list (make-LNotTypeFilter ty null 0)))
-             t o)))]
-    [((tc-result1: t _ o)
-      (and (? (lambda _ (free-identifier=? #'memq comparator)))
-           (tc-result1: (app untuple (list (and ts (Value: (? eq?-able))) ...)))))
-     (let ([ty (apply Un ts)])
-       (ret (Un (-val #f) t) 
-            (apply-filter 
-             (make-LFilterSet (list (make-LTypeFilter ty null 0))
-                              (list (make-LNotTypeFilter ty null 0)))
-             t o)))]
+	    (-FS (-filter-at ty o)
+		 (-not-filter-at ty o))))]
     [(_ _) (ret -Boolean)]))
 
 
@@ -609,7 +597,7 @@
                                            (= (length d) 
                                               (length (syntax->list #'args))))
                                          dom)
-                                      (Values: (list (Result: v (LFilterSet: '() '()) (LEmpty:))))
+                                      (Values: (list (Result: v (FilterSet: (Top:) (Top:)) (Empty:))))
                                       #f #f (list (Keyword: _ _ #f) ...)))))))
           ;(printf "f dom: ~a ~a~n" (syntax->datum #'f) dom)
           (let ([arg-tys (map (lambda (a t) (tc-expr/check a (ret t))) 
@@ -740,10 +728,13 @@
 
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
 (define (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
+  ;(printf "got to here 0~a~n" args-stx)
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
-    [((arr: dom (Values: (list (Result: t-r lf-r lo-r) ...)) rest #f (list (Keyword: _ _ #f) ...))
+    [((arr: dom (Values: (list (Result: t-r f-r o-r) ...)) rest #f (list (Keyword: _ _ #f) ...)
+	    names)
       (list (tc-result1: t-a phi-a o-a) ...))
+     ;(printf "got to here 1~a~n" args-stx)
      (when check?
        (cond [(and (not rest) (not (= (length dom) (length t-a))))
               (tc-error/expr #:return (ret t-r)
@@ -751,26 +742,27 @@
              [(and rest (< (length t-a) (length dom)))
               (tc-error/expr #:return (ret t-r)
                              "Wrong number of arguments, expected at least ~a and got ~a" (length dom) (length t-a))])
-       (for ([dom-t (if rest (in-sequence-forever dom rest) (in-list dom))] [a (syntax->list args-stx)] [arg-t (in-list t-a)])
+       (for ([dom-t (if rest (in-sequence-forever dom rest) (in-list dom))] 
+             [a (in-list (syntax->list args-stx))]
+             [arg-t (in-list t-a)])
          (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
-     (let* (;; Listof[Listof[LFilterSet]]
-            [lfs-f (for/list ([lf lf-r])
-                     (for/list ([i (in-indexes dom)])
-                       (split-lfilters lf i)))]
-            ;; Listof[FilterSet]
-            [f-r (for/list ([lfs lfs-f])
-                   (merge-filter-sets 
-                    (for/list ([lf lfs] [t t-a] [o o-a])
-                      (apply-filter lf t o))))]
-            ;; Listof[Object]
-            [o-r (for/list ([lo lo-r])                     
-                   (match lo
-                     [(LPath: pi* i)
-                      (match (object-index o-a i)
-                        [(Path: pi x) (make-Path (append pi* pi) x)]
-                        [_ (make-Empty)])]
-                     [_ (make-Empty)]))])
-       (ret t-r f-r o-r))]
+     ;(printf "got to here 2 ~a ~a ~a ~n" dom names o-a)
+     (let-values ([(names o-a)
+                   (for/lists (n o) ([d (in-list dom)]
+                                     [nm (in-list names)]
+                                     [oa (in-list o-a)])
+                     (values nm oa))])
+       ;(printf "got to here 3~a~n" args-stx)
+       (let* (;; Listof[FilterSet]
+              [f-r (for/list ([f f-r])
+                     (apply-filter f names o-a))]
+              ;; Listof[Object]
+              [o-r (for/list ([o o-r])
+                     (apply-object o names o-a))]
+              ;; Listof[Type]
+              [t-r (for/list ([t t-r])
+                     (apply-type t names o-a))])
+         (ret t-r f-r o-r)))]
     [((arr: _ _ _ drest '()) _)
      (int-err "funapp with drest args NYI")]
     [((arr: _ _ _ _ kws) _)

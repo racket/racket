@@ -68,7 +68,7 @@
                (define-values (dom* opt-dom* rngs* rst)
                  (match a
                    ;; functions with no filters or objects
-                   [(arr: dom (Values: (list (Result: rngs (LFilterSet: '() '()) (LEmpty:)) ...)) rst #f kws)
+                   [(arr: dom (Values: (list (Result: rngs (FilterSet: (Top:) (Top:)) (Empty:)) ...)) rst #f kws)
                     (let-values ([(mand-kws opt-kws) (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws)]
                                  [(conv) (match-lambda [(Keyword: kw kty _) (list kw (t->c/neg kty))])])
                       (values (append (map t->c/neg dom) (append-map conv mand-kws))

@@ -184,14 +184,12 @@
 (d/c (combine-arrs arrs)
   (c-> (listof arr?) (or/c #f arr?))
   (match arrs
-    [(list (arr: dom1 rng1 #f #f '()) (arr: dom rng #f #f '()) ...)
+    [(list (and a1 (arr: dom1 rng1 #f #f '() names)) (arr: dom rng #f #f '()) ...)
      (cond
-      [(null? dom) (make-arr dom1 rng1 #f #f '())]
-      ((not (apply = (length dom1) (map length dom)))
-       #f)
-      ((not (foldl type-equal? rng1 rng))
-       #f)
-      [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
+      [(null? dom) a1]
+      [(not (apply = (length dom1) (map length dom))) #f]
+      [(not (foldl type-equal? rng1 rng)) #f]
+      [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '() names)])]
     [_ #f]))
 
 
@@ -328,7 +326,7 @@
               [((Result: t f o) (Result: t* f o))
                (subtype* A0 t t*)]
               ;; we can ignore interesting results
-              [((Result: t f o) (Result: t* (LFilterSet: (list) (list)) (LEmpty:)))
+              [((Result: t f o) (Result: t* (FilterSet: (Top:) (Top:)) (Empty:)))
                (subtype* A0 t t*)]
 	      ;; subtyping on other stuff
 	      [((Syntax: t) (Syntax: t*))

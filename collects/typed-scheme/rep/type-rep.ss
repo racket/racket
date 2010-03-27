@@ -5,7 +5,7 @@
 	 "rep-utils.ss" "object-rep.ss" "filter-rep.ss" "free-variance.ss"
          mzlib/trace scheme/match
          scheme/contract
-         (for-syntax scheme/base))
+         (for-syntax scheme/base syntax/parse))
 
 (define name-table (make-weak-hasheq))
 
@@ -132,9 +132,9 @@
     [#:frees (λ (f) (f ty))]
     [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)])
 
-(dt Result ([t Type/c] [f LFilterSet?] [o LatentObject?])
+(dt Result ([t Type/c] [f FilterSet?] [o Object?])
     [#:frees (λ (frees) (combine-frees (map frees (list t f o))))]
-    [#:fold-rhs (*Result (type-rec-id t) (latentfilter-rec-id f) (latentobject-rec-id o))])
+    [#:fold-rhs (*Result (type-rec-id t) (filter-rec-id f) (object-rec-id o))])
 
 ;; types : Listof[Type]
 (dt Values ([rs (listof Result?)]) 
@@ -150,7 +150,11 @@
          [rng (or/c Values? ValuesDots?)]
          [rest (or/c #f Type/c)] 
          [drest (or/c #f (cons/c Type/c (or/c natural-number/c symbol?)))]
-         [kws (listof Keyword?)])
+         [kws (listof Keyword?)]
+         ;; order is: fixed, rest/drest, keywords
+         [names (listof identifier?)])
+    #:no-provide
+    [#:intern (list dom rng rest drest kws (map hash-id names))]
     [#:frees (combine-frees 
               (append (map (compose flip-variances free-vars*) 
                            (append (if rest (list rest) null)
@@ -179,7 +183,8 @@
                       (type-rec-id rng)
                       (and rest (type-rec-id rest))
                       (and drest (cons (type-rec-id (car drest)) (cdr drest)))
-                      (map type-rec-id kws))])
+                      (map type-rec-id kws)
+                      names)])
 
 ;; top-arr is the supertype of all function types
 (dt top-arr () [#:fold-rhs #:base])
@@ -396,7 +401,7 @@
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions 
-       [#:arr dom rng rest drest kws
+       [#:arr dom rng rest drest kws names
               (*arr (map sb dom)
                     (sb rng)
                     (if rest (sb rest) #f)
@@ -404,7 +409,8 @@
                         (cons (sb (car drest))
                               (if (eq? (cdr drest) name) (+ count outer) (cdr drest)))
                         #f)
-                    (map sb kws))]
+                    (map sb kws)
+                    names)]
        [#:ValuesDots rs dty dbound
               (*ValuesDots (map sb rs)
                            (sb dty)
@@ -441,7 +447,7 @@
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions
-       [#:arr dom rng rest drest kws
+       [#:arr dom rng rest drest kws names
               (*arr (map sb dom)
                     (sb rng)
                     (if rest (sb rest) #f)
@@ -449,7 +455,8 @@
                         (cons (sb (car drest))
                               (if (eqv? (cdr drest) (+ count outer)) (F-n image) (cdr drest)))
                         #f)
-                    (map sb kws))]
+                    (map sb kws)
+                    names)]
        [#:ValuesDots rs dty dbound
                      (*ValuesDots (map sb rs)
                                   (sb dty)
@@ -604,6 +611,13 @@
                      (list syms (PolyDots-body* syms t))))
                  (list nps bp)))])))
 
+(define-match-expander arr:*
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ dom rng rest drest kws names)
+       (syntax/loc stx (arr: dom rng rest drest kws names))]
+      [(_ dom rng rest drest kws)
+       (syntax/loc stx (arr: dom rng rest drest kws _))])))
 ;(trace subst subst-all)
 
 (provide
@@ -614,6 +628,7 @@
  PolyDots-unsafe:
  Mu? Poly? PolyDots?
  arr
+ arr?
  Type? Filter? LatentFilter? Object? LatentObject?
  Type/c
  Poly-n
@@ -631,7 +646,9 @@
              [PolyDots* make-PolyDots]
              [Mu-body* Mu-body]
              [Poly-body* Poly-body]
-             [PolyDots-body* PolyDots-body]))
+             [PolyDots-body* PolyDots-body]
+	     [*arr make-arr]
+             [arr:* arr:]))
 
 (p/c [type-equal? (Rep? Rep? . -> . boolean?)])
 

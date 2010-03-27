@@ -1,14 +1,17 @@
 #lang scheme/unit
 
-(require "../utils/utils.ss"
-	 (rep free-variance type-rep filter-rep rep-utils)
-	 (types convenience union subtype remove-intersect resolve)
-	 (except-in (utils tc-utils) make-env)
-	 (env type-name-env)
-         (except-in (types utils) Dotted)
+(require scheme/require
+         (except-in 
+          (path-up
+           "utils/utils.ss" "utils/tc-utils.ss"
+           "rep/free-variance.ss" "rep/type-rep.ss" "rep/filter-rep.ss" "rep/rep-utils.ss"
+           "types/convenience.ss" "types/union.ss" "types/subtype.ss" "types/remove-intersect.ss" "types/resolve.ss"
+           "env/type-name-env.ss")
+          make-env)
+         (except-in (path-up "types/utils.ss") Dotted)
+         (only-in (path-up "env/type-environments.ss") lookup current-tvars)
          "constraint-structs.ss"
-	 "signatures.ss"
-         (only-in (env type-environments) lookup current-tvars)
+	 "signatures.ss"                  
          scheme/match
          mzlib/etc
          mzlib/trace
@@ -101,11 +104,13 @@
 (define (cgen/filter V X t s)
   (match* (t s)
     [(e e) (empty-cset X)]
-    ;; FIXME - is there something to be said about LBot?
-    [((LTypeFilter: t p i) (LTypeFilter: s p i)) (cset-meet (cgen V X t s) (cgen V X s t))]
-    [((LNotTypeFilter: t p i) (LNotTypeFilter: s p i)) (cset-meet (cgen V X t s) (cgen V X s t))]
+    [(e (Top:)) (empty-cset X)]
+    ;; FIXME - is there something to be said about the logical ones?
+    [((TypeFilter: t p i) (TypeFilter: s p i)) (cset-meet (cgen V X t s) (cgen V X s t))]
+    [((NotTypeFilter: t p i) (NotTypeFilter: s p i)) (cset-meet (cgen V X t s) (cgen V X s t))]
     [(_ _) (fail! t s)]))
 
+#;
 (define (cgen/filters V X ts ss)
   (cond 
     [(null? ss) (empty-cset X)]
@@ -119,14 +124,14 @@
 (define (cgen/filter-set V X t s)
   (match* (t s)
     [(e e) (empty-cset X)]
-    [((LFilterSet: t+ t-) (LFilterSet: s+ s-))
-     (cset-meet (cgen/filters V X t+ s+) (cgen/filters V X t- s-))]
+    [((FilterSet: t+ t-) (FilterSet: s+ s-))
+     (cset-meet (cgen/filter V X t+ s+) (cgen/filter V X t- s-))]
     [(_ _) (fail! t s)]))
 
 (define (cgen/object V X t s)
   (match* (t s)
     [(e e) (empty-cset X)]
-    [(e (LEmpty:)) (empty-cset X)]
+    [(e (Empty:)) (empty-cset X)]
     ;; FIXME - do something here    
     [(_ _) (fail! t s)]))
 
@@ -153,8 +158,8 @@
            [ret-mapping (cg t s)])
        (cset-meet*
         (list arg-mapping ret-mapping)))]
-    [((arr: ts t #f (cons dty dbound) '())
-      (arr: ss s #f #f                '()))
+    [((arr: ts t #f (cons dty dbound) '() names)
+      (arr: ss s #f #f                '() names*))
      (unless (memq dbound X)
        (fail! S T))
      (unless (<= (length ts) (length ss))
@@ -164,10 +169,11 @@
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
-            [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f null) s-arr)])
+            [new-names (generate-temporaries new-tys)]
+            [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f null (append names new-names)) s-arr)])
        (move-vars-to-dmap new-cset dbound vars))]
     [((arr: ts t #f #f                '())
-      (arr: ss s #f (cons dty dbound) '()))
+      (arr: ss s #f (cons dty dbound) '() names*))
      (unless (memq dbound X)
        (fail! S T))
      (unless (<= (length ss) (length ts))
@@ -177,7 +183,8 @@
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
-            [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f null))])
+            [new-names (generate-temporaries new-tys)]
+            [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f null (append names* new-names)))])
        (move-vars-to-dmap new-cset dbound vars))]
     [((arr: ts t #f (cons t-dty dbound) '())
       (arr: ss s #f (cons s-dty dbound) '()))
@@ -201,7 +208,7 @@
        (cset-meet* 
         (list arg-mapping darg-mapping ret-mapping)))]
     [((arr: ts t t-rest #f                  '())
-      (arr: ss s #f     (cons s-dty dbound) '()))
+      (arr: ss s #f     (cons s-dty dbound) '() names*))
      (unless (memq dbound X)
        (fail! S T))
      (if (<= (length ts) (length ss))
@@ -216,8 +223,9 @@
                             (gensym dbound))]
                 [new-tys  (for/list ([var vars])
                             (substitute (make-F var) dbound s-dty))]
+                [new-names (generate-temporaries new-tys)]
                 [new-cset (cgen/arr V (append vars X) t-arr 
-                                    (make-arr (append ss new-tys) s #f (cons s-dty dbound) null))])
+                                    (make-arr (append ss new-tys) s #f (cons s-dty dbound) null (append names* new-names)))])
            (move-vars+rest-to-dmap new-cset dbound vars)))]
     ;; If dotted <: starred is correct, add it below.  Not sure it is.
     [((arr: ts t #f     (cons t-dty dbound) '())
@@ -506,4 +514,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;(trace subst-gen cgen)
+;(trace cgen cgen/arr)

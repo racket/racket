@@ -43,7 +43,7 @@
                  target
                  [#:Union tys (Un (map sb tys))]
                  [#:F name* (if (eq? name* name) image target)]
-                 [#:arr dom rng rest drest kws
+                 [#:arr dom rng rest drest kws names
                         (begin
                           (when (and (pair? drest)
                                      (eq? name (cdr drest))
@@ -53,7 +53,8 @@
                                     (sb rng)
                                     (and rest (sb rest))
                                     (and drest (cons (sb (car drest)) (cdr drest)))
-                                    (map sb kws)))]
+                                    (map sb kws)
+				    names))]
                  [#:ValuesDots types dty dbound
                                (begin
                                  (when (eq? name dbound)
@@ -76,10 +77,10 @@
                                        (for/list ([img images])
                                          (make-Result
                                           (substitute img name expanded)
-                                          (make-LFilterSet null null)
-                                          (make-LEmpty))))))
+                                          (make-FilterSet (make-Top) (make-Top))
+                                          (make-Empty))))))
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
-                 [#:arr dom rng rest drest kws
+                 [#:arr dom rng rest drest kws names
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))                            
                             (make-arr (append 
@@ -90,12 +91,14 @@
                                       (sb rng)
                                       rimage
                                       #f
-                                      (map sb kws))
+                                      (map sb kws)
+				      names)
                             (make-arr (map sb dom)
                                       (sb rng)
                                       (and rest (sb rest))
                                       (and drest (cons (sb (car drest)) (cdr drest)))
-                                      (map sb kws)))])
+                                      (map sb kws)
+				      names))])
       target))
 
 ;; implements sd from the formalism
@@ -113,14 +116,15 @@
                       (if (eq? name* name)
                           image
                           target)]
-                 [#:arr dom rng rest drest kws
+                 [#:arr dom rng rest drest kws names
                         (make-arr (map sb dom)
                                   (sb rng)
                                   (and rest (sb rest))
                                   (and drest
                                        (cons (sb (car drest))
                                              (if (eq? name (cdr drest)) image-bound (cdr drest))))
-                                  (map sb kws))])
+                                  (map sb kws)
+				  names)])
        target))
 
 ;; substitute many variables
@@ -210,7 +214,7 @@
 ;; convenience function for returning the result of typechecking an expression
 (define ret
   (case-lambda [(t)
-                (let ([mk (lambda (t) (make-FilterSet null null))])
+                (let ([mk (lambda (t) (make-FilterSet (make-Top) (make-Top)))])
                   (make-tc-results
                    (cond [(Type? t)
                           (list (make-tc-result t (mk t) (make-Empty)))]

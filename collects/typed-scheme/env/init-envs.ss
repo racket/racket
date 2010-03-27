@@ -38,8 +38,17 @@
     [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]
     [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
-    [(? (lambda (e) (or (LatentFilter? e)
-                        (LatentObject? e)
+    [(arr: dom rng rest drest kws names)
+     `(make-arr ,(sub dom) ,(sub rng) ,(sub rest) ,(sub drest) ,(sub kws) 
+                (list ,@(for/list ([i names]) `(quote-syntax ,i))))]
+    [(TypeFilter: t p i)
+     `(make-TypeFilter ,(sub t) ,(sub p) (quote-syntax ,i))]
+    [(NotTypeFilter: t p i)
+     `(make-NotTypeFilter ,(sub t) ,(sub p) (quote-syntax ,i))]
+    [(Path: p i)
+     `(make-Path ,(sub p) (quote-syntax ,i))]
+    [(? (lambda (e) (or (Filter? e)
+                        (Object? e)
                         (PathElem? e)))
         (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx vals)))
      `(,(gen-constructor tag) ,@(map sub vals))]

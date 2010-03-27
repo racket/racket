@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed/scheme/base ;/no-check
 
 (require typed/mred/mred
          typed/framework/framework
@@ -172,7 +172,7 @@
                (max raw-th h)))
   (define tmp-color (make-object color%))
   
-  (: get-char (Number Number -> Char))
+  (: get-char (Real Real -> Char))
   (define (get-char x y)
     (send bdc get-pixel x y tmp-color)
     (let ([red (send tmp-color red)])
@@ -185,9 +185,9 @@
       (inexact->exact th)
       #t))
   
-  (: fetch-line (Number -> String))
+  (: fetch-line (Real -> String))
   (define (fetch-line y)
-    (let: loop : String ([x : Number (send bitmap get-width)]
+    (let: loop : String ([x : Real (send bitmap get-width)]
                          [chars : (Listof Char) null])
       (cond
         [(zero? x) (apply string chars)]

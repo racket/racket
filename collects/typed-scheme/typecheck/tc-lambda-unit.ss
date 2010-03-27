@@ -14,7 +14,8 @@
          (types abbrev utils)
 	 (env type-environments lexical-env)
 	 (utils tc-utils)
-         mzlib/plt-match)
+         unstable/debug
+         scheme/match)
 (require (for-template scheme/base "internal-forms.ss"))
 
 (import tc-expr^)
@@ -32,9 +33,7 @@
     [(struct lam-result ((list (list arg-ids arg-tys) ...) (list (list kw kw-id kw-ty req?) ...) rest drest body))
      (make-arr 
       arg-tys
-      (abstract-filters (append (for/list ([i (in-naturals)] [_ arg-ids]) i) kw)
-                        (append arg-ids kw-id)
-                        body)
+      (abstract-filters body)
       #:kws (map make-Keyword kw kw-ty req?)
       #:rest rest
       #:drest drest)]))
@@ -200,7 +199,7 @@
          [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
           (for/list ([args argss] [ret rets] [rest rests] [drest drests])
             (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies))
-                                    args (values->tc-results ret (formals->list (car (syntax->list formals)))) rest drest))]
+                                    args (values->tc-results ret) rest drest))]
          [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))]
     ;; otherwise
     [else (go (syntax->list formals) (syntax->list bodies) null null null)]))

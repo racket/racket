@@ -30,9 +30,9 @@
                               Univ
                               (make-Hashtable (vp k) v))]
              [#:Param in out
-                          (make-Param (var-demote in V)
-                                          (vp out))]
-             [#:arr dom rng rest drest kws
+                      (make-Param (var-demote in V)
+                                  (vp out))]
+             [#:arr dom rng rest drest kws names
                     (cond                      
                       [(apply V-in? V (get-filters rng))
                        (make-top-arr)]
@@ -41,7 +41,8 @@
                                  (vp rng)
                                  (var-demote (car drest) V)
                                  #f
-                                 (for/list ([k kws]) (var-demote k V)))]
+                                 (for/list ([k kws]) (var-demote k V))
+                                 names)]
                       [else
                        (make-arr (for/list ([d dom]) (var-demote d V))
                                  (vp rng)
@@ -49,7 +50,8 @@
                                  (and drest
                                       (cons (var-demote (car drest) V)
                                             (cdr drest)))
-                                 (for/list ([k kws]) (var-demote k V)))])]))
+                                 (for/list ([k kws]) (var-demote k V))
+                                 names)])]))
 
 (define (var-demote T V)
   (define (vd t) (var-demote t V))
@@ -63,9 +65,9 @@
                               (Un)
                               (make-Hashtable (vd k) v))]
              [#:Param in out
-                          (make-Param (var-promote in V)
-                                          (vd out))]
-             [#:arr dom rng rest drest kws
+                      (make-Param (var-promote in V)
+                                  (vd out))]
+             [#:arr dom rng rest drest kws names
                     (cond
                       [(apply V-in? V (get-filters rng))
                        (make-top-arr)]
@@ -74,7 +76,8 @@
                                  (vd rng)
                                  (var-promote (car drest) V)
                                  #f
-                                 (for/list ([k kws]) (var-demote k V)))]
+                                 (for/list ([k kws]) (var-demote k V))
+                                 names)]
                       [else
                        (make-arr (for/list ([d dom]) (var-promote d V))
                                  (vd rng)
@@ -82,4 +85,5 @@
                                  (and drest
                                       (cons (var-promote (car drest) V)
                                             (cdr drest)))
-                                 (for/list ([k kws]) (var-demote k V)))])]))
+                                 (for/list ([k kws]) (var-demote k V))
+                                 names)])]))

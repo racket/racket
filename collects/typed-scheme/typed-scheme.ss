@@ -42,7 +42,7 @@
            [with-handlers
                ([(lambda (e) (and catch-errors? (exn:fail? e) (not (exn:fail:syntax? e))))
                  (lambda (e) (tc-error "Internal error: ~a" e))])]
-           [parameterize (;; disable fancy printing
+           [parameterize (;; enable fancy printing?
                           [custom-printer #t]
                           ;; a cheat to avoid units
                           [infer-param infer]
@@ -99,7 +99,9 @@
     [(_ . form)     
      (nest
          ([begin (set-box! typed-context? #t)]
-          [parameterize (;; a cheat to avoid units
+          [parameterize (;; disable fancy printing
+                         [custom-printer #t]
+                         ;; a cheat to avoid units
                          [infer-param infer]
                          ;; this paramter is for parsing types
                          [current-tvars initial-tvar-env]
