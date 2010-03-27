@@ -1,4 +1,17 @@
 ------------------------------
+        Version 4.2.5
+------------------------------
+
+  . a few more improvements to 2htdp/image
+  . new language dialog, designed to encourage 
+    people to use the module language
+  . the module browser shows the phases in
+    which each module is invoked (in a new
+    "long name" mode)
+  . added alt-1 thru alt-9 as shortcuts to swap
+    around between tabs
+
+------------------------------
         Version 4.2.4
 ------------------------------
 
