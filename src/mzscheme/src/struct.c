@@ -1753,7 +1753,7 @@ static void chaperone_struct_set(const char *who, Scheme_Object *o, int i, Schem
 {
   while (1) {
     if (!SCHEME_CHAPERONEP(o)) {
-      SCHEME_VEC_ELS(o)[i] = v;
+      ((Scheme_Structure *)o)->slots[i] = v;
       return;
     } else {
       Scheme_Chaperone *px = (Scheme_Chaperone *)o;

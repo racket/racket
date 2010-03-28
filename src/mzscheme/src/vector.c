@@ -364,7 +364,10 @@ void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *what, Scheme
 static Scheme_Object *
 bad_index(char *name, Scheme_Object *i, Scheme_Object *vec, int bottom)
 {
-  scheme_bad_vec_index(name, i, "vector", vec, bottom, SCHEME_VEC_SIZE(vec));
+  scheme_bad_vec_index(name, i, "vector", vec, bottom, 
+                       (SCHEME_NP_CHAPERONEP(vec)
+                        ? SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(vec))
+                        : SCHEME_VEC_SIZE(vec)));
   return NULL;
 }
 
@@ -491,7 +494,7 @@ scheme_checked_vector_set(int argc, Scheme_Object *argv[])
   if (!SCHEME_MUTABLE_VECTORP(vec))
     scheme_wrong_type("vector-set!", "mutable vector", 0, argc, argv);
 
-  len = SCHEME_VEC_SIZE(argv[0]);
+  len = SCHEME_VEC_SIZE(vec);
 
   i = scheme_extract_index("vector-set!", 1, argc, argv, len, 0);
 
