@@ -314,10 +314,10 @@
     [(15) 'quote-syntax-type]
     [(24) 'variable-type]
     [(25) 'module-variable-type]
-    [(96) 'case-lambda-sequence-type]
-    [(97) 'begin0-sequence-type]
-    [(100) 'module-type]
-    [(102) 'resolve-prefix-type]
+    [(99) 'case-lambda-sequence-type]
+    [(100) 'begin0-sequence-type]
+    [(103) 'module-type]
+    [(105) 'resolve-prefix-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers
