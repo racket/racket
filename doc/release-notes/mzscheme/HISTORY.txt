@@ -1,5 +1,6 @@
-Version 4.2.4.2
+Version 4.2.5, March 2010
 Changed module to wrap each body expression in a prompt
+Changed define-cstruct to bind type name for struct-out, etc.
 
 Version 4.2.4, January 2010
 Added scheme/flonum and scheme/fixnum

@@ -333,17 +333,23 @@ corresponds to the unplayed move! that's confusing.
           [(0) best-player%]
           [(1) polite-player%]
           [(2) reckless-player%]
-          [(3) gui-player%]))
+          [(3) gui-player%]
+          [else
+           (message-box "Parcheesi" (format "index->player got ~s" i))
+           gui-player%]))
       
-      (define players (vector (index->player 0)
-                              (index->player 0)
-                              (index->player 0)
-                              (index->player 0)))
+      (define players (vector 'unfilled-in-players-array
+                              'unfilled-in-players-array
+                              'unfilled-in-players-array
+                              'unfilled-in-players-array))
       
-      (define/private (add-choose-player-controls color parent-panel)
-        (let ([color-order '((green . 0) (red . 1) (blue . 2) (yellow . 3))])
+      (define/private (add-choose-player-controls color parent-panel init-selection)
+        (let* ([color-order '((green . 0) (red . 1) (blue . 2) (yellow . 3))]
+               [color-index (cdr (assq color color-order))])
+          (vector-set! players color-index (index->player init-selection))
           (new radio-box%
                (parent parent-panel)
+               (selection init-selection)
                (label #f)
                (choices '("Amazing Grace"
                           "Polite Polly"
@@ -352,7 +358,7 @@ corresponds to the unplayed move! that's confusing.
                (callback
                 (lambda (rb y)
                   (vector-set! players
-                               (cdr (assq color color-order))
+                               color-index
                                (index->player
                                 (send rb get-selection))))))))
       
@@ -361,7 +367,7 @@ corresponds to the unplayed move! that's confusing.
       ;;  put all the gui elements together
       ;;
       
-      (define/private (make-player-control-panel parent color ah aw)
+      (define/private (make-player-control-panel parent color ah aw init-selection)
         (let* ([parent 
                 (new panel:single% 
                      (stretchable-height #f)
@@ -379,14 +385,14 @@ corresponds to the unplayed move! that's confusing.
                                           (stretchable-width #f)
                                           (stretchable-height #f))])
           (add-gui-player-controls color control-player-panel)
-          (add-choose-player-controls color choose-player-panel)
+          (add-choose-player-controls color choose-player-panel init-selection)
           (list color parent choose-player-panel control-player-panel)))
       
       (define gui-player-control-panels
-        (list (make-player-control-panel green-player-panel 'green 'top 'left)
-              (make-player-control-panel red-player-panel 'red 'bottom 'left)
-              (make-player-control-panel yellow-player-panel 'yellow 'top 'right)
-              (make-player-control-panel blue-player-panel 'blue 'bottom 'right)))
+        (list (make-player-control-panel green-player-panel 'green 'top 'left 0)
+              (make-player-control-panel red-player-panel 'red 'bottom 'left 1)
+              (make-player-control-panel yellow-player-panel 'yellow 'top 'right 2)
+              (make-player-control-panel blue-player-panel 'blue 'bottom 'right 3)))
       
       (define/private (get-player-panel color i)
         (let ([e (assq color gui-player-control-panels)])
