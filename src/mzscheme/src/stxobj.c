@@ -8034,7 +8034,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     while (i != -1) {
       scheme_hash_tree_index(ht1, i, &key, &val);
       if (!SAME_OBJ((Scheme_Object *)ht1, o))
-        val = scheme_chaperone_hash_traversal_get(ht1, key);
+        val = scheme_chaperone_hash_traversal_get(o, key);
       val = datum_to_syntax_inner(val, ut, stx_src, stx_wraps, ht);
       if (!val) return NULL;
       ht2 = scheme_hash_tree_set(ht2, key, val);

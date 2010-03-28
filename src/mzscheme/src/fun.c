@@ -31,6 +31,7 @@
 
 #include "schpriv.h"
 #include "schexpobs.h"
+#include "schmach.h"
 
 /* The implementations of the time primitives, such as
    `current-seconds', vary a lot from platform to platform. */
@@ -4007,7 +4008,7 @@ static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
 
   if (!is_subarity(orig, naya))
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "chaperone-procedure: arity of chaperoneing procedure: %V"
+                     "chaperone-procedure: arity of chaperoning procedure: %V"
                      " does not cover arity of original procedure: %V",
                      argv[1],
                      argv[0]);
@@ -4024,10 +4025,46 @@ static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
   return (Scheme_Object *)px;
 }
 
-Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv)
+static Scheme_Object *apply_chaperone_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Object **argv = (Scheme_Object **)p->ku.k.p2;
+  Scheme_Object *auto_val = (Scheme_Object *)p->ku.k.p3;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+
+  return scheme_apply_chaperone(o, p->ku.k.i1, argv, auto_val);
+}
+
+static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
+{
+  #ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      Scheme_Object **argv2;
+      argv2 = MALLOC_N(Scheme_Object*, argc);
+      memcpy(argv2, argv, sizeof(Scheme_Object *) * argc);
+      p->ku.k.p1 = (void *)o;
+      p->ku.k.p2 = (void *)argv2;
+      p->ku.k.p3 = (void *)auto_val;
+      p->ku.k.i1 = argc;
+      return scheme_handle_stack_overflow(apply_chaperone_k);
+    }
+  }
+#endif
+
+  return scheme_apply_chaperone(o, argc, argv, auto_val);
+}
+
+Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
 {
   Scheme_Chaperone *px = (Scheme_Chaperone *)o;
-  Scheme_Object *v, *a[1], *a2[1], **argv2, *post;
+  Scheme_Object *v, *a[1], *a2[1], **argv2, *post, *result_v;
   int c, i;
 
   v = _scheme_apply_multi(px->redirects, argc, argv);
@@ -4069,7 +4106,14 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
 
   if (c == argc) {
     /* No filter for the result, so tail call: */
-    return scheme_tail_apply(px->prev, c, argv2);
+    if (auto_val) {
+      if (SCHEME_CHAPERONEP(px->prev))
+        return do_apply_chaperone(px->prev, c, argv2, auto_val);
+      else
+        return argv2[0];
+    } else {
+      return scheme_tail_apply(px->prev, c, argv2);
+    }
   } else {
     /* Last element is a filter for the result(s) */
     post = argv2[argc];
@@ -4078,7 +4122,16 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "procedure chaperone: %V: expected <procedure> as last result, produced: %V",
                        px->redirects,
                        post);
-    v = _scheme_apply_multi(px->prev, argc, argv2);
+    if (auto_val) {
+      if (SCHEME_CHAPERONEP(px->prev))
+        result_v = do_apply_chaperone(px->prev, argc, argv2, auto_val);
+      else
+        result_v = argv2[0];
+      v = auto_val;
+    } else {
+      v = _scheme_apply_multi(px->prev, argc, argv2);
+      result_v = NULL;
+    }
     if (v == SCHEME_MULTIPLE_VALUES) {
       GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
       if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
@@ -4114,16 +4167,16 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       for (i = 0; i < argc; i++) {
         if (!scheme_chaperone_of(argv2[i], argv[i])) {
           if (argc == 1)
-          scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                           "procedure-result chaperone: %V: result: %V is not a chaperone of original result: %V",
-                           post,
-                           argv2[i], argv[i]);
-        else
-          scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
-                           "procedure-result chaperone: %V: %d%s result: %V is not a chaperone of original result: %V",
-                           post,
-                           i, scheme_number_suffix(i),
-                           argv2[i], argv[i]);
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                             "procedure-result chaperone: %V: result: %V is not a chaperone of original result: %V",
+                             post,
+                             argv2[i], argv[i]);
+          else
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                             "procedure-result chaperone: %V: %d%s result: %V is not a chaperone of original result: %V",
+                             post,
+                             i, scheme_number_suffix(i),
+                             argv2[i], argv[i]);
         }
       }
     } else {
@@ -4134,7 +4187,9 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       return NULL;
     }
 
-    if (c == 1)
+    if (result_v)
+      return result_v;
+    else if (c == 1)
       return argv2[0];
     else
       return scheme_values(c, argv2);

@@ -768,7 +768,7 @@ typedef struct Scheme_Chaperone {
 Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i);
 void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v);
 
-Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv);
+Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val);
 
 Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv);
 

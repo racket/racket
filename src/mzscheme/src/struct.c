@@ -2714,10 +2714,12 @@ int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos)
 static Scheme_Object *
 struct_setter_p(int argc, Scheme_Object *argv[])
 {
-  return ((STRUCT_mPROCP(argv[0], 
+  Scheme_Object *v = argv[0];
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+  return ((STRUCT_mPROCP(v, 
 			 SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
 			 SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER)
-	   || STRUCT_mPROCP(argv[0], 
+	   || STRUCT_mPROCP(v, 
 			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
 			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER))
 	  ? scheme_true : scheme_false);
@@ -2726,8 +2728,10 @@ struct_setter_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 struct_getter_p(int argc, Scheme_Object *argv[])
 {
-  return ((STRUCT_PROCP(argv[0], SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER)
-	   || STRUCT_mPROCP(argv[0], 
+  Scheme_Object *v = argv[0];
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+  return ((STRUCT_PROCP(v, SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER)
+	   || STRUCT_mPROCP(v, 
 			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
 			    SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
 	  ? scheme_true : scheme_false);
@@ -2736,14 +2740,18 @@ struct_getter_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 struct_pred_p(int argc, Scheme_Object *argv[])
 {
-  return (STRUCT_PROCP(argv[0], SCHEME_PRIM_IS_STRUCT_PRED)
+  Scheme_Object *v = argv[0];
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+  return (STRUCT_PROCP(v, SCHEME_PRIM_IS_STRUCT_PRED)
 	  ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *
 struct_constr_p(int argc, Scheme_Object *argv[])
 {
-  return (STRUCT_mPROCP(argv[0], 
+  Scheme_Object *v = argv[0];
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+  return (STRUCT_mPROCP(v, 
                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
                         SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_STRUCT_TYPE_CONSTR)
 	  ? scheme_true : scheme_false);
@@ -2752,20 +2760,24 @@ struct_constr_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 struct_prop_getter_p(int argc, Scheme_Object *argv[])
 {
-  return ((STRUCT_mPROCP(argv[0], 
+  Scheme_Object *v = argv[0];
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+  return ((STRUCT_mPROCP(v, 
                          SCHEME_PRIM_OTHER_TYPE_MASK,
                          SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
-           && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(argv[0])[0]), scheme_struct_property_type))
+           && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_struct_property_type))
 	  ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *
 chaperone_prop_getter_p(int argc, Scheme_Object *argv[])
 {
-  return ((STRUCT_mPROCP(argv[0], 
+  Scheme_Object *v = argv[0];
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+  return ((STRUCT_mPROCP(v, 
                          SCHEME_PRIM_OTHER_TYPE_MASK,
                          SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
-           && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(argv[0])[0]), scheme_chaperone_property_type))
+           && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_chaperone_property_type))
 	  ? scheme_true : scheme_false);
 }
 
@@ -2778,6 +2790,9 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
   const char *fieldstr;
   char digitbuf[20];
   int fieldstrlen;
+
+  /* We don't allow chaperones on the getter or setter procedure, because we
+     can't preserve them in the generated procedure. */
 
   if (!STRUCT_mPROCP(argv[0], 
 		     SCHEME_PRIM_IS_STRUCT_OTHER | SCHEME_PRIM_OTHER_TYPE_MASK,
@@ -4564,8 +4579,10 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
       props = scheme_parse_chaperone_props("chaperone-box", i, argc, argv);
       break;
     }
+    
 
     a[0] = proc;
+    if (SCHEME_CHAPERONEP(proc)) proc = SCHEME_CHAPERONE_VAL(proc);
     if (SCHEME_TRUEP(struct_setter_p(1, a))) {
       kind = "mutator";
       offset = stype->num_slots;
@@ -4589,7 +4606,7 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
       if (si_chaperone)
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "chaperone-struct: struct-info procedure supplied a second time: %V",
-                         proc);
+                         a[0]);
       pi = NULL;
       prop = NULL;
       arity = 2;
@@ -4601,7 +4618,7 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "chaperone-struct: %s %V does not apply to given object: %V",
                          kind,
-                         proc,
+                         a[0],
                          argv[0]);
       if (!red_props)
         red_props = scheme_make_hash_tree(0);
@@ -4610,7 +4627,7 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "chaperone-struct: given %s is for the same property as a previous %s argument: %V",
                          kind, kind,
-                         proc);
+                         a[0]);
       arity = 2;
     } else {
       pi = (Struct_Proc_Info *)((Scheme_Primitive_Closure *)proc)->val[0];
@@ -4620,13 +4637,13 @@ static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv)
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "chaperone-struct: %s %V does not apply to given object: %V",
                          kind,
-                         proc,
+                         a[0],
                          argv[0]);
       if (SCHEME_VEC_ELS(redirects)[PRE_REDIRECTS + offset + pi->field])
         scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                          "chaperone-struct: given %s is for the same field as a previous %s argument: %V",
                          kind, kind,
-                         proc);
+                         a[0]);
       arity = 2;
     }
 

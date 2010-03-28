@@ -9196,7 +9196,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
         /* Chaperone is for function arguments */
         VACATE_TAIL_BUFFER_USE_RUNSTACK();
         UPDATE_THREAD_RSPTR();
-        v = scheme_apply_chaperone(obj, num_rands, rands);
+        v = scheme_apply_chaperone(obj, num_rands, rands, NULL);
       }
     } else if (type == scheme_closed_prim_type) {
       GC_CAN_IGNORE Scheme_Closed_Primitive_Proc *prim;

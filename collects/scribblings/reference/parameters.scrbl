@@ -141,18 +141,24 @@ Returns a parameter procedure that sets or retrieves the same value as
 
  @item{@scheme[wrap] applied when obtaining the parameter's value.}
 
-]}
+]
+
+See also @scheme[chaperone-procedure], which can also be used to guard
+parameter procedures.}
+
 
 @defproc[(parameter? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a parameter procedure,
 @scheme[#f] otherwise.}
 
+
 @defproc[(parameter-procedure=? [a parameter?][b parameter?]) boolean?]{
 
 Returns @scheme[#t] if the parameter procedures @scheme[a] and
-@scheme[b] always modify the same parameter with the same guards,
-@scheme[#f] otherwise.}
+@scheme[b] always modify the same parameter with the same guards
+(although possibly with different @tech{chaperones}), @scheme[#f]
+otherwise.}
 
 
 @defproc[(current-parameterization) parameterization?]{Returns the

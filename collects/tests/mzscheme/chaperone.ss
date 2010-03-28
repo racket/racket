@@ -553,4 +553,50 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define (check-param current-directory)
+    (parameterize ([current-directory (current-directory)])
+      (let* ([pre-cd? #f]
+             [post-cd? #f]
+             [got-cd? #f]
+             [post-got-cd? #f]
+             [cd1 (chaperone-procedure current-directory (case-lambda 
+                                                          [() (set! got-cd? #t) (values)]
+                                                          [(v) (set! pre-cd? #t) v]))]
+             [cd2 (chaperone-procedure current-directory (case-lambda 
+                                                          [() (set! got-cd? #t)
+                                                           (lambda (r)
+                                                             (set! post-got-cd? #t)
+                                                             r)]
+                                                          [(v)
+                                                           (set! pre-cd? #t)
+                                                           (values v
+                                                                   (lambda (x)
+                                                                     (set! post-cd? #t)
+                                                                     (void)))]))])
+        (test #t parameter? cd1)
+        (test #t parameter? cd2)
+        (test '(#f #f #f #f) list pre-cd? post-cd? got-cd? post-got-cd?)
+        (test (current-directory) cd1)
+        (test '(#f #f #t #f) list pre-cd? post-cd? got-cd? post-got-cd?)
+        (test (current-directory) cd2)
+        (test '(#f #f #t #t) list pre-cd? post-cd? got-cd? post-got-cd?)
+        (cd1 (current-directory))
+        (test '(#t #f #t #t) list pre-cd? post-cd? got-cd? post-got-cd?)
+        (set! pre-cd? #f)
+        (parameterize ([cd1 (current-directory)])
+          (test '(#t #f #t #t) list pre-cd? post-cd? got-cd? post-got-cd?))
+        (set! pre-cd? #f)
+        (cd2 (current-directory))
+        (test '(#t #t #t #t) list pre-cd? post-cd? got-cd? post-got-cd?)
+        (set! pre-cd? #f)
+        (set! post-cd? #f)
+        (parameterize ([cd2 (current-directory)])
+          (test '(#t #t #t #t) list pre-cd? post-cd? got-cd? post-got-cd?)))))
+  (check-param current-directory)
+  (let ([p (make-parameter 88)])
+    (check-param p)))
+
+;; ----------------------------------------
+
 (report-errs)

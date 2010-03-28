@@ -6351,13 +6351,20 @@ static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
     scheme_flatten_config(c);
   } else if (SCHEME_CONFIGP(c) && (argc & 1)) {
     for (i = 1; i < argc; i += 2) {
-      if (!SCHEME_PARAMETERP(argv[i])) {
+      param = argv[i];
+      if (!SCHEME_PARAMETERP(param)
+          && !(SCHEME_CHAPERONEP(param) && SCHEME_PARAMETERP(SCHEME_CHAPERONE_VAL(param)))) {
 	scheme_wrong_type("parameterize", "parameter", i, argc, argv);
 	return NULL;
       }
-      a[0] = argv[i + 1];
+      key = argv[i + 1];
+      if (SCHEME_CHAPERONEP(param)) {
+        a[0] = key;
+        key = scheme_apply_chaperone(param, 1, a, scheme_void);
+        param = SCHEME_CHAPERONE_VAL(param);
+      }
+      a[0] = key;
       a[1] = scheme_false;
-      param = argv[i];
       while (1) {
         if (SCHEME_PRIMP(param)) {
           Scheme_Prim *proc;
@@ -6420,6 +6427,8 @@ static Scheme_Object *reparameterize(int argc, Scheme_Object **argv)
 static Scheme_Object *parameter_p(int argc, Scheme_Object **argv)
 {
   Scheme_Object *v = argv[0];
+
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
 
   return (SCHEME_PARAMETERP(v)
 	  ? scheme_true
@@ -6509,7 +6518,7 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
   ParamData *data;
 
   if (!SCHEME_PARAMETERP(argv[0]))
-    scheme_wrong_type("make-derived-parameter", "parameter", 0, argc, argv);
+    scheme_wrong_type("make-derived-parameter", "unchaperoned parameter", 0, argc, argv);
 
   scheme_check_proc_arity("make-derived-parameter", 1, 1, argc, argv);
   scheme_check_proc_arity("make-derived-parameter", 1, 2, argc, argv);
@@ -6536,6 +6545,9 @@ static Scheme_Object *parameter_procedure_eq(int argc, Scheme_Object **argv)
 
   a = argv[0];
   b = argv[1];
+
+  if (SCHEME_CHAPERONEP(a)) a = SCHEME_CHAPERONE_VAL(a);
+  if (SCHEME_CHAPERONEP(b)) b = SCHEME_CHAPERONE_VAL(b);
 
   if (!SCHEME_PARAMETERP(a))
     scheme_wrong_type("parameter-procedure=?", "parameter-procedure", 0, argc, argv);

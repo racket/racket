@@ -102,6 +102,11 @@ that accepts as many results as produced by @scheme[proc]; it must
 return the same number of results, each of which is the same or a
 chaperone of the corresponding original result.
 
+If @scheme[wrapper-proc] returns the same number of values as it is
+given (i.e., it does not return a procedure to chaperone
+@scheme[proc]'s result), then @scheme[proc] is called in @tech{tail
+position} with respect to the call to the chaperone.
+
 Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[procedure-chaperone] must be even) add chaperone properties
 or override chaperone-property values of @scheme[proc].}
