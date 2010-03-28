@@ -938,7 +938,7 @@ void scheme_out_of_string_range(const char *name, const char *which,
 		     scheme_make_provided_string(i, 2, NULL),
 		     start, len,
 		     is_byte ? "byte-" : "",
-                     SCHEME_VECTORP(s) ? "vector" : "string",
+                     SCHEME_CHAPERONE_VECTORP(s) ? "vector" : "string",
 		     sstr, slen);
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -946,7 +946,7 @@ void scheme_out_of_string_range(const char *name, const char *which,
 		     name, which,
 		     scheme_make_provided_string(i, 0, NULL),
 		     is_byte ? "byte-" : "",
-                     SCHEME_VECTORP(s) ? "vector" : "string");
+                     SCHEME_CHAPERONE_VECTORP(s) ? "vector" : "string");
   }
 }
 
@@ -981,7 +981,7 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
   long len;
   long start, finish;
 
-  if (SCHEME_VECTORP(str))
+  if (SCHEME_CHAPERONE_VECTORP(str))
     len = SCHEME_VEC_SIZE(str);
   else if (SCHEME_CHAR_STRINGP(str))
     len = SCHEME_CHAR_STRTAG_VAL(str);
@@ -2347,7 +2347,7 @@ int scheme_strncmp(const char *a, const char *b, int len)
 
 static Scheme_Object *ok_cmdline(int argc, Scheme_Object **argv)
 {
-  if (SCHEME_VECTORP(argv[0])) {
+  if (SCHEME_CHAPERONE_VECTORP(argv[0])) {
     Scheme_Object *vec = argv[0], *vec2, *str;
     int i, size = SCHEME_VEC_SIZE(vec);
 

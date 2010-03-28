@@ -367,9 +367,12 @@ is then sent to that property's guard, of any).
 @defproc[(struct-type-property? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @tech{structure type property
-descriptor} value, @scheme[#f] otherwise.
+descriptor} value, @scheme[#f] otherwise.}
 
-}
+@defproc[(struct-type-property-accessor-procedure? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is an accessor procedure produced
+by @scheme[make-struct-type-property], @scheme[#f] otherwise.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "struct-copy"]{Copying and Updating Structures}

@@ -10,6 +10,7 @@
 @include-section["eval.scrbl"]
 @include-section["load-lang.scrbl"]
 @include-section["module-reflect.scrbl"]
+@include-section["chaperones.scrbl"]
 @include-section["security-guards.scrbl"]
 @include-section["custodians.scrbl"]
 @include-section["thread-groups.scrbl"]

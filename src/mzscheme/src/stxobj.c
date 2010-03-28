@@ -115,6 +115,7 @@ static void preemptive_chunk(Scheme_Stx *stx);
 #define ICONS scheme_make_pair
 
 #define HAS_SUBSTX(obj) (SCHEME_PAIRP(obj) || SCHEME_VECTORP(obj) || SCHEME_BOXP(obj) || prefab_p(obj) || SCHEME_HASHTRP(obj))
+#define HAS_CHAPERONE_SUBSTX(obj) (HAS_SUBSTX(obj) || (SCHEME_NP_CHAPERONEP(obj) && HAS_SUBSTX(SCHEME_CHAPERONE_VAL(obj))))
 
 XFORM_NONGCING static int prefab_p(Scheme_Object *o)
 {
@@ -7887,7 +7888,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
   SCHEME_USE_FUEL(1);
 
   if (ht) {
-    if (HAS_SUBSTX(o)) {
+    if (HAS_CHAPERONE_SUBSTX(o)) {
       if (scheme_hash_get(ht, o)) {
         /* Graphs disallowed */
         return_NULL;
@@ -7985,34 +7986,55 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
 
       result = first;
     }
-  } else if (SCHEME_BOXP(o)) {
-    o = datum_to_syntax_inner(SCHEME_PTR_VAL(o), ut, stx_src, stx_wraps, ht);
+  } else if (SCHEME_CHAPERONE_BOXP(o)) {
+    if (SCHEME_NP_CHAPERONEP(o))
+      o = scheme_unbox(o);
+    else
+      o = SCHEME_PTR_VAL(o);
+
+    o = datum_to_syntax_inner(o, ut, stx_src, stx_wraps, ht);
     if (!o) return_NULL;
     result = scheme_box(o);
     SCHEME_SET_BOX_IMMUTABLE(result);
-  } else if (SCHEME_VECTORP(o)) {
-    int size = SCHEME_VEC_SIZE(o), i;
-    Scheme_Object *a;
+  } else if (SCHEME_CHAPERONE_VECTORP(o)) {
+    int size, i;
+    Scheme_Object *a, *oo;
+
+    oo = o;
+    if (SCHEME_NP_CHAPERONEP(o))
+      o = SCHEME_CHAPERONE_VAL(o);
+    size = SCHEME_VEC_SIZE(o);
 
     result = scheme_make_vector(size, NULL);
     
     for (i = 0; i < size; i++) {
-      a = datum_to_syntax_inner(SCHEME_VEC_ELS(o)[i], ut, stx_src, stx_wraps, ht);
+      if (SAME_OBJ(o, oo))
+        a = SCHEME_VEC_ELS(o)[i];
+      else
+        a = scheme_chaperone_vector_ref(oo, i);
+      a = datum_to_syntax_inner(a, ut, stx_src, stx_wraps, ht);
       if (!a) return_NULL;
       SCHEME_VEC_ELS(result)[i] = a;
     }
 
     SCHEME_SET_VECTOR_IMMUTABLE(result);
-  } else if (SCHEME_HASHTRP(o)) {
-    Scheme_Hash_Tree *ht1 = (Scheme_Hash_Tree *)o, *ht2;
+  } else if (SCHEME_CHAPERONE_HASHTRP(o)) {
+    Scheme_Hash_Tree *ht1, *ht2;
     Scheme_Object *key, *val;
     int i;
+
+    if (SCHEME_NP_CHAPERONEP(o))
+      ht1 = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(o);
+    else
+      ht1 = (Scheme_Hash_Tree *)o;
     
     ht2 = scheme_make_hash_tree(SCHEME_HASHTR_FLAGS(ht1) & 0x3);
     
     i = scheme_hash_tree_next(ht1, -1);
     while (i != -1) {
       scheme_hash_tree_index(ht1, i, &key, &val);
+      if (!SAME_OBJ((Scheme_Object *)ht1, o))
+        val = scheme_chaperone_hash_traversal_get(ht1, key);
       val = datum_to_syntax_inner(val, ut, stx_src, stx_wraps, ht);
       if (!val) return NULL;
       ht2 = scheme_hash_tree_set(ht2, key, val);
@@ -8020,12 +8042,14 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     }
     
     result = (Scheme_Object *)ht2;
-  } else if (prefab_p(o)) {
-    Scheme_Structure *s = (Scheme_Structure *)o;
+  } else if (prefab_p(o) || (SCHEME_CHAPERONEP(o) && prefab_p(SCHEME_CHAPERONE_VAL(o)))) {
+    Scheme_Structure *s;
     Scheme_Object *a;
-    int size = s->stype->num_slots, i;
-    
-    s = (Scheme_Structure *)scheme_clone_prefab_struct_instance(s);
+    int size, i;
+
+    s = (Scheme_Structure *)scheme_clone_prefab_struct_instance((Scheme_Structure *)o);
+    size = s->stype->num_slots;
+
     for (i = 0; i < size; i++) {
       a = datum_to_syntax_inner(s->slots[i], ut, stx_src, stx_wraps, ht);
       if (!a) return NULL;
@@ -8106,7 +8130,7 @@ static Scheme_Object *general_datum_to_syntax(Scheme_Object *o,
   if (SCHEME_STXP(o))
     return o;
 
-  if (can_graph && HAS_SUBSTX(o))
+  if (can_graph && HAS_CHAPERONE_SUBSTX(o))
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
   else
     ht = NULL;
@@ -8421,6 +8445,19 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
     src = argv[2];
 
     ll = scheme_proper_list_length(src);
+
+    if (SCHEME_CHAPERONEP(src)) {
+      src = SCHEME_CHAPERONE_VAL(src);
+      if (SCHEME_VECTORP(src) && (SCHEME_VEC_SIZE(src) == 5)) {
+        Scheme_Object *a;
+        int i;
+        src = scheme_make_vector(5, NULL);
+        for (i = 0; i < 5; i++) {
+          a = scheme_chaperone_vector_ref(argv[2], i);
+          SCHEME_VEC_ELS(src)[i] = a;
+        }
+      }
+    }
 
     if (!SCHEME_FALSEP(src) 
 	&& !SCHEME_STXP(src)

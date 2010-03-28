@@ -2287,7 +2287,7 @@ static int check_and_propagate_depends(void)
 	  }
 	  if (SCHEME_HASHTP(v)) {
 	    /* Check/propagate assumption. The fixpoint direction is 
-	       determined by assuming "true" whil erecursively checking. */
+	       determined by assuming "true" while recursively checking. */
 	    scheme_hash_set(regbackknown, backdepends->keys[i], scheme_true);
 	    if (!next_ht)
 	      next_ht = scheme_make_hash_table(SCHEME_hash_ptr);

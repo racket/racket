@@ -1974,6 +1974,19 @@ mark_nack_guard_evt {
   gcBYTES_TO_WORDS(sizeof(Nack_Guard_Evt));
 }
 
+mark_chaperone {
+ mark:
+  Scheme_Chaperone *px = (Scheme_Chaperone *)p;
+
+  gcMARK(px->val);
+  gcMARK(px->prev);
+  gcMARK(px->props);
+  gcMARK(px->redirects);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Chaperone));
+}
+
 END struct;
 
 /**********************************************************************/

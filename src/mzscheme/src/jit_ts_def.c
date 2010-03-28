@@ -178,3 +178,21 @@ static void* ts_ ## id(size_t g43) \
   else \
     return id(g43); \
 }
+#define define_ts_si_s(id, src_type) \
+static Scheme_Object* ts_ ## id(Scheme_Object* g44, int g45) \
+   XFORM_SKIP_PROC \
+{ \
+  if (scheme_use_rtcall) \
+    return scheme_rtcall_si_s("[" #id "]", src_type, id, g44, g45); \
+  else \
+    return id(g44, g45); \
+}
+#define define_ts_sis_v(id, src_type) \
+static void ts_ ## id(Scheme_Object* g46, int g47, Scheme_Object* g48) \
+   XFORM_SKIP_PROC \
+{ \
+  if (scheme_use_rtcall) \
+     scheme_rtcall_sis_v("[" #id "]", src_type, id, g46, g47, g48); \
+  else \
+     id(g46, g47, g48); \
+}

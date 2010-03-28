@@ -372,7 +372,7 @@ static MZ_INLINE Scheme_Input_Port *input_port_record_slow(Scheme_Object *port)
     if (SCHEME_INPORTP(port))
       return (Scheme_Input_Port *)port;
 
-    if (!SCHEME_STRUCTP(port)) {
+    if (!SCHEME_CHAPERONE_STRUCTP(port)) {
       return (Scheme_Input_Port *)dummy_input_port;
     }
     
@@ -380,7 +380,7 @@ static MZ_INLINE Scheme_Input_Port *input_port_record_slow(Scheme_Object *port)
     if (!v)
       v = scheme_false;
     else if (SCHEME_INTP(v))
-      v = ((Scheme_Structure *)port)->slots[SCHEME_INT_VAL(v)];
+      v = scheme_struct_ref(port, SCHEME_INT_VAL(v));
     port = v;
 
     SCHEME_USE_FUEL(1);
@@ -404,7 +404,7 @@ static MZ_INLINE Scheme_Output_Port *output_port_record_slow(Scheme_Object *port
     if (SCHEME_OUTPORTP(port))
       return (Scheme_Output_Port *)port;
 
-    if (!SCHEME_STRUCTP(port)) {
+    if (!SCHEME_CHAPERONE_STRUCTP(port)) {
       return (Scheme_Output_Port *)dummy_output_port;
     }
     
@@ -412,7 +412,7 @@ static MZ_INLINE Scheme_Output_Port *output_port_record_slow(Scheme_Object *port
     if (!v)
       v = scheme_false;
     else if (SCHEME_INTP(v))
-      v = ((Scheme_Structure *)port)->slots[SCHEME_INT_VAL(v)];
+      v = scheme_struct_ref(port, SCHEME_INT_VAL(v));
     port = v;
 
     SCHEME_USE_FUEL(1);
@@ -433,7 +433,7 @@ int scheme_is_input_port(Scheme_Object *port)
   if (SCHEME_INPORTP(port))
     return 1;
 
-  if (SCHEME_STRUCTP(port))
+  if (SCHEME_CHAPERONE_STRUCTP(port))
     if (scheme_struct_type_property_ref(scheme_input_port_property, port))
       return 1;
 
@@ -445,7 +445,7 @@ int scheme_is_output_port(Scheme_Object *port)
   if (SCHEME_OUTPORTP(port))
     return 1;
   
-  if (SCHEME_STRUCTP(port))
+  if (SCHEME_CHAPERONE_STRUCTP(port))
     if (scheme_struct_type_property_ref(scheme_output_port_property, port))
       return 1;
 

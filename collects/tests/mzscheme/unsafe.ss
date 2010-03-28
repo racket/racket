@@ -8,6 +8,8 @@
          scheme/foreign)
 
 (let ()
+  (define ((add-star str) sym)
+    (string->symbol (regexp-replace str (symbol->string sym) (string-append str "*"))))
   (define (test-tri result proc x y z 
                     #:pre [pre void] 
                     #:post [post (lambda (x) x)] 
@@ -49,24 +51,42 @@
 
   (test-bin 3 'unsafe-fx+ 1 2)
   (test-bin -1 'unsafe-fx+ 1 -2)
+  (test-bin 12 'unsafe-fx+ 12 0)
+  (test-bin -12 'unsafe-fx+ 0 -12)
 
   (test-bin 8 'unsafe-fx- 10 2)
   (test-bin 3 'unsafe-fx- 1 -2)
+  (test-bin 13 'unsafe-fx- 13 0)
 
   (test-bin 20 'unsafe-fx* 10 2)
   (test-bin -20 'unsafe-fx* 10 -2)
+  (test-bin -2 'unsafe-fx* 1 -2)
+  (test-bin -21 'unsafe-fx* -21 1)
+  (test-bin 0 'unsafe-fx* 0 -2)
+  (test-bin 0 'unsafe-fx* -21 0)
   
   (test-bin 3 'unsafe-fxquotient 17 5)
   (test-bin -3 'unsafe-fxquotient 17 -5)
+  (test-bin 0 'unsafe-fxquotient 0 -5)
+  (test-bin 18 'unsafe-fxquotient 18 1)
 
   (test-bin 2 'unsafe-fxremainder 17 5)
   (test-bin 2 'unsafe-fxremainder 17 -5)
+  (test-bin 0 'unsafe-fxremainder 0 -5)
+  (test-bin 0 'unsafe-fxremainder 10 1)
+
+  (test-bin 2 'unsafe-fxmodulo 17 5)
+  (test-bin -3 'unsafe-fxmodulo 17 -5)
+  (test-bin 0 'unsafe-fxmodulo 0 -5)
+  (test-bin 0 'unsafe-fxmodulo 10 1)
 
   (test-bin 3.4 'unsafe-fl+ 1.4 2.0)
   (test-bin -1.1 'unsafe-fl+ 1.0 -2.1)
   (test-bin +inf.0 'unsafe-fl+ 1.0 +inf.0)
   (test-bin -inf.0 'unsafe-fl+ 1.0 -inf.0)
   (test-bin +nan.0 'unsafe-fl+ +nan.0 -inf.0)
+  (test-bin 1.5 'unsafe-fl+ 1.5 0.0)
+  (test-bin 1.7 'unsafe-fl+ 0.0 1.7)
 
   (test-bin #f unsafe-fx= 1 2)
   (test-bin #t unsafe-fx= 2 2)
@@ -96,13 +116,18 @@
 
   (test-bin 7.9 'unsafe-fl- 10.0 2.1)
   (test-bin 3.7 'unsafe-fl- 1.0 -2.7)
+  (test-bin 1.5 'unsafe-fl- 1.5 0.0)
 
   (test-bin 20.02 'unsafe-fl* 10.01 2.0)
   (test-bin -20.02 'unsafe-fl* 10.01 -2.0)
+  (test-bin +nan.0 'unsafe-fl* +inf.0 0.0)
+  (test-bin 1.8 'unsafe-fl* 1.0 1.8)
+  (test-bin 1.81 'unsafe-fl* 1.81 1.0)
   
   (test-bin (exact->inexact 17/5) 'unsafe-fl/ 17.0 5.0)
   (test-bin +inf.0 'unsafe-fl/ 17.0 0.0)
   (test-bin -inf.0 'unsafe-fl/ -17.0 0.0)
+  (test-bin 1.5 'unsafe-fl/ 1.5 1.0)
 
   (test-bin 3 'unsafe-fxand 7 3)
   (test-bin 2 'unsafe-fxand 6 3)
@@ -183,13 +208,24 @@
               #:post (lambda (x) (mcdr v))
               #:literal-ok? #f))
 
-  (test-bin 5 'unsafe-vector-ref #(1 5 7) 1)
-  (test-un 3 'unsafe-vector-length #(1 5 7))
-  (let ([v (vector 0 3 7)])
-    (test-tri (list (void) 5) 'unsafe-vector-set! v 2 5 
-              #:pre (lambda () (vector-set! v 2 0)) 
-              #:post (lambda (x) (list x (vector-ref v 2)))
-              #:literal-ok? #f))
+  (for ([star (list values (add-star "vector"))])
+    (test-un 3 (star 'unsafe-unbox) #&3)
+    (let ([b (box 12)])
+      (test-tri (list (void) 8) 
+                `(lambda (b i val) (,(star 'unsafe-set-box!) b val))
+                b 0 8
+                #:pre (lambda () (set-box! b 12))
+                #:post (lambda (x) (list x (unbox b)))
+                #:literal-ok? #f)))
+
+  (for ([star (list values (add-star "vector"))])
+    (test-bin 5 (star 'unsafe-vector-ref) #(1 5 7) 1)
+    (test-un 3 (star 'unsafe-vector-length) #(1 5 7))
+    (let ([v (vector 0 3 7)])
+      (test-tri (list (void) 5) (star 'unsafe-vector-set!) v 2 5 
+                #:pre (lambda () (vector-set! v 2 0)) 
+                #:post (lambda (x) (list x (vector-ref v 2)))
+                #:literal-ok? #f)))
 
   (test-bin 53 'unsafe-bytes-ref #"157" 1)
   (test-un 3 'unsafe-bytes-length #"157")
@@ -222,7 +258,7 @@
               #:post (lambda (x) (list x (f64vector-ref v 2)))
               #:literal-ok? #f))
 
-  (let ()
+  (for ([star (list values (add-star "star"))])
     (define-struct posn (x [y #:mutable] z))
     (test-bin 'a unsafe-struct-ref (make-posn 'a 'b 'c) 0 #:literal-ok? #f)
     (test-bin 'b unsafe-struct-ref (make-posn 'a 'b 'c) 1 #:literal-ok? #f)

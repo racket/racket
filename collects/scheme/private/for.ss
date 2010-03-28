@@ -1143,9 +1143,9 @@
   (define-sequence-syntax *in-vector
     (lambda () #'in-vector)
     (vector-like-gen #'vector?
-                     #'unsafe-vector-length
+                     #'unsafe-vector*-length
                      #'in-vector
-                     #'unsafe-vector-ref))
+                     #'unsafe-vector*-ref))
 
   (define-sequence-syntax *in-string
     (lambda () #'in-string)

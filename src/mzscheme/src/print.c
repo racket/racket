@@ -122,18 +122,20 @@ static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, Prin
 #define SCHEME_PREFABP(obj) (((Scheme_Structure *)(obj))->stype->prefab_key)
 
 #define SCHEME_HASHTPx(obj) ((SCHEME_HASHTP(obj) && !(MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)obj)->iso)) & 0x1)))
+#define SCHEME_CHAPERONE_HASHTPx(obj) (SCHEME_HASHTPx(obj) \
+                                       || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(obj))))
 
 #define HAS_SUBSTRUCT(obj, qk) \
    (SCHEME_PAIRP(obj) \
     || SCHEME_MUTABLE_PAIRP(obj) \
-    || SCHEME_VECTORP(obj) \
-    || (qk(pp->print_box, 1) && SCHEME_BOXP(obj)) \
+    || SCHEME_CHAPERONE_VECTORP(obj) \
+    || (qk(pp->print_box, 1) && SCHEME_CHAPERONE_BOXP(obj)) \
     || (qk(pp->print_struct  \
-	   && SCHEME_STRUCTP(obj) \
+	   && SCHEME_CHAPERONE_STRUCTP(obj) \
 	   && PRINTABLE_STRUCT(obj, pp), 0)) \
-    || (qk(SCHEME_STRUCTP(obj) && scheme_is_writable_struct(obj), 0)) \
-    || (qk(pp->print_struct, 1) && SCHEME_STRUCTP(obj) && SCHEME_PREFABP(obj)) \
-    || (qk(pp->print_hash_table, 1) && (SCHEME_HASHTPx(obj) || SCHEME_HASHTRP(obj))))
+    || (qk(SCHEME_CHAPERONE_STRUCTP(obj) && scheme_is_writable_struct(obj), 0)) \
+    || (qk(pp->print_struct, 1) && SCHEME_CHAPERONE_STRUCTP(obj) && SCHEME_PREFABP(obj)) \
+    || (qk(pp->print_hash_table, 1) && (SCHEME_CHAPERONE_HASHTPx(obj) || SCHEME_CHAPERONE_HASHTRP(obj))))
 #define ssQUICK(x, isbox) x
 #define ssQUICKp(x, isbox) (pp ? x : isbox)
 #define ssALLp(x, isbox) isbox
@@ -443,8 +445,8 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
 
   if (SCHEME_PAIRP(obj)
       || SCHEME_MUTABLE_PAIRP(obj)
-      || (pp->print_box && SCHEME_BOXP(obj))
-      || SCHEME_VECTORP(obj)
+      || (pp->print_box && SCHEME_CHAPERONE_BOXP(obj))
+      || SCHEME_CHAPERONE_VECTORP(obj)
       || ((SAME_TYPE(t, scheme_structure_type)
 	   || SAME_TYPE(t, scheme_proc_struct_type))
           && ((pp->print_struct 
@@ -464,16 +466,29 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
       return 1;
     if (check_cycles(SCHEME_CDR(obj), for_write, ht, pp))
       return 1;
-  } else if (SCHEME_BOXP(obj)) {
+  } else if (SCHEME_CHAPERONE_BOXP(obj)) {
     /* got here => printable */
-    if (check_cycles(SCHEME_BOX_VAL(obj), for_write, ht, pp))
+    Scheme_Object *v;
+    if (SCHEME_BOXP(obj))
+      v = SCHEME_BOX_VAL(obj);
+    else
+      v = scheme_unbox(obj);
+    if (check_cycles(v, for_write, ht, pp))
       return 1;
-  } else if (SCHEME_VECTORP(obj)) {
+  } else if (SCHEME_CHAPERONE_VECTORP(obj)) {
     int i, len;
+    Scheme_Object *v;
 
-    len = SCHEME_VEC_SIZE(obj);
+    if (SCHEME_VECTORP(obj))
+      len = SCHEME_VEC_SIZE(obj);
+    else
+      len = SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(obj));
     for (i = 0; i < len; i++) {
-      if (check_cycles(SCHEME_VEC_ELS(obj)[i], for_write, ht, pp)) {
+      if (SCHEME_VECTORP(obj))
+        v = SCHEME_VEC_ELS(obj)[i];
+      else
+        v = scheme_chaperone_vector_ref(obj, i);
+      if (check_cycles(v, for_write, ht, pp)) {
 	return 1;
       }
     }
@@ -494,33 +509,50 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
 	}
       }
     }
-  } else if (SCHEME_HASHTPx(obj)) {
+  } else if (SCHEME_CHAPERONE_HASHTPx(obj)) {
     /* got here => printable */
     Scheme_Hash_Table *t;
-    Scheme_Object **keys, **vals, *val;
+    Scheme_Object **keys, **vals, *val, *key;
     int i;
-    
-    t = (Scheme_Hash_Table *)obj;
+
+    if (SCHEME_NP_CHAPERONEP(obj))
+      t = (Scheme_Hash_Table *)SCHEME_CHAPERONE_VAL(obj);
+    else
+      t = (Scheme_Hash_Table *)obj;
+
     keys = t->keys;
     vals = t->vals;
-    for (i = t->size; i--; ) {
+    for (i = 0; i < t->size; i++) {
       if (vals[i]) {
-	val = vals[i];
-	if (check_cycles(keys[i], for_write, ht, pp))
-	  return 1;
-	if (check_cycles(val, for_write, ht, pp))
-	  return 1;
+        key = keys[i];
+        if (!SAME_OBJ((Scheme_Object *)t, obj))
+          val = scheme_chaperone_hash_traversal_get(obj, key);
+        else
+          val = vals[i];
+        if (val) {
+          if (check_cycles(key, for_write, ht, pp))
+            return 1;
+          if (check_cycles(val, for_write, ht, pp))
+            return 1;
+        }
       }
     }
-  } else if (SCHEME_HASHTRP(obj)) {
+  } else if (SCHEME_CHAPERONE_HASHTRP(obj)) {
     /* got here => printable */
-    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)obj;
+    Scheme_Hash_Tree *t;
     Scheme_Object *key, *val;
     int i;
+
+    if (SCHEME_NP_CHAPERONEP(obj))
+      t = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(obj);
+    else
+      t = (Scheme_Hash_Tree *)obj;
     
     i = scheme_hash_tree_next(t, -1);
     while (i != -1) {
       scheme_hash_tree_index(t, i, &key, &val);
+      if (!SAME_OBJ((Scheme_Object *)t, obj))
+        val = scheme_chaperone_hash_traversal_get(obj, key);
       if (check_cycles(key, for_write, ht, pp))
         return 1;
       if (check_cycles(val, for_write, ht, pp))
@@ -610,7 +642,9 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_chec
     else
       /* don't bother with fast checks for non-empty hash trees */
       cycle = -1;
-  } else
+  } else if (SCHEME_CHAPERONEP(obj))
+    cycle = -1; /* no fast checks for chaperones */
+  else
     cycle = 0;
 
   return cycle;
@@ -682,16 +716,29 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
   if (SCHEME_PAIRP(obj) || SCHEME_MUTABLE_PAIRP(obj)) {
     setup_graph_table(SCHEME_CAR(obj), for_write, ht, counter, pp);
     setup_graph_table(SCHEME_CDR(obj), for_write, ht, counter, pp);
-  } else if ((!pp || pp->print_box) && SCHEME_BOXP(obj)) {
-    setup_graph_table(SCHEME_BOX_VAL(obj), for_write, ht, counter, pp);
-  } else if (SCHEME_VECTORP(obj)) {
+  } else if ((!pp || pp->print_box) && SCHEME_CHAPERONE_BOXP(obj)) {
+    Scheme_Object *v;
+    if (SCHEME_BOXP(obj))
+      v = SCHEME_BOX_VAL(obj);
+    else
+      v = scheme_unbox(obj);
+    setup_graph_table(v, for_write, ht, counter, pp);
+  } else if (SCHEME_CHAPERONE_VECTORP(obj)) {
     int i, len;
+    Scheme_Object *v;
 
-    len = SCHEME_VEC_SIZE(obj);
+    if (SCHEME_VECTORP(obj))
+      len = SCHEME_VEC_SIZE(obj);
+    else
+      len = SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(obj));
     for (i = 0; i < len; i++) {
-      setup_graph_table(SCHEME_VEC_ELS(obj)[i], for_write, ht, counter, pp);
+      if (SCHEME_VECTORP(obj))
+        v = SCHEME_VEC_ELS(obj)[i];
+      else
+        v = scheme_chaperone_vector_ref(obj, i);
+      setup_graph_table(v, for_write, ht, counter, pp);
     }
-  } else if (pp && SCHEME_STRUCTP(obj)) { /* got here => printable */
+  } else if (pp && SCHEME_CHAPERONE_STRUCTP(obj)) { /* got here => printable */
     if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
 	obj = writable_struct_subs(obj, for_write, pp);
@@ -702,33 +749,50 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
 
       while (i--) {
 	if (scheme_inspector_sees_part(obj, pp->inspector, i))
-	  setup_graph_table(((Scheme_Structure *)obj)->slots[i], for_write, ht, counter, pp);
+	  setup_graph_table(scheme_struct_ref(obj, i), for_write, ht, counter, pp);
       }
     }
-  } else if (pp && SCHEME_HASHTPx(obj)) { /* got here => printable */
+  } else if (pp && SCHEME_CHAPERONE_HASHTPx(obj)) { /* got here => printable */
     Scheme_Hash_Table *t;
-    Scheme_Object **keys, **vals, *val;
+    Scheme_Object **keys, **vals, *val, *key;
     int i;
-    
-    t = (Scheme_Hash_Table *)obj;
+
+    if (SCHEME_NP_CHAPERONEP(obj))
+      t = (Scheme_Hash_Table *)SCHEME_CHAPERONE_VAL(obj);
+    else
+      t = (Scheme_Hash_Table *)obj;
+
     keys = t->keys;
     vals = t->vals;
-    for (i = t->size; i--; ) {
+    for (i = 0; i < t->size; i++) {
       if (vals[i]) {
-	val = vals[i];
-	setup_graph_table(keys[i], for_write, ht, counter, pp);
-	setup_graph_table(val, for_write, ht, counter, pp);
+        key = keys[i];
+        if (!SAME_OBJ((Scheme_Object *)t, obj))
+          val = scheme_chaperone_hash_traversal_get(obj, key);
+        else
+          val = vals[i];
+        if (val) {
+          setup_graph_table(key, for_write, ht, counter, pp);
+          setup_graph_table(val, for_write, ht, counter, pp);
+        }
       }
     }
-  } else if (SCHEME_HASHTRP(obj)) {
+  } else if (SCHEME_CHAPERONE_HASHTRP(obj)) {
     /* got here => printable */
-    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)obj;
+    Scheme_Hash_Tree *t;
     Scheme_Object *key, *val;
     int i;
+
+    if (SCHEME_NP_CHAPERONEP(obj))
+      t = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(obj);
+    else
+      t = (Scheme_Hash_Tree *)obj;
     
     i = scheme_hash_tree_next(t, -1);
     while (i != -1) {
       scheme_hash_tree_index(t, i, &key, &val);
+      if (!SAME_OBJ((Scheme_Object *)t, obj))
+        val = scheme_chaperone_hash_traversal_get(obj, key);
       setup_graph_table(key, for_write, ht, counter, pp);
       setup_graph_table(val, for_write, ht, counter, pp);
       i = scheme_hash_tree_next(t, i);
@@ -1600,6 +1664,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   }
 
+  if (SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_chaperone_type)) {
+    if (!SCHEME_STRUCTP(SCHEME_CHAPERONE_VAL(obj)))
+      /* unwrap non-struct procedure to print it: */
+      obj = SCHEME_CHAPERONE_VAL(obj);
+  }
+
   if (SCHEME_SYMBOLP(obj)
       || SCHEME_KEYWORDP(obj))
     {
@@ -1815,32 +1885,41 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       print_pair(obj, notdisplay, compact, ht, mt, pp, scheme_mutable_pair_type, !pp->print_mpair_curly);
       closed = 1;
     }
-  else if (SCHEME_VECTORP(obj))
+  else if (SCHEME_CHAPERONE_VECTORP(obj))
     {
       print_vector(obj, notdisplay, compact, ht, mt, pp, 0);
       closed = 1;
     }
-  else if ((compact || pp->print_box) && SCHEME_BOXP(obj))
+  else if ((compact || pp->print_box) && SCHEME_CHAPERONE_BOXP(obj))
     {
       if (compact && !pp->print_box) {
 	closed = print(scheme_protect_quote(obj), notdisplay, compact, ht, mt, pp);
       } else {
+        Scheme_Object *content;
 	if (compact)
 	  print_compact(pp, CPT_BOX);
 	else {
 	  always_scheme(pp, 1);
 	  print_utf8_string(pp, "#&", 0, 2);
 	}
-	closed = print(SCHEME_BOX_VAL(obj), notdisplay, compact, ht, mt, pp);
+        if (SCHEME_BOXP(obj))
+          content = SCHEME_BOX_VAL(obj);
+        else
+          content = scheme_unbox(obj);
+	closed = print(content, notdisplay, compact, ht, mt, pp);
       }
     }
   else if ((compact || pp->print_hash_table) 
-           && (SCHEME_HASHTPx(obj) || SCHEME_HASHTRP(obj)))
+           && (SCHEME_CHAPERONE_HASHTPx(obj) || SCHEME_CHAPERONE_HASHTRP(obj)))
     {
       Scheme_Hash_Table *t;
       Scheme_Hash_Tree *tr;
-      Scheme_Object **keys, **vals, *val, *key;
+      Scheme_Object **keys, **vals, *val, *key, *orig;
       int i, size, did_one = 0;
+
+      orig = obj;
+      if (SCHEME_NP_CHAPERONEP(obj))
+        obj = SCHEME_CHAPERONE_VAL(obj);
 
       if (compact) {
 	print_compact(pp, CPT_HASH_TABLE);
@@ -1897,23 +1976,32 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	if (!vals || vals[i]) {
           if (!vals) {
             scheme_hash_tree_index(tr, i, &key, &val);
+            if (!SAME_OBJ(obj, orig))
+              val = scheme_chaperone_hash_traversal_get(orig, key);
           } else {
-            val = vals[i];
-            key = keys[i];
+            if (i < t->size) {
+              val = vals[i];
+              key = keys[i];
+              if (!SAME_OBJ(obj, orig))
+                val = scheme_chaperone_hash_traversal_get(orig, key);
+            } else
+              val = 0;
           }
 
-	  if (!compact) {
-	    if (did_one)
-	      print_utf8_string(pp, " ", 0, 1);
-	    print_utf8_string(pp, "(", 0, 1);
-	  }
-	  print(key, notdisplay, compact, ht, mt, pp);
-	  if (!compact)
-	    print_utf8_string(pp, " . ", 0, 3);
-	  print(val, notdisplay, compact, ht, mt, pp);
-	  if (!compact)
-	    print_utf8_string(pp, ")", 0, 1);
-	  did_one++;
+          if (val) {
+            if (!compact) {
+              if (did_one)
+                print_utf8_string(pp, " ", 0, 1);
+              print_utf8_string(pp, "(", 0, 1);
+            }
+            print(key, notdisplay, compact, ht, mt, pp);
+            if (!compact)
+              print_utf8_string(pp, " . ", 0, 3);
+            print(val, notdisplay, compact, ht, mt, pp);
+            if (!compact)
+              print_utf8_string(pp, ")", 0, 1);
+            did_one++;
+          }
 	}
       }
 
@@ -1950,9 +2038,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       print_compact(pp, CPT_VOID);
     }
-  else if (SCHEME_STRUCTP(obj))
+  else if (SCHEME_CHAPERONE_STRUCTP(obj))
     {
-      if (compact && SCHEME_PREFABP(obj)) {
+      if (compact && (SCHEME_PREFABP(obj) || (SCHEME_CHAPERONEP(obj)
+                                              && SCHEME_PREFABP(SCHEME_CHAPERONE_VAL(obj))))) {
         Scheme_Object *vec, *prefab;
         print_compact(pp, CPT_PREFAB);
         prefab = ((Scheme_Structure *)obj)->stype->prefab_key;
@@ -1979,6 +2068,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  closed = 1;
 	} else {
 	  Scheme_Object *src;
+
+          if (SCHEME_CHAPERONEP(obj))
+            obj = SCHEME_CHAPERONE_VAL(obj);
 
 	  if (SCHEME_PROC_STRUCTP(obj)) {
 	    /* Name by procedure? */
@@ -3124,15 +3216,21 @@ print_vector(Scheme_Object *vec, int notdisplay, int compact,
              int as_prefab)
 {
   int i, size, common = 0;
-  Scheme_Object **elems;
+  Scheme_Object **elems, *elem;
 
-  size = SCHEME_VEC_SIZE(vec);
+  if (SCHEME_VECTORP(vec))
+    size = SCHEME_VEC_SIZE(vec);
+  else
+    size = SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(vec));
 
   if (compact) {
     print_compact(pp, CPT_VECTOR);
     print_compact_number(pp, size);
   } else {
-    elems = SCHEME_VEC_ELS(vec);
+    if (SCHEME_VECTORP(vec))
+      elems = SCHEME_VEC_ELS(vec);
+    else
+      elems = SCHEME_VEC_ELS(SCHEME_CHAPERONE_VAL(vec));
     for (i = size; i--; common++) {
       if (!i || (elems[i] != elems[i - 1]))
 	break;
@@ -3160,7 +3258,11 @@ print_vector(Scheme_Object *vec, int notdisplay, int compact,
   }
 
   for (i = 0; i < size; i++) {
-    print(SCHEME_VEC_ELS(vec)[i], notdisplay, compact, ht, mt, pp);
+    if (SCHEME_VECTORP(vec))
+      elem = SCHEME_VEC_ELS(vec)[i];
+    else
+      elem = scheme_chaperone_vector_ref(vec, i);
+    print(elem, notdisplay, compact, ht, mt, pp);
     if (i < (size - 1)) {
       if (!compact) {
 	if (pp->honu_mode)

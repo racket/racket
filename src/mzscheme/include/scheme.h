@@ -445,6 +445,9 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 
 #define SCHEME_STXP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_stx_type)
 
+#define SCHEME_CHAPERONEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_chaperone_type) \
+                                || SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_chaperone_type))
+
 #define SCHEME_UDPP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_udp_type)
 #define SCHEME_UDP_EVTP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_udp_evt_type)
 
@@ -615,9 +618,8 @@ typedef struct Scheme_Offset_Cptr
 #define SCHEME_PRIM_IS_PRIMITIVE 4
 #define SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER 8
 #define SCHEME_PRIM_IS_STRUCT_PRED 16
-#define SCHEME_PRIM_IS_PARAMETER 32
-#define SCHEME_PRIM_IS_STRUCT_OTHER 64
-#define SCHEME_PRIM_STRUCT_OTHER_TYPE_MASK (128 | 256)
+#define SCHEME_PRIM_IS_STRUCT_OTHER 32
+#define SCHEME_PRIM_OTHER_TYPE_MASK (64 | 128 | 256)
 #define SCHEME_PRIM_IS_MULTI_RESULT 512
 #define SCHEME_PRIM_IS_BINARY_INLINED 1024
 #define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL 2048
@@ -631,11 +633,14 @@ typedef struct Scheme_Offset_Cptr
 #define SCHEME_PRIM_OPT_IMMEDIATE  2
 #define SCHEME_PRIM_OPT_NONCM      1
 
-/* Values with SCHEME_PRIM_STRUCT_OTHER_TYPE_MASK */
+/* Values with SCHEME_PRIM_OTHER_TYPE_MASK */
 #define SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER 0
 #define SCHEME_PRIM_STRUCT_TYPE_CONSTR           128
 #define SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER 256
 #define SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER   (128 | 256)
+#define SCHEME_PRIM_TYPE_PARAMETER               64
+#define SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER      (64 | 128)
+/* combinations still available: 64|256, 64|128|256 */
 
 #define SCHEME_PRIM_IS_STRUCT_PROC (SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER | SCHEME_PRIM_IS_STRUCT_PRED | SCHEME_PRIM_IS_STRUCT_OTHER)
 
@@ -752,7 +757,7 @@ typedef struct {
 
 /* ------------------------------------------------- */
 
-#define SCHEME_PROCP(obj)  (!SCHEME_INTP(obj) && ((_SCHEME_TYPE(obj) >= scheme_prim_type) && (_SCHEME_TYPE(obj) <= scheme_native_closure_type)))
+#define SCHEME_PROCP(obj)  (!SCHEME_INTP(obj) && ((_SCHEME_TYPE(obj) >= scheme_prim_type) && (_SCHEME_TYPE(obj) <= scheme_proc_chaperone_type)))
 #define SCHEME_SYNTAXP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_syntax_compiler_type)
 #define SCHEME_PRIMP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_prim_type)
 #define SCHEME_CLSD_PRIMP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_closed_prim_type)

@@ -247,11 +247,11 @@
 (define wcm-type-num 14)
 (define quote-syntax-type-num 15)
 (define variable-type-num 24)
-(define top-type-num 87)
-(define case-lambda-sequence-type-num 96)
-(define begin0-sequence-type-num 97)
-(define module-type-num 100)
-(define prefix-type-num 102)
+(define top-type-num 89)
+(define case-lambda-sequence-type-num 99)
+(define begin0-sequence-type-num 100)
+(define module-type-num 103)
+(define prefix-type-num 105)
 
 (define-syntax define-enum
   (syntax-rules ()

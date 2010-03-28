@@ -24,10 +24,13 @@
 */
 
 #include "schpriv.h"
+#include "schmach.h"
 
 /* globals */
 READ_ONLY Scheme_Object *scheme_vector_proc;
 READ_ONLY Scheme_Object *scheme_vector_immutable_proc;
+READ_ONLY Scheme_Object *scheme_vector_ref_proc;
+READ_ONLY Scheme_Object *scheme_vector_set_proc;
 
 /* locals */
 static Scheme_Object *vector_p (int argc, Scheme_Object *argv[]);
@@ -41,6 +44,7 @@ static Scheme_Object *vector_fill (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv);
 
 static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[]);
@@ -89,15 +93,19 @@ scheme_init_vector (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("vector-length", p, env);
 
-  p = scheme_make_immed_prim(scheme_checked_vector_ref, 
-			     "vector-ref", 
-			     2, 2);
+  REGISTER_SO(scheme_vector_ref_proc);
+  p = scheme_make_noncm_prim(scheme_checked_vector_ref, 
+                             "vector-ref", 
+                             2, 2);
+  scheme_vector_ref_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("vector-ref", p, env);
 
-  p = scheme_make_immed_prim(scheme_checked_vector_set,
-			     "vector-set!", 
-			     3, 3);
+  REGISTER_SO(scheme_vector_set_proc);
+  p = scheme_make_noncm_prim(scheme_checked_vector_set,
+                             "vector-set!", 
+                             3, 3);
+  scheme_vector_set_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("vector-set!", p, env);
 
@@ -132,6 +140,12 @@ scheme_init_vector (Scheme_Env *env)
                                                        1, 3,
                                                        0, -1), 
 			     env);
+
+  scheme_add_global_constant("chaperone-vector",
+                             scheme_make_prim_w_arity(chaperone_vector,
+                                                      "chaperone-vector",
+                                                      3, -1),
+                             env);
 }
 
 void
@@ -139,85 +153,79 @@ scheme_init_unsafe_vector (Scheme_Env *env)
 {
   Scheme_Object *p;
 
-  p = scheme_make_immed_prim(unsafe_vector_len, 
-			     "unsafe-vector-length", 
-			     1, 1);
+  p = scheme_make_immed_prim(unsafe_vector_len, "unsafe-vector-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-vector-length", p, env);
 
-  p = scheme_make_immed_prim(unsafe_vector_ref, 
-			     "unsafe-vector-ref", 
-			     2, 2);
+  p = scheme_make_immed_prim(unsafe_vector_len, "unsafe-vector*-length", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-vector*-length", p, env);
+
+  p = scheme_make_immed_prim(unsafe_vector_ref, "unsafe-vector-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-vector-ref", p, env);
 
-  p = scheme_make_immed_prim(unsafe_vector_set,
-			     "unsafe-vector-set!", 
-			     3, 3);
+  p = scheme_make_immed_prim(unsafe_vector_ref, "unsafe-vector*-ref", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-vector*-ref", p, env);
+
+  p = scheme_make_immed_prim(unsafe_vector_set, "unsafe-vector-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-vector-set!", p, env);  
-  p = scheme_make_immed_prim(unsafe_vector_ref, 
-			     "unsafe-vector-ref", 
-			     2, 2);
 
-  p = scheme_make_immed_prim(unsafe_struct_ref, 
-			     "unsafe-struct-ref", 
-			     2, 2);
+  p = scheme_make_immed_prim(unsafe_vector_set, "unsafe-vector*-set!", 3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-vector*-set!", p, env);  
+
+  p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-struct-ref", p, env);
 
-  p = scheme_make_immed_prim(unsafe_struct_set,
-			     "unsafe-struct-set!", 
-			     3, 3);
+  p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct*-ref", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-struct*-ref", p, env);
+
+  p = scheme_make_immed_prim(unsafe_struct_set, "unsafe-struct-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-struct-set!", p, env);  
 
+  p = scheme_make_immed_prim(unsafe_struct_set, "unsafe-struct*-set!", 3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-struct*-set!", p, env);  
 
-  p = scheme_make_immed_prim(unsafe_string_len, 
-			     "unsafe-string-length", 
-			     1, 1);
+  p = scheme_make_immed_prim(unsafe_string_len, "unsafe-string-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-string-length", p, env);
 
-  p = scheme_make_immed_prim(unsafe_string_ref, 
-			     "unsafe-string-ref", 
-			     2, 2);
+  p = scheme_make_immed_prim(unsafe_string_ref, "unsafe-string-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-string-ref", p, env);
 
-  p = scheme_make_immed_prim(unsafe_string_set,
-			     "unsafe-string-set!", 
-			     3, 3);
+  p = scheme_make_immed_prim(unsafe_string_set, "unsafe-string-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-string-set!", p, env);  
 
-  p = scheme_make_immed_prim(unsafe_bytes_len, 
-			     "unsafe-bytes-length", 
-			     1, 1);
+  p = scheme_make_immed_prim(unsafe_bytes_len, "unsafe-bytes-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-bytes-length", p, env);
 
-  p = scheme_make_immed_prim(unsafe_bytes_ref, 
-			     "unsafe-bytes-ref", 
-			     2, 2);
+  p = scheme_make_immed_prim(unsafe_bytes_ref, "unsafe-bytes-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-bytes-ref", p, env);
 
-  p = scheme_make_immed_prim(unsafe_bytes_set,
-			     "unsafe-bytes-set!", 
-			     3, 3);
+  p = scheme_make_immed_prim(unsafe_bytes_set, "unsafe-bytes-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
-  scheme_add_global_constant("unsafe-bytes-set!", p, env);  
-  p = scheme_make_immed_prim(unsafe_bytes_ref, 
-			     "unsafe-bytes-ref", 
-			     2, 2);
+  scheme_add_global_constant("unsafe-bytes-set!", p, env);
 }
 
 #define VECTOR_BYTES(size) (sizeof(Scheme_Vector) + ((size) - 1) * sizeof(Scheme_Object *))
@@ -256,7 +264,7 @@ scheme_make_vector (long size, Scheme_Object *fill)
 static Scheme_Object *
 vector_p (int argc, Scheme_Object *argv[])
 {
-  return (SCHEME_VECTORP(argv[0]) ? scheme_true : scheme_false);
+  return (SCHEME_CHAPERONE_VECTORP(argv[0]) ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *
@@ -312,10 +320,15 @@ vector_immutable (int argc, Scheme_Object *argv[])
 static Scheme_Object *
 vector_length (int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_VECTORP(argv[0]))
+  Scheme_Object *vec = argv[0];
+
+  if (SCHEME_NP_CHAPERONEP(vec))
+    vec = SCHEME_CHAPERONE_VAL(vec);
+
+  if (!SCHEME_VECTORP(vec))
     scheme_wrong_type("vector-length", "vector", 0, argc, argv);
 
-  return scheme_make_integer(SCHEME_VEC_SIZE(argv[0]));
+  return scheme_make_integer(SCHEME_VEC_SIZE(vec));
 }
 
 Scheme_Object *scheme_vector_length(Scheme_Object *v)
@@ -355,30 +368,127 @@ bad_index(char *name, Scheme_Object *i, Scheme_Object *vec, int bottom)
   return NULL;
 }
 
+static Scheme_Object *chaperone_vector_ref_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return scheme_chaperone_vector_ref(o, p->ku.k.i1);
+}
+
+static Scheme_Object *chaperone_vector_ref_overflow(Scheme_Object *o, int i)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = (void *)o;
+  p->ku.k.i1 = i;
+
+  return scheme_handle_stack_overflow(chaperone_vector_ref_k);
+}
+
+Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i)
+{
+  if (!SCHEME_NP_CHAPERONEP(o)) {
+    return SCHEME_VEC_ELS(o)[i];
+  } else {
+    Scheme_Chaperone *px = (Scheme_Chaperone *)o;
+    Scheme_Object *a[3], *red, *orig;
+
+#ifdef DO_STACK_CHECK
+    {
+# include "mzstkchk.h"
+      return chaperone_vector_ref_overflow(o, i);
+    }
+#endif
+
+    orig = scheme_chaperone_vector_ref(px->prev, i);
+
+    if (SCHEME_VECTORP(px->redirects)) {
+      /* chaperone was on property accessors */
+      return orig;
+    }
+
+    a[0] = px->prev;
+    a[1] = scheme_make_integer(i);
+    a[2] = orig;
+    red = SCHEME_CAR(px->redirects);
+    o = _scheme_apply(red, 3, a);
+
+    if (!scheme_chaperone_of(o, orig))
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "vector-ref: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                       o, 
+                       orig);
+
+    return o;
+  }
+}
+
 Scheme_Object *
 scheme_checked_vector_ref (int argc, Scheme_Object *argv[])
 {
   long i, len;
+  Scheme_Object *vec;
 
-  if (!SCHEME_VECTORP(argv[0]))
+  vec = argv[0];
+  if (SCHEME_CHAPERONEP(vec))
+    vec = SCHEME_CHAPERONE_VAL(vec);
+
+  if (!SCHEME_VECTORP(vec))
     scheme_wrong_type("vector-ref", "vector", 0, argc, argv);
 
-  len = SCHEME_VEC_SIZE(argv[0]);
+  len = SCHEME_VEC_SIZE(vec);
 
   i = scheme_extract_index("vector-ref", 1, argc, argv, len, 0);
 
   if (i >= len)
     return bad_index("vector-ref", argv[1], argv[0], 0);
 
-  return (SCHEME_VEC_ELS(argv[0]))[i];
+  if (!SAME_OBJ(vec, argv[0]))
+    /* chaperone */
+    return scheme_chaperone_vector_ref(argv[0], i);
+  else
+    return (SCHEME_VEC_ELS(vec))[i];
+}
+
+void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v)
+{
+  while (1) {
+    if (!SCHEME_NP_CHAPERONEP(o)) {
+      SCHEME_VEC_ELS(o)[i] = v;
+      return;
+    } else {
+      Scheme_Chaperone *px = (Scheme_Chaperone *)o;
+      Scheme_Object *a[3], *red;
+      
+      o = px->prev;
+      a[0] = o;
+      a[1] = scheme_make_integer(i);
+      a[2] = v;
+      red = SCHEME_CDR(px->redirects);
+      v = _scheme_apply(red, 3, a);
+
+      if (!scheme_chaperone_of(v, a[2]))
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "vector-set!: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                         v, 
+                         a[2]);
+    }
+  }
 }
 
 Scheme_Object *
 scheme_checked_vector_set(int argc, Scheme_Object *argv[])
 {
+  Scheme_Object *vec = argv[0];
   long i, len;
 
-  if (!SCHEME_MUTABLE_VECTORP(argv[0]))
+  if (SCHEME_CHAPERONEP(vec))
+    vec = SCHEME_CHAPERONE_VAL(vec);
+
+  if (!SCHEME_MUTABLE_VECTORP(vec))
     scheme_wrong_type("vector-set!", "mutable vector", 0, argc, argv);
 
   len = SCHEME_VEC_SIZE(argv[0]);
@@ -388,18 +498,12 @@ scheme_checked_vector_set(int argc, Scheme_Object *argv[])
   if (i >= len)
     return bad_index("vector-set!", argv[1], argv[0], 0);
 
-  (SCHEME_VEC_ELS(argv[0]))[i] = argv[2];
+  if (!SAME_OBJ(vec, argv[0]))
+    scheme_chaperone_vector_set(argv[0], i, argv[2]);
+  else
+    SCHEME_VEC_ELS(vec)[i] = argv[2];
 
   return scheme_void;
-}
-
-static Scheme_Object *
-vector_to_list (int argc, Scheme_Object *argv[])
-{
-  if (!SCHEME_VECTORP(argv[0]))
-    scheme_wrong_type("vector->list", "vector", 0, argc, argv);
-
-  return scheme_vector_to_list(argv[0]);
 }
 
 # define cons(car, cdr) scheme_make_pair(car, cdr)
@@ -425,6 +529,43 @@ scheme_vector_to_list (Scheme_Object *vec)
   }
 
   return pair;
+}
+
+
+Scheme_Object *
+chaperone_vector_to_list (Scheme_Object *vec)
+{
+  int i;
+  Scheme_Object *pair = scheme_null;
+
+  i = SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(vec));
+
+  for (; i--; ) {
+    if (!(i & 0xFFF))
+      SCHEME_USE_FUEL(0xFFF);
+    pair = cons(scheme_chaperone_vector_ref(vec, i), pair);
+  }
+
+  return pair;
+}
+
+static Scheme_Object *
+vector_to_list (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *vec = argv[0];
+
+  if (SCHEME_NP_CHAPERONEP(vec))
+    vec = SCHEME_CHAPERONE_VAL(vec);
+
+  if (!SCHEME_VECTORP(vec)) {
+    scheme_wrong_type("vector->list", "vector", 0, argc, argv);
+    return NULL;
+  }
+
+  if (!SAME_OBJ(vec, argv[0]))
+    return chaperone_vector_to_list(argv[0]);
+  else
+    return scheme_vector_to_list(vec);
 }
 
 static Scheme_Object *
@@ -456,18 +597,27 @@ static Scheme_Object *
 vector_fill (int argc, Scheme_Object *argv[])
 {
   int i, sz;
-  Scheme_Object *v;
+  Scheme_Object *v, *vec = argv[0];
+
+  if (SCHEME_NP_CHAPERONEP(vec))
+    vec = SCHEME_CHAPERONE_VAL(vec);
   
-  if (!SCHEME_MUTABLE_VECTORP(argv[0]))
+  if (!SCHEME_MUTABLE_VECTORP(vec))
     scheme_wrong_type("vector-fill!", "mutable vector", 0, argc, argv);
 
   v = argv[1];
-  sz = SCHEME_VEC_SIZE(argv[0]);
-  for (i = 0; i < sz; i++) {
-    SCHEME_VEC_ELS(argv[0])[i] = v;
+  sz = SCHEME_VEC_SIZE(vec);
+  if (SAME_OBJ(vec, argv[0])) {
+    for (i = 0; i < sz; i++) {
+      SCHEME_VEC_ELS(argv[0])[i] = v;
+    }
+  } else {
+    for (i = 0; i < sz; i++) {
+      scheme_chaperone_vector_set(argv[0], i, v);
+    }
   }
 
-  return argv[0];
+  return scheme_void;
 }
 
 static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[])
@@ -475,8 +625,13 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[])
   Scheme_Object *s1, *s2;
   long istart, ifinish;
   long ostart, ofinish;
+  int slow = 0;
 
   s1 = argv[0];
+  if (SCHEME_NP_CHAPERONEP(s1)) {
+    slow = 1;
+    s1 = SCHEME_CHAPERONE_VAL(s1);
+  }
   if (!SCHEME_MUTABLE_VECTORP(s1))
     scheme_wrong_type("vector-copy!", "mutable vector", 0, argc, argv);
 
@@ -485,6 +640,10 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[])
                                   &ostart, &ofinish, SCHEME_VEC_SIZE(s1));
 
   s2 = argv[2];
+  if (SCHEME_NP_CHAPERONEP(s2)) {
+    slow = 1;
+    s2 = SCHEME_CHAPERONE_VAL(s2);
+  }
   if (!SCHEME_VECTORP(s2))
     scheme_wrong_type("vector-copy!", "vector", 2, argc, argv);
 
@@ -499,30 +658,66 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  memmove(SCHEME_VEC_ELS(s1) + ostart,
-	  SCHEME_VEC_ELS(s2) + istart,
-	  (ifinish - istart) * sizeof(Scheme_Object*));
+  if (slow) {
+    int i, o;
+    for (i = istart, o = ostart; i < ifinish; i++, o++) {
+      scheme_chaperone_vector_set(argv[0], o, scheme_chaperone_vector_ref(argv[2], i));
+    }
+  } else {
+    memmove(SCHEME_VEC_ELS(s1) + ostart,
+            SCHEME_VEC_ELS(s2) + istart,
+            (ifinish - istart) * sizeof(Scheme_Object*));
+  }
   
   return scheme_void;
 }
 
+Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *vec)
+{
+  int len;
+  Scheme_Object *a[3], *vec2;
+
+  if (SCHEME_NP_CHAPERONEP(vec))
+    len = SCHEME_VEC_SIZE(SCHEME_CHAPERONE_VAL(vec));
+  else
+    len = SCHEME_VEC_SIZE(vec);
+
+  vec2 = scheme_make_vector(len, NULL);
+  a[0] = vec2;
+  a[1] = scheme_make_integer(0);
+  a[2] = vec;
+
+  return vector_copy_bang(3, a);
+}
+
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *vec, *ovec;
+  Scheme_Object *vec, *ovec, *v;
   long len, i;
 
-  if (!SCHEME_VECTORP(argv[0]))
+  vec = argv[0];
+  if (SCHEME_NP_CHAPERONEP(vec))
+    vec = SCHEME_CHAPERONE_VAL(vec);  
+
+  if (!SCHEME_VECTORP(vec))
     scheme_wrong_type("vector->immutable-vector", "vector", 0, argc, argv);
 
-  if (SCHEME_IMMUTABLEP(argv[0]))
+  if (SCHEME_IMMUTABLEP(vec))
     return argv[0];
 
-  ovec = argv[0];
+  ovec = vec;
   len = SCHEME_VEC_SIZE(ovec);
 
   vec = scheme_make_vector(len, NULL);
-  for (i = 0; i < len; i++) {
-    SCHEME_VEC_ELS(vec)[i] = SCHEME_VEC_ELS(ovec)[i];
+  if (!SAME_OBJ(ovec, argv[0])) {
+    for (i = 0; i < len; i++) {
+      v = scheme_chaperone_vector_ref(argv[0], i);
+      SCHEME_VEC_ELS(vec)[i] = v;
+    }
+  } else {
+    for (i = 0; i < len; i++) {
+      SCHEME_VEC_ELS(vec)[i] = SCHEME_VEC_ELS(ovec)[i];
+    }
   }
   SCHEME_SET_IMMUTABLE(vec);
 
@@ -536,6 +731,8 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
   long len, start, finish, i;
 
   vec = argv[0];
+  if (SCHEME_NP_CHAPERONEP(vec))
+    vec = SCHEME_CHAPERONE_VAL(vec);  
 
   if (!SCHEME_VECTORP(vec))
     scheme_wrong_type("vector->values", "vector", 0, argc, argv);
@@ -552,15 +749,19 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
     finish = len;
 
   if (!(start <= len)) {
-    bad_index("vector->values", argv[1], vec, 0);
+    bad_index("vector->values", argv[1], argv[0], 0);
   }
   if (!(finish >= start && finish <= len)) {
-    bad_index("vector->values", argv[2], vec, start);
+    bad_index("vector->values", argv[2], argv[0], start);
   }
 
   len = finish - start;
-  if (len == 1)
-    return SCHEME_VEC_ELS(vec)[start];
+  if (len == 1) {
+    if (!SAME_OBJ(vec, argv[0]))
+      return scheme_chaperone_vector_ref(argv[0], start);
+    else
+      return SCHEME_VEC_ELS(vec)[start];
+  }
 
   p = scheme_current_thread;
   if (p->values_buffer && (p->values_buffer_size >= len))
@@ -574,11 +775,47 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
   p->ku.multiple.array = a;
   p->ku.multiple.count = len;
 
-  for (i = 0; i < len; i++) {
-    a[i] = SCHEME_VEC_ELS(vec)[start + i];
+  if (!SAME_OBJ(vec, argv[0])) {
+    for (i = 0; i < len; i++) {
+      vec = scheme_chaperone_vector_ref(argv[0], start + i);
+      a[i] = vec;
+    }
+  } else {
+    for (i = 0; i < len; i++) {
+      a[i] = SCHEME_VEC_ELS(vec)[start + i];
+    }
   }
 
   return SCHEME_MULTIPLE_VALUES;
+}
+
+static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *val = argv[0];
+  Scheme_Object *redirects;
+  Scheme_Hash_Tree *props;
+
+  if (SCHEME_CHAPERONEP(val))
+    val = SCHEME_CHAPERONE_VAL(val);
+
+  if (!SCHEME_VECTORP(val))
+    scheme_wrong_type("chaperone-vector", "vector", 0, argc, argv);
+  scheme_check_proc_arity("chaperone-vector", 3, 1, argc, argv);
+  scheme_check_proc_arity("chaperone-vector", 3, 2, argc, argv);
+
+  props = scheme_parse_chaperone_props("chaperone-vector", 3, argc, argv);
+
+  redirects = scheme_make_pair(argv[1], argv[2]);
+  
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  px->so.type = scheme_chaperone_type;
+  px->props = props;
+  px->val = val;
+  px->prev = argv[0];
+  px->redirects = redirects;
+
+  return (Scheme_Object *)px;
 }
 
 /************************************************************/
@@ -587,18 +824,27 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[])
 {
-  long n = SCHEME_VEC_SIZE(argv[0]);
+  Scheme_Object *vec = argv[0];
+  long n;
+  if (SCHEME_NP_CHAPERONEP(vec)) vec = SCHEME_CHAPERONE_VAL(vec);
+  n = SCHEME_VEC_SIZE(vec);
   return scheme_make_integer(n);
 }
 
 static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[])
 {
-  return SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])];
+  if (SCHEME_NP_CHAPERONEP(argv[0]))
+    return scheme_chaperone_vector_ref(argv[0], SCHEME_INT_VAL(argv[1]));
+  else
+    return SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])];
 }
 
 static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[])
 {
-  SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])] = argv[2];
+  if (SCHEME_NP_CHAPERONEP(argv[0]))
+    scheme_chaperone_vector_set(argv[0], SCHEME_INT_VAL(argv[1]), argv[2]);
+  else
+    SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])] = argv[2];
   return scheme_void;
 }
 
@@ -650,4 +896,3 @@ static Scheme_Object *unsafe_bytes_set (int argc, Scheme_Object *argv[])
   SCHEME_BYTE_STR_VAL(argv[0])[SCHEME_INT_VAL(argv[1])] = (char)SCHEME_INT_VAL(argv[2]);
   return scheme_void;
 }
-

@@ -581,6 +581,7 @@
   scheme_extension_table->scheme_make_struct_type_property = scheme_make_struct_type_property;
   scheme_extension_table->scheme_make_struct_type_property_w_guard = scheme_make_struct_type_property_w_guard;
   scheme_extension_table->scheme_struct_type_property_ref = scheme_struct_type_property_ref;
+  scheme_extension_table->scheme_chaperone_struct_type_property_ref = scheme_chaperone_struct_type_property_ref;
   scheme_extension_table->scheme_make_location = scheme_make_location;
   scheme_extension_table->scheme_is_location = scheme_is_location;
   scheme_extension_table->scheme_make_inspector = scheme_make_inspector;
@@ -588,6 +589,7 @@
   scheme_extension_table->scheme_eq = scheme_eq;
   scheme_extension_table->scheme_eqv = scheme_eqv;
   scheme_extension_table->scheme_equal = scheme_equal;
+  scheme_extension_table->scheme_chaperone_of = scheme_chaperone_of;
 #ifdef MZ_PRECISE_GC
   scheme_extension_table->scheme_hash_key = scheme_hash_key;
 #endif

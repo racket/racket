@@ -558,6 +558,12 @@
       (test-setter make-string #\a #\7 'string-set! string-set! string-ref #f)
       (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref #f))
 
+    (let ([v (box 1)])
+      (check-error-message 'set-box! (eval `(lambda (x) (set-box! x 10))))
+      (tri0 (void) '(lambda (b i v) (set-box! b v))
+            (lambda () v) 0 "other"
+            (lambda () (test "other" unbox v))))
+
     ))
 
 (define (comp=? c1 c2)

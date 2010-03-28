@@ -336,7 +336,7 @@
                                       bitwise-bit-set? char=?
                                       + - * / quotient remainder min max bitwise-and bitwise-ior bitwise-xor
                                       arithmetic-shift vector-ref string-ref bytes-ref
-                                      set-mcar! set-mcdr! cons mcons
+                                      set-mcar! set-mcdr! cons mcons set-box!
                                       list list* vector vector-immutable))]
              [(4) (memq (car a) '(vector-set! string-set! bytes-set!
                                               list list* vector vector-immutable

@@ -1002,6 +1002,7 @@ MZ_EXTERN void scheme_struct_set(Scheme_Object *s, int pos, Scheme_Object *v);
 MZ_EXTERN Scheme_Object *scheme_make_struct_type_property(Scheme_Object *name);
 MZ_EXTERN Scheme_Object *scheme_make_struct_type_property_w_guard(Scheme_Object *name, Scheme_Object *guard);
 XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_struct_type_property_ref(Scheme_Object *prop, Scheme_Object *s);
+MZ_EXTERN Scheme_Object *scheme_chaperone_struct_type_property_ref(Scheme_Object *prop, Scheme_Object *s);
 
 MZ_EXTERN Scheme_Object *scheme_make_location(Scheme_Object *src,
 					      Scheme_Object *line,
@@ -1020,6 +1021,7 @@ XFORM_NONGCING MZ_EXTERN int scheme_is_subinspector(Scheme_Object *i, Scheme_Obj
 XFORM_NONGCING MZ_EXTERN int scheme_eq(Scheme_Object *obj1, Scheme_Object *obj2);
 XFORM_NONGCING MZ_EXTERN int scheme_eqv(Scheme_Object *obj1, Scheme_Object *obj2);
 MZ_EXTERN int scheme_equal(Scheme_Object *obj1, Scheme_Object *obj2);
+MZ_EXTERN int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2);
 
 #ifdef MZ_PRECISE_GC
 XFORM_NONGCING MZ_EXTERN long scheme_hash_key(Scheme_Object *o);

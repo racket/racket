@@ -4845,6 +4845,39 @@ static int mark_nack_guard_evt_FIXUP(void *p) {
 #define mark_nack_guard_evt_IS_CONST_SIZE 1
 
 
+static int mark_chaperone_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Chaperone));
+}
+
+static int mark_chaperone_MARK(void *p) {
+  Scheme_Chaperone *px = (Scheme_Chaperone *)p;
+
+  gcMARK(px->val);
+  gcMARK(px->prev);
+  gcMARK(px->props);
+  gcMARK(px->redirects);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Chaperone));
+}
+
+static int mark_chaperone_FIXUP(void *p) {
+  Scheme_Chaperone *px = (Scheme_Chaperone *)p;
+
+  gcFIXUP(px->val);
+  gcFIXUP(px->prev);
+  gcFIXUP(px->props);
+  gcFIXUP(px->redirects);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Chaperone));
+}
+
+#define mark_chaperone_IS_ATOMIC 0
+#define mark_chaperone_IS_CONST_SIZE 1
+
+
 #endif  /* STRUCT */
 
 /**********************************************************************/

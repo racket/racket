@@ -671,7 +671,7 @@ call_error(char *buffer, int len, Scheme_Object *exn)
                  "optimizer constant-fold attempt failed%s: %s",
                  scheme_optimize_context_to_string(scheme_current_thread->constant_folding),
                  buffer);
-    if (SCHEME_STRUCTP(exn)
+    if (SCHEME_CHAPERONE_STRUCTP(exn)
         && scheme_is_struct_instance(exn_table[MZEXN_BREAK].type, exn)) {
       /* remember to re-raise exception */
       scheme_current_thread->reading_delayed = exn;
@@ -965,7 +965,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
   xminc = minc - (is_method ? 1 : 0);
   xmaxc = maxc - (is_method ? 1 : 0);
 
-  if ((minc == -1) && SCHEME_PROC_STRUCTP((Scheme_Object *)name)) {
+  if ((minc == -1) && SCHEME_CHAPERONE_PROC_STRUCTP((Scheme_Object *)name)) {
     Scheme_Object *arity_maker;
 
     while (1) {
@@ -992,7 +992,7 @@ static char *make_arity_expect_string(const char *name, int namelen,
         Scheme_Object *v;
         int is_method;
         v = scheme_extract_struct_procedure((Scheme_Object *)name, -1, NULL, &is_method);
-        if (!v || is_method || !SCHEME_PROC_STRUCTP(v))
+        if (!v || is_method || !SCHEME_CHAPERONE_PROC_STRUCTP(v))
           break;
         name = (const char *)v;
       }
@@ -1138,7 +1138,7 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
 	name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
       } else if (SCHEME_STRUCTP(pa)) {
 	/* This happens when a non-case-lambda is not yet JITted.
-	 It's an arity-at-least record. */
+	   It's an arity-at-least record. */
 	pa = ((Scheme_Structure *)pa)->slots[0];
 	minc = SCHEME_INT_VAL(pa);
 	maxc = -1;
@@ -1241,7 +1241,7 @@ char *scheme_make_arity_expect_string(Scheme_Object *proc,
     }
     name = scheme_get_proc_name((Scheme_Object *)proc, &namelen, 1);
 #endif
-  } else if (SCHEME_STRUCTP(proc)) {
+  } else if (SCHEME_CHAPERONE_STRUCTP(proc)) {
     name = (const char *)proc;
     mina = -1;
     maxa = 0;
@@ -2159,7 +2159,7 @@ static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[])
 
 static int is_arity_at_least(Scheme_Object *v)
 {
-  return (SCHEME_STRUCTP(v)
+  return (SCHEME_CHAPERONE_STRUCTP(v)
           && scheme_is_struct_instance(scheme_arity_at_least, v)
           && scheme_nonneg_exact_p(((Scheme_Structure *)v)->slots[0]));
 }
@@ -2209,7 +2209,7 @@ static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
     minc = maxc = SCHEME_INT_VAL(argv[1]);
   } else if (is_arity_at_least(argv[1])) {
     Scheme_Object *v;
-    v = ((Scheme_Structure *)argv[1])->slots[0];
+    v = scheme_struct_ref(argv[1], 0);
     if (SCHEME_INTP(v)) {
       minc = SCHEME_INT_VAL(v);
       maxc = -1;
@@ -2328,7 +2328,7 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
   scheme_write_byte_string("\n", 1, port);
 
   /* Print context, if available */
-  if (SCHEME_STRUCTP(argv[1])
+  if (SCHEME_CHAPERONE_STRUCTP(argv[1])
       && scheme_is_struct_instance(exn_table[MZEXN].type, argv[1])
       && !scheme_is_struct_instance(exn_table[MZEXN_FAIL_USER].type, argv[1])) {
     Scheme_Object *l, *w;
@@ -2347,7 +2347,7 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
 	print_width = SCHEME_INT_VAL(w);
       else
 	print_width = 0x7FFFFFFF;
-      l = scheme_get_stack_trace(((Scheme_Structure *)argv[1])->slots[1]);
+      l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1));
       while (!SCHEME_NULLP(l)) {
 	if (!max_cnt) {
 	  scheme_write_byte_string("...\n", 4, port);
@@ -3107,9 +3107,10 @@ def_exn_handler(int argc, Scheme_Object *argv[])
   char *s;
   int len = -1;
 
-  if (SCHEME_STRUCTP(argv[0])
+  if (SCHEME_CHAPERONE_STRUCTP(argv[0])
       && scheme_is_struct_instance(exn_table[MZEXN].type, argv[0])) {
-    Scheme_Object *str = ((Scheme_Structure *)argv[0])->slots[0];
+    Scheme_Object *str;
+    str = scheme_struct_ref(argv[0], 0);
     if (SCHEME_CHAR_STRINGP(str)) {
       str = scheme_char_string_to_byte_string(str);
       s = SCHEME_BYTE_STR_VAL(str);
@@ -3158,9 +3159,10 @@ nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
     who = SCHEME_BYTE_STR_VAL(SCHEME_CAR((Scheme_Object *)old_exn));
     sep = " by ";
 
-    if (SCHEME_STRUCTP(arg)
+    if (SCHEME_CHAPERONE_STRUCTP(arg)
         && scheme_is_struct_instance(exn_table[MZEXN].type, arg)) {
-      Scheme_Object *str = ((Scheme_Structure *)arg)->slots[0];
+      Scheme_Object *str;
+      str = scheme_struct_ref(arg, 0);
       raisetype = "exception raised";
       str = scheme_char_string_to_byte_string(str);
       msg = SCHEME_BYTE_STR_VAL(str);
@@ -3171,9 +3173,10 @@ nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
     }
   }
 
-  if (SCHEME_STRUCTP(orig_arg)
+  if (SCHEME_CHAPERONE_STRUCTP(orig_arg)
       && scheme_is_struct_instance(exn_table[MZEXN].type, orig_arg)) {
-    Scheme_Object *str = ((Scheme_Structure *)orig_arg)->slots[0];
+    Scheme_Object *str;
+    str = scheme_struct_ref(orig_arg, 0);
     orig_raisetype = "exception raised";
     str = scheme_char_string_to_byte_string(str);
     orig_msg = SCHEME_BYTE_STR_VAL(str);
@@ -3289,7 +3292,7 @@ do_raise(Scheme_Object *arg, int need_debug, int eb)
                  scheme_optimize_context_to_string(p->constant_folding),
                  msg);
     }
-    if (SCHEME_STRUCTP(arg)
+    if (SCHEME_CHAPERONE_STRUCTP(arg)
         && scheme_is_struct_instance(exn_table[MZEXN_BREAK].type, arg)) {
       /* remember to re-raise exception */
       scheme_current_thread->reading_delayed = arg;

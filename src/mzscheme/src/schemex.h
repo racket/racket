@@ -833,6 +833,7 @@ void (*scheme_struct_set)(Scheme_Object *s, int pos, Scheme_Object *v);
 Scheme_Object *(*scheme_make_struct_type_property)(Scheme_Object *name);
 Scheme_Object *(*scheme_make_struct_type_property_w_guard)(Scheme_Object *name, Scheme_Object *guard);
 Scheme_Object *(*scheme_struct_type_property_ref)(Scheme_Object *prop, Scheme_Object *s);
+Scheme_Object *(*scheme_chaperone_struct_type_property_ref)(Scheme_Object *prop, Scheme_Object *s);
 Scheme_Object *(*scheme_make_location)(Scheme_Object *src,
 					      Scheme_Object *line,
 					      Scheme_Object *col,
@@ -847,6 +848,7 @@ int (*scheme_is_subinspector)(Scheme_Object *i, Scheme_Object *sup);
 int (*scheme_eq)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_eqv)(Scheme_Object *obj1, Scheme_Object *obj2);
 int (*scheme_equal)(Scheme_Object *obj1, Scheme_Object *obj2);
+int (*scheme_chaperone_of)(Scheme_Object *obj1, Scheme_Object *obj2);
 #ifdef MZ_PRECISE_GC
 long (*scheme_hash_key)(Scheme_Object *o);
 #endif

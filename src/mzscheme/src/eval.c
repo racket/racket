@@ -3673,6 +3673,69 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
     info->single_result = -info->single_result;
   }
 
+  /* Ad hoc optimization of (unsafe-fx+ <x> 0), etc. */
+  if (SCHEME_PRIMP(app->rator)
+      && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)) {
+    int z1, z2;
+    
+    z1 = SAME_OBJ(app->rand1, scheme_make_integer(0));
+    z2 = SAME_OBJ(app->rand2, scheme_make_integer(0));
+    if (IS_NAMED_PRIM(app->rator, "unsafe-fx+")) {
+      if (z1)
+        return app->rand2;
+      else if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx-")) {
+      if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx*")) {
+      if (z1 || z2)
+        return scheme_make_integer(0);
+      if (SAME_OBJ(app->rand1, scheme_make_integer(1)))
+        return app->rand2;
+      if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx/")
+               || IS_NAMED_PRIM(app->rator, "unsafe-fxquotient")) {
+      if (z1)
+        return scheme_make_integer(0);
+      if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fxremainder")
+               || IS_NAMED_PRIM(app->rator, "unsafe-fxmodulo")) {
+      if (z1)
+        return scheme_make_integer(0);
+      if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
+        return scheme_make_integer(0);
+    }
+    
+    z1 = (SCHEME_FLOATP(app->rand1) && (SCHEME_FLOAT_VAL(app->rand1) == 0.0));
+    z2 = (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 0.0));
+
+    if (IS_NAMED_PRIM(app->rator, "unsafe-fl+")) {
+      if (z1)
+        return app->rand2;
+      else if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl-")) {
+      if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl*")) {
+      if (SCHEME_FLOATP(app->rand1) && (SCHEME_FLOAT_VAL(app->rand1) == 1.0))
+        return app->rand2;
+      if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl/")
+               || IS_NAMED_PRIM(app->rator, "unsafe-flquotient")) {
+      if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-flremainder")
+               || IS_NAMED_PRIM(app->rator, "unsafe-flmodulo")) {
+      if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
+        return scheme_make_double(0.0);
+    }
+  }
+
   register_flonum_argument_types(NULL, NULL, app, info);
 
   return check_unbox_rotation((Scheme_Object *)app, app->rator, 2, info);
@@ -9124,6 +9187,17 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       } while (SAME_TYPE(scheme_proc_struct_type, SCHEME_TYPE(obj)));
 
       goto apply_top;
+    } else if (type == scheme_proc_chaperone_type) {
+      if (SCHEME_VECTORP(((Scheme_Chaperone *)obj)->redirects)) {
+        /* Chaperone is for struct fields, not function arguments */
+        obj = ((Scheme_Chaperone *)obj)->prev;
+        goto apply_top;
+      } else {
+        /* Chaperone is for function arguments */
+        VACATE_TAIL_BUFFER_USE_RUNSTACK();
+        UPDATE_THREAD_RSPTR();
+        v = scheme_apply_chaperone(obj, num_rands, rands);
+      }
     } else if (type == scheme_closed_prim_type) {
       GC_CAN_IGNORE Scheme_Closed_Primitive_Proc *prim;
       

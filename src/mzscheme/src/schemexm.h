@@ -581,6 +581,7 @@
 #define scheme_make_struct_type_property (scheme_extension_table->scheme_make_struct_type_property)
 #define scheme_make_struct_type_property_w_guard (scheme_extension_table->scheme_make_struct_type_property_w_guard)
 #define scheme_struct_type_property_ref (scheme_extension_table->scheme_struct_type_property_ref)
+#define scheme_chaperone_struct_type_property_ref (scheme_extension_table->scheme_chaperone_struct_type_property_ref)
 #define scheme_make_location (scheme_extension_table->scheme_make_location)
 #define scheme_is_location (scheme_extension_table->scheme_is_location)
 #define scheme_make_inspector (scheme_extension_table->scheme_make_inspector)
@@ -588,6 +589,7 @@
 #define scheme_eq (scheme_extension_table->scheme_eq)
 #define scheme_eqv (scheme_extension_table->scheme_eqv)
 #define scheme_equal (scheme_extension_table->scheme_equal)
+#define scheme_chaperone_of (scheme_extension_table->scheme_chaperone_of)
 #ifdef MZ_PRECISE_GC
 #define scheme_hash_key (scheme_extension_table->scheme_hash_key)
 #endif

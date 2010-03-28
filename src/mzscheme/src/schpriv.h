@@ -329,6 +329,8 @@ extern Scheme_Object *scheme_list_proc;
 extern Scheme_Object *scheme_list_star_proc;
 extern Scheme_Object *scheme_vector_proc;
 extern Scheme_Object *scheme_vector_immutable_proc;
+extern Scheme_Object *scheme_vector_ref_proc;
+extern Scheme_Object *scheme_vector_set_proc;
 extern Scheme_Object *scheme_box_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
@@ -732,6 +734,47 @@ Scheme_Object *scheme_clone_prefab_struct_instance(Scheme_Structure *s);
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
 Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
+
+typedef struct Scheme_Chaperone {
+  Scheme_Object so;
+  Scheme_Object *val;  /* root object */
+  Scheme_Object *prev; /* immediately chaperoned object */
+  Scheme_Hash_Tree *props;
+  Scheme_Object *redirects; /* specific to the type of chaperone and root object */
+} Scheme_Chaperone;
+
+#define SCHEME_CHAPERONE_VAL(obj) (((Scheme_Chaperone *)obj)->val)
+
+#define SCHEME_P_CHAPERONEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_chaperone_type))
+#define SCHEME_NP_CHAPERONEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_chaperone_type))
+
+#define SCHEME_CHAPERONE_VECTORP(obj) (SCHEME_VECTORP(obj) \
+                                   || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_VECTORP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_BOXP(obj) (SCHEME_BOXP(obj) \
+                                || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_BOXP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_STRUCTP(obj) (SCHEME_STRUCTP(obj)              \
+                                       || (SCHEME_CHAPERONEP(obj) && SCHEME_STRUCTP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_PROC_STRUCTP(obj) (SCHEME_PROC_STRUCTP(obj)              \
+                                           || (SCHEME_P_CHAPERONEP(obj) && SCHEME_PROC_STRUCTP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_STRUCT_TYPEP(obj) (SCHEME_STRUCT_TYPEP(obj)              \
+                                            || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_STRUCT_TYPEP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_HASHTP(obj) (SCHEME_HASHTP(obj) \
+                                      || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_HASHTRP(obj) (SCHEME_HASHTRP(obj) \
+                                       || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_BUCKTP(obj) (SCHEME_BUCKTP(obj) \
+                                      || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(obj))))
+
+Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i);
+void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v);
+
+Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv);
+
+Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv);
+
+Scheme_Object *scheme_chaperone_hash_get(Scheme_Object *table, Scheme_Object *key);
+Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key);
+void scheme_chaperone_hash_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val);
 
 /*========================================================================*/
 /*                         syntax objects                                 */
@@ -3312,6 +3355,9 @@ Scheme_Object *scheme_vector_length(Scheme_Object *v);
 Scheme_Object *scheme_checked_flvector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_flvector_set(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_flvector_length(Scheme_Object *v);
+
+Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *obj);
+Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj);
 
 void scheme_bad_vec_index(char *name, Scheme_Object *i, 
                           const char *what, Scheme_Object *vec, 

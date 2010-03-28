@@ -70,13 +70,13 @@ by functions like @scheme[decode-flow].}
 @defproc[(pre-part? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @deftech{pre-part} value: a
-string or other non-list @scheme[content], a @scheme[block], a
+string or other non-list @tech{content}, a @tech{block}, a
 @scheme[part], a @scheme[title-decl], a @scheme[part-start], a
 @scheme[part-index-decl], a @scheme[part-collect-decl], a
 @scheme[part-tag-decl], @|void-const|, or a @scheme[splice] containing
 a list of @tech{pre-part} values; otherwise returns @scheme[#f].
 
-A pre-part sequences is decoded into a @scheme[part] by functions like
+A pre-part sequence is decoded into a @scheme[part] by functions like
 @scheme[decode] and @scheme[decode-part].}
 
 

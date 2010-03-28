@@ -152,7 +152,10 @@ scheme_init_type ()
   set_name(scheme_unix_path_type, "<unix-path>");
   set_name(scheme_windows_path_type, "<windows-path>");
   set_name(scheme_struct_property_type, "<struct-property>");
+  set_name(scheme_chaperone_property_type, "<chaperone-property>");
   set_name(scheme_structure_type, "<struct>");
+  set_name(scheme_proc_chaperone_type, "<chaperone>");
+  set_name(scheme_chaperone_type, "<chaperone>");
 #ifdef USE_SENORA_GC
   set_name(scheme_proc_struct_type, "<procedure-struct>");
 #else

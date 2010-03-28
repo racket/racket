@@ -2113,9 +2113,13 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       result = obj;
       scheme_hash_set(dht, obj, result);
     }
-  } else if (SCHEME_VECTORP(obj)) {
+  } else if (SCHEME_VECTORP(obj)
+             || (clone && SCHEME_CHAPERONE_VECTORP(obj))) {
     int i, len, diff = 0;
     Scheme_Object *prev_rr, *prev_v;
+
+    if (SCHEME_NP_CHAPERONEP(obj))
+      obj = scheme_chaperone_vector_copy(obj);
 
     len = SCHEME_VEC_SIZE(obj);
 
@@ -2146,10 +2150,16 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       scheme_hash_set(dht, obj, result);
     }
   } else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_table_placeholder_type)
-             || SCHEME_HASHTRP(obj)) {
+             || SCHEME_HASHTRP(obj)
+             || (clone && SCHEME_NP_CHAPERONEP(obj) 
+                 && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(obj))
+                     || SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj))))) {
     Scheme_Hash_Tree *t, *base;
     Scheme_Object *a, *key, *val, *lst;
     int kind;
+
+    if (SCHEME_NP_CHAPERONEP(obj))
+      obj = scheme_chaperone_hash_table_copy(obj);
 
     if (SCHEME_HASHTRP(obj)) {
       int i;
@@ -2224,22 +2234,27 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
         scheme_hash_set(t2, key, val);
       }
     }
-  } else if (SCHEME_STRUCTP(obj)) {
-    Scheme_Structure *s = (Scheme_Structure *)obj;
+  } else if (SCHEME_STRUCTP(obj)
+             || (clone && SCHEME_CHAPERONE_STRUCTP(obj))) {
+    Scheme_Structure *s;
+    if (clone && SCHEME_CHAPERONEP(obj))
+      s = (Scheme_Structure *)SCHEME_CHAPERONE_VAL(obj);
+    else
+      s = (Scheme_Structure *)obj;
     if (s->stype->prefab_key) {
       /* prefab */
       int c, i, diff;
       Scheme_Object *prev_v, *v;
 
       if (clone) {
-        result = scheme_clone_prefab_struct_instance(s);
+        result = scheme_clone_prefab_struct_instance((Scheme_Structure *)obj);
       }
       scheme_hash_set(dht, obj, result);
 
       c = s->stype->num_slots;
       diff = 0;
       for (i = 0; i < c; i++) {
-        prev_v = s->slots[i];
+        prev_v = ((Scheme_Structure *)result)->slots[i];
 	v = resolve_references(prev_v, port, top, dht, tht, clone, tail_depth + 1);
         if (!SAME_OBJ(prev_v, v))
           diff = 1;
