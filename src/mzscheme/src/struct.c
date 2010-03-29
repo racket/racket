@@ -4788,6 +4788,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_struct_proc_info, mark_struct_proc_info);
 
   GC_REG_TRAV(scheme_chaperone_type, mark_chaperone);
+  GC_REG_TRAV(scheme_proc_chaperone_type, mark_chaperone);
 }
 
 END_XFORM_SKIP;
