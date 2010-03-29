@@ -18,7 +18,10 @@
              keyword-apply
              procedure-keywords
              procedure-reduce-keyword-arity
-             new-prop:procedure)
+             new-prop:procedure
+             new:procedure->method
+             new:procedure-rename
+             new:chaperone-procedure)
   
   ;; ----------------------------------------
 
@@ -854,8 +857,10 @@
              (let loop ([kws kws][req-kws req-kws])
                (if (null? req-kws)
                    (null? kws)
-                   (and (eq? (car kws) (car req-kws))
-                        (loop (cdr kws) (cdr req-kws))))))
+                   (if (null? kws)
+                       #f
+                       (and (eq? (car kws) (car req-kws))
+                            (loop (cdr kws) (cdr req-kws)))))))
             (arity-check-lambda
              (kws) 
              ;; Required is a subset of allowed
@@ -970,8 +975,8 @@
 
   ;; setting procedure arity
   (define (procedure-reduce-keyword-arity proc arity req-kw allowed-kw)
-    (let ([plain-proc (procedure-reduce-arity (if (okp? proc)
-                                                  (okp-ref proc 0) 
+    (let ([plain-proc (procedure-reduce-arity (if (okp? proc) 
+                                                  (okp-ref proc 0)
                                                   proc)
                                               arity)])
       (define (sorted? kws)
@@ -1022,17 +1027,62 @@
             (raise-mismatch-error 'procedure-reduce-keyword-arity
                                   "cannot allow keywords not in original allowed set: "
                                   old-allowed))))
-      (let ([new-arity (let loop ([a arity])
-                         (cond
-                          [(integer? a) (+ a 2)]
-                          [(arity-at-least? a)
-                           (make-arity-at-least (+ (arity-at-least-value a) 2))]
-                          [else
-                           (map loop a)]))])
-        (make-optional-keyword-procedure
-         (make-keyword-checker req-kw allowed-kw new-arity)
-         (procedure-reduce-arity (keyword-procedure-proc proc)
-                                 new-arity)
-         req-kw
-         allowed-kw
-         plain-proc)))))
+      (if (null? allowed-kw)
+          plain-proc
+          (let* ([inc-arity (lambda (arity delta)
+                              (let loop ([a arity])
+                                (cond
+                                 [(integer? a) (+ a delta)]
+                                 [(arity-at-least? a)
+                                  (make-arity-at-least (+ (arity-at-least-value a) delta))]
+                                 [else
+                                  (map loop a)])))]
+                 [new-arity (inc-arity arity 2)]
+                 [kw-checker (make-keyword-checker req-kw allowed-kw new-arity)]
+                 [new-kw-proc (procedure-reduce-arity (keyword-procedure-proc proc)
+                                                      new-arity)])
+            (if (null? req-kw)
+                ;; All keywords are optional:
+                ((if (okm? proc)
+                     make-optional-keyword-method
+                     make-optional-keyword-procedure)
+                 kw-checker
+                 new-kw-proc
+                 req-kw
+                 allowed-kw
+                 plain-proc)
+                ;; Some keywords are required, so "plain" proc is
+                ;;  irrelevant; we build a new one that wraps `missing-kws'.
+                ((make-required (or (and (named-keyword-procedure? proc)
+                                         (keyword-procedure-name proc))
+                                    (object-name proc))
+                                (procedure-reduce-arity 
+                                 missing-kw
+                                 (inc-arity arity 1))
+                                (or (okm? proc)
+                                    (keyword-method? proc)))
+                 kw-checker
+                 new-kw-proc
+                 req-kw
+                 allowed-kw))))))
+    
+  (define new:procedure->method
+    (let ([procedure->method
+           (lambda (proc)
+             (procedure->method proc))])
+      procedure->method))
+
+  (define new:procedure-rename
+    (let ([procedure-rename 
+           (lambda (proc name)
+             (if (not (and (keyword-procedure? proc)
+                           (symbol? name)))
+                 (procedure-rename proc name)
+                 (procedure-rename proc name)))])
+      procedure-rename))
+
+  (define new:chaperone-procedure
+    (let ([chaperone-procedure 
+           (lambda (proc wrap-proc . props)
+             (apply chaperone-procedure proc wrap-proc props))])
+      chaperone-procedure)))

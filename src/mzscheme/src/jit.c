@@ -11351,7 +11351,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     for (i = 0; i < 4; i++) {
       void *code;
       int kind, for_branch;
-      jit_insn *ref, *ref2, *refslow, *bref1, *bref2, *bref3, *bref4, *bref5, *bref6, *bref8;
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow, *bref1, *bref2, *refretry;
+      GC_CAN_IGNORE jit_insn *bref3, *bref4, *bref5, *bref6, *bref8, *ref9;
 
       if ((ii == 1) && (i == 1)) continue; /* no multi variant of pred branch */
 
@@ -11448,11 +11449,21 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       /* Check argument: */
       if (kind == 1) {
 	bref1 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
+        refretry = _jit.x.pc;
 	jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
         __START_INNER_TINY__(1);
 	ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
+        ref3 = jit_beqi_i(jit_forward(), JIT_R2, scheme_proc_struct_type);
+	ref9 = jit_beqi_i(jit_forward(), JIT_R2, scheme_chaperone_type);
         __END_INNER_TINY__(1);
-	bref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_proc_struct_type);
+	bref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_proc_chaperone_type);
+        CHECK_LIMIT();
+        __START_INNER_TINY__(1);
+        mz_patch_branch(ref9);
+        jit_ldxi_p(JIT_R1, JIT_R1, &SCHEME_CHAPERONE_VAL(0x0));
+        (void)jit_jmpi(refretry);
+        mz_patch_branch(ref3);
+        __END_INNER_TINY__(1);
       } else {
 	(void)jit_bmsi_ul(refslow, JIT_R1, 0x1);
 	jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);

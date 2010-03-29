@@ -68,7 +68,7 @@
 (for-each (lambda (p)
             (let ([a (cadr p)])
               (test a procedure-arity (car p))
-              (test-values (list (caddr p)  (cadddr p))
+              (test-values (list (caddr p) (cadddr p))
                            (lambda ()
                              (procedure-keywords (car p))))
               (let ([1-ok? (let loop ([a a])
@@ -78,7 +78,14 @@
                                  (and (list? a)
                                       (ormap loop a))))])
                 (test 1-ok? procedure-arity-includes? (car p) 1)
-                (let ([allowed (cadddr p)])
+                (let ([allowed (cadddr p)]
+                      [required (caddr p)])
+                  ;; If some keyword is required, make sure that a plain
+                  ;;  application fails:
+                  (unless (null? required)
+                    (err/rt-test
+                     (apply (car p) (make-list (procedure-arity (car p)) #\0))))
+                  ;; Other tests:
                   (if 1-ok?
                       (cond
                        [(equal? allowed '())

@@ -314,6 +314,12 @@
            [a2 (if rev?
                    (chaperone-struct a3 a-y (lambda (a v) (set! get v) v))
                    a2)])
+      (test #t a? a1)
+      (test #t a? a2)
+      (test #t a? a3)
+      (test #t procedure? a1)
+      (test #t procedure? a2)
+      (test #t procedure? a3)
       (test '(12 12) a1 12)
       (test #f values get)
       (test #f values pre)

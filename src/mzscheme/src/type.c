@@ -400,19 +400,19 @@ int scheme_num_types(void)
 
 START_XFORM_SKIP;
 
-static int bad_trav_SIZE(void *p)
+static int bad_trav_SIZE(void *p, struct NewGC *gc)
 {
   printf("Shouldn't get here.\n");
   exit(1);
 }
 
-static int bad_trav_MARK(void *p)
+static int bad_trav_MARK(void *p, struct NewGC *gc)
 {
   printf("Shouldn't get here.\n");
   exit(1);
 }
 
-static int bad_trav_FIXUP(void *p)
+static int bad_trav_FIXUP(void *p, struct NewGC *gc)
 {
   printf("Shouldn't get here.\n");
   exit(1);
@@ -421,59 +421,61 @@ static int bad_trav_FIXUP(void *p)
 #define bad_trav_IS_CONST_SIZE 0
 #define bad_trav_IS_ATOMIC 0
 
-static void MARK_cjs(Scheme_Continuation_Jump_State *cjs)
+static void MARK_cjs(Scheme_Continuation_Jump_State *cjs, struct NewGC *gc)
 {
-  gcMARK(cjs->jumping_to_continuation);
-  gcMARK(cjs->val);
+  gcMARK2(cjs->jumping_to_continuation, gc);
+  gcMARK2(cjs->val, gc);
 }
 
-static void FIXUP_cjs(Scheme_Continuation_Jump_State *cjs)
+static void FIXUP_cjs(Scheme_Continuation_Jump_State *cjs, struct NewGC *gc)
 {
-  gcFIXUP(cjs->jumping_to_continuation);
-  gcFIXUP(cjs->val);
+  gcFIXUP2(cjs->jumping_to_continuation, gc);
+  gcFIXUP2(cjs->val, gc);
 }
 
-static void MARK_stack_state(Scheme_Stack_State *ss)
-{
-}
-
-static void FIXUP_stack_state(Scheme_Stack_State *ss)
+static void MARK_stack_state(Scheme_Stack_State *ss, struct NewGC *gc)
 {
 }
 
-static void MARK_jmpup(Scheme_Jumpup_Buf *buf)
+static void FIXUP_stack_state(Scheme_Stack_State *ss, struct NewGC *gc)
 {
-  gcMARK(buf->stack_copy);
-  gcMARK(buf->cont);
-  gcMARK(buf->external_stack);
+}
+
+static void MARK_jmpup(Scheme_Jumpup_Buf *buf, struct NewGC *gc)
+{
+  gcMARK2(buf->stack_copy, gc);
+  gcMARK2(buf->cont, gc);
+  gcMARK2(buf->external_stack, gc);
 
   /* IMPORTANT: the buf->stack_copy pointer must be the only instance
      of this stack to be traversed. If you copy a jmpup buffer (as in
      fun.c), don't let a GC happen until the old copy is zeroed
      out. */
   if (buf->stack_copy)
-    GC_mark_variable_stack(buf->gc_var_stack,
-			   (long)buf->stack_copy - (long)buf->stack_from,
-			   /* FIXME: stack direction */
-			   (char *)buf->stack_copy + buf->stack_size,
-                           buf->stack_copy);
+    GC_mark2_variable_stack(buf->gc_var_stack,
+                            (long)buf->stack_copy - (long)buf->stack_from,
+                            /* FIXME: stack direction */
+                            (char *)buf->stack_copy + buf->stack_size,
+                            buf->stack_copy,
+                            gc);
 }
 
-static void FIXUP_jmpup(Scheme_Jumpup_Buf *buf)
+static void FIXUP_jmpup(Scheme_Jumpup_Buf *buf, struct NewGC *gc)
 {
   void *new_stack;
 
   new_stack = GC_resolve(buf->stack_copy);
-  gcFIXUP_TYPED_NOW(void *, buf->stack_copy);
-  gcFIXUP(buf->cont);
-  gcFIXUP(buf->external_stack);
+  gcFIXUP2_TYPED_NOW(void *, buf->stack_copy, gc);
+  gcFIXUP2(buf->cont, gc);
+  gcFIXUP2(buf->external_stack, gc);
 
   if (buf->stack_copy)
-    GC_fixup_variable_stack(buf->gc_var_stack,
-			    (long)new_stack - (long)buf->stack_from,
-			    /* FIXME: stack direction */
-			    (char *)new_stack + buf->stack_size,
-                            new_stack);
+    GC_fixup2_variable_stack(buf->gc_var_stack,
+                             (long)new_stack - (long)buf->stack_from,
+                             /* FIXME: stack direction */
+                             (char *)new_stack + buf->stack_size,
+                             new_stack,
+                             gc);
 }
 
 #define RUNSTACK_ZERO_VAL NULL

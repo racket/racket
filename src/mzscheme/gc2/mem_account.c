@@ -43,12 +43,12 @@ inline static void BTC_register_thread(void *t, void *c)
 inline static void mark_threads(NewGC *gc, int owner)
 {
   GC_Thread_Info *work;
-  Mark_Proc thread_mark = gc->mark_table[btc_redirect_thread];
+  Mark2_Proc thread_mark = gc->mark_table[btc_redirect_thread];
 
   for(work = gc->thread_infos; work; work = work->next)
     if(work->owner == owner) {
       if (((Scheme_Thread *)work->thread)->running) {
-        thread_mark(work->thread);
+        thread_mark(work->thread, gc);
         if (work->thread == scheme_current_thread) {
           GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
         }
@@ -275,7 +275,7 @@ inline static void mark_cust_boxes(NewGC *gc, Scheme_Custodian *cur)
 {
   Scheme_Object *pr, *prev = NULL, *next;
   GC_Weak_Box *wb;
-  Mark_Proc cust_box_mark = gc->mark_table[btc_redirect_cust_box];
+  Mark2_Proc cust_box_mark = gc->mark_table[btc_redirect_cust_box];
 
   /* cust boxes is a list of weak boxes to cust boxes */
 
@@ -284,7 +284,7 @@ inline static void mark_cust_boxes(NewGC *gc, Scheme_Custodian *cur)
     wb = (GC_Weak_Box *)SCHEME_CAR(pr);
     next = SCHEME_CDR(pr);
     if (wb->val) {
-      cust_box_mark(wb->val);
+      cust_box_mark(wb->val, gc);
       prev = pr;
     } else {
       if (prev)
@@ -298,34 +298,31 @@ inline static void mark_cust_boxes(NewGC *gc, Scheme_Custodian *cur)
   cur->checked_cust_boxes = cur->num_cust_boxes;
 }
 
-int BTC_thread_mark(void *p)
+int BTC_thread_mark(void *p, struct NewGC *gc)
 {
-  NewGC *gc = GC_get_GC();
   if (gc->doing_memory_accounting) {
     return OBJPTR_TO_OBJHEAD(p)->size;
   }
-  return gc->mark_table[btc_redirect_thread](p);
+  return gc->mark_table[btc_redirect_thread](p, gc);
 }
 
-int BTC_custodian_mark(void *p)
+int BTC_custodian_mark(void *p, struct NewGC *gc)
 {
-  NewGC *gc = GC_get_GC();
   if (gc->doing_memory_accounting) {
     if(custodian_to_owner_set(gc, p) == gc->current_mark_owner)
-      return gc->mark_table[btc_redirect_custodian](p);
+      return gc->mark_table[btc_redirect_custodian](p, gc);
     else
       return OBJPTR_TO_OBJHEAD(p)->size;
   }
-  return gc->mark_table[btc_redirect_custodian](p);
+  return gc->mark_table[btc_redirect_custodian](p, gc);
 }
 
-int BTC_cust_box_mark(void *p)
+int BTC_cust_box_mark(void *p, struct NewGC *gc)
 {
-  NewGC *gc = GC_get_GC();
   if (gc->doing_memory_accounting) {
     return OBJPTR_TO_OBJHEAD(p)->size;
   }
-  return gc->mark_table[btc_redirect_cust_box](p);
+  return gc->mark_table[btc_redirect_cust_box](p, gc);
 }
 
 static void btc_overmem_abort(NewGC *gc)
@@ -338,12 +335,11 @@ static void btc_overmem_abort(NewGC *gc)
 static void propagate_accounting_marks(NewGC *gc)
 {
   void *p;
-  PageMap pagemap = gc->page_maps;
-  Mark_Proc *mark_table = gc->mark_table;
+  Mark2_Proc *mark_table = gc->mark_table;
 
   while(pop_ptr(gc, &p) && !gc->kill_propagation_loop) {
     /* GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p)); */
-    propagate_marks_worker(pagemap, mark_table, p); 
+    propagate_marks_worker(gc, mark_table, p); 
   }
   if(gc->kill_propagation_loop)
     reset_pointer_stack(gc);

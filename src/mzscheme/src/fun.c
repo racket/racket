@@ -2898,21 +2898,28 @@ Scheme_Object *scheme_make_arity(mzshort mina, mzshort maxa)
   }
 }
 
-static Scheme_Object *clone_arity(Scheme_Object *a)
+static Scheme_Object *clone_arity(Scheme_Object *a, int delta)
 {
   if (SCHEME_PAIRP(a)) {
     Scheme_Object *m, *l;
     m = scheme_copy_list(a);
     for (l = m; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-      a = clone_arity(SCHEME_CAR(l));
+      a = clone_arity(SCHEME_CAR(l), delta);
       SCHEME_CAR(l) = a;
     }
     return m;
   } else if (SCHEME_CHAPERONE_STRUCTP(a)) {
     Scheme_Object *p[1];
-    p[0] = scheme_struct_ref(a, 0);
+    a = scheme_struct_ref(a, 0);
+    if (delta)
+      a = scheme_bin_minus(a, scheme_make_integer(delta));
+    p[0] = a;
     return scheme_make_struct_instance(scheme_arity_at_least, 1, p);
-  } else
+  } else if (SCHEME_NULLP(a))
+    return a;
+  else if (delta)
+    return scheme_bin_minus(a, scheme_make_integer(delta));
+  else
     return a;
 }
 
@@ -2996,10 +3003,13 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a, Scheme_Object
     int is_method;
     if (scheme_reduced_procedure_struct
         && scheme_is_struct_instance(scheme_reduced_procedure_struct, p)) {
-      if (a >= 0)
+      if (a >= 0) {
         bign = scheme_make_integer(a);
+        if (drop)
+          bign = scheme_bin_plus(bign, scheme_make_integer(a));
+      }
       if (a == -1)
-        return clone_arity(((Scheme_Structure *)p)->slots[1]);
+        return clone_arity(((Scheme_Structure *)p)->slots[1], drop);
       else {
         /* Check arity (or for varargs) */
         Scheme_Object *v;
@@ -3836,7 +3846,7 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
      lists that include arity-at-least records. */
 
   orig = get_or_check_arity(argv[0], -1, NULL);
-  aty = clone_arity(argv[1]);
+  aty = clone_arity(argv[1], 0);
 
   if (!is_subarity(aty, orig)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,

@@ -1,4 +1,5 @@
 Version 4.2.5, March 2010
+Added scheme/future, enabled by default on main platforms
 Changed module to wrap each body expression in a prompt
 Changed define-cstruct to bind type name for struct-out, etc.
 
