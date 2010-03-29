@@ -4,6 +4,7 @@
          schemeunit/text-ui
          "all-schemeunit-tests.ss")
 
-;(run-tests all-schemeunit-tests)
+(run-tests all-schemeunit-tests)
 
-(run-tests success-and-failure-tests)
+;; Don't run the failing tests by default. Switch the comments if you want to inspect the visual appearance of failing test's output.
+;(run-tests success-and-failure-tests)

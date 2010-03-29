@@ -41,6 +41,7 @@
    format-tests
    ))
 
+;; These tests fail. The are intended to do this so a human can manually check the output they produce. They should not be run by DrDr as they will generate bogus warnings.
 (define success-and-failure-tests
   (test-suite
    "Successes and Failures"

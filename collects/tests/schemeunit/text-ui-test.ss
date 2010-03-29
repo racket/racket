@@ -1,5 +1,5 @@
 ;;;
-;;; Time-stamp: <2008-07-31 10:11:42 noel>
+;;; Time-stamp: <2010-03-29 13:56:54 noel>
 ;;;
 ;;; Copyright (C) 2005 by Noel Welsh.
 ;;;
@@ -48,12 +48,22 @@
          expr ...)
        (get-output-string p))]))
 
+(define-syntax with-error-to-string
+  (syntax-rules ()
+    [(with-error-to-string expr ...)
+     (let ([p (open-output-string)])
+       (parameterize ([current-error-port p])
+         expr ...)
+       (get-output-string p))]))
+
 (define-runtime-path here ".")
 
 ;; with-silent-output (() -> any) -> any
 (define (with-silent-output thunk)
-  (let ((op (open-output-string)))
-    (parameterize ((current-output-port op))
+  (let ([out  (open-output-string)]
+        [err (open-output-string)])
+    (parameterize ([current-output-port out]
+                   [current-error-port err])
       (thunk))))
 
 (define (failing-test)
@@ -99,7 +109,7 @@
    
    (test-case
     "Binary check displays actual and expected in failure error message"
-    (let ((op (with-output-to-string (failing-test))))
+    (let ((op (with-error-to-string (failing-test))))
       (check string-contains
              op
              "expected")
@@ -109,14 +119,14 @@
    
    (test-case
     "Binary check doesn't display params"
-    (let ((op (with-output-to-string (failing-test))))
+    (let ((op (with-error-to-string (failing-test))))
       (check (lambda (out str) (not (string-contains out str)))
              op
              "params")))
    
    (test-case
     "Binary check output is pretty printed"
-    (let ([op (with-output-to-string (failing-binary-test/complex-params))])
+    (let ([op (with-error-to-string (failing-binary-test/complex-params))])
       (check string-contains
              op
              "((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
@@ -125,7 +135,7 @@
    
    (test-case
     "Non-binary check output is pretty printed"
-    (let ([op (with-output-to-string (failing-test/complex-params))])
+    (let ([op (with-error-to-string (failing-test/complex-params))])
       (check string-contains
              op
              "((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
@@ -135,14 +145,14 @@
    (test-case
     "Location trimmed when file is under current directory"
     (parameterize ((current-directory here))
-      (let ((op (with-output-to-string (failing-test))))
+      (let ((op (with-error-to-string (failing-test))))
         (check string-contains
                op
                "location:   text-ui-test.ss"))))
    
    (test-case
     "Name and location displayed before actual/expected"
-    (let ((op (with-output-to-string (failing-test))))
+    (let ((op (with-error-to-string (failing-test))))
       (let ((name-idx (string-contains op "name:"))
             (loc-idx (string-contains op "location:"))
             (actual-idx (string-contains op "actual:"))
@@ -153,14 +163,11 @@
    
    (test-case
     "Quiet mode is quiet"
-    (let ((op1 (with-output-to-string (quiet-failing-test)))
-          (op2 (with-output-to-string (quiet-error-test))))
-      (check string=?
-             op1
-             "0 success(es) 1 failure(s) 0 error(s) 1 test(s) run\n")
-      (check string=?
-             op2
-             "0 success(es) 0 failure(s) 1 error(s) 1 test(s) run\n")))
+    (let ((op1 (with-error-to-string (quiet-failing-test)))
+          (op2 (with-error-to-string (quiet-error-test))))
+      (check string=? op1 "")
+      (check string=? op2 "")))
+
    (test-case
     "Number of unsuccessful tests returned"
     (check-equal? (with-silent-output failing-test) 1)
