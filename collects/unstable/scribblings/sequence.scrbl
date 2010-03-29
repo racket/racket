@@ -28,7 +28,7 @@ Produces a sequence equivalent to @scheme[(syntax->list lst)].
 
 @defproc[(in-pairs [seq sequence?]) sequence?]{
 Produces a sequence equivalent to
- @scheme[(in-parallel (lift car seq) (lift cdr seq))].
+ @scheme[(in-parallel (sequence-lift car seq) (sequence-lift cdr seq))].
 }
 
 @defproc[(in-sequence-forever [seq sequence?] [val any/c]) sequence?]{
@@ -37,4 +37,7 @@ Produces a sequence whose values are the elements of @scheme[seq], followed by @
 
 @defproc[(sequence-lift [f procedure?] [seq sequence?]) sequence?]{
 Produces the sequence of @scheme[f] applied to each element of @scheme[seq].
+@examples[#:eval the-eval
+(for/list ([x (sequence-lift add1 (in-range 10))])
+  x)]
 }

@@ -37,7 +37,7 @@
   (make-do-sequence
    (lambda ()
      (let-values ([(more? gen) (sequence-generate seq)])
-       (values (lambda (e) (compose f gen))
+       (values (lambda (e) (f (gen)))
                (lambda (_) #t)
                #t
                (lambda (_) (more?))
