@@ -1076,7 +1076,7 @@
 
   ; the three string constants are concatenated together and the middle
   ; one is hyperlinked to the dialog that suggests various languages
-  (get-guidance-before "Choisissez l'entrée Sélectionner le langage...” dans le menu Langage, ou ")
+  (get-guidance-before "Choisissez l'entrée \"Sélectionner le langage...\" dans le menu \"Langage\", ou ")
   (get-guidance-during "recevez de l'aide")
   (get-guidance-after ".")
   
