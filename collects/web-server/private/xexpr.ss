@@ -95,7 +95,11 @@
       l)]))
 
 (define (format-elements l)
-  (map format-xexpr l))
+  (if (list? l)
+      (map format-xexpr l)
+      (mark-error
+       "Expected a list of elements"
+       l)))
 
 (define (format-attributes l)
   (match l
