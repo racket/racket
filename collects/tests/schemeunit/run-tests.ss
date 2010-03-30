@@ -6,5 +6,7 @@
 
 (run-tests all-schemeunit-tests)
 
-;; Don't run the failing tests by default. Switch the comments if you want to inspect the visual appearance of failing test's output.
-;(run-tests success-and-failure-tests)
+;; These tests should all error, so we switch the meaning of correct and incorrect. If the error display changes significantly, DrDr will catch it
+(parameterize ([current-error-port (current-output-port)]
+               [current-output-port (current-error-port)])
+  (run-tests failure-tests))

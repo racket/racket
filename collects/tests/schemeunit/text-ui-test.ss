@@ -29,6 +29,8 @@
 #lang scheme/base
 
 (require scheme/runtime-path
+         scheme/pretty
+         scheme/port
          srfi/1
          srfi/13
          schemeunit
@@ -36,35 +38,22 @@
 
 (provide text-ui-tests)
 
+(define-syntax-rule (with-all-output-to-string e ...)
+  (with-all-output-to-string* (lambda () e ...)))
 
-;; Reimplement with-output-to-string to avoid dependency on
-;; io.plt, which in turn depends on SchemeUnit 1.2, which
-;; has not been ported to PLT 4.
-(define-syntax with-output-to-string
-  (syntax-rules ()
-    [(with-output-to-string expr ...)
-     (let ([p (open-output-string)])
-       (parameterize ([current-output-port p])
-         expr ...)
-       (get-output-string p))]))
-
-(define-syntax with-error-to-string
-  (syntax-rules ()
-    [(with-error-to-string expr ...)
-     (let ([p (open-output-string)])
-       (parameterize ([current-error-port p])
-         expr ...)
-       (get-output-string p))]))
+(define (with-all-output-to-string* thnk)
+  (with-output-to-string
+      (lambda ()
+        (parameterize ([current-error-port (current-output-port)])
+          (thnk)))))
 
 (define-runtime-path here ".")
 
 ;; with-silent-output (() -> any) -> any
 (define (with-silent-output thunk)
-  (let ([out  (open-output-string)]
-        [err (open-output-string)])
-    (parameterize ([current-output-port out]
-                   [current-error-port err])
-      (thunk))))
+  (parameterize ([current-output-port (open-output-nowhere)]
+                 [current-error-port (open-output-nowhere)])
+    (thunk)))
 
 (define (failing-test)
   (run-tests
@@ -109,7 +98,7 @@
    
    (test-case
     "Binary check displays actual and expected in failure error message"
-    (let ((op (with-error-to-string (failing-test))))
+    (let ((op (with-all-output-to-string (failing-test))))
       (check string-contains
              op
              "expected")
@@ -119,14 +108,15 @@
    
    (test-case
     "Binary check doesn't display params"
-    (let ((op (with-error-to-string (failing-test))))
+    (let ((op (with-all-output-to-string (failing-test))))
       (check (lambda (out str) (not (string-contains out str)))
              op
              "params")))
    
    (test-case
     "Binary check output is pretty printed"
-    (let ([op (with-error-to-string (failing-binary-test/complex-params))])
+    (let ([op (parameterize ([pretty-print-columns 80])
+                (with-all-output-to-string (failing-binary-test/complex-params)))])
       (check string-contains
              op
              "((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
@@ -135,7 +125,8 @@
    
    (test-case
     "Non-binary check output is pretty printed"
-    (let ([op (with-error-to-string (failing-test/complex-params))])
+    (let ([op (parameterize ([pretty-print-columns 80])
+                (with-all-output-to-string (failing-test/complex-params)))])
       (check string-contains
              op
              "((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
@@ -145,14 +136,14 @@
    (test-case
     "Location trimmed when file is under current directory"
     (parameterize ((current-directory here))
-      (let ((op (with-error-to-string (failing-test))))
+      (let ((op (with-all-output-to-string (failing-test))))
         (check string-contains
                op
                "location:   text-ui-test.ss"))))
    
    (test-case
     "Name and location displayed before actual/expected"
-    (let ((op (with-error-to-string (failing-test))))
+    (let ((op (with-all-output-to-string (failing-test))))
       (let ((name-idx (string-contains op "name:"))
             (loc-idx (string-contains op "location:"))
             (actual-idx (string-contains op "actual:"))
@@ -163,65 +154,71 @@
    
    (test-case
     "Quiet mode is quiet"
-    (let ((op1 (with-error-to-string (quiet-failing-test)))
-          (op2 (with-error-to-string (quiet-error-test))))
+    (let ((op1 (with-all-output-to-string (quiet-failing-test)))
+          (op2 (with-all-output-to-string (quiet-error-test))))
       (check string=? op1 "")
       (check string=? op2 "")))
-
+   
    (test-case
     "Number of unsuccessful tests returned"
     (check-equal? (with-silent-output failing-test) 1)
     (check-equal? (with-silent-output quiet-failing-test) 1)
     (check-equal? (with-silent-output quiet-error-test) 1)
     (check-equal? (with-silent-output
-                   (lambda ()
-                     (run-tests
-                      (test-suite
-                       "Dummy"
-                       (test-case "Dummy" (check-equal? 1 1)))
-                      'quiet)))
+                      (lambda ()
+                        (run-tests
+                         (test-suite
+                          "Dummy"
+                          (test-case "Dummy" (check-equal? 1 1)))
+                         'quiet)))
                   0))
    
    (test-case
     "run-tests runs suite before/after actions in quiet mode"
-    (let ([foo 1])
-      (run-tests
-       (test-suite
-        "Foo"
-        #:before (lambda () (set! foo 2))
-        #:after (lambda () (set! foo 3))
-        (test-case
-         "Foo check"
-         (check = foo 2)))
-       'quiet)
-      (check = foo 3)))
+    (with-silent-output
+        (λ ()
+          (let ([foo 1])
+            (run-tests
+             (test-suite
+              "Foo"
+              #:before (lambda () (set! foo 2))
+              #:after (lambda () (set! foo 3))
+              (test-case
+               "Foo check"
+               (check = foo 2)))
+             'quiet)
+            (check = foo 3)))))
    
    (test-case
     "run-tests runs suite before/after actions in normal mode"
-    (let ([foo 1])
-      (run-tests
-       (test-suite
-        "Foo"
-        #:before (lambda () (set! foo 2))
-        #:after (lambda () (set! foo 3))
-        (test-case
-         "Foo check"
-         (check = foo 2)))
-       'normal)
-      (check = foo 3)))
+    (with-silent-output
+        (λ ()
+          (let ([foo 1])
+            (run-tests
+             (test-suite
+              "Foo"
+              #:before (lambda () (set! foo 2))
+              #:after (lambda () (set! foo 3))
+              (test-case
+               "Foo check"
+               (check = foo 2)))
+             'normal)
+            (check = foo 3)))))
    
    (test-case
     "run-tests runs suite before/after actions in verbose mode"
-    (let ([foo 1])
-      (run-tests
-       (test-suite
-        "Foo"
-        #:before (lambda () (set! foo 2))
-        #:after (lambda () (set! foo 3))
-        (test-case
-         "Foo check"
-         (check = foo 2)))
-       'verbose)
-      (check = foo 3)))
+    (with-silent-output
+        (λ ()
+          (let ([foo 1])
+            (run-tests
+             (test-suite
+              "Foo"
+              #:before (lambda () (set! foo 2))
+              #:after (lambda () (set! foo 3))
+              (test-case
+               "Foo check"
+               (check = foo 2)))
+             'verbose)
+            (check = foo 3)))))
    ))
 
