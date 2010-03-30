@@ -7994,7 +7994,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       int simple, constval, can_delay_vec, can_delay_index;
       int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
       int pushed, flonum_arg;
-      int can_chaperone, for_struct = 0;
+      int can_chaperone = 1, for_struct = 0;
 
       if (IS_NAMED_PRIM(rator, "vector-set!"))
 	which = 0;
@@ -11848,7 +11848,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->key, JIT_R0, JIT_R1);
     jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(0));
     jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->val, JIT_R0, JIT_R1);
-    jit_movi_p(JIT_R1, NULL);
+    (void)jit_movi_p(JIT_R1, NULL);
     jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->cache, JIT_R0, JIT_R1);
     ref5 = jit_jmpi(jit_forward());
     CHECK_LIMIT();
