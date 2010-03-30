@@ -2880,9 +2880,34 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
      in optimize_for_inline() after optimizing a rator. */
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_compiled_let_void_type)) {
     Scheme_Let_Header *head = (Scheme_Let_Header *)rator;
-    Scheme_Compiled_Let_Value *clv = NULL;
+    Scheme_Compiled_Let_Value *clv;
     int i;
 
+    /* Handle ((let ([f ...]) f) arg ...) specially, so we can
+       adjust the flags for `f': */
+    if ((head->count == 1) && (head->num_clauses == 1)) {
+      clv = (Scheme_Compiled_Let_Value *)head->body;
+      rator = clv->body;
+      if (SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)
+          && (SCHEME_LOCAL_POS(rator) == 0)
+          && scheme_is_compiled_procedure(clv->value, 1, 1)) {
+        
+        reset_rator(app, scheme_false);
+        app = scheme_optimize_shift(app, 1, 0);
+        reset_rator(app, scheme_make_local(scheme_local_type, 0, 0));
+
+        clv->body = app;
+        
+        if (clv->flags[0] & SCHEME_WAS_APPLIED_EXCEPT_ONCE) {
+          clv->flags[0] -= SCHEME_WAS_APPLIED_EXCEPT_ONCE;
+          clv->flags[0] |= SCHEME_WAS_ONLY_APPLIED;
+        }
+        
+        return scheme_optimize_expr((Scheme_Object *)head, info, context);
+      }
+    }
+
+    clv = NULL;
     rator = head->body;
     for (i = head->num_clauses; i--; ) {
       clv = (Scheme_Compiled_Let_Value *)rator;
