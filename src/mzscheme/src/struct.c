@@ -3518,7 +3518,7 @@ static Scheme_Object *add_struct_type_chaperone_guards(Scheme_Object *o, Scheme_
   return scheme_make_pair(orig_guard, first);
 }
 
-static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base, int blen,
+static Scheme_Object *_make_struct_type(Scheme_Object *base,
 					Scheme_Object *parent,
 					Scheme_Object *inspector,
 					int num_fields,
@@ -3554,14 +3554,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
     struct_type->parent_types[j] = parent_type->parent_types[j];
   }
 
-  {
-    Scheme_Object *tn;
-    if (basesym)
-      tn = basesym;
-    else
-      tn = scheme_intern_exact_symbol(base, blen);
-    struct_type->name = tn;
-  }
+  struct_type->name = base;
+
   struct_type->num_slots = num_fields + num_uninit_fields + (parent_type ? parent_type->num_slots : 0);
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
   if (parent_type)
@@ -3856,7 +3850,7 @@ Scheme_Object *scheme_make_struct_type(Scheme_Object *base,
 				       Scheme_Object *properties,
 				       Scheme_Object *guard)
 {
-  return _make_struct_type(base, NULL, 0,
+  return _make_struct_type(base,
 			   parent, inspector, 
 			   num_fields, num_uninit,
 			   uninit_val, properties, 
@@ -3872,7 +3866,7 @@ Scheme_Object *scheme_make_proc_struct_type(Scheme_Object *base,
                                             Scheme_Object *proc_attr,
                                             Scheme_Object *guard)
 {
-  return _make_struct_type(base, NULL, 0,
+  return _make_struct_type(base,
 			   parent, inspector, 
 			   num_fields, num_uninit,
 			   uninit_val, scheme_null, 
@@ -3887,6 +3881,7 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 						   Scheme_Object *guard,
 						   int immutable)
 {
+  Scheme_Object *basesym;
   Scheme_Object *imm = scheme_null;
   int i;
 
@@ -3896,7 +3891,9 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
     }
   }
 
-  return _make_struct_type(NULL, base, strlen(base),
+  basesym = scheme_intern_exact_symbol(base, strlen(base));
+
+  return _make_struct_type(basesym,
 			   parent, scheme_false, 
 			   num_fields, 0, 
 			   NULL, props, 
@@ -4070,7 +4067,7 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
     }
   }
 
-  type = (Scheme_Struct_Type *)_make_struct_type(argv[0], NULL, 0, 
+  type = (Scheme_Struct_Type *)_make_struct_type(argv[0],
 						 SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
 						 inspector,
 						 initc, uninitc,
@@ -4274,7 +4271,7 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
     if (parent && (icnt + parent->num_slots > MAX_STRUCT_FIELD_COUNT))
       return NULL;
 
-    parent = (Scheme_Struct_Type *)_make_struct_type(name, NULL, 0, 
+    parent = (Scheme_Struct_Type *)_make_struct_type(name,
                                                      (Scheme_Object *)parent,
                                                      scheme_false,
                                                      icnt, ucnt,
