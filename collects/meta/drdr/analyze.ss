@@ -107,6 +107,7 @@
  [responsible-ht-id->str (hash/c symbol? string?)]
  [responsible-ht-difference (responsible-ht/c responsible-ht/c . -> . responsible-ht/c)])  
   
+(define ERROR-LIMIT 50)
 (define (notify cur-rev 
                 start end
                 duration
@@ -174,7 +175,8 @@
                                        (if (empty? paths)
                                            empty
                                            (list (format "\t~a" id)
-                                                 (for/list ([f (in-list paths)])
+                                                 (for/list ([f (in-list paths)]
+                                                            [i (in-range ERROR-LIMIT)])
                                                    (format "\t\t~a" (path->url f)))
                                                  ""))))
                                    "")
@@ -185,7 +187,8 @@
                                        (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
                                                   #:when (not (symbol=? id 'changes)))
                                          (list (format "\t~a:" id)
-                                               (for/list ([f (in-list files)])
+                                               (for/list ([f (in-list files)]
+                                                          [i (in-range ERROR-LIMIT)])
                                                  (format "\t\t~a" (path->url f)))
                                                ""))
                                       ""))))))
