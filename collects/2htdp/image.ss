@@ -46,12 +46,14 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 |#
 
 
-(require "../mrlib/image-core.ss"
+(require (except-in "../mrlib/image-core.ss" make-color make-pen)
          "private/image-more.ss"
          "private/img-err.ss"
+         (only-in lang/prim provide-primitive provide-primitives define-primitive)
          htdp/error)
 
-(provide overlay
+(provide-primitives
+         overlay
          overlay/align
          overlay/xy
          underlay
@@ -93,7 +95,6 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          scene+curve
          text
          text/font
-         bitmap
          
          x-place?
          y-place?
@@ -105,12 +106,23 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          pen-style? 
          pen-cap?
          pen-join?
-         (rename-out [build-color make-color])
          color-red color-blue color-green color? color
-         
-         (rename-out [build-pen make-pen])
          pen-color pen-width pen-style pen-cap pen-join pen
 
          image-width
          image-height
-         image-baseline)
+         image-baseline
+         
+         make-color
+         make-pen
+         )
+
+(provide bitmap)
+
+
+(define-primitive make-color build-color)
+(define-primitive make-pen build-pen)
+
+#;
+(provide (rename-out [build-color make-color])
+         (rename-out [build-pen make-pen]))

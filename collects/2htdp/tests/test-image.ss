@@ -38,7 +38,8 @@
          (only-in "../private/image-more.ss" 
                   bring-between
                   swizzle)
-         "../private/img-err.ss"
+         (only-in "../private/img-err.ss" image-snip->image)
+         ; "../private/img-err.ss"
          "../../mrlib/private/image-core-bitmap.ss"
          lang/posn
          scheme/math

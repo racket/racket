@@ -11,10 +11,7 @@
    -- what if the initial world or universe state is omitted? the error message is bad then. 
 |#
 
-(require (for-syntax "private/syn-aux.ss"
-                     scheme/function
-                     #;
-                     (rename-in lang/prim (first-order->higher-order f2h)))
+(require (for-syntax "private/syn-aux.ss" scheme/function)
          "private/syn-aux-aux.ss" 
          "private/syn-aux.ss"
          "private/check-aux.ss"
@@ -26,8 +23,9 @@
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
 
-(provide 
- (rename-out (make-stop-the-world stop-with))) ;; World -> STOP
+(define-primitive stop-with make-stop-the-world)
+
+(provide stop-with) ;; World -> STOP
 
 (provide
  launch-many-worlds
@@ -35,7 +33,7 @@
  ;; run expressions e1 through e2 in parallel, produce all values in same order
  )
 
-(provide
+(provide-primitive
  sexp?  ;; Any -> Boolean 
  )
 
@@ -71,6 +69,9 @@
 ;                                     
 
 (provide big-bang     ;; <syntax> : see below 
+         )
+
+(provide-primitives
          make-package ;; World Sexp -> Package
          package?     ;; Any -> Boolean 
          run-movie    ;; [Listof Image] -> true 
@@ -235,7 +236,7 @@
 ;                                                          
 ;                                                          
 
-(provide
+(provide-primitives
  ;; type World 
  iworld?    ;; Any -> Boolean 
  iworld=?   ;; World World -> Boolean 
