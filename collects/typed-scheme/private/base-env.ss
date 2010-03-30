@@ -651,7 +651,9 @@
 ;; unsafe
 
 [unsafe-vector-ref (-poly (a) ((-vec a) -Nat . -> . a))]
+[unsafe-vector*-ref (-poly (a) ((-vec a) -Nat . -> . a))]
 [unsafe-vector-length (-poly (a) ((-vec a) . -> . -Nat))]
+[unsafe-vector*-length (-poly (a) ((-vec a) . -> . -Nat))]
 [unsafe-car (-poly (a b) 
               (cl->*
                (->acc (list (-pair a b)) a (list -car))))]
