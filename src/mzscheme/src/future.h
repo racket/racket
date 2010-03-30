@@ -37,6 +37,7 @@ typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
 #define FSRC_OTHER 0
 #define FSRC_RATOR 1
 #define FSRC_PRIM 2
+#define FSRC_MARKS 3
 
 typedef struct future_t {
   Scheme_Object so;
@@ -50,7 +51,7 @@ typedef struct future_t {
   Scheme_Object *orig_lambda;
   void *code;
 
-  //Runtime call stuff
+  /* Runtime call stuff */
   int rt_prim; /* flag to indicate waiting for a prim call */
   int rt_prim_is_atomic;
   double time_of_request;
@@ -76,6 +77,7 @@ typedef struct future_t {
   Scheme_Object *arg_s2;
   Scheme_Object **arg_S2;
   int arg_i2;
+  Scheme_Thread *arg_p;
 
   Scheme_Object *retval_s;
   void *retval_p; /* use only with conservative GC */
@@ -97,12 +99,12 @@ typedef struct future_t {
   struct future_t *next_waiting_atomic;
 } future_t;
 
-//Primitive instrumentation stuff 
+/* Primitive instrumentation stuff */
 
-//Signature flags for primitive invocations
-//Here the convention is SIG_[arg1type]_[arg2type]..._[return type]
-#define SIG_VOID_VOID_3ARGS 1 						//void -> void, copy 3 args from runstack
-#define SIG_ALLOC 2 						//void -> void*
+/* Signature flags for primitive invocations */
+#define SIG_VOID_VOID_3ARGS    1
+#define SIG_ALLOC              2
+#define SIG_ALLOC_MARK_SEGMENT 3
 
 # include "jit_ts_protos.h"
 
@@ -120,6 +122,7 @@ extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 
 extern void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f);
 extern unsigned long scheme_rtcall_alloc(const char *who, int src_type);
+extern void scheme_rtcall_new_mark_segment(Scheme_Thread *p);
 
 #else 
 

@@ -8,6 +8,7 @@
          scheme/contract
          scheme/unit
          scheme/runtime-path
+         (for-template scheme/base)
          (for-syntax scheme/base))
 
 (define oprintf

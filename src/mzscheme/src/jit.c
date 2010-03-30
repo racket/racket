@@ -170,6 +170,7 @@ SHARED_OK static void *finish_tail_call_code, *finish_tail_call_fixup_code;
 SHARED_OK static void *module_run_start_code, *module_exprun_start_code, *module_start_start_code;
 SHARED_OK static void *box_flonum_from_stack_code;
 SHARED_OK static void *fl1_fail_code, *fl2rr_fail_code[2], *fl2fr_fail_code[2], *fl2rf_fail_code[2];
+SHARED_OK static void *wcm_code, *wcm_nontail_code;
 
 typedef struct {
   MZTAG_IF_REQUIRED
@@ -828,7 +829,7 @@ static void raise_bad_call_with_values(Scheme_Object *f)
 
 static Scheme_Object *call_with_values_from_multiple_result(Scheme_Object *f)
 {
-    Scheme_Thread *p = scheme_current_thread;
+  Scheme_Thread *p = scheme_current_thread;
   if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
     p->values_buffer = NULL;
   return _scheme_apply(f, p->ku.multiple.count, p->ku.multiple.array);
@@ -836,7 +837,7 @@ static Scheme_Object *call_with_values_from_multiple_result(Scheme_Object *f)
 
 static Scheme_Object *call_with_values_from_multiple_result_multi(Scheme_Object *f)
 {
-    Scheme_Thread *p = scheme_current_thread;
+  Scheme_Thread *p = scheme_current_thread;
   if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
     p->values_buffer = NULL;
   return _scheme_apply_multi(f, p->ku.multiple.count, p->ku.multiple.array);
@@ -1003,7 +1004,7 @@ static void mz_pushr_p_it(mz_jit_state *jitter, int reg)
   jitter->need_set_rs = 1;
 }
 
-static void mz_popr_p_it(mz_jit_state *jitter, int reg) 
+static void mz_popr_p_it(mz_jit_state *jitter, int reg, int discard) 
 /* de-sync's rs */
 {
   int v;
@@ -1019,7 +1020,8 @@ static void mz_popr_p_it(mz_jit_state *jitter, int reg)
   else
     jitter->mappings[jitter->num_mappings] = ((v << 2) | 0x1);
 
-  mz_rs_ldr(reg);
+  if (!discard)
+    mz_rs_ldr(reg);
   mz_rs_inc(1);
 
   jitter->need_set_rs = 1;
@@ -1314,7 +1316,8 @@ static int stack_safety(mz_jit_state *jitter, int cnt, int offset)
 
 /* de-sync's rs: */
 #define mz_pushr_p(x) mz_pushr_p_it(jitter, x)
-#define mz_popr_p(x) mz_popr_p_it(jitter, x)
+#define mz_popr_p(x) mz_popr_p_it(jitter, x, 0)
+#define mz_popr_x() mz_popr_p_it(jitter, JIT_R1, 1)
 
 #if 0
 /* Debugging: at each _finish(), double-check that the runstack register has been
@@ -6197,6 +6200,7 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
       jit_ldxi_p(JIT_R1, JIT_R0, (long)&((Scheme_Chaperone *)0x0)->val);
       jit_ldxi_s(JIT_R1, JIT_R1, &((Scheme_Object *)0x0)->type);
       mz_patch_branch(ref3);
+      CHECK_LIMIT();
       __END_INNER_TINY__(branch_short);
     }
     if (lo_ty == hi_ty) {
@@ -6673,6 +6677,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         mz_patch_branch(ref);
         __END_TINY_JUMPS__(1);
       }
+      CHECK_LIMIT();
 
       if (!for_fl)
         (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_VEC_SIZE(0x0));
@@ -6768,6 +6773,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       (void)jit_calli(unbox_code);
       ref2 = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
+      CHECK_LIMIT();
       __END_TINY_JUMPS__(1);
 
       (void)jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_BOX_VAL(0x0));
@@ -9226,7 +9232,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 /* de-sync's; result goes to target */
 {
   Scheme_Type type;
-  int result_ignored, orig_target;
+  int result_ignored, orig_target, not_wmc_again;
 
 #ifdef DO_STACK_CHECK
 # include "mzstkchk.h"
@@ -9266,6 +9272,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       return 1;
     CHECK_LIMIT();
   }
+
+  not_wmc_again = !is_tail;
 
   type = SCHEME_TYPE(obj);
   switch (type) {
@@ -10179,27 +10187,23 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       /* Key: */
       generate_non_tail(wcm->key, jitter, 0, 1, 0); /* sync'd below */
+      mz_pushr_p(JIT_R0); /* sync'd below */
       CHECK_LIMIT();
-      if (SCHEME_TYPE(wcm->val) > _scheme_values_types_) {
-	/* No need to push mark onto value stack: */
-	jit_movr_p(JIT_V1, JIT_R0);
-	generate_non_tail(wcm->val, jitter, 0, 1, 0); /* sync'd below */
-	CHECK_LIMIT();
-      } else {
-	mz_pushr_p(JIT_R0);
-	generate_non_tail(wcm->val, jitter, 0, 1, 0); /* sync'd below */
-	CHECK_LIMIT();
-	mz_popr_p(JIT_V1); /* sync'd below */
-      }
+      /* Value: */
+      generate_non_tail(wcm->val, jitter, 0, 1, 0); /* sync'd below */
+      CHECK_LIMIT();
+      mz_pushr_p(JIT_R0); /* sync'd below */
 
+      /* Key and value are on runstack */
       mz_rs_sync();
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-
-      mz_prepare(2);
-      jit_pusharg_p(JIT_R0);
-      jit_pusharg_p(JIT_V1);
-      (void)mz_finish(ts_scheme_set_cont_mark);
-      CHECK_LIMIT();
+      if (not_wmc_again) {
+        (void)jit_calli(wcm_nontail_code);
+        not_wmc_again = 0;
+      } else
+        (void)jit_calli(wcm_code);
+      
+      mz_popr_x();
+      mz_popr_x();
 
       END_JIT_DATA(18);
 
@@ -11743,6 +11747,133 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 
       register_sub_func(jitter, code, scheme_false);
     }
+  }
+
+  /* wcm_[nontail_]code */
+  /* key and value are on runstack */
+  {
+    GC_CAN_IGNORE jit_insn *refloop, *ref, *ref2, *ref3, *ref4, *ref5, *ref7, *ref8;
+
+    wcm_code = jit_get_ip().ptr;
+
+    mz_prolog(JIT_R2);
+
+    (void)mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
+    /* R2 has counter for search */
+
+    refloop = _jit.x.pc;
+    (void)mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
+    jit_ldxi_i(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->cont_mark_stack_bottom);
+    ref = jit_bler_i(jit_forward(), JIT_R2, JIT_R0); /* => double-check meta-continuation */
+    CHECK_LIMIT();
+
+    jit_subi_l(JIT_R2, JIT_R2, 1);
+
+    jit_ldxi_p(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->cont_mark_stack_segments);
+    jit_rshi_l(JIT_V1, JIT_R2, SCHEME_LOG_MARK_SEGMENT_SIZE);
+    jit_lshi_l(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+    jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1); /* R0 now points to the right array */
+    CHECK_LIMIT();
+    
+    jit_andi_l(JIT_V1, JIT_R2, SCHEME_MARK_SEGMENT_MASK);
+    jit_movi_l(JIT_R1, sizeof(Scheme_Cont_Mark));
+    jit_mulr_l(JIT_V1, JIT_V1, JIT_R1);
+    jit_addr_l(JIT_R0, JIT_R0, JIT_V1);
+    CHECK_LIMIT();
+    /* R0 now points to the right record */
+    
+    (void)mz_tl_ldi_l(JIT_R1, tl_scheme_current_cont_mark_pos);
+    jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Cont_Mark *)0x0)->pos);
+    ref2 = jit_bltr_l(jit_forward(), JIT_V1, JIT_R1); /* => try to allocate new slot */
+
+    jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Cont_Mark *)0x0)->key);
+    ref3 = jit_beqr_p(jit_forward(), JIT_V1, JIT_R1); /* => found right destination */
+
+    CHECK_LIMIT();
+    (void)jit_jmpi(refloop); 
+
+    /* Double-check meta-continuation */
+    /* R1 has thread pointer */
+    mz_patch_branch(ref);
+    jit_ldxi_i(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->cont_mark_pos_bottom);
+    (void)mz_tl_ldi_l(JIT_R2, tl_scheme_current_cont_mark_pos);
+    jit_subi_l(JIT_R2, JIT_R2, 2);
+    ref = jit_bner_i(jit_forward(), JIT_R2, JIT_R0); /* => try to allocate new slot */
+    jit_ldxi_p(JIT_R1, JIT_R1, &((Scheme_Thread *)0x0)->meta_continuation);
+    ref7 = jit_beqi_l(jit_forward(), JIT_R1, NULL); /* => try to allocate new slot */
+    /* we need to check a meta-continuation... take the slow path. */
+    ref8 = jit_jmpi(jit_forward());
+    CHECK_LIMIT();
+
+    /* Entry point when we know we're not in non-tail position with respect
+       to any enclosing wcm: */
+    wcm_nontail_code = jit_get_ip().ptr;
+    mz_prolog(JIT_R2);
+
+    /* Try to allocate new slot: */
+    mz_patch_branch(ref);
+    mz_patch_branch(ref2);
+    mz_patch_branch(ref7);
+    (void)mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
+    jit_rshi_l(JIT_V1, JIT_R2, SCHEME_LOG_MARK_SEGMENT_SIZE - JIT_LOG_WORD_SIZE);
+    (void)mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
+    jit_ldxi_i(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->cont_mark_seg_count);
+    ref4 = jit_bger_i(jit_forward(), JIT_V1, JIT_R0); /* => take slow path */
+    CHECK_LIMIT();
+    
+    jit_ldxi_p(JIT_R0, JIT_R1, &((Scheme_Thread *)0x0)->cont_mark_stack_segments);
+    jit_rshi_l(JIT_V1, JIT_R2, SCHEME_LOG_MARK_SEGMENT_SIZE);
+    jit_lshi_l(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+    jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
+    CHECK_LIMIT();
+    /* R0 now points to the right array */
+    
+    jit_andi_l(JIT_V1, JIT_R2, SCHEME_MARK_SEGMENT_MASK);
+    jit_movi_l(JIT_R1, sizeof(Scheme_Cont_Mark));
+    jit_mulr_l(JIT_V1, JIT_V1, JIT_R1);
+    jit_addr_l(JIT_R0, JIT_R0, JIT_V1);
+    CHECK_LIMIT();
+    /* R0 now points to the right record */
+
+    /* Increment counter: */
+    jit_addi_l(JIT_R2, JIT_R2, 1);
+    mz_tl_sti_p(tl_scheme_current_cont_mark_stack, JIT_R2, JIT_R1);
+
+    /* Fill in record at R0: */
+    mz_patch_branch(ref3);
+    (void)mz_tl_ldi_l(JIT_R1, tl_scheme_current_cont_mark_pos);
+    jit_stxi_l(&((Scheme_Cont_Mark *)0x0)->pos, JIT_R0, JIT_R1);
+    jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->key, JIT_R0, JIT_R1);
+    jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(0));
+    jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->val, JIT_R0, JIT_R1);
+    jit_movi_p(JIT_R1, NULL);
+    jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->cache, JIT_R0, JIT_R1);
+    ref5 = jit_jmpi(jit_forward());
+    CHECK_LIMIT();
+    
+    /* slow path: */
+
+    mz_patch_branch(ref4);
+    mz_patch_ucbranch(ref8);
+    JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+    jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(0));
+    jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    CHECK_LIMIT();
+    
+    mz_prepare(2);
+    jit_pusharg_p(JIT_R0);
+    jit_pusharg_p(JIT_V1);
+    (void)mz_finish(scheme_set_cont_mark);
+    CHECK_LIMIT();
+
+    mz_patch_ucbranch(ref5);
+
+    mz_epilog(JIT_R2);
+
+    register_sub_func(jitter, wcm_code, scheme_false);
   }
 
   return 1;

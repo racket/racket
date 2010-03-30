@@ -600,6 +600,8 @@ extern Scheme_Object *scheme_apply_thread_thunk(Scheme_Object *rator);
 #define GLOB_HAS_HOME_PTR 32
 /* Scheme-level constant (cannot be changed further): */
 #define GLOB_IS_IMMUTATED 64
+/* Linked from other (cannot be undefined): */
+#define GLOB_IS_LINKED 128
 
 typedef struct {
   Scheme_Bucket bucket;
@@ -1248,6 +1250,8 @@ typedef struct Scheme_Cont_Mark {
   Scheme_Object *cache; /* chain and/or shortcut */
   MZ_MARK_POS_TYPE pos; /* Odd numbers - so they look like non-pointers */
 } Scheme_Cont_Mark;
+
+void scheme_new_mark_segment(Scheme_Thread *p);
 
 typedef struct Scheme_Cont_Mark_Chain {
   Scheme_Inclhash_Object iso; /* 0x1 => next is from different meta-continuation */
@@ -2216,6 +2220,7 @@ Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env
 				     Scheme_Object *certs, Scheme_Object *in_modidx, 
 				     Scheme_Env **_menv, int *_protected,
                                      Scheme_Object **_lexical_binding_id);
+int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o);
 Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o);
@@ -2268,7 +2273,8 @@ void scheme_delay_load_closure(Scheme_Closure_Data *data);
 Scheme_Object *scheme_compiled_void(void);
 
 Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
-						  Scheme_Compile_Info *rec, int drec);
+						  Scheme_Compile_Info *rec, int drec,
+                                                  int imported);
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 					     Scheme_Compile_Info *rec, int drec);
 void scheme_register_unsafe_in_prefix(Scheme_Comp_Env *env,

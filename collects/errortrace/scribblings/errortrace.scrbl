@@ -99,6 +99,14 @@ top-level. The functions also can be accessed by importing
 @schememodname[errortrace/errortrace-lib], which does not install any
 handlers.
 
+As a language name, @schememodname[errortrace] chains to another
+language that is specified immediately after @schememodname[at-exp],
+but instruments the module for debugging in the same way as if
+@schememodname[errortrace] is required before loading the module from
+source. Using the @schememodname[errortrace] meta-language is one way
+to ensure that debugging instrumentation is present when the module is
+compiled.}
+
 @; ---------------------------------------------
 
 @subsection[#:tag "instrumentation-and-profiling"]{Instrumentation and Profiling}

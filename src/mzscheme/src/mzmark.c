@@ -5589,6 +5589,7 @@ static int future_MARK(void *p, struct NewGC *gc) {
   gcMARK2(f->arg_S1, gc);
   gcMARK2(f->arg_s2, gc);
   gcMARK2(f->arg_S2, gc);
+  gcMARK2(f->arg_p, gc);
   gcMARK2(f->retval_s, gc);
   gcMARK2(f->retval, gc);
   gcMARK2(f->multiple_array, gc);
@@ -5612,6 +5613,7 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(f->arg_S1, gc);
   gcFIXUP2(f->arg_s2, gc);
   gcFIXUP2(f->arg_S2, gc);
+  gcFIXUP2(f->arg_p, gc);
   gcFIXUP2(f->retval_s, gc);
   gcFIXUP2(f->retval, gc);
   gcFIXUP2(f->multiple_array, gc);

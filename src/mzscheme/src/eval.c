@@ -124,6 +124,9 @@
 #include "schpriv.h"
 #include "schrunst.h"
 #include "schexpobs.h"
+#ifdef MZ_USE_FUTURES
+# include "future.h"
+#endif
 
 #ifdef USE_STACKAVAIL
 #include <malloc.h>
@@ -959,8 +962,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         && (1 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
-        /* can omit an unsafe op */
-        return 1;
+        if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info))
+          return 1;
       }
     }
     return 0;
@@ -998,8 +1001,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
-        /* can omit an unsafe op */
-        return 1;
+	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info)
+	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info))
+          return 1;
       }
     }
   }
@@ -1844,6 +1848,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 {
   Scheme_Object *modname;
   Scheme_Env *menv;
+  Scheme_Bucket *bkt;
   int self = 0;
 
   /* If it's a name id, resolve the name. */
@@ -1893,7 +1898,23 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     }
   }
 
-  return (Scheme_Object *)scheme_global_bucket(varname, menv);
+  bkt = scheme_global_bucket(varname, menv);
+  if (!self) {
+    if (!bkt->val) {
+      scheme_wrong_syntax("link", NULL, varname,
+                          "reference (phase %d) to a variable in module"
+                          " %D that is uninitialized (phase level %d); reference"
+                          " appears in module: %D", 
+                          env->phase,
+                          exprs ? SCHEME_CDR(modname) : modname,
+                          mod_phase,
+                          env->module ? env->module->modname : scheme_false);    
+    }
+    if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
+      ((Scheme_Bucket_With_Flags *)bkt)->flags |= GLOB_IS_LINKED;
+  }
+  
+  return (Scheme_Object *)bkt;
 }
 
 static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env *env,
@@ -4082,6 +4103,11 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   b = scheme_optimize_expr(wcm->body, info, scheme_optimize_tail_context(context));
 
+  if (scheme_omittable_expr(k, 1, 20, 0, info)
+      && scheme_omittable_expr(v, 1, 20, 0, info)
+      && scheme_omittable_expr(b, -1, 20, 0, info))
+    return b;
+
   /* info->single_result is already set */
   info->preserves_marks = 0;
 
@@ -4425,6 +4451,27 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       b2->fbranch = expr;
 
       return (Scheme_Object *)b2;
+    }
+  case scheme_with_cont_mark_type:
+    {
+      Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr, *wcm2;
+
+      wcm2 = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
+      wcm2->so.type = scheme_with_cont_mark_type;
+
+      expr = scheme_optimize_clone(dup_ok, wcm->key, info, delta, closure_depth);
+      if (!expr) return NULL;
+      wcm2->key = expr;
+
+      expr = scheme_optimize_clone(dup_ok, wcm->val, info, delta, closure_depth);
+      if (!expr) return NULL;
+      wcm2->val = expr;
+
+      expr = scheme_optimize_clone(dup_ok, wcm->body, info, delta, closure_depth);
+      if (!expr) return NULL;
+      wcm2->body = expr;
+
+      return (Scheme_Object *)wcm2;      
     }
   case scheme_compiled_unclosed_procedure_type:
     return scheme_clone_closure_compilation(dup_ok, expr, info, delta, closure_depth);
@@ -6590,7 +6637,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
             return scheme_extract_flfxnum(var);
           } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
                      || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type))
-	    return scheme_register_toplevel_in_prefix(var, env, rec, drec);
+	    return scheme_register_toplevel_in_prefix(var, env, rec, drec, 
+                                                      scheme_is_imported(var, env));
 	  else
 	    return var;
 	} else {
@@ -7293,7 +7341,7 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
     c = (Scheme_Object *)scheme_global_bucket(c, env->genv);
   }
 
-  return scheme_register_toplevel_in_prefix(c, env, rec, drec);
+  return scheme_register_toplevel_in_prefix(c, env, rec, drec, 0);
 }
 
 static Scheme_Object *
@@ -8018,13 +8066,10 @@ static MZ_MARK_STACK_TYPE clone_meta_cont_set_mark(Scheme_Meta_Continuation *mc,
   return 0;
 }
 
-static MZ_MARK_STACK_TYPE new_segment_set_mark(long segpos, long pos, Scheme_Object *key, Scheme_Object *val)
+void scheme_new_mark_segment(Scheme_Thread *p)
 {
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Cont_Mark *cm = NULL;
   int c = p->cont_mark_seg_count;
   Scheme_Cont_Mark **segs, *seg;
-  long findpos;
   
   /* Note: we perform allocations before changing p to avoid GC trouble,
      since MzScheme adjusts a thread's cont_mark_stack_segments on GC. */
@@ -8036,22 +8081,22 @@ static MZ_MARK_STACK_TYPE new_segment_set_mark(long segpos, long pos, Scheme_Obj
   
   p->cont_mark_seg_count++;
   p->cont_mark_stack_segments = segs;
-
-  seg = p->cont_mark_stack_segments[segpos];
-  cm = seg + pos;
-  findpos = MZ_CONT_MARK_STACK;
-  MZ_CONT_MARK_STACK++;
-
-  cm->key = key;
-  cm->val = val;
-  cm->pos = MZ_CONT_MARK_POS; /* always odd */
-  cm->cache = NULL;
-
-  return findpos;
 }
 
+#ifdef MZ_USE_FUTURES
+static void ts_scheme_new_mark_segment(Scheme_Thread *p) XFORM_SKIP_PROC
+{
+  if (scheme_use_rtcall)
+    scheme_rtcall_new_mark_segment(p);
+  else
+    scheme_new_mark_segment(p);
+}
+#else
+# define ts_scheme_new_mark_segment scheme_new_mark_segment 
+#endif
 
 MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
+/* This function can be called inside a future thread */
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Cont_Mark *cm = NULL;
@@ -8116,8 +8161,7 @@ MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
     pos = ((long)findpos) & SCHEME_MARK_SEGMENT_MASK;
 
     if (segpos >= p->cont_mark_seg_count) {
-      /* Need a new segment */
-      return new_segment_set_mark(segpos, pos, key, val);
+      ts_scheme_new_mark_segment(p);
     }
 
     seg = p->cont_mark_stack_segments[segpos];

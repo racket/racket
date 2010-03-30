@@ -1817,7 +1817,8 @@ static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved, i
 }
 
 Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
-						  Scheme_Compile_Info *rec, int drec)
+						  Scheme_Compile_Info *rec, int drec,
+                                                  int imported)
 {
   Comp_Prefix *cp = env->prefix;
   Scheme_Hash_Table *ht;
@@ -1838,7 +1839,7 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
   if (o)
     return o;
 
-  o = make_toplevel(0, cp->num_toplevels, 0, 0);
+  o = make_toplevel(0, cp->num_toplevels, 0, imported ? SCHEME_TOPLEVEL_READY : 0);
 
   cp->num_toplevels++;
   scheme_hash_set(ht, var, o);
@@ -3092,6 +3093,24 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     ((Scheme_Bucket_With_Home *)b)->home = genv;
   
   return (Scheme_Object *)b;
+}
+
+int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env)
+{
+  if (env->genv->module) {
+    if (SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
+      if (!SAME_OBJ(((Module_Variable *)var)->modidx, env->genv->module->self_modidx))
+        return 1;
+    } else
+      return 1;
+  } else {
+    if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
+      if (!SAME_OBJ(((Scheme_Bucket_With_Home *)var)->home, env->genv))
+        return 1;
+    } else
+      return 1;
+  }
+  return 0;
 }
 
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o)
