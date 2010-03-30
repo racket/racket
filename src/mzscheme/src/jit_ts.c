@@ -123,6 +123,7 @@ define_ts_siS_v(wrong_argument_count, FSRC_MARKS)
 # define ts_scheme_checked_set_mcar scheme_checked_set_mcar
 # define ts_scheme_checked_set_mcdr scheme_checked_set_mcdr
 # define ts_scheme_unbox scheme_unbox
+# define ts_scheme_set_box scheme_set_box
 # define ts_scheme_vector_length scheme_vector_length
 # define ts_scheme_flvector_length scheme_flvector_length
 # define ts_scheme_struct_ref scheme_struct_ref
