@@ -1493,6 +1493,9 @@
 		       (char=? c #\-)))
 	     tm:zone-reader (lambda (val object)
 			      (tm:set-date-zone-offset! object val)))
+       ; PLT-specific extension for 2- or 4-digit years:
+       (list #\? char-numeric? ireader4 (lambda (val object)
+                                          (tm:set-date-year! object (tm:natural-year val))))
        )))
   
   (define (tm:string->date date index format-string str-len port template-string)

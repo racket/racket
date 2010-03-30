@@ -1,11 +1,12 @@
 #lang scheme/base
 
 ;; Tests by Will Fitzgerald, augmented by:
-;;   John Clements                             -- 2004-08-16
-;;   Dave Gurnell (string->date, date->string) -- 2007-09-14 
-;;   Dave Gurnell (time{=,<,>,<=,>=}?)         -- 2009-11-26
-;;   John Clements (nanoseconds off by x100)   -- 2009-12-15
-
+;;   John Clements                                -- 2004-08-16
+;;   Dave Gurnell  (string->date, date->string)   -- 2007-09-14 
+;;   Dave Gurnell  (time{=,<,>,<=,>=}?)           -- 2009-11-26
+;;   John Clements (nanoseconds off by x100)      -- 2009-12-15
+;;   Dave Gurnell  (serializable dates and times) -- 2010-03-03
+;;   Dave Gurnell  (added ~x for string->date)    -- 2010-03-10
 (require scheme/serialize
          srfi/19/time)
 
@@ -148,7 +149,7 @@
     
     
     
-    (test-case "[DJG] date->string conversions of dates with nanosecond components"
+    (test-case "date->string conversions of dates with nanosecond components"
       (check-equal? (date->string (srfi:make-date 123456789 2 3 4 5 6 2007 0) "~N") "123456789")
       (check-equal? (date->string (srfi:make-date 12345678  2 3 4 5 6 2007 0) "~N") "012345678")
       (check-equal? (date->string (srfi:make-date 1234567   2 3 4 5 6 2007 0) "~N") "001234567")
@@ -159,7 +160,7 @@
       (check-equal? (date->string (srfi:make-date 12        2 3 4 5 6 2007 0) "~N") "000000012")
       (check-equal? (date->string (srfi:make-date 1         2 3 4 5 6 2007 0) "~N") "000000001"))
     
-    (test-case "[DJG] string->date conversions of dates with nanosecond components"
+    (test-case "string->date conversions of dates with nanosecond components"
       (check-equal? (string->date "12:00:00.123456789" "~H:~M:~S.~N") (srfi:make-date 123456789 0 0 12 #t #t #t cur-tz) "check 1")
       (check-equal? (string->date "12:00:00.12345678"  "~H:~M:~S.~N") (srfi:make-date 123456780 0 0 12 #t #t #t cur-tz) "check 2")
       (check-equal? (string->date "12:00:00.1234567"   "~H:~M:~S.~N") (srfi:make-date 123456700 0 0 12 #t #t #t cur-tz) "check 3")
@@ -178,6 +179,23 @@
       (check-equal? (string->date "12:00:00.000000123" "~H:~M:~S.~N") (srfi:make-date 123       0 0 12 #t #t #t cur-tz) "check 16")
       (check-equal? (string->date "12:00:00.000000012" "~H:~M:~S.~N") (srfi:make-date 12        0 0 12 #t #t #t cur-tz) "check 17")
       (check-equal? (string->date "12:00:00.000000001" "~H:~M:~S.~N") (srfi:make-date 1         0 0 12 #t #t #t cur-tz) "check 18"))
+    
+    (test-case "interpretation of 1- to 4-digit years by ~y, ~Y and ~?:"
+      ; ~y:
+      (check-exn exn:fail? (lambda () (string->date    "1-03-02" "~y-~m-~d")))
+      (check-not-exn (lambda () (check-equal? (string->date   "10-03-02" "~y-~m-~d") (srfi:make-date 0 0 0 0 2 3 2010 cur-tz))))
+      (check-exn exn:fail? (lambda () (string->date  "100-03-02" "~y-~m-~d")))
+      (check-exn exn:fail? (lambda () (string->date "1000-03-02" "~y-~m-~d")))
+      ; ~Y:
+      (check-not-exn (lambda () (check-equal? (string->date    "1-03-02" "~Y-~m-~d") (srfi:make-date 0 0 0 0 2 3    1 cur-tz))))
+      (check-not-exn (lambda () (check-equal? (string->date   "10-03-02" "~Y-~m-~d") (srfi:make-date 0 0 0 0 2 3   10 cur-tz))))
+      (check-not-exn (lambda () (check-equal? (string->date  "100-03-02" "~Y-~m-~d") (srfi:make-date 0 0 0 0 2 3  100 cur-tz))))
+      (check-not-exn (lambda () (check-equal? (string->date "1000-03-02" "~Y-~m-~d") (srfi:make-date 0 0 0 0 2 3 1000 cur-tz))))
+      ; ~? (PLT-specific extension for 2- or 4-digit years:
+      (check-not-exn (lambda () (check-equal? (string->date    "1-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3 2001 cur-tz))))
+      (check-not-exn (lambda () (check-equal? (string->date   "10-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3 2010 cur-tz))))
+      (check-not-exn (lambda () (check-equal? (string->date  "100-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3  100 cur-tz))))
+      (check-not-exn (lambda () (check-equal? (string->date "1000-03-02" "~?-~m-~d") (srfi:make-date 0 0 0 0 2 3 1000 cur-tz)))))
     
     (test-case "date<->julian-day conversion"
       (check = 365 (- (date->julian-day (srfi:make-date 0 0 0 0 1 1 2004 0))
@@ -198,17 +216,17 @@
     
     ;; nanosecnds off by a factor of 100...
     (test-case "nanosecond order-of-magnitude"
-               ;; half a second should be within 1/10th of 10^9 / 2 nanoseconds (currently off by a factor of 100)
-               (check-within (let ([t (date-nanosecond (current-date))])
-                               (sleep 0.5)
-                               (abs (- (date-nanosecond (current-date)) t)))
-                             (* 1/2  (expt 10 9))
-                             (* 1/10 (expt 10 9))))))
+      ;; half a second should be within 1/10th of 10^9 / 2 nanoseconds (currently off by a factor of 100)
+      (check-within (let ([t (date-nanosecond (current-date))])
+                      (sleep 0.5)
+                      (abs (- (date-nanosecond (current-date)) t)))
+                    (* 1/2  (expt 10 9))
+                    (* 1/10 (expt 10 9))))))
 
 ; Helper checks and procedures -----------------
 
 (define-simple-check (check-within actual expected epsilon)
-    (< (abs (- actual expected)) epsilon))
+  (< (abs (- actual expected)) epsilon))
 
 (define-check (check-one-utc-tai-edge utc tai-diff tai-last-diff)
   (let* (;; right on the edge they should be the same
