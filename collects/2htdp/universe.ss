@@ -80,7 +80,9 @@
          key-event?    ;; Any -> Boolean : KEY-EVTS
          key=?         ;; KEY-EVTS KEY-EVTS -> Boolean
          ;; IP : a string that points to a machine on the net 
-         LOCALHOST     ;; IP
+         )
+
+(provide LOCALHOST     ;; IP
          )
 
 (provide-higher-order-primitive
@@ -241,15 +243,18 @@
  iworld?    ;; Any -> Boolean 
  iworld=?   ;; World World -> Boolean 
  iworld-name ;; World -> Symbol 
- iworld1    ;; sample worlds 
- iworld2
- iworld3
  ;; type Bundle = (make-bundle [Listof World] Universe [Listof Mail]) 
  ;; type Mail = (make-mail World S-expression)
  make-bundle ;; [Listof World] Universe [Listof Mail] -> Bundle 
  bundle?     ;; is this a bundle? 
  make-mail   ;; World S-expression -> Mail 
  mail?       ;; is this a real mail? 
+ )
+
+(provide 
+ iworld1    ;; sample worlds 
+ iworld2
+ iworld3
  universe    ;; <syntax> : see below 
  )
 
