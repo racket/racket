@@ -3526,7 +3526,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
 					Scheme_Object *uninit_val,
 					Scheme_Object *props,
 					Scheme_Object *proc_attr,
-					Scheme_Object *immutable_pos_list,
+          char *immutable_array,
 					Scheme_Object *guard)
 {
   Scheme_Struct_Type *struct_type, *parent_type;
@@ -3601,10 +3601,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
   struct_type->uninit_val = uninit_val;
 
   if ((struct_type->proc_attr && SCHEME_INTP(struct_type->proc_attr))
-      || !SCHEME_NULLP(immutable_pos_list)
       || (proc_attr && SCHEME_INTP(proc_attr))) {
-    Scheme_Object *l, *a;
-    char *ims;
     int n, ni, p;
 
     n = struct_type->num_slots;
@@ -3613,43 +3610,19 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
       n -= parent_type->num_slots;
       ni -= parent_type->num_islots;
     }
-    ims = (char *)scheme_malloc_atomic(n);
-    memset(ims, 0, n);
 
     if (proc_attr && SCHEME_INTP(proc_attr)) {
       p = SCHEME_INT_VAL(proc_attr);
-      if (p < ni)
-        ims[p] = 1;
-    }
-
-    for (l = immutable_pos_list; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-      a = SCHEME_CAR(l);
-      if (SCHEME_INTP(a))
-	p = SCHEME_INT_VAL(a);
-      else
-	p = n; /* too big */
-
-      if (p >= n) {
-	scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			 "make-struct-type: index %V for immutable field >= initialized-field count %d in list: %V", 
-			 a, 
-                         ni, 
-                         immutable_pos_list);
-	return NULL;
+      if (p < ni) {
+        if (!immutable_array) {
+          immutable_array= (char *)scheme_malloc_atomic(n);
+          memset(immutable_array, 0, n);
+        }
+        immutable_array[p] = 1;
       }
-
-      if (ims[p]) {
-	scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-			 "make-struct-type: redundant immutable field index %V in list: %V", 
-			 a, immutable_pos_list);
-	return NULL;
-      }
-
-      ims[p] = 1;
     }
-    
-    struct_type->immutables = ims;
   }
+  struct_type->immutables = immutable_array;
 
   /* We add properties last, because a property guard receives a
      struct-type descriptor. */
@@ -3854,7 +3827,7 @@ Scheme_Object *scheme_make_struct_type(Scheme_Object *base,
 			   parent, inspector, 
 			   num_fields, num_uninit,
 			   uninit_val, properties, 
-			   NULL, scheme_null,
+			   NULL, NULL,
 			   guard);
 }
 
@@ -3870,7 +3843,7 @@ Scheme_Object *scheme_make_proc_struct_type(Scheme_Object *base,
 			   parent, inspector, 
 			   num_fields, num_uninit,
 			   uninit_val, scheme_null, 
-			   proc_attr, scheme_null,
+			   proc_attr, NULL,
 			   guard);
 }
 
@@ -3882,13 +3855,11 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 						   int immutable)
 {
   Scheme_Object *basesym;
-  Scheme_Object *imm = scheme_null;
-  int i;
+  char *immutable_array = NULL;
 
   if (immutable) {
-    for (i = 0; i < num_fields; i++) {
-      imm = scheme_make_pair(scheme_make_integer(i), imm);
-    }
+    immutable_array = (char *)scheme_malloc_atomic(num_fields);
+    memset(immutable_array, 1, num_fields);
   }
 
   basesym = scheme_intern_exact_symbol(base, strlen(base));
@@ -3896,8 +3867,8 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
   return _make_struct_type(basesym,
 			   parent, scheme_false, 
 			   num_fields, 0, 
-			   NULL, props, 
-			   NULL, imm,
+			   NULL, props,
+			   NULL, immutable_array,
 			   guard);
 }
 
@@ -3927,6 +3898,47 @@ Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type)
 
   return type;
 }
+
+static char* immutable_pos_list_to_immutable_array(Scheme_Object *immutable_pos_list, int localfieldc) {
+  char* ia;
+  Scheme_Object *l;
+  ia = (char *)scheme_malloc_atomic(localfieldc);
+  memset(ia, 0, localfieldc);
+
+  for (l = immutable_pos_list; l && SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+    int a_val;
+    Scheme_Object *a;
+    a = SCHEME_CAR(l);
+    if (!SCHEME_INTP(a)) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+          "make-struct-type: index %V for immutable field is not a exact non-negative fixnum integer in list %V",
+           a, immutable_pos_list);
+      return NULL;
+    }
+    a_val = SCHEME_INT_VAL(a); 
+    if (a_val < 0) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+          "make-struct-type: index %d for immutable field < 0 in list: %V", 
+          a_val, immutable_pos_list);
+      return NULL;
+    }
+    if (a_val >= localfieldc) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+          "make-struct-type: index %d for immutable field >= initialized-field count %d in list: %V", 
+          a_val, localfieldc, immutable_pos_list);
+      return NULL;
+    }
+    if (ia[a_val]) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+          "make-struct-type: redundant immutable field index %d in list: %V", 
+          a_val, immutable_pos_list);
+      return NULL;
+    }
+    ia[a_val] = 1;
+  }
+
+  return ia;
+}
   
 static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 {
@@ -3935,6 +3947,7 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
   Scheme_Object *inspector = NULL, **names, *uninit_val;
   Scheme_Struct_Type *type;
   Scheme_Object *proc_attr = NULL, *immutable_pos_list = scheme_null, *guard = NULL;
+  char* immutable_array;
 
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_type("make-struct-type", "symbol", 0, argc, argv);
@@ -4005,18 +4018,7 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 	  if (argc > 8) {
 	    l = immutable_pos_list = argv[8];
 	    
-	    if (scheme_proper_list_length(l) < 0)
-	      l = NULL;
-	    for (; l && SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-	      a = SCHEME_CAR(l);
-	      if (!((SCHEME_INTP(a) && (SCHEME_INT_VAL(a) >= 0))
-		    || (SCHEME_BIGNUMP(a) && !SCHEME_BIGPOS(a)))) {
-		l = NULL;
-		break;
-	      }
-	    }
-
-	    if (!l) {
+	    if (scheme_proper_list_length(l) < 0) {
 	      scheme_wrong_type("make-struct-type", 
 				"list of exact non-negative integers",
 				8, argc, argv);
@@ -4042,6 +4044,8 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 
   if (!inspector)
     inspector = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+
+  immutable_array = immutable_pos_list_to_immutable_array(immutable_pos_list, initc + uninitc);
 
   if (prefab) {
     const char *bad = NULL;
@@ -4073,7 +4077,7 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 						 initc, uninitc,
 						 uninit_val, props,
 						 proc_attr,
-						 immutable_pos_list,
+						 immutable_array,
 						 guard);
 
   if (prefab) {
@@ -4156,11 +4160,42 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
   return key;
 }
 
+static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutables) {
+  char *immutable_array = NULL;
+
+  if (icnt > 0) {
+    immutable_array = (char *)scheme_malloc_atomic(icnt);
+    memset(immutable_array, 1, icnt);
+
+    if (mutables) {
+      int i;
+      int len;
+      len = SCHEME_VEC_SIZE(mutables);
+      if (len > icnt)
+        return NULL;
+
+      for (i = 0; i < len; i++) {
+        int a_val;
+        Scheme_Object *a;
+        a = SCHEME_VEC_ELS(mutables)[i];
+        if (!SCHEME_INTP(a)
+            || (SCHEME_INT_VAL(a) < 0)
+            || (SCHEME_INT_VAL(a) >= icnt))
+          return NULL;
+        a_val = SCHEME_INT_VAL(a);
+        immutable_array[a_val] = 0;
+      }
+    }
+  }
+  return immutable_array;
+}
+
 Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count)
 {
   Scheme_Struct_Type *parent = NULL;
-  Scheme_Object *a, *uninit_val, *mutables, *immutable_pos_list, *name;
-  int i, ucnt, icnt, prev;
+  Scheme_Object *a, *uninit_val, *mutables, *name;
+  int ucnt, icnt;
+  char *immutable_array = NULL;
 
   if (SCHEME_SYMBOLP(key))
     key = scheme_make_pair(key, scheme_null);
@@ -4239,34 +4274,7 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
       return NULL;
     name = a;
 
-    /* convert mutability data to immutability data */
-    immutable_pos_list = scheme_null;
-    prev = -1;
-    if (mutables) {
-      int len;
-      len = SCHEME_VEC_SIZE(mutables);
-      if (len > icnt)
-        return NULL;
-      for (i = 0; i < len; i++) {
-        a = SCHEME_VEC_ELS(mutables)[i];
-        if (!SCHEME_INTP(a)
-            || (SCHEME_INT_VAL(a) < 0)
-            || (SCHEME_INT_VAL(a) >= icnt)
-            || (SCHEME_INT_VAL(a) <= prev))
-          return NULL;
-        while (prev + 1 < SCHEME_INT_VAL(a)) {
-          immutable_pos_list = scheme_make_pair(scheme_make_integer(prev + 1), 
-                                                immutable_pos_list);
-          prev++;
-        }
-        prev++;
-      }
-    }
-    while (prev + 1 < icnt) {
-      immutable_pos_list = scheme_make_pair(scheme_make_integer(prev + 1), 
-                                            immutable_pos_list);
-      prev++;
-    }
+    immutable_array = mutability_data_to_immutability_data(icnt + ucnt, mutables);
 
     if (parent && (icnt + parent->num_slots > MAX_STRUCT_FIELD_COUNT))
       return NULL;
@@ -4277,7 +4285,7 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
                                                      icnt, ucnt,
                                                      uninit_val, scheme_null,
                                                      NULL,
-                                                     immutable_pos_list,
+                                                     immutable_array,
                                                      NULL);
     
     parent = hash_prefab(parent);
