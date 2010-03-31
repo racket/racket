@@ -7100,8 +7100,6 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
   if (!skip_checks && (!unsafe || can_chaperone)) {
     if (set && !unbox_flonum)
       mz_rs_str(JIT_R2);
-    if (set && !unbox_flonum)
-      mz_rs_str(JIT_R2);
     __START_TINY_JUMPS__(1);
     if (!unsafe) {
       ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
@@ -7189,7 +7187,7 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
     jit_addi_p(JIT_V1, JIT_V1, base_offset);
   }
   if (set) {
-    if (!unbox_flonum && !unsafe)
+    if (!unbox_flonum && (!unsafe || can_chaperone))
       jit_ldr_p(JIT_R2, JIT_RUNSTACK);
     if (!for_fl) {
       jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
@@ -7635,7 +7633,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
         CHECK_LIMIT();
 
-        if (!unsafe)
+        if (!unsafe || can_chaperone)
           mz_rs_sync();
 
         if (!which) {
@@ -7682,7 +7680,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         generate_non_tail(app->rand1, jitter, 0, 1, 0);
         CHECK_LIMIT();
 
-        mz_rs_sync();
+        if (!unsafe || can_chaperone)
+          mz_rs_sync();
       
 	offset = SCHEME_INT_VAL(app->rand2);
         if (!unsafe)
@@ -8073,7 +8072,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       else
         pushed = 1;
 
-      if (!pushed && !flonum_arg && !unsafe)
+      if (!pushed && !flonum_arg && (!unsafe || can_chaperone))
         pushed = 1; /* need temporary space */
       
       mz_runstack_skipped(jitter, 3 - pushed);
@@ -8150,7 +8149,8 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       /* All pieces are in place */
 
-      mz_rs_sync();
+      if (!unsafe || can_chaperone)
+        mz_rs_sync();
 
       if (!simple) {
 	if (!which) {
