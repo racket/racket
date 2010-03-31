@@ -30,3 +30,5 @@
 (test--> test2
          (term ((cont hole) (explode)))
          (term okay))
+
+(test-results)

@@ -14,7 +14,8 @@ reflects the (broken) spec).
 
 (provide run-tests
          run-big-test
-         reductions)
+         reductions
+         main)
 
 #|
   
@@ -47,12 +48,8 @@ reflects the (broken) spec).
      (if e e e)
      (and e e e ...)
      (or e e e ...)
-     empty
      x
-     'x
-     number
-     boolean
-     string)
+     v)
   
   (prim-op + * / cons first rest empty? struct? symbol=?)
   
@@ -920,7 +917,6 @@ reflects the (broken) spec).
         true
         false)))))
 
-;; timing test
-#;
-(time (run-tests)
-      (run-big-test))
+(define (main)
+  (run-tests)
+  (run-big-test))

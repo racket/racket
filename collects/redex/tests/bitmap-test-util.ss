@@ -1,9 +1,8 @@
 #lang scheme/gui
 (require framework
-         slideshow
+         slideshow/pict
          "../pict.ss"
-         "../reduction-semantics.ss"
-         "config.ss")
+         "../reduction-semantics.ss")
 
 (provide test done)
 
@@ -149,7 +148,7 @@
        (define (update-gui) 
          (send sp active-child (list-ref failed current-index)))
        (set! test-result-single-panel sp)
-       (when (get-show-bitmaps?) (send f show #t))
+       (send f show #t)
        sp)]))
 
 (define (make-failed-panel line-number filename old-bitmap new-bitmap diff-bitmap)

@@ -2,22 +2,37 @@
 
 #lang scheme/base
 (require scheme/runtime-path
-         "config.ss"
+         scheme/cmdline
+         scheme/match
          "test-util.ss")
 
-(set-show-bitmaps? #f)
+(define test-bitmaps? #t)
+(define test-examples? #f)
+
+(command-line
+ #:once-each
+ [("--no-bitmaps") "executes bitmap-test.ss" (set! test-bitmaps? #f)]
+ [("--examples") "executes the tests in the examples directory" (set! test-examples? #t)])
 
 (define test-files
-  '("lw-test.ss" 
-    "matcher-test.ss" 
-    "tl-test.ss" 
-    "term-test.ss" 
-    "rg-test.ss" 
-    "keyword-macros-test.ss"
-    "core-layout-test.ss" 
-    "bitmap-test.ss" 
-    "pict-test.ss"
-    "hole-test.ss"))
+  (append
+   '("lw-test.ss" 
+     "matcher-test.ss" 
+     "tl-test.ss" 
+     "term-test.ss" 
+     "rg-test.ss" 
+     "keyword-macros-test.ss"
+     "core-layout-test.ss" 
+     "pict-test.ss"
+     "hole-test.ss")
+   (if test-bitmaps? '("bitmap-test.ss") '())
+   (if test-examples? 
+       '("../examples/pi-calculus.ss"
+         ("../examples/beginner.ss" main)
+         "../examples/mzscheme-machine/reduction-test.ss"
+         "../examples/mzscheme-machine/verification-test.ss"
+         ("../examples/r6rs/r6rs-tests.ss" main))
+       '())))
 
 (define-runtime-path here ".")
 
@@ -30,12 +45,18 @@
 
 (for-each
  (λ (test-file)
-   (flush)
-   (printf "requiring ~a\n" test-file)
-   (flush)
-   (dynamic-require (build-path here test-file) #f)
-   (flush))
+   (let-values ([(file provided action)
+                 (match test-file
+                   [(list (? string? file) id)
+                    (values file id (λ (x) (x)))]
+                   [(? string?) 
+                    (values test-file #f values)])])
+     (flush)
+     (printf "testing ~a\n" file)
+     (flush)
+     (action (dynamic-require (build-path here file) provided))
+     (flush)))
  test-files)
 
-(printf "\nWARNING: didn't run color-test.ss or subst-test.ss\n")
+(printf "\nWARNING: didn't run color-test.ss\n")
 (flush)
