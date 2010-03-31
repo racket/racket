@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("places.scrbl" ())))
+(define scribblings '(("places.scrbl" (user-doc))))
