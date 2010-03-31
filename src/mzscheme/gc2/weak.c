@@ -25,7 +25,7 @@
 /*                               weak arrays                                  */
 /******************************************************************************/
 
-static int size_weak_array(void *p)
+static int size_weak_array(void *p, struct NewGC *gc)
 {
   GC_Weak_Array *a = (GC_Weak_Array *)p;
 
@@ -33,12 +33,11 @@ static int size_weak_array(void *p)
 			  + ((a->count - 1) * sizeof(void *)));
 }
 
-static int mark_weak_array(void *p)
+static int mark_weak_array(void *p, struct NewGC *gc)
 {
-  GCTYPE *gc = GC_get_GC();
   GC_Weak_Array *a = (GC_Weak_Array *)p;
 
-  gcMARK(a->replace_val);
+  gcMARK2(a->replace_val, gc);
 
   a->next = gc->weak_arrays;
   gc->weak_arrays = a;
@@ -64,18 +63,18 @@ static int mark_weak_array(void *p)
 			  + ((a->count - 1) * sizeof(void *)));
 }
 
-static int fixup_weak_array(void *p)
+static int fixup_weak_array(void *p, struct NewGC *gc)
 {
   GC_Weak_Array *a = (GC_Weak_Array *)p;
   int i;
   void **data;
 
-  gcFIXUP(a->replace_val);
+  gcFIXUP2(a->replace_val, gc);
 
   data = a->data;
   for (i = a->count; i--; ) {
     if (data[i])
-      gcFIXUP(data[i]);
+      gcFIXUP2(data[i], gc);
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Array) 
@@ -132,17 +131,16 @@ static void zero_weak_arrays(GCTYPE *gc)
 /*                                weak boxes                                  */
 /******************************************************************************/
 
-static int size_weak_box(void *p)
+static int size_weak_box(void *p, struct NewGC *gc)
 {
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
 }
 
-static int mark_weak_box(void *p)
+static int mark_weak_box(void *p, struct NewGC *gc)
 {
-  GCTYPE *gc = GC_get_GC();
   GC_Weak_Box *wb = (GC_Weak_Box *)p;
     
-  gcMARK(wb->secondary_erase);
+  gcMARK2(wb->secondary_erase, gc);
 
   if (wb->val) {
     wb->next = gc->weak_boxes;
@@ -152,12 +150,12 @@ static int mark_weak_box(void *p)
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
 }
 
-static int fixup_weak_box(void *p)
+static int fixup_weak_box(void *p, struct NewGC *gc)
 {
   GC_Weak_Box *wb = (GC_Weak_Box *)p;
     
-  gcFIXUP(wb->secondary_erase);
-  gcFIXUP(wb->val);
+  gcFIXUP2(wb->secondary_erase, gc);
+  gcFIXUP2(wb->val, gc);
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
 }
@@ -213,14 +211,13 @@ static void zero_weak_boxes(GCTYPE *gc)
 /*                                 ephemeron                                  */
 /******************************************************************************/
 
-static int size_ephemeron(void *p)
+static int size_ephemeron(void *p, struct NewGC *gc)
 {
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
 }
 
-static int mark_ephemeron(void *p)
+static int mark_ephemeron(void *p, struct NewGC *gc)
 {
-  GCTYPE *gc = GC_get_GC();
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
 
   if (eph->val) {
@@ -232,29 +229,28 @@ static int mark_ephemeron(void *p)
 }
 
 #ifdef NEWGC_BTC_ACCOUNT
-static int BTC_ephemeron_mark(void *p)
+static int BTC_ephemeron_mark(void *p, struct NewGC *gc)
 {
-  GCTYPE *gc = GC_get_GC();
   if (gc->doing_memory_accounting) {
 
     GC_Ephemeron *eph = (GC_Ephemeron *)p;
 
-    gcMARK(eph->key);
-    gcMARK(eph->val);
+    gcMARK2(eph->key, gc);
+    gcMARK2(eph->val, gc);
 
     return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
   }
-  return mark_ephemeron(p);
+  return mark_ephemeron(p, gc);
 }
 #endif
 
 
-static int fixup_ephemeron(void *p)
+static int fixup_ephemeron(void *p, struct NewGC *gc)
 {
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
     
-  gcFIXUP(eph->key);
-  gcFIXUP(eph->val);
+  gcFIXUP2(eph->key, gc);
+  gcFIXUP2(eph->val, gc);
 
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
 }
@@ -294,7 +290,7 @@ static void mark_ready_ephemerons(GCTYPE *gc)
   for (eph = gc->ephemerons; eph; eph = next) {
     next = eph->next;
     if (is_marked(gc, eph->key)) {
-      gcMARK(eph->val);
+      gcMARK2(eph->val, gc);
       gc->num_last_seen_ephemerons++;
     } else {
       eph->next = waiting;

@@ -2,28 +2,28 @@
 
 #ifdef MARKS_FOR_TYPE_C
 
-static int variable_obj_SIZE(void *p) {
+static int variable_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_With_Home));
 }
 
-static int variable_obj_MARK(void *p) {
+static int variable_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Bucket *b = (Scheme_Bucket *)p;
 
-  gcMARK(b->key);
-  gcMARK(b->val);
-  gcMARK(((Scheme_Bucket_With_Home *)b)->home);
+  gcMARK2(b->key, gc);
+  gcMARK2(b->val, gc);
+  gcMARK2(((Scheme_Bucket_With_Home *)b)->home, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_With_Home));
 }
 
-static int variable_obj_FIXUP(void *p) {
+static int variable_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Bucket *b = (Scheme_Bucket *)p;
 
-  gcFIXUP(b->key);
-  gcFIXUP(b->val);
-  gcFIXUP(((Scheme_Bucket_With_Home *)b)->home);
+  gcFIXUP2(b->key, gc);
+  gcFIXUP2(b->val, gc);
+  gcFIXUP2(((Scheme_Bucket_With_Home *)b)->home, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_With_Home));
@@ -33,28 +33,28 @@ static int variable_obj_FIXUP(void *p) {
 #define variable_obj_IS_CONST_SIZE 1
 
 
-static int module_var_SIZE(void *p) {
+static int module_var_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Module_Variable));
 }
 
-static int module_var_MARK(void *p) {
+static int module_var_MARK(void *p, struct NewGC *gc) {
   Module_Variable *mv = (Module_Variable *)p;
 
-  gcMARK(mv->modidx);
-  gcMARK(mv->sym);
-  gcMARK(mv->insp);
+  gcMARK2(mv->modidx, gc);
+  gcMARK2(mv->sym, gc);
+  gcMARK2(mv->insp, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Module_Variable));
 }
 
-static int module_var_FIXUP(void *p) {
+static int module_var_FIXUP(void *p, struct NewGC *gc) {
   Module_Variable *mv = (Module_Variable *)p;
 
-  gcFIXUP(mv->modidx);
-  gcFIXUP(mv->sym);
-  gcFIXUP(mv->insp);
+  gcFIXUP2(mv->modidx, gc);
+  gcFIXUP2(mv->sym, gc);
+  gcFIXUP2(mv->insp, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Module_Variable));
@@ -64,26 +64,26 @@ static int module_var_FIXUP(void *p) {
 #define module_var_IS_CONST_SIZE 1
 
 
-static int bucket_obj_SIZE(void *p) {
+static int bucket_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket));
 }
 
-static int bucket_obj_MARK(void *p) {
+static int bucket_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Bucket *b = (Scheme_Bucket *)p;
 
-  gcMARK(b->key);
-  gcMARK(b->val);
+  gcMARK2(b->key, gc);
+  gcMARK2(b->val, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket));
 }
 
-static int bucket_obj_FIXUP(void *p) {
+static int bucket_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Bucket *b = (Scheme_Bucket *)p;
 
-  gcFIXUP(b->key);
-  gcFIXUP(b->val);
+  gcFIXUP2(b->key, gc);
+  gcFIXUP2(b->val, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket));
@@ -93,17 +93,17 @@ static int bucket_obj_FIXUP(void *p) {
 #define bucket_obj_IS_CONST_SIZE 1
 
 
-static int local_obj_SIZE(void *p) {
+static int local_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Local));
 }
 
-static int local_obj_MARK(void *p) {
+static int local_obj_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Local));
 }
 
-static int local_obj_FIXUP(void *p) {
+static int local_obj_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Local));
 }
@@ -112,17 +112,17 @@ static int local_obj_FIXUP(void *p) {
 #define local_obj_IS_CONST_SIZE 1
 
 
-static int toplevel_obj_SIZE(void *p) {
+static int toplevel_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
 }
 
-static int toplevel_obj_MARK(void *p) {
+static int toplevel_obj_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
 }
 
-static int toplevel_obj_FIXUP(void *p) {
+static int toplevel_obj_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
 }
@@ -131,17 +131,17 @@ static int toplevel_obj_FIXUP(void *p) {
 #define toplevel_obj_IS_CONST_SIZE 1
 
 
-static int quotesyntax_obj_SIZE(void *p) {
+static int quotesyntax_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
 }
 
-static int quotesyntax_obj_MARK(void *p) {
+static int quotesyntax_obj_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
 }
 
-static int quotesyntax_obj_FIXUP(void *p) {
+static int quotesyntax_obj_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
 }
@@ -150,25 +150,25 @@ static int quotesyntax_obj_FIXUP(void *p) {
 #define quotesyntax_obj_IS_CONST_SIZE 1
 
 
-static int cpointer_obj_SIZE(void *p) {
+static int cpointer_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
 }
 
-static int cpointer_obj_MARK(void *p) {
+static int cpointer_obj_MARK(void *p, struct NewGC *gc) {
   if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
-    gcMARK(SCHEME_CPTR_VAL(p));
+    gcMARK2(SCHEME_CPTR_VAL(p), gc);
   }
-  gcMARK(SCHEME_CPTR_TYPE(p));
+  gcMARK2(SCHEME_CPTR_TYPE(p), gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
 }
 
-static int cpointer_obj_FIXUP(void *p) {
+static int cpointer_obj_FIXUP(void *p, struct NewGC *gc) {
   if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
-    gcFIXUP(SCHEME_CPTR_VAL(p));
+    gcFIXUP2(SCHEME_CPTR_VAL(p), gc);
   }
-  gcFIXUP(SCHEME_CPTR_TYPE(p));
+  gcFIXUP2(SCHEME_CPTR_TYPE(p), gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
 }
@@ -177,25 +177,25 @@ static int cpointer_obj_FIXUP(void *p) {
 #define cpointer_obj_IS_CONST_SIZE 1
 
 
-static int offset_cpointer_obj_SIZE(void *p) {
+static int offset_cpointer_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
 }
 
-static int offset_cpointer_obj_MARK(void *p) {
+static int offset_cpointer_obj_MARK(void *p, struct NewGC *gc) {
   if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
-    gcMARK(SCHEME_CPTR_VAL(p));
+    gcMARK2(SCHEME_CPTR_VAL(p), gc);
   }
-  gcMARK(SCHEME_CPTR_TYPE(p));
+  gcMARK2(SCHEME_CPTR_TYPE(p), gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
 }
 
-static int offset_cpointer_obj_FIXUP(void *p) {
+static int offset_cpointer_obj_FIXUP(void *p, struct NewGC *gc) {
   if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
-    gcFIXUP(SCHEME_CPTR_VAL(p));
+    gcFIXUP2(SCHEME_CPTR_VAL(p), gc);
   }
-  gcFIXUP(SCHEME_CPTR_TYPE(p));
+  gcFIXUP2(SCHEME_CPTR_TYPE(p), gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
 }
@@ -204,21 +204,21 @@ static int offset_cpointer_obj_FIXUP(void *p) {
 #define offset_cpointer_obj_IS_CONST_SIZE 1
 
 
-static int twoptr_obj_SIZE(void *p) {
+static int twoptr_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int twoptr_obj_MARK(void *p) {
-  gcMARK(SCHEME_PTR1_VAL((Scheme_Object *)p));
-  gcMARK(SCHEME_PTR2_VAL((Scheme_Object *)p));
+static int twoptr_obj_MARK(void *p, struct NewGC *gc) {
+  gcMARK2(SCHEME_PTR1_VAL((Scheme_Object *)p), gc);
+  gcMARK2(SCHEME_PTR2_VAL((Scheme_Object *)p), gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int twoptr_obj_FIXUP(void *p) {
-  gcFIXUP(SCHEME_PTR1_VAL((Scheme_Object *)p));
-  gcFIXUP(SCHEME_PTR2_VAL((Scheme_Object *)p));
+static int twoptr_obj_FIXUP(void *p, struct NewGC *gc) {
+  gcFIXUP2(SCHEME_PTR1_VAL((Scheme_Object *)p), gc);
+  gcFIXUP2(SCHEME_PTR2_VAL((Scheme_Object *)p), gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
@@ -227,19 +227,19 @@ static int twoptr_obj_FIXUP(void *p) {
 #define twoptr_obj_IS_CONST_SIZE 1
 
 
-static int iptr_obj_SIZE(void *p) {
+static int iptr_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int iptr_obj_MARK(void *p) {
-  gcMARK(SCHEME_IPTR_VAL((Scheme_Object *)p));
+static int iptr_obj_MARK(void *p, struct NewGC *gc) {
+  gcMARK2(SCHEME_IPTR_VAL((Scheme_Object *)p), gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int iptr_obj_FIXUP(void *p) {
-  gcFIXUP(SCHEME_IPTR_VAL((Scheme_Object *)p));
+static int iptr_obj_FIXUP(void *p, struct NewGC *gc) {
+  gcFIXUP2(SCHEME_IPTR_VAL((Scheme_Object *)p), gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
@@ -248,20 +248,20 @@ static int iptr_obj_FIXUP(void *p) {
 #define iptr_obj_IS_CONST_SIZE 1
 
 
-static int small_object_SIZE(void *p) {
+static int small_object_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
 
-static int small_object_MARK(void *p) {
-  gcMARK(((Scheme_Small_Object *)p)->u.ptr_value);
+static int small_object_MARK(void *p, struct NewGC *gc) {
+  gcMARK2(((Scheme_Small_Object *)p)->u.ptr_value, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
 
-static int small_object_FIXUP(void *p) {
-  gcFIXUP(((Scheme_Small_Object *)p)->u.ptr_value);
+static int small_object_FIXUP(void *p, struct NewGC *gc) {
+  gcFIXUP2(((Scheme_Small_Object *)p)->u.ptr_value, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
@@ -271,7 +271,7 @@ static int small_object_FIXUP(void *p) {
 #define small_object_IS_CONST_SIZE 1
 
 
-static int app_rec_SIZE(void *p) {
+static int app_rec_SIZE(void *p, struct NewGC *gc) {
   Scheme_App_Rec *r = (Scheme_App_Rec *)p;
 
   return
@@ -280,12 +280,12 @@ static int app_rec_SIZE(void *p) {
 		    + ((r->num_args + 1) * sizeof(char))));
 }
 
-static int app_rec_MARK(void *p) {
+static int app_rec_MARK(void *p, struct NewGC *gc) {
   Scheme_App_Rec *r = (Scheme_App_Rec *)p;
 
   int i = r->num_args + 1;
   while (i--) 
-    gcMARK(r->args[i]);
+    gcMARK2(r->args[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_App_Rec) 
@@ -293,12 +293,12 @@ static int app_rec_MARK(void *p) {
 		    + ((r->num_args + 1) * sizeof(char))));
 }
 
-static int app_rec_FIXUP(void *p) {
+static int app_rec_FIXUP(void *p, struct NewGC *gc) {
   Scheme_App_Rec *r = (Scheme_App_Rec *)p;
 
   int i = r->num_args + 1;
   while (i--) 
-    gcFIXUP(r->args[i]);
+    gcFIXUP2(r->args[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_App_Rec) 
@@ -310,24 +310,24 @@ static int app_rec_FIXUP(void *p) {
 #define app_rec_IS_CONST_SIZE 0
 
 
-static int app2_rec_SIZE(void *p) {
+static int app2_rec_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_App2_Rec));
 }
 
-static int app2_rec_MARK(void *p) {
+static int app2_rec_MARK(void *p, struct NewGC *gc) {
   Scheme_App2_Rec *r = (Scheme_App2_Rec *)p;
-  gcMARK(r->rator);
-  gcMARK(r->rand);
+  gcMARK2(r->rator, gc);
+  gcMARK2(r->rand, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_App2_Rec));
 }
 
-static int app2_rec_FIXUP(void *p) {
+static int app2_rec_FIXUP(void *p, struct NewGC *gc) {
   Scheme_App2_Rec *r = (Scheme_App2_Rec *)p;
-  gcFIXUP(r->rator);
-  gcFIXUP(r->rand);
+  gcFIXUP2(r->rator, gc);
+  gcFIXUP2(r->rand, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_App2_Rec));
@@ -337,26 +337,26 @@ static int app2_rec_FIXUP(void *p) {
 #define app2_rec_IS_CONST_SIZE 1
 
 
-static int app3_rec_SIZE(void *p) {
+static int app3_rec_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_App3_Rec));
 }
 
-static int app3_rec_MARK(void *p) {
+static int app3_rec_MARK(void *p, struct NewGC *gc) {
   Scheme_App3_Rec *r = (Scheme_App3_Rec *)p;
-  gcMARK(r->rator);
-  gcMARK(r->rand1);
-  gcMARK(r->rand2);
+  gcMARK2(r->rator, gc);
+  gcMARK2(r->rand1, gc);
+  gcMARK2(r->rand2, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_App3_Rec));
 }
 
-static int app3_rec_FIXUP(void *p) {
+static int app3_rec_FIXUP(void *p, struct NewGC *gc) {
   Scheme_App3_Rec *r = (Scheme_App3_Rec *)p;
-  gcFIXUP(r->rator);
-  gcFIXUP(r->rand1);
-  gcFIXUP(r->rand2);
+  gcFIXUP2(r->rator, gc);
+  gcFIXUP2(r->rand1, gc);
+  gcFIXUP2(r->rand2, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_App3_Rec));
@@ -366,7 +366,7 @@ static int app3_rec_FIXUP(void *p) {
 #define app3_rec_IS_CONST_SIZE 1
 
 
-static int seq_rec_SIZE(void *p) {
+static int seq_rec_SIZE(void *p, struct NewGC *gc) {
   Scheme_Sequence *s = (Scheme_Sequence *)p;
 
   return
@@ -374,24 +374,24 @@ static int seq_rec_SIZE(void *p) {
 		    + ((s->count - 1) * sizeof(Scheme_Object *))));
 }
 
-static int seq_rec_MARK(void *p) {
+static int seq_rec_MARK(void *p, struct NewGC *gc) {
   Scheme_Sequence *s = (Scheme_Sequence *)p;
 
   int i = s->count;
   while (i--)
-    gcMARK(s->array[i]);
+    gcMARK2(s->array[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Sequence)
 		    + ((s->count - 1) * sizeof(Scheme_Object *))));
 }
 
-static int seq_rec_FIXUP(void *p) {
+static int seq_rec_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Sequence *s = (Scheme_Sequence *)p;
 
   int i = s->count;
   while (i--)
-    gcFIXUP(s->array[i]);
+    gcFIXUP2(s->array[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Sequence)
@@ -402,28 +402,28 @@ static int seq_rec_FIXUP(void *p) {
 #define seq_rec_IS_CONST_SIZE 0
 
 
-static int branch_rec_SIZE(void *p) {
+static int branch_rec_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Branch_Rec));
 }
 
-static int branch_rec_MARK(void *p) {
+static int branch_rec_MARK(void *p, struct NewGC *gc) {
   Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)p;
   
-  gcMARK(b->test);
-  gcMARK(b->tbranch);
-  gcMARK(b->fbranch);
+  gcMARK2(b->test, gc);
+  gcMARK2(b->tbranch, gc);
+  gcMARK2(b->fbranch, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Branch_Rec));
 }
 
-static int branch_rec_FIXUP(void *p) {
+static int branch_rec_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)p;
   
-  gcFIXUP(b->test);
-  gcFIXUP(b->tbranch);
-  gcFIXUP(b->fbranch);
+  gcFIXUP2(b->test, gc);
+  gcFIXUP2(b->tbranch, gc);
+  gcFIXUP2(b->fbranch, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Branch_Rec));
@@ -433,35 +433,35 @@ static int branch_rec_FIXUP(void *p) {
 #define branch_rec_IS_CONST_SIZE 1
 
 
-static int unclosed_proc_SIZE(void *p) {
+static int unclosed_proc_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Closure_Data));
 }
 
-static int unclosed_proc_MARK(void *p) {
+static int unclosed_proc_MARK(void *p, struct NewGC *gc) {
   Scheme_Closure_Data *d = (Scheme_Closure_Data *)p;
 
-  gcMARK(d->name);
-  gcMARK(d->code);
-  gcMARK(d->closure_map);
+  gcMARK2(d->name, gc);
+  gcMARK2(d->code, gc);
+  gcMARK2(d->closure_map, gc);
 #ifdef MZ_USE_JIT
-  gcMARK(d->u.native_code);
-  gcMARK(d->context);
+  gcMARK2(d->u.native_code, gc);
+  gcMARK2(d->context, gc);
 #endif
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Closure_Data));
 }
 
-static int unclosed_proc_FIXUP(void *p) {
+static int unclosed_proc_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Closure_Data *d = (Scheme_Closure_Data *)p;
 
-  gcFIXUP(d->name);
-  gcFIXUP(d->code);
-  gcFIXUP(d->closure_map);
+  gcFIXUP2(d->name, gc);
+  gcFIXUP2(d->code, gc);
+  gcFIXUP2(d->closure_map, gc);
 #ifdef MZ_USE_JIT
-  gcFIXUP(d->u.native_code);
-  gcFIXUP(d->context);
+  gcFIXUP2(d->u.native_code, gc);
+  gcFIXUP2(d->context, gc);
 #endif
 
   return
@@ -472,26 +472,26 @@ static int unclosed_proc_FIXUP(void *p) {
 #define unclosed_proc_IS_CONST_SIZE 1
 
 
-static int let_value_SIZE(void *p) {
+static int let_value_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Value));
 }
 
-static int let_value_MARK(void *p) {
+static int let_value_MARK(void *p, struct NewGC *gc) {
   Scheme_Let_Value *l = (Scheme_Let_Value *)p;
   
-  gcMARK(l->value);
-  gcMARK(l->body);
+  gcMARK2(l->value, gc);
+  gcMARK2(l->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Value));
 }
 
-static int let_value_FIXUP(void *p) {
+static int let_value_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Let_Value *l = (Scheme_Let_Value *)p;
   
-  gcFIXUP(l->value);
-  gcFIXUP(l->body);
+  gcFIXUP2(l->value, gc);
+  gcFIXUP2(l->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Value));
@@ -501,24 +501,24 @@ static int let_value_FIXUP(void *p) {
 #define let_value_IS_CONST_SIZE 1
 
 
-static int let_void_SIZE(void *p) {
+static int let_void_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Void));
 }
 
-static int let_void_MARK(void *p) {
+static int let_void_MARK(void *p, struct NewGC *gc) {
   Scheme_Let_Void *l = (Scheme_Let_Void *)p;
 
-  gcMARK(l->body);
+  gcMARK2(l->body, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Void));
 }
 
-static int let_void_FIXUP(void *p) {
+static int let_void_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Let_Void *l = (Scheme_Let_Void *)p;
 
-  gcFIXUP(l->body);
+  gcFIXUP2(l->body, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Void));
@@ -528,26 +528,26 @@ static int let_void_FIXUP(void *p) {
 #define let_void_IS_CONST_SIZE 1
 
 
-static int letrec_SIZE(void *p) {
+static int letrec_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Letrec));
 }
 
-static int letrec_MARK(void *p) {
+static int letrec_MARK(void *p, struct NewGC *gc) {
   Scheme_Letrec *l = (Scheme_Letrec *)p;
   
-  gcMARK(l->procs);
-  gcMARK(l->body);
+  gcMARK2(l->procs, gc);
+  gcMARK2(l->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Letrec));
 }
 
-static int letrec_FIXUP(void *p) {
+static int letrec_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Letrec *l = (Scheme_Letrec *)p;
   
-  gcFIXUP(l->procs);
-  gcFIXUP(l->body);
+  gcFIXUP2(l->procs, gc);
+  gcFIXUP2(l->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Letrec));
@@ -557,26 +557,26 @@ static int letrec_FIXUP(void *p) {
 #define letrec_IS_CONST_SIZE 1
 
 
-static int let_one_SIZE(void *p) {
+static int let_one_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_One));
 }
 
-static int let_one_MARK(void *p) {
+static int let_one_MARK(void *p, struct NewGC *gc) {
   Scheme_Let_One *l = (Scheme_Let_One *)p;
   
-  gcMARK(l->value);
-  gcMARK(l->body);
+  gcMARK2(l->value, gc);
+  gcMARK2(l->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_One));
 }
 
-static int let_one_FIXUP(void *p) {
+static int let_one_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Let_One *l = (Scheme_Let_One *)p;
   
-  gcFIXUP(l->value);
-  gcFIXUP(l->body);
+  gcFIXUP2(l->value, gc);
+  gcFIXUP2(l->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_One));
@@ -586,28 +586,28 @@ static int let_one_FIXUP(void *p) {
 #define let_one_IS_CONST_SIZE 1
 
 
-static int with_cont_mark_SIZE(void *p) {
+static int with_cont_mark_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_With_Continuation_Mark));
 }
 
-static int with_cont_mark_MARK(void *p) {
+static int with_cont_mark_MARK(void *p, struct NewGC *gc) {
   Scheme_With_Continuation_Mark *w = (Scheme_With_Continuation_Mark *)p;
 
-  gcMARK(w->key);
-  gcMARK(w->val);
-  gcMARK(w->body);
+  gcMARK2(w->key, gc);
+  gcMARK2(w->val, gc);
+  gcMARK2(w->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_With_Continuation_Mark));
 }
 
-static int with_cont_mark_FIXUP(void *p) {
+static int with_cont_mark_FIXUP(void *p, struct NewGC *gc) {
   Scheme_With_Continuation_Mark *w = (Scheme_With_Continuation_Mark *)p;
 
-  gcFIXUP(w->key);
-  gcFIXUP(w->val);
-  gcFIXUP(w->body);
+  gcFIXUP2(w->key, gc);
+  gcFIXUP2(w->val, gc);
+  gcFIXUP2(w->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_With_Continuation_Mark));
@@ -617,28 +617,28 @@ static int with_cont_mark_FIXUP(void *p) {
 #define with_cont_mark_IS_CONST_SIZE 1
 
 
-static int comp_let_value_SIZE(void *p) {
+static int comp_let_value_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Let_Value));
 }
 
-static int comp_let_value_MARK(void *p) {
+static int comp_let_value_MARK(void *p, struct NewGC *gc) {
   Scheme_Compiled_Let_Value *c = (Scheme_Compiled_Let_Value *)p;
 
-  gcMARK(c->flags);
-  gcMARK(c->value);
-  gcMARK(c->body);
+  gcMARK2(c->flags, gc);
+  gcMARK2(c->value, gc);
+  gcMARK2(c->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Let_Value));
 }
 
-static int comp_let_value_FIXUP(void *p) {
+static int comp_let_value_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Compiled_Let_Value *c = (Scheme_Compiled_Let_Value *)p;
 
-  gcFIXUP(c->flags);
-  gcFIXUP(c->value);
-  gcFIXUP(c->body);
+  gcFIXUP2(c->flags, gc);
+  gcFIXUP2(c->value, gc);
+  gcFIXUP2(c->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Let_Value));
@@ -648,24 +648,24 @@ static int comp_let_value_FIXUP(void *p) {
 #define comp_let_value_IS_CONST_SIZE 1
 
 
-static int let_header_SIZE(void *p) {
+static int let_header_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Header));
 }
 
-static int let_header_MARK(void *p) {
+static int let_header_MARK(void *p, struct NewGC *gc) {
   Scheme_Let_Header *h = (Scheme_Let_Header *)p;
   
-  gcMARK(h->body);
+  gcMARK2(h->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Header));
 }
 
-static int let_header_FIXUP(void *p) {
+static int let_header_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Let_Header *h = (Scheme_Let_Header *)p;
   
-  gcFIXUP(h->body);
+  gcFIXUP2(h->body, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Let_Header));
@@ -675,7 +675,7 @@ static int let_header_FIXUP(void *p) {
 #define let_header_IS_CONST_SIZE 1
 
 
-static int prim_proc_SIZE(void *p) {
+static int prim_proc_SIZE(void *p, struct NewGC *gc) {
   Scheme_Primitive_Proc *prim = (Scheme_Primitive_Proc *)p;
 
   return
@@ -687,18 +687,18 @@ static int prim_proc_SIZE(void *p) {
       : gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Proc))));
 }
 
-static int prim_proc_MARK(void *p) {
+static int prim_proc_MARK(void *p, struct NewGC *gc) {
   Scheme_Primitive_Proc *prim = (Scheme_Primitive_Proc *)p;
 
-  gcMARK(prim->name);
+  gcMARK2(prim->name, gc);
   if (prim->mina < 0) {
-    gcMARK(prim->mu.cases);
+    gcMARK2(prim->mu.cases, gc);
   }
   if (prim->pp.flags & SCHEME_PRIM_IS_CLOSURE) {
     Scheme_Primitive_Closure *cc = (Scheme_Primitive_Closure *)prim;
     int i;
     for (i = cc->count; i--; ) {
-      gcMARK(cc->val[i]);
+      gcMARK2(cc->val[i], gc);
     }
   }  
   
@@ -711,18 +711,18 @@ static int prim_proc_MARK(void *p) {
       : gcBYTES_TO_WORDS(sizeof(Scheme_Primitive_Proc))));
 }
 
-static int prim_proc_FIXUP(void *p) {
+static int prim_proc_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Primitive_Proc *prim = (Scheme_Primitive_Proc *)p;
 
-  gcFIXUP(prim->name);
+  gcFIXUP2(prim->name, gc);
   if (prim->mina < 0) {
-    gcFIXUP(prim->mu.cases);
+    gcFIXUP2(prim->mu.cases, gc);
   }
   if (prim->pp.flags & SCHEME_PRIM_IS_CLOSURE) {
     Scheme_Primitive_Closure *cc = (Scheme_Primitive_Closure *)prim;
     int i;
     for (i = cc->count; i--; ) {
-      gcFIXUP(cc->val[i]);
+      gcFIXUP2(cc->val[i], gc);
     }
   }  
   
@@ -739,7 +739,7 @@ static int prim_proc_FIXUP(void *p) {
 #define prim_proc_IS_CONST_SIZE 0
 
 
-static int closed_prim_proc_SIZE(void *p) {
+static int closed_prim_proc_SIZE(void *p, struct NewGC *gc) {
   Scheme_Closed_Primitive_Proc *c = (Scheme_Closed_Primitive_Proc *)p;
 
   return
@@ -750,13 +750,13 @@ static int closed_prim_proc_SIZE(void *p) {
       : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc))));
 }
 
-static int closed_prim_proc_MARK(void *p) {
+static int closed_prim_proc_MARK(void *p, struct NewGC *gc) {
   Scheme_Closed_Primitive_Proc *c = (Scheme_Closed_Primitive_Proc *)p;
 
-  gcMARK(c->name);
-  gcMARK(SCHEME_CLSD_PRIM_DATA(c));
+  gcMARK2(c->name, gc);
+  gcMARK2(SCHEME_CLSD_PRIM_DATA(c), gc);
   if (c->mina == -2) {
-    gcMARK(((Scheme_Closed_Case_Primitive_Proc *)c)->cases);
+    gcMARK2(((Scheme_Closed_Case_Primitive_Proc *)c)->cases, gc);
   }
   
   return
@@ -767,13 +767,13 @@ static int closed_prim_proc_MARK(void *p) {
       : gcBYTES_TO_WORDS(sizeof(Scheme_Closed_Primitive_Proc))));
 }
 
-static int closed_prim_proc_FIXUP(void *p) {
+static int closed_prim_proc_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Closed_Primitive_Proc *c = (Scheme_Closed_Primitive_Proc *)p;
 
-  gcFIXUP(c->name);
-  gcFIXUP(SCHEME_CLSD_PRIM_DATA(c));
+  gcFIXUP2(c->name, gc);
+  gcFIXUP2(SCHEME_CLSD_PRIM_DATA(c), gc);
   if (c->mina == -2) {
-    gcFIXUP(((Scheme_Closed_Case_Primitive_Proc *)c)->cases);
+    gcFIXUP2(((Scheme_Closed_Case_Primitive_Proc *)c)->cases, gc);
   }
   
   return
@@ -788,7 +788,7 @@ static int closed_prim_proc_FIXUP(void *p) {
 #define closed_prim_proc_IS_CONST_SIZE 0
 
 
-static int scm_closure_SIZE(void *p) {
+static int scm_closure_SIZE(void *p, struct NewGC *gc) {
   Scheme_Closure *c = (Scheme_Closure *)p;
   int closure_size = (c->code 
                       ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
@@ -799,7 +799,7 @@ static int scm_closure_SIZE(void *p) {
 		    + (closure_size - 1) * sizeof(Scheme_Object *)));
 }
 
-static int scm_closure_MARK(void *p) {
+static int scm_closure_MARK(void *p, struct NewGC *gc) {
   Scheme_Closure *c = (Scheme_Closure *)p;
   int closure_size = (c->code 
                       ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
@@ -808,15 +808,15 @@ static int scm_closure_MARK(void *p) {
 
   int i = closure_size;
   while (i--)
-    gcMARK(c->vals[i]);
-  gcMARK(c->code);
+    gcMARK2(c->vals[i], gc);
+  gcMARK2(c->code, gc);
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
 		    + (closure_size - 1) * sizeof(Scheme_Object *)));
 }
 
-static int scm_closure_FIXUP(void *p) {
+static int scm_closure_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Closure *c = (Scheme_Closure *)p;
   int closure_size = (c->code 
                       ? ((Scheme_Closure_Data *)GC_resolve(c->code))->closure_size
@@ -825,8 +825,8 @@ static int scm_closure_FIXUP(void *p) {
 
   int i = closure_size;
   while (i--)
-    gcFIXUP(c->vals[i]);
-  gcFIXUP(c->code);
+    gcFIXUP2(c->vals[i], gc);
+  gcFIXUP2(c->code, gc);
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Closure)
@@ -837,7 +837,7 @@ static int scm_closure_FIXUP(void *p) {
 #define scm_closure_IS_CONST_SIZE 0
 
 
-static int case_closure_SIZE(void *p) {
+static int case_closure_SIZE(void *p, struct NewGC *gc) {
   Scheme_Case_Lambda *c = (Scheme_Case_Lambda *)p;
 
   return
@@ -845,16 +845,16 @@ static int case_closure_SIZE(void *p) {
 		    + ((c->count - 1) * sizeof(Scheme_Object *))));
 }
 
-static int case_closure_MARK(void *p) {
+static int case_closure_MARK(void *p, struct NewGC *gc) {
   Scheme_Case_Lambda *c = (Scheme_Case_Lambda *)p;
 
   int i;
   
   for (i = c->count; i--; )
-    gcMARK(c->array[i]);
-  gcMARK(c->name);
+    gcMARK2(c->array[i], gc);
+  gcMARK2(c->name, gc);
 #ifdef MZ_USE_JIT
-  gcMARK(c->native_code);
+  gcMARK2(c->native_code, gc);
 #endif
 
   return
@@ -862,16 +862,16 @@ static int case_closure_MARK(void *p) {
 		    + ((c->count - 1) * sizeof(Scheme_Object *))));
 }
 
-static int case_closure_FIXUP(void *p) {
+static int case_closure_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Case_Lambda *c = (Scheme_Case_Lambda *)p;
 
   int i;
   
   for (i = c->count; i--; )
-    gcFIXUP(c->array[i]);
-  gcFIXUP(c->name);
+    gcFIXUP2(c->array[i], gc);
+  gcFIXUP2(c->name, gc);
 #ifdef MZ_USE_JIT
-  gcFIXUP(c->native_code);
+  gcFIXUP2(c->native_code, gc);
 #endif
 
   return
@@ -883,86 +883,86 @@ static int case_closure_FIXUP(void *p) {
 #define case_closure_IS_CONST_SIZE 0
 
 
-static int cont_proc_SIZE(void *p) {
+static int cont_proc_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont));
 }
 
-static int cont_proc_MARK(void *p) {
+static int cont_proc_MARK(void *p, struct NewGC *gc) {
   Scheme_Cont *c = (Scheme_Cont *)p;
   
-  gcMARK(c->dw);
-  gcMARK(c->prompt_tag);
-  gcMARK(c->meta_continuation);
-  gcMARK(c->common_dw);
-  gcMARK(c->save_overflow);
-  gcMARK(c->runstack_copied);
-  gcMARK(c->runstack_owner);
-  gcMARK(c->cont_mark_stack_copied);
-  gcMARK(c->cont_mark_stack_owner);
-  gcMARK(c->init_config);
-  gcMARK(c->init_break_cell);
+  gcMARK2(c->dw, gc);
+  gcMARK2(c->prompt_tag, gc);
+  gcMARK2(c->meta_continuation, gc);
+  gcMARK2(c->common_dw, gc);
+  gcMARK2(c->save_overflow, gc);
+  gcMARK2(c->runstack_copied, gc);
+  gcMARK2(c->runstack_owner, gc);
+  gcMARK2(c->cont_mark_stack_copied, gc);
+  gcMARK2(c->cont_mark_stack_owner, gc);
+  gcMARK2(c->init_config, gc);
+  gcMARK2(c->init_break_cell, gc);
 #ifdef MZ_USE_JIT
-  gcMARK(c->native_trace);
+  gcMARK2(c->native_trace, gc);
 #endif
 
-  MARK_jmpup(&c->buf);
-  MARK_cjs(&c->cjs);
-  MARK_stack_state(&c->ss);
-  gcMARK(c->barrier_prompt);
+  MARK_jmpup(&c->buf, gc);
+  MARK_cjs(&c->cjs, gc);
+  MARK_stack_state(&c->ss, gc);
+  gcMARK2(c->barrier_prompt, gc);
   if (!GC_merely_accounting()) {
-    gcMARK(c->runstack_start);
-    gcMARK(c->runstack_saved);
+    gcMARK2(c->runstack_start, gc);
+    gcMARK2(c->runstack_saved, gc);
   }
 
-  gcMARK(c->prompt_id);
-  gcMARK(c->prompt_buf);
+  gcMARK2(c->prompt_id, gc);
+  gcMARK2(c->prompt_buf, gc);
 
-  gcMARK(c->value);
-  gcMARK(c->resume_to);
-  gcMARK(c->use_next_cont);
-  gcMARK(c->extra_marks);
-  gcMARK(c->shortcut_prompt);
+  gcMARK2(c->value, gc);
+  gcMARK2(c->resume_to, gc);
+  gcMARK2(c->use_next_cont, gc);
+  gcMARK2(c->extra_marks, gc);
+  gcMARK2(c->shortcut_prompt, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont));
 }
 
-static int cont_proc_FIXUP(void *p) {
+static int cont_proc_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Cont *c = (Scheme_Cont *)p;
   
-  gcFIXUP(c->dw);
-  gcFIXUP(c->prompt_tag);
-  gcFIXUP(c->meta_continuation);
-  gcFIXUP(c->common_dw);
-  gcFIXUP(c->save_overflow);
-  gcFIXUP(c->runstack_copied);
-  gcFIXUP(c->runstack_owner);
-  gcFIXUP(c->cont_mark_stack_copied);
-  gcFIXUP(c->cont_mark_stack_owner);
-  gcFIXUP(c->init_config);
-  gcFIXUP(c->init_break_cell);
+  gcFIXUP2(c->dw, gc);
+  gcFIXUP2(c->prompt_tag, gc);
+  gcFIXUP2(c->meta_continuation, gc);
+  gcFIXUP2(c->common_dw, gc);
+  gcFIXUP2(c->save_overflow, gc);
+  gcFIXUP2(c->runstack_copied, gc);
+  gcFIXUP2(c->runstack_owner, gc);
+  gcFIXUP2(c->cont_mark_stack_copied, gc);
+  gcFIXUP2(c->cont_mark_stack_owner, gc);
+  gcFIXUP2(c->init_config, gc);
+  gcFIXUP2(c->init_break_cell, gc);
 #ifdef MZ_USE_JIT
-  gcFIXUP(c->native_trace);
+  gcFIXUP2(c->native_trace, gc);
 #endif
 
-  FIXUP_jmpup(&c->buf);
-  FIXUP_cjs(&c->cjs);
-  FIXUP_stack_state(&c->ss);
-  gcFIXUP(c->barrier_prompt);
+  FIXUP_jmpup(&c->buf, gc);
+  FIXUP_cjs(&c->cjs, gc);
+  FIXUP_stack_state(&c->ss, gc);
+  gcFIXUP2(c->barrier_prompt, gc);
   if (!GC_merely_accounting()) {
-    gcFIXUP(c->runstack_start);
-    gcFIXUP(c->runstack_saved);
+    gcFIXUP2(c->runstack_start, gc);
+    gcFIXUP2(c->runstack_saved, gc);
   }
 
-  gcFIXUP(c->prompt_id);
-  gcFIXUP(c->prompt_buf);
+  gcFIXUP2(c->prompt_id, gc);
+  gcFIXUP2(c->prompt_buf, gc);
 
-  gcFIXUP(c->value);
-  gcFIXUP(c->resume_to);
-  gcFIXUP(c->use_next_cont);
-  gcFIXUP(c->extra_marks);
-  gcFIXUP(c->shortcut_prompt);
+  gcFIXUP2(c->value, gc);
+  gcFIXUP2(c->resume_to, gc);
+  gcFIXUP2(c->use_next_cont, gc);
+  gcFIXUP2(c->extra_marks, gc);
+  gcFIXUP2(c->shortcut_prompt, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont));
@@ -972,32 +972,32 @@ static int cont_proc_FIXUP(void *p) {
 #define cont_proc_IS_CONST_SIZE 1
 
 
-static int meta_cont_proc_SIZE(void *p) {
+static int meta_cont_proc_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Meta_Continuation));
 }
 
-static int meta_cont_proc_MARK(void *p) {
+static int meta_cont_proc_MARK(void *p, struct NewGC *gc) {
   Scheme_Meta_Continuation *c = (Scheme_Meta_Continuation *)p;
   
-  gcMARK(c->prompt_tag);
-  gcMARK(c->overflow);
-  gcMARK(c->next);
-  gcMARK(c->cont_mark_stack_copied);
-  gcMARK(c->cont);
+  gcMARK2(c->prompt_tag, gc);
+  gcMARK2(c->overflow, gc);
+  gcMARK2(c->next, gc);
+  gcMARK2(c->cont_mark_stack_copied, gc);
+  gcMARK2(c->cont, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Meta_Continuation));
 }
 
-static int meta_cont_proc_FIXUP(void *p) {
+static int meta_cont_proc_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Meta_Continuation *c = (Scheme_Meta_Continuation *)p;
   
-  gcFIXUP(c->prompt_tag);
-  gcFIXUP(c->overflow);
-  gcFIXUP(c->next);
-  gcFIXUP(c->cont_mark_stack_copied);
-  gcFIXUP(c->cont);
+  gcFIXUP2(c->prompt_tag, gc);
+  gcFIXUP2(c->overflow, gc);
+  gcFIXUP2(c->next, gc);
+  gcFIXUP2(c->cont_mark_stack_copied, gc);
+  gcFIXUP2(c->cont, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Meta_Continuation));
@@ -1007,34 +1007,34 @@ static int meta_cont_proc_FIXUP(void *p) {
 #define meta_cont_proc_IS_CONST_SIZE 1
 
 
-static int mark_dyn_wind_SIZE(void *p) {
+static int mark_dyn_wind_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Dynamic_Wind));
 }
 
-static int mark_dyn_wind_MARK(void *p) {
+static int mark_dyn_wind_MARK(void *p, struct NewGC *gc) {
   Scheme_Dynamic_Wind *dw = (Scheme_Dynamic_Wind *)p;
   
-  gcMARK(dw->id);
-  gcMARK(dw->data);
-  gcMARK(dw->prompt_tag);
-  gcMARK(dw->prev);
+  gcMARK2(dw->id, gc);
+  gcMARK2(dw->data, gc);
+  gcMARK2(dw->prompt_tag, gc);
+  gcMARK2(dw->prev, gc);
     
-  MARK_stack_state(&dw->envss);
+  MARK_stack_state(&dw->envss, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Dynamic_Wind));
 }
 
-static int mark_dyn_wind_FIXUP(void *p) {
+static int mark_dyn_wind_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Dynamic_Wind *dw = (Scheme_Dynamic_Wind *)p;
   
-  gcFIXUP(dw->id);
-  gcFIXUP(dw->data);
-  gcFIXUP(dw->prompt_tag);
-  gcFIXUP(dw->prev);
+  gcFIXUP2(dw->id, gc);
+  gcFIXUP2(dw->data, gc);
+  gcFIXUP2(dw->prompt_tag, gc);
+  gcFIXUP2(dw->prev, gc);
     
-  FIXUP_stack_state(&dw->envss);
+  FIXUP_stack_state(&dw->envss, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Dynamic_Wind));
@@ -1044,28 +1044,28 @@ static int mark_dyn_wind_FIXUP(void *p) {
 #define mark_dyn_wind_IS_CONST_SIZE 1
 
 
-static int mark_overflow_SIZE(void *p) {
+static int mark_overflow_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Overflow));
 }
 
-static int mark_overflow_MARK(void *p) {
+static int mark_overflow_MARK(void *p, struct NewGC *gc) {
   Scheme_Overflow *o = (Scheme_Overflow *)p;
 
-  gcMARK(o->prev);
-  gcMARK(o->jmp);
-  gcMARK(o->id);
+  gcMARK2(o->prev, gc);
+  gcMARK2(o->jmp, gc);
+  gcMARK2(o->id, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Overflow));
 }
 
-static int mark_overflow_FIXUP(void *p) {
+static int mark_overflow_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Overflow *o = (Scheme_Overflow *)p;
 
-  gcFIXUP(o->prev);
-  gcFIXUP(o->jmp);
-  gcFIXUP(o->id);
+  gcFIXUP2(o->prev, gc);
+  gcFIXUP2(o->jmp, gc);
+  gcFIXUP2(o->id, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Overflow));
@@ -1075,24 +1075,24 @@ static int mark_overflow_FIXUP(void *p) {
 #define mark_overflow_IS_CONST_SIZE 1
 
 
-static int mark_overflow_jmp_SIZE(void *p) {
+static int mark_overflow_jmp_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Overflow_Jmp));
 }
 
-static int mark_overflow_jmp_MARK(void *p) {
+static int mark_overflow_jmp_MARK(void *p, struct NewGC *gc) {
   Scheme_Overflow_Jmp *o = (Scheme_Overflow_Jmp *)p;
 
-  MARK_jmpup(&o->cont);
+  MARK_jmpup(&o->cont, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Overflow_Jmp));
 }
 
-static int mark_overflow_jmp_FIXUP(void *p) {
+static int mark_overflow_jmp_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Overflow_Jmp *o = (Scheme_Overflow_Jmp *)p;
 
-  FIXUP_jmpup(&o->cont);
+  FIXUP_jmpup(&o->cont, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Overflow_Jmp));
@@ -1102,34 +1102,34 @@ static int mark_overflow_jmp_FIXUP(void *p) {
 #define mark_overflow_jmp_IS_CONST_SIZE 1
 
 
-static int escaping_cont_proc_SIZE(void *p) {
+static int escaping_cont_proc_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Escaping_Cont));
 }
 
-static int escaping_cont_proc_MARK(void *p) {
+static int escaping_cont_proc_MARK(void *p, struct NewGC *gc) {
   Scheme_Escaping_Cont *c = (Scheme_Escaping_Cont *)p;
 
 #ifdef MZ_USE_JIT
-  gcMARK(c->native_trace);
+  gcMARK2(c->native_trace, gc);
 #endif
 
-  gcMARK(c->barrier_prompt);
-  MARK_stack_state(&c->envss);
+  gcMARK2(c->barrier_prompt, gc);
+  MARK_stack_state(&c->envss, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Escaping_Cont));
 }
 
-static int escaping_cont_proc_FIXUP(void *p) {
+static int escaping_cont_proc_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Escaping_Cont *c = (Scheme_Escaping_Cont *)p;
 
 #ifdef MZ_USE_JIT
-  gcFIXUP(c->native_trace);
+  gcFIXUP2(c->native_trace, gc);
 #endif
 
-  gcFIXUP(c->barrier_prompt);
-  FIXUP_stack_state(&c->envss);
+  gcFIXUP2(c->barrier_prompt, gc);
+  FIXUP_stack_state(&c->envss, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Escaping_Cont));
@@ -1139,17 +1139,17 @@ static int escaping_cont_proc_FIXUP(void *p) {
 #define escaping_cont_proc_IS_CONST_SIZE 1
 
 
-static int char_obj_SIZE(void *p) {
+static int char_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
 
-static int char_obj_MARK(void *p) {
+static int char_obj_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
 
-static int char_obj_FIXUP(void *p) {
+static int char_obj_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Small_Object));
 }
@@ -1158,7 +1158,7 @@ static int char_obj_FIXUP(void *p) {
 #define char_obj_IS_CONST_SIZE 1
 
 
-static int bignum_obj_SIZE(void *p) {
+static int bignum_obj_SIZE(void *p, struct NewGC *gc) {
   Scheme_Bignum *b = (Scheme_Bignum *)p;
 
   return
@@ -1167,11 +1167,11 @@ static int bignum_obj_SIZE(void *p) {
    : gcBYTES_TO_WORDS(sizeof(Small_Bignum)));
 }
 
-static int bignum_obj_MARK(void *p) {
+static int bignum_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Bignum *b = (Scheme_Bignum *)p;
 
   if (!SCHEME_BIGINLINE(b)) {
-    gcMARK(b->digits);
+    gcMARK2(b->digits, gc);
   } else {
     
   }
@@ -1182,11 +1182,11 @@ static int bignum_obj_MARK(void *p) {
    : gcBYTES_TO_WORDS(sizeof(Small_Bignum)));
 }
 
-static int bignum_obj_FIXUP(void *p) {
+static int bignum_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Bignum *b = (Scheme_Bignum *)p;
 
   if (!SCHEME_BIGINLINE(b)) {
-    gcFIXUP(b->digits);
+    gcFIXUP2(b->digits, gc);
   } else {
     b->digits = ((Small_Bignum *)GC_fixup_self(b))->v;
   }
@@ -1201,26 +1201,26 @@ static int bignum_obj_FIXUP(void *p) {
 #define bignum_obj_IS_CONST_SIZE 0
 
 
-static int rational_obj_SIZE(void *p) {
+static int rational_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Rational));
 }
 
-static int rational_obj_MARK(void *p) {
+static int rational_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Rational *r = (Scheme_Rational *)p;
   
-  gcMARK(r->num);
-  gcMARK(r->denom);
+  gcMARK2(r->num, gc);
+  gcMARK2(r->denom, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Rational));
 }
 
-static int rational_obj_FIXUP(void *p) {
+static int rational_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Rational *r = (Scheme_Rational *)p;
   
-  gcFIXUP(r->num);
-  gcFIXUP(r->denom);
+  gcFIXUP2(r->num, gc);
+  gcFIXUP2(r->denom, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Rational));
@@ -1230,7 +1230,7 @@ static int rational_obj_FIXUP(void *p) {
 #define rational_obj_IS_CONST_SIZE 1
 
 
-static int float_obj_SIZE(void *p) {
+static int float_obj_SIZE(void *p, struct NewGC *gc) {
   return
 #ifdef MZ_USE_SINGLE_FLOATS
   gcBYTES_TO_WORDS(sizeof(Scheme_Float));
@@ -1239,7 +1239,7 @@ static int float_obj_SIZE(void *p) {
 #endif
 }
 
-static int float_obj_MARK(void *p) {
+static int float_obj_MARK(void *p, struct NewGC *gc) {
   return
 #ifdef MZ_USE_SINGLE_FLOATS
   gcBYTES_TO_WORDS(sizeof(Scheme_Float));
@@ -1248,7 +1248,7 @@ static int float_obj_MARK(void *p) {
 #endif
 }
 
-static int float_obj_FIXUP(void *p) {
+static int float_obj_FIXUP(void *p, struct NewGC *gc) {
   return
 #ifdef MZ_USE_SINGLE_FLOATS
   gcBYTES_TO_WORDS(sizeof(Scheme_Float));
@@ -1261,17 +1261,17 @@ static int float_obj_FIXUP(void *p) {
 #define float_obj_IS_CONST_SIZE 0
 
 
-static int double_obj_SIZE(void *p) {
+static int double_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Double));
 }
 
-static int double_obj_MARK(void *p) {
+static int double_obj_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Double));
 }
 
-static int double_obj_FIXUP(void *p) {
+static int double_obj_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Double));
 }
@@ -1280,26 +1280,26 @@ static int double_obj_FIXUP(void *p) {
 #define double_obj_IS_CONST_SIZE 1
 
 
-static int complex_obj_SIZE(void *p) {
+static int complex_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Complex));
 }
 
-static int complex_obj_MARK(void *p) {
+static int complex_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Complex *c = (Scheme_Complex *)p;
   
-  gcMARK(c->r);
-  gcMARK(c->i);
+  gcMARK2(c->r, gc);
+  gcMARK2(c->i, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Complex));
 }
 
-static int complex_obj_FIXUP(void *p) {
+static int complex_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Complex *c = (Scheme_Complex *)p;
   
-  gcFIXUP(c->r);
-  gcFIXUP(c->i);
+  gcFIXUP2(c->r, gc);
+  gcFIXUP2(c->i, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Complex));
@@ -1309,22 +1309,22 @@ static int complex_obj_FIXUP(void *p) {
 #define complex_obj_IS_CONST_SIZE 1
 
 
-static int string_obj_SIZE(void *p) {
+static int string_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int string_obj_MARK(void *p) {
+static int string_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Object *o = (Scheme_Object *)p;
-  gcMARK(SCHEME_CHAR_STR_VAL(o));
+  gcMARK2(SCHEME_CHAR_STR_VAL(o), gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int string_obj_FIXUP(void *p) {
+static int string_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Object *o = (Scheme_Object *)p;
-  gcFIXUP(SCHEME_CHAR_STR_VAL(o));
+  gcFIXUP2(SCHEME_CHAR_STR_VAL(o), gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
@@ -1334,22 +1334,22 @@ static int string_obj_FIXUP(void *p) {
 #define string_obj_IS_CONST_SIZE 1
 
 
-static int bstring_obj_SIZE(void *p) {
+static int bstring_obj_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int bstring_obj_MARK(void *p) {
+static int bstring_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Object *o = (Scheme_Object *)p;
-  gcMARK(SCHEME_BYTE_STR_VAL(o));
+  gcMARK2(SCHEME_BYTE_STR_VAL(o), gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int bstring_obj_FIXUP(void *p) {
+static int bstring_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Object *o = (Scheme_Object *)p;
-  gcFIXUP(SCHEME_BYTE_STR_VAL(o));
+  gcFIXUP2(SCHEME_BYTE_STR_VAL(o), gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
@@ -1359,21 +1359,21 @@ static int bstring_obj_FIXUP(void *p) {
 #define bstring_obj_IS_CONST_SIZE 1
 
 
-static int symbol_obj_SIZE(void *p) {
+static int symbol_obj_SIZE(void *p, struct NewGC *gc) {
   Scheme_Symbol *s = (Scheme_Symbol *)p;
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
 }
 
-static int symbol_obj_MARK(void *p) {
+static int symbol_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Symbol *s = (Scheme_Symbol *)p;
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Symbol) + s->len - 3);
 }
 
-static int symbol_obj_FIXUP(void *p) {
+static int symbol_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Symbol *s = (Scheme_Symbol *)p;
 
   return
@@ -1384,26 +1384,26 @@ static int symbol_obj_FIXUP(void *p) {
 #define symbol_obj_IS_CONST_SIZE 0
 
 
-static int cons_cell_SIZE(void *p) {
+static int cons_cell_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int cons_cell_MARK(void *p) {
+static int cons_cell_MARK(void *p, struct NewGC *gc) {
   Scheme_Object *o = (Scheme_Object *)p;
   
-  gcMARK(SCHEME_CAR(o));
-  gcMARK(SCHEME_CDR(o));
+  gcMARK2(SCHEME_CAR(o), gc);
+  gcMARK2(SCHEME_CDR(o), gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int cons_cell_FIXUP(void *p) {
+static int cons_cell_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Object *o = (Scheme_Object *)p;
   
-  gcFIXUP(SCHEME_CAR(o));
-  gcFIXUP(SCHEME_CDR(o));
+  gcFIXUP2(SCHEME_CAR(o), gc);
+  gcFIXUP2(SCHEME_CDR(o), gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
@@ -1413,7 +1413,7 @@ static int cons_cell_FIXUP(void *p) {
 #define cons_cell_IS_CONST_SIZE 1
 
 
-static int vector_obj_SIZE(void *p) {
+static int vector_obj_SIZE(void *p, struct NewGC *gc) {
   Scheme_Vector *vec = (Scheme_Vector *)p;
 
   return
@@ -1421,24 +1421,24 @@ static int vector_obj_SIZE(void *p) {
 		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
 }
 
-static int vector_obj_MARK(void *p) {
+static int vector_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Vector *vec = (Scheme_Vector *)p;
 
   int i;
   for (i = vec->size; i--; )
-    gcMARK(vec->els[i]);
+    gcMARK2(vec->els[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
 		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
 }
 
-static int vector_obj_FIXUP(void *p) {
+static int vector_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Vector *vec = (Scheme_Vector *)p;
 
   int i;
   for (i = vec->size; i--; )
-    gcFIXUP(vec->els[i]);
+    gcFIXUP2(vec->els[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
@@ -1449,7 +1449,7 @@ static int vector_obj_FIXUP(void *p) {
 #define vector_obj_IS_CONST_SIZE 0
 
 
-static int flvector_obj_SIZE(void *p) {
+static int flvector_obj_SIZE(void *p, struct NewGC *gc) {
   Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
 
   return
@@ -1457,7 +1457,7 @@ static int flvector_obj_SIZE(void *p) {
 		    + ((vec->size - 1) * sizeof(double))));
 }
 
-static int flvector_obj_MARK(void *p) {
+static int flvector_obj_MARK(void *p, struct NewGC *gc) {
   Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
 
   return
@@ -1465,7 +1465,7 @@ static int flvector_obj_MARK(void *p) {
 		    + ((vec->size - 1) * sizeof(double))));
 }
 
-static int flvector_obj_FIXUP(void *p) {
+static int flvector_obj_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
 
   return
@@ -1477,56 +1477,56 @@ static int flvector_obj_FIXUP(void *p) {
 #define flvector_obj_IS_CONST_SIZE 0
 
 
-static int input_port_SIZE(void *p) {
+static int input_port_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_Port));
 }
 
-static int input_port_MARK(void *p) {
+static int input_port_MARK(void *p, struct NewGC *gc) {
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
   
-  gcMARK(ip->sub_type);
-  gcMARK(ip->port_data);
-  gcMARK(ip->name);
-  gcMARK(ip->peeked_read);
-  gcMARK(ip->peeked_write);
-  gcMARK(ip->read_handler);
-  gcMARK(ip->mref);
-  gcMARK(ip->output_half);
-  gcMARK(ip->special);
-  gcMARK(ip->ungotten_special);
-  gcMARK(ip->progress_evt);
-  gcMARK(ip->input_lock);
-  gcMARK(ip->input_giveup);
-  gcMARK(ip->input_extras);
-  gcMARK(ip->input_extras_ready);
-  gcMARK(ip->unless);
-  gcMARK(ip->unless_cache);
+  gcMARK2(ip->sub_type, gc);
+  gcMARK2(ip->port_data, gc);
+  gcMARK2(ip->name, gc);
+  gcMARK2(ip->peeked_read, gc);
+  gcMARK2(ip->peeked_write, gc);
+  gcMARK2(ip->read_handler, gc);
+  gcMARK2(ip->mref, gc);
+  gcMARK2(ip->output_half, gc);
+  gcMARK2(ip->special, gc);
+  gcMARK2(ip->ungotten_special, gc);
+  gcMARK2(ip->progress_evt, gc);
+  gcMARK2(ip->input_lock, gc);
+  gcMARK2(ip->input_giveup, gc);
+  gcMARK2(ip->input_extras, gc);
+  gcMARK2(ip->input_extras_ready, gc);
+  gcMARK2(ip->unless, gc);
+  gcMARK2(ip->unless_cache, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_Port));
 }
 
-static int input_port_FIXUP(void *p) {
+static int input_port_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;
   
-  gcFIXUP(ip->sub_type);
-  gcFIXUP(ip->port_data);
-  gcFIXUP(ip->name);
-  gcFIXUP(ip->peeked_read);
-  gcFIXUP(ip->peeked_write);
-  gcFIXUP(ip->read_handler);
-  gcFIXUP(ip->mref);
-  gcFIXUP(ip->output_half);
-  gcFIXUP(ip->special);
-  gcFIXUP(ip->ungotten_special);
-  gcFIXUP(ip->progress_evt);
-  gcFIXUP(ip->input_lock);
-  gcFIXUP(ip->input_giveup);
-  gcFIXUP(ip->input_extras);
-  gcFIXUP(ip->input_extras_ready);
-  gcFIXUP(ip->unless);
-  gcFIXUP(ip->unless_cache);
+  gcFIXUP2(ip->sub_type, gc);
+  gcFIXUP2(ip->port_data, gc);
+  gcFIXUP2(ip->name, gc);
+  gcFIXUP2(ip->peeked_read, gc);
+  gcFIXUP2(ip->peeked_write, gc);
+  gcFIXUP2(ip->read_handler, gc);
+  gcFIXUP2(ip->mref, gc);
+  gcFIXUP2(ip->output_half, gc);
+  gcFIXUP2(ip->special, gc);
+  gcFIXUP2(ip->ungotten_special, gc);
+  gcFIXUP2(ip->progress_evt, gc);
+  gcFIXUP2(ip->input_lock, gc);
+  gcFIXUP2(ip->input_giveup, gc);
+  gcFIXUP2(ip->input_extras, gc);
+  gcFIXUP2(ip->input_extras_ready, gc);
+  gcFIXUP2(ip->unless, gc);
+  gcFIXUP2(ip->unless_cache, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_Port));
@@ -1536,38 +1536,38 @@ static int input_port_FIXUP(void *p) {
 #define input_port_IS_CONST_SIZE 1
 
 
-static int output_port_SIZE(void *p) {
+static int output_port_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Output_Port));
 }
 
-static int output_port_MARK(void *p) {
+static int output_port_MARK(void *p, struct NewGC *gc) {
   Scheme_Output_Port *op = (Scheme_Output_Port *)p;
 
-  gcMARK(op->sub_type);
-  gcMARK(op->port_data);
-  gcMARK(op->name);
-  gcMARK(op->display_handler);
-  gcMARK(op->write_handler);
-  gcMARK(op->print_handler);
-  gcMARK(op->mref);
-  gcMARK(op->input_half);
+  gcMARK2(op->sub_type, gc);
+  gcMARK2(op->port_data, gc);
+  gcMARK2(op->name, gc);
+  gcMARK2(op->display_handler, gc);
+  gcMARK2(op->write_handler, gc);
+  gcMARK2(op->print_handler, gc);
+  gcMARK2(op->mref, gc);
+  gcMARK2(op->input_half, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Output_Port));
 }
 
-static int output_port_FIXUP(void *p) {
+static int output_port_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Output_Port *op = (Scheme_Output_Port *)p;
 
-  gcFIXUP(op->sub_type);
-  gcFIXUP(op->port_data);
-  gcFIXUP(op->name);
-  gcFIXUP(op->display_handler);
-  gcFIXUP(op->write_handler);
-  gcFIXUP(op->print_handler);
-  gcFIXUP(op->mref);
-  gcFIXUP(op->input_half);
+  gcFIXUP2(op->sub_type, gc);
+  gcFIXUP2(op->port_data, gc);
+  gcFIXUP2(op->name, gc);
+  gcFIXUP2(op->display_handler, gc);
+  gcFIXUP2(op->write_handler, gc);
+  gcFIXUP2(op->print_handler, gc);
+  gcFIXUP2(op->mref, gc);
+  gcFIXUP2(op->input_half, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Output_Port));
@@ -1578,17 +1578,17 @@ static int output_port_FIXUP(void *p) {
 
 
 
-static int syntax_compiler_SIZE(void *p) {
+static int syntax_compiler_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int syntax_compiler_MARK(void *p) {
+static int syntax_compiler_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int syntax_compiler_FIXUP(void *p) {
+static int syntax_compiler_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
@@ -1597,231 +1597,231 @@ static int syntax_compiler_FIXUP(void *p) {
 #define syntax_compiler_IS_CONST_SIZE 1
 
 
-static int thread_val_SIZE(void *p) {
+static int thread_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }
 
-static int thread_val_MARK(void *p) {
+static int thread_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Thread *pr = (Scheme_Thread *)p;
   
-  gcMARK(pr->next);
-  gcMARK(pr->prev);
+  gcMARK2(pr->next, gc);
+  gcMARK2(pr->prev, gc);
 
-  gcMARK(pr->t_set_parent);
-  gcMARK(pr->t_set_next);
-  gcMARK(pr->t_set_prev);
+  gcMARK2(pr->t_set_parent, gc);
+  gcMARK2(pr->t_set_next, gc);
+  gcMARK2(pr->t_set_prev, gc);
 
-  MARK_cjs(&pr->cjs);
-  gcMARK(pr->decompose_mc);
+  MARK_cjs(&pr->cjs, gc);
+  gcMARK2(pr->decompose_mc, gc);
 
-  gcMARK(pr->cell_values);
-  gcMARK(pr->init_config);
-  gcMARK(pr->init_break_cell);
+  gcMARK2(pr->cell_values, gc);
+  gcMARK2(pr->init_config, gc);
+  gcMARK2(pr->init_break_cell, gc);
 
   if (!pr->runstack_owner
       || !GC_merely_accounting()
       || (*pr->runstack_owner == pr)) {
     Scheme_Object **rs = pr->runstack_start;
-    gcMARK( pr->runstack_start);
+    gcMARK2( pr->runstack_start, gc);
     if (pr->runstack != pr->runstack_start + (pr->runstack - rs))
       pr->runstack = pr->runstack_start + (pr->runstack - rs);
 
-    gcMARK(pr->runstack_saved);
+    gcMARK2(pr->runstack_saved, gc);
   }
-  gcMARK(pr->runstack_owner);
-  gcMARK(pr->runstack_swapped);
+  gcMARK2(pr->runstack_owner, gc);
+  gcMARK2(pr->runstack_swapped, gc);
   pr->spare_runstack = NULL; /* just in case */
 
-  gcMARK(pr->meta_prompt);
-  gcMARK(pr->meta_continuation);
+  gcMARK2(pr->meta_prompt, gc);
+  gcMARK2(pr->meta_continuation, gc);
   
-  gcMARK(pr->cont_mark_stack_segments);
-  gcMARK(pr->cont_mark_stack_owner);
-  gcMARK(pr->cont_mark_stack_swapped);
+  gcMARK2(pr->cont_mark_stack_segments, gc);
+  gcMARK2(pr->cont_mark_stack_owner, gc);
+  gcMARK2(pr->cont_mark_stack_swapped, gc);
 
-  MARK_jmpup(&pr->jmpup_buf);
+  MARK_jmpup(&pr->jmpup_buf, gc);
   
-  gcMARK(pr->dw);
+  gcMARK2(pr->dw, gc);
   
-  gcMARK(pr->nester);
-  gcMARK(pr->nestee);
+  gcMARK2(pr->nester, gc);
+  gcMARK2(pr->nestee, gc);
   
-  gcMARK(pr->blocker);
-  gcMARK(pr->overflow);
+  gcMARK2(pr->blocker, gc);
+  gcMARK2(pr->overflow, gc);
 
-  gcMARK(pr->return_marks_to);
-  gcMARK(pr->returned_marks);
+  gcMARK2(pr->return_marks_to, gc);
+  gcMARK2(pr->returned_marks, gc);
   
-  gcMARK(pr->current_local_env);
-  gcMARK(pr->current_local_mark);
-  gcMARK(pr->current_local_name);
-  gcMARK(pr->current_local_certs);
-  gcMARK(pr->current_local_modidx);
-  gcMARK(pr->current_local_menv);
-  gcMARK(pr->current_local_bindings);
+  gcMARK2(pr->current_local_env, gc);
+  gcMARK2(pr->current_local_mark, gc);
+  gcMARK2(pr->current_local_name, gc);
+  gcMARK2(pr->current_local_certs, gc);
+  gcMARK2(pr->current_local_modidx, gc);
+  gcMARK2(pr->current_local_menv, gc);
+  gcMARK2(pr->current_local_bindings, gc);
 
-  gcMARK(pr->current_mt);
+  gcMARK2(pr->current_mt, gc);
 
-  gcMARK(pr->constant_folding);
-  gcMARK(pr->reading_delayed);
+  gcMARK2(pr->constant_folding, gc);
+  gcMARK2(pr->reading_delayed, gc);
   
-  gcMARK(pr->overflow_reply);
+  gcMARK2(pr->overflow_reply, gc);
 
-  gcMARK(pr->values_buffer);
+  gcMARK2(pr->values_buffer, gc);
 
-  gcMARK(pr->tail_buffer);
+  gcMARK2(pr->tail_buffer, gc);
   
-  gcMARK(pr->ku.eval.wait_expr);
+  gcMARK2(pr->ku.eval.wait_expr, gc);
 
-  gcMARK(pr->ku.apply.tail_rator);
-  gcMARK(pr->ku.apply.tail_rands);
+  gcMARK2(pr->ku.apply.tail_rator, gc);
+  gcMARK2(pr->ku.apply.tail_rands, gc);
 
-  gcMARK(pr->ku.multiple.array);
+  gcMARK2(pr->ku.multiple.array, gc);
 
-  gcMARK(pr->ku.k.p1);
-  gcMARK(pr->ku.k.p2);
-  gcMARK(pr->ku.k.p3);
-  gcMARK(pr->ku.k.p4);
-  gcMARK(pr->ku.k.p5);
+  gcMARK2(pr->ku.k.p1, gc);
+  gcMARK2(pr->ku.k.p2, gc);
+  gcMARK2(pr->ku.k.p3, gc);
+  gcMARK2(pr->ku.k.p4, gc);
+  gcMARK2(pr->ku.k.p5, gc);
   
-  gcMARK(pr->list_stack);
+  gcMARK2(pr->list_stack, gc);
   
-  gcMARK(pr->kill_data);
-  gcMARK(pr->private_kill_data);
-  gcMARK(pr->private_kill_next);
+  gcMARK2(pr->kill_data, gc);
+  gcMARK2(pr->private_kill_data, gc);
+  gcMARK2(pr->private_kill_next, gc);
   
-  gcMARK(pr->user_tls);
-  gcMARK(pr->gmp_tls_data);
+  gcMARK2(pr->user_tls, gc);
+  gcMARK2(pr->gmp_tls_data, gc);
   
-  gcMARK(pr->mr_hop);
-  gcMARK(pr->mref);
-  gcMARK(pr->extra_mrefs);
+  gcMARK2(pr->mr_hop, gc);
+  gcMARK2(pr->mref, gc);
+  gcMARK2(pr->extra_mrefs, gc);
 
-  gcMARK(pr->name);
+  gcMARK2(pr->name, gc);
 
-  gcMARK(pr->transitive_resumes);
+  gcMARK2(pr->transitive_resumes, gc);
 
-  gcMARK(pr->suspended_box);
-  gcMARK(pr->resumed_box);
-  gcMARK(pr->dead_box);
-  gcMARK(pr->running_box);
+  gcMARK2(pr->suspended_box, gc);
+  gcMARK2(pr->resumed_box, gc);
+  gcMARK2(pr->dead_box, gc);
+  gcMARK2(pr->running_box, gc);
 
-  gcMARK(pr->mbox_first);
-  gcMARK(pr->mbox_last);
-  gcMARK(pr->mbox_sema);
+  gcMARK2(pr->mbox_first, gc);
+  gcMARK2(pr->mbox_last, gc);
+  gcMARK2(pr->mbox_sema, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }
 
-static int thread_val_FIXUP(void *p) {
+static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Thread *pr = (Scheme_Thread *)p;
   
-  gcFIXUP(pr->next);
-  gcFIXUP(pr->prev);
+  gcFIXUP2(pr->next, gc);
+  gcFIXUP2(pr->prev, gc);
 
-  gcFIXUP(pr->t_set_parent);
-  gcFIXUP(pr->t_set_next);
-  gcFIXUP(pr->t_set_prev);
+  gcFIXUP2(pr->t_set_parent, gc);
+  gcFIXUP2(pr->t_set_next, gc);
+  gcFIXUP2(pr->t_set_prev, gc);
 
-  FIXUP_cjs(&pr->cjs);
-  gcFIXUP(pr->decompose_mc);
+  FIXUP_cjs(&pr->cjs, gc);
+  gcFIXUP2(pr->decompose_mc, gc);
 
-  gcFIXUP(pr->cell_values);
-  gcFIXUP(pr->init_config);
-  gcFIXUP(pr->init_break_cell);
+  gcFIXUP2(pr->cell_values, gc);
+  gcFIXUP2(pr->init_config, gc);
+  gcFIXUP2(pr->init_break_cell, gc);
 
   if (!pr->runstack_owner
       || !GC_merely_accounting()
       || (*pr->runstack_owner == pr)) {
     Scheme_Object **rs = pr->runstack_start;
-    gcFIXUP_TYPED_NOW(Scheme_Object **, pr->runstack_start);
+    gcFIXUP2_TYPED_NOW(Scheme_Object **, pr->runstack_start, gc);
     if (pr->runstack != pr->runstack_start + (pr->runstack - rs))
       pr->runstack = pr->runstack_start + (pr->runstack - rs);
 
-    gcFIXUP(pr->runstack_saved);
+    gcFIXUP2(pr->runstack_saved, gc);
   }
-  gcFIXUP(pr->runstack_owner);
-  gcFIXUP(pr->runstack_swapped);
+  gcFIXUP2(pr->runstack_owner, gc);
+  gcFIXUP2(pr->runstack_swapped, gc);
   pr->spare_runstack = NULL; /* just in case */
 
-  gcFIXUP(pr->meta_prompt);
-  gcFIXUP(pr->meta_continuation);
+  gcFIXUP2(pr->meta_prompt, gc);
+  gcFIXUP2(pr->meta_continuation, gc);
   
-  gcFIXUP(pr->cont_mark_stack_segments);
-  gcFIXUP(pr->cont_mark_stack_owner);
-  gcFIXUP(pr->cont_mark_stack_swapped);
+  gcFIXUP2(pr->cont_mark_stack_segments, gc);
+  gcFIXUP2(pr->cont_mark_stack_owner, gc);
+  gcFIXUP2(pr->cont_mark_stack_swapped, gc);
 
-  FIXUP_jmpup(&pr->jmpup_buf);
+  FIXUP_jmpup(&pr->jmpup_buf, gc);
   
-  gcFIXUP(pr->dw);
+  gcFIXUP2(pr->dw, gc);
   
-  gcFIXUP(pr->nester);
-  gcFIXUP(pr->nestee);
+  gcFIXUP2(pr->nester, gc);
+  gcFIXUP2(pr->nestee, gc);
   
-  gcFIXUP(pr->blocker);
-  gcFIXUP(pr->overflow);
+  gcFIXUP2(pr->blocker, gc);
+  gcFIXUP2(pr->overflow, gc);
 
-  gcFIXUP(pr->return_marks_to);
-  gcFIXUP(pr->returned_marks);
+  gcFIXUP2(pr->return_marks_to, gc);
+  gcFIXUP2(pr->returned_marks, gc);
   
-  gcFIXUP(pr->current_local_env);
-  gcFIXUP(pr->current_local_mark);
-  gcFIXUP(pr->current_local_name);
-  gcFIXUP(pr->current_local_certs);
-  gcFIXUP(pr->current_local_modidx);
-  gcFIXUP(pr->current_local_menv);
-  gcFIXUP(pr->current_local_bindings);
+  gcFIXUP2(pr->current_local_env, gc);
+  gcFIXUP2(pr->current_local_mark, gc);
+  gcFIXUP2(pr->current_local_name, gc);
+  gcFIXUP2(pr->current_local_certs, gc);
+  gcFIXUP2(pr->current_local_modidx, gc);
+  gcFIXUP2(pr->current_local_menv, gc);
+  gcFIXUP2(pr->current_local_bindings, gc);
 
-  gcFIXUP(pr->current_mt);
+  gcFIXUP2(pr->current_mt, gc);
 
-  gcFIXUP(pr->constant_folding);
-  gcFIXUP(pr->reading_delayed);
+  gcFIXUP2(pr->constant_folding, gc);
+  gcFIXUP2(pr->reading_delayed, gc);
   
-  gcFIXUP(pr->overflow_reply);
+  gcFIXUP2(pr->overflow_reply, gc);
 
-  gcFIXUP(pr->values_buffer);
+  gcFIXUP2(pr->values_buffer, gc);
 
-  gcFIXUP(pr->tail_buffer);
+  gcFIXUP2(pr->tail_buffer, gc);
   
-  gcFIXUP(pr->ku.eval.wait_expr);
+  gcFIXUP2(pr->ku.eval.wait_expr, gc);
 
-  gcFIXUP(pr->ku.apply.tail_rator);
-  gcFIXUP(pr->ku.apply.tail_rands);
+  gcFIXUP2(pr->ku.apply.tail_rator, gc);
+  gcFIXUP2(pr->ku.apply.tail_rands, gc);
 
-  gcFIXUP(pr->ku.multiple.array);
+  gcFIXUP2(pr->ku.multiple.array, gc);
 
-  gcFIXUP(pr->ku.k.p1);
-  gcFIXUP(pr->ku.k.p2);
-  gcFIXUP(pr->ku.k.p3);
-  gcFIXUP(pr->ku.k.p4);
-  gcFIXUP(pr->ku.k.p5);
+  gcFIXUP2(pr->ku.k.p1, gc);
+  gcFIXUP2(pr->ku.k.p2, gc);
+  gcFIXUP2(pr->ku.k.p3, gc);
+  gcFIXUP2(pr->ku.k.p4, gc);
+  gcFIXUP2(pr->ku.k.p5, gc);
   
-  gcFIXUP(pr->list_stack);
+  gcFIXUP2(pr->list_stack, gc);
   
-  gcFIXUP(pr->kill_data);
-  gcFIXUP(pr->private_kill_data);
-  gcFIXUP(pr->private_kill_next);
+  gcFIXUP2(pr->kill_data, gc);
+  gcFIXUP2(pr->private_kill_data, gc);
+  gcFIXUP2(pr->private_kill_next, gc);
   
-  gcFIXUP(pr->user_tls);
-  gcFIXUP(pr->gmp_tls_data);
+  gcFIXUP2(pr->user_tls, gc);
+  gcFIXUP2(pr->gmp_tls_data, gc);
   
-  gcFIXUP(pr->mr_hop);
-  gcFIXUP(pr->mref);
-  gcFIXUP(pr->extra_mrefs);
+  gcFIXUP2(pr->mr_hop, gc);
+  gcFIXUP2(pr->mref, gc);
+  gcFIXUP2(pr->extra_mrefs, gc);
 
-  gcFIXUP(pr->name);
+  gcFIXUP2(pr->name, gc);
 
-  gcFIXUP(pr->transitive_resumes);
+  gcFIXUP2(pr->transitive_resumes, gc);
 
-  gcFIXUP(pr->suspended_box);
-  gcFIXUP(pr->resumed_box);
-  gcFIXUP(pr->dead_box);
-  gcFIXUP(pr->running_box);
+  gcFIXUP2(pr->suspended_box, gc);
+  gcFIXUP2(pr->resumed_box, gc);
+  gcFIXUP2(pr->dead_box, gc);
+  gcFIXUP2(pr->running_box, gc);
 
-  gcFIXUP(pr->mbox_first);
-  gcFIXUP(pr->mbox_last);
-  gcFIXUP(pr->mbox_sema);
+  gcFIXUP2(pr->mbox_first, gc);
+  gcFIXUP2(pr->mbox_last, gc);
+  gcFIXUP2(pr->mbox_sema, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }
@@ -1830,32 +1830,32 @@ static int thread_val_FIXUP(void *p) {
 #define thread_val_IS_CONST_SIZE 1
 
 
-static int runstack_val_SIZE(void *p) {
+static int runstack_val_SIZE(void *p, struct NewGC *gc) {
   long *s = (long *)p;
   return
   s[1];
 }
 
-static int runstack_val_MARK(void *p) {
+static int runstack_val_MARK(void *p, struct NewGC *gc) {
   long *s = (long *)p;
   void **a, **b;
   a = (void **)s + 4 + s[2];
   b = (void **)s + 4 + s[3];
   while (a < b) {
-    gcMARK(*a);
+    gcMARK2(*a, gc);
     a++;
   }
   return
   s[1];
 }
 
-static int runstack_val_FIXUP(void *p) {
+static int runstack_val_FIXUP(void *p, struct NewGC *gc) {
   long *s = (long *)p;
   void **a, **b;
   a = (void **)s + 4 + s[2];
   b = (void **)s + 4 + s[3];
   while (a < b) {
-    gcFIXUP(*a);
+    gcFIXUP2(*a, gc);
     a++;
   }
 
@@ -1881,29 +1881,29 @@ static int runstack_val_FIXUP(void *p) {
 #define runstack_val_IS_CONST_SIZE 0
 
 
-static int prompt_val_SIZE(void *p) {
+static int prompt_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Prompt));
 }
 
-static int prompt_val_MARK(void *p) {
+static int prompt_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
-  gcMARK(pr->boundary_overflow_id);
+  gcMARK2(pr->boundary_overflow_id, gc);
   if (!GC_merely_accounting())
-    gcMARK(pr->runstack_boundary_start);
-  gcMARK(pr->tag);
-  gcMARK(pr->id);
+    gcMARK2(pr->runstack_boundary_start, gc);
+  gcMARK2(pr->tag, gc);
+  gcMARK2(pr->id, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Prompt));
 }
 
-static int prompt_val_FIXUP(void *p) {
+static int prompt_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
-  gcFIXUP(pr->boundary_overflow_id);
+  gcFIXUP2(pr->boundary_overflow_id, gc);
   if (!GC_merely_accounting())
-    gcFIXUP(pr->runstack_boundary_start);
-  gcFIXUP(pr->tag);
-  gcFIXUP(pr->id);
+    gcFIXUP2(pr->runstack_boundary_start, gc);
+  gcFIXUP2(pr->tag, gc);
+  gcFIXUP2(pr->id, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Prompt));
 }
@@ -1912,24 +1912,24 @@ static int prompt_val_FIXUP(void *p) {
 #define prompt_val_IS_CONST_SIZE 1
 
 
-static int cont_mark_set_val_SIZE(void *p) {
+static int cont_mark_set_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Set));
 }
 
-static int cont_mark_set_val_MARK(void *p) {
+static int cont_mark_set_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Cont_Mark_Set *s = (Scheme_Cont_Mark_Set *)p;
-  gcMARK(s->chain);
-  gcMARK(s->native_stack_trace);
+  gcMARK2(s->chain, gc);
+  gcMARK2(s->native_stack_trace, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Set));
 }
 
-static int cont_mark_set_val_FIXUP(void *p) {
+static int cont_mark_set_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Cont_Mark_Set *s = (Scheme_Cont_Mark_Set *)p;
-  gcFIXUP(s->chain);
-  gcFIXUP(s->native_stack_trace);
+  gcFIXUP2(s->chain, gc);
+  gcFIXUP2(s->native_stack_trace, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Set));
@@ -1939,26 +1939,26 @@ static int cont_mark_set_val_FIXUP(void *p) {
 #define cont_mark_set_val_IS_CONST_SIZE 1
 
 
-static int sema_val_SIZE(void *p) {
+static int sema_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Sema));
 }
 
-static int sema_val_MARK(void *p) {
+static int sema_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Sema *s = (Scheme_Sema *)p;
 
-  gcMARK(s->first);
-  gcMARK(s->last);
+  gcMARK2(s->first, gc);
+  gcMARK2(s->last, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Sema));
 }
 
-static int sema_val_FIXUP(void *p) {
+static int sema_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Sema *s = (Scheme_Sema *)p;
 
-  gcFIXUP(s->first);
-  gcFIXUP(s->last);
+  gcFIXUP2(s->first, gc);
+  gcFIXUP2(s->last, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Sema));
@@ -1968,30 +1968,30 @@ static int sema_val_FIXUP(void *p) {
 #define sema_val_IS_CONST_SIZE 1
 
 
-static int channel_val_SIZE(void *p) {
+static int channel_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel));
 }
 
-static int channel_val_MARK(void *p) {
+static int channel_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Channel *s = (Scheme_Channel *)p;
 
-  gcMARK(s->get_first);
-  gcMARK(s->get_last);
-  gcMARK(s->put_first);
-  gcMARK(s->put_last);
+  gcMARK2(s->get_first, gc);
+  gcMARK2(s->get_last, gc);
+  gcMARK2(s->put_first, gc);
+  gcMARK2(s->put_last, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel));
 }
 
-static int channel_val_FIXUP(void *p) {
+static int channel_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Channel *s = (Scheme_Channel *)p;
 
-  gcFIXUP(s->get_first);
-  gcFIXUP(s->get_last);
-  gcFIXUP(s->put_first);
-  gcFIXUP(s->put_last);
+  gcFIXUP2(s->get_first, gc);
+  gcFIXUP2(s->get_last, gc);
+  gcFIXUP2(s->put_first, gc);
+  gcFIXUP2(s->put_last, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel));
@@ -2001,26 +2001,26 @@ static int channel_val_FIXUP(void *p) {
 #define channel_val_IS_CONST_SIZE 1
 
 
-static int channel_put_val_SIZE(void *p) {
+static int channel_put_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel_Put));
 }
 
-static int channel_put_val_MARK(void *p) {
+static int channel_put_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Channel_Put *s = (Scheme_Channel_Put *)p;
 
-  gcMARK(s->ch);
-  gcMARK(s->val);
+  gcMARK2(s->ch, gc);
+  gcMARK2(s->val, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel_Put));
 }
 
-static int channel_put_val_FIXUP(void *p) {
+static int channel_put_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Channel_Put *s = (Scheme_Channel_Put *)p;
 
-  gcFIXUP(s->ch);
-  gcFIXUP(s->val);
+  gcFIXUP2(s->ch, gc);
+  gcFIXUP2(s->val, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel_Put));
@@ -2030,28 +2030,28 @@ static int channel_put_val_FIXUP(void *p) {
 #define channel_put_val_IS_CONST_SIZE 1
 
 
-static int hash_table_val_SIZE(void *p) {
+static int hash_table_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Table));
 }
 
-static int hash_table_val_MARK(void *p) {
+static int hash_table_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)p;
 
-  gcMARK(ht->keys);
-  gcMARK(ht->vals);
-  gcMARK(ht->mutex);
+  gcMARK2(ht->keys, gc);
+  gcMARK2(ht->vals, gc);
+  gcMARK2(ht->mutex, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Table));
 }
 
-static int hash_table_val_FIXUP(void *p) {
+static int hash_table_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)p;
 
-  gcFIXUP(ht->keys);
-  gcFIXUP(ht->vals);
-  gcFIXUP(ht->mutex);
+  gcFIXUP2(ht->keys, gc);
+  gcFIXUP2(ht->vals, gc);
+  gcFIXUP2(ht->mutex, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Table));
@@ -2061,26 +2061,26 @@ static int hash_table_val_FIXUP(void *p) {
 #define hash_table_val_IS_CONST_SIZE 1
 
 
-static int bucket_table_val_SIZE(void *p) {
+static int bucket_table_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_Table));
 }
 
-static int bucket_table_val_MARK(void *p) {
+static int bucket_table_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Bucket_Table *ht = (Scheme_Bucket_Table *)p;
 
-  gcMARK(ht->buckets);
-  gcMARK(ht->mutex);
+  gcMARK2(ht->buckets, gc);
+  gcMARK2(ht->mutex, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_Table));
 }
 
-static int bucket_table_val_FIXUP(void *p) {
+static int bucket_table_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Bucket_Table *ht = (Scheme_Bucket_Table *)p;
 
-  gcFIXUP(ht->buckets);
-  gcFIXUP(ht->mutex);
+  gcFIXUP2(ht->buckets, gc);
+  gcFIXUP2(ht->mutex, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket_Table));
@@ -2090,83 +2090,83 @@ static int bucket_table_val_FIXUP(void *p) {
 #define bucket_table_val_IS_CONST_SIZE 1
 
 
-static int namespace_val_SIZE(void *p) {
+static int namespace_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
 }
 
-static int namespace_val_MARK(void *p) {
+static int namespace_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Env *e = (Scheme_Env *)p;
 
-  gcMARK(e->module);
-  gcMARK(e->module_registry);
-  gcMARK(e->export_registry);
-  gcMARK(e->insp);
+  gcMARK2(e->module, gc);
+  gcMARK2(e->module_registry, gc);
+  gcMARK2(e->export_registry, gc);
+  gcMARK2(e->insp, gc);
 
-  gcMARK(e->rename_set);
-  gcMARK(e->temp_marked_names);
-  gcMARK(e->post_ex_rename_set);
+  gcMARK2(e->rename_set, gc);
+  gcMARK2(e->temp_marked_names, gc);
+  gcMARK2(e->post_ex_rename_set, gc);
 
-  gcMARK(e->syntax);
-  gcMARK(e->exp_env);
-  gcMARK(e->template_env);
-  gcMARK(e->label_env);
+  gcMARK2(e->syntax, gc);
+  gcMARK2(e->exp_env, gc);
+  gcMARK2(e->template_env, gc);
+  gcMARK2(e->label_env, gc);
 
-  gcMARK(e->shadowed_syntax);
+  gcMARK2(e->shadowed_syntax, gc);
 
-  gcMARK(e->link_midx);
-  gcMARK(e->require_names);
-  gcMARK(e->et_require_names);
-  gcMARK(e->tt_require_names);
-  gcMARK(e->dt_require_names);
-  gcMARK(e->other_require_names);
-  gcMARK(e->did_starts);
-  gcMARK(e->available_next[0]);
-  gcMARK(e->available_next[1]);
+  gcMARK2(e->link_midx, gc);
+  gcMARK2(e->require_names, gc);
+  gcMARK2(e->et_require_names, gc);
+  gcMARK2(e->tt_require_names, gc);
+  gcMARK2(e->dt_require_names, gc);
+  gcMARK2(e->other_require_names, gc);
+  gcMARK2(e->did_starts, gc);
+  gcMARK2(e->available_next[0], gc);
+  gcMARK2(e->available_next[1], gc);
 
-  gcMARK(e->toplevel);
-  gcMARK(e->modchain);
+  gcMARK2(e->toplevel, gc);
+  gcMARK2(e->modchain, gc);
 
-  gcMARK(e->modvars);
+  gcMARK2(e->modvars, gc);
 
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
 }
 
-static int namespace_val_FIXUP(void *p) {
+static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Env *e = (Scheme_Env *)p;
 
-  gcFIXUP(e->module);
-  gcFIXUP(e->module_registry);
-  gcFIXUP(e->export_registry);
-  gcFIXUP(e->insp);
+  gcFIXUP2(e->module, gc);
+  gcFIXUP2(e->module_registry, gc);
+  gcFIXUP2(e->export_registry, gc);
+  gcFIXUP2(e->insp, gc);
 
-  gcFIXUP(e->rename_set);
-  gcFIXUP(e->temp_marked_names);
-  gcFIXUP(e->post_ex_rename_set);
+  gcFIXUP2(e->rename_set, gc);
+  gcFIXUP2(e->temp_marked_names, gc);
+  gcFIXUP2(e->post_ex_rename_set, gc);
 
-  gcFIXUP(e->syntax);
-  gcFIXUP(e->exp_env);
-  gcFIXUP(e->template_env);
-  gcFIXUP(e->label_env);
+  gcFIXUP2(e->syntax, gc);
+  gcFIXUP2(e->exp_env, gc);
+  gcFIXUP2(e->template_env, gc);
+  gcFIXUP2(e->label_env, gc);
 
-  gcFIXUP(e->shadowed_syntax);
+  gcFIXUP2(e->shadowed_syntax, gc);
 
-  gcFIXUP(e->link_midx);
-  gcFIXUP(e->require_names);
-  gcFIXUP(e->et_require_names);
-  gcFIXUP(e->tt_require_names);
-  gcFIXUP(e->dt_require_names);
-  gcFIXUP(e->other_require_names);
-  gcFIXUP(e->did_starts);
-  gcFIXUP(e->available_next[0]);
-  gcFIXUP(e->available_next[1]);
+  gcFIXUP2(e->link_midx, gc);
+  gcFIXUP2(e->require_names, gc);
+  gcFIXUP2(e->et_require_names, gc);
+  gcFIXUP2(e->tt_require_names, gc);
+  gcFIXUP2(e->dt_require_names, gc);
+  gcFIXUP2(e->other_require_names, gc);
+  gcFIXUP2(e->did_starts, gc);
+  gcFIXUP2(e->available_next[0], gc);
+  gcFIXUP2(e->available_next[1], gc);
 
-  gcFIXUP(e->toplevel);
-  gcFIXUP(e->modchain);
+  gcFIXUP2(e->toplevel, gc);
+  gcFIXUP2(e->modchain, gc);
 
-  gcFIXUP(e->modvars);
+  gcFIXUP2(e->modvars, gc);
 
 
   return
@@ -2177,17 +2177,17 @@ static int namespace_val_FIXUP(void *p) {
 #define namespace_val_IS_CONST_SIZE 1
 
 
-static int random_state_val_SIZE(void *p) {
+static int random_state_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Random_State));
 }
 
-static int random_state_val_MARK(void *p) {
+static int random_state_val_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Random_State));
 }
 
-static int random_state_val_FIXUP(void *p) {
+static int random_state_val_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Random_State));
 }
@@ -2196,24 +2196,24 @@ static int random_state_val_FIXUP(void *p) {
 #define random_state_val_IS_CONST_SIZE 1
 
 
-static int compilation_top_val_SIZE(void *p) {
+static int compilation_top_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
 }
 
-static int compilation_top_val_MARK(void *p) {
+static int compilation_top_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Compilation_Top *t = (Scheme_Compilation_Top *)p;
-  gcMARK(t->code);
-  gcMARK(t->prefix);
+  gcMARK2(t->code, gc);
+  gcMARK2(t->prefix, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
 }
 
-static int compilation_top_val_FIXUP(void *p) {
+static int compilation_top_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Compilation_Top *t = (Scheme_Compilation_Top *)p;
-  gcFIXUP(t->code);
-  gcFIXUP(t->prefix);
+  gcFIXUP2(t->code, gc);
+  gcFIXUP2(t->prefix, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
@@ -2223,28 +2223,28 @@ static int compilation_top_val_FIXUP(void *p) {
 #define compilation_top_val_IS_CONST_SIZE 1
 
 
-static int resolve_prefix_val_SIZE(void *p) {
+static int resolve_prefix_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
 }
 
-static int resolve_prefix_val_MARK(void *p) {
+static int resolve_prefix_val_MARK(void *p, struct NewGC *gc) {
   Resolve_Prefix *rp = (Resolve_Prefix *)p;
-  gcMARK(rp->toplevels);
-  gcMARK(rp->stxes);
-  gcMARK(rp->delay_info_rpair);
-  gcMARK(rp->uses_unsafe);
+  gcMARK2(rp->toplevels, gc);
+  gcMARK2(rp->stxes, gc);
+  gcMARK2(rp->delay_info_rpair, gc);
+  gcMARK2(rp->uses_unsafe, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
 }
 
-static int resolve_prefix_val_FIXUP(void *p) {
+static int resolve_prefix_val_FIXUP(void *p, struct NewGC *gc) {
   Resolve_Prefix *rp = (Resolve_Prefix *)p;
-  gcFIXUP(rp->toplevels);
-  gcFIXUP(rp->stxes);
-  gcFIXUP(rp->delay_info_rpair);
-  gcFIXUP(rp->uses_unsafe);
+  gcFIXUP2(rp->toplevels, gc);
+  gcFIXUP2(rp->stxes, gc);
+  gcFIXUP2(rp->delay_info_rpair, gc);
+  gcFIXUP2(rp->uses_unsafe, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2254,26 +2254,26 @@ static int resolve_prefix_val_FIXUP(void *p) {
 #define resolve_prefix_val_IS_CONST_SIZE 1
 
 
-static int comp_prefix_val_SIZE(void *p) {
+static int comp_prefix_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
 }
 
-static int comp_prefix_val_MARK(void *p) {
+static int comp_prefix_val_MARK(void *p, struct NewGC *gc) {
   Comp_Prefix *cp = (Comp_Prefix *)p;
-  gcMARK(cp->toplevels);
-  gcMARK(cp->stxes);
-  gcMARK(cp->uses_unsafe);
+  gcMARK2(cp->toplevels, gc);
+  gcMARK2(cp->stxes, gc);
+  gcMARK2(cp->uses_unsafe, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
 }
 
-static int comp_prefix_val_FIXUP(void *p) {
+static int comp_prefix_val_FIXUP(void *p, struct NewGC *gc) {
   Comp_Prefix *cp = (Comp_Prefix *)p;
-  gcFIXUP(cp->toplevels);
-  gcFIXUP(cp->stxes);
-  gcFIXUP(cp->uses_unsafe);
+  gcFIXUP2(cp->toplevels, gc);
+  gcFIXUP2(cp->stxes, gc);
+  gcFIXUP2(cp->uses_unsafe, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
@@ -2283,24 +2283,24 @@ static int comp_prefix_val_FIXUP(void *p) {
 #define comp_prefix_val_IS_CONST_SIZE 1
 
 
-static int svector_val_SIZE(void *p) {
+static int svector_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int svector_val_MARK(void *p) {
+static int svector_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Object *o = (Scheme_Object *)p;
 
-  gcMARK(SCHEME_SVEC_VEC(o));
+  gcMARK2(SCHEME_SVEC_VEC(o), gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
 }
 
-static int svector_val_FIXUP(void *p) {
+static int svector_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Object *o = (Scheme_Object *)p;
 
-  gcFIXUP(SCHEME_SVEC_VEC(o));
+  gcFIXUP2(SCHEME_SVEC_VEC(o), gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
@@ -2310,33 +2310,33 @@ static int svector_val_FIXUP(void *p) {
 #define svector_val_IS_CONST_SIZE 1
 
 
-static int stx_val_SIZE(void *p) {
+static int stx_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }
 
-static int stx_val_MARK(void *p) {
+static int stx_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
-  gcMARK(stx->val);
-  gcMARK(stx->srcloc);
-  gcMARK(stx->wraps);
-  gcMARK(stx->certs);
-  gcMARK(stx->props);
+  gcMARK2(stx->val, gc);
+  gcMARK2(stx->srcloc, gc);
+  gcMARK2(stx->wraps, gc);
+  gcMARK2(stx->certs, gc);
+  gcMARK2(stx->props, gc);
   if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
-    gcMARK(stx->u.modinfo_cache);
+    gcMARK2(stx->u.modinfo_cache, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }
 
-static int stx_val_FIXUP(void *p) {
+static int stx_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
-  gcFIXUP(stx->val);
-  gcFIXUP(stx->srcloc);
-  gcFIXUP(stx->wraps);
-  gcFIXUP(stx->certs);
-  gcFIXUP(stx->props);
+  gcFIXUP2(stx->val, gc);
+  gcFIXUP2(stx->srcloc, gc);
+  gcFIXUP2(stx->wraps, gc);
+  gcFIXUP2(stx->certs, gc);
+  gcFIXUP2(stx->props, gc);
   if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
-    gcFIXUP(stx->u.modinfo_cache);
+    gcFIXUP2(stx->u.modinfo_cache, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }
@@ -2345,21 +2345,21 @@ static int stx_val_FIXUP(void *p) {
 #define stx_val_IS_CONST_SIZE 1
 
 
-static int stx_off_val_SIZE(void *p) {
+static int stx_off_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Offset));
 }
 
-static int stx_off_val_MARK(void *p) {
+static int stx_off_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Stx_Offset *o = (Scheme_Stx_Offset *)p;
-  gcMARK(o->src);
+  gcMARK2(o->src, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Offset));
 }
 
-static int stx_off_val_FIXUP(void *p) {
+static int stx_off_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Stx_Offset *o = (Scheme_Stx_Offset *)p;
-  gcFIXUP(o->src);
+  gcFIXUP2(o->src, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Offset));
 }
@@ -2368,99 +2368,99 @@ static int stx_off_val_FIXUP(void *p) {
 #define stx_off_val_IS_CONST_SIZE 1
 
 
-static int module_val_SIZE(void *p) {
+static int module_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module));
 }
 
-static int module_val_MARK(void *p) {
+static int module_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Module *m = (Scheme_Module *)p;
-  gcMARK(m->modname);
+  gcMARK2(m->modname, gc);
 
-  gcMARK(m->et_requires);
-  gcMARK(m->requires);
-  gcMARK(m->tt_requires);
-  gcMARK(m->dt_requires);
-  gcMARK(m->other_requires);
+  gcMARK2(m->et_requires, gc);
+  gcMARK2(m->requires, gc);
+  gcMARK2(m->tt_requires, gc);
+  gcMARK2(m->dt_requires, gc);
+  gcMARK2(m->other_requires, gc);
 
-  gcMARK(m->body);
-  gcMARK(m->et_body);
+  gcMARK2(m->body, gc);
+  gcMARK2(m->et_body, gc);
 
-  gcMARK(m->me);
+  gcMARK2(m->me, gc);
 
-  gcMARK(m->provide_protects);
-  gcMARK(m->indirect_provides);
+  gcMARK2(m->provide_protects, gc);
+  gcMARK2(m->indirect_provides, gc);
 
-  gcMARK(m->indirect_syntax_provides);
+  gcMARK2(m->indirect_syntax_provides, gc);
 
-  gcMARK(m->et_provide_protects);
-  gcMARK(m->et_indirect_provides);
+  gcMARK2(m->et_provide_protects, gc);
+  gcMARK2(m->et_indirect_provides, gc);
 
-  gcMARK(m->self_modidx);
+  gcMARK2(m->self_modidx, gc);
 
-  gcMARK(m->accessible);
-  gcMARK(m->et_accessible);
+  gcMARK2(m->accessible, gc);
+  gcMARK2(m->et_accessible, gc);
 
-  gcMARK(m->insp);
+  gcMARK2(m->insp, gc);
 
-  gcMARK(m->lang_info);
+  gcMARK2(m->lang_info, gc);
 
-  gcMARK(m->hints);
-  gcMARK(m->ii_src);
+  gcMARK2(m->hints, gc);
+  gcMARK2(m->ii_src, gc);
 
-  gcMARK(m->comp_prefix);
-  gcMARK(m->prefix);
-  gcMARK(m->dummy);
+  gcMARK2(m->comp_prefix, gc);
+  gcMARK2(m->prefix, gc);
+  gcMARK2(m->dummy, gc);
 
-  gcMARK(m->rn_stx);
+  gcMARK2(m->rn_stx, gc);
 
-  gcMARK(m->primitive);
+  gcMARK2(m->primitive, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module));
 }
 
-static int module_val_FIXUP(void *p) {
+static int module_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Module *m = (Scheme_Module *)p;
-  gcFIXUP(m->modname);
+  gcFIXUP2(m->modname, gc);
 
-  gcFIXUP(m->et_requires);
-  gcFIXUP(m->requires);
-  gcFIXUP(m->tt_requires);
-  gcFIXUP(m->dt_requires);
-  gcFIXUP(m->other_requires);
+  gcFIXUP2(m->et_requires, gc);
+  gcFIXUP2(m->requires, gc);
+  gcFIXUP2(m->tt_requires, gc);
+  gcFIXUP2(m->dt_requires, gc);
+  gcFIXUP2(m->other_requires, gc);
 
-  gcFIXUP(m->body);
-  gcFIXUP(m->et_body);
+  gcFIXUP2(m->body, gc);
+  gcFIXUP2(m->et_body, gc);
 
-  gcFIXUP(m->me);
+  gcFIXUP2(m->me, gc);
 
-  gcFIXUP(m->provide_protects);
-  gcFIXUP(m->indirect_provides);
+  gcFIXUP2(m->provide_protects, gc);
+  gcFIXUP2(m->indirect_provides, gc);
 
-  gcFIXUP(m->indirect_syntax_provides);
+  gcFIXUP2(m->indirect_syntax_provides, gc);
 
-  gcFIXUP(m->et_provide_protects);
-  gcFIXUP(m->et_indirect_provides);
+  gcFIXUP2(m->et_provide_protects, gc);
+  gcFIXUP2(m->et_indirect_provides, gc);
 
-  gcFIXUP(m->self_modidx);
+  gcFIXUP2(m->self_modidx, gc);
 
-  gcFIXUP(m->accessible);
-  gcFIXUP(m->et_accessible);
+  gcFIXUP2(m->accessible, gc);
+  gcFIXUP2(m->et_accessible, gc);
 
-  gcFIXUP(m->insp);
+  gcFIXUP2(m->insp, gc);
 
-  gcFIXUP(m->lang_info);
+  gcFIXUP2(m->lang_info, gc);
 
-  gcFIXUP(m->hints);
-  gcFIXUP(m->ii_src);
+  gcFIXUP2(m->hints, gc);
+  gcFIXUP2(m->ii_src, gc);
 
-  gcFIXUP(m->comp_prefix);
-  gcFIXUP(m->prefix);
-  gcFIXUP(m->dummy);
+  gcFIXUP2(m->comp_prefix, gc);
+  gcFIXUP2(m->prefix, gc);
+  gcFIXUP2(m->dummy, gc);
 
-  gcFIXUP(m->rn_stx);
+  gcFIXUP2(m->rn_stx, gc);
 
-  gcFIXUP(m->primitive);
+  gcFIXUP2(m->primitive, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module));
 }
@@ -2469,52 +2469,52 @@ static int module_val_FIXUP(void *p) {
 #define module_val_IS_CONST_SIZE 1
 
 
-static int module_phase_exports_val_SIZE(void *p) {
+static int module_phase_exports_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
 }
 
-static int module_phase_exports_val_MARK(void *p) {
+static int module_phase_exports_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
 
-  gcMARK(m->phase_index);
+  gcMARK2(m->phase_index, gc);
 
-  gcMARK(m->src_modidx);
+  gcMARK2(m->src_modidx, gc);
 
-  gcMARK(m->provides);
-  gcMARK(m->provide_srcs);
-  gcMARK(m->provide_src_names);
-  gcMARK(m->provide_nominal_srcs);
-  gcMARK(m->provide_src_phases);
-  gcMARK(m->provide_insps);
+  gcMARK2(m->provides, gc);
+  gcMARK2(m->provide_srcs, gc);
+  gcMARK2(m->provide_src_names, gc);
+  gcMARK2(m->provide_nominal_srcs, gc);
+  gcMARK2(m->provide_src_phases, gc);
+  gcMARK2(m->provide_insps, gc);
 
-  gcMARK(m->kernel_exclusion);
-  gcMARK(m->kernel_exclusion2);
+  gcMARK2(m->kernel_exclusion, gc);
+  gcMARK2(m->kernel_exclusion2, gc);
 
-  gcMARK(m->ht);
+  gcMARK2(m->ht, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
 }
 
-static int module_phase_exports_val_FIXUP(void *p) {
+static int module_phase_exports_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
 
-  gcFIXUP(m->phase_index);
+  gcFIXUP2(m->phase_index, gc);
 
-  gcFIXUP(m->src_modidx);
+  gcFIXUP2(m->src_modidx, gc);
 
-  gcFIXUP(m->provides);
-  gcFIXUP(m->provide_srcs);
-  gcFIXUP(m->provide_src_names);
-  gcFIXUP(m->provide_nominal_srcs);
-  gcFIXUP(m->provide_src_phases);
-  gcFIXUP(m->provide_insps);
+  gcFIXUP2(m->provides, gc);
+  gcFIXUP2(m->provide_srcs, gc);
+  gcFIXUP2(m->provide_src_names, gc);
+  gcFIXUP2(m->provide_nominal_srcs, gc);
+  gcFIXUP2(m->provide_src_phases, gc);
+  gcFIXUP2(m->provide_insps, gc);
 
-  gcFIXUP(m->kernel_exclusion);
-  gcFIXUP(m->kernel_exclusion2);
+  gcFIXUP2(m->kernel_exclusion, gc);
+  gcFIXUP2(m->kernel_exclusion2, gc);
 
-  gcFIXUP(m->ht);
+  gcFIXUP2(m->ht, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
@@ -2524,33 +2524,33 @@ static int module_phase_exports_val_FIXUP(void *p) {
 #define module_phase_exports_val_IS_CONST_SIZE 1
 
 
-static int module_exports_val_SIZE(void *p) {
+static int module_exports_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
 }
 
-static int module_exports_val_MARK(void *p) {
+static int module_exports_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
 
-  gcMARK(m->rt);
-  gcMARK(m->et);
-  gcMARK(m->dt);
-  gcMARK(m->other_phases);
+  gcMARK2(m->rt, gc);
+  gcMARK2(m->et, gc);
+  gcMARK2(m->dt, gc);
+  gcMARK2(m->other_phases, gc);
 
-  gcMARK(m->src_modidx);
+  gcMARK2(m->src_modidx, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
 }
 
-static int module_exports_val_FIXUP(void *p) {
+static int module_exports_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
 
-  gcFIXUP(m->rt);
-  gcFIXUP(m->et);
-  gcFIXUP(m->dt);
-  gcFIXUP(m->other_phases);
+  gcFIXUP2(m->rt, gc);
+  gcFIXUP2(m->et, gc);
+  gcFIXUP2(m->dt, gc);
+  gcFIXUP2(m->other_phases, gc);
 
-  gcFIXUP(m->src_modidx);
+  gcFIXUP2(m->src_modidx, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
 }
@@ -2559,31 +2559,31 @@ static int module_exports_val_FIXUP(void *p) {
 #define module_exports_val_IS_CONST_SIZE 1
 
 
-static int modidx_val_SIZE(void *p) {
+static int modidx_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Modidx));
 }
 
-static int modidx_val_MARK(void *p) {
+static int modidx_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Modidx *modidx = (Scheme_Modidx *)p;
 
-  gcMARK(modidx->path);
-  gcMARK(modidx->base);
-  gcMARK(modidx->resolved);
-  gcMARK(modidx->shift_cache);
-  gcMARK(modidx->cache_next);
+  gcMARK2(modidx->path, gc);
+  gcMARK2(modidx->base, gc);
+  gcMARK2(modidx->resolved, gc);
+  gcMARK2(modidx->shift_cache, gc);
+  gcMARK2(modidx->cache_next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Modidx));
 }
 
-static int modidx_val_FIXUP(void *p) {
+static int modidx_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Modidx *modidx = (Scheme_Modidx *)p;
 
-  gcFIXUP(modidx->path);
-  gcFIXUP(modidx->base);
-  gcFIXUP(modidx->resolved);
-  gcFIXUP(modidx->shift_cache);
-  gcFIXUP(modidx->cache_next);
+  gcFIXUP2(modidx->path, gc);
+  gcFIXUP2(modidx->base, gc);
+  gcFIXUP2(modidx->resolved, gc);
+  gcFIXUP2(modidx->shift_cache, gc);
+  gcFIXUP2(modidx->cache_next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Modidx));
 }
@@ -2592,29 +2592,29 @@ static int modidx_val_FIXUP(void *p) {
 #define modidx_val_IS_CONST_SIZE 1
 
 
-static int guard_val_SIZE(void *p) {
+static int guard_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Security_Guard));
 }
 
-static int guard_val_MARK(void *p) {
+static int guard_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Security_Guard *g = (Scheme_Security_Guard *)p;
 
-  gcMARK(g->parent);
-  gcMARK(g->file_proc);
-  gcMARK(g->network_proc);
-  gcMARK(g->link_proc);
+  gcMARK2(g->parent, gc);
+  gcMARK2(g->file_proc, gc);
+  gcMARK2(g->network_proc, gc);
+  gcMARK2(g->link_proc, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Security_Guard));
 }
 
-static int guard_val_FIXUP(void *p) {
+static int guard_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Security_Guard *g = (Scheme_Security_Guard *)p;
 
-  gcFIXUP(g->parent);
-  gcFIXUP(g->file_proc);
-  gcFIXUP(g->network_proc);
-  gcFIXUP(g->link_proc);
+  gcFIXUP2(g->parent, gc);
+  gcFIXUP2(g->file_proc, gc);
+  gcFIXUP2(g->network_proc, gc);
+  gcFIXUP2(g->link_proc, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Security_Guard));
 }
@@ -2623,24 +2623,24 @@ static int guard_val_FIXUP(void *p) {
 #define guard_val_IS_CONST_SIZE 1
 
 
-static int buf_holder_SIZE(void *p) {
+static int buf_holder_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Jumpup_Buf_Holder));
 }
 
-static int buf_holder_MARK(void *p) {
+static int buf_holder_MARK(void *p, struct NewGC *gc) {
   Scheme_Jumpup_Buf_Holder *h = (Scheme_Jumpup_Buf_Holder *)p;
  
-  MARK_jmpup(&h->buf);
+  MARK_jmpup(&h->buf, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Jumpup_Buf_Holder));
 }
 
-static int buf_holder_FIXUP(void *p) {
+static int buf_holder_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Jumpup_Buf_Holder *h = (Scheme_Jumpup_Buf_Holder *)p;
  
-  FIXUP_jmpup(&h->buf);
+  FIXUP_jmpup(&h->buf, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Jumpup_Buf_Holder));
@@ -2650,21 +2650,21 @@ static int buf_holder_FIXUP(void *p) {
 #define buf_holder_IS_CONST_SIZE 1
 
 
-static int mark_inspector_SIZE(void *p) {
+static int mark_inspector_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Inspector));
 }
 
-static int mark_inspector_MARK(void *p) {
+static int mark_inspector_MARK(void *p, struct NewGC *gc) {
   Scheme_Inspector *i = (Scheme_Inspector *)p;
-  gcMARK(i->superior);
+  gcMARK2(i->superior, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Inspector));
 }
 
-static int mark_inspector_FIXUP(void *p) {
+static int mark_inspector_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Inspector *i = (Scheme_Inspector *)p;
-  gcFIXUP(i->superior);
+  gcFIXUP2(i->superior, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Inspector));
 }
@@ -2673,28 +2673,28 @@ static int mark_inspector_FIXUP(void *p) {
 #define mark_inspector_IS_CONST_SIZE 1
 
 
-static int mark_pipe_SIZE(void *p) {
+static int mark_pipe_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Pipe));
 }
 
-static int mark_pipe_MARK(void *p) {
+static int mark_pipe_MARK(void *p, struct NewGC *gc) {
   Scheme_Pipe *pp = (Scheme_Pipe *)p;
     
-  gcMARK(pp->buf);
-  gcMARK(pp->wakeup_on_read);
-  gcMARK(pp->wakeup_on_write);
+  gcMARK2(pp->buf, gc);
+  gcMARK2(pp->wakeup_on_read, gc);
+  gcMARK2(pp->wakeup_on_write, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Pipe));
 }
 
-static int mark_pipe_FIXUP(void *p) {
+static int mark_pipe_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Pipe *pp = (Scheme_Pipe *)p;
     
-  gcFIXUP(pp->buf);
-  gcFIXUP(pp->wakeup_on_read);
-  gcFIXUP(pp->wakeup_on_write);
+  gcFIXUP2(pp->buf, gc);
+  gcFIXUP2(pp->wakeup_on_read, gc);
+  gcFIXUP2(pp->wakeup_on_write, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Pipe));
@@ -2704,27 +2704,27 @@ static int mark_pipe_FIXUP(void *p) {
 #define mark_pipe_IS_CONST_SIZE 1
 
 
-static int mark_logger_SIZE(void *p) {
+static int mark_logger_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
 
-static int mark_logger_MARK(void *p) {
+static int mark_logger_MARK(void *p, struct NewGC *gc) {
   Scheme_Logger *l = (Scheme_Logger *)p;
-  gcMARK(l->name);
-  gcMARK(l->parent);
-  gcMARK(l->readers);
-  gcMARK(l->timestamp);
+  gcMARK2(l->name, gc);
+  gcMARK2(l->parent, gc);
+  gcMARK2(l->readers, gc);
+  gcMARK2(l->timestamp, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
 
-static int mark_logger_FIXUP(void *p) {
+static int mark_logger_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Logger *l = (Scheme_Logger *)p;
-  gcFIXUP(l->name);
-  gcFIXUP(l->parent);
-  gcFIXUP(l->readers);
-  gcFIXUP(l->timestamp);
+  gcFIXUP2(l->name, gc);
+  gcFIXUP2(l->parent, gc);
+  gcFIXUP2(l->readers, gc);
+  gcFIXUP2(l->timestamp, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
 }
@@ -2733,25 +2733,25 @@ static int mark_logger_FIXUP(void *p) {
 #define mark_logger_IS_CONST_SIZE 1
 
 
-static int mark_log_reader_SIZE(void *p) {
+static int mark_log_reader_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Log_Reader));
 }
 
-static int mark_log_reader_MARK(void *p) {
+static int mark_log_reader_MARK(void *p, struct NewGC *gc) {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
-  gcMARK(lr->sema);
-  gcMARK(lr->head);
-  gcMARK(lr->tail);
+  gcMARK2(lr->sema, gc);
+  gcMARK2(lr->head, gc);
+  gcMARK2(lr->tail, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Log_Reader));
 }
 
-static int mark_log_reader_FIXUP(void *p) {
+static int mark_log_reader_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
-  gcFIXUP(lr->sema);
-  gcFIXUP(lr->head);
-  gcFIXUP(lr->tail);
+  gcFIXUP2(lr->sema, gc);
+  gcFIXUP2(lr->head, gc);
+  gcFIXUP2(lr->tail, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Log_Reader));
 }
@@ -2766,18 +2766,18 @@ static int mark_log_reader_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_ENGINE_C
 
-static int engine_val_SIZE(void *p) {
+static int engine_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Engine));
 }
 
-static int engine_val_MARK(void *p) {
+static int engine_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Engine *en = (Scheme_Engine *)p;
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Engine));
 }
 
-static int engine_val_FIXUP(void *p) {
+static int engine_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Engine *en = (Scheme_Engine *)p;
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Engine));
@@ -2791,62 +2791,62 @@ static int engine_val_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_ENV_C
 
-static int mark_comp_env_SIZE(void *p) {
+static int mark_comp_env_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Full_Comp_Env));
 }
 
-static int mark_comp_env_MARK(void *p) {
+static int mark_comp_env_MARK(void *p, struct NewGC *gc) {
   Scheme_Full_Comp_Env *e = (Scheme_Full_Comp_Env *)p;
 
-  gcMARK(e->base.genv);
-  gcMARK(e->base.insp);
-  gcMARK(e->base.prefix);
-  gcMARK(e->base.next);
-  gcMARK(e->base.values);
-  gcMARK(e->base.certs);
-  gcMARK(e->base.renames);
-  gcMARK(e->base.uid);
-  gcMARK(e->base.uids);
-  gcMARK(e->base.dup_check);
-  gcMARK(e->base.intdef_name);
-  gcMARK(e->base.in_modidx);
-  gcMARK(e->base.skip_table);
+  gcMARK2(e->base.genv, gc);
+  gcMARK2(e->base.insp, gc);
+  gcMARK2(e->base.prefix, gc);
+  gcMARK2(e->base.next, gc);
+  gcMARK2(e->base.values, gc);
+  gcMARK2(e->base.certs, gc);
+  gcMARK2(e->base.renames, gc);
+  gcMARK2(e->base.uid, gc);
+  gcMARK2(e->base.uids, gc);
+  gcMARK2(e->base.dup_check, gc);
+  gcMARK2(e->base.intdef_name, gc);
+  gcMARK2(e->base.in_modidx, gc);
+  gcMARK2(e->base.skip_table, gc);
   
-  gcMARK(e->data.const_names);
-  gcMARK(e->data.const_vals);
-  gcMARK(e->data.const_uids);
-  gcMARK(e->data.sealed);
-  gcMARK(e->data.use);
-  gcMARK(e->data.lifts);
+  gcMARK2(e->data.const_names, gc);
+  gcMARK2(e->data.const_vals, gc);
+  gcMARK2(e->data.const_uids, gc);
+  gcMARK2(e->data.sealed, gc);
+  gcMARK2(e->data.use, gc);
+  gcMARK2(e->data.lifts, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Full_Comp_Env));
 }
 
-static int mark_comp_env_FIXUP(void *p) {
+static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Full_Comp_Env *e = (Scheme_Full_Comp_Env *)p;
 
-  gcFIXUP(e->base.genv);
-  gcFIXUP(e->base.insp);
-  gcFIXUP(e->base.prefix);
-  gcFIXUP(e->base.next);
-  gcFIXUP(e->base.values);
-  gcFIXUP(e->base.certs);
-  gcFIXUP(e->base.renames);
-  gcFIXUP(e->base.uid);
-  gcFIXUP(e->base.uids);
-  gcFIXUP(e->base.dup_check);
-  gcFIXUP(e->base.intdef_name);
-  gcFIXUP(e->base.in_modidx);
-  gcFIXUP(e->base.skip_table);
+  gcFIXUP2(e->base.genv, gc);
+  gcFIXUP2(e->base.insp, gc);
+  gcFIXUP2(e->base.prefix, gc);
+  gcFIXUP2(e->base.next, gc);
+  gcFIXUP2(e->base.values, gc);
+  gcFIXUP2(e->base.certs, gc);
+  gcFIXUP2(e->base.renames, gc);
+  gcFIXUP2(e->base.uid, gc);
+  gcFIXUP2(e->base.uids, gc);
+  gcFIXUP2(e->base.dup_check, gc);
+  gcFIXUP2(e->base.intdef_name, gc);
+  gcFIXUP2(e->base.in_modidx, gc);
+  gcFIXUP2(e->base.skip_table, gc);
   
-  gcFIXUP(e->data.const_names);
-  gcFIXUP(e->data.const_vals);
-  gcFIXUP(e->data.const_uids);
-  gcFIXUP(e->data.sealed);
-  gcFIXUP(e->data.use);
-  gcFIXUP(e->data.lifts);
+  gcFIXUP2(e->data.const_names, gc);
+  gcFIXUP2(e->data.const_vals, gc);
+  gcFIXUP2(e->data.const_uids, gc);
+  gcFIXUP2(e->data.sealed, gc);
+  gcFIXUP2(e->data.use, gc);
+  gcFIXUP2(e->data.lifts, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Full_Comp_Env));
@@ -2856,40 +2856,40 @@ static int mark_comp_env_FIXUP(void *p) {
 #define mark_comp_env_IS_CONST_SIZE 1
 
 
-static int mark_resolve_info_SIZE(void *p) {
+static int mark_resolve_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Info));
 }
 
-static int mark_resolve_info_MARK(void *p) {
+static int mark_resolve_info_MARK(void *p, struct NewGC *gc) {
   Resolve_Info *i = (Resolve_Info *)p;
   
-  gcMARK(i->prefix);
-  gcMARK(i->stx_map);
-  gcMARK(i->old_pos);
-  gcMARK(i->new_pos);
-  gcMARK(i->old_stx_pos);
-  gcMARK(i->flags);
-  gcMARK(i->lifts);
-  gcMARK(i->lifted);
-  gcMARK(i->next);
+  gcMARK2(i->prefix, gc);
+  gcMARK2(i->stx_map, gc);
+  gcMARK2(i->old_pos, gc);
+  gcMARK2(i->new_pos, gc);
+  gcMARK2(i->old_stx_pos, gc);
+  gcMARK2(i->flags, gc);
+  gcMARK2(i->lifts, gc);
+  gcMARK2(i->lifted, gc);
+  gcMARK2(i->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Info));
 }
 
-static int mark_resolve_info_FIXUP(void *p) {
+static int mark_resolve_info_FIXUP(void *p, struct NewGC *gc) {
   Resolve_Info *i = (Resolve_Info *)p;
   
-  gcFIXUP(i->prefix);
-  gcFIXUP(i->stx_map);
-  gcFIXUP(i->old_pos);
-  gcFIXUP(i->new_pos);
-  gcFIXUP(i->old_stx_pos);
-  gcFIXUP(i->flags);
-  gcFIXUP(i->lifts);
-  gcFIXUP(i->lifted);
-  gcFIXUP(i->next);
+  gcFIXUP2(i->prefix, gc);
+  gcFIXUP2(i->stx_map, gc);
+  gcFIXUP2(i->old_pos, gc);
+  gcFIXUP2(i->new_pos, gc);
+  gcFIXUP2(i->old_stx_pos, gc);
+  gcFIXUP2(i->flags, gc);
+  gcFIXUP2(i->lifts, gc);
+  gcFIXUP2(i->lifted, gc);
+  gcFIXUP2(i->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Info));
@@ -2899,40 +2899,40 @@ static int mark_resolve_info_FIXUP(void *p) {
 #define mark_resolve_info_IS_CONST_SIZE 1
 
 
-static int mark_optimize_info_SIZE(void *p) {
+static int mark_optimize_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
 }
 
-static int mark_optimize_info_MARK(void *p) {
+static int mark_optimize_info_MARK(void *p, struct NewGC *gc) {
   Optimize_Info *i = (Optimize_Info *)p;
   
-  gcMARK(i->stat_dists);
-  gcMARK(i->sd_depths);
-  gcMARK(i->next);
-  gcMARK(i->use);
-  gcMARK(i->consts);
-  gcMARK(i->top_level_consts);
-  gcMARK(i->transitive_use);
-  gcMARK(i->transitive_use_len);
-  gcMARK(i->context);
+  gcMARK2(i->stat_dists, gc);
+  gcMARK2(i->sd_depths, gc);
+  gcMARK2(i->next, gc);
+  gcMARK2(i->use, gc);
+  gcMARK2(i->consts, gc);
+  gcMARK2(i->top_level_consts, gc);
+  gcMARK2(i->transitive_use, gc);
+  gcMARK2(i->transitive_use_len, gc);
+  gcMARK2(i->context, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
 }
 
-static int mark_optimize_info_FIXUP(void *p) {
+static int mark_optimize_info_FIXUP(void *p, struct NewGC *gc) {
   Optimize_Info *i = (Optimize_Info *)p;
   
-  gcFIXUP(i->stat_dists);
-  gcFIXUP(i->sd_depths);
-  gcFIXUP(i->next);
-  gcFIXUP(i->use);
-  gcFIXUP(i->consts);
-  gcFIXUP(i->top_level_consts);
-  gcFIXUP(i->transitive_use);
-  gcFIXUP(i->transitive_use_len);
-  gcFIXUP(i->context);
+  gcFIXUP2(i->stat_dists, gc);
+  gcFIXUP2(i->sd_depths, gc);
+  gcFIXUP2(i->next, gc);
+  gcFIXUP2(i->use, gc);
+  gcFIXUP2(i->consts, gc);
+  gcFIXUP2(i->top_level_consts, gc);
+  gcFIXUP2(i->transitive_use, gc);
+  gcFIXUP2(i->transitive_use_len, gc);
+  gcFIXUP2(i->context, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
@@ -2942,28 +2942,28 @@ static int mark_optimize_info_FIXUP(void *p) {
 #define mark_optimize_info_IS_CONST_SIZE 1
 
 
-static int mark_sfs_info_SIZE(void *p) {
+static int mark_sfs_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(SFS_Info));
 }
 
-static int mark_sfs_info_MARK(void *p) {
+static int mark_sfs_info_MARK(void *p, struct NewGC *gc) {
   SFS_Info *i = (SFS_Info *)p;
   
-  gcMARK(i->max_used);
-  gcMARK(i->max_calls);
-  gcMARK(i->saved);
+  gcMARK2(i->max_used, gc);
+  gcMARK2(i->max_calls, gc);
+  gcMARK2(i->saved, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(SFS_Info));
 }
 
-static int mark_sfs_info_FIXUP(void *p) {
+static int mark_sfs_info_FIXUP(void *p, struct NewGC *gc) {
   SFS_Info *i = (SFS_Info *)p;
   
-  gcFIXUP(i->max_used);
-  gcFIXUP(i->max_calls);
-  gcFIXUP(i->saved);
+  gcFIXUP2(i->max_used, gc);
+  gcFIXUP2(i->max_calls, gc);
+  gcFIXUP2(i->saved, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(SFS_Info));
@@ -2973,25 +2973,25 @@ static int mark_sfs_info_FIXUP(void *p) {
 #define mark_sfs_info_IS_CONST_SIZE 1
 
 
-static int mark_once_used_SIZE(void *p) {
+static int mark_once_used_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
 }
 
-static int mark_once_used_MARK(void *p) {
+static int mark_once_used_MARK(void *p, struct NewGC *gc) {
   Scheme_Once_Used *o = (Scheme_Once_Used *)p;
-  gcMARK(o->expr);
-  gcMARK(o->info);
-  gcMARK(o->next);
+  gcMARK2(o->expr, gc);
+  gcMARK2(o->info, gc);
+  gcMARK2(o->next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
 }
 
-static int mark_once_used_FIXUP(void *p) {
+static int mark_once_used_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Once_Used *o = (Scheme_Once_Used *)p;
-  gcFIXUP(o->expr);
-  gcFIXUP(o->info);
-  gcFIXUP(o->next);
+  gcFIXUP2(o->expr, gc);
+  gcFIXUP2(o->info, gc);
+  gcFIXUP2(o->next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
 }
@@ -3006,28 +3006,28 @@ static int mark_once_used_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_EVAL_C
 
-static int mark_comp_info_SIZE(void *p) {
+static int mark_comp_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compile_Info));
 }
 
-static int mark_comp_info_MARK(void *p) {
+static int mark_comp_info_MARK(void *p, struct NewGC *gc) {
   Scheme_Compile_Info *i = (Scheme_Compile_Info *)p;
   
-  gcMARK(i->value_name);
-  gcMARK(i->certs);
-  gcMARK(i->observer);
+  gcMARK2(i->value_name, gc);
+  gcMARK2(i->certs, gc);
+  gcMARK2(i->observer, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compile_Info));
 }
 
-static int mark_comp_info_FIXUP(void *p) {
+static int mark_comp_info_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Compile_Info *i = (Scheme_Compile_Info *)p;
   
-  gcFIXUP(i->value_name);
-  gcFIXUP(i->certs);
-  gcFIXUP(i->observer);
+  gcFIXUP2(i->value_name, gc);
+  gcFIXUP2(i->certs, gc);
+  gcFIXUP2(i->observer, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compile_Info));
@@ -3037,26 +3037,26 @@ static int mark_comp_info_FIXUP(void *p) {
 #define mark_comp_info_IS_CONST_SIZE 1
 
 
-static int mark_saved_stack_SIZE(void *p) {
+static int mark_saved_stack_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Saved_Stack));
 }
 
-static int mark_saved_stack_MARK(void *p) {
+static int mark_saved_stack_MARK(void *p, struct NewGC *gc) {
   Scheme_Saved_Stack *saved = (Scheme_Saved_Stack *)p;
   
-  gcMARK(saved->prev);
-  gcMARK(saved->runstack_start);
+  gcMARK2(saved->prev, gc);
+  gcMARK2(saved->runstack_start, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Saved_Stack));
 }
 
-static int mark_saved_stack_FIXUP(void *p) {
+static int mark_saved_stack_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Saved_Stack *saved = (Scheme_Saved_Stack *)p;
   
-  gcFIXUP(saved->prev);
-  gcFIXUP(saved->runstack_start);
+  gcFIXUP2(saved->prev, gc);
+  gcFIXUP2(saved->runstack_start, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Saved_Stack));
@@ -3066,26 +3066,26 @@ static int mark_saved_stack_FIXUP(void *p) {
 #define mark_saved_stack_IS_CONST_SIZE 1
 
 
-static int mark_validate_clearing_SIZE(void *p) {
+static int mark_validate_clearing_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
 }
 
-static int mark_validate_clearing_MARK(void *p) {
+static int mark_validate_clearing_MARK(void *p, struct NewGC *gc) {
   Validate_Clearing *vc = (Validate_Clearing *)p;
   
-  gcMARK(vc->stack);
-  gcMARK(vc->ncstack);
+  gcMARK2(vc->stack, gc);
+  gcMARK2(vc->ncstack, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
 }
 
-static int mark_validate_clearing_FIXUP(void *p) {
+static int mark_validate_clearing_FIXUP(void *p, struct NewGC *gc) {
   Validate_Clearing *vc = (Validate_Clearing *)p;
   
-  gcFIXUP(vc->stack);
-  gcFIXUP(vc->ncstack);
+  gcFIXUP2(vc->stack, gc);
+  gcFIXUP2(vc->ncstack, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Validate_Clearing));
@@ -3101,24 +3101,24 @@ static int mark_validate_clearing_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_FILE_C
 
-static int mark_reply_item_SIZE(void *p) {
+static int mark_reply_item_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(ReplyItem));
 }
 
-static int mark_reply_item_MARK(void *p) {
+static int mark_reply_item_MARK(void *p, struct NewGC *gc) {
   ReplyItem *r = (ReplyItem *)p;
   
-  gcMARK(r->next);
+  gcMARK2(r->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(ReplyItem));
 }
 
-static int mark_reply_item_FIXUP(void *p) {
+static int mark_reply_item_FIXUP(void *p, struct NewGC *gc) {
   ReplyItem *r = (ReplyItem *)p;
   
-  gcFIXUP(r->next);
+  gcFIXUP2(r->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(ReplyItem));
@@ -3134,28 +3134,28 @@ static int mark_reply_item_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_FUN_C
 
-static int mark_closure_info_SIZE(void *p) {
+static int mark_closure_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Closure_Info));
 }
 
-static int mark_closure_info_MARK(void *p) {
+static int mark_closure_info_MARK(void *p, struct NewGC *gc) {
   Closure_Info *i = (Closure_Info *)p;
   
-  gcMARK(i->local_flags);
-  gcMARK(i->base_closure_map);
-  gcMARK(i->flonum_map);
+  gcMARK2(i->local_flags, gc);
+  gcMARK2(i->base_closure_map, gc);
+  gcMARK2(i->flonum_map, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Closure_Info));
 }
 
-static int mark_closure_info_FIXUP(void *p) {
+static int mark_closure_info_FIXUP(void *p, struct NewGC *gc) {
   Closure_Info *i = (Closure_Info *)p;
   
-  gcFIXUP(i->local_flags);
-  gcFIXUP(i->base_closure_map);
-  gcFIXUP(i->flonum_map);
+  gcFIXUP2(i->local_flags, gc);
+  gcFIXUP2(i->base_closure_map, gc);
+  gcFIXUP2(i->flonum_map, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Closure_Info));
@@ -3165,26 +3165,26 @@ static int mark_closure_info_FIXUP(void *p) {
 #define mark_closure_info_IS_CONST_SIZE 1
 
 
-static int mark_dyn_wind_cell_SIZE(void *p) {
+static int mark_dyn_wind_cell_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Dynamic_Wind_List));
 }
 
-static int mark_dyn_wind_cell_MARK(void *p) {
+static int mark_dyn_wind_cell_MARK(void *p, struct NewGC *gc) {
   Scheme_Dynamic_Wind_List *l = (Scheme_Dynamic_Wind_List *)p;
   
-  gcMARK(l->dw);
-  gcMARK(l->next);
+  gcMARK2(l->dw, gc);
+  gcMARK2(l->next, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Dynamic_Wind_List));
 }
 
-static int mark_dyn_wind_cell_FIXUP(void *p) {
+static int mark_dyn_wind_cell_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Dynamic_Wind_List *l = (Scheme_Dynamic_Wind_List *)p;
   
-  gcFIXUP(l->dw);
-  gcFIXUP(l->next);
+  gcFIXUP2(l->dw, gc);
+  gcFIXUP2(l->next, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Dynamic_Wind_List));
@@ -3194,28 +3194,28 @@ static int mark_dyn_wind_cell_FIXUP(void *p) {
 #define mark_dyn_wind_cell_IS_CONST_SIZE 1
 
 
-static int mark_dyn_wind_info_SIZE(void *p) {
+static int mark_dyn_wind_info_SIZE(void *p, struct NewGC *gc) {
   return
    gcBYTES_TO_WORDS(sizeof(Dyn_Wind));
 }
 
-static int mark_dyn_wind_info_MARK(void *p) {
+static int mark_dyn_wind_info_MARK(void *p, struct NewGC *gc) {
   Dyn_Wind *d = (Dyn_Wind *)p;
   
-  gcMARK(d->pre);
-  gcMARK(d->act);
-  gcMARK(d->post);
+  gcMARK2(d->pre, gc);
+  gcMARK2(d->act, gc);
+  gcMARK2(d->post, gc);
 
   return
    gcBYTES_TO_WORDS(sizeof(Dyn_Wind));
 }
 
-static int mark_dyn_wind_info_FIXUP(void *p) {
+static int mark_dyn_wind_info_FIXUP(void *p, struct NewGC *gc) {
   Dyn_Wind *d = (Dyn_Wind *)p;
   
-  gcFIXUP(d->pre);
-  gcFIXUP(d->act);
-  gcFIXUP(d->post);
+  gcFIXUP2(d->pre, gc);
+  gcFIXUP2(d->act, gc);
+  gcFIXUP2(d->post, gc);
 
   return
    gcBYTES_TO_WORDS(sizeof(Dyn_Wind));
@@ -3225,28 +3225,28 @@ static int mark_dyn_wind_info_FIXUP(void *p) {
 #define mark_dyn_wind_info_IS_CONST_SIZE 1
 
 
-static int mark_cont_mark_chain_SIZE(void *p) {
+static int mark_cont_mark_chain_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Chain));
 }
 
-static int mark_cont_mark_chain_MARK(void *p) {
+static int mark_cont_mark_chain_MARK(void *p, struct NewGC *gc) {
   Scheme_Cont_Mark_Chain *c = (Scheme_Cont_Mark_Chain *)p;
   
-  gcMARK(c->key);
-  gcMARK(c->val);
-  gcMARK(c->next);
+  gcMARK2(c->key, gc);
+  gcMARK2(c->val, gc);
+  gcMARK2(c->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Chain));
 }
 
-static int mark_cont_mark_chain_FIXUP(void *p) {
+static int mark_cont_mark_chain_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Cont_Mark_Chain *c = (Scheme_Cont_Mark_Chain *)p;
   
-  gcFIXUP(c->key);
-  gcFIXUP(c->val);
-  gcFIXUP(c->next);
+  gcFIXUP2(c->key, gc);
+  gcFIXUP2(c->val, gc);
+  gcFIXUP2(c->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cont_Mark_Chain));
@@ -3262,26 +3262,26 @@ static int mark_cont_mark_chain_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_HASH_C
 
-static int hash_tree_val_SIZE(void *p) {
+static int hash_tree_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
 }
 
-static int hash_tree_val_MARK(void *p) {
+static int hash_tree_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
 
-  gcMARK(ht->root);
-  gcMARK(ht->elems_box);
+  gcMARK2(ht->root, gc);
+  gcMARK2(ht->elems_box, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
 }
 
-static int hash_tree_val_FIXUP(void *p) {
+static int hash_tree_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
 
-  gcFIXUP(ht->root);
-  gcFIXUP(ht->elems_box);
+  gcFIXUP2(ht->root, gc);
+  gcFIXUP2(ht->elems_box, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
@@ -3291,40 +3291,40 @@ static int hash_tree_val_FIXUP(void *p) {
 #define hash_tree_val_IS_CONST_SIZE 1
 
 
-static int mark_rb_node_SIZE(void *p) {
+static int mark_rb_node_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(RBNode));
 }
 
-static int mark_rb_node_MARK(void *p) {
+static int mark_rb_node_MARK(void *p, struct NewGC *gc) {
   RBNode *rb = (RBNode *)p;
 
   /* Short-circuit on NULL pointers, which are especially likely */
   if (rb->left) {
-    gcMARK(rb->left);
+    gcMARK2(rb->left, gc);
   }
   if (rb->right) {
-    gcMARK(rb->right);
+    gcMARK2(rb->right, gc);
   }
-  gcMARK(rb->key);
-  gcMARK(rb->val);
+  gcMARK2(rb->key, gc);
+  gcMARK2(rb->val, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(RBNode));
 }
 
-static int mark_rb_node_FIXUP(void *p) {
+static int mark_rb_node_FIXUP(void *p, struct NewGC *gc) {
   RBNode *rb = (RBNode *)p;
 
   /* Short-circuit on NULL pointers, which are especially likely */
   if (rb->left) {
-    gcFIXUP(rb->left);
+    gcFIXUP2(rb->left, gc);
   }
   if (rb->right) {
-    gcFIXUP(rb->right);
+    gcFIXUP2(rb->right, gc);
   }
-  gcFIXUP(rb->key);
-  gcFIXUP(rb->val);
+  gcFIXUP2(rb->key, gc);
+  gcFIXUP2(rb->val, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(RBNode));
@@ -3340,22 +3340,22 @@ static int mark_rb_node_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_PLACES_C
 
-static int place_val_SIZE(void *p) {
+static int place_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));
 }
 
-static int place_val_MARK(void *p) {
+static int place_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Place *pr = (Scheme_Place *)p;
-  gcMARK(pr->channel);
+  gcMARK2(pr->channel, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));
 }
 
-static int place_val_FIXUP(void *p) {
+static int place_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Place *pr = (Scheme_Place *)p;
-  gcFIXUP(pr->channel);
+  gcFIXUP2(pr->channel, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));
@@ -3365,26 +3365,26 @@ static int place_val_FIXUP(void *p) {
 #define place_val_IS_CONST_SIZE 1
 
 
-static int place_async_channel_val_SIZE(void *p) {
+static int place_async_channel_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
 }
 
-static int place_async_channel_val_MARK(void *p) {
+static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   int i;
   for (i = pac->size; i--; )
-    gcMARK(pac->msgs[i]);
+    gcMARK2(pac->msgs[i], gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
 }
 
-static int place_async_channel_val_FIXUP(void *p) {
+static int place_async_channel_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   int i;
   for (i = pac->size; i--; )
-    gcFIXUP(pac->msgs[i]);
+    gcFIXUP2(pac->msgs[i], gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
@@ -3400,34 +3400,34 @@ static int place_async_channel_val_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_PORTFUN_C
 
-static int mark_load_handler_data_SIZE(void *p) {
+static int mark_load_handler_data_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));
 }
 
-static int mark_load_handler_data_MARK(void *p) {
+static int mark_load_handler_data_MARK(void *p, struct NewGC *gc) {
   LoadHandlerData *d = (LoadHandlerData *)p;
     
-  gcMARK(d->config);
-  gcMARK(d->port);
-  gcMARK(d->p);
-  gcMARK(d->stxsrc);
-  gcMARK(d->expected_module);
-  gcMARK(d->delay_load_info);
+  gcMARK2(d->config, gc);
+  gcMARK2(d->port, gc);
+  gcMARK2(d->p, gc);
+  gcMARK2(d->stxsrc, gc);
+  gcMARK2(d->expected_module, gc);
+  gcMARK2(d->delay_load_info, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));
 }
 
-static int mark_load_handler_data_FIXUP(void *p) {
+static int mark_load_handler_data_FIXUP(void *p, struct NewGC *gc) {
   LoadHandlerData *d = (LoadHandlerData *)p;
     
-  gcFIXUP(d->config);
-  gcFIXUP(d->port);
-  gcFIXUP(d->p);
-  gcFIXUP(d->stxsrc);
-  gcFIXUP(d->expected_module);
-  gcFIXUP(d->delay_load_info);
+  gcFIXUP2(d->config, gc);
+  gcFIXUP2(d->port, gc);
+  gcFIXUP2(d->p, gc);
+  gcFIXUP2(d->stxsrc, gc);
+  gcFIXUP2(d->expected_module, gc);
+  gcFIXUP2(d->delay_load_info, gc);
   
   return
   gcBYTES_TO_WORDS(sizeof(LoadHandlerData));
@@ -3437,24 +3437,24 @@ static int mark_load_handler_data_FIXUP(void *p) {
 #define mark_load_handler_data_IS_CONST_SIZE 1
 
 
-static int mark_indexed_string_SIZE(void *p) {
+static int mark_indexed_string_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Indexed_String));
 }
 
-static int mark_indexed_string_MARK(void *p) {
+static int mark_indexed_string_MARK(void *p, struct NewGC *gc) {
   Scheme_Indexed_String *is = (Scheme_Indexed_String *)p;
     
-  gcMARK(is->string);
+  gcMARK2(is->string, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Indexed_String));
 }
 
-static int mark_indexed_string_FIXUP(void *p) {
+static int mark_indexed_string_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Indexed_String *is = (Scheme_Indexed_String *)p;
     
-  gcFIXUP(is->string);
+  gcFIXUP2(is->string, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Indexed_String));
@@ -3464,43 +3464,43 @@ static int mark_indexed_string_FIXUP(void *p) {
 #define mark_indexed_string_IS_CONST_SIZE 1
 
 
-static int mark_user_input_SIZE(void *p) {
+static int mark_user_input_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(User_Input_Port));
 }
 
-static int mark_user_input_MARK(void *p) {
+static int mark_user_input_MARK(void *p, struct NewGC *gc) {
   User_Input_Port *uip = (User_Input_Port *)p;
 
-  gcMARK(uip->read_proc);
-  gcMARK(uip->peek_proc);
-  gcMARK(uip->progress_evt_proc);
-  gcMARK(uip->peeked_read_proc);
-  gcMARK(uip->location_proc);
-  gcMARK(uip->count_lines_proc);
-  gcMARK(uip->buffer_mode_proc);
-  gcMARK(uip->close_proc);
-  gcMARK(uip->reuse_str);
-  gcMARK(uip->peeked);
-  gcMARK(uip->prefix_pipe);
+  gcMARK2(uip->read_proc, gc);
+  gcMARK2(uip->peek_proc, gc);
+  gcMARK2(uip->progress_evt_proc, gc);
+  gcMARK2(uip->peeked_read_proc, gc);
+  gcMARK2(uip->location_proc, gc);
+  gcMARK2(uip->count_lines_proc, gc);
+  gcMARK2(uip->buffer_mode_proc, gc);
+  gcMARK2(uip->close_proc, gc);
+  gcMARK2(uip->reuse_str, gc);
+  gcMARK2(uip->peeked, gc);
+  gcMARK2(uip->prefix_pipe, gc);
   return
   gcBYTES_TO_WORDS(sizeof(User_Input_Port));
 }
 
-static int mark_user_input_FIXUP(void *p) {
+static int mark_user_input_FIXUP(void *p, struct NewGC *gc) {
   User_Input_Port *uip = (User_Input_Port *)p;
 
-  gcFIXUP(uip->read_proc);
-  gcFIXUP(uip->peek_proc);
-  gcFIXUP(uip->progress_evt_proc);
-  gcFIXUP(uip->peeked_read_proc);
-  gcFIXUP(uip->location_proc);
-  gcFIXUP(uip->count_lines_proc);
-  gcFIXUP(uip->buffer_mode_proc);
-  gcFIXUP(uip->close_proc);
-  gcFIXUP(uip->reuse_str);
-  gcFIXUP(uip->peeked);
-  gcFIXUP(uip->prefix_pipe);
+  gcFIXUP2(uip->read_proc, gc);
+  gcFIXUP2(uip->peek_proc, gc);
+  gcFIXUP2(uip->progress_evt_proc, gc);
+  gcFIXUP2(uip->peeked_read_proc, gc);
+  gcFIXUP2(uip->location_proc, gc);
+  gcFIXUP2(uip->count_lines_proc, gc);
+  gcFIXUP2(uip->buffer_mode_proc, gc);
+  gcFIXUP2(uip->close_proc, gc);
+  gcFIXUP2(uip->reuse_str, gc);
+  gcFIXUP2(uip->peeked, gc);
+  gcFIXUP2(uip->prefix_pipe, gc);
   return
   gcBYTES_TO_WORDS(sizeof(User_Input_Port));
 }
@@ -3509,41 +3509,41 @@ static int mark_user_input_FIXUP(void *p) {
 #define mark_user_input_IS_CONST_SIZE 1
 
 
-static int mark_user_output_SIZE(void *p) {
+static int mark_user_output_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(User_Output_Port));
 }
 
-static int mark_user_output_MARK(void *p) {
+static int mark_user_output_MARK(void *p, struct NewGC *gc) {
   User_Output_Port *uop = (User_Output_Port *)p;
 
-  gcMARK(uop->evt);
-  gcMARK(uop->write_evt_proc);
-  gcMARK(uop->write_proc);
-  gcMARK(uop->write_special_evt_proc);
-  gcMARK(uop->write_special_proc);
-  gcMARK(uop->location_proc);
-  gcMARK(uop->count_lines_proc);
-  gcMARK(uop->buffer_mode_proc);
-  gcMARK(uop->close_proc);
-  gcMARK(uop->buffer_pipe);
+  gcMARK2(uop->evt, gc);
+  gcMARK2(uop->write_evt_proc, gc);
+  gcMARK2(uop->write_proc, gc);
+  gcMARK2(uop->write_special_evt_proc, gc);
+  gcMARK2(uop->write_special_proc, gc);
+  gcMARK2(uop->location_proc, gc);
+  gcMARK2(uop->count_lines_proc, gc);
+  gcMARK2(uop->buffer_mode_proc, gc);
+  gcMARK2(uop->close_proc, gc);
+  gcMARK2(uop->buffer_pipe, gc);
   return
   gcBYTES_TO_WORDS(sizeof(User_Output_Port));
 }
 
-static int mark_user_output_FIXUP(void *p) {
+static int mark_user_output_FIXUP(void *p, struct NewGC *gc) {
   User_Output_Port *uop = (User_Output_Port *)p;
 
-  gcFIXUP(uop->evt);
-  gcFIXUP(uop->write_evt_proc);
-  gcFIXUP(uop->write_proc);
-  gcFIXUP(uop->write_special_evt_proc);
-  gcFIXUP(uop->write_special_proc);
-  gcFIXUP(uop->location_proc);
-  gcFIXUP(uop->count_lines_proc);
-  gcFIXUP(uop->buffer_mode_proc);
-  gcFIXUP(uop->close_proc);
-  gcFIXUP(uop->buffer_pipe);
+  gcFIXUP2(uop->evt, gc);
+  gcFIXUP2(uop->write_evt_proc, gc);
+  gcFIXUP2(uop->write_proc, gc);
+  gcFIXUP2(uop->write_special_evt_proc, gc);
+  gcFIXUP2(uop->write_special_proc, gc);
+  gcFIXUP2(uop->location_proc, gc);
+  gcFIXUP2(uop->count_lines_proc, gc);
+  gcFIXUP2(uop->buffer_mode_proc, gc);
+  gcFIXUP2(uop->close_proc, gc);
+  gcFIXUP2(uop->buffer_pipe, gc);
   return
   gcBYTES_TO_WORDS(sizeof(User_Output_Port));
 }
@@ -3559,24 +3559,24 @@ static int mark_user_output_FIXUP(void *p) {
 #ifdef MARKS_FOR_PORT_C
 
 #ifdef WINDOWS_PROCESSES
-static int mark_thread_memory_SIZE(void *p) {
+static int mark_thread_memory_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Memory));
 }
 
-static int mark_thread_memory_MARK(void *p) {
+static int mark_thread_memory_MARK(void *p, struct NewGC *gc) {
   Scheme_Thread_Memory *tm = (Scheme_Thread_Memory *)p;
-  gcMARK(tm->prev);
-  gcMARK(tm->next);
+  gcMARK2(tm->prev, gc);
+  gcMARK2(tm->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Memory));
 }
 
-static int mark_thread_memory_FIXUP(void *p) {
+static int mark_thread_memory_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Thread_Memory *tm = (Scheme_Thread_Memory *)p;
-  gcFIXUP(tm->prev);
-  gcFIXUP(tm->next);
+  gcFIXUP2(tm->prev, gc);
+  gcFIXUP2(tm->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Memory));
@@ -3587,24 +3587,24 @@ static int mark_thread_memory_FIXUP(void *p) {
 
 #endif
 
-static int mark_input_file_SIZE(void *p) {
+static int mark_input_file_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_File));
 }
 
-static int mark_input_file_MARK(void *p) {
+static int mark_input_file_MARK(void *p, struct NewGC *gc) {
   Scheme_Input_File *i = (Scheme_Input_File *)p;
 
-  gcMARK(i->f);
+  gcMARK2(i->f, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_File));
 }
 
-static int mark_input_file_FIXUP(void *p) {
+static int mark_input_file_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Input_File *i = (Scheme_Input_File *)p;
 
-  gcFIXUP(i->f);
+  gcFIXUP2(i->f, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_File));
@@ -3614,24 +3614,24 @@ static int mark_input_file_FIXUP(void *p) {
 #define mark_input_file_IS_CONST_SIZE 1
 
 
-static int mark_output_file_SIZE(void *p) {
+static int mark_output_file_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Output_File));
 }
 
-static int mark_output_file_MARK(void *p) {
+static int mark_output_file_MARK(void *p, struct NewGC *gc) {
   Scheme_Output_File *o = (Scheme_Output_File *)p;
 
-  gcMARK(o->f);
+  gcMARK2(o->f, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Output_File));
 }
 
-static int mark_output_file_FIXUP(void *p) {
+static int mark_output_file_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Output_File *o = (Scheme_Output_File *)p;
 
-  gcFIXUP(o->f);
+  gcFIXUP2(o->f, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Output_File));
@@ -3642,26 +3642,26 @@ static int mark_output_file_FIXUP(void *p) {
 
 
 #ifdef MZ_FDS
-static int mark_input_fd_SIZE(void *p) {
+static int mark_input_fd_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));
 }
 
-static int mark_input_fd_MARK(void *p) {
+static int mark_input_fd_MARK(void *p, struct NewGC *gc) {
   Scheme_FD *fd = (Scheme_FD *)p;
 
-  gcMARK(fd->buffer);
-  gcMARK(fd->refcount);
+  gcMARK2(fd->buffer, gc);
+  gcMARK2(fd->refcount, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));
 }
 
-static int mark_input_fd_FIXUP(void *p) {
+static int mark_input_fd_FIXUP(void *p, struct NewGC *gc) {
   Scheme_FD *fd = (Scheme_FD *)p;
 
-  gcFIXUP(fd->buffer);
-  gcFIXUP(fd->refcount);
+  gcFIXUP2(fd->buffer, gc);
+  gcFIXUP2(fd->refcount, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));
@@ -3673,24 +3673,24 @@ static int mark_input_fd_FIXUP(void *p) {
 #endif
 
 #if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
-static int mark_system_child_SIZE(void *p) {
+static int mark_system_child_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(System_Child));
 }
 
-static int mark_system_child_MARK(void *p) {
+static int mark_system_child_MARK(void *p, struct NewGC *gc) {
   System_Child *sc = (System_Child *)p;
 
-  gcMARK(sc->next);
+  gcMARK2(sc->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(System_Child));
 }
 
-static int mark_system_child_FIXUP(void *p) {
+static int mark_system_child_FIXUP(void *p, struct NewGC *gc) {
   System_Child *sc = (System_Child *)p;
 
-  gcFIXUP(sc->next);
+  gcFIXUP2(sc->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(System_Child));
@@ -3702,26 +3702,26 @@ static int mark_system_child_FIXUP(void *p) {
 #endif
 
 #ifdef USE_OSKIT_CONSOLE
-static int mark_oskit_console_input_SIZE(void *p) {
+static int mark_oskit_console_input_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(osk_console_input));
 }
 
-static int mark_oskit_console_input_MARK(void *p) {
+static int mark_oskit_console_input_MARK(void *p, struct NewGC *gc) {
   osk_console_input *c = (osk_console_input *)p;
     
-  gcMARK(c->buffer);
-  gcMARK(c->next);
+  gcMARK2(c->buffer, gc);
+  gcMARK2(c->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(osk_console_input));
 }
 
-static int mark_oskit_console_input_FIXUP(void *p) {
+static int mark_oskit_console_input_FIXUP(void *p, struct NewGC *gc) {
   osk_console_input *c = (osk_console_input *)p;
     
-  gcFIXUP(c->buffer);
-  gcFIXUP(c->next);
+  gcFIXUP2(c->buffer, gc);
+  gcFIXUP2(c->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(osk_console_input));
@@ -3732,24 +3732,24 @@ static int mark_oskit_console_input_FIXUP(void *p) {
 
 #endif
 
-static int mark_subprocess_SIZE(void *p) {
+static int mark_subprocess_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Subprocess));
 }
 
-static int mark_subprocess_MARK(void *p) {
+static int mark_subprocess_MARK(void *p, struct NewGC *gc) {
 #ifndef WINDOWS_PROCESSES
   Scheme_Subprocess *sp = (Scheme_Subprocess *)p;
-  gcMARK(sp->handle);
+  gcMARK2(sp->handle, gc);
 #endif
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Subprocess));
 }
 
-static int mark_subprocess_FIXUP(void *p) {
+static int mark_subprocess_FIXUP(void *p, struct NewGC *gc) {
 #ifndef WINDOWS_PROCESSES
   Scheme_Subprocess *sp = (Scheme_Subprocess *)p;
-  gcFIXUP(sp->handle);
+  gcFIXUP2(sp->handle, gc);
 #endif
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Subprocess));
@@ -3759,25 +3759,25 @@ static int mark_subprocess_FIXUP(void *p) {
 #define mark_subprocess_IS_CONST_SIZE 1
 
 
-static int mark_read_write_evt_SIZE(void *p) {
+static int mark_read_write_evt_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Read_Write_Evt));
 }
 
-static int mark_read_write_evt_MARK(void *p) {
+static int mark_read_write_evt_MARK(void *p, struct NewGC *gc) {
   Scheme_Read_Write_Evt *rww = (Scheme_Read_Write_Evt *)p;
-  gcMARK(rww->port);
-  gcMARK(rww->v);
-  gcMARK(rww->str);
+  gcMARK2(rww->port, gc);
+  gcMARK2(rww->v, gc);
+  gcMARK2(rww->str, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Read_Write_Evt));
 }
 
-static int mark_read_write_evt_FIXUP(void *p) {
+static int mark_read_write_evt_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Read_Write_Evt *rww = (Scheme_Read_Write_Evt *)p;
-  gcFIXUP(rww->port);
-  gcFIXUP(rww->v);
-  gcFIXUP(rww->str);
+  gcFIXUP2(rww->port, gc);
+  gcFIXUP2(rww->v, gc);
+  gcFIXUP2(rww->str, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Read_Write_Evt));
 }
@@ -3792,25 +3792,25 @@ static int mark_read_write_evt_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_PRINT_C
 
-static int mark_print_params_SIZE(void *p) {
+static int mark_print_params_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(PrintParams));
 }
 
-static int mark_print_params_MARK(void *p) {
+static int mark_print_params_MARK(void *p, struct NewGC *gc) {
   PrintParams *pp = (PrintParams *)p;
-  gcMARK(pp->inspector);
-  gcMARK(pp->print_port);
-  gcMARK(pp->print_buffer);
+  gcMARK2(pp->inspector, gc);
+  gcMARK2(pp->print_port, gc);
+  gcMARK2(pp->print_buffer, gc);
   return
   gcBYTES_TO_WORDS(sizeof(PrintParams));
 }
 
-static int mark_print_params_FIXUP(void *p) {
+static int mark_print_params_FIXUP(void *p, struct NewGC *gc) {
   PrintParams *pp = (PrintParams *)p;
-  gcFIXUP(pp->inspector);
-  gcFIXUP(pp->print_port);
-  gcFIXUP(pp->print_buffer);
+  gcFIXUP2(pp->inspector, gc);
+  gcFIXUP2(pp->print_port, gc);
+  gcFIXUP2(pp->print_buffer, gc);
   return
   gcBYTES_TO_WORDS(sizeof(PrintParams));
 }
@@ -3819,51 +3819,51 @@ static int mark_print_params_FIXUP(void *p) {
 #define mark_print_params_IS_CONST_SIZE 1
 
 
-static int mark_marshal_tables_SIZE(void *p) {
+static int mark_marshal_tables_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));
 }
 
-static int mark_marshal_tables_MARK(void *p) {
+static int mark_marshal_tables_MARK(void *p, struct NewGC *gc) {
   Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p;
-  gcMARK(mt->symtab);
-  gcMARK(mt->rns);
-  gcMARK(mt->rn_refs);
-  gcMARK(mt->st_refs);
-  gcMARK(mt->st_ref_stack);
-  gcMARK(mt->reverse_map);
-  gcMARK(mt->same_map);
-  gcMARK(mt->cert_lists);
-  gcMARK(mt->shift_map);
-  gcMARK(mt->top_map);
-  gcMARK(mt->key_map);
-  gcMARK(mt->delay_map);
-  gcMARK(mt->cdata_map);
-  gcMARK(mt->rn_saved);
-  gcMARK(mt->shared_offsets);
-  gcMARK(mt->sorted_keys);
+  gcMARK2(mt->symtab, gc);
+  gcMARK2(mt->rns, gc);
+  gcMARK2(mt->rn_refs, gc);
+  gcMARK2(mt->st_refs, gc);
+  gcMARK2(mt->st_ref_stack, gc);
+  gcMARK2(mt->reverse_map, gc);
+  gcMARK2(mt->same_map, gc);
+  gcMARK2(mt->cert_lists, gc);
+  gcMARK2(mt->shift_map, gc);
+  gcMARK2(mt->top_map, gc);
+  gcMARK2(mt->key_map, gc);
+  gcMARK2(mt->delay_map, gc);
+  gcMARK2(mt->cdata_map, gc);
+  gcMARK2(mt->rn_saved, gc);
+  gcMARK2(mt->shared_offsets, gc);
+  gcMARK2(mt->sorted_keys, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));
 }
 
-static int mark_marshal_tables_FIXUP(void *p) {
+static int mark_marshal_tables_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p;
-  gcFIXUP(mt->symtab);
-  gcFIXUP(mt->rns);
-  gcFIXUP(mt->rn_refs);
-  gcFIXUP(mt->st_refs);
-  gcFIXUP(mt->st_ref_stack);
-  gcFIXUP(mt->reverse_map);
-  gcFIXUP(mt->same_map);
-  gcFIXUP(mt->cert_lists);
-  gcFIXUP(mt->shift_map);
-  gcFIXUP(mt->top_map);
-  gcFIXUP(mt->key_map);
-  gcFIXUP(mt->delay_map);
-  gcFIXUP(mt->cdata_map);
-  gcFIXUP(mt->rn_saved);
-  gcFIXUP(mt->shared_offsets);
-  gcFIXUP(mt->sorted_keys);
+  gcFIXUP2(mt->symtab, gc);
+  gcFIXUP2(mt->rns, gc);
+  gcFIXUP2(mt->rn_refs, gc);
+  gcFIXUP2(mt->st_refs, gc);
+  gcFIXUP2(mt->st_ref_stack, gc);
+  gcFIXUP2(mt->reverse_map, gc);
+  gcFIXUP2(mt->same_map, gc);
+  gcFIXUP2(mt->cert_lists, gc);
+  gcFIXUP2(mt->shift_map, gc);
+  gcFIXUP2(mt->top_map, gc);
+  gcFIXUP2(mt->key_map, gc);
+  gcFIXUP2(mt->delay_map, gc);
+  gcFIXUP2(mt->cdata_map, gc);
+  gcFIXUP2(mt->rn_saved, gc);
+  gcFIXUP2(mt->shared_offsets, gc);
+  gcFIXUP2(mt->sorted_keys, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));
 }
@@ -3878,28 +3878,28 @@ static int mark_marshal_tables_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_NETWORK_C
 
-static int mark_listener_SIZE(void *p) {
+static int mark_listener_SIZE(void *p, struct NewGC *gc) {
   listener_t *l = (listener_t *)p;
 
   return
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
 }
 
-static int mark_listener_MARK(void *p) {
+static int mark_listener_MARK(void *p, struct NewGC *gc) {
   listener_t *l = (listener_t *)p;
 
 
-  gcMARK(l->mref);
+  gcMARK2(l->mref, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
 }
 
-static int mark_listener_FIXUP(void *p) {
+static int mark_listener_FIXUP(void *p, struct NewGC *gc) {
   listener_t *l = (listener_t *)p;
 
 
-  gcFIXUP(l->mref);
+  gcFIXUP2(l->mref, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - 1) * sizeof(tcp_t)));
@@ -3910,26 +3910,26 @@ static int mark_listener_FIXUP(void *p) {
 
 
 #ifdef USE_TCP
-static int mark_tcp_SIZE(void *p) {
+static int mark_tcp_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
 }
 
-static int mark_tcp_MARK(void *p) {
+static int mark_tcp_MARK(void *p, struct NewGC *gc) {
   Scheme_Tcp *tcp = (Scheme_Tcp *)p;
 
-  gcMARK(tcp->b.buffer);
-  gcMARK(tcp->b.out_buffer);
+  gcMARK2(tcp->b.buffer, gc);
+  gcMARK2(tcp->b.out_buffer, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
 }
 
-static int mark_tcp_FIXUP(void *p) {
+static int mark_tcp_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Tcp *tcp = (Scheme_Tcp *)p;
 
-  gcFIXUP(tcp->b.buffer);
-  gcFIXUP(tcp->b.out_buffer);
+  gcFIXUP2(tcp->b.buffer, gc);
+  gcFIXUP2(tcp->b.out_buffer, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
@@ -3940,26 +3940,26 @@ static int mark_tcp_FIXUP(void *p) {
 
 
 # ifdef UDP_IS_SUPPORTED
-static int mark_udp_SIZE(void *p) {
+static int mark_udp_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP));
 }
 
-static int mark_udp_MARK(void *p) {
+static int mark_udp_MARK(void *p, struct NewGC *gc) {
   Scheme_UDP *udp = (Scheme_UDP *)p;
 
-  gcMARK(udp->previous_from_addr);
-  gcMARK(udp->mref);
+  gcMARK2(udp->previous_from_addr, gc);
+  gcMARK2(udp->mref, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP));
 }
 
-static int mark_udp_FIXUP(void *p) {
+static int mark_udp_FIXUP(void *p, struct NewGC *gc) {
   Scheme_UDP *udp = (Scheme_UDP *)p;
 
-  gcFIXUP(udp->previous_from_addr);
-  gcFIXUP(udp->mref);
+  gcFIXUP2(udp->previous_from_addr, gc);
+  gcFIXUP2(udp->mref, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP));
@@ -3969,28 +3969,28 @@ static int mark_udp_FIXUP(void *p) {
 #define mark_udp_IS_CONST_SIZE 1
 
 
-static int mark_udp_evt_SIZE(void *p) {
+static int mark_udp_evt_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
 }
 
-static int mark_udp_evt_MARK(void *p) {
+static int mark_udp_evt_MARK(void *p, struct NewGC *gc) {
   Scheme_UDP_Evt *uw = (Scheme_UDP_Evt *)p;
 
-  gcMARK(uw->udp);
-  gcMARK(uw->str);
-  gcMARK(uw->dest_addr);
+  gcMARK2(uw->udp, gc);
+  gcMARK2(uw->str, gc);
+  gcMARK2(uw->dest_addr, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
 }
 
-static int mark_udp_evt_FIXUP(void *p) {
+static int mark_udp_evt_FIXUP(void *p, struct NewGC *gc) {
   Scheme_UDP_Evt *uw = (Scheme_UDP_Evt *)p;
 
-  gcFIXUP(uw->udp);
-  gcFIXUP(uw->str);
-  gcFIXUP(uw->dest_addr);
+  gcFIXUP2(uw->udp, gc);
+  gcFIXUP2(uw->str, gc);
+  gcFIXUP2(uw->dest_addr, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
@@ -4008,34 +4008,34 @@ static int mark_udp_evt_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_THREAD_C
 
-static int mark_parameterization_SIZE(void *p) {
+static int mark_parameterization_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Parameterization)
 		    + ((max_configs - 1) * sizeof(Scheme_Object*))));
 }
 
-static int mark_parameterization_MARK(void *p) {
+static int mark_parameterization_MARK(void *p, struct NewGC *gc) {
   Scheme_Parameterization *c = (Scheme_Parameterization *)p;
   int i;
     
   for (i = max_configs; i--; ) {
-    gcMARK(c->prims[i]);
+    gcMARK2(c->prims[i], gc);
   }
-  gcMARK(c->extensions);
+  gcMARK2(c->extensions, gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Parameterization)
 		    + ((max_configs - 1) * sizeof(Scheme_Object*))));
 }
 
-static int mark_parameterization_FIXUP(void *p) {
+static int mark_parameterization_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Parameterization *c = (Scheme_Parameterization *)p;
   int i;
     
   for (i = max_configs; i--; ) {
-    gcFIXUP(c->prims[i]);
+    gcFIXUP2(c->prims[i], gc);
   }
-  gcFIXUP(c->extensions);
+  gcFIXUP2(c->extensions, gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Parameterization)
@@ -4046,25 +4046,25 @@ static int mark_parameterization_FIXUP(void *p) {
 #define mark_parameterization_IS_CONST_SIZE 0
 
 
-static int mark_config_SIZE(void *p) {
+static int mark_config_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Config));
 }
 
-static int mark_config_MARK(void *p) {
+static int mark_config_MARK(void *p, struct NewGC *gc) {
   Scheme_Config *config = (Scheme_Config *)p;
-  gcMARK(config->key);
-  gcMARK(config->cell);
-  gcMARK(config->next);
+  gcMARK2(config->key, gc);
+  gcMARK2(config->cell, gc);
+  gcMARK2(config->next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Config));
 }
 
-static int mark_config_FIXUP(void *p) {
+static int mark_config_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Config *config = (Scheme_Config *)p;
-  gcFIXUP(config->key);
-  gcFIXUP(config->cell);
-  gcFIXUP(config->next);
+  gcFIXUP2(config->key, gc);
+  gcFIXUP2(config->cell, gc);
+  gcFIXUP2(config->next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Config));
 }
@@ -4073,28 +4073,28 @@ static int mark_config_FIXUP(void *p) {
 #define mark_config_IS_CONST_SIZE 1
 
 
-static int mark_will_executor_val_SIZE(void *p) {
+static int mark_will_executor_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(WillExecutor));
 }
 
-static int mark_will_executor_val_MARK(void *p) {
+static int mark_will_executor_val_MARK(void *p, struct NewGC *gc) {
   WillExecutor *e = (WillExecutor *)p;
   
-  gcMARK(e->sema);
-  gcMARK(e->first);
-  gcMARK(e->last);
+  gcMARK2(e->sema, gc);
+  gcMARK2(e->first, gc);
+  gcMARK2(e->last, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(WillExecutor));
 }
 
-static int mark_will_executor_val_FIXUP(void *p) {
+static int mark_will_executor_val_FIXUP(void *p, struct NewGC *gc) {
   WillExecutor *e = (WillExecutor *)p;
   
-  gcFIXUP(e->sema);
-  gcFIXUP(e->first);
-  gcFIXUP(e->last);
+  gcFIXUP2(e->sema, gc);
+  gcFIXUP2(e->first, gc);
+  gcFIXUP2(e->last, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(WillExecutor));
@@ -4104,48 +4104,48 @@ static int mark_will_executor_val_FIXUP(void *p) {
 #define mark_will_executor_val_IS_CONST_SIZE 1
 
 
-static int mark_custodian_val_SIZE(void *p) {
+static int mark_custodian_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Custodian));
 }
 
-static int mark_custodian_val_MARK(void *p) {
+static int mark_custodian_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Custodian *m = (Scheme_Custodian *)p;
   
-  gcMARK(m->boxes);
-  gcMARK(m->mrefs);
-  gcMARK(m->closers);
-  gcMARK(m->data);
+  gcMARK2(m->boxes, gc);
+  gcMARK2(m->mrefs, gc);
+  gcMARK2(m->closers, gc);
+  gcMARK2(m->data, gc);
 
-  gcMARK(m->parent);
-  gcMARK(m->sibling);
-  gcMARK(m->children);
+  gcMARK2(m->parent, gc);
+  gcMARK2(m->sibling, gc);
+  gcMARK2(m->children, gc);
 
-  gcMARK(m->global_next);
-  gcMARK(m->global_prev);
+  gcMARK2(m->global_next, gc);
+  gcMARK2(m->global_prev, gc);
 
-  gcMARK(m->cust_boxes);
+  gcMARK2(m->cust_boxes, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Custodian));
 }
 
-static int mark_custodian_val_FIXUP(void *p) {
+static int mark_custodian_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Custodian *m = (Scheme_Custodian *)p;
   
-  gcFIXUP(m->boxes);
-  gcFIXUP(m->mrefs);
-  gcFIXUP(m->closers);
-  gcFIXUP(m->data);
+  gcFIXUP2(m->boxes, gc);
+  gcFIXUP2(m->mrefs, gc);
+  gcFIXUP2(m->closers, gc);
+  gcFIXUP2(m->data, gc);
 
-  gcFIXUP(m->parent);
-  gcFIXUP(m->sibling);
-  gcFIXUP(m->children);
+  gcFIXUP2(m->parent, gc);
+  gcFIXUP2(m->sibling, gc);
+  gcFIXUP2(m->children, gc);
 
-  gcFIXUP(m->global_next);
-  gcFIXUP(m->global_prev);
+  gcFIXUP2(m->global_next, gc);
+  gcFIXUP2(m->global_prev, gc);
 
-  gcFIXUP(m->cust_boxes);
+  gcFIXUP2(m->cust_boxes, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Custodian));
@@ -4155,31 +4155,31 @@ static int mark_custodian_val_FIXUP(void *p) {
 #define mark_custodian_val_IS_CONST_SIZE 1
 
 
-static int mark_custodian_box_val_SIZE(void *p) {
+static int mark_custodian_box_val_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Custodian_Box));
 }
 
-static int mark_custodian_box_val_MARK(void *p) {
+static int mark_custodian_box_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Custodian_Box *b = (Scheme_Custodian_Box *)p;
   int sd = ((Scheme_Custodian *)GC_resolve(b->cust))->shut_down;
 
-  gcMARK(b->cust);
+  gcMARK2(b->cust, gc);
   if (!sd) {
-    gcMARK(b->v);
+    gcMARK2(b->v, gc);
   }
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Custodian_Box));
 }
 
-static int mark_custodian_box_val_FIXUP(void *p) {
+static int mark_custodian_box_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Custodian_Box *b = (Scheme_Custodian_Box *)p;
   int sd = ((Scheme_Custodian *)GC_resolve(b->cust))->shut_down;
 
-  gcFIXUP(b->cust);
+  gcFIXUP2(b->cust, gc);
   if (!sd) {
-    gcFIXUP(b->v);
+    gcFIXUP2(b->v, gc);
   }
 
   return
@@ -4190,24 +4190,24 @@ static int mark_custodian_box_val_FIXUP(void *p) {
 #define mark_custodian_box_val_IS_CONST_SIZE 1
 
 
-static int mark_thread_hop_SIZE(void *p) {
+static int mark_thread_hop_SIZE(void *p, struct NewGC *gc) {
   return
    gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Custodian_Hop));
 }
 
-static int mark_thread_hop_MARK(void *p) {
+static int mark_thread_hop_MARK(void *p, struct NewGC *gc) {
   Scheme_Thread_Custodian_Hop *hop = (Scheme_Thread_Custodian_Hop *)p;
 
-  gcMARK(hop->p);
+  gcMARK2(hop->p, gc);
 
   return
    gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Custodian_Hop));
 }
 
-static int mark_thread_hop_FIXUP(void *p) {
+static int mark_thread_hop_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Thread_Custodian_Hop *hop = (Scheme_Thread_Custodian_Hop *)p;
 
-  gcFIXUP(hop->p);
+  gcFIXUP2(hop->p, gc);
 
   return
    gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Custodian_Hop));
@@ -4217,30 +4217,30 @@ static int mark_thread_hop_FIXUP(void *p) {
 #define mark_thread_hop_IS_CONST_SIZE 1
 
 
-static int mark_param_data_SIZE(void *p) {
+static int mark_param_data_SIZE(void *p, struct NewGC *gc) {
   return
    gcBYTES_TO_WORDS(sizeof(ParamData));
 }
 
-static int mark_param_data_MARK(void *p) {
+static int mark_param_data_MARK(void *p, struct NewGC *gc) {
   ParamData *d = (ParamData *)p;
 
-  gcMARK(d->key);
-  gcMARK(d->guard);
-  gcMARK(d->extract_guard);
-  gcMARK(d->defcell);
+  gcMARK2(d->key, gc);
+  gcMARK2(d->guard, gc);
+  gcMARK2(d->extract_guard, gc);
+  gcMARK2(d->defcell, gc);
 
   return
    gcBYTES_TO_WORDS(sizeof(ParamData));
 }
 
-static int mark_param_data_FIXUP(void *p) {
+static int mark_param_data_FIXUP(void *p, struct NewGC *gc) {
   ParamData *d = (ParamData *)p;
 
-  gcFIXUP(d->key);
-  gcFIXUP(d->guard);
-  gcFIXUP(d->extract_guard);
-  gcFIXUP(d->defcell);
+  gcFIXUP2(d->key, gc);
+  gcFIXUP2(d->guard, gc);
+  gcFIXUP2(d->extract_guard, gc);
+  gcFIXUP2(d->defcell, gc);
 
   return
    gcBYTES_TO_WORDS(sizeof(ParamData));
@@ -4250,30 +4250,30 @@ static int mark_param_data_FIXUP(void *p) {
 #define mark_param_data_IS_CONST_SIZE 1
 
 
-static int mark_will_SIZE(void *p) {
+static int mark_will_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(ActiveWill));
 }
 
-static int mark_will_MARK(void *p) {
+static int mark_will_MARK(void *p, struct NewGC *gc) {
   ActiveWill *w = (ActiveWill *)p;
   
-  gcMARK(w->o);
-  gcMARK(w->proc);
-  gcMARK(w->w);
-  gcMARK(w->next);
+  gcMARK2(w->o, gc);
+  gcMARK2(w->proc, gc);
+  gcMARK2(w->w, gc);
+  gcMARK2(w->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(ActiveWill));
 }
 
-static int mark_will_FIXUP(void *p) {
+static int mark_will_FIXUP(void *p, struct NewGC *gc) {
   ActiveWill *w = (ActiveWill *)p;
   
-  gcFIXUP(w->o);
-  gcFIXUP(w->proc);
-  gcFIXUP(w->w);
-  gcFIXUP(w->next);
+  gcFIXUP2(w->o, gc);
+  gcFIXUP2(w->proc, gc);
+  gcFIXUP2(w->w, gc);
+  gcFIXUP2(w->next, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(ActiveWill));
@@ -4283,17 +4283,17 @@ static int mark_will_FIXUP(void *p) {
 #define mark_will_IS_CONST_SIZE 1
 
 
-static int mark_evt_SIZE(void *p) {
+static int mark_evt_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Evt));
 }
 
-static int mark_evt_MARK(void *p) {
+static int mark_evt_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Evt));
 }
 
-static int mark_evt_FIXUP(void *p) {
+static int mark_evt_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Evt));
 }
@@ -4302,34 +4302,34 @@ static int mark_evt_FIXUP(void *p) {
 #define mark_evt_IS_CONST_SIZE 1
 
 
-static int mark_syncing_SIZE(void *p) {
+static int mark_syncing_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Syncing));
 }
 
-static int mark_syncing_MARK(void *p) {
+static int mark_syncing_MARK(void *p, struct NewGC *gc) {
   Syncing *w = (Syncing *)p;
  
-  gcMARK(w->set);
-  gcMARK(w->wrapss);
-  gcMARK(w->nackss);
-  gcMARK(w->reposts);
-  gcMARK(w->accepts);
-  gcMARK(w->disable_break);
+  gcMARK2(w->set, gc);
+  gcMARK2(w->wrapss, gc);
+  gcMARK2(w->nackss, gc);
+  gcMARK2(w->reposts, gc);
+  gcMARK2(w->accepts, gc);
+  gcMARK2(w->disable_break, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Syncing));
 }
 
-static int mark_syncing_FIXUP(void *p) {
+static int mark_syncing_FIXUP(void *p, struct NewGC *gc) {
   Syncing *w = (Syncing *)p;
  
-  gcFIXUP(w->set);
-  gcFIXUP(w->wrapss);
-  gcFIXUP(w->nackss);
-  gcFIXUP(w->reposts);
-  gcFIXUP(w->accepts);
-  gcFIXUP(w->disable_break);
+  gcFIXUP2(w->set, gc);
+  gcFIXUP2(w->wrapss, gc);
+  gcFIXUP2(w->nackss, gc);
+  gcFIXUP2(w->reposts, gc);
+  gcFIXUP2(w->accepts, gc);
+  gcFIXUP2(w->disable_break, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Syncing));
@@ -4339,26 +4339,26 @@ static int mark_syncing_FIXUP(void *p) {
 #define mark_syncing_IS_CONST_SIZE 1
 
 
-static int mark_evt_set_SIZE(void *p) {
+static int mark_evt_set_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Evt_Set));
 }
 
-static int mark_evt_set_MARK(void *p) {
+static int mark_evt_set_MARK(void *p, struct NewGC *gc) {
   Evt_Set *w = (Evt_Set *)p;
  
-  gcMARK(w->ws);
-  gcMARK(w->argv);
+  gcMARK2(w->ws, gc);
+  gcMARK2(w->argv, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Evt_Set));
 }
 
-static int mark_evt_set_FIXUP(void *p) {
+static int mark_evt_set_FIXUP(void *p, struct NewGC *gc) {
   Evt_Set *w = (Evt_Set *)p;
  
-  gcFIXUP(w->ws);
-  gcFIXUP(w->argv);
+  gcFIXUP2(w->ws, gc);
+  gcFIXUP2(w->argv, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Evt_Set));
@@ -4368,34 +4368,34 @@ static int mark_evt_set_FIXUP(void *p) {
 #define mark_evt_set_IS_CONST_SIZE 1
 
 
-static int mark_thread_set_SIZE(void *p) {
+static int mark_thread_set_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Set));
 }
 
-static int mark_thread_set_MARK(void *p) {
+static int mark_thread_set_MARK(void *p, struct NewGC *gc) {
   Scheme_Thread_Set *ts = (Scheme_Thread_Set *)p;
  
-  gcMARK(ts->parent);
-  gcMARK(ts->first);
-  gcMARK(ts->next);
-  gcMARK(ts->prev);
-  gcMARK(ts->search_start);
-  gcMARK(ts->current);
+  gcMARK2(ts->parent, gc);
+  gcMARK2(ts->first, gc);
+  gcMARK2(ts->next, gc);
+  gcMARK2(ts->prev, gc);
+  gcMARK2(ts->search_start, gc);
+  gcMARK2(ts->current, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Set));
 }
 
-static int mark_thread_set_FIXUP(void *p) {
+static int mark_thread_set_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Thread_Set *ts = (Scheme_Thread_Set *)p;
  
-  gcFIXUP(ts->parent);
-  gcFIXUP(ts->first);
-  gcFIXUP(ts->next);
-  gcFIXUP(ts->prev);
-  gcFIXUP(ts->search_start);
-  gcFIXUP(ts->current);
+  gcFIXUP2(ts->parent, gc);
+  gcFIXUP2(ts->first, gc);
+  gcFIXUP2(ts->next, gc);
+  gcFIXUP2(ts->prev, gc);
+  gcFIXUP2(ts->search_start, gc);
+  gcFIXUP2(ts->current, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Set));
@@ -4405,24 +4405,24 @@ static int mark_thread_set_FIXUP(void *p) {
 #define mark_thread_set_IS_CONST_SIZE 1
 
 
-static int mark_thread_cell_SIZE(void *p) {
+static int mark_thread_cell_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Thread_Cell));
 }
 
-static int mark_thread_cell_MARK(void *p) {
+static int mark_thread_cell_MARK(void *p, struct NewGC *gc) {
   Thread_Cell *c = (Thread_Cell *)p;
  
-  gcMARK(c->def_val);
+  gcMARK2(c->def_val, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Thread_Cell));
 }
 
-static int mark_thread_cell_FIXUP(void *p) {
+static int mark_thread_cell_FIXUP(void *p, struct NewGC *gc) {
   Thread_Cell *c = (Thread_Cell *)p;
  
-  gcFIXUP(c->def_val);
+  gcFIXUP2(c->def_val, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Thread_Cell));
@@ -4432,30 +4432,30 @@ static int mark_thread_cell_FIXUP(void *p) {
 #define mark_thread_cell_IS_CONST_SIZE 1
 
 
-static int mark_frozen_tramp_SIZE(void *p) {
+static int mark_frozen_tramp_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(FrozenTramp));
 }
 
-static int mark_frozen_tramp_MARK(void *p) {
+static int mark_frozen_tramp_MARK(void *p, struct NewGC *gc) {
   FrozenTramp *f = (FrozenTramp *)p;
  
-  gcMARK(f->do_data);
-  gcMARK(f->old_param);
-  gcMARK(f->config);
-  gcMARK(f->progress_cont);
+  gcMARK2(f->do_data, gc);
+  gcMARK2(f->old_param, gc);
+  gcMARK2(f->config, gc);
+  gcMARK2(f->progress_cont, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(FrozenTramp));
 }
 
-static int mark_frozen_tramp_FIXUP(void *p) {
+static int mark_frozen_tramp_FIXUP(void *p, struct NewGC *gc) {
   FrozenTramp *f = (FrozenTramp *)p;
  
-  gcFIXUP(f->do_data);
-  gcFIXUP(f->old_param);
-  gcFIXUP(f->config);
-  gcFIXUP(f->progress_cont);
+  gcFIXUP2(f->do_data, gc);
+  gcFIXUP2(f->old_param, gc);
+  gcFIXUP2(f->config, gc);
+  gcFIXUP2(f->progress_cont, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(FrozenTramp));
@@ -4471,28 +4471,28 @@ static int mark_frozen_tramp_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_SALLOC_C
 
-static int mark_finalization_SIZE(void *p) {
+static int mark_finalization_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Finalization));
 }
 
-static int mark_finalization_MARK(void *p) {
+static int mark_finalization_MARK(void *p, struct NewGC *gc) {
   Finalization *f = (Finalization *)p;
   
-  gcMARK(f->data);
-  gcMARK(f->next);
-  gcMARK(f->prev);
+  gcMARK2(f->data, gc);
+  gcMARK2(f->next, gc);
+  gcMARK2(f->prev, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Finalization));
 }
 
-static int mark_finalization_FIXUP(void *p) {
+static int mark_finalization_FIXUP(void *p, struct NewGC *gc) {
   Finalization *f = (Finalization *)p;
   
-  gcFIXUP(f->data);
-  gcFIXUP(f->next);
-  gcFIXUP(f->prev);
+  gcFIXUP2(f->data, gc);
+  gcFIXUP2(f->next, gc);
+  gcFIXUP2(f->prev, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Finalization));
@@ -4502,32 +4502,32 @@ static int mark_finalization_FIXUP(void *p) {
 #define mark_finalization_IS_CONST_SIZE 1
 
 
-static int mark_finalizations_SIZE(void *p) {
+static int mark_finalizations_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Finalizations));
 }
 
-static int mark_finalizations_MARK(void *p) {
+static int mark_finalizations_MARK(void *p, struct NewGC *gc) {
   Finalizations *f = (Finalizations *)p;
 
-  gcMARK(f->scheme_first);
-  gcMARK(f->scheme_last);
-  gcMARK(f->prim_first);
-  gcMARK(f->prim_last);
-  gcMARK(f->ext_data);
+  gcMARK2(f->scheme_first, gc);
+  gcMARK2(f->scheme_last, gc);
+  gcMARK2(f->prim_first, gc);
+  gcMARK2(f->prim_last, gc);
+  gcMARK2(f->ext_data, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Finalizations));
 }
 
-static int mark_finalizations_FIXUP(void *p) {
+static int mark_finalizations_FIXUP(void *p, struct NewGC *gc) {
   Finalizations *f = (Finalizations *)p;
 
-  gcFIXUP(f->scheme_first);
-  gcFIXUP(f->scheme_last);
-  gcFIXUP(f->prim_first);
-  gcFIXUP(f->prim_last);
-  gcFIXUP(f->ext_data);
+  gcFIXUP2(f->scheme_first, gc);
+  gcFIXUP2(f->scheme_last, gc);
+  gcFIXUP2(f->prim_first, gc);
+  gcFIXUP2(f->prim_last, gc);
+  gcFIXUP2(f->ext_data, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Finalizations));
@@ -4543,32 +4543,32 @@ static int mark_finalizations_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_SEMA_C
 
-static int mark_channel_syncer_SIZE(void *p) {
+static int mark_channel_syncer_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel_Syncer));
 }
 
-static int mark_channel_syncer_MARK(void *p) {
+static int mark_channel_syncer_MARK(void *p, struct NewGC *gc) {
   Scheme_Channel_Syncer *w = (Scheme_Channel_Syncer *)p;
 
-  gcMARK(w->p);
-  gcMARK(w->prev);
-  gcMARK(w->next);
-  gcMARK(w->syncing);
-  gcMARK(w->obj);
+  gcMARK2(w->p, gc);
+  gcMARK2(w->prev, gc);
+  gcMARK2(w->next, gc);
+  gcMARK2(w->syncing, gc);
+  gcMARK2(w->obj, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel_Syncer));
 }
 
-static int mark_channel_syncer_FIXUP(void *p) {
+static int mark_channel_syncer_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Channel_Syncer *w = (Scheme_Channel_Syncer *)p;
 
-  gcFIXUP(w->p);
-  gcFIXUP(w->prev);
-  gcFIXUP(w->next);
-  gcFIXUP(w->syncing);
-  gcFIXUP(w->obj);
+  gcFIXUP2(w->p, gc);
+  gcFIXUP2(w->prev, gc);
+  gcFIXUP2(w->next, gc);
+  gcFIXUP2(w->syncing, gc);
+  gcFIXUP2(w->obj, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Channel_Syncer));
@@ -4578,17 +4578,17 @@ static int mark_channel_syncer_FIXUP(void *p) {
 #define mark_channel_syncer_IS_CONST_SIZE 1
 
 
-static int mark_alarm_SIZE(void *p) {
+static int mark_alarm_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Alarm));
 }
 
-static int mark_alarm_MARK(void *p) {
+static int mark_alarm_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Alarm));
 }
 
-static int mark_alarm_FIXUP(void *p) {
+static int mark_alarm_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Alarm));
 }
@@ -4603,7 +4603,7 @@ static int mark_alarm_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_STRUCT_C
 
-static int mark_struct_val_SIZE(void *p) {
+static int mark_struct_val_SIZE(void *p, struct NewGC *gc) {
   Scheme_Structure *s = (Scheme_Structure *)p;
   int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;
 
@@ -4612,32 +4612,32 @@ static int mark_struct_val_SIZE(void *p) {
 		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
 }
 
-static int mark_struct_val_MARK(void *p) {
+static int mark_struct_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Structure *s = (Scheme_Structure *)p;
   int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;
 
   int i;
 
-  gcMARK( s->stype);
+  gcMARK2( s->stype, gc);
   
   for(i = num_slots; i--; )
-    gcMARK(s->slots[i]);
+    gcMARK2(s->slots[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Structure) 
 		    + ((num_slots - 1) * sizeof(Scheme_Object *))));
 }
 
-static int mark_struct_val_FIXUP(void *p) {
+static int mark_struct_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Structure *s = (Scheme_Structure *)p;
   int num_slots = ((Scheme_Struct_Type *)GC_resolve(s->stype))->num_slots;
 
   int i;
 
-  gcFIXUP_TYPED_NOW(Scheme_Struct_Type *, s->stype);
+  gcFIXUP2_TYPED_NOW(Scheme_Struct_Type *, s->stype, gc);
   
   for(i = num_slots; i--; )
-    gcFIXUP(s->slots[i]);
+    gcFIXUP2(s->slots[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Structure) 
@@ -4648,7 +4648,7 @@ static int mark_struct_val_FIXUP(void *p) {
 #define mark_struct_val_IS_CONST_SIZE 0
 
 
-static int mark_struct_type_val_SIZE(void *p) {
+static int mark_struct_type_val_SIZE(void *p, struct NewGC *gc) {
   Scheme_Struct_Type *t = (Scheme_Struct_Type *)p;
 
   return
@@ -4656,46 +4656,46 @@ static int mark_struct_type_val_SIZE(void *p) {
 		    + (t->name_pos * sizeof(Scheme_Struct_Type *))));
 }
 
-static int mark_struct_type_val_MARK(void *p) {
+static int mark_struct_type_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Struct_Type *t = (Scheme_Struct_Type *)p;
 
   int i;
   for (i = t->name_pos + 1; i--; ) {
-    gcMARK(t->parent_types[i]);
+    gcMARK2(t->parent_types[i], gc);
   }
-  gcMARK(t->name);
-  gcMARK(t->inspector);
-  gcMARK(t->accessor);
-  gcMARK(t->mutator);
-  gcMARK(t->prefab_key);
-  gcMARK(t->uninit_val);
-  gcMARK(t->props);
-  gcMARK(t->proc_attr);
-  gcMARK(t->guard);
-  gcMARK(t->immutables);
+  gcMARK2(t->name, gc);
+  gcMARK2(t->inspector, gc);
+  gcMARK2(t->accessor, gc);
+  gcMARK2(t->mutator, gc);
+  gcMARK2(t->prefab_key, gc);
+  gcMARK2(t->uninit_val, gc);
+  gcMARK2(t->props, gc);
+  gcMARK2(t->proc_attr, gc);
+  gcMARK2(t->guard, gc);
+  gcMARK2(t->immutables, gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Struct_Type)
 		    + (t->name_pos * sizeof(Scheme_Struct_Type *))));
 }
 
-static int mark_struct_type_val_FIXUP(void *p) {
+static int mark_struct_type_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Struct_Type *t = (Scheme_Struct_Type *)p;
 
   int i;
   for (i = t->name_pos + 1; i--; ) {
-    gcFIXUP(t->parent_types[i]);
+    gcFIXUP2(t->parent_types[i], gc);
   }
-  gcFIXUP(t->name);
-  gcFIXUP(t->inspector);
-  gcFIXUP(t->accessor);
-  gcFIXUP(t->mutator);
-  gcFIXUP(t->prefab_key);
-  gcFIXUP(t->uninit_val);
-  gcFIXUP(t->props);
-  gcFIXUP(t->proc_attr);
-  gcFIXUP(t->guard);
-  gcFIXUP(t->immutables);
+  gcFIXUP2(t->name, gc);
+  gcFIXUP2(t->inspector, gc);
+  gcFIXUP2(t->accessor, gc);
+  gcFIXUP2(t->mutator, gc);
+  gcFIXUP2(t->prefab_key, gc);
+  gcFIXUP2(t->uninit_val, gc);
+  gcFIXUP2(t->props, gc);
+  gcFIXUP2(t->proc_attr, gc);
+  gcFIXUP2(t->guard, gc);
+  gcFIXUP2(t->immutables, gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Struct_Type)
@@ -4706,26 +4706,26 @@ static int mark_struct_type_val_FIXUP(void *p) {
 #define mark_struct_type_val_IS_CONST_SIZE 0
 
 
-static int mark_struct_proc_info_SIZE(void *p) {
+static int mark_struct_proc_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
 }
 
-static int mark_struct_proc_info_MARK(void *p) {
+static int mark_struct_proc_info_MARK(void *p, struct NewGC *gc) {
   Struct_Proc_Info *i = (Struct_Proc_Info *)p;
 
-  gcMARK(i->struct_type);
-  gcMARK(i->func_name);
+  gcMARK2(i->struct_type, gc);
+  gcMARK2(i->func_name, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
 }
 
-static int mark_struct_proc_info_FIXUP(void *p) {
+static int mark_struct_proc_info_FIXUP(void *p, struct NewGC *gc) {
   Struct_Proc_Info *i = (Struct_Proc_Info *)p;
 
-  gcFIXUP(i->struct_type);
-  gcFIXUP(i->func_name);
+  gcFIXUP2(i->struct_type, gc);
+  gcFIXUP2(i->func_name, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Struct_Proc_Info));
@@ -4735,25 +4735,25 @@ static int mark_struct_proc_info_FIXUP(void *p) {
 #define mark_struct_proc_info_IS_CONST_SIZE 1
 
 
-static int mark_struct_property_SIZE(void *p) {
+static int mark_struct_property_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Property));
 }
 
-static int mark_struct_property_MARK(void *p) {
+static int mark_struct_property_MARK(void *p, struct NewGC *gc) {
   Scheme_Struct_Property *i = (Scheme_Struct_Property *)p;
-  gcMARK(i->name);
-  gcMARK(i->guard);
-  gcMARK(i->supers);
+  gcMARK2(i->name, gc);
+  gcMARK2(i->guard, gc);
+  gcMARK2(i->supers, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Property));
 }
 
-static int mark_struct_property_FIXUP(void *p) {
+static int mark_struct_property_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Struct_Property *i = (Scheme_Struct_Property *)p;
-  gcFIXUP(i->name);
-  gcFIXUP(i->guard);
-  gcFIXUP(i->supers);
+  gcFIXUP2(i->name, gc);
+  gcFIXUP2(i->guard, gc);
+  gcFIXUP2(i->supers, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Property));
 }
@@ -4762,26 +4762,26 @@ static int mark_struct_property_FIXUP(void *p) {
 #define mark_struct_property_IS_CONST_SIZE 1
 
 
-static int mark_wrapped_evt_SIZE(void *p) {
+static int mark_wrapped_evt_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Wrapped_Evt));
 }
 
-static int mark_wrapped_evt_MARK(void *p) {
+static int mark_wrapped_evt_MARK(void *p, struct NewGC *gc) {
   Wrapped_Evt *ww = (Wrapped_Evt *)p;
 
-  gcMARK(ww->evt);
-  gcMARK(ww->wrapper);
+  gcMARK2(ww->evt, gc);
+  gcMARK2(ww->wrapper, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Wrapped_Evt));
 }
 
-static int mark_wrapped_evt_FIXUP(void *p) {
+static int mark_wrapped_evt_FIXUP(void *p, struct NewGC *gc) {
   Wrapped_Evt *ww = (Wrapped_Evt *)p;
 
-  gcFIXUP(ww->evt);
-  gcFIXUP(ww->wrapper);
+  gcFIXUP2(ww->evt, gc);
+  gcFIXUP2(ww->wrapper, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Wrapped_Evt));
@@ -4791,24 +4791,24 @@ static int mark_wrapped_evt_FIXUP(void *p) {
 #define mark_wrapped_evt_IS_CONST_SIZE 1
 
 
-static int mark_nack_guard_evt_SIZE(void *p) {
+static int mark_nack_guard_evt_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Nack_Guard_Evt));
 }
 
-static int mark_nack_guard_evt_MARK(void *p) {
+static int mark_nack_guard_evt_MARK(void *p, struct NewGC *gc) {
   Nack_Guard_Evt *nw = (Nack_Guard_Evt *)p;
 
-  gcMARK(nw->maker);
+  gcMARK2(nw->maker, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Nack_Guard_Evt));
 }
 
-static int mark_nack_guard_evt_FIXUP(void *p) {
+static int mark_nack_guard_evt_FIXUP(void *p, struct NewGC *gc) {
   Nack_Guard_Evt *nw = (Nack_Guard_Evt *)p;
 
-  gcFIXUP(nw->maker);
+  gcFIXUP2(nw->maker, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Nack_Guard_Evt));
@@ -4830,17 +4830,17 @@ static int mark_nack_guard_evt_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_READ_C
 
-static int mark_indent_SIZE(void *p) {
+static int mark_indent_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Indent));
 }
 
-static int mark_indent_MARK(void *p) {
+static int mark_indent_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Indent));
 }
 
-static int mark_indent_FIXUP(void *p) {
+static int mark_indent_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Indent));
 }
@@ -4849,41 +4849,41 @@ static int mark_indent_FIXUP(void *p) {
 #define mark_indent_IS_CONST_SIZE 1
 
 
-static int mark_cport_SIZE(void *p) {
+static int mark_cport_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
 
-static int mark_cport_MARK(void *p) {
+static int mark_cport_MARK(void *p, struct NewGC *gc) {
   CPort *cp = (CPort *)p;
-  gcMARK(cp->start);
-  gcMARK(cp->orig_port);
-  gcMARK(cp->ht);
-  gcMARK(cp->ut);
-  gcMARK(cp->symtab);
-  gcMARK(cp->insp);
-  gcMARK(cp->relto);
-  gcMARK(cp->magic_sym);
-  gcMARK(cp->magic_val);
-  gcMARK(cp->shared_offsets);
-  gcMARK(cp->delay_info);
+  gcMARK2(cp->start, gc);
+  gcMARK2(cp->orig_port, gc);
+  gcMARK2(cp->ht, gc);
+  gcMARK2(cp->ut, gc);
+  gcMARK2(cp->symtab, gc);
+  gcMARK2(cp->insp, gc);
+  gcMARK2(cp->relto, gc);
+  gcMARK2(cp->magic_sym, gc);
+  gcMARK2(cp->magic_val, gc);
+  gcMARK2(cp->shared_offsets, gc);
+  gcMARK2(cp->delay_info, gc);
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
 
-static int mark_cport_FIXUP(void *p) {
+static int mark_cport_FIXUP(void *p, struct NewGC *gc) {
   CPort *cp = (CPort *)p;
-  gcFIXUP(cp->start);
-  gcFIXUP(cp->orig_port);
-  gcFIXUP(cp->ht);
-  gcFIXUP(cp->ut);
-  gcFIXUP(cp->symtab);
-  gcFIXUP(cp->insp);
-  gcFIXUP(cp->relto);
-  gcFIXUP(cp->magic_sym);
-  gcFIXUP(cp->magic_val);
-  gcFIXUP(cp->shared_offsets);
-  gcFIXUP(cp->delay_info);
+  gcFIXUP2(cp->start, gc);
+  gcFIXUP2(cp->orig_port, gc);
+  gcFIXUP2(cp->ht, gc);
+  gcFIXUP2(cp->ut, gc);
+  gcFIXUP2(cp->symtab, gc);
+  gcFIXUP2(cp->insp, gc);
+  gcFIXUP2(cp->relto, gc);
+  gcFIXUP2(cp->magic_sym, gc);
+  gcFIXUP2(cp->magic_val, gc);
+  gcFIXUP2(cp->shared_offsets, gc);
+  gcFIXUP2(cp->delay_info, gc);
   return
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -4892,27 +4892,27 @@ static int mark_cport_FIXUP(void *p) {
 #define mark_cport_IS_CONST_SIZE 1
 
 
-static int mark_readtable_SIZE(void *p) {
+static int mark_readtable_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }
 
-static int mark_readtable_MARK(void *p) {
+static int mark_readtable_MARK(void *p, struct NewGC *gc) {
   Readtable *t = (Readtable *)p;
-  gcMARK(t->mapping);
-  gcMARK(t->fast_mapping);
-  gcMARK(t->symbol_parser);
-  gcMARK(t->names);
+  gcMARK2(t->mapping, gc);
+  gcMARK2(t->fast_mapping, gc);
+  gcMARK2(t->symbol_parser, gc);
+  gcMARK2(t->names, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }
 
-static int mark_readtable_FIXUP(void *p) {
+static int mark_readtable_FIXUP(void *p, struct NewGC *gc) {
   Readtable *t = (Readtable *)p;
-  gcFIXUP(t->mapping);
-  gcFIXUP(t->fast_mapping);
-  gcFIXUP(t->symbol_parser);
-  gcFIXUP(t->names);
+  gcFIXUP2(t->mapping, gc);
+  gcFIXUP2(t->fast_mapping, gc);
+  gcFIXUP2(t->symbol_parser, gc);
+  gcFIXUP2(t->names, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Readtable));
 }
@@ -4921,27 +4921,27 @@ static int mark_readtable_FIXUP(void *p) {
 #define mark_readtable_IS_CONST_SIZE 1
 
 
-static int mark_read_params_SIZE(void *p) {
+static int mark_read_params_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
 
-static int mark_read_params_MARK(void *p) {
+static int mark_read_params_MARK(void *p, struct NewGC *gc) {
   ReadParams *rp = (ReadParams *)p;
-  gcMARK(rp->table);
-  gcMARK(rp->magic_sym);
-  gcMARK(rp->magic_val);
-  gcMARK(rp->delay_load_info);
+  gcMARK2(rp->table, gc);
+  gcMARK2(rp->magic_sym, gc);
+  gcMARK2(rp->magic_val, gc);
+  gcMARK2(rp->delay_load_info, gc);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
 
-static int mark_read_params_FIXUP(void *p) {
+static int mark_read_params_FIXUP(void *p, struct NewGC *gc) {
   ReadParams *rp = (ReadParams *)p;
-  gcFIXUP(rp->table);
-  gcFIXUP(rp->magic_sym);
-  gcFIXUP(rp->magic_val);
-  gcFIXUP(rp->delay_load_info);
+  gcFIXUP2(rp->table, gc);
+  gcFIXUP2(rp->magic_sym, gc);
+  gcFIXUP2(rp->magic_val, gc);
+  gcFIXUP2(rp->delay_load_info, gc);
   return
   gcBYTES_TO_WORDS(sizeof(ReadParams));
 }
@@ -4950,37 +4950,37 @@ static int mark_read_params_FIXUP(void *p) {
 #define mark_read_params_IS_CONST_SIZE 1
 
 
-static int mark_delay_load_SIZE(void *p) {
+static int mark_delay_load_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
 }
 
-static int mark_delay_load_MARK(void *p) {
+static int mark_delay_load_MARK(void *p, struct NewGC *gc) {
   Scheme_Load_Delay *ld = (Scheme_Load_Delay *)p;
-  gcMARK(ld->path);
-  gcMARK(ld->symtab);
-  gcMARK(ld->shared_offsets);
-  gcMARK(ld->insp);
-  gcMARK(ld->relto);
-  gcMARK(ld->ut);
-  gcMARK(ld->current_rp);
-  gcMARK(ld->cached);
-  gcMARK(ld->cached_port);
+  gcMARK2(ld->path, gc);
+  gcMARK2(ld->symtab, gc);
+  gcMARK2(ld->shared_offsets, gc);
+  gcMARK2(ld->insp, gc);
+  gcMARK2(ld->relto, gc);
+  gcMARK2(ld->ut, gc);
+  gcMARK2(ld->current_rp, gc);
+  gcMARK2(ld->cached, gc);
+  gcMARK2(ld->cached_port, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
 }
 
-static int mark_delay_load_FIXUP(void *p) {
+static int mark_delay_load_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Load_Delay *ld = (Scheme_Load_Delay *)p;
-  gcFIXUP(ld->path);
-  gcFIXUP(ld->symtab);
-  gcFIXUP(ld->shared_offsets);
-  gcFIXUP(ld->insp);
-  gcFIXUP(ld->relto);
-  gcFIXUP(ld->ut);
-  gcFIXUP(ld->current_rp);
-  gcFIXUP(ld->cached);
-  gcFIXUP(ld->cached_port);
+  gcFIXUP2(ld->path, gc);
+  gcFIXUP2(ld->symtab, gc);
+  gcFIXUP2(ld->shared_offsets, gc);
+  gcFIXUP2(ld->insp, gc);
+  gcFIXUP2(ld->relto, gc);
+  gcFIXUP2(ld->ut, gc);
+  gcFIXUP2(ld->current_rp, gc);
+  gcFIXUP2(ld->cached, gc);
+  gcFIXUP2(ld->cached_port, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Load_Delay));
 }
@@ -4989,25 +4989,25 @@ static int mark_delay_load_FIXUP(void *p) {
 #define mark_delay_load_IS_CONST_SIZE 1
 
 
-static int mark_unmarshal_tables_SIZE(void *p) {
+static int mark_unmarshal_tables_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Unmarshal_Tables));
 }
 
-static int mark_unmarshal_tables_MARK(void *p) {
+static int mark_unmarshal_tables_MARK(void *p, struct NewGC *gc) {
   Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
-  gcMARK(ut->rns);
-  gcMARK(ut->rp);
-  gcMARK(ut->decoded);
+  gcMARK2(ut->rns, gc);
+  gcMARK2(ut->rp, gc);
+  gcMARK2(ut->decoded, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Unmarshal_Tables));
 }
 
-static int mark_unmarshal_tables_FIXUP(void *p) {
+static int mark_unmarshal_tables_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
-  gcFIXUP(ut->rns);
-  gcFIXUP(ut->rp);
-  gcFIXUP(ut->decoded);
+  gcFIXUP2(ut->rns, gc);
+  gcFIXUP2(ut->rp, gc);
+  gcFIXUP2(ut->decoded, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Unmarshal_Tables));
 }
@@ -5022,24 +5022,24 @@ static int mark_unmarshal_tables_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_REGEXP_C
 
-static int mark_regexp_SIZE(void *p) {
+static int mark_regexp_SIZE(void *p, struct NewGC *gc) {
   regexp *r = (regexp *)p;
   return
   gcBYTES_TO_WORDS((sizeof(regexp) + r->regsize));
 }
 
-static int mark_regexp_MARK(void *p) {
+static int mark_regexp_MARK(void *p, struct NewGC *gc) {
   regexp *r = (regexp *)p;
-  gcMARK(r->source);
-  gcMARK(r->regstart);
+  gcMARK2(r->source, gc);
+  gcMARK2(r->regstart, gc);
   return
   gcBYTES_TO_WORDS((sizeof(regexp) + r->regsize));
 }
 
-static int mark_regexp_FIXUP(void *p) {
+static int mark_regexp_FIXUP(void *p, struct NewGC *gc) {
   regexp *r = (regexp *)p;
-  gcFIXUP(r->source);
-  gcFIXUP(r->regstart);
+  gcFIXUP2(r->source, gc);
+  gcFIXUP2(r->regstart, gc);
   return
   gcBYTES_TO_WORDS((sizeof(regexp) + r->regsize));
 }
@@ -5048,37 +5048,37 @@ static int mark_regexp_FIXUP(void *p) {
 #define mark_regexp_IS_CONST_SIZE 0
 
 
-static int mark_regwork_SIZE(void *p) {
+static int mark_regwork_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Regwork));
 }
 
-static int mark_regwork_MARK(void *p) {
+static int mark_regwork_MARK(void *p, struct NewGC *gc) {
   Regwork *r = (Regwork *)p;
-  gcMARK(r->str);
-  gcMARK(r->instr);
-  gcMARK(r->port);
-  gcMARK(r->unless_evt);
-  gcMARK(r->startp);
-  gcMARK(r->maybep);
-  gcMARK(r->endp);
-  gcMARK(r->counters);
-  gcMARK(r->peekskip);
+  gcMARK2(r->str, gc);
+  gcMARK2(r->instr, gc);
+  gcMARK2(r->port, gc);
+  gcMARK2(r->unless_evt, gc);
+  gcMARK2(r->startp, gc);
+  gcMARK2(r->maybep, gc);
+  gcMARK2(r->endp, gc);
+  gcMARK2(r->counters, gc);
+  gcMARK2(r->peekskip, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Regwork));
 }
 
-static int mark_regwork_FIXUP(void *p) {
+static int mark_regwork_FIXUP(void *p, struct NewGC *gc) {
   Regwork *r = (Regwork *)p;
-  gcFIXUP(r->str);
-  gcFIXUP(r->instr);
-  gcFIXUP(r->port);
-  gcFIXUP(r->unless_evt);
-  gcFIXUP(r->startp);
-  gcFIXUP(r->maybep);
-  gcFIXUP(r->endp);
-  gcFIXUP(r->counters);
-  gcFIXUP(r->peekskip);
+  gcFIXUP2(r->str, gc);
+  gcFIXUP2(r->instr, gc);
+  gcFIXUP2(r->port, gc);
+  gcFIXUP2(r->unless_evt, gc);
+  gcFIXUP2(r->startp, gc);
+  gcFIXUP2(r->maybep, gc);
+  gcFIXUP2(r->endp, gc);
+  gcFIXUP2(r->counters, gc);
+  gcFIXUP2(r->peekskip, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Regwork));
 }
@@ -5093,21 +5093,21 @@ static int mark_regwork_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_STRING_C
 
-static int mark_string_convert_SIZE(void *p) {
+static int mark_string_convert_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Converter));
 }
 
-static int mark_string_convert_MARK(void *p) {
+static int mark_string_convert_MARK(void *p, struct NewGC *gc) {
   Scheme_Converter *c = (Scheme_Converter *)p;
-  gcMARK(c->mref);
+  gcMARK2(c->mref, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Converter));
 }
 
-static int mark_string_convert_FIXUP(void *p) {
+static int mark_string_convert_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Converter *c = (Scheme_Converter *)p;
-  gcFIXUP(c->mref);
+  gcFIXUP2(c->mref, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Converter));
 }
@@ -5122,35 +5122,35 @@ static int mark_string_convert_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_STXOBJ_C
 
-static int mark_rename_table_SIZE(void *p) {
+static int mark_rename_table_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }
 
-static int mark_rename_table_MARK(void *p) {
+static int mark_rename_table_MARK(void *p, struct NewGC *gc) {
   Module_Renames *rn = (Module_Renames *)p;
-  gcMARK(rn->phase);
-  gcMARK(rn->ht);
-  gcMARK(rn->nomarshal_ht);
-  gcMARK(rn->unmarshal_info);
-  gcMARK(rn->shared_pes);
-  gcMARK(rn->set_identity);
-  gcMARK(rn->marked_names);
-  gcMARK(rn->free_id_renames);
+  gcMARK2(rn->phase, gc);
+  gcMARK2(rn->ht, gc);
+  gcMARK2(rn->nomarshal_ht, gc);
+  gcMARK2(rn->unmarshal_info, gc);
+  gcMARK2(rn->shared_pes, gc);
+  gcMARK2(rn->set_identity, gc);
+  gcMARK2(rn->marked_names, gc);
+  gcMARK2(rn->free_id_renames, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }
 
-static int mark_rename_table_FIXUP(void *p) {
+static int mark_rename_table_FIXUP(void *p, struct NewGC *gc) {
   Module_Renames *rn = (Module_Renames *)p;
-  gcFIXUP(rn->phase);
-  gcFIXUP(rn->ht);
-  gcFIXUP(rn->nomarshal_ht);
-  gcFIXUP(rn->unmarshal_info);
-  gcFIXUP(rn->shared_pes);
-  gcFIXUP(rn->set_identity);
-  gcFIXUP(rn->marked_names);
-  gcFIXUP(rn->free_id_renames);
+  gcFIXUP2(rn->phase, gc);
+  gcFIXUP2(rn->ht, gc);
+  gcFIXUP2(rn->nomarshal_ht, gc);
+  gcFIXUP2(rn->unmarshal_info, gc);
+  gcFIXUP2(rn->shared_pes, gc);
+  gcFIXUP2(rn->set_identity, gc);
+  gcFIXUP2(rn->marked_names, gc);
+  gcFIXUP2(rn->free_id_renames, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }
@@ -5159,29 +5159,29 @@ static int mark_rename_table_FIXUP(void *p) {
 #define mark_rename_table_IS_CONST_SIZE 1
 
 
-static int mark_rename_table_set_SIZE(void *p) {
+static int mark_rename_table_set_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }
 
-static int mark_rename_table_set_MARK(void *p) {
+static int mark_rename_table_set_MARK(void *p, struct NewGC *gc) {
   Module_Renames_Set *rns = (Module_Renames_Set *)p;
-  gcMARK(rns->et);
-  gcMARK(rns->rt);
-  gcMARK(rns->other_phases);
-  gcMARK(rns->share_marked_names);
-  gcMARK(rns->set_identity);
+  gcMARK2(rns->et, gc);
+  gcMARK2(rns->rt, gc);
+  gcMARK2(rns->other_phases, gc);
+  gcMARK2(rns->share_marked_names, gc);
+  gcMARK2(rns->set_identity, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }
 
-static int mark_rename_table_set_FIXUP(void *p) {
+static int mark_rename_table_set_FIXUP(void *p, struct NewGC *gc) {
   Module_Renames_Set *rns = (Module_Renames_Set *)p;
-  gcFIXUP(rns->et);
-  gcFIXUP(rns->rt);
-  gcFIXUP(rns->other_phases);
-  gcFIXUP(rns->share_marked_names);
-  gcFIXUP(rns->set_identity);
+  gcFIXUP2(rns->et, gc);
+  gcFIXUP2(rns->rt, gc);
+  gcFIXUP2(rns->other_phases, gc);
+  gcFIXUP2(rns->share_marked_names, gc);
+  gcFIXUP2(rns->set_identity, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
 }
@@ -5190,21 +5190,21 @@ static int mark_rename_table_set_FIXUP(void *p) {
 #define mark_rename_table_set_IS_CONST_SIZE 1
 
 
-static int mark_srcloc_SIZE(void *p) {
+static int mark_srcloc_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Srcloc));
 }
 
-static int mark_srcloc_MARK(void *p) {
+static int mark_srcloc_MARK(void *p, struct NewGC *gc) {
   Scheme_Stx_Srcloc *s = (Scheme_Stx_Srcloc *)p;
-  gcMARK(s->src);
+  gcMARK2(s->src, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Srcloc));
 }
 
-static int mark_srcloc_FIXUP(void *p) {
+static int mark_srcloc_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Stx_Srcloc *s = (Scheme_Stx_Srcloc *)p;
-  gcFIXUP(s->src);
+  gcFIXUP2(s->src, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Srcloc));
 }
@@ -5213,27 +5213,27 @@ static int mark_srcloc_FIXUP(void *p) {
 #define mark_srcloc_IS_CONST_SIZE 1
 
 
-static int mark_wrapchunk_SIZE(void *p) {
+static int mark_wrapchunk_SIZE(void *p, struct NewGC *gc) {
   Wrap_Chunk *wc = (Wrap_Chunk *)p;
   return
   gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - 1) * sizeof(Scheme_Object *)));
 }
 
-static int mark_wrapchunk_MARK(void *p) {
+static int mark_wrapchunk_MARK(void *p, struct NewGC *gc) {
   Wrap_Chunk *wc = (Wrap_Chunk *)p;
   int i;
   for (i = wc->len; i--; ) {
-    gcMARK(wc->a[i]);
+    gcMARK2(wc->a[i], gc);
   }
   return
   gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - 1) * sizeof(Scheme_Object *)));
 }
 
-static int mark_wrapchunk_FIXUP(void *p) {
+static int mark_wrapchunk_FIXUP(void *p, struct NewGC *gc) {
   Wrap_Chunk *wc = (Wrap_Chunk *)p;
   int i;
   for (i = wc->len; i--; ) {
-    gcFIXUP(wc->a[i]);
+    gcFIXUP2(wc->a[i], gc);
   }
   return
   gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - 1) * sizeof(Scheme_Object *)));
@@ -5243,31 +5243,31 @@ static int mark_wrapchunk_FIXUP(void *p) {
 #define mark_wrapchunk_IS_CONST_SIZE 0
 
 
-static int mark_cert_SIZE(void *p) {
+static int mark_cert_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
 }
 
-static int mark_cert_MARK(void *p) {
+static int mark_cert_MARK(void *p, struct NewGC *gc) {
   Scheme_Cert *c = (Scheme_Cert *)p;
-  gcMARK(c->mark);
-  gcMARK(c->modidx);
-  gcMARK(c->insp);
-  gcMARK(c->key);
-  gcMARK(c->mapped);
-  gcMARK(c->next);
+  gcMARK2(c->mark, gc);
+  gcMARK2(c->modidx, gc);
+  gcMARK2(c->insp, gc);
+  gcMARK2(c->key, gc);
+  gcMARK2(c->mapped, gc);
+  gcMARK2(c->next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
 }
 
-static int mark_cert_FIXUP(void *p) {
+static int mark_cert_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Cert *c = (Scheme_Cert *)p;
-  gcFIXUP(c->mark);
-  gcFIXUP(c->modidx);
-  gcFIXUP(c->insp);
-  gcFIXUP(c->key);
-  gcFIXUP(c->mapped);
-  gcFIXUP(c->next);
+  gcFIXUP2(c->mark, gc);
+  gcFIXUP2(c->modidx, gc);
+  gcFIXUP2(c->insp, gc);
+  gcFIXUP2(c->key, gc);
+  gcFIXUP2(c->mapped, gc);
+  gcFIXUP2(c->next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Cert));
 }
@@ -5276,29 +5276,29 @@ static int mark_cert_FIXUP(void *p) {
 #define mark_cert_IS_CONST_SIZE 1
 
 
-static int lex_rib_SIZE(void *p) {
+static int lex_rib_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
 }
 
-static int lex_rib_MARK(void *p) {
+static int lex_rib_MARK(void *p, struct NewGC *gc) {
   Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
-  gcMARK(rib->rename);
-  gcMARK(rib->timestamp);
-  gcMARK(rib->sealed);
-  gcMARK(rib->mapped_names);
-  gcMARK(rib->next);
+  gcMARK2(rib->rename, gc);
+  gcMARK2(rib->timestamp, gc);
+  gcMARK2(rib->sealed, gc);
+  gcMARK2(rib->mapped_names, gc);
+  gcMARK2(rib->next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
 }
 
-static int lex_rib_FIXUP(void *p) {
+static int lex_rib_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
-  gcFIXUP(rib->rename);
-  gcFIXUP(rib->timestamp);
-  gcFIXUP(rib->sealed);
-  gcFIXUP(rib->mapped_names);
-  gcFIXUP(rib->next);
+  gcFIXUP2(rib->rename, gc);
+  gcFIXUP2(rib->timestamp, gc);
+  gcFIXUP2(rib->sealed, gc);
+  gcFIXUP2(rib->mapped_names, gc);
+  gcFIXUP2(rib->next, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
 }
@@ -5307,28 +5307,28 @@ static int lex_rib_FIXUP(void *p) {
 #define lex_rib_IS_CONST_SIZE 1
 
 
-static int mark_free_id_info_SIZE(void *p) {
+static int mark_free_id_info_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
 		    + ((8 - 1) * sizeof(Scheme_Object *))));
 }
 
-static int mark_free_id_info_MARK(void *p) {
+static int mark_free_id_info_MARK(void *p, struct NewGC *gc) {
   Scheme_Vector *vec = (Scheme_Vector *)p;
   int i;
   for (i = 8; i--; )
-    gcMARK(vec->els[i]);
+    gcMARK2(vec->els[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
 		    + ((8 - 1) * sizeof(Scheme_Object *))));
 }
 
-static int mark_free_id_info_FIXUP(void *p) {
+static int mark_free_id_info_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Vector *vec = (Scheme_Vector *)p;
   int i;
   for (i = 8; i--; )
-    gcFIXUP(vec->els[i]);
+    gcFIXUP2(vec->els[i], gc);
 
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
@@ -5347,7 +5347,7 @@ static int mark_free_id_info_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_JIT_C
 
-static int native_closure_SIZE(void *p) {
+static int native_closure_SIZE(void *p, struct NewGC *gc) {
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
   int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve(c->code))->closure_size;
 
@@ -5360,7 +5360,7 @@ static int native_closure_SIZE(void *p) {
 		    + (closure_size - 1) * sizeof(Scheme_Object *)));
 }
 
-static int native_closure_MARK(void *p) {
+static int native_closure_MARK(void *p, struct NewGC *gc) {
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
   int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve(c->code))->closure_size;
 
@@ -5372,16 +5372,16 @@ static int native_closure_MARK(void *p) {
   {
     int i = closure_size;
     while (i--)
-      gcMARK(c->vals[i]);
+      gcMARK2(c->vals[i], gc);
   }
-  gcMARK(c->code);
+  gcMARK2(c->code, gc);
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
 		    + (closure_size - 1) * sizeof(Scheme_Object *)));
 }
 
-static int native_closure_FIXUP(void *p) {
+static int native_closure_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
   int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve(c->code))->closure_size;
 
@@ -5393,9 +5393,9 @@ static int native_closure_FIXUP(void *p) {
   {
     int i = closure_size;
     while (i--)
-      gcFIXUP(c->vals[i]);
+      gcFIXUP2(c->vals[i], gc);
   }
-  gcFIXUP(c->code);
+  gcFIXUP2(c->code, gc);
   
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Native_Closure)
@@ -5406,23 +5406,23 @@ static int native_closure_FIXUP(void *p) {
 #define native_closure_IS_CONST_SIZE 0
 
 
-static int mark_jit_state_SIZE(void *p) {
+static int mark_jit_state_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }
 
-static int mark_jit_state_MARK(void *p) {
+static int mark_jit_state_MARK(void *p, struct NewGC *gc) {
   mz_jit_state *j = (mz_jit_state *)p;
-  gcMARK(j->mappings);
-  gcMARK(j->self_data);
+  gcMARK2(j->mappings, gc);
+  gcMARK2(j->self_data, gc);
   return
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }
 
-static int mark_jit_state_FIXUP(void *p) {
+static int mark_jit_state_FIXUP(void *p, struct NewGC *gc) {
   mz_jit_state *j = (mz_jit_state *)p;
-  gcFIXUP(j->mappings);
-  gcFIXUP(j->self_data);
+  gcFIXUP2(j->mappings, gc);
+  gcFIXUP2(j->self_data, gc);
   return
   gcBYTES_TO_WORDS(sizeof(mz_jit_state));
 }
@@ -5431,41 +5431,41 @@ static int mark_jit_state_FIXUP(void *p) {
 #define mark_jit_state_IS_CONST_SIZE 1
 
 
-static int native_unclosed_proc_SIZE(void *p) {
+static int native_unclosed_proc_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));
 }
 
-static int native_unclosed_proc_MARK(void *p) {
+static int native_unclosed_proc_MARK(void *p, struct NewGC *gc) {
   Scheme_Native_Closure_Data *d = (Scheme_Native_Closure_Data *)p;
   int i;
 
-  gcMARK(d->u2.name);
+  gcMARK2(d->u2.name, gc);
   if (d->retained) {
     for (i = SCHEME_INT_VAL(d->retained[0]); i--; ) {
-      gcMARK(d->retained[i]);
+      gcMARK2(d->retained[i], gc);
     }
   }
   if (d->closure_size < 0) {
-    gcMARK(d->u.arities);
+    gcMARK2(d->u.arities, gc);
   }
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));
 }
 
-static int native_unclosed_proc_FIXUP(void *p) {
+static int native_unclosed_proc_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Native_Closure_Data *d = (Scheme_Native_Closure_Data *)p;
   int i;
 
-  gcFIXUP(d->u2.name);
+  gcFIXUP2(d->u2.name, gc);
   if (d->retained) {
     for (i = SCHEME_INT_VAL(d->retained[0]); i--; ) {
-      gcFIXUP(d->retained[i]);
+      gcFIXUP2(d->retained[i], gc);
     }
   }
   if (d->closure_size < 0) {
-    gcFIXUP(d->u.arities);
+    gcFIXUP2(d->u.arities, gc);
   }
 
   return
@@ -5476,26 +5476,26 @@ static int native_unclosed_proc_FIXUP(void *p) {
 #define native_unclosed_proc_IS_CONST_SIZE 1
 
 
-static int native_unclosed_proc_plus_case_SIZE(void *p) {
+static int native_unclosed_proc_plus_case_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data_Plus_Case));
 }
 
-static int native_unclosed_proc_plus_case_MARK(void *p) {
+static int native_unclosed_proc_plus_case_MARK(void *p, struct NewGC *gc) {
   Scheme_Native_Closure_Data_Plus_Case *d = (Scheme_Native_Closure_Data_Plus_Case *)p;
 
-  native_unclosed_proc_MARK(p);
-  gcMARK(d->case_lam);
+  native_unclosed_proc_MARK(p, gc);
+  gcMARK2(d->case_lam, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data_Plus_Case));
 }
 
-static int native_unclosed_proc_plus_case_FIXUP(void *p) {
+static int native_unclosed_proc_plus_case_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Native_Closure_Data_Plus_Case *d = (Scheme_Native_Closure_Data_Plus_Case *)p;
 
-  native_unclosed_proc_FIXUP(p);
-  gcFIXUP(d->case_lam);
+  native_unclosed_proc_FIXUP(p, gc);
+  gcFIXUP2(d->case_lam, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data_Plus_Case));
@@ -5513,53 +5513,53 @@ static int native_unclosed_proc_plus_case_FIXUP(void *p) {
 
 #ifdef MZ_USE_FUTURES
 
-static int future_SIZE(void *p) {
+static int future_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
 
-static int future_MARK(void *p) {
+static int future_MARK(void *p, struct NewGC *gc) {
   future_t *f = (future_t *)p;
-  gcMARK(f->orig_lambda);
-  gcMARK(f->arg_s0);
-  gcMARK(f->arg_S0);
-  gcMARK(f->arg_b0);
-  gcMARK(f->arg_n0);
-  gcMARK(f->arg_s1);
-  gcMARK(f->arg_S1);
-  gcMARK(f->arg_s2);
-  gcMARK(f->arg_S2);
-  gcMARK(f->retval_s);
-  gcMARK(f->retval);
-  gcMARK(f->multiple_array);
-  gcMARK(f->tail_rator);
-  gcMARK(f->tail_rands);
-  gcMARK(f->prev);
-  gcMARK(f->next);
-  gcMARK(f->next_waiting_atomic);
+  gcMARK2(f->orig_lambda, gc);
+  gcMARK2(f->arg_s0, gc);
+  gcMARK2(f->arg_S0, gc);
+  gcMARK2(f->arg_b0, gc);
+  gcMARK2(f->arg_n0, gc);
+  gcMARK2(f->arg_s1, gc);
+  gcMARK2(f->arg_S1, gc);
+  gcMARK2(f->arg_s2, gc);
+  gcMARK2(f->arg_S2, gc);
+  gcMARK2(f->retval_s, gc);
+  gcMARK2(f->retval, gc);
+  gcMARK2(f->multiple_array, gc);
+  gcMARK2(f->tail_rator, gc);
+  gcMARK2(f->tail_rands, gc);
+  gcMARK2(f->prev, gc);
+  gcMARK2(f->next, gc);
+  gcMARK2(f->next_waiting_atomic, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
 
-static int future_FIXUP(void *p) {
+static int future_FIXUP(void *p, struct NewGC *gc) {
   future_t *f = (future_t *)p;
-  gcFIXUP(f->orig_lambda);
-  gcFIXUP(f->arg_s0);
-  gcFIXUP(f->arg_S0);
-  gcFIXUP(f->arg_b0);
-  gcFIXUP(f->arg_n0);
-  gcFIXUP(f->arg_s1);
-  gcFIXUP(f->arg_S1);
-  gcFIXUP(f->arg_s2);
-  gcFIXUP(f->arg_S2);
-  gcFIXUP(f->retval_s);
-  gcFIXUP(f->retval);
-  gcFIXUP(f->multiple_array);
-  gcFIXUP(f->tail_rator);
-  gcFIXUP(f->tail_rands);
-  gcFIXUP(f->prev);
-  gcFIXUP(f->next);
-  gcFIXUP(f->next_waiting_atomic);
+  gcFIXUP2(f->orig_lambda, gc);
+  gcFIXUP2(f->arg_s0, gc);
+  gcFIXUP2(f->arg_S0, gc);
+  gcFIXUP2(f->arg_b0, gc);
+  gcFIXUP2(f->arg_n0, gc);
+  gcFIXUP2(f->arg_s1, gc);
+  gcFIXUP2(f->arg_S1, gc);
+  gcFIXUP2(f->arg_s2, gc);
+  gcFIXUP2(f->arg_S2, gc);
+  gcFIXUP2(f->retval_s, gc);
+  gcFIXUP2(f->retval, gc);
+  gcFIXUP2(f->multiple_array, gc);
+  gcFIXUP2(f->tail_rator, gc);
+  gcFIXUP2(f->tail_rands, gc);
+  gcFIXUP2(f->prev, gc);
+  gcFIXUP2(f->next, gc);
+  gcFIXUP2(f->next_waiting_atomic, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5570,27 +5570,27 @@ static int future_FIXUP(void *p) {
 
 #else
 
-static int sequential_future_SIZE(void *p) {
+static int sequential_future_SIZE(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
 
-static int sequential_future_MARK(void *p) {
+static int sequential_future_MARK(void *p, struct NewGC *gc) {
   future_t *f = (future_t *)p;
-  gcMARK(f->orig_lambda);
-  gcMARK(f->running_sema);
-  gcMARK(f->retval);
-  gcMARK(f->multiple_array);
+  gcMARK2(f->orig_lambda, gc);
+  gcMARK2(f->running_sema, gc);
+  gcMARK2(f->retval, gc);
+  gcMARK2(f->multiple_array, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
 
-static int sequential_future_FIXUP(void *p) {
+static int sequential_future_FIXUP(void *p, struct NewGC *gc) {
   future_t *f = (future_t *)p;
-  gcFIXUP(f->orig_lambda);
-  gcFIXUP(f->running_sema);
-  gcFIXUP(f->retval);
-  gcFIXUP(f->multiple_array);
+  gcFIXUP2(f->orig_lambda, gc);
+  gcFIXUP2(f->running_sema, gc);
+  gcFIXUP2(f->retval, gc);
+  gcFIXUP2(f->multiple_array, gc);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5605,4 +5605,4 @@ static int sequential_future_FIXUP(void *p) {
 
 /**********************************************************************/
 
-#define GC_REG_TRAV(type, base) GC_register_traversers(type, base ## _SIZE, base ## _MARK, base ## _FIXUP, base ## _IS_CONST_SIZE, base ## _IS_ATOMIC)
+#define GC_REG_TRAV(type, base) GC_register_traversers2(type, base ## _SIZE, base ## _MARK, base ## _FIXUP, base ## _IS_CONST_SIZE, base ## _IS_ATOMIC)

@@ -269,7 +269,7 @@ list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
-mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h
+mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h $(XFORMDEP)
 	$(CC) $(CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(XSRCDIR)/network.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
