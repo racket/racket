@@ -21,11 +21,12 @@
   
   if anything fails, use the legal keyword to specialize the error message
 |#
-(define (->args stx clauses AllSpec PartSpec ->rec? legal)
+(define (->args tag stx clauses AllSpec PartSpec ->rec? legal)
   (define msg (format "not a legal clause in a ~a description" legal))
   (define Spec (append AllSpec PartSpec))
   (define kwds (map (compose (curry datum->syntax stx) car) Spec))
   (define spec (clauses-use-kwd (syntax->list clauses) ->rec? msg (->kwds-in kwds)))
+  (duplicates? tag spec)
   (map (lambda (x) 
          (define kw (car x))
          (define-values (key coercion)
@@ -36,6 +37,21 @@
          (list key (coercion (cdr x))))
        spec))
 
+;; Symbol [Listof kw] -> true
+;; effect: raise syntax error about duplicated clause 
+(define (duplicates? tag lox)
+  (let duplicates? ([lox lox])
+    (cond
+      [(empty? lox) false]
+      [else
+       (let* ([f (caar lox)]
+              [id (syntax-e f)]
+              [x (memf (lambda (x) (free-identifier=? (car x) f)) (rest lox))])
+         (if x 
+             (raise-syntax-error tag (format "duplicate ~a clause" id) (cdar x))
+             (duplicates? (rest lox))))])))
+
+;; check whether rec? occurs, produce list of keywords 
 (define (clauses-use-kwd stx:list ->rec? legal-clause kwd-in?)
   (map (lambda (stx)
          (syntax-case stx ()
