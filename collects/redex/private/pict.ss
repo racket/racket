@@ -792,10 +792,7 @@
                                             (* 2 sep)))))
                                   lhss rhss linebreak-list))]
          [scs (map (lambda (eqn)
-                     (let ([scs (filter (lambda (v)
-                                          (not (or (metafunc-extra-side-cond/hidden? v)
-                                                   (metafunc-extra-where/hidden? v))))
-                                        (reverse (list-ref eqn 1)))])
+                     (let ([scs (reverse (list-ref eqn 1))])
                      (if (null? scs)
                          #f
                          (let-values ([(fresh where/sc) (partition metafunc-extra-fresh? scs)])

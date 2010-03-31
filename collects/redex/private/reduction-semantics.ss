@@ -406,7 +406,9 @@
                        (cond
                          [(null? stuffs) (values label (reverse scs/withs) (reverse fvars))]
                          [else
-                          (syntax-case (car stuffs) (fresh variable-not-in)
+                          (syntax-case (car stuffs) (where where/hidden
+                                                           side-condition side-condition/hidden
+                                                           fresh variable-not-in)
                             [(fresh xs ...) 
                              (loop (cdr stuffs)
                                    label
@@ -433,21 +435,21 @@
                                                          #'y)])))
                                                   (syntax->list #'(xs ...))))
                                     fvars))]
-                            [(-where x e)
-                             (or (free-identifier=? #'-where #'where)
-                                 (free-identifier=? #'-where #'where/hidden))
+                            [(where x e)
                              (loop (cdr stuffs)
                                    label
                                    (cons #`(cons #,(to-lw/proc #'x) #,(to-lw/proc #'e))
                                          scs/withs)
                                    fvars)]
-                            [(-side-condition sc)
-                             (or (free-identifier=? #'-side-condition #'side-condition)
-                                 (free-identifier=? #'-side-condition #'side-condition/hidden))
+                            [(where/hidden x e)
+                             (loop (cdr stuffs) label scs/withs fvars)]
+                            [(side-condition sc)
                              (loop (cdr stuffs)
                                    label
                                    (cons (to-lw/uq/proc #'sc) scs/withs)
                                    fvars)]
+                            [(side-condition/hidden sc)
+                             (loop (cdr stuffs) label scs/withs fvars)]
                             [x
                              (identifier? #'x)
                              (loop (cdr stuffs)
@@ -1051,9 +1053,7 @@
 
 ;; Intermediate structures recording clause "extras" for typesetting.
 (define-struct metafunc-extra-side-cond (expr))
-(define-struct (metafunc-extra-side-cond/hidden metafunc-extra-side-cond) ())
 (define-struct metafunc-extra-where (lhs rhs))
-(define-struct (metafunc-extra-where/hidden metafunc-extra-where) ())
 (define-struct metafunc-extra-fresh (vars))
 
 (define-syntax (in-domain? stx)
@@ -1289,9 +1289,7 @@
                                                                          (map (λ (hm)
                                                                                 (map
                                                                                  (λ (lst)
-                                                                                   (syntax-case lst (unquote
-                                                                                                     side-condition where
-                                                                                                     side-condition/hidden where/hidden)
+                                                                                   (syntax-case lst (unquote side-condition where)
                                                                                      [(where pat (unquote (f _ _)))
                                                                                       (and (or (identifier? #'pat)
                                                                                                (andmap identifier? (syntax->list #'pat)))
@@ -1307,16 +1305,17 @@
                                                                                      [(where pat exp)
                                                                                       #`(make-metafunc-extra-where
                                                                                          #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
-                                                                                     [(where/hidden pat exp)
-                                                                                      #`(make-metafunc-extra-where/hidden
-                                                                                         #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
                                                                                      [(side-condition x)
                                                                                       #`(make-metafunc-extra-side-cond
-                                                                                         #,(to-lw/uq/proc #'x))]
-                                                                                     [(side-condition/hidden x)
-                                                                                      #`(make-metafunc-extra-side-cond/hidden
                                                                                          #,(to-lw/uq/proc #'x))]))
-                                                                                 (reverse (syntax->list hm))))
+                                                                                 (reverse 
+                                                                                  (filter (λ (lst)
+                                                                                            (syntax-case lst (where/hidden
+                                                                                                              side-condition/hidden)
+                                                                                              [(where/hidden pat exp) #f]
+                                                                                              [(side-condition/hidden x) #f]
+                                                                                              [_ #t])) 
+                                                                                          (syntax->list hm)))))
                                                                               (syntax->list #'(... seq-of-tl-side-cond/binds)))]
                                                                         
                                                                         [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
@@ -2185,9 +2184,7 @@
          (struct-out metafunc-case)
          
          (struct-out metafunc-extra-side-cond)
-         (struct-out metafunc-extra-side-cond/hidden)
          (struct-out metafunc-extra-where)
-         (struct-out metafunc-extra-where/hidden)
          (struct-out metafunc-extra-fresh)
          
          (struct-out binds))

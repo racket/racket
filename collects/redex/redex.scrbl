@@ -682,7 +682,9 @@ all non-GUI portions of Redex) and also exported by
                [extras name
                        (fresh fresh-clause ...)
                        (side-condition scheme-expression)
-                       (where tl-pat @#,tttterm)]
+                       (where tl-pat @#,tttterm)
+                       (side-condition/hidden scheme-expression)
+                       (where/hidden tl-pat @#,tttterm)]
                [fresh-clause var ((var1 ...) (var2 ...))]
                [tl-pat identifier (tl-pat-ele ...)]
                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
@@ -717,15 +719,22 @@ a sequence of variables. The variable @scheme[var2] is used to
 determine the number of variables generated and @scheme[var2] must be
 bound by the left-hand side of the rule.
 
-The side-conditions are expected to all hold, and have the
-format of the second argument to the @pattech[side-condition] pattern,
-described above.
+All side-conditions provided with @scheme[side-condition] and
+@scheme[hidden-side-condition] are collected with @scheme[and] and
+used as guards on the case being matched. The argument to each
+side-condition should be a Scheme expression, and the pattern
+variables in the @|ttpattern| are bound in that expression. A
+@scheme[side-condition/hidden] form is the same as
+@scheme[side-condition], except that the side condition is not
+rendered when typesetting via @schememodname[redex/pict].
 
 Each @scheme[where] clause acts as a side condition requiring a
 successful pattern match, and it can bind pattern variables in the
 side-conditions (and @scheme[where] clauses) that follow and in the
-reduction result. The bindings are the same as bindings in a
-@scheme[term-let] expression.
+metafunction result. The bindings are the same as bindings in a
+@scheme[term-let] expression. A @scheme[where/hidden] clause is the
+same as a @scheme[where] clause, but the clause is not
+rendered when typesetting via @schememodname[redex/pict].
 
 As an example, this
 
@@ -905,22 +914,9 @@ expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
 the rhs-expressions is implicitly wrapped in @|tttterm|. 
 
-All side-conditions provided with @scheme[side-condition] and
-@scheme[hidden-side-condition] are collected with @scheme[and] and
-used as guards on the case being matched. The argument to each
-side-condition should be a Scheme expression, and the pattern
-variables in the @|ttpattern| are bound in that expression. A
-@scheme[side-condition/hidden] form is the same as
-@scheme[side-condition], except that the side condition is not
-rendered when typesetting via @schememodname[redex/pict].
-
-Each @scheme[where] clause acts as a side condition requiring a
-successful pattern match, and it can bind pattern variables in the
-side-conditions (and @scheme[where] clauses) that follow and in the
-metafunction result. The bindings are the same as bindings in a
-@scheme[term-let] expression. A @scheme[where/hidden] clause is the
-same as a @scheme[where] clause, but the clause is not
-rendered when typesetting via @schememodname[redex/pict].
+The @scheme[side-condition], @scheme[hidden-side-condition],
+@scheme[where], and @scheme[where/hidden] clauses behave as
+in the @scheme[reduction-relation] form.
 
 Raises an exception recognized by @scheme[exn:fail:redex?] if
 no clauses match, if one of the clauses matches multiple ways

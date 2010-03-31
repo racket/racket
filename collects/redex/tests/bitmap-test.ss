@@ -178,5 +178,21 @@
      (where x ,(variable-not-in 'y 'x))])
   (test (render-metafunction g) "var-not-in-rebound.png"))
 
+;; hidden `where' and `side-condition' clauses
+(define-metafunction lang
+  [(mf-hidden 1)
+   2
+   (where/hidden number 7)
+   (side-condition/hidden (= 1 2))])
+(test (render-metafunction mf-hidden) "mf-hidden.png")
+(test (render-reduction-relation
+       (reduction-relation
+        lang
+        (--> 1
+             2
+             (where/hidden number 7)
+             (side-condition/hidden (= 1 2)))))
+      "rr-hidden.png")
+
 (printf "bitmap-test.ss: ")
 (done)
