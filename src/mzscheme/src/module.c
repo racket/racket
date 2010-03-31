@@ -3748,6 +3748,37 @@ void scheme_module_force_lazy(Scheme_Env *env, int previous)
   /* not anymore */
 }
 
+static void wait_registry(Scheme_Env *env)
+{
+  Scheme_Object *lock, *a[1];
+
+  while (1) {
+    lock = scheme_hash_get(env->module_registry, scheme_false);
+    if (!lock)
+      return;
+
+    a[0] = SCHEME_CAR(lock);
+    a[1] = SCHEME_CDR(lock);
+    (void)scheme_sync(1, a);
+  }
+}
+
+static void lock_registry(Scheme_Env *env)
+{
+  Scheme_Object *lock;
+  lock = scheme_make_pair(scheme_make_sema(0),
+                          scheme_current_thread);
+  scheme_hash_set(env->module_registry, scheme_false, lock);
+}
+
+static void unlock_registry(Scheme_Env *env)
+{
+  Scheme_Object *lock;
+  lock = scheme_hash_get(env->module_registry, scheme_false);
+  scheme_post_sema(SCHEME_CAR(lock));
+  scheme_hash_set(env->module_registry, scheme_false, NULL);
+}
+
 XFORM_NONGCING static long make_key(int base_phase, int eval_exp, int eval_run)
 {
   return ((base_phase << 3) 
@@ -4364,6 +4395,8 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
   Scheme_Object *v, *prev;
   Scheme_Env *menv;
 
+  wait_registry(env);
+
   v = MODCHAIN_AVAIL(env->modchain, pos);
   if (!SCHEME_FALSEP(v)) {
     MODCHAIN_AVAIL(env->modchain, pos) = scheme_false;
@@ -4380,6 +4413,8 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
     }
     v = prev;
 
+    lock_registry(env);
+
     while (SCHEME_NAMESPACEP(v)) {
       menv = (Scheme_Env *)v;
       v = menv->available_next[pos];
@@ -4388,6 +4423,8 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
                    NULL, 1, 0, base_phase,
                    scheme_null);
     }
+
+    unlock_registry(env);
   }
 }
 

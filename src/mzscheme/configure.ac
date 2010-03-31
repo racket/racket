@@ -549,8 +549,9 @@ case $OS in
     EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../mzscheme/include/mzscheme.exp"
     ;;
   FreeBSD)
-    LIBS="$LIBS -rdynamic -pthread"
+    LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
+    enable_pthread=yes
     ;;
   OpenBSD)
     LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
@@ -1142,19 +1143,10 @@ if test "${enable_gl}" = "yes" ; then
   MROPTIONS="$MROPTIONS -DUSE_GL"
 fi
 
-############### pthread ###################
-
-if test "${enable_pthread}" = "yes" ; then
-  PREFLAGS="$PREFLAGS -D_THREAD_SAFE"
-  X_EXTRA_LIBS="$X_EXTRA_LIBS -pthread"
-  AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
-fi
-
 ############### places ###################
 
 if test "${enable_places}" = "yes" ; then
   AC_DEFINE(MZ_USE_PLACES,1,[Places enabled])
-  LDFLAGS="$LDFLAGS -pthread"
   enable_mzrt=yes
 fi
 
@@ -1174,10 +1166,18 @@ fi
 ############### OS threads ###################
 
 if test "${enable_mzrt}" = "yes" ; then
-  AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
-  LDFLAGS="$LDFLAGS -pthread"
   MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
   LIBATOM="LIBATOM_USE"
+  enable_pthread=yes
+fi
+
+############### pthread ###################
+
+if test "${enable_pthread}" = "yes" ; then
+  # FIXME: the following two flags are GCC-specific:
+  PREFLAGS="$PREFLAGS -pthread"
+  LDFLAGS="$LDFLAGS -pthread"
+  AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
 fi
 
 ################ Xrender ##################
