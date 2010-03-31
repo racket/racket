@@ -7903,7 +7903,8 @@ int scheme_is_in_frozen_stack()
 static unsigned long get_deeper_base()
 {
   long here;
-  return (unsigned long)&here;
+  unsigned long here_addr = (unsigned long)&here;
+  return here_addr;
 }
 
 #ifdef _MSC_VER

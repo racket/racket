@@ -3767,7 +3767,7 @@ static void lock_registry(Scheme_Env *env)
 {
   Scheme_Object *lock;
   lock = scheme_make_pair(scheme_make_sema(0),
-                          scheme_current_thread);
+                          (Scheme_Object *) scheme_current_thread);
   scheme_hash_set(env->module_registry, scheme_false, lock);
 }
 
