@@ -593,7 +593,6 @@ plt-extras :+= (package: "algol60/")
 ;; -------------------- games
 plt-extras :+= (- (+ (package: "games/" #:executable "plt-games")
                      (doc+src: "gl-board-game/" "cards/"))
-                  "loa/"
                   "paint-by-numbers/{hattori|solution-sets|raw-problems}")
 
 ;; -------------------- texpict & slideshow
