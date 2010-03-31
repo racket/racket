@@ -54,8 +54,11 @@ function MergePageArgsIntoLink(a) {
 // Cookies --------------------------------------------------------------------
 
 function GetCookie(key, def) {
-  if (document.cookie.length <= 0) return def;
-  var i, cookiestrs = document.cookie.split(/; */);
+  var i, cookiestrs;
+  try {
+    if (document.cookie.length <= 0) return def;
+    cookiestrs = document.cookie.split(/; */);
+  } catch (e) { return def; }
   for (i = 0; i < cookiestrs.length; i++) {
     var cur = cookiestrs[i];
     var eql = cur.indexOf('=');
@@ -68,8 +71,10 @@ function GetCookie(key, def) {
 function SetCookie(key, val) {
   var d = new Date();
   d.setTime(d.getTime()+(365*24*60*60*1000));
-  document.cookie =
-    key + "=" + escape(val) + "; expires="+ d.toGMTString() + "; path=/";
+  try {
+    document.cookie =
+      key + "=" + escape(val) + "; expires="+ d.toGMTString() + "; path=/";
+  } catch (e) {}
 }
 
 // note that this always stores a directory name, ending with a "/"
