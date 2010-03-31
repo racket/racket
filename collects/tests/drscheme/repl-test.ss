@@ -262,12 +262,12 @@ This produces an ACK message
    ;; top-level semantics test
    (mktest "(define (f) (+ 1 1)) (define + -) (f)"
            
-           ("define-values: cannot change constant identifier: +"
-            "define-values: cannot change constant identifier: +"
-            "define-values: cannot change constant identifier: +"
-            "define-values: cannot change constant identifier: +"
-            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant identifier: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant identifier: \\+")
+           ("define-values: cannot change constant variable: +"
+            "define-values: cannot change constant variable: +"
+            "define-values: cannot change constant variable: +"
+            "define-values: cannot change constant variable: +"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant variable: \\+")
            'interactions
            #f
            void
