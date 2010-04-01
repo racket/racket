@@ -729,9 +729,22 @@ Scheme_Object *scheme_is_writable_struct(Scheme_Object *s);
 extern Scheme_Object *scheme_source_property;
 
 Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count);
+Scheme_Object *scheme_make_blank_prefab_struct_instance(Scheme_Struct_Type *stype);
 Scheme_Object *scheme_make_prefab_struct_instance(Scheme_Struct_Type *stype,
                                                          Scheme_Object *vec);
 Scheme_Object *scheme_clone_prefab_struct_instance(Scheme_Structure *s);
+Scheme_Struct_Type *scheme_make_prefab_struct_type_in_master(Scheme_Object *base,
+					Scheme_Object *parent,
+					int num_slots,
+					int num_islots,
+					Scheme_Object *uninit_val,
+					char *immutable_pos_list);
+Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
+					Scheme_Object *parent,
+					int num_slots,
+					int num_islots,
+					Scheme_Object *uninit_val,
+					char *immutable_pos_list);
 
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
