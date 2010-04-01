@@ -7,7 +7,8 @@
 (with-handlers ((exn:fail:syntax? 
                  (lambda (e) 
                    (define msg (exn-message e))
-                   (unless (string=? msg "big-bang: duplicate on-draw clause")
+                   (define ext "big-bang: duplicate on-draw clause in: (on-draw render2 400 200)")
+                   (unless (string=? msg ext)
                      (raise e)))))
   (eval '(module a scheme 
            (require 2htdp/universe)
@@ -26,7 +27,7 @@
 (with-handlers ((exn:fail:syntax? 
                  (lambda (e) 
                    (define msg (exn-message e))
-                   (unless (string=? msg "universe: duplicate on-tick clause")
+                   (unless (string=? msg "universe: duplicate on-tick clause in: (on-tick sub1)")
                      (raise e)))))
   (eval '(module a scheme 
            (require 2htdp/universe)
