@@ -235,10 +235,10 @@
         (for/list ([x (in-generator (helper 0) (helper 1) (helper 2))])
                   x)))
 
-(let ([g (lambda () (generator (yield 1) (yield 2) (yield 3)))])
+(let ([g (lambda () (generator () (yield 1) (yield 2) (yield 3)))])
   (let ([g (g)]) (test '(1 2 3) list (g) (g) (g)))
   (let ([g (g)]) (test '(1 2 3 10 10) list (g) (g) (g) (g 10) (g)))
-  (let ([g (generator (yield (yield (yield 1))))])
+  (let ([g (generator () (yield (yield (yield 1))))])
     (test '(1 2 3 4 4 4) list (g) (g 2) (g 3) (g 4) (g) (g)))
   (let ([g (g)])
     (test '(fresh 1 suspended 2 suspended 3 suspended last done)
@@ -247,8 +247,8 @@
                (generator-state g) (g)
                (generator-state g) (g 'last)
                (generator-state g)))
-  (letrec ([g (generator (yield (generator-state g))
-                         (yield (generator-state g)))])
+  (letrec ([g (generator () (yield (generator-state g))
+                            (yield (generator-state g)))])
     (test '(fresh running suspended running suspended last done)
           list (generator-state g) (g)
                (generator-state g) (g)
@@ -257,8 +257,8 @@
 
 (let* ([helper (lambda (pred num)
                  (for ([i (in-range 0 3)]) (yield (pred (+ i num)))))]
-       [g1 (generator (helper odd? 1) (yield 'odd))]
-       [g2 (generator (helper even? 1) (yield 'even))])
+       [g1 (generator () (helper odd? 1) (yield 'odd))]
+       [g2 (generator () (helper even? 1) (yield 'even))])
   (test '(#t #f #f #t #t #f odd even) 'yield-helper
         (list (g1) (g2) (g1) (g2) (g1) (g2) (g1) (g2))))
 
