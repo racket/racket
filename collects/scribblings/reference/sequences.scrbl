@@ -325,11 +325,14 @@ sequence; if no more elements are available, the
 
 @section{Iterator Generators}
 @defmodule[scheme/generator]
-@defform[(generator body ...)]{ Creates a function that returns a
-value, usually through @scheme[yield], each time it is invoked. When
-the generator runs out of values to yield the last value it computed
+@defform[(generator () body ...)]{ Creates a function that returns a
+value through @scheme[yield], each time it is invoked. When
+the generator runs out of values to yield, the last value it computed
 will be returned for future invocations of the generator. Generators
 can be safely nested.
+
+Note: the first form must be @scheme[()], and in the future this will
+hold argument names that are used in the initial generator call.
 
 @examples[#:eval (generator-eval)
 (define g (generator
