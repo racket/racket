@@ -495,7 +495,7 @@ static void *tiny_sbrk(ptrdiff_t increment)
 #define sbrk tiny_sbrk
 # endif /* ECOS */
 
-#if (defined(NETBSD) || defined(OPENBSD)) && defined(__ELF__)
+#if defined(NETBSD) && defined(__ELF__)
   ptr_t GC_data_start;
 
   void GC_init_netbsd_elf(void)
@@ -507,6 +507,103 @@ static void *tiny_sbrk(ptrdiff_t increment)
     GC_data_start = GC_find_limit((ptr_t)&environ, FALSE);
   }
 #endif
+
+#if defined(OPENBSD)
+  static struct sigaction old_segv_act;
+  sigjmp_buf GC_jmp_buf_openbsd;
+
+# if defined(GC_OPENBSD_THREADS)
+#   include <sys/syscall.h>
+    sigset_t __syscall(quad_t, ...);
+# endif
+
+  /*
+   * Dont use GC_find_limit() because siglongjmp out of the
+   * signal handler by-passes our userland pthreads lib, leaving
+   * SIGSEGV and SIGPROF masked. Instead use this custom one
+   * that works-around the issues.
+   */
+
+    /*ARGSUSED*/
+    void GC_fault_handler_openbsd(int sig)
+    {
+	siglongjmp(GC_jmp_buf_openbsd, 1);
+    }
+
+    /* Return the first nonaddressible location > p or bound	*/
+    /* Requires allocation lock.				*/
+    ptr_t GC_find_limit_openbsd(ptr_t p, ptr_t bound)
+    {
+        static volatile ptr_t result;
+               /* Safer if static, since otherwise it may not be       */
+               /* preserved across the longjmp.  Can safely be         */
+               /* static since it's only called with the               */
+               /* allocation lock held.                                */
+        struct sigaction act;
+	size_t pgsz = (size_t)sysconf(_SC_PAGESIZE);
+
+	GC_ASSERT(I_HOLD_LOCK());
+
+        act.sa_handler = GC_fault_handler_openbsd;
+        sigemptyset(&act.sa_mask);
+        act.sa_flags = SA_NODEFER | SA_RESTART;
+        sigaction(SIGSEGV, &act, &old_segv_act);
+
+	if (sigsetjmp(GC_jmp_buf_openbsd, 1) == 0) {
+	    result = (ptr_t)(((word)(p)) & ~(pgsz-1));
+	    for (;;) {
+	        result += pgsz;
+	        if (result >= bound) {
+		    result = bound;
+		    break;
+ 	        }
+	        GC_noop1((word)(*result));
+	    }
+	}
+
+# if defined(GC_OPENBSD_THREADS)
+	/* due to the siglongjump we need to manually unmask SIGPROF */
+	__syscall(SYS_sigprocmask, SIG_UNBLOCK, sigmask(SIGPROF));
+# endif
+
+	sigaction(SIGSEGV, &old_segv_act, 0);
+
+	return(result);
+    }
+
+    /* Return first addressable location > p or bound */
+    /* Requires allocation lock. */
+    ptr_t GC_skip_hole_openbsd(ptr_t p, ptr_t bound)
+    {
+        static volatile ptr_t result;
+        struct sigaction act;
+	size_t pgsz = (size_t)sysconf(_SC_PAGESIZE);
+	static volatile int firstpass;
+
+	GC_ASSERT(I_HOLD_LOCK());
+
+        act.sa_handler = GC_fault_handler_openbsd;
+        sigemptyset(&act.sa_mask);
+        act.sa_flags = SA_NODEFER | SA_RESTART;
+        sigaction(SIGSEGV, &act, &old_segv_act);
+
+	firstpass = 1;
+	result = (ptr_t)(((word)(p)) & ~(pgsz-1));
+	if (sigsetjmp(GC_jmp_buf_openbsd, 1) != 0 || firstpass) {
+	    firstpass = 0;
+	    result += pgsz;
+	    if (result >= bound) {
+		result = bound;
+	    } else
+	        GC_noop1((word)(*result));
+        }
+
+	sigaction(SIGSEGV, &old_segv_act, 0);
+
+	return(result);
+    }
+#endif
+
 
 # ifdef OS2
 
@@ -1113,7 +1210,7 @@ ptr_t GC_get_main_stack_base(void)
 
 #if !defined(BEOS) && !defined(AMIGA) && !defined(MSWIN32) \
     && !defined(MSWINCE) && !defined(OS2) && !defined(NOSYS) && !defined(ECOS) \
-    && !defined(CYGWIN32)
+    && !defined(CYGWIN32) && !defined(GC_OPENBSD_THREADS)
 
 ptr_t GC_get_main_stack_base(void)
 {
@@ -1221,6 +1318,35 @@ int GC_get_stack_base(struct GC_stack_base *b)
 #define HAVE_GET_STACK_BASE
 
 #endif /* GC_LINUX_THREADS */
+
+#if defined(GC_OPENBSD_THREADS)
+
+/* Find the stack using pthread_stackseg_np() */
+
+# include <sys/signal.h>
+# include <pthread.h>
+# include <pthread_np.h>
+        
+#define HAVE_GET_STACK_BASE
+
+int GC_get_stack_base(struct GC_stack_base *sb)
+{
+    stack_t stack;
+    pthread_stackseg_np(pthread_self(), &stack);
+    sb->mem_base = stack.ss_sp;
+    return GC_SUCCESS;
+}
+
+/* This is always called from the main thread.	*/
+ptr_t GC_get_main_stack_base(void)
+{
+    struct GC_stack_base sb;
+
+    GC_get_stack_base(&sb);
+    return (ptr_t)sb.mem_base;
+}
+
+#endif /* GC_OPENBSD_THREADS */
 
 #ifndef HAVE_GET_STACK_BASE
 /* Retrieve stack base.						*/
@@ -1670,6 +1796,31 @@ ptr_t GC_FreeBSDGetDataStart(size_t max_page_size, ptr_t etext_addr)
 
 #else /* !OS2 && !Windows && !AMIGA */
 
+#if defined(OPENBSD)
+
+/*
+ * Depending on arch alignment there can be multiple holes
+ * between DATASTART & DATAEND. Scan from DATASTART - DATAEND
+ * and register each region.
+ */
+void GC_register_data_segments(void)
+{
+  ptr_t region_start, region_end;
+
+  region_start = DATASTART;
+
+  for(;;) {
+    region_end = GC_find_limit_openbsd(region_start, DATAEND);
+    GC_add_roots_inner(region_start, region_end, FALSE);
+    if (region_end < DATAEND)
+    	region_start = GC_skip_hole_openbsd(region_end, DATAEND);
+    else
+	break;
+  }
+}
+
+# else /* !OS2 && !Windows && !AMIGA && !OPENBSD */
+
 void GC_register_data_segments(void)
 {
 #   if !defined(PCR) && !defined(MACOS)
@@ -1727,6 +1878,7 @@ void GC_register_data_segments(void)
     /* change.								*/
 }
 
+# endif  /* ! OPENBSD */
 # endif  /* ! AMIGA */
 # endif  /* ! MSWIN32 && ! MSWINCE*/
 # endif  /* ! OS2 */

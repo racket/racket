@@ -345,14 +345,14 @@ OBJS= alloc.@LTO@ reclaim.@LTO@ allchblk.@LTO@ misc.@LTO@ mach_dep.@LTO@ mach_de
   headers.@LTO@ mark.@LTO@ obj_map.@LTO@ blacklst.@LTO@ finalize.@LTO@ new_hblk.@LTO@ dbg_mlc.@LTO@  \
   malloc.@LTO@ stubborn.@LTO@ checksums.@LTO@ pthread_support.@LTO@ pthread_stop_world.@LTO@ \
   darwin_stop_world.@LTO@ typd_mlc.@LTO@ ptr_chck.@LTO@ mallocx.@LTO@ gcj_mlc.@LTO@ specific.@LTO@ \
-  gc_dlopen.@LTO@ backgraph.@LTO@ win32_threads.@LTO@ thread_local_alloc.@LTO@
+  gc_dlopen.@LTO@ backgraph.@LTO@ win32_threads.@LTO@ thread_local_alloc.@LTO@ openbsd_stop_world.@LTO@
 
 CSRCS= reclaim.c allchblk.c misc.c alloc.c mach_dep.c mach_dep1.c os_dep.c mark_rts.c \
   headers.c mark.c obj_map.c pcr_interface.c blacklst.c finalize.c \
   new_hblk.c real_malloc.c dyn_load.c dbg_mlc.c malloc.c stubborn.c \
   checksums.c pthread_support.c pthread_stop_world.c darwin_stop_world.c \
   typd_mlc.c ptr_chck.c mallocx.c gcj_mlc.c specific.c gc_dlopen.c \
-  backgraph.c win32_threads.c thread_local_alloc.c
+  backgraph.c win32_threads.c thread_local_alloc.c openbsd_stop_world.c
 
 CORD_SRCS=  cord/cordbscs.c cord/cordxtra.c cord/cordprnt.c cord/de.c cord/cordtest.c include/cord.h include/ec.h include/private/cord_pos.h cord/de_win.c cord/de_win.h cord/de_cmds.h cord/de_win.ICO cord/de_win.RC
 
@@ -377,7 +377,7 @@ SRCS= $(CSRCS) mips_sgi_mach_dep.s rs6000_mach_dep.s alpha_mach_dep.S \
     include/gc_config_macros.h include/private/pthread_support.h \
     include/private/pthread_stop_world.h include/private/darwin_semaphore.h \
     include/private/darwin_stop_world.h include/private/thread_local_alloc.h \
-    $(CORD_SRCS)
+    include/private/openbsd_stop_world.h $(CORD_SRCS)
 
 DOC_FILES= README.QUICK doc/README.Mac doc/README.MacOSX doc/README.O2 \
 	doc/README.amiga doc/README.cords doc/debugging.html \
@@ -815,6 +815,9 @@ pthread_stop_world.@LTO@: $(srcdir)/pthread_stop_world.c
 
 darwin_stop_world.@LTO@: $(srcdir)/darwin_stop_world.c
 	$(CC) $(CFLAGS) -c $(srcdir)/darwin_stop_world.c
+
+openbsd_stop_world.@LTO@: $(srcdir)/openbsd_stop_world.c
+	$(CC) $(CFLAGS) -c $(srcdir)/openbsd_stop_world.c
 
 backgraph.@LTO@: $(srcdir)/backgraph.c
 	$(CC) $(CFLAGS) -c $(srcdir)/backgraph.c

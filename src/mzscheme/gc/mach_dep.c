@@ -159,7 +159,7 @@ void GC_push_regs()
 # undef HAVE_PUSH_REGS
 #endif
 
-#if !defined(HAVE_PUSH_REGS) && defined(UNIX_LIKE)
+#if !defined(HAVE_PUSH_REGS) && defined(UNIX_LIKE) && !defined(OPENBSD)
 # define _XOPEN_SOURCE /* PLTSCHEME: for Mac OS X */
 # include <ucontext.h>
 #endif
@@ -176,7 +176,7 @@ void GC_with_callee_saves_pushed(void (*fn)(ptr_t, void *),
 #   if defined(HAVE_PUSH_REGS)
       GC_push_regs();
 #   elif defined(UNIX_LIKE) && !defined(DARWIN) && !defined(ARM32) && \
-	 !defined(HURD)
+	 !defined(HURD) && !defined(OPENBSD)
       /* Older versions of Darwin seem to lack getcontext(). */
       /* ARM Linux often doesn't support a real getcontext(). */
       ucontext_t ctxt;

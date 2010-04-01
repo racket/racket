@@ -85,9 +85,9 @@ static int (*GC_has_static_roots)(const char *, void *, size_t);
 
 #if defined(LINUX) && defined(__ELF__) || defined(SCO_ELF) || \
     (defined(FREEBSD) && defined(__ELF__)) || defined(DGUX) || \
+    (defined(OPENBSD) && defined(__ELF__)) || \
     (defined(NETBSD) && defined(__ELF__)) || defined(HURD)
 #   include <stddef.h>
-#   include <elf.h>
 #   include <link.h>
 #endif
 
@@ -100,7 +100,7 @@ static int (*GC_has_static_roots)(const char *, void *, size_t);
 #      else
 #        define ElfW(type) Elf64_##type
 #      endif
-#    elif defined(NETBSD)
+#    elif defined(NETBSD) || defined(OPENBSD)
 #      if ELFSIZE == 32
 #        define ElfW(type) Elf32_##type
 #      else
@@ -468,7 +468,7 @@ GC_bool GC_register_main_static_data()
 /* This doesn't necessarily work in all cases, e.g. with preloaded
  * dynamic libraries.						*/
 
-#if defined(NETBSD)
+#if defined(NETBSD) || defined(OPENBSD)
 #  include <sys/exec_elf.h>
 /* for compatibility with 1.4.x */
 #  ifndef DT_DEBUG

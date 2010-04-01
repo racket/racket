@@ -18,6 +18,9 @@ int main()
 #	endif
         printf("-lpthread\n");
 #   endif
+#   if defined(GC_OPENBSD_THREADS)
+        printf("-pthread\n");
+#   endif
 #   if defined(GC_FREEBSD_THREADS)
 #       ifdef GC_USE_DLOPEN_WRAP
 	  printf("-ldl ");

@@ -774,6 +774,9 @@ void GC_thr_init(void)
 #       if defined(GC_NETBSD_THREADS)
 	  GC_nprocs = get_ncpu();
 #       endif
+#       if defined(GC_OPENBSD_THREADS)
+	  GC_nprocs = 1;
+#       endif
 #       if defined(GC_DARWIN_THREADS) || defined(GC_FREEBSD_THREADS)
 	  int ncpus = 1;
 	  size_t len = sizeof(ncpus);
@@ -845,7 +848,7 @@ void GC_init_parallel(void)
 }
 
 
-#if !defined(GC_DARWIN_THREADS)
+#if !defined(GC_DARWIN_THREADS) && !defined(GC_OPENBSD_THREADS)
 int WRAP_FUNC(pthread_sigmask)(int how, const sigset_t *set, sigset_t *oset)
 {
     sigset_t fudged_set;
@@ -1100,6 +1103,12 @@ void * GC_start_routine(void * arg)
         GC_enable();
 #     endif
       return GC_inner_start_routine(&sb, arg);
+#   elif defined(GC_OPENBSD_THREADS)
+      /* On OpenBSD GC_get_stack_base() doesn't cause any allocations */
+      struct GC_stack_base sb;
+      if (GC_get_stack_base(&sb) != GC_SUCCESS)
+	ABORT("Failed to get thread stack base.");
+      return GC_inner_start_routine(&sb, arg);
 #   else
       return GC_call_with_stack_base(GC_inner_start_routine, arg);
 #   endif
@@ -1294,7 +1303,7 @@ void GC_generic_lock(pthread_mutex_t * lock)
 /* as STL alloc.h.  This isn't really the right way to do this.   */
 /* but until the POSIX scheduling mess gets straightened out ...  */
 
-volatile AO_TS_t GC_allocate_lock = 0;
+volatile AO_TS_t GC_allocate_lock = AO_TS_INITIALIZER;
 
 
 void GC_lock(void)
