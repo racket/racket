@@ -4,10 +4,12 @@
 
 ;; (why am I running this in scheme/load for the namespace in eval)
 
+(error-print-source-location #f)
+
 (with-handlers ((exn:fail:syntax? 
                  (lambda (e) 
                    (define msg (exn-message e))
-                   (define ext "big-bang: duplicate on-draw clause in: (on-draw render2 400 200)")
+                   (define ext "big-bang: duplicate on-draw clause") ; " in: (on-draw render2 400 200)")
                    (unless (string=? msg ext)
                      (raise e)))))
   (eval '(module a scheme 
@@ -27,7 +29,7 @@
 (with-handlers ((exn:fail:syntax? 
                  (lambda (e) 
                    (define msg (exn-message e))
-                   (unless (string=? msg "universe: duplicate on-tick clause in: (on-tick sub1)")
+                   (unless (string=? msg "universe: duplicate on-tick clause"); " in: (on-tick sub1)")
                      (raise e)))))
   (eval '(module a scheme 
            (require 2htdp/universe)
