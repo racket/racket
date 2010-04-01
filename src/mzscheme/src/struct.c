@@ -3553,11 +3553,11 @@ static void struct_type_set_if_immutable(Scheme_Struct_Type *struct_type) {
 }
 
 Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
-					Scheme_Object *parent,
-					int num_fields,
-					int num_uninit_fields,
-					Scheme_Object *uninit_val,
-					char *immutable_array)
+                                                       Scheme_Object *parent,
+                                                       int num_fields,
+                                                       int num_uninit_fields,
+                                                       Scheme_Object *uninit_val,
+                                                       char *immutable_array)
 {
   Scheme_Struct_Type *struct_type, *parent_type;
   int j, depth;
@@ -3595,11 +3595,11 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
 }
 
 static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *base,
-					Scheme_Object *parent,
-					int num_fields,
-					int num_uninit_fields,
-					Scheme_Object *uninit_val,
-					char *immutable_array)
+                                                          Scheme_Object *parent,
+                                                          int num_fields,
+                                                          int num_uninit_fields,
+                                                          Scheme_Object *uninit_val,
+                                                          char *immutable_array)
 {
 #ifdef MZ_USE_PLACES
   return scheme_make_prefab_struct_type_in_master
@@ -3607,23 +3607,23 @@ static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *base,
   return scheme_make_prefab_struct_type_raw
 #endif
          (base,
-					parent,
-					num_fields,
-					num_uninit_fields,
-					uninit_val,
-					immutable_array);
+          parent,
+          num_fields,
+          num_uninit_fields,
+          uninit_val,
+          immutable_array);
 }
 
 static Scheme_Object *_make_struct_type(Scheme_Object *base,
-					Scheme_Object *parent,
-					Scheme_Object *inspector,
-					int num_fields,
-					int num_uninit_fields,
-					Scheme_Object *uninit_val,
-					Scheme_Object *props,
-					Scheme_Object *proc_attr,
-          char *immutable_array,
-					Scheme_Object *guard)
+                                        Scheme_Object *parent,
+                                        Scheme_Object *inspector,
+                                        int num_fields,
+                                        int num_uninit_fields,
+                                        Scheme_Object *uninit_val,
+                                        Scheme_Object *props,
+                                        Scheme_Object *proc_attr,
+                                        char *immutable_array,
+                                        Scheme_Object *guard)
 {
   Scheme_Struct_Type *struct_type, *parent_type;
   int j, depth, checked_proc = 0;
@@ -4173,9 +4173,9 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
     }
 
     type = scheme_make_prefab_struct_type(argv[0],
-						 SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
-						 initc, uninitc,
-						 uninit_val,
+             SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
+             initc, uninitc,
+             uninit_val,
              immutable_array);
   }
   else {
