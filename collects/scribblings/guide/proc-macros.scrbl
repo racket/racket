@@ -286,9 +286,9 @@ This way of generating identifiers is normally easier to think
 about than tricking the macro expander into generating names with
 purely pattern-based macros.
 
-In general, the right-hand side of a @scheme[with-handlers]
+In general, the right-hand side of a @scheme[with-syntax]
 binding is a pattern, just like in @scheme[syntax-case]. In fact,
-a @scheme[with-handlers] form is just a @scheme[syntax-case] form
+a @scheme[with-syntax] form is just a @scheme[syntax-case] form
 turned partially inside-out.
 
 @; ----------------------------------------
