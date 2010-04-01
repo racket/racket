@@ -152,6 +152,7 @@ static Scheme_Object *exn_source_p(int argc, Scheme_Object **argv);
 static Scheme_Object *exn_source_get(int argc, Scheme_Object **argv);
 
 static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv);
+static Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type);
 
 static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv);
 static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv);
@@ -163,7 +164,7 @@ static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[]);
 static void register_traversers(void);
 #endif
 
-THREAD_LOCAL_DECL(static Scheme_Bucket_Table *prefab_table);
+SHARED_OK static Scheme_Bucket_Table *prefab_table;
 static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 
 #define cons scheme_make_pair
@@ -1906,6 +1907,22 @@ scheme_make_struct_instance(Scheme_Object *_stype, int argc, Scheme_Object **arg
   return (Scheme_Object *)inst;
 }
 
+Scheme_Object *scheme_make_blank_prefab_struct_instance(Scheme_Struct_Type *stype)
+{
+  Scheme_Structure *inst;
+  int c;
+
+  c = stype->num_slots;
+  inst = (Scheme_Structure *)
+    scheme_malloc_tagged(sizeof(Scheme_Structure) 
+			 + ((c - 1) * sizeof(Scheme_Object *)));
+  
+  inst->so.type = scheme_structure_type;
+  inst->stype = stype;
+  
+  return (Scheme_Object *)inst;
+}
+
 Scheme_Object *scheme_make_prefab_struct_instance(Scheme_Struct_Type *stype,
                                                          Scheme_Object *vec)
 {
@@ -3518,6 +3535,85 @@ static Scheme_Object *add_struct_type_chaperone_guards(Scheme_Object *o, Scheme_
   return scheme_make_pair(orig_guard, first);
 }
 
+static void struct_type_set_if_immutable(Scheme_Struct_Type *struct_type) {
+  if (!struct_type->name_pos
+      || MZ_OPT_HASH_KEY(&struct_type->parent_types[struct_type->name_pos - 1]->iso) & STRUCT_TYPE_ALL_IMMUTABLE) {
+    int i, size;
+    size = struct_type->num_islots;
+    if (struct_type->name_pos)
+      size -= struct_type->parent_types[struct_type->name_pos - 1]->num_islots;
+    if (struct_type->immutables) {
+      for (i = 0; i < size; i++) {
+        if (!struct_type->immutables[i])
+          return;
+      }
+      MZ_OPT_HASH_KEY(&struct_type->iso) |= STRUCT_TYPE_ALL_IMMUTABLE;
+    }
+  }
+}
+
+Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
+					Scheme_Object *parent,
+					int num_fields,
+					int num_uninit_fields,
+					Scheme_Object *uninit_val,
+					char *immutable_array)
+{
+  Scheme_Struct_Type *struct_type, *parent_type;
+  int j, depth;
+
+  parent_type = (Scheme_Struct_Type *)parent;
+  depth = parent_type ? (1 + parent_type->name_pos) : 0;
+  struct_type = (Scheme_Struct_Type *)scheme_malloc_tagged(sizeof(Scheme_Struct_Type)
+                                                           + (depth 
+                                                              * sizeof(Scheme_Struct_Type *)));
+  struct_type->iso.so.type = scheme_struct_type_type;
+
+  struct_type->parent_types[depth] = struct_type;
+  for (j = depth; j--; ) {
+    struct_type->parent_types[j] = parent_type->parent_types[j];
+  }
+
+  struct_type->name = base;
+  struct_type->num_slots = num_fields + num_uninit_fields + (parent_type ? parent_type->num_slots : 0);
+  struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
+  struct_type->name_pos = depth;
+  struct_type->inspector = scheme_false;
+  //Scheme_Object *accessor *mutator;
+  //Scheme_Object *prefab_key;
+  struct_type->uninit_val = uninit_val;
+  struct_type->props = NULL;
+  struct_type->num_props = 0;
+  struct_type->proc_attr = NULL;
+  struct_type->immutables = immutable_array;
+  struct_type->guard = NULL;
+
+  struct_type_set_if_immutable(struct_type);
+  struct_type = hash_prefab(struct_type);
+      
+  return struct_type;
+}
+
+static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *base,
+					Scheme_Object *parent,
+					int num_fields,
+					int num_uninit_fields,
+					Scheme_Object *uninit_val,
+					char *immutable_array)
+{
+#ifdef MZ_USE_PLACES
+  return scheme_make_prefab_struct_type_in_master
+#else
+  return scheme_make_prefab_struct_type_raw
+#endif
+         (base,
+					parent,
+					num_fields,
+					num_uninit_fields,
+					uninit_val,
+					immutable_array);
+}
+
 static Scheme_Object *_make_struct_type(Scheme_Object *base,
 					Scheme_Object *parent,
 					Scheme_Object *inspector,
@@ -3794,23 +3890,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
     MZ_OPT_HASH_KEY(&struct_type->iso) |= STRUCT_TYPE_CHECKED_PROC;
       
     /* Check all immutable */
-  if (!struct_type->name_pos
-      || MZ_OPT_HASH_KEY(&struct_type->parent_types[struct_type->name_pos - 1]->iso) & STRUCT_TYPE_ALL_IMMUTABLE) {
-    int i, size;
-    size = struct_type->num_islots;
-    if (struct_type->name_pos)
-      size -= struct_type->parent_types[struct_type->name_pos - 1]->num_islots;
-    if (struct_type->immutables) {
-      for (i = 0; i < size; i++) {
-        if (!struct_type->immutables[i])
-          break;
-      }
-    } else {
-      i = 0;
-    }
-    if (i == size)
-      MZ_OPT_HASH_KEY(&struct_type->iso) |= STRUCT_TYPE_ALL_IMMUTABLE;
-  }
+  struct_type_set_if_immutable(struct_type);
 
   return (Scheme_Object *)struct_type;
 }
@@ -3872,7 +3952,29 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 			   guard);
 }
 
-Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type)
+static Scheme_Struct_Type *lookup_prefab(Scheme_Object *key) {
+  Scheme_Object *a = NULL;
+
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  void *original_gc;
+  original_gc = GC_switch_to_master_gc();
+# endif
+
+  if (prefab_table) {
+    a = scheme_lookup_in_table(prefab_table, (const char *)key);
+  }
+
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  GC_switch_back_from_master(original_gc);
+# endif
+
+  if (a) {
+      return (Scheme_Struct_Type *) SCHEME_WEAK_BOX_VAL(a);
+  }
+  return NULL;
+}
+
+static Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type)
 {
   Scheme_Object *k, *v;
   
@@ -3942,12 +4044,12 @@ static char* immutable_pos_list_to_immutable_array(Scheme_Object *immutable_pos_
   
 static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 {
-  int initc, uninitc, num_props = 0, i, prefab = 0;
+  int initc, uninitc, num_props = 0, prefab = 0;
   Scheme_Object *props = scheme_null, *l, *a, **r;
-  Scheme_Object *inspector = NULL, **names, *uninit_val;
+  Scheme_Object *inspector = NULL, *uninit_val;
   Scheme_Struct_Type *type;
   Scheme_Object *proc_attr = NULL, *immutable_pos_list = scheme_null, *guard = NULL;
-  char* immutable_array;
+  char *immutable_array;
 
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_type("make-struct-type", "symbol", 0, argc, argv);
@@ -4069,35 +4171,42 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
     if (bad) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT, bad, argv[0]);
     }
-  }
 
-  type = (Scheme_Struct_Type *)_make_struct_type(argv[0],
+    type = scheme_make_prefab_struct_type(argv[0],
 						 SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
-						 inspector,
 						 initc, uninitc,
-						 uninit_val, props,
-						 proc_attr,
-						 immutable_array,
-						 guard);
-
-  if (prefab) {
-    type = hash_prefab(type);
+						 uninit_val,
+             immutable_array);
   }
+  else {
+    type = (Scheme_Struct_Type *)_make_struct_type(argv[0],
+               SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
+               inspector,
+               initc, uninitc,
+               uninit_val, props,
+               proc_attr,
+               immutable_array,
+               guard);
+  }
+  {
+    int i;
+    Scheme_Object **names;
 
-  names = scheme_make_struct_names(argv[0],
-				   NULL,
-				   SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET, 
-				   &i);
-  r = scheme_make_struct_values((Scheme_Object *)type, names, i, 
-				SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET);
+    names = scheme_make_struct_names(argv[0],
+             NULL,
+             SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET, 
+             &i);
+    r = scheme_make_struct_values((Scheme_Object *)type, names, i, 
+          SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET);
 
-  return scheme_values(i, r);
+    return scheme_values(i, r);
+  }
 }
 
 static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
 {
-  Scheme_Object *key = scheme_null, *stack = scheme_null, *v;
-  int cnt, icnt, total_cnt;
+  Scheme_Object *key = scheme_null, *stack = scheme_null;
+  int total_cnt;
 
   total_cnt = type->num_slots;
 
@@ -4107,8 +4216,8 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
   }
 
   while (type) {
-    cnt = type->num_slots;
-    icnt = type->num_islots;
+    int cnt = type->num_slots;
+    int icnt = type->num_islots;
     if (type->name_pos) {
       cnt -= type->parent_types[type->name_pos - 1]->num_slots;
       icnt -= type->parent_types[type->name_pos - 1]->num_islots;
@@ -4116,7 +4225,7 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
 
     if (cnt) {
       int i;
-      v = scheme_null;
+      Scheme_Object *v = scheme_null;
       for (i = icnt; i--; ) {
         if (!type->immutables || !type->immutables[i]) {
           v = scheme_make_pair(scheme_make_integer(i), v);
@@ -4206,13 +4315,15 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
   if (field_count > MAX_STRUCT_FIELD_COUNT)
     field_count = MAX_STRUCT_FIELD_COUNT;
 
-  if (prefab_table) {
-    a = scheme_lookup_in_table(prefab_table, (const char *)key);
-    if (a)
-      a = SCHEME_WEAK_BOX_VAL(a);
-    if (a)
-      return (Scheme_Struct_Type *)a;
+
+  {
+    Scheme_Struct_Type *stype = NULL;
+    stype = lookup_prefab(key);
+    if (stype) {
+      return stype;
+    }
   }
+
 
   key = scheme_reverse(key);
 
@@ -4279,16 +4390,12 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
     if (parent && (icnt + parent->num_slots > MAX_STRUCT_FIELD_COUNT))
       return NULL;
 
-    parent = (Scheme_Struct_Type *)_make_struct_type(name,
-                                                     (Scheme_Object *)parent,
-                                                     scheme_false,
-                                                     icnt, ucnt,
-                                                     uninit_val, scheme_null,
-                                                     NULL,
-                                                     immutable_array,
-                                                     NULL);
+    parent = scheme_make_prefab_struct_type(name,
+                                     (Scheme_Object *)parent,
+                                     icnt, ucnt,
+                                     uninit_val,
+                                     immutable_array);
     
-    parent = hash_prefab(parent);
   }
 
   if (!SCHEME_NULLP(key))

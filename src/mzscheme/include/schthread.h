@@ -192,7 +192,6 @@ typedef struct Thread_Local_Variables {
   void *stack_copy_cache_[STACK_COPY_CACHE_SIZE];
   long stack_copy_size_cache_[STACK_COPY_CACHE_SIZE];
   int scc_pos_;
-  struct Scheme_Bucket_Table *prefab_table_;
   struct Scheme_Object *nominal_ipair_cache_;
   struct Scheme_Object *mark_id_;
   struct Scheme_Object *current_rib_timestamp_;
@@ -476,7 +475,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define stack_copy_cache XOA (scheme_get_thread_local_variables()->stack_copy_cache_)
 #define stack_copy_size_cache XOA (scheme_get_thread_local_variables()->stack_copy_size_cache_)
 #define scc_pos XOA (scheme_get_thread_local_variables()->scc_pos_)
-#define prefab_table XOA (scheme_get_thread_local_variables()->prefab_table_)
 #define nominal_ipair_cache XOA (scheme_get_thread_local_variables()->nominal_ipair_cache_)
 #define mark_id XOA (scheme_get_thread_local_variables()->mark_id_)
 #define current_rib_timestamp XOA (scheme_get_thread_local_variables()->current_rib_timestamp_)
