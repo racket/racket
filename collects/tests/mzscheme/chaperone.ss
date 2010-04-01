@@ -172,6 +172,56 @@
   (test (vector 'a 'b 'c) values in)
   (test (vector 'b '(a c)) values out))
 
+;; Optional keyword arguments:
+(let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b))]
+       [in #f]
+       [f2 (chaperone-procedure
+            f
+            (lambda (x #:a [a 'nope] #:b [b 'nope])
+              (if (and (eq? a 'nope) (eq? b 'nope))
+                  x
+                  (values
+                   (append 
+                    (if (eq? a 'nope) null (list a))
+                    (if (eq? b 'nope) null (list b)))
+                   x))))])
+  (test '(1 a b) f 1)
+  (test '(1 a b) f2 1)
+  (test '(1 2 b) f 1 #:a 2)
+  (test '(1 2 b) f2 1 #:a 2)
+  (test '(1 a 3) f 1 #:b 3)
+  (test '(1 a 3) f2 1 #:b 3)
+  (test '(1 2 3) f 1 #:a 2 #:b 3)
+  (test '(1 2 3) f2 1 #:a 2 #:b 3)
+  (test 1 procedure-arity f2)
+  (test 'f object-name f2)
+  (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2))))
+
+;; Required keyword arguments:
+(let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
+       [in #f]
+       [f2 (chaperone-procedure
+            f
+            (lambda (x #:a [a 'nope] #:b [b 'nope])
+              (if (and (eq? a 'nope) (eq? b 'nope))
+                  x
+                  (values
+                   (append 
+                    (if (eq? a 'nope) null (list a))
+                    (if (eq? b 'nope) null (list b)))
+                   x))))])
+  (err/rt-test (f 1))
+  (err/rt-test (f2 1))
+  (err/rt-test (f 1 #:a 2))
+  (err/rt-test (f2 1 #:a 2))
+  (test '(1 a 3) f 1 #:b 3)
+  (test '(1 a 3) f2 1 #:b 3)
+  (test '(1 2 3) f 1 #:a 2 #:b 3)
+  (test '(1 2 3) f2 1 #:a 2 #:b 3)
+  (test 1 procedure-arity f2)
+  (test 'f object-name f2)
+  (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2))))
+
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values y y))) 1))
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values y y y))) 1))
 (err/rt-test ((chaperone-procedure (lambda (x) (values x x)) (lambda (y) y))) 1)

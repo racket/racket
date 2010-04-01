@@ -159,6 +159,7 @@
   scheme_extension_table->_scheme_apply_known_prim_closure_multi = _scheme_apply_known_prim_closure_multi;
   scheme_extension_table->_scheme_apply_prim_closure = _scheme_apply_prim_closure;
   scheme_extension_table->_scheme_apply_prim_closure_multi = _scheme_apply_prim_closure_multi;
+  scheme_extension_table->scheme_current_argument_stack = scheme_current_argument_stack;
   scheme_extension_table->scheme_call_with_prompt = scheme_call_with_prompt;
   scheme_extension_table->scheme_call_with_prompt_multi = scheme_call_with_prompt_multi;
   scheme_extension_table->_scheme_call_with_prompt = _scheme_call_with_prompt;

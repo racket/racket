@@ -182,7 +182,7 @@ Errors/exceptions and other kinds of control?
                (gen-exp))]))
 
 (define-namespace-anchor ns-here)
-(let ([seed (+ 1 (random (expt 2 30)))])
+(let ([seed 595933061 #;(+ 1 (random (expt 2 30)))])
   (printf "DrDr Ignore! random-seed ~s\n" seed)
   (random-seed seed))
 

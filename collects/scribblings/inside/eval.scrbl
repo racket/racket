@@ -186,7 +186,10 @@ to create new namespaces.}
            [int c]
            [Scheme_Object** args])]{
 
-Applies the procedure @var{f} to the given arguments.}
+Applies the procedure @var{f} to the given arguments.
+
+Beware that the procedure can mutate @var{args} if it is the same as
+the result of @cpp{scheme_current_argument_stack}.}
 
 @function[(Scheme_Object* scheme_apply_multi
            [Scheme_Object* f]

@@ -9941,6 +9941,11 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 #endif
 }
 
+Scheme_Object **scheme_current_argument_stack()
+{
+  return MZ_RUNSTACK;
+}
+
 /*========================================================================*/
 /*                  eval/compile/expand starting points                   */
 /*========================================================================*/

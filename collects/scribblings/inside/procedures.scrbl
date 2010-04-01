@@ -17,7 +17,9 @@ of arguments passed to the function will be checked using the arity
 information.  (The arity information provided to
 @cpp{scheme_make_prim_w_arity} is also used for the Scheme
 @scheme[arity] procedure.) The procedure implementation is not allowed
-to mutate the input array of arguments, although it may mutate the
+to mutate the input array of arguments; as an exception, the procedure
+can mutate the array if it is the same a the result of
+@cpp{scheme_current_argument_stack}. The procedure may mutate the
 arguments themselves when appropriate (e.g., a fill in a vector
 argument).
 
@@ -129,3 +131,12 @@ The form of @var{prim} is defined by:
 
 Creates a closed primitive procedure value without arity information.
 This function is provided for backward compatibility only.}
+
+@function[(Scheme_Object** scheme_current_argument_stack)]{
+
+Returns a pointer to an internal stack for argument passing. When the
+argument array passed to a procedure corresponds to the current
+argument stack address, the procedure is allowed to modify the
+array. In particular, it might clear out pointers in the argument
+array to allow the arguments to be reclaimed by the memory manager (if
+they are not otherwise accessible).}

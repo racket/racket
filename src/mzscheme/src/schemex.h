@@ -243,6 +243,7 @@ Scheme_Object *(*_scheme_apply_prim_closure)(Scheme_Object *rator, int argc,
 						    Scheme_Object **argv);
 Scheme_Object *(*_scheme_apply_prim_closure_multi)(Scheme_Object *rator, int argc,
 							  Scheme_Object **argv);
+Scheme_Object **(*scheme_current_argument_stack)();
 Scheme_Object *(*scheme_call_with_prompt)(Scheme_Closed_Prim f, void *data);
 Scheme_Object *(*scheme_call_with_prompt_multi)(Scheme_Closed_Prim f, void *data);
 Scheme_Object *(*_scheme_call_with_prompt)(Scheme_Closed_Prim f, void *data);

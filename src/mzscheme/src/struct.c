@@ -4347,7 +4347,7 @@ static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv)
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_type("procedure-extract-target", "procedure", 0, argc, argv);
   
-  if (SCHEME_CHAPERONE_STRUCTP(argv[0])) {
+  if (SCHEME_STRUCTP(argv[0])) { /* don't allow chaperones */
     /* Don't expose arity reducer: */
     if (scheme_reduced_procedure_struct
         && scheme_is_struct_instance(scheme_reduced_procedure_struct, argv[0]))

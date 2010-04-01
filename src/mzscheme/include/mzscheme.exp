@@ -151,6 +151,7 @@ _scheme_apply_known_prim_closure
 _scheme_apply_known_prim_closure_multi
 _scheme_apply_prim_closure
 _scheme_apply_prim_closure_multi
+scheme_current_argument_stack
 scheme_call_with_prompt
 scheme_call_with_prompt_multi
 _scheme_call_with_prompt

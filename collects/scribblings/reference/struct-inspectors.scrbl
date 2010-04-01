@@ -150,8 +150,11 @@ The name (if any) of a procedure is always a symbol. The
 name.
 
 The name of a @tech{structure}, @tech{structure type}, @tech{structure
-type property} is always a symbol. If a @tech{structure} is not a
-procedure, its name matches the name of the @tech{structure type} that
+type property} is always a symbol. If a @tech{structure} is a
+procedure as implemented by one of its fields (i.e., the
+@scheme[prop:procedure] property value for the structure's type is an
+integer), then its name is the implementing procedure's name;
+otherwise, its name matches the name of the @tech{structure type} that
 it instantiates.
 
 The name of a @tech{regexp value} is a string or byte string. Passing

@@ -991,7 +991,10 @@ static char *make_arity_expect_string(const char *name, int namelen,
       } else {
         Scheme_Object *v;
         int is_method;
-        v = scheme_extract_struct_procedure((Scheme_Object *)name, -1, NULL, &is_method);
+        v = (Scheme_Object *)name;
+        if (SCHEME_CHAPERONEP(v))
+          v = SCHEME_CHAPERONE_VAL(v);
+        v = scheme_extract_struct_procedure(v, -1, NULL, &is_method);
         if (!v || is_method || !SCHEME_CHAPERONE_PROC_STRUCTP(v))
           break;
         name = (const char *)v;

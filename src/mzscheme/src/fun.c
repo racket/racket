@@ -3352,6 +3352,8 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a)
       /* Either use struct name, or extract proc, depending
          whether it's method-style */
       int is_method;
+      if (SCHEME_CHAPERONEP(a))
+        a = SCHEME_CHAPERONE_VAL(a);
       b = scheme_extract_struct_procedure(a, -1, NULL, &is_method);
       if (!is_method && SCHEME_PROCP(b)) {
         a = b;
@@ -4074,8 +4076,23 @@ static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Obje
 Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
 {
   Scheme_Chaperone *px = (Scheme_Chaperone *)o;
-  Scheme_Object *v, *a[1], *a2[1], **argv2, *post, *result_v;
-  int c, i;
+  Scheme_Object *v, *a[1], *a2[3], **argv2, *post, *result_v;
+  int c, i, need_restore = 0;
+
+  if (argv == MZ_RUNSTACK) {
+    /* Pushing onto the runstack ensures that px->redirects won't
+       modify argv. */
+    if (MZ_RUNSTACK > MZ_RUNSTACK_START) {
+      --MZ_RUNSTACK;
+      *MZ_RUNSTACK = NULL;
+      need_restore = 1;
+    } else {
+      /* Can't push! Just allocate a copy. */
+      argv2 = MALLOC_N(Scheme_Object *, argc);
+      memcpy(argv2, argv, sizeof(Scheme_Object*) * argc);
+      argv = argv2;
+    }
+  }
 
   v = _scheme_apply_multi(px->redirects, argc, argv);
   if (v == SCHEME_MULTIPLE_VALUES) {
@@ -4113,6 +4130,16 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                      c, argc, argc + 1);
     return NULL;
   }
+
+  if (need_restore) {
+    /* As a step toward space safety, even clear out the arguments 
+       form the runstack: */
+    MZ_RUNSTACK++;
+    for (i = 0; i < argc; i++) {
+      argv[i] = NULL;
+    }
+  } else
+    argv = NULL;
 
   if (c == argc) {
     /* No filter for the result, so tail call: */

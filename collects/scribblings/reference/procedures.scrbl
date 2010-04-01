@@ -176,8 +176,13 @@ when @scheme[procedure-arity] is applied to the generated
 procedure, it returns a value that is @scheme[equal?] to
 @scheme[arity].
 
-If the @scheme[arity] specification allows arguments that are not
-in @scheme[(procedure-arity proc)], the @exnraise[exn:fail:contract].
+If the @scheme[arity] specification allows arguments that are not in
+@scheme[(procedure-arity proc)], the @exnraise[exn:fail:contract].  If
+@scheme[proc] accepts keyword argument, either the keyword arguments
+must be all optional (and they are not accepted in by the
+arity-reduced procedure) or @scheme[arity] must be the empty list
+(which makes a procedure that cannot be called); otherwise, the
+@exnraise[exn:fail:contract].
 
 @examples[
 (define my+ (procedure-reduce-arity + 2))

@@ -2091,6 +2091,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
               print_utf8_string(pp, "procedure:", 0, 10);
               name = ((Scheme_Structure *)obj)->slots[2];
             } else {
+              if (SCHEME_PROCP(obj))
+                print_utf8_string(pp, "procedure:", 0, 10);
 	      name = SCHEME_STRUCT_NAME_SYM(obj);
             }
 
