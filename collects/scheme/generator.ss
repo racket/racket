@@ -22,8 +22,7 @@
 ;;         r)))
 ;;   (lambda () (cont)))
 
-;; not using parameterization (old version, doesn't deal with multiple
-;; inputs/outputs as the one below)
+;; not using parameterization
 #;
 (define-syntax-rule (generator body0 body ...)
   (let ([tag (make-continuation-prompt-tag)])
@@ -52,13 +51,7 @@
 
 (define yield-tag (make-continuation-prompt-tag))
 
-(define-syntax (generator stx)
-  (syntax-case stx ()
-    [(_ () body0 body ...) #'(generator-old body0 body ...)]
-    [_ (raise-syntax-error
-        'generator "must have a form of (generator () body ...)")]))
-
-(define-syntax-rule (generator-old body0 body ...)
+(define-syntax-rule (generator body0 body ...)
   (let ([state 'fresh])
     (define (cont)
       (define (yielder . vs)
@@ -102,23 +95,22 @@
       (raise-type-error 'generator-state "generator" g))))
 
 (define-syntax-rule (infinite-generator body0 body ...)
-  (generator () (let loop () body0 body ... (loop))))
+  (generator (let loop () body0 body ... (loop))))
 
 (define stop-value (gensym))
 
 (define-sequence-syntax in-generator
   (syntax-rules ()
     [(_ body0 body ...)
-     (in-producer (generator () body0 body ... stop-value) stop-value)])
+     (in-producer (generator body0 body ... stop-value) stop-value)])
   (lambda (stx)
     (syntax-case stx ()
       [((id ...) (_ body0 body ...))
        #'[(id ...)
-          (in-producer (generator () body0 body ... stop-value)
-                       stop-value)]])))
+          (in-producer (generator body0 body ... stop-value) stop-value)]])))
 
 (define (sequence->generator sequence)
-  (generator () (for ([i sequence]) (yield i))))
+  (generator (for ([i sequence]) (yield i))))
 
 (define (sequence->repeated-generator sequence)
   (sequence->generator (in-cycle sequence)))

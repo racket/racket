@@ -7,7 +7,7 @@
 
 @(define (generate-c_r-example proc)
   (define (make-it start n)
-    (generator ()
+    (generator
       (let loop ([start start]
                  [n n])
         (yield (list* n start))
