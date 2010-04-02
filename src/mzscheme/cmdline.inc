@@ -166,16 +166,58 @@ typedef struct {
 
 typedef void (*Repl_Proc)(Scheme_Env *);
 
+static void configure_environment(Scheme_Object *mod)
+{
+  Scheme_Object *mli, *dyreq, *a[3], *gi, *v;
+
+  mli = scheme_builtin_value("module->language-info");
+
+  a[0] = mod;
+  a[1] = scheme_make_true();
+  v = scheme_apply(mli, 2, a);
+  if (SCHEME_VECTORP(v)) {
+    dyreq = scheme_builtin_value("dynamic-require");
+
+    a[0] = SCHEME_VEC_ELS(v)[0];
+    a[1] = SCHEME_VEC_ELS(v)[1];
+    gi = scheme_apply(dyreq, 2, a);
+
+    a[0] = SCHEME_VEC_ELS(v)[2];
+    gi = scheme_apply(gi, 1, a);
+
+    a[0] = scheme_intern_symbol("configure-runtime");
+    a[1] = scheme_make_false();
+    v = scheme_apply(gi, 2, a);
+    if (!SAME_OBJ(v, scheme_make_false())) {
+      if (SCHEME_VECTORP(v) && SCHEME_VEC_SIZE(v) == 3) {
+        a[0] = SCHEME_VEC_ELS(v)[0];
+        a[1] = SCHEME_VEC_ELS(v)[1];
+        a[2] = SCHEME_VEC_ELS(v)[2];
+        v = scheme_apply(dyreq, 2, a);
+        
+        a[0] = a[2];
+        scheme_apply_multi(v, 1, a);
+      } else {
+        a[0] = v;
+        scheme_wrong_type("current-print setup", "vector of three values",
+                          -1, 0, a);
+      }
+    }
+  }
+}
+
 static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 {
   volatile int exit_val = 0;
+  volatile int did_config = 0;
 
   if (fa->a->init_ns) {
-    Scheme_Object *nsreq, *a[1];
+    Scheme_Object *a[1], *nsreq;
     Scheme_Thread * volatile p;
     mz_jmp_buf * volatile save, newbuf;
 
     nsreq = scheme_builtin_value("namespace-require");
+
     a[0] = scheme_make_pair(scheme_intern_symbol("lib"),
                             scheme_make_pair(scheme_make_utf8_string(fa->init_lib),
                                              scheme_make_null()));
@@ -183,9 +225,13 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     p = scheme_get_current_thread();
     save = p->error_buf;
     p->error_buf = &newbuf;
-    if (!scheme_setjmp(newbuf))
+    if (!scheme_setjmp(newbuf)) {
+      if (!did_config) {
+        configure_environment(a[0]);
+        did_config = 1;
+      }
       scheme_apply(nsreq, 1, a);
-    else {
+    } else {
       exit_val = 1;
     }        
     p->error_buf = save;
@@ -238,6 +284,8 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             a[0] = scheme_make_pair(scheme_intern_symbol(name),
                                     scheme_make_pair(scheme_make_utf8_string(fa->evals_and_loads[i]),
                                                      scheme_make_null()));
+            if (!did_config)
+              configure_environment(a[0]);
             scheme_apply(nsreq, 1, a);
           }
         } else {
@@ -307,6 +355,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	}
 	p->error_buf = save;
       }
+      did_config = 1;
     }
   }
 #endif /* DONT_PARSE_COMMAND_LINE */

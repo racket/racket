@@ -1,10 +1,8 @@
 
 (module pconvert mzscheme
   
-  (require (only "string.ss" expr->string)
-           (only "list.ss" sort)
+  (require (only "list.ss" sort)
            scheme/mpair
-	   "etc.ss"
 	   "pconvert-prop.ss"
            "class.ss")
   
@@ -169,7 +167,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   (define map-share-name
     (lambda (name)
-      (string->symbol (string-append "-" (expr->string name) "-"))))
+      (string->symbol (format "-~s-" name))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; prints an expression given that it has already been hashed. This
@@ -458,8 +456,7 @@
 						  [str-name (if (string? name)
 								name
 								(symbol->string name))])
-					     (string->symbol (string-append "make-" str-name))))]
-				      [uniq (begin-lifted (box #f))])
+					     (string->symbol (string-append "make-" str-name))))])
                                   `(,constructor
                                     ,@(map (lambda (x) 
                                              (if (eq? uniq x)
@@ -497,6 +494,7 @@
       [(null? x) null]
       [else (f x)]))
   
+  (define uniq (gensym))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; these functions get the list of shared items.  If just-circular is
@@ -536,8 +534,8 @@
                     (get-shared-helper csi))
                   (get-shared-helper csi))]
              [cmp (lambda (x y)
-                    (string<? (expr->string (share-info-name (car x)))
-                              (expr->string (share-info-name (car y)))))])
+                    (string<? (format "~s" (share-info-name (car x)))
+                              (format "~s" (share-info-name (car y)))))])
          (map cdr (sort shared-listss cmp)))]))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

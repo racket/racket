@@ -99,7 +99,8 @@ override the default @scheme[equal?] definition through the
                                       #f]
                            [immutables (listof exact-nonnegative-integer?)
                                        null]
-                           [guard (or/c procedure? #f) #f])
+                           [guard (or/c procedure? #f) #f]
+                           [constructor-name (or/c symbol? #f) #f])
           (values struct-type?
                   struct-constructor-procedure?
                   struct-predicate-procedure?
@@ -168,6 +169,10 @@ own guard, the subtype guard is applied first, and the first @math{n}
 values produced by the subtype's guard procedure become the first
 @math{n} arguments to @scheme[guard]. When @scheme[inspector] is
 @scheme['prefab], then @scheme[guard] must be @scheme[#f].
+
+If @scheme[constructor-name] is not @scheme[#f], it is used as the
+name of the generated @tech{constructor} procedure as returned by
+@scheme[object-name] or in the printed form of the constructor value.
 
 The result of @scheme[make-struct-type] is five values:
 

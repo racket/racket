@@ -355,8 +355,8 @@ scheme_compile
 scheme_read
 scheme_read_syntax
 scheme_write
-scheme_display
 scheme_print
+scheme_display
 scheme_write_w_max
 scheme_display_w_max
 scheme_print_w_max
@@ -523,6 +523,7 @@ scheme_intern_exact_char_keyword
 scheme_make_struct_values
 scheme_make_struct_names
 scheme_make_struct_type
+scheme_make_struct_type2
 scheme_make_struct_instance
 scheme_is_struct_instance
 scheme_struct_ref

@@ -1560,6 +1560,7 @@ mark_print_params {
   gcMARK2(pp->inspector, gc);
   gcMARK2(pp->print_port, gc);
   gcMARK2(pp->print_buffer, gc);
+  gcMARK2(pp->depth_delta, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(PrintParams));
 }

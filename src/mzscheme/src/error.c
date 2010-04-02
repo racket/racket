@@ -3287,7 +3287,7 @@ do_raise(Scheme_Object *arg, int need_debug, int eb)
       if (need_debug) {
         msg = scheme_display_to_string(((Scheme_Structure *)arg)->slots[0], NULL);
       } else
-        msg = scheme_write_to_string(arg, NULL);
+        msg = scheme_print_to_string(arg, NULL);
       scheme_log(NULL,
                  SCHEME_LOG_WARNING,
                  0,

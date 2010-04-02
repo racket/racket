@@ -24,6 +24,7 @@
                               (code:line #:property prop-expr val-exr)
                               (code:line #:transparent)
                               (code:line #:prefab)
+                              (code:line #:constructor-name constructor-id)
                               #:omit-define-syntaxes
                               #:omit-define-values]
                [field-option #:mutable
@@ -41,7 +42,8 @@ to @math{4+2n} names:
  @item{@schemeidfont{struct:}@scheme[id], a @deftech{structure type
        descriptor} value that represents the @tech{structure type}.}
 
- @item{@schemeidfont{make-}@scheme[id], a @deftech{constructor}
+ @item{@scheme[constructor-id] (which defaults to
+       @schemeidfont{make-}@scheme[id]), a @deftech{constructor}
        procedure that takes @math{m} arguments and returns a new
        instance of the @tech{structure type}, where @math{m} is the
        number of @scheme[field]s that do not include an
@@ -72,7 +74,10 @@ to @math{4+2n} names:
        is used to define subtypes, and it also works with the
        @scheme[shared] and @scheme[match] forms. For detailed
        information about the binding of @scheme[id], see
-       @secref["structinfo"].}
+       @secref["structinfo"].
+       
+       The @scheme[constructor-id] and @scheme[id] can be the same, in
+       which case @scheme[id] performs both roles.}
 
 ]
 
@@ -119,8 +124,9 @@ must also be a @tech{prefab} structure type.
 If the @scheme[#:omit-define-syntaxes] option is supplied, then
 @scheme[id] is not bound as a transformer. If the
 @scheme[#:omit-define-values] option is supplied, then none of the
-usual variables are bound. If both are supplied, then the
-@scheme[define-struct] form is equivalent to @scheme[(begin)].
+usual variables are bound, but @scheme[id] is bound. If both are
+supplied, then the @scheme[define-struct] form is equivalent to
+@scheme[(begin)].
 
 If @scheme[#:auto] is supplied as a @scheme[field-option], then the
 @tech{constructor} procedure for the structure type does not accept an

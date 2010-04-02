@@ -403,8 +403,8 @@
   scheme_extension_table->scheme_read = scheme_read;
   scheme_extension_table->scheme_read_syntax = scheme_read_syntax;
   scheme_extension_table->scheme_write = scheme_write;
-  scheme_extension_table->scheme_display = scheme_display;
   scheme_extension_table->scheme_print = scheme_print;
+  scheme_extension_table->scheme_display = scheme_display;
   scheme_extension_table->scheme_write_w_max = scheme_write_w_max;
   scheme_extension_table->scheme_display_w_max = scheme_display_w_max;
   scheme_extension_table->scheme_print_w_max = scheme_print_w_max;
@@ -575,6 +575,7 @@
   scheme_extension_table->scheme_make_struct_values = scheme_make_struct_values;
   scheme_extension_table->scheme_make_struct_names = scheme_make_struct_names;
   scheme_extension_table->scheme_make_struct_type = scheme_make_struct_type;
+  scheme_extension_table->scheme_make_struct_type2 = scheme_make_struct_type2;
   scheme_extension_table->scheme_make_struct_instance = scheme_make_struct_instance;
   scheme_extension_table->scheme_is_struct_instance = scheme_is_struct_instance;
   scheme_extension_table->scheme_struct_ref = scheme_struct_ref;

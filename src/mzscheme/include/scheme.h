@@ -1191,6 +1191,8 @@ enum {
   MZCONFIG_PRINT_PAIR_CURLY,
   MZCONFIG_PRINT_MPAIR_CURLY,
   MZCONFIG_PRINT_SYNTAX_WIDTH,
+  MZCONFIG_PRINT_READER,
+  MZCONFIG_PRINT_AS_QQ,
 
   MZCONFIG_CASE_SENS,
   MZCONFIG_SQUARE_BRACKETS_ARE_PARENS,
@@ -1894,6 +1896,7 @@ extern Scheme_Extension_Table *scheme_extension_table;
 #define SCHEME_STRUCT_GEN_GET 0x20
 #define SCHEME_STRUCT_GEN_SET 0x40
 #define SCHEME_STRUCT_EXPTIME 0x80
+#define SCHEME_STRUCT_NO_MAKE_PREFIX 0x100
 
 /*========================================================================*/
 /*                           file descriptors                             */

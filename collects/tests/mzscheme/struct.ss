@@ -16,7 +16,7 @@
   (test #f struct-type-property? 5)
   (let-values ([(type make pred sel set) (make-struct-type 'a #f 2 1 'un (list (cons prop:p 87)) (make-inspector insp1))]
 	       [(typex makex predx selx setx) (make-struct-type 'ax #f 0 5 #f null (make-inspector insp2))])
-    (arity-test make-struct-type 4 10)
+    (arity-test make-struct-type 4 11)
     (test 5 primitive-result-arity make-struct-type)
     (test #t struct-type? type)
     (test #t procedure? make)

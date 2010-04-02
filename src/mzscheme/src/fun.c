@@ -3520,10 +3520,8 @@ static Scheme_Object *primitive_result_arity(int argc, Scheme_Object *argv[])
   return scheme_make_integer(1);
 }
 
-static Scheme_Object *object_name(int argc, Scheme_Object **argv)
+Scheme_Object *scheme_object_name(Scheme_Object *a)
 {
-  Scheme_Object *a = argv[0];
-
   if (SCHEME_CHAPERONEP(a))
     a = SCHEME_CHAPERONE_VAL(a);
 
@@ -3578,6 +3576,11 @@ static Scheme_Object *object_name(int argc, Scheme_Object **argv)
   }
 
   return scheme_false;
+}
+
+static Scheme_Object *object_name(int argc, Scheme_Object **argv)
+{
+  return scheme_object_name(argv[0]);
 }
 
 Scheme_Object *scheme_arity(Scheme_Object *p)
@@ -3676,13 +3679,14 @@ void scheme_init_reduced_proc_struct(Scheme_Env *env)
     while (insp->superior->superior) {
       insp = insp->superior;
     }
-    scheme_reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
-                                                                   NULL,
-                                                                   (Scheme_Object *)insp,
-                                                                   4, 0,
-                                                                   scheme_false,
-                                                                   scheme_make_integer(0),
-                                                                   NULL);
+    scheme_reduced_procedure_struct = scheme_make_struct_type2(NULL,
+                                                               NULL,
+                                                               (Scheme_Object *)insp,
+                                                               4, 0,
+                                                               scheme_false,
+                                                               scheme_null,
+                                                               scheme_make_integer(0),
+                                                               NULL, NULL);
   }
 }
 

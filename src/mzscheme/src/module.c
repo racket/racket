@@ -398,7 +398,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("resolved-module-path-name",        resolved_module_path_name,  1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-provide-protected?",        module_export_protected_p,  2, 2, env);
   GLOBAL_PRIM_W_ARITY("module->namespace",                module_to_namespace,        1, 1, env);
-  GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 2, env);
   GLOBAL_PRIM_W_ARITY("module->imports",                  module_to_imports,          1, 1, env);
   GLOBAL_PRIM_W_ARITY2("module->exports",                 module_to_exports,          1, 1, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("module-path?",                     is_module_path,             1, 1, env);
@@ -2601,7 +2601,8 @@ static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[
   if (SCHEME_MODNAMEP(argv[0]))
     name = argv[0];
   else
-    name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false), 1);
+    name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false),
+                                 (argc > 1) ? SCHEME_TRUEP(argv[1]) : 0);
 
   if (SAME_OBJ(name, kernel_modname))
     m = kernel;

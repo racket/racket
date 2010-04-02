@@ -171,11 +171,11 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 #define icons scheme_make_pair
 #define _intern scheme_intern_symbol
 
-#define BUILTIN_STRUCT_FLAGS SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_SET
-#define LOC_STRUCT_FLAGS BUILTIN_STRUCT_FLAGS | SCHEME_STRUCT_NO_SET
+#define BUILTIN_STRUCT_FLAGS SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_EXPTIME
 
 #define TYPE_NAME(base, blen) make_name("struct:", base, blen, "", NULL, 0, "", 1)
-#define CSTR_NAME(base, blen) make_name("make-", base, blen, "", NULL, 0, "", 1)
+#define CSTR_NAME(base, blen) make_name("", base, blen, "", NULL, 0, "", 1)
+#define CSTR_MAKE_NAME(base, blen) make_name("make-", base, blen, "", NULL, 0, "", 1)
 #define PRED_NAME(base, blen) make_name("", base, blen, "?", NULL, 0, "", 1)
 #define GET_NAME(base, blen, field, flen, sym) make_name("", base, blen, "-", field, flen, "", sym)
 #define SET_NAME(base, blen, field, flen, sym) make_name("set-", base, blen, "-", field, flen, "!", sym)
@@ -207,8 +207,8 @@ scheme_init_struct (Scheme_Env *env)
   READ_ONLY static const char *arity_fields[1] = { "value" };
 #ifdef TIME_SYNTAX
   READ_ONLY static const char *date_fields[10] = { "second", "minute", "hour",
-					 "day", "month", "year",
-					 "week-day", "year-day", "dst?", "time-zone-offset" };
+                                                   "day", "month", "year",
+                                                   "week-day", "year-day", "dst?", "time-zone-offset" };
 #endif
   READ_ONLY static const char *location_fields[10] = { "source", "line", "column", "position", "span" };
   
@@ -259,10 +259,10 @@ scheme_init_struct (Scheme_Env *env)
   
   loc_names = scheme_make_struct_names_from_array("srcloc",
 						  5, location_fields,
-						  LOC_STRUCT_FLAGS, &loc_count);
+						  BUILTIN_STRUCT_FLAGS, &loc_count);
   
   loc_values = scheme_make_struct_values(location_struct, loc_names, loc_count, 
-					 LOC_STRUCT_FLAGS);
+					 BUILTIN_STRUCT_FLAGS);
   for (i = 0; i < loc_count - 1; i++) {
     scheme_add_global_constant(scheme_symbol_val(loc_names[i]), loc_values[i], 
 			       env);
@@ -405,7 +405,7 @@ scheme_init_struct (Scheme_Env *env)
   REGISTER_SO(scheme_make_struct_type_proc);
   scheme_make_struct_type_proc = scheme_make_prim_w_arity2(make_struct_type,
                                                            "make-struct-type",
-                                                           4, 10,
+                                                           4, 11,
                                                            5, 5);
 
   scheme_add_global_constant("make-struct-type", 
@@ -504,7 +504,7 @@ scheme_init_struct (Scheme_Env *env)
   scheme_add_global_constant("struct-type-make-constructor",
 			     scheme_make_prim_w_arity(struct_type_constr,
 						      "struct-type-make-constructor",
-						      1, 1),
+						      1, 2),
 			     env);
   scheme_add_global_constant("struct->vector",
 			     scheme_make_prim_w_arity(struct_to_vector,
@@ -1530,11 +1530,21 @@ int scheme_is_set_transformer(Scheme_Object *o)
 }
 
 static int is_proc_1(Scheme_Object *o) { return (SCHEME_PROCP(o) && scheme_check_proc_arity(NULL, 1, -1, 0, &o)); } 
+static int is_proc_1_or_2(Scheme_Object *o) { return (SCHEME_PROCP(o) && (scheme_check_proc_arity(NULL, 1, -1, 0, &o)
+                                                                          || scheme_check_proc_arity(NULL, 2, -1, 0, &o))); }
 
 Scheme_Object *signal_bad_syntax(int argc, Scheme_Object **argv)
 {
   scheme_wrong_syntax(NULL, NULL, argv[0], "bad syntax");
   return NULL;
+}
+
+static Scheme_Object *chain_transformer(void *data, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a[2], *v = (Scheme_Object *)data;
+  a[0] = SCHEME_CAR(v);
+  a[1] = argv[0];
+  return _scheme_tail_apply(SCHEME_CDR(v), 2, a);
 }
 
 Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o)
@@ -1551,6 +1561,11 @@ Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o)
                                      "bad-syntax-set!-transformer",
                                      1, 1);
       }
+    } else if (!scheme_check_proc_arity(NULL, 1, -1, 0, &v)) {
+      /* Must be a procedure of 2 arguments. Reduce to a procedure of 1. */
+      o = scheme_make_pair(o, v);
+      v = scheme_make_closed_prim_w_arity(chain_transformer, (void *)o,
+                                          "set!-transformer", 1, 1);
     }
     return v;
   }
@@ -1560,8 +1575,8 @@ Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o)
 static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[])
 {
   return check_indirect_property_value_ok("guard-for-prop:set!-transformer", 
-                                          is_proc_1, 
-                                          "property value is not an procedure (arity 1) or exact non-negative integer: ",
+                                          is_proc_1_or_2, 
+                                          "property value is not an procedure (arity 1 or 2) or exact non-negative integer: ",
                                           argc, argv);
 }
 
@@ -2485,9 +2500,17 @@ static Scheme_Object *struct_type_constr(int argc, Scheme_Object *argv[])
   else
     stype = (Scheme_Struct_Type *)argv[0];
 
+  if ((argc < 2) || SCHEME_FALSEP(argv[1]))
+    v = CSTR_MAKE_NAME(scheme_symbol_val(stype->name), SCHEME_SYM_LEN(stype->name));
+  else if (SCHEME_SYMBOLP(argv[1]))
+    v = argv[1];
+  else {
+    scheme_wrong_type("struct-type-make-constructor", "symbol", 1, argc, argv);
+    return NULL;
+  }
+  
   v = make_struct_proc(stype, 
-                       scheme_symbol_val(CSTR_NAME(scheme_symbol_val(stype->name),
-                                                   SCHEME_SYM_LEN(stype->name))),
+                       scheme_symbol_val(v),
                        SCHEME_CONSTR,
                        stype->num_slots);
 
@@ -3200,7 +3223,10 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
   }
   if (!(flags & SCHEME_STRUCT_NO_CONSTR)) {
     Scheme_Object *nm;
-    nm = CSTR_NAME(base, blen);
+    if (flags & SCHEME_STRUCT_NO_MAKE_PREFIX)
+      nm = CSTR_NAME(base, blen);
+    else
+      nm = CSTR_MAKE_NAME(base, blen);
     names[pos++] = nm;
   }
   if (!(flags & SCHEME_STRUCT_NO_PRED)) {
@@ -3615,15 +3641,15 @@ static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *base,
 }
 
 static Scheme_Object *_make_struct_type(Scheme_Object *base,
-                                        Scheme_Object *parent,
-                                        Scheme_Object *inspector,
-                                        int num_fields,
-                                        int num_uninit_fields,
-                                        Scheme_Object *uninit_val,
-                                        Scheme_Object *props,
-                                        Scheme_Object *proc_attr,
+					Scheme_Object *parent,
+					Scheme_Object *inspector,
+					int num_fields,
+					int num_uninit_fields,
+					Scheme_Object *uninit_val,
+					Scheme_Object *props,
+					Scheme_Object *proc_attr,
                                         char *immutable_array,
-                                        Scheme_Object *guard)
+					Scheme_Object *guard)
 {
   Scheme_Struct_Type *struct_type, *parent_type;
   int j, depth, checked_proc = 0;
@@ -3711,7 +3737,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
       p = SCHEME_INT_VAL(proc_attr);
       if (p < ni) {
         if (!immutable_array) {
-          immutable_array= (char *)scheme_malloc_atomic(n);
+          immutable_array = (char *)scheme_malloc_atomic(n);
           memset(immutable_array, 0, n);
         }
         immutable_array[p] = 1;
@@ -3911,19 +3937,21 @@ Scheme_Object *scheme_make_struct_type(Scheme_Object *base,
 			   guard);
 }
 
-Scheme_Object *scheme_make_proc_struct_type(Scheme_Object *base,
-                                            Scheme_Object *parent,
-                                            Scheme_Object *inspector,
-                                            int num_fields, int num_uninit,
-                                            Scheme_Object *uninit_val,
-                                            Scheme_Object *proc_attr,
-                                            Scheme_Object *guard)
+Scheme_Object *scheme_make_struct_type2(Scheme_Object *base,
+                                        Scheme_Object *parent,
+                                        Scheme_Object *inspector,
+                                        int num_fields, int num_uninit,
+                                        Scheme_Object *uninit_val,
+                                        Scheme_Object *properties,
+                                        Scheme_Object *proc_attr,
+                                        char *immutable_array,
+                                        Scheme_Object *guard)
 {
   return _make_struct_type(base,
 			   parent, inspector, 
 			   num_fields, num_uninit,
-			   uninit_val, scheme_null, 
-			   proc_attr, NULL,
+			   uninit_val, properties, 
+			   proc_attr, immutable_array,
 			   guard);
 }
 
@@ -4045,7 +4073,7 @@ static char* immutable_pos_list_to_immutable_array(Scheme_Object *immutable_pos_
 static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 {
   int initc, uninitc, num_props = 0, prefab = 0;
-  Scheme_Object *props = scheme_null, *l, *a, **r;
+  Scheme_Object *props = scheme_null, *l, *a, **r, *cstr_name = NULL;
   Scheme_Object *inspector = NULL, *uninit_val;
   Scheme_Struct_Type *type;
   Scheme_Object *proc_attr = NULL, *immutable_pos_list = scheme_null, *guard = NULL;
@@ -4133,6 +4161,14 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 		if (!SCHEME_PROCP(guard))
 		  scheme_wrong_type("make-struct-type", "procedure or #f", 9, argc, argv);
 	      }
+
+              if (argc > 10) {
+                if (!SCHEME_FALSEP(argv[10])) {
+                  if (!SCHEME_SYMBOLP(argv[10]))
+                    scheme_wrong_type("make-struct-type", "symbol or #f", 10, argc, argv);
+                  cstr_name = argv[10];
+                }
+              }
 	    }
 	  }
 	}
@@ -4173,31 +4209,33 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
     }
 
     type = scheme_make_prefab_struct_type(argv[0],
-             SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
-             initc, uninitc,
-             uninit_val,
-             immutable_array);
-  }
-  else {
+                                          SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
+                                          initc, uninitc,
+                                          uninit_val,
+                                          immutable_array);
+  } else {
     type = (Scheme_Struct_Type *)_make_struct_type(argv[0],
-               SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
-               inspector,
-               initc, uninitc,
-               uninit_val, props,
-               proc_attr,
-               immutable_array,
-               guard);
+                                                   SCHEME_FALSEP(argv[1]) ? NULL : argv[1],
+                                                   inspector,
+                                                   initc, uninitc,
+                                                   uninit_val, props,
+                                                   proc_attr,
+                                                   immutable_array,
+                                                   guard);
   }
+
   {
     int i;
     Scheme_Object **names;
 
     names = scheme_make_struct_names(argv[0],
-             NULL,
-             SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET, 
-             &i);
+                                     NULL,
+                                     SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET, 
+                                     &i);
+    if (cstr_name)
+      names[1] = cstr_name;
     r = scheme_make_struct_values((Scheme_Object *)type, names, i, 
-          SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET);
+                                  SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET);
 
     return scheme_values(i, r);
   }

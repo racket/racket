@@ -3829,6 +3829,7 @@ static int mark_print_params_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pp->inspector, gc);
   gcMARK2(pp->print_port, gc);
   gcMARK2(pp->print_buffer, gc);
+  gcMARK2(pp->depth_delta, gc);
   return
   gcBYTES_TO_WORDS(sizeof(PrintParams));
 }
@@ -3838,6 +3839,7 @@ static int mark_print_params_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pp->inspector, gc);
   gcFIXUP2(pp->print_port, gc);
   gcFIXUP2(pp->print_buffer, gc);
+  gcFIXUP2(pp->depth_delta, gc);
   return
   gcBYTES_TO_WORDS(sizeof(PrintParams));
 }

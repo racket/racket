@@ -118,6 +118,8 @@ static Scheme_Object *print_pair_curly(int, Scheme_Object *[]);
 static Scheme_Object *print_mpair_curly(int, Scheme_Object *[]);
 static Scheme_Object *print_honu(int, Scheme_Object *[]);
 static Scheme_Object *print_syntax_width(int, Scheme_Object *[]);
+static Scheme_Object *print_reader(int, Scheme_Object *[]);
+static Scheme_Object *print_as_qq(int, Scheme_Object *[]);
 
 static int scheme_ellipses(mzchar* buffer, int length);
 
@@ -536,6 +538,8 @@ void scheme_init_read(Scheme_Env *env)
   GLOBAL_PARAMETER("print-mpair-curly-braces",      print_mpair_curly,      MZCONFIG_PRINT_MPAIR_CURLY,           env);
   GLOBAL_PARAMETER("print-honu",                    print_honu,             MZCONFIG_HONU_MODE,                   env);
   GLOBAL_PARAMETER("print-syntax-width",            print_syntax_width,     MZCONFIG_PRINT_SYNTAX_WIDTH,          env);
+  GLOBAL_PARAMETER("print-reader-abbreviations",    print_reader,           MZCONFIG_PRINT_READER,                env);
+  GLOBAL_PARAMETER("print-as-quasiquote",           print_as_qq,            MZCONFIG_PRINT_AS_QQ,                 env);
 
   GLOBAL_PRIM_W_ARITY("make-readtable",     make_readtable,     1, -1,      env);
   GLOBAL_FOLDING_PRIM("readtable?",         readtable_p,        1, 1, 1,    env);
@@ -751,6 +755,18 @@ static Scheme_Object *
 print_honu(int argc, Scheme_Object *argv[])
 {
   DO_CHAR_PARAM("print-honu", MZCONFIG_HONU_MODE);
+}
+
+static Scheme_Object *
+print_reader(int argc, Scheme_Object *argv[])
+{
+  DO_CHAR_PARAM("print-reader-abbreviations", MZCONFIG_PRINT_READER);
+}
+
+static Scheme_Object *
+print_as_qq(int argc, Scheme_Object *argv[])
+{
+  DO_CHAR_PARAM("print-as-quasiquote", MZCONFIG_PRINT_AS_QQ);
 }
 
 static Scheme_Object *good_syntax_width(int c, Scheme_Object **argv)

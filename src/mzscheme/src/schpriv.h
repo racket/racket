@@ -708,19 +708,13 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 						   Scheme_Object *props,
 						   Scheme_Object *guard,
 						   int immutable);
-Scheme_Object *scheme_make_proc_struct_type(Scheme_Object *base,
-                                            Scheme_Object *parent,
-                                            Scheme_Object *inspector,
-                                            int num_fields, int num_uninit,
-                                            Scheme_Object *uninit_val,
-                                            Scheme_Object *proc_attr,
-                                            Scheme_Object *guard);
 
 Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown_val, Scheme_Object *insp);
 
 Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands, Scheme_Object **rands, int *is_method);
 
 Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a);
+Scheme_Object *scheme_object_name(Scheme_Object *a);
 
 Scheme_Object *scheme_is_writable_struct(Scheme_Object *s);
 
@@ -1914,7 +1908,7 @@ Scheme_Object *scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, 
                                     Scheme_Object *delay_load_info);
 void scheme_internal_display(Scheme_Object *obj, Scheme_Object *port);
 void scheme_internal_write(Scheme_Object *obj, Scheme_Object *port);
-void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port);
+void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port, Scheme_Object *quote_depth);
 
 Scheme_Object *scheme_read_language(Scheme_Object *port, int nonlang_ok);
 

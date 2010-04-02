@@ -577,8 +577,8 @@ Scheme_Object *(*scheme_compile)(Scheme_Object *form, Scheme_Env *env, int write
 Scheme_Object *(*scheme_read)(Scheme_Object *port);
 Scheme_Object *(*scheme_read_syntax)(Scheme_Object *port, Scheme_Object *stxsrc);
 void (*scheme_write)(Scheme_Object *obj, Scheme_Object *port);
-void (*scheme_display)(Scheme_Object *obj, Scheme_Object *port);
 void (*scheme_print)(Scheme_Object *obj, Scheme_Object *port);
+void (*scheme_display)(Scheme_Object *obj, Scheme_Object *port);
 void (*scheme_write_w_max)(Scheme_Object *obj, Scheme_Object *port, long maxl);
 void (*scheme_display_w_max)(Scheme_Object *obj, Scheme_Object *port, long maxl);
 void (*scheme_print_w_max)(Scheme_Object *obj, Scheme_Object *port, long maxl);
@@ -813,11 +813,11 @@ Scheme_Object *(*scheme_intern_exact_char_keyword)(const mzchar *name, unsigned 
 /*                                structs                                 */
 /*========================================================================*/
 Scheme_Object **(*scheme_make_struct_values)(Scheme_Object *struct_type,
-					  Scheme_Object **names,
-					  int count, int flags);
+                                                    Scheme_Object **names,
+                                                    int count, int flags);
 Scheme_Object **(*scheme_make_struct_names)(Scheme_Object *base,
-					 Scheme_Object *field_names,
-					 int flags, int *count_out);
+                                                   Scheme_Object *field_names,
+                                                   int flags, int *count_out);
 Scheme_Object *(*scheme_make_struct_type)(Scheme_Object *base,
 						 Scheme_Object *parent,
 						 Scheme_Object *inspector,
@@ -825,6 +825,15 @@ Scheme_Object *(*scheme_make_struct_type)(Scheme_Object *base,
 						 Scheme_Object *uninit_val,
 						 Scheme_Object *properties,
 						 Scheme_Object *guard);
+Scheme_Object *(*scheme_make_struct_type2)(Scheme_Object *base,
+                                                  Scheme_Object *parent,
+                                                  Scheme_Object *inspector,
+                                                  int num_fields, int num_uninit_fields,
+                                                  Scheme_Object *uninit_val,
+                                                  Scheme_Object *proc_attr,
+                                                  Scheme_Object *properties,
+                                                  char *immutable_array,
+                                                  Scheme_Object *guard);
 Scheme_Object *(*scheme_make_struct_instance)(Scheme_Object *stype,
 						     int argc,
 						     Scheme_Object **argv);
