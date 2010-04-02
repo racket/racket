@@ -206,6 +206,12 @@ These @tech{formlet}s are the main combinators for form input.
  extracted @scheme[binding].
 }
                                              
+@defproc[(make-input* [render (string? . -> . xexpr/c)])
+         (formlet/c (listof binding?))]{
+ This @tech{formlet} is rendered with @scheme[render], which is passed the input name, and results in all the
+ @scheme[binding]s that use the name.
+}
+                                             
 @defproc[(text-input [#:value value (or/c false/c bytes?) #f]
                      [#:size size (or/c false/c exact-nonnegative-integer?) #f]
                      [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
@@ -223,14 +229,34 @@ These @tech{formlet}s are the main combinators for form input.
         (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using an INPUT element with the PASSWORD type and the attributes given in the arguments.
 }
- 
+
+@defproc[(textarea-input)
+        (formlet/c string?)]{
+ This @tech{formlet} renders using an TEXTAREA element.
+}
+                                            
 @defproc[(checkbox [value bytes?]
                    [checked? boolean?]
                    [#:attributes attrs (listof (list/c symbol? string?)) empty])
          (formlet/c (or/c false/c binding?))]{
  This @tech{formlet} renders using a INPUT elemen with the CHECKBOX type and the attributes given in the arguments.
-}      
+}
                                              
+@defproc[(multiselect-input [l sequence?]
+                            [#:multiple? multiple? boolean? #t]
+                            [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]
+                            [#:display display (any/c . -> . xexpr/c) (λ (x) x)])
+        (formlet/c list?)]{
+ This @tech{formlet} renders using an SELECT element with an OPTION for each element of the sequence. If @scheme[multiple?] is @scheme[#t], then multiple options may be selected. An element is selected if @scheme[selected?] returns @scheme[#t]. Elements are displayed with @scheme[display].
+}
+
+@defproc[(select-input [l sequence?]
+                       [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]
+                       [#:display display (any/c . -> . xexpr/c) (λ (x) x)])
+        (formlet/c any/c)]{
+ This @tech{formlet} renders using an SELECT element with an OPTION for each element of the sequence. An element is selected if @scheme[selected?] returns @scheme[#t]. Elements are displayed with @scheme[display].
+}
+                          
 @defproc[(required [f (formlet/c (or/c false/c binding?))])
          (formlet/c bytes?)]{
  Constructs a @tech{formlet} that extracts the @scheme[binding:form-value] from the binding produced by @scheme[f], or errors.

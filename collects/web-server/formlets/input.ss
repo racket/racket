@@ -9,6 +9,16 @@
 ; Low-level
 (define (next-name i)
   (values (format "input_~a" i) (add1 i)))
+(define (make-input* render)
+  (lambda (i)
+    (let-values ([(w i) (next-name i)])
+      (define wb (string->bytes/utf-8 w))
+      (values (list (render w))
+              (lambda (env) 
+                (for/list ([b (in-list env)]
+                           #:when (bytes=? wb (binding-id b)))
+                  b))
+              i))))
 (define (make-input render)
   (lambda (i)
     (let-values ([(w i) (next-name i)])
@@ -31,6 +41,7 @@
          default))))
 
 (provide/contract
+ [make-input* ((string? . -> . pretty-xexpr/c) . -> . (formlet/c (listof binding?)))]
  [make-input ((string? . -> . pretty-xexpr/c) . -> . (formlet/c (or/c false/c binding?)))]
  #;[binding:form-required (formlet/c (binding? . -> . bytes?))]
  #;[binding:form/default (bytes? . -> . (formlet/c (binding? . -> . bytes?)))])
@@ -110,7 +121,70 @@
 
 ; XXX button
 
+(define (multiselect-input l
+                       #:multiple? [multiple? #t]
+                       #:selected? [selected? (λ (x) #f)]
+                       #:display [display (λ (x) x)])
+  (define value->element (make-hasheq))
+  (define i 0)
+  (define (remember! e)
+    (define this-i
+      (begin0 i (set! i (add1 i))))
+    (hash-set! value->element this-i e))
+  (define (recall i)
+    (hash-ref value->element i
+              (λ () (error 'input-select* "Invalid selection: ~e" i))))
+  (for ([e l])
+    (remember! e))
+  (cross
+   (pure
+    (lambda (bs)
+      (map (compose recall string->number
+                    bytes->string/utf-8
+                    binding:form-value)
+           bs)))
+   (make-input*
+    (lambda (name)
+      `(select (,@(if multiple? '([multiple "true"]) empty)
+                [name ,name])
+               ,@(for/list ([(vn e) (in-hash value->element)])
+                   (define v (number->string vn))
+                   `(option ([value ,v]
+                             ,@(if (selected? e)
+                                   '([selected "true"])
+                                   empty))
+                            ,(display e))))))))
+
+(define (select-input l 
+                      #:selected? [selected? (λ (x) #f)]
+                      #:display [display (λ (x) x)])
+  (cross
+   (pure first)
+   (multiselect-input l
+                  #:multiple? #f
+                  #:selected? selected?
+                  #:display display)))
+
+(define (textarea-input)
+  (to-string 
+   (required 
+    (make-input
+     (lambda (n)
+       (list 'textarea
+             (list (list 'name n))
+             ""))))))
+
 (provide/contract
+ [multiselect-input (->* (sequence?)
+                         (#:multiple? boolean?
+                          #:selected? (any/c . -> . boolean?)
+                          #:display (any/c . -> . pretty-xexpr/c))
+                         (formlet/c (listof any/c)))]
+ [select-input (->* (sequence?)
+                    (#:selected? (any/c . -> . boolean?)
+                     #:display (any/c . -> . pretty-xexpr/c))
+                    (formlet/c any/c))]
+ [textarea-input (-> (formlet/c string?))]
  [text-input (() 
         (#:value (or/c false/c bytes?)
                  #:size (or/c false/c exact-nonnegative-integer?)
