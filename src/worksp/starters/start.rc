@@ -22,8 +22,8 @@ APPLICATION             ICON    DISCARDABLE     "mzstart.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 4,2,4,900
- PRODUCTVERSION 4,2,4,900
+ FILEVERSION 4,2,5,0
+ PRODUCTVERSION 4,2,5,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -45,7 +45,7 @@ BEGIN
 #ifdef MZSTART
             VALUE "FileDescription", "PLT Scheme Launcher\0"
 #endif
-            VALUE "FileVersion", "4, 2, 4, 900\0"
+            VALUE "FileVersion", "4, 2, 5, 0\0"
 #ifdef MRSTART
             VALUE "InternalName", "mrstart\0"
 #endif
@@ -60,7 +60,7 @@ BEGIN
             VALUE "OriginalFilename", "MzStart.exe\0"
 #endif
             VALUE "ProductName", "PLT Scheme\0"
-            VALUE "ProductVersion", "4, 2, 4, 900\0"
+            VALUE "ProductVersion", "4, 2, 5, 0\0"
         END
     END
     BLOCK "VarFileInfo"
