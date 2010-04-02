@@ -33,11 +33,11 @@
            ([((path-pat-id ...) ...)
              (map (lambda (pp/is)
                     (map (lambda (bs)
-                           (with-syntax ([(bidi-id id) bs])
+                           (with-syntax ([(bidi-id arg ... id) bs])
                              #'id))
                          (filter (lambda (pp/i)
                                    (syntax-case pp/i ()
-                                     [(bidi-id id) #t]
+                                     [(bidi-id arg ... id) #t]
                                      [_ #f]))
                                  (syntax->list pp/is))))
                   (syntax->list #'((path-pat/id ...) ...)))])
@@ -73,7 +73,7 @@
                     (for/list ([pp/i (dispatch-pattern-not-... pp/is)]
                                [next-...? (dispatch-pattern-next-...? pp/is)])
                       (with-syntax ([pp pp/i]
-                                    [(bidi-id id) pp/i])
+                                    [(bidi-id arg ... id) pp/i])
                         (if next-...?
                             (syntax/loc pp/i (list pp (... ...)))
                             pp/i))))
@@ -89,7 +89,7 @@
                       (with-syntax ([pp pp/i])
                         (if (string-syntax? pp/i)
                             (syntax/loc pp/i (list pp))
-                            (with-syntax ([(bidi-id id) pp/i])
+                            (with-syntax ([(bidi-id arg ... id) pp/i])
                               (if next-...?
                                   (syntax/loc pp/i id)
                                   (syntax/loc pp/i (list id))))))))  
@@ -122,6 +122,24 @@
            ...
            [else default-else]))]))
 
+(define (dispatch-succ . _) #t)
+(define (dispatch-fail . _) #f)
+
+(define-syntax-rule (dispatch-rules+applies
+                     [pat fun]
+                     ...)
+  (let-values ([(dispatch url)
+                (dispatch-rules
+                 [pat fun]
+                 ...)]
+               [(applies? _)
+                (dispatch-rules
+                 [pat dispatch-succ]
+                 ...
+                 [else dispatch-fail])])
+    (values dispatch url applies?)))
+
 (provide dispatch-case
          dispatch-url
-         dispatch-rules)
+         dispatch-rules
+         dispatch-rules+applies)
