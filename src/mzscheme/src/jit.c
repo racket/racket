@@ -11850,14 +11850,17 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->val, JIT_R0, JIT_R1);
     (void)jit_movi_p(JIT_R1, NULL);
     jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->cache, JIT_R0, JIT_R1);
-    ref5 = jit_jmpi(jit_forward());
     CHECK_LIMIT();
+
+    /* return: */
+    ref5 = _jit.x.pc;
+    mz_epilog(JIT_R2);
     
     /* slow path: */
 
     mz_patch_branch(ref4);
     mz_patch_ucbranch(ref8);
-    JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+    JIT_UPDATE_THREAD_RSPTR();
 
     jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(0));
     jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(1));
@@ -11869,9 +11872,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     (void)mz_finish(scheme_set_cont_mark);
     CHECK_LIMIT();
 
-    mz_patch_ucbranch(ref5);
-
-    mz_epilog(JIT_R2);
+    (void)jit_jmpi(ref5);
 
     register_sub_func(jitter, wcm_code, scheme_false);
   }
