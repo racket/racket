@@ -27,6 +27,7 @@
          ~!
          ~bind
          ~fail
+         ~early-fail
          ~parse
          ...+
 
@@ -93,6 +94,7 @@
 (define-keyword ~!)
 (define-keyword ~bind)
 (define-keyword ~fail)
+(define-keyword ~early-fail)
 (define-keyword ~parse)
 (define-keyword ...+)
 

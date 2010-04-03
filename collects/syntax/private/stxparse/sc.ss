@@ -44,6 +44,7 @@
          ~!
          ~bind
          ~fail
+         ;; ~early-fail
          ~parse
          ...+
 
