@@ -977,4 +977,32 @@
 
 ;; ----------------------------------------
 
+(require (for-syntax scheme/struct-info))
+
+(let ()
+  (define-struct a (x y))
+  (define-syntax foo (make-struct-info
+                      (lambda ()
+                        (list #'struct:a #'make-a #'a?
+                              (list #'a-y #'a-x)
+                              (list #f #f)
+                              #f))))
+  (define-syntax foo2 (let ()
+                        (define-struct si (pred)
+                          #:property 
+                          prop:struct-info
+                          (lambda (v)
+                            (list #'struct:a #'make-a (si-pred v)
+                                  (list #'a-y #'a-x)
+                                  (list #f #f)
+                                  #f)))
+                        (make-si #'a?)))
+  (test (list 1 2) 'match (match (make-a 1 2)
+                            [(struct foo (x y)) (list x y)]))
+  (test (list 1 2) 'match (match (make-a 1 2)
+                            [(struct foo2 (x y)) (list x y)])))
+                              
+
+;; ----------------------------------------
+
 (report-errs)

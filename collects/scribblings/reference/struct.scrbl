@@ -318,7 +318,7 @@ Creates a new structure type property and returns three values:
 
 If the optional @scheme[guard] is supplied as a procedure, it is
 called by @scheme[make-struct-type] before attaching the property to a
-new structure type. The @scheme[guard-proc] must accept two arguments:
+new structure type. The @scheme[guard] must accept two arguments:
 a value for the property supplied to @scheme[make-struct-type], and a
 list containing information about the new structure type. The list
 contains the values that @scheme[struct-type-info] would return for
@@ -596,14 +596,17 @@ encapsulated procedure must return):
 
 ]
 
-Instead of this direct representation, the representation can
-be a structure created by @scheme[make-struct-info] (or an instance of
-a subtype of @scheme[struct:struct-info]), which encapsulates a
+Instead of this direct representation, the representation can be a
+structure created by @scheme[make-struct-info] (or an instance of a
+subtype of @scheme[struct:struct-info]), which encapsulates a
 procedure that takes no arguments and returns a list of six
-elements. Finally, the representation can be an instance of a
-structure type derived from @scheme[struct:struct-info] that also
-implements @scheme[prop:procedure], and where the instance is further
-is wrapped by @scheme[make-set!-transformer].
+elements. Alternately, the representation can be a structure whose
+type has the @scheme[prop:struct-info] @tech{structure type property}.
+Finally, the representation can be an instance of a structure type
+derived from @scheme[struct:struct-info] or with the
+@scheme[prop:struct-info] property that also implements
+@scheme[prop:procedure], and where the instance is further is wrapped
+by @scheme[make-set!-transformer].
 
 Use @scheme[struct-info?] to recognize all allowed forms of the
 information, and use @scheme[extract-struct-info] to obtain a list
@@ -626,9 +629,10 @@ type.
 
 Returns @scheme[#t] if @scheme[v] is either a six-element list with
 the correct shape for representing structure-type information, a
-procedure encapsulated by @scheme[make-struct-info], or a structure
-type derived from @scheme[struct:struct-info] and wrapped with
-@scheme[make-set!-transformer].}
+procedure encapsulated by @scheme[make-struct-info], a structure with
+the @scheme[prop:struct-info] property, or a structure type derived
+from @scheme[struct:struct-info] or with @scheme[prop:struct-info] and
+wrapped with @scheme[make-set!-transformer].}
 
 @defproc[(checked-struct-info? [v any/c]) boolean?]{
 
@@ -656,6 +660,13 @@ by @scheme[make-struct-info]. This @tech{structure type descriptor} is
 mostly useful for creating structure subtypes. The structure type
 includes a guard that checks an instance's first field in the same way
 as @scheme[make-struct-info].}
+
+@defthing[prop:struct-info struct-type-property?]{
+
+The @tech{structure type property} for creating new structure types
+like @scheme[struct:struct-info]. The property value must a procedure
+of one argument that takes an instance structure and returns
+structure-type information in list form.}
 
 @; ----------------------------------------------------------------------
 

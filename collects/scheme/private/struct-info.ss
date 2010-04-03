@@ -8,7 +8,18 @@
   (#%provide make-struct-info
              struct-info?
              extract-struct-info
-             struct:struct-info)
+             struct:struct-info
+             prop:struct-info)
+
+  (define-values (prop:struct-info has-struct-info-prop? struct-info-prop-ref)
+    (make-struct-type-property 'struct-info
+                               (lambda (v type-info)
+                                 (if (and (procedure? v)
+                                          (procedure-arity-includes? v 1))
+                                     v
+                                     (raise-type-error 'guard-for-prop:struct-info
+                                                       "procedure (arity 1)"
+                                                       v)))))
   
   (define-values (struct:struct-info make-struct-info struct-info-rec?
                                      struct-info-ref struct-info-set!)
@@ -31,21 +42,34 @@
 
   (define-values (extract-struct-info)
     (lambda (si)
-      (if (struct-info-rec? si)
-          (let ([p (struct-info-ref si 0)])
-            (let ([v (p)])
-              (if (struct-declaration-info? v)
-                  v
-                  (error 'extract-struct-info
-                         "struct-info procedure result not properly formed: ~e"
-                         v))))
-          (if (set!-transformer? si)
-              (extract-struct-info (set!-transformer-procedure si))
-              si))))
+      (cond
+       [(struct-info-rec? si)
+        (let ([p (struct-info-ref si 0)])
+          (let ([v (p)])
+            (if (struct-declaration-info? v)
+                v
+                (error 'extract-struct-info
+                       "struct-info procedure result not properly formed: ~e"
+                       v))))]
+       [(has-struct-info-prop? si)
+        (let ([v ((struct-info-prop-ref si) si)])
+          (if (struct-declaration-info? v)
+              v
+              (error 'extract-struct-info
+                     "prop:struct-info procedure result not properly formed: ~e"
+                     v)))]
+       [(set!-transformer? si)
+        (extract-struct-info (set!-transformer-procedure si))]
+       [(struct-declaration-info? si) si]
+       [else (raise-type-error 'extract-struct-info
+                               "struct-info"
+                               si)])))
 
   (define-values (struct-info?)
     (lambda (si)
       (or (struct-info-rec? si)
+          (and (has-struct-info-prop? si)
+               (not (struct-type? si)))
           (struct-declaration-info? si)
           (and (set!-transformer? si)
                (struct-info-rec? (set!-transformer-procedure si))))))
