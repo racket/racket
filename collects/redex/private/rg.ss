@@ -340,7 +340,9 @@
                            (λ (r s a e h)
                              (let*-values ([(len) 
                                             (let ([prior (hash-ref e class #f)])
-                                              (if prior prior ((next-sequence-decision) a)))]
+                                              (if prior
+                                                  prior
+                                                  (if (zero? s) 0 ((next-sequence-decision) a))))]
                                            [(seq env)
                                             (generate-sequence (λ (e h) (elemg r s a e h)) e vars len)]
                                            [(tail env) 

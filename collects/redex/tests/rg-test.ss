@@ -526,6 +526,14 @@
                         (if (= attempt finish) 0 'x))))
     (test attempts (list finish retry-threshold start))))
 
+;; At size zero, a sequence length must be zero; otherwise,
+;; we risk increasing the problem size.
+(let ()
+  (define-language L
+    (a (a ...)))
+  (test (generate-term/decisions L a 0 1 (decisions #:seq '()))
+        (term ())))
+
 ;; output : (-> (-> void) string)
 (define (output thunk)
   (let ([p (open-output-string)])
@@ -692,24 +700,26 @@
 
 ;; check-metafunction-contract
 (let ()
-  (define-language empty)
-  (define-metafunction empty
+  (define-language L
+    (C hole (1 hole)))
+  
+  (define-metafunction L
     f : (side-condition number_1 (odd? (term number_1))) -> number
     [(f 1) 1]
     [(f 3) 'NaN])
   
-  (define-metafunction empty
-    g : number ... -> (any ...)
-    [(g number_1 ... 1 number_2 ...) (number_1 ...)])
+  (define-metafunction L
+    g : (1 1) -> C
+    [(g (in-hole C any)) C])
   
-  (define-metafunction empty
+  (define-metafunction L
     h : number -> number
     [(h any) any])
   
-  (define-metafunction empty
+  (define-metafunction L
     [(i any ...) (any ...)])
   
-  (define-metafunction empty
+  (define-metafunction L
     j : (side-condition any #f) -> any
     [(j any ...) (any ...)])
   
@@ -728,13 +738,8 @@
              (check-metafunction-contract f))))
         #rx"counterexample found after 1 attempt:\n\\(3\\)\n")
   ;; LHS matches multiple ways
-  (test (output
-         (λ () 
-           (parameterize ([generation-decisions
-                           (decisions #:num (list (λ _ 1) (λ _ 1))
-                                      #:seq (list (λ _ 2)))])
-             (check-metafunction-contract g))))
-        #rx"counterexample found after 1 attempt:\n\\(1 1\\)\n")
+  (test (output (λ () (check-metafunction-contract g)))
+        #rx"counterexample found after 1 attempt:\n\\(\\(1 1\\)\\)\n")
   ;; OK -- generated from Dom(h)
   (test (output (λ () (check-metafunction-contract h))) #rx"no counterexamples")
   ;; OK -- generated from pattern (any ...)
