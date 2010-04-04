@@ -47,9 +47,12 @@
           launcher^)
   (export)
 
+  (define name-str (setup-program-name))
+  (define name-sym (string->symbol name-str))
+
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
-      (apply fprintf p (string-append "setup-plt: " task s "\n") args)))
+      (apply fprintf p (string-append name-str ": " task s "\n") args)))
 
   (define (setup-printf task s . args)
     (apply setup-fprintf (current-output-port) task s args))
@@ -175,7 +178,7 @@
        info 'name (lambda () #f)
        (lambda (x)
          (when (and x (not (string? x)))
-           (error 'setup-plt
+           (error name-sym
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
     (define path-name (path->name path))
@@ -221,13 +224,13 @@
        (let ([maj (string->number maj-str)]
              [min (string->number min-str)])
          (unless maj
-           (error 'setup-plt "bad major version for PLaneT package: ~e" maj-str))
+           (error name-sym "bad major version for PLaneT package: ~e" maj-str))
          (unless min
-           (error 'setup-plt "bad minor version for PLaneT package: ~e" min-str))
+           (error name-sym "bad minor version for PLaneT package: ~e" min-str))
          (let ([pkg (lookup-package-by-keys owner pkg-name maj min min)])
            (if pkg
              pkg
-             (error 'setup-plt "not an installed PLaneT package: (~e ~e ~e ~e)"
+             (error name-sym "not an installed PLaneT package: (~e ~e ~e ~e)"
                     owner pkg-name maj min))))]
       [_ spec]))
 
@@ -337,7 +340,7 @@
                        (cadr cc+name+id)))
                 all-ccs+names+ids)
          => (lambda (bad)
-              (error 'setup-plt
+              (error name-sym
                      "given collection path: \"~a\" refers to the same directory as another given collection path, \"~a\""
                      (cadr given-cc+name+id) bad))]))
     (map car given*-ccs+names+ids))
@@ -440,7 +443,7 @@
                                          (system-library-subpath))))
                      (lambda (x)
                        (unless (list-of path-string? x)
-                         (error 'setup-plt
+                         (error name-sym
                                 "expected a list of path strings for 'clean, got: ~s"
                                 x))))]
              [printed? #f]
@@ -542,7 +545,7 @@
               (let ([installer
                      (with-handlers ([exn:fail?
                                       (lambda (exn)
-                                        (error 'setup-plt
+                                        (error name-sym
                                                "error loading installer: ~a"
                                                (exn->string exn)))])
                        (dynamic-require (build-path (cc-path cc) fn)
@@ -599,7 +602,7 @@
       (let ([zo-compile
              (with-handlers ([exn:fail?
                               (lambda (exn)
-                                (error 'setup-plt
+                                (error name-sym
                                        "error loading compiler for mode ~s: ~a"
                                        (compile-mode)
                                        (exn->string exn)))])

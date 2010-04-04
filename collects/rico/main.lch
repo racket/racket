@@ -1,0 +1,5 @@
+The context of this file doesn't matter.
+It's existence causes the launcher-maker to
+create an "independent launcher", which
+means that it doesn't depend on the exact
+MzScheme/MrEd executable or DLLs.

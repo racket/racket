@@ -123,8 +123,7 @@ by @scheme[kind], which must be one of the following:
   (or @exec{mred}) executable, or because an embedding executable
   installed an alternate path. In particular a ``launcher'' script
   created by @scheme[make-mzscheme-launcher] sets this path to the
-  script's path. In the @exec{mzscheme} executable, this path is also
-  bound initially to @scheme[program].}
+  script's path.}
 
  @item{@indexed-scheme['collects-dir] --- a path to the main
  collection of libraries (see @secref["collects"]). If this path is

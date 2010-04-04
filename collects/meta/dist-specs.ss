@@ -428,6 +428,9 @@ platform-dependent := ; hook for package rules
 mz-extras :+= (- (package: "setup-plt" #:collection "setup/")
                  (cond (not dr) => (srcfile: "plt-installer{|-sig|-unit}.ss")))
 
+;; -------------------- rico
+mz-extras :+= (package: "rico")
+
 ;; -------------------- launcher
 mz-extras :+= (- (collects: "launcher")
                  (cond (not mr) => "[Mm]r[Ss]tart*.exe"))

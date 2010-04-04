@@ -10,7 +10,7 @@
 
   (define-values/invoke-unit/infer setup:option@)
 
-  (define-values (x-flags x-specific-collections x-specific-planet-packages x-archives)
+  (define-values (short-name x-flags x-specific-collections x-specific-planet-packages x-archives)
     (parse-cmdline (current-command-line-arguments)))
 
   ;; Pseudo-option:
@@ -27,6 +27,8 @@
   (specific-collections x-specific-collections)
   (archives x-archives)
   (specific-planet-dirs x-specific-planet-packages)
+
+  (setup-program-name short-name)
 
   (require launcher/launcher-sig
 	   launcher/launcher-unit

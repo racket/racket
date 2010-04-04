@@ -11,6 +11,7 @@ PLANNED FEATURES:
            (only mzlib/list sort)
            net/url
            mzlib/match
+           rico/command-name
            
            "config.ss"
            "private/planet-shared.ss"
@@ -27,7 +28,7 @@ PLANNED FEATURES:
     (planet-logging-to-stdout #t)
     
     (svn-style-command-line
-     #:program "planet"
+     #:program (short-program+command-name)
      #:argv (current-command-line-arguments)
      "PLT Scheme PLaneT command-line tool. Provides commands to help you manipulate your local planet cache."
      ["create" "create a PLaneT archive from a directory"

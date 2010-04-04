@@ -75,9 +75,11 @@
 			(let* ([specific-lib-dir
                                 (build-path "lib"
                                             "plt"
-                                            (let-values ([(base name dir?) 
-                                                          (split-path (car binaries))])
-                                              (path-replace-suffix name #"")))]
+                                            (if (null? binaries)
+                                                "generic"
+                                                (let-values ([(base name dir?) 
+                                                              (split-path (car binaries))])
+                                                  (path-replace-suffix name #""))))]
                                [relative-collects-dir 
                                 (or collects-path
                                     (build-path specific-lib-dir
@@ -120,18 +122,19 @@
                        (collects-path->bytes 
                         (relative->binary-relative sub-dir type relative-collects-dir))))
                     binaries types sub-dirs)
-          ;; Copy over extensions and adjust embedded paths:
-          (copy-extensions-and-patch-binaries orig-binaries binaries types sub-dirs
-                                              exts-dir 
-                                              relative-exts-dir
-                                              relative->binary-relative)
-          ;; Copy over runtime files and adjust embedded paths:
-          (copy-runtime-files-and-patch-binaries orig-binaries binaries types sub-dirs
-                                                 exts-dir 
-                                                 relative-exts-dir
-                                                 relative->binary-relative)
-          ;; Done!
-          (void)))))
+          (unless (null? binaries)
+            ;; Copy over extensions and adjust embedded paths:
+            (copy-extensions-and-patch-binaries orig-binaries binaries types sub-dirs
+                                                exts-dir 
+                                                relative-exts-dir
+                                                relative->binary-relative)
+            ;; Copy over runtime files and adjust embedded paths:
+            (copy-runtime-files-and-patch-binaries orig-binaries binaries types sub-dirs
+                                                   exts-dir 
+                                                   relative-exts-dir
+                                                   relative->binary-relative)
+            ;; Done!
+            (void))))))
 
   (define (install-libs lib-dir types)
     (case (system-type)
