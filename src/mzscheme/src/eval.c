@@ -5188,6 +5188,7 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
   Scheme_Let_One *lo = (Scheme_Let_One *)o;
   Scheme_Object *body, *rhs, *vec;
   int pos, save_mnt, ip, et;
+  int unused = 0;
 
   scheme_sfs_start_sequence(info, 2, 1);
 
@@ -5228,25 +5229,30 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
     info->max_nontail = save_mnt;
 
     if (info->max_used[pos] <= ip) {
-      /* No one is using it, so either don't push the real value, or 
-         clear it if there's a later non-tail call.
+      /* No one is using it, so don't actually push the value at run time
+         (but keep the check that the result is single-valued).
          The optimizer normally would have converted away the binding, but
          it might not because (1) it was introduced late by inlining,
          or (2) the rhs expression doesn't always produce a single
          value. */
       if (scheme_omittable_expr(rhs, 1, -1, 1, NULL)) {
         rhs = scheme_false;
-      } else if (ip < info->max_calls[pos]) {
-        Scheme_Object *clr;
+      } else if ((ip < info->max_calls[pos])
+                 && SAME_TYPE(SCHEME_TYPE(rhs), scheme_toplevel_type)) {
+        /* Unusual case: we can't just drop the global-variable access,
+           because it might be undefined, but we don't need the value,
+           and we want to avoid an SFS clear in the interpreter loop.
+           So, bind #f and then access in the global in a `begin'. */
         Scheme_Sequence *s;
         s = malloc_sequence(2);
         s->so.type = scheme_sequence_type;
         s->count = 2;
-        clr = scheme_make_local(scheme_local_type, 0, SCHEME_LOCAL_CLEAR_ON_READ);
-        s->array[0] = clr;
+        s->array[0] = rhs;
         s->array[1] = body;
         body = (Scheme_Object *)s;
+        rhs = scheme_false;
       }
+      unused = 1;
     }
   }
 
@@ -5254,7 +5260,9 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
   lo->body = body;
 
   et = scheme_get_eval_type(lo->value);
-  SCHEME_LET_EVAL_TYPE(lo) = (et | (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM));
+  SCHEME_LET_EVAL_TYPE(lo) = (et 
+                              | (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) 
+                              | (unused ? LET_ONE_UNUSED : 0));
 
   return o;
 }
@@ -9817,6 +9825,10 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  PUSH_RUNSTACK(p, RUNSTACK, 1);
 	  RUNSTACK_CHANGED();
 
+          /* SFS pass may set LET_ONE_UNUSED, but not for the
+             variable cases; in the constant case, the constant
+             is #f, so it's ok to push it anyway. */
+
 	  switch (SCHEME_LET_EVAL_TYPE(lo) & 0x7) {
 	  case SCHEME_EVAL_CONSTANT:
 	    RUNSTACK[0] = lo->value;
@@ -9840,7 +9852,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	      GC_CAN_IGNORE Scheme_Object *val;
               SFS_CLEAR_RUNSTACK_ONE(RUNSTACK, 0);
 	      val = _scheme_eval_linked_expr_wp(lo->value, p);
-	      RUNSTACK[0] = val;
+              if (!(SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_UNUSED))
+                RUNSTACK[0] = val;
 	    }
 	    break;
 	  }
@@ -12324,7 +12337,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
         scheme_ill_formed_code(port);
 #endif
       
-      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) {
+      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_UNUSED) {
+        stack[delta] = VALID_NOT;
+      } else if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) {
         stack[delta] = VALID_FLONUM;
         /* FIXME: need to check that lo->value produces a flonum */
       } else

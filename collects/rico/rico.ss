@@ -106,6 +106,6 @@
     (printf "\nA command can be specified by an unambigous prefix.")
     (unless show-all?
       (printf "\nSee `rico --help' for a complete list of commands."))
-    (printf "\nSee `rico <command> --help' for help on a command."))
-  (newline)
-  (exit 1))
+    (printf "\nSee `rico <command> --help' for help on a command.")
+    (newline)
+    (exit (if show-all? 0 1))))

@@ -1134,13 +1134,14 @@ typedef struct Scheme_Let_Value {
 #define SCHEME_LET_AUTOBOX(lh) MZ_OPT_HASH_KEY(&lh->iso)
 
 typedef struct Scheme_Let_One {
-  Scheme_Inclhash_Object iso; /* keyex used for eval_type + flonum (and can't be hashed) */
+  Scheme_Inclhash_Object iso; /* keyex used for eval_type + flonum/unused (and can't be hashed) */
   Scheme_Object *value;
   Scheme_Object *body;
 } Scheme_Let_One;
 
 #define SCHEME_LET_EVAL_TYPE(lh) MZ_OPT_HASH_KEY(&lh->iso)
 #define LET_ONE_FLONUM 0x8
+#define LET_ONE_UNUSED 0x10
 
 typedef struct Scheme_Let_Void {
   Scheme_Inclhash_Object iso; /* keyex used for autobox */

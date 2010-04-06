@@ -4840,6 +4840,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_LET_ONE:
     case CPT_LET_ONE_FLONUM:
+    case CPT_LET_ONE_UNUSED:
       {
 	Scheme_Let_One *lo;
 	int et;
@@ -4854,6 +4855,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	et = scheme_get_eval_type(lo->value);
         if (ch == CPT_LET_ONE_FLONUM)
           et |= LET_ONE_FLONUM;
+        if (ch == CPT_LET_ONE_UNUSED)
+          et |= LET_ONE_UNUSED;
         SCHEME_LET_EVAL_TYPE(lo) = et;
 	
 	return (Scheme_Object *)lo;

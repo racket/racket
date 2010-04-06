@@ -10109,7 +10109,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
   case scheme_let_one_type:
     {
       Scheme_Let_One *lv = (Scheme_Let_One *)obj;
-      int flonum, to_unbox = 0;
+      int flonum, to_unbox = 0, unused;
       START_JIT_DATA();
 
       LOG_IT(("leto...\n"));
@@ -10126,6 +10126,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 #else
       flonum = 0;
 #endif
+      unused = SCHEME_LET_EVAL_TYPE(lv) & LET_ONE_UNUSED;
 
       PAUSE_JIT_DATA();
       if (flonum) {
@@ -10141,15 +10142,20 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           generate_unboxed(lv->value, jitter, 1, 0);
         }
 #endif
+      } else if (unused && SCHEME_FALSEP(lv->value)) {
+        /* unused constants are collapsed to #f by the bytecde compiler */
       } else
-        generate_non_tail(lv->value, jitter, 0, 1, 0); /* no sync */
+        generate_non_tail(lv->value, jitter, 0, 1, unused); /* no sync */
+
       RESUME_JIT_DATA();
       CHECK_LIMIT();
       
-      mz_runstack_unskipped(jitter, 1);
-
-      mz_rs_dec(1);
-      CHECK_RUNSTACK_OVERFLOW();
+      if (!unused) {
+        mz_runstack_unskipped(jitter, 1);
+        
+        mz_rs_dec(1);
+        CHECK_RUNSTACK_OVERFLOW();
+      }
 
       if (flonum) {
 #ifdef USE_FLONUM_UNBOXING
@@ -10162,16 +10168,18 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
         (void)jit_movi_p(JIT_R0, NULL);
 #endif
       } else {
-        mz_runstack_pushed(jitter, 1);
+        if (!unused)
+          mz_runstack_pushed(jitter, 1);
       }
 
-      mz_rs_str(JIT_R0);
-	
+      if (!unused) {
+        mz_rs_str(JIT_R0);
+        mz_RECORD_STATUS(mz_RS_R0_HAS_RUNSTACK0);
+      }
+      
       END_JIT_DATA(17);
 
       LOG_IT(("...in\n"));
-
-      mz_RECORD_STATUS(mz_RS_R0_HAS_RUNSTACK0);
 
       if (to_unbox)
         jitter->unbox = to_unbox;

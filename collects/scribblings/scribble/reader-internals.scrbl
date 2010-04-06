@@ -149,7 +149,7 @@ is an example of this.
 
 @defmodulelang[at-exp]{The @schememodname[at-exp] language installs
 @"@"-reader support in the readtable, and then chains to the reader of
-another language that is specified immediate after
+another language that is specified immediately after
 @schememodname[at-exp].}
 
 For example, @scheme[@#,hash-lang[] at-exp scheme/base] adds @"@"-reader

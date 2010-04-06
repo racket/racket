@@ -2547,11 +2547,14 @@ Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown
 	m++;
       last_is_unknown = 1;
     } else {
-      last_is_unknown = 0;
+      int count;
       if (p)
-	m += stype->num_slots - stype->parent_types[p-1]->num_slots;
+	count = stype->num_slots - stype->parent_types[p-1]->num_slots;
       else
-	m += stype->num_slots;
+	count = stype->num_slots;
+      m += count;
+      if (count)
+        last_is_unknown = 0;
     }
   }
 
@@ -2581,6 +2584,8 @@ Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown
       i -= n;
       last_is_unknown = 1;
     } else {
+      if (n)
+        last_is_unknown = 0;
       while (n--) {
         --i;
         if (SAME_OBJ((Scheme_Object *)s, _s))
@@ -2589,7 +2594,6 @@ Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown
           elem = scheme_struct_ref(_s, i);
 	array[1 + (--m)] = elem;
       }
-      last_is_unknown = 0;
     }
   }
 

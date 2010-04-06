@@ -207,9 +207,9 @@
        ,@(map (lambda (lam)
                 (decompile-lam lam globs stack closed))
               lams))]
-    [(struct let-one (rhs body flonum?))
+    [(struct let-one (rhs body flonum? unused?))
      (let ([id (or (extract-id rhs)
-                   (gensym 'local))])
+                   (gensym (if unused? 'unused 'local)))])
        `(let ([,id ,(let ([v (decompile-expr rhs globs (cons id stack) closed)])
                       (if flonum?
                           (list '#%as-flonum v)

@@ -2710,7 +2710,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
       lo = (Scheme_Let_One *)obj;
 
-      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM)
+      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_UNUSED)
+        print_compact(pp, CPT_LET_ONE_UNUSED);
+      else if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM)
         print_compact(pp, CPT_LET_ONE_FLONUM);
       else
         print_compact(pp, CPT_LET_ONE);

@@ -429,8 +429,13 @@ does not match the size of the @scheme[struct] if more than one field
 is inaccessible.)}
 
 @defproc[(struct? [v any/c]) any]{ Returns @scheme[#t] if
- @scheme[struct->vector] exposes any fields of @scheme[v] with the
- current inspector, @scheme[#f] otherwise.}
+ @scheme[struct-info] exposes any structure types of @scheme[v] with
+ the current inspector, @scheme[#f] otherwise.
+
+ Typically, when @scheme[(struct? v)] is true, then
+ @scheme[(struct->vector v)] exposes at least one field value. It is
+ possible, however, for the only visible types of @scheme[v] to
+ contribute zero fields.}
 
 @defproc[(struct-type? [v any/c]) boolean?]{Returns @scheme[#t] if
  @scheme[v] is a structure type descriptor value, @scheme[#f]
