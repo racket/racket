@@ -118,7 +118,7 @@
 (define-form-struct (closure expr) ([code lam?] [gen-id symbol?])) ; a static closure (nothing to close over)
 (define-form-struct (case-lam expr) ([name (or/c symbol? vector? empty?)] [clauses (listof (or/c lam? indirect?))])) ; each clause is a lam (added indirect)
 
-(define-form-struct (let-one expr) ([rhs (or/c expr? seq? indirect? any/c)] [body (or/c expr? seq? indirect? any/c)] [flonum? boolean?])) ; pushes one value onto stack
+(define-form-struct (let-one expr) ([rhs (or/c expr? seq? indirect? any/c)] [body (or/c expr? seq? indirect? any/c)] [flonum? boolean?] [unused? boolean?])) ; pushes one value onto stack
 (define-form-struct (let-void expr) ([count exact-nonnegative-integer?] [boxes? boolean?] [body (or/c expr? seq? indirect? any/c)])) ; create new stack slots
 (define-form-struct (install-value expr) ([count exact-nonnegative-integer?] 
                                           [pos exact-nonnegative-integer?] 
