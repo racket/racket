@@ -373,35 +373,6 @@
   (define ccs-to-compile (append collections-to-compile planet-dirs-to-compile))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;                  Helpers                      ;;
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define (control-io-apply print-doing f args)
-    (if (make-verbose)
-      (begin (apply f args) #t)
-      (let* ([oop (current-output-port)]
-             [printed? #f]
-             [on? #f]
-             [dir-table (make-hash)]
-             [line-accum #""]
-             [op (if (verbose)
-                   (current-output-port)
-                   (open-output-nowhere))]
-             [doing-path (lambda (path)
-                           (unless printed?
-                             (set! printed? #t)
-                             (print-doing oop))
-                           (unless (verbose)
-                             (let ([path (normal-case-path (path-only path))])
-                               (unless (hash-ref dir-table path (lambda () #f))
-                                 (hash-set! dir-table path #t)
-                                 (print-doing oop path)))))])
-        (parameterize ([current-output-port op]
-                       [compile-notify-handler doing-path])
-          (apply f args)
-          printed?))))
-
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Clean                        ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -567,95 +538,99 @@
 
   (do-install-part 'pre)
 
-  (define (make-it desc compile-directory get-namespace)
-    ;; To avoid polluting the compilation with modules that are already loaded,
-    ;; create a fresh namespace before calling this function.
-    ;; To avoid keeping modules in memory across collections, pass
-    ;; `make-base-namespace' as `get-namespace', otherwise use
-    ;; `current-namespace' for `get-namespace'.
-    (let ([gc? #f])
-      (for ([cc ccs-to-compile])
-        (parameterize ([current-namespace (get-namespace)])
-          (begin-record-error 
-           cc "making"
-           (unless (control-io-apply
-                    (case-lambda
-                     [(p)
-                      ;; Main "doing something" message
-                      (set! gc? #t)
-                      (setup-fprintf p "making" "~a" (cc-name cc))]
-                     [(p where)
-                      ;; Doing something specifically in "where"
-                      (setup-fprintf p #f " in ~a"
-                                     (path->name (path->complete-path
-                                                  where (cc-path cc))))])
-                    compile-directory
-                    (list (cc-path cc) (cc-info cc)))
-             (setup-printf "making" "~a" (cc-name cc)))))
-        (when gc?
-          (collect-garbage)))))
-
-  (define (with-specified-mode thunk)
-    (if (not (compile-mode))
-      (thunk)
-      ;; Use the indicated mode
-      (let ([zo-compile
-             (with-handlers ([exn:fail?
-                              (lambda (exn)
-                                (error name-sym
-                                       "error loading compiler for mode ~s: ~a"
-                                       (compile-mode)
-                                       (exn->string exn)))])
-               (dynamic-require `(lib "zo-compile.ss" ,(compile-mode))
-                                'zo-compile))]
-            [orig-kinds (use-compiled-file-paths)]
-            [orig-compile (current-compile)]
-            [orig-namespace (namespace-anchor->empty-namespace anchor)])
-        (parameterize ([current-namespace (make-base-empty-namespace)]
-                       [current-compile zo-compile]
-                       [use-compiled-file-paths (list mode-dir)]
-                       [current-compiler-dynamic-require-wrapper
-                        (lambda (thunk)
-                          (parameterize ([current-namespace orig-namespace]
-                                         [use-compiled-file-paths orig-kinds]
-                                         [current-compile orig-compile])
-                            (thunk)))])
-          (thunk)))))
-
-
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make zo                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define compile-skip-directory
-    (and (avoid-main-installation)
-         (find-collects-dir)))
+  (define-syntax-rule (control-io print-verbose body ...)
+    (if (make-verbose)
+      (begin 
+        body ...)
+      (let* ([oop (current-output-port)]
+             [dir-table (make-hash)]
+             [doing-path (lambda (path)
+                           (unless (verbose)
+                             (let ([path (normal-case-path (path-only path))])
+                               (unless (hash-ref dir-table path (lambda () #f))
+                                 (hash-set! dir-table path #t)
+                                 (print-verbose oop path)))))])
+        (parameterize ([current-output-port (if (verbose) (current-output-port) (open-output-nowhere))]
+                       [compile-notify-handler doing-path])
+          body ...))))
 
+  (define (clean-cc dir info)
+    ;; Clean up bad .zos:
+    (unless (info 'assume-virtual-sources (lambda () #f))
+      (let ([c (build-path dir "compiled")])
+        (when (directory-exists? c)
+          (let ([ok-zo-files
+                 (make-immutable-hash
+                  (map (lambda (p)
+                         (cons (path-add-suffix p #".zo") #t))
+                       (append (directory-list dir)
+                               (info 'virtual-sources (lambda () null)))))])
+            (for ([p (directory-list c)])
+              (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
+                         (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
+                (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
+                (delete-file (build-path c p)))))))))
+
+  (define (compile-cc cc)
+    (define compile-skip-directory
+      (and (avoid-main-installation)
+           (find-collects-dir)))
+    (let ([dir (cc-path cc)]
+          [info (cc-info cc)])
+      (clean-cc dir info)
+      (compile-directory-zos dir info #:skip-path compile-skip-directory #:skip-doc-sources? (not (make-docs)))))
+
+  (define-syntax-rule (with-specified-mode body ...)
+    (let ([thunk (lambda () body ...)])
+      (if (not (compile-mode))
+        (thunk)
+        ;; Use the indicated mode
+        (let ([zo-compile
+               (with-handlers ([exn:fail?
+                                (lambda (exn)
+                                  (error name-sym
+                                         "error loading compiler for mode ~s: ~a"
+                                         (compile-mode)
+                                         (exn->string exn)))])
+                 (dynamic-require `(lib "zo-compile.ss" ,(compile-mode))
+                                  'zo-compile))]
+              [orig-kinds (use-compiled-file-paths)]
+              [orig-compile (current-compile)]
+              [orig-namespace (namespace-anchor->empty-namespace anchor)])
+          (parameterize ([current-namespace (make-base-empty-namespace)]
+                         [current-compile zo-compile]
+                         [use-compiled-file-paths (list mode-dir)]
+                         [current-compiler-dynamic-require-wrapper
+                          (lambda (thunk)
+                            (parameterize ([current-namespace orig-namespace]
+                                           [use-compiled-file-paths orig-kinds]
+                                           [current-compile orig-compile])
+                              (thunk)))])
+            (thunk))))))
+
+  ;; To avoid polluting the compilation with modules that are already loaded,
+  ;; create a fresh namespace before calling this function.
+  ;; To avoid keeping modules in memory across collections, pass
+  ;; `make-base-namespace' as `get-namespace', otherwise use
+  ;; `current-namespace' for `get-namespace'.
   (when (make-zo)
     (setup-printf #f "--- compiling collections ---")
     (with-specified-mode
-     (lambda ()
-       (make-it
-        ".zos"
-        (lambda (dir info)
-          ;; Clean up bad .zos:
-          (unless (info 'assume-virtual-sources (lambda () #f))
-            (let ([c (build-path dir "compiled")])
-              (when (directory-exists? c)
-                (let ([ok-zo-files
-                       (make-immutable-hash
-                        (map (lambda (p)
-                               (cons (path-add-suffix p #".zo") #t))
-                             (append (directory-list dir)
-                                     (info 'virtual-sources (lambda () null)))))])
-                  (for ([p (directory-list c)])
-                    (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
-                               (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
-                      (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
-                      (delete-file (build-path c p))))))))
-          ;; Make .zos
-          (compile-directory-zos dir info #:skip-path compile-skip-directory #:skip-doc-sources? (not (make-docs))))
-        make-base-empty-namespace))))
+      (let ([gc? #f])
+        (for ([cc ccs-to-compile])
+          (parameterize ([current-namespace (make-base-empty-namespace)])
+            (begin-record-error cc "making"
+              (setup-printf "making" "~a" (cc-name cc))
+              (control-io
+                (lambda (p where) (set! gc? #t) (setup-fprintf p #f " in ~a" (path->name (path->complete-path where (cc-path cc)))))
+                (compile-cc cc))))
+          (when gc?
+            (collect-garbage))))))
+    
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Info-Domain Cache               ;;
