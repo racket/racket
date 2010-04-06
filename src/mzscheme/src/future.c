@@ -351,6 +351,7 @@ void futures_init(void)
   REGISTER_SO(fs->future_queue);
   REGISTER_SO(fs->future_queue_end);
   REGISTER_SO(fs->future_waiting_atomic);
+  REGISTER_SO(jit_future_storage);
   
   mzrt_mutex_create(&fs->future_mutex);
   mzrt_sema_create(&fs->future_pending_sema, 0);

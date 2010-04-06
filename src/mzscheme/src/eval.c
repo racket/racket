@@ -8084,7 +8084,7 @@ void scheme_new_mark_segment(Scheme_Thread *p)
   segs = MALLOC_N(Scheme_Cont_Mark *, c + 1);
   seg = scheme_malloc_allow_interior(sizeof(Scheme_Cont_Mark) * SCHEME_MARK_SEGMENT_SIZE);
   segs[c] = seg;
-  
+
   memcpy(segs, p->cont_mark_stack_segments, c * sizeof(Scheme_Cont_Mark *));
   
   p->cont_mark_seg_count++;
@@ -8169,7 +8169,18 @@ MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
     pos = ((long)findpos) & SCHEME_MARK_SEGMENT_MASK;
 
     if (segpos >= p->cont_mark_seg_count) {
+#ifdef MZ_USE_FUTURES
+      jit_future_storage[0] = key;
+      jit_future_storage[1] = val;
+#endif
       ts_scheme_new_mark_segment(p);
+      p = scheme_current_thread;
+#ifdef MZ_USE_FUTURES
+      key = jit_future_storage[0];
+      val = jit_future_storage[1];
+      jit_future_storage[0] = NULL;
+      jit_future_storage[1] = NULL;
+#endif
     }
 
     seg = p->cont_mark_stack_segments[segpos];

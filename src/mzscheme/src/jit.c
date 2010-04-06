@@ -12447,7 +12447,12 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   gdata.argc = argc;
   gdata.argv = argv;
 
+  /* This action is not atomic: */
   scheme_delay_load_closure(data);
+
+  /* So, check again whether we still need to generate: */
+  if (nc->code->code != scheme_on_demand_jit_code)
+    return;
 
   generate_one(NULL, do_generate_closure, &gdata, 1, data->name, ndata);
 
