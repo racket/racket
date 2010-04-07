@@ -14,11 +14,10 @@ you can add this to your git config file:
   [alias]
     prop = "!$(git rev-parse --show-toplevel)/collects/meta/props"
 
-and use it as a git command: `git prop ...args....'.  Note that this will uses
-the script from the work tree that you're now in, with any mzscheme executable
-that happens to be on your $PATH.  This is fine, because the script will modify
-itself based on where it was called from, unelated to the mzscheme version that
-runs it.
+and use it as a git command: `git prop cmd args...'.  This will use the script
+from the work tree that you're now in, with any mzscheme executable that
+happens to be on your $PATH.  This is fine, because the script reads and writes
+itself, unelated to the mzscheme version that runs it.
 
 As described above, the format of this file makes it easy to edit manually, but
 it should be considered internal and mostly manipulated by running it as a
@@ -43,17 +42,17 @@ the data is expected to have the correct format (it is checked when properties
 are set by running this file as a script).
 
 Requiring this file builds the data table and provides an interface for
-properties, intended to be used by meta tools:
+properties, intended to be used by meta tools.  In these functions, `path' is a path argument that is
 
-* (get-prop "some/path" 'known-prop [default] #:strict? [strict? #f])
+* (get-prop path/s prop [default] #:strict? [strict? #f])
 
   Returns the property value of a given path, given as a "/"-delimited string.
-  The default is similar to `hash-ref' (can be a thunk, a value, or if not
-  specified an exception is raised).  If `strict?' is true, then the property
-  value of the path itself is returned, not inheriting values from parent
-  paths.
+  The `default' argument is used similarly to `hash-ref' (can be a thunk, a
+  value, or if not specified an exception is raised).  If `strict?' is true,
+  then the property value of the path itself is returned, not inheriting values
+  from parent paths.
 
-* (set-prop! "some/path" 'known-prop value [warn? #t])
+* (set-prop! path/s prop value [warn? #t])
 
   Sets the value of a (known) proprty for a given path or paths (a string or a
   list of strings).  The path string/s is/are verified (relative paths
@@ -312,7 +311,9 @@ properties, intended to be used by meta tools:
     (let ([s (string->symbol str)])
       (car (or (assq s known-props) (error* #f "unknown property `~s'" s)))))
   (define (help . _)
-    (define (para . lines) (for ([line lines]) (printf "  ~a\n" line)))
+    (define (para . lines)
+      (newline)
+      (for ([line lines]) (printf "  ~a\n" line)))
     (printf "Usage: ~a subcommand args ...\n" (script-name))
     (para
      "This is a utility for manipulating properties in the PLT repository."
@@ -320,13 +321,18 @@ properties, intended to be used by meta tools:
      "known properties.  The given paths are normalized to be relative to the"
      "plt root for the tree holding this script *if* it is in such a tree"
      "(determined by inspecting a few known directories), otherwise an error"
-     "is raised.  Note that this script holds the data that it changes, so you"
-     "need to commit it after changes are made.  Also note that it does not"
-     "depend on the plt installation that runs it -- you just need to use the"
-     "script from the work directory that you want to deal with; if you add"
+     "is raised."
+     ""
+     "Note: this script holds the data that it changes, so you need to commit"
+     "it after changes are made."
+     ""
+     "Note: it does not depend on the plt installation that runs it -- you"
+     "just need to use the script from the work directory that you want to"
+     "deal with; if you add a git alias like:"
      "  prop = \"!$(git rev-parse --show-toplevel)/collects/meta/props\""
      "to your global git config file (usually ~/.gitconfig), then you'll be"
-     "able to run it as `git prop'."
+     "able to run it as `git prop' (the first part of this finds the root of"
+     "your workdir)."
      ""
      "Path arguments can also be given via stdin (each on a line) if the"
      "command-line path argument is a single `-'.  In this mode the paths are"
@@ -335,7 +341,8 @@ properties, intended to be used by meta tools:
     (for ([v (in-list (verbs))]) (printf "  ~a\n" (cadr v)))
     (printf "\nKnown properties:\n")
     (for ([p (in-list known-props)])
-      (printf "  ~s: ~a\n" (car p) (caddr p))))
+      (printf "  ~s: ~a\n" (car p) (caddr p)))
+    (para "See in-script comments for a scheme interface"))
   (define (verbs)
     `([("help" "h" "-h" "--help") "help: show this help" ,help]
       [("get") "get <prop> <path/s>" ,get]
@@ -381,7 +388,7 @@ properties, intended to be used by meta tools:
            [val (with-handlers
                     ([exn? (lambda (_)
                              (error* #f "unreadable value \"~a\", ~a" val
-                                     "must be a single scheme sexpr"))])
+                                     "must be a single sexpr"))])
                   (let ([v (read in)])
                     (if (and (pair? v) (null? (cdr v)))
                       (car v)
