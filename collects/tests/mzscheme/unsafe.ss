@@ -27,11 +27,14 @@
     (test result (compose post (eval `(lambda (x y) (,proc x y ,z)))) x y)
     (pre)
     (test result (compose post (eval `(lambda (x) (,proc x ,y ,z)))) x)
+    (pre)
     (when lit-ok?
       (pre)
       (test result (compose post (eval `(lambda (y) (,proc ,x y ,z)))) y)
       (pre)
-      (test result (compose post (eval `(lambda (z) (,proc ,x ,y z)))) z)))
+      (test result (compose post (eval `(lambda (z) (,proc ,x ,y z)))) z)
+      (pre)
+      (test result (compose post (eval `(lambda () (,proc ,x ,y ,z)))))))
   (define (test-bin result proc x y 
                     #:pre [pre void] 
                     #:post [post (lambda (x) x)]
@@ -42,12 +45,15 @@
     (test result (compose post (eval `(lambda (x y) (,proc x y)))) x y)
     (when lit-ok?
       (pre)
-      (test result (compose post (eval `(lambda (y) (,proc ,x y)))) y))
+      (test result (compose post (eval `(lambda (y) (,proc ,x y)))) y)
+      (pre)
+      (test result (compose post (eval `(lambda () (,proc ,x ,y))))))
     (pre)
     (test result (compose post (eval `(lambda (x) (,proc x ,y)))) x))
   (define (test-un result proc x)
     (test result (eval proc) x)
-    (test result (eval `(lambda (x) (,proc x))) x))
+    (test result (eval `(lambda (x) (,proc x))) x)
+    (test result (eval `(lambda () (,proc ',x)))))
 
   (test-bin 3 'unsafe-fx+ 1 2)
   (test-bin -1 'unsafe-fx+ 1 -2)

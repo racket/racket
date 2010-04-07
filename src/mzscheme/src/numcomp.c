@@ -505,17 +505,18 @@ SAFE_FX(fx_gt_eq, "fx>=", >=)
 SAFE_FX_X(fx_min, "fxmin", <, argv[0], argv[1])
 SAFE_FX_X(fx_max, "fxmax", >, argv[0], argv[1])
 
-#define UNSAFE_FX_X(name, op, fold, T, F)                    \
+#define UNSAFE_FX_X(name, op, fold, T, F, SEL)               \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   if (scheme_current_thread->constant_folding) return (fold(argv[0], argv[1]) ? scheme_true : scheme_false); \
+   if (scheme_current_thread->constant_folding) return SEL(fold(argv[0], argv[1])); \
    if (SCHEME_INT_VAL(argv[0]) op SCHEME_INT_VAL(argv[1]))   \
      return T;                                               \
    else                                                      \
      return F;                                               \
  }
 
-#define UNSAFE_FX(name, op, fold) UNSAFE_FX_X(name, op, fold, scheme_true, scheme_false)
+#define FX_SEL_BOOLEAN(e) (e ? scheme_true : scheme_false)
+#define UNSAFE_FX(name, op, fold) UNSAFE_FX_X(name, op, fold, scheme_true, scheme_false, FX_SEL_BOOLEAN)
 
 UNSAFE_FX(unsafe_fx_eq, ==, scheme_bin_eq)
 UNSAFE_FX(unsafe_fx_lt, <, scheme_bin_lt)
@@ -523,8 +524,9 @@ UNSAFE_FX(unsafe_fx_gt, >, scheme_bin_gt)
 UNSAFE_FX(unsafe_fx_lt_eq, <=, scheme_bin_lt_eq)
 UNSAFE_FX(unsafe_fx_gt_eq, >=, scheme_bin_gt_eq)
 
-UNSAFE_FX_X(unsafe_fx_min, <, bin_min, argv[0], argv[1])
-UNSAFE_FX_X(unsafe_fx_max, >, bin_max, argv[0], argv[1])
+#define FX_SEL_ID(e) e
+UNSAFE_FX_X(unsafe_fx_min, <, bin_min, argv[0], argv[1], FX_SEL_ID)
+UNSAFE_FX_X(unsafe_fx_max, >, bin_max, argv[0], argv[1], FX_SEL_ID)
 
 #define SAFE_FL_X(name, sname, op, T, F)                       \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
