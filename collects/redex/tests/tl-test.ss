@@ -6,7 +6,21 @@
            "../private/struct.ss")
   
   (reset-count)
-  
+
+  (parameterize ([current-namespace syn-err-test-namespace])
+    (eval (quote-syntax
+           (define-language grammar
+             (M (M M)
+                number)
+             (E hole
+                (E M)
+                (number E))
+             (X (number any)
+                (any number))
+             (Q (Q ...)
+                variable)
+             (UN (add1 UN)
+                 zero)))))
   
 ;                                                          
 ;                                                          
@@ -689,6 +703,12 @@
     (test (term (f 8)) 12345))
   
   
+  (let ()
+    (test-syn-err
+     (define-metafunction grammar
+       [(f x)])
+     #rx"expected a pattern and a right-hand side"))
+  
 ;                                                                                                 
 ;                                                                                                 
 ;                                                                                                 
@@ -1037,21 +1057,6 @@
            (reduction-relation n-lang [--> any ,(length (redex-match n-lang n 1))])
            11)
           '(1)))
-  
-  (parameterize ([current-namespace syn-err-test-namespace])
-    (eval (quote-syntax
-           (define-language grammar
-             (M (M M)
-                number)
-             (E hole
-                (E M)
-                (number E))
-             (X (number any)
-                (any number))
-             (Q (Q ...)
-                variable)
-             (UN (add1 UN)
-                 zero)))))
   
   (test-syn-err (reduction-relation 
                  grammar

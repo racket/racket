@@ -1414,7 +1414,7 @@
                 (syntax-case clause ()
                   [(a b) (void)]
                   [x (raise-syntax-error syn-error-name "expected a pattern and a right-hand side" stx clause)]))
-              (syntax->list #'([(lhs ...) rhs ...] ...)))
+              rest)
              (raise-syntax-error syn-error-name "error checking failed.3" stx)))]
       [([x roc ...] ...)
        (begin
