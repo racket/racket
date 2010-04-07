@@ -686,16 +686,6 @@ before the pattern compiler is invoked.
                                          (build-flat-context exp)
                                          none)))))))
         #f)]
-      [`variable-not-otherwise-mentioned 
-       (values
-        (let ([literals (compiled-lang-literals clang)])
-          (lambda (exp hole-info)
-            (and (symbol? exp)
-                 (not (memq exp literals))
-                 (list (make-mtch (make-bindings null)
-                                  (build-flat-context exp)
-                                  none)))))
-        #f)]
       [`hole
        (values (match-hole none) #t)]
       [(? string?)
@@ -814,6 +804,12 @@ before the pattern compiler is invoked.
       [`number (simple-match number?)]
       [`string (simple-match string?)]
       [`variable (simple-match symbol?)]
+      [`variable-not-otherwise-mentioned
+       (let ([literals (compiled-lang-literals clang)])
+         (simple-match
+          (λ (exp)
+            (and (symbol? exp) 
+                 (not (memq exp literals))))))]
       [`natural (simple-match (λ (x) (and (integer? x) (exact? x) (not (negative? x)))))]
       [`integer (simple-match (λ (x) (and (integer? x) (exact? x))))]
       [`real (simple-match real?)]

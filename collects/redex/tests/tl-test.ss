@@ -233,6 +233,21 @@
     (test (pair? (redex-match L x (term a_c))) #t)
     (test (pair? (redex-match L y (term a_bc))) #t))
   
+  ; underscores allowed on built-in non-terminals and names bound
+  (let ([m (redex-match 
+            grammar 
+            (any_1 number_1 natural_1 integer_1
+                   real_1 string_1 variable_1
+                   variable-not-otherwise-mentioned_1)
+            '(1 2 3 4 5 "s" s t))])
+    (test (if m
+              (map bind-exp
+                   (sort (match-bindings (car m))
+                         string<=?
+                         #:key (compose symbol->string bind-name)))
+              '())
+          '(1 4 3 2 5 "s" t s)))
+  
   ;; test caching
   (let ()
     (define match? #t)
