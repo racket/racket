@@ -480,6 +480,10 @@ properties, intended to be used by meta tools.  In these functions, `path' is a 
 "collects/browser/tool.ss" drdr "mred-text -t $path"
 "collects/combinator-parser" responsible (kathyg)
 "collects/compiler" responsible (mflatt)
+"collects/compiler/commands/c-ext.ss" drdr ""
+"collects/compiler/commands/exe-dir.ss" drdr ""
+"collects/compiler/commands/exe.ss" drdr ""
+"collects/compiler/commands/pack.ss" drdr ""
 "collects/defaults" responsible (robby)
 "collects/deinprogramm" responsible (sperber)
 "collects/deinprogramm/contract/contract-test-display.ss" drdr "mred-text -t $path"
@@ -1051,6 +1055,8 @@ properties, intended to be used by meta tools.  In these functions, `path' is a 
 "collects/redex/tests/term-test.ss" drdr "mzc $path"
 "collects/repos-time-stamp" responsible (eli)
 "collects/repos-time-stamp/time-stamp.ss" drdr "mred-text -t $path"
+"collects/rico/main.ss" drdr ""
+"collects/rico/rico.ss" drdr ""
 "collects/scheme/contract/private/arrow.ss" responsible (robby)
 "collects/scheme/contract/private/base.ss" responsible (robby)
 "collects/scheme/contract/private/ds-helpers.ss" responsible (robby)
