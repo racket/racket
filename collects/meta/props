@@ -1053,6 +1053,7 @@ properties, intended to be used by meta tools.  In these functions, `path' is a 
 "collects/redex/tests/rg-test.ss" drdr "mzc $path"
 "collects/redex/tests/run-tests.ss" drdr ("mred-text $path --examples --no-bitmaps" 180)
 "collects/redex/tests/term-test.ss" drdr "mzc $path"
+"collects/redex/tests/tl-test.ss" drdr "mzc $path"
 "collects/repos-time-stamp" responsible (eli)
 "collects/repos-time-stamp/time-stamp.ss" drdr "mred-text -t $path"
 "collects/rico/main.ss" drdr ""
