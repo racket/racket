@@ -313,7 +313,7 @@ properties, intended to be used by meta tools:
       (car (or (assq s known-props) (error* #f "unknown property `~s'" s)))))
   (define (help . _)
     (define (para . lines) (for ([line lines]) (printf "  ~a\n" line)))
-    (printf "Usage: ~a [flags] subcommand args ...\n" (script-name))
+    (printf "Usage: ~a subcommand args ...\n" (script-name))
     (para
      "This is a utility for manipulating properties in the PLT repository."
      "Each of the following subcommands expects a property name from a set of"
