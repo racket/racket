@@ -311,4 +311,14 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Check that compiling a misapplication of `unsafe-car' and `unsafe-cdr'
+;; (which are folding operations in the compiler ) doesn't crash:
+
+(let ([f (lambda (x) (if x x (unsafe-car 3)))]
+      [g (lambda (x) (if x x (unsafe-cdr 4)))])
+  (test 5 f 5)
+  (test 5 g 5))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

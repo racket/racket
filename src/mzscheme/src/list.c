@@ -3196,11 +3196,13 @@ void scheme_init_ephemerons(void)
 
 static Scheme_Object *unsafe_car (int argc, Scheme_Object *argv[])
 {
+  if (scheme_current_thread->constant_folding) return scheme_checked_car(argc, argv);
   return SCHEME_CAR(argv[0]);
 }
 
 static Scheme_Object *unsafe_cdr (int argc, Scheme_Object *argv[])
 {
+  if (scheme_current_thread->constant_folding) return scheme_checked_cdr(argc, argv);
   return SCHEME_CDR(argv[0]);
 }
 
