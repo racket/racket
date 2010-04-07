@@ -3749,14 +3749,17 @@ void scheme_module_force_lazy(Scheme_Env *env, int previous)
   /* not anymore */
 }
 
-static void wait_registry(Scheme_Env *env)
+static int wait_registry(Scheme_Env *env)
 {
   Scheme_Object *lock, *a[1];
 
   while (1) {
     lock = scheme_hash_get(env->module_registry, scheme_false);
     if (!lock)
-      return;
+      return 1;
+
+    if (SAME_OBJ(SCHEME_CDR(lock), (Scheme_Object *)scheme_current_thread))
+      return 0;
 
     a[0] = SCHEME_CAR(lock);
     a[1] = SCHEME_CDR(lock);
@@ -4395,8 +4398,9 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
 {
   Scheme_Object *v, *prev;
   Scheme_Env *menv;
+  int need_lock;
 
-  wait_registry(env);
+  need_lock = wait_registry(env);
 
   v = MODCHAIN_AVAIL(env->modchain, pos);
   if (!SCHEME_FALSEP(v)) {
@@ -4414,7 +4418,8 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
     }
     v = prev;
 
-    lock_registry(env);
+    if (need_lock)
+      lock_registry(env);
 
     while (SCHEME_NAMESPACEP(v)) {
       menv = (Scheme_Env *)v;
@@ -4425,7 +4430,8 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
                    scheme_null);
     }
 
-    unlock_registry(env);
+    if (need_lock)
+      unlock_registry(env);
   }
 }
 

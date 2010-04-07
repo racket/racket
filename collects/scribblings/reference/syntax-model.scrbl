@@ -682,7 +682,9 @@ are visited. More generally, initiating expansion at @tech{phase}
 @math{n} @tech{visit}s modules at @tech{phase} @math{n}, which in turn
 @tech{instantiates} modules at @tech{phase} @math{n+1}. These
 @tech{visits} and @tech{instantiations} apply to @tech{available}
-modules in the enclosing @tech{namespace}.
+modules in the enclosing @tech{namespace}'s @tech{module registry};
+a per-registry lock prevents multiple threads from concurrently
+instantiating and visiting available modules.
 
 When the expander encounters @scheme[require] and @scheme[(require
 (for-syntax ....))] within a @tech{module context}, the resulting
