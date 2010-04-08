@@ -547,7 +547,7 @@ path/s is either such a string or a list of them.
 "collects/drscheme/private/bitmap-message.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/debug.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/drscheme-normal.ss" drdr:command-line "mzc ~s"
-"collects/drscheme/private/eb.ss" drdr:command-line "mred-text"
+"collects/drscheme/private/eb.ss" drdr:command-line "mred-text ~s"
 "collects/drscheme/private/embedded-snip-utils.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/eval.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/font.ss" drdr:command-line "mred-text -t ~s"
@@ -566,7 +566,7 @@ path/s is either such a string or a list of them.
 "collects/drscheme/private/main.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/modes.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/module-browser.ss" drdr:command-line "mred-text -t ~s"
-"collects/drscheme/private/module-language-tools.ss" drdr:command-line "mred-text"
+"collects/drscheme/private/module-language-tools.ss" drdr:command-line "mred-text ~s"
 "collects/drscheme/private/module-language.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/multi-file-search.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/number-snip.ss" drdr:command-line "mred-text -t ~s"
@@ -1119,8 +1119,8 @@ path/s is either such a string or a list of them.
 "collects/schemeunit/private/gui/view.ss" drdr:command-line "mred-text -t ~s"
 "collects/schemeunit/tool.ss" responsible (ryanc) drdr:command-line "mred-text -t ~s"
 "collects/scribble/run.ss" drdr:command-line "mzc ~s"
-"collects/scribble/tools/drscheme-buttons.ss" drdr:command-line "mred-text"
-"collects/scribble/tools/private/mk-drs-bitmaps.ss" drdr:command-line "mred-text"
+"collects/scribble/tools/drscheme-buttons.ss" drdr:command-line "mred-text ~s"
+"collects/scribble/tools/private/mk-drs-bitmaps.ss" drdr:command-line "mred-text ~s"
 "collects/scribblings/foreign/unsafe-foreign.ss" drdr:command-line "mzc ~s"
 "collects/scribblings/framework/standard-menus.scrbl" drdr:command-line ""
 "collects/scribblings/guide/contracts-examples/6.ss" drdr:command-line "mzscheme -f ~s"
@@ -1200,7 +1200,7 @@ path/s is either such a string or a list of them.
 "collects/syntax" responsible (mflatt)
 "collects/syntax-color" responsible (sowens)
 "collects/teachpack" responsible (matthias)
-"collects/teachpack/2htdp/scribblings/image-gen.ss" drdr:command-line "mred-text"
+"collects/teachpack/2htdp/scribblings/image-gen.ss" drdr:command-line "mred-text ~s"
 "collects/teachpack/2htdp/universe.ss" drdr:command-line "mred-text -t ~s"
 "collects/teachpack/balls.ss" drdr:command-line "mzc ~s"
 "collects/teachpack/deinprogramm/image.ss" drdr:command-line "mred-text -t ~s"
@@ -1364,7 +1364,7 @@ path/s is either such a string or a list of them.
 "collects/tests/mzscheme/benchmarks/common/takr.ss" drdr:command-line "mzc ~s"
 "collects/tests/mzscheme/benchmarks/common/takr2.ss" drdr:command-line "mzc ~s"
 "collects/tests/mzscheme/benchmarks/mz/expand-class.scm" drdr:command-line "mzscheme -f ~s"
-"collects/tests/mzscheme/benchmarks/mz/parsing.scm" drdr:command-line "mred -f"
+"collects/tests/mzscheme/benchmarks/mz/parsing.scm" drdr:command-line "mred -f ~s"
 "collects/tests/mzscheme/benchmarks/mz/redsem.scm" drdr:command-line "mzscheme -f ~s -- --skip-struct-test"
 "collects/tests/mzscheme/benchmarks/mz/ssax.scm" drdr:command-line "mzscheme -f ~s"
 "collects/tests/mzscheme/benchmarks/rx/auto.ss" drdr:command-line "mzscheme -qt ~s -- mzscheme simple" drdr:timeout 600
