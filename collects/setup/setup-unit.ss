@@ -887,7 +887,7 @@
   (when (make-info-domain) (make-info-domain-step))
   (when (make-docs)
     ;; Double-check that "setup/scribble" is present.
-    (unless (file-exists? (build-path (collection-path "setup") "scribble.ss"))
+    (when (file-exists? (build-path (collection-path "setup") "scribble.ss"))
       (make-docs-step)))
 
   (when (doc-pdf-dest) (doc-pdf-dest-step))
