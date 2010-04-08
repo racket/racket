@@ -322,8 +322,8 @@
                      ((dynamic-require (vector-ref info 0)
                                        (vector-ref info 1))
                       (vector-ref info 2))])
-                (let ([config (get-info 'configure-runtime #f)])
-                  (when config
+                (let ([configs (get-info 'configure-runtime null)])
+                  (for ([config (in-list configs)])
                     ((dynamic-require (vector-ref config 0)
                                       (vector-ref config 1))
                      (vector-ref config 2))))))))

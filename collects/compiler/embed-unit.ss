@@ -781,18 +781,20 @@
              [__
               ;; Load all code:
               (for-each get-code-at files collapsed-mps)]
-             [config-info (and config?
+             [config-infos (if config?
                                (let ([a (assoc (car files) (unbox codes))])
                                  (let ([info (module-compiled-language-info (mod-code a))])
                                    (when info
                                      (let ([get-info ((dynamic-require (vector-ref info 0) (vector-ref info 1))
                                                       (vector-ref info 2))])
-                                       (get-info 'configure-runtime #f))))))])
+                                       (get-info 'configure-runtime null)))))
+                               null)])
         ;; Add module for runtime configuration:
-        (when config-info
-          (let ([mp (vector-ref config-info 0)])
-            (get-code-at (resolve-one-path mp)
-                         (collapse-one mp))))
+        (when config-infos
+          (for ([config-info (in-list config-infos)])
+            (let ([mp (vector-ref config-info 0)])
+              (get-code-at (resolve-one-path mp)
+                           (collapse-one mp)))))
         ;; Drop elements of `codes' that just record copied libs:
         (set-box! codes (filter mod-code (unbox codes)))
         ;; Bind `module' to get started:
@@ -929,12 +931,13 @@
         (write (compile-using-kernel '(namespace-set-variable-value! 'module #f #t)) outp)
         (write (compile-using-kernel '(namespace-undefine-variable! 'module)) outp)
         (newline outp)
-        (when config-info
-          (let ([a (assoc (resolve-one-path (vector-ref config-info 0)) (unbox codes))])            
-            (write (compile-using-kernel `((dynamic-require '',(mod-full-name a)
-                                                            ',(vector-ref config-info 1))
-                                           ',(vector-ref config-info 2)))
-                   outp)))
+        (when config-infos
+          (for ([config-info (in-list config-infos)])
+            (let ([a (assoc (resolve-one-path (vector-ref config-info 0)) (unbox codes))])            
+              (write (compile-using-kernel `((dynamic-require '',(mod-full-name a)
+                                                              ',(vector-ref config-info 1))
+                                             ',(vector-ref config-info 2)))
+                     outp))))
         (for-each (lambda (f)
                     (when verbose?
                       (fprintf (current-error-port) "Copying from ~s~n" f))

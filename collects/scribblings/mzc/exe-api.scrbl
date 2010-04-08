@@ -126,7 +126,8 @@ If the @scheme[#:configure-via-first-module?] argument is specified as
 true, then the language of the first module in @scheme[mod-list] is
 used to configure the run-time environment before the expressions
 added by @scheme[#:literal-files] and @scheme[#:literal-expressions]
-are evaluated.
+are evaluated. See also @secref[#:doc '(lib
+"scribblings/reference/reference.scrbl") "configure-runtime"].
 
 The @scheme[#:cmdline] argument @scheme[cmdline] contains command-line
 strings that are prefixed onto any actual command-line arguments that

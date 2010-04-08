@@ -168,14 +168,14 @@ typedef void (*Repl_Proc)(Scheme_Env *);
 
 static void configure_environment(Scheme_Object *mod)
 {
-  Scheme_Object *mli, *dyreq, *a[3], *gi, *v;
+  Scheme_Object *mli, *dyreq, *a[3], *gi, *v, *vs;
 
   mli = scheme_builtin_value("module->language-info");
 
   a[0] = mod;
   a[1] = scheme_make_true();
   v = scheme_apply(mli, 2, a);
-  if (SCHEME_VECTORP(v)) {
+  if (SCHEME_VECTORP(v) && SCHEME_VEC_SIZE(v) == 3) {
     dyreq = scheme_builtin_value("dynamic-require");
 
     a[0] = SCHEME_VEC_ELS(v)[0];
@@ -186,22 +186,35 @@ static void configure_environment(Scheme_Object *mod)
     gi = scheme_apply(gi, 1, a);
 
     a[0] = scheme_intern_symbol("configure-runtime");
-    a[1] = scheme_make_false();
-    v = scheme_apply(gi, 2, a);
-    if (!SAME_OBJ(v, scheme_make_false())) {
+    a[1] = scheme_make_null();
+    vs = scheme_apply(gi, 2, a);
+    a[0] = vs;
+    while (SCHEME_PAIRP(vs)) {
+      v = SCHEME_CAR(vs);
+      vs = SCHEME_CDR(vs);
       if (SCHEME_VECTORP(v) && SCHEME_VEC_SIZE(v) == 3) {
-        a[0] = SCHEME_VEC_ELS(v)[0];
-        a[1] = SCHEME_VEC_ELS(v)[1];
-        a[2] = SCHEME_VEC_ELS(v)[2];
-        v = scheme_apply(dyreq, 2, a);
-        
-        a[0] = a[2];
-        scheme_apply_multi(v, 1, a);
+        /* ok */
       } else {
-        a[0] = v;
-        scheme_wrong_type("current-print setup", "vector of three values",
-                          -1, 0, a);
+        break;
       }
+    }
+    if (!SCHEME_NULLP(vs)) {
+      scheme_wrong_type("runtime-configure", "list of vectors of three values",
+                        -1, 0, a);
+    }
+
+    vs = a[0];
+    while (SCHEME_PAIRP(vs)) {
+      v = SCHEME_CAR(vs);
+      vs = SCHEME_CDR(vs);
+
+      a[0] = SCHEME_VEC_ELS(v)[0];
+      a[1] = SCHEME_VEC_ELS(v)[1];
+      a[2] = SCHEME_VEC_ELS(v)[2];
+      v = scheme_apply(dyreq, 2, a);
+      
+      a[0] = a[2];
+      scheme_apply_multi(v, 1, a);
     }
   }
 }

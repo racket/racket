@@ -387,12 +387,13 @@ language specifies run-time configuration by
 
  @item{having the function indicated by the @scheme['module-language]
        @tech{syntax property} recognize the
-       @scheme['configure-runtime] key, for which it returns another
-       vector: @scheme[(vector _mp _name _val)] where @scheme[_mp] is
-       a @tech{module path}, @scheme[_name] is a symbol, and
-       @scheme[_val] is an arbitrary value; and}
+       @scheme['configure-runtime] key, for which it returns a list of
+       vectors; each vector must have the form @scheme[(vector _mp
+       _name _val)] where @scheme[_mp] is a @tech{module path},
+       @scheme[_name] is a symbol, and @scheme[_val] is an arbitrary
+       value; and}
 
- @item{having the function called as @scheme[((dynamic-require _mp
+ @item{having each function called as @scheme[((dynamic-require _mp
        _name) _val)] configure the run-time environment, typically by
        setting parameters such as @scheme[current-print].}
 
@@ -400,3 +401,11 @@ language specifies run-time configuration by
 
 The @schememodname[scheme/base] and @schememodname[scheme] languages
 do not currently specify a run-time configuration action.
+
+A @scheme['configure-runtime] query returns a list of vectors, instead
+of directly configuring the environment, so that the indicated modules
+to be bundled with a program when creating a stand-alone
+executable; see @secref[#:doc '(lib "scribblings/mzc/mzc.scrbl") "exe"].
+
+For information on defining a new @hash-lang[] language, see
+@schememodname[syntax/module-reader].
