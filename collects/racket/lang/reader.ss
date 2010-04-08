@@ -1,6 +1,6 @@
 #lang s-exp syntax/module-reader
 racket
 
-#:info get-info
-(require racket/private/get-info)
+#:module-info '#(racket/private/get-info get-info #f)
+
 

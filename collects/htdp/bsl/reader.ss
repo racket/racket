@@ -1,7 +1,20 @@
 #lang scheme/base
-(provide wrap-reader
-         make-info
-         make-module-info)
+(require (rename-in syntax/module-reader
+                    [#%module-begin #%reader-module-begin]))
+(provide (rename-out [module-begin #%module-begin])
+         (except-out (all-from-out scheme/base)
+                     #%module-begin))
+
+(define-syntax-rule (module-begin lang opts)
+  (#%reader-module-begin
+   lang
+
+   #:read (wrap-reader read options)
+   #:read-syntax (wrap-reader read-syntax options)
+   #:info (make-info options)
+   #:module-info (make-module-info options)
+
+   (define options opts)))
 
 (define (wrap-reader read-proc options)
   (lambda args

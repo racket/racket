@@ -1,10 +1,4 @@
-#lang s-exp syntax/module-reader
+#lang s-exp htdp/bsl/reader
 lang/htdp-intermediate-lambda
-#:read (wrap-reader read options)
-#:read-syntax (wrap-reader read-syntax options)
-#:info (make-info options)
-#:module-info (make-module-info options)
-
-(require htdp/bsl/reader)
-(define options '(abbreviate-cons-as-list
-                  read-accept-quasiquote))
+'(abbreviate-cons-as-list
+  read-accept-quasiquote)
