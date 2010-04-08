@@ -309,9 +309,24 @@
           (parameterize ([current-namespace (current-namespace)])
             ;; the prompt makes it continue after an error
             (call-with-continuation-prompt
-             (λ () (with-stack-checkpoint (namespace-require modspec)))))
+             (λ () (with-stack-checkpoint 
+                    (begin
+                      (*do-module-specified-configuration modspec)
+                      (namespace-require modspec))))))
           (current-namespace (module->namespace modspec))
           (check-interactive-language))
+        (define (*do-module-specified-configuration modspec)
+          (let ([info (module->language-info modspec #t)])
+            (when info
+              (let ([get-info
+                     ((dynamic-require (vector-ref info 0)
+                                       (vector-ref info 1))
+                      (vector-ref info 2))])
+                (let ([config (get-info 'configure-runtime #f)])
+                  (when config
+                    ((dynamic-require (vector-ref config 0)
+                                      (vector-ref config 1))
+                     (vector-ref config 2))))))))
         ;; here's where they're all combined with the module expression
         (expr-getter *pre module-expr *post))
       
@@ -350,6 +365,7 @@
                           #:mred? gui?
                           #:verbose? #f ;; verbose?
                           #:modules (list (list #f program-filename))
+                          #:configure-via-first-module? #t
                           #:literal-expression
                           (begin
                             (parameterize ([current-namespace (make-base-empty-namespace)])

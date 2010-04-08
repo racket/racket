@@ -304,6 +304,7 @@
                                            (datum->syntax
                                             expr
                                             x
+                                            expr
                                             expr)))))]
               [else (same-k)])))))
   
@@ -312,6 +313,7 @@
       [(syntax? expr)
        (datum->syntax expr
                       (append-rebuild (syntax-e expr) end)
+                      expr
                       expr)]
       [(pair? expr)
        (cons (car expr) (append-rebuild (cdr expr) end))]
