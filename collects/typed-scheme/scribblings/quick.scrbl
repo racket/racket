@@ -28,9 +28,9 @@ language:
 typed/scheme
 (define-struct: pt ([x : Real] [y : Real]))
 
-(: mag (pt -> Real))
+(: mag (pt -> Number))
 (define (mag p)
-  (sqrt (sqr (pt-x p)) (sqr (pt-y p))))
+  (sqrt (+ (sqr (pt-x p)) (sqr (pt-y p)))))
 ]
 )
 
@@ -40,7 +40,7 @@ scheme
 
 (code:contract mag : pt -> number)
 (define (mag p)
-  (sqrt (sqr (pt-x p)) (sqr (pt-y p))))
+  (sqrt (+ (sqr (pt-x p)) (sqr (pt-y p)))))
 ]
 
 Here is the same program, in @schememodname[typed/scheme]:
