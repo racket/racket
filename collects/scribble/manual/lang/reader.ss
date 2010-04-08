@@ -6,12 +6,8 @@ scribble/manual/lang
 #:read-syntax scribble:read-syntax-inside
 #:whole-body-readers? #t
 #:wrapper1 (lambda (t) (cons 'doc (t)))
-#:info (lambda (key defval default)
-         (case key
-           [(color-lexer)
-            (dynamic-require 'syntax-color/scribble-lexer 'scribble-inside-lexer)]
-           [(drscheme:toolbar-buttons)
-            (dynamic-require 'scribble/tools/drscheme-buttons 'drscheme-buttons)]
-           [else (default key defval)]))
+#:module-info (scribble-base-module-info)
+#:info (scribble-base-info)
 
-(require (prefix-in scribble: "../../reader.ss"))
+(require (prefix-in scribble: "../../reader.ss")
+         scribble/base/reader)

@@ -5,168 +5,286 @@
                      (only-in scribble/reader
                               read-syntax-inside read-inside)))
 
+@(begin
+  (define-syntax-rule (define-mb name)
+    (begin
+     (require (for-label scheme/base))
+     (define name @scheme[#%module-begin])))
+  (define-mb scheme-#%module-begin))
+
 @title[#:tag "module-reader"]{Module Reader}
 
 @defmodule[syntax/module-reader]
 
-The @schememodname[syntax/module-reader] language provides support for
-defining @hash-lang[] readers.  In its simplest form, the only thing
-that is needed in the body of a @schememodname[syntax/module-reader]
-is the name of the module that will be used in the language position
-of read modules; using keywords, the resulting readers can be
-customized in a number of ways.
+The @schememodname[syntax/module-reader] library provides support for
+defining @hash-lang[] readers. It is normally used as a module
+language, though it may also be @scheme[require]d to get
+@scheme[make-meta-reader]. It provides all of the bindings of
+@scheme[scheme/base] other than @|scheme-#%module-begin|.
 
 @defform*/subs[
   [(#%module-begin module-path)
-   (#%module-begin module-path reader-option ... body ....)
-   (#%module-begin             reader-option ... body ....)]
-  ([reader-option (code:line #:language    lang-expr)
-                  (code:line #:read        read-expr)
+   (#%module-begin module-path reader-option ... form ....)
+   (#%module-begin             reader-option ... form ....)]
+  ([reader-option (code:line #:read        read-expr)
                   (code:line #:read-syntax read-syntax-expr)
-                  (code:line #:info        info-expr)
+                  (code:line #:whole-body-readers? whole?-expr)
                   (code:line #:wrapper1    wrapper1-expr)
                   (code:line #:wrapper2    wrapper2-expr)
-                  (code:line #:whole-body-readers? whole?-expr)])]{
+                  (code:line #:language    lang-expr)
+                  (code:line #:info        info-expr)
+                  (code:line #:module-info module-info-expr)])
+  #:contracts ([read-expr (input-port? . -> . any/c)]
+               [read-syntax-expr (any/c input-port? . -> . any/c)]
+               [whole-expr any/c]
+               [wrapper1-expr (or/c ((-> any/c) . -> . any/c)
+                                    ((-> any/c) boolean? . -> . any/c))]
+               [wrapper2-expr (or/c (input-port? (input-port? . -> . any/c) 
+                                     . -> . any/c)
+                                    (input-port? (input-port? . -> . any/c) 
+                                     boolean? . -> . any/c))]
+               [info-expr (symbol? any/c (symbol? any/c . -> . any/c) . -> . any/c)]
+               [module-info-expr (or/c (vector/c module-path? symbol? any/c) #f)]
+               [lang-expr (or/c module-path?
+                                (and/c syntax? (compose module-path? syntax->datum))
+                                procedure?)])]{
 
-Causes a module written in the @schememodname[syntax/module-reader]
-language to define and provide @schemeidfont{read} and
-@schemeidfont{read-syntax} functions, making the module an
-implementation of a reader. In particular, the exported reader
-functions read all S-expressions until an end-of-file, and package
-them into a new module in the @scheme[module-path] language.
-
-That is, a module @scheme[_something]@scheme[/lang/reader] implemented
-as
+In its simplest form, the body of a module written with
+@schememodname[syntax/module-reader] contains just a module path,
+which is used in the language position of read modules. For example, a
+module @scheme[_something]@scheme[/lang/reader] implemented as
 
 @schemeblock[
-  (module reader syntax/module-reader
-    module-path)
+(module reader @#,schememodname[syntax/module-reader]
+  module-path)
 ]
 
-creates a reader that converts @scheme[#,(hash-lang)_something] into
+creates a reader such that a module source
+
+@schememod[
+@#,scheme[_something]
+....
+]
+
+is read as
 
 @schemeblock[
   (module _name-id module-path
     (#%module-begin ....))
 ]
 
-where @scheme[_name-id] is derived from the name of the port used by
-the reader, or @scheme[anonymous-module] if the port has no name.
+Keyword-based @scheme[reader-option]s allow further customization, as
+listed below. Additional @scheme[form]s are as in the body of
+@scheme[scheme/base] module; they can import bindings and define
+identifiers used by the @scheme[reader-option]s.
 
-For example, @scheme[scheme/base/lang/reader] is implemented as
+@itemlist[
 
-@schemeblock[
-  (module reader syntax/module-reader
-    scheme/base)
+ @item{@scheme[#:read] and @scheme[#:read-syntax] (both or neither
+       must be supplied) specify alternate readers for parsing the
+       module body---replacements @scheme[read] and
+       @scheme[read-syntax], respectively. Normally, the replacements
+       for @scheme[read] and @scheme[read-syntax] are applied
+       repeatedly to the module source until @scheme[eof] is produced,
+       but see also @scheme[#:whole-body-readers?].
+
+       For example, a language built on the @secref[#:doc '(lib
+       "scribblings/honu/honu.scrbl")]{Honu} reader could be
+       implemented with:
+
+        @schemeblock[
+          (module reader syntax/module-reader
+            module-path
+            #:read read-honu
+            #:read-syntax read-honu-syntax)
+        ]
+
+        See also @scheme[#:wrapper1] and @scheme[#:wrapper2], which
+        support simple parameterization of readers rather than
+        wholesale replacement.}
+
+ @item{@scheme[#:whole-body-readers?] specified as true indicates that
+       the @scheme[#:read] and @scheme[#:read-syntax] functions each produce a
+       list of S-expressions or syntax objects for the module content,
+       so that each is applied just once to the input stream.
+
+       If the resulting list contains a single form that starts with
+       the symbol @scheme['#%module-begin] (or a syntax object whose
+       datum is that symbol), then the first item is used as the
+       module body; otherwise, a @scheme['#%module-begin] (symbol or
+       identifier) is added to the beginning of the list to form the
+       module body.}
+
+ @item{@scheme[#:wrapper1] specifies a function that controls the
+       dynamic context in which the @scheme[read] and
+       @scheme[read-syntax] functions are called. A
+       @scheme[#:wrapper1]-specified function must accept a thunk, and
+       it normally calls the thunk to produce a result while
+       @scheme[parameterizing] the call. Optionally, a
+       @scheme[#:wrapper1]-specified function can accept a boolean
+       that indicates whether it is used in @scheme[read]
+       (@scheme[#f]) or @scheme[read-syntax] (@scheme[#t]) mode.
+
+       For example, a language like @scheme[scheme/base] but with
+       case-insensitive reading of symbols and identifiers can be
+       implemented as
+
+        @schemeblock[
+          (module reader syntax/module-reader
+            scheme/base
+            #:wrapper1 (lambda (t)
+                         (parameterize ([read-case-sensitive #f])
+                           (t))))
+        ]
+
+       Using a @tech[#:doc refman]{readtable}, you can implement
+       languages that are extensions of plain S-expressions.}
+
+ @item{@scheme[#:wrapper2] is like @scheme[#:wrapper1], but a
+       @scheme[#:wrapper2]-specified function receives the input port
+       to be read, and the function that it receives accepts an input
+       port (usually, but not necessarily the same input port). A
+       @scheme[#:wrapper2]-specified function can optionally accept an
+       boolean that indicates whether it is used in @scheme[read]
+       (@scheme[#f]) or @scheme[read-syntax] (@scheme[#t]) mode.}
+
+ @item{@scheme[#:info] specifies an implementation of reflective
+       information that is used by external tools to manipulate the
+       @emph{source} of modules in the language @scheme[_something]. For
+       example, DrScheme uses information from @scheme[#:info] to
+       determine the style of syntax coloring that it should use for
+       editing a module's source.
+
+       The @scheme[#:info] specification should be a function of three
+       arguments: a symbol indicating the kind of information
+       requested (as defined by external tools), a default value that
+       normally should be returned if the symbol is not recognized,
+       and a default-filtering function that takes the first two
+       arguments and returns a result.
+
+       The expression after @scheme[#:info] is placed into a context
+       where @scheme[language-module] and @scheme[language-data] are
+       bound. The @scheme[language-module] identifier is bound to the
+       @scheme[module-path] that is used for the read module's
+       language as written directly or as determined through
+       @scheme[#:language]. The @scheme[language-data] identifier is
+       bound to the second result from @scheme[#:language], or
+       @scheme[#f] by default.
+
+       The default-filtering function passed to the @scheme[#:info]
+       function is intended to provide support for information that
+       @schememodname[syntax/module-reader] can provide automatically.
+       Currently, it recognizes only the @scheme['module-language]
+       key, for which it returns @scheme[language-module]; it returns
+       the given default value for any other key.
+
+       In the case of the DrScheme syntax-coloring example, DrScheme
+       supplies @scheme['color-lexer] as the symbol argument, and it
+       supplies @scheme[#f] as the default. The default-filtering
+       argument (i.e., the third argument to the @scheme[#:info]
+       function) currently just returns the default for
+       @scheme['color-lexer].}
+
+ @item{@scheme[#:module-info] specifies an implementation of
+       reflective information that is used by external tools to
+       manipulate the @emph{compiled} form of modules in the language
+       @scheme[_something]. For example, when MzScheme starts a
+       program, it uses information attached to the compiled main
+       module to initialize the run-time environment.
+
+       Since the compiled form exists at a different time than when
+       the source is read, a @scheme[#:module-info] specification is a
+       vector that indicates an implementation of the reflective
+       information, instead of a direct implementation as a function
+       like @scheme[#:info]. The first element of the vector is a
+       module path, the second is a symbol corresponding to a function
+       exported from the module, and the last element is a value to be
+       passed to the function. The last value in the vector must be
+       one that can be written with @scheme[write] and read back with
+       @scheme[read]. When the exported function indicated by the
+       first two vector elements is called with the value from the
+       last vector element, the result should be a function or two
+       arguments: a symbol and a default value. The symbol and default
+       value are used as for the @scheme[#:info] function (but without
+       an extra default-filtering function).
+
+       The value specified by @scheme[#:module-info] is attached to
+       the @scheme[module] form that is parsed from source through the
+       @scheme['module-language] syntax property. See @scheme[module]
+       for more information.
+
+       The expression after @scheme[#:module-info] is placed into a
+       context where @scheme[language-module] are
+       @scheme[language-data] are bound, the same as for
+       @scheme[#:info].
+
+       In the case of the MzScheme run-time configuration example,
+       MzScheme uses the @scheme[#:module-info] vector to obtain a
+       function, and then it passes @scheme['configure-runtime] to the
+       function to obtain information about configuring the runtime
+       environment. See also @secref[#:doc refman "configure-runtime"].}
+
+ @item{@scheme[#:language] allows the language of the read
+       @scheme[module] to be computed dynamically and based on the
+       program source, instead of using a constant
+       @scheme[module-path]. (Either @scheme[#:language] or
+       @scheme[module-path] must be provided, but not both.)
+
+       This value of the @scheme[#:language] option can be either a
+       module path (possibly as a syntax object) that is used as a
+       module language, or it can be a procedure. If it is a procedure
+       it can accept either
+
+       @itemlist[
+         @item{0 arguments;}
+         @item{1 argument: an input port; or}
+         @item{5 arguments: an input port, a syntax object whose datum
+               is a module path for the enclosing module as it was
+               referenced through @hash-lang[] or
+               @schememetafont{#reader}, a starting line number
+               (positive exact integer) or @scheme[#f], a column
+               number (non-negative exact integer) or @scheme[#f], and
+               a position number (positive exact integer) or
+               @scheme[#f].}
+        ] 
+
+       The result can be either
+
+       @itemlist[
+          @item{a single value, which is a module path or a syntax
+                object whose datum is a module path, to be used
+                like @scheme[module-path]; or}
+          @item{two values, where the first is like a single-value
+                result and the second can be any value.}
+       ]
+
+       The second result, which defaults to @scheme[#f] if only a
+       single result is produced, is made available to the
+       @scheme[#:info] and @scheme[#:module-info] functions through
+       the @scheme[language-data] binding. For example, it can be a
+       specification derived from the input stream that changes the
+       module's reflective information (such as the syntax-coloring
+       mode or the output-printing styles).}
+
 ]
 
-The reader functions can be customized in a number of ways, using
-keyword markers in the syntax of the reader module.  A @scheme[#:read]
-and @scheme[#:read-syntax] keywords can be used to specify functions
-other than @scheme[read] and @scheme[read-syntax] to perform the
-reading.  For example, you can implement a
-@secref[#:doc '(lib "scribblings/honu/honu.scrbl")]{Honu} reader
-using:
+As another example, the following reader defines a ``language'' that
+ignores the contents of the file, and simply reads files as if they
+were empty:
 
-@schemeblock[
-  (module reader syntax/module-reader
-    honu
-    #:read read-honu
-    #:read-syntax read-honu-syntax)
-]
-
-Similarly, the @scheme[#:info] keyword supplies a procedure to be used
-by a @scheme[get-info] export (see @scheme[read-language]). The
-procedure produced by @scheme[info-expr] should consume three
-arguments: a key value, a default result, and a default info-getting
-procedure (to be called with the key and default result for default
-handling). If @scheme[#:info] is not supplied, the default
-info-getting procedure is used.
-
-You can also use the (optional) module @scheme[body] forms to provide
-more definitions that might be needed to implement your reader
-functions.  For example, here is a case-insensitive reader for the
-@scheme[scheme/base] language:
-
-@schemeblock[
-  (module reader syntax/module-reader
-    scheme/base
-    #:read (wrap read) #:read-syntax (wrap read-syntax)
-    (define ((wrap reader) . args)
-      (parameterize ([read-case-sensitive #f]) (apply reader args))))
-]
-
-In many cases, however, the standard @scheme[read] and
-@scheme[read-syntax] are fine, as long as you can customize the
-dynamic context they're invoked at.  For this, @scheme[#:wrapper1] can
-specify a function that can control the dynamic context in which the
-reader functions are called.  It should evaluate to a function that
-consumes a thunk and invokes it in the right context.  Here is an
-alternative definition of the case-insensitive language using
-@scheme[#:wrapper1]:
-
-@schemeblock[
-  (module reader syntax/module-reader
-    scheme/base
-    #:wrapper1 (lambda (t)
-                 (parameterize ([read-case-sensitive #f])
-                   (t))))
-]
-
-Note that using a @tech[#:doc refman]{readtable}, you can implement
-languages that are extensions of plain S-expressions.
-
-In addition to this wrapper, there is also @scheme[#:wrapper2] that
-has more control over the resulting reader functions.  If specified,
-this wrapper is handed the input port and a (one-argumet) reader
-function that expects the input port as an argument.  This allows this
-wrapper to hand a different port value to the reader function, for
-example, it can divert the read to use different file (if given a port
-that corresponds to a file).  Here is the case-insensitive implemented
-using this option:
-
-@schemeblock[
-  (module reader syntax/module-reader
-    scheme/base
-    #:wrapper2 (lambda (in r)
-                 (parameterize ([read-case-sensitive #f])
-                   (r in))))
-]
-
-In some cases, the reader functions read the whole file, so there is
-no need to iterate them (e.g., Scribble's @scheme[read-inside] and
-@scheme[read-syntax-inside]).  In these cases you can specify
-@scheme[#:whole-body-readers?] as @scheme[#t] --- the readers are
-expected to return a list of expressions in this case.
-
-In addition, the two wrappers can return a different value than the
-wrapped function.  This introduces two more customization points for
-the resulting readers:
-@itemize[
-  @item{The thunk that is passed to a @scheme[#:wrapper1] function
-    reads the file contents and returns a list of read expressions
-    (either syntax values or S-expressions).  For example, the
-    following reader defines a ``language'' that ignores the contents
-    of the file, and simply reads files as if they were empty:
     @schemeblock[
       (module ignored syntax/module-reader
         scheme/base
         #:wrapper1 (lambda (t) (t) '()))]
-    Note that it is still performing the read, otherwise the module
-    loader will complain about extra expressions.}
-  @item{The reader function that is passed to a @scheme[#:wrapper2]
-    function returns the final reault of the reader (a module
-    expression).  You can return a different value, for example,
-    making it use a different language module.}]
-In some rare cases, it is more convenient to know whether a reader is
-invoked for a @scheme[read] or for a @scheme[read-syntax].  To
-accommodate these cases, both wrappers can accept an additional
-argument, and in this case, they will be handed a boolean value that
-indicates whether the reader is expected to read syntax (@scheme[#t])
-or not (@scheme[#f]).  For example, here is a reader that uses the
-scribble syntax, and the first datum in the file determines the actual
-language (which means that the library specification is effectively
-ignored):
+
+Note that the wrapper still performs the read, otherwise the module
+loader would complain about extra expressions.
+
+As a more useful example, the following module language is similar to
+@schememodname[at-exp], where the first datum in the file determines
+the actual language (which means that the library specification is
+effectively ignored):
+
 @schemeblock[
   (module reader syntax/module-reader
     -ignored-
@@ -186,7 +304,7 @@ ignored):
     (require scribble/reader))
 ]
 
-This ability to change the language position in the resulting module
+The ability to change the language position in the resulting module
 expression can be useful in cases such as the above, where the base
 language module is chosen based on the input.  To make this more
 convenient, you can omit the @scheme[module-path] and instead specify
@@ -210,15 +328,9 @@ concisely:
     (require scribble/reader))
 ]
 
-
-Note: if such whole-body reader functions return a list with a single
-expression that begins with @scheme[#%module-begin], then the
-@scheme[syntax/module-reader] language will not inappropriately add
-another.  This for backwards-compatibility with older code: having a
-whole-body reader functions or wrapper functions that return a
-@scheme[#%module-begin]-wrapped body is deprectaed.
-
-}
+For such cases, however, the alternative reader constructor
+@scheme[make-meta-reader] implements a might tightly controlled
+reading of the module language.}
 
 
 @defproc[(make-meta-reader [self-sym symbol?]

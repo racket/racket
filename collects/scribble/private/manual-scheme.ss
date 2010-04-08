@@ -41,9 +41,11 @@
                                         #f
                                         (list (hash-lang)
                                               spacer
-                                              (as-modname-link
-                                               ',#'lang
-                                               (to-element ',#'lang)))))
+                                              ,(if (identifier? #'lang)
+                                                   `(as-modname-link
+                                                     ',#'lang
+                                                     (to-element ',#'lang))
+                                                   #'(scheme lang)))))
                             #'lang)]
                    [(file ...)
                     (if (syntax-e #'filename)

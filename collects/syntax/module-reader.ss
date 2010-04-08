@@ -42,6 +42,7 @@
         [#:wrapper2            ~wrapper2            #'#f]
         [#:whole-body-readers? ~whole-body-readers? #'#f]
         [#:info                ~info                #'#f]
+        [#:module-info         ~module-get-info     #'#f]
         [(when (equal? (and lang #t) (and ~lang #t))
            (err (string-append
                  "must specify either a module language, or #:language"
@@ -57,7 +58,7 @@
          #,@body
          (#%provide (rename lang:read read)
                     (rename lang:read-syntax read-syntax)
-                    read-properties get-info-getter get-info)
+                    get-info)
          (define (lang:read in modpath line col pos)
            (wrap-internal/wrapper #f #f in modpath line col pos))
          (define (lang:read-syntax src in modpath line col pos)
@@ -83,10 +84,13 @@
                            [(ar? w2 3) (w2 in rd stx?)]
                            [else (w2 in rd)])])
              (if stx?
-               (syntax-property r
-                 'module-language
-                 (vector (syntax->datum modpath) 'get-info-getter props))
-               r)))
+                 (let ([prop #,(if (syntax-e ~module-get-info)
+                                   ~module-get-info
+                                   #'#f)])
+                   (if prop 
+                       (syntax-property r 'module-language prop)
+                       r))
+                 r)))
          (define read-properties (lang->read-properties #,~lang))
          (define (get-info in modpath line col pos)
            (get-info-getter (read-properties in modpath line col pos)))
@@ -95,7 +99,7 @@
            (define data (cadr props))
            (define (default-info what defval)
              (case what
-               [(module-language) (car props)]
+               [(module-language) lang]
                ;; ... more?
                [else defval]))
            (define info
@@ -176,8 +180,8 @@
                      (let loop ([a null])
                        (let ([v (read port)])
                          (if (eof-object? v)
-                           (reverse a)
-                           (loop (cons v a)))))))]
+                             (reverse a)
+                             (loop (cons v a)))))))]
            [body (cond [(not wrapper)   (body)]
                        [(ar? wrapper 2) (wrapper body stx?)]
                        [else            (wrapper body)])]
