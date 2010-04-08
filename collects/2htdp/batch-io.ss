@@ -3,19 +3,44 @@
 (require htdp/error)
 
 (define (read-file f)
-  (check-arg 'read-file (string? f) "string" "first" f)
+  (check-file f 'read-file)
   (check-arg 'read-file (file-exists? f) "name of file in program's folder" "first" f)
   (list->string
-    (with-input-from-file f 
-      (lambda ()
-	(let loop ([accu '()])
-	  (define nxt (read-char))
-	  (if (eof-object? nxt)
-	      (reverse (if (char=? (car accu) #\newline) (cdr accu) accu))
-	      (loop (cons nxt accu))))))))
- 
+   (with-input-from-file f 
+     (lambda ()
+       (let loop ([accu '()])
+         (define nxt (read-char))
+         (if (eof-object? nxt)
+             (reverse (if (char=? (car accu) #\newline) (cdr accu) accu))
+             (loop (cons nxt accu))))))))
+
+(define (read-file-as-lines f)
+  (check-file f 'read-file-as-lines)
+  (with-input-from-file f 
+    (lambda ()
+      (let loop ([accu '()])
+        (define nxt (read-line))
+        (if (eof-object? nxt)
+            (reverse accu)
+            (loop (cons nxt accu)))))))
+
+(define (read-file-as-1strings f)
+  (check-file f 'read-file-as-1strings)
+  (read-chars f string))
+
+;; 
+(define (read-chars f action)
+  (with-input-from-file f 
+    (lambda ()
+      (let loop ([accu '()])
+        (define nxt (read-char))
+        (if (eof-object? nxt)
+            (reverse (if (char=? (car accu) #\newline) (cdr accu) accu))
+            (loop (cons nxt accu)))))))
+
 (define (write-file f str)
-  (check-arg 'read-file (string? f) "string" "first" f)
+  (check-arg 'write-file (string? f) "name of file (string)" "first" f)
+  (check-arg 'write-file (string? str) "string" "second" str)
   (let ([result (not (file-exists? f))])
     (with-output-to-file f 
       (lambda () (printf "~a" str))
@@ -25,6 +50,9 @@
 ;; -----------------------------------------------------------------------------
 
 (provide 
+ read-file-as-lines ;; String -> [Listof String]
+ ;; read the fule f (in current-directory) as a list of strings
+ 
  read-file ;; String -> String
  ;; read the file f (in current-directory) as a string
  
@@ -34,6 +62,11 @@
  ;; true, if f doesn't exist
  )
 
+;; String[file name] Symbol -> Void
+;; effect: ensure that f is a file in current directory or report error for t
+(define (check-file f t)
+  (check-arg t (string? f) "string" "first" f)
+  (check-arg t (file-exists? f) "name of file in program's folder" "first" f))
 
 ;                                                                               
 ;                                                                               
