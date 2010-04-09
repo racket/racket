@@ -35,6 +35,9 @@
 /* Whether __attribute__ ((noinline)) works */
 #undef MZ_USE_NOINLINE
 
+/* Whether pthread_rwlock is availabale: */
+#undef HAVE_PTHREAD_RWLOCK
+
 /* Enable futures and/or places: */
 #undef MZ_USE_FUTURES
 #undef MZ_USE_PLACES

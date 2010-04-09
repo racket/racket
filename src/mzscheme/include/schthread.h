@@ -30,7 +30,7 @@ extern "C" {
 # if _MSC_VER
 #  define THREAD_LOCAL /* empty */
 #  define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-# elif defined(OS_X) || (defined(linux) && defined(MZ_USES_SHARED_LIB))
+# elif defined(OS_X)
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
 #   define INLINE_GETSPECIFIC_ASSEMBLY_CODE
@@ -306,7 +306,7 @@ static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
 #   else
   asm volatile("movl %%gs:0x48(,%1,4), %0" : "=r"(x) : "r"(scheme_thread_local_key));
 #   endif
-#  elif defined(linux) && defined(MZ_USES_SHARED_LIB)
+#  elif defined(linux)
 #   if defined(__x86_64__)
   asm volatile( "mov %1, %%eax;" 
   "shl $0x4, %%rax;"

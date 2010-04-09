@@ -296,6 +296,7 @@ show_explicitly_disabled "${enable_foreign}" Foreign
 
 show_explicitly_enabled "${enable_places}" Places
 show_explicitly_enabled "${enable_futures}" Futures
+show_explicitly_disabled "${enable_futures}" Futures
 
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
@@ -1178,6 +1179,19 @@ if test "${enable_pthread}" = "yes" ; then
   PREFLAGS="$PREFLAGS -pthread"
   LDFLAGS="$LDFLAGS -pthread"
   AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
+
+[ msg="whether pthread_rwlock is available"   ]
+  AC_MSG_CHECKING($msg)
+  AC_TRY_RUN(
+[  #include <pthread.h>]
+   pthread_rwlock_t l;
+   int main() {
+     return pthread_rwlock_init(&l, NULL);
+   }, rwlockavail=yes, rwlockavail=no, rwlockavail=no)
+  AC_MSG_RESULT($rwlockavail)
+  if test "$rwlockavail" = "yes" ; then
+    AC_DEFINE(HAVE_PTHREAD_RWLOCK,1,[Have pthread_rwlock])
+  fi
 fi
 
 ################ Xrender ##################

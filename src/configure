@@ -2258,6 +2258,7 @@ show_explicitly_disabled "${enable_foreign}" Foreign
 
 show_explicitly_enabled "${enable_places}" Places
 show_explicitly_enabled "${enable_futures}" Futures
+show_explicitly_disabled "${enable_futures}" Futures
 
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
@@ -10760,6 +10761,67 @@ cat >>confdefs.h <<\_ACEOF
 #define USE_PTHREAD_INSTEAD_OF_ITIMER 1
 _ACEOF
 
+
+ msg="whether pthread_rwlock is available"
+  { echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
+  if test "$cross_compiling" = yes; then
+  rwlockavail=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+  #include <pthread.h>
+   pthread_rwlock_t l;
+   int main() {
+     return pthread_rwlock_init(&l, NULL);
+   }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  rwlockavail=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+rwlockavail=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+  { echo "$as_me:$LINENO: result: $rwlockavail" >&5
+echo "${ECHO_T}$rwlockavail" >&6; }
+  if test "$rwlockavail" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_PTHREAD_RWLOCK 1
+_ACEOF
+
+  fi
 fi
 
 ################ Xrender ##################
