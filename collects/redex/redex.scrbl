@@ -1062,20 +1062,52 @@ all non-GUI portions of Redex) and also exported by
 Tests to see if @scheme[e1] is equal to @scheme[e2].
 }
 
-@defform/subs[(test-->> reduction-relation maybe-cycles e1 e2 ...)
-              ([cycles (code:line) #:cycles-ok])]{
+@defform/subs[(test-->> rel-expr option ... e1-expr e2-expr ...)
+              ([option (code:line #:cycles-ok)
+                       (code:line #:equiv pred-expr)])
+              #:contracts ([rel-expr reduction-relation?]
+                           [pred-expr (--> any/c any/c any/c)]
+                           [e1-expr any/c]
+                           [e2-expr any/c])]{
 
-Tests to see if the value of @scheme[e1] (which should be a term),
-reduces to the @scheme[e2]s under @scheme[reduction-relation]
-(using @scheme[apply-reduction-relation*], so it may not terminate).
+Tests to see if the term @scheme[e1-expr],
+reduces to the terms @scheme[e2-expr] under @scheme[rel-expr],
+using @scheme[pred-expr] to determine equivalence. This test uses
+@scheme[apply-reduction-relation*], so it does not terminate
+when the resulting reduction graph is infinite.
 }
 
-@defform[(test--> reduction-relation e1 e2 ...)]{
+@defform/subs[(test--> rel-expr option ... e1-expr e2-expr ...)
+              ([option (code:line #:equiv pred-expr)])
+              #:contracts ([rel-expr reduction-relation?]
+                           [pred-expr (--> any/c any/c anyc)]
+                           [e1-expr any/c]
+                           [e2-expr any/c])]{
 
-Tests to see if the value of @scheme[e1] (which should be a term),
-reduces to the @scheme[e2]s in a single step, under @scheme[reduction-relation]
-(using @scheme[apply-reduction-relation]).
+Tests to see if the term @scheme[e1-expr],
+reduces to the terms @scheme[e2-expr] in a single @scheme[rel-expr]
+step, using @scheme[pred-expr] to determine equivalence.
 }
+                                            
+@examples[
+#:eval redex-eval
+       (define-language L
+         (i integer))
+
+       (define R
+         (reduction-relation
+          L
+          (--> i i)
+          (--> i ,(add1 (term i)))))
+
+       (define (mod2=? i j)
+         (= (modulo i 2) (modulo j 2)))
+
+       (test--> R #:equiv mod2=? 7 1)
+
+       (test--> R #:equiv mod2=? 7 1 0)
+       
+       (test-results)]
 
 @defform[(test-predicate p? e)]{
 Tests to see if the value of @scheme[e] matches the predicate @scheme[p?].

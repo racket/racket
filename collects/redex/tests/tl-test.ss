@@ -1896,5 +1896,35 @@
           "One test passed.\n")
     (test (capture-output (test--> red (term (x)) (term x) (term ((x)))) (test-results))
           "One test passed.\n"))
+  
+  (let ()
+    (define-language L
+      (i integer))
+    
+    (define R
+      (reduction-relation
+       L
+       (--> i i)
+       (--> i ,(add1 (term i)))))
+    
+    (define (mod2=? i j)
+      (= (modulo i 2) (modulo j 2)))
+    
+    (test (capture-output (test--> R #:equiv mod2=? 7 1 0) (test-results))
+          "One test passed.\n")
+    (test (capture-output (test--> R #:equiv mod2=? 7 1) (test-results))
+          #rx"FAILED tl-test.ss:[0-9.]+\nexpected: 1\n  actual: 8\n  actual: 7\n1 test failed \\(out of 1 total\\).\n"))
+  
+  (let-syntax ([test-bad-equiv-arg
+                (λ (stx)
+                  (syntax-case stx ()
+                    [(_ test-form)
+                     #'(test (with-handlers ([exn:fail:contract? exn-message])
+                               (test-form (reduction-relation empty-language (--> any any))
+                                          #:equiv 1 2)
+                               "no error raised")
+                             #rx"expected argument of type")]))])
+    (test-bad-equiv-arg test-->)
+    (test-bad-equiv-arg test-->>))
 
   (print-tests-passed 'tl-test.ss))

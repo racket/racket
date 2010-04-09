@@ -8,7 +8,8 @@
 	 "error.ss"
          mzlib/trace
          (lib "list.ss")
-         (lib "etc.ss"))
+         (lib "etc.ss")
+         (for-syntax syntax/parse))
 
 (require (for-syntax (lib "name.ss" "syntax")
                      "loc-wrapper-ct.ss"
@@ -2064,22 +2065,41 @@
      '#,(syntax-column stx)
      '#,(syntax-position stx)))
 
+(define (check-equiv-pred form p)
+  (unless (and (procedure? p) (procedure-arity-includes? p 2))
+    (raise-type-error form "procedure (arity 2)" p)))
+
 (define-syntax (test-->> stx)
-  (syntax-case stx ()
-    [(_ red #:cycles-ok e1 e2 ...)
-     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #t #,(get-srcloc stx))]
-    [(_ red e1 e2 ...)
-     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #f #,(get-srcloc stx))]))
+  (syntax-parse stx
+    [(form red:expr
+           (~or (~optional (~seq (~and #:cycles-ok (~bind [cycles-ok? #t])))
+                           #:defaults ([cycles-ok? #f])
+                           #:name "#:cycles-ok keyword")
+                (~optional (~seq #:equiv equiv?:expr)
+                           #:defaults ([equiv? #'equal?])
+                           #:name "#:equiv keyword"))
+           ...
+           e1:expr
+           e2:expr ...)
+     #`(let ([=? equiv?])
+         (check-equiv-pred 'form =?)
+         (test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #,(attribute cycles-ok?) =? #,(get-srcloc stx)))]))
 
 (define-syntax (test--> stx)
-  (syntax-case stx ()
-    [(_ red e1 e2 ...)
-     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t #,(get-srcloc stx))]))
+  (syntax-parse stx
+    [(form red:expr
+           (~optional (~seq #:equiv equiv?:expr)
+                      #:defaults ([equiv? #'equal?]))
+           e1:expr
+           e2:expr ...)
+     #`(let ([=? equiv?])
+         (check-equiv-pred 'form =?)
+         (test-->>/procs red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t =? #,(get-srcloc stx)))]))
 
 (define (apply-reduction-relation/dummy-second-value red arg)
   (values (apply-reduction-relation red arg) #f))
 
-(define (test-->>/procs red arg expected apply-red cycles-ok? srcinfo)
+(define (test-->>/procs red arg expected apply-red cycles-ok? equiv? srcinfo)
   (unless (reduction-relation? red)
     (error 'test--> "expected a reduction relation as first argument, got ~e" red))
   (let-values ([(got got-cycle?) (apply-red red arg)])
@@ -2092,7 +2112,7 @@
        (print-failed srcinfo)
        (fprintf (current-error-port) "found a cycle in the reduction graph\n")]
       [else
-       (unless (set-equal? expected got)
+       (unless (set-equal? expected got equiv?)
          (inc-failures)
          (print-failed srcinfo)
          (for-each
@@ -2102,8 +2122,8 @@
           (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
           got))])))
 
-(define (set-equal? s1 s2)
-  (define (⊆ s1 s2) (andmap (λ (x1) (member x1 s2)) s1))
+(define (set-equal? s1 s2 equiv?)
+  (define (⊆ s1 s2) (andmap (λ (x1) (memf (λ (x) (equiv? x1 x)) s2)) s1))
   (and (⊆ s1 s2)
        (⊆ s2 s1)))
 
