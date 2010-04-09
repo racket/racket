@@ -70,9 +70,7 @@
   (drscheme:language-configuration:language-settings-language settings))
 
 (define (stepper-works-for? language-level)
-  (printf "~s\n" language-level)
   (or (send language-level stepper:supported?)
-      (is-a? language-level drscheme:module-language:module-language<%>)
       (getenv "PLTSTEPPERUNSAFE")))
   
   ;; the stepper's frame:
@@ -222,7 +220,8 @@
             (let* ([language-level
                     (extract-language-level (get-definitions-text))]
                    [language-level-name (language-level->name language-level)])
-              (if (stepper-works-for? language-level)
+              (if (or (stepper-works-for? language-level)
+                      (is-a? language-level drscheme:module-language:module-language<%>))
                   (set! stepper-frame
                         (go this 
                             program-expander 
