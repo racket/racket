@@ -198,7 +198,7 @@ static void configure_environment(Scheme_Object *mod)
         break;
       }
     }
-    if (!SCHEME_NULLP(vs)) {
+    if (!SAME_OBJ(vs, scheme_make_null())) {
       scheme_wrong_type("runtime-configure", "list of vectors of three values",
                         -1, 0, a);
     }
