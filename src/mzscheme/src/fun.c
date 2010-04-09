@@ -178,6 +178,7 @@ static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_values(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_print(int argc, Scheme_Object **argv);
 static Scheme_Object *current_prompt_read(int, Scheme_Object **);
+static Scheme_Object *current_read(int, Scheme_Object **);
 
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj);
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj);
@@ -545,6 +546,11 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_register_parameter(current_prompt_read,
 						       "current-prompt-read",
 						       MZCONFIG_PROMPT_READ_HANDLER),
+			     env);
+  scheme_add_global_constant("current-read-interaction",
+			     scheme_register_parameter(current_read,
+						       "current-read-interaction",
+						       MZCONFIG_READ_HANDLER),
 			     env);
 
   scheme_install_type_writer(scheme_unclosed_procedure_type,
@@ -8859,6 +8865,15 @@ current_prompt_read(int argc, Scheme_Object **argv)
 			     0, NULL, NULL, 0);
 }
 
+static Scheme_Object *
+current_read(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("current-read-interaction",
+			     scheme_make_integer(MZCONFIG_READ_HANDLER),
+			     argc, argv,
+			     2, NULL, NULL, 0);
+}
+
 Scheme_Object *
 scheme_default_print_handler(int argc, Scheme_Object *argv[])
 {
@@ -8885,11 +8900,8 @@ Scheme_Object *
 scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
 {
   Scheme_Config *config;
-  Scheme_Object *port;
-  Scheme_Object *inport;
-  Scheme_Object *name;
-  Scheme_Object *stx;
-  Scheme_Cont_Frame_Data cframe;
+  Scheme_Object *port, *reader;
+  Scheme_Object *inport, *name, *a[2];
 
   config = scheme_current_config();
   port = scheme_get_param(config, MZCONFIG_OUTPUT_PORT);
@@ -8898,11 +8910,36 @@ scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
   scheme_write_byte_string("> ", 2, port);
   scheme_flush_output(port);
 
-  name = ((Scheme_Input_Port *)inport)->name;
-
   if (inport == scheme_orig_stdin_port)
     scheme_flush_orig_outputs();
 
+  name = (Scheme_Object *)scheme_port_record(inport);
+  name = ((Scheme_Input_Port *)name)->name;
+
+  reader = scheme_get_param(config, MZCONFIG_READ_HANDLER);
+
+  a[0] = name;
+  a[1] = inport;
+  return _scheme_apply(reader, 2, a);
+}
+  
+Scheme_Object *
+scheme_default_read_handler(int argc, Scheme_Object *argv[])
+{
+  Scheme_Config *config;
+  Scheme_Object *name = argv[0];
+  Scheme_Object *inport = argv[1];
+  Scheme_Object *stx;
+  Scheme_Cont_Frame_Data cframe;
+
+  if (!SCHEME_INPORTP(inport))
+    scheme_wrong_type("default-read-interaction-handler",
+                      "input port",
+                      1,
+                      argc,
+                      argv);
+
+  config = scheme_current_config();
   config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
 
   scheme_push_continuation_frame(&cframe);

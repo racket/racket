@@ -334,6 +334,21 @@
         (cond [(thread-cell-ref repl-init-thunk)
                => (λ (t) (thread-cell-set! repl-init-thunk #f) (t))]))
       
+      (define/override (front-end/interaction port settings)
+        (λ ()
+           (let ([v (parameterize ([read-accept-reader #t])
+                      (with-stack-checkpoint
+                       ((current-read-interaction) 
+                        (object-name port)
+                        port)))])
+             (if (eof-object? v)
+                 v
+                 (let ([w (cons '#%top-interaction v)])
+                   (if (syntax? v)
+                       (namespace-syntax-introduce
+                        (datum->syntax #f w v))
+                       v))))))
+
       ;; printer settings are just ignored here.
       (define/override (create-executable setting parent program-filename)
         (let* ([executable-specs (drscheme:language:create-executable-gui

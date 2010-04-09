@@ -6699,17 +6699,22 @@ static void make_initial_config(Scheme_Thread *p)
   }
   
   {
-    Scheme_Object *ph, *prh;
+    Scheme_Object *ph;
 
     ph = scheme_make_prim_w_arity(scheme_default_print_handler,
 				  "default-print-handler",
 				  1, 1);
     init_param(cells, paramz, MZCONFIG_PRINT_HANDLER, ph);
 
-    prh = scheme_make_prim_w_arity(scheme_default_prompt_read_handler,
-				   "default-prompt-read-handler",
-				   0, 0);
-    init_param(cells, paramz, MZCONFIG_PROMPT_READ_HANDLER, prh);
+    ph = scheme_make_prim_w_arity(scheme_default_prompt_read_handler,
+                                  "default-prompt-read-handler",
+                                  0, 0);
+    init_param(cells, paramz, MZCONFIG_PROMPT_READ_HANDLER, ph);
+
+    ph = scheme_make_prim_w_arity(scheme_default_read_handler,
+                                  "default-read-interaction-handler",
+                                  2, 2);
+    init_param(cells, paramz, MZCONFIG_READ_HANDLER, ph);
   }
   init_param(cells, paramz, MZCONFIG_PORT_COUNT_LINES, scheme_false);
 

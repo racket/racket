@@ -288,15 +288,34 @@ the @scheme[current-prompt-read], @scheme[current-eval], and
 
 @defparam[current-prompt-read proc (-> any)]{
 
-A parameter that determines a procedure that takes no arguments,
-displays a prompt string, and returns a top-level form to
-evaluate. This procedure is called by the read phase of
-@scheme[read-eval-print-loop].  The default prompt read handler prints
-@litchar{> } and returns the result of
+A parameter that determines a @deftech{prompt read handler}, which is
+a procedure that takes no arguments, displays a prompt string, and
+returns a top-level form to evaluate. The prompt read handler is
+called by @scheme[read-eval-print-loop], and the handler typically
+should call the @tech{read interaction handler} (as determined by the
+@scheme[current-read-interaction] parameter) after printing a prompt.
+
+The default prompt read handler prints @litchar{> } and returns the
+result of
 
 @schemeblock[
-(parameterize ((read-accept-reader #t))
-  (read-syntax))
+(let ([in (current-input-port)])
+  ((current-read-interaction) (object-name in) in))
+]}
+
+
+@defparam[current-read-interaction proc (any/c input-port? -> any)]{
+
+A parameter that determines the current @deftech{read interaction
+handler}, which is procedure that takes an arbitrary value and an
+input port and returns an expression read from the input port. 
+
+The default read interaction handler accepts @scheme[_src] and
+@scheme[_in] and returns
+
+@schemeblock[
+(parameterize ([read-accept-reader #t])
+  (read-syntax _src _in))
 ]}
 
 

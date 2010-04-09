@@ -1930,6 +1930,7 @@ Scheme_Object *scheme_default_eval_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_compile_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_print_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_prompt_read_handler(int, Scheme_Object *[]);
+Scheme_Object *scheme_default_read_handler(int argc, Scheme_Object *[]);
 
 extern Scheme_Object *scheme_default_global_print_handler;
 
