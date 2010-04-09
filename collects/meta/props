@@ -719,6 +719,7 @@ path/s is either such a string or a list of them.
 "collects/games/cards/make-cards.ss" drdr:command-line "mred-text -t ~s"
 "collects/games/cards/snipclass.ss" drdr:command-line "mred-text -t ~s"
 "collects/games/cards.ss" drdr:command-line "mred-text -t ~s"
+"collects/games/chat-noir" responsible (robby matthias)
 "collects/games/chat-noir/chat-noir-literate.ss" drdr:command-line "mzc -k ~s"
 "collects/games/chat-noir/chat-noir-unit.ss" drdr:command-line "mred-text -t ~s"
 "collects/games/checkers/checkers.ss" drdr:command-line "mred-text -t ~s"
