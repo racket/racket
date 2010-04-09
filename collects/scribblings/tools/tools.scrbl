@@ -504,5 +504,6 @@ for a list of the capabilities registered by default.
 @include-section["help-desk.scrbl"]
 @include-section["eval.scrbl"]
 @include-section["modes.scrbl"]
+@include-section["module-language.scrbl"]
 
 @index-section[]

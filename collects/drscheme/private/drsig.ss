@@ -329,7 +329,8 @@
    (open (prefix drscheme:help-desk: drscheme:help-desk-cm^))
    (open (prefix drscheme:eval: drscheme:eval-cm^))
    (open (prefix drscheme:modes: drscheme:modes-cm^))
-   (open (prefix drscheme:tracing: drscheme:tracing-cm^))))
+   (open (prefix drscheme:tracing: drscheme:tracing-cm^))
+   (open (prefix drscheme:module-language: drscheme:module-language-cm^))))
 
 (define-signature drscheme:tool^ 
   ((open (prefix drscheme:debug: drscheme:debug^))
@@ -342,4 +343,5 @@
    (open (prefix drscheme:help-desk: drscheme:help-desk^))
    (open (prefix drscheme:eval: drscheme:eval^))
    (open (prefix drscheme:modes: drscheme:modes^))
-   (open (prefix drscheme:tracing: drscheme:tracing^))))
+   (open (prefix drscheme:tracing: drscheme:tracing^))
+   (open (prefix drscheme:module-language: drscheme:module-language^))))

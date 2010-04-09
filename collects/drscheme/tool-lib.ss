@@ -44,6 +44,21 @@ all of the names in the tools library, for use defining keybindings
 
 (provide/doc
  
+ (proc-doc/names
+  drscheme:module-language:add-module-language
+  (-> any)
+  ()
+  @{Adds the module language to DrScheme. This is called during DrScheme's startup.})
+ 
+ (proc-doc/names
+  drscheme:module-language:module-language-put-file-mixin
+  (-> (implementation?/c text:basic<%>) (implementation?/c text:basic<%>))
+  (super%)
+  @{Extends @scheme[super%] by overriding the @method[editor<%> put-file] method
+    to use a default name from the buffer, if the buffer contains something like
+    @tt{(module name ...)}.})
+  
+ 
  ;                           
  ;                           
  ;                           

@@ -37,7 +37,8 @@
           drscheme:help-desk^
           drscheme:eval^
           drscheme:modes^
-          drscheme:tracing^)
+          drscheme:tracing^
+          drscheme:module-language^)
   (link init@ tools@ modes@ text@ eval@ frame@ rep@ language@
         module-overview@ unit@ debug@ multi-file-search@ get-extend@
         language-configuration@ font@ module-language@ module-language-tools@
@@ -56,5 +57,6 @@
     (prefix drscheme:help-desk: drscheme:help-desk^)
     (prefix drscheme:eval: drscheme:eval^)
     (prefix drscheme:modes: drscheme:modes^)
-    (prefix drscheme:tracing: drscheme:tracing^))
+    (prefix drscheme:tracing: drscheme:tracing^)
+    (prefix drscheme:module-language: drscheme:module-language^))
    drscheme-unit@))

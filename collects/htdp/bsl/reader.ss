@@ -25,6 +25,8 @@
 
 (define ((make-info options) key default use-default)
   (case key
+    [(drscheme:toolbar-buttons)
+     (dynamic-require 'stepper/drscheme-button 'stepper-drscheme-button)]
     [else (use-default key default)]))
 
 (define (make-module-info options)
