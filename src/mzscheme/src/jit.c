@@ -10663,14 +10663,14 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* *** set_box_code *** */
   /* R0 is box, R1 is value */
   set_box_code = jit_get_ip().ptr;
-  mz_prolog(JIT_R1);
+  mz_prolog(JIT_R2);
   jit_prepare(2);
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
   (void)mz_finish(ts_scheme_set_box);
   CHECK_LIMIT();
   /* returns if proxied */
-  mz_epilog(JIT_R1);
+  mz_epilog(JIT_R2);
   register_sub_func(jitter, set_box_code, scheme_false);
 
   /* *** bad_vector_length_code *** */

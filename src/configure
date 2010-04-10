@@ -9472,6 +9472,120 @@ _ACEOF
 
 fi
 
+############### places ###################
+
+if test "${enable_places}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define MZ_USE_PLACES 1
+_ACEOF
+
+  enable_mzrt=yes
+fi
+
+############### futures ###################
+
+if test "${enable_futures_by_default}" = "yes" ; then
+  if test "${enable_futures}" = "" ; then
+    enable_futures=yes
+  fi
+fi
+
+if test "${enable_futures}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define MZ_USE_FUTURES 1
+_ACEOF
+
+  enable_mzrt=yes
+fi
+
+############### OS threads ###################
+
+if test "${enable_mzrt}" = "yes" ; then
+  MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
+  LIBATOM="LIBATOM_USE"
+  enable_pthread=yes
+fi
+
+############### pthread ###################
+
+if test "${enable_pthread}" = "yes" ; then
+  # FIXME: the following two flags are GCC-specific:
+  PREFLAGS="$PREFLAGS -pthread"
+  LDFLAGS="$LDFLAGS -pthread"
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_PTHREAD_INSTEAD_OF_ITIMER 1
+_ACEOF
+
+
+ msg="whether pthread_rwlock is available"
+  { echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
+  if test "$cross_compiling" = yes; then
+  rwlockavail=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+  #include <pthread.h>
+   pthread_rwlock_t l;
+   int main() {
+     return pthread_rwlock_init(&l, NULL);
+   }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  rwlockavail=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+rwlockavail=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+  { echo "$as_me:$LINENO: result: $rwlockavail" >&5
+echo "${ECHO_T}$rwlockavail" >&6; }
+  if test "$rwlockavail" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_PTHREAD_RWLOCK 1
+_ACEOF
+
+  fi
+fi
+
+if test "${enable_pthread}" = "" ; then
+  enable_pthread=no
+fi
+
 ############## Solaris grunge ################
 
 if test "$check_gcc_dash_e" = "yes" ; then
@@ -10416,10 +10530,6 @@ if test "${enable_gl}" = "" ; then
   enable_gl=yes
 fi
 
-if test "${enable_pthread}" = "" ; then
-  enable_pthread=no
-fi
-
 if test "${enable_gl}" = "yes" ; then
   # Check for header
   if test "${ac_cv_header_GL_glx_h+set}" = set; then
@@ -10712,116 +10822,6 @@ fi
 if test "${enable_gl}" = "yes" ; then
   X_EXTRA_LIBS="$X_EXTRA_LIBS -lGL"
   MROPTIONS="$MROPTIONS -DUSE_GL"
-fi
-
-############### places ###################
-
-if test "${enable_places}" = "yes" ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define MZ_USE_PLACES 1
-_ACEOF
-
-  enable_mzrt=yes
-fi
-
-############### futures ###################
-
-if test "${enable_futures_by_default}" = "yes" ; then
-  if test "${enable_futures}" = "" ; then
-    enable_futures=yes
-  fi
-fi
-
-if test "${enable_futures}" = "yes" ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define MZ_USE_FUTURES 1
-_ACEOF
-
-  enable_mzrt=yes
-fi
-
-############### OS threads ###################
-
-if test "${enable_mzrt}" = "yes" ; then
-  MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
-  LIBATOM="LIBATOM_USE"
-  enable_pthread=yes
-fi
-
-############### pthread ###################
-
-if test "${enable_pthread}" = "yes" ; then
-  # FIXME: the following two flags are GCC-specific:
-  PREFLAGS="$PREFLAGS -pthread"
-  LDFLAGS="$LDFLAGS -pthread"
-
-cat >>confdefs.h <<\_ACEOF
-#define USE_PTHREAD_INSTEAD_OF_ITIMER 1
-_ACEOF
-
-
- msg="whether pthread_rwlock is available"
-  { echo "$as_me:$LINENO: checking $msg" >&5
-echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
-  if test "$cross_compiling" = yes; then
-  rwlockavail=no
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-  #include <pthread.h>
-   pthread_rwlock_t l;
-   int main() {
-     return pthread_rwlock_init(&l, NULL);
-   }
-_ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  rwlockavail=yes
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-rwlockavail=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-
-
-  { echo "$as_me:$LINENO: result: $rwlockavail" >&5
-echo "${ECHO_T}$rwlockavail" >&6; }
-  if test "$rwlockavail" = "yes" ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_PTHREAD_RWLOCK 1
-_ACEOF
-
-  fi
 fi
 
 ################ Xrender ##################

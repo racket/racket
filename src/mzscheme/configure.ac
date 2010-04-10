@@ -983,6 +983,60 @@ if test "${endianness}" = "big" ; then
   AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
 fi
 
+############### places ###################
+
+if test "${enable_places}" = "yes" ; then
+  AC_DEFINE(MZ_USE_PLACES,1,[Places enabled])
+  enable_mzrt=yes
+fi
+
+############### futures ###################
+
+if test "${enable_futures_by_default}" = "yes" ; then
+  if test "${enable_futures}" = "" ; then
+    enable_futures=yes
+  fi
+fi
+
+if test "${enable_futures}" = "yes" ; then
+  AC_DEFINE(MZ_USE_FUTURES,1,[Futures enabled])
+  enable_mzrt=yes
+fi
+
+############### OS threads ###################
+
+if test "${enable_mzrt}" = "yes" ; then
+  MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
+  LIBATOM="LIBATOM_USE"
+  enable_pthread=yes
+fi
+
+############### pthread ###################
+
+if test "${enable_pthread}" = "yes" ; then
+  # FIXME: the following two flags are GCC-specific:
+  PREFLAGS="$PREFLAGS -pthread"
+  LDFLAGS="$LDFLAGS -pthread"
+  AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
+
+[ msg="whether pthread_rwlock is available"   ]
+  AC_MSG_CHECKING($msg)
+  AC_TRY_RUN(
+[  #include <pthread.h>]
+   pthread_rwlock_t l;
+   int main() {
+     return pthread_rwlock_init(&l, NULL);
+   }, rwlockavail=yes, rwlockavail=no, rwlockavail=no)
+  AC_MSG_RESULT($rwlockavail)
+  if test "$rwlockavail" = "yes" ; then
+    AC_DEFINE(HAVE_PTHREAD_RWLOCK,1,[Have pthread_rwlock])
+  fi
+fi
+
+if test "${enable_pthread}" = "" ; then
+  enable_pthread=no
+fi
+
 ############## Solaris grunge ################
 
 if test "$check_gcc_dash_e" = "yes" ; then
@@ -1109,10 +1163,6 @@ if test "${enable_gl}" = "" ; then
   enable_gl=yes
 fi
 
-if test "${enable_pthread}" = "" ; then
-  enable_pthread=no
-fi
-
 if test "${enable_gl}" = "yes" ; then  
   # Check for header
   AC_CHECK_HEADER(GL/glx.h, GLX_HEADER=yes, GLX_HEADER=no)
@@ -1142,56 +1192,6 @@ fi
 if test "${enable_gl}" = "yes" ; then
   X_EXTRA_LIBS="$X_EXTRA_LIBS -lGL"
   MROPTIONS="$MROPTIONS -DUSE_GL"
-fi
-
-############### places ###################
-
-if test "${enable_places}" = "yes" ; then
-  AC_DEFINE(MZ_USE_PLACES,1,[Places enabled])
-  enable_mzrt=yes
-fi
-
-############### futures ###################
-
-if test "${enable_futures_by_default}" = "yes" ; then
-  if test "${enable_futures}" = "" ; then
-    enable_futures=yes
-  fi
-fi
-
-if test "${enable_futures}" = "yes" ; then
-  AC_DEFINE(MZ_USE_FUTURES,1,[Futures enabled])
-  enable_mzrt=yes
-fi
-
-############### OS threads ###################
-
-if test "${enable_mzrt}" = "yes" ; then
-  MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
-  LIBATOM="LIBATOM_USE"
-  enable_pthread=yes
-fi
-
-############### pthread ###################
-
-if test "${enable_pthread}" = "yes" ; then
-  # FIXME: the following two flags are GCC-specific:
-  PREFLAGS="$PREFLAGS -pthread"
-  LDFLAGS="$LDFLAGS -pthread"
-  AC_DEFINE(USE_PTHREAD_INSTEAD_OF_ITIMER, 1, [Pthread timer enabled])
-
-[ msg="whether pthread_rwlock is available"   ]
-  AC_MSG_CHECKING($msg)
-  AC_TRY_RUN(
-[  #include <pthread.h>]
-   pthread_rwlock_t l;
-   int main() {
-     return pthread_rwlock_init(&l, NULL);
-   }, rwlockavail=yes, rwlockavail=no, rwlockavail=no)
-  AC_MSG_RESULT($rwlockavail)
-  if test "$rwlockavail" = "yes" ; then
-    AC_DEFINE(HAVE_PTHREAD_RWLOCK,1,[Have pthread_rwlock])
-  fi
 fi
 
 ################ Xrender ##################
