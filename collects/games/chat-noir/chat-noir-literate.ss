@@ -2325,7 +2325,7 @@ and reports the results.
        (test (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0)
                                                             #f))
                                          3)
-             (list (make-cell (make-posn 0 0) #t)))]
+             (list (make-cell (make-posn 0 0) #f)))]
 
 @section{Run, program, run}
 
