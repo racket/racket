@@ -448,7 +448,7 @@ path/s is either such a string or a list of them.
    'drdr:command-line
    "command-line string (empty string means no execution)"
    (lambda (str)
-     (if (regexp-match #rx"^(|.*\\$path.*)$")
+     (if (regexp-match #rx"^(|.*~s.*)$" str)
        str
        (error "expecting an empty string, or one with `~s'")))
    values)
@@ -720,7 +720,7 @@ path/s is either such a string or a list of them.
 "collects/games/cards/snipclass.ss" drdr:command-line "mred-text -t ~s"
 "collects/games/cards.ss" drdr:command-line "mred-text -t ~s"
 "collects/games/chat-noir" responsible (robby matthias)
-"collects/games/chat-noir/chat-noir-literate.ss" drdr:command-line "mzc -k ~s"
+"collects/games/chat-noir/chat-noir-literate.ss" drdr:command-line "mred-text ~s"
 "collects/games/chat-noir/chat-noir-unit.ss" drdr:command-line "mred-text -t ~s"
 "collects/games/checkers/checkers.ss" drdr:command-line "mred-text -t ~s"
 "collects/games/checkers/honu-bitmaps.ss" drdr:command-line "mred-text -t ~s"
