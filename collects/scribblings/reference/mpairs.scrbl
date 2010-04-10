@@ -13,6 +13,11 @@ Scheme pairs).
 A @deftech{mutable list} is analogous to a list created with pairs, but
 instead created with mutable pairs.
 
+A @tech{mutable pair} is not a @tech{pair}, and a @tech{mutable list}
+is not a @tech{list}; they are completely separate datatypes. Pairs,
+lists, hash tables, and other data structures are practically always
+better choices than mutable pairs and mutable lists.
+
 @; ----------------------------------------
 @section{Mutable Pair Constructors and Selectors}
 
