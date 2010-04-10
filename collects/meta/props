@@ -1187,6 +1187,7 @@ path/s is either such a string or a list of them.
 "collects/srpersist/main.ss" drdr:command-line ""
 "collects/srpersist/srpersist.ss" drdr:command-line ""
 "collects/stepper" responsible (clements)
+"collects/stepper/drscheme-button.ss" drdr:command-line "mred-text ~s"
 "collects/stepper/private/display-break-stuff.ss" drdr:command-line "mred-text -t ~s"
 "collects/stepper/private/mred-extensions.ss" drdr:command-line "mred-text -t ~s"
 "collects/stepper/private/vertical-separator-snip.ss" drdr:command-line "mred-text -t ~s"
