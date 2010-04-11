@@ -456,8 +456,9 @@ corresponds to the default @tech{module name resolver}.
  Refers to a module previously declared interactively with the name
  @scheme[id].
 
- Example: Require'ing a module named test.
- @scheme[(require 'test)]}
+ @examples[
+ (code:comment @#,t{a module declared interactively as @schemeidfont{test}:})
+ (eval:alts (require '@#,schemeidfont{test}) (void))]}
 
  @specsubform[rel-string]{A path relative to the containing source (as
  determined by @scheme[current-load-relative-directory] or
@@ -481,13 +482,18 @@ corresponds to the default @tech{module name resolver}.
  UTF-8 encoding). Such encodings are not decoded to arrive at a
  filename, but instead preserved in the file access.}
 
- Example: Require a module named x.ss in the same directory as this file.
+ If @scheme[rel-string] ends with a @filepath{.ss} suffix, it is
+ converted to a @filepath{.rkt} suffix. The @tech{compiled-load
+ handler} may reverse that conversion if a @filepath{.rkt} file does
+ not exist and a @filepath{.ss} exists.
 
- @scheme[(require "x.ss")]
- 
- Require a module named x.ss in the parent directory.
-
- @scheme[(require "../x.ss")]}
+ @examples[
+ (code:comment @#,t{a module named @filepath{x.rkt} in the same})
+ (code:comment @#,t{directory as the enclosing module's file:})
+ (eval:alts (require "x.rkt") (void))
+ (code:comment @#,t{a module named @filepath{x.rkt} in the parent directory})
+ (code:comment @#,t{of the enclosing module file's directory:})
+ (eval:alts (require "../x.rkt") (void))]}
 
  @defsubform[(lib rel-string ...+)]{A path to a module installed into
  a @tech{collection} (see @secref["collects"]). The @scheme[rel-string]s in
@@ -503,43 +509,52 @@ corresponds to the default @tech{module name resolver}.
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of a single element (i.e., no @litchar{/}) with no file
     suffix (i.e., no @litchar{.}), then @scheme[rel-string] names a
-    @tech{collection}, and @filepath{main.ss} is the library file name.
+    @tech{collection}, and @filepath{main.rkt} is the library file name.
 
-    Example: require swindle
-    @defexamples[#:eval require-eval
-      (eval:alts (require (lib "swindle")) (void))]}
+    @examples[
+    (code:comment @#,t{the main @schememodname[swindle] library:})
+    (eval:alts (require (lib "swindle")) (void))
+    (code:comment @#,t{the same:})
+    (eval:alts (require (lib "swindle/main.rkt")) (void))]}
 
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of multiple @litchar{/}-separated elements, then each
     element up to the last names a @tech{collection}, subcollection,
     etc., and the last element names a file. If the last element has
-    no file suffix, @filepath{.ss} is added.
+    no file suffix, @filepath{.rkt} is added, while a @filepath{.ss}
+    suffix is converted to @filepath{.rkt}.
 
-    Example: require a file within the swindle collection
-    @defexamples[#:eval require-eval
-      (eval:alts (require (lib "swindle/turbo")) (void))]}
+    @examples[
+     (code:comment @#,t{@filepath{turbo.rkt} from the @filepath{swindle} collection:})
+     (eval:alts (require (lib "swindle/turbo")) (void))
+     (code:comment @#,t{the same:})
+     (eval:alts (require (lib "swindle/turbo.rkt")) (void))
+     (code:comment @#,t{the same:})
+     (eval:alts (require (lib "swindle/turbo.ss")) (void))]}
 
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of a single element @italic{with} a file suffix (i.e,
     with a @litchar{.}), then @scheme[rel-string] names a file within
-    the @filepath{mzlib} @tech{collection}. (This convention is for
+    the @filepath{mzlib} @tech{collection}. A @filepath{.ss}
+    suffix is converted to @filepath{.rkt}. (This convention is for
     compatibility with older version of PLT Scheme.)
 
-    Example: require the tar module from mzlib
-    @defexamples[#:eval require-eval
-      (eval:alts (require (lib "tar.ss")) (void))]}
+    @examples[
+    (code:comment @#,t{@filepath{tar.rkt} module from the @filepath{mzlib} collection:})
+    (eval:alts (require (lib "tar.ss")) (void))]}
 
     @item{Otherwise, when multiple @scheme[rel-string]s are provided,
     the first @scheme[rel-string] is effectively moved after the
     others, and all @scheme[rel-string]s are appended with @litchar{/}
     separators. The resulting path names a @tech{collection}, then
     subcollection, etc., ending with a file name. No suffix is added
-    automatically. (This convention is for compatibility
-    with older version of PLT Scheme.)
+    automatically, but a @filepath{.ss} suffix is converted to
+    @filepath{.rkt}. (This convention is for compatibility with older
+    version of PLT Scheme.)
 
-    Example: require the tar module from mzlib
-    @defexamples[#:eval require-eval
-      (eval:alts (require (lib "tar.ss" "mzlib")) (void))]}
+    @examples[
+    (code:comment @#,t{@filepath{tar.rkt} module from the @filepath{mzlib} collection:})
+    (eval:alts (require (lib "tar.ss" "mzlib")) (void))]}
   ]}
 
  @specsubform[id]{A shorthand for a @scheme[lib] form with a single
@@ -553,8 +568,9 @@ corresponds to the default @tech{module name resolver}.
  @defsubform[(file string)]{Similar to the plain @scheme[rel-string]
  case, but @scheme[string] is a path---possibly absolute---using the
  current platform's path conventions and @scheme[expand-user-path].
+ A @filepath{.ss} suffix is converted to @filepath{.rkt}. 
 
- @examples[(eval:alts (require (file "~/tmp/x.ss")) (void))]}
+ @examples[(eval:alts (require (file "~/tmp/x.rkt")) (void))]}
 
  @defsubform*[((planet id)
                (planet string)
@@ -590,14 +606,15 @@ corresponds to the default @tech{module name resolver}.
  (that do not encode one of the other allowed characters), and an
  @nonterm{int} is a non-empty sequence of ASCII digits. As this
  shorthand is expended, a @filepath{.plt} extension is added to
- @nonterm{pkg}, and a @filepath{.ss} extension is added to
- @nonterm{path}; if no @nonterm{path} is included, @filepath{main.ss}
+ @nonterm{pkg}, and a @filepath{.rkt} extension is added to
+ @nonterm{path}; if no @nonterm{path} is included, @filepath{main.rkt}
  is used in the expansion.
 
  A @scheme[(planet string)] form is like a @scheme[(planet id)] form
  with the identifier converted to a string, except that the
  @scheme[string] can optionally end with a file extension (i.e., a
- @litchar{.}) for a @nonterm{path}.
+ @litchar{.}) for a @nonterm{path}. A @filepath{.ss} file extension is
+ converted to @filepath{.rkt}.
 
  In the more general last form of a @scheme[planet] module path, the
  @scheme[rel-string]s are similar to the @scheme[lib] form, except
@@ -615,13 +632,13 @@ corresponds to the default @tech{module name resolver}.
  symbolically.
 
  @examples[
- (code:comment @#,t{@filepath{main.ss} in package @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{main.rkt} in package @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm)) (void))
- (code:comment @#,t{@filepath{main.ss} in version >= 2.0 of @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{main.rkt} in version >= 2.0 of @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2)) (void))
- (code:comment @#,t{@filepath{main.ss} in version >= 2.5 of @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{main.rkt} in version >= 2.5 of @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2:5)) (void))
- (code:comment @#,t{@filepath{duck.ss} in version >= 2.5 of @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{duck.rkt} in version >= 2.5 of @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2:5/duck)) (void))
  ]}
 
@@ -629,7 +646,7 @@ No identifier can be bound multiple times in a given @tech{phase
 level} by an import, unless all of the bindings refer to the same
 original definition in the same module.  In a @tech{module context},
 an identifier can be either imported or defined for a given
-@tech{phase level}, but not both.}}
+@tech{phase level}, but not both.}
 
 
 @guideintro["module-provide"]{@scheme[provide]}

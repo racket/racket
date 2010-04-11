@@ -23,7 +23,15 @@
    [else c]))
 
 (define-for-syntax (extract orig-path stx)
-  (let ([path (resolve-path-spec orig-path orig-path stx)])
+  (let* ([n-path (resolve-path-spec orig-path orig-path stx)]
+         [path (if (regexp-match? #rx#"[.]rkt$" (path->bytes n-path))
+                   (if (file-exists? n-path)
+                       n-path
+                       (let ([ss (path-replace-suffix n-path #".ss")])
+                         (if (file-exists? ss)
+                             ss
+                             n-path)))
+                   n-path)])
     (let ([s-exp 
            (parameterize ([current-namespace (make-base-namespace)]
                           [read-accept-reader #t]

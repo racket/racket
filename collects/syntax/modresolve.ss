@@ -21,6 +21,12 @@
         [(procedure? relto) (relto)]
         [else (current-directory)]))
 
+(define (path-ss->rkt p)
+  (let-values ([(base name dir?) (split-path p)])
+    (if (regexp-match #rx"[.]ss$" (path->bytes name))
+        (path-replace-suffix p #".rkt")
+        p)))
+
 (define (resolve-module-path s relto)
   ;; relto should be a complete path, #f, or procedure that returns a
   ;; complete path
@@ -32,17 +38,19 @@
            (module-path-index-join s #f)))]
         [(string? s)
          ;; Parse Unix-style relative path string
-         (apply build-path (get-dir) (explode-relpath-string s))]
+         (path-ss->rkt
+          (apply build-path (get-dir) (explode-relpath-string s)))]
         [(and (or (not (pair? s)) (not (list? s))) (not (path? s)))
          #f]
         [(or (path? s) (eq? (car s) 'file))
          (let ([p (if (path? s) s (cadr s))])
-           (path->complete-path
-            p (let ([d (get-dir)])
-                (if (path-string? d)
-                    d
-                    (or (current-load-relative-directory)
-                        (current-directory))))))]
+           (path-ss->rkt
+            (path->complete-path
+             p (let ([d (get-dir)])
+                 (if (path-string? d)
+                     d
+                     (or (current-load-relative-directory)
+                         (current-directory)))))))]
         [(or (eq? (car s) 'lib)
              (eq? (car s) 'quote)
              (eq? (car s) 'planet))
@@ -57,7 +65,7 @@
   (let-values ([(path base) (module-path-index-split mpi)])
     (if path
         (resolve-module-path path (resolve-possible-module-path-index base relto))
-        (force-relto relto #f))))
+        (path-ss->rkt (force-relto relto #f)))))
 
 (define (resolve-possible-module-path-index base relto)
   (cond [(module-path-index? base)

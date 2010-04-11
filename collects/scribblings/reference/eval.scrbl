@@ -213,24 +213,34 @@ The protocol for a @tech{compiled-load handler} is the same as for the
 @tech{load handler} (see @scheme[current-load]), except that a
 @tech{compiled-load handler} is expected to set
 @scheme[current-load-relative-directory] itself. The default
-@tech{compiled-load handler}, however, checks for @filepath{.zo} files
-(usually produced with @scheme[compile-file]) and @filepath{.so} (Unix),
-@filepath{.dll} (Windows), or @filepath{.dylib} (Mac OS X) files.
+@tech{compiled-load handler}, however, checks for a @filepath{.ss}
+file when then given path ends with @filepath{.rkt} and no
+@filepath{.rkt} file exists. In addition, the default
+@tech{compiled-load handler} checks for @filepath{.zo} (bytecode)
+files and @filepath{.so} (native Unix), @filepath{.dll} (native
+Windows), or @filepath{.dylib} (native Mac OS X) files.
 
 The check for a compiled file occurs whenever the given path
-@scheme[_file] ends with any extension (e.g., @filepath{.ss} or
-@filepath{.scm}), and the check consults the subdirectories indicated by
-the @scheme[use-compiled-file-paths] parameter relative to
-@scheme[_file].  The subdirectories are checked in order. A @filepath{.zo}
-version of the file is loaded if it exists directly in one of the
-indicated subdirectories, or a @filepath{.so}/@filepath{.dll}/@filepath{.dylib}
-version of the file is loaded if it exists within a @filepath{native}
-subdirectory of a @scheme[use-compiled-file-paths] directory, in an
-even deeper subdirectory as named by
-@scheme[system-library-subpath]. A compiled file is loaded only if its
-modification date is not older than the date for @scheme[_file]. If
-both @filepath{.zo} and @filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are
-available, the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.
+@scheme[_file] ends with any extension (e.g., @filepath{.rkt} or
+@filepath{.scrbl}), and the check consults the subdirectories
+indicated by the @scheme[use-compiled-file-paths] parameter relative
+to @scheme[_file].  The subdirectories are checked in order. A
+@filepath{.zo} version of the file (whose name is formed by passing
+@scheme[_file] and @scheme[#".zo"] to @scheme[path-add-suffix]) is
+loaded if it exists directly in one of the indicated subdirectories,
+or a @filepath{.so}/@filepath{.dll}/@filepath{.dylib} version of the
+file is loaded if it exists within a @filepath{native} subdirectory of
+a @scheme[use-compiled-file-paths] directory, in an even deeper
+subdirectory as named by @scheme[system-library-subpath]. A compiled
+file is loaded only if its modification date is not older than the
+date for @scheme[_file]. If both @filepath{.zo} and
+@filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are available,
+the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.  If
+@scheme[_file] ends with @filepath{.rkt}, no such file exists, and a
+@filepath{.ss} file exists, then @filepath{.zo} and
+@filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are used only
+with names based on @scheme[_file] with its suffixed replaced by
+@filepath{.ss}.
 
 While a @filepath{.zo}, @filepath{.so}, @filepath{.dll}, or
 @filepath{.dylib} file is loaded, the current @scheme[load-relative]

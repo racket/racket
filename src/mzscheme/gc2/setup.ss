@@ -35,22 +35,33 @@
                        (resolve-module-path-index mod-path rel-to)
                        (resolve-module-path mod-path rel-to)))])
     (unless (symbol? path)
-      ;; Copy file to here:
-      (let ([target 
-             (or target
-                 (let-values ([(src-base rel-path)
-                               (let loop ([path (simplify-path path)][accum null])
-                                 (let-values ([(base name dir?) (split-path path)])
-                                   (if (string=? (path->string name) "collects")
-                                       (values base (cons "xform-collects" accum))
-                                       (loop base (cons name accum)))))])
-                   (let loop ([place (current-directory)][rel-path rel-path])
-                     (if (null? (cdr rel-path))
-                         (build-path place (car rel-path))
-                         (let ([next (build-path place (car rel-path))])
-                           (unless (directory-exists? next)
-                             (make-directory next))
-                           (loop next (cdr rel-path)))))))])
+      ;; Copy file to here. The filename is from the resolved module
+      ;; path, so it is ".rkt" even if the source is ".ss".
+      (let* ([path (if (file-exists? path)
+                       path
+                       (if (regexp-match? #rx#"[.]rkt$" (if (path? path)
+                                                            (path->bytes path)
+                                                            path))
+                           (let ([p2 (path-replace-suffix path #".ss")])
+                             (if (file-exists? p2)
+                                 p2
+                                 path))
+                           path))]
+             [target 
+              (or target
+                  (let-values ([(src-base rel-path)
+                                (let loop ([path (simplify-path path)][accum null])
+                                  (let-values ([(base name dir?) (split-path path)])
+                                    (if (string=? (path->string name) "collects")
+                                        (values base (cons "xform-collects" accum))
+                                        (loop base (cons name accum)))))])
+                    (let loop ([place (current-directory)][rel-path rel-path])
+                      (if (null? (cdr rel-path))
+                          (build-path place (car rel-path))
+                          (let ([next (build-path place (car rel-path))])
+                            (unless (directory-exists? next)
+                              (make-directory next))
+                            (loop next (cdr rel-path)))))))])
         (unless (file-exists? target)
           (printf "Copying ~a to ~a~n" path target)
           (copy-file path target)

@@ -61,7 +61,7 @@ the grammar for @scheme[_module-path] for @scheme[require],
 
 A parameter that determines the current @deftech{module name
 resolver}, which manages the conversion from other kinds of module
-references to a symbol or @tech{resolved module path}. For example,
+references to a @tech{resolved module path}. For example,
 when the expander encounters @scheme[(require _module-path)] where
 @scheme[_module-path] is not an identifier, then the expander passes
 @scheme['_module-path] to the module name resolver to obtain a symbol
@@ -223,7 +223,7 @@ above).}
 
 Combines @scheme[path] and @scheme[mpi] to create a new @tech{module
 path index}. The @scheme[path] argument can @scheme[#f] only if
-@scheme[mpi] is also @scheme[false].}
+@scheme[mpi] is also @scheme[#f].}
 
 @defproc[(compiled-module-expression? [v any/c]) boolean?]{
 
