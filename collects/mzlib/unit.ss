@@ -21,7 +21,8 @@
          "private/unit-contract.ss"
          "private/unit-keywords.ss"
          "private/unit-runtime.ss"
-         "private/unit-utils.ss")
+         "private/unit-utils.ss"
+         (rename-in racket/private/struct [struct struct~]))
 
 (provide define-signature-form struct struct/ctc open
          define-signature provide-signature-elements
@@ -35,7 +36,8 @@
          define-unit-binding
          unit/new-import-export define-unit/new-import-export
          unit/s define-unit/s
-         unit/c define-unit/contract)
+         unit/c define-unit/contract
+         struct~ struct~/ctc)
 
 (define-syntax/err-param (define-signature-form stx)
   (syntax-case stx ()
@@ -130,6 +132,99 @@
       ((_)
        (raise-stx-err "missing name and fields")))))
 
+;; Replacement `struct' signature form for `scheme/unit':
+(define-signature-form (struct~~ stx)
+  (syntax-case stx ()
+    ((_ name (field ...) opt ...)
+     (begin
+       (unless (identifier? #'name)
+         (raise-syntax-error #f
+                             "expected an identifier to name the structure type"
+                             stx
+                             #'name))
+       (for-each (lambda (field)
+                   (unless (identifier? field)
+                     (syntax-case field ()
+                       [(id #:mutable)
+                        (identifier? #'id)
+                        'ok]
+                       [_
+                        (raise-syntax-error #f
+                                            "bad field specification"
+                                            stx
+                                            field)])))
+                 (syntax->list #'(field ...)))
+       (let-values ([(no-ctr? mutable? no-stx? no-rt?)
+                     (let loop ([opts (syntax->list #'(opt ...))]
+                                [no-ctr? #f]
+                                [mutable? #f]
+                                [no-stx? #f]
+                                [no-rt? #f])
+                       (if (null? opts)
+                           (values no-ctr? mutable? no-stx? no-rt?)
+                           (let ([opt (car opts)])
+                             (case (syntax-e opt)
+                               [(#:omit-constructor)
+                                (if no-ctr?
+                                    (raise-syntax-error #f
+                                                        "redundant option"
+                                                        stx
+                                                        opt)
+                                    (loop (cdr opts) #t mutable? no-stx? no-rt?))]
+                               [(#:mutable)
+                                (if mutable?
+                                    (raise-syntax-error #f
+                                                        "redundant option"
+                                                        stx
+                                                        opt)
+                                    (loop (cdr opts) no-ctr? #t no-stx? no-rt?))]
+                               [(#:omit-define-syntaxes)
+                                (if no-stx?
+                                    (raise-syntax-error #f
+                                                        "redundant option"
+                                                        stx
+                                                        opt)
+                                    (loop (cdr opts) no-ctr? mutable? #t no-rt?))]
+                               [(#:omit-define-values)
+                                (if no-rt?
+                                    (raise-syntax-error #f
+                                                        "redundant option"
+                                                        stx
+                                                        opt)
+                                    (loop (cdr opts) no-ctr? mutable? no-stx? #t))]
+                               [else
+                                (raise-syntax-error #f
+                                                    (string-append
+                                                     "expected a keyword to specify option: "
+                                                     "#:mutable, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values")
+                                                    stx
+                                                    opt)]))))])
+         (cons
+          #`(define-syntaxes (name)
+              #,(build-struct-expand-info
+                 #'name (syntax->list #'(field ...))
+                 #f (not mutable?)
+                 #f '(#f) '(#f)
+                 #:omit-constructor? no-ctr?))
+          (let ([names (build-struct-names #'name (syntax->list #'(field ...))
+                                           #f (not mutable?))])
+            (if no-ctr?
+                (cons (car names) (cddr names))
+                names))))))
+    ((_ name fields opt ...)
+     (raise-syntax-error #f
+                         "bad syntax; expected a parenthesized sequence of fields"
+                         stx
+                         #'fields))
+    ((_ name)
+     (raise-syntax-error #f
+                         "bad syntax; missing fields"
+                         stx))
+    ((_)
+     (raise-syntax-error #f
+                         "missing name and fields"
+                         stx))))
+
 (define-signature-form (struct/ctc stx)
   (parameterize ((error-syntax stx))
     (syntax-case stx ()
@@ -213,6 +308,118 @@
        (raise-stx-err "missing fields"))
       ((_)
        (raise-stx-err "missing name and fields")))))
+
+;; Replacement struct/ctc form for `scheme/unit':
+(define-signature-form (struct~/ctc stx)
+  (syntax-case stx ()
+    ((_ name ([field ctc] ...) opt ...)
+     (begin
+       (unless (identifier? #'name)
+         (raise-syntax-error #f
+                             "expected an identifier to name the structure type"
+                             stx
+                             #'name))
+       (for-each (lambda (field)
+                   (unless (identifier? field)
+                     (syntax-case field ()
+                       [(id #:mutable)
+                        (identifier? #'id)
+                        'ok]
+                       [_
+                        (raise-syntax-error #f
+                                            "bad field specification"
+                                            stx
+                                            field)])))
+                 (syntax->list #'(field ...)))
+       (let-values ([(no-ctr? mutable? no-stx? no-rt?)
+                     (let loop ([opts (syntax->list #'(opt ...))]
+                                [no-ctr? #f]
+                                [mutable? #f]
+                                [no-stx? #f]
+                                [no-rt? #f])
+                       (if (null? opts)
+                           (values no-ctr? mutable? no-stx? no-rt?)
+                           (let ([opt (car opts)])
+                             (case (syntax-e opt)
+                               [(#:omit-constructor)
+                                (if no-ctr?
+                                    (raise-syntax-error #f
+                                                        "redundant option"
+                                                        stx
+                                                        opt)
+                                    (loop (cdr opts) #t mutable? no-stx? no-rt?))]
+                               [(#:mutable)
+                                (if mutable?
+                                    (raise-syntax-error #f
+                                                        "redundant option"
+                                                        stx
+                                                        opt)
+                                    (loop (cdr opts) no-ctr? #t no-stx? no-rt?))]
+                               [(#:omit-define-syntaxes)
+                                (if no-stx?
+                                    (raise-syntax-error #f
+                                                        "redundant option"
+                                                        stx
+                                                        opt)
+                                    (loop (cdr opts) no-ctr? mutable? #t no-rt?))]
+                               [(#:omit-define-values)
+                                (if no-rt?
+                                    (raise-syntax-error #f
+                                                        "redundant option"
+                                                        stx
+                                                        opt)
+                                    (loop (cdr opts) no-ctr? mutable? no-stx? #t))]
+                               [else
+                                (raise-syntax-error #f
+                                                    (string-append
+                                                     "expected a keyword to specify option: "
+                                                     "#:mutable, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values")
+                                                    stx
+                                                    opt)]))))])
+         (define (add-contracts l)
+           (let* ([pred (caddr l)]
+                  [ctor-ctc #`(-> ctc ... #,pred)]
+                  [pred-ctc #'(-> any/c boolean?)]
+                  [field-ctcs
+                   (apply append
+                          (map (λ (f c)
+                                  (cons #`(-> #,pred #,c)
+                                        (if (and (not mutable?)
+                                                 (not (pair? (syntax-e f))))
+                                            null
+                                            #`(-> #,pred #,c void?))))
+                               (syntax->list #'(field ...))
+                               (syntax->list #'(ctc ...))))])
+             (list* (car l)
+                    (list (cadr l) ctor-ctc)
+                    (list pred pred-ctc)
+                    (map list (cdddr l) field-ctcs))))
+         (cons
+          #`(define-syntaxes (name)
+              #,(build-struct-expand-info
+                 #'name (syntax->list #'(field ...))
+                 #f (not mutable?)
+                 #f '(#f) '(#f)
+                 #:omit-constructor? no-ctr?))
+          (let* ([names (add-contracts
+                         (build-struct-names #'name (syntax->list #'(field ...))
+                                             #f (not mutable?)))]
+                 [cpairs (cons 'contracted
+                               (if no-ctr? (cddr names) (cdr names)))])
+            (list (car names) cpairs))))))
+    ((_ name fields opt ...)
+     (raise-syntax-error #f
+                         "bad syntax; expected a parenthesized sequence of fields"
+                         stx
+                         #'fields))
+    ((_ name)
+     (raise-syntax-error #f
+                         "bad syntax; missing fields"
+                         stx))
+    ((_)
+     (raise-syntax-error #f
+                         "missing name and fields"
+                         stx))))
 
 
 ;; build-val+macro-defs : sig -> (list syntax-object^3)
@@ -395,7 +602,10 @@
             (let ((trans 
                    (set!-trans-extract
                     (syntax-local-value
-                     (syntax-local-introduce #'x)
+                     ;; redirect struct~ to struct~~
+                     (if (free-identifier=? #'x #'struct~)
+                         #'struct~~
+                         (syntax-local-introduce #'x))
                      (lambda ()
                        (raise-stx-err "unknown signature form" #'x))))))
               (unless (signature-form? trans)

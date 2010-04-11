@@ -37,3 +37,12 @@ but with a different syntax for the options that limit exports.}
 
 A signature form like @scheme-struct/ctc from @schememodname[scheme/unit],
 but with a different syntax for the options that limit exports.}
+
+@deftogether[(
+@defidform[struct~]
+@defidform[struct~/ctc]
+)]{
+
+The same as @|scheme-struct| and @|scheme-struct/ctc| from
+@schememodname[scheme/unit].}
+

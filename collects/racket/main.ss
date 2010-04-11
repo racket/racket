@@ -1,8 +1,7 @@
 #lang racket/private
 (require scheme)
 
-(require "private/define-struct.ss")
+;; scheme includes `struct' via scheme/unit
 
-(provide (except-out (all-from-out scheme)
-                     define-struct)
-         (rename-out [new-define-struct define-struct]))
+(provide (all-from-out scheme))
+
