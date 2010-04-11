@@ -10,7 +10,8 @@
          framework/splash
          "drsig.ss"
          "language-object-contract.ss"
-         string-constants)
+         mrlib/switchable-button
+string-constants)
 
 (require (for-syntax scheme/base scheme/match))
 
@@ -412,21 +413,21 @@
 (define tool-bitmap-y tool-bitmap-gap)
 (define tool-bitmap-size 32)
 
-
-
-;;                             ;                          ;;;  
-;                           ;;;            ;;;          ;   ; 
-;                             ;           ;  ;          ;   ; 
-; ;;;   ; ;;   ;;;;    ;;;    ;;;     ;           ;             ;   ; 
-;   ;  ;;  ;      ;  ;   ;  ;   ;    ;            ;   ;           ;  
-;   ;  ;   ;   ;;;;   ;;;   ;;;;;    ;           ;;; ;           ;   
-;   ;  ;   ;  ;   ;      ;  ;        ;          ;   ;           ;    
-;   ;  ;   ;  ;   ;  ;   ;  ;   ;    ;          ;   ;;         ;   ; 
-;;;;  ;;; ;;;  ;;; ;  ;;;    ;;;   ;;;;;         ;;;  ;        ;;;;; 
-;                                                                    
-;                                                                    
-;;;                                                                   
-
+;     
+;     
+;            ;;                             ;                          ;;;  
+;             ;                           ;;;            ;;;          ;   ; 
+;             ;                             ;           ;  ;          ;   ; 
+;     ; ;;;   ; ;;   ;;;;    ;;;    ;;;     ;           ;             ;   ; 
+;      ;   ;  ;;  ;      ;  ;   ;  ;   ;    ;            ;   ;           ;  
+;      ;   ;  ;   ;   ;;;;   ;;;   ;;;;;    ;           ;;; ;           ;   
+;      ;   ;  ;   ;  ;   ;      ;  ;        ;          ;   ;           ;    
+;      ;   ;  ;   ;  ;   ;  ;   ;  ;   ;    ;          ;   ;;         ;   ; 
+;      ;;;;  ;;; ;;;  ;;; ;  ;;;    ;;;   ;;;;;         ;;;  ;        ;;;;; 
+;      ;                                                                    
+;      ;                                                                    
+;     ;;;                                                                   
+;       
 
 ;; run-phases : -> void
 (define (run-phases phase1-extras phase2-extras)
