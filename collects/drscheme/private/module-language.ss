@@ -97,7 +97,6 @@
         (cond
           [(eq? key 'drscheme:autocomplete-words)
            (drscheme:language-configuration:get-all-manual-keywords)]
-          [(eq? key 'macro-stepper:enabled) #t]
           [else (drscheme:language:get-capability-default key)]))
       
       ;; config-panel : as in super class
@@ -322,7 +321,7 @@
                      ((dynamic-require (vector-ref info 0)
                                        (vector-ref info 1))
                       (vector-ref info 2))])
-                (let ([configs (get-info 'configure-runtime null)])
+                (let ([configs (get-info 'configure-runtime '())])
                   (for ([config (in-list configs)])
                     ((dynamic-require (vector-ref config 0)
                                       (vector-ref config 1))
@@ -336,19 +335,19 @@
       
       (define/override (front-end/interaction port settings)
         (λ ()
-           (let ([v (parameterize ([read-accept-reader #t])
-                      (with-stack-checkpoint
-                       ((current-read-interaction) 
-                        (object-name port)
-                        port)))])
-             (if (eof-object? v)
-                 v
-                 (let ([w (cons '#%top-interaction v)])
-                   (if (syntax? v)
-                       (namespace-syntax-introduce
-                        (datum->syntax #f w v))
-                       v))))))
-
+          (let ([v (parameterize ([read-accept-reader #t])
+                     (with-stack-checkpoint
+                      ((current-read-interaction) 
+                       (object-name port)
+                       port)))])
+            (if (eof-object? v)
+                v
+                (let ([w (cons '#%top-interaction v)])
+                  (if (syntax? v)
+                      (namespace-syntax-introduce
+                       (datum->syntax #f w v))
+                      v))))))
+      
       ;; printer settings are just ignored here.
       (define/override (create-executable setting parent program-filename)
         (let* ([executable-specs (drscheme:language:create-executable-gui

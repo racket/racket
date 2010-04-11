@@ -93,7 +93,7 @@
    definitions-text-mixin
    definitions-text<%>))
 (define-signature drscheme:module-language-tools^ extends drscheme:module-language-tools-cm^
-  ())
+  (add-opt-out-toolbar-button))
 
 (define-signature drscheme:get-collection-cm^ ())
 (define-signature drscheme:get-collection^ extends drscheme:get-collection-cm^
@@ -330,7 +330,8 @@
    (open (prefix drscheme:eval: drscheme:eval-cm^))
    (open (prefix drscheme:modes: drscheme:modes-cm^))
    (open (prefix drscheme:tracing: drscheme:tracing-cm^))
-   (open (prefix drscheme:module-language: drscheme:module-language-cm^))))
+   (open (prefix drscheme:module-language: drscheme:module-language-cm^))
+   (open (prefix drscheme:module-language-tools: drscheme:module-language-tools-cm^))))
 
 (define-signature drscheme:tool^ 
   ((open (prefix drscheme:debug: drscheme:debug^))
@@ -344,4 +345,5 @@
    (open (prefix drscheme:eval: drscheme:eval^))
    (open (prefix drscheme:modes: drscheme:modes^))
    (open (prefix drscheme:tracing: drscheme:tracing^))
-   (open (prefix drscheme:module-language: drscheme:module-language^))))
+   (open (prefix drscheme:module-language: drscheme:module-language^))
+   (open (prefix drscheme:module-language-tools: drscheme:module-language-tools^))))

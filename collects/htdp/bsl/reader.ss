@@ -26,7 +26,14 @@
 (define ((make-info options) key default use-default)
   (case key
     [(drscheme:toolbar-buttons)
-     (dynamic-require 'stepper/drscheme-button 'stepper-drscheme-button)]
+     (list (dynamic-require 'stepper/drscheme-button 'stepper-drscheme-button)
+           (dynamic-require 'drscheme/syncheck-drscheme-button 'syncheck-drscheme-button))]
+    
+    [(drscheme:opt-out-toolbar-buttons)
+     ;; opt-out of all of the extra buttons b/c 
+     ;; we don't want anything to confuse in the teaching languages.
+     #f]
+    
     [else (use-default key default)]))
 
 (define (make-module-info options)

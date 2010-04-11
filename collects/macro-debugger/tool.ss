@@ -76,12 +76,23 @@
     (super-new)))
 
 
+(define macro-stepper-button-label "Macro Stepper")
+
 (define tool@
   (unit
     (import drscheme:tool^)
     (export drscheme:tool-exports^)
 
     (define (phase1)
+      (drscheme:module-language-tools:add-opt-out-toolbar-button
+       (λ (frame parent)
+         (new switchable-button%
+               (label macro-stepper-button-label)
+               (bitmap macro-debugger-bitmap)
+               (alternate-bitmap macro-debugger-up-bitmap)
+               (parent parent)
+               (callback (lambda (button) (send frame run-macro-stepper)))))
+       'macro-stepper)
       (drscheme:language:register-capability
        'macro-stepper:enabled
        boolean?
@@ -118,7 +129,7 @@
                (stretchable-width #f)))
         (define macro-debug-button
           (new switchable-button%
-               (label "Macro Stepper")
+               (label macro-stepper-button-label)
                (bitmap macro-debugger-bitmap)
                (alternate-bitmap macro-debugger-up-bitmap)
                (parent macro-debug-panel)

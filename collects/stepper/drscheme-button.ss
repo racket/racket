@@ -5,7 +5,7 @@
 (define-local-member-name stepper-button-callback)
 
 (define stepper-drscheme-button
-  (list (list 
-         (string-constant stepper-button-label)
-         x:foot-img/horizontal
-         (λ (drs-frame) (send drs-frame stepper-button-callback)))))
+  (list 
+   (string-constant stepper-button-label)
+   x:foot-img/horizontal
+   (λ (drs-frame) (send drs-frame stepper-button-callback))))
