@@ -185,7 +185,7 @@ accompanying files:
        flag. Add additional style definitions and re-definitions using
        the @as-index{@DPFlag{style}} flag.}
 
- @item{Add additional accompanying files with @as-index{@DFlag{extra}}.}
+ @item{Add additional accompanying files with @as-index{@DPFlag{extra}}.}
 
 ]
 
