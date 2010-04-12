@@ -4459,7 +4459,7 @@ namespace_mapped_symbols(int argc, Scheme_Object *argv[])
   }
 
   if (env->rename_set)
-    scheme_list_module_rename(env->rename_set, mapped);
+    scheme_list_module_rename(env->rename_set, mapped, env->export_registry);
 
   l = scheme_null;
   for (i = mapped->size; i--; ) {

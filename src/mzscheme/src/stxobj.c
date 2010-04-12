@@ -98,7 +98,6 @@ static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active);
 static Scheme_Object *write_free_id_info_prefix(Scheme_Object *obj);
 static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj, Scheme_Object *insp);
 
-
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -159,6 +158,10 @@ typedef struct Module_Renames {
                                             (box (cons sym #f)) => top-level binding
                                             (box (cons sym sym)) => lexical binding */
 } Module_Renames;
+
+static void unmarshal_rename(Module_Renames *mrn,
+			     Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to,
+			     Scheme_Hash_Table *export_registry);
 
 typedef struct Module_Renames_Set {
   Scheme_Object so; /* scheme_rename_table_set_type */
@@ -1764,7 +1767,8 @@ void scheme_remove_module_rename(Scheme_Object *mrn,
     scheme_hash_set(((Module_Renames *)mrn)->free_id_renames, localname, NULL);
 }
 
-void scheme_list_module_rename(Scheme_Object *set, Scheme_Hash_Table *ht)
+void scheme_list_module_rename(Scheme_Object *set, Scheme_Hash_Table *ht,
+                               Scheme_Hash_Table *export_registry)
 {
   /* Put every name mapped by src into ht: */
   Scheme_Object *pr;
@@ -1780,6 +1784,10 @@ void scheme_list_module_rename(Scheme_Object *set, Scheme_Hash_Table *ht)
 
   if (!src)
     return;
+  
+  if (src->needs_unmarshal) {
+    unmarshal_rename(src, NULL, NULL, export_registry);
+  }
 
   for (t = 0; t < 2; t++) {
     if (!t)
