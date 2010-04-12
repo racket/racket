@@ -30,7 +30,7 @@ extern "C" {
 # if _MSC_VER
 #  define THREAD_LOCAL /* empty */
 #  define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-# elif defined(OS_X)
+# elif defined(OS_X) || defined(GC2_PLACES_TESTING)
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
 #   define INLINE_GETSPECIFIC_ASSEMBLY_CODE

@@ -79,6 +79,7 @@ AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to
 AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS X install])
 AC_ARG_ENABLE(mac64,   [  --enable-mac64          do not force 32-bit build])
 
+AC_ARG_ENABLE(gc2_places_testing,  [  --enable-gc2-places-testing         compile gc2 places tesging support])
 
 ###### Get OS Type #######
 
@@ -151,6 +152,12 @@ else
     fi
   fi
 fi
+
+if test "${enable_gc2_places_testing}" = "yes" ; then
+  enable_shared=yes
+  enable_places=yes
+fi
+
 
 # Hack for the implementor:
 if test "${enable_perl}" = "" ; then
@@ -295,6 +302,7 @@ show_explicitly_disabled "${enable_jit}" JIT
 show_explicitly_disabled "${enable_foreign}" Foreign
 
 show_explicitly_enabled "${enable_places}" Places
+show_explicitly_enabled "${enable_gc2_places_testing}" "GC2 Places Testing"
 show_explicitly_enabled "${enable_futures}" Futures
 show_explicitly_disabled "${enable_futures}" Futures
 
@@ -981,6 +989,12 @@ fi
 
 if test "${endianness}" = "big" ; then
   AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
+fi
+
+############### GC2_PLACES_TESTING ###################
+
+if test "${enable_gc2_places_testing}" = "yes" ; then
+  AC_DEFINE(GC2_PLACES_TESTING,1,[GC2 Places Testing])
 fi
 
 ############### places ###################

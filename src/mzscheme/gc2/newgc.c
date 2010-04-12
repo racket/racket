@@ -470,6 +470,9 @@ int GC_is_allocated(void *p)
   return !!pagemap_find_page(gc->page_maps, p);
 }
 
+#ifdef GC2_PLACES_TESTING
+#include "testing.c"
+#endif
 
 /*****************************************************************************/
 /* Allocation                                                                */

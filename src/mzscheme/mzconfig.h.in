@@ -45,4 +45,7 @@
 /* Configure use of pthreads for the user-thread timer: */
 #undef USE_PTHREAD_INSTEAD_OF_ITIMER
 
+/* Enable GC2 Places Testing: */
+#undef GC2_PLACES_TESTING
+
 #endif
