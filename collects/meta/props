@@ -581,6 +581,7 @@ path/s is either such a string or a list of them.
 "collects/drscheme/private/tracing.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/unit.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/sprof.ss" drdr:command-line "mred-text -t ~s"
+"collects/drscheme/syncheck-drscheme-button.ss" drdr:command-line "mred-text ~s"
 "collects/drscheme/syncheck.ss" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/tool-lib.ss" drdr:command-line "mzc ~s"
 "collects/dynext" responsible (mflatt)
