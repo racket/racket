@@ -484,7 +484,7 @@
 "(current-directory))))"
 "(t))))"
 "(try-main?(or main-path-d(not alt-path-d)))"
-"(try-alt?(or alt-path-d(not main-path-d))))"
+"(try-alt?(and alt-file(or alt-path-d(not main-path-d)))))"
 "(cond"
 "((or(and try-main?"
 "(date>=? modes so path-d))"
