@@ -39,10 +39,19 @@ A signature form like @scheme-struct/ctc from @schememodname[scheme/unit],
 but with a different syntax for the options that limit exports.}
 
 @deftogether[(
-@defidform[struct~]
-@defidform[struct~/ctc]
+@defidform[struct~s]
+@defidform[struct~s/ctc]
 )]{
 
 The same as @|scheme-struct| and @|scheme-struct/ctc| from
 @schememodname[scheme/unit].}
+
+@deftogether[(
+@defidform[struct~r]
+@defidform[struct~r/ctc]
+)]{
+
+Like @scheme[struct~s] and @scheme[struct~s/ctc], but the constructor is
+named the same as the type, instead of with  @schemeidfont{make-} prefix.}
+
 

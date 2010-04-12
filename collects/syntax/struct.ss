@@ -2,7 +2,7 @@
 (module struct scheme/base
   (require (for-syntax scheme/base)
            mzlib/etc
-           mzlib/contract
+           scheme/contract
 	   "stx.ss"
            scheme/struct-info)
   (require (for-template mzscheme))
@@ -93,16 +93,23 @@
 
   ;; build-struct-names : id (list-of id) bool bool -> (list-of id)
   (define build-struct-names
-    (opt-lambda (name-stx fields omit-sel? omit-set? [srcloc-stx #f])
+    (lambda (name-stx fields omit-sel? omit-set? [srcloc-stx #f]
+                      #:constructor-name [ctr-name #f])
       (let ([name (symbol->string (syntax-e name-stx))]
 	    [fields (map symbol->string (map syntax-e fields))]
 	    [+ string-append])
 	(map (lambda (s)
-	       (datum->syntax name-stx (string->symbol s) srcloc-stx))
+               (if (string? s)
+                   (datum->syntax name-stx (string->symbol s) srcloc-stx)
+                   s))
 	     (append
 	      (list 
 	       (+ "struct:" name)
-	       (+ "make-" name)
+	       (if ctr-name 
+                   (if (pair? ctr-name)
+                       (cdr ctr-name)
+                       ctr-name)
+                   (+ "make-" name))
 	       (+ name "?"))
 	      (let loop ([l fields])
 		(if (null? l)
@@ -117,15 +124,17 @@
 		     (loop (cdr l))))))))))
 
   (define build-struct-generation
-    (opt-lambda (name-stx fields omit-sel? omit-set? [super-type #f] [prop-value-list null]
-                          [immutable-positions null] [mk-rec-prop-list (lambda (struct: make- ? acc mut) null)])
-      (let ([names (build-struct-names name-stx fields omit-sel? omit-set?)])
+    (lambda (name-stx fields omit-sel? omit-set? [super-type #f] [prop-value-list null]
+                      [immutable-positions null] [mk-rec-prop-list (lambda (struct: make- ? acc mut) null)]
+                      #:constructor-name [ctr-name #f])
+      (let ([names (build-struct-names name-stx fields omit-sel? omit-set?
+                                       #:constructor-name ctr-name)])
 	(build-struct-generation* names name-stx fields omit-sel? omit-set? super-type prop-value-list
 				  immutable-positions mk-rec-prop-list))))
 
   (define build-struct-generation*
-    (opt-lambda (names name fields omit-sel? omit-set? [super-type #f] [prop-value-list null]
-		       [immutable-positions null] [mk-rec-prop-list (lambda (struct: make- ? acc mut) null)])
+    (lambda (names name fields omit-sel? omit-set? [super-type #f] [prop-value-list null]
+                   [immutable-positions null] [mk-rec-prop-list (lambda (struct: make- ? acc mut) null)])
       (let ([num-fields (length fields)]
 	    [acc/mut-makers (let loop ([l fields][n 0])
 			      (if (null? l)
@@ -158,8 +167,10 @@
 
   (define build-struct-expand-info
     (lambda (name-stx fields omit-sel? omit-set? base-name base-getters base-setters 
-                      #:omit-constructor? [no-ctr? #f])
-      (let* ([names (build-struct-names name-stx fields omit-sel? omit-set?)]
+                      #:omit-constructor? [no-ctr? #f]
+                      #:constructor-name [ctr-name #f])
+      (let* ([names (build-struct-names name-stx fields omit-sel? omit-set?
+                                        #:constructor-name ctr-name)]
              [names (if no-ctr?
                         (list* (car names)
                                #f
@@ -304,12 +315,14 @@
 				(loop (cdr field-names) (add1 n))))))))
 
   (define generate-struct-declaration 
-    (opt-lambda (orig-stx
-                 name super-id field-names 
-                 context 
-                 make-make-struct-type
-                 [no-sel? #f] [no-set? #f])
-      (let ([defined-names (build-struct-names name field-names no-sel? no-set? name)])
+    (lambda (orig-stx
+             name super-id field-names 
+             context 
+             make-make-struct-type
+             [no-sel? #f] [no-set? #f]
+             #:constructor-name [ctr-name #f])
+      (let ([defined-names (build-struct-names name field-names no-sel? no-set? name
+                                               #:constructor-name ctr-name)])
         (let-values ([(super-info stx-info) (get-stx-info orig-stx super-id defined-names)])
           (let ([result
                  #`(begin
@@ -326,6 +339,7 @@
   
   (provide/contract
    [build-struct-names
-    (opt-> (identifier? (listof identifier?) boolean? boolean?)
-           ((union false/c syntax?))
-           (listof identifier?))]))
+    (->* (identifier? (listof identifier?) boolean? boolean?)
+         ((or/c #f syntax?) 
+          #:constructor-name (or/c #f identifier? (cons/c identifier? identifier?)))
+         (listof identifier?))]))

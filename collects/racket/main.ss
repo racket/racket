@@ -1,7 +1,8 @@
 #lang racket/private
-(require scheme)
+(require (except-in scheme struct struct/ctc)
+         (only-in mzlib/unit struct~r/ctc)
+         "private/struct.rkt")
 
-;; scheme includes `struct' via scheme/unit
-
-(provide (all-from-out scheme))
-
+(provide (all-from-out scheme) 
+         (rename-out [struct~r/ctc struct/ctc])
+         struct)

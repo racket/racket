@@ -103,9 +103,10 @@
 ;;                 (listof identifier)
 ;;                 (listof (cons (listof identifier) syntax-object))
 ;;                 (listof (cons (listof identifier) syntax-object))
+;;                 (listof (cons (listof identifier) syntax-object))
 ;;                 (listof (U syntax-object #f))
 ;;                 identifier)
-(define-struct/proc signature (siginfo vars val-defs stx-defs ctcs orig-binder)
+(define-struct/proc signature (siginfo vars val-defs stx-defs post-val-defs ctcs orig-binder)
   (lambda (_ stx)
     (parameterize ((error-syntax stx))
       (raise-stx-err "illegal use of signature name"))))
@@ -233,6 +234,7 @@
          (vars (signature-vars sig))
          (vals (signature-val-defs sig))
          (stxs (signature-stx-defs sig))
+         (p-vals (signature-post-val-defs sig))
          (ctcs  (signature-ctcs sig))
          (delta-introduce (if bind?
                               (let ([f (syntax-local-make-delta-introducer
@@ -259,7 +261,8 @@
                                  (car stx))
                             (cdr stx)))
                     stxs)
-                   ctcs))))
+                   ctcs
+                   p-vals))))
 
 (define (sig-names sig)
   (append (car sig)
@@ -292,7 +295,10 @@
   (list (map (lambda (x) (cons (f (car x)) (g (cdr x)))) (car sig))
         (map (lambda (x) (map-def f g x)) (cadr sig))
         (map (lambda (x) (map-def f g x)) (caddr sig))
-        (map (lambda (x) (map-ctc f g x)) (cadddr sig))))
+        (map (lambda (x) (map-ctc f g x)) (cadddr sig))
+        (map (lambda (x) (cons (map f (car x))
+                               (g (cdr x))))
+             (list-ref sig 4))))
 
 ;; An import-spec is one of
 ;; - signature-name
