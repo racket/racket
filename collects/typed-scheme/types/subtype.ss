@@ -5,7 +5,7 @@
 	 (types utils comparison resolve abbrev)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
-         scheme/match unstable/match unstable/debug
+         scheme/match unstable/match
          mzlib/trace (rename-in scheme/contract
                                 [-> c->]
                                 [->* c->*])
@@ -186,12 +186,11 @@
   (match arrs
     [(list (arr: dom1 rng1 #f #f '()) (arr: dom rng #f #f '()) ...)
      (cond
-      [(null? dom) (make-arr dom1 rng1 #f #f '())]
-      ((not (apply = (length dom1) (map length dom)))
-       #f)
-      ((not (foldl type-equal? rng1 rng))
-       #f)
-      [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
+       [(null? dom) (make-arr dom1 rng1 #f #f '())]
+       [(not (apply = (length dom1) (map length dom))) #f]
+       [(not (for/and ([rng2 (in-list rng)]) (type-equal? rng1 rng2)))
+        #f]
+       [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
 
@@ -200,7 +199,8 @@
 ;; potentially raises exn:subtype, when the algorithm fails
 ;; is s a subtype of t, taking into account constraints A
 (define (subtype* A s t)
-  (parameterize ([match-equality-test (lambda (a b) (if (and (Rep? a) (Rep? b)) (type-equal? a b) (equal? a b)))]
+  (define =t (lambda (a b) (if (and (Rep? a) (Rep? b)) (type-equal? a b) (equal? a b))))
+  (parameterize ([match-equality-test =t]
                  [current-seen A])
     (let ([ks (Type-key s)] [kt (Type-key t)])
       (cond 
@@ -225,26 +225,26 @@
 	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
 	      ;; now we encode the numeric hierarchy - bletch	      
 	      [((Base: 'Integer _) (Base: 'Number _)) A0]
-	      [((Base: 'Flonum _)  (== -Real type-equal?)) A0]
-	      [((Base: 'Integer _)  (== -Real type-equal?)) A0]
+	      [((Base: 'Flonum _)  (== -Real =t)) A0]
+	      [((Base: 'Integer _)  (== -Real =t)) A0]
 	      [((Base: 'Flonum _)  (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
 	      [((Base: 'Integer _) (Base: 'Exact-Rational _)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Exact-Rational _)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Number _)) A0]
-	      [((Base: 'Exact-Positive-Integer _) (== -Nat type-equal?)) A0]
+	      [((Base: 'Exact-Positive-Integer _) (== -Nat =t)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Integer _)) A0]
-	      [((== -Nat type-equal?) (Base: 'Number _)) A0]
-	      [((== -Nat type-equal?) (Base: 'Exact-Rational _)) A0]
-	      [((== -Nat type-equal?) (Base: 'Integer _)) A0]
+	      [((== -Nat =t) (Base: 'Number _)) A0]
+	      [((== -Nat =t) (Base: 'Exact-Rational _)) A0]
+	      [((== -Nat =t) (Base: 'Integer _)) A0]
 
 	      ;; values are subtypes of their "type"
 	      [((Value: (? exact-integer? n)) (Base: 'Integer _)) A0]
 	      [((Value: (and n (? number?) (? exact?) (? rational?))) (Base: 'Exact-Rational _)) A0]
-	      [((Value: (? exact-nonnegative-integer? n)) (== -Nat type-equal?)) A0]
+	      [((Value: (? exact-nonnegative-integer? n)) (== -Nat =t)) A0]
 	      [((Value: (? exact-positive-integer? n)) (Base: 'Exact-Positive-Integer _)) A0]	      
 	      [((Value: (? inexact-real? n)) (Base: 'Flonum _)) A0]
-	      [((Value: (? real? n)) (== -Real type-equal?)) A0]
+	      [((Value: (? real? n)) (== -Real =t)) A0]
 	      [((Value: (? number? n)) (Base: 'Number _)) A0]
 
               [((Value: (? keyword?)) (Base: 'Keyword _)) A0]
