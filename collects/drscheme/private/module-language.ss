@@ -250,7 +250,10 @@
         (define path
           (cond [(get-filename port) => (compose simplify-path cleanse-path)]
                 [else #f]))
-        (define resolved-modpath (and path (make-resolved-module-path path)))
+        (define resolved-modpath (and path (module-path-index-resolve
+                                            (module-path-index-join
+                                             path
+                                             #f))))
         (define-values (name lang module-expr)
           (let ([expr
                  ;; just reading the definitions might be a syntax error,
