@@ -334,6 +334,8 @@ struct mzrt_rwlock {
 
 static mzrt_rwlock *locks[2];
 
+/* tests for rwlock implementation */
+#if 0
 static void *go(void *id)
 {
   int i = *(int *)id, j, amt;
@@ -357,6 +359,7 @@ static void *go(void *id)
 
   return NULL;
 }
+#endif
 
 int mzrt_rwlock_create(mzrt_rwlock **lock) {
   int err;
