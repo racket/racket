@@ -5321,7 +5321,7 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int sou
   /* Inspect the wraps to look for a self-modidx shift: */
   WRAP_POS w;
   Scheme_Object *srcmod = scheme_false, *chain_from = NULL, *er;
-  Scheme_Hash_Table *export_registry;
+  Scheme_Hash_Table *export_registry = NULL;
 
   WRAP_POS_INIT(w, ((Scheme_Stx *)stx)->wraps);
 
