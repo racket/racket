@@ -1,4 +1,4 @@
-;; I HATE DEFINE-STRUCT!
+; I HATE DEFINE-STRUCT!
 (define-struct/properties :empty-list ()
   ((prop:custom-write
     (lambda (r port write?)
@@ -72,21 +72,20 @@
 	    (else
 	     (cons (recur (car v))
 		   (list-recur (cdr v))))))))
-       ((deinprogramm-struct? v)
+       ((struct? v)
 	(or (hash-ref hash v #f)
-	    (let*-values (((ty skipped?) (struct-info v))
-			  ((name-symbol
-			    init-field-k auto-field-k accessor-proc mutator-proc immutable-k-list
-			    super-struct-type skipped?)
-			   (struct-type-info ty)))
-	      (let* ((indices (iota (+ init-field-k auto-field-k)))
-		     (val (apply (struct-type-make-constructor ty) indices)))
-		(hash-set! hash v val)
-		(for-each (lambda (index)
-			    (mutator-proc val index 
-					  (recur (accessor-proc v index))))
-			  indices)
-		val))))
+	    (let-values (((ty skipped?) (struct-info v)))
+	      (cond
+	       ((and ty (lazy-wrap-ref ty))
+		=> (lambda (lazy-wrap-info)
+		     (let ((constructor (lazy-wrap-info-constructor lazy-wrap-info))
+			   (raw-accessors (lazy-wrap-info-raw-accessors lazy-wrap-info)))
+		       (let ((val (apply constructor (map (lambda (raw-accessor)
+							    (recur (raw-accessor v)))
+							  raw-accessors))))
+			 (hash-set! hash v val)
+			 val))))
+	       (else v)))))
        (else
 	v)))))
 

@@ -86,15 +86,15 @@
 	      ((define-values (?id ...) ?e1)
 	       (with-syntax (((?enforced ...)
 			      (map (lambda (id)
-				     (with-syntax ((?id id))
-				       (cond
-					((bound-identifier-mapping-get contract-table #'?id (lambda () #f))
-					 => (lambda (cnt)
-					      (bound-identifier-mapping-put! contract-table #'?id #f) ; check for orphaned contracts
-					      (with-syntax ((?cnt cnt))
-						#'(?id ?cnt))))
-					(else
-					 #'?id))))
+				     (cond
+				      ((bound-identifier-mapping-get contract-table id (lambda () #f))
+				       => (lambda (cnt)
+					    (bound-identifier-mapping-put! contract-table id #f) ; check for orphaned contracts
+					    (with-syntax ((?id id)
+							  (?cnt cnt))
+					      #'(?id (contract ?cnt)))))
+				      (else
+				       id)))
 				   (syntax->list #'(?id ...))))
 			     (?rest (loop (cdr exprs))))
 		 (with-syntax ((?defn

@@ -368,6 +368,9 @@ Beispiel:
 Dann ist @scheme[(pare-of integer string)] der Vertrag für
 @scheme[pare]-Records, bei dem die Feldinhalte die Verträge
 @scheme[integer] bzw. @scheme[string] erfüllen müssen.
+
+Die Verträge für die Feldinhalte werden erst überprüft, wenn ein
+Selektor aufgerufen wird.
 }
 
 @; ----------------------------------------------------------------------
