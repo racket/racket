@@ -17,7 +17,13 @@
     [(_) #`(quote-srcloc #,stx)]
     [(_ loc)
      (with-syntax ([(arg ...) (build-source-location-list #'loc)])
-       #'(make-srcloc (quote arg) ...))]))
+       #'(make-srcloc (quote arg) ...))]
+    [(_ loc #:module-source alt-src)
+     (with-syntax ([(src arg ...) (build-source-location-list #'loc)])
+       (with-syntax ([alt-src (if (syntax-source-module #'loc)
+                                  #'alt-src
+                                  #'(quote src))])
+         #'(make-srcloc alt-src (quote arg) ...)))]))
 
 (define-syntax (quote-source-file stx)
   (syntax-case stx ()
@@ -70,5 +76,7 @@
    [else 'top-level]))
 
 (define (variable-reference->module-src var)
-  (or (variable-reference->module-source var)
-      'top-level))
+  (let ([v (variable-reference->module-source var)])
+    (if v
+        (make-resolved-module-path v)
+        'top-level)))

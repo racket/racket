@@ -1021,6 +1021,7 @@ module_exports_val {
   gcMARK2(m->other_phases, gc);
 
   gcMARK2(m->src_modidx, gc);
+  gcMARK2(m->modsrc, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
 }

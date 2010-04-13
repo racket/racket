@@ -2540,6 +2540,7 @@ static int module_exports_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(m->other_phases, gc);
 
   gcMARK2(m->src_modidx, gc);
+  gcMARK2(m->modsrc, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
 }
@@ -2553,6 +2554,7 @@ static int module_exports_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->other_phases, gc);
 
   gcFIXUP2(m->src_modidx, gc);
+  gcFIXUP2(m->modsrc, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
 }

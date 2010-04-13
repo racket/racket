@@ -505,6 +505,7 @@ void scheme_finish_kernel(Scheme_Env *env)
       Scheme_Module_Exports *me;
       me = make_module_exports();
       kernel->me = me;
+      kernel->me->modsrc = kernel_modname;
     }
 
     kernel->me->rt->provides = exs;
@@ -4712,6 +4713,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
     Scheme_Module_Exports *me;
     me = make_module_exports();
     m->me = me;
+    me->modsrc = src;
   }
 
   scheme_hash_set(for_env->export_registry, m->modname, (Scheme_Object *)m->me);
@@ -5173,7 +5175,8 @@ module_execute(Scheme_Object *data)
     et_insps = NULL;
 
   if (!SAME_OBJ(rt_insps, m->me->rt->provide_insps)
-      || !SAME_OBJ(et_insps, m->me->et->provide_insps)) {
+      || !SAME_OBJ(et_insps, m->me->et->provide_insps)
+      || !SAME_OBJ(m->me->modsrc, m->modsrc)) {
     /* have to clone m->me, etc. */
     Scheme_Module_Exports *naya_me;
     Scheme_Module_Phase_Exports *pt;
@@ -5181,6 +5184,7 @@ module_execute(Scheme_Object *data)
     naya_me = MALLOC_ONE_TAGGED(Scheme_Module_Exports);
     memcpy(naya_me, m->me, sizeof(Scheme_Module_Exports));
     m->me = naya_me;
+    m->me->modsrc = m->modsrc;
 
     if (!SAME_OBJ(rt_insps, m->me->rt->provide_insps)) {
       pt = MALLOC_ONE_TAGGED(Scheme_Module_Phase_Exports);
@@ -5898,6 +5902,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     Scheme_Module_Exports *me;
     me = make_module_exports();
     m->me = me;
+    me->modsrc = m->modsrc;
   }
 
   top_env = env->genv;
@@ -10108,6 +10113,7 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   if (!SCHEME_PAIRP(obj)) return_NULL();
   e = scheme_intern_resolved_module_path(SCHEME_CAR(obj));
   m->modsrc = e;
+  m->me->modsrc = e;
   obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();

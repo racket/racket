@@ -48,7 +48,7 @@
                                         pos-module-source
                                         (quote-module-source)
                                         'external-id
-                                        (quote-srcloc id))))))])
+                                        (quote-srcloc id #:module-source pos-module-source))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
                ;; Expand to a use of the lifted expression:
@@ -664,7 +664,8 @@
                   (syntax-local-lift-module-end-declaration
                    #`(begin 
                        (unless extra-test
-                         (contract contract-id id pos-module-source 'ignored 'id (quote-srcloc id)))
+                         (contract contract-id id pos-module-source 'ignored 'id 
+                                   (quote-srcloc id #:module-source pos-module-source)))
                        (void)))
                   
                   (syntax (code id-rename))))))]))

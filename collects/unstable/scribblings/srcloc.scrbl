@@ -213,11 +213,15 @@ Furthermore, the examples illustrate the use of source location quoting inside
 macros, and the difference between quoting the source location of the macro
 definition itself and quoting the source location of the macro's arguments.
 
-@defform*[[(quote-srcloc) (quote-srcloc expr)]]{
+@defform*[[(quote-srcloc) (quote-srcloc form) (quote-srcloc form #:module-source expr)]]{
 
-This form quotes the source location of @scheme[expr] as a @scheme[srcloc]
-structure, using the location of the whole @scheme[(quote-srcloc)] expression if
-no @scheme[expr] is given.
+Quotes the source location of @scheme[form] as a @scheme[srcloc]
+structure, using the location of the whole @scheme[(quote-srcloc)]
+expression if no @scheme[expr] is given. When @scheme[expr] has a
+source module (in the sense of @scheme[syntax-source-module]), the
+module's source path is used form source location, unless a
+@scheme[#:module-source expr] is specified, in which case
+@scheme[expr] provides the source.
 
 @defexamples[#:eval (new-evaluator)
 (quote-srcloc)
@@ -232,15 +236,15 @@ no @scheme[expr] is given.
 }
 
 @deftogether[(
-@defform*[[(quote-source-file) (quote-source-file expr)]]
-@defform*[[(quote-line-number) (quote-line-number expr)]]
-@defform*[[(quote-column-number) (quote-column-number expr)]]
-@defform*[[(quote-character-position) (quote-character-position expr)]]
-@defform*[[(quote-character-span) (quote-character-span expr)]]
+@defform*[[(quote-source-file) (quote-source-file form)]]
+@defform*[[(quote-line-number) (quote-line-number form)]]
+@defform*[[(quote-column-number) (quote-column-number form)]]
+@defform*[[(quote-character-position) (quote-character-position form)]]
+@defform*[[(quote-character-span) (quote-character-span form)]]
 )]{
 
-These forms quote various fields of the source location of @scheme[expr], or of
-the whole macro application if no @scheme[expr] is given.
+Quote various fields of the source location of @scheme[form], or of
+the whole macro application if no @scheme[form] is given.
 
 @examples[#:eval (new-evaluator)
 (list (quote-source-file)
@@ -270,13 +274,13 @@ the whole macro application if no @scheme[expr] is given.
 
 @defform[(quote-module-path)]{
 
-This form quotes a module path suitable for use with @scheme[require] which
+Quotes a module path suitable for use with @scheme[require] which
 refers to the module in which the macro application occurs.  If executed at the
 top level, it may return @scheme['top-level], or it may return a valid module
 path if the current namespace was constructed by @scheme[module->namespace]
 (such as at the DrScheme interactions window).
 
-This macro operates by creating a @tech[#:doc reference-path]{variable
+The @scheme[quote-module-path] form operates by creating a @tech[#:doc reference-path]{variable
 reference} (see @scheme[#%variable-reference]) at the point of its application.
 It thus automatically describes its final expanded position, rather than the
 module of any macro definition that happens to use it.
@@ -308,12 +312,15 @@ b
 Like @scheme[quote-module-path], but for the enclosing module's source
 name, rather than its module path. The module path and source name are
 typically the same, but they can be different. For example, a source
-file whose name ends with @filepath{.ss} corersponds to a resolved
-module path ending with @filepath{.rkt}.}
+file whose name ends with @filepath{.ss} corresponds to a resolved
+module path ending with @filepath{.rkt}. The value produced by
+@scheme[(quote-module-source)] is either @scheme['top-level] or a
+resolved module path, even though the latter may correspond to a
+source file rather than a module path.}
 
 @defform[(quote-module-name)]{
 
-This form quotes the name (@tech[#:doc reference-path]{path} or @tech[#:doc
+Quotes the name (@tech[#:doc reference-path]{path} or @tech[#:doc
 reference-path]{symbol}) of the module in which the macro application occurs, or
 @scheme[#f] if it occurs at the top level.  As with @scheme[quote-module-path],
 @scheme[quote-module-name] uses a @tech[#:doc reference-path]{variable

@@ -3219,24 +3219,6 @@ void scheme_dup_symbol_check(DupCheckRecord *r, const char *where,
   scheme_hash_set(r->ht, symbol, scheme_true);
 }
 
-int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok_modidx)
-{
-  Scheme_Object *mod, *id = name;
-
-  mod = scheme_stx_source_module(id, 0);
-
-  if (mod && SCHEME_TRUEP(mod) && NOT_SAME_OBJ(ok_modidx, mod)) {
-    return 1;
-  } else {
-    mod = scheme_stx_module_name(NULL, &id, scheme_make_integer(env->phase), NULL, NULL, NULL, 
-                                 NULL, NULL, NULL, NULL, NULL);
-    if (SAME_OBJ(mod, scheme_undefined))
-      return 1;
-  }
-  
-  return 0;
-}
-
 /*========================================================================*/
 /*                 compile-time env for optimization                      */
 /*========================================================================*/
@@ -4574,7 +4556,7 @@ static Scheme_Object *variable_module_source(int argc, Scheme_Object *argv[])
     scheme_wrong_type("variable-reference->module-source", "variable-reference", 0, argc, argv);
 
   if (env->module)
-    return env->module->modsrc;
+    return SCHEME_PTR_VAL(env->module->modsrc);
   else
     return scheme_false;
 }
@@ -4899,7 +4881,7 @@ local_module_introduce(int argc, Scheme_Object *argv[])
   if (!SCHEME_STXP(s))
     scheme_wrong_type("syntax-local-module-introduce", "syntax", 0, argc, argv);
 
-  v = scheme_stx_source_module(s, 0);
+  v = scheme_stx_source_module(s, 0, 0);
   if (SCHEME_FALSEP(v)) {
     if (env->genv->rename_set)
       s = scheme_add_rename(s, env->genv->rename_set);

@@ -582,9 +582,9 @@ void scheme_init_stx(Scheme_Env *env)
 
 
   scheme_add_global_constant("syntax-source-module", 
-			     scheme_make_folding_prim(syntax_src_module,
-						      "syntax-source-module",
-						      1, 1, 1),
+			     scheme_make_noncm_prim(syntax_src_module,
+                                                    "syntax-source-module",
+                                                    1, 2),
 			     env);
 
   scheme_add_global_constant("syntax-recertify", 
@@ -5316,11 +5316,12 @@ Scheme_Object *scheme_explain_resolve_env(Scheme_Object *a)
 }
 #endif
 
-Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve)
+Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source)
 {
   /* Inspect the wraps to look for a self-modidx shift: */
   WRAP_POS w;
-  Scheme_Object *srcmod = scheme_false, *chain_from = NULL;
+  Scheme_Object *srcmod = scheme_false, *chain_from = NULL, *er;
+  Scheme_Hash_Table *export_registry;
 
   WRAP_POS_INIT(w, ((Scheme_Stx *)stx)->wraps);
 
@@ -5346,14 +5347,29 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve)
         }
         
         chain_from = src;
+
+        if (!export_registry) {
+          er = SCHEME_VEC_ELS(vec)[3];
+          if (SCHEME_TRUEP(er))
+            export_registry = (Scheme_Hash_Table *)er;
+        }
       }
     }
 
     WRAP_POS_INC(w);
   }
 
-  if (SCHEME_TRUEP(srcmod) && resolve)
-    srcmod = scheme_module_resolve(srcmod, 0);
+  if (SCHEME_TRUEP(srcmod)) {
+    if (resolve) {
+      srcmod = scheme_module_resolve(srcmod, 0);
+      if (export_registry && source) {
+        er = scheme_hash_get(export_registry, srcmod);
+        if (er)
+          srcmod = ((Scheme_Module_Exports *)er)->modsrc;
+      }
+      srcmod = SCHEME_PTR_VAL(srcmod);
+    }
+  }
 
   return srcmod;
 }
@@ -9110,10 +9126,15 @@ static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)
 
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv)
 {
+  int source = 0;
+
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_type("syntax-source-module", "syntax", 0, argc, argv);
 
-  return scheme_stx_source_module(argv[0], 0);
+  if ((argc > 1) && SCHEME_TRUEP(argv[1]))
+    source = 1;
+
+  return scheme_stx_source_module(argv[0], source, source);
 }
 
 /**********************************************************************/

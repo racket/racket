@@ -128,7 +128,12 @@
 
 (define ((good-string default) x src line col pos span)
   (format "~a~a"
-          (cond [(path? src) (collects-path src)]
+          (cond [(resolved-module-path? src)
+                 (let ([p (resolved-module-path-name src)])
+                   (if (path? p)
+                       (collects-path p)
+                       p))]
+                [(path? src) (collects-path src)]
                 [(not src) default]
                 [else src])
           (if line
@@ -253,12 +258,8 @@
 
 (define (syntax-get-source x)
   (cond
-   [(syntax-source-module x) =>
-    (lambda (src)
-      (if (module-path-index? src)
-        (resolved-module-path-name
-         (module-path-index-resolve src))
-        src))]
+   [(syntax-source-module x #t) =>
+    (lambda (src) src)]
    [else (syntax-source x)]))
 
 (define (process-list x good bad name)

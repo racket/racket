@@ -950,7 +950,7 @@ int scheme_stx_ribs_matter(Scheme_Object *a, Scheme_Object *skip_ribs);
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
 int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, Scheme_Object *phase);
 
-Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve);
+Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source);
 
 Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 				   Scheme_Object *key,
@@ -2200,7 +2200,6 @@ void scheme_check_identifier(const char *formname, Scheme_Object *id,
 			     const char *where,
 			     Scheme_Comp_Env *env,
 			     Scheme_Object *form);
-int scheme_check_context(Scheme_Env *env, Scheme_Object *id, Scheme_Object *ok_modix);
 
 Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    Scheme_Comp_Env *env,
@@ -2914,6 +2913,7 @@ typedef struct Scheme_Module_Exports
   Scheme_Hash_Table *other_phases;
 
   Scheme_Object *src_modidx;  /* the one used in marshalled syntax */
+  Scheme_Object *modsrc; /* module source as loaded */
 } Scheme_Module_Exports;
 
 typedef struct Scheme_Modidx {
