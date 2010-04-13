@@ -2,41 +2,54 @@
 
 (require htdp/error)
 
+;; todo
+;; -- read files as "white space separated tokens"
+;; -- read csv files 
+;; -- tokenization? how? map-file? on a string? 
+
+(provide 
+ read-file ;; String -> String
+ ;; read the file f (in current-directory) as a string
+ 
+ read-file-as-lines ;; String -> [Listof String]
+ ;; read the file f (in current-directory) as a list of strings
+ 
+ read-file-as-1strings ;; String -> [Listof 1String]
+ ;; read the file f (in current-directory) as a list of 1strings
+
+ write-file ;; String String -> Boolean
+ ;; write str to file f (in current-directory); 
+ ;; false, if f exists
+ ;; true, if f doesn't exist
+ )
+
 (define (read-file f)
   (check-file f 'read-file)
   (check-arg 'read-file (file-exists? f) "name of file in program's folder" "first" f)
-  (list->string
-   (with-input-from-file f 
-     (lambda ()
-       (let loop ([accu '()])
-         (define nxt (read-char))
-         (if (eof-object? nxt)
-             (reverse (if (char=? (car accu) #\newline) (cdr accu) accu))
-             (loop (cons nxt accu))))))))
-
-(define (read-file-as-lines f)
-  (check-file f 'read-file-as-lines)
-  (with-input-from-file f 
-    (lambda ()
-      (let loop ([accu '()])
-        (define nxt (read-line))
-        (if (eof-object? nxt)
-            (reverse accu)
-            (loop (cons nxt accu)))))))
+  (list->string (read-chunks f read-char drop-last-newline)))
 
 (define (read-file-as-1strings f)
   (check-file f 'read-file-as-1strings)
-  (read-chars f string))
+  (map string (read-chunks f read-char drop-last-newline)))
 
-;; 
-(define (read-chars f action)
+(define (read-file-as-lines f)
+  (check-file f 'read-file-as-lines)
+  (read-chunks f read-line reverse))
+
+;; String (-> X) ([Listof X] -> [Listof X]) -> [Listof X]
+;; read a file as a list of X where process-accu is applied to accu when eof
+(define (read-chunks f read-chunk process-accu)
   (with-input-from-file f 
     (lambda ()
       (let loop ([accu '()])
-        (define nxt (read-char))
-        (if (eof-object? nxt)
-            (reverse (if (char=? (car accu) #\newline) (cdr accu) accu))
-            (loop (cons nxt accu)))))))
+        (define nxt (read-chunk))
+        (if (eof-object? nxt) (process-accu accu) (loop (cons nxt accu)))))))
+
+;; [Listof Char] -> [Listof Char]
+(define (drop-last-newline accu)
+  (reverse (if (char=? (car accu) #\newline) (cdr accu) accu)))
+
+;; -----------------------------------------------------------------------------
 
 (define (write-file f str)
   (check-arg 'write-file (string? f) "name of file (string)" "first" f)
@@ -49,24 +62,21 @@
 
 ;; -----------------------------------------------------------------------------
 
-(provide 
- read-file-as-lines ;; String -> [Listof String]
- ;; read the fule f (in current-directory) as a list of strings
- 
- read-file ;; String -> String
- ;; read the file f (in current-directory) as a string
- 
- write-file ;; String String -> Boolean
- ;; write str to file f (in current-directory); 
- ;; false, if f exists
- ;; true, if f doesn't exist
- )
-
 ;; String[file name] Symbol -> Void
 ;; effect: ensure that f is a file in current directory or report error for t
 (define (check-file f t)
   (check-arg t (string? f) "string" "first" f)
   (check-arg t (file-exists? f) "name of file in program's folder" "first" f))
+
+;; -----------------------------------------------------------------------------
+
+#|
+(require scheme/class)
+(require scheme/gui)
+
+(define (read-image-file file-name)
+  (make-object image-snip% file-name))
+|#
 
 ;                                                                               
 ;                                                                               
@@ -86,7 +96,9 @@
 
 #|
 
-For basic i/o, I find the following two functions extremely helpful to provide as a teachpack along with what batch-io gives. Perhaps it would be possible to include them in the standard teachpack?
+For basic i/o, I find the following two functions extremely helpful to provide as a 
+  teachpack along with what batch-io gives. Perhaps it would be possible to include 
+  them in the standard teachpack?
 
  ;; split : String String -> Listof[String]
  ;; splits a string into a list of substrings using the given delimiter (space
