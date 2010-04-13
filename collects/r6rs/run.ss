@@ -202,6 +202,7 @@
         (let ([code (get-module-code main #:source-reader r6rs-read-syntax)]
               [rpath (module-path-index-resolve
                       (module-path-index-join main #f))])
-          (parameterize ([current-module-declare-name rpath])
+          (parameterize ([current-module-declare-name rpath]
+                         [current-module-declare-source main])
             (eval code))
           (dynamic-require rpath #f))))])

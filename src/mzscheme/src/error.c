@@ -1942,7 +1942,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
 		     name,
 		     errmsg,
 		     name,
-		     ((Scheme_Bucket_With_Home *)b)->home->module->modname,
+		     ((Scheme_Bucket_With_Home *)b)->home->module->modsrc,
                      phase);
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,

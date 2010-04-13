@@ -46,7 +46,7 @@
                             #`(contract contract-id
                                         id
                                         pos-module-source
-                                        (quote-module-path)
+                                        (quote-module-source)
                                         'external-id
                                         (quote-srcloc id))))))])
                (when key
@@ -646,7 +646,7 @@
                 (with-syntax ([code
                                (quasisyntax/loc stx
                                  (begin
-                                   (define pos-module-source (quote-module-path))
+                                   (define pos-module-source (quote-module-source))
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)

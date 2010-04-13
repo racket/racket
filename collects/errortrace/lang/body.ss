@@ -9,12 +9,13 @@
   (syntax-case stx ()
     [(_ lang . body)
      (let ([e (annotate-top
-               (local-expand #`(module . #,(strip-context #`(n lang . body)))
-                             'top-level
-                             null)
+               (syntax-local-introduce
+                (local-expand #`(module . #,(strip-context #`(n lang . body)))
+                              'top-level
+                              null))
                0)])
        (syntax-case e ()
          [(mod nm lang (mb . body)) 
-          #'(#%plain-module-begin 
+          #`(#%plain-module-begin 
              (require (only-in lang) errortrace/errortrace-key)
              . body)]))]))

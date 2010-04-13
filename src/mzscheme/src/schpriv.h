@@ -2821,6 +2821,7 @@ typedef struct Scheme_Module
   Scheme_Object so; /* scheme_module_type */
 
   Scheme_Object *modname;
+  Scheme_Object *modsrc;
 
   Scheme_Object *et_requires;  /* list of symbol-or-module-path-index */
   Scheme_Object *requires;     /* list of symbol-or-module-path-index */

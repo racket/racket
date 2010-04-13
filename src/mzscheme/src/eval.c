@@ -1877,7 +1877,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 			  env->phase,
                           modname,
                           mod_phase,
-                          env->module ? env->module->modname : scheme_false);
+                          env->module ? env->module->modsrc : scheme_false);
       return NULL;
     }
 
@@ -1908,7 +1908,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
                           env->phase,
                           exprs ? SCHEME_CDR(modname) : modname,
                           mod_phase,
-                          env->module ? env->module->modname : scheme_false);    
+                          env->module ? env->module->modsrc : scheme_false);    
     }
     if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
       ((Scheme_Bucket_With_Flags *)bkt)->flags |= GLOB_IS_LINKED;
@@ -2852,7 +2852,7 @@ char *scheme_optimize_context_to_string(Scheme_Object *context)
     }
 
     if (SAME_TYPE(SCHEME_TYPE(mod), scheme_module_type)) {
-      mctx = scheme_display_to_string(((Scheme_Module *)mod)->modname, NULL);
+      mctx = scheme_display_to_string(((Scheme_Module *)mod)->modsrc, NULL);
       mprefix = " in module: ";
     } else {
       mctx = "";

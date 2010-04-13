@@ -282,32 +282,39 @@
 
 (define depth (make-parameter 0))
 
+(define (actual-source-path path)
+  (if (file-exists? path) 
+      path
+      (let ([alt-path (rkt->ss path)])
+        (if (file-exists? alt-path)
+            alt-path
+            path))))
+
 (define (compile-zo mode path orig-path read-src-syntax)
-  ;; The `path' argument has been converted to .rkt or .ss form,
-  ;;  as appropriate.
-  ((manager-compile-notify-handler) orig-path)
-  (trace-printf "compiling: ~a" orig-path)
-  (parameterize ([indent (string-append "  " (indent))])
-    (let* ([zo-name (path-add-suffix (get-compilation-path mode path) #".zo")]
-           [zo-exists? (file-exists? zo-name)])
-      (if (and zo-exists? (trust-existing-zos))
-          (touch zo-name)
-          (begin (when zo-exists? (delete-file zo-name))
-                 (log-info (format "cm: ~acompiling ~a" 
-                                   (build-string 
-                                    (depth)
-                                    (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
-                                   orig-path))
-                 (parameterize ([depth (+ (depth) 1)])
-                   (with-handlers
-                       ([exn:get-module-code?
-                         (lambda (ex)
-                           (compilation-failure mode path zo-name
-                                                (exn:get-module-code-path ex)
-                                                (exn-message ex))
-                           (raise ex))])
-                     (compile-zo* mode path read-src-syntax zo-name)))))))
-  (trace-printf "end compile: ~a" orig-path))
+  (let ([actual-path (actual-source-path orig-path)])
+    ((manager-compile-notify-handler) actual-path)
+    (trace-printf "compiling: ~a" actual-path)
+    (parameterize ([indent (string-append "  " (indent))])
+      (let* ([zo-name (path-add-suffix (get-compilation-path mode path) #".zo")]
+             [zo-exists? (file-exists? zo-name)])
+        (if (and zo-exists? (trust-existing-zos))
+            (touch zo-name)
+            (begin (when zo-exists? (delete-file zo-name))
+                   (log-info (format "cm: ~acompiling ~a" 
+                                     (build-string 
+                                      (depth)
+                                      (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
+                                     actual-path))
+                   (parameterize ([depth (+ (depth) 1)])
+                     (with-handlers
+                         ([exn:get-module-code?
+                           (lambda (ex)
+                             (compilation-failure mode path zo-name
+                                                  (exn:get-module-code-path ex)
+                                                  (exn-message ex))
+                             (raise ex))])
+                       (compile-zo* mode path read-src-syntax zo-name)))))))
+    (trace-printf "end compile: ~a" actual-path)))
 
 (define (get-compiled-time mode path)
   (define-values (dir name) (get-compilation-dir+name mode path))

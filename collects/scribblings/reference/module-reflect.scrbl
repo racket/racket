@@ -104,11 +104,13 @@ the table and the corresponding file is loaded with a variant of
 
 While loading a file, the default @tech{module name resolver} sets the
 @scheme[current-module-declare-name] parameter to the resolved module
-name. Also, the default @tech{module name resolver} records in a
-private @tech{continuation mark} the filename being loaded, and it
-checks whether such a mark already exists; if such a continuation mark
-does exist in the current continuation, then the @exnraise[exn:fail]
-with a message about a dependency cycle.
+name (while the @tech{compiled-load handler} sets
+@scheme[current-module-declare-source]). Also, the default
+@tech{module name resolver} records in a private @tech{continuation
+mark} the module being loaded, and it checks whether such a mark
+already exists; if such a continuation mark does exist in the current
+continuation, then the @exnraise[exn:fail] with a message about a
+dependency cycle.
 
 Module loading is suppressed (i.e., @scheme[#f] is supplied as a third
 argument to the module name resolver) when resolving module paths in
@@ -133,6 +135,16 @@ a @scheme[module] declaration (when the parameter value is not
 @scheme[#f]). In that case, the @scheme[_id] from the @scheme[module]
 declaration is ignored, and the parameter's value is used as the name
 of the declared module.}
+
+@defparam[current-module-declare-source src (or/c symbol? (and/c path? complete-path?) #f)]{
+
+A parameter that determines source information to be associated with a
+module when evaluating a @scheme[module] declaration. Source
+information is used in error messages and reflected by
+@scheme[variable-reference->module-source]. When the parameter value
+is @scheme[#f], the module's name (as determined by
+@scheme[current-module-declare-name]) is used as the source name
+instead of the parameter value.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "modpathidx"]{Compiled Modules and References}

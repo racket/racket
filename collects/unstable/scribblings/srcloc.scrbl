@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require scribble/eval "utils.ss" (for-label scheme/base unstable/srcloc))
+@(require scribble/eval "utils.ss" (for-label scheme/base unstable/srcloc unstable/location))
 
 @(define unsyntax #f)
 
@@ -302,6 +302,14 @@ b
 ]
 
 }
+
+@defform[(quote-module-source)]{
+
+Like @scheme[quote-module-path], but for the enclosing module's source
+name, rather than its module path. The module path and source name are
+typically the same, but they can be different. For example, a source
+file whose name ends with @filepath{.ss} corersponds to a resolved
+module path ending with @filepath{.rkt}.}
 
 @defform[(quote-module-name)]{
 

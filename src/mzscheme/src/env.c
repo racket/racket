@@ -90,6 +90,7 @@ static Scheme_Object *namespace_mapped_symbols(int, Scheme_Object *[]);
 static Scheme_Object *namespace_module_registry(int, Scheme_Object *[]);
 static Scheme_Object *variable_p(int, Scheme_Object *[]);
 static Scheme_Object *variable_module_path(int, Scheme_Object *[]);
+static Scheme_Object *variable_module_source(int, Scheme_Object *[]);
 static Scheme_Object *variable_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_top_level_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_phase(int, Scheme_Object *[]);
@@ -650,6 +651,7 @@ static void make_kernel_env(void)
 
   GLOBAL_PRIM_W_ARITY("variable-reference?", variable_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->resolved-module-path", variable_module_path, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("variable-reference->module-source", variable_module_source, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->empty-namespace", variable_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->namespace", variable_top_level_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->phase", variable_phase, 1, 1, env);
@@ -4555,6 +4557,24 @@ static Scheme_Object *variable_module_path(int argc, Scheme_Object *argv[])
 
   if (env->module)
     return env->module->modname;
+  else
+    return scheme_false;
+}
+
+static Scheme_Object *variable_module_source(int argc, Scheme_Object *argv[])
+{
+  Scheme_Env *env;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
+    env = NULL;
+  else
+    env = ((Scheme_Bucket_With_Home *)SCHEME_PTR_VAL(argv[0]))->home;
+
+  if (!env)
+    scheme_wrong_type("variable-reference->module-source", "variable-reference", 0, argc, argv);
+
+  if (env->module)
+    return env->module->modsrc;
   else
     return scheme_false;
 }

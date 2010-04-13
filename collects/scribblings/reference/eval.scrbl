@@ -214,11 +214,12 @@ The protocol for a @tech{compiled-load handler} is the same as for the
 @tech{compiled-load handler} is expected to set
 @scheme[current-load-relative-directory] itself. The default
 @tech{compiled-load handler}, however, checks for a @filepath{.ss}
-file when then given path ends with @filepath{.rkt} and no
-@filepath{.rkt} file exists. In addition, the default
-@tech{compiled-load handler} checks for @filepath{.zo} (bytecode)
-files and @filepath{.so} (native Unix), @filepath{.dll} (native
-Windows), or @filepath{.dylib} (native Mac OS X) files.
+file when the given path ends with @filepath{.rkt}, no @filepath{.rkt}
+file exists, and when the handler's second argument is a symbol. In
+addition, the default @tech{compiled-load handler} checks for
+@filepath{.zo} (bytecode) files and @filepath{.so} (native Unix),
+@filepath{.dll} (native Windows), or @filepath{.dylib} (native Mac OS
+X) files.
 
 The check for a compiled file occurs whenever the given path
 @scheme[_file] ends with any extension (e.g., @filepath{.rkt} or
@@ -236,15 +237,22 @@ file is loaded only if its modification date is not older than the
 date for @scheme[_file]. If both @filepath{.zo} and
 @filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are available,
 the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.  If
-@scheme[_file] ends with @filepath{.rkt}, no such file exists, and a
-@filepath{.ss} file exists, then @filepath{.zo} and
+@scheme[_file] ends with @filepath{.rkt}, no such file exists, the
+handler's second argument is a symbol, and a @filepath{.ss} file
+exists, then @filepath{.zo} and
 @filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are used only
 with names based on @scheme[_file] with its suffixed replaced by
 @filepath{.ss}.
 
 While a @filepath{.zo}, @filepath{.so}, @filepath{.dll}, or
 @filepath{.dylib} file is loaded, the current @scheme[load-relative]
-directory is set to the directory of the original @scheme[_file].
+directory is set to the directory of the original @scheme[_file].  If
+the file to be loaded has the suffix @filepath{.ss} while the
+requested file has the suffix @filepath{.rkt}, then the
+@scheme[current-module-declare-source] parameter is set to the full
+path of the loaded file, otherwise the
+@scheme[current-module-declare-source] parameter is set to
+@scheme[#f].
 
 If the original @scheme[_file] is loaded or a @filepath{.zo} variant is
 loaded, the @tech{load handler} is called to load the file. If any

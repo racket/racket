@@ -377,6 +377,16 @@ result is a @tech{resolved module path} naming the module.
 If @scheme[varref] refers to a @tech{top-level variable}, then the
 result is @scheme[#f].}
 
+@defproc[(variable-reference->module-source [varref variable-reference?])
+         (or/c symbol? (and/c path? complete-path?) #f)]{
+
+If @scheme[varref] refers to a @tech{module-level variable}, the
+result is a path or symbol naming the module's source (which is
+typically, but not always, the same as in the resolved module path).
+
+If @scheme[varref] refers to a @tech{top-level variable}, then the
+result is @scheme[#f].}
+
 @defproc[(variable-reference->phase [varref variable-reference?])
          exact-nonnegative-integer?]{
 

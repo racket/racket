@@ -96,15 +96,14 @@
 ;; Other representations of blame are returned as-is.
 (define (unpack-blame blame)
   (if (variable-reference? blame)
-      (let ([rp (variable-reference->resolved-module-path blame)])
+      (let ([resolved (variable-reference->module-source blame)])
         (cond
-         [(not rp) 
+         [(not resolved) 
           'top-level]
          [else
-          (let ([resolved (resolved-module-path-name rp)])
-            (cond
-             [(symbol? resolved) `(quote ,resolved)]
-             [else `(file ,(path->string resolved))]))]))
+          (cond
+           [(symbol? resolved) `(quote ,resolved)]
+           [else `(file ,(path->string resolved))])]))
       blame))
 
 (define (unpack-source info)

@@ -943,6 +943,7 @@ module_val {
  mark:
   Scheme_Module *m = (Scheme_Module *)p;
   gcMARK2(m->modname, gc);
+  gcMARK2(m->modsrc, gc);
 
   gcMARK2(m->et_requires, gc);
   gcMARK2(m->requires, gc);

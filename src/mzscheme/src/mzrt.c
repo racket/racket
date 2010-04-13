@@ -332,35 +332,6 @@ struct mzrt_rwlock {
   int readers, writers, write_waiting;
 };
 
-static mzrt_rwlock *locks[2];
-
-/* tests for rwlock implementation */
-#if 0
-static void *go(void *id)
-{
-  int i = *(int *)id, j, amt;
-
-  for (j = 0; j < 3; j++) {
-    amt = (random() % 400) + 100;
-    usleep(amt - 100);
-    if (!(i % 3)) {
-      mzrt_rwlock_wrlock(locks[0]);
-      printf("writing %d\n", i);
-      usleep(amt);
-      mzrt_rwlock_unlock(locks[0]);
-    } else {
-      mzrt_rwlock_rdlock(locks[0]);
-      printf("reading %d\n", i);
-      usleep(amt);
-      mzrt_rwlock_unlock(locks[0]);
-    }
-    printf("done %d\n", i);
-  }
-
-  return NULL;
-}
-#endif
-
 int mzrt_rwlock_create(mzrt_rwlock **lock) {
   int err;
 

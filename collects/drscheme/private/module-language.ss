@@ -293,13 +293,16 @@
         ;; module.  So the code is split among several thunks that follow.
         (define (*pre)
           (thread-cell-set! repl-init-thunk *error)
-          (current-module-declare-name resolved-modpath))
+          (current-module-declare-name resolved-modpath)
+          (current-module-declare-source path))
         (define (*post)
           (current-module-declare-name #f)
+          (current-module-declare-source #f)
           (when path ((current-module-name-resolver) resolved-modpath))
           (thread-cell-set! repl-init-thunk *init))
         (define (*error)
           (current-module-declare-name #f)
+          (current-module-declare-source #f)
           ;; syntax error => try to require the language to get a working repl
           (with-handlers ([void (λ (e)
                                   (raise-hopeless-syntax-error

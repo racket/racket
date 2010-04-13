@@ -567,22 +567,32 @@
                  [try-main? (or main-path-d (not alt-path-d))]
                  [try-alt? (and alt-file (or alt-path-d (not main-path-d)))])
             (cond
-             [(or (and try-main?
-                       (date>=? modes so path-d))
-                  (and try-alt?
-                       (date>=? modes alt-so alt-path-d)))
+             [(and try-main?
+                   (date>=? modes so path-d))
               => (lambda (so-d)
-                   (with-dir (lambda () ((current-load-extension) (car so-d) expect-module))))]
-             [(or (and try-main?
-                       (date>=? modes zo path-d))
-                  (and try-alt?
-                       (date>=? modes alt-zo path-d)))
+                   (parameterize ([current-module-declare-source #f])
+                     (with-dir (lambda () ((current-load-extension) (car so-d) expect-module)))))]
+             [(and try-alt?
+                   (date>=? modes alt-so alt-path-d))
+              => (lambda (so-d)
+                   (parameterize ([current-module-declare-source alt-path])
+                     (with-dir (lambda () ((current-load-extension) (car so-d) expect-module)))))]
+             [(and try-main?
+                   (date>=? modes zo path-d))
               => (lambda (zo-d)
-                   (with-dir (lambda () ((current-load) (car zo-d) expect-module))))]
+                   (parameterize ([current-module-declare-source #f])
+                     (with-dir (lambda () ((current-load) (car zo-d) expect-module)))))]
+             [(and try-alt?
+                   (date>=? modes alt-zo path-d))
+              => (lambda (zo-d)
+                   (parameterize ([current-module-declare-source alt-path])
+                     (with-dir (lambda () ((current-load) (car zo-d) expect-module)))))]
              [else
-              (with-dir (lambda () ((current-load) 
-                                    (if try-main? path alt-path)
-                                    expect-module)))]))))))
+              (let ([p (if try-main? path alt-path)])
+                (parameterize ([current-module-declare-source (and expect-module 
+                                                                   (not try-main?)
+                                                                   p)])
+                  (with-dir (lambda () ((current-load) p expect-module)))))]))))))
 
   (define-values (default-reader-guard)
     (lambda (path) path))

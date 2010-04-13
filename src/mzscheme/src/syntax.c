@@ -666,7 +666,7 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
                               : "re-define a constant"))
 			: "set variable before its definition"),
 		       (Scheme_Object *)b->key,
-		       ((Scheme_Bucket_With_Home *)b)->home->module->modname);
+		       ((Scheme_Bucket_With_Home *)b)->home->module->modsrc);
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
 		       "%s: cannot %s variable: %S",

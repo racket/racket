@@ -9,6 +9,7 @@
          quote-character-position
          quote-character-span
          quote-module-path
+         quote-module-source
          quote-module-name)
 
 (define-syntax (quote-srcloc stx)
@@ -49,6 +50,9 @@
 (define-syntax-rule (quote-module-path)
   (variable-reference->module-path (#%variable-reference)))
 
+(define-syntax-rule (quote-module-source)
+  (variable-reference->module-src (#%variable-reference)))
+
 (define (variable-reference->module-path var)
   (module-name->module-path
    (variable-reference->module-name var)))
@@ -64,3 +68,7 @@
    [(path? name) `(file ,(path->string name))]
    [(symbol? name) `(quote ,name)]
    [else 'top-level]))
+
+(define (variable-reference->module-src var)
+  (or (variable-reference->module-source var)
+      'top-level))

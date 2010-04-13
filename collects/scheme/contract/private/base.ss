@@ -21,7 +21,7 @@ improve method arity mismatch contract violation error messages?
          "blame.ss")
 
 (define-syntax-parameter current-contract-region
-  (λ (stx) #'(quote-module-path)))
+  (λ (stx) #'(quote-module-source)))
 
 (define-syntax (contract stx)
   (syntax-case stx ()
