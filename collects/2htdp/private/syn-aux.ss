@@ -25,7 +25,7 @@
   (define msg (format "not a legal clause in a ~a description" legal))
   (define Spec (append AllSpec PartSpec))
   (define kwds (map (compose (curry datum->syntax stx) car) Spec))
-  (define spec (clauses-use-kwd (syntax->list clauses) ->rec? msg (->kwds-in kwds)))
+  (define spec (clauses-use-kwd (syntax->list clauses) ->rec? msg kwds))
   (duplicates? tag spec)
   (map (lambda (x) 
          (define kw (car x))
@@ -52,10 +52,17 @@
              (duplicates? (rest lox))))])))
 
 ;; check whether rec? occurs, produce list of keywords 
-(define (clauses-use-kwd stx:list ->rec? legal-clause kwd-in?)
+(define (clauses-use-kwd stx:list ->rec? legal-clause kwds)
+  (define kwd-in? (->kwds-in kwds))
+  (define double (string-append legal-clause ", ~a has been redefined"))
   (map (lambda (stx)
          (syntax-case stx ()
            [(kw . E) (kwd-in? #'kw) (begin (->rec? #'kw #'E) (cons #'kw stx))]
+           [(kw . E)
+            (let ([kw (syntax-e #'kw)])
+              (if (member kw (map syntax-e kwds))
+                  (raise-syntax-error #f (format double kw) stx)
+                  (raise-syntax-error #f legal-clause stx)))]
            [_ (raise-syntax-error #f legal-clause stx)]))
        stx:list))
 

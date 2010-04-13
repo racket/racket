@@ -1,7 +1,6 @@
 #lang scheme/load
 
 ;; purpose: make sure that each clause exists at most once 
-
 ;; (why am I running this in scheme/load for the namespace in eval)
 
 (error-print-source-location #f)
