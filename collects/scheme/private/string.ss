@@ -108,25 +108,29 @@
   ;; Helper macro for the regexp functions below, with some utilities.
   (define (bstring-length s)
     (if (bytes? s) (bytes-length s) (string-length s)))
-  (define no-empty-edge-matches
+  (define (no-empty-edge-matches n)
     (make-regexp-tweaker (lambda (rx) 
                            (if (bytes? rx)
-                               (bytes-append #"(?=.)(?:" rx #")(?<=.)")
-                               (format "(?=.)(?:~a)(?<=.)" rx)))))
-  (define (bstring->no-edge-regexp name pattern)
-    (if (or (regexp? pattern) (byte-regexp? pattern)
-            (string? pattern) (bytes? pattern))
-      (no-empty-edge-matches pattern)
-      (raise-type-error
-       name "regexp, byte regexp, string, or byte string" pattern)))
+                               (bytes-append #"(?=.)(?:" rx #")(?<=" (make-bytes n (char->integer #\.)) #")")
+                               (format "(?=.)(?:~a)(?<=~a)" rx (make-bytes n (char->integer #\.)))))))
   (define-syntax-rule (regexp-loop
-                       name loop start end rx string
+                       name loop start end pattern string
+                       ipre
                        success-choose failure-k
                        port-success-k port-success-choose port-failure-k
                        need-leftover? peek?)
-    (let ([len (cond [(string? string) (string-length string)]
-                     [(bytes?  string) (bytes-length  string)]
-                     [else #f])])
+    (let* ([len (cond [(string? string) (string-length string)]
+                      [(bytes?  string) (bytes-length  string)]
+                      [else #f])]
+           [orig-rx (cond [(bytes? pattern) (byte-regexp pattern)]
+                          [(string? pattern) (regexp pattern)]
+                          [(regexp? pattern) pattern]
+                          [(byte-regexp? pattern) pattern]
+                          [else
+                           (raise-type-error 'name
+                                             "regexp, byte regexp, string, or byte string" 
+                                             pattern)])]
+           [max-lookbehind (regexp-max-lookbehind orig-rx)])
       (if peek?
         (unless (input-port? string)
           (raise-type-error 'name "input port" string))
@@ -140,6 +144,8 @@
                   (and (number? end) (exact? end) (integer? end)
                        (end . >= . 0)))
         (raise-type-error 'name "non-negative exact integer or false" end))
+      (unless (bytes? ipre)
+        (raise-type-error 'name "byte string" ipre))
       (unless (or (input-port? string) (and len (start . <= . len)))
         (raise-mismatch-error
          'name
@@ -153,66 +159,76 @@
          (format "ending offset index out of range [~a,~a]: " start len)
          end))
       (reverse
-       (let loop ([acc '()] [start start] [end end])
+       (let loop ([acc '()] [start start] [end end] [ipre ipre] [rx #f] [rx-lb 0])
+         (let* ([new-rx-lb (add1 (bytes-length ipre))]
+                [rx (if (= rx-lb new-rx-lb)
+                        rx
+                        ((no-empty-edge-matches new-rx-lb) orig-rx))])
+           (if (and port-success-choose (input-port? string))
 
-         (if (and port-success-choose (input-port? string))
-
-           ;; Input port match, get string
-           (let* ([_ (when (positive? start)
-                       ;; Skip start chars:
-                       (let ([s (make-bytes 4096)])
-                         (let loop ([n 0])
-                           (unless (= n start)
-                             (let ([m (read-bytes-avail!
-                                       s string 0 (min (- start n) 4096))])
-                               (unless (eof-object? m) (loop (+ n m))))))))]
-                  [discarded/leftovers (if need-leftover? #f 0)]
-                  [spitout (if need-leftover?
-                             (open-output-bytes)
-                             (make-output-port
-                              'counter always-evt
-                              (lambda (s start end flush? breakable?)
-                                (let ([c (- end start)])
-                                  (set! discarded/leftovers
-                                        (+ c discarded/leftovers))
-                                  c))
-                              void))]
-                  [end (and end (- end start))]
-                  [m (regexp-match rx string 0 end spitout)]
-                  [m (and m (car m))]
-                  [discarded/leftovers (if need-leftover?
-                                         (get-output-bytes spitout)
-                                         discarded/leftovers)]
-                  [end (and end m
-                            (- end (if need-leftover?
-                                     (bstring-length discarded/leftovers)
-                                     discarded/leftovers)
-                               (bstring-length m)))])
-             (if m
-               (loop (cons (port-success-choose m discarded/leftovers) acc)
-                     0 end)
-               (port-failure-k acc discarded/leftovers)))
-
-           ;; String/port match, get positions
-           (let ([m (if peek?
-                      (regexp-match-peek-positions rx string start end)
-                      (regexp-match-positions rx string start end))])
-             (if (not m)
-               (failure-k acc start end)
-               (let ([mstart (caar m)] [mend (cdar m)])
-                 (if port-success-k
-                   (port-success-k
-                    (lambda (acc new-start new-end)
-                      (loop acc new-start new-end))
-                    acc start end mstart mend)
-                   (loop (cons (success-choose start mstart mend) acc)
-                         mend end))))))))))
+               ;; Input port match, get string
+               (let* ([_ (when (positive? start)
+                           ;; Skip start chars:
+                           (let ([s (make-bytes 4096)])
+                             (let loop ([n 0])
+                               (unless (= n start)
+                                 (let ([m (read-bytes-avail!
+                                           s string 0 (min (- start n) 4096))])
+                                   (unless (eof-object? m) (loop (+ n m))))))))]
+                      [discarded/leftovers (if need-leftover? #f 0)]
+                      [spitout (if need-leftover?
+                                   (open-output-bytes)
+                                   (make-output-port
+                                    'counter always-evt
+                                    (lambda (s start end flush? breakable?)
+                                      (let ([c (- end start)])
+                                        (set! discarded/leftovers
+                                              (+ c discarded/leftovers))
+                                        c))
+                                    void))]
+                      [end (and end (- end start))])
+                 (let-values ([(m ipre) (regexp-match/end rx string 0 end spitout ipre
+                                                          max-lookbehind)])
+                   (let* ([m (and m (car m))]
+                          [discarded/leftovers (if need-leftover?
+                                                   (get-output-bytes spitout)
+                                                   discarded/leftovers)]
+                          [end (and end m
+                                    (- end (if need-leftover?
+                                               (bstring-length discarded/leftovers)
+                                               discarded/leftovers)
+                                       (bstring-length m)))])
+                     (if m
+                         (loop (cons (port-success-choose m discarded/leftovers) acc)
+                               0 end ipre
+                               rx new-rx-lb)
+                         (port-failure-k acc discarded/leftovers)))))
+               
+               ;; String/port match, get positions
+               (let-values ([(m ipre)
+                             (if peek?
+                                 (regexp-match-peek-positions/end rx string start end #f ipre
+                                                                  max-lookbehind)
+                                 (regexp-match-positions/end rx string start end #f ipre
+                                                             max-lookbehind))])
+                 
+                 (if (not m)
+                     (failure-k acc start end)
+                     (let ([mstart (caar m)] [mend (cdar m)])
+                       (if port-success-k
+                           (port-success-k
+                            (lambda (acc new-start new-end)
+                              (loop acc new-start new-end ipre rx new-rx-lb))
+                            acc start end mstart mend)
+                           (loop (cons (success-choose start mstart mend) acc)
+                                 mend end ipre rx new-rx-lb)))))))))))
 
   ;; Returns all the positions at which the pattern matched.
-  (define (regexp-match-positions* pattern string [start 0] [end #f])
+  (define (regexp-match-positions* pattern string [start 0] [end #f] [ipre #""])
     (regexp-loop
      regexp-match-positions* loop start end
-     (bstring->no-edge-regexp 'regexp-match-positions* pattern) string
+     pattern string
+     ipre
      ;; success-choose:
      (lambda (start mstart mend) (cons mstart mend))
      ;; failure-k:
@@ -233,10 +249,11 @@
      #f))
 
   ;; Returns all the positions at which the pattern matched.
-  (define (regexp-match-peek-positions* pattern string [start 0] [end #f])
+  (define (regexp-match-peek-positions* pattern string [start 0] [end #f] [ipre #""])
     (regexp-loop
      regexp-match-peek-positions* loop start end
-     (bstring->no-edge-regexp 'regexp-match-peek-positions* pattern) string
+     pattern string
+     ipre
      ;; success-choose:
      (lambda (start mstart mend) (cons mstart mend))
      ;; failure-k:
@@ -250,13 +267,13 @@
 
   ;; Splits a string into a list by removing any piece which matches
   ;; the pattern.
-  (define (regexp-split pattern string [start 0] [end #f])
-    (define rx (bstring->no-edge-regexp 'regexp-split pattern))
-    (define buf (if (and (string? string) (byte-regexp? rx))
+  (define (regexp-split pattern string [start 0] [end #f] [ipre #""])
+    (define buf (if (and (string? string) (or (byte-regexp? pattern)
+                                              (bytes? pattern)))
                   (string->bytes/utf-8 string (char->integer #\?))
                   string))
     (define sub (if (bytes? buf) subbytes substring))
-    (regexp-loop regexp-split loop start end rx buf
+    (regexp-loop regexp-split loop start end pattern buf ipre
      ;; success-choose:
      (lambda (start mstart mend) (sub buf start mstart))
      ;; failure-k:
@@ -272,13 +289,13 @@
      #f))
 
   ;; Returns all the matches for the pattern in the string.
-  (define (regexp-match* pattern string [start 0] [end #f])
-    (define rx (bstring->no-edge-regexp 'regexp-match* pattern))
-    (define buf (if (and (string? string) (byte-regexp? rx))
+  (define (regexp-match* pattern string [start 0] [end #f] [ipre #""])
+    (define buf (if (and (string? string) (or (byte-regexp? pattern)
+                                              (bytes? pattern)))
                   (string->bytes/utf-8 string (char->integer #\?))
                   string))
     (define sub (if (bytes? buf) subbytes substring))
-    (regexp-loop regexp-match* loop start end rx buf
+    (regexp-loop regexp-match* loop start end pattern buf ipre
      ;; success-choose:
      (lambda (start mstart mend) (sub buf mstart mend))
      ;; failure-k:

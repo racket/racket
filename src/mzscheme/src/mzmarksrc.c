@@ -2101,6 +2101,7 @@ mark_regwork {
   gcMARK2(r->endp, gc);
   gcMARK2(r->counters, gc);
   gcMARK2(r->peekskip, gc);
+  gcMARK2(r->prefix, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Regwork));
 }

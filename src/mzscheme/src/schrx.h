@@ -26,11 +26,12 @@ typedef struct regexp {
 #endif
 } regexp;
 
-#define REGEXP_IS_UTF8 0x01
-#define REGEXP_IS_PCRE 0x02
-#define REGEXP_ANCH    0x04
-#define REGEXP_MUST_CI 0x08
-#define REGEXP_JIT     0x10
+#define REGEXP_IS_UTF8    0x01
+#define REGEXP_IS_PCRE    0x02
+#define REGEXP_ANCH       0x04
+#define REGEXP_MUST_CI    0x08
+#define REGEXP_JIT        0x10
+#define REGEXP_LOOKBEHIND 0x20
 
 #ifdef INDIRECT_TO_PROGRAM
 # define N_ITO_DELTA(prog, extra, re) extra
@@ -217,14 +218,17 @@ typedef struct Regwork {
   char *instr;
   Scheme_Object *port;
   Scheme_Object *unless_evt;
-  short nonblock, aborted;
+  char nonblock, aborted;
   rxpos instr_size;       /* For port reads */
   rxpos input_maxend;     /* For port reads */
   rxpos input, input_end, input_start; /* String-input pointer. */
-  rxpos boi, bol;	  /* Beginning of input/line, for ^ check. */
+  rxpos input_min;        /* input_start minus prefix_size */
+  rxpos boi;	          /* Beginning of input, for ^ check. */
   rxpos *startp;	  /* Pointer to startp array. */
   rxpos *maybep;	  /* Pointer to tentative startp array. */
   rxpos *endp;		  /* Ditto for endp. */
   int *counters;          /* For {} counters */
   Scheme_Object *peekskip;
+  char *prefix;
+  rxpos prefix_len, prefix_delta;
 } Regwork;

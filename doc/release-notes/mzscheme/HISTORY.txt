@@ -1,3 +1,7 @@
+Version 4.2.5.9
+regexp-match* et al. now disable ^ matching on all but the first
+ match
+
 Version 4.2.5.3
 Added chaperones
 

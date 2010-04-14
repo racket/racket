@@ -1266,12 +1266,12 @@
 
 (arity-test regexp 1 1)
 (arity-test regexp? 1 1)
-(arity-test regexp-match 2 5)
-(arity-test regexp-match-positions 2 5)
-(arity-test regexp-match-peek 2 5)
-(arity-test regexp-match-peek-positions 2 5)
-(arity-test regexp-replace 3 3)
-(arity-test regexp-replace* 3 3)
+(arity-test regexp-match 2 6)
+(arity-test regexp-match-positions 2 6)
+(arity-test regexp-match-peek 2 6)
+(arity-test regexp-match-peek-positions 2 6)
+(arity-test regexp-replace 3 4)
+(arity-test regexp-replace* 3 4)
 
 (test #t procedure? car)
 (test #f procedure? 'car)

@@ -5130,6 +5130,7 @@ static int mark_regwork_MARK(void *p, struct NewGC *gc) {
   gcMARK2(r->endp, gc);
   gcMARK2(r->counters, gc);
   gcMARK2(r->peekskip, gc);
+  gcMARK2(r->prefix, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Regwork));
 }
@@ -5145,6 +5146,7 @@ static int mark_regwork_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(r->endp, gc);
   gcFIXUP2(r->counters, gc);
   gcFIXUP2(r->peekskip, gc);
+  gcFIXUP2(r->prefix, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Regwork));
 }
