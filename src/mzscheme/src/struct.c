@@ -614,6 +614,10 @@ scheme_init_struct (Scheme_Env *env)
   REGISTER_SO(prefab_symbol);
   prefab_symbol = scheme_intern_symbol("prefab");
 
+  REGISTER_SO(prefab_table);
+  prefab_table = scheme_make_weak_equal_table();
+  
+
   REGISTER_SO(scheme_source_property);
   {
     guard = scheme_make_prim_w_arity(check_exn_source_property_value_ok,
@@ -4009,11 +4013,6 @@ static Scheme_Struct_Type *lookup_prefab(Scheme_Object *key) {
 static Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type)
 {
   Scheme_Object *k, *v;
-  
-  if (!prefab_table) {
-    REGISTER_SO(prefab_table);
-    prefab_table = scheme_make_weak_equal_table();
-  }
   
   k = make_prefab_key(type);
   type->prefab_key = k;
