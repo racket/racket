@@ -196,7 +196,7 @@
 
 ;; name : symbol
 ;; parent : Struct
-;; flds : Listof[Type]
+;; flds : Listof[Cons[Type,Bool]] type and mutability
 ;; proc : Function Type
 ;; poly? : is this a polymorphic type?
 ;; pred-id : identifier for the predicate of the struct
@@ -204,22 +204,34 @@
 (dt Struct ([name symbol?] 
             [parent (or/c #f Struct? Name?)] 
             [flds (listof Type/c)]
+            #;
+            [flds (listof (cons/c Type/c boolean?))]
             [proc (or/c #f Function?)]
             [poly? boolean?] 
             [pred-id identifier?]
             [cert procedure?]
-            [acc-ids (listof identifier?)])
+            [acc-ids (listof identifier?)]
+            [maker-id identifier?])
     [#:intern (list name parent flds proc)]
-    [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null) (if parent (list parent) null) flds)))
-             (combine-frees (map free-idxs* (append (if proc (list proc) null) (if parent (list parent) null) flds)))]
+    [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null)
+                                                    (if parent (list parent) null) 
+                                                    
+                                                    flds #;(map car flds))))
+             (combine-frees (map free-idxs* (append (if proc (list proc) null)
+                                                    (if parent (list parent) null)
+                                                    flds #;(map car flds))))]
     [#:fold-rhs (*Struct name 
                          (and parent (type-rec-id parent))
                          (map type-rec-id flds)
+                         #;
+                         (for/list ([(t m?) (in-pairs (in-list flds))])
+                           (cons (type-rec-id t) m?))
                          (and proc (type-rec-id proc))
                          poly?
                          pred-id
                          cert
-                         acc-ids)]
+                         acc-ids
+                         maker-id)]
     [#:key #f])
 
 ;; A structure type descriptor

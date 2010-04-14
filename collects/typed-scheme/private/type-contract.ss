@@ -160,25 +160,33 @@
            #;#'class?           
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
-        [(Struct: nm par flds proc poly? pred? cert acc-ids)
+        [(Struct: nm par flds proc poly? pred? cert acc-ids maker-id)
          (cond 
            [(assf (λ (t) (type-equal? t ty)) structs-seen)
             =>
-            (lambda (pr)
-              (cdr pr))]
+            cdr]
            [proc (exit (fail))]
-               [poly? 
-                (with-syntax* ([(x rec) (generate-temporaries '(x rec))]
-                               [(fld-cnts ...)
-                                (for/list ([fty flds]
-                                           [f-acc acc-ids])
-                                  #`(#,(t->c fty #:seen (cons (cons ty #'rec) structs-seen))
-                                     (#,f-acc x)))])
-                              #`(flat-rec-contract 
-                                 rec
-                                 '#,(syntax-e pred?)
-                                 (lambda (x) (and fld-cnts ...))))]
-               [else #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))])]
+           [poly? 
+            (with-syntax* ([(rec blame val) (generate-temporaries '(rec blame val))]
+                           [maker maker-id]
+                           [cnt-name nm]
+                           [(fld-cnts ...)
+                            (for/list ([fty flds]
+                                       [f-acc acc-ids])
+                              #`(((contract-projection
+                                   #,(t->c fty #:seen (cons (cons ty #'(recursive-contract rec)) structs-seen)))
+                                  blame)
+                                 (#,f-acc val)))])
+              #`(letrec ([rec 
+                          (make-contract 
+                           #:name 'cnt-name
+                           #:first-order #,pred?
+                           #:projection 
+                           (lambda (blame)
+                             (lambda (val)
+                               (maker fld-cnts ...))))])
+                  rec))]
+           [else #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))])]
         [(Syntax: (Base: 'Symbol _)) #'identifier?]
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]

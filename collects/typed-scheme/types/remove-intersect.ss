@@ -50,18 +50,18 @@
          [(or (list (Pair: _ _) _)
               (list _ (Pair: _ _)))
           #f]
-         [(or (list (Value: '()) (Struct: n _ flds _ _ _ _ _))
-              (list (Struct: n _ flds _ _ _ _ _) (Value: '())))
+         [(or (list (Value: '()) (Struct: n _ flds _ _ _ _ _ _))
+              (list (Struct: n _ flds _ _ _ _ _ _) (Value: '())))
           #f]
-         [(list (Struct: n _ flds _ _ _ _ _)
-                (Struct: n _ flds* _ _ _ _ _))
+         [(list (Struct: n _ flds _ _ _ _ _ _)
+                (Struct: n _ flds* _ _ _ _ _ _))
           (for/and ([f flds] [f* flds*]) (overlap f f*))]
          ;; n and n* must be different, so there's no overlap
-         [(list (Struct: n #f flds _ _ _ _ _)
-                (Struct: n* #f flds* _ _ _ _ _))
+         [(list (Struct: n #f flds _ _ _ _ _ _)
+                (Struct: n* #f flds* _ _ _ _ _ _))
           #f]
-         [(list (Struct: n p flds _ _ _ _ _)
-                (Struct: n* p* flds* _ _ _ _ _))
+         [(list (Struct: n p flds _ _ _ _ _ _)
+                (Struct: n* p* flds* _ _ _ _ _ _))
           (and (= (length flds) (length flds*)) (for/and ([f flds] [f* flds*]) (overlap f f*)))]
          [else #t])])))
 

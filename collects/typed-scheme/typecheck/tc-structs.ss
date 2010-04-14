@@ -76,7 +76,7 @@
 ;; Option[Struct-Ty] -> Listof[Type]
 (define (get-parent-flds p)
   (match p
-    [(Struct: _ _ flds _ _ _ _ _) flds]
+    [(Struct: _ _ flds _ _ _ _ _ _) flds]
     [(Name: n) (get-parent-flds (lookup-type-name n))]
     [#f null]))
 
@@ -99,7 +99,7 @@
   (define-values (struct-type-id maker pred getters setters) (struct-names nm flds setters?))
   (let* ([name (syntax-e nm)]
          [fld-types (append parent-field-types types)]
-         [sty (make-Struct name parent fld-types proc-ty poly? pred (syntax-local-certifier) getters)]
+         [sty (make-Struct name parent fld-types proc-ty poly? pred (syntax-local-certifier) getters (or maker* maker))]
          [external-fld-types/no-parent types]
          [external-fld-types fld-types])
     (if type-only

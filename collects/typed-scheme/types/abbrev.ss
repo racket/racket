@@ -77,7 +77,7 @@
 (define make-promise-ty
   (let ([s (string->uninterned-symbol "Promise")])
     (lambda (t)
-      (make-Struct s #f (list t) #f #f #'promise? values (list #'values)))))
+      (make-Struct s #f (list t) #f #f #'promise? values (list #'values) #'values))))
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
@@ -256,8 +256,8 @@
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))
 
-(define (-struct name parent flds accs [proc #f] [poly #f] [pred #'dummy] [cert values])
-  (make-Struct name parent flds proc poly pred cert accs))
+(define (-struct name parent flds accs constructor [proc #f] [poly #f] [pred #'dummy] [cert values])
+  (make-Struct name parent flds proc poly pred cert accs constructor))
 
 (define (-filter t [p null] [i 0])
   (make-LTypeFilter t p i))
