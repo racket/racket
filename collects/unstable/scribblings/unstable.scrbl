@@ -73,6 +73,7 @@ Keep documentation and tests up to date.
 
 @include-section["bytes.scrbl"]
 @include-section["contract.scrbl"]
+@include-section["dirs.scrbl"]
 @include-section["exn.scrbl"]
 @include-section["file.scrbl"]
 @include-section["list.scrbl"]

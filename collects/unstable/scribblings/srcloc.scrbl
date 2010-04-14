@@ -169,6 +169,25 @@ position and span, if both are numbers) or @scheme[#f].
 
 }
 
+@defproc[(update-source-location
+          [loc source-location?]
+          [#:source source any/c]
+          [#:line line (or/c exact-nonnegative-integer? #f)]
+          [#:column column (or/c exact-positive-integer? #f)]
+          [#:position position (or/c exact-nonnegative-integer? #f)]
+          [#:span span (or/c exact-positive-integer? #f)])
+         source-location?]{
+Produces a modified version of @scheme[loc], replacing its fields with
+@scheme[source], @scheme[line], @scheme[column], @scheme[position], and/or
+@scheme[span], if given.
+
+@examples[#:eval evaluator
+(update-source-location #f #:source 'here)
+(update-source-location (list 'there 1 2 3 4) #:line 20 #:column 79)
+(update-source-location (vector 'everywhere 1 2 3 4) #:position #f #:span #f)
+]
+}
+
 @deftogether[(
 @defproc[(source-location->string [loc source-location?]) string?]{}
 @defproc[(source-location->prefix [loc source-location?]) string?]{}
@@ -217,11 +236,9 @@ definition itself and quoting the source location of the macro's arguments.
 
 Quotes the source location of @scheme[form] as a @scheme[srcloc]
 structure, using the location of the whole @scheme[(quote-srcloc)]
-expression if no @scheme[expr] is given. When @scheme[expr] has a
-source module (in the sense of @scheme[syntax-source-module]), the
-module's source path is used form source location, unless a
-@scheme[#:module-source expr] is specified, in which case
-@scheme[expr] provides the source.
+expression if no @scheme[expr] is given.  Uses relative directories
+for paths found within the collections tree, the user's collections directory,
+or the PLaneT cache.
 
 @defexamples[#:eval (new-evaluator)
 (quote-srcloc)
@@ -272,80 +289,44 @@ the whole macro application if no @scheme[form] is given.
 
 }
 
-@defform[(quote-module-path)]{
+@deftogether[(
+@defform[(quote-module-name)]
+@defform[(quote-module-path)]
+)]{
 
-Quotes a module path suitable for use with @scheme[require] which
-refers to the module in which the macro application occurs.  If executed at the
-top level, it may return @scheme['top-level], or it may return a valid module
-path if the current namespace was constructed by @scheme[module->namespace]
-(such as at the DrScheme interactions window).
+Quote the name of the module in which the form is compiled.  The
+@scheme[quote-module-name] form produces a string or a symbol, while
+@scheme[quote-module-path] produces a @tech[#:doc reference-path]{module path}.
 
-The @scheme[quote-module-path] form operates by creating a @tech[#:doc reference-path]{variable
-reference} (see @scheme[#%variable-reference]) at the point of its application.
-It thus automatically describes its final expanded position, rather than the
-module of any macro definition that happens to use it.
+These forms use relative names for modules found in the collections or PLaneT
+cache; their results are suitable for printing, but not for accessing libraries
+programmatically, such as via @scheme[dynamic-require].
 
 @defexamples[#:eval (new-evaluator)
-(quote-module-path)
 (module A scheme
   (require unstable/location)
-  (define-syntax-rule (here) (quote-module-path))
-  (define a (here))
-  (provide a here))
+  (define-syntax-rule (name) (quote-module-name))
+  (define-syntax-rule (path) (quote-module-path))
+  (define a-name (name))
+  (define a-path (path))
+  (provide (all-defined-out)))
 (require 'A)
-a
+a-name
+a-path
 (module B scheme
   (require unstable/location)
   (require 'A)
-  (define b (here))
-  (provide b))
+  (define b-name (name))
+  (define b-path (path))
+  (provide (all-defined-out)))
 (require 'B)
-b
-[current-namespace (module->namespace (quote 'A))]
+b-name
+b-path
+(quote-module-name)
 (quote-module-path)
-]
-
-}
-
-@defform[(quote-module-source)]{
-
-Like @scheme[quote-module-path], but for the enclosing module's source
-name, rather than its module path. The module path and source name are
-typically the same, but they can be different. For example, a source
-file whose name ends with @filepath{.ss} corresponds to a resolved
-module path ending with @filepath{.rkt}. The value produced by
-@scheme[(quote-module-source)] is either @scheme['top-level] or a
-resolved module path, even though the latter may correspond to a
-source file rather than a module path.}
-
-@defform[(quote-module-name)]{
-
-Quotes the name (@tech[#:doc reference-path]{path} or @tech[#:doc
-reference-path]{symbol}) of the module in which the macro application occurs, or
-@scheme[#f] if it occurs at the top level.  As with @scheme[quote-module-path],
-@scheme[quote-module-name] uses a @tech[#:doc reference-path]{variable
-reference}, so a top level namespace created by @scheme[module->namespace] will
-be treated as a module, and the macro will always produce the module name of its
-final expanded position.
-
-@defexamples[#:eval (new-evaluator)
-(quote-module-name)
-(module A scheme
-  (require unstable/location)
-  (define-syntax-rule (here) (quote-module-name))
-  (define a (here))
-  (provide a here))
-(require 'A)
-a
-(module B scheme
-  (require unstable/location)
-  (require 'A)
-  (define b (here))
-  (provide b))
-(require 'B)
-b
 [current-namespace (module->namespace (quote 'A))]
 (quote-module-name)
+(quote-module-path)
 ]
 
 }
