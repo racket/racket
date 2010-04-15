@@ -1,6 +1,10 @@
 #lang scheme
 
-(provide define-keywords function-with-arity expr-with-check except err 
+(provide define-keywords 
+         ;; (define-keywords (name1:identifier ... spec:expr) ...)
+         ;; constraint: the first name is the original name
+         ;; and it is also the name of the field in the class
+         function-with-arity expr-with-check except err 
          ->args
          ->kwds-in
          clauses-use-kwd)
@@ -9,6 +13,41 @@
  (for-template "syn-aux-aux.ss" 
                scheme
                (rename-in lang/prim (first-order->higher-order f2h))))
+
+(require (for-syntax syntax/parse))
+(define-syntax (define-keywords stx)
+  (syntax-parse stx 
+    [(define-keywords the-list (kw:identifier ... coerce:expr) ...)
+     #'(begin
+         (provide kw ...) ...
+         (define-syntaxes (kw ...)
+           (values (lambda (x)
+                     (raise-syntax-error 'kw "used out of context" x))
+                   ...))
+         ...
+         (define-for-syntax the-list
+           (apply append 
+                  (list 
+                   (let* ([x (list (list #'kw ''kw) ...)]
+                          [f (caar x)])
+                     (map (lambda (x) 
+                            (define clause-name (car x))
+                            (define clause-spec (cadr x))
+                            (list clause-name f (coerce clause-spec)))
+                          x))
+                   ...))))]))
+
+#;
+(define-syntax-rule
+  (define-keywords the-list (kw coerce) ...)
+  (begin
+    (provide kw ...) 
+    (define-syntax kw
+      (lambda (x)
+        (raise-syntax-error 'kw "used out of context" x)))
+    ...
+    (define-for-syntax the-list
+      (list (list #'kw (coerce ''kw)) ...))))
 
 #|
   transform the clauses into the initial arguments specification 
@@ -32,7 +71,9 @@
          (define-values (key coercion)
            (let loop ([kwds kwds][Spec Spec])
              (if (free-identifier=? (car kwds) kw)
-                 (values (car kwds) (cadar Spec))
+                 ;; -- the original keyword, which is also the init-field name
+                 ;; -- the coercion that comes with it 
+                 (values (cadar Spec) (caddar Spec))
                  (loop (cdr kwds) (cdr Spec)))))
          (list key (coercion (cdr x))))
        spec))
@@ -70,14 +111,6 @@
 (define (->kwds-in kwds)
   (lambda (k)
     (and (identifier? k) (for/or ([n kwds]) (free-identifier=? k n)))))
-
-(define-syntax-rule (define-keywords the-list (kw coerce) ...)
-  (begin
-    (provide kw ...)
-    (define-syntax (kw x)
-      (raise-syntax-error 'kw "used out of context" x))
-    ...
-    (define-for-syntax the-list (list (list #'kw (coerce ''kw)) ...))))
 
 (define-syntax (expr-with-check stx)
   (syntax-case stx ()

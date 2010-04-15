@@ -137,13 +137,14 @@
 
 (define-keywords WldSpec 
   ;; -- on-draw must specify a rendering function; it may specify dimensions
-  [on-draw (function-with-arity 
+  [on-draw to-draw
+           (function-with-arity 
             1 
             except
-            [(_ f width height) 
-             #'(list (proc> 'on-draw (f2h f) 1) 
-                     (nat> 'on-draw width "width")
-                     (nat> 'on-draw height "height"))])]
+            [(_ f width height)
+             #'(list (proc> 'to-draw (f2h f) 1) 
+                     (nat> 'to-draw width "width")
+                     (nat> 'to-draw height "height"))])]
   ;; -- on-mouse must specify a mouse event handler 
   [on-mouse (function-with-arity 4)]
   ;; -- on-key must specify a key event handler 
@@ -188,7 +189,7 @@
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
-  (big-bang 1 (on-tick add1) (on-draw f)))
+  (big-bang 1 (on-draw f) (on-tick add1)))
 
 (define animate run-simulation)
 
