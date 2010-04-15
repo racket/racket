@@ -84,7 +84,6 @@ THREAD_LOCAL_DECL(static rxpos regcode) ;    /* Code-emit pointer, if less than 
 THREAD_LOCAL_DECL(static rxpos regcodesize);
 THREAD_LOCAL_DECL(static rxpos regcodemax);
 THREAD_LOCAL_DECL(static long regmaxlookback);
-static int reghasgenlookback; /* FIXME: make this thread local */
 
 /* caches to avoid gc */
 THREAD_LOCAL_DECL(static long rx_buffer_size);
@@ -170,7 +169,6 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre)
   regnpar = 1;
   regncounter = 0;
   regmaxlookback = 0;
-  reghasgenlookback = 0;
   regcode = 1;
   regcodesize = 0;
   regcodemax = 0;
@@ -202,8 +200,6 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre)
   r->nsubexp = regnpar;
   r->ncounter = regncounter;
   r->maxlookback = regmaxlookback;
-  if (reghasgenlookback)
-    r->flags |= REGEXP_LOOKBEHIND;
   
   /* Second pass: emit code. */
   regparse = exp;
@@ -498,7 +494,7 @@ reg(int paren, int *flagp, int paren_set, int lookahead, int parse_flags)
   rxpos br;
   rxpos ender;
   int parno = 0;
-  int flags, matchmin, matchmax, maxlookback, brcount, hasgenlookback;
+  int flags, matchmin, matchmax, maxlookback, brcount;
   Scheme_Hash_Table *backdepends;
 
 #ifdef DO_STACK_CHECK
@@ -564,7 +560,6 @@ reg(int paren, int *flagp, int paren_set, int lookahead, int parse_flags)
   matchmin = regmatchmin;
   matchmax = regmatchmax;
   maxlookback = regmaxlookback;
-  hasgenlookback = reghasgenlookback;
   brcount = 1;
   while (regparsestr[regparse] == '|') {
     brcount++;
@@ -595,15 +590,12 @@ reg(int paren, int *flagp, int paren_set, int lookahead, int parse_flags)
 	matchmax = regmatchmax;
       if (regmaxlookback > maxlookback)
         maxlookback = regmaxlookback;
-      if (reghasgenlookback)
-        hasgenlookback = 1;
     }
   }
   regbackdepends = backdepends;
   regmatchmin = matchmin;
   regmatchmax = matchmax;
   regmaxlookback = maxlookback;
-  reghasgenlookback = hasgenlookback;
 
   if (paren && paren_set) {
     Scheme_Object *assumed;
@@ -660,7 +652,6 @@ reg(int paren, int *flagp, int paren_set, int lookahead, int parse_flags)
 	if (matchmax > 0x7FFF)
 	  FAIL("lookbehind match is potentially too long (more than 32767 bytes)");
         regmaxlookback = matchmax + maxlookback;
-        reghasgenlookback = 1;
 	if (ret + 8 < regcodesize) {
 	  regstr[ret + 5] = (matchmin >> 8);
 	  regstr[ret + 6] = (matchmin & 255);
@@ -726,7 +717,7 @@ regbranch(int *flagp, int parse_flags, int without_branch_node)
 {
   rxpos ret;
   rxpos chain, latest;
-  int flags = 0, matchmin = 0, matchmax = 0, maxlookback = 0, hasgenlookback = 0, pcount = 0, save_flags;
+  int flags = 0, matchmin = 0, matchmax = 0, maxlookback = 0, pcount = 0, save_flags;
 
   *flagp = (WORST|SPFIXED);		/* Tentatively. */
 
@@ -757,8 +748,6 @@ regbranch(int *flagp, int parse_flags, int without_branch_node)
 	regtail(chain, latest);
       if (!(flags&SPFIXED))
 	*flagp &= ~SPFIXED;
-      if (reghasgenlookback && (regmaxlookback > matchmin))
-        hasgenlookback = 1;
       if ((regmaxlookback - matchmin) > maxlookback)
         maxlookback = regmaxlookback - matchmin;
       matchmin += regmatchmin;
@@ -771,7 +760,6 @@ regbranch(int *flagp, int parse_flags, int without_branch_node)
   regmatchmin = matchmin;
   regmatchmax = matchmax;
   regmaxlookback = maxlookback;
-  reghasgenlookback = hasgenlookback;
   if (chain == 0) {  /* Loop ran zero times. */
     latest = regnode(NOTHING);
     if (without_branch_node)
@@ -1085,7 +1073,6 @@ regatom(int *flagp, int parse_flags, int at_start)
   *flagp = (WORST|SPFIXED);		/* Tentatively. */
   regmatchmin = regmatchmax = 1;
   regmaxlookback = 0;
-  reghasgenlookback = 0;
 
   switch (regparsestr[regparse++]) {
   case '^':
@@ -1331,12 +1318,10 @@ regatom(int *flagp, int parse_flags, int at_start)
 	ret = regnode(WORDBOUND);
 	regmatchmin = regmatchmax = 0;
         regmaxlookback = 1;
-        reghasgenlookback = 1;
       } else if ((parse_flags & PARSE_PCRE) && (c == 'B')) {
 	ret = regnode(NOTWORDBOUND);
 	regmatchmin = regmatchmax = 0;
         regmaxlookback = 1;
-        reghasgenlookback = 1;
       } else if ((parse_flags & PARSE_PCRE) && (c == 'p')) {
 	ret = regunicode(0);
 	regmatchmax = MAX_UTF8_CHAR_BYTES;

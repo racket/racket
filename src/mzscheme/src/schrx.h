@@ -31,7 +31,6 @@ typedef struct regexp {
 #define REGEXP_ANCH       0x04
 #define REGEXP_MUST_CI    0x08
 #define REGEXP_JIT        0x10
-#define REGEXP_LOOKBEHIND 0x20
 
 #ifdef INDIRECT_TO_PROGRAM
 # define N_ITO_DELTA(prog, extra, re) extra

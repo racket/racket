@@ -56,13 +56,15 @@
           [else (raise-type-error 'regexp-replace-quote
                                   "string or byte string" s)]))
 
+  ;; This was originally intended to be general, but it has become specialized
+  ;; to deal with the combination of a regexp and a number:
   (define (make-regexp-tweaker tweaker)
-    (let ([t (make-weak-hasheq)])
-      (lambda (rx)
+    (let ([t (make-hash)])
+      (lambda (rx n)
         (define-syntax-rule (->str x) (if (bytes? x) (bytes->string/utf-8 x) x))
         (define-syntax-rule (->bts x) (if (bytes? x) x (string->bytes/utf-8 x)))
         (define-syntax-rule (tweak unwrap wrap convert)
-          (let ([tweaked (tweaker (unwrap rx))])
+          (let ([tweaked (tweaker (unwrap rx) n)])
             ;; the tweaker is allowed to return a regexp
             (if (or (regexp? tweaked) (byte-regexp? tweaked))
               tweaked
@@ -81,8 +83,9 @@
                        'regexp-tweaker
                        "regexp, byte regexp, string, or byte string"
                        rx)]))
-        (or (hash-ref t rx #f)
-            (let ([rx* (run-tweak)]) (hash-set! t rx rx*) rx*)))))
+        (let ([key (cons n rx)])
+          (or (hash-ref t key #f)
+              (let ([rx* (run-tweak)]) (hash-set! t key rx*) rx*))))))
 
   (define (regexp-try-match pattern input-port [start-k 0] [end-k #f] [out #f])
     (unless (input-port? input-port)
@@ -109,8 +112,8 @@
   ;; Helper macro for the regexp functions below, with some utilities.
   (define (bstring-length s)
     (if (bytes? s) (bytes-length s) (string-length s)))
-  (define (no-empty-edge-matches n)
-    (make-regexp-tweaker (lambda (rx) 
+  (define no-empty-edge-matches
+    (make-regexp-tweaker (lambda (rx n) 
                            (if (bytes? rx)
                                (bytes-append #"(?:" 
                                              rx 
@@ -166,8 +169,7 @@
        (let loop ([acc '()] [start start] [end end] [ipre ipre] [0-ok? #t])
          (let* ([rx (if 0-ok?
                         orig-rx
-                        ((no-empty-edge-matches (add1 (bytes-length ipre)))
-                         orig-rx))])
+                        (no-empty-edge-matches orig-rx (add1 (bytes-length ipre))))])
            (if (and port-success-choose (input-port? string))
 
                ;; Input port match, get string
