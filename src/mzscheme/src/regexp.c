@@ -3420,7 +3420,7 @@ regmatch(Regwork *rw, rxpos prog)
 	    if (is - rw->input_min >= no) {
 	      rw->input = save - no;
 	      if (regmatch(rw, next)) {
-		if (is == save) {
+		if (rw->input == save) {
 		  /* Match */
 		  if (!t) return 0;
                   found = 1;

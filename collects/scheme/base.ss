@@ -16,9 +16,12 @@
                               call-with-input-file
                               call-with-output-file
                               with-input-from-file
-                              with-output-to-file)
+                              with-output-to-file
+                              regexp-replace*)
              (all-from "private/list.ss")
-             (all-from "private/string.ss")
+             (all-from-except "private/string.ss" 
+                              -regexp-replace*)
+             (rename -regexp-replace* regexp-replace*)
              identifier?
              (all-from "private/stxcase-scheme.ss")
              (all-from "private/qqstx.ss")

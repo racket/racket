@@ -336,14 +336,13 @@ results for parenthesized sub-patterns in @scheme[pattern] are not
 returned.)
 
 The @scheme[pattern] is used in order to find matches, where each
-match attempt starts at the end of the last match, and @litchar{$} is
+match attempt starts at the end of the last match, and @litchar{^} is
 allowed to match the beginning of the input (if @scheme[input-prefix]
 is @scheme[#""]) only for the first match.  Empty matches are handled
 like other matches, returning a zero-length string or byte sequence
 (they are more useful in the complementing @scheme[regexp-split]
 function), but @scheme[pattern] is restricted from matching an empty
-string at the beginning (or right after a previous match) or at the
-end.
+sequence immediately after an empty match.
 
 If @scheme[input] contains no matches (in the range @scheme[start-pos]
 to @scheme[end-pos]), @scheme[null] is returned. Otherwise, each item
@@ -355,6 +354,7 @@ port).
 
 @examples[
 (regexp-match* #rx"x." "12x4x6")
+(regexp-match* #rx"x*" "12x4x6")
 ]}
 
 
@@ -639,8 +639,8 @@ strings (if @scheme[pattern] is a string or character regexp and
 @scheme[input] is a string) or byte strings (otherwise) from in
 @scheme[input] that are separated by matches to
 @scheme[pattern]. Adjacent matches are separated with @scheme[""] or
-@scheme[#""]. Zero-length matches are treated the same as in
-@scheme[regexp-match*], but are more useful in this case.
+@scheme[#""]. Zero-length matches are treated the same as for
+@scheme[regexp-match*].
 
 If @scheme[input] contains no matches (in the range @scheme[start-pos]
 to @scheme[end-pos]), the result is a list containing @scheme[input]'s

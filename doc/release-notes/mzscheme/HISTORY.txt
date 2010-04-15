@@ -1,6 +1,7 @@
-Version 4.2.5.9
+Version 4.2.5.10
 regexp-match* et al. now disable ^ matching on all but the first
- match
+ match, and empty matches are allowed in all positions except
+ immediately after an empty match
 
 Version 4.2.5.3
 Added chaperones
