@@ -3994,6 +3994,7 @@ static Scheme_Struct_Type *lookup_prefab(Scheme_Object *key) {
 # if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   void *original_gc;
   original_gc = GC_switch_to_master_gc();
+  scheme_start_atomic();
 # endif
 
   if (prefab_table) {
@@ -4001,6 +4002,7 @@ static Scheme_Struct_Type *lookup_prefab(Scheme_Object *key) {
   }
 
 # if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  scheme_end_atomic_no_swap();
   GC_switch_back_from_master(original_gc);
 # endif
 

@@ -587,6 +587,7 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_in_master(Scheme_Object *base
 
 # ifdef MZ_PRECISE_GC
   original_gc = GC_switch_to_master_gc();
+  scheme_start_atomic();
 # endif
 
   cname = scheme_places_deep_copy(base);
@@ -598,6 +599,7 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_in_master(Scheme_Object *base
   stype = scheme_make_prefab_struct_type_raw(cname, parent, num_fields, num_uninit_fields, cuninit_val, cimm_array);
 
 # ifdef MZ_PRECISE_GC
+  scheme_end_atomic_no_swap();
   GC_switch_back_from_master(original_gc);
 # endif
 
@@ -853,9 +855,11 @@ void* scheme_master_fast_path(int msg_type, void *msg_payload) {
 
 # ifdef MZ_PRECISE_GC
   original_gc = GC_switch_to_master_gc();
+  scheme_start_atomic();
 # endif
   o = scheme_master_place_handlemsg(msg_type, msg_payload);
 # ifdef MZ_PRECISE_GC
+  scheme_end_atomic_no_swap();
   GC_switch_back_from_master(original_gc);
 # endif
 
