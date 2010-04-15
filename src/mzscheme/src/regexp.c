@@ -116,6 +116,8 @@ static unsigned char *extract_regstart(rxpos scan, int *_anch);
 static int check_and_propagate_depends(void);
 static int merge_tables(Scheme_Hash_Table *dest, Scheme_Hash_Table *src);
 
+READ_ONLY static Scheme_Object *empty_byte_string;
+
 #define	FAIL(m)	{ regcomperror(m); return 0; }
 
 static void
@@ -5183,25 +5185,29 @@ static Scheme_Object *gen_compare(char *name, int pos,
           || (endp[0] - minpos < last_bytes_count))
         last_bytes_count = endp[0] - minpos;
 
-      frompos = endp[0] - last_bytes_count;
-      tooffset = 0;
+      if (!last_bytes_count) {
+        last_bytes_str = empty_byte_string;
+      } else {
+        frompos = endp[0] - last_bytes_count;
+        tooffset = 0;
 
-      last_bytes_str = scheme_alloc_byte_string(last_bytes_count, 0);
-      if (frompos < offset) {
-        /* draw from prefix: */
-        rxpos amt = last_bytes_count;
-        if (frompos + last_bytes_count > offset)
-          amt = offset - frompos;
+        last_bytes_str = scheme_alloc_byte_string(last_bytes_count, 0);
+        if (frompos < offset) {
+          /* draw from prefix: */
+          rxpos amt = last_bytes_count;
+          if (frompos + last_bytes_count > offset)
+            amt = offset - frompos;
+          memcpy(SCHEME_BYTE_STR_VAL(last_bytes_str) XFORM_OK_PLUS tooffset,
+                 prefix + prefix_offset + prefix_len - (offset - frompos),
+                 amt);
+          frompos += amt;
+          tooffset += amt;
+          last_bytes_count -= amt;
+        }
         memcpy(SCHEME_BYTE_STR_VAL(last_bytes_str) XFORM_OK_PLUS tooffset,
-               prefix + prefix_offset + prefix_len - (offset - frompos),
-               amt);
-        frompos += amt;
-        tooffset += amt;
-        last_bytes_count -= amt;
+               full_s + frompos,
+               last_bytes_count);
       }
-      memcpy(SCHEME_BYTE_STR_VAL(last_bytes_str) XFORM_OK_PLUS tooffset,
-             full_s + frompos,
-             last_bytes_count);
     }
 
     if (pos > 1) {
@@ -5736,6 +5742,9 @@ void scheme_regexp_initialize(Scheme_Env *env)
   GC_REG_TRAV(scheme_regexp_type, mark_regexp);
   GC_REG_TRAV(scheme_rt_regwork, mark_regwork);
 #endif
+
+  REGISTER_SO(empty_byte_string);
+  empty_byte_string = scheme_alloc_byte_string(0, 0);
 
   GLOBAL_PRIM_W_ARITY("byte-regexp",                           make_regexp,             1, 1, env);
   GLOBAL_PRIM_W_ARITY("regexp",                                make_utf8_regexp,        1, 1, env);
