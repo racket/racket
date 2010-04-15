@@ -1,19 +1,19 @@
 HKCR
 {
-	MzCOM.MzObj.4.2.5.9 = s 'MzObj Class'
+	MzCOM.MzObj.4.2.5.10 = s 'MzObj Class'
 	{
 		CLSID = s '{A3B0AF9E-2AB0-11D4-B6D2-0060089002FE}'
 	}
 	MzCOM.MzObj = s 'MzObj Class'
 	{
 		CLSID = s '{A3B0AF9E-2AB0-11D4-B6D2-0060089002FE}'
-		CurVer = s 'MzCOM.MzObj.4.2.5.9'
+		CurVer = s 'MzCOM.MzObj.4.2.5.10'
 	}
 	NoRemove CLSID
 	{
 		ForceRemove {A3B0AF9E-2AB0-11D4-B6D2-0060089002FE} = s 'MzObj Class'
 		{
-			ProgID = s 'MzCOM.MzObj.4.2.5.9'
+			ProgID = s 'MzCOM.MzObj.4.2.5.10'
 			VersionIndependentProgID = s 'MzCOM.MzObj'
 			ForceRemove 'Programmable'
 			LocalServer32 = s '%MODULE%'
