@@ -92,6 +92,7 @@ Keep documentation and tests up to date.
 @include-section["match.scrbl"]
 @include-section["skip-list.scrbl"]
 @include-section["interval-map.scrbl"]
+@include-section["generics.scrbl"]
 
 @;{--------}
 
