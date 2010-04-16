@@ -2,5 +2,5 @@
 
 (define compile-omit-paths '("main.ss"))
 
-(define mzscheme-launcher-libraries '("main.ss"))
-(define mzscheme-launcher-names '("Rico"))
+(define racket-launcher-libraries '("main.ss"))
+(define racket-launcher-names '("Rico"))

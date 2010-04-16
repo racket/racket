@@ -66,11 +66,11 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="ComCtl32.lib Glu32.lib OpenGL32.lib Unicows.lib WinMM.lib WS2_32.lib User32.lib Gdi32.lib Shell32.lib Comdlg32.lib Advapi32.lib Ole32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				OutputFile="..\..\..\lib\libgracketxxxxxxx.dll"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
 				BaseAddress="0x11000000"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				ImportLibrary="..\..\..\lib\msvc\libgracketxxxxxxx.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -153,11 +153,11 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="ComCtl32.lib Glu32.lib OpenGL32.lib Unicows.lib WinMM.lib WS2_32.lib User32.lib Gdi32.lib Shell32.lib Comdlg32.lib Advapi32.lib Ole32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				OutputFile="..\..\..\lib\libgracketxxxxxxx.dll"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
 				BaseAddress="0x11000000"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				ImportLibrary="..\..\..\lib\msvc\libgracketxxxxxxx.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

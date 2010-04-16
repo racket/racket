@@ -68,14 +68,14 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libmredxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libgracketxxxxxxx.dll"
 				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
-				OutputFile="..\..\..\$(ProjectName)CGC.exe"
+				OutputFile="..\..\..\GRacketCGC.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\$(ProjectName)CGC.pdb"
+				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
 				SubSystem="2"
 			/>
 			<Tool
@@ -154,13 +154,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libmredxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libgracketxxxxxxx.dll"
 				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
-				OutputFile="..\..\..\$(ProjectName)CGC.exe"
+				OutputFile="..\..\..\GRacketCGC.exe"
 				SuppressStartupBanner="true"
 				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\$(ProjectName)CGC.pdb"
+				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
 				SubSystem="2"
 			/>
 			<Tool

@@ -37,8 +37,8 @@
 					  #"$"))
 					(string->bytes/utf-8 new-path))))
 		(if mred?
-		    '("PLT_MrEd")
-		    '("PLT_MzScheme")))))
+		    '("GRacket")
+		    '("Racket")))))
 
   (define (get-current-framework-path dest p)
     (let ([v (get/set-dylib-path dest

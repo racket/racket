@@ -708,14 +708,14 @@ INSTALL_ORIG_TREE
 EXE_SUFFIX
 MZRT_CGC_FLAGS
 LIBATOM
-MREDLINKER
+GRACKETLINKER
 LIBSFX
 WXLIBS
 WXVARIANT
 ICP
 MRLIBINSTALL
 LIBFINISH
-MAKE_MRED
+MAKE_GRACKET
 MAKE_WBUILD
 MAKE_COPYTREE
 MAKE_FINISH
@@ -734,8 +734,8 @@ FOREIGN_IF_USED
 FOREIGN_OBJSLIB
 FOREIGN_CONVENIENCE
 FOREIGNTARGET
-LIBMZSCHEME_DEP
-LIBMRED_DEP
+LIBRACKET_DEP
+LIBGRACKET_DEP
 LTO
 LTA
 collectsdir
@@ -1335,7 +1335,7 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-mred           compile MrEd as well as MzScheme (enabled by default)
+  --enable-gracket           compile GRacket as well as Racket (enabled by default)
   --enable-gl             use OpenGL when available (enabled by default)
   --enable-xrender        use Xrender when available (enabled by default)
   --enable-xft            use Xft when available (enabled by default)
@@ -1358,22 +1358,23 @@ Optional Features:
   --enable-backtrace      3m: support GC backtrace dumps
   --enable-float          include support for single-precision floats
   --enable-floatinstead   compile to use single-precision by default
-  --enable-pthread        link MrEd with pthreads (sometimes needed for GL)
+  --enable-pthread        link with pthreads (sometimes needed for GL)
   --enable-stackup        assume "up" if stack direction cannot be determined
   --enable-bigendian      assume "big" if endianness cannot be determined
-  --enable-oskit          compile OSKit-based MzScheme kernel
-  --enable-smalloskit     compile small OSKit-based MzScheme kernel
+  --enable-oskit          compile OSKit-based Racket kernel
+  --enable-smalloskit     compile small OSKit-based Racket kernel
   --enable-wbuild         compile and use wbuild for .w sources
   --enable-perl           use perl to regenerate certain sources
   --enable-gprof          compile for profiling with gprof (gcc only)
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
   --enable-noopt          drop -O C flags
   --enable-sdk=<path>     use Mac OS X 10.4 SDK directory
-  --enable-xonx           compile X11 (not Quartz) MrEd for Mac OS X
+  --enable-xonx           compile X11 (not Quartz) GRacket for Mac OS X
   --enable-libfw          install Mac OS X frameworks to /Library/Frameworks
   --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks
   --enable-macprefix      allow --prefix with a Mac OS X install
   --enable-mac64          do not force 32-bit build
+  --enable-gc2-places-testing         compile gc2 places tesging support
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1820,11 +1821,11 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 ac_config_headers="$ac_config_headers mzscheme/mzconfig.h"
 
 
-# Check whether --enable-mred was given.
-if test "${enable_mred+set}" = set; then
-  enableval=$enable_mred;
+# Check whether --enable-gracket was given.
+if test "${enable_gracket+set}" = set; then
+  enableval=$enable_gracket;
 else
-  enable_mred=yes
+  enable_gracket=yes
 fi
 
 
@@ -2041,6 +2042,11 @@ if test "${enable_mac64+set}" = set; then
 fi
 
 
+# Check whether --enable-gc2_places_testing was given.
+if test "${enable_gc2_places_testing+set}" = set; then
+  enableval=$enable_gc2_places_testing;
+fi
+
 
 ###### Get OS Type #######
 
@@ -2064,7 +2070,7 @@ if test "${enable_smalloskit}" = "yes" ; then
 fi
 
 if test "${enable_oskit}" = "yes" ; then
-  enable_mred=no
+  enable_gracket=no
 fi
 
 if test "${enable_dynlib}" = "no" ; then
@@ -2113,6 +2119,12 @@ else
     fi
   fi
 fi
+
+if test "${enable_gc2_places_testing}" = "yes" ; then
+  enable_shared=yes
+  enable_places=yes
+fi
+
 
 # Hack for the implementor:
 if test "${enable_perl}" = "" ; then
@@ -2198,15 +2210,15 @@ else
   INSTALL_ORIG_TREE=no
 fi
 
-###### Make sure MrEd is really there ######
+###### Make sure GRacket is really there ######
 
-if test "${enable_mred}" = "yes" ; then
+if test "${enable_gracket}" = "yes" ; then
   if test ! -d $srcdir/mred ; then
-    enable_mred=no
+    enable_gracket=no
   fi
 fi
 
-if test "${enable_mred}" = "no" ; then
+if test "${enable_gracket}" = "no" ; then
   enable_wbuild=no
   enable_xrender=no
   enable_cairo=no
@@ -2237,8 +2249,8 @@ show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
 show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
-show_explicitly_disabled "${enable_mred}" MrEd
-if test "${enable_mred}" != "no" ; then
+show_explicitly_disabled "${enable_gracket}" GRacket
+if test "${enable_gracket}" != "no" ; then
   show_explicitly_disabled "${enable_gl}" OpenGL
   show_explicitly_disabled "${enable_xrender}" Xrender
   show_explicitly_disabled "${enable_xft}" Xft
@@ -2257,6 +2269,7 @@ show_explicitly_disabled "${enable_jit}" JIT
 show_explicitly_disabled "${enable_foreign}" Foreign
 
 show_explicitly_enabled "${enable_places}" Places
+show_explicitly_enabled "${enable_gc2_places_testing}" "GC2 Places Testing"
 show_explicitly_enabled "${enable_futures}" Futures
 show_explicitly_disabled "${enable_futures}" Futures
 
@@ -2321,7 +2334,7 @@ MZRT_CGC_FLAGS=""
 LIBATOM="LIBATOM_NONE"
 
 ar_libtool_no_undefined=""
-LIBMZSCHEME_DEP=""
+LIBRACKET_DEP=""
 
 XFT_EXTRA_FLAGS=
 XFT_EXTRA_LIBS=
@@ -4311,7 +4324,7 @@ if test "$REZ" = '' ; then
  REZ=/Developer/Tools/Rez
 fi
 
-if test "${enable_mred}" = "yes" ; then
+if test "${enable_gracket}" = "yes" ; then
   if test "${enable_quartz}" = "yes" ; then
    :
   else
@@ -5633,9 +5646,9 @@ fi
 
   fi
 
-  MAKE_MRED=mred
+  MAKE_GRACKET=gracket
 else
-  MAKE_MRED=no
+  MAKE_GRACKET=no
 fi
 
 
@@ -5817,7 +5830,7 @@ EXTRALIBS=
 # for gmp assembly:
 EXTRA_GMP_OBJ=
 
-# For MzScheme targets:
+# For Racket targets:
 OSX=".osx"
 NOT_OSX=""
 CGC_X86_64=""
@@ -5837,7 +5850,7 @@ case $OS in
     ;;
   AIX)
     enable_cgcdefault="yes"
-    EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../mzscheme/include/mzscheme.exp"
+    EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../mzscheme/include/racket.exp"
     ;;
   FreeBSD)
     LIBS="$LIBS -rdynamic"
@@ -5917,8 +5930,8 @@ case $OS in
     MZINSTALLTARGET=unix-cygwin-install
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
-      LIBMZSCHEME_DEP="libmzgc.la -liconv"
-      LIBMRED_DEP="../mzscheme/libmzgc.la ../mzscheme/libmred.la"
+      LIBRACKET_DEP="libmzgc.la -liconv"
+      LIBGRACKET_DEP="../mzscheme/libmzgc.la ../mzscheme/libgracket.la"
     fi
     EXE_SUFFIX=".exe"
     ;;
@@ -9472,6 +9485,16 @@ _ACEOF
 
 fi
 
+############### GC2_PLACES_TESTING ###################
+
+if test "${enable_gc2_places_testing}" = "yes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define GC2_PLACES_TESTING 1
+_ACEOF
+
+fi
+
 ############### places ###################
 
 if test "${enable_places}" = "yes" ; then
@@ -9653,7 +9676,7 @@ fi
 
 ############## C++ grunge ################
 
-if test "${enable_mred}" = "yes" ; then
+if test "${enable_gracket}" = "yes" ; then
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -10441,7 +10464,7 @@ fi
   else
      echo "******************************************************"
      echo "configure: cannot find X11 development files that are"
-     echo "           needed to compile MrEd:"
+     echo "           needed to compile GRacket:"
      echo "$xmissing"
      echo "******************************************************"
      echo configure aborted
@@ -12003,7 +12026,7 @@ if test "${enable_shared}" = "yes" ; then
   ARFLAGS=""
   RANLIB=":"
   MZLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc} -rpath ${abslibdir}"
-  MREDLINKER="${LIBTOOLPROG} --mode=link --tag=CXX $CXX${need_gcc_static_libgcc} -rpath ${abslibdir}"
+  GRACKETLINKER="${LIBTOOLPROG} --mode=link --tag=CXX $CXX${need_gcc_static_libgcc} -rpath ${abslibdir}"
   PLAIN_CC="$CC"
   CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
   CXX="${LIBTOOLPROG} --mode=compile --tag=CXX $CXX"
@@ -12020,7 +12043,7 @@ if test "${enable_shared}" = "yes" ; then
   MZOPTIONS="$MZOPTIONS -DMZ_USES_SHARED_LIB"
 else
   LIBSFX=a
-  MREDLINKER='$(CXX)'
+  GRACKETLINKER='$(CXX)'
   WXLIBS=WXLIBSNORM
   ICP=cp
   MRLIBINSTALL="install-no-lib"
@@ -12245,7 +12268,7 @@ else
 fi
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
 
-if test "${enable_mred}" = "yes" ; then
+if test "${enable_gracket}" = "yes" ; then
   if test "${enable_quartz}" = "yes" ; then
     mk_needed_dir wxmac
     mk_needed_dir wxmac/src
@@ -13061,7 +13084,7 @@ INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
 EXE_SUFFIX!$EXE_SUFFIX$ac_delim
 MZRT_CGC_FLAGS!$MZRT_CGC_FLAGS$ac_delim
 LIBATOM!$LIBATOM$ac_delim
-MREDLINKER!$MREDLINKER$ac_delim
+GRACKETLINKER!$GRACKETLINKER$ac_delim
 LIBSFX!$LIBSFX$ac_delim
 WXLIBS!$WXLIBS$ac_delim
 _ACEOF
@@ -13109,7 +13132,7 @@ WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
 LIBFINISH!$LIBFINISH$ac_delim
-MAKE_MRED!$MAKE_MRED$ac_delim
+MAKE_GRACKET!$MAKE_GRACKET$ac_delim
 MAKE_WBUILD!$MAKE_WBUILD$ac_delim
 MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
 MAKE_FINISH!$MAKE_FINISH$ac_delim
@@ -13128,8 +13151,8 @@ FOREIGN_IF_USED!$FOREIGN_IF_USED$ac_delim
 FOREIGN_OBJSLIB!$FOREIGN_OBJSLIB$ac_delim
 FOREIGN_CONVENIENCE!$FOREIGN_CONVENIENCE$ac_delim
 FOREIGNTARGET!$FOREIGNTARGET$ac_delim
-LIBMZSCHEME_DEP!$LIBMZSCHEME_DEP$ac_delim
-LIBMRED_DEP!$LIBMRED_DEP$ac_delim
+LIBRACKET_DEP!$LIBRACKET_DEP$ac_delim
+LIBGRACKET_DEP!$LIBGRACKET_DEP$ac_delim
 LTO!$LTO$ac_delim
 LTA!$LTA$ac_delim
 collectsdir!$collectsdir$ac_delim

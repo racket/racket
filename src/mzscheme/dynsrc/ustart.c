@@ -396,14 +396,14 @@ int main(int argc, char **argv)
     int offset, len;
     offset = _coldir_offset;
     new_argv[argpos++] = "-X";
-    new_argv[argpos++] = _coldir + offset;
+    new_argv[argpos++] = absolutize(_coldir + offset, me);
     while (1) {
       len = strlen(_coldir + offset);
       offset += len + 1;
       if (!_coldir[offset])
 	break;
       new_argv[argpos++] = "-S";
-      new_argv[argpos++] = _coldir + offset;
+      new_argv[argpos++] = absolutize(_coldir + offset, me);
     }
   }
 

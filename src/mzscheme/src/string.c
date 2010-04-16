@@ -1945,7 +1945,7 @@ char *scheme_banner(void)
   if (embedding_banner)
     return embedding_banner;
   else
-    return "Welcome to MzScheme"
+    return "Welcome to Racket"
       " v" MZSCHEME_VERSION VERSION_SUFFIX
       ", Copyright (c) 2004-2010 PLT Scheme Inc.\n";
 }

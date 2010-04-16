@@ -71,7 +71,7 @@
               (lambda ()
                 (error 'create-embedding-executable
                        "can't find ~a executable for variant ~a"
-                       (if mred? "MrEd" "MzScheme")
+                       (if mred? "GRacket" "Racket")
                        variant))])
         (let ([exe (build-path
                     base
@@ -80,22 +80,22 @@
                        (cond
                          [(not mred?)
                           ;; Need MzScheme:
-                          (string-append "mzscheme" (variant-suffix variant #f))]
+                          (string-append "racket" (variant-suffix variant #f))]
                          [mred?
                           ;; Need MrEd:
                           (let ([sfx (variant-suffix variant #t)])
-                            (build-path (format "MrEd~a.app" sfx)
+                            (build-path (format "GRacket~a.app" sfx)
                                         "Contents" "MacOS" 
-                                        (format "MrEd~a" sfx)))])]
+                                        (format "GRacket~a" sfx)))])]
                       [(windows)
                        (format "~a~a.exe" (if mred?
-                                              "MrEd"
-                                              "MzScheme")
+                                              "Gracket"
+                                              "Racket")
                                (variant-suffix variant #t))]
                       [(unix)
                        (format "~a~a" (if mred?
-                                          "mred"
-                                          "mzscheme")
+                                          "gracket"
+                                          "racket")
                                (variant-suffix variant #f))]))])
           (unless (or (file-exists? exe)
                       (directory-exists? exe))
@@ -989,7 +989,8 @@
     
     ;; Use `write-module-bundle', but figure out how to put it into an executable
     (define (create-embedding-executable dest
-                                         #:mred? [mred? #f]
+                                         #:mred? [really-mred? #f]
+                                         #:gracket? [gracket? #f]
                                          #:verbose? [verbose? #f]
                                          #:modules [modules null]
                                          #:configure-via-first-module? [config? #f]
@@ -1012,6 +1013,7 @@
                                                                   (compile expr)))]
                                          #:src-filter [src-filter (lambda (filename) #f)]
                                          #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
+      (define mred? (or really-mred? gracket?))
       (define keep-exe? (and launcher?
                              (let ([m (assq 'forget-exe? aux)])
                                (or (not m)
@@ -1088,8 +1090,8 @@
                       (when (regexp-match #rx"^@executable_path" 
                                           (get-current-framework-path dest 
                                                                       (if mred?
-                                                                          "PLT_MrEd"
-                                                                          "PLT_MzScheme")))
+                                                                          "GRacket"
+                                                                          "Racket")))
                         (update-framework-path (string-append
                                                 (path->string (find-lib-dir))
                                                 "/")

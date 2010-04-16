@@ -64,12 +64,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
 				AdditionalDependencies="unicows.lib delayimp.lib user32.lib"
-				OutputFile="..\..\..\$(ProjectName)CGC.exe"
+				OutputFile="..\..\..\RacketCGC.exe"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\$(ProjectName)CGC.pdb"
+				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"
 			/>
 			<Tool
@@ -152,13 +152,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
 				AdditionalDependencies="unicows.lib delayimp.lib user32.lib"
-				OutputFile="..\..\..\$(ProjectName)CGC.exe"
+				OutputFile="..\..\..\RacketCGC.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile="..\..\..\$(ProjectName)CGC.pdb"
+				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
 				SubSystem="1"
 			/>
 			<Tool

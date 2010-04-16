@@ -1,6 +1,6 @@
 /*
  * File:        mred.cc
- * Purpose:     MrEd main file, including a hodge-podge of global stuff
+ * Purpose:     GRacket main file, including a hodge-podge of global stuff
  * Author:      Matthew Flatt
  * Created:     1995
  * Copyright:   (c) 2004-2010 PLT Scheme Inc.
@@ -98,15 +98,15 @@ extern "C" Scheme_Object *scheme_initialize(Scheme_Env *env);
 #endif
 
 #ifdef wx_x
-# define INIT_FILENAME "~/.mredrc"
+# define INIT_FILENAME "~/.gracketrc"
 #else
 # ifdef wx_msw
-#  define INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\mredrc.ss"
+#  define INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.ss"
 # else
 #  ifdef OS_X
-#   define INIT_FILENAME "~/.mredrc"
+#   define INIT_FILENAME "~/.gracketrc"
 #  else
-#   define INIT_FILENAME "PREFERENCES:mredrc.ss"
+#   define INIT_FILENAME "PREFERENCES:gracketrc.ss"
 #  endif
 # endif
 #endif
@@ -118,8 +118,8 @@ static void (*mred_console_printf)(char *str, ...);
 #else
 # define PRINTF printf
 #endif
-#define PROGRAM "MrEd"
-#define PROGRAM_LC "mred"
+#define PROGRAM "GRacket"
+#define PROGRAM_LC "gracket"
 #define INITIAL_BIN_TYPE "ri"
 
 #ifdef wx_mac
@@ -141,7 +141,7 @@ static char *pltcollects_from_resource;
 
 #define CMDLINE_STDIO_FLAG
 #define YIELD_BEFORE_EXIT
-#define INITIAL_NAMESPACE_MODULE "scheme/gui/init"
+#define INITIAL_NAMESPACE_MODULE "racket/gui/init"
 
 # include "../mzscheme/cmdline.inc"
 
@@ -241,7 +241,7 @@ static int main_after_stack(int argc, char *argv[])
 #endif
 
 #ifdef SGC_STD_DEBUGGING
-  fprintf(stderr, "Starting MrEd with sgc for debugging\n");
+  fprintf(stderr, "Starting GRacket with sgc for debugging\n");
 #endif
 
 #ifdef wx_mac
@@ -644,8 +644,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
 # ifndef MZ_PRECISE_GC
   load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
 # endif
-  load_delayed_dll(NULL, "libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
-  load_delayed_dll(NULL, "libmred" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll(NULL, "libgracket" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
 # ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
   scheme_register_tls_space(&tls_space, _tls_index);

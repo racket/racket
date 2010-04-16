@@ -1,7 +1,7 @@
 
-/***************************************************************/
-/* This command-line parser is used by both MzScheme and MrEd. */
-/***************************************************************/
+/****************************************************************/
+/* This command-line parser is used by both Racket and Gracket. */
+/****************************************************************/
 
 #define SDESC "Set! works on undefined identifiers"
 
@@ -17,7 +17,7 @@ char *cmdline_exe_hack =
 char *binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRECISION_TYPE;
 /* The format of bINARy tYPe is e?[zr]i[3c].
    e indicates a starter executable
-   z/r indicates MzScheme or MrEd
+   z/r indicates Racket or GRacket
    i indicates ???
    3/c indicates 3m or CGC */
 
@@ -1049,7 +1049,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
     init_ns = 0;
 
   if (show_vers) {
-#ifndef MZSCHEME_CMD_LINE  
+#ifndef RACKET_CMD_LINE  
     if (!use_repl
 #ifdef CMDLINE_STDIO_FLAG
 	|| alternate_rep
@@ -1057,7 +1057,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	)
 #endif
       PRINTF("%s", BANNER);
-#ifdef MZSCHEME_CMD_LINE  
+#ifdef RACKET_CMD_LINE  
 # ifdef DOS_FILE_SYSTEM
 #  if !defined(FILES_HAVE_FDS)
 #   if !defined(WINDOWS_FILE_HANDLES)
@@ -1202,7 +1202,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
  show_help:
   prog =("%s"
          PROGRAM_LC " [<option> ...] <argument> ...\n"
-# ifndef MZSCHEME_CMD_LINE
+# ifndef RACKET_CMD_LINE
 #  ifdef wx_x
 	 " X configuration options (must precede all other options):\n"
 	 "  -display <display>, -geometry <geometry>, -fn <font>, -font <font>,\n"

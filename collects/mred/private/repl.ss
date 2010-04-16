@@ -50,14 +50,14 @@
 	  (super-init)
 	  (let ([s (last-position)]
 		[m (regexp-match #rx"^(.*), (Copyright.*)$" (banner))])
-	    (insert (format "Welcome to ~a." (cadr m)))
+	    (insert (format "~a." (cadr m)))
 	    (let ([e (last-position)])
 	      (insert #\newline)
 	      (change-style (send (make-object wx:style-delta% 'change-bold) set-delta-foreground "BLUE") s e))
 	    (output (caddr m)))
-	  (insert "This is a simple window for evaluating MrEd Scheme expressions.") (insert #\newline)
+	  (insert "This is a simple window for evaluating Racket expressions.") (insert #\newline)
 	  (let ([s (last-position)])
-	    (insert "Quit now and run DrScheme to get a better window.")
+	    (insert "Quit now and run DrRacket to get a better window.")
 	    (let ([e (last-position)])
 	      (insert #\newline)
 	      (change-style

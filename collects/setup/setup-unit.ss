@@ -834,8 +834,15 @@
                   kind mzlns
                   (if (eq? 'l fault) "library" "flags")
                   (if (eq? fault 'l) mzlls mzlfs)))]))
-          (for ([variant (available-mred-variants)])
+          (for ([variant (available-gracket-variants)])
             (parameterize ([current-launcher-variant variant])
+              (make-launcher 'gui
+                             'gracket-launcher-names
+                             'gracket-launcher-libraries
+                             'gracket-launcher-flags
+                             gracket-program-launcher-path
+                             make-gracket-launcher
+                             gracket-launcher-up-to-date?)
               (make-launcher 'gui
                              'mred-launcher-names
                              'mred-launcher-libraries
@@ -843,8 +850,15 @@
                              mred-program-launcher-path
                              make-mred-launcher
                              mred-launcher-up-to-date?)))
-          (for ([variant (available-mzscheme-variants)])
+          (for ([variant (available-racket-variants)])
             (parameterize ([current-launcher-variant variant])
+              (make-launcher 'console
+                             'racket-launcher-names
+                             'racket-launcher-libraries
+                             'racket-launcher-flags
+                             racket-program-launcher-path
+                             make-racket-launcher
+                             racket-launcher-up-to-date?)
               (make-launcher 'console
                              'mzscheme-launcher-names
                              'mzscheme-launcher-libraries

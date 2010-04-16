@@ -1,5 +1,5 @@
 #
-# Makefile for mzscheme
+# Makefile for racket
 #
 
 srcdir = @srcdir@
@@ -66,13 +66,13 @@ cgc:
 	$(MAKE) common
 	$(MAKE) dynlib
 	$(MAKE) mzlibrary
-	$(MAKE) mzscheme@CGC@ 
+	$(MAKE) racket@CGC@ 
 
 3m:
 	$(MAKE) cgc
 	cd gc2; $(MAKE) all
 	cd dynsrc; $(MAKE) dynlib3m
-	cd gc2; $(MAKE) ../mzscheme@MMM@
+	cd gc2; $(MAKE) ../racket@MMM@
 
 both:
 	$(MAKE) cgc
@@ -81,9 +81,9 @@ both:
 oskit: 
 	$(MAKE) common
 	$(MAKE) mzlibrary
-	$(MAKE) mzscheme.multiboot
+	$(MAKE) racket.multiboot
 
-mzschemelib: 
+racketlib: 
 	$(MAKE) g-c 
 	$(MAKE) @FOREIGNTARGET@
 	$(MAKE) mzlibrary 
@@ -119,16 +119,16 @@ foreign-nothing:
 
 mzlibrary:
 	cd src; $(MAKE) all 
-	$(MAKE) libmzscheme.@LIBSFX@
+	$(MAKE) libracket.@LIBSFX@
 
 FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
 FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
 FOREIGN_NOT_USED_LIB = 
 FOREIGN_NOT_USED_OBJSLIB = 
 
-libmzscheme.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB)
-	$(AR) $(ARFLAGS) libmzscheme.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBMZSCHEME_DEP@
-	$(RANLIB) libmzscheme.@LIBSFX@
+libracket.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB)
+	$(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBRACKET_DEP@
+	$(RANLIB) libracket.@LIBSFX@
 
 # Irix sproc, only
 sproc.@LTO@: @GCDIR@/sproc.@LTO@
@@ -136,28 +136,28 @@ sproc.@LTO@: @GCDIR@/sproc.@LTO@
 
 # Unix ----------------------------------------
 
-mzscheme@CGC@@NOT_OSX@: libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
-	@MZLINKER@ -o mzscheme@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
+racket@CGC@@NOT_OSX@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
+	@MZLINKER@ -o racket@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
 
 # Mac OS ----------------------------------------
 
-MZFW = PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme
+MZFW = Racket.framework/Versions/$(FWVERSION)/Racket
 
-$(MZFW): libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
-	mkdir -p  PLT_MzScheme.framework/Versions/$(FWVERSION)
-	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -framework CoreFoundation -dynamiclib -all_load $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@
-	rm -f PLT_MzScheme.framework/PLT_MzScheme
-	ln -s Versions/$(FWVERSION)/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme
+$(MZFW): libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
+	mkdir -p  Racket.framework/Versions/$(FWVERSION)
+	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -framework CoreFoundation -dynamiclib -all_load $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@
+	rm -f Racket.framework/Racket
+	ln -s Versions/$(FWVERSION)/Racket Racket.framework/Racket
 
-mzscheme@CGC@@OSX@: $(MZFW) main.@LTO@
-	@MZLINKER@ -o mzscheme@CGC@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme @LIBS@
-	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "mzscheme@CGC@"
+racket@CGC@@OSX@: $(MZFW) main.@LTO@
+	@MZLINKER@ -o racket@CGC@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket @LIBS@
+	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "racket@CGC@"
 
 # OSKit ----------------------------------------
 
-mzscheme.multiboot : libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@
+racket.multiboot : libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@
 	$(LD) -Ttext 100000 $(LDFLAGS) @OSKHOME@/lib/oskit/multiboot.@LTO@ \
-		-o mzscheme.multiboot main.@LTO@ -L. -lmzscheme -lgc \
+		-o racket.multiboot main.@LTO@ -L. -lracket -lgc \
                 -L@OSKHOME@/lib -loskit_kern -loskit_clientos @EXTRA_OSK_LIBS@ \
                 -loskit_freebsd_c -loskit_c -loskit_lmm \
                 -loskit_freebsd_m -loskit_memfs -loskit_fsnamespace  \
@@ -178,8 +178,8 @@ main_ee.@LTO@: main.@LTO@
 ee-main:
 	$(MAKE) main_ee.@LTO@
 
-ee-app: $(MZSCHEME) main_ee.@LTO@
-	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(CC) $(MAIN_CFLAGS_NODBG) -o $(EEAPP) main_ee.@LTO@ $(EEOBJECTS) $(SPECIALIZINGOBJECTS) libmzscheme.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@ ; fi
+ee-app: $(RACKET) main_ee.@LTO@
+	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(CC) $(MAIN_CFLAGS_NODBG) -o $(EEAPP) main_ee.@LTO@ $(EEOBJECTS) $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@ ; fi
 
 testext.@LTO@: testext.c
 	$(CC) $(MAIN_CFLAGS) -I/home/scheme/plt/compiler/ -c testext.c -o testext.@LTO@
@@ -212,18 +212,18 @@ mark:
 	$(MAKE) $(srcdir)/src/mzmark.c
 
 headers:
-	./mzscheme@CGC@ -cqu $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
+	./racket@CGC@ -cqu $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
-	./mzscheme@CGC@ -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
+	./racket@CGC@ -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
 $(collectsdir)/scheme/private/kernstruct.ss: $(srcdir)/src/makeexn
-	./mzscheme@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.ss
+	./racket@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.ss
 
 
 $(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.ss $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	./mzscheme@CGC@ -cqu $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.ss 
+	./racket@CGC@ -cqu $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.ss 
 $(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.ss
-	mzscheme -cu $(srcdir)/src/mkmark.ss < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
+	racket -cu $(srcdir)/src/mkmark.ss < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
 
 cstartup.zo:
 	$(MAKE) startup CSTARTUPEXTRA='zo' CSTARTUPDEST="../cstartup.zo"
@@ -232,7 +232,7 @@ clean@NOT_OSX@:
 	/bin/rm -rf tmp[123456789] tests/tmp[123456789] tests/sub[123]
 	/bin/rm -f tests/*~
 	/bin/rm -f *.@LTO@ core
-	/bin/rm -f mzdyn.o libmzgc.@LIBSFX@ libmzscheme.@LIBSFX@ libmzscheme3m.@LIBSFX@ libdl.a mzscheme mzscheme.multiboot
+	/bin/rm -f mzdyn.o libmzgc.@LIBSFX@ libracket.@LIBSFX@ libracket3m.@LIBSFX@ libdl.a racket racket.multiboot
 	/bin/rm -f include/macosxpre
 	/bin/rm -f include/macosxpre.p
 	cd gc; $(MAKE) clean
@@ -243,7 +243,7 @@ clean@NOT_OSX@:
 	if [ -d ../foreign ] ; then cd ../foreign ; $(MAKE) clean ; fi
 
 clean@OSX@:
-	rm -rf PLT_MzScheme.framework
+	rm -rf Racket.framework
 	$(MAKE) clean@NOT_OSX@
 
 BUILDINFO=$(DESTDIR)$(libpltdir)/buildinfo
@@ -277,8 +277,8 @@ install-both:
 # have to go up and install things from there.
 
 unix-install:	
-	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@"
-	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@"
+	cd ..; rm -f "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
+	cd ..; rm -f "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	cd ..; cp mzscheme/starter "$(DESTDIR)$(libpltdir)/starter"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
@@ -290,32 +290,32 @@ unix-install:
 
 unix-install-cgc:
 	cd ..; $(ICP) mzscheme/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
-	cd ..; $(ICP) mzscheme/libmzscheme.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme.@LIBSFX@"
-	cd ..; $(ICP) mzscheme/mzscheme@CGC@ "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@"
+	cd ..; $(ICP) mzscheme/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
+	cd ..; $(ICP) mzscheme/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; cp mzscheme/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
-	./mzscheme@CGC@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	./racket@CGC@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-cgc-final:
 	$(NOOP)
 
 unix-install-3m:
-	cd ..; $(ICP) mzscheme/mzscheme@MMM@ "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@"
-	cd ..; $(ICP) mzscheme/libmzscheme3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzscheme3m.@LIBSFX@"
+	cd ..; $(ICP) mzscheme/racket@MMM@ "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
+	cd ..; $(ICP) mzscheme/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 	cd ..; $(ICP) mzscheme/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	./mzscheme@MMM@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	./racket@MMM@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-3m-final:
 	$(NOOP)
 
 # OS X install ----------------------------------------
 
-MZFWDIR = @FRAMEWORK_INSTALL_DIR@/PLT_MzScheme.framework
-MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
+MZFWDIR = @FRAMEWORK_INSTALL_DIR@/Racket.framework
+MZFWMMM = Racket.framework/Versions/$(FWVERSION)_3m/Racket
 FRAMEWORK_REL_PREFIX = "@executable_path/../lib/"
 
 osx-install:
 	$(MAKE) unix-install
-	rm -f $(MZFWDIR)/PLT_MzScheme
+	rm -f $(MZFWDIR)/Racket
 	rm -rf $(MZFWDIR)/Versions/$(FWVERSION)
 	rm -rf $(MZFWDIR)/Versions/$(FWVERSION)_3m
 	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MZFWDIR) ; fi
@@ -325,23 +325,23 @@ osx-install-cgc:
 	$(MAKE) unix-install-cgc
 	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)"
 	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
-	/usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@FRAMEWORK_PREFIX@PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(bindir)/mzscheme@CGC_INSTALLED@"
-	$(STRIP_DEBUG) "$(bindir)/mzscheme@CGC_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" "$(bindir)/racket@CGC_INSTALLED@"
+	$(STRIP_DEBUG) "$(bindir)/racket@CGC_INSTALLED@"
 
 osx-install-cgc-final:
 	$(MAKE) unix-install-cgc-final
-	ln -s Versions/$(FWVERSION)/PLT_MzScheme $(MZFWDIR)/
+	ln -s Versions/$(FWVERSION)/Racket $(MZFWDIR)/
 
 osx-install-3m:
 	$(MAKE) unix-install-3m
 	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)_3m"
 	cp $(MZFWMMM) $(MZFWDIR)/Versions/$(FWVERSION)_3m/
-	/usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@FRAMEWORK_PREFIX@PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(bindir)/mzscheme@MMM_INSTALLED@"
-	$(STRIP_DEBUG) "$(bindir)/mzscheme@MMM_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" "$(bindir)/racket@MMM_INSTALLED@"
+	$(STRIP_DEBUG) "$(bindir)/racket@MMM_INSTALLED@"
 
 osx-install-3m-final:
 	$(MAKE) unix-install-3m-final
-	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme $(MZFWDIR)/
+	ln -s Versions/$(FWVERSION)_3m/Racket $(MZFWDIR)/
 
 
 # Cygwin install ----------------------------------------
@@ -367,4 +367,4 @@ unix-cygwin-install-3m-final:
 # Generate plt-gdbinit ----------------------------------------
 
 mz-gdbinit: $(srcdir)/mk-gdbinit.ss $(srcdir)/src/stypes.h
-	mzscheme $(srcdir)/mk-gdbinit.ss
+	racket $(srcdir)/mk-gdbinit.ss

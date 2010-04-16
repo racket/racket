@@ -243,6 +243,14 @@ currently supported keys are as follows:
         executable, instead of a wrapper binary that execs the
         original; the default is @scheme[#f].}
 
+  @item{@scheme['relative?] (Unix, Windows, Mac OS X): A boolean;
+        @scheme[#t] means that, to the degree that the generated
+        executable must refer to another, it can use a relative path
+        (so the executables can be moved together, but not
+        seperately); a @scheme[#f] value (the default) means that
+        absolute paths should be used (so the generated executable can
+        be moved).}
+
 ]
 
 If the @scheme[#:collects-path] argument is @scheme[#f], then the
