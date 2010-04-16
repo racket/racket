@@ -134,40 +134,41 @@
                  (info-result 'drscheme:opt-out-toolbar-buttons '())))))))
 
       (inherit get-tab)
+      
       (define/private (register-new-buttons buttons opt-out-ids)
-        
         (let* ([tab (get-tab)]
                [frame (send tab get-frame)])
-          (send frame begin-container-sequence)
-          (let ([directly-specified-buttons
-                 (map (λ (button-spec)
-                        (new switchable-button%
-                             [label (list-ref button-spec 0)]
-                             [bitmap (list-ref button-spec 1)]
-                             [parent (send frame get-toolbar-button-panel)]
-                             [callback
-                              (lambda (button)
-                                ((list-ref button-spec 2) frame))]))
-                      (or buttons '()))]
-                [opt-out-buttons
-                 (if (eq? opt-out-ids #f)
-                     '()
-                     (map
-                      (λ (opt-out-toolbar-button)
-                        ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
-                         frame
-                         (send frame get-toolbar-button-panel)))
-                      (filter (λ (opt-out-toolbar-button)
-                                (not (member (opt-out-toolbar-button-id opt-out-toolbar-button) 
-                                             opt-out-ids)))
-                              opt-out-toolbar-buttons)))])
-            (send tab set-lang-toolbar-buttons
-                  (sort
-                   (append directly-specified-buttons
-                           opt-out-buttons)
-                   string<=?
-                   #:key (λ (x) (send x get-label)))))
-          (send frame end-container-sequence)))
+          (when (send frame initialized?)
+            (send frame begin-container-sequence)
+            (let ([directly-specified-buttons
+                   (map (λ (button-spec)
+                          (new switchable-button%
+                               [label (list-ref button-spec 0)]
+                               [bitmap (list-ref button-spec 1)]
+                               [parent (send frame get-toolbar-button-panel)]
+                               [callback
+                                (lambda (button)
+                                  ((list-ref button-spec 2) frame))]))
+                        (or buttons '()))]
+                  [opt-out-buttons
+                   (if (eq? opt-out-ids #f)
+                       '()
+                       (map
+                        (λ (opt-out-toolbar-button)
+                          ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
+                           frame
+                           (send frame get-toolbar-button-panel)))
+                        (filter (λ (opt-out-toolbar-button)
+                                  (not (member (opt-out-toolbar-button-id opt-out-toolbar-button) 
+                                               opt-out-ids)))
+                                opt-out-toolbar-buttons)))])
+              (send tab set-lang-toolbar-buttons
+                    (sort
+                     (append directly-specified-buttons
+                             opt-out-buttons)
+                     string<=?
+                     #:key (λ (x) (send x get-label)))))
+            (send frame end-container-sequence))))
       
       (inherit get-text)
       (define/private (get-lang-name pos)
