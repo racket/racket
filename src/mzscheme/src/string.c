@@ -1931,7 +1931,8 @@ char *scheme_version(void)
 }
 
 #ifdef MZ_PRECISE_GC
-# define VERSION_SUFFIX " [3m]"
+/* don't print " [3m]", which is the default: */
+# define VERSION_SUFFIX ""
 #else
 # ifdef USE_SENORA_GC
 #  define VERSION_SUFFIX " [cgc~]"
@@ -1945,9 +1946,9 @@ char *scheme_banner(void)
   if (embedding_banner)
     return embedding_banner;
   else
-    return "Welcome to Racket"
-      " v" MZSCHEME_VERSION VERSION_SUFFIX
-      ", Copyright (c) 2004-2010 PLT Scheme Inc.\n";
+    return ("Welcome to Racket"
+            " v" MZSCHEME_VERSION VERSION_SUFFIX
+            ".\n");
 }
 
 void scheme_set_banner(char *s)
