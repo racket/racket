@@ -54,8 +54,10 @@ eos
 (write-file file test3)
 (check-equal? (read-file-as-csv file) '(("word1" "word2") ("word3" "word4"))
   "as-cvs 1")
+(check-equal? (read-file-as-csv/rows file length) '(2 2)
+  "as-words/rows")
 (check-equal? (read-file-as-words file) '("word1," "word2" "word3," "word4")
-  "as-words 1")
+  "as-words")
 
 (check-exn exn:fail:contract? (lambda () (write-file 0 1)))
 (check-exn exn:fail:contract? (lambda () (write-file '("test") 1)))
@@ -69,12 +71,3 @@ eos
 
 (check-exn exn:fail:contract? (lambda () (read-file-as-1strings 0)))
 (check-exn exn:fail:contract? (lambda () (read-file-as-1strings '("test"))))
-
-(check-exn exn:fail? 
-           (lambda ()
-             (with-handlers ((exn:fail:syntax? (compose error exn-message)))
-               (eval '(begin 
-                        (module a scheme 
-                          (require 2htdp/batch-io) 
-                          (read-file-as-csv "batch-io.ss" (turn-row-into cons)))
-                        (require 'a))))))
