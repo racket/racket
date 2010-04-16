@@ -45,6 +45,19 @@ eos
 (write-file file test2)
 (check-equal? (read-as-1strings file) as-1strings2 "as-lines 2")
 
+(define test2-a-as-list '("test1" "" "test2"))
+
+(define test2-a
+  (apply string-append 
+         (list (first test2-as-list)
+               (string #\newline)
+               (string #\newline)
+               (second test2-as-list))))
+
+(write-file file test2-a)
+(check-equal? (read-as-lines file) test2-a-as-list "as-lines 2-a")
+(check-equal? (read-as-words file) '("test1" "test2") "as-words 2-a")
+
 (define test3 #<< eos
  word1, word2 
  word3, word4
@@ -53,13 +66,13 @@ eos
 
 (write-file file test3)
 (check-equal? (read-as-words file) '("word1," "word2" "word3," "word4")
-  "as-words")
+              "as-words")
 (check-equal? (read-as-words/line file) '(("word1," "word2") ("word3," "word4"))
-  "as-words")
+              "as-words")
 (check-equal? (read-as-csv file) '(("word1" "word2") ("word3" "word4"))
-  "as-cvs 1")
-(check-equal? (read-as-csv/rows file length) '(2 2)
-  "as-words/rows")
+              "as-cvs 1")
+(check-equal? (read-as-csv/rows file length) '(2 2) 
+              "as-csv/rows")
 
 
 (check-exn exn:fail:contract? (lambda () (write-file 0 1)))

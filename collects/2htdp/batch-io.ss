@@ -9,22 +9,22 @@
 (provide
  ;; all reader functions consume the name of a file f:
  ;; -- f must be a file name (string) in the same folder as the program 
-
+ 
  read-file ;; String -> String
  ;; read the specified file as a string
  
  read-as-1strings ;; String -> [Listof 1String]
  ;; read the specified file as a list of 1strings (characters)
-
+ 
  read-as-lines ;; String -> [Listof String]
  ;; read the specified file as a list of strings, one per line
  
  read-as-words ;; String -> [Listof String]
  ;; read the specified file as a list of white-space separated tokens
-
+ 
  read-as-words/line ;; String -> [Listof [Listof String]]
  ;; read the specified file as a list of lines, each line as a list of words
-
+ 
  read-as-csv ;; String -> [Listof [Listof (U Any)]]
  ;; -- f must be formated as a a file with comma-separated values (Any)
  ;; read the specified file as a list of lists---one per line---of values (Any)
@@ -33,7 +33,7 @@
  ;; -- f must be formated as a a file with comma-separated values (Any)
  ;; read the specified file as a file of comma-separated values, apply the second
  ;; argument to each row, i.e., list of CSV on one line 
-
+ 
  write-file ;; String String -> Boolean
  ;; write the second argument to specified file in the same folder as the program
  ;; produce false, if f exists
@@ -61,13 +61,19 @@
   (read-chunks f read-line reverse))
 
 (def-reader (read-as-words f)
-  (define lines (read-chunks f read-line reverse))
-  (foldr (lambda (f r) (append (split f) r)) '() lines))
+  (read-as-words/line/internal f append))
 
 (def-reader (read-as-words/line f)
   ;; String -> [Listof [Listof String]]
   ;; read the specified file as a list of lines, each line as a list of words
-  (map split (read-chunks f read-line reverse)))
+  (read-as-words/line/internal f cons))
+
+(define (read-as-words/line/internal f combine)
+  (define lines (read-chunks f read-line (lambda (x) x)))
+  (foldl (lambda (f r)
+           (define fst (filter (compose not (curry string=? "")) (split f)))
+           (if (empty? fst) r (combine fst r)))
+         '() lines))
 
 (def-reader (read-as-csv f)
   (read-as-csv/func f))
