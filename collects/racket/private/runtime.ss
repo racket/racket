@@ -5,6 +5,6 @@
 
 (define (configure config)
   (current-prompt-read  (lambda ()
-                          (printf "r> ")
+                          (printf "> ")
                           (read)))
   (print-as-quasiquote #t))
