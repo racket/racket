@@ -47,12 +47,12 @@
 
 (define drscheme-buttons
   (let ([html-button
-         (make-render-button "HTML" html.png "--html" #".html" 
+         (make-render-button "Scribble HTML" html.png "--html" #".html" 
                              '("++xref-in" "setup/xref" "load-collections-xref"))]
         [pdf-button
          ;; only available on OSX currently
          ;; when we have a general way of opening pdfs, can use that
-         (make-render-button "PDF" pdf.png "--pdf" #".pdf" null)])
+         (make-render-button "Scribble PDF" pdf.png "--pdf" #".pdf" null)])
     (case (system-type)
       [(macosx) (list html-button pdf-button)]
       [else (list html-button)])))
