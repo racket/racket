@@ -5,7 +5,11 @@
 
 (require 2htdp/image
          lang/posn
+         scheme/runtime-path
          (only-in 2htdp/private/image-more save-image))
+
+(define-runtime-path image.scrbl "image.scrbl")
+(define-runtime-path img "img")
 
 (define-namespace-anchor anchor)
 (define ns (namespace-anchor->namespace anchor))
@@ -16,7 +20,7 @@
       (thread
        (λ () 
          (parameterize ([current-output-port out])
-           (dynamic-require "image.scrbl" #f))
+           (dynamic-require image.scrbl #f))
          (close-output-port out)))
       (let loop ()
         (let ([exp (read in)])
@@ -42,7 +46,9 @@
       [(image? result)
        (let ([fn (exp->filename exp)])
          (set! mapping (cons `(list ',exp 'image ,fn) mapping))
-         (save-image result (build-path "img" fn)))]
+         (let ([pth (build-path img fn)])
+           (unless (save-image result pth)
+             (fprintf (current-error-port) "failed to save ~s\n" pth))))]
       [else
        (unless (equal? result (read/write result))
          (error 'handle-image "expression ~s produced ~s, which I can't write"
