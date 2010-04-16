@@ -1071,6 +1071,8 @@
 (test "==1=2===3==4==" regexp-replace* "2*" "1234" (lambda (s) (string-append "=" s "=")))
 
 (test "x&b\\ab=cy&w\\aw=z" regexp-replace* #rx"a(.)" "xabcyawz" "\\&\\1\\\\&\\99=")
+(test "x&cy&z" regexp-replace* #rx"a(.)" "xabcyawz" "\\&")
+(test "x\\cy\\z" regexp-replace* #rx"a(.)" "xabcyawz" "\\\\")
 
 ;; Test weird port offsets:
 (define (test-weird-offset regexp-match regexp-match-positions)

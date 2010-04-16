@@ -328,9 +328,8 @@
                                              "expected a byte string result: ")
                                          v))
                  v))
-             (define rx:sub #rx#"^(?:[^&\\]*[\\][&\\])*[^&\\]*(?:&|[\\](?=[^&\\]|$))")
              (define need-replac? (and (not (procedure? replacement))
-                                       (regexp-match? rx:sub replacement)))
+                                       (regexp-match? #rx#"[\\&]" replacement)))
              (define (replac ms str)
                (if need-replac?
                    ((if (string? str) bytes->string/utf-8 values)
