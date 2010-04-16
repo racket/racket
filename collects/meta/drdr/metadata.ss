@@ -1,6 +1,8 @@
 #lang scheme
 (require "path-utils.ss"
-         "svn.ss")
+         "dirstruct.ss"
+         "svn.ss"
+         scheme/system)
 
 (define (testable-file? pth)
   (define suffix (filename-extension pth))
@@ -8,11 +10,11 @@
        (ormap (lambda (bs) (bytes=? suffix bs))
               (list #"ss" #"scm" #"scrbl"))))
 
-(define SVN-PROP:command-line "plt:drdr:command-line")
-(define SVN-PROP:timeout "plt:drdr:timeout")
+(define PROP:command-line "drdr:command-line")
+(define PROP:timeout "drdr:timeout")
 
 (define (path-command-line a-path)
-  (match (svn-property-value/root a-path SVN-PROP:command-line)
+  (match (get-prop a-path 'drdr:command-line #f)
     [#f
      (if (testable-file? a-path)
          (list "mzscheme" "-qt" (path->string* a-path))
@@ -21,15 +23,49 @@
      #f]
     [(? string? s)
      (map (lambda (s)
-            (regexp-replace (regexp-quote "$path") s (path->string* a-path)))
+            (regexp-replace (regexp-quote "~s") s (path->string* a-path)))
           (regexp-split #rx" " s))]))
 
 (define (path-timeout a-path)
-  (with-handlers ([exn:fail? (lambda (x) #f)])
-    (string->number (svn-property-value/root a-path SVN-PROP:timeout))))
+  (get-prop a-path 'drdr:timeout #f))
+
+(define (path-responsible a-path)
+  (get-prop a-path 'responsible #:as-string? #t))
 
 (provide/contract
- [SVN-PROP:command-line string?]
- [SVN-PROP:timeout string?]
+ [PROP:command-line string?]
+ [PROP:timeout string?]
+ [path-responsible (path-string? . -> . (or/c string? false/c))]
  [path-command-line (path-string? . -> . (or/c (listof string?) false/c))]
  [path-timeout (path-string? . -> . (or/c exact-nonnegative-integer? false/c))])
+
+;;; Property lookup
+(define props-cache (make-hasheq))
+(define (get-prop a-fs-path prop [def #f] #:as-string? [as-string? #f])
+  (define rev (current-rev))
+  (define a-path
+    (substring
+     (path->string
+      ((rebase-path (revision-trunk-dir rev) "/") a-fs-path))
+     1))
+  (define props:get-prop
+    (hash-ref! props-cache rev
+               (lambda ()
+                 (define tmp-file (make-temporary-file "props~a.ss"))
+                 (and
+                  ; Checkout the props file
+                  (system* (svn-path) 
+                           "export"
+                           "--quiet"
+                           "-r" (number->string rev)
+                           (format "~a/collects/meta/props" (plt-repository))
+                           (path->string tmp-file))
+                  ; Dynamic require it
+                  (begin0
+                    (dynamic-require `(file ,(path->string tmp-file))
+                                     'get-prop)
+                    (delete-file tmp-file))))))
+  (unless props:get-prop
+    (error 'get-prop "Could not load props file for ~e" (current-rev)))
+  (props:get-prop a-path prop def
+                  #:as-string? as-string?))

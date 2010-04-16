@@ -11,7 +11,9 @@
                     revision-trunk-dir)
          "status.ss"
          "monitor-svn.ss"
-         "metadata.ss"
+         (only-in "metadata.ss"
+                  PROP:command-line
+                  PROP:timeout)
          "formats.ss"
          "path-utils.ss"
          "analyze.ss")
@@ -416,9 +418,9 @@
             @p{Only one build runs at a time and when none is running the SVN repository is polled every @,(number->string (current-monitoring-interval-seconds)) seconds.}
             
             @h1{How is the revision "tested"?}
-            @p{Each file's @code{@,SVN-PROP:command-line} SVN property is consulted. If it is the empty string, the file is ignored. If it is a string, then @code{$path} is replaced with the file's path, @code{mzscheme} and @code{mzc} with their path (for the current revision), and @code{mred} and @code{mred-text} with @code{mred-text}'s path (for the current revision); then the resulting command-line is executed. 
+            @p{Each file's @code{@,PROP:command-line} property is consulted. If it is the empty string, the file is ignored. If it is a string, then a single @code{~s} is replaced with the file's path, @code{mzscheme} and @code{mzc} with their path (for the current revision), and @code{mred} and @code{mred-text} with @code{mred-text}'s path (for the current revision); then the resulting command-line is executed. 
                (Currently no other executables are allowed, so you can't @code{rm -fr /}.)
-               If there is no property value, the default (@code{mzscheme -t $path}) is used if the file's suffix is @code{.ss}, @code{.scm}, or @code{.scrbl}.}
+               If there is no property value, the default (@code{mzscheme -t ~s}) is used if the file's suffix is @code{.ss}, @code{.scm}, or @code{.scrbl}.}
                     
             @p{The command-line is always executed with a fresh empty current directory which is removed after the run. But all the files share the same home directory and X server, which are both removed after each revision's testing is complete.}
             
@@ -426,10 +428,10 @@
             @p{One per core, or @,(number->string (number-of-cpus)).}
             
             @h1{How long may a file run?}
-            @p{The execution timeout is @,(number->string (current-subprocess-timeout-seconds)) seconds by default, but the @code{@,SVN-PROP:timeout} property is used if @code{string->number} returns a number on it.}
+            @p{The execution timeout is @,(number->string (current-subprocess-timeout-seconds)) seconds by default, but the @code{@,PROP:timeout} property is used if @code{string->number} returns a number on it.}
             
             @h1{May these settings be set on a per-directory basis?}
-            @p{Yes; if the SVN property is set on any ancestor directory, then its value is used for its descendents when theirs is not set.
+            @p{Yes; if the property is set on any ancestor directory, then its value is used for its descendents when theirs is not set.
                }
             
             @h1{What data is gathered during these runs?}
@@ -467,7 +469,7 @@
             @p{So DrDr can be effective with all testing packages and untested code, it only pays attention to error output and non-zero exit codes. You can make the most of this strategy by ensuring that when your tests are run successfully they have no STDERR output and exit cleanly, but have both when they fail.}
             
             @h1{How do I fix the reporting of an error in my code?}
-            @p{If you know you code does not have a bug, but DrDr thinks it does, you can probably fix it by setting its SVN properties: allow it to run longer with @code{@,SVN-PROP:timeout} (but be kind and perhaps change the program to support work load selection on the command-line) or make sure it is run with the right command-line using @code{@,SVN-PROP:command-line}.}
+            @p{If you know you code does not have a bug, but DrDr thinks it does, you can probably fix it by setting its properties: allow it to run longer with @code{@,PROP:timeout} (but be kind and perhaps change the program to support work load selection on the command-line) or make sure it is run with the right command-line using @code{@,PROP:command-line}.}
             
             @h1{How can I do the most for DrDr?}
             @p{The most important thing you can do is eliminate false positives by configuring DrDr for your code and removing spurious error output.}

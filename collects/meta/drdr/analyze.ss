@@ -7,6 +7,7 @@
          "cache.ss"
          "dirstruct.ss"
          "status.ss"
+         "metadata.ss"
          "path-utils.ss"
          "rendering.ss")
 (provide (all-from-out "rendering.ss"))
@@ -263,7 +264,7 @@
                     (log-different? output-log (status-output-log (read-cache prev-log-pth))))
                   #f))
             (define responsible 
-              (or (svn-property-value/root (trunk-path log-pth) plt:responsible)
+              (or (path-responsible (trunk-path log-pth))
                   (and (regexp-match #rx"/planet/" (path->string* log-pth))
                        "jay")
                   ; XXX maybe mflatt, eli, or tewk
@@ -317,7 +318,7 @@
                   (and committer? 
                        (with-handlers ([exn:fail? (lambda (x) #f)])
                          (svn-rev-log-author (read-cache (revision-commit-msg (current-rev))))))
-                  (or (svn-property-value/root (trunk-path dir-pth) plt:responsible)
+                  (or (path-responsible (trunk-path dir-pth))
                       "unknown"))
                  
                  empty)
