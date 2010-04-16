@@ -5,7 +5,7 @@
 # will need to make sure that you've enable bash completion more
 # generally, usually via '. /etc/bash_completion'
 #
-#     source $PLTHOME/collects/meta/contrib/racket_completion
+#     source $PLTHOME/collects/meta/contrib/completion/racket-completion.bash
 #
 # Change $PLTHOME to whatever references your Racket installation
 
@@ -28,6 +28,13 @@ _racket()
       return 0
     fi
   done
+
+  # -k takes *two* integer arguments
+  if [[ 2 < ${#COMP_WORDS[@]} ]]; then
+    if [[ ${COMP_WORDS[COMP_CWORD-2]} == -k ]]; then
+      return 0
+    fi
+  fi
 
   
   case "${cur}" in
