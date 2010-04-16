@@ -1,6 +1,14 @@
 # -*- mode: shell-script; sh-basic-offset: 2; indent-tabs-mode: nil -*-
 # ex: ts=2 sw=2 noet filetype=sh
 
+# to enable this, add the following line to ~/.bash_completion you
+# will need to make sure that you've enable bash completion more
+# generally, usually via '. /etc/bash_completion'
+#
+#     source $PLTHOME/collects/meta/contrib/racket_completion
+#
+# Change $PLTHOME to whatever references your Racket installation
+
 _racket()
 {
   local cur prev singleopts doubleopts
