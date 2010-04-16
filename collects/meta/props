@@ -1203,7 +1203,10 @@ path/s is either such a string or a list of them.
 "collects/syntax" responsible (mflatt)
 "collects/syntax-color" responsible (sowens)
 "collects/teachpack" responsible (matthias)
-"collects/teachpack/2htdp/scribblings/image-gen.ss" drdr:command-line "mred-text ~s"
+"collects/teachpack/2htdp/scribblings/image-gen.ss" responsible (robby) drdr:command-line "mred-text ~s"
+"collects/teachpack/2htdp/scribblings/image-toc.ss" responsible (robby)
+"collects/teachpack/2htdp/scribblings/image-util.ss" responsible (robby)
+"collects/teachpack/2htdp/scribblings/image.scrbl" responsible (robby)
 "collects/teachpack/2htdp/universe.ss" drdr:command-line "mred-text -t ~s"
 "collects/teachpack/balls.ss" drdr:command-line "mzc ~s"
 "collects/teachpack/deinprogramm/image.ss" drdr:command-line "mred-text -t ~s"
