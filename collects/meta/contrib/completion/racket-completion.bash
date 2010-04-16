@@ -9,6 +9,8 @@
 #
 # Change $PLTHOME to whatever references your Racket installation
 
+# this completes only *.{rkt,ss,scm,scrbl} files unless there are
+# none, in which case it completes other things
 _smart_filedir()
 {
   COMPREPLY=()
@@ -25,7 +27,6 @@ _racket()
   COMPREPLY=()
   cur=`_get_cword`
   prev="${COMP_WORDS[COMP_CWORD-1]}"
-  #prev2="${COMP_WORDS[COMP_CWORD-2]}"
   doubleopts="--help --version --eval --load --require --lib --script --require-script\
  --main --repl --no-lib --version --warn --syslog --collects --search --addon --no-compiled --no-init-file"
   singleopts="-h -e -f -t -l -p -r -u -k  -m -i -n -v -W -L -X -S -A -I -U -N -j -d -b -c -q"
@@ -56,16 +57,18 @@ _racket()
       ;;
     *)
       case "${prev}" in
-        # these do not take paths as options
+        # these do not take anything completable as arguments
         --help|-h|-e|--eval|-p|-k)
           ;;
-        # these take dirs (not files) as options
+        # these take dirs (not files) as arguments
         -X|-S|-A|--collects|--search|--addon)
           _filedir '-d'
           ;;
+        # these take warnlevels as arguments
         -W|--warn|-L|--syslog)
           COMPREPLY=( $(compgen -W "${warnlevels}" -- ${cur}) )
           ;;
+        # otherwise, just a file
         *)
           _smart_filedir 
           ;;
