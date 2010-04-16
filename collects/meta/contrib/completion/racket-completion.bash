@@ -9,6 +9,16 @@
 #
 # Change $PLTHOME to whatever references your Racket installation
 
+_smart_filedir()
+{
+  COMPREPLY=()
+  _filedir '@(rkt|ss|scm|scrbl)'
+  if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
+    _filedir
+  fi
+  return 0
+}
+
 _racket()
 {
   local cur prev singleopts doubleopts
@@ -24,7 +34,7 @@ _racket()
   # if '--' is already given, complete all kind of files, but no options
   for (( i=0; i < ${#COMP_WORDS[@]}-1; i++ )); do
     if [[ ${COMP_WORDS[i]} == -- ]]; then
-      _filedir
+      _smart_filedir
       return 0
     fi
   done
@@ -57,7 +67,7 @@ _racket()
           COMPREPLY=( $(compgen -W "${warnlevels}" -- ${cur}) )
           ;;
         *)
-          _filedir #'@(rkt|ss|scm|scrbl)'
+          _smart_filedir 
           ;;
       esac
       ;;
