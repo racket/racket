@@ -5,8 +5,10 @@
 @(require "shared.ss")
 
 @(require 2htdp/batch-io)
+@(require scheme/runtime-path)
+@(define-runtime-path here ".")
 @(define (file-is f)
-  (define x (read-file f))
+  (define x (parameterize ([current-directory here]) (read-file f)))
   (centered
     (tabular #:style "searchbox"
       (list (list (verbatim x))))))
@@ -20,9 +22,9 @@
          (interaction-eval #:eval me (require 2htdp/batch-io))
          (interaction-eval #:eval me d)
          ...)
+       (current-directory here)
        (interaction-eval #:eval me (require lang/htdp-intermediate-lambda))
        me)]))
-
 
 @; -----------------------------------------------------------------------------
 
