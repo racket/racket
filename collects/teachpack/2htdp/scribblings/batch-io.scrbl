@@ -1,16 +1,34 @@
 #lang scribble/doc
 
 @(require (for-label scheme teachpack/2htdp/batch-io))
-@(require scribble/manual "shared.ss")
-@(require scribble/struct)
+@(require scheme/sandbox scribble/manual scribble/eval scribble/core)
+@(require "shared.ss")
+
+@(require 2htdp/batch-io)
+@(define (file-is f)
+  (define x (read-file f))
+  (centered
+    (tabular #:style "searchbox"
+      (list (list (verbatim x))))))
+
+@(define-syntax examples-batch-io
+  (syntax-rules ()
+    [(_ d ...)
+     (let ()
+       (define me (make-base-eval))
+       (begin
+         (interaction-eval #:eval me (require 2htdp/batch-io))
+         (interaction-eval #:eval me d)
+         ...)
+       (interaction-eval #:eval me (require lang/htdp-intermediate-lambda))
+       me)]))
+
 
 @; -----------------------------------------------------------------------------
 
 @(define-syntax-rule (reading name ctc s)
    @defproc[(@name [f (and/c string? file-exists?)]) @ctc ]{
- reads the content of file @scheme[f] and produces it as @s .
- The file @scheme[f] must exist and must be located in the same folder
- (directory) as the program; otherwise the function signals an error.} )
+ reads the content of file @scheme[f] and produces it as @s .} )
 
 @teachpack["batch-io"]{Batch Input/Output}
 
@@ -21,37 +39,92 @@
 The batch-io teachpack introduces several functions and a form for reading
  content from files and one function for writing to a file.
 
-@reading[read-file-as-string string?]{a string, including newlines}
+All functions that read a file consume the name of a file and possibly
+ additional arguments. They assume that the specified file exists in the
+ same folder as the program; if not they signal an error:
+@itemlist[
 
-@reading[read-file-as-lines (listof string?)]{a list of strings, one per line}
+@item{@reading[read-file string?]{a string, including newlines}
 
-@reading[read-file-as-1strings (listof 1string?)]{a list of one-char strings, one per character}
+@examples[#:eval (examples-batch-io)
+(read-file "data.txt")
+]
+assuming the file named @scheme["data.txt"] has this shape: 
+@(file-is "data.txt")
+Note how the leading space in the second line translates into the space
+between the newline indicator and the word @scheme["good"] in the result.}
 
-@defform/subs[#:id read-file-as-csv 
-              #:literals 
-	      (turn-row-into)
-              (read-file-as-csv f-expr clause)
-              ([clause
-		 (turn-row-into row-expr)
-		 ])]{
- reads the content of file @scheme[f] and produces it as a list of rows. 
- The file @scheme[f] must be a file of comma-separated values (csv).
- It must exist and must be located in the same folder
- (directory) as the program; otherwise the function signals an error.
+@item{@reading[read-file-as-lines (listof string?)]{a list of strings, one per line}
+@examples[#:eval (examples-batch-io)
+(read-file-as-lines "data.txt")
+]
+when @scheme["data.txt"] is the name of the same file as in the preceding
+item. And again, the leading space of the second line shows up in the
+second string in the list.}
 
- The form comes with one optional clause: @scheme[turn-into-row], which is
- described next.}
+@item{@reading[read-file-as-words (listof string?)]{a list of strings, one per white-space separated token in the file}
 
- @defform[(turn-row-into row-expr)
-          #:contracts
-          ([row-expr (-> (listof (or/c string? number?)) any)])]{
- requests that each row is processed by the result of @scheme[row-expr]
- before it is added to the result of @scheme[read-file-as-csv].}
+@examples[#:eval (examples-batch-io)
+(read-file-as-words "data.txt")
+]
+This time, however, the extra leading space of the second line of
+@scheme["data.txt"] has disappeared in the result. The space is considered
+a part of the separator that surrounds the word @scheme["good"].
+}
 
+@item{@reading[read-file-as-1strings (listof 1string?)]{a list of one-char strings, one per character}
 
-@defproc[(write-file [f string?] [cntnt string?]) boolean?]{
+@examples[#:eval (examples-batch-io)
+(read-file-as-1strings "data.txt")
+]
+Note how this function reproduces all parts of the file faithfully,
+including spaces and newlines.}
+
+@item{@reading[read-file-as-csv (listof (listof any/c))]{a list of lists of comma-separated values}
+
+@examples[#:eval (examples-batch-io)
+(read-file-as-csv "data.csv")
+]
+where the file named @scheme["data.csv"] has this shape: 
+@(file-is "data.csv")
+It is important to understand that the rows don't have to have the same
+length. Here the third line of the file turns into a row of three
+elements. 
+}
+
+@item{@defproc[(@read-file-as-csv/rows [f (and/c string? file-exists?)][s
+ (-> (listof any/c) X?)]) (listof X?)]{reads the content of file @scheme[f] and
+ produces it as list of rows, each constructed via @scheme[s]}
+
+@examples[#:eval (examples-batch-io)
+(read-file-as-csv/rows "data.csv" (lambda (x) x))
+(read-file-as-csv/rows "data.csv" length)
+]
+ The first example shows how @scheme[read-file-as-csv] is just a short form
+ for @scheme[read-file-as-csv/rows]; the second one simply counts the
+ number of separated tokens and the result is just a list of numbers. 
+ In many cases, the function argument is used to construct a structure from
+ a row.}
+]
+
+There is only one writer function at the moment: 
+@itemlist[
+
+@item{@defproc[(write-file [f string?] [cntnt string?]) boolean?]{
  turns @scheme[cntnt] into the content of file @scheme[f], located in the
  same folder (directory) as the program. If the file exists when the
  function is called, the function produces @scheme[true]; otherwise it
  produces @scheme[false].}
+
+@examples[#:eval (examples-batch-io)
+(if (write-file "output.txt" "good bye")
+    (write-file "output.txt" "cruel world")
+    (write-file "output.txt" "cruel world"))
+]
+ After evaluating this examples, the file named @scheme["output.txt"]
+ looks like this: 
+ @(file-is "output.txt")
+ Explain why.
+}
+]
 
