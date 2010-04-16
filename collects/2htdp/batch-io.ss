@@ -11,28 +11,31 @@
  ;; -- f must be a file name (string) in the same folder as the program 
 
  read-file ;; String -> String
- ;; read the file f as a string
+ ;; read the specified file as a string
  
- read-file-as-lines ;; String -> [Listof String]
- ;; read the file f as a list of strings, one per line 
- 
- read-file-as-words ;; String -> [Listof String]
- ;; read the file f as a list of white-space separated tokens
- 
- read-file-as-1strings ;; String -> [Listof 1String]
- ;; read the file f as a list of 1strings (characters)
+ read-as-1strings ;; String -> [Listof 1String]
+ ;; read the specified file as a list of 1strings (characters)
 
- read-file-as-csv ;; String -> [Listof [Listof (U Any)]]
- ;; -- f must be formated as a a file with comma-separated values (Any)
- ;; read the file f as a list of lists---one per line---of values (Any)
+ read-as-lines ;; String -> [Listof String]
+ ;; read the specified file as a list of strings, one per line
  
- read-file-as-csv/rows ;; String ([Listof Any] -> X) -> [Listof X]
+ read-as-words ;; String -> [Listof String]
+ ;; read the specified file as a list of white-space separated tokens
+
+ read-as-words/line ;; String -> [Listof [Listof String]]
+ ;; read the specified file as a list of lines, each line as a list of words
+
+ read-as-csv ;; String -> [Listof [Listof (U Any)]]
  ;; -- f must be formated as a a file with comma-separated values (Any)
- ;; read the file f as a file of comma-separated values, apply the second
+ ;; read the specified file as a list of lists---one per line---of values (Any)
+ 
+ read-as-csv/rows ;; String ([Listof Any] -> X) -> [Listof X]
+ ;; -- f must be formated as a a file with comma-separated values (Any)
+ ;; read the specified file as a file of comma-separated values, apply the second
  ;; argument to each row, i.e., list of CSV on one line 
 
  write-file ;; String String -> Boolean
- ;; write the second argument to file f in the same folder as the program
+ ;; write the second argument to specified file in the same folder as the program
  ;; produce false, if f exists
  ;; produce true, if f doesn't exist
  )      
@@ -51,22 +54,27 @@
 (def-reader (read-file f)
   (list->string (read-chunks f read-char drop-last-newline)))
 
-(def-reader (read-file-as-1strings f)
+(def-reader (read-as-1strings f)
   (map string (read-chunks f read-char drop-last-newline)))
 
-(def-reader (read-file-as-lines f)
+(def-reader (read-as-lines f)
   (read-chunks f read-line reverse))
 
-(def-reader (read-file-as-words f)
+(def-reader (read-as-words f)
   (define lines (read-chunks f read-line reverse))
   (foldr (lambda (f r) (append (split f) r)) '() lines))
 
-(def-reader (read-file-as-csv f)
-  (read-file-as-csv/func f))
+(def-reader (read-as-words/line f)
+  ;; String -> [Listof [Listof String]]
+  ;; read the specified file as a list of lines, each line as a list of words
+  (map split (read-chunks f read-line reverse)))
 
-(def-reader (read-file-as-csv/rows f row)
-  (check-proc 'read-file-as-cvs row 1 "one argument" "row")
-  (read-file-as-csv/func f row))
+(def-reader (read-as-csv f)
+  (read-as-csv/func f))
+
+(def-reader (read-as-csv/rows f row)
+  (check-proc 'read-as-cvs row 1 "one argument" "row")
+  (read-as-csv/func f row))
 
 ;; -----------------------------------------------------------------------------
 ;; writer 
@@ -84,7 +92,7 @@
 ;; auxiliaries 
 
 ;; String [([Listof X] -> Y)] -> [Listof Y]
-(define (read-file-as-csv/func f [row (lambda (x) x)])
+(define (read-as-csv/func f [row (lambda (x) x)])
   (local ((define (reader o)
             (make-csv-reader o '((strip-leading-whitespace?  . #t)
                                  (strip-trailing-whitespace? . #t)))))

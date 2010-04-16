@@ -56,36 +56,45 @@ assuming the file named @scheme["data.txt"] has this shape:
 Note how the leading space in the second line translates into the space
 between the newline indicator and the word @scheme["good"] in the result.}
 
-@item{@reading[read-file-as-lines (listof string?)]{a list of strings, one per line}
+@item{@reading[read-as-1strings (listof 1string?)]{a list of one-char strings, one per character}
+
 @examples[#:eval (examples-batch-io)
-(read-file-as-lines "data.txt")
+(read-as-1strings "data.txt")
+]
+Note how this function reproduces all parts of the file faithfully,
+including spaces and newlines.}
+
+@item{@reading[read-as-lines (listof string?)]{a list of strings, one per line}
+@examples[#:eval (examples-batch-io)
+(read-as-lines "data.txt")
 ]
 when @scheme["data.txt"] is the name of the same file as in the preceding
 item. And again, the leading space of the second line shows up in the
 second string in the list.}
 
-@item{@reading[read-file-as-words (listof string?)]{a list of strings, one per white-space separated token in the file}
+@item{@reading[read-as-words (listof string?)]{a list of strings, one per white-space separated token in the file}
 
 @examples[#:eval (examples-batch-io)
-(read-file-as-words "data.txt")
+(read-as-words "data.txt")
 ]
 This time, however, the extra leading space of the second line of
 @scheme["data.txt"] has disappeared in the result. The space is considered
 a part of the separator that surrounds the word @scheme["good"].
 }
 
-@item{@reading[read-file-as-1strings (listof 1string?)]{a list of one-char strings, one per character}
+@item{@reading[read-as-words/line (listof string?)]{a list of lists, one per line; each line is represented as a list of white-space separated tokens}
 
 @examples[#:eval (examples-batch-io)
-(read-file-as-1strings "data.txt")
+(read-as-words/line "data.txt")
 ]
-Note how this function reproduces all parts of the file faithfully,
-including spaces and newlines.}
+The results is similar to the one that @scheme[read-as-words] produces,
+except that the organization of the file into lines is preserved. 
+}
 
-@item{@reading[read-file-as-csv (listof (listof any/c))]{a list of lists of comma-separated values}
+@item{@reading[read-as-csv (listof (listof any/c))]{a list of lists of comma-separated values}
 
 @examples[#:eval (examples-batch-io)
-(read-file-as-csv "data.csv")
+(read-as-csv "data.csv")
 ]
 where the file named @scheme["data.csv"] has this shape: 
 @(file-is "data.csv")
@@ -94,16 +103,16 @@ length. Here the third line of the file turns into a row of three
 elements. 
 }
 
-@item{@defproc[(@read-file-as-csv/rows [f (and/c string? file-exists?)][s
+@item{@defproc[(@read-as-csv/rows [f (and/c string? exists?)][s
  (-> (listof any/c) X?)]) (listof X?)]{reads the content of file @scheme[f] and
  produces it as list of rows, each constructed via @scheme[s]}
 
 @examples[#:eval (examples-batch-io)
-(read-file-as-csv/rows "data.csv" (lambda (x) x))
-(read-file-as-csv/rows "data.csv" length)
+(read-as-csv/rows "data.csv" (lambda (x) x))
+(read-as-csv/rows "data.csv" length)
 ]
- The first example shows how @scheme[read-file-as-csv] is just a short form
- for @scheme[read-file-as-csv/rows]; the second one simply counts the
+ The first example shows how @scheme[read-as-csv] is just a short form
+ for @scheme[read-as-csv/rows]; the second one simply counts the
  number of separated tokens and the result is just a list of numbers. 
  In many cases, the function argument is used to construct a structure from
  a row.}
