@@ -233,7 +233,7 @@ static BOOL DoGetDir(BROWSEINFOW *b, HWND parent)
 }
 
 #ifdef MZ_PRECISE_GC
-START_XFORM_SKIP;
+END_XFORM_SKIP;
 #endif
 
 static int set_init_dir;
