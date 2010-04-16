@@ -79,10 +79,12 @@ _racket()
   return 0
 }
 complete  -F _racket $filenames racket
+complete  -F _racket $filenames gracket
+complete  -F _racket $filenames gracket-text
 
 _rico()
 {
-    local cur prev opts base
+    local cur prev opts base cmds makeopts tmpoutput
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -90,14 +92,21 @@ _rico()
     #
     #  The basic commands we'll complete.
     #
-    opts="make setup planet exe pack c-ext decompile distribute expand --help docs"
-    local makeopts="--disable-inline --no-deps -p --prefix --no-prim -v -vv --help -h"
+    #local cmds="make setup planet exe pack c-ext decompile distribute expand --help docs"
+    tmpoutput=`rico --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'`
+    if [ $? -ne 0 ]; then
+      return 1
+    fi
+    # removing the empty string on the next line breaks things.  such as my brain.
+    cmds=$( echo '' '--help' ;  for x in ${tmpoutput} ; do echo ${x} ; done )
+    makeopts="--disable-inline --no-deps -p --prefix --no-prim -v -vv --help -h"
+    planetcmds=$( echo '' '--help' ;  for x in `rico planet --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
 
     #
     #  Complete the arguments to some of the basic commands.
     #
     if [ $COMP_CWORD -eq 1 ]; then
-      COMPREPLY=($(compgen -W "${opts}" -- ${cur}))  
+      COMPREPLY=($(compgen -W "${cmds}" -- ${cur}))  
     else
       case "${prev}" in
         make)
@@ -108,7 +117,10 @@ _rico()
             *)
               _filedir
               ;;
-        esac
+          esac
+          ;;
+        planet)
+          COMPREPLY=( $(compgen -W "${planetcmds}" -- ${cur}) )
           ;;
         --help)
           ;;
