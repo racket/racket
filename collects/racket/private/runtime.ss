@@ -1,5 +1,4 @@
 #lang scheme/base
-(require mzlib/pconvert)
 
 (provide configure)
 
