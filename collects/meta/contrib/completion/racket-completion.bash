@@ -82,31 +82,31 @@ complete  -F _racket $filenames racket
 complete  -F _racket $filenames gracket
 complete  -F _racket $filenames gracket-text
 
+# Expects ${cur} as arg 1
+_rico_planet()
+{
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local planetcmds=$( echo '' '--help' ;  for x in `rico planet --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
+    COMPREPLY=( $(compgen -W "${planetcmds}" -- ${cur}) )
+}
+
 _rico()
 {
-    local cur prev opts base cmds makeopts tmpoutput
     COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-    #
-    #  The basic commands we'll complete.
-    #
-    #local cmds="make setup planet exe pack c-ext decompile distribute expand --help docs"
-    tmpoutput=`rico --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'`
-    if [ $? -ne 0 ]; then
-      return 1
-    fi
-    # removing the empty string on the next line breaks things.  such as my brain.
-    cmds=$( echo '' '--help' ;  for x in ${tmpoutput} ; do echo ${x} ; done )
-    makeopts="--disable-inline --no-deps -p --prefix --no-prim -v -vv --help -h"
+    local cur="${COMP_WORDS[COMP_CWORD]}"
 
     #
     #  Complete the arguments to some of the basic commands.
     #
+    local makeopts="--disable-inline --no-deps -p --prefix --no-prim -v -vv --help -h"
+
     if [ $COMP_CWORD -eq 1 ]; then
+      # removing the empty string on the next line breaks things.  such as my brain.
+      local cmds=$( echo '' '--help' ;  for x in `rico --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
       COMPREPLY=($(compgen -W "${cmds}" -- ${cur}))  
-    else
+    elif [ $COMP_CWORD -eq 2 ]; then
+      # Here we'll handle the main rico commands
+      local prev="${COMP_WORDS[1]}"
       case "${prev}" in
         make)
           case "${cur}" in
@@ -119,8 +119,7 @@ _rico()
           esac
           ;;
         planet)
-          planetcmds=$( echo '' '--help' ;  for x in `rico planet --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
-          COMPREPLY=( $(compgen -W "${planetcmds}" -- ${cur}) )
+          _rico_planet
           ;;
         --help)
           ;;
@@ -128,6 +127,8 @@ _rico()
           _filedir
           ;;
       esac
+    else
+      _filedir
     fi
     return 0
 }
