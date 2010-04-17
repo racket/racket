@@ -100,7 +100,6 @@ _rico()
     # removing the empty string on the next line breaks things.  such as my brain.
     cmds=$( echo '' '--help' ;  for x in ${tmpoutput} ; do echo ${x} ; done )
     makeopts="--disable-inline --no-deps -p --prefix --no-prim -v -vv --help -h"
-    planetcmds=$( echo '' '--help' ;  for x in `rico planet --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
 
     #
     #  Complete the arguments to some of the basic commands.
@@ -120,6 +119,7 @@ _rico()
           esac
           ;;
         planet)
+          planetcmds=$( echo '' '--help' ;  for x in `rico planet --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
           COMPREPLY=( $(compgen -W "${planetcmds}" -- ${cur}) )
           ;;
         --help)
