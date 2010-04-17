@@ -82,7 +82,6 @@ complete  -F _racket $filenames racket
 complete  -F _racket $filenames gracket
 complete  -F _racket $filenames gracket-text
 
-# Expects ${cur} as arg 1
 _rico_planet()
 {
     local cur="${COMP_WORDS[COMP_CWORD]}"
