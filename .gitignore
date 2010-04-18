@@ -1,0 +1,5 @@
+/bin/
+/lib/
+/include/
+/*.app
+/*.exe
