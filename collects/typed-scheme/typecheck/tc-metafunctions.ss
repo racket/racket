@@ -43,50 +43,40 @@
          (for/list ([t ts] [f fs] [o os])
            (make-Result t f o)))]))
 
-#;
-(define/contract (abstract-object ids keys o)
-  (-> (listof identifier?) (listof index/c) Object? LatentObject?)
+
+(d/c (abstract-object ids keys o)
+  (-> (listof identifier?) (listof name-ref/c) Object? Object?)
   (define (lookup y)
     (for/first ([x ids] [i keys] #:when (free-identifier=? x y)) i))
   (define-match-expander lookup:
     (syntax-rules ()
       [(_ i) (app lookup (? values i))]))
   (match o    
-    [(Path: p (lookup: idx)) (make-LPath p idx)]
-    [_ (make-LEmpty)]))
+    [(Path: p (lookup: idx)) (make-Path p idx)]
+    [_ (make-Empty)]))
 
-#;
+
 (d/c (abstract-filter ids keys fs)
-  (-> (listof identifier?) (listof index/c) FilterSet/c LatentFilterSet/c)
+  (-> (listof identifier?) (listof name-ref/c) FilterSet/c FilterSet/c)
   (match fs
     [(FilterSet: f+ f-)
-     (combine
-      (apply append (for/list ([f f+]) (abo ids keys f)))
-      (apply append (for/list ([f f-]) (abo ids keys f))))]
+     (combine (abo ids keys f+) (abo ids keys f-))]
     [(NoFilter:) (combine -top -top)]))
 
-#;
-(d/c (abo xs idxs f)
-  ((listof identifier?) (listof index/c) Filter/c . -> . (or/c null? (list/c LatentFilter/c)))
+(d/c (abo xs idxs f [inc 0])
+  ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
   (define (lookup y)
-    (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i)) 
+    (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) (+ inc i)))
   (define-match-expander lookup:
     (syntax-rules ()
       [(_ i) (app lookup (? values i))]))
-  (match f
-    [(Bot:) (list (make-LBot))]
-    [(TypeFilter: t p (lookup: idx)) (list (make-LTypeFilter t p idx))]
-    [(NotTypeFilter: t p (lookup: idx)) (list (make-LNotTypeFilter t p idx))]
-    [(ImpFilter: as cs)
-     (let ([a* (apply append (for/list ([f as]) (abo xs idxs f)))]
-           [c* (apply append (for/list ([f cs]) (abo xs idxs f)))])
-       (cond [(< (length a*) (length as)) ;; if we removed some things, we can't be sure
-              null]
-             [(null? c*) ;; this clause is now useless
-              null]
-             [else
-              (list (make-LImpFilter a* c*))]))]
-    [_ null]))
+  (define (rec f) (abo xs idxs f inc))
+  (define (sb-t t) t)
+  (filter-case (#:Type sb-t #:Filter rec) f
+               [#:TypeFilter t p (lookup: idx)
+                             (make-TypeFilter t p idx)]
+               [#:NotTypeFilter t p (lookup: idx)
+                                (make-NotTypeFilter t p idx)]))
 
 (define (merge-filter-sets fs)
   (match fs
