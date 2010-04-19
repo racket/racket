@@ -139,3 +139,5 @@ There is only one writer function at the moment:
 }
 ]
 
+@(delete-file "output.txt")
+
