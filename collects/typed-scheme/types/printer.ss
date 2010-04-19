@@ -34,10 +34,10 @@
   (match c
     [(FilterSet: thn els) (fp "(~a | ~a)" thn els)]
     [(NoFilter:) (fp "-")]
-    [(NotTypeFilter: type (list) id) (fp "(! ~a @ ~a)" type (syntax-e id))]
-    [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
-    [(TypeFilter: type (list) id) (fp "(~a @ ~a)" type (syntax-e id))]
-    [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
+    [(NotTypeFilter: type (list) id) (fp "(! ~a @ ~a)" type id)]
+    [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path id)]
+    [(TypeFilter: type (list) id) (fp "(~a @ ~a)" type id)]
+    [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path id)]
     [(Bot:) (fp "Bot")]
     [(Top:) (fp "Top")]
     [(ImpFilter: a c) (fp "(ImpFilter ~a ~a)" a c)]
@@ -58,7 +58,7 @@
   (match c
     [(NoObject:) (fp "-")]
     [(Empty:) (fp "")]
-    [(Path: pes i) (fp "~a" (append pes (list (syntax-e i))))]    
+    [(Path: pes i) (fp "~a" (append pes (list i)))]    
     [else (fp "(Unknown Object: ~a)" (struct->vector c))]))
 
 ;; print out a type

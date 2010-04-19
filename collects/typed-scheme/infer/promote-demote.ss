@@ -21,7 +21,7 @@
 (define (var-promote T V)
   (define (vp t) (var-promote t V))
   (define (inv t) (if (V-in? V t) Univ t))
-  (type-case (#:Type vp #:LatentFilter (sub-lf vp)) T
+  (type-case (#:Type vp #:Filter (sub-f vp)) T
              [#:F name (if (memq name V) Univ T)]
              [#:Vector t (make-Vector (inv t))]
              [#:Box t (make-Box (inv t))]
@@ -32,7 +32,7 @@
              [#:Param in out
                       (make-Param (var-demote in V)
                                   (vp out))]
-             [#:arr dom rng rest drest kws names
+             [#:arr dom rng rest drest kws
                     (cond                      
                       [(apply V-in? V (get-filters rng))
                        (make-top-arr)]
@@ -41,8 +41,7 @@
                                  (vp rng)
                                  (var-demote (car drest) V)
                                  #f
-                                 (for/list ([k kws]) (var-demote k V))
-                                 names)]
+                                 (for/list ([k kws]) (var-demote k V)))]
                       [else
                        (make-arr (for/list ([d dom]) (var-demote d V))
                                  (vp rng)
@@ -50,13 +49,12 @@
                                  (and drest
                                       (cons (var-demote (car drest) V)
                                             (cdr drest)))
-                                 (for/list ([k kws]) (var-demote k V))
-                                 names)])]))
+                                 (for/list ([k kws]) (var-demote k V)))])]))
 
 (define (var-demote T V)
   (define (vd t) (var-demote t V))
   (define (inv t) (if (V-in? V t) (Un) t))
-  (type-case (#:Type vd #:LatentFilter (sub-lf vd)) T
+  (type-case (#:Type vd #:Filter (sub-f vd)) T
              [#:F name (if (memq name V) (Un) T)]
              [#:Vector t (make-Vector (inv t))]
              [#:Box t (make-Box (inv t))]
@@ -67,7 +65,7 @@
              [#:Param in out
                       (make-Param (var-promote in V)
                                   (vd out))]
-             [#:arr dom rng rest drest kws names
+             [#:arr dom rng rest drest kws
                     (cond
                       [(apply V-in? V (get-filters rng))
                        (make-top-arr)]
@@ -76,8 +74,7 @@
                                  (vd rng)
                                  (var-promote (car drest) V)
                                  #f
-                                 (for/list ([k kws]) (var-demote k V))
-                                 names)]
+                                 (for/list ([k kws]) (var-demote k V)))]
                       [else
                        (make-arr (for/list ([d dom]) (var-promote d V))
                                  (vd rng)
@@ -85,5 +82,4 @@
                                  (and drest
                                       (cons (var-promote (car drest) V)
                                             (cdr drest)))
-                                 (for/list ([k kws]) (var-demote k V))
-                                 names)])]))
+                                 (for/list ([k kws]) (var-demote k V)))])]))

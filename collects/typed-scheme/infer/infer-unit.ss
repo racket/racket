@@ -158,8 +158,8 @@
            [ret-mapping (cg t s)])
        (cset-meet*
         (list arg-mapping ret-mapping)))]
-    [((arr: ts t #f (cons dty dbound) '() names)
-      (arr: ss s #f #f                '() names*))
+    [((arr: ts t #f (cons dty dbound) '())
+      (arr: ss s #f #f                '()))
      (unless (memq dbound X)
        (fail! S T))
      (unless (<= (length ts) (length ss))
@@ -169,11 +169,10 @@
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
-            [new-names (generate-temporaries new-tys)]
-            [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f null (append names new-names)) s-arr)])
+            [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f null) s-arr)])
        (move-vars-to-dmap new-cset dbound vars))]
     [((arr: ts t #f #f                '())
-      (arr: ss s #f (cons dty dbound) '() names*))
+      (arr: ss s #f (cons dty dbound) '()))
      (unless (memq dbound X)
        (fail! S T))
      (unless (<= (length ss) (length ts))
@@ -183,8 +182,7 @@
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
-            [new-names (generate-temporaries new-tys)]
-            [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f null (append names* new-names)))])
+            [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f null))])
        (move-vars-to-dmap new-cset dbound vars))]
     [((arr: ts t #f (cons t-dty dbound) '())
       (arr: ss s #f (cons s-dty dbound) '()))
@@ -208,7 +206,7 @@
        (cset-meet* 
         (list arg-mapping darg-mapping ret-mapping)))]
     [((arr: ts t t-rest #f                  '())
-      (arr: ss s #f     (cons s-dty dbound) '() names*))
+      (arr: ss s #f     (cons s-dty dbound) '()))
      (unless (memq dbound X)
        (fail! S T))
      (if (<= (length ts) (length ss))
@@ -223,9 +221,8 @@
                             (gensym dbound))]
                 [new-tys  (for/list ([var vars])
                             (substitute (make-F var) dbound s-dty))]
-                [new-names (generate-temporaries new-tys)]
                 [new-cset (cgen/arr V (append vars X) t-arr 
-                                    (make-arr (append ss new-tys) s #f (cons s-dty dbound) null (append names* new-names)))])
+                                    (make-arr (append ss new-tys) s #f (cons s-dty dbound) null))])
            (move-vars+rest-to-dmap new-cset dbound vars)))]
     ;; If dotted <: starred is correct, add it below.  Not sure it is.
     [((arr: ts t #f     (cons t-dty dbound) '())

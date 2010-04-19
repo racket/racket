@@ -39,9 +39,8 @@
     [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]
     [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
-    [(arr: dom rng rest drest kws names)
-     `(make-arr ,(sub dom) ,(sub rng) ,(sub rest) ,(sub drest) ,(sub kws) 
-                (list ,@(for/list ([i names]) `(quote-syntax ,i))))]
+    [(arr: dom rng rest drest kws)
+     `(make-arr ,(sub dom) ,(sub rng) ,(sub rest) ,(sub drest) ,(sub kws))]
     [(TypeFilter: t p i)
      `(make-TypeFilter ,(sub t) ,(sub p) (quote-syntax ,i))]
     [(NotTypeFilter: t p i)

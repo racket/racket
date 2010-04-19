@@ -39,11 +39,11 @@
 (define (substitute image name target #:Un [Un (get-union-maker)])
   (define (sb t) (substitute image name t))
   (if (hash-ref (free-vars* target) name #f)
-      (type-case (#:Type sb #:LatentFilter (sub-lf sb) #:LatentObject (sub-lo sb))
+      (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
                  target
                  [#:Union tys (Un (map sb tys))]
                  [#:F name* (if (eq? name* name) image target)]
-                 [#:arr dom rng rest drest kws names
+                 [#:arr dom rng rest drest kws
                         (begin
                           (when (and (pair? drest)
                                      (eq? name (cdr drest))
@@ -53,8 +53,7 @@
                                     (sb rng)
                                     (and rest (sb rest))
                                     (and drest (cons (sb (car drest)) (cdr drest)))
-                                    (map sb kws)
-				    names))]
+                                    (map sb kws)))]
                  [#:ValuesDots types dty dbound
                                (begin
                                  (when (eq? name dbound)
@@ -66,7 +65,7 @@
 (define (substitute-dots images rimage name target)    
   (define (sb t) (substitute-dots images rimage name t))
   (if (hash-ref (free-vars* target) name #f)
-      (type-case (#:Type sb #:LatentFilter (sub-lf sb)) target
+      (type-case (#:Type sb #:Filter (sub-f sb)) target
                  [#:ValuesDots types dty dbound
                                (if (eq? name dbound)
                                    (make-Values
@@ -80,7 +79,7 @@
                                           (make-FilterSet (make-Top) (make-Top))
                                           (make-Empty))))))
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
-                 [#:arr dom rng rest drest kws names
+                 [#:arr dom rng rest drest kws
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))                            
                             (make-arr (append 
@@ -91,14 +90,12 @@
                                       (sb rng)
                                       rimage
                                       #f
-                                      (map sb kws)
-				      names)
+                                      (map sb kws))
                             (make-arr (map sb dom)
                                       (sb rng)
                                       (and rest (sb rest))
                                       (and drest (cons (sb (car drest)) (cdr drest)))
-                                      (map sb kws)
-				      names))])
+                                      (map sb kws)))])
       target))
 
 ;; implements sd from the formalism
@@ -106,7 +103,7 @@
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
   (if (hash-ref (free-vars* target) name #f)
-      (type-case (#:Type sb #:LatentFilter (sub-lf sb))
+      (type-case (#:Type sb #:Filter (sub-f sb))
                  target
                  [#:ValuesDots types dty dbound
                                (make-ValuesDots (map sb types)
@@ -116,15 +113,14 @@
                       (if (eq? name* name)
                           image
                           target)]
-                 [#:arr dom rng rest drest kws names
+                 [#:arr dom rng rest drest kws
                         (make-arr (map sb dom)
                                   (sb rng)
                                   (and rest (sb rest))
                                   (and drest
                                        (cons (sb (car drest))
                                              (if (eq? name (cdr drest)) image-bound (cdr drest))))
-                                  (map sb kws)
-				  names)])
+                                  (map sb kws))])
        target))
 
 ;; substitute many variables

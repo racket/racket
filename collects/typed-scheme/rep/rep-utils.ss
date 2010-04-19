@@ -181,13 +181,15 @@
                         #`[#,rec-id #,(hash-ref (attribute recs.mapping) k
                                                 #'values)])]
                      [(match-clauses ...)
-                      (hash-map new-ht gen-clause)])
+                      (hash-map new-ht gen-clause)]
+                     [error-msg (quasisyntax/loc stx (error 'tc "no pattern for ~a" #,fold-target))])
          #`(let (let-clauses ...
                  [#,fold-target ty])
              ;; then generate the fold
              #,(quasisyntax/loc stx
                  (match #,fold-target
-                   match-clauses ...))))])))
+                   match-clauses ...
+                   [_ error-msg]))))])))
 
 
 (define-syntax (make-prim-type stx)    
@@ -237,9 +239,7 @@
 
 (make-prim-type [Type #:key #:d dt]
                 [Filter #:d df]
-                [LatentFilter #:d dlf]
                 [Object #:d do] 
-                [LatentObject #:d dlo]
                 [PathElem #:d dpe])
 
 (provide PathElem? (rename-out [Rep-seq Type-seq]

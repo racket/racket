@@ -731,8 +731,7 @@
   ;(printf "got to here 0~a~n" args-stx)
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
-    [((arr: dom (Values: (list (Result: t-r f-r o-r) ...)) rest #f (list (Keyword: _ _ #f) ...)
-	    names)
+    [((arr: dom (Values: (list (Result: t-r f-r o-r) ...)) rest #f (list (Keyword: _ _ #f) ...))
       (list (tc-result1: t-a phi-a o-a) ...))
      ;(printf "got to here 1~a~n" args-stx)
      (when check?
@@ -748,8 +747,7 @@
          (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
      ;(printf "got to here 2 ~a ~a ~a ~n" dom names o-a)
      (let-values ([(names o-a)
-                   (for/lists (n o) ([d (in-list dom)]
-                                     [nm (in-list names)]
+                   (for/lists (n o) ([(d nm) (in-indexed (in-list dom))]
                                      [oa (in-list o-a)])
                      (values nm oa))])
        ;(printf "got to here 3~a~n" args-stx)

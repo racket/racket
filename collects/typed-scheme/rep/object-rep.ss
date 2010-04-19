@@ -12,8 +12,8 @@
 
 (do Empty () [#:fold-rhs #:base])
 
-(do Path ([p (listof PathElem?)] [v identifier?])
-  [#:intern (list p (hash-id v))]
+(do Path ([p (listof PathElem?)] [v name-ref/c])
+  [#:intern (list p (hash-name v))]
   [#:frees (combine-frees (map free-vars* p)) (combine-frees (map free-idxs* p))]
   [#:fold-rhs (*Path (map pathelem-rec-id p) v)])
 

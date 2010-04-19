@@ -182,24 +182,18 @@
 
 (d/c (make-arr* dom rng 
                 #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
-                #:filters [filters -no-filter] #:object [obj -no-obj]
-                #:names [names (append
-                                (generate-temporaries dom)
-                                (if (or drest rest) (list (generate-temporary)) null)
-                                (generate-temporaries kws))])
+                #:filters [filters -no-filter] #:object [obj -no-obj])
   (c:->* ((listof Type/c) (or/c Values? ValuesDots? Type/c))
          (#:rest (or/c #f Type/c) 
           #:drest (or/c #f (cons/c Type/c symbol?))
           #:kws (listof Keyword?)
           #:filters FilterSet?
-          #:object Object?
-          #:names (listof identifier?))
+          #:object Object?)
          arr?)
   (make-arr dom (if (or (Values? rng) (ValuesDots? rng))
                     rng
                     (make-Values (list (-result rng filters obj))))
-            rest drest (sort #:key Keyword-kw kws keyword<?)
-	    names))
+            rest drest (sort #:key Keyword-kw kws keyword<?)))
 
 (define-syntax (->* stx)
   (define-syntax-class c
@@ -241,12 +235,10 @@
      (make-Function (list (make-arr* dom rng #:drest (cons dty 'dbound) #:filters filters)))]))
 
 (define (->acc dom rng path)
-  (define x (generate-temporary 'x))
-  (make-Function (list (make-arr* dom rng 
-                                  #:names (list x)
-                                  #:filters (-FS (-not-filter (-val #f) x path)
-                                                 (-filter (-val #f) x path))
-                                  #:object (make-Path path x)))))
+  (make-Function (list (make-arr* dom rng
+                                  #:filters (-FS (-not-filter (-val #f) 0 path)
+                                                 (-filter (-val #f) 0 path))
+                                  #:object (make-Path path 0)))))
 
 (define (cl->* . args)
   (define (funty-arities f)
@@ -275,7 +267,7 @@
   (make-Struct name parent flds proc poly pred cert accs constructor))
 
 (d/c (-filter t i [p null])
-     (c:->* (Type/c identifier?) ((listof PathElem?)) Filter/c)
+     (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
      (make-TypeFilter t p i))
 
 (define (-filter-at t o)
@@ -329,7 +321,7 @@
           [t (loop (cdr fs) (cons t result))]))))
 
 (d/c (-not-filter t i [p null])
-     (c:->* (Type/c identifier?) ((listof PathElem?)) Filter/c)
+     (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
      (make-NotTypeFilter t p i))
 
 (define-syntax-rule (with-names (vars ...) . e)
@@ -337,7 +329,7 @@
     . e))
 
 (define-syntax-rule (asym-pred (var) dom rng filter)
-  (with-names (var) (make-Function (list (make-arr* (list dom) rng #:names (list var) #:filters filter)))))
+  (with-names (var) (make-Function (list (make-arr* (list dom) rng #:filters filter)))))
 
 (d/c make-pred-ty
   (case-> (c:-> Type/c Type/c)
@@ -346,12 +338,11 @@
           (c:-> (listof Type/c) Type/c Type/c integer? (listof PathElem?) Type/c))
   (case-lambda 
     [(in out t n p)
-     (define xs (generate-temporaries in))
+     (define xs (for/list ([(_ i) (in-indexed (in-list in))]) i))
      (make-Function
       (list
        (make-arr* 
 	in out 
-	#:names xs
 	#:filters (-FS (-filter t (list-ref xs n) p) (-not-filter t (list-ref xs n) p)))))]
     [(in out t n)
      (make-pred-ty in out t n null)]

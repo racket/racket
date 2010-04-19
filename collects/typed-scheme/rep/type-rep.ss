@@ -4,7 +4,7 @@
 (require (utils tc-utils) 
 	 "rep-utils.ss" "object-rep.ss" "filter-rep.ss" "free-variance.ss"
          mzlib/trace scheme/match
-         scheme/contract
+         scheme/contract unstable/debug
          (for-syntax scheme/base syntax/parse))
 
 (define name-table (make-weak-hasheq))
@@ -380,16 +380,16 @@
         [(type<? s t) 1]
         [else -1]))
 
-(define ((sub-lf st) e)
-  (latentfilter-case (#:Type st
-                      #:LatentFilter (sub-lf st))
-                     e))
+(define ((sub-f st) e)
+  (filter-case (#:Type st
+                #:Filter (sub-f st))
+               e))
 
-(define ((sub-lo st) e)
-  (latentobject-case (#:Type st
-                      #:LatentObject (sub-lo st)
-                      #:PathElem (sub-pe st))
-                     e))
+(define ((sub-o st) e)
+  (object-case (#:Type st
+                #:Object (sub-o st)
+                #:PathElem (sub-pe st))
+               e))
 
 (define ((sub-pe st) e)
   (pathelem-case (#:Type st
@@ -402,9 +402,8 @@
   (define (nameTo name count type)
     (let loop ([outer 0] [ty type])
       (define (sb t) (loop outer t))
-      (define slf (sub-lf sb))
       (type-case 
-       (#:Type sb #:LatentFilter (sub-lf sb) #:LatentObject (sub-lo sb))
+       (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
        ty
        [#:F name* (if (eq? name name*) (*B (+ count outer)) ty)]
        ;; necessary to avoid infinite loops
@@ -418,8 +417,7 @@
                         (cons (sb (car drest))
                               (if (eq? (cdr drest) name) (+ count outer) (cdr drest)))
                         #f)
-                    (map sb kws)
-                    names)]
+                    (map sb kws))]
        [#:ValuesDots rs dty dbound
               (*ValuesDots (map sb rs)
                            (sb dty)
@@ -439,6 +437,7 @@
                 (cdr names)
                 (sub1 count))))))
 
+
 ;; instantiate-many : List[Type] Scope^n -> Type 
 ;; where n is the length of types  
 ;; all of the types MUST be Fs
@@ -446,9 +445,9 @@
   (define (replace image count type)
     (let loop ([outer 0] [ty type])
       (define (sb t) (loop outer t))    
-      (define slf (sub-lf sb))  
+      (define sf (sub-f sb))  
       (type-case 
-       (#:Type sb #:LatentFilter slf #:LatentObject (sub-lo sb))
+       (#:Type sb #:Filter sf #:Object (sub-o sb))
        ty
        [#:B idx (if (= (+ count outer) idx)
                     image
@@ -622,10 +621,8 @@
 (define-match-expander arr:*
   (lambda (stx)
     (syntax-parse stx
-      [(_ dom rng rest drest kws names)
-       (syntax/loc stx (arr: dom rng rest drest kws names))]
       [(_ dom rng rest drest kws)
-       (syntax/loc stx (arr: dom rng rest drest kws _))])))
+       (syntax/loc stx (arr: dom rng rest drest kws))])))
 ;(trace subst subst-all)
 
 (provide
@@ -637,14 +634,14 @@
  Mu? Poly? PolyDots?
  arr
  arr?
- Type? Filter? LatentFilter? Object? LatentObject?
+ Type? Filter? Object?
  Type/c
  Poly-n
  PolyDots-n
  free-vars*
  type-compare type<?
  remove-dups
- sub-lf sub-lo sub-pe
+ sub-f sub-o sub-pe
  Values: Values? Values-rs
  (rename-out [Mu:* Mu:]               
              [Poly:* Poly:]

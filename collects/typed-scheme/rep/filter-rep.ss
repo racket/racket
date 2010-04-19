@@ -14,7 +14,7 @@
    'FilterSet
    (λ (e) (or (FilterSet? e) (NoFilter? e)))))
 
-(provide Filter/c FilterSet/c)
+(provide Filter/c FilterSet/c name-ref/c hash-name)
 
 (define name-ref/c (or/c identifier? integer?))
 (define (hash-name v) (if (identifier? v) (hash-id v) v))
@@ -48,18 +48,19 @@
              (combine-frees (map free-idxs* fs))])
 
 (df FilterSet (thn els)
-     [#:contract (->d ([t (cond [(Bot? t)
-                                 Bot?]
-                                [(Bot? e)
-                                 Top?]
-                                [else Filter/c])]
-                       [e (cond [(Bot? e)
-                                 Bot?]
-                                [(Bot? t)
-                                 Top?]
-                                [else Filter/c])])
-                      (#:syntax [stx #f])
-                      [result FilterSet?])])
+    [#:contract (->d ([t (cond [(Bot? t)
+                                Bot?]
+                               [(Bot? e)
+                                Top?]
+                               [else Filter/c])]
+                      [e (cond [(Bot? e)
+                                Bot?]
+                               [(Bot? t)
+                                Top?]
+                               [else Filter/c])])
+                     (#:syntax [stx #f])
+                     [result FilterSet?])]
+    [#:fold-rhs (*FilterSet (filter-rec-id thn) (filter-rec-id els))])
 
 ;; represents no info about the filters of this expression
 ;; should only be used for parsing type annotations and expected types

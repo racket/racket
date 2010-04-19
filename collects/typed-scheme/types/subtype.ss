@@ -184,13 +184,13 @@
 (d/c (combine-arrs arrs)
   (c-> (listof arr?) (or/c #f arr?))
   (match arrs
-    [(list (and a1 (arr: dom1 rng1 #f #f '() names)) (arr: dom rng #f #f '()) ...)
+    [(list (and a1 (arr: dom1 rng1 #f #f '())) (arr: dom rng #f #f '()) ...)
      (cond
-       [(null? dom) (make-arr dom1 rng1 #f #f '() names)]
+       [(null? dom) (make-arr dom1 rng1 #f #f '())]
        [(not (apply = (length dom1) (map length dom))) #f]
        [(not (for/and ([rng2 (in-list rng)]) (type-equal? rng1 rng2)))
         #f]
-       [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '() names)])]
+       [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
 
