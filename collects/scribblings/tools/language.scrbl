@@ -882,6 +882,15 @@ the name.
 
 }
 
+@defmethod[(extra-repl-information [settings settings] [port output-port?]) void?]{
+  This method is called on the DrScheme eventspace main thread to insert extra
+  information into the REPL to reflect the state of the program.
+  
+  It is used, for example, to print out the ``Teachpack'' lines in the HtDP languages.
+}
+                   
+
+                                                                                                     
 @defmethod[(marshall-settings [settings settings])
            writable]{
 Translates an instance of the settings type into a scheme

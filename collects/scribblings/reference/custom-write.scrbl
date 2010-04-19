@@ -6,19 +6,22 @@
 @defthing[prop:custom-write struct-type-property?]{
 
 Associates a procedure to a structure type to used by the default
-printer to @scheme[display] or @scheme[write] (or @scheme[print])
+printer to @scheme[display], @scheme[write], or @scheme[print]
 instances of the structure type.
 
 @moreref["structprops"]{structure type properties}
 
 The procedure for a @scheme[prop:custom-write] value takes three
-arguments: the structure to be printed, the target port, and a boolean
-that is @scheme[#t] for @scheme[write] mode and @scheme[#f] for
-@scheme[display] mode. The procedure should print the value to the
-given port using @scheme[write], @scheme[display], @scheme[fprintf],
+arguments: the structure to be printed, the target port, and an
+argument that is @scheme[#t] for @scheme[write] mode, @scheme[#f] for
+@scheme[display] mode, or an exact non-negative integer representing
+the current @scheme[quasiquote] depth for @scheme[print] mode.  The
+procedure should print the value to the given port using
+@scheme[write], @scheme[display], @scheme[print], @scheme[fprintf],
 @scheme[write-special], etc.
 
-The write handler, display handler, and print handler are specially
+The @tech{port write handler}, @tech{port display handler}, 
+and @tech{print handler} are specially
 configured for a port given to a custom-write procedure. Printing to
 the port through @scheme[display], @scheme[write], or @scheme[print]
 prints a value recursively with sharing annotations. To avoid a
@@ -41,27 +44,33 @@ limited width).
 
 The following example definition of a @scheme[tuple] type includes
 custom-write procedures that print the tuple's list content using
-angle brackets in @scheme[write] mode and no brackets in
+angle brackets in @scheme[write] and @scheme[print] mode and no brackets in
 @scheme[display] mode. Elements of the tuple are printed recursively,
 so that graph and cycle structure can be represented.
 
 @defexamples[
-(define (tuple-print tuple port write?)
-  (when write? (write-string "<" port))
-  (let ([l (tuple-ref tuple 0)])
+(define (tuple-print tuple port mode)
+  (when mode (write-string "<" port))
+  (let ([l (tuple-ref tuple 0)]
+        [recur (case mode
+                 [(#t) write]
+                 [(#f) display]
+                 [else (lambda (p port) (print p port mode))])])
     (unless (zero? (vector-length l))
-      ((if write? write display) (vector-ref l 0) port)
+      (recur (vector-ref l 0) port)
       (for-each (lambda (e)
                   (write-string ", " port)
-                  ((if write? write display) e port))
+                  (recur e port))
                 (cdr (vector->list l)))))
-  (when write? (write-string ">" port)))
+  (when mode (write-string ">" port)))
 
 (define-values (s:tuple make-tuple tuple? tuple-ref tuple-set!)
   (make-struct-type 'tuple #f 1 0 #f
                     (list (cons prop:custom-write tuple-print))))
 
 (display (make-tuple #(1 2 "a")))
+
+(print (make-tuple #(1 2 "a")))
 
 (let ([t (make-tuple (vector 1 2 "a"))])
   (vector-set! (tuple-ref t 0) 0 t)

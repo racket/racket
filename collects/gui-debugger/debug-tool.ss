@@ -22,12 +22,22 @@
   ; what is the right way to deal with macros?
   ; how can the three tool classes communicate with each other safely
   
+  (define-local-member-name debug-callback)
+  
   (define tool@
     (unit 
       (import drscheme:tool^)
       (export drscheme:tool-exports^) 
 
       (define (phase1)
+        (drscheme:module-language-tools:add-opt-out-toolbar-button
+         (λ (frame parent)
+           (new switchable-button%
+                (label (string-constant debug-tool-button-name))
+                (bitmap debug-bitmap)
+                (parent parent)
+                (callback (λ (button) (send frame debug-callback)))))
+         'macro-stepper)
 	(drscheme:language:extend-language-interface
          debugger-language<%>
          (lambda (superclass)
@@ -1395,6 +1405,7 @@
             (let* ([settings (send (get-definitions-text) get-next-settings)]
                    [lang (drscheme:language-configuration:language-settings-language settings)]
                    [visible? (and (send lang capability-value 'gui-debugger:debug-button)
+                                  (not (is-a? lang drscheme:module-language:module-language<%>)) ;; the opt-out button handles this language
                                   (not (debugger-does-not-work-for?
                                         (extract-language-level settings))))])
               (if visible?

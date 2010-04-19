@@ -920,7 +920,7 @@ END-OF-TESTS
            ;; remove all comment lines
            [ts (regexp-replace* #px"(?m:^;.*\r?\n)" ts "")]
            ;; split the tests
-           [ts (regexp-split #px"(?:^|\r?\n)-+(?:$|\r?\n)" ts)])
+           [ts (regexp-split #px"(?m:^)-+(?:$|\r?\n)" ts)])
       (parameterize ([port-count-lines-enabled #t])
         (for ([t ts] #:when (not (regexp-match? #px"^\\s*$" t)))
           (let ([m (or (regexp-match #px"^(.*)\n\\s*(-\\S+->)\\s*\n(.*)$"

@@ -17,7 +17,15 @@
   (export drscheme:module-language-tools^)
 
   (define-local-member-name initialized? move-to-new-language)
+
+  (define-struct opt-out-toolbar-button (make-button id))
+  (define opt-out-toolbar-buttons '())
   
+  (define (add-opt-out-toolbar-button make-button id) 
+    (set! opt-out-toolbar-buttons
+          (cons (make-opt-out-toolbar-button make-button id)
+                opt-out-toolbar-buttons)))
+    
   (define tab<%> (interface ()))
   
   (define tab-mixin
@@ -122,23 +130,45 @@
                                                     (-> (is-a?/c drscheme:unit:frame<%>) any))))
                            (info-result 'drscheme:toolbar-buttons #f)
                            (get-lang-name pos)
-                           'drscheme/private/module-language-tools)))))))
+                           'drscheme/private/module-language-tools)
+                 (info-result 'drscheme:opt-out-toolbar-buttons '())))))))
 
       (inherit get-tab)
-      (define/private (register-new-buttons buttons)
-        (when buttons
-          (let* ([tab (get-tab)]
-                 [frame (send tab get-frame)])
-            (send tab set-lang-toolbar-buttons
-                  (map (λ (button-spec)
-                         (new switchable-button%
-                              [label (list-ref button-spec 0)]
-                              [bitmap (list-ref button-spec 1)]
-                              [parent (send frame get-toolbar-button-panel)]
-                              [callback
-                               (lambda (button)
-                                 ((list-ref button-spec 2) frame))]))
-                       buttons)))))
+      
+      (define/private (register-new-buttons buttons opt-out-ids)
+        (let* ([tab (get-tab)]
+               [frame (send tab get-frame)])
+          (when (send frame initialized?)
+            (send frame begin-container-sequence)
+            (let ([directly-specified-buttons
+                   (map (λ (button-spec)
+                          (new switchable-button%
+                               [label (list-ref button-spec 0)]
+                               [bitmap (list-ref button-spec 1)]
+                               [parent (send frame get-toolbar-button-panel)]
+                               [callback
+                                (lambda (button)
+                                  ((list-ref button-spec 2) frame))]))
+                        (or buttons '()))]
+                  [opt-out-buttons
+                   (if (eq? opt-out-ids #f)
+                       '()
+                       (map
+                        (λ (opt-out-toolbar-button)
+                          ((opt-out-toolbar-button-make-button opt-out-toolbar-button) 
+                           frame
+                           (send frame get-toolbar-button-panel)))
+                        (filter (λ (opt-out-toolbar-button)
+                                  (not (member (opt-out-toolbar-button-id opt-out-toolbar-button) 
+                                               opt-out-ids)))
+                                opt-out-toolbar-buttons)))])
+              (send tab set-lang-toolbar-buttons
+                    (sort
+                     (append directly-specified-buttons
+                             opt-out-buttons)
+                     string<=?
+                     #:key (λ (x) (send x get-label)))))
+            (send frame end-container-sequence))))
       
       (inherit get-text)
       (define/private (get-lang-name pos)
@@ -163,79 +193,3 @@
       (set! in-module-language? 
             (is-a? (drscheme:language-configuration:language-settings-language (get-next-settings))
                    drscheme:module-language:module-language<%>)))))
-
-
-
-#|
-
-                                                                     
-                                                                     
-                                                                     
-                                             
-#lang scheme/gui
-
-(require mrlib/switchable-button 
-         mrlib/bitmap-label
-         drscheme/tool
-         scheme/system
-         setup/xref)
-
-(provide tool@)
-
-(define-namespace-anchor anchor)
-
-(define scribble-bm (make-object bitmap% 1 1))
-
-(define tool@
-  (unit
-    (import drscheme:tool^)
-    (export drscheme:tool-exports^)
-
-    (define phase1 void)
-    (define phase2 void)
-
-    (define (make-new-unit-frame% super%)
-      (class super%
-        (inherit get-button-panel
-                 get-definitions-text)
-        (super-instantiate ())
-
-        (define client-panel
-          (new horizontal-pane% (parent (get-button-panel))))
-
-        (define (make-render-button label mode suffix extra-cmdline)
-          (new switchable-button%
-               [label label]
-               [bitmap scribble-bm]
-               [parent client-panel]
-               [callback
-                (lambda (button)
-                  (let* ([t (get-definitions-text)]
-                         [fn (send t get-filename)])
-                    (if fn
-                        (begin
-                          (send t save-file)
-                          (parameterize ([current-namespace (make-base-namespace)]
-                                         [current-command-line-arguments
-                                          (list->vector 
-                                           (append
-                                            extra-cmdline
-                                            (list mode (if (path? fn) (path->string fn) fn))))])
-                            (namespace-attach-module (namespace-anchor->empty-namespace anchor) 'setup/xref)
-                            (dynamic-require 'scribble/run #f)
-                            (let-values ([(base name dir?) (split-path fn)])
-                              (system (format "open ~a" (path-replace-suffix name suffix))))))
-                        (message-box "Not Named" "Cannot render unsaved file"))))]))
-
-        (inherit register-toolbar-button)
-        (define pdf-button (make-render-button "PDF" "--pdf" #".pdf" null))
-        (register-toolbar-button pdf-button)
-        (define html-button (make-render-button "HTML" "--html" #".html" '("++xref-in" "setup/xref" "load-collections-xref")))
-        (register-toolbar-button html-button)
-
-        (send (get-button-panel) change-children
-              (lambda (l) (cons client-panel (remq client-panel l))))))
-
-    (drscheme:get/extend:extend-unit-frame make-new-unit-frame% #f)))
-
-|#

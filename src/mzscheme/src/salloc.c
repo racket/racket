@@ -210,7 +210,8 @@ void scheme_set_thread_local_variables(Thread_Local_Variables *tlvs) XFORM_SKIP_
 }
 #endif
 
-#if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) && defined(INLINE_GETSPECIFIC_ASSEMBLY_CODE)
+#if 0 && defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) && defined(INLINE_GETSPECIFIC_ASSEMBLY_CODE)
+/* This code is dsiabled */
 static void macosx_get_thread_local_key_for_assembly_code() XFORM_SKIP_PROC
 {
   /* Our [highly questionable] strategy for inlining pthread_getspecific() is taken from 
@@ -265,44 +266,21 @@ Thread_Local_Variables *scheme_external_get_thread_local_variables() XFORM_SKIP_
 void scheme_setup_thread_local_key_if_needed() XFORM_SKIP_PROC
 {
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
-# ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
-#  if defined(linux)
-    scheme_thread_local_key = 0;
-    if (pthread_key_create(&scheme_thread_local_key, NULL)) {
-      fprintf(stderr, "pthread key create failed\n");
-      abort();
-    }
-    /*
-    if (scheme_thread_local_key != 0) {
-      fprintf(stderr, "pthread getspecific inline hack failed scheme_thread_local_key %i\n", scheme_thread_local_key);
-      abort();
-    }
-    */
-    pthread_setspecific(scheme_thread_local_key, (void *)0xaced);
-    if (scheme_get_thread_local_variables() != (Thread_Local_Variables *)0xaced) {
-      fprintf(stderr, "pthread getspecific inline hack failed to return set data\n");
-      abort();
-    }
-#  else
-    macosx_get_thread_local_key_for_assembly_code();
-#  endif
-# else
-    if (pthread_key_create(&scheme_thread_local_key, NULL)) {
-      fprintf(stderr, "pthread key create failed\n");
-      abort();
-    }
-# endif
+  scheme_thread_local_key = 0;
+  if (pthread_key_create(&scheme_thread_local_key, NULL)) {
+    fprintf(stderr, "pthread key create failed\n");
+    abort();
+  }
 #endif
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-    {
-      void **base;
+  {
+    void **base;
 
-      __asm { mov ecx, FS:[0x2C]
-              mov base, ecx }
-      scheme_tls_delta -= (unsigned long)base[scheme_tls_index];
-      scheme_tls_index *= sizeof(void*);
-      
-    }
+    __asm { mov ecx, FS:[0x2C]
+            mov base, ecx }
+    scheme_tls_delta -= (unsigned long)base[scheme_tls_index];
+    scheme_tls_index *= sizeof(void*);
+  }
 #endif
 }
 
@@ -401,7 +379,7 @@ void scheme_init_os_thread_like(void *other) XFORM_SKIP_PROC
 
 void scheme_init_os_thread() XFORM_SKIP_PROC
 {
-  return scheme_init_os_thread_like(NULL);
+  scheme_init_os_thread_like(NULL);
 }
 
 /************************************************************************/

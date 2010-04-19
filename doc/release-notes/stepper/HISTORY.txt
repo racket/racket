@@ -1,6 +1,10 @@
 Stepper
 -------
 
+Changse for v4.2.5:
+
+Non.
+
 Changes for v4.2.4:
 
 Bug fixes.

@@ -347,13 +347,17 @@ arguments given.}
 
 @defstruct+[(let-one expr) ([rhs (or/c expr? seq? indirect? any/c)]
                             [body (or/c expr? seq? indirect? any/c)]
-                            [flonum? boolean?])]{
+                            [flonum? boolean?]
+                            [unused? boolean?])]{
 
 Pushes an uninitialized slot onto the stack, evaluates @scheme[rhs]
 and puts its value into the slot, and then runs @scheme[body]. If
 @scheme[flonum?] is @scheme[#t], then @scheme[rhs] must produce a
 flonum, and the slot must be accessed by @scheme[localref]s that
-expect a flonum.
+expect a flonum. If @scheme[unused?] is @scheme[#t], then the slot
+must not be used, and the value of @scheme[rhs] is not actually pushed
+onto the stack (but @scheme[rhs] is constrained to produce a single
+value).
 
 After @scheme[rhs] is evaluated, the stack is restored to its depth
 from before evaluating @scheme[rhs]. Note that the new slot is created

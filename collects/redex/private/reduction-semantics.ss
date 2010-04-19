@@ -8,7 +8,8 @@
 	 "error.ss"
          mzlib/trace
          (lib "list.ss")
-         (lib "etc.ss"))
+         (lib "etc.ss")
+         (for-syntax syntax/parse))
 
 (require (for-syntax (lib "name.ss" "syntax")
                      "loc-wrapper-ct.ss"
@@ -406,7 +407,9 @@
                        (cond
                          [(null? stuffs) (values label (reverse scs/withs) (reverse fvars))]
                          [else
-                          (syntax-case (car stuffs) (fresh variable-not-in)
+                          (syntax-case (car stuffs) (where where/hidden
+                                                           side-condition side-condition/hidden
+                                                           fresh variable-not-in)
                             [(fresh xs ...) 
                              (loop (cdr stuffs)
                                    label
@@ -433,21 +436,21 @@
                                                          #'y)])))
                                                   (syntax->list #'(xs ...))))
                                     fvars))]
-                            [(-where x e)
-                             (or (free-identifier=? #'-where #'where)
-                                 (free-identifier=? #'-where #'where/hidden))
+                            [(where x e)
                              (loop (cdr stuffs)
                                    label
                                    (cons #`(cons #,(to-lw/proc #'x) #,(to-lw/proc #'e))
                                          scs/withs)
                                    fvars)]
-                            [(-side-condition sc)
-                             (or (free-identifier=? #'-side-condition #'side-condition)
-                                 (free-identifier=? #'-side-condition #'side-condition/hidden))
+                            [(where/hidden x e)
+                             (loop (cdr stuffs) label scs/withs fvars)]
+                            [(side-condition sc)
                              (loop (cdr stuffs)
                                    label
                                    (cons (to-lw/uq/proc #'sc) scs/withs)
                                    fvars)]
+                            [(side-condition/hidden sc)
+                             (loop (cdr stuffs) label scs/withs fvars)]
                             [x
                              (identifier? #'x)
                              (loop (cdr stuffs)
@@ -1051,9 +1054,7 @@
 
 ;; Intermediate structures recording clause "extras" for typesetting.
 (define-struct metafunc-extra-side-cond (expr))
-(define-struct (metafunc-extra-side-cond/hidden metafunc-extra-side-cond) ())
 (define-struct metafunc-extra-where (lhs rhs))
-(define-struct (metafunc-extra-where/hidden metafunc-extra-where) ())
 (define-struct metafunc-extra-fresh (vars))
 
 (define-syntax (in-domain? stx)
@@ -1289,9 +1290,7 @@
                                                                          (map (λ (hm)
                                                                                 (map
                                                                                  (λ (lst)
-                                                                                   (syntax-case lst (unquote
-                                                                                                     side-condition where
-                                                                                                     side-condition/hidden where/hidden)
+                                                                                   (syntax-case lst (unquote side-condition where)
                                                                                      [(where pat (unquote (f _ _)))
                                                                                       (and (or (identifier? #'pat)
                                                                                                (andmap identifier? (syntax->list #'pat)))
@@ -1307,16 +1306,17 @@
                                                                                      [(where pat exp)
                                                                                       #`(make-metafunc-extra-where
                                                                                          #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
-                                                                                     [(where/hidden pat exp)
-                                                                                      #`(make-metafunc-extra-where/hidden
-                                                                                         #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
                                                                                      [(side-condition x)
                                                                                       #`(make-metafunc-extra-side-cond
-                                                                                         #,(to-lw/uq/proc #'x))]
-                                                                                     [(side-condition/hidden x)
-                                                                                      #`(make-metafunc-extra-side-cond/hidden
                                                                                          #,(to-lw/uq/proc #'x))]))
-                                                                                 (reverse (syntax->list hm))))
+                                                                                 (reverse 
+                                                                                  (filter (λ (lst)
+                                                                                            (syntax-case lst (where/hidden
+                                                                                                              side-condition/hidden)
+                                                                                              [(where/hidden pat exp) #f]
+                                                                                              [(side-condition/hidden x) #f]
+                                                                                              [_ #t])) 
+                                                                                          (syntax->list hm)))))
                                                                               (syntax->list #'(... seq-of-tl-side-cond/binds)))]
                                                                         
                                                                         [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
@@ -1415,7 +1415,7 @@
                 (syntax-case clause ()
                   [(a b) (void)]
                   [x (raise-syntax-error syn-error-name "expected a pattern and a right-hand side" stx clause)]))
-              (syntax->list #'([(lhs ...) rhs ...] ...)))
+              rest)
              (raise-syntax-error syn-error-name "error checking failed.3" stx)))]
       [([x roc ...] ...)
        (begin
@@ -2065,22 +2065,41 @@
      '#,(syntax-column stx)
      '#,(syntax-position stx)))
 
+(define (check-equiv-pred form p)
+  (unless (and (procedure? p) (procedure-arity-includes? p 2))
+    (raise-type-error form "procedure (arity 2)" p)))
+
 (define-syntax (test-->> stx)
-  (syntax-case stx ()
-    [(_ red #:cycles-ok e1 e2 ...)
-     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #t #,(get-srcloc stx))]
-    [(_ red e1 e2 ...)
-     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #f #,(get-srcloc stx))]))
+  (syntax-parse stx
+    [(form red:expr
+           (~or (~optional (~seq (~and #:cycles-ok (~bind [cycles-ok? #t])))
+                           #:defaults ([cycles-ok? #f])
+                           #:name "#:cycles-ok keyword")
+                (~optional (~seq #:equiv equiv?:expr)
+                           #:defaults ([equiv? #'equal?])
+                           #:name "#:equiv keyword"))
+           ...
+           e1:expr
+           e2:expr ...)
+     #`(let ([=? equiv?])
+         (check-equiv-pred 'form =?)
+         (test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #,(attribute cycles-ok?) =? #,(get-srcloc stx)))]))
 
 (define-syntax (test--> stx)
-  (syntax-case stx ()
-    [(_ red e1 e2 ...)
-     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t #,(get-srcloc stx))]))
+  (syntax-parse stx
+    [(form red:expr
+           (~optional (~seq #:equiv equiv?:expr)
+                      #:defaults ([equiv? #'equal?]))
+           e1:expr
+           e2:expr ...)
+     #`(let ([=? equiv?])
+         (check-equiv-pred 'form =?)
+         (test-->>/procs red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t =? #,(get-srcloc stx)))]))
 
 (define (apply-reduction-relation/dummy-second-value red arg)
   (values (apply-reduction-relation red arg) #f))
 
-(define (test-->>/procs red arg expected apply-red cycles-ok? srcinfo)
+(define (test-->>/procs red arg expected apply-red cycles-ok? equiv? srcinfo)
   (unless (reduction-relation? red)
     (error 'test--> "expected a reduction relation as first argument, got ~e" red))
   (let-values ([(got got-cycle?) (apply-red red arg)])
@@ -2093,7 +2112,7 @@
        (print-failed srcinfo)
        (fprintf (current-error-port) "found a cycle in the reduction graph\n")]
       [else
-       (unless (set-equal? expected got)
+       (unless (set-equal? expected got equiv?)
          (inc-failures)
          (print-failed srcinfo)
          (for-each
@@ -2103,8 +2122,8 @@
           (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
           got))])))
 
-(define (set-equal? s1 s2)
-  (define (⊆ s1 s2) (andmap (λ (x1) (member x1 s2)) s1))
+(define (set-equal? s1 s2 equiv?)
+  (define (⊆ s1 s2) (andmap (λ (x1) (memf (λ (x) (equiv? x1 x)) s2)) s1))
   (and (⊆ s1 s2)
        (⊆ s2 s1)))
 
@@ -2185,9 +2204,7 @@
          (struct-out metafunc-case)
          
          (struct-out metafunc-extra-side-cond)
-         (struct-out metafunc-extra-side-cond/hidden)
          (struct-out metafunc-extra-where)
-         (struct-out metafunc-extra-where/hidden)
          (struct-out metafunc-extra-fresh)
          
          (struct-out binds))

@@ -21,10 +21,6 @@
 	 wxme/wxme
 	 setup/dirs
 
-	 ;; this module is shared between the drscheme's namespace (so loaded here) 
-	 ;; and the user's namespace in the teaching languages
-	 "deinprogramm-struct.ss"
-           
 	 lang/stepper-language-interface
 	 lang/debugger-language-interface
 	 lang/run-teaching-program
@@ -171,8 +167,6 @@
           
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-namespace (current-namespace)]
-		  [deinprogramm-struct-module-name 
-                   ((current-module-name-resolver) '(lib "deinprogramm/deinprogramm-struct.ss") #f #f)]
                   [scheme-test-module-name
                    ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
                   [scheme-contract-module-name
@@ -182,7 +176,6 @@
                  (read-accept-quasiquote (get-accept-quasiquote?))
                  (ensure-drscheme-secrets-declared drs-namespace)
                  (namespace-attach-module drs-namespace ''drscheme-secrets)
-                 (namespace-attach-module drs-namespace deinprogramm-struct-module-name)
                  (error-display-handler teaching-languages-error-display-handler)
 
 		 (current-eval (add-annotation (deinprogramm-lang-settings-tracing? settings) (current-eval)))

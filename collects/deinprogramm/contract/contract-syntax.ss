@@ -83,7 +83,8 @@
        #'(contract-update-syntax contract/contract #'?loc)))
     (?id
      (identifier? #'?id)
-     (with-syntax ((?stx (phase-lift stx)))
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name))
        (let ((name (symbol->string (syntax->datum #'?id))))
 	 (if (char=? #\% (string-ref name 0))
 	     #'(make-type-variable-contract '?id ?stx)
@@ -91,13 +92,19 @@
 		 ((?raise
 		   (syntax/loc #'?stx
 			       (error 'contracts "expected a contract, found ~e" ?id))))
-	       #'(make-delayed-contract '?name
-					(delay
-					  (begin
-					    (when (not (contract? ?id))
-					      ?raise)
-					    (contract-update-syntax ?id ?stx)))
-					#'?stx))))))
+	       (with-syntax
+		   ((?ctr
+		     #'(make-delayed-contract '?name
+					      (delay
+						(begin
+						  (when (not (contract? ?id))
+						    ?raise)
+						  ?id)))))
+		 ;; for local variables (parameters, most probably),
+		 ;; we want the value to determine the blame location
+		 (if (eq? (identifier-binding #'?id) 'lexical)
+		     #'?ctr
+		     #'(contract-update-syntax ?ctr #'?stx))))))))
     ((combined ?contract ...)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name)
@@ -118,14 +125,16 @@
     ((?contract-abstr ?contract ...)
      (identifier? #'?contract-abstr)
      (with-syntax ((?stx (phase-lift stx))
+		   (?name name)
 		   ((?contract-expr ...) (map (lambda (ctr)
 						(parse-contract #f ctr))
 					      (syntax->list #'(?contract ...)))))
        (with-syntax
 	   ((?call (syntax/loc stx (?contract-abstr ?contract-expr ...))))
-	 #'(make-delayed-contract '?name
-				  (delay ?call)
-				  ?stx))))
+	 #'(make-call-contract '?name
+			       (delay ?call)
+			       (delay ?contract-abstr) (delay (list ?contract-expr ...))
+			       ?stx))))
     (else
      (raise-syntax-error 'contract
 			 "ungültiger Vertrag" stx))))
@@ -175,7 +184,7 @@
     (syntax-case stx ()
       ((_ ?name ?cnt ?expr)
        (with-syntax ((?enforced
-		       (stepper-syntax-property #'(attach-name '?name (apply-contract/blame (contract ?cnt) ?expr))
+		       (stepper-syntax-property #'(attach-name '?name (apply-contract/blame ?cnt ?expr))
 						'stepper-skipto/discard
 						;; apply-contract/blame takes care of itself
 						;; remember there's an implicit #%app
@@ -205,7 +214,7 @@
 		       ((?id ?cnt)
 			(identifier? #'?id)
 			(cons #'?id
-			      #'(attach-name '?id (apply-contract/blame (contract ?cnt) ?id))))))
+			      #'(attach-name '?id (apply-contract/blame ?cnt ?id))))))
 		   (syntax->list #'(?bind ...)))))
 	 (with-syntax (((?id ...) (map car ids+enforced))
 		       ((?enforced ...) (map cdr ids+enforced)))

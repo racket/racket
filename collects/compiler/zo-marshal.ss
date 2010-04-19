@@ -160,7 +160,7 @@
     [(struct case-lam (name lams))
      (traverse-data name visit)
      (for-each (lambda (lam) (traverse-lam lam visit)) lams)]
-    [(struct let-one (rhs body flonum?))
+    [(struct let-one (rhs body flonum? unused?))
      (traverse-expr rhs visit)
      (traverse-expr body visit)]
     [(struct let-void (count boxes? body))
@@ -247,11 +247,11 @@
 (define wcm-type-num 14)
 (define quote-syntax-type-num 15)
 (define variable-type-num 24)
-(define top-type-num 87)
-(define case-lambda-sequence-type-num 96)
-(define begin0-sequence-type-num 97)
-(define module-type-num 100)
-(define prefix-type-num 102)
+(define top-type-num 89)
+(define case-lambda-sequence-type-num 99)
+(define begin0-sequence-type-num 100)
+(define module-type-num 103)
+(define prefix-type-num 105)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -297,7 +297,8 @@
   CPT_PATH
   CPT_CLOSURE
   CPT_DELAY_REF
-  CPT_PREFAB)
+  CPT_PREFAB
+  CPT_LET_ONE_UNUSED)
 
 (define-enum
   0
@@ -314,7 +315,7 @@
   APPVALS_EXPD
   SPLICE_EXPD)
 
-(define CPT_SMALL_NUMBER_START 35)
+(define CPT_SMALL_NUMBER_START 36)
 (define CPT_SMALL_NUMBER_END 60)
 
 (define CPT_SMALL_SYMBOL_START 60)
@@ -715,8 +716,12 @@
                     (cons (or name null)
                           lams)
                     out)]
-    [(struct let-one (rhs body flonum?))
-     (out-byte (if flonum? CPT_LET_ONE_FLONUM CPT_LET_ONE) out)
+    [(struct let-one (rhs body flonum? unused?))
+     (out-byte (cond
+                [flonum? CPT_LET_ONE_FLONUM]
+                [unused? CPT_LET_ONE_UNUSED]
+                [else CPT_LET_ONE])
+               out)
      (out-expr (protect-quote rhs) out)
      (out-expr (protect-quote body) out)]
     [(struct let-void (count boxes? body))

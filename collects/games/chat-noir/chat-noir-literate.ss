@@ -2253,13 +2253,7 @@ and reports the results.
                                  'playing 3 (make-posn 0 0) #f)
                      "h")
              (make-world '() (make-posn 1 1)
-                         'playing 3 (make-posn 0 0) #t))
-       (test (change (make-world '() (make-posn 1 1)
-                                 'playing 3 (make-posn 0 0) #t)
-                     "release")
-             (make-world '() (make-posn 1 1) 'playing 3 (make-posn 0 0) #f))]
-
-
+                         'playing 3 (make-posn 0 0) #t))]
 
 
 @chunk[<point-in-this-circle?-tests>
@@ -2338,7 +2332,7 @@ and reports the results.
 This section contains expressions that start
 the Chat Noir game going.
 
-First, a function to compute state of the world at the start of a game is defined.
+First, here is a function to compute state of the world at the start of a game.
 
 @chunk[<initial-world>
        (define board-size 11)
@@ -2349,21 +2343,24 @@ First, a function to compute state of the world at the start of a game is define
             (empty-board board-size)
             board-size))
          (make-world initial-board
-                           (make-posn (quotient board-size 2)
-                                      (quotient board-size 2))
-                           'playing
-                           board-size
-                           #f
-                           #f))]
+                     (make-posn (quotient board-size 2)
+                                (quotient board-size 2))
+                     'playing
+                     board-size
+                     #f
+                     #f))]
 
-Next, the game starts by calling @scheme[big-bang] with the appropriate arguments.
+Finally, we can define and provide a function to start the game
+by calling @scheme[big-bang] with the appropriate arguments.
 
 @chunk[<go>
-       (void
-        (big-bang (make-initial-world)
-                  (on-draw render-world
-                           (world-width board-size)
-                           (world-height board-size))
-                  (on-key change)
-                  (on-mouse clack)
-                  (name "Chat Noir")))]
+       (provide main)
+       (define (main)
+         (void
+          (big-bang (make-initial-world)
+                    (on-draw render-world
+                             (world-width board-size)
+                             (world-height board-size))
+                    (on-key change)
+                    (on-mouse clack)
+                    (name "Chat Noir"))))]

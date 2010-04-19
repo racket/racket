@@ -83,4 +83,4 @@
   (parameterize ([current-readtable readtable])
     (read-syntax src port)))
 
-(provide (rename-out [*read read] [*read-syntax read-syntax]))
+(provide readtable (rename-out [*read read] [*read-syntax read-syntax]))

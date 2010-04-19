@@ -273,7 +273,7 @@
 			(<= 2 (length (stx->list clause)) 3))
 	     (raise-syntax-error
 	      (syntax-e who)
-	      "bad clause"
+	      "expected a clause containing a pattern, an optional guard expression, and an expression"
 	      clause)))
 	 clauses)
 	(let ([patterns (map stx-car clauses)]

@@ -213,28 +213,46 @@ The protocol for a @tech{compiled-load handler} is the same as for the
 @tech{load handler} (see @scheme[current-load]), except that a
 @tech{compiled-load handler} is expected to set
 @scheme[current-load-relative-directory] itself. The default
-@tech{compiled-load handler}, however, checks for @filepath{.zo} files
-(usually produced with @scheme[compile-file]) and @filepath{.so} (Unix),
-@filepath{.dll} (Windows), or @filepath{.dylib} (Mac OS X) files.
+@tech{compiled-load handler}, however, checks for a @filepath{.ss}
+file when the given path ends with @filepath{.rkt}, no @filepath{.rkt}
+file exists, and when the handler's second argument is a symbol. In
+addition, the default @tech{compiled-load handler} checks for
+@filepath{.zo} (bytecode) files and @filepath{.so} (native Unix),
+@filepath{.dll} (native Windows), or @filepath{.dylib} (native Mac OS
+X) files.
 
 The check for a compiled file occurs whenever the given path
-@scheme[_file] ends with any extension (e.g., @filepath{.ss} or
-@filepath{.scm}), and the check consults the subdirectories indicated by
-the @scheme[use-compiled-file-paths] parameter relative to
-@scheme[_file].  The subdirectories are checked in order. A @filepath{.zo}
-version of the file is loaded if it exists directly in one of the
-indicated subdirectories, or a @filepath{.so}/@filepath{.dll}/@filepath{.dylib}
-version of the file is loaded if it exists within a @filepath{native}
-subdirectory of a @scheme[use-compiled-file-paths] directory, in an
-even deeper subdirectory as named by
-@scheme[system-library-subpath]. A compiled file is loaded only if its
-modification date is not older than the date for @scheme[_file]. If
-both @filepath{.zo} and @filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are
-available, the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.
+@scheme[_file] ends with any extension (e.g., @filepath{.rkt} or
+@filepath{.scrbl}), and the check consults the subdirectories
+indicated by the @scheme[use-compiled-file-paths] parameter relative
+to @scheme[_file].  The subdirectories are checked in order. A
+@filepath{.zo} version of the file (whose name is formed by passing
+@scheme[_file] and @scheme[#".zo"] to @scheme[path-add-suffix]) is
+loaded if it exists directly in one of the indicated subdirectories,
+or a @filepath{.so}/@filepath{.dll}/@filepath{.dylib} version of the
+file is loaded if it exists within a @filepath{native} subdirectory of
+a @scheme[use-compiled-file-paths] directory, in an even deeper
+subdirectory as named by @scheme[system-library-subpath]. A compiled
+file is loaded only if its modification date is not older than the
+date for @scheme[_file]. If both @filepath{.zo} and
+@filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are available,
+the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.  If
+@scheme[_file] ends with @filepath{.rkt}, no such file exists, the
+handler's second argument is a symbol, and a @filepath{.ss} file
+exists, then @filepath{.zo} and
+@filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are used only
+with names based on @scheme[_file] with its suffixed replaced by
+@filepath{.ss}.
 
 While a @filepath{.zo}, @filepath{.so}, @filepath{.dll}, or
 @filepath{.dylib} file is loaded, the current @scheme[load-relative]
-directory is set to the directory of the original @scheme[_file].
+directory is set to the directory of the original @scheme[_file].  If
+the file to be loaded has the suffix @filepath{.ss} while the
+requested file has the suffix @filepath{.rkt}, then the
+@scheme[current-module-declare-source] parameter is set to the full
+path of the loaded file, otherwise the
+@scheme[current-module-declare-source] parameter is set to
+@scheme[#f].
 
 If the original @scheme[_file] is loaded or a @filepath{.zo} variant is
 loaded, the @tech{load handler} is called to load the file. If any
@@ -288,15 +306,34 @@ the @scheme[current-prompt-read], @scheme[current-eval], and
 
 @defparam[current-prompt-read proc (-> any)]{
 
-A parameter that determines a procedure that takes no arguments,
-displays a prompt string, and returns a top-level form to
-evaluate. This procedure is called by the read phase of
-@scheme[read-eval-print-loop].  The default prompt read handler prints
-@litchar{> } and returns the result of
+A parameter that determines a @deftech{prompt read handler}, which is
+a procedure that takes no arguments, displays a prompt string, and
+returns a top-level form to evaluate. The prompt read handler is
+called by @scheme[read-eval-print-loop], and the handler typically
+should call the @tech{read interaction handler} (as determined by the
+@scheme[current-read-interaction] parameter) after printing a prompt.
+
+The default prompt read handler prints @litchar{> } and returns the
+result of
 
 @schemeblock[
-(parameterize ((read-accept-reader #t))
-  (read-syntax))
+(let ([in (current-input-port)])
+  ((current-read-interaction) (object-name in) in))
+]}
+
+
+@defparam[current-read-interaction proc (any/c input-port? -> any)]{
+
+A parameter that determines the current @deftech{read interaction
+handler}, which is procedure that takes an arbitrary value and an
+input port and returns an expression read from the input port. 
+
+The default read interaction handler accepts @scheme[_src] and
+@scheme[_in] and returns
+
+@schemeblock[
+(parameterize ([read-accept-reader #t])
+  (read-syntax _src _in))
 ]}
 
 

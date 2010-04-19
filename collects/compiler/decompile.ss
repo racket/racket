@@ -207,9 +207,9 @@
        ,@(map (lambda (lam)
                 (decompile-lam lam globs stack closed))
               lams))]
-    [(struct let-one (rhs body flonum?))
+    [(struct let-one (rhs body flonum? unused?))
      (let ([id (or (extract-id rhs)
-                   (gensym 'local))])
+                   (gensym (if unused? 'unused 'local)))])
        `(let ([,id ,(let ([v (decompile-expr rhs globs (cons id stack) closed)])
                       (if flonum?
                           (list '#%as-flonum v)
@@ -336,7 +336,7 @@
                                       bitwise-bit-set? char=?
                                       + - * / quotient remainder min max bitwise-and bitwise-ior bitwise-xor
                                       arithmetic-shift vector-ref string-ref bytes-ref
-                                      set-mcar! set-mcdr! cons mcons
+                                      set-mcar! set-mcdr! cons mcons set-box!
                                       list list* vector vector-immutable))]
              [(4) (memq (car a) '(vector-set! string-set! bytes-set!
                                               list list* vector vector-immutable

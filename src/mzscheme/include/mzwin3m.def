@@ -145,6 +145,7 @@ EXPORTS
  scheme_eval_string_multi_with_prompt
  scheme_eval_string_all_with_prompt
  scheme_eval_module_string
+ scheme_current_argument_stack
  scheme_call_with_prompt
  scheme_call_with_prompt_multi
  scheme_values
@@ -352,8 +353,8 @@ EXPORTS
  scheme_read
  scheme_read_syntax
  scheme_write
- scheme_display
  scheme_print
+ scheme_display
  scheme_write_w_max
  scheme_display_w_max
  scheme_print_w_max
@@ -520,6 +521,7 @@ EXPORTS
  scheme_make_struct_values
  scheme_make_struct_names
  scheme_make_struct_type
+ scheme_make_struct_type2
  scheme_make_struct_instance
  scheme_is_struct_instance
  scheme_struct_ref
@@ -527,6 +529,7 @@ EXPORTS
  scheme_make_struct_type_property
  scheme_make_struct_type_property_w_guard
  scheme_struct_type_property_ref
+ scheme_chaperone_struct_type_property_ref
  scheme_make_location
  scheme_is_location
  scheme_make_inspector
@@ -534,6 +537,7 @@ EXPORTS
  scheme_eq
  scheme_eqv
  scheme_equal
+ scheme_chaperone_of
  scheme_hash_key
  scheme_equal_hash_key
  scheme_equal_hash_key2

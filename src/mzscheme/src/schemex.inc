@@ -159,6 +159,7 @@
   scheme_extension_table->_scheme_apply_known_prim_closure_multi = _scheme_apply_known_prim_closure_multi;
   scheme_extension_table->_scheme_apply_prim_closure = _scheme_apply_prim_closure;
   scheme_extension_table->_scheme_apply_prim_closure_multi = _scheme_apply_prim_closure_multi;
+  scheme_extension_table->scheme_current_argument_stack = scheme_current_argument_stack;
   scheme_extension_table->scheme_call_with_prompt = scheme_call_with_prompt;
   scheme_extension_table->scheme_call_with_prompt_multi = scheme_call_with_prompt_multi;
   scheme_extension_table->_scheme_call_with_prompt = _scheme_call_with_prompt;
@@ -402,8 +403,8 @@
   scheme_extension_table->scheme_read = scheme_read;
   scheme_extension_table->scheme_read_syntax = scheme_read_syntax;
   scheme_extension_table->scheme_write = scheme_write;
-  scheme_extension_table->scheme_display = scheme_display;
   scheme_extension_table->scheme_print = scheme_print;
+  scheme_extension_table->scheme_display = scheme_display;
   scheme_extension_table->scheme_write_w_max = scheme_write_w_max;
   scheme_extension_table->scheme_display_w_max = scheme_display_w_max;
   scheme_extension_table->scheme_print_w_max = scheme_print_w_max;
@@ -574,6 +575,7 @@
   scheme_extension_table->scheme_make_struct_values = scheme_make_struct_values;
   scheme_extension_table->scheme_make_struct_names = scheme_make_struct_names;
   scheme_extension_table->scheme_make_struct_type = scheme_make_struct_type;
+  scheme_extension_table->scheme_make_struct_type2 = scheme_make_struct_type2;
   scheme_extension_table->scheme_make_struct_instance = scheme_make_struct_instance;
   scheme_extension_table->scheme_is_struct_instance = scheme_is_struct_instance;
   scheme_extension_table->scheme_struct_ref = scheme_struct_ref;
@@ -581,6 +583,7 @@
   scheme_extension_table->scheme_make_struct_type_property = scheme_make_struct_type_property;
   scheme_extension_table->scheme_make_struct_type_property_w_guard = scheme_make_struct_type_property_w_guard;
   scheme_extension_table->scheme_struct_type_property_ref = scheme_struct_type_property_ref;
+  scheme_extension_table->scheme_chaperone_struct_type_property_ref = scheme_chaperone_struct_type_property_ref;
   scheme_extension_table->scheme_make_location = scheme_make_location;
   scheme_extension_table->scheme_is_location = scheme_is_location;
   scheme_extension_table->scheme_make_inspector = scheme_make_inspector;
@@ -588,6 +591,7 @@
   scheme_extension_table->scheme_eq = scheme_eq;
   scheme_extension_table->scheme_eqv = scheme_eqv;
   scheme_extension_table->scheme_equal = scheme_equal;
+  scheme_extension_table->scheme_chaperone_of = scheme_chaperone_of;
 #ifdef MZ_PRECISE_GC
   scheme_extension_table->scheme_hash_key = scheme_hash_key;
 #endif

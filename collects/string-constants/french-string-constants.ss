@@ -730,6 +730,7 @@
   (most-recent-window "Fenêtre la plus récente")
   (next-tab "Onglet suivant")
   (prev-tab "Onglet précédent")
+  (tab-i "Onglet ~a: ~a") ;; menu item in the windows menu under mac os x. first ~a is filled with a number between 1 and 9; second one is the filename of the tab
   
   (view-menu-label "&Montrer")
   (show-overview "Montrer le contour du &programme")
@@ -886,7 +887,7 @@
   (reindent-menu-item-label "&Réindenter")
   (reindent-all-menu-item-label "Réindenter &tout")
   (semicolon-comment-out-menu-item-label "&Commenter à l'aide de points-virgules")
-  (box-comment-out-menu-item-label "&Commenter à l'aide d'une boite")
+  (box-comment-out-menu-item-label "Commenter à l'aide d'une &boite")
   (uncomment-menu-item-label "&Décommenter")
   
   (convert-to-semicolon-comment "Convertir en un commentaire avec points-virgules")
@@ -1055,7 +1056,8 @@
   (initial-language-category "Langage initial")
   (no-language-chosen "Aucun langage sélectionné")
   
-  ;(module-language-one-line-summary "Exécuter crée une fenêtre d'interaction dans le contexte du module, incluant le langage du module lui-même")
+  (module-language-name "Déterminer le langage à partir du code source")
+  (module-language-one-line-summary "Le langage utilisé est spécifié par la ligne #lang")
   (module-language-auto-text "Ligne #lang automatique") ;; shows up in the details section of the module language
   
   ;;; from the `not a language language' used initially in drscheme.
@@ -1074,7 +1076,7 @@
 
   ; the three string constants are concatenated together and the middle
   ; one is hyperlinked to the dialog that suggests various languages
-  (get-guidance-before "Choisissez l'entrée Sélectionner le langage...” dans le menu Langage, ou ")
+  (get-guidance-before "Choisissez l'entrée \"Sélectionner le langage...\" dans le menu \"Langage\", ou ")
   (get-guidance-during "recevez de l'aide")
   (get-guidance-after ".")
   
@@ -1183,7 +1185,7 @@
   (module-browser-laying-out-graph-label "Tracer le graph")
   (module-browser-open-file-format "Ouvrir ~a")
   (module-browser "Navigateur de modules") ;; frame title
-  (module-browser... "Navigateur de modules...") ;; menu item title
+  (module-browser... "Navigateur de &modules...") ;; menu item title
   (module-browser-error-expanding "Erreur durant l'expansion du programme :\n\n~a")
   (module-browser-show-lib-paths "Montrer les fichiers chargés à l'aide de chemins de fichiers du type (lib ..)")
   (module-browser-progress "Navigateur de modules : ~a") ;; prefix in the status line

@@ -41,6 +41,13 @@ Many forms in the decompiled code, such as @scheme[module],
  @schemeidfont{#%sfs-clear}, which indicates that the variable-stack
  location holding the variable will be cleared to prevent the
  variable's value from being retained by the garbage collector.
+ Variables whose name starts with @schemeidfont{unused} are never
+ actually stored on the stack, and so they never have
+ @schemeidfont{#%sfs-clear} annotations. (The bytecode compiler
+ normally eliminates such bindings, but sometimes it cannot, either
+ because it cannot prove that the right-hand side produces the right
+ number of values, or the discovery that the variable is unused
+ happens too late with the compiler.)
 
  Mutable variables are converted to explicitly boxed values using
  @schemeidfont{#%box}, @schemeidfont{#%unbox}, and

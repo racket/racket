@@ -47,9 +47,17 @@
           launcher^)
   (export)
 
+  (define name-str (setup-program-name))
+  (define name-sym (string->symbol name-str))
+  (define main-collects-dir (find-collects-dir))
+  (define mode-dir
+    (if (compile-mode)
+      (build-path "compiled" (compile-mode))
+      (build-path "compiled")))
+
   (define (setup-fprintf p task s . args)
     (let ([task (if task (string-append task ": ") "")])
-      (apply fprintf p (string-append "setup-plt: " task s "\n") args)))
+      (apply fprintf p (string-append name-str ": " task s "\n") args)))
 
   (define (setup-printf task s . args)
     (apply setup-fprintf (current-output-port) task s args))
@@ -63,34 +71,9 @@
 
   (define (relative-path-string? x) (and (path-string? x) (relative-path? x)))
 
-  (define main-collects-dir (find-collects-dir))
-
-  (unless (make-user)
-    (current-library-collection-paths
-     (if (member main-collects-dir (current-library-collection-paths))
-       (list main-collects-dir)
-       '())))
-
-  (current-library-collection-paths
-   (map simplify-path (current-library-collection-paths)))
-
-  (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
-  (setup-printf "variants" "~a"
-                (string-join (map symbol->string (available-mzscheme-variants))
-                             ", "))
-  (setup-printf "main collects" "~a" (path->string main-collects-dir))
-  (setup-printf "collects paths"
-                (if (null? (current-library-collection-paths)) " empty!" ""))
-  (for ([p (current-library-collection-paths)])
-    (setup-printf #f "  ~a" (path->string p)))
 
   (define (call-info info flag mk-default test)
     (let ([v (info flag mk-default)]) (test v) v))
-
-  (define mode-dir
-    (if (compile-mode)
-      (build-path "compiled" (compile-mode))
-      (build-path "compiled")))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;
@@ -154,10 +137,6 @@
   (define no-specific-collections?
     (and (null? x-specific-collections) (null? x-specific-planet-dirs)))
 
-  (when (and (not (null? (archives))) no-specific-collections?)
-    (done)
-    (exit 0)) ; done
-
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;              Find Collections                 ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -175,7 +154,7 @@
        info 'name (lambda () #f)
        (lambda (x)
          (when (and x (not (string? x)))
-           (error 'setup-plt
+           (error name-sym
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
     (define path-name (path->name path))
@@ -221,13 +200,13 @@
        (let ([maj (string->number maj-str)]
              [min (string->number min-str)])
          (unless maj
-           (error 'setup-plt "bad major version for PLaneT package: ~e" maj-str))
+           (error name-sym "bad major version for PLaneT package: ~e" maj-str))
          (unless min
-           (error 'setup-plt "bad minor version for PLaneT package: ~e" min-str))
+           (error name-sym "bad minor version for PLaneT package: ~e" min-str))
          (let ([pkg (lookup-package-by-keys owner pkg-name maj min min)])
            (if pkg
              pkg
-             (error 'setup-plt "not an installed PLaneT package: (~e ~e ~e ~e)"
+             (error name-sym "not an installed PLaneT package: (~e ~e ~e ~e)"
                     owner pkg-name maj min))))]
       [_ spec]))
 
@@ -253,15 +232,6 @@
                   (append extra-path subdir)
                   maj
                   min)))
-
-  (define planet-dirs-to-compile
-    (if (make-planet)
-      (filter-map (lambda (spec) (apply planet->cc spec))
-                  (if no-specific-collections?
-                    (get-all-planet-packages)
-                    (filter-map planet-spec->planet-list
-                                x-specific-planet-dirs)))
-      null))
 
   (define all-collections
     (let ([ht (make-hash)])
@@ -337,7 +307,7 @@
                        (cadr cc+name+id)))
                 all-ccs+names+ids)
          => (lambda (bad)
-              (error 'setup-plt
+              (error name-sym
                      "given collection path: \"~a\" refers to the same directory as another given collection path, \"~a\""
                      (cadr given-cc+name+id) bad))]))
     (map car given*-ccs+names+ids))
@@ -345,58 +315,34 @@
   (define (sort-collections ccs)
     (sort ccs string<? #:key cc-name))
 
-  (define collections-to-compile
-    (sort-collections
-     (plt-collection-closure
-      (if no-specific-collections?
-        all-collections
-        (check-again-all
-         (filter-map
-          (lambda (c)
-            (collection->cc (append-map (lambda (s)
-                                          (map string->path
-                                               (regexp-split #rx"/" s)))
-                                        c)))
-          x-specific-collections))))))
-
-  (set! planet-dirs-to-compile
-        (sort-collections
-         (collection-closure
-          planet-dirs-to-compile
-          (lambda (cc subs)
-            (map (lambda (p) (planet-cc->sub-cc cc (list (path->bytes p))))
-                 subs)))))
-
-  (define ccs-to-compile (append collections-to-compile planet-dirs-to-compile))
-
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;                  Helpers                      ;;
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define (control-io-apply print-doing f args)
-    (if (make-verbose)
-      (begin (apply f args) #t)
-      (let* ([oop (current-output-port)]
-             [printed? #f]
-             [on? #f]
-             [dir-table (make-hash)]
-             [line-accum #""]
-             [op (if (verbose)
-                   (current-output-port)
-                   (open-output-nowhere))]
-             [doing-path (lambda (path)
-                           (unless printed?
-                             (set! printed? #t)
-                             (print-doing oop))
-                           (unless (verbose)
-                             (let ([path (normal-case-path (path-only path))])
-                               (unless (hash-ref dir-table path (lambda () #f))
-                                 (hash-set! dir-table path #t)
-                                 (print-doing oop path)))))])
-        (parameterize ([current-output-port op]
-                       [compile-notify-handler doing-path])
-          (apply f args)
-          printed?))))
+  (define ccs-to-compile 
+    (let ([planet-dirs-to-compile
+            (sort-collections
+              (collection-closure
+                (if (make-planet)
+                  (filter-map (lambda (spec) (apply planet->cc spec))
+                              (if no-specific-collections?
+                                (get-all-planet-packages)
+                                (filter-map planet-spec->planet-list
+                                            x-specific-planet-dirs)))
+                  null)
+                (lambda (cc subs)
+                  (map (lambda (p) (planet-cc->sub-cc cc (list (path->bytes p))))
+                       subs))))]
+          [collections-to-compile
+            (sort-collections
+             (plt-collection-closure
+              (if no-specific-collections?
+                all-collections
+                (check-again-all
+                 (filter-map
+                  (lambda (c)
+                    (collection->cc (append-map (lambda (s)
+                                                  (map string->path
+                                                       (regexp-split #rx"/" s)))
+                                                c)))
+                  x-specific-collections)))))])
+    (append collections-to-compile planet-dirs-to-compile)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Clean                        ;;
@@ -440,7 +386,7 @@
                                          (system-library-subpath))))
                      (lambda (x)
                        (unless (list-of path-string? x)
-                         (error 'setup-plt
+                         (error name-sym
                                 "expected a list of path strings for 'clean, got: ~s"
                                 x))))]
              [printed? #f]
@@ -478,7 +424,7 @@
                      (print-message)]
                     [else (void)])))))))
 
-  (when (clean)
+  (define (clean-step)
     (setup-printf #f "--- cleaning collections ---")
     (let ([dependencies (make-hash)])
       ;; Main deletion:
@@ -510,10 +456,6 @@
               (with-handlers ([exn:fail:filesystem? (warning-handler (void))])
                 (with-output-to-file fn void #:exists 'truncate/replace))))))))
 
-  (when (make-zo)
-    (compiler:option:verbose (compiler-verbose))
-    (compiler:option:compile-subcollections #f))
-
   (define (do-install-part part)
     (when (if (eq? part 'post) (call-post-install) (call-install))
       (setup-printf #f (format "--- ~ainstalling collections ---"
@@ -542,7 +484,7 @@
               (let ([installer
                      (with-handlers ([exn:fail?
                                       (lambda (exn)
-                                        (error 'setup-plt
+                                        (error name-sym
                                                "error loading installer: ~a"
                                                (exn->string exn)))])
                        (dynamic-require (build-path (cc-path cc) fn)
@@ -562,103 +504,105 @@
                     (installer dir (cc-path cc))
                     (installer dir))))))))))
 
-  (do-install-part 'pre)
-
-  (define (make-it desc compile-directory get-namespace)
-    ;; To avoid polluting the compilation with modules that are already loaded,
-    ;; create a fresh namespace before calling this function.
-    ;; To avoid keeping modules in memory across collections, pass
-    ;; `make-base-namespace' as `get-namespace', otherwise use
-    ;; `current-namespace' for `get-namespace'.
-    (let ([gc? #f])
-      (for ([cc ccs-to-compile])
-        (parameterize ([current-namespace (get-namespace)])
-          (begin-record-error 
-           cc "making"
-           (unless (control-io-apply
-                    (case-lambda
-                     [(p)
-                      ;; Main "doing something" message
-                      (set! gc? #t)
-                      (setup-fprintf p "making" "~a" (cc-name cc))]
-                     [(p where)
-                      ;; Doing something specifically in "where"
-                      (setup-fprintf p #f " in ~a"
-                                     (path->name (path->complete-path
-                                                  where (cc-path cc))))])
-                    compile-directory
-                    (list (cc-path cc) (cc-info cc)))
-             (setup-printf "making" "~a" (cc-name cc)))))
-        (when gc?
-          (collect-garbage)))))
-
-  (define (with-specified-mode thunk)
-    (if (not (compile-mode))
-      (thunk)
-      ;; Use the indicated mode
-      (let ([zo-compile
-             (with-handlers ([exn:fail?
-                              (lambda (exn)
-                                (error 'setup-plt
-                                       "error loading compiler for mode ~s: ~a"
-                                       (compile-mode)
-                                       (exn->string exn)))])
-               (dynamic-require `(lib "zo-compile.ss" ,(compile-mode))
-                                'zo-compile))]
-            [orig-kinds (use-compiled-file-paths)]
-            [orig-compile (current-compile)]
-            [orig-namespace (namespace-anchor->empty-namespace anchor)])
-        (parameterize ([current-namespace (make-base-empty-namespace)]
-                       [current-compile zo-compile]
-                       [use-compiled-file-paths (list mode-dir)]
-                       [current-compiler-dynamic-require-wrapper
-                        (lambda (thunk)
-                          (parameterize ([current-namespace orig-namespace]
-                                         [use-compiled-file-paths orig-kinds]
-                                         [current-compile orig-compile])
-                            (thunk)))])
-          (thunk)))))
-
-
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make zo                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define compile-skip-directory
-    (and (avoid-main-installation)
-         (find-collects-dir)))
+  (define-syntax-rule (control-io print-verbose body ...)
+    (if (make-verbose)
+      (begin 
+        body ...)
+      (let* ([oop (current-output-port)]
+             [dir-table (make-hash)]
+             [doing-path (lambda (path)
+                           (unless (verbose)
+                             (let ([path (normal-case-path (path-only path))])
+                               (unless (hash-ref dir-table path (lambda () #f))
+                                 (hash-set! dir-table path #t)
+                                 (print-verbose oop path)))))])
+        (parameterize ([current-output-port (if (verbose) (current-output-port) (open-output-nowhere))]
+                       [compile-notify-handler doing-path])
+          body ...))))
 
-  (when (make-zo)
+  (define (clean-cc dir info)
+    ;; Clean up bad .zos:
+    (unless (info 'assume-virtual-sources (lambda () #f))
+      (let ([c (build-path dir "compiled")])
+        (when (directory-exists? c)
+          (let ([ok-zo-files
+                 (make-immutable-hash
+                  (map (lambda (p)
+                         (cons (path-add-suffix p #".zo") #t))
+                       (append (directory-list dir)
+                               (info 'virtual-sources (lambda () null)))))])
+            (for ([p (directory-list c)])
+              (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
+                         (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
+                (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
+                (delete-file (build-path c p)))))))))
+
+  (define (compile-cc cc)
+    (define compile-skip-directory
+      (and (avoid-main-installation)
+           (find-collects-dir)))
+    (let ([dir (cc-path cc)]
+          [info (cc-info cc)])
+      (clean-cc dir info)
+      (compile-directory-zos dir info #:skip-path compile-skip-directory #:skip-doc-sources? (not (make-docs)))))
+
+  (define-syntax-rule (with-specified-mode body ...)
+    (let ([thunk (lambda () body ...)])
+      (if (not (compile-mode))
+        (thunk)
+        ;; Use the indicated mode
+        (let ([zo-compile
+               (with-handlers ([exn:fail?
+                                (lambda (exn)
+                                  (error name-sym
+                                         "error loading compiler for mode ~s: ~a"
+                                         (compile-mode)
+                                         (exn->string exn)))])
+                 (dynamic-require `(lib "zo-compile.ss" ,(compile-mode))
+                                  'zo-compile))]
+              [orig-kinds (use-compiled-file-paths)]
+              [orig-compile (current-compile)]
+              [orig-namespace (namespace-anchor->empty-namespace anchor)])
+          (parameterize ([current-namespace (make-base-empty-namespace)]
+                         [current-compile zo-compile]
+                         [use-compiled-file-paths (list mode-dir)]
+                         [current-compiler-dynamic-require-wrapper
+                          (lambda (thunk)
+                            (parameterize ([current-namespace orig-namespace]
+                                           [use-compiled-file-paths orig-kinds]
+                                           [current-compile orig-compile])
+                              (thunk)))])
+            (thunk))))))
+
+  ;; To avoid polluting the compilation with modules that are already loaded,
+  ;; create a fresh namespace before calling this function.
+  ;; To avoid keeping modules in memory across collections, pass
+  ;; `make-base-namespace' as `get-namespace', otherwise use
+  ;; `current-namespace' for `get-namespace'.
+  (define (make-zo-step)
     (setup-printf #f "--- compiling collections ---")
     (with-specified-mode
-     (lambda ()
-       (make-it
-        ".zos"
-        (lambda (dir info)
-          ;; Clean up bad .zos:
-          (unless (info 'assume-virtual-sources (lambda () #f))
-            (let ([c (build-path dir "compiled")])
-              (when (directory-exists? c)
-                (let ([ok-zo-files
-                       (make-immutable-hash
-                        (map (lambda (p)
-                               (cons (path-add-suffix p #".zo") #t))
-                             (append (directory-list dir)
-                                     (info 'virtual-sources (lambda () null)))))])
-                  (for ([p (directory-list c)])
-                    (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
-                               (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
-                      (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
-                      (delete-file (build-path c p))))))))
-          ;; Make .zos
-          (compile-directory-zos dir info #:skip-path compile-skip-directory #:skip-doc-sources? (not (make-docs))))
-        make-base-empty-namespace))))
+      (let ([gc? #f])
+        (for ([cc ccs-to-compile])
+          (parameterize ([current-namespace (make-base-empty-namespace)])
+            (begin-record-error cc "making"
+              (setup-printf "making" "~a" (cc-name cc))
+              (control-io
+                (lambda (p where) (set! gc? #t) (setup-fprintf p #f " in ~a" (path->name (path->complete-path where (cc-path cc)))))
+                (compile-cc cc))))
+          (when gc?
+            (collect-garbage))))))
+    
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Info-Domain Cache               ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (when (make-info-domain)
+  (define (make-info-domain-step)
     (setup-printf #f "--- updating info-domain tables ---")
     ;; Each ht maps a collection root dir to an info-domain table. Even when
     ;; `collections-to-compile' is a subset of all collections, we only care
@@ -755,11 +699,6 @@
   ;;                       Docs                    ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (when (make-docs)
-    ;; Double-check that "setup/scribble" is present.
-    (unless (file-exists? (build-path (collection-path "setup") "scribble.ss"))
-      (make-docs #f)))
-
   (define (scr:call name . xs)
     (parameterize ([current-namespace
                     (namespace-anchor->empty-namespace anchor)])
@@ -775,7 +714,7 @@
               (lambda (what go alt) (record-error what "Building docs" go alt))
               setup-printf))
 
-  (when (make-docs)
+  (define (make-docs-step)
     (setup-printf #f "--- building documentation ---")
     (set-doc:verbose)
     (with-handlers ([exn:fail?
@@ -784,7 +723,7 @@
       (doc:setup-scribblings #f (and (not (null? (archives)))
                                      (archive-implies-reindex)))))
 
-  (when (doc-pdf-dest)
+  (define (doc-pdf-dest-step)
     (setup-printf #f "building PDF documentation (via pdflatex)")
     (let ([dest-dir (path->complete-path (doc-pdf-dest))])
       (unless (directory-exists? dest-dir)
@@ -814,7 +753,7 @@
   ;;                  Make Launchers               ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (when (make-launchers)
+  (define (make-launchers-step)
     (setup-printf #f "--- creating launchers ---")
     (let ([name-list
            (lambda (l)
@@ -895,8 +834,15 @@
                   kind mzlns
                   (if (eq? 'l fault) "library" "flags")
                   (if (eq? fault 'l) mzlls mzlfs)))]))
-          (for ([variant (available-mred-variants)])
+          (for ([variant (available-gracket-variants)])
             (parameterize ([current-launcher-variant variant])
+              (make-launcher 'gui
+                             'gracket-launcher-names
+                             'gracket-launcher-libraries
+                             'gracket-launcher-flags
+                             gracket-program-launcher-path
+                             make-gracket-launcher
+                             gracket-launcher-up-to-date?)
               (make-launcher 'gui
                              'mred-launcher-names
                              'mred-launcher-libraries
@@ -904,8 +850,15 @@
                              mred-program-launcher-path
                              make-mred-launcher
                              mred-launcher-up-to-date?)))
-          (for ([variant (available-mzscheme-variants)])
+          (for ([variant (available-racket-variants)])
             (parameterize ([current-launcher-variant variant])
+              (make-launcher 'console
+                             'racket-launcher-names
+                             'racket-launcher-libraries
+                             'racket-launcher-flags
+                             racket-program-launcher-path
+                             make-racket-launcher
+                             racket-launcher-up-to-date?)
               (make-launcher 'console
                              'mzscheme-launcher-names
                              'mzscheme-launcher-libraries
@@ -913,6 +866,47 @@
                              mzscheme-program-launcher-path
                              make-mzscheme-launcher
                              mzscheme-launcher-up-to-date?)))))))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; setup-unit Body                ;;
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (unless (make-user)
+    (current-library-collection-paths
+     (if (member main-collects-dir (current-library-collection-paths))
+       (list main-collects-dir)
+       '())))
+
+  (current-library-collection-paths
+   (map simplify-path (current-library-collection-paths)))
+
+  (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
+  (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))
+  (setup-printf "main collects" "~a" (path->string main-collects-dir))
+  (setup-printf "collects paths" (if (null? (current-library-collection-paths)) " empty!" ""))
+  (for ([p (current-library-collection-paths)])
+    (setup-printf #f "  ~a" (path->string p)))
+
+  (when (and (not (null? (archives))) no-specific-collections?)
+    (done))
+
+  (when (clean) (clean-step))
+  (when (make-zo)
+    (compiler:option:verbose (compiler-verbose))
+    (compiler:option:compile-subcollections #f))
+
+  (do-install-part 'pre)
+
+  (when (make-zo) (make-zo-step))
+  (when (make-info-domain) (make-info-domain-step))
+  (when (make-docs)
+    ;; Double-check that "setup/scribble" is present.
+    (when (file-exists? (build-path (collection-path "setup") "scribble.ss"))
+      (make-docs-step)))
+
+  (when (doc-pdf-dest) (doc-pdf-dest-step))
+  (when (make-launchers) (make-launchers-step))
+
 
   (do-install-part 'general)
   (do-install-part 'post)

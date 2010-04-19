@@ -37,7 +37,8 @@ If the namespace does not, they are colored the unbound color.
          net/url
          net/uri-codec
          browser/external
-         (for-syntax scheme/base))
+         (for-syntax scheme/base)
+         "syncheck-drscheme-button.ss")
 (provide tool@)
 
 (define o (current-output-port))
@@ -66,7 +67,6 @@ If the namespace does not, they are colored the unbound color.
   syncheck:jump-to-definition
   
   syncheck:clear-highlighting
-  syncheck:button-callback
   syncheck:add-to-cleanup-texts
   ;syncheck:error-report-visible? ;; test suite uses this one.
   ;syncheck:get-bindings-table    ;; test suite uses this one.
@@ -92,6 +92,14 @@ If the namespace does not, they are colored the unbound color.
     (define currently-processing-definitions-text (make-parameter #f))
     
     (define (phase1) 
+      (drscheme:module-language-tools:add-opt-out-toolbar-button
+       (λ (frame parent)
+         (new switchable-button%
+              (label (string-constant check-syntax))
+              (bitmap syncheck-bitmap)
+              (parent parent)
+              (callback (λ (button) (send frame syncheck:button-callback)))))
+       'drscheme:syncheck)
       (drscheme:unit:add-to-program-editor-mixin clearing-text-mixin))
     (define (phase2) (void))
     
@@ -953,8 +961,6 @@ If the namespace does not, they are colored the unbound color.
             
             (super-new)))))
     
-    (define syncheck-bitmap (make-object bitmap% (build-path (collection-path "icons") "syncheck.png") 'png/mask))
-    
     (define syncheck-frame<%>
       (interface ()
         syncheck:button-callback
@@ -1030,7 +1036,8 @@ If the namespace does not, they are colored the unbound color.
           (update-button-visibility/settings (send (send tab get-defs) get-next-settings)))
         (define/public (update-button-visibility/settings settings)
           (let* ([lang (drscheme:language-configuration:language-settings-language settings)]
-                 [visible? (send lang capability-value 'drscheme:check-syntax-button)])
+                 [visible? (and (not (is-a? lang drscheme:module-language:module-language<%>))
+                                (send lang capability-value 'drscheme:check-syntax-button))])
             (send check-syntax-button-parent-panel change-children
                   (λ (l)
                     (if visible?

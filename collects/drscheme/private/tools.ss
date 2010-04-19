@@ -10,7 +10,8 @@
          framework/splash
          "drsig.ss"
          "language-object-contract.ss"
-         string-constants)
+         mrlib/switchable-button
+string-constants)
 
 (require (for-syntax scheme/base scheme/match))
 
@@ -25,7 +26,9 @@
         [prefix drscheme:debug: drscheme:debug^]
         [prefix drscheme:eval: drscheme:eval^]
         [prefix drscheme:modes: drscheme:modes^]
-        [prefix drscheme:tracing: drscheme:tracing^])
+        [prefix drscheme:tracing: drscheme:tracing^]
+        [prefix drscheme:module-language: drscheme:module-language^]
+        [prefix drscheme:module-language-tools: drscheme:module-language-tools^])
 (export drscheme:tools^)
 
 ;; An installed-tool is
@@ -410,21 +413,21 @@
 (define tool-bitmap-y tool-bitmap-gap)
 (define tool-bitmap-size 32)
 
-
-
-;;                             ;                          ;;;  
-;                           ;;;            ;;;          ;   ; 
-;                             ;           ;  ;          ;   ; 
-; ;;;   ; ;;   ;;;;    ;;;    ;;;     ;           ;             ;   ; 
-;   ;  ;;  ;      ;  ;   ;  ;   ;    ;            ;   ;           ;  
-;   ;  ;   ;   ;;;;   ;;;   ;;;;;    ;           ;;; ;           ;   
-;   ;  ;   ;  ;   ;      ;  ;        ;          ;   ;           ;    
-;   ;  ;   ;  ;   ;  ;   ;  ;   ;    ;          ;   ;;         ;   ; 
-;;;;  ;;; ;;;  ;;; ;  ;;;    ;;;   ;;;;;         ;;;  ;        ;;;;; 
-;                                                                    
-;                                                                    
-;;;                                                                   
-
+;     
+;     
+;            ;;                             ;                          ;;;  
+;             ;                           ;;;            ;;;          ;   ; 
+;             ;                             ;           ;  ;          ;   ; 
+;     ; ;;;   ; ;;   ;;;;    ;;;    ;;;     ;           ;             ;   ; 
+;      ;   ;  ;;  ;      ;  ;   ;  ;   ;    ;            ;   ;           ;  
+;      ;   ;  ;   ;   ;;;;   ;;;   ;;;;;    ;           ;;; ;           ;   
+;      ;   ;  ;   ;  ;   ;      ;  ;        ;          ;   ;           ;    
+;      ;   ;  ;   ;  ;   ;  ;   ;  ;   ;    ;          ;   ;;         ;   ; 
+;      ;;;;  ;;; ;;;  ;;; ;  ;;;    ;;;   ;;;;;         ;;;  ;        ;;;;; 
+;      ;                                                                    
+;      ;                                                                    
+;     ;;;                                                                   
+;       
 
 ;; run-phases : -> void
 (define (run-phases phase1-extras phase2-extras)

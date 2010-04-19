@@ -19,6 +19,7 @@ all of the names in the tools library, for use defining keybindings
          framework
          framework/splash
          
+         mrlib/switchable-button
          scribble/srcdoc
          drscheme/private/language-object-contract)
 
@@ -43,6 +44,43 @@ all of the names in the tools library, for use defining keybindings
 (language-object-abstraction drscheme:language:object/c #t)
 
 (provide/doc
+ 
+ (proc-doc/names
+  drscheme:module-language-tools:add-opt-out-toolbar-button
+  (-> (-> (is-a?/c top-level-window<%>)
+          (is-a?/c area-container<%>) 
+          (is-a?/c switchable-button%))
+      symbol?
+      void?)
+  (make-button id)
+  @{Call this function to add another button to DrScheme's toolbar. When buttons are added this way,
+    DrScheme monitors the @tt{#lang} line at the top of the file; when it changes DrScheme queries
+    the language to see if this button should be included.
+    These buttons are ``opt out'', meaning that if the language doesn't explicitly ask to not
+    have this button (or all such buttons), the button will appear.
+    
+    @section-index["drscheme:opt-out-toolbar-buttons"]
+    See @scheme[read-language] for more details on how language's specify how to opt out.
+    DrScheme will invoke the @tt{get-info} proc from @scheme[read-language] with
+    @tt{'drscheme:opt-out-toolbar-buttons}. If the result is a list of symbols, the
+    listed symbols are opted out. If the result is @scheme[#f], all buttons are opted
+    out. The default is the empty list, meaning that all opt-out buttons appear..
+    })
+ 
+ (proc-doc/names
+  drscheme:module-language:add-module-language
+  (-> any)
+  ()
+  @{Adds the module language to DrScheme. This is called during DrScheme's startup.})
+ 
+ (proc-doc/names
+  drscheme:module-language:module-language-put-file-mixin
+  (-> (implementation?/c text:basic<%>) (implementation?/c text:basic<%>))
+  (super%)
+  @{Extends @scheme[super%] by overriding the @method[editor<%> put-file] method
+    to use a default name from the buffer, if the buffer contains something like
+    @tt{(module name ...)}.})
+  
  
  ;                           
  ;                           

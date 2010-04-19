@@ -72,12 +72,15 @@ expression that were directly present in the original expression, as
 opposed to @tech{syntax object}s inserted by macros.}
 
 
-@defproc[(syntax-source-module [stx syntax?])
-         (or/c module-path-index? symbol? #f)]{
+@defproc[(syntax-source-module [stx syntax?] [source? any/c #f])
+         (or/c module-path-index? symbol? path? #f)]{
 
-Returns a module path index or symbol (see @secref["modpathidx"])
-for the module whose source contains @scheme[stx], or @scheme[#f] if
-@scheme[stx] has no source module.}
+Returns an indication of the module whose source contains
+@scheme[stx], or @scheme[#f] if @scheme[stx] has no source module.  If
+@scheme[source?] is @scheme[#f], then result is a module path index or
+symbol (see @secref["modpathidx"]); if @scheme[source?] is true, the
+result is a path or symbol corresponding to the loaded module's
+source in the sense of @scheme[current-module-declare-source].}
 
 
 @defproc[(syntax-e [stx syntax?]) any]{

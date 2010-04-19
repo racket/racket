@@ -154,7 +154,7 @@ The design of a world program demands that you come up with a data
 
 @defform/subs[#:id big-bang
               #:literals 
-	      (on-tick on-draw on-key on-release on-mouse on-receive stop-when
+	      (on-tick to-draw on-draw on-key on-release on-mouse on-receive stop-when
 	      check-with register record? state name)
               (big-bang state-expr clause ...)
               ([clause
@@ -163,8 +163,8 @@ The design of a world program demands that you come up with a data
 		 (on-key key-expr)
 		 (on-release release-expr)
 		 (on-mouse key-expr)
-		 (on-draw draw-expr)
-		 (on-draw draw-expr width-expr height-expr)
+		 (to-draw draw-expr)
+		 (to-draw draw-expr width-expr height-expr)
 		 (stop-when stop-expr) (stop-when stop-expr last-scene-expr)	   
 		 (check-with world?-expr)	   
 		 (record? boolean-expr)
@@ -183,7 +183,7 @@ The design of a world program demands that you come up with a data
  itself as a scene; when the program must shut down; where to register the
  world with a universe; and whether to record the stream of events. A world
  specification may not contain more than one @scheme[on-tick],
- @scheme[on-draw], or @scheme[register] clause. A @scheme[big-bang]
+ @scheme[to-draw], or @scheme[register] clause. A @scheme[big-bang]
  expression returns the last world when the stop condition is satisfied
  (see below) or when the programmer clicks on the @tt{Stop} button or
  closes the canvas.
@@ -389,7 +389,7 @@ All @tech{MouseEvent}s are represented via strings:
 
 @item{
  
-@defform[(on-draw render-expr)
+@defform[(to-draw render-expr)
          #:contracts
          ([render-expr (-> (unsyntax @tech{WorldState}) scene?)])]{ 
 
@@ -398,8 +398,8 @@ All @tech{MouseEvent}s are represented via strings:
  dealt with an event. Its size is determined by the size of the first
  generated @tech{scene}.}
 
-@defform/none[#:literals (on-draw)
-              (on-draw render-expr width-expr height-expr)
+@defform/none[#:literals (to-draw)
+              (to-draw render-expr width-expr height-expr)
               #:contracts
               ([render-expr (-> (unsyntax @tech{WorldState}) scene?)]
 	       [width-expr natural-number/c]
@@ -407,7 +407,12 @@ All @tech{MouseEvent}s are represented via strings:
 
  tell DrScheme to use a @scheme[width-expr] by @scheme[height-expr]
  canvas instead of one determine by the first generated @tech{scene}.
-}}
+}
+
+For compatibility reasons, the teachpack also supports the keyword
+@tt{on-draw} in lieu of @scheme[to-draw] but the latter is preferred
+now. 
+}
 
 @item{
 
@@ -497,7 +502,7 @@ a short-hand for three lines of code:
 ;; (run-simulation create-UFO-scene) is short for: 
 (big-bang 0 
           (on-tick add1)
-	  (on-draw create-UFO-scene))
+	  (to-draw create-UFO-scene))
 ])
 
 Exercise: Add a condition for stopping the flight of the UFO when it
@@ -1637,7 +1642,7 @@ Finally, here is the third function, which renders the state as a scene:
 (define (create-world n)
   (big-bang WORLD0
            (on-receive receive)
-	   (on-draw (draw n))
+	   (to-draw (draw n))
 	   (on-tick move)
            (name n)
 	   (register LOCALHOST)))

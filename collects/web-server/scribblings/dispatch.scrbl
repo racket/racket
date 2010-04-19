@@ -80,6 +80,7 @@ After mastering the world of blogging software, you decide to put the ubiquitous
    (dispatch-rules
     [((integer-arg) ...) sum]
     [else (lambda (req) (sum req empty))]))
+ 
  (define (sum req is)
    (apply + is))
  
@@ -120,6 +121,21 @@ After mastering the world of blogging software, you decide to put the ubiquitous
                (string . dispatch-pattern)
                (bidi-match-expander ... . dispatch-pattern)
                (bidi-match-expander . dispatch-pattern)]
+
+@defform*[#:literals (else)
+         [(dispatch-rules+applies
+           [dispatch-pattern dispatch-fun]
+           ...
+           [else else-fun])
+          (dispatch-rules+applies
+           [dispatch-pattern dispatch-fun]
+           ...)]
+         #:contracts
+         ([else-fun (request? . -> . response/c)]
+          [dispatch-fun (request? any/c ... . -> . response/c)])]{
+ Like @scheme[dispatch-rules], except returns a third value with the contract @scheme[(request? . -> . boolean?)] that returns
+      @scheme[#t] if the dispatching rules apply to the request and @scheme[#f] otherwise.
+      }
 
 @defform*[#:literals (else)
          [(dispatch-case
@@ -183,6 +199,10 @@ You can create new URL component patterns by defining @tech{bi-directional match
  Binds @scheme[id] to a @deftech{bi-directional match expander}
  where @scheme[in-xform] is a match expander (defined by @scheme[define-match-expander]) that is used when parsing URLs
  and @scheme[out-xform] is one used when generating URLs.
+ 
+ Both @scheme[in-xform] and @scheme[out-xform] should use the syntax @scheme[(_xform arg ... _id)] where the @scheme[arg]s are 
+ specific to @scheme[id] and compatible with both @scheme[in-xform] and @scheme[out-xform]. @scheme[_id] will typically be provided
+ automatically by @scheme[dispatch-rules].
 }
 
 @defidform[bidi-match-going-in?]{

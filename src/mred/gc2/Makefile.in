@@ -60,8 +60,8 @@ PNG_A = ../../wxcommon/libpng/libpng.@LIBSFX@
 XFORM_INC_wx_xt = -Dwx_xt @WX_MMD_FLAG@ -I$(WXDIR)/src/XWidgets -I$(WXDIR)/src
 XFORM_INC_wx_mac = -Dwx_mac -DOS_X -MMD -DWX_CARBON -I$(WXMACDIR)/../utils/image/src -I$(WXMACDIR)/../contrib/wxxpm/libxpm.34b/lib -I$(WXMACDIR)/../../mac/mzscheme
 
-MZMMM_wx_xt = ../../mzscheme/mzscheme@MMM@
-MZMMM_wx_mac = ../../mzscheme/mzscheme@MMM@
+MZMMM_wx_xt = ../../mzscheme/racket@MMM@
+MZMMM_wx_mac = ../../mzscheme/racket@MMM@
 MZMMM = $(MZMMM_@WXVARIANT@)
 
 XFORM_CMD = $(MZMMM) -cqu $(srcdir)/../../mzscheme/gc2/xform.ss --setup ../../mzscheme/gc2
@@ -76,7 +76,7 @@ NONPRECOMPDEP =  $(srcdir)/../../mzscheme/include/schthread.h
 WXBDIR=../../wxxt
 WXMACBDIR=../../wxmac/src
 
-MREDLDFLAGS = -L$(WXBDIR)/utils/image/src -L$(WXBDIR)/contrib/xpm/lib $(LDFLAGS) -L../../mzscheme -L../wxs -L$(WXBDIR)/src
+GRACKETLDFLAGS = -L$(WXBDIR)/utils/image/src -L$(WXBDIR)/contrib/xpm/lib $(LDFLAGS) -L../../mzscheme -L../wxs -L$(WXBDIR)/src
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
@@ -215,7 +215,8 @@ xsrc/wx_xbm.cc: $(WXDIR)/utils/image/src/wx_xbm.cc $(XFORMDEP)
 MACXPRECOMP = macxsrc/xform_precomp.h
 MACXPRECOMPDEP = 
 
-macxsrc/xform_precomp.h : $(XFORMDEP) $(srcdir)/macprecomp.cxx $(srcdir)/../../mzscheme/src/schvers.h
+macxsrc/xform_precomp.h : $(XFORMDEP) $(srcdir)/macprecomp.cxx $(srcdir)/../../mzscheme/src/schvers.h \
+                          $(srcdir)/../../mzscheme/src/schemef.h
 	env XFORM_PRECOMP=yes $(XFORMXX) $(MACXPRECOMP) $(srcdir)/macprecomp.cxx
 
 @INCLUDEDEP@ macprecomp.dd
@@ -928,10 +929,10 @@ wx_mac_XSRCS = \
 \
   macxsrc/simpledrop.cc
 
-MRED_wx_xt = mredx
-MRED_wx_mac = mredmac
+GRACKET_wx_xt = mredx
+GRACKET_wx_mac = mredmac
 
-MRED_XSRCS = \
+GRACKET_XSRCS = \
   xsrc/wxs_bmap.cc \
   xsrc/wxs_butn.cc \
   xsrc/wxs_chce.cc \
@@ -960,9 +961,9 @@ MRED_XSRCS = \
 \
   xsrc/mred.cc \
   xsrc/mrmain.cc \
-  xsrc/$(MRED_@WXVARIANT@).cc
+  xsrc/$(GRACKET_@WXVARIANT@).cc
 
-XSRCS = $(@WXVARIANT@_XSRCS) $(MRED_XSRCS)
+XSRCS = $(@WXVARIANT@_XSRCS) $(GRACKET_XSRCS)
 
 wx_xt_XOBJS = Window.@LTO@ \
   Button.@LTO@ \
@@ -1108,7 +1109,7 @@ wx_mac_XOBJS = \
 \
   simpledrop.@LTO@
 
-MRED_XOBJS = \
+GRACKET_XOBJS = \
   wxs_bmap.@LTO@ \
   wxs_butn.@LTO@ \
   wxs_chce.@LTO@ \
@@ -1136,14 +1137,14 @@ MRED_XOBJS = \
   wxJPEG.@LTO@ \
 \
   mred.@LTO@ \
-  $(MRED_@WXVARIANT@).@LTO@ \
+  $(GRACKET_@WXVARIANT@).@LTO@ \
 \
   xcglue.@LTO@ \
   wxGC.@LTO@
 
-XOBJS = $(@WXVARIANT@_XOBJS) $(MRED_XOBJS)
+XOBJS = $(@WXVARIANT@_XOBJS) $(GRACKET_XOBJS)
 
-MZOBJS = ../../mzscheme/libmzscheme3m.@LIBSFX@
+MZOBJS = ../../mzscheme/libracket3m.@LIBSFX@
 
 wx_xt_PLAIN_OBJS = \
     ../../wxxt/src/XWidgets/xwArrow.@LTO@ \
@@ -1212,7 +1213,7 @@ wx_file_dialog.o : $(srcdir)/../../wxmac/src/mac/wx_file_dialog.m
 wx_xt_LIBS = ../../wxxt/contrib/xpm/lib/libXpm.@LTA@ @JPEG_A@ @PNG_A@ @ZLIB_A@ 
 wx_mac_LIBS = -framework Carbon -framework Cocoa -framework QuickTime -framework AGL -framework OpenGL @JPEG_A@ @PNG_A@ -lz @LIBS@
 
-MREDLINKER = @MREDLINKER@
+GRACKETLINKER = @GRACKETLINKER@
 
 FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@
 FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.@LTA@
@@ -1227,45 +1228,45 @@ EXTRA_GMP := $(if @EXTRA_GMP_OBJ@,../../mzscheme/src/@EXTRA_GMP_OBJ@,)
 
 EXTRA_MZ_OBJS = ../../mzscheme/src/gmp.@LTO@ $(EXTRA_GMP) ../../mzscheme/src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
-LIBMREDLIBS_a = 
-LIBMREDLIBS_la = $(LDFLAGS) $(LDLIBS) $(@WXVARIANT@_LIBS)
-LIBMREDMZOBJS_a = 
-LIBMREDMZOBJS_la = $(MZOBJS)
-MREDLIBS_a = $(LDLIBS) $(@WXVARIANT@_LIBS)
-MREDLIBS_la =
-MREDMZOBJS_a = $(MZOBJS)
-MREDMZOBJS_la =
+LIBGRACKETLIBS_a = 
+LIBGRACKETLIBS_la = $(LDFLAGS) $(LDLIBS) $(@WXVARIANT@_LIBS)
+LIBGRACKETMZOBJS_a = 
+LIBGRACKETMZOBJS_la = $(MZOBJS)
+GRACKETLIBS_a = $(LDLIBS) $(@WXVARIANT@_LIBS)
+GRACKETLIBS_la =
+GRACKETMZOBJS_a = $(MZOBJS)
+GRACKETMZOBJS_la =
 
-../libmred3m.@LIBSFX@: $(XOBJS) $(MZOBJS) $(@WXVARIANT@_PLAIN_OBJS) $(EXTRA_MZ_OBJS)
-	$(AR) $(ARFLAGS) ../libmred3m.@LIBSFX@ $(XOBJS) $(LIBMREDMZOBJS_@LIBSFX@) $(@WXVARIANT@_PLAIN_OBJS) $(EXTRA_MZ_OBJS) $(LIBMREDLIBS_@LIBSFX@) 
-	$(RANLIB) ../libmred3m.@LIBSFX@
+../libgracket3m.@LIBSFX@: $(XOBJS) $(MZOBJS) $(@WXVARIANT@_PLAIN_OBJS) $(EXTRA_MZ_OBJS)
+	$(AR) $(ARFLAGS) ../libgracket3m.@LIBSFX@ $(XOBJS) $(LIBGRACKETMZOBJS_@LIBSFX@) $(@WXVARIANT@_PLAIN_OBJS) $(EXTRA_MZ_OBJS) $(LIBGRACKETLIBS_@LIBSFX@) 
+	$(RANLIB) ../libgracket3m.@LIBSFX@
 
-../mred@MMM@@NOT_OSX@: mrmain.@LTO@ ../libmred3m.@LIBSFX@
-	$(MREDLINKER) $(MREDLDFLAGS) -o ../mred@MMM@ mrmain.@LTO@ ../libmred3m.@LIBSFX@ $(MREDMZOBJS_@LIBSFX@) $(MREDLIBS_@LIBSFX@)
+../gracket@MMM@@NOT_OSX@: mrmain.@LTO@ ../libgracket3m.@LIBSFX@
+	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o ../gracket@MMM@ mrmain.@LTO@ ../libgracket3m.@LIBSFX@ $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@)
 
-MRFW = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd
-MRFWRES = PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources/PLT_MrEd.rsrc
+MRFW = GRacket.framework/Versions/$(FWVERSION)_3m/GRacket
+MRFWRES = GRacket.framework/Versions/$(FWVERSION)_3m/Resources/GRacket.rsrc
 
-../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@: $(MRFWRES) $(MRFW) mrmain.@LTO@
-	$(MREDLINKER) $(LDFLAGS) -o ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MrEd -framework Carbon -framework Cocoa
-	mkdir -p "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m"
+../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@: $(MRFWRES) $(MRFW) mrmain.@LTO@
+	$(GRACKETLINKER) $(LDFLAGS) -o ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@ mrmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework GRacket -framework Carbon -framework Cocoa
+	mkdir -p "../GRacket.framework/Versions/$(FWVERSION)_3m"
 	cp "$(MRFW)" "../$(MRFW)"
-	rm -rf "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources"
-	cp -r "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources" "../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/Resources"
-	/usr/bin/install_name_tool -change "PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "@executable_path/../../../PLT_MrEd.framework/Versions/$(FWVERSION)_3m/PLT_MrEd" "../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@"
+	rm -rf "../GRacket.framework/Versions/$(FWVERSION)_3m/Resources"
+	cp -r "GRacket.framework/Versions/$(FWVERSION)_3m/Resources" "../GRacket.framework/Versions/$(FWVERSION)_3m/Resources"
+	/usr/bin/install_name_tool -change "GRacket.framework/Versions/$(FWVERSION)_3m/GRacket" "@executable_path/../../../GRacket.framework/Versions/$(FWVERSION)_3m/GRacket" "../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@"
 
-$(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ wx_font.o wx_file_dialog.o $(MRFWRES)
-	$(MREDLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libmzscheme3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o
+$(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libracket3m.@LIBSFX@ wx_font.o wx_file_dialog.o $(MRFWRES)
+	$(GRACKETLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../mzscheme/libracket3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o
 
 $(MRFWRES): $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../../mac/cw/MrEd.r
-	rm -rf PLT_MrEd.framework/Resources PLT_MrEd.framework/PLT_MrEd
-	env BUILDBASE=../.. BUILDING_3M=yes ../../mzscheme/mzscheme@CGC@ -cqu $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../.. "@MMM@"
-	ln -s Versions/$(FWVERSION)_3m/PLT_MrEd PLT_MrEd.framework/PLT_MrEd
-	ln -s Versions/$(FWVERSION)_3m/Resources PLT_MrEd.framework/Resources
+	rm -rf GRacket.framework/Resources GRacket.framework/GRacket
+	env BUILDBASE=../.. BUILDING_3M=yes ../../mzscheme/racket@CGC@ -cqu $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../.. "@MMM@"
+	ln -s Versions/$(FWVERSION)_3m/GRacket GRacket.framework/GRacket
+	ln -s Versions/$(FWVERSION)_3m/Resources GRacket.framework/Resources
 
-../mred@MMM@@OSX@ :
+../gracket@MMM@@OSX@ :
 	$(MAKE) macxsrc/xform_precomp.h
-	$(MAKE) ../MrEd@MMM@.app/Contents/MacOS/MrEd@MMM@
+	$(MAKE) ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@
 
 xsrc:
 	mkdir xsrc
@@ -1276,14 +1277,14 @@ XSRC_EXTRA_DIR_wx_xt =
 XSRC_EXTRA_DIR_wx_mac = macxsrc
 
 3m: xsrc $(XSRC_EXTRA_DIR_@WXVARIANT@)
-	$(MAKE) ../mred@MMM@
+	$(MAKE) ../gracket@MMM@
 
 ########################################
 #             Make Depends             #
 ########################################
 
 gen-deps:
-	../../mzscheme/mzscheme@MMM@ -cqu "$(srcdir)/gen-deps.ss"
+	../../mzscheme/racket@MMM@ -cqu "$(srcdir)/gen-deps.ss"
 
 @INCLUDEDEP@ mrmain.dd
 @INCLUDEDEP@ mred.dd

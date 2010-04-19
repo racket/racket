@@ -12,11 +12,12 @@
          "private/shared.ss"
          lang/stepper-language-interface
          scheme/pretty
-         "xml-sig.ss")
+         "xml-sig.ss"
+         "drscheme-button.ss") ;; get the stepper-button-callback private-member-name
 
 (import drscheme:tool^ xml^ view-controller^)
 (export drscheme:tool-exports^ stepper-frame^)
-  
+
   ;; tool magic here:
 (define (phase1)
   ;; experiment with extending the language... parameter-like fields for stepper parameters
@@ -212,28 +213,32 @@
              [stretchable-width #f]
              [stretchable-height #f]))
       
+      ;; called from drscheme-button.ss, installed via the #lang htdp/bsl (& co) reader into drscheme
+      (define/public (stepper-button-callback)
+        (if stepper-frame
+            (send stepper-frame show #t)
+            (let* ([language-level
+                    (extract-language-level (get-definitions-text))]
+                   [language-level-name (language-level->name language-level)])
+              (if (or (stepper-works-for? language-level)
+                      (is-a? language-level drscheme:module-language:module-language<%>))
+                  (set! stepper-frame
+                        (go this 
+                            program-expander 
+                            (+ 1 (send (get-definitions-text) get-start-position))
+                            (+ 1 (send (get-definitions-text) get-end-position))))
+                  (message-box
+                   (string-constant stepper-name)
+                   (format (string-constant stepper-language-level-message)
+                           language-level-name))))))
+      
       (define stepper-button
         (new switchable-button% 
              [parent stepper-button-parent-panel]
              [label (string-constant stepper-button-label)]
              [bitmap x:foot-img/horizontal]
              [alternate-bitmap x:foot-img/vertical]
-             [callback (lambda (dont-care)
-                         (if stepper-frame
-                             (send stepper-frame show #t)
-                             (let* ([language-level
-                                     (extract-language-level (get-definitions-text))]
-                                    [language-level-name (language-level->name language-level)])
-                               (if (stepper-works-for? language-level)
-                                   (set! stepper-frame
-                                         (go this 
-                                             program-expander 
-                                             (+ 1 (send (get-definitions-text) get-start-position))
-                                             (+ 1 (send (get-definitions-text) get-end-position))))
-                                   (message-box
-                                    (string-constant stepper-name)
-                                    (format (string-constant stepper-language-level-message)
-                                            language-level-name))))))]))
+             [callback (lambda (dont-care) (stepper-button-callback))]))
       
       (register-toolbar-button stepper-button)
       

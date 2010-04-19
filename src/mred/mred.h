@@ -179,7 +179,8 @@ MRED_EXTERN void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc);
 # include "../mzscheme/src/schvers.h"
 
 #ifdef MZ_PRECISE_GC
-# define mrVERSION_SUFFIX " [3m]"
+/* don't print " [3m]", which is the default: */
+# define mrVERSION_SUFFIX ""
 #else
 # ifdef USE_SENORA_GC
 #  define mrVERSION_SUFFIX " [cgc~]"
@@ -187,7 +188,7 @@ MRED_EXTERN void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc);
 #  define mrVERSION_SUFFIX " [cgc]"
 # endif
 #endif
-#define BANNER "MrEd v" MZSCHEME_VERSION mrVERSION_SUFFIX ", Copyright (c) 2004-2010 PLT Scheme Inc.\n"
+#define BANNER "Welcome to GRacket v" MZSCHEME_VERSION mrVERSION_SUFFIX ".\n"
 
 #ifndef WCONSOLE_STDIO
 # if defined(wx_msw)

@@ -5,7 +5,7 @@ devenv mred.sln /Build Release
 cd ..
 
 cd gc2
-..\..\..\mzschemecgc -cu make.ss
+..\..\..\racketcgc -cu make.ss
 cd ..
 
 cd mzcom
@@ -15,11 +15,11 @@ devenv libmysterx.sln /Build Release
 cd ..
 
 cd libmysterx
-..\..\..\mzscheme -cu xform.ss
+..\..\..\racket -cu xform.ss
 cd ..
 
 cd mzcom
-..\..\..\mzscheme -cu xform.ss
+..\..\..\racket -cu xform.ss
 cd ..
 
 cd mzcom
@@ -34,4 +34,4 @@ cd ..\mrstart
 devenv mrstart.sln /Build Release
 cd ..
 
-..\..\mzscheme -l setup
+..\..\racket -l setup -N "rico setup"

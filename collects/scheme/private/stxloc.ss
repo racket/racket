@@ -10,15 +10,15 @@
   (-define-syntax syntax-case*
     (lambda (stx)
       (syntax-case** #f #t stx () free-identifier=?
-	[(_ stxe kl id=? clause ...)
-	 (syntax (syntax-case** _ #f stxe kl id=? clause ...))])))
+	[(sc stxe kl id=? clause ...)
+	 (syntax (syntax-case** sc #f stxe kl id=? clause ...))])))
 
   ;; Regular syntax-case
   (-define-syntax syntax-case
     (lambda (stx)
       (syntax-case** #f #t stx () free-identifier=?
-	[(_ stxe kl clause ...)
-	 (syntax (syntax-case** _ #f stxe kl free-identifier=? clause ...))])))
+	[(sc stxe kl clause ...)
+	 (syntax (syntax-case** sc #f stxe kl free-identifier=? clause ...))])))
 
   (-define (relocate loc stx)
     (if (or (syntax-source loc)

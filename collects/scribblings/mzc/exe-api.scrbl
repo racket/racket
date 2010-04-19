@@ -46,6 +46,9 @@ parameter is true.
                                           (listof (list/c (or/c symbol? (one-of/c #t #f)) 
                                                           module-path?))
                                           null]
+                               [#:configure-via-first-module? config-via-first? 
+                                                              any/c 
+                                                              #f]
                                [#:literal-files literal-files
                                                 (listof path-string?)
                                                 null]
@@ -118,6 +121,13 @@ bindings; use compiled expressions to bootstrap the namespace. If
 @scheme[literal-sexp] is @scheme[#f], no literal expression is
 included in the executable. The @scheme[#:literal-expression]
 (singular) argument is for backward compatibility.
+
+If the @scheme[#:configure-via-first-module?] argument is specified as
+true, then the language of the first module in @scheme[mod-list] is
+used to configure the run-time environment before the expressions
+added by @scheme[#:literal-files] and @scheme[#:literal-expressions]
+are evaluated. See also @secref[#:doc '(lib
+"scribblings/reference/reference.scrbl") "configure-runtime"].
 
 The @scheme[#:cmdline] argument @scheme[cmdline] contains command-line
 strings that are prefixed onto any actual command-line arguments that
@@ -232,6 +242,14 @@ currently supported keys are as follows:
         that the embedding uses the original MzScheme or MrEd
         executable, instead of a wrapper binary that execs the
         original; the default is @scheme[#f].}
+
+  @item{@scheme['relative?] (Unix, Windows, Mac OS X): A boolean;
+        @scheme[#t] means that, to the degree that the generated
+        executable must refer to another, it can use a relative path
+        (so the executables can be moved together, but not
+        seperately); a @scheme[#f] value (the default) means that
+        absolute paths should be used (so the generated executable can
+        be moved).}
 
 ]
 

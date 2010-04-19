@@ -71,7 +71,7 @@
               (lambda ()
                 (error 'create-embedding-executable
                        "can't find ~a executable for variant ~a"
-                       (if mred? "MrEd" "MzScheme")
+                       (if mred? "GRacket" "Racket")
                        variant))])
         (let ([exe (build-path
                     base
@@ -80,22 +80,22 @@
                        (cond
                          [(not mred?)
                           ;; Need MzScheme:
-                          (string-append "mzscheme" (variant-suffix variant #f))]
+                          (string-append "racket" (variant-suffix variant #f))]
                          [mred?
                           ;; Need MrEd:
                           (let ([sfx (variant-suffix variant #t)])
-                            (build-path (format "MrEd~a.app" sfx)
+                            (build-path (format "GRacket~a.app" sfx)
                                         "Contents" "MacOS" 
-                                        (format "MrEd~a" sfx)))])]
+                                        (format "GRacket~a" sfx)))])]
                       [(windows)
                        (format "~a~a.exe" (if mred?
-                                              "MrEd"
-                                              "MzScheme")
+                                              "Gracket"
+                                              "Racket")
                                (variant-suffix variant #t))]
                       [(unix)
                        (format "~a~a" (if mred?
-                                          "mred"
-                                          "mzscheme")
+                                          "gracket"
+                                          "racket")
                                (variant-suffix variant #f))]))])
           (unless (or (file-exists? exe)
                       (directory-exists? exe))
@@ -746,21 +746,19 @@
     
     ;; Write a module bundle that can be loaded with 'load' (do not embed it
     ;; into an executable). The bundle is written to the current output port.
-    (define (do-write-module-bundle outp verbose? modules literal-files literal-expressions collects-dest
+    (define (do-write-module-bundle outp verbose? modules config? literal-files literal-expressions collects-dest
                                     on-extension program-name compiler expand-namespace 
                                     src-filter get-extra-imports)
       (let* ([module-paths (map cadr modules)]
-             [files (map
-                     (lambda (mp)
-                       (let ([f (resolve-module-path mp #f)])
-                         (unless f
-                           (error 'write-module-bundle "bad module path: ~e" mp))
-                         (normalize f)))
-                     module-paths)]
-             [collapsed-mps (map
-                             (lambda (mp)
-                               (collapse-module-path mp (build-path (current-directory) "dummy.ss")))
-                             module-paths)]
+             [resolve-one-path (lambda (mp)
+                                 (let ([f (resolve-module-path mp #f)])
+                                   (unless f
+                                     (error 'write-module-bundle "bad module path: ~e" mp))
+                                   (normalize f)))]
+             [files (map resolve-one-path module-paths)]
+             [collapse-one (lambda (mp)
+                             (collapse-module-path mp (build-path (current-directory) "dummy.ss")))]
+             [collapsed-mps (map collapse-one module-paths)]
              [prefix-mapping (map (lambda (f m)
                                     (cons f (let ([p (car m)])
                                               (cond
@@ -774,13 +772,29 @@
                                   files modules)]
              ;; Each element is created with `make-mod'.
              ;; As we descend the module tree, we append to the front after
-             ;; loasing imports, so the list in the right order.
-             [codes (box null)])
-        (for-each (lambda (f mp) (get-code f mp codes prefix-mapping verbose? collects-dest
+             ;; loading imports, so the list in the right order.
+             [codes (box null)]
+             [get-code-at (lambda (f mp)
+                            (get-code f mp codes prefix-mapping verbose? collects-dest
                                            on-extension compiler expand-namespace
-                                           get-extra-imports))
-                  files
-                  collapsed-mps)
+                                           get-extra-imports))]
+             [__
+              ;; Load all code:
+              (for-each get-code-at files collapsed-mps)]
+             [config-infos (if config?
+                               (let ([a (assoc (car files) (unbox codes))])
+                                 (let ([info (module-compiled-language-info (mod-code a))])
+                                   (when info
+                                     (let ([get-info ((dynamic-require (vector-ref info 0) (vector-ref info 1))
+                                                      (vector-ref info 2))])
+                                       (get-info 'configure-runtime null)))))
+                               null)])
+        ;; Add module for runtime configuration:
+        (when config-infos
+          (for ([config-info (in-list config-infos)])
+            (let ([mp (vector-ref config-info 0)])
+              (get-code-at (resolve-one-path mp)
+                           (collapse-one mp)))))
         ;; Drop elements of `codes' that just record copied libs:
         (set-box! codes (filter mod-code (unbox codes)))
         ;; Bind `module' to get started:
@@ -917,6 +931,13 @@
         (write (compile-using-kernel '(namespace-set-variable-value! 'module #f #t)) outp)
         (write (compile-using-kernel '(namespace-undefine-variable! 'module)) outp)
         (newline outp)
+        (when config-infos
+          (for ([config-info (in-list config-infos)])
+            (let ([a (assoc (resolve-one-path (vector-ref config-info 0)) (unbox codes))])            
+              (write (compile-using-kernel `((dynamic-require '',(mod-full-name a)
+                                                              ',(vector-ref config-info 1))
+                                             ',(vector-ref config-info 2)))
+                     outp))))
         (for-each (lambda (f)
                     (when verbose?
                       (fprintf (current-error-port) "Copying from ~s~n" f))
@@ -928,6 +949,7 @@
 
     (define (write-module-bundle #:verbose? [verbose? #f]
                                  #:modules [modules null]
+                                 #:configure-via-first-module? [config? #f]
                                  #:literal-files [literal-files null]
                                  #:literal-expressions [literal-expressions null]
                                  #:on-extension [on-extension #f]
@@ -937,7 +959,7 @@
                                                           (compile expr)))]
                                  #:src-filter [src-filter (lambda (filename) #f)]
                                  #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
-      (do-write-module-bundle (current-output-port) verbose? modules literal-files literal-expressions
+      (do-write-module-bundle (current-output-port) verbose? modules config? literal-files literal-expressions
                               #f ; collects-dest
                               on-extension
                               "?" ; program-name 
@@ -967,9 +989,11 @@
     
     ;; Use `write-module-bundle', but figure out how to put it into an executable
     (define (create-embedding-executable dest
-                                         #:mred? [mred? #f]
+                                         #:mred? [really-mred? #f]
+                                         #:gracket? [gracket? #f]
                                          #:verbose? [verbose? #f]
                                          #:modules [modules null]
+                                         #:configure-via-first-module? [config? #f]
                                          #:literal-files [literal-files null]
                                          #:literal-expression [literal-expression #f]
                                          #:literal-expressions [literal-expressions
@@ -989,6 +1013,7 @@
                                                                   (compile expr)))]
                                          #:src-filter [src-filter (lambda (filename) #f)]
                                          #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
+      (define mred? (or really-mred? gracket?))
       (define keep-exe? (and launcher?
                              (let ([m (assq 'forget-exe? aux)])
                                (or (not m)
@@ -1065,8 +1090,8 @@
                       (when (regexp-match #rx"^@executable_path" 
                                           (get-current-framework-path dest 
                                                                       (if mred?
-                                                                          "PLT_MrEd"
-                                                                          "PLT_MzScheme")))
+                                                                          "GRacket"
+                                                                          "Racket")))
                         (update-framework-path (string-append
                                                 (path->string (find-lib-dir))
                                                 "/")
@@ -1086,7 +1111,7 @@
             (let ([write-module
                    (lambda (s)
                      (do-write-module-bundle s
-                                             verbose? modules literal-files literal-expressions collects-dest
+                                             verbose? modules config? literal-files literal-expressions collects-dest
                                              on-extension
                                              (file-name-from-path dest)
                                              compiler

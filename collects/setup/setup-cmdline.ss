@@ -5,7 +5,8 @@
 
 #lang scheme/base
 
-(require scheme/cmdline)
+(require scheme/cmdline
+         rico/command-name)
 
 (provide parse-cmdline)
 
@@ -23,8 +24,24 @@
   (define (add-flags l)
     (set! x-flags (append (reverse l) x-flags)))
 
+  (define-values (short-name long-name)
+    (let ([p (find-system-path 'run-file)])
+      (let-values ([(base name dir?) (split-path p)])
+        (cond
+         [(current-command-name)
+          (values (format "~a ~a" name (current-command-name))
+                  (program+command-name))]
+         ;; Hack for bootstrapping, if the program name is "rico",
+         ;; then claim to be the "setup" command:
+         [(equal? (path->string name) "rico")
+          (values (format "~a setup" name)
+                  (format "~a setup" p))]
+         [else
+          (values (path->string name) p)]))))
+
   (define-values (x-specific-collections x-archives)
     (command-line
+     #:program long-name
      #:argv argv
      #:once-each
      [("-c" "--clean") "Delete existing compiled files; implies -nxi"
@@ -103,4 +120,4 @@
                "all collections are setup")
        (exit 0))))
 
-    (values x-flags x-specific-collections x-specific-planet-packages x-archives))
+    (values short-name x-flags x-specific-collections x-specific-planet-packages x-archives))

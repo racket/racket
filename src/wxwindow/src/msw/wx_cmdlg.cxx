@@ -189,6 +189,10 @@ int wxMessageBox(char *message, char *caption, long type,
 }
 
 
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
 static BOOL DoGetSaveFileName(OPENFILENAMEW *of, HWND parent)
 {
   if (!of->hwndOwner)
@@ -227,6 +231,10 @@ static BOOL DoGetDir(BROWSEINFOW *b, HWND parent)
   } else
     return 0;
 }
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
 
 static int set_init_dir;
 extern void MrEdSyncCurrentDir(void);

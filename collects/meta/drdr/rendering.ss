@@ -2,7 +2,6 @@
 (require "list-count.ss")
 
 (define-struct rendering (start end duration timeout? unclean-exit? stderr? responsible changed?) #:prefab)
-(define plt:responsible "plt:responsible")
 
 (define (rendering-responsibles r)
   (regexp-split #rx"," (rendering-responsible r)))
@@ -16,5 +15,4 @@
                     [stderr? list/count]
                     [responsible string?]
                     [changed? list/count])]
- [rendering-responsibles (rendering? . -> . (listof string?))]
- [plt:responsible string?])
+ [rendering-responsibles (rendering? . -> . (listof string?))])

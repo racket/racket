@@ -1,4 +1,24 @@
-  * Renamed the #:attempts keyword #:attempt-num in the `generate-term' form
+v4.2.5
+
+  * reversed the order in which `where' and `side-condition' clauses
+    appear in typeset definitions
+
+  * added support for `where' and `side-condition' clauses that do not
+    appear in the metafunction's typeset definition
+
+  * added a #:print? flag to redex-check, to control whether it prints
+    or returns its result
+
+  * renamed the #:attempts keyword to #:attempt-num in the `generate-term' form
+
+  * changed typesetting to render `where' clauses as `fresh' clauses
+    when the right-hand side is a call to `variable-not-in' or 
+    `variables-not-in'
+
+  * changed typesetting of meta-variables to render anything following
+    a caret (^) as a superscript
+
+  * minor bug fixes
 
 v4.2.4
 

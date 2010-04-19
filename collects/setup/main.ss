@@ -23,7 +23,7 @@
         (namespace-attach-module cns ''#%builtin ns)
         ns)))
 
-  (define-values (flags specific-collections specific-planet-packages archives)
+  (define-values (short-name flags specific-collections specific-planet-packages archives)
     ;; Load the command-line parser without using .zos,
     ;;  and in its own namespace to avoid poluting the cm-managed
     ;;  namespace later
@@ -40,7 +40,7 @@
 
   (define-values (print-bootstrapping)
     (lambda ()
-      (fprintf (current-output-port) "setup-plt: bootstrapping from source...\n")))
+      (fprintf (current-output-port) "~a: bootstrapping from source...\n" short-name)))
 
   (define-values (main-collects-relative->path)
     (let ([main-collects #f])

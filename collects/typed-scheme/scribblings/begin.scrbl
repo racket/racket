@@ -36,22 +36,22 @@ form from @schememodname[scheme]---when porting a program from
 @schememodname[scheme] to @schememodname[typed/scheme], uses of
 @scheme[define-struct] should be changed to @scheme[define-struct:].
 
-@schemeblock[(: mag (pt -> Real))]
+@schemeblock[(: mag (pt -> Number))]
 
-This declares that @scheme[mag] has the type @scheme[(pt -> Real)].
+This declares that @scheme[mag] has the type @scheme[(pt -> Number)].
 @;{@scheme[mag] must be defined at the top-level of the module containing
 the declaration.}
 
-The type @scheme[(pt -> Real)] is a function type, that is, the type
+The type @scheme[(pt -> Number)] is a function type, that is, the type
 of a procedure.  The input type, or domain, is a single argument of
 type @scheme[pt], which refers to an instance of the @scheme[pt]
 structure.  The @scheme[->] both indicates that this is a function
 type and separates the domain from  the range, or output type, in this
-case @scheme[Real].
+case @scheme[Number].
 
 @schemeblock[
 (define (mag p)
-  (sqrt (sqr (pt-x p)) (sqr (pt-y p))))
+  (sqrt (+ (sqr (pt-x p)) (sqr (pt-y p)))))
 ]
 
 This definition is unchanged from the untyped version of the code.

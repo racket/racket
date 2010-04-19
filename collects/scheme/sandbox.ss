@@ -275,7 +275,11 @@
                                                   (if m 
                                                       (module-compiled-imports m)
                                                       null))))))
-               (cons path r)))])))
+               (let ([l (cons path r)])
+                 ;; If we need an .rkt path, also allow access to .ss path
+                 (if (regexp-match? #rx#"[.]rkt$" (path->bytes path))
+                     (cons (path-replace-suffix path #".ss") l)
+                     l))))])))
 
 ;; Resources ----------------------------------------------------------------
 

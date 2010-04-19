@@ -664,7 +664,8 @@
                   (syntax-local-lift-module-end-declaration
                    #`(begin 
                        (unless extra-test
-                         (contract contract-id id pos-module-source 'ignored 'id (quote-srcloc id)))
+                         (contract contract-id id pos-module-source 'ignored 'id 
+                                   (quote-srcloc id)))
                        (void)))
                   
                   (syntax (code id-rename))))))]))

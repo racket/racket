@@ -16,7 +16,7 @@
   (test #f struct-type-property? 5)
   (let-values ([(type make pred sel set) (make-struct-type 'a #f 2 1 'un (list (cons prop:p 87)) (make-inspector insp1))]
 	       [(typex makex predx selx setx) (make-struct-type 'ax #f 0 5 #f null (make-inspector insp2))])
-    (arity-test make-struct-type 4 10)
+    (arity-test make-struct-type 4 11)
     (test 5 primitive-result-arity make-struct-type)
     (test #t struct-type? type)
     (test #t procedure? make)
@@ -974,6 +974,34 @@
   (err/rt-test (try -1))
   (err/rt-test (try 'x))
   (test 10 try 1))
+
+;; ----------------------------------------
+
+(require (for-syntax scheme/struct-info))
+
+(let ()
+  (define-struct a (x y))
+  (define-syntax foo (make-struct-info
+                      (lambda ()
+                        (list #'struct:a #'make-a #'a?
+                              (list #'a-y #'a-x)
+                              (list #f #f)
+                              #f))))
+  (define-syntax foo2 (let ()
+                        (define-struct si (pred)
+                          #:property 
+                          prop:struct-info
+                          (lambda (v)
+                            (list #'struct:a #'make-a (si-pred v)
+                                  (list #'a-y #'a-x)
+                                  (list #f #f)
+                                  #f)))
+                        (make-si #'a?)))
+  (test (list 1 2) 'match (match (make-a 1 2)
+                            [(struct foo (x y)) (list x y)]))
+  (test (list 1 2) 'match (match (make-a 1 2)
+                            [(struct foo2 (x y)) (list x y)])))
+                              
 
 ;; ----------------------------------------
 

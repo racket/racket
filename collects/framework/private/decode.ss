@@ -6,7 +6,7 @@
 (define-syntax (module-begin stx)
   (syntax-case stx ()
     [(_ x ...)
-     (andmap (lambda (x) (or identifier? (integer? (syntax-e x))))
+     (andmap (lambda (x) (or (identifier? x) (integer? (syntax-e x))))
              (syntax->list #'(x ...)))
      (let* ([data  (format "~a" (syntax->datum #'(x ...)))]
             [data  (substring data 1 (sub1 (string-length data)))]

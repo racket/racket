@@ -1246,7 +1246,15 @@ constructed by @scheme[build-flat-contract-property].
                  (if ((get-first-order c) x)
                    x
                    (raise-blame-error
-                    b x "expected <~a>, given: ~e" (get-name c) x)))))])
+                    b x "expected <~a>, given: ~e" (get-name c) x)))))]
+         [#:stronger
+	  stronger
+	  (or/c (-> contract? contract? boolean?) #f)
+	  #f]
+         [#:generator
+	  generator
+	  (or/c (-> number? (listof (list any/c contract?)) any/c) #f)
+	  #f])
          flat-contract-property?]
 @defproc[(build-contract-property
           [#:name
@@ -1266,7 +1274,15 @@ constructed by @scheme[build-flat-contract-property].
                  (if ((get-first-order c) x)
                    x
                    (raise-blame-error
-                    b x "expected <~a>, given: ~e" (get-name c) x)))))])
+                    b x "expected <~a>, given: ~e" (get-name c) x)))))]
+         [#:stronger
+	  stronger
+	  (or/c (-> contract? contract? boolean?) #f)
+	  #f]
+         [#:generator
+	  generator
+	  (or/c (-> number? (listof (list any/c contract?)) any/c) #f)
+	  #f])
          contract-property?]
 )]{
 
@@ -1274,11 +1290,16 @@ These functions build the arguments for @scheme[prop:contract] and
 @scheme[prop:flat-contract], respectively.
 
 A @deftech{contract property} specifies the behavior of a structure when used as
-a contract.  It is specified in terms of three accessors: @scheme[get-name],
-which produces a description to @scheme[display] during a contract violation;
+a contract.  It is specified in terms of five accessors: @scheme[get-name],
+which produces a description to @scheme[write] as part of a contract violation;
 @scheme[get-first-order], which produces a first order predicate to be used by
-@scheme[contract-first-order-passes?]; and @scheme[get-projection], which
-produces a blame-tracking projection defining the behavior of the contract.
+@scheme[contract-first-order-passes?]; @scheme[get-projection], which
+produces a blame-tracking projection defining the behavior of the contract;
+@scheme[stronger], which is a predicate that determines if one contract this contract
+(passed in the first argument) is stronger than some other contract (passed in the second argument);
+and @scheme[generator], which makes a random value that matches the contract,
+given a size bound and an environment from which to draw interesting values.
+
 These accessors are passed as (optional) keyword arguments to
 @scheme[build-contract-property], and are applied to instances of the
 appropriate structure type by the contract system.  Their results are used

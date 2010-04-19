@@ -682,7 +682,9 @@ all non-GUI portions of Redex) and also exported by
                [extras name
                        (fresh fresh-clause ...)
                        (side-condition scheme-expression)
-                       (where tl-pat @#,tttterm)]
+                       (where tl-pat @#,tttterm)
+                       (side-condition/hidden scheme-expression)
+                       (where/hidden tl-pat @#,tttterm)]
                [fresh-clause var ((var1 ...) (var2 ...))]
                [tl-pat identifier (tl-pat-ele ...)]
                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
@@ -717,15 +719,22 @@ a sequence of variables. The variable @scheme[var2] is used to
 determine the number of variables generated and @scheme[var2] must be
 bound by the left-hand side of the rule.
 
-The side-conditions are expected to all hold, and have the
-format of the second argument to the @pattech[side-condition] pattern,
-described above.
+All side-conditions provided with @scheme[side-condition] and
+@scheme[hidden-side-condition] are collected with @scheme[and] and
+used as guards on the case being matched. The argument to each
+side-condition should be a Scheme expression, and the pattern
+variables in the @|ttpattern| are bound in that expression. A
+@scheme[side-condition/hidden] form is the same as
+@scheme[side-condition], except that the side condition is not
+rendered when typesetting via @schememodname[redex/pict].
 
 Each @scheme[where] clause acts as a side condition requiring a
 successful pattern match, and it can bind pattern variables in the
 side-conditions (and @scheme[where] clauses) that follow and in the
-reduction result. The bindings are the same as bindings in a
-@scheme[term-let] expression.
+metafunction result. The bindings are the same as bindings in a
+@scheme[term-let] expression. A @scheme[where/hidden] clause is the
+same as a @scheme[where] clause, but the clause is not
+rendered when typesetting via @schememodname[redex/pict].
 
 As an example, this
 
@@ -905,22 +914,9 @@ expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
 the rhs-expressions is implicitly wrapped in @|tttterm|. 
 
-All side-conditions provided with @scheme[side-condition] and
-@scheme[hidden-side-condition] are collected with @scheme[and] and
-used as guards on the case being matched. The argument to each
-side-condition should be a Scheme expression, and the pattern
-variables in the @|ttpattern| are bound in that expression. A
-@scheme[side-condition/hidden] form is the same as
-@scheme[side-condition], except that the side condition is not
-rendered when typesetting via @schememodname[redex/pict].
-
-Each @scheme[where] clause acts as a side condition requiring a
-successful pattern match, and it can bind pattern variables in the
-side-conditions (and @scheme[where] clauses) that follow and in the
-metafunction result. The bindings are the same as bindings in a
-@scheme[term-let] expression. A @scheme[where/hidden] clause is the
-same as a @scheme[where] clause, but the clause is not
-rendered when typesetting via @schememodname[redex/pict].
+The @scheme[side-condition], @scheme[hidden-side-condition],
+@scheme[where], and @scheme[where/hidden] clauses behave as
+in the @scheme[reduction-relation] form.
 
 Raises an exception recognized by @scheme[exn:fail:redex?] if
 no clauses match, if one of the clauses matches multiple ways
@@ -1066,20 +1062,52 @@ all non-GUI portions of Redex) and also exported by
 Tests to see if @scheme[e1] is equal to @scheme[e2].
 }
 
-@defform/subs[(test-->> reduction-relation maybe-cycles e1 e2 ...)
-              ([cycles (code:line) #:cycles-ok])]{
+@defform/subs[(test-->> rel-expr option ... e1-expr e2-expr ...)
+              ([option (code:line #:cycles-ok)
+                       (code:line #:equiv pred-expr)])
+              #:contracts ([rel-expr reduction-relation?]
+                           [pred-expr (--> any/c any/c any/c)]
+                           [e1-expr any/c]
+                           [e2-expr any/c])]{
 
-Tests to see if the value of @scheme[e1] (which should be a term),
-reduces to the @scheme[e2]s under @scheme[reduction-relation]
-(using @scheme[apply-reduction-relation*], so it may not terminate).
+Tests to see if the term @scheme[e1-expr],
+reduces to the terms @scheme[e2-expr] under @scheme[rel-expr],
+using @scheme[pred-expr] to determine equivalence. This test uses
+@scheme[apply-reduction-relation*], so it does not terminate
+when the resulting reduction graph is infinite.
 }
 
-@defform[(test--> reduction-relation e1 e2 ...)]{
+@defform/subs[(test--> rel-expr option ... e1-expr e2-expr ...)
+              ([option (code:line #:equiv pred-expr)])
+              #:contracts ([rel-expr reduction-relation?]
+                           [pred-expr (--> any/c any/c anyc)]
+                           [e1-expr any/c]
+                           [e2-expr any/c])]{
 
-Tests to see if the value of @scheme[e1] (which should be a term),
-reduces to the @scheme[e2]s in a single step, under @scheme[reduction-relation]
-(using @scheme[apply-reduction-relation]).
+Tests to see if the term @scheme[e1-expr],
+reduces to the terms @scheme[e2-expr] in a single @scheme[rel-expr]
+step, using @scheme[pred-expr] to determine equivalence.
 }
+                                            
+@examples[
+#:eval redex-eval
+       (define-language L
+         (i integer))
+
+       (define R
+         (reduction-relation
+          L
+          (--> i i)
+          (--> i ,(add1 (term i)))))
+
+       (define (mod2=? i j)
+         (= (modulo i 2) (modulo j 2)))
+
+       (test--> R #:equiv mod2=? 7 1)
+
+       (test--> R #:equiv mod2=? 7 1 0)
+       
+       (test-results)]
 
 @defform[(test-predicate p? e)]{
 Tests to see if the value of @scheme[e] matches the predicate @scheme[p?].

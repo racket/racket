@@ -27,13 +27,15 @@
     (lambda (x)
       (syntax-case x ()
 	((_ ?type-name
+	    ?mutable?
 	    ?contract-constructor-name
 	    ?constructor
 	    ?predicate
 	    (?field-spec ...))
 
 	 (with-syntax
-	     (((accessor ...)
+	     ((number-of-fields (length (syntax->list (syntax (?field-spec ...)))))
+	      ((accessor ...)
 	       (map (lambda (field-spec)
 		      (syntax-case field-spec ()
 			((accessor mutator) (syntax accessor))
@@ -47,129 +49,151 @@
 		    (syntax->list (syntax (?field-spec ...)))
 		    (generate-temporaries (syntax (?field-spec ...))))))
 	   (with-syntax
-	       ((number-of-fields (length (syntax->list
-					   (syntax (accessor ...)))))
-		(generic-access (syntax generic-access))
-		(generic-mutate (syntax generic-mutate)))
-	     (with-syntax
-		 (((accessor-proc ...)
-		   (map-with-index
-		    (lambda (i accessor)
-		      (with-syntax ((i i)
-				    (tag accessor))
-			(syntax-property (syntax/loc
-					  accessor
-					  (lambda (s)
-					    (when (not (?predicate s))
-					      (raise
-					       (make-exn:fail:contract
-						(string->immutable-string
-						 (format "~a: Argument kein ~a: ~e" 
-							 'tag '?type-name s))
-						(current-continuation-marks))))
-					    (generic-access s i)))
-					 'inferred-name
-					 (syntax-e accessor))))
-		    (syntax->list (syntax (accessor ...)))))
-		  ((our-accessor ...) (generate-temporaries #'(accessor ...)))
-		  ((mutator-proc ...)
-		   (map-with-index
-		    (lambda (i mutator)
-		      (with-syntax ((i i)
-				    (tag mutator))
-			(syntax-property (syntax/loc
-					  mutator
-					  (lambda (s v)
-					    (when (not (?predicate s))
-					      (raise
-					       (make-exn:fail:contract
-						(string->immutable-string
-						 (format "~a: Argument kein ~a: ~e" 
-							 'tag '?type-name s))
-						(current-continuation-marks))))
-					    (generic-mutate s i v)))
-					 'inferred-name
-					 (syntax-e mutator))))
-		    (syntax->list (syntax (mutator ...)))))
-		  (constructor-proc
-		   (syntax-property (syntax
-				     (lambda (accessor ...)
-				       (?constructor accessor ...)))
-				    'inferred-name
-				    (syntax-e (syntax ?constructor))))
-		  (predicate-proc
-		   (syntax-property (syntax
-				     (lambda (thing)
-				       (?predicate thing)))
-				    'inferred-name
-				    (syntax-e (syntax ?predicate))))
-		  (constructor-name (syntax ?constructor)))
-	       (with-syntax
-		   ((defs
-		      #'(define-values (?constructor
-					?predicate real-predicate
-					accessor ...
-					our-accessor ...
-					mutator ...)
-			  (letrec-values (((type-descriptor
-					    ?constructor
-					    ?predicate
-					    generic-access
-					    generic-mutate)
-					   (make-struct-type
-					    '?type-name #f number-of-fields 0
-					    #f
-					    (list
-					     (cons prop:print-convert-constructor-name
-						   'constructor-name)
-					     (cons prop:deinprogramm-struct
-						   #t)
-					     (cons prop:custom-write
-						   (lambda (r port write?)
-						     (custom-write-record '?type-name 
-									  (access-record-fields r generic-access number-of-fields)
-									  port write?))))
-					    (make-inspector))))
-			    (values constructor-proc
-				    predicate-proc predicate-proc
-				    accessor-proc ...
-				    accessor-proc ...
-				    mutator-proc ...))))
-		    (contract
-		     (with-syntax (((?param ...) (generate-temporaries #'(?field-spec ...))))
-		       (with-syntax (((component-contract ...)
-				      (map (lambda (accessor param)
-					     (with-syntax ((?accessor accessor)
-							   (?param param))
-					       #'(at ?param (property ?accessor ?param))))
-					   (syntax->list #'(our-accessor ...))
-					   (syntax->list #'(?param ...)))))
-			 (with-syntax ((base-contract
-					(stepper-syntax-property
-					 #'(define ?type-name (contract (predicate real-predicate)))
-					 'stepper-skip-completely
-					 #t))
-				       (constructor-contract
-					(stepper-syntax-property
-					 #'(define (?contract-constructor-name ?param ...)
-					     (contract
-					      (combined (at ?type-name (predicate real-predicate))
-							component-contract ...)))
-					 'stepper-skip-completely
-					 #t)))
-			   #'(begin
-			       ;; we use real-predicate to avoid infinite recursion if a contract
-			       ;; for ?type-name using ?predicate is inadvertently defined
-			       base-contract
-			       constructor-contract))))))
-		 (with-syntax ((defs
-				 (stepper-syntax-property
-				  (syntax/loc x defs) 'stepper-skip-completely #t)))
+	       (((accessor-proc ...)
+		 (map-with-index
+		  (lambda (i accessor)
+		    (with-syntax ((i i)
+				  (tag accessor))
+		      (syntax-property (syntax/loc
+					accessor
+					(lambda (s)
+					  (when (not (raw-predicate s))
+					    (raise
+					     (make-exn:fail:contract
+					      (string->immutable-string
+					       (format "~a: Argument kein ~a: ~e" 
+						       'tag '?type-name s))
+					      (current-continuation-marks))))
+					  (check-struct-wraps! s)
+					  (raw-generic-access s i)))
+				       'inferred-name
+				       (syntax-e accessor))))
+		  (syntax->list #'(accessor ...))))
+		((our-accessor ...) (generate-temporaries #'(accessor ...)))
+		((mutator-proc ...)
+		 (map-with-index
+		  (lambda (i mutator)
+		    (with-syntax ((i i)
+				  (tag mutator))
+		      (syntax-property (syntax/loc
+					mutator
+					(lambda (s v)
+					  (when (not (raw-predicate s))
+					    (raise
+					     (make-exn:fail:contract
+					      (string->immutable-string
+					       (format "~a: Argument kein ~a: ~e" 
+						       'tag '?type-name s))
+					      (current-continuation-marks))))
+					  (raw-generic-mutate s i v)))
+				       'inferred-name
+				       (syntax-e mutator))))
+		  (syntax->list #'(mutator ...))))
+		(constructor-proc
+		 (syntax-property #'(lambda (accessor ...)
+				      (raw-constructor accessor ... '()))
+				  'inferred-name
+				  (syntax-e #'?constructor)))
+		(predicate-proc
+		 (syntax-property #'(lambda (thing)
+				     (raw-predicate thing))
+				  'inferred-name
+				  (syntax-e #'?predicate)))
+		((raw-accessor-proc ...)
+		 (map-with-index (lambda (i _)
+				   #`(lambda (r)
+				       (raw-generic-access r #,i)))
+				 (syntax->list #'(?field-spec ...))))
+		((raw-mutator-proc ...)
+		 (map-with-index (lambda (i _)
+				   #`(lambda (r val)
+				       (raw-generic-mutate r #,i val)))
+				 (syntax->list #'(?field-spec ...))))
+
+		(record-equal? #`(lambda (r1 r2 equal?)
+				   (and #,@(map-with-index (lambda (i field-spec)
+							     #`(equal? (raw-generic-access r1 #,i)
+								       (raw-generic-access r2 #,i)))
+							   (syntax->list #'(?field-spec ...)))))))
+
 				 
-		   #'(begin
-		       contract
-		       ;; the contract might be used in the definitions, hence this ordering
-		       defs)))))))
+	     (with-syntax
+		 ((defs
+		    #'(begin
+			(define-values (type-descriptor
+					raw-constructor
+					raw-predicate
+					raw-generic-access
+					raw-generic-mutate)
+			  (make-struct-type
+			   '?type-name #f (+ 1 number-of-fields) 0
+			   #f
+			   (list
+			    (cons prop:print-convert-constructor-name
+				  '?constructor)
+			    (cons prop:custom-write
+				  (lambda (r port write?)
+				    (custom-write-record '?type-name 
+							 (access-record-fields r raw-generic-access number-of-fields)
+							 port write?)))
+			    (cons prop:equal+hash
+				  (list record-equal? void void))
+			    (cons prop:lazy-wrap
+				  (make-lazy-wrap-info constructor-proc
+						       (list raw-accessor-proc ...)
+						       (list raw-mutator-proc ...)
+						       (lambda (r)
+							 (raw-generic-access r number-of-fields))
+						       (lambda (r val)
+							 (raw-generic-mutate r number-of-fields val)))))
+			   (make-inspector)))
+			(define ?constructor constructor-proc)
+			(define-values (?predicate real-predicate) 
+			  (values predicate-proc predicate-proc))
+			(define-values (accessor ... our-accessor ...)
+			  (values accessor-proc ... accessor-proc ...))
+			(define mutator mutator-proc) ...))
+		  (contract
+		   (with-syntax (((?param ...) (generate-temporaries #'(?field-spec ...))))
+		     (with-syntax (((component-contract ...)
+				    (map (lambda (accessor param)
+					   (with-syntax ((?accessor accessor)
+							 (?param param))
+					     #'(at ?param (property ?accessor ?param))))
+					 (syntax->list #'(our-accessor ...))
+					 (syntax->list #'(?param ...)))))
+		       (with-syntax ((base-contract
+				      (stepper-syntax-property
+				       #'(define ?type-name 
+					   (contract (predicate real-predicate)))
+				       'stepper-skip-completely 
+				       #t))
+				     (constructor-contract
+				      (stepper-syntax-property
+				       (if (syntax->datum #'?mutable?)
+					   ;; no lazy contracts
+					   #'(define (?contract-constructor-name ?param ...)
+					       (contract
+						(combined (at ?type-name (predicate real-predicate))
+							  component-contract ...)))
+					   ;; lazy contracts
+					   #'(define (?contract-constructor-name ?param ...)
+					       (make-struct-wrap-contract '?type-name type-descriptor (list ?param ...) #'?type-name)))
+				       'stepper-skip-completely
+				       #t)))
+			 #'(begin
+			     ;; we use real-predicate to avoid infinite recursion if a contract
+			     ;; for ?type-name using ?predicate is inadvertently defined
+			     base-contract
+			     constructor-contract))))))
+	       (with-syntax ((defs
+			       (stepper-syntax-property
+				(syntax/loc x defs) 'stepper-skip-completely #t)))
+				 
+		 #'(begin
+		     contract
+		     ;; the contract might be used in the definitions, hence this ordering
+		     defs))))))
 
       ((_ ?type-name
 	  ?contract-constructor-name
@@ -295,7 +319,7 @@ prints as:
          (with-syntax (((dummy-mutator ...)
                         (generate-temporaries (syntax (accessor ...)))))
            (syntax
-            (define-record-procedures* ?type-name
+            (define-record-procedures* ?type-name #f
 	      dummy-contract-constructor-name
               ?constructor
               ?predicate
@@ -362,7 +386,7 @@ prints as:
 	 (with-syntax (((dummy-mutator ...)
 			(generate-temporaries (syntax (accessor ...)))))
 	   (syntax
-	    (define-record-procedures* ?type-name ?contract-constructor-name
+	    (define-record-procedures* ?type-name #f ?contract-constructor-name
 	      ?constructor
 	      ?predicate
 	      ((accessor dummy-mutator) ...))))))
@@ -424,7 +448,7 @@ prints as:
 				       "Selektor ist kein Bezeichner"))))
 		   (syntax->list (syntax (?field-spec ...))))
 
-	 #'(define-record-procedures* ?type-name
+	 #'(define-record-procedures* ?type-name #t
 	     dummy-contract-constructor-name
 	     ?constructor
 	     ?predicate
@@ -486,7 +510,7 @@ prints as:
 				       "Selektor ist kein Bezeichner"))))
 		   (syntax->list (syntax (?field-spec ...))))
 
-	 #'(define-record-procedures* ?type-name ?contract-constructor-name
+	 #'(define-record-procedures* ?type-name #t ?contract-constructor-name
 	     ?constructor
 	     ?predicate
 	     (?field-spec ...))))

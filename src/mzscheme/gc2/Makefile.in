@@ -27,7 +27,7 @@ ARLIBFLAGS = @LDFLAGS@ $(LIBS)
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
-XFORM_SETUP = ../mzscheme@CGC@ -cqu $(srcdir)/xform.ss --setup .
+XFORM_SETUP = ../racket@CGC@ -cqu $(srcdir)/xform.ss --setup .
 XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" @XFORMFLAGS@ -o
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
@@ -126,7 +126,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 all: xsrc
 	$(MAKE) $(XSRCDIR)/precomp.h
 	$(MAKE) xobjects
-	$(MAKE) ../mzscheme3m
+	$(MAKE) ../racket3m
 
 xsrcs: $(XSRCS)
 
@@ -269,7 +269,7 @@ list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
-mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h
+mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h $(XFORMDEP)
 	$(CC) $(CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(XSRCDIR)/network.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
@@ -377,35 +377,35 @@ EXTRA_GMP := $(if @EXTRA_GMP_OBJ@,../src/@EXTRA_GMP_OBJ@,)
 EXTRA_OBJS_T = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB)
 EXTRA_OBJS_L = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
-../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
-	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
-	$(RANLIB) ../libmzscheme3m.@LIBSFX@
+../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
+	$(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
+	$(RANLIB) ../libracket3m.@LIBSFX@
 
-../mzscheme@MMM@@NOT_OSX@: main.@LTO@ ../libmzscheme3m.@LIBSFX@
-	cd ..; @MZLINKER@ -o mzscheme@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+../racket@MMM@@NOT_OSX@: main.@LTO@ ../libracket3m.@LIBSFX@
+	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
 
 # The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
 #  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative
 #  path.
 
-MZFWMMM = PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme
+MZFWMMM = Racket.framework/Versions/$(FWVERSION)_3m/Racket
 
-$(MZFWMMM): ../libmzscheme3m.@LIBSFX@
-	mkdir -p "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m"
-	@MZLINKER@ -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load ../libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
-	rm -f PLT_MzScheme.framework/PLT_MzScheme
-	ln -s Versions/$(FWVERSION)_3m/PLT_MzScheme PLT_MzScheme.framework/PLT_MzScheme	
+$(MZFWMMM): ../libracket3m.@LIBSFX@
+	mkdir -p "Racket.framework/Versions/$(FWVERSION)_3m"
+	@MZLINKER@ -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load ../libracket3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+	rm -f Racket.framework/Racket
+	ln -s Versions/$(FWVERSION)_3m/Racket Racket.framework/Racket	
 
-../mzscheme@MMM@@OSX@: $(MZFWMMM) main.@LTO@
-	@MZLINKER@ -o ../mzscheme@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework PLT_MzScheme
-	mkdir -p "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m"
-	cp "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme"
-	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../mzscheme@MMM@"
+../racket@MMM@@OSX@: $(MZFWMMM) main.@LTO@
+	@MZLINKER@ -o ../racket@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket
+	mkdir -p "../Racket.framework/Versions/$(FWVERSION)_3m"
+	cp "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
+	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"
 
 clean:
-	/bin/rm -f ../mzscheme@MMM@ *.@LTO@ $(XSRCDIR)/*
+	/bin/rm -f ../racket@MMM@ *.@LTO@ $(XSRCDIR)/*
 	/bin/rm -rf xform-collects
-	/bin/rm -rf PLT_MzScheme.framework
+	/bin/rm -rf Racket.framework
 
 #--------------------------------------------------
 

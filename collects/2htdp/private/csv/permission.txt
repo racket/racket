@@ -1,0 +1,26 @@
+From: Neil Van Dyke <neil@neilvandyke.org>
+Date: April 13, 2010 2:39:54 PM EDT
+To: Matthias Felleisen <matthias@ccs.neu.edu>
+Subject: Re: csv package
+
+Matthias, sure, you guys may include it, if you want to.
+
+I have to retain copyright, since it's used by people with several non-PLT Scheme implementations.
+
+If LGPL 3 license is a problem, and you're looking for a LPGL 2.x, I could change the license.
+
+I've attached a ".zip" file of the sources of the latest version.  PLaneT has the sources for the specific version you mentioned.  Let me know if you need something else.
+
+Cheers,
+Neil
+
+Matthias Felleisen wrote at 04/13/2010 11:08 AM:
+
+Neil, would it be okay with you if I provide your csv package from the core:
+
+ (require (planet neil/csv:1:2/csv))
+
+If so, could you send me your sources? Thanks -- Matthias
+
+
+ 

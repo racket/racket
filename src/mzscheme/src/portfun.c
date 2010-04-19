@@ -200,14 +200,14 @@ scheme_init_port_fun(Scheme_Env *env)
 
   scheme_write_proc   = scheme_make_noncm_prim(sch_write, "write",    1, 2);
   scheme_display_proc = scheme_make_noncm_prim(display,   "display",  1, 2);
-  scheme_print_proc   = scheme_make_noncm_prim(sch_print, "print",    1, 2);
+  scheme_print_proc   = scheme_make_noncm_prim(sch_print, "print",    1, 3);
 
   /* Made as a closed prim so we can get the arity right: */
   default_read_handler = scheme_make_closed_prim_w_arity(sch_default_read_handler, NULL, "default-port-read-handler", 1, 2);
 
   default_display_handler = scheme_make_prim_w_arity(sch_default_display_handler, "default-port-display-handler", 2, 2);
   default_write_handler   = scheme_make_prim_w_arity(sch_default_write_handler,   "default-port-write-handler",   2, 2);
-  default_print_handler   = scheme_make_prim_w_arity(sch_default_print_handler,   "default-port-print-handler",   2, 2);
+  default_print_handler   = scheme_make_prim_w_arity(sch_default_print_handler,   "default-port-print-handler",   2, 3);
 
   scheme_add_global_constant("eof", scheme_eof, env);
   
@@ -342,7 +342,7 @@ void scheme_init_port_fun_config(void)
 
   REGISTER_SO(scheme_default_global_print_handler);
   scheme_default_global_print_handler
-    = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 2);
+    = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 3);
   scheme_set_root_param(MZCONFIG_PORT_PRINT_HANDLER, scheme_default_global_print_handler);
 
   /* Use dummy port: */
@@ -372,7 +372,7 @@ static MZ_INLINE Scheme_Input_Port *input_port_record_slow(Scheme_Object *port)
     if (SCHEME_INPORTP(port))
       return (Scheme_Input_Port *)port;
 
-    if (!SCHEME_STRUCTP(port)) {
+    if (!SCHEME_CHAPERONE_STRUCTP(port)) {
       return (Scheme_Input_Port *)dummy_input_port;
     }
     
@@ -380,7 +380,7 @@ static MZ_INLINE Scheme_Input_Port *input_port_record_slow(Scheme_Object *port)
     if (!v)
       v = scheme_false;
     else if (SCHEME_INTP(v))
-      v = ((Scheme_Structure *)port)->slots[SCHEME_INT_VAL(v)];
+      v = scheme_struct_ref(port, SCHEME_INT_VAL(v));
     port = v;
 
     SCHEME_USE_FUEL(1);
@@ -404,7 +404,7 @@ static MZ_INLINE Scheme_Output_Port *output_port_record_slow(Scheme_Object *port
     if (SCHEME_OUTPORTP(port))
       return (Scheme_Output_Port *)port;
 
-    if (!SCHEME_STRUCTP(port)) {
+    if (!SCHEME_CHAPERONE_STRUCTP(port)) {
       return (Scheme_Output_Port *)dummy_output_port;
     }
     
@@ -412,7 +412,7 @@ static MZ_INLINE Scheme_Output_Port *output_port_record_slow(Scheme_Object *port
     if (!v)
       v = scheme_false;
     else if (SCHEME_INTP(v))
-      v = ((Scheme_Structure *)port)->slots[SCHEME_INT_VAL(v)];
+      v = scheme_struct_ref(port, SCHEME_INT_VAL(v));
     port = v;
 
     SCHEME_USE_FUEL(1);
@@ -433,7 +433,7 @@ int scheme_is_input_port(Scheme_Object *port)
   if (SCHEME_INPORTP(port))
     return 1;
 
-  if (SCHEME_STRUCTP(port))
+  if (SCHEME_CHAPERONE_STRUCTP(port))
     if (scheme_struct_type_property_ref(scheme_input_port_property, port))
       return 1;
 
@@ -445,7 +445,7 @@ int scheme_is_output_port(Scheme_Object *port)
   if (SCHEME_OUTPORTP(port))
     return 1;
   
-  if (SCHEME_STRUCTP(port))
+  if (SCHEME_CHAPERONE_STRUCTP(port))
     if (scheme_struct_type_property_ref(scheme_output_port_property, port))
       return 1;
 
@@ -3684,7 +3684,10 @@ static Scheme_Object *sch_default_print_handler(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_OUTPUT_PORTP(argv[1]))
     scheme_wrong_type("default-port-print-handler", "output-port", 1, argc, argv);
-
+  if ((argc > 2) && !scheme_nonneg_exact_p(argv[2]))
+    scheme_wrong_type("default-port-print-handler", "non-negative exact integer", 
+                      2, argc, argv);
+  
   return _scheme_apply(scheme_get_param(scheme_current_config(),
 					MZCONFIG_PORT_PRINT_HANDLER),
 		       argc, argv);
@@ -3694,8 +3697,11 @@ static Scheme_Object *sch_default_global_port_print_handler(int argc, Scheme_Obj
 {
   if (!SCHEME_OUTPUT_PORTP(argv[1]))
     scheme_wrong_type("default-global-port-print-handler", "output-port", 1, argc, argv);
+  if ((argc > 2) && !scheme_nonneg_exact_p(argv[2]))
+    scheme_wrong_type("default-global-port-print-handler", "non-negative exact integer", 
+                      2, argc, argv);
 
-  scheme_internal_print(argv[0], argv[1]);
+  scheme_internal_print(argv[0], argv[1], argv[2]);
 
   return scheme_void;
 }
@@ -3757,17 +3763,25 @@ display_write(char *name,
   } else {
     /* print */
     Scheme_Object *h;
-    Scheme_Object *a[2];
+    Scheme_Object *a[3];
+    
+    if (argc > 2) {
+      h = argv[2];
+      if (!scheme_nonneg_exact_p(h))
+        scheme_wrong_type(name, "non-negative exact integer", 2, argc, argv);
+    } else
+      h = scheme_make_integer(0);
 
     a[0] = argv[0];
     a[1] = (Scheme_Object *)port;
+    a[2] = h;
 
     h = op->print_handler;
 
     if (!h)
-      sch_default_print_handler(2, a);
+      sch_default_print_handler(3, a);
     else
-      _scheme_apply_multi(h, 2, a);
+      _scheme_apply_multi(h, 3, a);
   }
 
   return scheme_void;
@@ -3943,6 +3957,20 @@ static Scheme_Object *port_write_handler(int argc, Scheme_Object *argv[])
   }
 }
 
+static Scheme_Object *call_print_handler(void *data, int argc, Scheme_Object *argv[])
+{
+  /* If there's a 3rd argument, drop it. */
+  return _scheme_tail_apply((Scheme_Object *)data, 2, argv);
+}
+
+static Scheme_Object *wrap_print_handler(Scheme_Object *proc)
+{
+  return scheme_make_closed_prim_w_arity(call_print_handler,
+                                         proc,
+                                         "wrapped-port-print-handler",
+                                         2, 3);
+}
+
 static Scheme_Object *port_print_handler(int argc, Scheme_Object *argv[])
 {
   Scheme_Output_Port *op;
@@ -3960,11 +3988,26 @@ static Scheme_Object *port_print_handler(int argc, Scheme_Object *argv[])
     scheme_check_proc_arity("port-print-handler", 2, 1, argc, argv);
     if (argv[1] == default_print_handler)
       op->print_handler = NULL;
-    else
+    else if (!scheme_check_proc_arity(NULL, 3, 1, argc, argv)) {
+      Scheme_Object *wrapped;
+      wrapped = wrap_print_handler(argv[1]);
+      op->print_handler = wrapped;
+    } else
       op->print_handler = argv[1];
 
     return scheme_void;
   }
+}
+
+static Scheme_Object *filter_print_handler(int argc, Scheme_Object **argv)
+{
+  if (scheme_check_proc_arity(NULL, 2, 0, argc, argv)) {
+    if (scheme_check_proc_arity(NULL, 3, 0, argc, argv))
+      return argv[0];
+    else
+      return wrap_print_handler(argv[0]);
+  } else
+    return NULL;
 }
 
 static Scheme_Object *global_port_print_handler(int argc, Scheme_Object *argv[])
@@ -3972,7 +4015,7 @@ static Scheme_Object *global_port_print_handler(int argc, Scheme_Object *argv[])
   return scheme_param_config("global-port-print-handler",
 			     scheme_make_integer(MZCONFIG_PORT_PRINT_HANDLER),
 			     argc, argv,
-			     2, NULL, NULL, 0);
+			     -1, filter_print_handler, "procedure (arity 2)", 1);
 }
 
 static Scheme_Object *port_count_lines(int argc, Scheme_Object *argv[])

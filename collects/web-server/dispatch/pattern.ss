@@ -14,7 +14,7 @@
   (define (dispatch/no-...? stx)
     (syntax-case stx ()
       [() #t]
-      [((bidi) . rest-stx)
+      [((bidi arg ...) . rest-stx)
        (dispatch/...? #'rest-stx)]
       [(string . rest-stx)
        (string-syntax? #'string)
@@ -22,7 +22,7 @@
   (define (dispatch/...? stx)
     (syntax-case stx ()
       [() #t]
-      [((bidi) . rest-stx)
+      [((bidi arg ...) . rest-stx)
        (dispatch/...? #'rest-stx)]
       [(string . rest-stx)
        (string-syntax? #'string)
@@ -35,7 +35,7 @@
   (define (dispatch/no-...? stx)
     (syntax-case stx ()
       [() #t]
-      [((bidi id) . rest-stx)
+      [((bidi arg ... id) . rest-stx)
        (identifier? #'id)
        (dispatch/...? #'rest-stx)]
       [(string . rest-stx)
@@ -44,7 +44,7 @@
   (define (dispatch/...? stx)
     (syntax-case stx ()
       [() #t]
-      [((bidi id) . rest-stx)
+      [((bidi arg ... id) . rest-stx)
        (identifier? #'id)
        (dispatch/...? #'rest-stx)]
       [(string . rest-stx)
@@ -78,9 +78,9 @@
            [(...? pp)
             pp]
            [else
-            (with-syntax ([(bidi-id) pp]
+            (with-syntax ([(bidi-id arg ...) pp]
                           [id ppi])
-              (syntax/loc pp (bidi-id id)))]))
+              (syntax/loc pp (bidi-id arg ... id)))]))
        (syntax->list pps)
        (generate-temporaries pps)))
 

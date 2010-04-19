@@ -21,17 +21,17 @@
    "Dispatch"
    
    #;(local
-     [(define-syntax test-match=>
-        (syntax-rules ()
-          [(_ val pat res)
-           (test-equal? (format "~S" 'pat)
-                        (match=> val [pat => (lambda x x)])
-                        res)]))]
-     (test-suite
-      "match"
-      
-      (test-match=> (list 1 2) (list a b) (list 1 2))
-      (test-match=> (list 1 2) (list _ b) (list 2))))   
+       [(define-syntax test-match=>
+          (syntax-rules ()
+            [(_ val pat res)
+             (test-equal? (format "~S" 'pat)
+                          (match=> val [pat => (lambda x x)])
+                          res)]))]
+       (test-suite
+        "match"
+        
+        (test-match=> (list 1 2) (list a b) (list 1 2))
+        (test-match=> (list 1 2) (list _ b) (list 2))))   
    
    (test-suite
     "coercion"
@@ -193,11 +193,11 @@
                                 'string-arg)
                   (check-pred symbol? (second (first (map syntax->datum (dispatch-pattern->dispatch-pattern/ids #'((string-arg))))))))))    
     
-    (test-exn "dispatch-pattern?" exn? (lambda () (dispatch-pattern? #'((... ...)))))
-    (test-exn "dispatch-pattern?" exn? (lambda () (dispatch-pattern? #'("foo" (... ...)))))
-    (test-exn "dispatch-pattern?" exn? (lambda () (dispatch-pattern? #'((integer-arg a) (... ...)))))
-    (test-exn "dispatch-pattern?" exn? (lambda () (dispatch-pattern? #'((integer-arg a)))))
-    (test-exn "dispatch-pattern?" exn? (lambda () (dispatch-pattern? #'((list a b) (... ...)))))
+    (test-exn "dispatch-pattern? ..." exn? (lambda () (dispatch-pattern? #'((... ...)))))
+    (test-exn "dispatch-pattern? foo ..." exn? (lambda () (dispatch-pattern? #'("foo" (... ...)))))
+    (test-not-false "dispatch-pattern? integer-arg a ..." (dispatch-pattern? #'((integer-arg a) (... ...))))
+    (test-not-false "dispatch-pattern? integer-arg a " (dispatch-pattern? #'((integer-arg a))))
+    (test-not-false "dispatch-pattern? list a b" (dispatch-pattern? #'((list a b) (... ...))))
     (test-not-false "dispatch-pattern?" (dispatch-pattern? #'((integer-arg) (... ...))))
     (test-not-false "dispatch-pattern?" (dispatch-pattern? #'((integer-arg))))
     (test-not-false "dispatch-pattern?" (dispatch-pattern? #'("foo")))
@@ -206,74 +206,107 @@
     (test-exn "dispatch-pattern/ids?" exn? (lambda () (dispatch-pattern/ids? #'("foo" (... ...)))))
     (test-not-false "dispatch-pattern/ids?" (dispatch-pattern/ids? #'((integer-arg a) (... ...))))
     (test-not-false "dispatch-pattern/ids?" (dispatch-pattern/ids? #'((integer-arg a))))
-    (test-exn "dispatch-pattern/ids?" exn? (lambda () (dispatch-pattern/ids? #'((list a b) (... ...)))))
+    (test-not-false "dispatch-pattern/ids?" (dispatch-pattern/ids? #'((list a b) (... ...))))
     (test-exn "dispatch-pattern/ids?" exn? (lambda () (dispatch-pattern/ids? #'((integer-arg) (... ...)))))
     (test-exn "dispatch-pattern/ids?" exn? (lambda () (dispatch-pattern/ids? #'((integer-arg)))))
     (test-not-false "dispatch-pattern/ids?" (dispatch-pattern/ids? #'("foo"))))    
    
    (local [(define-syntax test-arg
              (syntax-rules ()
-               [(_ arg
+               [(_ (arg arg-a ...)
                    ([in-expr out-expr] ...)
                    [in-fail-expr ...]
                    [out-fail-expr ...])
                 (test-suite (format "~S" 'arg)
                             (test-equal? (format "in ~S" in-expr)
                                          (syntax-parameterize ([bidi-match-going-in? #t])
-                                                              (match in-expr [(arg a) a]))
+                                                              (match in-expr [(arg arg-a ... a) a]))
                                          out-expr)
                             ...
                             (test-equal? (format "out ~S" out-expr)
                                          (syntax-parameterize ([bidi-match-going-in? #f])
-                                                              (match out-expr [(arg a) a]))
+                                                              (match out-expr [(arg arg-a ... a) a]))
                                          in-expr)
                             ...
                             (test-false (format "in-fail ~S" in-fail-expr)
                                         (syntax-parameterize ([bidi-match-going-in? #t])
-                                                             (match in-fail-expr [(arg a) a] [_ #f])))
+                                                             (match in-fail-expr [(arg arg-a ... a) a] [_ #f])))
                             ...
                             (test-false (format "out-fail ~S" out-fail-expr)
                                         (syntax-parameterize ([bidi-match-going-in? #f])
-                                                             (match out-fail-expr [(arg a) a] [_ #f])))
+                                                             (match out-fail-expr [(arg arg-a ... a) a] [_ #f])))
                             ...)]))]
      (test-suite
       "url-patterns"
       
-      (test-arg number-arg
+      (test-arg (number-arg)
                 (["1" 1]
                  ["2.3" 2.3]
                  ["+inf.0" +inf.0])
                 ["a"]
                 ['a #t])
       
-      (test-arg integer-arg
+      (test-arg (integer-arg)
                 (["1" 1])
                 ["a" "2.3" "+inf.0"]
                 ['a #t 2.3 +inf.0])
       
-      (test-arg real-arg
+      (test-arg (real-arg)
                 (["1" 1]
                  ["2.3" 2.3]
                  ["+inf.0" +inf.0])
                 ["a"]
                 ['a #t])
       
-      (test-arg string-arg
+      (test-arg (string-arg)
                 (["1" "1"]
                  ["foo" "foo"]
                  ["/" "/"])
                 []
                 ['a #t 5])
       
-      (test-arg symbol-arg
+      (test-arg (symbol-arg)
                 (["1" '|1|]
                  ["foo" 'foo]
                  ["/" '/])
                 []
-                ["a" #t 5])))
+                ["a" #t 5])
+      
+      (local [(define-match-expander const-m
+                (syntax-rules ()
+                  [(_ v id) (? (curry equal? v) id)]))
+              (define-bidi-match-expander const-arg const-m const-m)]
+        (test-arg (const-arg "1")
+                  (["1" "1"])
+                  ["2"]
+                  ["2"]))))
    
    (test-suite
     "syntax"
+    
+    (local
+      [(define (list-posts req) `(list-posts))
+       (define (review-post req p) `(review-post ,p))
+       (define (review-archive req y m) `(review-archive ,y ,m))
+       (define-values (blog-dispatch blog-url blog-applies?)
+         (dispatch-rules+applies
+          [("") list-posts]
+          [() list-posts]
+          [("posts" (string-arg)) review-post]
+          [("archive" (integer-arg) (integer-arg)) review-archive]))
+       (define (test-blog-dispatch url)
+         (test-not-false url (blog-applies? (test-request (string->url url)))))
+       (define (test-blog-dispatch/exn url)
+         (test-false url (blog-applies? (test-request (string->url url)))))]
+      
+      (test-blog-dispatch "http://www.example.com")
+      (test-blog-dispatch "http://www.example.com/")
+      (test-blog-dispatch "http://www.example.com/posts/hello-world")
+      (test-blog-dispatch "http://www.example.com/archive/2008/02")
+      (test-blog-dispatch/exn "http://www.example.com/posts")
+      (test-blog-dispatch/exn "http://www.example.com/archive/post/02")
+      (test-blog-dispatch/exn "http://www.example.com/archive/2008/post")
+      (test-blog-dispatch/exn "http://www.example.com/foo"))
     
     (local
       [(define (list-posts req) `(list-posts))
@@ -425,5 +458,5 @@
 
 #;(test-serve/dispatch)
 
-#;(require (planet schematics/schemeunit:3/text-ui))
-#;(run-tests all-dispatch-tests)
+(require schemeunit/text-ui)
+(run-tests all-dispatch-tests)

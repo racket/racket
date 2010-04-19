@@ -329,6 +329,8 @@ extern Scheme_Object *scheme_list_proc;
 extern Scheme_Object *scheme_list_star_proc;
 extern Scheme_Object *scheme_vector_proc;
 extern Scheme_Object *scheme_vector_immutable_proc;
+extern Scheme_Object *scheme_vector_ref_proc;
+extern Scheme_Object *scheme_vector_set_proc;
 extern Scheme_Object *scheme_box_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
@@ -598,6 +600,8 @@ extern Scheme_Object *scheme_apply_thread_thunk(Scheme_Object *rator);
 #define GLOB_HAS_HOME_PTR 32
 /* Scheme-level constant (cannot be changed further): */
 #define GLOB_IS_IMMUTATED 64
+/* Linked from other (cannot be undefined): */
+#define GLOB_IS_LINKED 128
 
 typedef struct {
   Scheme_Bucket bucket;
@@ -704,19 +708,13 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
 						   Scheme_Object *props,
 						   Scheme_Object *guard,
 						   int immutable);
-Scheme_Object *scheme_make_proc_struct_type(Scheme_Object *base,
-                                            Scheme_Object *parent,
-                                            Scheme_Object *inspector,
-                                            int num_fields, int num_uninit,
-                                            Scheme_Object *uninit_val,
-                                            Scheme_Object *proc_attr,
-                                            Scheme_Object *guard);
 
 Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown_val, Scheme_Object *insp);
 
 Scheme_Object *scheme_extract_struct_procedure(Scheme_Object *obj, int num_rands, Scheme_Object **rands, int *is_method);
 
 Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a);
+Scheme_Object *scheme_object_name(Scheme_Object *a);
 
 Scheme_Object *scheme_is_writable_struct(Scheme_Object *s);
 
@@ -725,13 +723,67 @@ Scheme_Object *scheme_is_writable_struct(Scheme_Object *s);
 extern Scheme_Object *scheme_source_property;
 
 Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_count);
+Scheme_Object *scheme_make_blank_prefab_struct_instance(Scheme_Struct_Type *stype);
 Scheme_Object *scheme_make_prefab_struct_instance(Scheme_Struct_Type *stype,
                                                          Scheme_Object *vec);
 Scheme_Object *scheme_clone_prefab_struct_instance(Scheme_Structure *s);
+Scheme_Struct_Type *scheme_make_prefab_struct_type_in_master(Scheme_Object *base,
+					Scheme_Object *parent,
+					int num_slots,
+					int num_islots,
+					Scheme_Object *uninit_val,
+					char *immutable_pos_list);
+Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
+					Scheme_Object *parent,
+					int num_slots,
+					int num_islots,
+					Scheme_Object *uninit_val,
+					char *immutable_pos_list);
 
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
 Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
+
+typedef struct Scheme_Chaperone {
+  Scheme_Object so;
+  Scheme_Object *val;  /* root object */
+  Scheme_Object *prev; /* immediately chaperoned object */
+  Scheme_Hash_Tree *props;
+  Scheme_Object *redirects; /* specific to the type of chaperone and root object */
+} Scheme_Chaperone;
+
+#define SCHEME_CHAPERONE_VAL(obj) (((Scheme_Chaperone *)obj)->val)
+
+#define SCHEME_P_CHAPERONEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_chaperone_type))
+#define SCHEME_NP_CHAPERONEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_chaperone_type))
+
+#define SCHEME_CHAPERONE_VECTORP(obj) (SCHEME_VECTORP(obj) \
+                                   || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_VECTORP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_BOXP(obj) (SCHEME_BOXP(obj) \
+                                || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_BOXP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_STRUCTP(obj) (SCHEME_STRUCTP(obj)              \
+                                       || (SCHEME_CHAPERONEP(obj) && SCHEME_STRUCTP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_PROC_STRUCTP(obj) (SCHEME_PROC_STRUCTP(obj)              \
+                                           || (SCHEME_P_CHAPERONEP(obj) && SCHEME_PROC_STRUCTP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_STRUCT_TYPEP(obj) (SCHEME_STRUCT_TYPEP(obj)              \
+                                            || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_STRUCT_TYPEP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_HASHTP(obj) (SCHEME_HASHTP(obj) \
+                                      || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_HASHTRP(obj) (SCHEME_HASHTRP(obj) \
+                                       || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj))))
+#define SCHEME_CHAPERONE_BUCKTP(obj) (SCHEME_BUCKTP(obj) \
+                                      || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(obj))))
+
+Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i);
+void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v);
+
+Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val);
+
+Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv);
+
+Scheme_Object *scheme_chaperone_hash_get(Scheme_Object *table, Scheme_Object *key);
+Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key);
+void scheme_chaperone_hash_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val);
 
 /*========================================================================*/
 /*                         syntax objects                                 */
@@ -866,7 +918,7 @@ Scheme_Object *scheme_get_kernel_modidx(void);
 void scheme_remove_module_rename(Scheme_Object *mrn,
 				 Scheme_Object *localname);
 void scheme_append_module_rename(Scheme_Object *src, Scheme_Object *dest, int with_unmarshal);
-void scheme_list_module_rename(Scheme_Object *src, Scheme_Hash_Table *ht);
+void scheme_list_module_rename(Scheme_Object *src, Scheme_Hash_Table *ht, Scheme_Hash_Table *export_registry);
 
 Scheme_Object *scheme_rename_to_stx(Scheme_Object *rn);
 Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx);
@@ -898,7 +950,7 @@ int scheme_stx_ribs_matter(Scheme_Object *a, Scheme_Object *skip_ribs);
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
 int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, Scheme_Object *phase);
 
-Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve);
+Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int source);
 
 Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 				   Scheme_Object *key,
@@ -1082,13 +1134,14 @@ typedef struct Scheme_Let_Value {
 #define SCHEME_LET_AUTOBOX(lh) MZ_OPT_HASH_KEY(&lh->iso)
 
 typedef struct Scheme_Let_One {
-  Scheme_Inclhash_Object iso; /* keyex used for eval_type + flonum (and can't be hashed) */
+  Scheme_Inclhash_Object iso; /* keyex used for eval_type + flonum/unused (and can't be hashed) */
   Scheme_Object *value;
   Scheme_Object *body;
 } Scheme_Let_One;
 
 #define SCHEME_LET_EVAL_TYPE(lh) MZ_OPT_HASH_KEY(&lh->iso)
 #define LET_ONE_FLONUM 0x8
+#define LET_ONE_UNUSED 0x10
 
 typedef struct Scheme_Let_Void {
   Scheme_Inclhash_Object iso; /* keyex used for autobox */
@@ -1205,6 +1258,8 @@ typedef struct Scheme_Cont_Mark {
   Scheme_Object *cache; /* chain and/or shortcut */
   MZ_MARK_POS_TYPE pos; /* Odd numbers - so they look like non-pointers */
 } Scheme_Cont_Mark;
+
+void scheme_new_mark_segment(Scheme_Thread *p);
 
 typedef struct Scheme_Cont_Mark_Chain {
   Scheme_Inclhash_Object iso; /* 0x1 => next is from different meta-continuation */
@@ -1854,7 +1909,7 @@ Scheme_Object *scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, 
                                     Scheme_Object *delay_load_info);
 void scheme_internal_display(Scheme_Object *obj, Scheme_Object *port);
 void scheme_internal_write(Scheme_Object *obj, Scheme_Object *port);
-void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port);
+void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port, Scheme_Object *quote_depth);
 
 Scheme_Object *scheme_read_language(Scheme_Object *port, int nonlang_ok);
 
@@ -1875,6 +1930,7 @@ Scheme_Object *scheme_default_eval_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_compile_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_print_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_prompt_read_handler(int, Scheme_Object *[]);
+Scheme_Object *scheme_default_read_handler(int argc, Scheme_Object *[]);
 
 extern Scheme_Object *scheme_default_global_print_handler;
 
@@ -2144,7 +2200,6 @@ void scheme_check_identifier(const char *formname, Scheme_Object *id,
 			     const char *where,
 			     Scheme_Comp_Env *env,
 			     Scheme_Object *form);
-int scheme_check_context(Scheme_Env *env, Scheme_Object *id, Scheme_Object *ok_modix);
 
 Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 					    Scheme_Comp_Env *env,
@@ -2173,6 +2228,7 @@ Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env
 				     Scheme_Object *certs, Scheme_Object *in_modidx, 
 				     Scheme_Env **_menv, int *_protected,
                                      Scheme_Object **_lexical_binding_id);
+int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o);
 Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o);
@@ -2225,7 +2281,8 @@ void scheme_delay_load_closure(Scheme_Closure_Data *data);
 Scheme_Object *scheme_compiled_void(void);
 
 Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
-						  Scheme_Compile_Info *rec, int drec);
+						  Scheme_Compile_Info *rec, int drec,
+                                                  int imported);
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 					     Scheme_Compile_Info *rec, int drec);
 void scheme_register_unsafe_in_prefix(Scheme_Comp_Env *env,
@@ -2763,6 +2820,7 @@ typedef struct Scheme_Module
   Scheme_Object so; /* scheme_module_type */
 
   Scheme_Object *modname;
+  Scheme_Object *modsrc;
 
   Scheme_Object *et_requires;  /* list of symbol-or-module-path-index */
   Scheme_Object *requires;     /* list of symbol-or-module-path-index */
@@ -2855,6 +2913,7 @@ typedef struct Scheme_Module_Exports
   Scheme_Hash_Table *other_phases;
 
   Scheme_Object *src_modidx;  /* the one used in marshalled syntax */
+  Scheme_Object *modsrc; /* module source as loaded */
 } Scheme_Module_Exports;
 
 typedef struct Scheme_Modidx {
@@ -3312,6 +3371,9 @@ Scheme_Object *scheme_vector_length(Scheme_Object *v);
 Scheme_Object *scheme_checked_flvector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_flvector_set(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_flvector_length(Scheme_Object *v);
+
+Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *obj);
+Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj);
 
 void scheme_bad_vec_index(char *name, Scheme_Object *i, 
                           const char *what, Scheme_Object *vec, 

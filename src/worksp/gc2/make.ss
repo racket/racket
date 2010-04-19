@@ -231,8 +231,8 @@
 	    mz-inc))
 (c-compile "../../mzscheme/src/mzsj86.c" "xsrc/mzsj86.obj" '() mz-inc)
 
-(define dll "../../../lib/libmzsch3mxxxxxxx.dll")
-(define exe "../../../MzScheme.exe")
+(define dll "../../../lib/libracket3mxxxxxxx.dll")
+(define exe "../../../Racket.exe")
 
 (define libs "kernel32.lib user32.lib ws2_32.lib shell32.lib advapi32.lib")
 
@@ -307,9 +307,9 @@
 	     "mzscheme.res"
 	     "xsrc/main.obj"
 	     "xsrc/uniplt.obj"
-	     "../../../lib/msvc/libmzsch3mxxxxxxx.lib")])
+	     "../../../lib/msvc/libracket3mxxxxxxx.lib")])
   (link-dll objs 
-	    '("libmzsch3mxxxxxxx.dll")
+	    '("libracket3mxxxxxxx.dll")
 	    '("delayimp.lib")
 	    exe "" #t))
 
@@ -460,7 +460,7 @@
 			     wxs-srcs
 			     mred-srcs)))]
       [libs (list
-	     "../../../lib/msvc/libmzsch3mxxxxxxx.lib"
+	     "../../../lib/msvc/libracket3mxxxxxxx.lib"
 	     "../wxutils/Release/wxutils.lib"
 	     "../jpeg/Release/jpeg.lib"
 	     "../png/Release/png.lib"
@@ -470,7 +470,7 @@
 		 "gdi32.lib" "comdlg32.lib" "advapi32.lib" 
 		 "shell32.lib" "ole32.lib" "oleaut32.lib"
 		 "winmm.lib")])
-  (link-dll (append objs libs) null win-libs "../../../lib/libmred3mxxxxxxx.dll" "" #f))
+  (link-dll (append objs libs) null win-libs "../../../lib/libgracket3mxxxxxxx.dll" "" #f))
 
 (wx-try "mred" "mred" "mrmain" #f "cxx" #t)
 
@@ -480,14 +480,14 @@
 	     "mred.res"
 	     "xsrc/mrmain.obj"
 	     "xsrc/uniplt.obj"
-	     "../../../lib/msvc/libmzsch3mxxxxxxx.lib"
-	     "../../../lib/msvc/libmred3mxxxxxxx.lib")])
+	     "../../../lib/msvc/libracket3mxxxxxxx.lib"
+	     "../../../lib/msvc/libgracket3mxxxxxxx.lib")])
   (link-dll objs 
-	    '("libmzsch3mxxxxxxx.dll" 
-	      "libmred3mxxxxxxx.dll")
+	    '("libracket3mxxxxxxx.dll" 
+	      "libgracket3mxxxxxxx.dll")
 	    '("advapi32.lib" 
 	      "delayimp.lib") 
-	    "../../../MrEd.exe" " /subsystem:windows" #t))
+	    "../../../GRacket.exe" " /subsystem:windows" #t))
 
 (system- "cl.exe /MT /O2 /DMZ_PRECISE_GC /I../../mzscheme/include /I.. /c ../../mzscheme/dynsrc/mzdyn.c /Fomzdyn3m.obj")
 (system- "lib.exe -def:../../mzscheme/dynsrc/mzdyn.def -out:mzdyn3m.lib")

@@ -29,7 +29,7 @@
   (-define-syntax syntax-rules
     (lambda (stx)
       (syntax-case** syntax-rules #t stx () free-identifier=?
-	((_ (k ...) ((keyword . pattern) template) ...)
+	((sr (k ...) ((keyword . pattern) template) ...)
 	 (andmap identifier? (syntax->list (syntax (k ...))))
 	 (begin
            (for-each (lambda (id)
@@ -42,19 +42,19 @@
                      (syntax->list (syntax (keyword ...))))
 	   (syntax/loc stx
 	     (lambda (x)
-	       (syntax-case** _ #t x (k ...) free-identifier=?
+	       (syntax-case** sr #t x (k ...) free-identifier=?
 		 ((_ . pattern) (syntax/loc x template))
 		 ...))))))))
 
   (-define-syntax syntax-id-rules
     (lambda (x)
       (syntax-case** syntax-id-rules #t x () free-identifier=?
-	((_ (k ...) (pattern template) ...)
+	((sidr (k ...) (pattern template) ...)
 	 (andmap identifier? (syntax->list (syntax (k ...))))
 	 (syntax/loc x
 	   (make-set!-transformer
 	    (lambda (x)
-	      (syntax-case** _ #t x (k ...) free-identifier=?
+	      (syntax-case** sidr #t x (k ...) free-identifier=?
 		(pattern (syntax/loc x template))
 		...))))))))
 

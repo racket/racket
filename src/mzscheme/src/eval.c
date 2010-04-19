@@ -124,6 +124,9 @@
 #include "schpriv.h"
 #include "schrunst.h"
 #include "schexpobs.h"
+#ifdef MZ_USE_FUTURES
+# include "future.h"
+#endif
 
 #ifdef USE_STACKAVAIL
 #include <malloc.h>
@@ -959,8 +962,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         && (1 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
-        /* can omit an unsafe op */
-        return 1;
+        if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info))
+          return 1;
       }
     }
     return 0;
@@ -998,8 +1001,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
-        /* can omit an unsafe op */
-        return 1;
+	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info)
+	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info))
+          return 1;
       }
     }
   }
@@ -1844,6 +1848,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 {
   Scheme_Object *modname;
   Scheme_Env *menv;
+  Scheme_Bucket *bkt;
   int self = 0;
 
   /* If it's a name id, resolve the name. */
@@ -1872,7 +1877,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 			  env->phase,
                           modname,
                           mod_phase,
-                          env->module ? env->module->modname : scheme_false);
+                          env->module ? env->module->modsrc : scheme_false);
       return NULL;
     }
 
@@ -1893,7 +1898,23 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     }
   }
 
-  return (Scheme_Object *)scheme_global_bucket(varname, menv);
+  bkt = scheme_global_bucket(varname, menv);
+  if (!self) {
+    if (!bkt->val) {
+      scheme_wrong_syntax("link", NULL, varname,
+                          "reference (phase %d) to a variable in module"
+                          " %D that is uninitialized (phase level %d); reference"
+                          " appears in module: %D", 
+                          env->phase,
+                          exprs ? SCHEME_CDR(modname) : modname,
+                          mod_phase,
+                          env->module ? env->module->modsrc : scheme_false);    
+    }
+    if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_IMMUTATED | GLOB_IS_LINKED)))
+      ((Scheme_Bucket_With_Flags *)bkt)->flags |= GLOB_IS_LINKED;
+  }
+  
+  return (Scheme_Object *)bkt;
 }
 
 static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env *env,
@@ -2831,7 +2852,7 @@ char *scheme_optimize_context_to_string(Scheme_Object *context)
     }
 
     if (SAME_TYPE(SCHEME_TYPE(mod), scheme_module_type)) {
-      mctx = scheme_display_to_string(((Scheme_Module *)mod)->modname, NULL);
+      mctx = scheme_display_to_string(((Scheme_Module *)mod)->modsrc, NULL);
       mprefix = " in module: ";
     } else {
       mctx = "";
@@ -2880,9 +2901,34 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
      in optimize_for_inline() after optimizing a rator. */
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_compiled_let_void_type)) {
     Scheme_Let_Header *head = (Scheme_Let_Header *)rator;
-    Scheme_Compiled_Let_Value *clv = NULL;
+    Scheme_Compiled_Let_Value *clv;
     int i;
 
+    /* Handle ((let ([f ...]) f) arg ...) specially, so we can
+       adjust the flags for `f': */
+    if ((head->count == 1) && (head->num_clauses == 1)) {
+      clv = (Scheme_Compiled_Let_Value *)head->body;
+      rator = clv->body;
+      if (SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)
+          && (SCHEME_LOCAL_POS(rator) == 0)
+          && scheme_is_compiled_procedure(clv->value, 1, 1)) {
+        
+        reset_rator(app, scheme_false);
+        app = scheme_optimize_shift(app, 1, 0);
+        reset_rator(app, scheme_make_local(scheme_local_type, 0, 0));
+
+        clv->body = app;
+        
+        if (clv->flags[0] & SCHEME_WAS_APPLIED_EXCEPT_ONCE) {
+          clv->flags[0] -= SCHEME_WAS_APPLIED_EXCEPT_ONCE;
+          clv->flags[0] |= SCHEME_WAS_ONLY_APPLIED;
+        }
+        
+        return scheme_optimize_expr((Scheme_Object *)head, info, context);
+      }
+    }
+
+    clv = NULL;
     rator = head->body;
     for (i = head->num_clauses; i--; ) {
       clv = (Scheme_Compiled_Let_Value *)rator;
@@ -3673,6 +3719,69 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
     info->single_result = -info->single_result;
   }
 
+  /* Ad hoc optimization of (unsafe-fx+ <x> 0), etc. */
+  if (SCHEME_PRIMP(app->rator)
+      && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)) {
+    int z1, z2;
+    
+    z1 = SAME_OBJ(app->rand1, scheme_make_integer(0));
+    z2 = SAME_OBJ(app->rand2, scheme_make_integer(0));
+    if (IS_NAMED_PRIM(app->rator, "unsafe-fx+")) {
+      if (z1)
+        return app->rand2;
+      else if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx-")) {
+      if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx*")) {
+      if (z1 || z2)
+        return scheme_make_integer(0);
+      if (SAME_OBJ(app->rand1, scheme_make_integer(1)))
+        return app->rand2;
+      if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx/")
+               || IS_NAMED_PRIM(app->rator, "unsafe-fxquotient")) {
+      if (z1)
+        return scheme_make_integer(0);
+      if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fxremainder")
+               || IS_NAMED_PRIM(app->rator, "unsafe-fxmodulo")) {
+      if (z1)
+        return scheme_make_integer(0);
+      if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
+        return scheme_make_integer(0);
+    }
+    
+    z1 = (SCHEME_FLOATP(app->rand1) && (SCHEME_FLOAT_VAL(app->rand1) == 0.0));
+    z2 = (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 0.0));
+
+    if (IS_NAMED_PRIM(app->rator, "unsafe-fl+")) {
+      if (z1)
+        return app->rand2;
+      else if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl-")) {
+      if (z2)
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl*")) {
+      if (SCHEME_FLOATP(app->rand1) && (SCHEME_FLOAT_VAL(app->rand1) == 1.0))
+        return app->rand2;
+      if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl/")
+               || IS_NAMED_PRIM(app->rator, "unsafe-flquotient")) {
+      if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
+        return app->rand1;
+    } else if (IS_NAMED_PRIM(app->rator, "unsafe-flremainder")
+               || IS_NAMED_PRIM(app->rator, "unsafe-flmodulo")) {
+      if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
+        return scheme_make_double(0.0);
+    }
+  }
+
   register_flonum_argument_types(NULL, NULL, app, info);
 
   return check_unbox_rotation((Scheme_Object *)app, app->rator, 2, info);
@@ -3993,6 +4102,11 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
   v = scheme_optimize_expr(wcm->val, info, 0);
 
   b = scheme_optimize_expr(wcm->body, info, scheme_optimize_tail_context(context));
+
+  if (scheme_omittable_expr(k, 1, 20, 0, info)
+      && scheme_omittable_expr(v, 1, 20, 0, info)
+      && scheme_omittable_expr(b, -1, 20, 0, info))
+    return b;
 
   /* info->single_result is already set */
   info->preserves_marks = 0;
@@ -4337,6 +4451,27 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
       b2->fbranch = expr;
 
       return (Scheme_Object *)b2;
+    }
+  case scheme_with_cont_mark_type:
+    {
+      Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr, *wcm2;
+
+      wcm2 = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
+      wcm2->so.type = scheme_with_cont_mark_type;
+
+      expr = scheme_optimize_clone(dup_ok, wcm->key, info, delta, closure_depth);
+      if (!expr) return NULL;
+      wcm2->key = expr;
+
+      expr = scheme_optimize_clone(dup_ok, wcm->val, info, delta, closure_depth);
+      if (!expr) return NULL;
+      wcm2->val = expr;
+
+      expr = scheme_optimize_clone(dup_ok, wcm->body, info, delta, closure_depth);
+      if (!expr) return NULL;
+      wcm2->body = expr;
+
+      return (Scheme_Object *)wcm2;      
     }
   case scheme_compiled_unclosed_procedure_type:
     return scheme_clone_closure_compilation(dup_ok, expr, info, delta, closure_depth);
@@ -5053,6 +5188,7 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
   Scheme_Let_One *lo = (Scheme_Let_One *)o;
   Scheme_Object *body, *rhs, *vec;
   int pos, save_mnt, ip, et;
+  int unused = 0;
 
   scheme_sfs_start_sequence(info, 2, 1);
 
@@ -5093,25 +5229,30 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
     info->max_nontail = save_mnt;
 
     if (info->max_used[pos] <= ip) {
-      /* No one is using it, so either don't push the real value, or 
-         clear it if there's a later non-tail call.
+      /* No one is using it, so don't actually push the value at run time
+         (but keep the check that the result is single-valued).
          The optimizer normally would have converted away the binding, but
          it might not because (1) it was introduced late by inlining,
          or (2) the rhs expression doesn't always produce a single
          value. */
       if (scheme_omittable_expr(rhs, 1, -1, 1, NULL)) {
         rhs = scheme_false;
-      } else if (ip < info->max_calls[pos]) {
-        Scheme_Object *clr;
+      } else if ((ip < info->max_calls[pos])
+                 && SAME_TYPE(SCHEME_TYPE(rhs), scheme_toplevel_type)) {
+        /* Unusual case: we can't just drop the global-variable access,
+           because it might be undefined, but we don't need the value,
+           and we want to avoid an SFS clear in the interpreter loop.
+           So, bind #f and then access in the global in a `begin'. */
         Scheme_Sequence *s;
         s = malloc_sequence(2);
         s->so.type = scheme_sequence_type;
         s->count = 2;
-        clr = scheme_make_local(scheme_local_type, 0, SCHEME_LOCAL_CLEAR_ON_READ);
-        s->array[0] = clr;
+        s->array[0] = rhs;
         s->array[1] = body;
         body = (Scheme_Object *)s;
+        rhs = scheme_false;
       }
+      unused = 1;
     }
   }
 
@@ -5119,7 +5260,9 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
   lo->body = body;
 
   et = scheme_get_eval_type(lo->value);
-  SCHEME_LET_EVAL_TYPE(lo) = (et | (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM));
+  SCHEME_LET_EVAL_TYPE(lo) = (et 
+                              | (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) 
+                              | (unused ? LET_ONE_UNUSED : 0));
 
   return o;
 }
@@ -6502,7 +6645,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
             return scheme_extract_flfxnum(var);
           } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
                      || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type))
-	    return scheme_register_toplevel_in_prefix(var, env, rec, drec);
+	    return scheme_register_toplevel_in_prefix(var, env, rec, drec, 
+                                                      scheme_is_imported(var, env));
 	  else
 	    return var;
 	} else {
@@ -7205,7 +7349,7 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
     c = (Scheme_Object *)scheme_global_bucket(c, env->genv);
   }
 
-  return scheme_register_toplevel_in_prefix(c, env, rec, drec);
+  return scheme_register_toplevel_in_prefix(c, env, rec, drec, 0);
 }
 
 static Scheme_Object *
@@ -7930,40 +8074,37 @@ static MZ_MARK_STACK_TYPE clone_meta_cont_set_mark(Scheme_Meta_Continuation *mc,
   return 0;
 }
 
-static MZ_MARK_STACK_TYPE new_segment_set_mark(long segpos, long pos, Scheme_Object *key, Scheme_Object *val)
+void scheme_new_mark_segment(Scheme_Thread *p)
 {
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Cont_Mark *cm = NULL;
   int c = p->cont_mark_seg_count;
   Scheme_Cont_Mark **segs, *seg;
-  long findpos;
   
   /* Note: we perform allocations before changing p to avoid GC trouble,
      since MzScheme adjusts a thread's cont_mark_stack_segments on GC. */
   segs = MALLOC_N(Scheme_Cont_Mark *, c + 1);
   seg = scheme_malloc_allow_interior(sizeof(Scheme_Cont_Mark) * SCHEME_MARK_SEGMENT_SIZE);
   segs[c] = seg;
-  
+
   memcpy(segs, p->cont_mark_stack_segments, c * sizeof(Scheme_Cont_Mark *));
   
   p->cont_mark_seg_count++;
   p->cont_mark_stack_segments = segs;
-
-  seg = p->cont_mark_stack_segments[segpos];
-  cm = seg + pos;
-  findpos = MZ_CONT_MARK_STACK;
-  MZ_CONT_MARK_STACK++;
-
-  cm->key = key;
-  cm->val = val;
-  cm->pos = MZ_CONT_MARK_POS; /* always odd */
-  cm->cache = NULL;
-
-  return findpos;
 }
 
+#ifdef MZ_USE_FUTURES
+static void ts_scheme_new_mark_segment(Scheme_Thread *p) XFORM_SKIP_PROC
+{
+  if (scheme_use_rtcall)
+    scheme_rtcall_new_mark_segment(p);
+  else
+    scheme_new_mark_segment(p);
+}
+#else
+# define ts_scheme_new_mark_segment scheme_new_mark_segment 
+#endif
 
 MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
+/* This function can be called inside a future thread */
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Cont_Mark *cm = NULL;
@@ -8028,8 +8169,18 @@ MZ_MARK_STACK_TYPE scheme_set_cont_mark(Scheme_Object *key, Scheme_Object *val)
     pos = ((long)findpos) & SCHEME_MARK_SEGMENT_MASK;
 
     if (segpos >= p->cont_mark_seg_count) {
-      /* Need a new segment */
-      return new_segment_set_mark(segpos, pos, key, val);
+#ifdef MZ_USE_FUTURES
+      jit_future_storage[0] = key;
+      jit_future_storage[1] = val;
+#endif
+      ts_scheme_new_mark_segment(p);
+      p = scheme_current_thread;
+#ifdef MZ_USE_FUTURES
+      key = jit_future_storage[0];
+      val = jit_future_storage[1];
+      jit_future_storage[0] = NULL;
+      jit_future_storage[1] = NULL;
+#endif
     }
 
     seg = p->cont_mark_stack_segments[segpos];
@@ -9124,6 +9275,17 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       } while (SAME_TYPE(scheme_proc_struct_type, SCHEME_TYPE(obj)));
 
       goto apply_top;
+    } else if (type == scheme_proc_chaperone_type) {
+      if (SCHEME_VECTORP(((Scheme_Chaperone *)obj)->redirects)) {
+        /* Chaperone is for struct fields, not function arguments */
+        obj = ((Scheme_Chaperone *)obj)->prev;
+        goto apply_top;
+      } else {
+        /* Chaperone is for function arguments */
+        VACATE_TAIL_BUFFER_USE_RUNSTACK();
+        UPDATE_THREAD_RSPTR();
+        v = scheme_apply_chaperone(obj, num_rands, rands, NULL);
+      }
     } else if (type == scheme_closed_prim_type) {
       GC_CAN_IGNORE Scheme_Closed_Primitive_Proc *prim;
       
@@ -9674,6 +9836,10 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  PUSH_RUNSTACK(p, RUNSTACK, 1);
 	  RUNSTACK_CHANGED();
 
+          /* SFS pass may set LET_ONE_UNUSED, but not for the
+             variable cases; in the constant case, the constant
+             is #f, so it's ok to push it anyway. */
+
 	  switch (SCHEME_LET_EVAL_TYPE(lo) & 0x7) {
 	  case SCHEME_EVAL_CONSTANT:
 	    RUNSTACK[0] = lo->value;
@@ -9697,7 +9863,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	      GC_CAN_IGNORE Scheme_Object *val;
               SFS_CLEAR_RUNSTACK_ONE(RUNSTACK, 0);
 	      val = _scheme_eval_linked_expr_wp(lo->value, p);
-	      RUNSTACK[0] = val;
+              if (!(SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_UNUSED))
+                RUNSTACK[0] = val;
 	    }
 	    break;
 	  }
@@ -9796,6 +9963,11 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 #ifdef p
 # undef p
 #endif
+}
+
+Scheme_Object **scheme_current_argument_stack()
+{
+  return MZ_RUNSTACK;
 }
 
 /*========================================================================*/
@@ -12176,7 +12348,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
         scheme_ill_formed_code(port);
 #endif
       
-      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) {
+      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_UNUSED) {
+        stack[delta] = VALID_NOT;
+      } else if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) {
         stack[delta] = VALID_FLONUM;
         /* FIXME: need to check that lo->value produces a flonum */
       } else

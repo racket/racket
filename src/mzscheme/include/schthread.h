@@ -30,7 +30,7 @@ extern "C" {
 # if _MSC_VER
 #  define THREAD_LOCAL /* empty */
 #  define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-# elif defined(OS_X) || (defined(linux) && defined(MZ_USES_SHARED_LIB))
+# elif defined(OS_X) || defined(GC2_PLACES_TESTING)
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
 #   define INLINE_GETSPECIFIC_ASSEMBLY_CODE
@@ -192,7 +192,6 @@ typedef struct Thread_Local_Variables {
   void *stack_copy_cache_[STACK_COPY_CACHE_SIZE];
   long stack_copy_size_cache_[STACK_COPY_CACHE_SIZE];
   int scc_pos_;
-  struct Scheme_Bucket_Table *prefab_table_;
   struct Scheme_Object *nominal_ipair_cache_;
   struct Scheme_Object *mark_id_;
   struct Scheme_Object *current_rib_timestamp_;
@@ -303,11 +302,11 @@ static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
   Thread_Local_Variables *x = NULL;
 #  if defined(OS_X)
 #   if defined(__x86_64__)
-  asm volatile("movq %%gs:0x8E0, %0" : "=r"(x));
+  asm volatile("movq %%gs:0x60(,%1,8), %0" : "=r"(x) : "r"(scheme_thread_local_key));
 #   else
-  asm volatile("movl %%gs:0x488, %0" : "=r"(x));
+  asm volatile("movl %%gs:0x48(,%1,4), %0" : "=r"(x) : "r"(scheme_thread_local_key));
 #   endif
-#  elif defined(linux) && defined(MZ_USES_SHARED_LIB)
+#  elif defined(linux)
 #   if defined(__x86_64__)
   asm volatile( "mov %1, %%eax;" 
   "shl $0x4, %%rax;"
@@ -476,7 +475,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define stack_copy_cache XOA (scheme_get_thread_local_variables()->stack_copy_cache_)
 #define stack_copy_size_cache XOA (scheme_get_thread_local_variables()->stack_copy_size_cache_)
 #define scc_pos XOA (scheme_get_thread_local_variables()->scc_pos_)
-#define prefab_table XOA (scheme_get_thread_local_variables()->prefab_table_)
 #define nominal_ipair_cache XOA (scheme_get_thread_local_variables()->nominal_ipair_cache_)
 #define mark_id XOA (scheme_get_thread_local_variables()->mark_id_)
 #define current_rib_timestamp XOA (scheme_get_thread_local_variables()->current_rib_timestamp_)

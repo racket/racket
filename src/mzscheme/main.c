@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2000 Matthew Flatt
 
@@ -23,7 +23,7 @@
   All rights reserved.
 */
 
-/* This file defines MzScheme's main(), which is a jumble of
+/* This file defines Racket's main(), which is a jumble of
    platform-specific initialization. The included file "cmdline.inc"
    implements command-line parsing. (MrEd also uses "cmdline.inc".)
 
@@ -136,22 +136,22 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 #endif
 
 #ifdef EXPAND_FILENAME_TILDE
-# define INIT_FILENAME "~/.mzschemerc"
+# define INIT_FILENAME "~/.racketrc"
 #else
 # ifdef DOS_FILE_SYSTEM
-#  define INIT_FILENAME "%%HOMEDRIVE%%\\%%HOMEPATH%%\\mzschemerc.ss"
+#  define INIT_FILENAME "%%HOMEDRIVE%%\\%%HOMEPATH%%\\racketrc.ss"
 # else
-#  define INIT_FILENAME "PREFERENCES:mzschemerc.ss"
+#  define INIT_FILENAME "PREFERENCES:racketrc.ss"
 # endif
 #endif
 #define GET_INIT_FILENAME get_init_filename
 #define PRINTF printf
-#define PROGRAM "MzScheme"
-#define PROGRAM_LC "mzscheme"
+#define PROGRAM "Racket"
+#define PROGRAM_LC "racket"
 #define INITIAL_BIN_TYPE "zi"
 #define BANNER scheme_banner()
-#define MZSCHEME_CMD_LINE
-#define INITIAL_NAMESPACE_MODULE "scheme/init"
+#define RACKET_CMD_LINE
+#define INITIAL_NAMESPACE_MODULE "racket/init"
 
 /*========================================================================*/
 /*                        command-line parsing                            */
@@ -234,7 +234,7 @@ int MAIN(int argc, MAIN_char **MAIN_argv)
 # ifndef MZ_PRECISE_GC
   load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
 # endif
-  load_delayed_dll(NULL, "libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
 # ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
   scheme_register_tls_space(&tls_space, _tls_index);

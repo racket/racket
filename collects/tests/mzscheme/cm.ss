@@ -102,4 +102,24 @@
 
 ;; ----------------------------------------
 
+;; test `file-date-in-paths'
+(test (file-or-directory-modify-seconds (build-path (collection-path "file") 
+                                                    "compiled"
+                                                    "gif_ss.zo"))
+      file-date-in-collection
+      (build-path (collection-path "file") "gif.ss"))
+;; gl-info.ss doesn't have a .ss source:
+(test (file-or-directory-modify-seconds (build-path (collection-path "sgl") 
+                                                    "compiled"
+                                                    "gl-info_ss.zo"))
+      file-date-in-collection
+      (build-path (collection-path "sgl") "gl-info.ss"))
+;; setup/main doesn't have a .zo:
+(test (file-or-directory-modify-seconds (build-path (collection-path "setup") 
+                                                    "main.ss"))
+      file-date-in-collection
+      (build-path (collection-path "setup") "main.ss"))
+
+;; ----------------------------------------
+
 (report-errs)

@@ -6,11 +6,11 @@
 
 (define plain-mz-is-cgc?
   (delay (let* ([dir (find-console-bin-dir)]
-                [exe (cond [(eq? 'windows (system-type)) "MzScheme.exe"]
+                [exe (cond [(eq? 'windows (system-type)) "Racket.exe"]
                            [(equal? #".dll" (system-type 'so-suffix))
                             ;; in cygwin so-suffix is ".dll"
-                            "mzscheme.exe"]
-                           [else "mzscheme"])]
+                            "racket.exe"]
+                           [else "racket"])]
                 [f (build-path dir exe)])
            (and (file-exists? f)
                 (with-input-from-file f

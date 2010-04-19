@@ -640,7 +640,8 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
 {
   if ((b->val || set_undef) 
       && ((b->so.type != scheme_variable_type)
-	  || !(((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_IMMUTATED)))
+	  || !(((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_IMMUTATED))
+      && (val || !(((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_LINKED)))
     b->val = val;
   else {
     if (((Scheme_Bucket_With_Home *)b)->home->module) {
@@ -658,17 +659,21 @@ void scheme_set_global_bucket(char *who, Scheme_Bucket *b, Scheme_Object *val,
 		       msg,
 		       who,
 		       (b->val
-			? (is_set
-                           ? "modify a constant"
-                           : "re-define a constant")
-			: "set identifier before its definition"),
+			? (!val
+                           ? "undefine variable that is used by other modules"
+                           : (is_set
+                              ? "modify a constant"
+                              : "re-define a constant"))
+			: "set variable before its definition"),
 		       (Scheme_Object *)b->key,
-		       ((Scheme_Bucket_With_Home *)b)->home->module->modname);
+		       ((Scheme_Bucket_With_Home *)b)->home->module->modsrc);
     } else {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, b->key,
-		       "%s: cannot %s identifier: %S",
+		       "%s: cannot %s variable: %S",
 		       who,
-		       b->val ? "change constant" : "set undefined",
+                       (val
+                        ? (b->val ? "change constant" : "set undefined")
+                        : "undefine"),
 		       (Scheme_Object *)b->key);
     }
   }
@@ -1124,7 +1129,7 @@ defn_targets_syntax (Scheme_Object *var, Scheme_Comp_Env *env, Scheme_Compile_In
 					   -1, env->genv->mod_phase);
     }
     /* Get indirection through the prefix: */
-    bucket = scheme_register_toplevel_in_prefix(bucket, env, rec, drec);
+    bucket = scheme_register_toplevel_in_prefix(bucket, env, rec, drec, 0);
 
     pr = cons(bucket, scheme_null);
     if (last)
@@ -1729,7 +1734,7 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 
   if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
       || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
-    var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
+    var = scheme_register_toplevel_in_prefix(var, env, rec, drec, 0);
     if (env->genv->module)
       SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
   }
@@ -1987,23 +1992,10 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
       if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
           || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
         int imported = 0;
-        /* It must be in the module being compiled/expanded. */
-        if (env->genv->module) {
-          if (SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
-            if (!SAME_OBJ(((Module_Variable *)var)->modidx, env->genv->module->self_modidx))
-              imported = 1;
-          } else
-            imported = 1;
-        } else {
-          if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
-            if (!SAME_OBJ(((Scheme_Bucket_With_Home *)var)->home, env->genv))
-              imported = 1;
-          } else
-            imported = 1;
-        }
+        imported = scheme_is_imported(var, env);
 
         if (rec[drec].comp) {
-          var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
+          var = scheme_register_toplevel_in_prefix(var, env, rec, drec, 0);
           if (!imported && env->genv->module)
             SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
         }
@@ -5858,7 +5850,7 @@ Scheme_Object *scheme_make_environment_dummy(Scheme_Comp_Env *env)
   /* Get a prefixed-based accessor for a dummy top-level bucket. It's
      used to "link" to the right environment at run time. The #f as
      a toplevel is handled in the prefix linker specially. */
-  return scheme_register_toplevel_in_prefix(scheme_false, env, NULL, 0);
+  return scheme_register_toplevel_in_prefix(scheme_false, env, NULL, 0, 0);
 }
 
 Scheme_Env *scheme_environment_from_dummy(Scheme_Object *dummy)

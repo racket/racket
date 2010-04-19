@@ -95,10 +95,10 @@
 (define string-tokenize
   (case-lambda
     ((s token-set start end)
-     (srfi13:string-tokenize s token-set start end))
+     (list->mlist (srfi13:string-tokenize s token-set start end)))
     ((s token-set start)
-     (srfi13:string-tokenize s token-set start))
+     (list->mlist (srfi13:string-tokenize s token-set start)))
     ((s token-set)
-     (srfi13:string-tokenize s token-set))
+     (list->mlist (srfi13:string-tokenize s token-set)))
     ((s)
-     (srfi13:string-tokenize s))))
+     (list->mlist (srfi13:string-tokenize s)))))

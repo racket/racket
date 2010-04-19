@@ -15,9 +15,14 @@
 
 #ifndef GC2_JUST_MACROS
 
+struct NewGC;
+
 typedef int (*Size_Proc)(void *obj);
+typedef int (*Size2_Proc)(void *obj, struct NewGC *);
 typedef int (*Mark_Proc)(void *obj);
+typedef int (*Mark2_Proc)(void *obj, struct NewGC *);
 typedef int (*Fixup_Proc)(void *obj);
+typedef int (*Fixup2_Proc)(void *obj, struct NewGC *);
 typedef void (*GC_collect_start_callback_Proc)(void);
 typedef void (*GC_collect_end_callback_Proc)(void);
 typedef void (*GC_collect_inform_callback_Proc)(int major_gc, long pre_used, long post_used);
@@ -288,6 +293,8 @@ GC2_EXTERN void GC_set_variable_stack(void **p);
 
 GC2_EXTERN void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				       int is_constant_size, int is_atomic);
+GC2_EXTERN void GC_register_traversers2(short tag, Size2_Proc size, Mark2_Proc mark, Fixup2_Proc fixup,
+				        int is_constant_size, int is_atomic);
 /*
    Registers a traversal procedure for a tag. Obviously, a traversal
    procedure must be installed for each tag before a collection
@@ -336,6 +343,8 @@ GC2_EXTERN void *GC_fixup_self(void *p);
 /* INTERNAL for the current implemenation (used by macros): */
 GC2_EXTERN void GC_mark(const void *p);
 GC2_EXTERN void GC_fixup(void *p);
+GC2_EXTERN void GC_mark2(const void *p, struct NewGC *gc);
+GC2_EXTERN void GC_fixup2(void *p, struct NewGC *gc);
 /*
    Used in the expansion of gcMARK and gcFIXUP. 
  
@@ -350,6 +359,16 @@ GC2_EXTERN void GC_fixup_variable_stack(void **var_stack,
 					long delta,
 					void *limit,
                                         void *stack_mem);
+GC2_EXTERN void GC_mark2_variable_stack(void **var_stack,
+                                        long delta,
+                                        void *limit,
+                                        void *stack_mem,
+                                        struct NewGC *gc);
+GC2_EXTERN void GC_fixup2_variable_stack(void **var_stack,
+                                         long delta,
+                                         void *limit,
+                                         void *stack_mem,
+                                         struct NewGC *gc);
 /*
    Can be called by a mark or fixup traversal proc to traverse and
    update a chunk of (atomically-allocated) memory containing an image
@@ -443,11 +462,17 @@ GC2_EXTERN void GC_set_put_external_event_fd(void *fd);
 # define gcLOG_WORD_SIZE 2
 #endif
 #define gcMARK(x) GC_mark(x)
+#define gcMARK2(x, gc) GC_mark2(x, gc)
 #define gcMARK_TYPED(t, x) gcMARK(x)
+#define gcMARK2_TYPED(t, x, gc) gcMARK2(x, gc)
 #define gcMARK_TYPED_NOW(t, x) gcMARK(x)
+#define gcMARK2_TYPED_NOW(t, x, gc) gcMARK(x, gc)
 #define gcFIXUP_TYPED_NOW(t, x) GC_fixup(&(x))
+#define gcFIXUP2_TYPED_NOW(t, x, gc) GC_fixup2(&(x), gc)
 #define gcFIXUP_TYPED(t, x) gcFIXUP_TYPED_NOW(void*, x)
+#define gcFIXUP2_TYPED(t, x, gc) gcFIXUP2_TYPED_NOW(void*, x, gc)
 #define gcFIXUP(x) gcFIXUP_TYPED(void*, x)
+#define gcFIXUP2(x, gc) gcFIXUP2_TYPED(void*, x, gc)
 #define gcBYTES_TO_WORDS(x) ((x + (1 << gcLOG_WORD_SIZE) - 1) >> gcLOG_WORD_SIZE)
 #define gcWORDS_TO_BYTES(x) (x << gcLOG_WORD_SIZE)
 

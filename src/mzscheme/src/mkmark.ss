@@ -48,28 +48,28 @@
                        (read-lines re:size))
                      null)]
 	  [size (read-lines re:close)])
-      (printf "static int ~a_SIZE(void *p) {~n" name)
+      (printf "static int ~a_SIZE(void *p, struct NewGC *gc) {~n" name)
       (print-lines prefix)
       (printf "  return~n")
       (print-lines size)
       (printf "}~n~n")
 
-      (printf "static int ~a_MARK(void *p) {~n" name)
+      (printf "static int ~a_MARK(void *p, struct NewGC *gc) {~n" name)
       (print-lines prefix)
       (print-lines (map (lambda (s)
 			  (regexp-replace* 
 			   "FIXUP_ONLY[(]([^;]*;)[)]" 
 			   (regexp-replace* 
-			    "FIXUP_TYPED_NOW[(][^,]*," 
+			    "FIXUP2_TYPED_NOW[(][^,]*," 
 			    s 
-			    "MARK(")
+			    "MARK2(")
 			   ""))
 			mark))
       (printf "  return~n")
       (print-lines size)
       (printf "}~n~n")
 
-      (printf "static int ~a_FIXUP(void *p) {~n" name)
+      (printf "static int ~a_FIXUP(void *p, struct NewGC *gc) {~n" name)
       (print-lines prefix)
       (print-lines (map (lambda (s)
 			  (regexp-replace* 

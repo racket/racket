@@ -7,6 +7,7 @@
          "cache.ss"
          "dirstruct.ss"
          "status.ss"
+         "metadata.ss"
          "path-utils.ss"
          "rendering.ss")
 (provide (all-from-out "rendering.ss"))
@@ -107,6 +108,7 @@
  [responsible-ht-id->str (hash/c symbol? string?)]
  [responsible-ht-difference (responsible-ht/c responsible-ht/c . -> . responsible-ht/c)])  
   
+(define ERROR-LIMIT 50)
 (define (notify cur-rev 
                 start end
                 duration
@@ -174,7 +176,8 @@
                                        (if (empty? paths)
                                            empty
                                            (list (format "\t~a" id)
-                                                 (for/list ([f (in-list paths)])
+                                                 (for/list ([f (in-list paths)]
+                                                            [i (in-range ERROR-LIMIT)])
                                                    (format "\t\t~a" (path->url f)))
                                                  ""))))
                                    "")
@@ -185,7 +188,8 @@
                                        (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
                                                   #:when (not (symbol=? id 'changes)))
                                          (list (format "\t~a:" id)
-                                               (for/list ([f (in-list files)])
+                                               (for/list ([f (in-list files)]
+                                                          [i (in-range ERROR-LIMIT)])
                                                  (format "\t\t~a" (path->url f)))
                                                ""))
                                       ""))))))
@@ -260,7 +264,7 @@
                     (log-different? output-log (status-output-log (read-cache prev-log-pth))))
                   #f))
             (define responsible 
-              (or (svn-property-value/root (trunk-path log-pth) plt:responsible)
+              (or (path-responsible (trunk-path log-pth))
                   (and (regexp-match #rx"/planet/" (path->string* log-pth))
                        "jay")
                   ; XXX maybe mflatt, eli, or tewk
@@ -314,7 +318,7 @@
                   (and committer? 
                        (with-handlers ([exn:fail? (lambda (x) #f)])
                          (svn-rev-log-author (read-cache (revision-commit-msg (current-rev))))))
-                  (or (svn-property-value/root (trunk-path dir-pth) plt:responsible)
+                  (or (path-responsible (trunk-path dir-pth))
                       "unknown"))
                  
                  empty)

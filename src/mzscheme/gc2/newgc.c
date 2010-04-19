@@ -470,6 +470,9 @@ int GC_is_allocated(void *p)
   return !!pagemap_find_page(gc->page_maps, p);
 }
 
+#ifdef GC2_PLACES_TESTING
+#include "testing.c"
+#endif
 
 /*****************************************************************************/
 /* Allocation                                                                */
@@ -1432,21 +1435,37 @@ static inline void *get_stack_base(NewGC *gc) {
 
 #include "stack_comp.c"
 
-#define GC_X_variable_stack GC_mark_variable_stack
-#define gcX(a) gcMARK(*a)
+#define GC_X_variable_stack GC_mark2_variable_stack
+#define gcX2(a, gc) gcMARK2(*a, gc)
 #define X_source(stk, p) set_backtrace_source((stk ? stk : p), BT_STACK)
 #include "var_stack.c"
 #undef GC_X_variable_stack
-#undef gcX
+#undef gcX2
 #undef X_source
 
-#define GC_X_variable_stack GC_fixup_variable_stack
-#define gcX(a) gcFIXUP(*a)
+#define GC_X_variable_stack GC_fixup2_variable_stack
+#define gcX2(a, gc) gcFIXUP2(*a, gc)
 #define X_source(stk, p) /* */
 #include "var_stack.c"
 #undef GC_X_variable_stack
-#undef gcX
+#undef gcX2
 #undef X_source
+
+void GC_mark_variable_stack(void **var_stack,
+                            long delta,
+                            void *limit,
+                            void *stack_mem)
+{
+  GC_mark2_variable_stack(var_stack, delta, limit, stack_mem, GC_get_GC());
+}
+
+void GC_fixup_variable_stack(void **var_stack,
+                             long delta,
+                             void *limit,
+                             void *stack_mem)
+{
+  GC_fixup2_variable_stack(var_stack, delta, limit, stack_mem, GC_get_GC());
+}
 
 /*****************************************************************************/
 /* Routines for root sets                                                    */
@@ -1499,16 +1518,16 @@ inline static void mark_finalizer_structs(NewGC *gc)
 
   for(fnl = GC_resolve(gc->finalizers); fnl; fnl = GC_resolve(fnl->next)) { 
     set_backtrace_source(fnl, BT_FINALIZER);
-    gcMARK(fnl->data); 
+    gcMARK2(fnl->data, gc); 
     set_backtrace_source(&gc->finalizers, BT_ROOT);
-    gcMARK(fnl);
+    gcMARK2(fnl, gc);
   }
   for(fnl = gc->run_queue; fnl; fnl = fnl->next) {
     set_backtrace_source(fnl, BT_FINALIZER);
-    gcMARK(fnl->data);
-    gcMARK(fnl->p);
+    gcMARK2(fnl->data, gc);
+    gcMARK2(fnl->p, gc);
     set_backtrace_source(&gc->run_queue, BT_ROOT);
-    gcMARK(fnl);
+    gcMARK2(fnl, gc);
   }
 }  
 
@@ -1517,17 +1536,17 @@ inline static void repair_finalizer_structs(NewGC *gc)
   Fnl *fnl;
 
   /* repair the base parts of the list */
-  gcFIXUP(gc->finalizers); gcFIXUP(gc->run_queue);
+  gcFIXUP2(gc->finalizers, gc); gcFIXUP2(gc->run_queue, gc);
   /* then repair the stuff inside them */
   for(fnl = gc->finalizers; fnl; fnl = fnl->next) {
-    gcFIXUP(fnl->data);
-    gcFIXUP(fnl->p);
-    gcFIXUP(fnl->next);
+    gcFIXUP2(fnl->data, gc);
+    gcFIXUP2(fnl->p, gc);
+    gcFIXUP2(fnl->next, gc);
   }
   for(fnl = gc->run_queue; fnl; fnl = fnl->next) {
-    gcFIXUP(fnl->data);
-    gcFIXUP(fnl->p);
-    gcFIXUP(fnl->next);
+    gcFIXUP2(fnl->data, gc);
+    gcFIXUP2(fnl->p, gc);
+    gcFIXUP2(fnl->next, gc);
   }
 }
 
@@ -1545,7 +1564,7 @@ inline static void check_finalizers(NewGC *gc, int level)
                "CFNL: Level %i finalizer %p on %p queued for finalization.\n",
                work->eager_level, work, work->p));
       set_backtrace_source(work, BT_FINALIZER);
-      gcMARK(work->p);
+      gcMARK2(work->p, gc);
       if(prev) prev->next = next;
       if(!prev) gc->finalizers = next;
       if(gc->last_in_queue) gc->last_in_queue = gc->last_in_queue->next = work;
@@ -1567,7 +1586,7 @@ inline static void check_finalizers(NewGC *gc, int level)
 inline static void do_ordered_level3(NewGC *gc)
 {
   struct finalizer *temp;
-  Mark_Proc *mark_table = gc->mark_table;
+  Mark2_Proc *mark_table = gc->mark_table;
 
   for(temp = GC_resolve(gc->finalizers); temp; temp = GC_resolve(temp->next))
     if(!marked(gc, temp->p)) {
@@ -1575,7 +1594,7 @@ inline static void do_ordered_level3(NewGC *gc)
                "LVL3: %p is not marked. Marking payload (%p)\n", 
                temp, temp->p));
       set_backtrace_source(temp, BT_FINALIZER);
-      if(temp->tagged) mark_table[*(unsigned short*)temp->p](temp->p);
+      if(temp->tagged) mark_table[*(unsigned short*)temp->p](temp->p, gc);
       if(!temp->tagged) GC_mark_xtagged(temp->p);
     }
 }
@@ -1598,7 +1617,7 @@ inline static void mark_weak_finalizer_structs(NewGC *gc)
   GCDEBUG((DEBUGOUTF, "MARKING WEAK FINALIZERS.\n"));
   for(work = gc->weak_finalizers; work; work = work->next) {
     set_backtrace_source(&gc->weak_finalizers, BT_ROOT);
-    gcMARK(work);
+    gcMARK2(work, gc);
   }
 }
 
@@ -1607,16 +1626,16 @@ inline static void repair_weak_finalizer_structs(NewGC *gc)
   Weak_Finalizer *work;
   Weak_Finalizer *prev;
 
-  gcFIXUP(gc->weak_finalizers);
+  gcFIXUP2(gc->weak_finalizers, gc);
   work = gc->weak_finalizers; prev = NULL;
   while(work) {
-    gcFIXUP(work->next);
+    gcFIXUP2(work->next, gc);
     if(!marked(gc, work->p)) {
       if(prev) prev->next = work->next;
       if(!prev) gc->weak_finalizers = work->next;
       work = GC_resolve(work->next);
     } else {
-      gcFIXUP(work->p);
+      gcFIXUP2(work->p, gc);
       prev = work;
       work = work->next;
     }
@@ -1640,7 +1659,7 @@ inline static void reset_weak_finalizers(NewGC *gc)
   for(wfnl = GC_resolve(gc->weak_finalizers); wfnl; wfnl = GC_resolve(wfnl->next)) {
     if(marked(gc, wfnl->p)) {
       set_backtrace_source(wfnl, BT_WEAKLINK);
-      gcMARK(wfnl->saved); 
+      gcMARK2(wfnl->saved, gc); 
     }
     *(void**)(NUM(GC_resolve(wfnl->p)) + wfnl->offset) = wfnl->saved;
     wfnl->saved = NULL;
@@ -1754,7 +1773,7 @@ inline static void reset_pointer_stack(NewGC *gc)
   gc->mark_stack->top = MARK_STACK_START(gc->mark_stack);
 }
 
-static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table, void *p);
+static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, void *p);
 
 /*****************************************************************************/
 /* MEMORY ACCOUNTING                                                         */
@@ -1996,8 +2015,8 @@ static void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
 #ifdef MZ_USE_PLACES
     NewGCMasterInfo_initialize();
 #endif
-    newgc->mark_table  = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
-    newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+    newgc->mark_table  = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark2_Proc)); 
+    newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup2_Proc)); 
 #ifdef NEWGC_BTC_ACCOUNT
     BTC_initialize_mark_table(newgc);
 #endif
@@ -2053,9 +2072,9 @@ static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mu
   resize_gen0(gc, GEN0_INITIAL_SIZE);
 
   if (!parentgc) {
-    GC_register_traversers(gc->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
-    GC_register_traversers(gc->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
-    GC_register_traversers(gc->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
+    GC_register_traversers2(gc->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
+    GC_register_traversers2(gc->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
+    GC_register_traversers2(gc->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
   }
   initialize_signal_handler(gc);
   GC_add_roots(&gc->park, (char *)&gc->park + sizeof(gc->park) + 1);
@@ -2163,8 +2182,8 @@ void GC_gcollect(void)
 }
 
 static inline int atomic_mark(void *p) { return 0; }
-void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
-                            Fixup_Proc fixup, int constant_Size, int atomic)
+void GC_register_traversers2(short tag, Size2_Proc size, Mark2_Proc mark,
+                             Fixup2_Proc fixup, int constant_Size, int atomic)
 {
   NewGC *gc = GC_get_GC();
 
@@ -2179,8 +2198,15 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
   atomic = 0;
 #endif
 
-  gc->mark_table[mark_tag]  = atomic ? (Mark_Proc)PAGE_ATOMIC : mark;
+  gc->mark_table[mark_tag]  = atomic ? (Mark2_Proc)PAGE_ATOMIC : mark;
   gc->fixup_table[tag]      = fixup;
+}
+
+void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
+                            Fixup_Proc fixup, int constant_Size, int atomic)
+{
+  GC_register_traversers2(tag, (Size2_Proc)size, (Mark2_Proc)mark,
+                          (Fixup2_Proc)fixup, constant_Size, atomic);
 }
 
 long GC_get_memory_use(void *o) 
@@ -2203,18 +2229,16 @@ long GC_get_memory_use(void *o)
    we use internally, and it doesn't do nearly as much. */
 
 /* This is the first mark routine. It's a bit complicated. */
-void GC_mark(const void *const_p)
+void GC_mark2(const void *const_p, struct NewGC *gc)
 {
   mpage *page;
   void *p = (void*)const_p;
-  NewGC *gc;
 
   if(!p || (NUM(p) & 0x1)) {
     GCDEBUG((DEBUGOUTF, "Not marking %p (bad ptr)\n", p));
     return;
   }
 
-  gc = GC_get_GC();
   if(!(page = pagemap_find_page(gc->page_maps, p))) {
 #ifdef MZ_USE_PLACES
     if (!MASTERGC || !MASTERGC->major_places_gc || !(page = pagemap_find_page(MASTERGC->page_maps, p)))
@@ -2405,9 +2429,14 @@ void GC_mark(const void *const_p)
   }
 }
 
+void GC_mark(const void *const_p)
+{
+  GC_mark2(const_p, GC_get_GC());
+}
+
 /* this is the second mark routine. It's not quite as complicated. */
 /* this is what actually does mark propagation */
-static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table, void *pp)
+static inline void propagate_marks_worker(NewGC *gc, Mark2_Proc *mark_table, void *pp)
 {
   void **start, **end;
   int alloc_type;
@@ -2418,7 +2447,7 @@ static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table
   if (IS_BIG_PAGE_PTR(pp)) {
     mpage *page;
     p = REMOVE_BIG_PAGE_PTR_TAG(pp);
-    page = pagemap_find_page(pagemap, p);
+    page = pagemap_find_page(gc->page_maps, p);
 #ifdef MZ_USE_PLACES
     if (!page && MASTERGC && MASTERGC->major_places_gc) {
       page = pagemap_find_page(MASTERGC->page_maps, p);
@@ -2442,12 +2471,12 @@ static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table
     case PAGE_TAGGED: 
       {
         const unsigned short tag = *(unsigned short*)start;
-        Mark_Proc markproc;
+        Mark2_Proc markproc;
         ASSERT_TAG(tag);
         markproc = mark_table[tag];
         if(((unsigned long) markproc) >= PAGE_TYPES) {
           GC_ASSERT(markproc);
-          markproc(start);
+          markproc(start, gc);
         }
         break;
       }
@@ -2455,7 +2484,7 @@ static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table
       break;
     case PAGE_ARRAY: 
       {
-        while(start < end) gcMARK(*start++); break;
+        while(start < end) gcMARK2(*start++, gc); break;
       }
     case PAGE_TARRAY: 
       {
@@ -2464,7 +2493,7 @@ static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table
         end -= INSET_WORDS;
         while(start < end) {
           GC_ASSERT(mark_table[tag]);
-          start += mark_table[tag](start);
+          start += mark_table[tag](start, gc);
         }
         break;
       }
@@ -2476,12 +2505,11 @@ static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table
 static void propagate_marks(NewGC *gc) 
 {
   void *p;
-  PageMap pagemap = gc->page_maps;
-  Mark_Proc *mark_table = gc->mark_table;
+  Mark2_Proc *mark_table = gc->mark_table;
 
   while(pop_ptr(gc, &p)) {
     GCDEBUG((DEBUGOUTF, "Popped pointer %p\n", p));
-    propagate_marks_worker(pagemap, mark_table, p);
+    propagate_marks_worker(gc, mark_table, p);
   }
 }
 
@@ -2506,16 +2534,14 @@ void *GC_fixup_self(void *p)
   return p;
 }
 
-void GC_fixup(void *pp)
+void GC_fixup2(void *pp, struct NewGC *gc)
 {
-  NewGC *gc;
   mpage *page;
   void *p = *(void**)pp;
 
   if(!p || (NUM(p) & 0x1))
     return;
 
-  gc = GC_get_GC();
   if((page = pagemap_find_page(gc->page_maps, p))) {
     objhead *info;
 
@@ -2525,6 +2551,11 @@ void GC_fixup(void *pp)
       *(void**)pp = *(void**)p;
     else GCDEBUG((DEBUGOUTF, "Not repairing %p from %p (not moved)\n",p,pp));
   } else GCDEBUG((DEBUGOUTF, "Not repairing %p from %p (no page)\n", p, pp));
+}
+
+void GC_fixup(void *pp)
+{
+  GC_fixup2(pp, GC_get_GC());
 }
 
 /*****************************************************************************/
@@ -3075,7 +3106,7 @@ static void repair_heap(NewGC *gc)
 {
   mpage *page;
   int i;
-  Fixup_Proc *fixup_table = gc->fixup_table;
+  Fixup2_Proc *fixup_table = gc->fixup_table;
 #ifdef MZ_USE_PLACES
   int master_has_switched = postmaster_and_master_gc(gc);
 #endif
@@ -3105,11 +3136,11 @@ static void repair_heap(NewGC *gc)
           page->size_class = 2; /* remove the mark */
           switch(page->page_type) {
           case PAGE_TAGGED: 
-            fixup_table[*(unsigned short*)start](start); 
+            fixup_table[*(unsigned short*)start](start, gc); 
             break;
           case PAGE_ATOMIC: break;
           case PAGE_ARRAY: 
-            while(start < end) gcFIXUP(*(start++)); 
+            while(start < end) gcFIXUP2(*(start++), gc); 
             break;
           case PAGE_XTAGGED: 
             GC_fixup_xtagged(start); 
@@ -3118,7 +3149,7 @@ static void repair_heap(NewGC *gc)
             unsigned short tag = *(unsigned short *)start;
             ASSERT_TAG(tag);
             end -= INSET_WORDS;
-            while(start < end) start += fixup_table[tag](start);
+            while(start < end) start += fixup_table[tag](start, gc);
             break;
           }
           }
@@ -3141,7 +3172,7 @@ static void repair_heap(NewGC *gc)
                   unsigned short tag = *(unsigned short *)obj_start;
                   ASSERT_TAG(tag);
                   info->mark = 0;
-                  fixup_table[tag](obj_start);
+                  fixup_table[tag](obj_start, gc);
                 } else {
                   info->dead = 1;
                 }
@@ -3164,7 +3195,7 @@ static void repair_heap(NewGC *gc)
                 if(info->mark) {
                   void **tempend = PPTR(info) + info->size;
                   start = OBJHEAD_TO_OBJPTR(start);
-                  while(start < tempend) gcFIXUP(*start++);
+                  while(start < tempend) gcFIXUP2(*start++, gc);
                   info->mark = 0;
                 } else { 
                   info->dead = 1;
@@ -3183,7 +3214,7 @@ static void repair_heap(NewGC *gc)
                   tag = *(unsigned short*)start;
                   ASSERT_TAG(tag);
                   while(start < tempend)
-                    start += fixup_table[tag](start);
+                    start += fixup_table[tag](start, gc);
                   info->mark = 0;
                   start = PPTR(info) + size;
                 } else {
@@ -3226,7 +3257,7 @@ static void repair_heap(NewGC *gc)
               {
                 void **tempend = PPTR(info) + info->size;
                 start = OBJHEAD_TO_OBJPTR(start);
-                while(start < tempend) gcFIXUP(*start++);
+                while(start < tempend) gcFIXUP2(*start++, gc);
               }
               break;
             case PAGE_TAGGED:
@@ -3234,7 +3265,7 @@ static void repair_heap(NewGC *gc)
                 void *obj_start = OBJHEAD_TO_OBJPTR(start);
                 unsigned short tag = *(unsigned short *)obj_start;
                 ASSERT_TAG(tag);
-                fixup_table[tag](obj_start);
+                fixup_table[tag](obj_start, gc);
                 start += info->size;
               }
               break;
@@ -3763,7 +3794,7 @@ static void dump_stack_pos(void *a)
 }
 
 # define GC_X_variable_stack GC_do_dump_variable_stack
-# define gcX(a) dump_stack_pos(a)
+# define gcX2(a, gc) dump_stack_pos(a)
 # define X_source(stk, p) /* */
 # include "var_stack.c"
 # undef GC_X_variable_stack

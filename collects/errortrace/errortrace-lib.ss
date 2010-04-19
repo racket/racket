@@ -8,6 +8,7 @@
          scheme/contract
          scheme/unit
          scheme/runtime-path
+         (for-template scheme/base)
          (for-syntax scheme/base))
 
 (define oprintf
@@ -43,15 +44,17 @@
 (define (add-test-coverage-init-code stx)
   (syntax-case stx (#%plain-module-begin)
     [(mod name init-import (#%plain-module-begin b1 b2 body ...))
-     #`(#,(namespace-module-identifier) name init-import
-                                        #,(syntax-recertify
-                                           #`(#%plain-module-begin
-                                              b1 b2 ;; the two requires that were introduced earlier
-                                              (#%plain-app init-test-coverage '#,(remove-duplicates test-coverage-state))
-                                              body ...)
-                                           (list-ref (syntax->list stx) 3)
-                                           orig-inspector
-                                           #f))]))
+     (copy-props
+      stx
+      #`(#,(namespace-module-identifier) name init-import
+         #,(syntax-recertify
+            #`(#%plain-module-begin
+               b1 b2 ;; the two requires that were introduced earlier
+               (#%plain-app init-test-coverage '#,(remove-duplicates test-coverage-state))
+               body ...)
+            (list-ref (syntax->list stx) 3)
+            orig-inspector
+            #f)))]))
 
 (define (annotate-covered-file filename-path [display-string #f])
   (annotate-file filename-path 
@@ -101,6 +104,9 @@
                (< (list-ref x 2) (list-ref y 2))]
               [else
                (< (list-ref x 1) (list-ref y 1))])))))
+
+(define (copy-props orig new)
+  (datum->syntax orig (syntax-e new) orig orig))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Profiling run-time support
@@ -415,19 +421,21 @@
                [(mod name init-import (#%plain-module-begin body ...))
                 (add-test-coverage-init-code
                  (normal
-                  #`(#,(namespace-module-identifier) name init-import
-                                                     #,(syntax-recertify
-                                                        #`(#%plain-module-begin
-                                                           #,((make-syntax-introducer)
-                                                              (syntax/loc (datum->syntax #f 'x #f)
-                                                                (#%require errortrace/errortrace-key)))
-                                                           #,((make-syntax-introducer)
-                                                              (syntax/loc (datum->syntax #f 'x #f)
-                                                                (#%require (for-syntax errortrace/errortrace-key))))
-                                                           body ...)
-                                                        (list-ref (syntax->list top-e) 3)
-                                                        orig-inspector
-                                                        #f))))])))]
+                  (copy-props
+                   top-e
+                   #`(#,(namespace-module-identifier) name init-import
+                      #,(syntax-recertify
+                         #`(#%plain-module-begin
+                            #,((make-syntax-introducer)
+                               (syntax/loc (datum->syntax #f 'x #f)
+                                 (#%require errortrace/errortrace-key)))
+                            #,((make-syntax-introducer)
+                               (syntax/loc (datum->syntax #f 'x #f)
+                                 (#%require (for-syntax errortrace/errortrace-key))))
+                            body ...)
+                         (list-ref (syntax->list top-e) 3)
+                         orig-inspector
+                         #f)))))])))]
       [_else
        (normal top-e)])))
 

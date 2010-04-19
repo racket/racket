@@ -290,6 +290,8 @@ void mz_proc_thread_exit(void *rc) {
 
 #ifndef WIN32
 
+# ifdef HAVE_PTHREAD_RWLOCK
+
 struct mzrt_rwlock {
   pthread_rwlock_t lock;
 };
@@ -321,6 +323,116 @@ int mzrt_rwlock_unlock(mzrt_rwlock *lock) {
 int mzrt_rwlock_destroy(mzrt_rwlock *lock) {
   return pthread_rwlock_destroy(&lock->lock);
 }
+
+# else
+
+struct mzrt_rwlock {
+  pthread_mutex_t m;
+  pthread_cond_t cr, cw;
+  int readers, writers, write_waiting;
+};
+
+int mzrt_rwlock_create(mzrt_rwlock **lock) {
+  int err;
+
+  *lock = malloc(sizeof(mzrt_rwlock));
+  err = pthread_mutex_init(&(*lock)->m, NULL);
+  if (err) { free(*lock); return err; }
+  err = pthread_cond_init(&(*lock)->cr, NULL);
+  if (err) { free(*lock); return err; }
+  err = pthread_cond_init(&(*lock)->cw, NULL);
+  if (err) { free(*lock); return err; }
+  return err;
+}
+
+static int rwlock_rdlock(mzrt_rwlock *lock, int just_try) {
+  int err;
+
+  err = pthread_mutex_lock(&lock->m);
+  if (err) return err;
+  while (lock->writers || lock->write_waiting) {
+    if (just_try) {
+      err = pthread_mutex_unlock(&lock->m);
+      if (err) return err;
+      return EBUSY;
+    } else {
+      err = pthread_cond_wait(&lock->cr, &lock->m);
+      if (err)
+        return err;
+    }
+  }
+  lock->readers++;
+  return pthread_mutex_unlock(&lock->m);
+}
+
+int mzrt_rwlock_rdlock(mzrt_rwlock *lock) {
+  return rwlock_rdlock(lock, 0);
+}
+
+static int rwlock_wrlock(mzrt_rwlock *lock, int just_try) {
+  int err;
+
+  err = pthread_mutex_lock(&lock->m);
+  if (err) return err;
+  while (lock->writers || lock->readers) {
+    if (just_try) {
+      err = pthread_mutex_unlock(&lock->m);
+      if (err) return err;
+      return EBUSY;
+    } else {
+      lock->write_waiting++;
+      err = pthread_cond_wait(&lock->cw, &lock->m);
+      --lock->write_waiting;
+      if (err)
+        return err;
+    }
+  }
+  lock->writers++;
+  return pthread_mutex_unlock(&lock->m);
+}
+
+int mzrt_rwlock_wrlock(mzrt_rwlock *lock) {
+  return rwlock_wrlock(lock, 0);
+}
+
+int mzrt_rwlock_tryrdlock(mzrt_rwlock *lock) {
+  return rwlock_rdlock(lock, 1);
+}
+
+int mzrt_rwlock_trywrlock(mzrt_rwlock *lock) {
+  return rwlock_wrlock(lock, 1);
+}
+
+int mzrt_rwlock_unlock(mzrt_rwlock *lock) {
+  int err;
+
+  err = pthread_mutex_lock(&lock->m);
+  if (err) return err;
+
+  if (lock->readers)
+    --lock->readers; /* must have been a read lock */
+  else
+    --lock->writers;
+
+  if (lock->write_waiting)
+    err = pthread_cond_signal(&lock->cw);
+  else
+    err = pthread_cond_broadcast(&lock->cr);
+  if (err) return err;
+  
+  return pthread_mutex_unlock(&lock->m);
+}
+
+int mzrt_rwlock_destroy(mzrt_rwlock *lock) {
+  pthread_mutex_destroy(&lock->m);
+  pthread_cond_destroy(&lock->cr);
+  pthread_cond_destroy(&lock->cw);
+  free(lock);
+
+  return 0;
+}
+
+# endif
 
 struct mzrt_mutex {
   pthread_mutex_t mutex;

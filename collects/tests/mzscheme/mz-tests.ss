@@ -25,6 +25,7 @@
 (load-relative "will.ss")
 (load-relative "namespac.ss")
 (load-relative "modprot.ss")
+(load-relative "chaperone.ss")
 (unless (or building-flat-tests? in-drscheme?)
   (load-relative "param.ss"))
 (load-relative "port.ss")

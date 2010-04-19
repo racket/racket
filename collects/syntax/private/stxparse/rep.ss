@@ -92,6 +92,7 @@
         (quote-syntax ~!)
         (quote-syntax ~bind)
         (quote-syntax ~fail)
+        (quote-syntax ~early-fail)
         (quote-syntax ~parse)
         (quote-syntax ...+)))
 
@@ -341,7 +342,7 @@
           [else
            (wrong-syntax stx "action pattern not allowed here")]))
   (syntax-case stx (~var ~literal ~datum ~and ~or ~not ~rest ~describe
-                    ~seq ~optional ~! ~bind ~fail ~parse)
+                    ~seq ~optional ~! ~bind ~fail ~early-fail ~parse)
     [wildcard
      (wildcard? #'wildcard)
      (begin (disappeared! stx)
@@ -401,7 +402,11 @@
     [(~fail . rest)
      (disappeared! stx)
      (check-ghost!
-      (parse-pat:fail stx decls))]
+      (parse-pat:fail stx decls #f))]
+    [(~early-fail . rest)
+     (disappeared! stx)
+     (check-ghost!
+      (parse-pat:fail stx decls #t))]
     [(~parse . rest)
      (disappeared! stx)
      (check-ghost!
@@ -726,7 +731,7 @@
          (append-iattrs (side-clauses-attrss clauses))
          clauses))]))
 
-(define (parse-pat:fail stx decls)
+(define (parse-pat:fail stx decls early?)
   (syntax-case stx ()
     [(_ . rest)
      (let-values ([(chunks rest)
@@ -743,7 +748,7 @@
                         #`(not #,(caddr chunk)))))])
          (syntax-case rest ()
            [(message)
-            (create-ghost:fail condition #'message)]
+            (create-ghost:fail early? condition #'message)]
            [()
             (wrong-syntax stx "missing message expression")]
            [_
@@ -843,11 +848,12 @@
                        "expected exact nonnegative integer or +inf.0"))
        (when (> minN maxN)
          (wrong-syntax stx "minimum larger than maximum repetition constraint"))
-       (let ([chunks (parse-keyword-options #'options
-                                            (list (list '#:too-few check-expression)
-                                                  (list '#:too-many check-expression)
-                                                  (list '#:name check-expression))
-                                            #:context stx)])
+       (let ([chunks (parse-keyword-options/eol
+                      #'options
+                      (list (list '#:too-few check-expression)
+                            (list '#:too-many check-expression)
+                            (list '#:name check-expression))
+                      #:context stx)])
          (let ([too-few-msg
                 (options-select-value chunks '#:too-few #:default #'#f)]
                [too-many-msg

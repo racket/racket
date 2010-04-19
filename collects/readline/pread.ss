@@ -208,4 +208,6 @@
       ;; readline-prompt and using read-complete-syntax below should still
       ;; work fine)
       (display prompt) (flush-output))
-    (begin0 (read-syntax) (do-multiline-chunk))))
+    (begin0 (let ([in (current-input-port)])
+              ((current-read-interaction) (object-name in) in))
+            (do-multiline-chunk))))

@@ -381,4 +381,4 @@
 ;; observe that the bang clause can be collected: it's listening on a channel that can't escape. So (observes Milner) this
 ;; is equivalent to (encode-as-π (lam y y) chan).
 
-
+(test-results)

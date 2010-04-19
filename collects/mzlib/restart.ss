@@ -111,7 +111,7 @@
 		 (init-namespace)
 
 		 (when scheme?
-		   (namespace-require 'scheme))
+		   (namespace-require 'scheme/init))
 		 
 		 (let/ec k
 		   (exit-handler

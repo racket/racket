@@ -1,7 +1,6 @@
 #lang scheme
 (require xml
-         "notify.ss"
-         (prefix-in ffi: (planet jaymccarthy/svn-prop)))
+         "notify.ss")
 
 (define svn-path 
   (make-parameter "/opt/local/bin/svn"))
@@ -34,48 +33,6 @@
                       (lambda (_)
                         (subprocess-kill the-process #t)
                         #f)))))
-
-;; Finding out a property going towards the root
-(define (sublists l)
-  (if (empty? l)
-      empty
-      (list* l (sublists (rest l)))))
-
-(define (svn-property-value/real working-copy-path property)
-  #;(printf "propget ~a @ ~a~n" property working-copy-path)
-  (with-handlers ([exn:fail? (lambda (x) 'error)])
-    (ffi:svn-property-value working-copy-path property))
-  #;(match (svn/xml-parse "propget" property working-copy-path)
-      [(? exn:xml? x)
-       'error]
-      [`(properties " ")
-       'none]
-      [`(properties " " (target ((path ,_path)) " " (property ((name ,_prop)) ,value) " ") " ")
-       value]))
-
-(define property-cache (make-hash))
-(define (svn-property-value working-copy-path property)
-  (define key (cons working-copy-path property))
-  (hash-ref! property-cache key
-             (lambda ()
-               (svn-property-value/real working-copy-path property)))
-  #;(if (hash-has-key? property-cache key)
-        (or (weak-box-value (hash-ref property-cache key))
-            (begin (hash-remove! property-cache key)
-                   (svn-property-value working-copy-path property)))
-        (local [(define val (svn-property-value/real working-copy-path property))]
-          (hash-set! property-cache key (make-weak-box val))
-          val)))
-
-(define (svn-property-value/root working-copy-path property)
-  (define wc-path-parts (reverse (explode-path working-copy-path)))
-  (define potentials (sublists wc-path-parts))
-  (for/or ([potential (in-list potentials)])
-    (define val (svn-property-value (path->string (apply build-path (reverse potential))) property))
-    (if (string? val) val #f)))
-
-(provide/contract
- [svn-property-value/root (path-string? string? . -> . (or/c false/c string?))])
 
 ;;; Finding out about SVN revisions
 

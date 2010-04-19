@@ -24,6 +24,7 @@
 */
 
 #include "schpriv.h"
+#include "schmach.h"
 
 /* read only globals */
 READ_ONLY Scheme_Object scheme_null[1];
@@ -88,6 +89,7 @@ static Scheme_Object *immutable_box (int argc, Scheme_Object *argv[]);
 static Scheme_Object *box_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unbox (int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_box (int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_box(int argc, Scheme_Object **argv);
 
 static Scheme_Object *make_hash(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_hasheq(int argc, Scheme_Object *argv[]);
@@ -119,6 +121,7 @@ static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv);
 
 static Scheme_Object *make_weak_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *weak_box_value(int argc, Scheme_Object *argv[]);
@@ -146,6 +149,9 @@ static Scheme_Object *unsafe_set_mcar (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *chaperone_hash_key(const char *name, Scheme_Object *table, Scheme_Object *key);
+static Scheme_Object *chaperone_hash_tree_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val);
 
 #define BOX "box"
 #define BOXP "box?"
@@ -446,15 +452,19 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant(BOXP, p, env);
 
-  p = scheme_make_immed_prim(unbox, UNBOX, 1, 1);
+  p = scheme_make_noncm_prim(unbox, UNBOX, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant(UNBOX, p, env);
 
-  scheme_add_global_constant(SETBOX,
-			     scheme_make_immed_prim(set_box,
-						    SETBOX,
-						    2, 2),
-			     env);
+  p = scheme_make_immed_prim(set_box, SETBOX, 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;  
+  scheme_add_global_constant(SETBOX, p, env);
+
+  scheme_add_global_constant("chaperone-box",
+                             scheme_make_prim_w_arity(chaperone_box,
+                                                      "chaperone-box",
+                                                      3, -1),
+                             env);
 
   scheme_add_global_constant("make-hash",
 			     scheme_make_immed_prim(make_hash,
@@ -578,15 +588,21 @@ scheme_init_list (Scheme_Env *env)
                                                     2, 2),
 			     env);
   scheme_add_global_constant("hash-iterate-value",
-			     scheme_make_immed_prim(hash_table_iterate_value,
+			     scheme_make_noncm_prim(hash_table_iterate_value,
 						    "hash-iterate-value",
                                                     2, 2),
 			     env);
   scheme_add_global_constant("hash-iterate-key",
-			     scheme_make_immed_prim(hash_table_iterate_key,
+			     scheme_make_noncm_prim(hash_table_iterate_key,
 						    "hash-iterate-key",
                                                     2, 2),
 			     env);
+
+  scheme_add_global_constant("chaperone-hash",
+                             scheme_make_prim_w_arity(chaperone_hash,
+                                                      "chaperone-hash",
+                                                      5, -1),
+                             env);
 
   scheme_add_global_constant("eq-hash-code",
 			     scheme_make_immed_prim(eq_hash_code,
@@ -729,9 +745,17 @@ scheme_init_unsafe_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant("unsafe-unbox", p, env);
 
+  p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox*", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
+  scheme_add_global_constant("unsafe-unbox*", p, env);
+
   p = scheme_make_immed_prim(unsafe_set_box, "unsafe-set-box!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-set-box!", p, env);
+
+  p = scheme_make_immed_prim(unsafe_set_box, "unsafe-set-box*!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-set-box*!", p, env);
 }
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
@@ -1100,7 +1124,12 @@ immutablep (int argc, Scheme_Object *argv[])
                     || SCHEME_CHAR_STRINGP(v)
                     || SCHEME_BOXP(v)
                     || SCHEME_HASHTP(v)))
-               || SCHEME_HASHTRP(v)))
+               || SCHEME_HASHTRP(v)
+               || (SCHEME_NP_CHAPERONEP(v)
+                   && (SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(v))
+                       || ((SCHEME_VECTORP(SCHEME_CHAPERONE_VAL(v))
+                            || SCHEME_BOXP(SCHEME_CHAPERONE_VAL(v)))
+                           && SCHEME_IMMUTABLEP(SCHEME_CHAPERONE_VAL(v)))))))
 	  ? scheme_true
 	  : scheme_false);
 }
@@ -1454,17 +1483,107 @@ Scheme_Object *scheme_box(Scheme_Object *v)
   return obj;
 }
 
+static Scheme_Object *chaperone_unbox_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return scheme_unbox(o);
+}
+
+static Scheme_Object *chaperone_unbox_overflow(Scheme_Object *o)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = (void *)o;
+
+  return scheme_handle_stack_overflow(chaperone_unbox_k);
+}
+
+static Scheme_Object *chaperone_unbox(Scheme_Object *obj)
+{
+  Scheme_Chaperone *px = (Scheme_Chaperone *)obj;
+  Scheme_Object *a[2], *orig;
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    return chaperone_unbox_overflow(obj);
+  }
+#endif
+
+  orig = scheme_unbox(px->prev);
+
+  if (SCHEME_VECTORP(px->redirects)) {
+    /* chaperone was on property accessors */
+    return orig;
+  }
+
+  a[0] = px->prev;
+  a[1] = orig;
+  obj = _scheme_apply(SCHEME_CAR(px->redirects), 2, a);
+
+  if (!scheme_chaperone_of(obj, orig))
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "unbox: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                     obj,
+                     orig);
+
+  return obj;
+}
+
 Scheme_Object *scheme_unbox(Scheme_Object *obj)
 {
-  if (!SCHEME_BOXP(obj))
-      scheme_wrong_type(UNBOX, "box", 0, 1, &obj);
+  if (!SCHEME_BOXP(obj)) {
+    if (SCHEME_NP_CHAPERONEP(obj)
+        && SCHEME_BOXP(SCHEME_CHAPERONE_VAL(obj)))
+      return chaperone_unbox(obj);
+
+    scheme_wrong_type(UNBOX, "box", 0, 1, &obj);
+  }
+
   return (Scheme_Object *)SCHEME_BOX_VAL(obj);
+}
+
+static void chaperone_set_box(Scheme_Object *obj, Scheme_Object *v)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *a[2];
+
+  while (1) {
+    if (SCHEME_BOXP(obj)) {
+      SCHEME_BOX_VAL(obj) = v;
+      return;
+    } else {
+      px = (Scheme_Chaperone *)obj;
+      
+      obj = px->prev;
+      a[0] = obj;
+      a[1] = v;
+      v = _scheme_apply(SCHEME_CDR(px->redirects), 2, a);
+
+      if (!scheme_chaperone_of(v, a[1]))
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                         "vector-set!: chaperone produced a result: %V that is not a chaperone of the original result: %V",
+                         v,
+                         a[1]);
+    }
+  }
 }
 
 void scheme_set_box(Scheme_Object *b, Scheme_Object *v)
 {
-  if (!SCHEME_MUTABLE_BOXP(b))
-      scheme_wrong_type(SETBOX, "mutable box", 0, 1, &b);
+  if (!SCHEME_MUTABLE_BOXP(b)) {
+    if (SCHEME_NP_CHAPERONEP(b)
+        && SCHEME_MUTABLE_BOXP(SCHEME_CHAPERONE_VAL(b))) {
+      chaperone_set_box(b, v);
+      return;
+    }
+
+    scheme_wrong_type(SETBOX, "mutable box", 0, 1, &b);
+  }
   SCHEME_BOX_VAL(b) = v;
 }
 
@@ -1485,7 +1604,7 @@ static Scheme_Object *immutable_box(int c, Scheme_Object *p[])
 
 static Scheme_Object *box_p(int c, Scheme_Object *p[])
 {
-  return SCHEME_BOXP(p[0]) ? scheme_true : scheme_false;
+  return SCHEME_CHAPERONE_BOXP(p[0]) ? scheme_true : scheme_false;
 }
 
 static Scheme_Object *unbox(int c, Scheme_Object *p[])
@@ -1497,6 +1616,35 @@ static Scheme_Object *set_box(int c, Scheme_Object *p[])
 {
   scheme_set_box(p[0], p[1]);
   return scheme_void;
+}
+
+static Scheme_Object *chaperone_box(int argc, Scheme_Object **argv)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *val = argv[0];
+  Scheme_Object *redirects;
+  Scheme_Hash_Tree *props;
+
+  if (SCHEME_CHAPERONEP(val))
+    val = SCHEME_CHAPERONE_VAL(val);
+
+  if (!SCHEME_BOXP(val))
+    scheme_wrong_type("chaperone-box", "box", 0, argc, argv);
+  scheme_check_proc_arity("chaperone-box", 2, 1, argc, argv);
+  scheme_check_proc_arity("chaperone-box", 2, 2, argc, argv);
+
+  redirects = scheme_make_pair(argv[1], argv[2]);
+  
+  props = scheme_parse_chaperone_props("chaperone-box", 3, argc, argv);
+
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  px->so.type = scheme_chaperone_type;
+  px->val = val;
+  px->prev = argv[0];
+  px->props = props;
+  px->redirects = redirects;
+
+  return (Scheme_Object *)px;
 }
 
 static int compare_equal(void *v1, void *v2)
@@ -1701,14 +1849,19 @@ Scheme_Hash_Table *scheme_make_hash_table_eqv()
 
 static Scheme_Object *hash_table_count(int argc, Scheme_Object *argv[])
 {
-  if (SCHEME_HASHTP(argv[0])) {
-    Scheme_Hash_Table *t = (Scheme_Hash_Table *)argv[0];
+  Scheme_Object *v = argv[0];
+
+  if (SCHEME_CHAPERONEP(v)) 
+    v = SCHEME_CHAPERONE_VAL(v);
+
+  if (SCHEME_HASHTP(v)) {
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
     return scheme_make_integer(t->count);
-  } else if (SCHEME_HASHTRP(argv[0])) {
-    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)argv[0];
+  } else if (SCHEME_HASHTRP(v)) {
+    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)v;
     return scheme_make_integer(t->count);
-  } else if (SCHEME_BUCKTP(argv[0])) {
-    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)argv[0];
+  } else if (SCHEME_BUCKTP(v)) {
+    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
     int count = 0, weak, i;
     Scheme_Bucket **buckets, *bucket;
     const char *key;
@@ -1739,34 +1892,49 @@ static Scheme_Object *hash_table_count(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_copy(int argc, Scheme_Object *argv[])
 {
-  if (SCHEME_HASHTP(argv[0])) {
+  Scheme_Object *v = argv[0];
+
+  if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
+                                  || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v))))
+    return scheme_chaperone_hash_table_copy(v);
+
+  if (SCHEME_HASHTP(v)) {
     Scheme_Object *o;
-    Scheme_Hash_Table *t = (Scheme_Hash_Table *)argv[0];
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
     if (t->mutex) scheme_wait_sema(t->mutex,0);
     o = (Scheme_Object *)scheme_clone_hash_table(t);
     if (t->mutex) scheme_post_sema(t->mutex);
     return o;
-  } else if (SCHEME_BUCKTP(argv[0])) {
+  } else if (SCHEME_BUCKTP(v)) {
     Scheme_Object *o;
-    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)argv[0];
+    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
     if (t->mutex) scheme_wait_sema(t->mutex,0);
     o = (Scheme_Object *)scheme_clone_bucket_table(t);
     if (t->mutex) scheme_post_sema(t->mutex);
     return o;
-  } else if (SCHEME_HASHTRP(argv[0])) {
-    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)argv[0];
+  } else if (SCHEME_HASHTRP(v)) {
+    Scheme_Hash_Tree *t;
     Scheme_Hash_Table *naya;
     int i;
-    Scheme_Object *k, *v;
+    Scheme_Object *k, *val;
+
+    if (SCHEME_NP_CHAPERONEP(v))
+      t = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(v);
+    else
+      t = (Scheme_Hash_Tree *)v;
 
     if (scheme_is_hash_tree_equal((Scheme_Object *)t))
       naya = scheme_make_hash_table_equal();
+    else if (scheme_is_hash_tree_eqv((Scheme_Object *)t))
+      naya = scheme_make_hash_table_eqv();
     else
       naya = scheme_make_hash_table(SCHEME_hash_ptr);
 
     for (i = t->count; i--; ) {
-      scheme_hash_tree_index(t, i, &k, &v);
-      scheme_hash_set(naya, k, v);
+      scheme_hash_tree_index(t, i, &k, &val);
+      if (!SAME_OBJ((Scheme_Object *)t, v))
+        val = scheme_chaperone_hash_traversal_get(v, k);
+      scheme_hash_set(naya, k, val);
     }
 
     return (Scheme_Object *)naya;
@@ -1780,6 +1948,9 @@ static Scheme_Object *hash_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 
+  if (SCHEME_CHAPERONEP(o)) 
+    o = SCHEME_CHAPERONE_VAL(o);
+
   if (SCHEME_HASHTP(o) || SCHEME_HASHTRP(o) || SCHEME_BUCKTP(o))
     return scheme_true;
   else
@@ -1789,6 +1960,9 @@ static Scheme_Object *hash_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *hash_eq_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
+
+  if (SCHEME_CHAPERONEP(o)) 
+    o = SCHEME_CHAPERONE_VAL(o);
 
   if (SCHEME_HASHTP(o)) {
     if ((((Scheme_Hash_Table *)o)->compare != compare_equal)
@@ -1812,6 +1986,9 @@ static Scheme_Object *hash_eqv_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 
+  if (SCHEME_CHAPERONEP(o)) 
+    o = SCHEME_CHAPERONE_VAL(o);
+
   if (SCHEME_HASHTP(o)) {
     if (((Scheme_Hash_Table *)o)->compare == compare_eqv)
       return scheme_true;
@@ -1831,6 +2008,9 @@ static Scheme_Object *hash_eqv_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *hash_weak_p(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
+
+  if (SCHEME_CHAPERONEP(o)) 
+    o = SCHEME_CHAPERONE_VAL(o);
 
   if (SCHEME_BUCKTP(o))
     return scheme_true;
@@ -1866,7 +2046,10 @@ static Scheme_Object *hash_table_put_bang(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
 
-  if (SCHEME_BUCKTP(v)) {
+  if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
+                                  || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v))))
+    scheme_chaperone_hash_set(v, argv[1], argv[2]);
+  else if (SCHEME_BUCKTP(v)) {
     Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
     if (t->mutex) scheme_wait_sema(t->mutex,0);
     scheme_add_to_table(t, (char *)argv[1], (void *)argv[2], 0);
@@ -1889,6 +2072,9 @@ static Scheme_Object *hash_table_put(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *v = argv[0];
 
+  if (SCHEME_NP_CHAPERONEP(v) && SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(v)))
+    return chaperone_hash_tree_set(v, argv[1], argv[2]);
+
   if (!SCHEME_HASHTRP(v)) {
     scheme_wrong_type("hash-set", "immutable hash", 0, argc, argv);
     return NULL;
@@ -1903,7 +2089,11 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
 
   v = argv[0];
 
-  if (SCHEME_BUCKTP(v)) {
+  if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
+                                  || SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(v))
+                                  || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v))))
+    v = scheme_chaperone_hash_get(v, argv[1]);
+  else if (SCHEME_BUCKTP(v)) {
     Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
     if (t->mutex) scheme_wait_sema(t->mutex, 0);
     v = (Scheme_Object *)scheme_lookup_in_table(t, (char *)argv[1]);
@@ -1940,21 +2130,31 @@ static Scheme_Object *hash_table_get(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_remove_bang(int argc, Scheme_Object *argv[])
 {
-  if (!(SCHEME_HASHTP(argv[0]) && SCHEME_MUTABLEP(argv[0])) && !SCHEME_BUCKTP(argv[0]))
+  Scheme_Object *v;
+
+  v = argv[0];
+
+  if (SCHEME_NP_CHAPERONEP(v) && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(v))
+                                  || SCHEME_BUCKTP(SCHEME_CHAPERONE_VAL(v)))) {
+    scheme_chaperone_hash_set(v, argv[1], NULL);
+    return scheme_void;
+  }
+  
+  if (!(SCHEME_HASHTP(v) && SCHEME_MUTABLEP(v)) && !SCHEME_BUCKTP(v))
     scheme_wrong_type("hash-remove!", "mutable table", 0, argc, argv);
 
-  if (SCHEME_BUCKTP(argv[0])) {
+  if (SCHEME_BUCKTP(v)) {
     Scheme_Bucket *b;
-    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)argv[0];
+    Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)v;
     if (t->mutex) scheme_wait_sema(t->mutex, 0);
-    b = scheme_bucket_or_null_from_table((Scheme_Bucket_Table *)argv[0], (char *)argv[1], 0);
+    b = scheme_bucket_or_null_from_table((Scheme_Bucket_Table *)v, (char *)argv[1], 0);
     if (b) {
       HT_EXTRACT_WEAK(b->key) = NULL;
       b->val = NULL;
     }
     if (t->mutex) scheme_post_sema(t->mutex);
   } else{
-    Scheme_Hash_Table *t = (Scheme_Hash_Table *)argv[0];
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)v;
     if (t->mutex) scheme_wait_sema(t->mutex, 0);
     scheme_hash_set(t, argv[1], NULL);
     if (t->mutex) scheme_post_sema(t->mutex);
@@ -1965,10 +2165,15 @@ static Scheme_Object *hash_table_remove_bang(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_remove(int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_HASHTRP(argv[0]))
+  Scheme_Object *v = argv[0];
+
+  if (SCHEME_NP_CHAPERONEP(v) && SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(v)))
+    return chaperone_hash_tree_set(v, argv[1], NULL);
+
+  if (!SCHEME_HASHTRP(v))
     scheme_wrong_type("hash-remove", "immutable hash", 0, argc, argv);
 
-  return (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)argv[0], argv[1], NULL);
+  return (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)v, argv[1], NULL);
 }
 
 static Scheme_Object *do_map_hash_table(int argc,
@@ -1978,9 +2183,16 @@ static Scheme_Object *do_map_hash_table(int argc,
 {
   int i;
   Scheme_Object *f;
-  Scheme_Object *first, *last = NULL, *v, *p[2];
+  Scheme_Object *first, *last = NULL, *v, *p[2], *obj, *chaperone;
 
-  if (!(SCHEME_HASHTP(argv[0]) || SCHEME_BUCKTP(argv[0]) || SCHEME_HASHTRP(argv[0])))
+  obj = argv[0];
+  if (SCHEME_NP_CHAPERONEP(obj)) {
+    chaperone = obj;
+    obj = SCHEME_CHAPERONE_VAL(chaperone);
+  } else
+    chaperone = NULL;
+
+  if (!(SCHEME_HASHTP(obj) || SCHEME_BUCKTP(obj) || SCHEME_HASHTRP(obj)))
     scheme_wrong_type(name, "hash", 0, argc, argv);
   scheme_check_proc_arity(name, 2, 1, argc, argv);
 
@@ -1991,11 +2203,11 @@ static Scheme_Object *do_map_hash_table(int argc,
   else
     first = scheme_void;
 
-  if (SCHEME_BUCKTP(argv[0])) {
+  if (SCHEME_BUCKTP(obj)) {
     Scheme_Bucket_Table *hash;
     Scheme_Bucket *bucket;
 
-    hash = (Scheme_Bucket_Table *)argv[0];
+    hash = (Scheme_Bucket_Table *)obj;
 
     for (i = hash->size; i--; ) {
       bucket = hash->buckets[i];
@@ -2004,7 +2216,13 @@ static Scheme_Object *do_map_hash_table(int argc,
 	  p[0] = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
 	else
 	  p[0] = (Scheme_Object *)bucket->key;
-	p[1] = (Scheme_Object *)bucket->val;
+        if (chaperone) {
+          v = chaperone_hash_key(name, chaperone, p[0]);
+          p[0] = v;
+          v = scheme_chaperone_hash_get(chaperone, v);
+        } else
+          v = (Scheme_Object *)bucket->val;
+        p[1] = v;
 	if (keep) {
 	  v = _scheme_apply(f, 2, p);
 	  v = cons(v, scheme_null);
@@ -2017,15 +2235,22 @@ static Scheme_Object *do_map_hash_table(int argc,
 	  _scheme_apply_multi(f, 2, p);
       }
     }
-  } else if (SCHEME_HASHTP(argv[0])) {
+  } else if (SCHEME_HASHTP(obj)) {
     Scheme_Hash_Table *hash;
 
-    hash = (Scheme_Hash_Table *)argv[0];
+    hash = (Scheme_Hash_Table *)obj;
 
     for (i = hash->size; i--; ) {
       if (hash->vals[i]) {
 	p[0] = hash->keys[i];
-	p[1] = hash->vals[i];
+        if (chaperone) {
+          v = chaperone_hash_key(name, chaperone, p[0]);
+          p[0] = v;
+          v = scheme_chaperone_hash_get(chaperone, v);
+        } else {
+          v = hash->vals[i];
+        }
+        p[1] = v;
 	if (keep) {
 	  v = _scheme_apply(f, 2, p);
 	  v = cons(v, scheme_null);
@@ -2043,12 +2268,16 @@ static Scheme_Object *do_map_hash_table(int argc,
     Scheme_Hash_Tree *hash;
     long pos;
 
-    hash = (Scheme_Hash_Tree *)argv[0];
+    hash = (Scheme_Hash_Tree *)obj;
 
     pos = scheme_hash_tree_next(hash, -1);
     while (pos != -1) {
       scheme_hash_tree_index(hash, pos, &ik, &iv);
       p[0] = ik;
+      if (chaperone) {
+        ik = chaperone_hash_key(name, chaperone, ik);
+        iv = scheme_chaperone_hash_get(chaperone, ik);
+      }
       p[1] = iv;
       if (keep) {
         v = _scheme_apply(f, 2, p);
@@ -2174,8 +2403,15 @@ static Scheme_Object *hash_table_iterate_next(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object *argv[], int get_val)
 {
-  Scheme_Object *p = argv[1];
+  Scheme_Object *p = argv[1], *obj, *chaperone;
   int pos, sz;
+
+  obj = argv[0];
+  if (SCHEME_NP_CHAPERONEP(obj)) {
+    chaperone = obj;
+    obj = SCHEME_CHAPERONE_VAL(chaperone);
+  } else
+    chaperone = NULL;
 
   if (SCHEME_INTP(p)) {
     pos = SCHEME_INT_VAL(p);
@@ -2185,42 +2421,61 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
     pos = 0x7FFFFFFF;
   }
 
-  if (SCHEME_HASHTP(argv[0])) {
+  if (SCHEME_HASHTP(obj)) {
     Scheme_Hash_Table *hash;
 
-    hash = (Scheme_Hash_Table *)argv[0];
+    hash = (Scheme_Hash_Table *)obj;
 
     sz = hash->size;
     if (pos < sz) {
       if (hash->vals[pos]) {
-        if (get_val)
+        if (chaperone) {
+          if (get_val)
+            return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, hash->keys[pos]));
+          else
+            return chaperone_hash_key(name, chaperone, hash->keys[pos]);
+        } else if (get_val)
           return hash->vals[pos];
         else
           return hash->keys[pos];
       }
     }
-  } else if (SCHEME_HASHTRP(argv[0])) {
+  } else if (SCHEME_HASHTRP(obj)) {
     Scheme_Object *v, *k;
-    if (scheme_hash_tree_index((Scheme_Hash_Tree *)argv[0], pos, &k, &v))
-      return (get_val ? v : k);
-  } else if (SCHEME_BUCKTP(argv[0])) {
+    if (scheme_hash_tree_index((Scheme_Hash_Tree *)obj, pos, &k, &v)) {
+      if (chaperone) {
+        if (get_val)
+          return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, k));
+        else
+          return chaperone_hash_key(name, chaperone, k);
+      } else
+        return (get_val ? v : k);
+    }
+  } else if (SCHEME_BUCKTP(obj)) {
     Scheme_Bucket_Table *hash;
     int sz;
     Scheme_Bucket *bucket;
 
-    hash = (Scheme_Bucket_Table *)argv[0];
+    hash = (Scheme_Bucket_Table *)obj;
 
     sz = hash->size;
     if (pos < sz) {
       bucket = hash->buckets[pos];
       if (bucket && bucket->val && bucket->key) {
-        if (get_val)
+        if (get_val && !chaperone)
           return (Scheme_Object *)bucket->val;
         else {
           if (hash->weak)
-            return (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
+            obj = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
           else
-            return (Scheme_Object *)bucket->key;
+            obj = (Scheme_Object *)bucket->key;
+          if (chaperone) {
+            if (get_val)
+              return scheme_chaperone_hash_get(chaperone, chaperone_hash_key(name, chaperone, obj));
+            else
+              return chaperone_hash_key(name, chaperone, obj);
+          } else
+            return obj;
         }
       }
     }
@@ -2249,6 +2504,313 @@ static Scheme_Object *hash_table_iterate_value(int argc, Scheme_Object *argv[])
 static Scheme_Object *hash_table_iterate_key(int argc, Scheme_Object *argv[])
 {
   return hash_table_index("hash-iterate-key", argc, argv, 0);
+}
+
+static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv)
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *val = argv[0];
+  Scheme_Object *redirects;
+  Scheme_Hash_Tree *props;
+
+  if (SCHEME_CHAPERONEP(val))
+    val = SCHEME_CHAPERONE_VAL(val);
+
+  if (!SCHEME_HASHTP(val) && !SCHEME_HASHTRP(val) && !SCHEME_BUCKTP(val))
+    scheme_wrong_type("chaperone-hash", "hash", 0, argc, argv);
+  scheme_check_proc_arity("chaperone-hash", 3, 1, argc, argv); /* ref */
+  scheme_check_proc_arity("chaperone-hash", 3, 2, argc, argv); /* set! */
+  scheme_check_proc_arity("chaperone-hash", 2, 3, argc, argv); /* remove */
+  scheme_check_proc_arity("chaperone-hash", 2, 4, argc, argv); /* key */
+
+  redirects = scheme_make_vector(4, NULL);
+  SCHEME_VEC_ELS(redirects)[0] = argv[1];
+  SCHEME_VEC_ELS(redirects)[1] = argv[2];
+  SCHEME_VEC_ELS(redirects)[2] = argv[3];
+  SCHEME_VEC_ELS(redirects)[3] = argv[4];
+  redirects = scheme_box(redirects); /* so it doesn't look like a struct chaperone */
+
+  props = scheme_parse_chaperone_props("chaperone-hash", 5, argc, argv);
+  
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  px->so.type = scheme_chaperone_type;
+  px->val = val;
+  px->prev = argv[0];
+  px->props = props;
+  px->redirects = redirects;
+
+  return (Scheme_Object *)px;
+}
+
+static Scheme_Object *transfer_chaperone(Scheme_Object *chaperone, Scheme_Object *v)
+{
+  Scheme_Chaperone *px;
+
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  memcpy(px, chaperone, sizeof(Scheme_Chaperone));
+  px->prev = v;
+  if (SCHEME_CHAPERONEP(v))
+    px->val = SCHEME_CHAPERONE_VAL(v);
+  else
+    px->val = v;
+
+  return (Scheme_Object *)px;
+}
+
+static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Scheme_Object *k, 
+                                        Scheme_Object *v, int mode);
+
+static Scheme_Object *chaperone_hash_op_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Object *k = (Scheme_Object *)p->ku.k.p2;
+  Scheme_Object *v = (Scheme_Object *)p->ku.k.p3;
+  const char *who = (const char *)p->ku.k.p4;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
+
+  return chaperone_hash_op(who, o, k, v, p->ku.k.i1);
+}
+
+static Scheme_Object *chaperone_hash_op_overflow(const char *who, Scheme_Object *o, Scheme_Object *k, 
+                                                 Scheme_Object *v, int mode)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = (void *)o;
+  p->ku.k.p2 = (void *)k;
+  p->ku.k.p3 = (void *)v;
+  p->ku.k.p4 = (void *)who;
+  p->ku.k.i1 = mode;
+
+  return scheme_handle_stack_overflow(chaperone_hash_op_k);
+}
+
+static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Scheme_Object *k, 
+                                        Scheme_Object *v, int mode)
+{
+  Scheme_Object *wraps = NULL;
+
+  while (1) {
+    if (!SCHEME_NP_CHAPERONEP(o)) {
+      if (mode == 0) {
+        if (SCHEME_HASHTP(o))
+          return scheme_hash_get((Scheme_Hash_Table *)o, k);
+        else if (SCHEME_HASHTRP(o))
+          return scheme_hash_tree_get((Scheme_Hash_Tree *)o, k);
+        else
+          return scheme_lookup_in_table((Scheme_Bucket_Table *)o, (const char *)k);
+      } else if ((mode == 1) || (mode == 2)) {
+        if (SCHEME_HASHTP(o))
+          scheme_hash_set((Scheme_Hash_Table *)o, k, v);
+        else if (SCHEME_HASHTRP(o)) {
+          o = (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)o, k, v);
+          while (wraps) {
+            o = transfer_chaperone(SCHEME_CAR(wraps), o);
+            wraps = SCHEME_CDR(wraps);
+          }
+          return o;
+        } else if (!v) {
+          Scheme_Bucket *b;
+          b = scheme_bucket_or_null_from_table((Scheme_Bucket_Table *)o, (char *)k, 0);
+          if (b) {
+            HT_EXTRACT_WEAK(b->key) = NULL;
+            b->val = NULL;
+          }
+        } else
+          scheme_add_to_table((Scheme_Bucket_Table *)o, (const char *)k, v, 0);
+        return scheme_void;
+      } else
+        return k;
+    } else {
+      Scheme_Chaperone *px = (Scheme_Chaperone *)o;
+      Scheme_Object *a[3], *red, *orig;
+      const char *what;
+
+#ifdef DO_STACK_CHECK
+      {
+# include "mzstkchk.h"
+        return chaperone_hash_op_overflow(who, o, k, v, mode);
+      }
+#endif
+
+      if (mode == 0) {
+        orig = chaperone_hash_op(who, px->prev, k, v, mode);
+        if (!orig) return NULL;
+      } else if ((mode == 2) || (mode == 3))
+        orig = k;
+      else
+        orig = v;
+
+      if (SCHEME_VECTORP(px->redirects)) {
+        /* chaperone was on property accessors */
+        o = orig;
+      } else {
+
+        red = SCHEME_BOX_VAL(px->redirects);
+        red = SCHEME_VEC_ELS(red)[mode];
+
+        a[0] = px->prev;
+        a[1] = k;
+        a[2] = orig;
+
+        if (mode == 0) {
+          /* hash-ref */
+          o = _scheme_apply(red, 3, a);
+          what = "result";
+        } else if (mode == 1) {
+          /* hash-set! */
+          Scheme_Object **vals;
+          int cnt;
+          Scheme_Thread *p;
+
+          o = _scheme_apply_multi(red, 3, a);
+
+          if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
+            p = scheme_current_thread;
+            cnt = p->ku.multiple.count;
+            vals = p->ku.multiple.array;
+            p->ku.multiple.array = NULL;
+            if (SAME_OBJ(vals, p->values_buffer))
+              p->values_buffer = NULL;
+            p = NULL;
+          } else {
+            vals = NULL;
+            cnt = 1;
+          }
+
+          if (cnt != 2)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                             "%s: chaperone: %V: returned %d values, expected 2",
+                             who,
+                             red,
+                             cnt);
+
+          if (!scheme_chaperone_of(vals[0], k))
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                             "%s: chaperone produced a key: %V that is not a chaperone of the original key: %V",
+                             who,
+                             vals[0],
+                             k);
+          k = vals[0];
+          o = vals[1];
+          what = "value";
+        } else {
+          /* hash-remove! and key extraction */
+          o = _scheme_apply(red, 2, a);
+          what = "key";
+        }
+
+        if (!scheme_chaperone_of(o, orig))
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                           "%s: chaperone produced a %s: %V that is not a chaperone of the original %s: %V",
+                           who, what,
+                           o, 
+                           what, orig);
+      }
+
+      if ((mode == 0) || (mode == 3))
+        return o;
+      else {
+        if (mode == 1)
+          v = o;
+        else
+          k = o;
+        if (SCHEME_HASHTRP(px->val))
+          wraps = scheme_make_raw_pair((Scheme_Object *)px, wraps);
+        o = px->prev;
+      }
+    }
+  }
+}
+
+Scheme_Object *scheme_chaperone_hash_get(Scheme_Object *table, Scheme_Object *key)
+{
+  return chaperone_hash_op("hash-ref", table, key, NULL, 0);
+}
+
+void scheme_chaperone_hash_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val)
+{
+  (void)chaperone_hash_op(val ? "hash-set!" : "hash-remove!", table, key, val, val ? 1 : 2);
+}
+
+Scheme_Object *chaperone_hash_tree_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val)
+{
+  return chaperone_hash_op(val ? "hash-set" : "hash-remove", table, key, val, val ? 1 : 2);
+}
+
+static Scheme_Object *chaperone_hash_key(const char *name, Scheme_Object *table, Scheme_Object *key)
+{
+  return chaperone_hash_op(name, table, key, NULL, 3);
+}
+
+Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key)
+{
+  key = chaperone_hash_key("hash-table-iterate-key", table, key);
+  return chaperone_hash_op("hash-ref", table, key, NULL, 0);
+}
+
+Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj)
+{
+  Scheme_Object *a[3], *v, *v2, *idx, *key, *val;
+  int is_eq, is_eqv;
+
+  v = SCHEME_CHAPERONE_VAL(obj);
+
+  a[0] = obj;
+  is_eq = SCHEME_TRUEP(hash_eq_p(1, a));
+  is_eqv = SCHEME_TRUEP(hash_eqv_p(1, a));
+  
+  if (SCHEME_HASHTP(obj)) {
+    if (is_eq)
+      v2 = make_hasheq(0, NULL);
+    else if (is_eqv)
+      v2 = make_hasheqv(0, NULL);
+    else
+      v2 = make_hash(0, NULL);
+  } else if (SCHEME_HASHTRP(obj)) {
+    if (is_eq)
+      v2 = make_immutable_hasheq(0, NULL);
+    else if (is_eqv)
+      v2 = make_immutable_hasheqv(0, NULL);
+    else
+      v2 = make_immutable_hash(0, NULL);
+  } else {
+    if (is_eq)
+      v2 = make_weak_hasheq(0, NULL);
+    else if (is_eqv)
+      v2 = make_weak_hasheqv(0, NULL);
+    else
+      v2 = make_weak_hash(0, NULL);
+  }
+
+  idx = hash_table_iterate_start(1, a);
+  while (SCHEME_TRUEP(idx)) {
+    a[0] = v;
+    a[1] = idx;
+    key = hash_table_iterate_key(2, a);
+
+    val = scheme_chaperone_hash_get(obj, key);
+    if (val) {
+      a[0] = v2;
+      a[1] = key;
+      a[2] = val;
+      if (SCHEME_HASHTRP(v2))
+        v2 = hash_table_put(2, a);
+      else
+        (void)hash_table_put_bang(2, a);
+    }
+
+    a[0] = v;
+    a[1] = idx;
+    idx = hash_table_iterate_next(2, a);
+  }
+
+  return v2;
 }
 
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[])
@@ -2634,11 +3196,13 @@ void scheme_init_ephemerons(void)
 
 static Scheme_Object *unsafe_car (int argc, Scheme_Object *argv[])
 {
+  if (scheme_current_thread->constant_folding) return scheme_checked_car(argc, argv);
   return SCHEME_CAR(argv[0]);
 }
 
 static Scheme_Object *unsafe_cdr (int argc, Scheme_Object *argv[])
 {
+  if (scheme_current_thread->constant_folding) return scheme_checked_cdr(argc, argv);
   return SCHEME_CDR(argv[0]);
 }
 

@@ -912,6 +912,7 @@
        (#"(?<=(foo)a)bar" #"fooabar" (#"bar" #"foo"))
        (#"(?<=(foo)a)bar" #"bar" #f)
        (#"(?<=(foo)a)bar" #"foobbar" #f)
+       (#"a(?<=x|ab)b" #"ab" #f)
        (#"(?>(\\.\\d\\d[1-9]?))\\d+" #"1.230003938" (#".230003938" #".23"))
        (#"(?>(\\.\\d\\d[1-9]?))\\d+" #"1.875000282" (#".875000282" #".875"))
        (#"(?>(\\.\\d\\d[1-9]?))\\d+" #"1.235 " #f)
@@ -1435,7 +1436,7 @@
        #"^(?:a?b?)*$"
        (#"(?=(a+?))(\\1ab)" #"aaab" (#"aab" #"a" #"aab"))
        (#"(\\w+:)+" #"one:" (#"one:" #"one:"))
-       (#"$(?<=^(a))" #"a" #f)
+       (#"$(?<=^(a))" #"a" (#"" #"a"))
        (#"(?=(a+?))(\\1ab)" #"aaab" (#"aab" #"a" #"aab"))
        (#"^(?=(a+?))\\1ab" #"aaab" #f)
        (#"^(?=(a+?))\\1ab" #"aaab" #f)
@@ -1707,6 +1708,54 @@
 (test '(#"$") regexp-match #rx#"\\$" #"a$b")
 (test '(#"a$") regexp-match #px#"a\\$" #"a$b")
 (test '(#"a$") regexp-match #rx#"a\\$" #"a$b")
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Check prefixes and suffixes that disallow matches at ^ at start or $ at end:
+(let ([try
+       (lambda (regexp-match input output [output2 output])
+         (let ([try-succeed
+                (lambda (output i s e)
+                  (test (output (list "a")) regexp-match #rx"^a" (i) s e #f #"")
+                  (test (output (list "a")) regexp-match #rx"(?m:^a)" (i) s e #f #"\n")
+                  (test (output (list "a")) regexp-match #rx"(?m:^a)" (i) s e #f #"x\n"))])
+           (try-succeed output (lambda () (input "a")) 0 #f)
+           (try-succeed output2 (lambda () (input "xay")) 1 2))
+         (let ([try-fail
+                (lambda (i s e)
+                  (test #f regexp-match #rx"^a" (i) s e #f #"\n")
+                  (test #f regexp-match #rx"^a" (i) s e #f #"x\n")
+                  (let ([try-always-fail
+                         (lambda (m)
+                           (test #f regexp-match (m #rx"^a") (i) s e #f #"x")
+                           (test #f regexp-match (m #rx"^a") (i) s e #f #"\nx"))])
+                    (try-always-fail values)
+                    (try-always-fail (lambda (rx) (regexp (format "(?m:~a)" (object-name rx)))))))])
+           (try-fail (lambda () (input "a")) 0 #f)
+           (try-fail (lambda () (input "xay")) 1 2)))])
+  (try regexp-match values values)
+  (try regexp-match? values (lambda (a) (and a #t)))
+  (try regexp-match string->bytes/utf-8 (lambda (l) (map string->bytes/utf-8 l)))
+  (try regexp-match open-input-string (lambda (l) (map string->bytes/utf-8 l)))
+  (try regexp-match-positions values 
+       (lambda (s) (and s '((0 . 1))))
+       (lambda (s) (and s '((1 . 2))))))
+
+;; regexp-replace* disallows start matching after the first match:
+(test "baa" regexp-replace* #rx"^a" "aaa" "b")
+
+;; regexp-replace* disallows start matching after the first match:
+(test "bbb" regexp-replace* #rx"(?m:^a\n)" "a\na\na\n" "b")
+(test "bba\n" regexp-replace* #rx"(?m:^a[z\n])" "a\naza\n" "b")
+
+(test-values `(("abc") #"c")
+             (lambda () (regexp-match/end #rx".*" "abc")))
+(test-values `(((0 . 3)) #"c")
+             (lambda () (regexp-match-positions/end #rx".*" "abc")))
+(test-values `(((0 . 3)) #"c")
+             (lambda () (regexp-match-peek-positions/end #rx".*" (open-input-string "abc"))))
+(test-values `(((0 . 3)) #"c")
+             (lambda () (regexp-match-peek-positions-immediate/end #rx".*" (open-input-string "abc"))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

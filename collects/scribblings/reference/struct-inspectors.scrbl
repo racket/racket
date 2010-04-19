@@ -58,14 +58,14 @@ Returns two values:
 
 @itemize[
 
-  @item{@scheme[struct-type]: a structure type descriptor or @scheme[#f];
+  @item{@scheme[_struct-type]: a structure type descriptor or @scheme[#f];
   the result is a structure type descriptor of the most specific type
   for which @scheme[v] is an instance, and for which the current
   inspector has control, or the result is @scheme[#f] if the current
   inspector does not control any structure type for which the
   @scheme[struct] is an instance.}
 
-  @item{@scheme[skipped?]: @scheme[#f] if the first result corresponds to
+  @item{@scheme[_skipped?]: @scheme[#f] if the first result corresponds to
   the most specific structure type of @scheme[v], @scheme[#t] otherwise.}
 
 ]}
@@ -86,32 +86,32 @@ Returns eight values that provide information about the structure type
 
  @itemize[
 
-  @item{@scheme[name]: the structure type's name as a symbol;}
+  @item{@scheme[_name]: the structure type's name as a symbol;}
 
-  @item{@scheme[init-field-cnt]: the number of fields defined by the
+  @item{@scheme[_init-field-cnt]: the number of fields defined by the
    structure type provided to the constructor procedure (not counting
    fields created by its ancestor types);}
 
-  @item{@scheme[auto-field-cnt]: the number of fields defined by the
+  @item{@scheme[_auto-field-cnt]: the number of fields defined by the
    structure type without a counterpart in the constructor procedure
    (not counting fields created by its ancestor types);}
 
-  @item{@scheme[accessor-proc]: an accessor procedure for the structure
+  @item{@scheme[_accessor-proc]: an accessor procedure for the structure
    type, like the one returned by @scheme[make-struct-type];}
 
-  @item{@scheme[mutator-proc]: a mutator procedure for the structure
+  @item{@scheme[_mutator-proc]: a mutator procedure for the structure
    type, like the one returned by @scheme[make-struct-type];}
 
-  @item{@scheme[immutable-k-list]: an immutable list of exact
+  @item{@scheme[_immutable-k-list]: an immutable list of exact
    non-negative integers that correspond to immutable fields for the
    structure type;}
 
-  @item{@scheme[super-type]: a structure type descriptor for the
+  @item{@scheme[_super-type]: a structure type descriptor for the
    most specific ancestor of the type that is controlled by the
    current inspector, or @scheme[#f] if no ancestor is controlled by
    the current inspector;}
 
-  @item{@scheme[skipped?]: @scheme[#f] if the seventh result is the
+  @item{@scheme[_skipped?]: @scheme[#f] if the seventh result is the
    most specific ancestor type or if the type has no supertype,
    @scheme[#t] otherwise.}
 
@@ -150,8 +150,11 @@ The name (if any) of a procedure is always a symbol. The
 name.
 
 The name of a @tech{structure}, @tech{structure type}, @tech{structure
-type property} is always a symbol. If a @tech{structure} is not a
-procedure, its name matches the name of the @tech{structure type} that
+type property} is always a symbol. If a @tech{structure} is a
+procedure as implemented by one of its fields (i.e., the
+@scheme[prop:procedure] property value for the structure's type is an
+integer), then its name is the implementing procedure's name;
+otherwise, its name matches the name of the @tech{structure type} that
 it instantiates.
 
 The name of a @tech{regexp value} is a string or byte string. Passing

@@ -45,7 +45,11 @@ Mutators sein.
 
 @defform[(define-record-procedures-parametric-2 t cc c p (field-spec1 ...))]{
 Diese Form ist wie @scheme[define-record-procedures-2], nur parametrisch 
-wie @schemeidfont{define-record-procedures-parametric}.}
+wie @schemeidfont{define-record-procedures-parametric}.  Außerdem
+werden die Verträge für die Feldinhalte, anders als bei
+@scheme[define-record-procedures-parametric], sofort bei der
+Konstruktion überprüft und nicht erst beim Aufruf eines Selektors.
+}
 
 @section{@scheme[set!]}
 

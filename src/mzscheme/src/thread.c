@@ -6184,12 +6184,6 @@ void scheme_install_config(Scheme_Config *config)
   scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 }
 
-#ifdef MZTAG_REQUIRED
-# define IS_VECTOR(c) SCHEME_VECTORP((c)->content)
-#else
-# define IS_VECTOR(c) (!(c)->is_param)
-#endif
-
 Scheme_Object *find_param_cell(Scheme_Config *c, Scheme_Object *k, int force_cell)
      /* Unless force_cell, the result may actually be a value, if there has been
 	no reason to set it before */
@@ -6342,7 +6336,8 @@ static Scheme_Object *parameterization_p(int argc, Scheme_Object **argv)
 
 
 #define SCHEME_PARAMETERP(v) ((SCHEME_PRIMP(v) || SCHEME_CLSD_PRIMP(v)) \
-                              && (((Scheme_Primitive_Proc *)v)->pp.flags & SCHEME_PRIM_IS_PARAMETER))
+                              && ((((Scheme_Primitive_Proc *)v)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) \
+                                  == SCHEME_PRIM_TYPE_PARAMETER))
 
 static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
 {
@@ -6356,13 +6351,20 @@ static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
     scheme_flatten_config(c);
   } else if (SCHEME_CONFIGP(c) && (argc & 1)) {
     for (i = 1; i < argc; i += 2) {
-      if (!SCHEME_PARAMETERP(argv[i])) {
+      param = argv[i];
+      if (!SCHEME_PARAMETERP(param)
+          && !(SCHEME_CHAPERONEP(param) && SCHEME_PARAMETERP(SCHEME_CHAPERONE_VAL(param)))) {
 	scheme_wrong_type("parameterize", "parameter", i, argc, argv);
 	return NULL;
       }
-      a[0] = argv[i + 1];
+      key = argv[i + 1];
+      if (SCHEME_CHAPERONEP(param)) {
+        a[0] = key;
+        key = scheme_apply_chaperone(param, 1, a, scheme_void);
+        param = SCHEME_CHAPERONE_VAL(param);
+      }
+      a[0] = key;
       a[1] = scheme_false;
-      param = argv[i];
       while (1) {
         if (SCHEME_PRIMP(param)) {
           Scheme_Prim *proc;
@@ -6425,6 +6427,8 @@ static Scheme_Object *reparameterize(int argc, Scheme_Object **argv)
 static Scheme_Object *parameter_p(int argc, Scheme_Object **argv)
 {
   Scheme_Object *v = argv[0];
+
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
 
   return (SCHEME_PARAMETERP(v)
 	  ? scheme_true
@@ -6503,7 +6507,7 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
 
   p = scheme_make_closed_prim_w_arity(do_param, (void *)data, 
 				      "parameter-procedure", 0, 1);
-  ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_IS_PARAMETER;
+  ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   return p;
 }
@@ -6514,7 +6518,7 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
   ParamData *data;
 
   if (!SCHEME_PARAMETERP(argv[0]))
-    scheme_wrong_type("make-derived-parameter", "parameter", 0, argc, argv);
+    scheme_wrong_type("make-derived-parameter", "unchaperoned parameter", 0, argc, argv);
 
   scheme_check_proc_arity("make-derived-parameter", 1, 1, argc, argv);
   scheme_check_proc_arity("make-derived-parameter", 1, 2, argc, argv);
@@ -6530,7 +6534,7 @@ static Scheme_Object *make_derived_parameter(int argc, Scheme_Object **argv)
 
   p = scheme_make_closed_prim_w_arity(do_param, (void *)data, 
 				      "parameter-procedure", 0, 1);
-  ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_IS_PARAMETER;
+  ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   return p;
 }
@@ -6542,11 +6546,12 @@ static Scheme_Object *parameter_procedure_eq(int argc, Scheme_Object **argv)
   a = argv[0];
   b = argv[1];
 
-  if (!((SCHEME_PRIMP(a) || SCHEME_CLSD_PRIMP(a))
-	&& (((Scheme_Primitive_Proc *)a)->pp.flags & SCHEME_PRIM_IS_PARAMETER)))
+  if (SCHEME_CHAPERONEP(a)) a = SCHEME_CHAPERONE_VAL(a);
+  if (SCHEME_CHAPERONEP(b)) b = SCHEME_CHAPERONE_VAL(b);
+
+  if (!SCHEME_PARAMETERP(a))
     scheme_wrong_type("parameter-procedure=?", "parameter-procedure", 0, argc, argv);
-  if (!((SCHEME_PRIMP(b) || SCHEME_CLSD_PRIMP(b))
-	&& (((Scheme_Primitive_Proc *)b)->pp.flags & SCHEME_PRIM_IS_PARAMETER)))
+  if (!SCHEME_PARAMETERP(b))
     scheme_wrong_type("parameter-procedure=?", "parameter-procedure", 1, argc, argv);
 
   return (SAME_OBJ(a, b)
@@ -6619,6 +6624,8 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_PRINT_UNREADABLE, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_PAIR_CURLY, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_MPAIR_CURLY, scheme_true);
+  init_param(cells, paramz, MZCONFIG_PRINT_READER, scheme_false);
+  init_param(cells, paramz, MZCONFIG_PRINT_AS_QQ, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_SYNTAX_WIDTH, scheme_make_integer(32));
 
   init_param(cells, paramz, MZCONFIG_HONU_MODE, scheme_false);
@@ -6692,17 +6699,22 @@ static void make_initial_config(Scheme_Thread *p)
   }
   
   {
-    Scheme_Object *ph, *prh;
+    Scheme_Object *ph;
 
     ph = scheme_make_prim_w_arity(scheme_default_print_handler,
 				  "default-print-handler",
 				  1, 1);
     init_param(cells, paramz, MZCONFIG_PRINT_HANDLER, ph);
 
-    prh = scheme_make_prim_w_arity(scheme_default_prompt_read_handler,
-				   "default-prompt-read-handler",
-				   0, 0);
-    init_param(cells, paramz, MZCONFIG_PROMPT_READ_HANDLER, prh);
+    ph = scheme_make_prim_w_arity(scheme_default_prompt_read_handler,
+                                  "default-prompt-read-handler",
+                                  0, 0);
+    init_param(cells, paramz, MZCONFIG_PROMPT_READ_HANDLER, ph);
+
+    ph = scheme_make_prim_w_arity(scheme_default_read_handler,
+                                  "default-read-interaction-handler",
+                                  2, 2);
+    init_param(cells, paramz, MZCONFIG_READ_HANDLER, ph);
   }
   init_param(cells, paramz, MZCONFIG_PORT_COUNT_LINES, scheme_false);
 
@@ -6770,7 +6782,7 @@ Scheme_Object *scheme_register_parameter(Scheme_Prim *function, char *name, int 
     return config_map[which];
 
   o = scheme_make_prim_w_arity(function, name, 0, 1);
-  ((Scheme_Primitive_Proc *)o)->pp.flags |= SCHEME_PRIM_IS_PARAMETER;
+  ((Scheme_Primitive_Proc *)o)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   config_map[which] = o;
 
@@ -7462,12 +7474,24 @@ END_XFORM_SKIP;
 /*                                 stats                                  */
 /*========================================================================*/
 
+static void set_perf_vector(Scheme_Object *v, Scheme_Object *ov, int i, Scheme_Object *a)
+{
+  if (SAME_OBJ(v, ov))
+    SCHEME_VEC_ELS(v)[i] = a;
+  else
+    scheme_chaperone_vector_set(ov, i, a);
+}
+
 static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *v;
+  Scheme_Object *v, *ov;
   Scheme_Thread *t = NULL;
   
   v = argv[0];
+
+  ov = v;
+  if (SCHEME_CHAPERONEP(v))
+    v = SCHEME_CHAPERONE_VAL(v);
 
   if (!SCHEME_MUTABLE_VECTORP(v))
     scheme_wrong_type("vector-set-performance-stats!", "mutable vector", 0, argc, argv);
@@ -7532,25 +7556,25 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
 	  }
 	}
 
-	SCHEME_VEC_ELS(v)[3] = scheme_make_integer(sz);
+        set_perf_vector(v, ov, 3, scheme_make_integer(sz));
       }
     case 3:
-      SCHEME_VEC_ELS(v)[2] = (t->block_descriptor 
-			      ? scheme_true 
-			      : ((t->running & MZTHREAD_SUSPENDED)
-				 ? scheme_true
-				 : scheme_false));
+      set_perf_vector(v, ov, 2, (t->block_descriptor 
+                                 ? scheme_true 
+                                 : ((t->running & MZTHREAD_SUSPENDED)
+                                    ? scheme_true
+                                    : scheme_false)));
     case 2:
       {
 	Scheme_Object *dp;
 	dp = thread_dead_p(1, (Scheme_Object **) mzALIAS &t);
-	SCHEME_VEC_ELS(v)[1] = dp;
+	set_perf_vector(v, ov, 1, dp);
       }
     case 1:
       {
 	Scheme_Object *rp;
 	rp = thread_running_p(1, (Scheme_Object **) mzALIAS &t);
-	SCHEME_VEC_ELS(v)[0] = rp;
+	set_perf_vector(v, ov, 0, rp);
       }
     case 0:
       break;
@@ -7565,27 +7589,27 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
     switch (SCHEME_VEC_SIZE(v)) {
     default:
     case 11:
-      SCHEME_VEC_ELS(v)[10] = scheme_make_integer(scheme_jit_malloced);
+      set_perf_vector(v, ov, 10, scheme_make_integer(scheme_jit_malloced));
     case 10:
-      SCHEME_VEC_ELS(v)[9] = scheme_make_integer(scheme_hash_iteration_count);
+      set_perf_vector(v, ov, 9, scheme_make_integer(scheme_hash_iteration_count));
     case 9:
-      SCHEME_VEC_ELS(v)[8] = scheme_make_integer(scheme_hash_request_count);
+      set_perf_vector(v, ov, 8, scheme_make_integer(scheme_hash_request_count));
     case 8:
-      SCHEME_VEC_ELS(v)[7] = scheme_make_integer(scheme_num_read_syntax_objects);
+      set_perf_vector(v, ov, 7, scheme_make_integer(scheme_num_read_syntax_objects));
     case 7:
-      SCHEME_VEC_ELS(v)[6] = scheme_make_integer(num_running_threads+1);
+      set_perf_vector(v, ov, 6, scheme_make_integer(num_running_threads+1));
     case 6:
-      SCHEME_VEC_ELS(v)[5] = scheme_make_integer(scheme_overflow_count);
+      set_perf_vector(v, ov, 5, scheme_make_integer(scheme_overflow_count));
     case 5:
-      SCHEME_VEC_ELS(v)[4] = scheme_make_integer(thread_swap_count);
+      set_perf_vector(v, ov, 4, scheme_make_integer(thread_swap_count));
     case 4:
-      SCHEME_VEC_ELS(v)[3] = scheme_make_integer(scheme_did_gc_count);
+      set_perf_vector(v, ov, 3, scheme_make_integer(scheme_did_gc_count));
     case 3:
-      SCHEME_VEC_ELS(v)[2] = scheme_make_integer(gcend);
+      set_perf_vector(v, ov, 2, scheme_make_integer(gcend));
     case 2:
-      SCHEME_VEC_ELS(v)[1] = scheme_make_integer(end);
+      set_perf_vector(v, ov, 1, scheme_make_integer(end));
     case 1:
-      SCHEME_VEC_ELS(v)[0] = scheme_make_integer(cpuend);
+      set_perf_vector(v, ov, 0, scheme_make_integer(cpuend));
     case 0:
       break;
     }
@@ -7886,7 +7910,8 @@ int scheme_is_in_frozen_stack()
 static unsigned long get_deeper_base()
 {
   long here;
-  return (unsigned long)&here;
+  unsigned long here_addr = (unsigned long)&here;
+  return here_addr;
 }
 
 #ifdef _MSC_VER

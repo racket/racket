@@ -1,9 +1,9 @@
 #|
 
 # OS X pre-make script
-# builds resource files, makes template Starter.app and MrEd.app
+# builds resource files, makes template Starter.app and GRacket.app
 #
-# the script must be run from the mred build directory,
+# the script must be run from the gracket build directory,
 # and srcdir must be provided as the first argument
 
 |#
@@ -24,15 +24,15 @@
 
   ; Rez where needed:
   (let* ([cw-path (build-path plthome "src" "mac" "cw")]
-	 [rez-it (lambda (app)
+	 [rez-it (lambda (app src)
 		   (printf "Writing ~a~n" (string-append app ".rsrc.OSX"))
 		   (system* rez-path 
-			    (path->string (build-path cw-path (string-append app ".r")))
+			    (path->string (build-path cw-path (string-append src ".r")))
 			    "-UseDF" "-o" 
 			    (path->string
 			     (path-replace-suffix app #".rsrc.OSX"))))])
     ; (rez-it "MzScheme") ; useless under OS X...
-    (rez-it "MrEd"))
+    (rez-it "GRacket" "MrEd"))
 
   ; make .app templates in the right places:
 
@@ -91,7 +91,7 @@
       (realize-template fw-path fw-template-tree)
       (write-info (build-path fw-path "Resources") info-plist)
       ;; maybe someday we'll have Contents/Resources/English.lproj ?
-      (let* ([rsrc-src (build-path "MrEd.rsrc.OSX")]
+      (let* ([rsrc-src (build-path "GRacket.rsrc.OSX")]
 	     [rsrc-dest (build-path fw-path "Resources" (format "~a.rsrc" fw-name))])
 	(when (file-exists? rsrc-dest)
 	  (delete-file rsrc-dest))
@@ -121,14 +121,14 @@
 		       ,(version))))
 
     (create-app (build-path (current-directory) (if for-3m? 'up 'same))
-                (string-append "MrEd" suffix)
+                (string-append "GRacket" suffix)
 		"MrEd"
 		"APPLmReD"
-		(make-info-plist (string-append "MrEd" suffix) "mReD" #t))
+		(make-info-plist (string-append "GRacket" suffix) "mReD" #t))
 
     (create-fw (current-directory)
-	       "PLT_MrEd"
-		(make-info-plist "PLT_MrEd" "MrEd" #f))
+	       "GRacket"
+		(make-info-plist "GRacket" "GRacket" #f))
 
     (create-app (build-path (current-directory) (if for-3m? 'up 'same))
                 "Starter"

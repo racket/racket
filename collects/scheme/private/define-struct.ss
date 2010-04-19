@@ -39,6 +39,34 @@
                                               "procedure (arity 0)"
                                               proc)))))
 
+  (define-for-syntax (self-ctor-transformer orig stx)
+    (with-syntax ([orig orig])
+      (syntax-case stx ()
+        [(_ arg ...) (datum->syntax stx
+                                    (syntax-e (syntax (orig arg ...)))
+                                    stx
+                                    stx)]
+        [_ (syntax orig)])))
+  
+  (define-values-for-syntax (make-self-ctor-struct-info)
+    (letrec-values ([(struct: make- ? ref set!)
+                     (make-struct-type 'self-ctor-struct-info struct:struct-info
+                                       1 0 #f
+                                       (list (cons prop:procedure
+                                                   (lambda (v stx)
+                                                     (self-ctor-transformer (ref v 0) stx))))
+                                       (current-inspector) #f '(0))])
+      make-))
+  (define-values-for-syntax (make-self-ctor-checked-struct-info)
+    (letrec-values ([(struct: make- ? ref set!)
+                     (make-struct-type 'self-ctor-checked-struct-info struct:checked-struct-info
+                                       1 0 #f
+                                       (list (cons prop:procedure
+                                                   (lambda (v stx)
+                                                     (self-ctor-transformer (ref v 0) stx))))
+                                       (current-inspector) #f '(0))])
+      make-))
+
   (define-syntax-parameter struct-field-index
     (lambda (stx)
       (raise-syntax-error #f "allowed only within a structure type definition" stx)))
@@ -92,15 +120,16 @@
        stx
        (if (null? alt) kw (car alt))))
 
-    (define (check-exprs orig-n ps)
+    (define (check-exprs orig-n ps what)
       (let loop ([nps (cdr ps)][n orig-n])
         (unless (zero? n)
           (unless (and (pair? nps)
                        (not (keyword? (syntax-e (car nps)))))
             (raise-syntax-error
              #f
-             (format "expected ~a expression~a after keyword~a"
+             (format "expected ~a ~a~a after keyword~a"
                      orig-n
+                     (or what "expression")
                      (if (= orig-n 1) "" "s")
                      (if (pair? nps)
                          ", found a keyword"
@@ -129,7 +158,7 @@
              (loop (cdr ps) def-val auto? #t)]
             #;
             [(eq? #:default (syntax-e (car ps)))
-             (check-exprs 1 ps)
+             (check-exprs 1 ps #f)
              (when def-val
                (bad "multiple" (car ps) " for field"))
              (loop (cddr ps) (cadr ps) auto? mutable?)]
@@ -173,13 +202,14 @@
                            (#:props . ())
                            (#:mutable . #f)
                            (#:guard . #f)
+                           (#:constructor-name . #f)
                            (#:omit-define-values . #f)
                            (#:omit-define-syntaxes . #f))]
                  [nongen? #f])
         (cond
          [(null? p) config]
          [(eq? '#:super (syntax-e (car p)))
-          (check-exprs 1 p)
+          (check-exprs 1 p #f)
           (when (lookup config '#:super)
             (bad "multiple" (car p) "s"))
           (when super-id
@@ -196,7 +226,7 @@
          [(memq (syntax-e (car p))
                 '(#:guard #:auto-value))
           (let ([key (syntax-e (car p))])
-            (check-exprs 1 p)
+            (check-exprs 1 p #f)
             (when (lookup config key)
               (bad "multiple" (car p) "s"))
             (when (and nongen?
@@ -206,7 +236,7 @@
                   (extend-config config key (cadr p))
                   nongen?))]
          [(eq? '#:property (syntax-e (car p)))
-          (check-exprs 2 p)
+          (check-exprs 2 p #f)
           (when nongen?
             (bad "cannot use" (car p) " for prefab structure type"))
           (loop (cdddr p)
@@ -216,7 +246,7 @@
                                      (lookup config '#:props)))
                 nongen?)]
          [(eq? '#:inspector (syntax-e (car p)))
-          (check-exprs 1 p)
+          (check-exprs 1 p #f)
           (when (lookup config '#:inspector)
             (bad "multiple" insp-keys "s" (car p)))
           (loop (cddr p)
@@ -228,6 +258,15 @@
             (bad "multiple" insp-keys "s" (car p)))
           (loop (cdr p)
                 (extend-config config '#:inspector #'#f)
+                nongen?)]
+         [(eq? '#:constructor-name (syntax-e (car p)))
+          (check-exprs 1 p "identifier")
+          (when (lookup config '#:constructor-name)
+            (bad "multiple #:constructor-name keys" (car p)))
+          (unless (identifier? (cadr p))
+            (bad "need an identifier after #:constructor-name" (cadr p)))
+          (loop (cddr p)
+                (extend-config config '#:constructor-name (cadr p))
                 nongen?)]
          [(eq? '#:prefab (syntax-e (car p)))
           (when (lookup config '#:inspector)
@@ -321,17 +360,20 @@
                          (car field-stxes))]
                        [else
                         (loop (cdr fields) (cdr field-stxes) #f)]))])
-               (let-values ([(inspector super-expr props auto-val guard mutable?
-                                        omit-define-values? omit-define-syntaxes?)
-                             (let ([config (parse-props #'fm (syntax->list #'(prop ...)) super-id)])
-                               (values (lookup config '#:inspector)
-                                       (lookup config '#:super)
-                                       (lookup config '#:props)
-                                       (lookup config '#:auto-value)
-                                       (lookup config '#:guard)
-                                       (lookup config '#:mutable)
-                                       (lookup config '#:omit-define-values)
-                                       (lookup config '#:omit-define-syntaxes)))])
+               (let*-values ([(inspector super-expr props auto-val guard ctor-name mutable?
+                                         omit-define-values? omit-define-syntaxes?)
+                              (let ([config (parse-props #'fm (syntax->list #'(prop ...)) super-id)])
+                                (values (lookup config '#:inspector)
+                                        (lookup config '#:super)
+                                        (lookup config '#:props)
+                                        (lookup config '#:auto-value)
+                                        (lookup config '#:guard)
+                                        (lookup config '#:constructor-name)
+                                        (lookup config '#:mutable)
+                                        (lookup config '#:omit-define-values)
+                                        (lookup config '#:omit-define-syntaxes)))]
+                             [(self-ctor?)
+                              (and ctor-name (bound-identifier=? id ctor-name))])
                  (when mutable?
                    (for-each (lambda (f f-stx)
                                (when (field-mutable? f)
@@ -342,7 +384,11 @@
                                   f-stx)))
                              fields field-stxes))
                  (let ([struct: (build-name id "struct:" id)]
-                       [make- (build-name id "make-" id)]
+                       [make- (if ctor-name
+                                  (if self-ctor?
+                                      (car (generate-temporaries (list id)))
+                                      ctor-name)
+                                  (build-name id "make-" id))]
                        [? (build-name id id "?")]
                        [sels (map (lambda (f)
                                     (build-name id ; (field-id f) 
@@ -407,7 +453,8 @@
                                                                         [(not (or mutable? (field-mutable? (car fields))))
                                                                          (cons i (loop (add1 i) (cdr fields)))]
                                                                         [else (loop (add1 i) (cdr fields))]))
-                                                                  #,guard))])
+                                                                  #,guard
+                                                                  '#,ctor-name))])
                                   (values struct: make- ?
                                           #,@(let loop ([i 0][fields fields])
                                                (if (null? fields)
@@ -429,8 +476,12 @@
                                                       #`(quote-syntax #,(prune sel))
                                                       sel)))]
 				  [mk-info (if super-info-checked?
-					       #'make-checked-struct-info
-					       #'make-struct-info)])
+                                               (if self-ctor?
+                                                   #'make-self-ctor-checked-struct-info
+                                                   #'make-checked-struct-info)
+                                               (if self-ctor?
+                                                   #'make-self-ctor-struct-info
+                                                   #'make-struct-info))])
                               (quasisyntax/loc stx
                                 (define-syntaxes (#,id)
                                   (#,mk-info
@@ -465,7 +516,10 @@
                                             (protect super-id)
                                             (if super-expr
                                                 #f
-                                                #t)))))))))])
+                                                #t))))
+                                   #,@(if self-ctor?
+                                          (list #`(quote-syntax #,make-))
+                                          null))))))])
                      (let ([result
                             (cond
                              [(and (not omit-define-values?) (not omit-define-syntaxes?))

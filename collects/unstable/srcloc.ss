@@ -3,8 +3,6 @@
 ;; Unstable library by: Carl Eastlund <cce@ccs.neu.edu>
 ;; intended for use in scheme/contract, so don't try to add contracts!
 
-(require setup/main-collects)
-
 (provide
 
  ;; type predicates
@@ -29,6 +27,9 @@
  source-location-position
  source-location-span
  source-location-end
+
+ ;; update
+ update-source-location
 
  ;; rendering
  source-location->string
@@ -57,17 +58,29 @@
 (define (source-location-line x)
   (process-source-location x good-line bad! 'source-location-line))
 
-(define (source-location-position x)
-  (process-source-location x good-position bad! 'source-location-position))
-
 (define (source-location-column x)
   (process-source-location x good-column bad! 'source-location-column))
+
+(define (source-location-position x)
+  (process-source-location x good-position bad! 'source-location-position))
 
 (define (source-location-span x)
   (process-source-location x good-span bad! 'source-location-span))
 
 (define (source-location-end x)
   (process-source-location x good-end bad! 'source-location-end))
+
+(define dont-update
+  (string->uninterned-symbol "Don't update!"))
+
+(define (update-source-location x
+                                #:source [src dont-update]
+                                #:line [line dont-update]
+                                #:column [col dont-update]
+                                #:position [pos dont-update]
+                                #:span [span dont-update])
+  (process-source-location x (good-update src line col pos span) bad!
+                           'update-source-location))
 
 (define (source-location->string x [s ""])
   (process-source-location x (good-string s) bad! 'source-location->string))
@@ -111,6 +124,28 @@
 (define (good-span x src line col pos span) span)
 (define (good-end x src line col pos span) (and pos span (+ pos span)))
 
+(define ((good-update src2 line2 col2 pos2 span2) x src1 line1 col1 pos1 span1)
+  (let* ([src (if (eq? src2 dont-update) src1 src2)]
+         [line (if (eq? line2 dont-update) line1 line2)]
+         [col (if (eq? col2 dont-update) col1 col2)]
+         [pos (if (eq? pos2 dont-update) pos1 pos2)]
+         [span (if (eq? span2 dont-update) span1 span2)])
+    (if (and (eq? src src1)
+             (eq? line line1)
+             (eq? col col1)
+             (eq? pos pos1)
+             (eq? span span1))
+      x
+      (rebuild x src line col pos span))))
+
+(define (rebuild x src line col pos span)
+  (cond
+   [(syntax? x) (datum->syntax x (syntax-e x) (list src line col pos span) x x)]
+   [(srcloc? x) (make-srcloc src line col pos span)]
+   [(vector? x) (vector src line col pos span)]
+   [(or (list? x) src line col pos span) (list src line col pos span)]
+   [else #f]))
+
 (define (good-srcloc x src line col pos span)
   (if (srcloc? x) x (make-srcloc src line col pos span)))
 
@@ -128,9 +163,7 @@
 
 (define ((good-string default) x src line col pos span)
   (format "~a~a"
-          (cond [(path? src) (collects-path src)]
-                [(not src) default]
-                [else src])
+          (or src default)
           (if line
             (if col
               (format ":~a.~a" line col)
@@ -140,16 +173,6 @@
                 (format "::~a-~a" pos (+ pos span))
                 (format "::~a" pos))
               ""))))
-
-(define (collects-path path)
-  (let* ([rel
-          (with-handlers ([exn:fail? (lambda (exn) path)])
-            (path->main-collects-relative path))])
-    (if (pair? rel)
-      (apply build-path
-             (bytes->path #"<collects>")
-             (map bytes->path-element (cdr rel)))
-      rel)))
 
 (define ((good-prefix default) x src line col pos span)
   (let ([str ((good-string default) x src line col pos span)])
@@ -252,14 +275,8 @@
                     (syntax-span x)))
 
 (define (syntax-get-source x)
-  (cond
-   [(syntax-source-module x) =>
-    (lambda (src)
-      (if (module-path-index? src)
-        (resolved-module-path-name
-         (module-path-index-resolve src))
-        src))]
-   [else (syntax-source x)]))
+  (or (syntax-source x)
+      (syntax-source-module x #t)))
 
 (define (process-list x good bad name)
   (cond

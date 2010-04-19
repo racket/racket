@@ -18,7 +18,7 @@
          "text-ui-util-test.ss")
 
 (provide all-schemeunit-tests
-         success-and-failure-tests)
+         failure-tests)
 
 (define all-schemeunit-tests
   (test-suite
@@ -41,10 +41,9 @@
    format-tests
    ))
 
-(define success-and-failure-tests
+(define failure-tests
   (test-suite
-   "Successes and Failures"
-   all-schemeunit-tests
+   "Failures"
    (test-case "Intended to fail" (fail))
    (test-case "Also intended to fail" (check-eq? 'apples 'orange))
    (test-equal? "Yet again intended to fail" "apples" "oranges")

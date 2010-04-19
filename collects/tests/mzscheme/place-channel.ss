@@ -31,7 +31,9 @@
       (string-append x "-ok")
       (cons (car x) 'b)
       (list (car x) 'b (cadr x))
-      (vector (vector-ref x 0) 'b (vector-ref x 1))))
+      (vector (vector-ref x 0) 'b (vector-ref x 1))
+      #s((bozo 1 building 2) 6 'gubber 'no)
+  ))
 )
 END
 "pct1.ss")
@@ -44,12 +46,19 @@ END
     (syntax-rules ()
       [(_ ch (send expect) ...) (begin (test expect pcsr ch send) ...)]))
 
+
+(define-struct building (rooms location) #:prefab)
+(define-struct (house building) (occupied ) #:prefab)
+(define h1 (make-house 5 'factory 'no))
+
+
 (let ([pl (place "pct1.ss" 'place-main)])
   (pcsrs pl
     (1 2 )
     ("Hello" "Hello-ok")
     ((cons 'a 'a) (cons 'a 'b))
     ((list 'a 'a) (list 'a 'b 'a))
-    (#(a a) #(a b a)))
-)
+    (#(a a) #(a b a))
+    (h1 #s((bozo 1 building 2) 6 'gubber 'no))
+))
 

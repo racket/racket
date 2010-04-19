@@ -622,7 +622,7 @@ void GC_init_inner()
 #   if defined(SEARCH_FOR_DATA_START)
 	GC_init_linux_data_start();
 #   endif
-#   if (defined(NETBSD) || defined(OPENBSD)) && defined(__ELF__)
+#   if defined(NETBSD) && defined(__ELF__)
         if (!GC_no_dls) /* PLTSCHEME: hack */
           GC_init_netbsd_elf();
 #   endif

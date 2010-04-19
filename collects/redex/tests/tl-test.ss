@@ -6,7 +6,21 @@
            "../private/struct.ss")
   
   (reset-count)
-  
+
+  (parameterize ([current-namespace syn-err-test-namespace])
+    (eval (quote-syntax
+           (define-language grammar
+             (M (M M)
+                number)
+             (E hole
+                (E M)
+                (number E))
+             (X (number any)
+                (any number))
+             (Q (Q ...)
+                variable)
+             (UN (add1 UN)
+                 zero)))))
   
 ;                                                          
 ;                                                          
@@ -232,6 +246,21 @@
       (y (variable-prefix a_b)))
     (test (pair? (redex-match L x (term a_c))) #t)
     (test (pair? (redex-match L y (term a_bc))) #t))
+  
+  ; underscores allowed on built-in non-terminals and names bound
+  (let ([m (redex-match 
+            grammar 
+            (any_1 number_1 natural_1 integer_1
+                   real_1 string_1 variable_1
+                   variable-not-otherwise-mentioned_1)
+            '(1 2 3 4 5 "s" s t))])
+    (test (if m
+              (map bind-exp
+                   (sort (match-bindings (car m))
+                         string<=?
+                         #:key (compose symbol->string bind-name)))
+              '())
+          '(1 4 3 2 5 "s" t s)))
   
   ;; test caching
   (let ()
@@ -674,6 +703,12 @@
     (test (term (f 8)) 12345))
   
   
+  (let ()
+    (test-syn-err
+     (define-metafunction grammar
+       [(f x)])
+     #rx"expected a pattern and a right-hand side"))
+  
 ;                                                                                                 
 ;                                                                                                 
 ;                                                                                                 
@@ -1022,21 +1057,6 @@
            (reduction-relation n-lang [--> any ,(length (redex-match n-lang n 1))])
            11)
           '(1)))
-  
-  (parameterize ([current-namespace syn-err-test-namespace])
-    (eval (quote-syntax
-           (define-language grammar
-             (M (M M)
-                number)
-             (E hole
-                (E M)
-                (number E))
-             (X (number any)
-                (any number))
-             (Q (Q ...)
-                variable)
-             (UN (add1 UN)
-                 zero)))))
   
   (test-syn-err (reduction-relation 
                  grammar
@@ -1876,5 +1896,35 @@
           "One test passed.\n")
     (test (capture-output (test--> red (term (x)) (term x) (term ((x)))) (test-results))
           "One test passed.\n"))
+  
+  (let ()
+    (define-language L
+      (i integer))
+    
+    (define R
+      (reduction-relation
+       L
+       (--> i i)
+       (--> i ,(add1 (term i)))))
+    
+    (define (mod2=? i j)
+      (= (modulo i 2) (modulo j 2)))
+    
+    (test (capture-output (test--> R #:equiv mod2=? 7 1 0) (test-results))
+          "One test passed.\n")
+    (test (capture-output (test--> R #:equiv mod2=? 7 1) (test-results))
+          #rx"FAILED tl-test.ss:[0-9.]+\nexpected: 1\n  actual: 8\n  actual: 7\n1 test failed \\(out of 1 total\\).\n"))
+  
+  (let-syntax ([test-bad-equiv-arg
+                (λ (stx)
+                  (syntax-case stx ()
+                    [(_ test-form)
+                     #'(test (with-handlers ([exn:fail:contract? exn-message])
+                               (test-form (reduction-relation empty-language (--> any any))
+                                          #:equiv 1 2)
+                               "no error raised")
+                             #rx"expected argument of type")]))])
+    (test-bad-equiv-arg test-->)
+    (test-bad-equiv-arg test-->>))
 
   (print-tests-passed 'tl-test.ss))

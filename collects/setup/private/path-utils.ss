@@ -3,7 +3,7 @@
 (require setup/dirs
          setup/main-collects
          setup/path-relativize
-         scheme/list
+         unstable/dirs
          (rename-in planet/config [CACHE-DIR planet-dir]))
 
 (provide doc-path path->name)
@@ -31,29 +31,10 @@
 ;; clear from the context what path is shown.  (To be used only for
 ;; human-readable output.)  Generalized for any base directory and an
 ;; indicative prefix.
-(define (path->rel path find-base)
-  ((if (not find-base)
-     path->main-collects-relative
-     (let-values ([(path->rel rel->path)
-                   (make-relativize find-base 'rel 'path->rel 'rel->path)])
-       path->rel))
-   path))
 (define (path->name path #:prefix [prefix #f] #:base [find-base #f])
-  (define (try find-base prefix)
-    (define rel (path->rel path find-base))
-    (and (pair? rel)
-         (let* ([p (append-map (lambda (p) (list #"/" p)) (cdr rel))]
-                [p (if (null? p)
-                     ""
-                     (bytes->string/utf-8 (apply bytes-append (cdr p))))])
-           (if prefix (format "<~a>/~a" prefix p) p))))
-  (define (->string) (if (string? path) path (path->string path)))
-  (if (not (complete-path? path))
-    (->string)
-    (or (try find-base prefix)
-        ;; by default (both optionals missing) try the user
-        ;; collections and planet too
-        (and (not (or prefix find-base))
-             (or (try find-user-collects-dir 'user)
-                 (try planet-dir 'planet)))
-        (->string))))
+  (path->directory-relative-string
+   path
+   #:dirs (cond
+           [find-base (list (cons find-base prefix))]
+           [prefix (list (cons find-collects-dir prefix))]
+           [else setup-relative-directories])))

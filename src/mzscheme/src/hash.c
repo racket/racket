@@ -999,6 +999,9 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
   Scheme_Type t;
 
  top:
+  if (SCHEME_CHAPERONEP(o))
+    o = ((Scheme_Chaperone *)o)->val;
+  
   t = SCHEME_TYPE(o);
   k += t;
 
@@ -1421,6 +1424,9 @@ static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
   Scheme_Type t;
 
  top:
+  if (SCHEME_CHAPERONEP(o))
+    o = ((Scheme_Chaperone *)o)->val;
+
   t = SCHEME_TYPE(o);
 
   if (hi->depth > (MAX_HASH_DEPTH << 1))

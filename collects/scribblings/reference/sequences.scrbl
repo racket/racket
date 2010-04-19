@@ -325,14 +325,17 @@ sequence; if no more elements are available, the
 
 @section{Iterator Generators}
 @defmodule[scheme/generator]
-@defform[(generator body ...)]{ Creates a function that returns a
-value, usually through @scheme[yield], each time it is invoked. When
-the generator runs out of values to yield the last value it computed
+@defform[(generator () body ...)]{ Creates a function that returns a
+value through @scheme[yield], each time it is invoked. When
+the generator runs out of values to yield, the last value it computed
 will be returned for future invocations of the generator. Generators
 can be safely nested.
 
+Note: the first form must be @scheme[()], and in the future this will
+hold argument names that are used in the initial generator call.
+
 @examples[#:eval (generator-eval)
-(define g (generator
+(define g (generator ()
 	    (let loop ([x '(a b c)])
 	      (if (null? x)
 		0
@@ -351,7 +354,7 @@ with a stop-value known to the generator.
 
 @examples[#:eval (generator-eval)
 (define my-stop-value (gensym))
-(define my-generator (generator
+(define my-generator (generator ()
 		       (let loop ([x '(a b c)])
 			 (if (null? x)
 			   my-stop-value
@@ -401,14 +404,14 @@ the arguments to the generator instance. Note that a value cannot be passed back
 to the generator until after the first @scheme[yield] has been invoked.
 
 @examples[#:eval (generator-eval)
-(define my-generator (generator (yield 1) (yield 2 3 4)))
+(define my-generator (generator () (yield 1) (yield 2 3 4)))
 (my-generator)
 (my-generator)
 ]
 
 @examples[#:eval (generator-eval)
 (define pass-values-generator
-  (generator
+  (generator ()
     (let* ([from-user (yield 2)]
            [from-user-again (yield (add1 from-user))])
       (yield from-user-again))))
@@ -433,7 +436,7 @@ of the generator.
  ]
 
 @examples[#:eval (generator-eval)
-(define my-generator (generator (yield 1) (yield 2)))
+(define my-generator (generator () (yield 1) (yield 2)))
 (generator-state my-generator)
 (my-generator)
 (generator-state my-generator)
@@ -442,7 +445,7 @@ of the generator.
 (my-generator)
 (generator-state my-generator)
 
-(define introspective-generator (generator ((yield 1))))
+(define introspective-generator (generator () ((yield 1))))
 (introspective-generator)
 (introspective-generator 
  (lambda () (generator-state introspective-generator)))

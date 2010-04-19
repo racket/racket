@@ -1,8 +1,7 @@
-;; The first three lines of this file were inserted by DrScheme. They record metadata
-;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname mp) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+#lang scheme (require test-engine/scheme-tests)
 (require 2htdp/universe)
 (require htdp/image)
+
 
 ;; WorldState = Image 
 
@@ -13,11 +12,11 @@
 ;; add a dot at (x,y) to ws 
 
 (check-expect 
- (clack mt 10 20 "something mousy")
+ (clack mt 10 20 "button-down")
  (place-image (circle 1 "solid" "red") 10 20 mt))
 
 (check-expect 
- (clack (place-image (circle 1 "solid" "red") 1 2 mt) 3 3 "")
+ (clack (place-image (circle 1 "solid" "red") 1 2 mt) 3 3 "button-down")
  (place-image (circle 1 "solid" "red") 3 3
               (place-image (circle 1 "solid" "red") 1 2 mt)))
 
@@ -34,8 +33,13 @@
 (define (show ws)
   ws)
 
+(test)
+
 ;; run program run 
-(big-bang (empty-scene 100 100)
-          (on-draw show)
-          (record? true)
-          (on-mouse clack))
+(define (main x)
+  (big-bang (empty-scene 100 100)
+            (on-draw show)
+            (record? x)
+            (on-mouse clack)))
+
+(main false)

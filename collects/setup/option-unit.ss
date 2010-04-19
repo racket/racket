@@ -23,6 +23,8 @@
   (import)
   (export setup-option^)
 
+  (define setup-program-name (make-parameter "setup-plt"))
+
   (define-flag-param verbose #f)
   (define-flag-param make-verbose #f)
   (define-flag-param compiler-verbose #f)

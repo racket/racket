@@ -76,7 +76,7 @@
 (define make-promise-ty
   (let ([s (string->uninterned-symbol "Promise")])
     (lambda (t)
-      (make-Struct s #f (list t) #f #f #'promise? values (list #'values)))))
+      (make-Struct s #f (list t) #f #f #'promise? values (list #'values) #'values))))
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
@@ -271,8 +271,8 @@
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))
 
-(define (-struct name parent flds accs [proc #f] [poly #f] [pred #'dummy] [cert values])
-  (make-Struct name parent flds proc poly pred cert accs))
+(define (-struct name parent flds accs constructor [proc #f] [poly #f] [pred #'dummy] [cert values])
+  (make-Struct name parent flds proc poly pred cert accs constructor))
 
 (d/c (-filter t i [p null])
      (c:->* (Type/c identifier?) ((listof PathElem?)) Filter/c)
@@ -362,6 +362,8 @@
 
 (define true-filter (-FS -top -bot))
 (define false-filter (-FS -bot -top))
+(define true-lfilter (-FS -top -bot))
+(define false-lfilter (-FS -bot -top))
 
 (define (opt-fn args opt-args result)
   (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])                         

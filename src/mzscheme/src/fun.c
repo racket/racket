@@ -31,6 +31,7 @@
 
 #include "schpriv.h"
 #include "schexpobs.h"
+#include "schmach.h"
 
 /* The implementations of the time primitives, such as
    `current-seconds', vary a lot from platform to platform. */
@@ -169,6 +170,7 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_result_arity (int argc, Scheme_Object *argv[]);
@@ -176,6 +178,7 @@ static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_values(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_print(int argc, Scheme_Object **argv);
 static Scheme_Object *current_prompt_read(int, Scheme_Object **);
+static Scheme_Object *current_read(int, Scheme_Object **);
 
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj);
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj);
@@ -511,6 +514,11 @@ scheme_init_fun (Scheme_Env *env)
 						      "procedure-closure-contents-eq?",
 						      2, 2, 1),
 			     env);
+  scheme_add_global_constant("chaperone-procedure",
+			     scheme_make_prim_w_arity(chaperone_procedure,
+						      "chaperone-procedure",
+						      2, -1),
+			     env);
 
   scheme_add_global_constant("primitive?",
 			     scheme_make_folding_prim(primitive_p,
@@ -538,6 +546,11 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_register_parameter(current_prompt_read,
 						       "current-prompt-read",
 						       MZCONFIG_PROMPT_READ_HANDLER),
+			     env);
+  scheme_add_global_constant("current-read-interaction",
+			     scheme_register_parameter(current_read,
+						       "current-read-interaction",
+						       MZCONFIG_READ_HANDLER),
 			     env);
 
   scheme_install_type_writer(scheme_unclosed_procedure_type,
@@ -2535,7 +2548,6 @@ extern int g_print_prims;
 Scheme_Object *
 scheme_tail_apply (Scheme_Object *rator, int num_rands, Scheme_Object **rands)
 {
-
   /* NOTE: apply_values_execute (in syntax.c) and
      tail_call_with_values_from_multiple_result (in jit.c)
      assume that this function won't allocate when 
@@ -2543,25 +2555,16 @@ scheme_tail_apply (Scheme_Object *rator, int num_rands, Scheme_Object **rands)
   int i;
   Scheme_Thread *p = scheme_current_thread;
 
-	#ifdef INSTRUMENT_PRIMITIVES 
-	if (g_print_prims)
-	{
-		printf("scheme_tail_apply\n");
-	}
-	#endif
-
   p->ku.apply.tail_rator = rator;
   p->ku.apply.tail_num_rands = num_rands;
 
   if (num_rands) {
     Scheme_Object **a;
     if (num_rands > p->tail_buffer_size) {
-      {
-	Scheme_Object **tb;
-	tb = MALLOC_N(Scheme_Object *, num_rands);
-	p->tail_buffer = tb;
-	p->tail_buffer_size = num_rands;
-      }
+      Scheme_Object **tb;
+      tb = MALLOC_N(Scheme_Object *, num_rands);
+      p->tail_buffer = tb;
+      p->tail_buffer_size = num_rands;
     }
     a = p->tail_buffer;
     p->ku.apply.tail_rands = a;
@@ -2901,21 +2904,28 @@ Scheme_Object *scheme_make_arity(mzshort mina, mzshort maxa)
   }
 }
 
-static Scheme_Object *clone_arity(Scheme_Object *a)
+static Scheme_Object *clone_arity(Scheme_Object *a, int delta)
 {
   if (SCHEME_PAIRP(a)) {
     Scheme_Object *m, *l;
     m = scheme_copy_list(a);
     for (l = m; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-      a = clone_arity(SCHEME_CAR(l));
+      a = clone_arity(SCHEME_CAR(l), delta);
       SCHEME_CAR(l) = a;
     }
     return m;
-  } else if (SCHEME_STRUCTP(a)) {
+  } else if (SCHEME_CHAPERONE_STRUCTP(a)) {
     Scheme_Object *p[1];
-    p[0] = ((Scheme_Structure *)a)->slots[0];
+    a = scheme_struct_ref(a, 0);
+    if (delta)
+      a = scheme_bin_minus(a, scheme_make_integer(delta));
+    p[0] = a;
     return scheme_make_struct_instance(scheme_arity_at_least, 1, p);
-  } else
+  } else if (SCHEME_NULLP(a))
+    return a;
+  else if (delta)
+    return scheme_bin_minus(a, scheme_make_integer(delta));
+  else
     return a;
 }
 
@@ -2999,10 +3009,13 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a, Scheme_Object
     int is_method;
     if (scheme_reduced_procedure_struct
         && scheme_is_struct_instance(scheme_reduced_procedure_struct, p)) {
-      if (a >= 0)
+      if (a >= 0) {
         bign = scheme_make_integer(a);
+        if (drop)
+          bign = scheme_bin_plus(bign, scheme_make_integer(a));
+      }
       if (a == -1)
-        return clone_arity(((Scheme_Structure *)p)->slots[1]);
+        return clone_arity(((Scheme_Structure *)p)->slots[1], drop);
       else {
         /* Check arity (or for varargs) */
         Scheme_Object *v;
@@ -3145,6 +3158,10 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a, Scheme_Object
 	return scheme_false;
     }
 #endif
+  } else if (type == scheme_proc_chaperone_type) {
+    p = SCHEME_CHAPERONE_VAL(p);
+    SCHEME_USE_FUEL(1);
+    goto top;
   } else {
     Scheme_Closure_Data *data;
 
@@ -3332,7 +3349,7 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a)
 {
   Scheme_Object *b;
 
-  while (SCHEME_PROC_STRUCTP(a)) {
+  while (SCHEME_CHAPERONE_PROC_STRUCTP(a)) {
     if (scheme_reduced_procedure_struct
         && scheme_is_struct_instance(scheme_reduced_procedure_struct, a)
         && SCHEME_TRUEP(((Scheme_Structure *)a)->slots[2])) {
@@ -3341,6 +3358,8 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a)
       /* Either use struct name, or extract proc, depending
          whether it's method-style */
       int is_method;
+      if (SCHEME_CHAPERONEP(a))
+        a = SCHEME_CHAPERONE_VAL(a);
       b = scheme_extract_struct_procedure(a, -1, NULL, &is_method);
       if (!is_method && SCHEME_PROCP(b)) {
         a = b;
@@ -3432,6 +3451,10 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
       p = other;
       goto top;
     }
+  } else if (type == scheme_proc_chaperone_type) {
+    p = SCHEME_CHAPERONE_VAL(p);
+    SCHEME_USE_FUEL(1);
+    goto top;
   } else {
     Scheme_Object *name;
 
@@ -3503,12 +3526,15 @@ static Scheme_Object *primitive_result_arity(int argc, Scheme_Object *argv[])
   return scheme_make_integer(1);
 }
 
-static Scheme_Object *object_name(int argc, Scheme_Object **argv)
+Scheme_Object *scheme_object_name(Scheme_Object *a)
 {
-  Scheme_Object *a = argv[0];
+  if (SCHEME_CHAPERONEP(a))
+    a = SCHEME_CHAPERONE_VAL(a);
 
   if (SCHEME_PROC_STRUCTP(a)) {
     a = scheme_proc_struct_name_source(a);
+    if (SCHEME_CHAPERONEP(a))
+      a = SCHEME_CHAPERONE_VAL(a);
     
     if (SCHEME_STRUCTP(a)
         && scheme_reduced_procedure_struct
@@ -3558,6 +3584,11 @@ static Scheme_Object *object_name(int argc, Scheme_Object **argv)
   return scheme_false;
 }
 
+static Scheme_Object *object_name(int argc, Scheme_Object **argv)
+{
+  return scheme_object_name(argv[0]);
+}
+
 Scheme_Object *scheme_arity(Scheme_Object *p)
 {
   return get_or_check_arity(p, -1, NULL);
@@ -3590,14 +3621,14 @@ static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[])
       } else if (SCHEME_BIGNUMP(v)) {
         if (!SCHEME_BIGPOS(v))
           return scheme_false;
-      } else if (!SCHEME_STRUCTP(v)
+      } else if (!SCHEME_CHAPERONE_STRUCTP(v)
                  || !scheme_is_struct_instance(scheme_arity_at_least, v)) {
         return scheme_false;
       }
       a = SCHEME_CDR(a);
     }
     return SCHEME_NULLP(a) ? scheme_true : scheme_false;
-  } else if (SCHEME_STRUCTP(a)
+  } else if (SCHEME_CHAPERONE_STRUCTP(a)
              && scheme_is_struct_instance(scheme_arity_at_least, a)) {
     return scheme_true;
   } else
@@ -3624,9 +3655,9 @@ static int is_arity(Scheme_Object *a, int at_least_ok, int list_ok)
   } else if (SCHEME_BIGNUMP(a)) {
     return SCHEME_BIGPOS(a);
   } else if (at_least_ok
-             && SCHEME_STRUCTP(a)
+             && SCHEME_CHAPERONE_STRUCTP(a)
              && scheme_is_struct_instance(scheme_arity_at_least, a)) {
-    a = ((Scheme_Structure *)a)->slots[0];
+    a = scheme_struct_ref(a, 0);
     return is_arity(a, 0, 0);
   }
 
@@ -3654,13 +3685,14 @@ void scheme_init_reduced_proc_struct(Scheme_Env *env)
     while (insp->superior->superior) {
       insp = insp->superior;
     }
-    scheme_reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
-                                                                   NULL,
-                                                                   (Scheme_Object *)insp,
-                                                                   4, 0,
-                                                                   scheme_false,
-                                                                   scheme_make_integer(0),
-                                                                   NULL);
+    scheme_reduced_procedure_struct = scheme_make_struct_type2(NULL,
+                                                               NULL,
+                                                               (Scheme_Object *)insp,
+                                                               4, 0,
+                                                               scheme_false,
+                                                               scheme_null,
+                                                               scheme_make_integer(0),
+                                                               NULL, NULL);
   }
 }
 
@@ -3686,24 +3718,9 @@ static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty,
   return scheme_make_struct_instance(scheme_reduced_procedure_struct, 4, a);
 }
 
-static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
+static int is_subarity(Scheme_Object *req, Scheme_Object *orig)
 {
-  Scheme_Object *orig, *req, *aty, *oa, *ra, *ol, *lra, *ara, *prev, *pr, *tmp;
-
-  if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type("procedure-reduce-arity", "procedure", 0, argc, argv);
-
-  if (!is_arity(argv[1], 1, 1)) {
-    scheme_wrong_type("procedure-reduce-arity", "arity", 1, argc, argv);
-  }
-
-  /* Check whether current arity covers the requested arity.  This is
-     a bit complicated, because both the source and target can be
-     lists that include arity-at-least records. */
-
-  orig = get_or_check_arity(argv[0], -1, NULL);
-  aty = clone_arity(argv[1]);
-  req = aty;
+  Scheme_Object *oa, *ra, *ol, *lra, *ara, *prev, *pr, *tmp;
 
   if (!SCHEME_PAIRP(orig) && !SCHEME_NULLP(orig))
     orig = scheme_make_pair(orig, scheme_null);
@@ -3712,13 +3729,13 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
 
   while (!SCHEME_NULLP(req)) {
     ra = SCHEME_CAR(req);
-    if (SCHEME_STRUCTP(ra)
+    if (SCHEME_CHAPERONE_STRUCTP(ra)
         && scheme_is_struct_instance(scheme_arity_at_least, ra)) {
       /* Convert to a sequence of range pairs, where the
          last one can be (min, #f); we'll iterate through the 
          original arity to knock out ranges until (if it matches)
          we end up with an empty list of ranges. */
-      ra = scheme_make_pair(scheme_make_pair(((Scheme_Structure *)ra)->slots[0],
+      ra = scheme_make_pair(scheme_make_pair(scheme_struct_ref(ra, 0),
                                              scheme_false),
                             scheme_null);
     }
@@ -3816,15 +3833,40 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
     }
 
     if (SCHEME_NULLP(ol)) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
-                       "procedure-reduce-arity: arity of procedure: %V"
-                       " does not include requested arity: %V",
-                       argv[0],
-                       argv[1]);
-      return NULL;
+      return 0;
     }
 
     req = SCHEME_CDR(req);
+  }
+
+  return 1;
+}
+
+static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *orig, *aty;
+
+  if (!SCHEME_PROCP(argv[0]))
+    scheme_wrong_type("procedure-reduce-arity", "procedure", 0, argc, argv);
+
+  if (!is_arity(argv[1], 1, 1)) {
+    scheme_wrong_type("procedure-reduce-arity", "arity", 1, argc, argv);
+  }
+
+  /* Check whether current arity covers the requested arity.  This is
+     a bit complicated, because both the source and target can be
+     lists that include arity-at-least records. */
+
+  orig = get_or_check_arity(argv[0], -1, NULL);
+  aty = clone_arity(argv[1], 0);
+
+  if (!is_subarity(aty, orig)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "procedure-reduce-arity: arity of procedure: %V"
+                     " does not include requested arity: %V",
+                     argv[0],
+                     argv[1]);
+    return NULL;
   }
 
   /* Construct a procedure that has the given arity. */
@@ -3967,6 +4009,238 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
   }
 
   return scheme_false;
+}
+
+static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *val = argv[0], *orig, *naya;
+  Scheme_Hash_Tree *props;
+
+  if (SCHEME_CHAPERONEP(val))
+    val = SCHEME_CHAPERONE_VAL(val);
+
+  if (!SCHEME_PROCP(val))
+    scheme_wrong_type("chaperone-procedure", "procedure", 0, argc, argv);
+  if (!SCHEME_PROCP(argv[1]))
+    scheme_wrong_type("chaperone-procedure", "procedure", 1, argc, argv);
+
+  orig = get_or_check_arity(val, -1, NULL);
+  naya = get_or_check_arity(argv[1], -1, NULL);
+
+  if (!is_subarity(orig, naya))
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "chaperone-procedure: arity of chaperoning procedure: %V"
+                     " does not cover arity of original procedure: %V",
+                     argv[1],
+                     argv[0]);
+
+  props = scheme_parse_chaperone_props("chaperone-procedure", 2, argc, argv);
+
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  px->so.type = scheme_proc_chaperone_type;
+  px->val = val;
+  px->prev = argv[0];
+  px->props = props;
+  px->redirects = argv[1];
+
+  return (Scheme_Object *)px;
+}
+
+static Scheme_Object *apply_chaperone_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Object **argv = (Scheme_Object **)p->ku.k.p2;
+  Scheme_Object *auto_val = (Scheme_Object *)p->ku.k.p3;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+
+  return scheme_apply_chaperone(o, p->ku.k.i1, argv, auto_val);
+}
+
+static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
+{
+  #ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      Scheme_Object **argv2;
+      argv2 = MALLOC_N(Scheme_Object*, argc);
+      memcpy(argv2, argv, sizeof(Scheme_Object *) * argc);
+      p->ku.k.p1 = (void *)o;
+      p->ku.k.p2 = (void *)argv2;
+      p->ku.k.p3 = (void *)auto_val;
+      p->ku.k.i1 = argc;
+      return scheme_handle_stack_overflow(apply_chaperone_k);
+    }
+  }
+#endif
+
+  return scheme_apply_chaperone(o, argc, argv, auto_val);
+}
+
+Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
+{
+  Scheme_Chaperone *px = (Scheme_Chaperone *)o;
+  Scheme_Object *v, *a[1], *a2[3], **argv2, *post, *result_v;
+  int c, i, need_restore = 0;
+
+  if (argv == MZ_RUNSTACK) {
+    /* Pushing onto the runstack ensures that px->redirects won't
+       modify argv. */
+    if (MZ_RUNSTACK > MZ_RUNSTACK_START) {
+      --MZ_RUNSTACK;
+      *MZ_RUNSTACK = NULL;
+      need_restore = 1;
+    } else {
+      /* Can't push! Just allocate a copy. */
+      argv2 = MALLOC_N(Scheme_Object *, argc);
+      memcpy(argv2, argv, sizeof(Scheme_Object*) * argc);
+      argv = argv2;
+    }
+  }
+
+  v = _scheme_apply_multi(px->redirects, argc, argv);
+  if (v == SCHEME_MULTIPLE_VALUES) {
+    GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+    if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+      p->values_buffer = NULL;
+    c = p->ku.multiple.count;
+    argv2 = p->ku.multiple.array;
+  } else {
+    c = 1;
+    a2[0] = v;
+    argv2 = a2;
+  }
+  
+  if ((c == argc) || (c == (argc + 1))) {
+    for (i = 0; i < argc; i++) {
+      if (!scheme_chaperone_of(argv2[i], argv[i])) {
+        if (argc == 1)
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                           "procedure chaperone: %V: result: %V is not a chaperone of argument: %V",
+                           px->redirects,
+                           argv2[i], argv[i]);
+        else
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                           "procedure chaperone: %V: %d%s result: %V is not a chaperone of argument: %V",
+                           px->redirects,
+                           i, scheme_number_suffix(i),
+                           argv2[i], argv[i]);
+      }
+    }
+  } else {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                     "procedure chaperone: %V: returned %d values, expected %d or %d",
+                     px->redirects,
+                     c, argc, argc + 1);
+    return NULL;
+  }
+
+  if (need_restore) {
+    /* As a step toward space safety, even clear out the arguments 
+       form the runstack: */
+    MZ_RUNSTACK++;
+    for (i = 0; i < argc; i++) {
+      argv[i] = NULL;
+    }
+  } else
+    argv = NULL;
+
+  if (c == argc) {
+    /* No filter for the result, so tail call: */
+    if (auto_val) {
+      if (SCHEME_CHAPERONEP(px->prev))
+        return do_apply_chaperone(px->prev, c, argv2, auto_val);
+      else
+        return argv2[0];
+    } else {
+      return scheme_tail_apply(px->prev, c, argv2);
+    }
+  } else {
+    /* Last element is a filter for the result(s) */
+    post = argv2[argc];
+    if (!SCHEME_PROCP(post))
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "procedure chaperone: %V: expected <procedure> as last result, produced: %V",
+                       px->redirects,
+                       post);
+    if (auto_val) {
+      if (SCHEME_CHAPERONEP(px->prev))
+        result_v = do_apply_chaperone(px->prev, argc, argv2, auto_val);
+      else
+        result_v = argv2[0];
+      v = auto_val;
+    } else {
+      v = _scheme_apply_multi(px->prev, argc, argv2);
+      result_v = NULL;
+    }
+    if (v == SCHEME_MULTIPLE_VALUES) {
+      GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
+      c = p->ku.multiple.count;
+      argv = p->ku.multiple.array;
+    } else {
+      c = 1;
+      a[0] = v;
+      argv = a;
+    }
+    
+    if (!scheme_check_proc_arity(NULL, c, 0, -1, &post))
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "procedure-result chaperone: %V: does not accept %d values produced by chaperoned procedure",
+                       post,
+                       c);
+    
+    v = _scheme_apply_multi(post, c, argv);
+    if (v == SCHEME_MULTIPLE_VALUES) {
+      GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+      if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+        p->values_buffer = NULL;
+      argc = p->ku.multiple.count;
+      argv2 = p->ku.multiple.array;
+    } else {
+      argc = 1;
+      a2[0] = v;
+      argv2 = a2;
+    }
+
+    if (c == argc) {
+      for (i = 0; i < argc; i++) {
+        if (!scheme_chaperone_of(argv2[i], argv[i])) {
+          if (argc == 1)
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                             "procedure-result chaperone: %V: result: %V is not a chaperone of original result: %V",
+                             post,
+                             argv2[i], argv[i]);
+          else
+            scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                             "procedure-result chaperone: %V: %d%s result: %V is not a chaperone of original result: %V",
+                             post,
+                             i, scheme_number_suffix(i),
+                             argv2[i], argv[i]);
+        }
+      }
+    } else {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                       "procedure-result chaperone: %V: returned %d values, expected %d",
+                       post,
+                       argc, c);
+      return NULL;
+    }
+
+    if (result_v)
+      return result_v;
+    else if (c == 1)
+      return argv2[0];
+    else
+      return scheme_values(c, argv2);
+  }
 }
 
 static Scheme_Object *
@@ -8591,6 +8865,15 @@ current_prompt_read(int argc, Scheme_Object **argv)
 			     0, NULL, NULL, 0);
 }
 
+static Scheme_Object *
+current_read(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("current-read-interaction",
+			     scheme_make_integer(MZCONFIG_READ_HANDLER),
+			     argc, argv,
+			     2, NULL, NULL, 0);
+}
+
 Scheme_Object *
 scheme_default_print_handler(int argc, Scheme_Object *argv[])
 {
@@ -8617,11 +8900,8 @@ Scheme_Object *
 scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
 {
   Scheme_Config *config;
-  Scheme_Object *port;
-  Scheme_Object *inport;
-  Scheme_Object *name;
-  Scheme_Object *stx;
-  Scheme_Cont_Frame_Data cframe;
+  Scheme_Object *port, *reader;
+  Scheme_Object *inport, *name, *a[2];
 
   config = scheme_current_config();
   port = scheme_get_param(config, MZCONFIG_OUTPUT_PORT);
@@ -8630,11 +8910,36 @@ scheme_default_prompt_read_handler(int argc, Scheme_Object *argv[])
   scheme_write_byte_string("> ", 2, port);
   scheme_flush_output(port);
 
-  name = ((Scheme_Input_Port *)inport)->name;
-
   if (inport == scheme_orig_stdin_port)
     scheme_flush_orig_outputs();
 
+  name = (Scheme_Object *)scheme_port_record(inport);
+  name = ((Scheme_Input_Port *)name)->name;
+
+  reader = scheme_get_param(config, MZCONFIG_READ_HANDLER);
+
+  a[0] = name;
+  a[1] = inport;
+  return _scheme_apply(reader, 2, a);
+}
+  
+Scheme_Object *
+scheme_default_read_handler(int argc, Scheme_Object *argv[])
+{
+  Scheme_Config *config;
+  Scheme_Object *name = argv[0];
+  Scheme_Object *inport = argv[1];
+  Scheme_Object *stx;
+  Scheme_Cont_Frame_Data cframe;
+
+  if (!SCHEME_INPORTP(inport))
+    scheme_wrong_type("default-read-interaction-handler",
+                      "input port",
+                      1,
+                      argc,
+                      argv);
+
+  config = scheme_current_config();
   config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
 
   scheme_push_continuation_frame(&cframe);

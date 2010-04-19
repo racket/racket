@@ -67,11 +67,11 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="Unicows.lib WS2_32.lib Shell32.lib User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
 				BaseAddress="0x10400000"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -155,11 +155,11 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
 				AdditionalDependencies="Unicows.lib WS2_32.lib Shell32.lib User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
 				BaseAddress="0x10400000"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

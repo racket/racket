@@ -11,10 +11,7 @@
    -- what if the initial world or universe state is omitted? the error message is bad then. 
 |#
 
-(require (for-syntax "private/syn-aux.ss"
-                     scheme/function
-                     #;
-                     (rename-in lang/prim (first-order->higher-order f2h)))
+(require (for-syntax "private/syn-aux.ss" scheme/function)
          "private/syn-aux-aux.ss" 
          "private/syn-aux.ss"
          "private/check-aux.ss"
@@ -26,8 +23,9 @@
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
 
-(provide 
- (rename-out (make-stop-the-world stop-with))) ;; World -> STOP
+(define-primitive stop-with make-stop-the-world)
+
+(provide stop-with) ;; World -> STOP
 
 (provide
  launch-many-worlds
@@ -35,7 +33,7 @@
  ;; run expressions e1 through e2 in parallel, produce all values in same order
  )
 
-(provide
+(provide-primitive
  sexp?  ;; Any -> Boolean 
  )
 
@@ -71,6 +69,9 @@
 ;                                     
 
 (provide big-bang     ;; <syntax> : see below 
+         )
+
+(provide-primitives
          make-package ;; World Sexp -> Package
          package?     ;; Any -> Boolean 
          run-movie    ;; [Listof Image] -> true 
@@ -79,7 +80,9 @@
          key-event?    ;; Any -> Boolean : KEY-EVTS
          key=?         ;; KEY-EVTS KEY-EVTS -> Boolean
          ;; IP : a string that points to a machine on the net 
-         LOCALHOST     ;; IP
+         )
+
+(provide LOCALHOST     ;; IP
          )
 
 (provide-higher-order-primitive
@@ -134,13 +137,14 @@
 
 (define-keywords WldSpec 
   ;; -- on-draw must specify a rendering function; it may specify dimensions
-  [on-draw (function-with-arity 
+  [on-draw to-draw
+           (function-with-arity 
             1 
             except
-            [(_ f width height) 
-             #'(list (proc> 'on-draw (f2h f) 1) 
-                     (nat> 'on-draw width "width")
-                     (nat> 'on-draw height "height"))])]
+            [(_ f width height)
+             #'(list (proc> 'to-draw (f2h f) 1) 
+                     (nat> 'to-draw width "width")
+                     (nat> 'to-draw height "height"))])]
   ;; -- on-mouse must specify a mouse event handler 
   [on-mouse (function-with-arity 4)]
   ;; -- on-key must specify a key event handler 
@@ -175,7 +179,7 @@
                    [(V) (set! rec? #'V)]
                    [_ (err '#'record? stx)])))]
             [args 
-             (->args stx (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
+             (->args 'big-bang stx (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
        #`(let* ([esp (make-eventspace)]
                 [thd (eventspace-handler-thread esp)])
            (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
@@ -185,7 +189,7 @@
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
-  (big-bang 1 (on-tick add1) (on-draw f)))
+  (big-bang 1 (on-draw f) (on-tick add1)))
 
 (define animate run-simulation)
 
@@ -235,20 +239,23 @@
 ;                                                          
 ;                                                          
 
-(provide
+(provide-primitives
  ;; type World 
  iworld?    ;; Any -> Boolean 
  iworld=?   ;; World World -> Boolean 
  iworld-name ;; World -> Symbol 
- iworld1    ;; sample worlds 
- iworld2
- iworld3
  ;; type Bundle = (make-bundle [Listof World] Universe [Listof Mail]) 
  ;; type Mail = (make-mail World S-expression)
  make-bundle ;; [Listof World] Universe [Listof Mail] -> Bundle 
  bundle?     ;; is this a bundle? 
  make-mail   ;; World S-expression -> Mail 
  mail?       ;; is this a real mail? 
+ )
+
+(provide 
+ iworld1    ;; sample worlds 
+ iworld2
+ iworld3
  universe    ;; <syntax> : see below 
  )
 
@@ -269,7 +276,7 @@
     [(universe u) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u bind ...)
      (let*
-         ([args (->args stx (syntax (bind ...)) AllSpec UniSpec void "universe")]
+         ([args (->args 'universe stx (syntax (bind ...)) AllSpec UniSpec void "universe")]
           [domain (map (compose syntax-e car) args)])
        (cond
          [(not (memq 'on-new domain))

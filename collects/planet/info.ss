@@ -4,3 +4,5 @@
 (define mzscheme-launcher-names '("planet"))
 (define mzscheme-launcher-libraries '("planet.ss"))
 (define scribblings '(("planet.scrbl" (multi-page) (tool))))
+
+(define rico '(("planet" planet/planet "manage Planet package installations" 80)))

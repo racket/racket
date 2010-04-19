@@ -905,7 +905,7 @@ See also @method[editor<%> local-to-global].
 
 }
 
-@defmethod[#:mode 'public-final (in-edit-sequence?)
+@defmethod[#:mode public-final (in-edit-sequence?)
            boolean?]{
 
 Returns @scheme[#t] if updating on this editor is currently delayed

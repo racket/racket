@@ -97,7 +97,6 @@
         (cond
           [(eq? key 'drscheme:autocomplete-words)
            (drscheme:language-configuration:get-all-manual-keywords)]
-          [(eq? key 'macro-stepper:enabled) #t]
           [else (drscheme:language:get-capability-default key)]))
       
       ;; config-panel : as in super class
@@ -251,7 +250,10 @@
         (define path
           (cond [(get-filename port) => (compose simplify-path cleanse-path)]
                 [else #f]))
-        (define resolved-modpath (and path (make-resolved-module-path path)))
+        (define resolved-modpath (and path (module-path-index-resolve
+                                            (module-path-index-join
+                                             path
+                                             #f))))
         (define-values (name lang module-expr)
           (let ([expr
                  ;; just reading the definitions might be a syntax error,
@@ -291,13 +293,16 @@
         ;; module.  So the code is split among several thunks that follow.
         (define (*pre)
           (thread-cell-set! repl-init-thunk *error)
-          (current-module-declare-name resolved-modpath))
+          (current-module-declare-name resolved-modpath)
+          (current-module-declare-source path))
         (define (*post)
           (current-module-declare-name #f)
+          (current-module-declare-source #f)
           (when path ((current-module-name-resolver) resolved-modpath))
           (thread-cell-set! repl-init-thunk *init))
         (define (*error)
           (current-module-declare-name #f)
+          (current-module-declare-source #f)
           ;; syntax error => try to require the language to get a working repl
           (with-handlers ([void (λ (e)
                                   (raise-hopeless-syntax-error
@@ -309,15 +314,45 @@
           (parameterize ([current-namespace (current-namespace)])
             ;; the prompt makes it continue after an error
             (call-with-continuation-prompt
-             (λ () (with-stack-checkpoint (namespace-require modspec)))))
+             (λ () (with-stack-checkpoint 
+                    (begin
+                      (*do-module-specified-configuration modspec)
+                      (namespace-require modspec))))))
           (current-namespace (module->namespace modspec))
           (check-interactive-language))
+        (define (*do-module-specified-configuration modspec)
+          (let ([info (module->language-info modspec #t)])
+            (when info
+              (let ([get-info
+                     ((dynamic-require (vector-ref info 0)
+                                       (vector-ref info 1))
+                      (vector-ref info 2))])
+                (let ([configs (get-info 'configure-runtime '())])
+                  (for ([config (in-list configs)])
+                    ((dynamic-require (vector-ref config 0)
+                                      (vector-ref config 1))
+                     (vector-ref config 2))))))))
         ;; here's where they're all combined with the module expression
         (expr-getter *pre module-expr *post))
       
       (define/override (front-end/finished-complete-program settings)
         (cond [(thread-cell-ref repl-init-thunk)
                => (λ (t) (thread-cell-set! repl-init-thunk #f) (t))]))
+      
+      (define/override (front-end/interaction port settings)
+        (λ ()
+          (let ([v (parameterize ([read-accept-reader #t])
+                     (with-stack-checkpoint
+                      ((current-read-interaction) 
+                       (object-name port)
+                       port)))])
+            (if (eof-object? v)
+                v
+                (let ([w (cons '#%top-interaction v)])
+                  (if (syntax? v)
+                      (namespace-syntax-introduce
+                       (datum->syntax #f w v))
+                      v))))))
       
       ;; printer settings are just ignored here.
       (define/override (create-executable setting parent program-filename)
@@ -350,6 +385,7 @@
                           #:mred? gui?
                           #:verbose? #f ;; verbose?
                           #:modules (list (list #f program-filename))
+                          #:configure-via-first-module? #t
                           #:literal-expression
                           (begin
                             (parameterize ([current-namespace (make-base-empty-namespace)])

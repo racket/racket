@@ -90,6 +90,7 @@ static Scheme_Object *namespace_mapped_symbols(int, Scheme_Object *[]);
 static Scheme_Object *namespace_module_registry(int, Scheme_Object *[]);
 static Scheme_Object *variable_p(int, Scheme_Object *[]);
 static Scheme_Object *variable_module_path(int, Scheme_Object *[]);
+static Scheme_Object *variable_module_source(int, Scheme_Object *[]);
 static Scheme_Object *variable_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_top_level_namespace(int, Scheme_Object *[]);
 static Scheme_Object *variable_phase(int, Scheme_Object *[]);
@@ -650,6 +651,7 @@ static void make_kernel_env(void)
 
   GLOBAL_PRIM_W_ARITY("variable-reference?", variable_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->resolved-module-path", variable_module_path, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("variable-reference->module-source", variable_module_source, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->empty-namespace", variable_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->namespace", variable_top_level_namespace, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("variable-reference->phase", variable_phase, 1, 1, env);
@@ -1817,7 +1819,8 @@ static Scheme_Object *make_toplevel(mzshort depth, int position, int resolved, i
 }
 
 Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
-						  Scheme_Compile_Info *rec, int drec)
+						  Scheme_Compile_Info *rec, int drec,
+                                                  int imported)
 {
   Comp_Prefix *cp = env->prefix;
   Scheme_Hash_Table *ht;
@@ -1838,7 +1841,7 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
   if (o)
     return o;
 
-  o = make_toplevel(0, cp->num_toplevels, 0, 0);
+  o = make_toplevel(0, cp->num_toplevels, 0, imported ? SCHEME_TOPLEVEL_READY : 0);
 
   cp->num_toplevels++;
   scheme_hash_set(ht, var, o);
@@ -3094,6 +3097,24 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   return (Scheme_Object *)b;
 }
 
+int scheme_is_imported(Scheme_Object *var, Scheme_Comp_Env *env)
+{
+  if (env->genv->module) {
+    if (SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
+      if (!SAME_OBJ(((Module_Variable *)var)->modidx, env->genv->module->self_modidx))
+        return 1;
+    } else
+      return 1;
+  } else {
+    if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
+      if (!SAME_OBJ(((Scheme_Bucket_With_Home *)var)->home, env->genv))
+        return 1;
+    } else
+      return 1;
+  }
+  return 0;
+}
+
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o)
 {
   Scheme_Env *home = ((Scheme_Bucket_With_Home *)o)->home;
@@ -3196,24 +3217,6 @@ void scheme_dup_symbol_check(DupCheckRecord *r, const char *where,
   }
 
   scheme_hash_set(r->ht, symbol, scheme_true);
-}
-
-int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok_modidx)
-{
-  Scheme_Object *mod, *id = name;
-
-  mod = scheme_stx_source_module(id, 0);
-
-  if (mod && SCHEME_TRUEP(mod) && NOT_SAME_OBJ(ok_modidx, mod)) {
-    return 1;
-  } else {
-    mod = scheme_stx_module_name(NULL, &id, scheme_make_integer(env->phase), NULL, NULL, NULL, 
-                                 NULL, NULL, NULL, NULL, NULL);
-    if (SAME_OBJ(mod, scheme_undefined))
-      return 1;
-  }
-  
-  return 0;
 }
 
 /*========================================================================*/
@@ -4440,7 +4443,7 @@ namespace_mapped_symbols(int argc, Scheme_Object *argv[])
   }
 
   if (env->rename_set)
-    scheme_list_module_rename(env->rename_set, mapped);
+    scheme_list_module_rename(env->rename_set, mapped, env->export_registry);
 
   l = scheme_null;
   for (i = mapped->size; i--; ) {
@@ -4536,6 +4539,24 @@ static Scheme_Object *variable_module_path(int argc, Scheme_Object *argv[])
 
   if (env->module)
     return env->module->modname;
+  else
+    return scheme_false;
+}
+
+static Scheme_Object *variable_module_source(int argc, Scheme_Object *argv[])
+{
+  Scheme_Env *env;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_global_ref_type))
+    env = NULL;
+  else
+    env = ((Scheme_Bucket_With_Home *)SCHEME_PTR_VAL(argv[0]))->home;
+
+  if (!env)
+    scheme_wrong_type("variable-reference->module-source", "variable-reference", 0, argc, argv);
+
+  if (env->module)
+    return SCHEME_PTR_VAL(env->module->modsrc);
   else
     return scheme_false;
 }
@@ -4860,7 +4881,7 @@ local_module_introduce(int argc, Scheme_Object *argv[])
   if (!SCHEME_STXP(s))
     scheme_wrong_type("syntax-local-module-introduce", "syntax", 0, argc, argv);
 
-  v = scheme_stx_source_module(s, 0);
+  v = scheme_stx_source_module(s, 0, 0);
   if (SCHEME_FALSEP(v)) {
     if (env->genv->rename_set)
       s = scheme_add_rename(s, env->genv->rename_set);

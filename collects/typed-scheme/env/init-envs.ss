@@ -1,10 +1,10 @@
 #lang scheme/base
 (provide (all-defined-out))
-(require "../utils/utils.ss")
-
-(require "type-env.ss" 
+(require "../utils/utils.ss"
+         "type-env.ss" 
 	 "type-name-env.ss"
 	 "type-alias-env.ss"
+         unstable/struct
          (rep type-rep object-rep filter-rep rep-utils)
 	 (for-template (rep type-rep object-rep filter-rep) 
 		       (types union)
@@ -25,11 +25,12 @@
     [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
     [(Base: n cnt) `(make-Base ',n (quote-syntax ,cnt))]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
-    [(Struct: name parent flds proc poly? pred-id cert acc-ids)
+    [(Struct: name parent flds proc poly? pred-id cert acc-ids maker-id)
      `(make-Struct ,(sub name) ,(sub parent) 
                    ,(sub flds) ,(sub proc) ,(sub poly?)
                    (quote-syntax ,pred-id) (syntax-local-certifier)
-                   (list ,@(for/list ([a acc-ids]) `(quote-syntax ,a))))]
+                   (list ,@(for/list ([a acc-ids]) `(quote-syntax ,a)))
+                   (quote-syntax ,maker-id))]
     [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx))]
     [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]
     [(Refinement: parent pred cert) `(make-Refinement ,(sub parent)

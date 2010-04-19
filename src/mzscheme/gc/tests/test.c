@@ -1627,7 +1627,8 @@ int main()
 
     pthread_attr_init(&attr);
 #   if defined(GC_IRIX_THREADS) || defined(GC_FREEBSD_THREADS) \
-    	|| defined(GC_DARWIN_THREADS) || defined(GC_AIX_THREADS)
+    	|| defined(GC_DARWIN_THREADS) || defined(GC_AIX_THREADS) \
+	|| defined(GC_OPENBSD_THREADS)
     	pthread_attr_setstacksize(&attr, 1000000);
 #   endif
     n_tests = 0;

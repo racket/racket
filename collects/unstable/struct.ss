@@ -35,9 +35,10 @@
          (unless (= num-provided num-slots)
            (raise-syntax-error
             #f
-            (format "wrong number of arguments for struct ~s (expected ~s)"
+            (format "wrong number of arguments for struct ~s (expected ~s, got ~s)"
                     (syntax-e #'S)
-                    num-slots)
+                    num-slots
+                    num-provided)
             stx)))
        (with-syntax ([constructor constructor])
          (syntax-property #'(constructor expr ...)

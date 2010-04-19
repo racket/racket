@@ -2,6 +2,7 @@
 (require scheme/unit
          syntax/kerncase
          syntax/stx
+         (for-template scheme/base)
          (for-syntax scheme/base)) ; for matching
 
 (provide stacktrace@ stacktrace^ stacktrace-imports^)
@@ -154,54 +155,54 @@
     (with-syntax ([expr sexpr]
                   [e se])
       (kernel-syntax-case/phase sexpr phase
-                                ;; negligible time to eval
-                                [id
-                                 (identifier? sexpr)
-                                 (syntax (begin e expr))]
-                                [(quote _) (syntax (begin e expr))]
-                                [(quote-syntax _) (syntax (begin e expr))]
-                                [(#%top . d) (syntax (begin e expr))]
-                                [(#%variable-reference . d) (syntax (begin e expr))]
-                                
-                                ;; No tail effect, and we want to account for the time
-                                [(#%plain-lambda . _) (syntax (begin0 expr e))]
-                                [(case-lambda . _) (syntax (begin0 expr e))]
-                                [(set! . _) (syntax (begin0 expr e))]
-                                
-                                [(let-values bindings . body)
-                                 (insert-at-tail* se sexpr phase)]
-                                [(letrec-values bindings . body)
-                                 (insert-at-tail* se sexpr phase)]
-                                
-                                [(begin . _)
-                                 (insert-at-tail* se sexpr phase)]
-                                [(with-continuation-mark . _)
-                                 (insert-at-tail* se sexpr phase)]
-                                
-                                [(begin0 body ...)
-                                 (certify sexpr (syntax (begin0 body ... e)))]
-                                
-                                [(if test then else)
-                                 ;; WARNING: se inserted twice!
-                                 (certify
-                                  sexpr
-                                  (rebuild
-                                   sexpr
-                                   (list
-                                    (cons #'then (insert-at-tail se (syntax then) phase))
-                                    (cons #'else (insert-at-tail se (syntax else) phase)))))]
-                                
-                                [(#%plain-app . rest)
-                                 (if (stx-null? (syntax rest))
-                                     ;; null constant
-                                     (syntax (begin e expr))
-                                     ;; application; exploit guaranteed left-to-right evaluation
-                                     (insert-at-tail* se sexpr phase))]
-                                
-                                [_else
-                                 (error 'errortrace
-                                        "unrecognized (non-top-level) expression form: ~e"
-                                        (syntax->datum sexpr))])))
+        ;; negligible time to eval
+        [id
+         (identifier? sexpr)
+         (syntax (begin e expr))]
+        [(quote _) (syntax (begin e expr))]
+        [(quote-syntax _) (syntax (begin e expr))]
+        [(#%top . d) (syntax (begin e expr))]
+        [(#%variable-reference . d) (syntax (begin e expr))]
+        
+        ;; No tail effect, and we want to account for the time
+        [(#%plain-lambda . _) (syntax (begin0 expr e))]
+        [(case-lambda . _) (syntax (begin0 expr e))]
+        [(set! . _) (syntax (begin0 expr e))]
+        
+        [(let-values bindings . body)
+         (insert-at-tail* se sexpr phase)]
+        [(letrec-values bindings . body)
+         (insert-at-tail* se sexpr phase)]
+        
+        [(begin . _)
+         (insert-at-tail* se sexpr phase)]
+        [(with-continuation-mark . _)
+         (insert-at-tail* se sexpr phase)]
+        
+        [(begin0 body ...)
+         (certify sexpr (syntax (begin0 body ... e)))]
+        
+        [(if test then else)
+         ;; WARNING: se inserted twice!
+         (certify
+          sexpr
+          (rebuild
+           sexpr
+           (list
+            (cons #'then (insert-at-tail se (syntax then) phase))
+            (cons #'else (insert-at-tail se (syntax else) phase)))))]
+        
+        [(#%plain-app . rest)
+         (if (stx-null? (syntax rest))
+             ;; null constant
+             (syntax (begin e expr))
+             ;; application; exploit guaranteed left-to-right evaluation
+             (insert-at-tail* se sexpr phase))]
+        
+        [_else
+         (error 'errortrace
+                "unrecognized (non-top-level) expression form: ~e"
+                (syntax->datum sexpr))])))
   
   (define (profile-annotate-lambda name expr clause bodys-stx phase)
     (let* ([bodys (stx->list bodys-stx)]
@@ -303,6 +304,7 @@
                                            (datum->syntax
                                             expr
                                             x
+                                            expr
                                             expr)))))]
               [else (same-k)])))))
   
@@ -311,6 +313,7 @@
       [(syntax? expr)
        (datum->syntax expr
                       (append-rebuild (syntax-e expr) end)
+                      expr
                       expr)]
       [(pair? expr)
        (cons (car expr) (append-rebuild (cdr expr) end))]
@@ -329,234 +332,241 @@
     (lambda (expr phase)
       (test-coverage-point
        (kernel-syntax-case/phase expr phase
-                                 [_
-                                  (identifier? expr)
-                                  (let ([b (identifier-binding expr phase)])
-                                    (cond
-                                      [(eq? 'lexical b)
-                                       ;; lexical variable - no error possile
-                                       expr]
-                                      [(and (pair? b) (eq? '#%kernel (car b)))
-                                       ;; built-in - no error possible
-                                       expr]
-                                      [else
-                                       ;; might be undefined/uninitialized
-                                       (with-mark expr expr)]))]
-                                 
-                                 [(#%top . id)
-                                  ;; might be undefined/uninitialized
-                                  (with-mark expr expr)]
-                                 [(#%variable-reference . _)
-                                  ;; no error possible
-                                  expr]
-                                 
-             [(define-values names rhs)
-              top?
-              ;; Can't put annotation on the outside
-              (let* ([marked 
-                      (with-mark expr
-                                 (annotate-named
-                                  (one-name #'names)
-                                  (syntax rhs)
-                                  phase))]
-                     [with-coverage
-                      (let loop ([stx #'names]
-                                 [obj marked])
-                        (cond
-                          [(not (syntax? stx)) obj]
-                          [(identifier? stx)
-                           (test-coverage-point obj stx phase)]
-                          [(pair? (syntax-e stx))
-                           (loop (car (syntax-e stx))
-                                 (loop (cdr (syntax-e stx))
-                                       obj))]
-                          [else obj]))])
-                (certify
-                 expr
-                 (rebuild 
-                  expr 
-                  (list (cons #'rhs with-coverage)))))]
-                                 [(begin . exprs)
-                                  top?
-                                  (certify
-                                   expr
-                                   (annotate-seq expr
-                                                 (syntax exprs)
-                                                 annotate-top phase))]
-                                 [(define-syntaxes (name ...) rhs)
-                                  top?
-                                  (let ([marked (with-mark expr
-                                                           (annotate-named
-                                                            (one-name #'(name ...))
-                                                            (syntax rhs)
-                                                            (add1 phase)))])
-                                    (certify
-                                     expr
-                                     (rebuild expr (list (cons #'rhs marked)))))]
-                                 
-                                 [(define-values-for-syntax (name ...) rhs)
-                                  top?
-                                  (let ([marked (with-mark expr
-                                                           (annotate-named
-                                                            (one-name (syntax (name ...)))
-                                                            (syntax rhs)
-                                                            (add1 phase)))])
-                                    (certify
-                                     expr
-                                     (rebuild expr (list (cons #'rhs marked)))))]
-                                 
-                                 [(module name init-import (__plain-module-begin body ...))
-                                  ;; Just wrap body expressions
-                                  (let ([bodys (syntax->list (syntax (body ...)))]
-                                        [mb (list-ref (syntax->list expr) 3)])
-                                    (let ([bodyl (map (lambda (b)
-                                                        (annotate-top b 0))
-                                                      bodys)])
-                                      (certify
-                                       expr
-                                       (rebuild
-                                        expr
-                                        (list (cons
-                                               mb
-                                               (certify
-                                                mb
-                                                (rebuild mb (map cons bodys bodyl)))))))))]
-                                 
-                                 [(#%expression e)
-                                  top?
-                                  (certify expr #`(#%expression #,(annotate (syntax e) phase)))]
-                                 
-                                 ;; No way to wrap
-                                 [(#%require i ...) expr]
-                                 ;; No error possible (and no way to wrap)
-                                 [(#%provide i ...) expr]
-                                 
-                                 
-                                 ;; No error possible
-                                 [(quote _)
-                                  expr]
-                                 [(quote-syntax _)
-                                  expr]
-                                 
-                                 ;; Wrap body, also a profile point
-                                 [(#%plain-lambda args . body)
-                                  (certify
-                                   expr
-                                   (keep-lambda-properties
-                                    expr
-                                    (profile-annotate-lambda name expr expr (syntax body)
-                                                             phase)))]
-                                 [(case-lambda clause ...)
-                                  (with-syntax ([([args . body] ...)
-                                                 (syntax (clause ...))])
-                                    (let* ([clauses (syntax->list (syntax (clause ...)))]
-                                           [clausel (map
-                                                     (lambda (body clause)
-                                                       (profile-annotate-lambda
-                                                        name expr clause body phase))
-                                                     (syntax->list (syntax (body ...)))
-                                                     clauses)])
-                                      (certify
-                                       expr
-                                       (keep-lambda-properties
-                                        expr
-                                        (rebuild expr (map cons clauses clausel))))))]
-                                 
-                                 ;; Wrap RHSs and body
-                                 [(let-values ([vars rhs] ...) . body)
-                                  (with-mark expr
-                                             (certify
-                                              expr
-                                              (annotate-let expr phase
-                                                            (syntax (vars ...))
-                                                            (syntax (rhs ...))
-                                                            (syntax body))))]
-                                 [(letrec-values ([vars rhs] ...) . body)
-                                  (with-mark expr
-                                             (certify
-                                              expr
-                                              (annotate-let expr phase
-                                                            (syntax (vars ...))
-                                                            (syntax (rhs ...))
-                                                            (syntax body))))]
-                                 
-                                 ;; Wrap RHS
-                                 [(set! var rhs)
-                                  (let ([new-rhs (annotate-named
-                                                  (syntax var)
-                                                  (syntax rhs)
-                                                  phase)])
-                                    ;; set! might fail on undefined variable, or too many values:
-                                    (with-mark expr
-                                               (certify
-                                                expr
-                                                (rebuild expr (list (cons #'rhs new-rhs))))))]
-                                 
-                                 ;; Wrap subexpressions only
-                                 [(begin e)
-                                  ;; Single expression: no mark
-                                  (certify
-                                   expr
-                                   #`(begin #,(annotate (syntax e) phase)))]
-                                 [(begin . body)
-                                  (with-mark expr
-                                             (certify
-                                              expr
-                                              (annotate-seq expr #'body annotate phase)))]
-                                 [(begin0 . body)
-                                  (with-mark expr
-                                             (certify
-                                              expr
-                                              (annotate-seq expr #'body annotate phase)))]
-                                 [(if tst thn els)
-                                  (let ([w-tst (annotate (syntax tst) phase)]
-                                        [w-thn (annotate (syntax thn) phase)]
-                                        [w-els (annotate (syntax els) phase)])
-                                    (with-mark expr
-                                               (certify
-                                                expr
-                                                (rebuild expr (list (cons #'tst w-tst)
-                                                                    (cons #'thn w-thn)
-                                                                    (cons #'els w-els))))))]
-                                 [(if tst thn)
-                                  (let ([w-tst (annotate (syntax tst) phase)]
-                                        [w-thn (annotate (syntax thn) phase)])
-                                    (with-mark expr
-                                               (certify
-                                                expr
-                                                (rebuild expr (list (cons #'tst w-tst)
-                                                                    (cons #'thn w-thn))))))]
-                                 [(with-continuation-mark . body)
-                                  (with-mark expr
-                                             (certify
-                                              expr
-                                              (annotate-seq expr (syntax body)
-                                                            annotate phase)))]
-                                 
-                                 ;; Wrap whole application, plus subexpressions
-                                 [(#%plain-app . body)
-                                  (cond
-                                    [(stx-null? (syntax body))
-                                     ;; It's a null:
-                                     expr]
-                                    [(syntax-case* expr (#%plain-app void)
-                                       (if (positive? phase)
-                                           free-transformer-identifier=?
-                                           free-identifier=?)
-                                       [(#%plain-app void) #t]
-                                       [_else #f])
-                                     ;; It's (void):
-                                     expr]
-                                    [else
-                                     (with-mark expr (certify
-                                                      expr
-                                                      (annotate-seq expr (syntax body)
-                                                                    annotate phase)))])]
-                                 
-                                 [_else
-                                  (error 'errortrace "unrecognized expression form~a: ~e"
-                                         (if top? " at top-level" "")
-                                         (syntax->datum expr))])
+         [_
+          (identifier? expr)
+          (let ([b (identifier-binding expr phase)])
+            (cond
+             [(eq? 'lexical b)
+              ;; lexical variable - no error possile
+              expr]
+             [(and (pair? b) (let-values ([(base rel) (module-path-index-split (car b))])
+                               (equal? '(quote #%kernel) base)))
+              ;; built-in - no error possible
+              expr]
+             [else
+              ;; might be undefined/uninitialized
+              (with-mark expr expr)]))]
+         
+         [(#%top . id)
+          ;; might be undefined/uninitialized
+          (with-mark expr expr)]
+         [(#%variable-reference . _)
+          ;; no error possible
+          expr]
+         
+         [(define-values names rhs)
+          top?
+          ;; Can't put annotation on the outside
+          (let* ([marked 
+                  (with-mark expr
+                             (annotate-named
+                              (one-name #'names)
+                              (syntax rhs)
+                              phase))]
+                 [with-coverage
+                  (let loop ([stx #'names]
+                             [obj marked])
+                    (cond
+                     [(not (syntax? stx)) obj]
+                     [(identifier? stx)
+                      (test-coverage-point obj stx phase)]
+                     [(pair? (syntax-e stx))
+                      (loop (car (syntax-e stx))
+                            (loop (cdr (syntax-e stx))
+                                  obj))]
+                     [else obj]))])
+            (certify
+             expr
+             (rebuild 
+              expr 
+              (list (cons #'rhs with-coverage)))))]
+         [(begin . exprs)
+          top?
+          (certify
+           expr
+           (annotate-seq expr
+                         (syntax exprs)
+                         annotate-top phase))]
+         [(define-syntaxes (name ...) rhs)
+          top?
+          (let ([marked (with-mark expr
+                                   (annotate-named
+                                    (one-name #'(name ...))
+                                    (syntax rhs)
+                                    (add1 phase)))])
+            (certify
+             expr
+             (rebuild expr (list (cons #'rhs marked)))))]
+         
+         [(define-values-for-syntax (name ...) rhs)
+          top?
+          (let ([marked (with-mark expr
+                                   (annotate-named
+                                    (one-name (syntax (name ...)))
+                                    (syntax rhs)
+                                    (add1 phase)))])
+            (certify
+             expr
+             (rebuild expr (list (cons #'rhs marked)))))]
+         
+         [(module name init-import (__plain-module-begin body ...))
+          ;; Just wrap body expressions
+          (let ([bodys (syntax->list (syntax (body ...)))]
+                [mb (list-ref (syntax->list expr) 3)])
+            (let ([bodyl (map (lambda (b)
+                                (annotate-top b 0))
+                              bodys)])
+              (certify
+               expr
+               (rebuild
+                expr
+                (list (cons
+                       mb
+                       (certify
+                        mb
+                        (rebuild mb (map cons bodys bodyl)))))))))]
+         
+         [(#%expression e)
+          top?
+          (certify expr #`(#%expression #,(annotate (syntax e) phase)))]
+         
+         ;; No way to wrap
+         [(#%require i ...) expr]
+         ;; No error possible (and no way to wrap)
+         [(#%provide i ...) expr]
+         
+         
+         ;; No error possible
+         [(quote _)
+          expr]
+         [(quote-syntax _)
+          expr]
+         
+         ;; Wrap body, also a profile point
+         [(#%plain-lambda args . body)
+          (certify
+           expr
+           (keep-lambda-properties
+            expr
+            (profile-annotate-lambda name expr expr (syntax body)
+                                     phase)))]
+         [(case-lambda clause ...)
+          (with-syntax ([([args . body] ...)
+                         (syntax (clause ...))])
+            (let* ([clauses (syntax->list (syntax (clause ...)))]
+                   [clausel (map
+                             (lambda (body clause)
+                               (profile-annotate-lambda
+                                name expr clause body phase))
+                             (syntax->list (syntax (body ...)))
+                             clauses)])
+              (certify
+               expr
+               (keep-lambda-properties
+                expr
+                (rebuild expr (map cons clauses clausel))))))]
+         
+         ;; Wrap RHSs and body
+         [(let-values ([vars rhs] ...) . body)
+          (with-mark expr
+                     (certify
+                      expr
+                      (annotate-let expr phase
+                                    (syntax (vars ...))
+                                    (syntax (rhs ...))
+                                    (syntax body))))]
+         [(letrec-values ([vars rhs] ...) . body)
+          (let ([fm (certify
+                     expr
+                     (annotate-let expr phase
+                                   (syntax (vars ...))
+                                   (syntax (rhs ...))
+                                   (syntax body)))])
+            (kernel-syntax-case/phase expr phase
+              [(lv ([(var1) (#%plain-lambda . _)]) var2)
+               (and (identifier? #'var2)
+                    (free-identifier=? #'var1 #'var2))
+               fm]
+              [_
+               (with-mark expr fm)]))]
+
+         ;; Wrap RHS
+         [(set! var rhs)
+          (let ([new-rhs (annotate-named
+                          (syntax var)
+                          (syntax rhs)
+                          phase)])
+            ;; set! might fail on undefined variable, or too many values:
+            (with-mark expr
+                       (certify
+                        expr
+                        (rebuild expr (list (cons #'rhs new-rhs))))))]
+         
+         ;; Wrap subexpressions only
+         [(begin e)
+          ;; Single expression: no mark
+          (certify
+           expr
+           #`(begin #,(annotate (syntax e) phase)))]
+         [(begin . body)
+          (with-mark expr
+                     (certify
+                      expr
+                      (annotate-seq expr #'body annotate phase)))]
+         [(begin0 . body)
+          (with-mark expr
+                     (certify
+                      expr
+                      (annotate-seq expr #'body annotate phase)))]
+         [(if tst thn els)
+          (let ([w-tst (annotate (syntax tst) phase)]
+                [w-thn (annotate (syntax thn) phase)]
+                [w-els (annotate (syntax els) phase)])
+            (with-mark expr
+                       (certify
+                        expr
+                        (rebuild expr (list (cons #'tst w-tst)
+                                            (cons #'thn w-thn)
+                                            (cons #'els w-els))))))]
+         [(if tst thn)
+          (let ([w-tst (annotate (syntax tst) phase)]
+                [w-thn (annotate (syntax thn) phase)])
+            (with-mark expr
+                       (certify
+                        expr
+                        (rebuild expr (list (cons #'tst w-tst)
+                                            (cons #'thn w-thn))))))]
+         [(with-continuation-mark . body)
+          (with-mark expr
+                     (certify
+                      expr
+                      (annotate-seq expr (syntax body)
+                                    annotate phase)))]
+         
+         ;; Wrap whole application, plus subexpressions
+         [(#%plain-app . body)
+          (cond
+           [(stx-null? (syntax body))
+            ;; It's a null:
+            expr]
+           [(syntax-case* expr (#%plain-app void)
+                          (if (positive? phase)
+                              free-transformer-identifier=?
+                              free-identifier=?)
+              [(#%plain-app void) #t]
+              [_else #f])
+            ;; It's (void):
+            expr]
+           [else
+            (with-mark expr (certify
+                             expr
+                             (annotate-seq expr (syntax body)
+                                           annotate phase)))])]
+         
+         [_else
+          (error 'errortrace "unrecognized expression form~a: ~e"
+                 (if top? " at top-level" "")
+                 (syntax->datum expr))])
        expr
        phase)))
   

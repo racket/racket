@@ -116,6 +116,8 @@ static unsigned char *extract_regstart(rxpos scan, int *_anch);
 static int check_and_propagate_depends(void);
 static int merge_tables(Scheme_Hash_Table *dest, Scheme_Hash_Table *src);
 
+READ_ONLY static Scheme_Object *empty_byte_string;
+
 #define	FAIL(m)	{ regcomperror(m); return 0; }
 
 static void
@@ -239,7 +241,6 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre)
     r->regstart = rs;
     if (anch)
       r->flags |= REGEXP_ANCH;
-
   }
   next = regnext(scan);
   if (rOP(next) == END) {	/* Only one top-level choice. */
@@ -495,7 +496,7 @@ reg(int paren, int *flagp, int paren_set, int lookahead, int parse_flags)
   rxpos br;
   rxpos ender;
   int parno = 0;
-  int flags, matchmin, matchmax, brcount;
+  int flags, matchmin, matchmax, maxlookback, brcount;
   Scheme_Hash_Table *backdepends;
 
 #ifdef DO_STACK_CHECK
@@ -560,6 +561,7 @@ reg(int paren, int *flagp, int paren_set, int lookahead, int parse_flags)
   *flagp |= flags&(SPSTART|SPFIXED);
   matchmin = regmatchmin;
   matchmax = regmatchmax;
+  maxlookback = regmaxlookback;
   brcount = 1;
   while (regparsestr[regparse] == '|') {
     brcount++;
@@ -588,11 +590,14 @@ reg(int paren, int *flagp, int paren_set, int lookahead, int parse_flags)
 	matchmin = regmatchmin;
       if (regmatchmax > matchmax)
 	matchmax = regmatchmax;
+      if (regmaxlookback > maxlookback)
+        maxlookback = regmaxlookback;
     }
   }
   regbackdepends = backdepends;
   regmatchmin = matchmin;
   regmatchmax = matchmax;
+  regmaxlookback = maxlookback;
 
   if (paren && paren_set) {
     Scheme_Object *assumed;
@@ -648,8 +653,7 @@ reg(int paren, int *flagp, int paren_set, int lookahead, int parse_flags)
 	  FAIL("lookbehind pattern does not match a bounded byte width");
 	if (matchmax > 0x7FFF)
 	  FAIL("lookbehind match is potentially too long (more than 32767 bytes)");
-	if (matchmax > regmaxlookback)
-	  regmaxlookback = matchmax;
+        regmaxlookback = matchmax + maxlookback;
 	if (ret + 8 < regcodesize) {
 	  regstr[ret + 5] = (matchmin >> 8);
 	  regstr[ret + 6] = (matchmin & 255);
@@ -715,7 +719,7 @@ regbranch(int *flagp, int parse_flags, int without_branch_node)
 {
   rxpos ret;
   rxpos chain, latest;
-  int flags = 0, matchmin = 0, matchmax = 0, pcount = 0, save_flags;
+  int flags = 0, matchmin = 0, matchmax = 0, maxlookback = 0, pcount = 0, save_flags;
 
   *flagp = (WORST|SPFIXED);		/* Tentatively. */
 
@@ -746,6 +750,8 @@ regbranch(int *flagp, int parse_flags, int without_branch_node)
 	regtail(chain, latest);
       if (!(flags&SPFIXED))
 	*flagp &= ~SPFIXED;
+      if ((regmaxlookback - matchmin) > maxlookback)
+        maxlookback = regmaxlookback - matchmin;
       matchmin += regmatchmin;
       matchmax += regmatchmax;
       if (matchmax > 0x7FFF)
@@ -755,6 +761,7 @@ regbranch(int *flagp, int parse_flags, int without_branch_node)
   }
   regmatchmin = matchmin;
   regmatchmax = matchmax;
+  regmaxlookback = maxlookback;
   if (chain == 0) {  /* Loop ran zero times. */
     latest = regnode(NOTHING);
     if (without_branch_node)
@@ -882,8 +889,11 @@ regpiece(int *flagp, int parse_flags, int at_start)
 	  regmatchmax = 0x10000;
 	*flagp |= SPFIXED;
       }
-    } else
+    } else {
       *flagp = (op != '+') ? WORST : HASWIDTH;
+      if ((op == '*') || (op == '?'))
+        regmatchmin = 0;
+    }
     *flagp |= SPSTART;
     if ((op == '?') && (flags & SPFIXED)) {
       *flagp |= SPFIXED;
@@ -1064,6 +1074,7 @@ regatom(int *flagp, int parse_flags, int at_start)
 
   *flagp = (WORST|SPFIXED);		/* Tentatively. */
   regmatchmin = regmatchmax = 1;
+  regmaxlookback = 0;
 
   switch (regparsestr[regparse++]) {
   case '^':
@@ -1071,6 +1082,7 @@ regatom(int *flagp, int parse_flags, int at_start)
       ret = regnode(BOI);
     else
       ret = regnode(BOL);
+    regmaxlookback = 1;
     regmatchmin = regmatchmax = 0;
     break;
   case '$':
@@ -1307,13 +1319,11 @@ regatom(int *flagp, int parse_flags, int at_start)
       if ((parse_flags & PARSE_PCRE) && (c == 'b')) {
 	ret = regnode(WORDBOUND);
 	regmatchmin = regmatchmax = 0;
-	if (!regmaxlookback)
-	  regmaxlookback = 1;
+        regmaxlookback = 1;
       } else if ((parse_flags & PARSE_PCRE) && (c == 'B')) {
 	ret = regnode(NOTWORDBOUND);
 	regmatchmin = regmatchmax = 0;
-	if (!regmaxlookback)
-	  regmaxlookback = 1;
+        regmaxlookback = 1;
       } else if ((parse_flags & PARSE_PCRE) && (c == 'p')) {
 	ret = regunicode(0);
 	regmatchmax = MAX_UTF8_CHAR_BYTES;
@@ -2287,7 +2297,7 @@ static int check_and_propagate_depends(void)
 	  }
 	  if (SCHEME_HASHTP(v)) {
 	    /* Check/propagate assumption. The fixpoint direction is 
-	       determined by assuming "true" whil erecursively checking. */
+	       determined by assuming "true" while recursively checking. */
 	    scheme_hash_set(regbackknown, backdepends->keys[i], scheme_true);
 	    if (!next_ht)
 	      next_ht = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -2376,11 +2386,13 @@ static MZ_INLINE int in_ranges_ci(char *str, rxpos a, int l, int c)
 /*
  * Forwards.
  */
-static int regtry(regexp *, char *, int, int, rxpos *, rxpos *, rxpos *, int *, Regwork *rw, rxpos, int, int, int);
+static int regtry(regexp *, char *, int, int, rxpos *, rxpos *, rxpos *, int *, Regwork *rw, rxpos, 
+                  char *, rxpos, rxpos, int);
 static int regtry_port(regexp *, Scheme_Object *, Scheme_Object *, int nonblock,
 		       rxpos *, rxpos *, rxpos *, int *,
-		       char **, rxpos *, rxpos *, rxpos, Scheme_Object*, Scheme_Object*, rxpos, int, int,
-		       int);
+		       char **, rxpos *, rxpos *, rxpos, Scheme_Object*, Scheme_Object*, rxpos, 
+                       char*, rxpos, rxpos,
+		       int, int *);
 static int regmatch(Regwork *rw, rxpos);
 static int regrepeat(Regwork *rw, rxpos, int);
 
@@ -2399,14 +2411,15 @@ static int
 regexec(const char *who,
 	regexp *prog, char *string, 
 	/* used only for strings: */
-	int stringpos, int stringlen, 
+	int stringpos, int stringlen, int stringorigin,
 	/* Always used: */
 	rxpos *startp, rxpos *maybep, rxpos *endp,
 	Scheme_Object *port, Scheme_Object *unless_evt, int nonblock,
 	/* Used only when port is non-NULL: */
-	char **stringp, int peek, int get_offsets,
+	char **stringp, int peek, int get_offsets, long save_prior,
 	Scheme_Object *discard_oport, 
-	Scheme_Object *portstart, Scheme_Object *portend, Scheme_Object **_dropped)
+	Scheme_Object *portstart, Scheme_Object *portend, Scheme_Object **_dropped,
+        char *prefix, rxpos prefix_len, rxpos prefix_offset)
 {
   int spos;
   int *counters;
@@ -2525,11 +2538,13 @@ regexec(const char *who,
   if (prog->flags & REGEXP_ANCH) {
     if (port) {
       rxpos len = 0, space = 0;
+      int aborted = 0;
 
       *stringp = NULL;
       if (regtry_port(prog, port, unless_evt, nonblock, 
 		      startp, maybep, endp, counters, stringp, &len, &space, 0, 
-		      portend, peekskip, 0, 1, 1, 0)) {
+		      portend, peekskip, 0, prefix, prefix_len, prefix_offset, 0, 
+                      &aborted)) {
 	if (!peek) {
 	  /* Need to consume matched chars: */
 	  char *drain;
@@ -2583,18 +2598,21 @@ regexec(const char *who,
       }
     } else
       return regtry(prog, string, stringpos, stringlen, startp, maybep, endp, counters, 0, 
-		    stringpos, 1, 1, 0);
+		    stringorigin, prefix, prefix_len, prefix_offset, 0);
   }
 
   /* Messy cases:  unanchored match. */
-  spos = stringpos;
   if (port) {
-    int at_line_start = 1;
     rxpos len = 0, skip = 0, space = 0;
     *stringp = NULL;
 
     do {
       int discard = skip - prog->maxlookback;
+      int aborted = 0;
+
+      if (discard > skip - save_prior)
+        discard = skip - save_prior;
+
       if (discard >= REGPORT_FLUSH_THRESHOLD) {
 	if (!peek) {
 	  if (discard_oport)
@@ -2613,11 +2631,15 @@ regexec(const char *who,
 	len -= discard;
 	skip -= discard;
 	memmove(*stringp, *stringp + discard, len);
+
+        prefix = NULL;
+        prefix_len = 0;
       }
 
       if (regtry_port(prog, port, unless_evt, nonblock,
 		      startp, maybep, endp, counters, stringp, &len, &space, skip, 
-		      portend, peekskip, 0, !space, at_line_start, 1)) {
+		      portend, peekskip, 0, prefix, prefix_len, prefix_offset, 1,
+                      &aborted)) {
 	if (!peek) {
 	  char *drain;
 
@@ -2636,8 +2658,8 @@ regexec(const char *who,
 	*_dropped = dropped;
 
 	return 1;
-      }
-      at_line_start = ((skip < len) && ((*stringp)[skip] == '\n'));
+      } else if (aborted)
+        return 0;
       skip++;
     } while (len >= skip);
 
@@ -2651,9 +2673,9 @@ regexec(const char *who,
       }
     }
   } else {
-    if (regtry(prog, string, spos, stringlen - (spos - stringpos), 
+    if (regtry(prog, string, stringpos, stringlen, 
 	       startp, maybep, endp, counters,
-	       0, stringpos, 1, 1, 1))
+	       0, stringorigin, prefix, prefix_len, prefix_offset, 1))
       return 1;
   }
 
@@ -2667,8 +2689,13 @@ regexec(const char *who,
 static int			/* 0 failure, 1 success */
 regtry(regexp *prog, char *string, int stringpos, int stringlen, 
        rxpos *startp, rxpos *maybep, rxpos *endp, int *counters,
-       Regwork *rw, rxpos stringorigin, int atstart, int atlinestart,
+       Regwork *rw, rxpos stringorigin, 
+       char *prefix, rxpos prefix_len, rxpos prefix_offset,
        int unanchored)
+/* stringpos: where to start looking;
+   stringlen: available bytes, counting from stringpos;
+   stringorigin: start of input, after prefix
+   prefix: bytes to appear before the origin to count as input */
 {
   int i;
   Regwork _rw;
@@ -2681,22 +2708,19 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen,
   rw->input = stringpos;
   rw->input_end = stringpos + stringlen;
   rw->input_start = stringorigin;
+  rw->input_min = stringorigin - prefix_len;
   rw->startp = startp;
   rw->maybep = maybep;
   rw->endp = endp;
   rw->counters = counters;
-  if (atstart)
-    rw->boi = stringpos;
-  else
-    rw->boi = -1;
-  if (atlinestart)
-    rw->bol = stringpos;
-  else
-    rw->bol = -1;
+  rw->prefix = prefix;
+  rw->prefix_len = prefix_len;
+  rw->prefix_delta = prefix_len + prefix_offset - stringorigin;
+  rw->boi = stringorigin - prefix_len;
 
   for (i = prog->nsubexp; i--; ) {
-    startp[i] = -1;
-    endp[i] = -1;
+    startp[i] = rw->input_min - 1;
+    endp[i] = rw->input_min - 1;
   }
 
 #ifdef INDIRECT_TO_PROGRAM
@@ -2732,15 +2756,10 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen,
 	  --stringlen;
 	}
       }
-      if (string[stringpos - 1] == '\n')
-	rw->bol = stringpos;
-      else
-	rw->bol = -1;
-      rw->boi = -1;
       rw->input = stringpos;      
       for (i = prog->nsubexp; i--; ) {
-	startp[i] = -1;
-	endp[i] = -1;
+	startp[i] = rw->input_min - 1;
+	endp[i] = rw->input_min - 1;
       }
       /* try again... */
     } else
@@ -2815,30 +2834,33 @@ static void read_more_from_regport(Regwork *rw, rxpos need_total)
     rw->input_end += got;
 
     /* Non-blocking read got enough? If not, try again in blocking mode: */
-    if (need_total > rw->input_end) {
-      if (rw->nonblock) {
-	rw->port = NULL; /* turn off further port reading */
-	rw->unless_evt = NULL;
-	rw->aborted = 1;
-      } else {
-	if (rw->peekskip)
-	  peekskip = scheme_bin_plus(scheme_make_integer(rw->input_end), rw->peekskip);
-	else
-	  peekskip = scheme_make_integer(rw->input_end);
-
-	rw->str = regstr; /* get_string can swap threads */
-	got = scheme_get_byte_string_unless("regexp-match", rw->port, 
-					    rw->instr, rw->input_end, need_total - rw->input_end,
-					    0, /* blocking mode */
-					    1, peekskip,
-					    rw->unless_evt);
-	regstr = rw->str;
+    while (need_total > rw->input_end) {
+      if (rw->peekskip)
+        peekskip = scheme_bin_plus(scheme_make_integer(rw->input_end), rw->peekskip);
+      else
+        peekskip = scheme_make_integer(rw->input_end);
       
-	if (got == EOF) {
-	  rw->port = NULL; /* turn off further port reading */
-	  rw->unless_evt = NULL;
-	} else
-	  rw->input_end += got;
+      rw->str = regstr; /* get_string can swap threads */
+      got = scheme_get_byte_string_unless("regexp-match", rw->port, 
+                                          rw->instr, rw->input_end, need_total - rw->input_end,
+                                          (rw->nonblock ? 2 : 0), /* blocking mode */
+                                          1, peekskip,
+                                          rw->unless_evt);
+      regstr = rw->str;
+      
+      if (!got && rw->nonblock) {
+        rw->port = NULL; /* turn off further port reading */
+        rw->unless_evt = NULL;
+        rw->aborted = 1;
+        break;
+      } else if (got == EOF) {
+        rw->port = NULL; /* turn off further port reading */
+        rw->unless_evt = NULL;
+        break;
+      } else {
+        rw->input_end += got;
+        if (!rw->nonblock)
+          break;
       }
     }
   }
@@ -2852,8 +2874,8 @@ regtry_port(regexp *prog, Scheme_Object *port, Scheme_Object *unless_evt, int no
 	    rxpos *startp, rxpos *maybep, rxpos *endp, int *counters,
 	    char **work_string, rxpos *len, rxpos *size, rxpos skip, 
 	    Scheme_Object *maxlen, Scheme_Object *peekskip, 
-	    rxpos origin, int atstart, int atlinestart,
-	    int read_at_least_one)
+	    rxpos origin, char *prefix, rxpos prefix_len, rxpos prefix_offset,
+	    int read_at_least_one, int *_aborted)
 {
   int m;
   Regwork rw;
@@ -2871,7 +2893,7 @@ regtry_port(regexp *prog, Scheme_Object *port, Scheme_Object *unless_evt, int no
 
   m = regtry(prog, *work_string, skip, (*len) - skip, 
 	     startp, maybep, endp, counters,
-	     &rw, origin, atstart, atlinestart, 0);
+	     &rw, origin, prefix, prefix_len, prefix_offset, 0);
 
   if (read_at_least_one
       && !rw.aborted
@@ -2884,9 +2906,10 @@ regtry_port(regexp *prog, Scheme_Object *port, Scheme_Object *unless_evt, int no
   *len = rw.input_end;
   *size = rw.instr_size;
 
-  if (rw.aborted)
+  if (rw.aborted) {
+    *_aborted = 1;
     return 0;
-  else
+  } else
     return m;
 }
 
@@ -2908,6 +2931,19 @@ static Scheme_Object *regmatch_k(void)
 }
 
 #endif
+
+XFORM_NONGCING static MZ_INLINE char INPUT_REF_S(Regwork *rw, rxpos c, rxpos input_start)
+{
+  if (c < input_start)
+    return rw->prefix[rw->prefix_delta + c];
+  else
+    return rw->instr[c];
+}
+
+XFORM_NONGCING static MZ_INLINE char INPUT_REF(Regwork *rw, int c)
+{
+  return INPUT_REF_S(rw, c, rw->input_start);
+}
 
 /*
    - regmatch - main matching routine
@@ -2978,16 +3014,16 @@ regmatch(Regwork *rw, rxpos prog)
       scan = NEXT_OP(scan);
       break;
     case BOL:
-      if ((is != rw->bol)
-	  && ((is <= rw->input_start)
-	      || (rw->instr[is - 1] != '\n')))
+      if ((is != rw->boi)
+	  && ((is <= rw->input_min)
+	      || (INPUT_REF(rw, is - 1) != '\n')))
 	return(0);
       scan = NEXT_OP(scan);
       break;
     case EOL:
       NEED_INPUT(rw, is, 1);
       if (is != rw->input_end) {
-	if (rw->instr[is] != '\n')
+	if (INPUT_REF(rw, is) != '\n')
 	  return(0);
       }
       scan = NEXT_OP(scan);
@@ -3003,7 +3039,7 @@ regmatch(Regwork *rw, rxpos prog)
       NEED_INPUT(rw, is, 1);
       if (is == rw->input_end)
 	return(0);
-      if (rw->instr[is] == '\n')
+      if (INPUT_REF(rw, is) == '\n')
 	return 0;
       is++;
       scan = NEXT_OP(scan);
@@ -3018,18 +3054,21 @@ regmatch(Regwork *rw, rxpos prog)
 	if (rw->port) {
 	  /* Like the other branch, but demand chars one at a time, as
 	     we need them */
+          rxpos input_start = rw->input_start;
 	  for (i = 0; i < len; i++) {
 	    NEED_INPUT(rw, is + i, 1);
 	    if (is + i >= rw->input_end)
 	      return 0;
-	    if (regstr[opnd+i] != rw->instr[is+i])
+	    if (regstr[opnd+i] != INPUT_REF_S(rw, is+i, input_start))
 	      return 0;
 	  }
 	} else {
+          rxpos input_start;
 	  if (len > rw->input_end - is)
 	    return 0;
+          input_start = rw->input_start;
 	  for (i = 0; i < len; i++) {
-	    if (regstr[opnd+i] != rw->instr[is+i])
+	    if (regstr[opnd+i] != INPUT_REF_S(rw, is+i, input_start))
 	      return 0;
 	  }
 	}
@@ -3052,16 +3091,18 @@ regmatch(Regwork *rw, rxpos prog)
 	    NEED_INPUT(rw, is + i, 1);
 	    if (is + i >= rw->input_end)
 	      return 0;
-	    c = rw->instr[is+i];
+	    c = INPUT_REF(rw, is+i);
 	    c = rx_tolower(c);
 	    if (regstr[opnd+i] != c)
 	      return 0;
 	  }
 	} else {
+          rxpos input_start;
 	  if (len > rw->input_end - is)
 	    return 0;
+          input_start = rw->input_start;
 	  for (i = 0; i < len; i++) {
-	    c = rw->instr[is+i];
+	    c = INPUT_REF_S(rw, is+i, input_start);
 	    c = rx_tolower(c);
 	    if (regstr[opnd+i] != c)
 	      return 0;
@@ -3077,7 +3118,7 @@ regmatch(Regwork *rw, rxpos prog)
 	NEED_INPUT(rw, is, 1);
 	if (is == rw->input_end)
 	  return 0;
-	c = UCHAR(rw->instr[is]);
+	c = UCHAR(INPUT_REF(rw, is));
 	if (!(regstr[OPERAND(scan) + (c >> 3)] & (1 << (c & 0x7))))
 	  return(0);
 	is++;
@@ -3088,7 +3129,7 @@ regmatch(Regwork *rw, rxpos prog)
       NEED_INPUT(rw, is, 1);
       if (is == rw->input_end)
 	return 0;
-      if (rw->instr[is] != regstr[OPERAND(scan)])
+      if (INPUT_REF(rw, is) != regstr[OPERAND(scan)])
 	return 0;
       is++;
       scan = NEXT_OP(scan);
@@ -3097,8 +3138,8 @@ regmatch(Regwork *rw, rxpos prog)
       NEED_INPUT(rw, is, 1);
       if (is == rw->input_end)
 	return 0;
-      if (rw->instr[is] != regstr[OPERAND(scan)])
-        if (rw->instr[is] != regstr[OPERAND(scan)+1])
+      if (INPUT_REF(rw, is) != regstr[OPERAND(scan)])
+        if (INPUT_REF(rw, is) != regstr[OPERAND(scan)+1])
           return 0;
       is++;
       scan = NEXT_OP(scan);
@@ -3109,7 +3150,7 @@ regmatch(Regwork *rw, rxpos prog)
 	NEED_INPUT(rw, is, 1);
 	if (is == rw->input_end)
 	  return 0;
-	c = UCHAR(rw->instr[is]);
+	c = UCHAR(INPUT_REF(rw, is));
 	if ((c < UCHAR(regstr[OPERAND(scan)]))
 	    || (c > UCHAR(regstr[OPERAND(scan)+1])))
 	  return(0);
@@ -3123,7 +3164,7 @@ regmatch(Regwork *rw, rxpos prog)
 	NEED_INPUT(rw, is, 1);
 	if (is == rw->input_end)
 	  return 0;
-	c = UCHAR(rw->instr[is]);
+	c = UCHAR(INPUT_REF(rw, is));
 	if ((c >= UCHAR(regstr[OPERAND(scan)]))
 	    && (c <= UCHAR(regstr[OPERAND(scan)+1])))
 	  return(0);
@@ -3214,7 +3255,7 @@ regmatch(Regwork *rw, rxpos prog)
 	  while (no >= min) {
 	    /* If it could work, try it. */
 	    if (nextch == '\0' || ((save + no < rw->input_end)
-				   && (rw->instr[save + no] == nextch))) {
+				   && (INPUT_REF(rw, save + no) == nextch))) {
 	      rw->input = is + no;
 	      if (regmatch(rw, next))
 		return(1);
@@ -3229,7 +3270,7 @@ regmatch(Regwork *rw, rxpos prog)
 	    if (nextch)
 	      NEED_INPUT(rw, save + i, 1);
 	    if (nextch == '\0' || ((save+i < rw->input_end)
-				   && (rw->instr[save+i] == nextch))) {
+				   && (INPUT_REF(rw, save+i) == nextch))) {
 	      rw->input = save + i;
 	      if (regmatch(rw, next)) {
 		return(1);
@@ -3271,7 +3312,7 @@ regmatch(Regwork *rw, rxpos prog)
       {
 	int no, len, start, i;
 	no = rOPLEN(OPERAND(scan));
-	if (rw->endp[no] == -1)
+	if (rw->endp[no] < rw->input_min)
 	  return 0;
 
 	start = rw->startp[no];
@@ -3280,18 +3321,20 @@ regmatch(Regwork *rw, rxpos prog)
 	if (rw->port) {
 	  /* Like the other branch, but demand chars one at a time, as
 	     we need them */
+          rxpos input_start = rw->input_start;
 	  for (i = 0; i < len; i++) {
 	    NEED_INPUT(rw, is + i, 1);
 	    if (is + i >= rw->input_end)
 	      return 0;
-	    if (rw->instr[start+i] != rw->instr[is+i])
+	    if (INPUT_REF_S(rw, start+i, input_start) != INPUT_REF_S(rw, is+i, input_start))
 	      return 0;
 	  }
 	} else {
+          rxpos input_start = rw->input_start;
 	  if (len > rw->input_end - is)
 	    return 0;
 	  for (i = 0; i < len; i++) {
-	    if (rw->instr[start+i] != rw->instr[is+i])
+	    if (INPUT_REF_S(rw, start+i, input_start) != INPUT_REF_S(rw, is+i, input_start))
 	      return 0;
 	  }
 	}
@@ -3303,7 +3346,7 @@ regmatch(Regwork *rw, rxpos prog)
       {
 	int no, len, start, i, c1, c2;
 	no = rOPLEN(OPERAND(scan));
-	if (rw->endp[no] == -1)
+	if (rw->endp[no] < rw->input_min)
 	  return 0;
 
 	start = rw->startp[no];
@@ -3312,24 +3355,26 @@ regmatch(Regwork *rw, rxpos prog)
 	if (rw->port) {
 	  /* Like the other branch, but demand chars one at a time, as
 	     we need them */
+          rxpos input_start = rw->input_start;
 	  for (i = 0; i < len; i++) {
 	    NEED_INPUT(rw, is + i, 1);
 	    if (is + i >= rw->input_end)
 	      return 0;
-	    c1 = rw->instr[start+i];
+	    c1 = INPUT_REF_S(rw, start+i, input_start);
 	    c1 = rx_tolower(c1);
-	    c2 = rw->instr[is+i];
+	    c2 = INPUT_REF_S(rw, is+i, input_start);
 	    c2 = rx_tolower(c2);
 	    if (c1 != c2)
 	      return 0;
 	  }
 	} else {
+          rxpos input_start = rw->input_start;
 	  if (len > rw->input_end - is)
 	    return 0;
 	  for (i = 0; i < len; i++) {
-	    c1 = rw->instr[start+i];
+	    c1 = INPUT_REF_S(rw, start+i, input_start);
 	    c1 = rx_tolower(c1);
-	    c2 = rw->instr[is+i];
+	    c2 = INPUT_REF_S(rw, is+i, input_start);
 	    c2 = rx_tolower(c2);
 	    if (c1 != c2)
 	      return 0;
@@ -3356,27 +3401,28 @@ regmatch(Regwork *rw, rxpos prog)
 	  no_start = no_end = 0;
 	save = is;
 	if (no_end) {
+          /* lookbehind */
           int found = 0;
 	  for (no = no_start; no <= no_end; no++) {
-	    if (is - rw->input_start >= no) {
+	    if (is - rw->input_min >= no) {
 	      rw->input = save - no;
 	      if (regmatch(rw, next)) {
-		if (is == save) {
+		if (rw->input == save) {
 		  /* Match */
 		  if (!t) return 0;
                   found = 1;
 		  break;
 		}
 	      }
-	    } else {
+	    } else
 	      break;
-	    }
 	  }
 	  if (!found) {
 	    /* No matches */
 	    if (t) return 0;
 	  }
 	} else {
+          /* lookahead */
 	  rw->input = is;
 	  if (regmatch(rw, next)) {
 	    if (!t) return 0;
@@ -3445,8 +3491,8 @@ regmatch(Regwork *rw, rxpos prog)
 	  rw->startp[no] = is - len;
 	  rw->endp[no] = is;
 	} else {
-	  rw->startp[no] = -1;
-	  rw->endp[no] = -1;
+	  rw->startp[no] = rw->input_min - 1;
+	  rw->endp[no] = rw->input_min - 1;
 	}
 	scan = NEXT_OP(scan);
       }
@@ -3463,13 +3509,13 @@ regmatch(Regwork *rw, rxpos prog)
       {
         int c, w1, w2;
 	NEED_INPUT(rw, is, 1);
-	if (is > rw->input_start) {
-          c = rw->instr[is - 1];
+	if (is > rw->input_min) {
+          c = INPUT_REF(rw, is - 1);
           w1 = rx_isword(c);
         } else
           w1 = 0;
         if (is < rw->input_end) {
-          c = rw->instr[is];
+          c = INPUT_REF(rw, is);
           w2 = rx_isword(c);
         } else
           w2 = 0;
@@ -3481,13 +3527,13 @@ regmatch(Regwork *rw, rxpos prog)
       {
         int c, w1, w2;
 	NEED_INPUT(rw, is, 1);
-	if (is > rw->input_start) {
-          c = rw->instr[is - 1];
+	if (is > rw->input_min) {
+          c = INPUT_REF(rw, is - 1);
           w1 = rx_isword(c);
         } else
           w1 = 0;
         if (is < rw->input_end) {
-          c = rw->instr[is];
+          c = INPUT_REF(rw, is);
           w2 = rx_isword(c);
         } else
           w2 = 0;
@@ -3511,7 +3557,7 @@ regmatch(Regwork *rw, rxpos prog)
 	
 	NEED_INPUT(rw, is, 1);
 	if (is < rw->input_end) {
-	  c = UCHAR(rw->instr[is]);
+	  c = UCHAR(INPUT_REF(rw, is));
 	  if (c < 128) {
 	    v = c;
 	    pos = 1;
@@ -3527,7 +3573,7 @@ regmatch(Regwork *rw, rxpos prog)
 		return 0;
 	      NEED_INPUT(rw, is, pos+1);
 	      if (is + pos < rw->input_end) {
-		buf[pos] = rw->instr[is + pos];
+		buf[pos] = INPUT_REF(rw, is + pos);
 		pos++;
 	      } else
 		return 0;
@@ -3559,7 +3605,7 @@ regmatch(Regwork *rw, rxpos prog)
 	if (rOP(test) == BACKREF) {
 	  int no;
 	  no = rOPLEN(OPERAND(test));
-	  t = (rw->endp[no] > -1);
+	  t = (rw->endp[no] > rw->input_min);
 	} else {
 	  rw->input = is;
 	  t = regmatch(rw, test);
@@ -3681,9 +3727,10 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
     break;
   case ANYL:
     {
+      rxpos input_start = rw->input_start;
       NEED_INPUT(rw, scan, 1);
       while (scan != rw->input_end
-	     && (rw->instr[scan] != '\n')) {
+	     && (INPUT_REF_S(rw, scan, input_start) != '\n')) {
 	count++;
 	scan++;
 	if (maxc) { maxc--; if (!maxc) break; }
@@ -3693,10 +3740,11 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
     break;
   case EXACTLY:
     {
+      rxpos input_start = rw->input_start;
       rxpos opnd2 = OPSTR(opnd);
       NEED_INPUT(rw, scan, 1);
       while (scan != rw->input_end
-	     && (regstr[opnd2] == rw->instr[scan])) {
+	     && (regstr[opnd2] == INPUT_REF_S(rw, scan, input_start))) {
 	count++;
 	scan++;
 	if (maxc) { maxc--; if (!maxc) break; }
@@ -3707,10 +3755,11 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
   case EXACTLY_CI:
     {
       char c;
+      rxpos input_start = rw->input_start;
       rxpos opnd2 = OPSTR(opnd);
       NEED_INPUT(rw, scan, 1);
       while (scan != rw->input_end) {
-	c = rw->instr[scan];
+	c = INPUT_REF_S(rw, scan, input_start);
 	c = rx_tolower(c);
 	if (regstr[opnd2] != c)
 	  break;
@@ -3724,12 +3773,13 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
   case ANYOF:
     {
       int c;
+      rxpos input_start = rw->input_start;
       rxpos init = scan;
       if (rw->port || maxc) {
 	/* Slow but general version */
 	NEED_INPUT(rw, scan, 1);
 	while (scan != rw->input_end) {
-	  c = UCHAR(rw->instr[scan]);
+	  c = UCHAR(INPUT_REF_S(rw, scan, input_start));
 	  if (!(regstr[opnd + (c >> 3)] & (1 << (c & 0x7))))
 	    break;
 	  scan++;
@@ -3740,7 +3790,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
 	/* Fast version */
 	int e = rw->input_end;
 	while (scan != e) {
-	  c = UCHAR(rw->instr[scan]);
+	  c = UCHAR(INPUT_REF_S(rw, scan, input_start));
 	  if (!(regstr[opnd + (c >> 3)] & (1 << (c & 0x7))))
 	    break;
 	  scan++;
@@ -3752,13 +3802,14 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
   case EXACTLY1:
     {
       rxpos init = scan;
+      rxpos input_start = rw->input_start;
       char c;
       c = regstr[opnd];
       if (rw->port || maxc) {
 	/* Slow but general version */
 	NEED_INPUT(rw, scan, 1);
 	while ((scan != rw->input_end)
-	       && (rw->instr[scan] == c)) {
+	       && (INPUT_REF_S(rw, scan, input_start) == c)) {
 	  scan++;
 	  if (maxc) { maxc--; if (!maxc) break; }
 	  NEED_INPUT(rw, scan, 1);
@@ -3767,7 +3818,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
 	/* Fast version */
 	int e = rw->input_end;
 	while ((scan != e)
-	       && (rw->instr[scan] == c)) {
+	       && (INPUT_REF(rw, scan) == c)) {
 	  scan++;
 	}
       }
@@ -3777,6 +3828,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
   case EXACTLY2:
     {
       rxpos init = scan;
+      rxpos input_start = rw->input_start;
       char c1, c2;
       c1 = regstr[opnd];
       c2 = regstr[opnd+1];
@@ -3784,8 +3836,8 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
 	/* Slow but general version */
 	NEED_INPUT(rw, scan, 1);
 	while ((scan != rw->input_end)
-	       && ((rw->instr[scan] == c1)
-                   || (rw->instr[scan] == c2))) {
+	       && ((INPUT_REF_S(rw, scan, input_start) == c1)
+                   || (INPUT_REF_S(rw, scan, input_start) == c2))) {
 	  scan++;
 	  if (maxc) { maxc--; if (!maxc) break; }
 	  NEED_INPUT(rw, scan, 1);
@@ -3794,8 +3846,8 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
 	/* Fast version */
 	int e = rw->input_end;
 	while ((scan != e)
-	       && ((rw->instr[scan] == c1)
-                   || (rw->instr[scan] == c2))) {
+	       && ((INPUT_REF(rw, scan) == c1)
+                   || (INPUT_REF(rw, scan) == c2))) {
 	  scan++;
 	}
       }
@@ -3805,6 +3857,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
   case RANGE:
     {
       rxpos init = scan;
+      rxpos input_start = rw->input_start;
       int c, sr, er;
       NEED_INPUT(rw, scan, 1);
       sr = UCHAR(regstr[opnd]);
@@ -3812,7 +3865,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
       if (rw->port || maxc) {
 	/* Slow but general version */
 	while (scan != rw->input_end) {
-	  c = UCHAR(rw->instr[scan]);
+	  c = UCHAR(INPUT_REF_S(rw, scan, input_start));
 	  if ((c < sr) || (c > er))
 	    break;
 	  scan++;
@@ -3823,7 +3876,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
 	/* Fast version */
 	int e = rw->input_end;
 	while (scan != e) {
-	  c = UCHAR(rw->instr[scan]);
+	  c = UCHAR(INPUT_REF(rw, scan));
 	  if ((c < sr) || (c > er))
 	    break;
 	  scan++;
@@ -3834,6 +3887,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
     break;
   case NOTRANGE:
     {
+      rxpos input_start = rw->input_start;
       rxpos init = scan;
       int c, sr, er;
       NEED_INPUT(rw, scan, 1);
@@ -3842,7 +3896,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
       if (rw->port || maxc) {
 	/* Slow but general version */
 	while (scan != rw->input_end) {
-	  c = UCHAR(rw->instr[scan]);
+	  c = UCHAR(INPUT_REF_S(rw, scan, input_start));
 	  if ((c >= sr) && (c <= er))
 	    break;
 	  scan++;
@@ -3853,7 +3907,7 @@ regrepeat(Regwork *rw, rxpos p, int maxc)
 	/* Fast version */
 	int e = rw->input_end;
 	while (scan != e) {
-	  c = UCHAR(rw->instr[scan]);
+	  c = UCHAR(INPUT_REF_S(rw, scan, input_start));
 	  if ((c >= sr) && (c <= er))
 	    break;
 	  scan++;
@@ -3925,7 +3979,8 @@ regstrcspn(char *s1, char *e1, char *s2)
    */
 static 
 char *regsub(regexp *prog, char *src, int sourcelen, long *lenout, char *insrc, 
-             rxpos *startp, rxpos *endp)
+             rxpos *startp, rxpos *endp, rxpos minpos,
+             char *prefix, rxpos prefix_offset)
 {
   char *dest;
   char c;
@@ -3970,7 +4025,7 @@ char *regsub(regexp *prog, char *src, int sourcelen, long *lenout, char *insrc,
       dest[destlen++] = c;
     } else if (no >= prog->nsubexp) {
       /* Number too big; prentend it's the empty string */
-    } else if (startp[no] != -1 && endp[no] != -1) {
+    } else if ((startp[no] >= minpos) && (endp[no] >= minpos)) {
       len = endp[no] - startp[no];
       if (len + destlen >= destalloc) {
 	char *old = dest;
@@ -3978,7 +4033,10 @@ char *regsub(regexp *prog, char *src, int sourcelen, long *lenout, char *insrc,
 	dest = (char *)scheme_malloc_atomic(destalloc + 1);
 	memcpy(dest, old, destlen);
       }
-      memcpy(dest + destlen, insrc + startp[no], len);
+      if (startp[no] >= 0)
+        memcpy(dest + destlen, insrc + startp[no], len);
+      else
+        memcpy(dest + destlen, prefix + prefix_offset + (startp[no] - minpos), len);
       destlen += len;
     }
   }
@@ -4935,13 +4993,14 @@ void scheme_clear_rx_buffers(void)
 
 static Scheme_Object *gen_compare(char *name, int pos, 
 				  int argc, Scheme_Object *argv[],
-				  int peek, int nonblock)
+				  int peek, int nonblock, int last_bytes)
 {
   regexp *r;
-  char *full_s;
-  rxpos *startp, *maybep, *endp;
-  int offset = 0, orig_offset, endset, m, was_non_byte;
+  char *full_s, *prefix = NULL;
+  rxpos *startp, *maybep, *endp, prefix_len = 0, prefix_offset = 0, minpos;
+  int offset = 0, orig_offset, endset, m, was_non_byte, last_bytes_count = last_bytes;
   Scheme_Object *iport, *oport = NULL, *startv = NULL, *endv = NULL, *dropped, *unless_evt = NULL;
+  Scheme_Object *last_bytes_str = scheme_false;
   
   if (SCHEME_TYPE(argv[0]) != scheme_regexp_type
       && !SCHEME_BYTE_STRINGP(argv[0])
@@ -5026,6 +5085,23 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	  }
 	}
       }
+
+      if (argc > 5) {
+        if (!SCHEME_BYTE_STRINGP(argv[5]))
+          scheme_wrong_type(name, "byte string", 5, argc, argv);
+        prefix = SCHEME_BYTE_STR_VAL(argv[5]);
+        prefix_len = SCHEME_BYTE_STRLEN_VAL(argv[5]);
+        prefix_offset = 0;
+
+        if (argc > 6) {
+          if (!scheme_nonneg_exact_p(argv[6]))
+            scheme_wrong_type(name, "exact nonnegative integer", 6, argc, argv);
+          if (SCHEME_INTP(argv[6]))
+            last_bytes_count = SCHEME_INT_VAL(argv[6]);
+          else
+            last_bytes_count = -1; /* => as many as available */
+        }
+      }
     }
   }
 
@@ -5083,10 +5159,17 @@ static Scheme_Object *gen_compare(char *name, int pos,
 
   dropped = scheme_make_integer(0);
 
-  m = regexec(name, r, full_s, offset, endset - offset, startp, maybep, endp,
+  m = regexec(name, r, full_s, offset, endset - offset, offset, startp, maybep, endp,
 	      iport, unless_evt, nonblock,
-	      &full_s, peek, pos, oport, 
-	      startv, endv, &dropped);
+	      &full_s, peek, pos, last_bytes_count, oport, 
+	      startv, endv, &dropped, 
+              prefix, prefix_len, prefix_offset);
+
+  if (iport) {
+    minpos = -prefix_len;
+    offset = 0;
+  } else
+    minpos = offset - prefix_len;
 
   if (m) {
     int i;
@@ -5095,12 +5178,44 @@ static Scheme_Object *gen_compare(char *name, int pos,
     if (oport && !iport)
       scheme_put_byte_string(name, oport, full_s, 0, *startp, 0);
 
+    if (last_bytes) {
+      rxpos frompos, tooffset;
+
+      if ((last_bytes_count < 0)
+          || (endp[0] - minpos < last_bytes_count))
+        last_bytes_count = endp[0] - minpos;
+
+      if (!last_bytes_count) {
+        last_bytes_str = empty_byte_string;
+      } else {
+        frompos = endp[0] - last_bytes_count;
+        tooffset = 0;
+
+        last_bytes_str = scheme_alloc_byte_string(last_bytes_count, 0);
+        if (frompos < offset) {
+          /* draw from prefix: */
+          rxpos amt = last_bytes_count;
+          if (frompos + last_bytes_count > offset)
+            amt = offset - frompos;
+          memcpy(SCHEME_BYTE_STR_VAL(last_bytes_str) XFORM_OK_PLUS tooffset,
+                 prefix + prefix_offset + prefix_len - (offset - frompos),
+                 amt);
+          frompos += amt;
+          tooffset += amt;
+          last_bytes_count -= amt;
+        }
+        memcpy(SCHEME_BYTE_STR_VAL(last_bytes_str) XFORM_OK_PLUS tooffset,
+               full_s + frompos,
+               last_bytes_count);
+      }
+    }
+
     if (pos > 1) {
       /* pos == 2 => just get true or false */
       dropped = scheme_true;
     } else {
       for (i = r->nsubexp; i--; ) {
-	if (startp[i] != -1) {
+	if (startp[i] >= minpos) {
 	  if (pos) {
 	    Scheme_Object *startpd, *endpd;
 
@@ -5110,15 +5225,37 @@ static Scheme_Object *gen_compare(char *name, int pos,
 		 unicode chars, so the start and end points can't be in
 		 the middle of encoded characters. */
 	      int uspd, uepd;
-	      uspd = scheme_utf8_decode((const unsigned char *)full_s, offset, startp[i],
-					NULL, 0, -1,
-					NULL, 0, 0);
+              if (startp[i] >= offset)
+                uspd = scheme_utf8_decode((const unsigned char *)full_s, offset, startp[i],
+                                          NULL, 0, -1,
+                                          NULL, 0, 0);
+              else {
+                uspd = scheme_utf8_decode((const unsigned char *)prefix, 
+                                          prefix_offset + prefix_len + (startp[i] - offset), 
+                                          prefix_offset + prefix_len,
+                                          NULL, 0, -1,
+                                          NULL, 0, 0);
+                uspd = offset - uspd;
+              }
 	      uspd += orig_offset;
 	      startpd = scheme_make_integer(uspd);
-	      uepd = scheme_utf8_decode((const unsigned char *)full_s, startp[i], endp[i],
-					NULL, 0, -1,
-					NULL, 0, 0);
-	      uepd += uspd;
+              if (startp[i] >= offset) {
+                uepd = scheme_utf8_decode((const unsigned char *)full_s, startp[i], endp[i],
+                                          NULL, 0, -1,
+                                          NULL, 0, 0);
+                uepd += uspd;
+              } else if (endp[i] < offset) {
+                uepd = scheme_utf8_decode((const unsigned char *)prefix, 
+                                          prefix_offset + prefix_len + (endp[i] - offset),
+                                          prefix_offset + prefix_len,
+                                          NULL, 0, -1,
+                                          NULL, 0, 0);
+                uepd = offset - uepd;
+                uepd += orig_offset;
+              } else {
+                scheme_signal_error("internal error: how can a match span both prefix and input?");
+                uepd = 0;
+              }
 	      endpd = scheme_make_integer(uepd);
 	    } else {
 	      int v;
@@ -5139,11 +5276,25 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	  } else {
 	    long len;
 	    len = endp[i] - startp[i];
-	    if (was_non_byte) {
-	      rs = scheme_make_sized_offset_utf8_string(full_s, startp[i], len);
-	    } else {
-	      rs = scheme_make_sized_offset_byte_string(full_s, startp[i], len, 1);
-	    }
+            if (startp[i] >= offset) {
+              if (was_non_byte) {
+                rs = scheme_make_sized_offset_utf8_string(full_s, startp[i], len);
+              } else {
+                rs = scheme_make_sized_offset_byte_string(full_s, startp[i], len, 1);
+              }
+            } else if (endp[i] <= offset) {
+              /* all in prefix */
+              rs = scheme_make_sized_offset_byte_string(prefix, 
+                                                        prefix_offset + (startp[i] - minpos),
+                                                        endp[i] - startp[i],
+                                                        1);
+              if (was_non_byte)
+                rs = scheme_byte_string_to_char_string(rs);
+            } else {
+              /* span both */
+              scheme_signal_error("internal error: how can a match span both prefix and input?");
+              rs = NULL;
+            }
 	    l = scheme_make_pair(rs, l);
 	  }
 	} else
@@ -5156,6 +5307,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
       scheme_put_byte_string(name, oport, full_s, 0, endset, 0);
 
     dropped = scheme_false;
+    last_bytes_str = scheme_false;
   }
   
   if (!startp_buffer_cache || (r->nsubexp > rx_buffer_size)) {
@@ -5166,43 +5318,69 @@ static Scheme_Object *gen_compare(char *name, int pos,
   } else if (maybep && !maybep_buffer_cache && (r->nsubexp == rx_buffer_size)) {
     maybep_buffer_cache = maybep;
   }
-  
-  return dropped;
+
+  if (last_bytes) {
+    Scheme_Object *a[2];
+    a[0] = dropped;
+    a[1] = last_bytes_str;
+    return scheme_values(2, a);
+  } else
+    return dropped;
 }
 
 static Scheme_Object *compare(int argc, Scheme_Object *argv[])
 {
-  return gen_compare("regexp-match", 0, argc, argv, 0, 0);
+  return gen_compare("regexp-match", 0, argc, argv, 0, 0, 0);
+}
+
+static Scheme_Object *compare_end(int argc, Scheme_Object *argv[])
+{
+  return gen_compare("regexp-match/end", 0, argc, argv, 0, 0, 1);
 }
 
 static Scheme_Object *positions(int argc, Scheme_Object *argv[])
 {
-  return gen_compare("regexp-match-positions", 1, argc, argv, 0, 0);
+  return gen_compare("regexp-match-positions", 1, argc, argv, 0, 0, 0);
+}
+
+static Scheme_Object *positions_end(int argc, Scheme_Object *argv[])
+{
+  return gen_compare("regexp-match-positions/end", 1, argc, argv, 0, 0, 1);
 }
 
 static Scheme_Object *compare_bool(int argc, Scheme_Object *argv[])
 {
-  return gen_compare("regexp-match?", 2, argc, argv, 0, 0);
+  return gen_compare("regexp-match?", 2, argc, argv, 0, 0, 0);
 }
 
 static Scheme_Object *compare_peek(int argc, Scheme_Object *argv[])
 {
-  return gen_compare("regexp-match-peek", 0, argc, argv, 1, 0);
+  return gen_compare("regexp-match-peek", 0, argc, argv, 1, 0, 0);
 }
 
 static Scheme_Object *positions_peek(int argc, Scheme_Object *argv[])
 {
-  return gen_compare("regexp-match-peek-positions", 1, argc, argv, 1, 0);
+  return gen_compare("regexp-match-peek-positions", 1, argc, argv, 1, 0, 0);
+}
+
+static Scheme_Object *positions_peek_end(int argc, Scheme_Object *argv[])
+{
+  return gen_compare("regexp-match-peek-positions/end", 1, argc, argv, 1, 0, 1);
 }
 
 static Scheme_Object *compare_peek_nonblock(int argc, Scheme_Object *argv[])
 {
-  return gen_compare("regexp-match-peek-immediate", 0, argc, argv, 1, 1);
+  return gen_compare("regexp-match-peek-immediate", 0, argc, argv, 1, 1, 0);
 }
 
 static Scheme_Object *positions_peek_nonblock(int argc, Scheme_Object *argv[])
 {
-  return gen_compare("regexp-match-peek-positions-immediate", 1, argc, argv, 1, 1);
+  return gen_compare("regexp-match-peek-positions-immediate", 1, argc, argv, 1, 1, 0);
+}
+
+static Scheme_Object *positions_peek_nonblock_end(int argc, Scheme_Object *argv[])
+{
+  return gen_compare("regexp-match-peek-positions-immediate/end", 1, argc, argv, 1, 1, 1);
 }
 
 static char *build_call_name(const char *n)
@@ -5234,8 +5412,8 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
   Scheme_Object *orig;
   regexp *r;
   char *source, *prefix = NULL, *deststr;
-  rxpos *startp, *maybep, *endp;
-  int prefix_len = 0, sourcelen, srcoffset = 0, was_non_byte, destlen;
+  rxpos *startp, *maybep, *endp, minpos;
+  int prefix_len = 0, prefix_offset = 0, sourcelen, srcoffset = 0, was_non_byte, destlen;
 
   if (SCHEME_TYPE(argv[0]) != scheme_regexp_type
       && !SCHEME_BYTE_STRINGP(argv[0])
@@ -5276,6 +5454,14 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
     }
   }
 
+  if (argc > 3) {
+    if (!SCHEME_BYTE_STRINGP(argv[3]))
+      scheme_wrong_type(name, "byte string", 3, argc, argv);
+    prefix = SCHEME_BYTE_STR_VAL(argv[3]);
+    prefix_len = SCHEME_BYTE_STRLEN_VAL(argv[3]);
+    prefix_offset = 0;
+  }
+
   if (SCHEME_CHAR_STRINGP(argv[1])) {
     orig = scheme_char_string_to_byte_string(argv[1]);
     if (r->flags & REGEXP_IS_UTF8)
@@ -5298,13 +5484,16 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
     maybep = NULL;
   endp = MALLOC_N_ATOMIC(rxpos, r->nsubexp);
 
+  minpos = -prefix_len;
+
   while (1) {
     int m;
 
     do {
-      m = regexec(name, r, source, srcoffset, sourcelen - srcoffset, startp, maybep, endp,
+      m = regexec(name, r, source, srcoffset, sourcelen - srcoffset, 0, startp, maybep, endp,
                   NULL, NULL, 0,
-                  NULL, 0, 0, NULL, NULL, NULL, NULL);
+                  NULL, 0, 0, 0, NULL, NULL, NULL, NULL, 
+                  prefix, prefix_len, prefix_offset);
 
       if (m && all && (startp[0] == endp[0])) {
         if (!startp[0] && sourcelen) {
@@ -5345,7 +5534,7 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
 	}
 
         for (i = r->nsubexp; i--; ) {
-          if (startp[i] == -1) {
+          if (startp[i] < minpos) {
             args[i] = scheme_false;
           } else {
             long len;
@@ -5394,7 +5583,8 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
 	    destlen = SCHEME_BYTE_STRTAG_VAL(argv[2]);
 	  }
 	}
-	insert = regsub(r, deststr, destlen, &len, source, startp, endp);
+	insert = regsub(r, deststr, destlen, &len, source, startp, endp, 
+                        minpos, prefix, prefix_offset);
       }
       
       end = sourcelen;
@@ -5449,7 +5639,7 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
 	prefix = naya;
 	prefix_len = total;
 
-	srcoffset = endpd + more;        
+	srcoffset = endpd + more;
       }
     } else if (!prefix) {
       if (was_non_byte)
@@ -5522,6 +5712,13 @@ static Scheme_Object *byte_pregexp_p(int argc, Scheme_Object *argv[])
 	  : scheme_false);
 }
 
+Scheme_Object *regexp_lookbehind(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_regexp_type))
+    scheme_wrong_type("regexp-max-lookbehind", "regexp or byte-regexp", 0, argc, argv);
+  return scheme_make_integer(((regexp *)argv[0])->maxlookback);
+}
+
 Scheme_Object *scheme_regexp_source(Scheme_Object *re)
 {
   return ((regexp *)re)->source;
@@ -5546,24 +5743,33 @@ void scheme_regexp_initialize(Scheme_Env *env)
   GC_REG_TRAV(scheme_rt_regwork, mark_regwork);
 #endif
 
+  REGISTER_SO(empty_byte_string);
+  empty_byte_string = scheme_alloc_byte_string(0, 0);
+
   GLOBAL_PRIM_W_ARITY("byte-regexp",                           make_regexp,             1, 1, env);
   GLOBAL_PRIM_W_ARITY("regexp",                                make_utf8_regexp,        1, 1, env);
   GLOBAL_PRIM_W_ARITY("byte-pregexp",                          make_pregexp,            1, 1, env);
   GLOBAL_PRIM_W_ARITY("pregexp",                               make_utf8_pregexp,       1, 1, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match",                          compare,                 2, 5, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-positions",                positions,               2, 5, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match?",                         compare_bool,            2, 5, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek",                     compare_peek,            2, 5, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions",           positions_peek,          2, 5, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek-immediate",           compare_peek_nonblock,   2, 5, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions-immediate", positions_peek_nonblock, 2, 5, env);
-  GLOBAL_PRIM_W_ARITY("regexp-replace",                        replace,                 3, 3, env);
-  GLOBAL_PRIM_W_ARITY("regexp-replace*",                       replace_star,            3, 3, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match",                          compare,                 2, 6, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match/end",                      compare_end,             2, 7, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-positions",                positions,               2, 6, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-positions/end",            positions_end,           2, 7, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match?",                         compare_bool,            2, 6, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek",                     compare_peek,            2, 6, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions",           positions_peek,          2, 6, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions/end",       positions_peek_end,      2, 7, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek-immediate",           compare_peek_nonblock,   2, 6, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions-immediate", positions_peek_nonblock, 2, 6, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions-immediate/end", positions_peek_nonblock_end, 2, 7, env);
+  GLOBAL_PRIM_W_ARITY("regexp-replace",                        replace,                 3, 4, env);
+  GLOBAL_PRIM_W_ARITY("regexp-replace*",                       replace_star,            3, 4, env);
 
   GLOBAL_FOLDING_PRIM("regexp?",                               regexp_p,        1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("byte-regexp?",                          byte_regexp_p,   1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("pregexp?",                              pregexp_p,       1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("byte-pregexp?",                         byte_pregexp_p,  1, 1, 1, env);
+
+  GLOBAL_FOLDING_PRIM("regexp-max-lookbehind",                 regexp_lookbehind, 1, 1, 1, env);
 }
 
 void scheme_init_regexp_places()

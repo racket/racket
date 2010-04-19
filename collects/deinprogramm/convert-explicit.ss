@@ -2,10 +2,9 @@
 (provide convert-explicit)
 
 (require mzlib/pretty
-	 mzlib/struct
-	 (only-in srfi/1 iota))
+	 mzlib/struct)
 
-(require deinprogramm/deinprogramm-struct)
+(require deinprogramm/contract/contract)
 
 (require scheme/include)
 (include "convert-explicit.scm")

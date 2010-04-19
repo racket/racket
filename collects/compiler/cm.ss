@@ -40,29 +40,34 @@
               ;; use the date of the original file (or the zo, whichever
               ;; is newer).
               (let-values ([(base name dir) (split-path p)])
-                (let* ([ext (filename-extension p)]
-                       [pbytes (path->bytes name)]
-                       [zo-file-name 
-                        (and ext
-                             (bytes->path
-                              (bytes-append
-                               (subbytes 
-                                pbytes
-                                0
-                                (- (bytes-length pbytes)
-                                   (bytes-length ext)))
-                               #"zo")))]
-                       [zo-path (and zo-file-name
-                                     (build-path 
-                                      base
-                                      (car (use-compiled-file-paths))
-                                      zo-file-name))])
-                  (cond
-                    [(and zo-file-name (file-exists? zo-path))
-                     (max (file-or-directory-modify-seconds p)
-                          (file-or-directory-modify-seconds zo-file-name))]
-                    [else
-                     (file-or-directory-modify-seconds p)])))]
+                (let* ([p-date (file-or-directory-modify-seconds p #f (lambda () #f))]
+                       [alt-date (and (not p-date)
+                                      (file-or-directory-modify-seconds 
+                                       (rkt->ss p) 
+                                       #f 
+                                       (lambda () #f)))]
+                       [date (or p-date alt-date)]
+                       [get-zo-date (lambda (name)
+                                      (file-or-directory-modify-seconds
+                                       (build-path 
+                                        base
+                                        (car (use-compiled-file-paths))
+                                        (path-add-suffix name #".zo"))
+                                       #f
+                                       (lambda () #f)))]
+                       [main-zo-date (and (or p-date (not alt-date))
+                                          (get-zo-date name))]
+                       [alt-zo-date (and (or alt-date
+                                             (and (not p-date) 
+                                                  (not alt-date)
+                                                  (not main-zo-date)))
+                                         (get-zo-date (rkt->ss name)))]
+                       [zo-date (or main-zo-date alt-zo-date)])
+                  (or (and date 
+                           zo-date
+                           (max date zo-date))
+                      date
+                      zo-date)))]
              [(null? p-eles) 
               ;; this case shouldn't happen... I think.
               (c-loop (cdr paths))]
@@ -81,7 +86,8 @@
 (define (get-deps code path)
   (filter-map (lambda (x)
                 (let ([r (resolve-module-path-index x path)])
-                  (and (path? r) (path->bytes r))))
+                  (and (path? r) 
+                       (path->bytes r))))
               (append-map cdr (module-compiled-imports code))))
 
 (define (get-compilation-dir+name mode path)
@@ -104,8 +110,7 @@
   (close-output-port (open-output-file path #:exists 'append)))
 
 (define (try-file-time path)
-  ;; might be better to use a `with-handlers'
-  (and (file-exists? path) (file-or-directory-modify-seconds path)))
+  (file-or-directory-modify-seconds path #f (lambda () #f)))
 
 (define (try-delete-file path)
   ;; Attempt to delete, but give up if it doesn't work:
@@ -165,7 +170,7 @@
             (date-hour d) (date-minute d) (date-second d))))
 
 (define (verify-times ss-name zo-name)
-  (define ss-sec (try-file-time ss-name)) ; should exist
+  (define ss-sec (try-file-time ss-name))
   (define zo-sec (try-file-time zo-name))
   (cond [(not ss-sec) (error 'compile-zo "internal error")]
         [(not zo-sec) (error 'compile-zo "failed to create .zo file (~a) for ~a"
@@ -184,6 +189,8 @@
 (define-struct file-dependency (path) #:prefab)
 
 (define (compile-zo* mode path read-src-syntax zo-name)
+  ;; The `path' argument has been converted to .rkt or .ss form,
+  ;;  as appropriate.
   ;; External dependencies registered through reader guard and
   ;; accomplice-logged events:
   (define external-deps null)
@@ -275,30 +282,39 @@
 
 (define depth (make-parameter 0))
 
-(define (compile-zo mode path read-src-syntax)
-  ((manager-compile-notify-handler) path)
-  (trace-printf "compiling: ~a" path)
-  (parameterize ([indent (string-append "  " (indent))])
-    (let* ([zo-name (path-add-suffix (get-compilation-path mode path) #".zo")]
-           [zo-exists? (file-exists? zo-name)])
-      (if (and zo-exists? (trust-existing-zos))
-          (touch zo-name)
-          (begin (when zo-exists? (delete-file zo-name))
-                 (log-info (format "cm: ~acompiling ~a" 
-                                   (build-string 
-                                    (depth)
-                                    (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
-                                   path))
-                 (parameterize ([depth (+ (depth) 1)])
-                   (with-handlers
-                       ([exn:get-module-code?
-                         (lambda (ex)
-                           (compilation-failure mode path zo-name
-                                                (exn:get-module-code-path ex)
-                                                (exn-message ex))
-                           (raise ex))])
-                     (compile-zo* mode path read-src-syntax zo-name)))))))
-  (trace-printf "end compile: ~a" path))
+(define (actual-source-path path)
+  (if (file-exists? path) 
+      path
+      (let ([alt-path (rkt->ss path)])
+        (if (file-exists? alt-path)
+            alt-path
+            path))))
+
+(define (compile-zo mode path orig-path read-src-syntax)
+  (let ([actual-path (actual-source-path orig-path)])
+    ((manager-compile-notify-handler) actual-path)
+    (trace-printf "compiling: ~a" actual-path)
+    (parameterize ([indent (string-append "  " (indent))])
+      (let* ([zo-name (path-add-suffix (get-compilation-path mode path) #".zo")]
+             [zo-exists? (file-exists? zo-name)])
+        (if (and zo-exists? (trust-existing-zos))
+            (touch zo-name)
+            (begin (when zo-exists? (delete-file zo-name))
+                   (log-info (format "cm: ~acompiling ~a" 
+                                     (build-string 
+                                      (depth)
+                                      (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
+                                     actual-path))
+                   (parameterize ([depth (+ (depth) 1)])
+                     (with-handlers
+                         ([exn:get-module-code?
+                           (lambda (ex)
+                             (compilation-failure mode path zo-name
+                                                  (exn:get-module-code-path ex)
+                                                  (exn-message ex))
+                             (raise ex))])
+                       (compile-zo* mode path read-src-syntax zo-name)))))))
+    (trace-printf "end compile: ~a" actual-path)))
 
 (define (get-compiled-time mode path)
   (define-values (dir name) (get-compilation-dir+name mode path))
@@ -308,31 +324,44 @@
       (try-file-time (build-path dir (path-add-suffix name #".zo")))
       -inf.0))
 
+(define (rkt->ss p)
+  (let ([b (path->bytes p)])
+    (if (regexp-match? #rx#"[.]rkt$" b)
+        (path-replace-suffix p #".ss")
+        p)))
+
 (define (compile-root mode path0 up-to-date read-src-syntax)
-  (define path (simplify-path (cleanse-path path0)))
-  (define (read-deps)
+  (define orig-path (simplify-path (cleanse-path path0)))
+  (define (read-deps path)
     (with-handlers ([exn:fail:filesystem? (lambda (ex) (list (version)))])
       (call-with-input-file
           (path-add-suffix (get-compilation-path mode path) #".dep")
         read)))
   (define (do-check)
-    (define path-zo-time (get-compiled-time mode path))
-    (define path-time (try-file-time path))
-    (cond
-      [(not path-time)
-       (trace-printf "~a does not exist" path)
-       path-zo-time]
-      [else
-       (cond
+    (let* ([main-path orig-path]
+           [alt-path (rkt->ss orig-path)]
+           [main-path-time (try-file-time main-path)]
+           [alt-path-time (and (not main-path-time)
+                               (not (eq? alt-path main-path))
+                               (try-file-time alt-path))]
+           [path (if alt-path-time alt-path main-path)]
+           [path-time (or main-path-time alt-path-time)]
+           [path-zo-time (get-compiled-time mode path)])
+      (cond
+       [(not path-time)
+        (trace-printf "~a does not exist" orig-path)
+        path-zo-time]
+       [else
+        (cond
          [(> path-time path-zo-time)
           (trace-printf "newer src...")
-          (compile-zo mode path read-src-syntax)]
+          (compile-zo mode path orig-path read-src-syntax)]
          [else
-          (let ([deps (read-deps)])
+          (let ([deps (read-deps path)])
             (cond
               [(not (and (pair? deps) (equal? (version) (car deps))))
                (trace-printf "newer version...")
-               (compile-zo mode path read-src-syntax)]
+               (compile-zo mode path orig-path read-src-syntax)]
               [(ormap
                 (lambda (p)
                   ;; (cons 'ext rel-path) => a non-module file (check date)
@@ -348,13 +377,15 @@
                                             d t path-zo-time)
                               #t)))
                 (cdr deps))
-               (compile-zo mode path read-src-syntax)]))])
+               (compile-zo mode path orig-path read-src-syntax)]))])
        (let ([stamp (get-compiled-time mode path)])
-         (hash-set! up-to-date path stamp)
-         stamp)]))
-  (or (and up-to-date (hash-ref up-to-date path #f))
-      ((manager-skip-file-handler) path)
-      (begin (trace-printf "checking: ~a" path)
+         (hash-set! up-to-date main-path stamp)
+         (unless (eq? main-path alt-path)
+           (hash-set! up-to-date alt-path stamp))
+         stamp)])))
+  (or (and up-to-date (hash-ref up-to-date orig-path #f))
+      ((manager-skip-file-handler) orig-path)
+      (begin (trace-printf "checking: ~a" orig-path)
              (do-check))))
 
 (define (managed-compile-zo zo [read-src-syntax read-syntax])
@@ -362,13 +393,14 @@
 
 (define (make-caching-managed-compile-zo [read-src-syntax read-syntax])
   (let ([cache (make-hash)])
-    (lambda (zo)
+    (lambda (src)
       (parameterize ([current-load/use-compiled
                       (make-compilation-manager-load/use-compiled-handler/table
                        cache)])
         (compile-root (car (use-compiled-file-paths))
-                      (path->complete-path zo)
-                      cache read-src-syntax)
+                      (path->complete-path src)
+                      cache
+                      read-src-syntax)
         (void)))))
 
 (define (make-compilation-manager-load/use-compiled-handler)
@@ -383,7 +415,10 @@
     (define (compilation-manager-load-handler path mod-name)
       (cond [(not mod-name)
              (trace-printf "skipping:  ~a mod-name ~s" path mod-name)]
-            [(not (file-exists? path))
+            [(not (or (file-exists? path)
+                      (let ([p2 (rkt->ss path)])
+                        (and (not (eq? path p2))
+                             (file-exists? p2)))))
              (trace-printf "skipping:  ~a file does not exist" path)]
             [(or (null? (use-compiled-file-paths))
                  (not (equal? (car modes)

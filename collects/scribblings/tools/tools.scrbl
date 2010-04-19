@@ -3,7 +3,7 @@
 (require scribble/manual
          (for-label scheme/gui/base)
          (for-label drscheme/tool-lib)
-         (for-label scheme/unit)
+         (for-label scheme/unit scheme/contract scheme/class)
          (for-label scheme/base)
          (for-label framework/framework))
 
@@ -462,23 +462,6 @@ file based on the file's extension. If the file ends with
 @File{.txt}, DrScheme uses text mode. Otherwise, DrScheme
 uses Scheme mode.
 
-@section{@tt{#lang}-specific tools}
-@section-index["drscheme:toolbar-buttons"]
-
-If the result of @scheme[read-language] for a language is a function, 
-DrScheme will query it to determine if there are any new toolbar
-buttons to be used when editing files in this language (when
-DrScheme's language is set to the Module language).
-
-Specifically, DrScheme will pass @scheme['drscheme:toolbar-buttons]
-to the function and expect back a value matching this contract:
-@schemeblock[(listof (list/c string?
-                             (is-a?/c bitmap%)
-                             (-> (is-a?/c drscheme:unit:frame<%>) any)))]
-which is then used to create new toolbar buttons, one for each list in the
-first. The string is the label on the button; the bitmap is the icon (it should be 16x16),
-and the function is called when the button is clicked.
-
 @section{Language-specific capabilities}
 
 Drscheme's capability interface provides a mechanism for
@@ -494,6 +477,35 @@ the tool shows this part of the GUI for DrScheme.
 See @scheme[drscheme:language:register-capability]
 for a list of the capabilities registered by default.
 
+@section{Check Syntax}
+
+Check Syntax is a part of the DrScheme collection, but is implemented via the tools api, i.e.,
+not taking any advantage of 
+
+@defmodule[drscheme/syncheck-drscheme-button]
+
+@defthing[syncheck-drscheme-button
+          (list/c 
+           string?
+           (is-a?/c bitmap%)
+           (-> (is-a?/c
+                top-level-window<%>)
+               any))]{
+  This is meant to be used with the @scheme['drscheme:toolbar-buttons] 
+  argument to the info proc returned
+  from @scheme[read-language].
+}
+
+@defidform[syncheck:button-callback]{
+  This is defined with @scheme[define-local-member-name] and
+  is bound to a method of no arguments of the DrScheme frame that runs Check
+  Syntax.
+}
+          
+@defthing[syncheck-bitmap (is-a?/c bitmap%)]{
+  The bitmap in the Check Syntax button on the DrScheme frame.
+}
+
 @include-section["get-slash-extend.scrbl"]
 @include-section["unit.scrbl"]
 @include-section["language.scrbl"]
@@ -504,5 +516,7 @@ for a list of the capabilities registered by default.
 @include-section["help-desk.scrbl"]
 @include-section["eval.scrbl"]
 @include-section["modes.scrbl"]
+@include-section["module-language-tools.scrbl"]
+@include-section["module-language.scrbl"]
 
 @index-section[]

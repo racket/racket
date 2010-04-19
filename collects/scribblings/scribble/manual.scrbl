@@ -112,6 +112,13 @@ A few other escapes are recognized symbolically:
 
  @item{@schemeidfont{code:blank} typesets as a blank space.}
 
+ @item{@scheme[(#,(scheme code:hilite) _datum)] typesets like
+       @scheme[_datum], but with a background highlight.}
+
+ @item{@scheme[(#,(scheme code:quote) _datum)] typesets like
+       @scheme[(@#,schemeidfont{quote} _datum)], but without rendering the
+       @schemeidfont{quote} as @litchar{'}.}
+
  @item{@schemeidfont{_}@scheme[_id] typesets as @scheme[id], but
        colored as a variable (like @scheme[schemevarfont]); this
        escape applies only if @schemeidfont{_}@scheme[_id] has no

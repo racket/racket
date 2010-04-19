@@ -1,7 +1,7 @@
 #include "private/pthread_support.h"
 
 #if defined(GC_PTHREADS) && !defined(GC_WIN32_THREADS) && \
-    !defined(GC_DARWIN_THREADS)
+    !defined(GC_DARWIN_THREADS) && !defined(GC_OPENBSD_THREADS)
 
 #include <signal.h>
 #include <semaphore.h>

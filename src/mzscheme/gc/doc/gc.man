@@ -1,4 +1,4 @@
-.TH GC_MALLOC 1L "2 October 2003"
+.TH GC_MALLOC 3 "2 October 2003"
 .SH NAME
 GC_malloc, GC_malloc_atomic, GC_free, GC_realloc, GC_enable_incremental, GC_register_finalizer, GC_malloc_ignore_off_page, GC_malloc_atomic_ignore_off_page, GC_set_warn_proc \- Garbage collecting malloc replacement
 .SH SYNOPSIS
@@ -81,6 +81,48 @@ GC_enable_incremental.
 This may temporarily write protect pages in the heap.  See the README file for more information on how this interacts with system calls that write to the heap.
 .LP
 Other facilities not discussed here include limited facilities to support incremental collection on machines without appropriate VM support, provisions for providing more explicit object layout information to the garbage collector, more direct support for ``weak'' pointers, support for ``abortable'' garbage collections during idle time, etc.
+.LP
+.SH "PORT INFORMATION"
+.LP
+In this (OpenBSD package) installation,
+.I gc.h
+and
+.I gc_cpp.h
+will be found in
+.I /usr/local/include ,
+and the libraries in
+.I /usr/local/lib.
+.LP
+These libraries have been compiled as drop-in replacements
+for malloc and free (which is to say, all malloc
+calls will allocate garbage-collectable data).
+There is no need to include "gc.h" in your C files unless you want
+access to the debugging (and other) functions defined there,
+or unless you want to explicitly use
+.I GC_malloc_uncollectable
+for some allocations.
+Just link against them whenever you want either garbage
+collection or leak detection.
+.LP
+The C++ header file, "gc_cpp.h",
+.I is
+necessary for C++ programs, to obtain the appropriate
+definitions of the
+.I new
+and
+.I delete
+operators.
+The comments in both of these header files presently
+provide far better documentation
+for the package than this man page;
+look there for more information.
+.LP
+Both libraries are compiled without (explicit) support
+for the experimental
+.I gc
+extension of
+.I g++.
+This may or may not make a difference.
 .LP
 .SH "SEE ALSO"
 The README and gc.h files in the distribution.  More detailed definitions of the functions exported by the collector are given there.  (The above list is not complete.)

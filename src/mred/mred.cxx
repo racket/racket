@@ -2960,10 +2960,10 @@ void wxDoMainLoop()
 
 static Scheme_Env *setup_basic_env()
 {
+  scheme_set_banner(BANNER);
+
   wxREGGLOB(global_env);
   global_env = scheme_basic_env();
-
-  scheme_set_banner(BANNER);
 
 #ifdef DANGER_ALARM
   {

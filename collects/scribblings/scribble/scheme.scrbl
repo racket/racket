@@ -41,7 +41,7 @@ The @scheme[stx-prop-expr] should produce a procedure for recording a
 @scheme[id] has such a property. The default is
 @scheme[syntax-property].}
 
-@defproc[(to-paragraph [v any/c]) block?]{
+@defproc[(to-paragraph [v any/c] [#:qq? qq? any/c #f]) block?]{
 
 Typesets an S-expression that is represented by a syntax object, where
 source-location information in the syntax object controls the
@@ -50,18 +50,26 @@ generated layout.
 Identifiers that have @scheme[for-label] bindings are typeset and
 hyperlinked based on definitions declared elsewhere (via
 @scheme[defproc], @scheme[defform], etc.). The identifiers
-@schemeidfont{code:line}, @schemeidfont{code:comment}, and
-@schemeidfont{code:blank} are handled as in @scheme[schemeblock], as
+@schemeidfont{code:line}, @schemeidfont{code:comment},
+@schemeidfont{code:blank}, @schemeidfont{code:hilite}, and
+@schemeidfont{code:quote} are handled as in @scheme[schemeblock], as
 are identifiers that start with @litchar{_}.
 
 In addition, the given @scheme[v] can contain @scheme[var-id],
 @scheme[shaped-parens], @scheme[just-context], or
 @scheme[literal-syntax] structures to be typeset specially (see each
 structure type for details), or it can contain @scheme[element]
-structures that are used directly in the output.}
+structures that are used directly in the output.
+
+If @scheme[qq?] is true, then @scheme[v] is rendered ``quasiquote''
+style, much like @scheme[print] with the @scheme[print-as-quasiquote]
+parameter set to @scheme[#t]. In that case, @scheme[for-label]
+bindings on identifiers are ignored, since the identifiers are all
+quoted in the output. Typically, @scheme[qq?] is set to true for
+printing result values.}
 
 
-@defproc[((to-paragraph/prefix [prefix1 any/c] [prefix any/c] [suffix any/c])
+@defproc[((to-paragraph/prefix [prefix1 any/c] [prefix any/c] [suffix any/c] [#:qq? qq? any/c #f])
           [v any/c]) 
           block?]{
 
@@ -73,13 +81,13 @@ first line, @scheme[prefix] is prefix to any subsequent line, and
 it is added to the end on its own line.}
 
 
-@defproc[(to-element [v any/c]) element?]{
+@defproc[(to-element [v any/c] [#:qq? qq? any/c #f]) element?]{
 
 Like @scheme[to-paragraph], except that source-location information is
 mostly ignored, since the result is meant to be inlined into a
 paragraph.}
 
-@defproc[(to-element/no-color [v any/c]) element?]{
+@defproc[(to-element/no-color [v any/c] [#:qq? qq? any/c #f]) element?]{
 
 Like @scheme[to-element], but @scheme[for-syntax] bindings are
 ignored, and the generated text is uncolored. This variant is

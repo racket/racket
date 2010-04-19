@@ -73,8 +73,14 @@
              (rename module-begin #%module-begin)
              (rename norm:procedure-arity procedure-arity)
              (rename norm:raise-arity-error raise-arity-error)
+             (rename new:procedure-reduce-arity procedure-reduce-arity)
+             (rename new:procedure->method procedure->method)
+             (rename new:procedure-rename procedure-rename)
+             (rename new:chaperone-procedure chaperone-procedure)
              (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
-                              procedure-arity raise-arity-error)
+                              procedure-arity procedure-reduce-arity raise-arity-error
+                              procedure->method procedure-rename
+                              chaperone-procedure)
              (all-from "reqprov.ss")
              (all-from "for.ss")
              (all-from "kernstruct.ss")

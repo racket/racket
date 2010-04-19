@@ -1,5 +1,8 @@
-;; Builds different kinds of executables for different platforms.
 #lang scheme/base
+
+;; Builds different kinds of executables for different platforms.
+
+;; proposed changes below -robby.
 
 (provide post-installer)
 (require launcher)
@@ -23,8 +26,8 @@
     (for ([variant (variants)])
       (parameterize ([current-launcher-variant variant])
         (mk-launcher '("-l-" "help/help")
-                     (mk-path "plt-help")
-                     `([exe-name . "plt-help"]
+                     (mk-path "plt-help")       ;; change to "Racket Docs"
+                     `([exe-name . "plt-help"]  ;; get rid of this (in favor of 'rico docs')
                        [relative? . #t]
                        [framework-root . #f]
                        [dll-dir . #f]

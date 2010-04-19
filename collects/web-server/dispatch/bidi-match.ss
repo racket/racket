@@ -10,10 +10,10 @@
        (define-match-expander bidi-id
          (lambda (stx)
            (syntax-case stx ()
-             [(_ id)
+             [(_ arg (... ...) id)
               (if (syntax-parameter-value #'bidi-match-going-in?)
-                  (syntax/loc stx (in-expander id))
-                  (syntax/loc stx (out-expander id)))]))))]))
+                  (syntax/loc stx (in-expander arg (... ...) id))
+                  (syntax/loc stx (out-expander arg (... ...) id)))]))))]))
 
 (provide bidi-match-going-in?
          define-bidi-match-expander)

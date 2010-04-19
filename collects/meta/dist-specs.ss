@@ -204,7 +204,7 @@ binary-keep/throw-templates :=
   (cond win => "/plt/*<!>.exe"
                "/plt/lib/**/lib*<!>???????.{dll|lib|exp}"
         mac => "/plt/*<!>.app/"
-               "/plt/lib/PLT_*.framework/Versions/*<_!>/")
+               "/plt/lib/*Racket*.framework/Versions/*<_!>/")
   "/plt/collects/**/compiled/**/<!/>*.*"
 
 binary-keep  := "3[mM]"
@@ -332,7 +332,7 @@ mz-base := "/plt/readme.txt"          ; generated
            (cond (not src) => (collects: "info-domain/")) ; filtered
            (package: "config")
            ;; basic code
-           (collects: "scheme" "s-exp" "reader")
+           (collects: "scheme" "s-exp" "reader" "racket")
            ;; include the time-stamp collection when not a public release
            (cond (not release)
                  => (- (collects: "repos-time-stamp/")
@@ -391,14 +391,14 @@ foreign-src := (src: "foreign/{Makefile.in|README}"
 ;; queries have no point elsewhere.)
 
 mz-bins := (lib: "buildinfo" "**/mzdyn{|w}{|3[mM]|cgc|CGC}.{o|obj|exp|def}")
-           (cond mac => (lib: "PLT_MzScheme*/")
-                 win => (dll: "libmz{gc|sch}" "UnicoWS" "iconv")
+           (cond mac => (lib: "Racket*/")
+                 win => (dll: "lib{mzgc|racket}" "UnicoWS" "iconv")
                         (lib: "gcc/{fixup|init}.o" "bcc/mzdynb.{obj|def}")
                  unix => (lib: "starter"))
            extra-dynlibs
 
-mr-bins := (cond mac => (lib: "PLT_MrEd*/")
-                 win => (dll: "libmred"))
+mr-bins := (cond mac => (lib: "GRacket*/")
+                 win => (dll: "libgracket"))
 
 extra-dynlibs := (cond win => (dll: "{ssl|lib}eay32"))
 
@@ -411,10 +411,12 @@ binaries := (+ "/plt/bin/"
                "/plt/include/"
                "/plt/collects/**/compiled/native/"
                (cond unix => "/plt/bin/{mzscheme|mred}*"
+                             "/plt/bin/{|g}racket*"
                      win  => "/plt/*.exe"
                              "/plt/*.dll"
                              "/plt/collects/launcher/*.exe"
                      mac  => "/plt/bin/mzscheme*"
+                             "/plt/bin/racket*"
                              "/plt/*.app"
                              "/plt/collects/launcher/*.app")
                platform-dependent)
@@ -427,6 +429,9 @@ platform-dependent := ; hook for package rules
 ;; -------------------- setup
 mz-extras :+= (- (package: "setup-plt" #:collection "setup/")
                  (cond (not dr) => (srcfile: "plt-installer{|-sig|-unit}.ss")))
+
+;; -------------------- rico
+mz-extras :+= (package: "rico")
 
 ;; -------------------- launcher
 mz-extras :+= (- (collects: "launcher")
@@ -593,7 +598,6 @@ plt-extras :+= (package: "algol60/")
 ;; -------------------- games
 plt-extras :+= (- (+ (package: "games/" #:executable "plt-games")
                      (doc+src: "gl-board-game/" "cards/"))
-                  "loa/"
                   "paint-by-numbers/{hattori|solution-sets|raw-problems}")
 
 ;; -------------------- texpict & slideshow

@@ -137,6 +137,19 @@
       (test-equal? "make-input"
                    (test-process (make-input (lambda (n) n)) empty)
                    #f)
+      
+      (test-equal? "make-input*"
+                   (map ->cons (test-process (make-input* (lambda (n) n)) (list (make-binding:form #"input_0" #"value"))))
+                   (list (cons #"input_0" #"value")))
+      (test-equal? "make-input*"
+                   (map ->cons (test-process (make-input* (lambda (n) n)) (list (make-binding:form #"input_0" #"value0")
+                                                                                (make-binding:form #"input_0" #"value1"))))
+                   (list (cons #"input_0" #"value0")
+                         (cons #"input_0" #"value1")))
+      (test-equal? "make-input*"
+                   (test-process (make-input* (lambda (n) n)) empty)
+                   empty)
+      
       (test-equal? "text-input"
                    (->cons (test-process (text-input) (list (make-binding:form #"input_0" #"value"))))
                    (cons #"input_0" #"value"))
@@ -146,6 +159,37 @@
       (test-equal? "checkbox"
                    (->cons (test-process (checkbox #"start" #t) (list (make-binding:form #"input_0" #"value"))))
                    (cons #"input_0" #"value"))
+      
+      (test-equal? "multiselect-input"
+                   (test-process (multiselect-input (list 1 2 3))
+                                 (list (make-binding:form #"input_0" #"0")))
+                   (list 1))
+      (test-equal? "multiselect-input"
+                   (test-process (multiselect-input (list 1 2 3))
+                                 (list (make-binding:form #"input_0" #"0")
+                                       (make-binding:form #"input_0" #"2")))
+                   (list 1 3))
+      (test-equal? "multiselect-input"
+                   (test-process (multiselect-input (list 1 2 3))
+                                 empty)
+                   empty)
+      
+      ; XXX check output
+      
+      (test-equal? "select-input"
+                   (test-process (select-input (list 1 2 3))
+                                 (list (make-binding:form #"input_0" #"0")))
+                   1)
+      (test-equal? "select-input"
+                   (test-process (select-input (list 1 2 3))
+                                 (list (make-binding:form #"input_0" #"0")
+                                       (make-binding:form #"input_0" #"2")))
+                   1)
+      (test-exn "select-input"
+                exn?
+                (lambda ()
+                  (test-process (select-input (list 1 2 3))
+                                empty)))
       
       (test-equal? "required" 
                    (test-process (required (text-input)) (list (make-binding:form #"input_0" #"value")))
@@ -161,6 +205,10 @@
       (test-equal? "default"
                    (test-process (default #"def" (text-input)) empty)
                    #"def")
+      
+      (test-equal? "textarea-input"
+                   (test-process (textarea-input) (list (make-binding:form #"input_0" #"value")))
+                   "value")
       
       (test-equal? "to-string"
                    (test-process (to-string (required (text-input))) (list (make-binding:form #"input_0" #"value")))
@@ -254,3 +302,6 @@
                                (list "Jay" (make-date 10 6) (make-date 10 8))))))
    
    ))
+
+(require schemeunit/text-ui)
+(run-tests all-formlets-tests)

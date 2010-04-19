@@ -365,9 +365,11 @@
         #`(with-enclosing-fail enclosing-cut-fail k)]
        [#s(ghost:bind _ clauses)
         #`(convert-sides x clauses (clause-success () k))]
-       [#s(ghost:fail _ condition message)
+       [#s(ghost:fail _ early? condition message)
         #`(let* ([c (without-fails condition)]
-                 [fc* (dfc-add-post fc (if (syntax? c) c x))])
+                 [fc* (if (quote early?)
+                          fc
+                          (dfc-add-post fc (if (syntax? c) c x)))])
             (if c
                 (fail (if (syntax? c) c x)
                       #:expect (expectation pattern0)
@@ -633,7 +635,7 @@
      #'(collect-error 'ineffable)]
     [(_ #s(pat:not _ pattern))
      #'(collect-error 'ineffable)]
-    [(_ #s(ghost:fail _ condition message))
+    [(_ #s(ghost:fail _ _e condition message))
      #'(expectation-of-message message)]))
 
 ;; ----

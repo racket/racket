@@ -463,6 +463,10 @@ sting as is; except escape characters (indicate by the tilde) indicate special c
 converters; implementations are free to extend this list.
 </DL>
 
+<H3>PLT-specific extensions</H3>
+
+<p>The <code>~?</code> wildcard is specific to the PLT implementation of <code>string-&gt;date</code>: it parses 1 and 2 digit years like <code>~y</code> and 3 and 4 digit years like <code>~Y</code>.</p>
+
 <TABLE ALIGN="CENTER" WIDTH="80%" summary="DATE->STRING conversion specifiers">
 <TR><TD COLSPAN="2"><HR WIDTH="100%"></TD></TR>
 <TR><TH>Ch</TH><TH>Conversion</TH></TR>
@@ -534,6 +538,7 @@ converters; implementations are free to extend this list.
 <TR><TD width="6%"><code>~y</code></TD><TD WIDTH="23%">any</TD><TD WIDTH="50%">2-digit year</TD><TD WIDTH="23%"><code>date-year</code> within 50 years</TD></TR>
 <TR><TD width="6%"><code>~Y</code></TD><TD WIDTH="23%">char-numeric?</TD><TD WIDTH="50%">year</TD><TD WIDTH="23%"><code>date-year</code></TD></TR>
 <TR><TD width="6%"><code>~z</code></TD><TD WIDTH="23%">any</TD><TD WIDTH="50%">time zone</TD><TD WIDTH="23%"><code>date-zone-offset</code></TD></TR>
+<TR><TD width="6%"><code>~?</code></TD><TD WIDTH="23%">char-numeric?</TD><TD WIDTH="50%">2-digit or 4-digit year (PLT-specific extension)</TD><TD WIDTH="23%"><code>date-year</code></TD></TR>
 <TR><TD COLSPAN="4"><HR WIDTH="100%"></TD></TR>
 <TR><TH COLSPAN="4">Table 2: <code>STRING->DATE</code> conversion specifiers</TH></TR>
 <TR><TD COLSPAN="4"><HR WIDTH="100%"></TD></TR>

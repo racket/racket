@@ -1005,7 +1005,15 @@ UNSAFE_FL(unsafe_fl_div, /, div_prim)
  }
 
 UNSAFE_FL1(unsafe_fl_abs, fabs, scheme_abs)
-UNSAFE_FL1(unsafe_fl_sqrt, sqrt, scheme_sqrt)
+
+static Scheme_Object *pos_sqrt(int argc, Scheme_Object **argv)
+{
+  if (SCHEME_DBLP(argv[0]) && (SCHEME_DBL_VAL(argv[0]) < 0.0))
+    return scheme_nan_object;
+  return scheme_sqrt(argc, argv);
+}
+
+UNSAFE_FL1(unsafe_fl_sqrt, sqrt, pos_sqrt)
 
 #define SAFE_FL(name, sname, op)                              \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \

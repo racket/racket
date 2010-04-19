@@ -11,7 +11,7 @@
          (types resolve)
          (only-in (env type-environments lexical-env) env? update-type/lexical env-map env-props replace-props)
          scheme/contract scheme/match
-         mzlib/trace unstable/debug
+         mzlib/trace unstable/debug unstable/struct
          (typecheck tc-metafunctions)
          (for-syntax scheme/base))
 
@@ -42,12 +42,15 @@
      (make-Syntax (update t (make-NotTypeFilter u rst x)))]
     
     ;; struct ops
-    [((Struct: nm par flds proc poly pred cert acc-ids) 
+    [((Struct: nm par flds proc poly pred cert acc-ids maker-id) 
       (TypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))     
-     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-TypeFilter u rst x)))) proc poly pred cert acc-ids)]
-    [((Struct: nm par flds proc poly pred cert acc-ids) 
+     (make-Struct nm par 
+                  (replace-nth flds idx 
+                               (lambda (e) (update e (make-TypeFilter u rst x))))
+                  proc poly pred cert acc-ids maker-id)]
+    [((Struct: nm par flds proc poly pred cert acc-ids maker-id) 
       (NotTypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))
-     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-NotTypeFilter u rst x)))) proc poly pred cert acc-ids)]
+     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-NotTypeFilter u rst x)))) proc poly pred cert acc-ids maker-id)]
     
     ;; otherwise
     [(t (TypeFilter: u (list) _))

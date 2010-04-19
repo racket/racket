@@ -103,15 +103,47 @@ We should also test deep continuations.
          [f3 (future (λ () (< (touch f2) 1)))]) 
    (touch f3)))
 
+(check-equal?
+ '((1) (1))
+ (let ([f1 (future (lambda ()
+                     (with-continuation-mark
+                         'x 1
+                       (current-continuation-marks))))]
+       [f2 (future (lambda ()
+                     (with-continuation-mark
+                         'x 1
+                       (current-continuation-marks))))])
+   (list (continuation-mark-set->list (touch f1) 'x)
+         (continuation-mark-set->list (touch f2) 'x))))
 
+(check-equal?
+ '((1 0) (1 0))
+ (let ([f1 (future (lambda ()
+                     (with-continuation-mark
+                         'x 1
+                       (current-continuation-marks))))]
+       [f2 (future (lambda ()
+                     (with-continuation-mark
+                         'x 1
+                       (current-continuation-marks))))])
+   (with-continuation-mark
+       'x 0
+     (list (continuation-mark-set->list (touch f1) 'x)
+           (continuation-mark-set->list (touch f2) 'x)))))
 
-
-
-
-
-
-
-
-
-
+(check-equal?
+ '((1 0) (1) ())
+ (let ([f1 (future (lambda ()
+                     (with-continuation-mark
+                         'x 1
+                       (current-continuation-marks))))]
+       [f2 (future (lambda ()
+                     (with-continuation-mark
+                         'x 1
+                       (current-continuation-marks))))])
+   (list (continuation-mark-set->list (with-continuation-mark 'x 0
+                                        (touch f1))
+                                      'x)
+         (continuation-mark-set->list (touch f2) 'x)
+         (continuation-mark-set->list (current-continuation-marks) 'x))))
 

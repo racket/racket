@@ -3,6 +3,7 @@
 (provide all-contract-tests)
 
 (require schemeunit
+	 deinprogramm/define-record-procedures
 	 deinprogramm/contract/contract
 	 deinprogramm/contract/contract-syntax)
 
@@ -250,6 +251,97 @@
       (check-equal? (say-no (proc "foo")) 'no))
     (let ((proc (say-no (apply-contract int->bool (lambda (x) (+ x 1))))))
       (check-equal? (say-no (proc 12)) 'no))) 
+
+
+   (test-case
+    "record-wrap"
+    (define-record-procedures-parametric pare pare-of kons pare? (kar kdr))
+    (define ctr (pare-of integer boolean))
+    (let ((obj (apply-contract ctr (kons 1 #t))))
+      (check-equal? (kar obj) 1)
+      (check-equal? (kdr obj) #t))
+    (let ((obj (apply-contract ctr (kons 1 2))))
+      (check-equal? (say-no (kar obj)) 'no))
+    )
+
+   (test-case
+    "record-wrap-2"
+    (let ((count 0))
+      (define counting-integer
+	(make-predicate-contract 'counting-integer 
+				 (lambda (obj)
+				   (set! count (+ 1 count))
+				   (integer? obj))
+				 'integer-marker))
+      (define-record-procedures-parametric pare pare-of kons pare? (kar kdr))
+      (define ctr (contract (pare-of counting-integer boolean)))
+      (let ((obj (apply-contract ctr (apply-contract ctr (kons 1 #t)))))
+	(check-equal? count 0)
+	(check-equal? (kar obj) 1)
+	(check-equal? count 1)
+	(check-equal? (kdr obj) #t)
+	(check-equal? count 1))))
+
+   (test-case
+    "double-wrap"
+    (let ((count 0))
+      (define counting-integer
+	(make-predicate-contract 'counting-integer 
+				 (lambda (obj)
+				   (set! count (+ 1 count))
+				   (integer? obj))
+				 'integer-marker))
+      (define-record-procedures-parametric pare pare-of raw-kons pare? (kar kdr))
+
+      (define empty-list (contract (predicate null?)))
+
+      (define list-of
+	(lambda (x)
+	  (contract (mixed empty-list
+			   (pare-of x (list-of x))))))
+      
+      (define/contract kons (contract (%a (list-of %a) -> (pare-of %a (list-of %a))))
+	raw-kons)
+      
+      (define/contract build-list (contract (integer -> (list-of counting-integer)))
+	(lambda (n)
+	  (if (= n 0)
+	      '()
+	      (kons n (build-list (- n 1))))))
+
+      (define/contract list-length (contract ((list-of counting-integer) -> integer))
+	(lambda (lis)
+	  (cond
+	   ((null? lis) 0)
+	   ((pare? lis)
+	    (+ 1 (list-length (kdr lis)))))))
+      
+      ;; one wrap each for (list-of %a), one for (list-of counting-integer)
+      (let  ((l1 (build-list 10)))
+	(check-equal? count 0)
+	(let ((len1 (list-length l1)))
+	  (check-equal? count 10)))))
+
+   (test-case
+    "wrap equality"
+    (define-record-procedures-parametric pare pare-of raw-kons pare? (kar kdr))
+    
+    (define empty-list (contract (predicate null?)))
+    
+    (define list-of
+      (lambda (x)
+	(contract (mixed empty-list
+			 (pare-of x (list-of x))))))
+    
+    (define/contract kons (contract (%a (list-of %a) -> (pare-of %a (list-of %a))))
+      raw-kons)
+
+    (check-equal? (raw-kons 1 '()) (raw-kons 1 '()))
+    (check-equal? (kons 1 '()) (kons 1 '()))
+    (check-equal? (kons 1 '()) (raw-kons 1 '()))
+    (check-equal? (raw-kons 1 '()) (kons 1 '())))
+      
+
 
 ))
 

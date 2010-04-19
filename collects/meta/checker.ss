@@ -479,10 +479,18 @@
 (define (set-bin-files-delayed-lists! p)
   (set! bin-files-lists p))
 
+(define (add-alts l)
+  (if (null? l) 
+      null
+      (let ([v (regexp-replace #rx"[.]ss$" (car l) ".rkt")])
+        (if (equal? v (car l))
+            (cons (car l) (add-alts (cdr l)))
+            (list* (car l) v (add-alts (cdr l)))))))
+
 (define (check-dependencies spec distname)
   (add-dependency-contents!)
   (dprintf "Verifying dependencies for ~s..." distname)
-  (let* ([all-files (sort* (tree-flatten (tree-filter spec *plt-tree*)))]
+  (let* ([all-files (sort* (add-alts (tree-flatten (tree-filter spec *plt-tree*))))]
          [deps0 (or (tree-filter `(and ,spec "*.dep") *plt-tree*)
                     (error 'check-dependencies
                            "got no .dep files for ~s" distname))]
@@ -507,8 +515,12 @@
              ;; trees).  No need to optimize since this happens very
              ;; infrequently.
              (let ([dep (regexp-replace #rx"/([^/]+)\\.([^/]+)$" (car deps)
-                                        "/compiled/\\1_\\2.zo")])
-               (if (andmap (lambda (files) (member dep files))
+                                        "/compiled/\\1_\\2.zo")]
+                   [alt-dep (and (regexp-match #rx"[.]rkt$" (car deps))
+                                 (regexp-replace #rx"/([^/]+)\\.([^/]+)$" (car deps)
+                                                 "/compiled/\\1_ss.zo"))])
+               (if (andmap (lambda (files) (or (member dep files)
+                                               (member alt-dep files)))
                            (force bin-files-lists))
                  (loop files (cdr deps) (car deps))
                  (error 'dependencies "unsatisfied dependency for ~s: ~s ~s"

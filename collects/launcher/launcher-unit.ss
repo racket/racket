@@ -26,7 +26,7 @@
                        v))
                     v)))
 
-(define (variant-available? kind cased-kind-name  variant)
+(define (variant-available? kind cased-kind-name variant)
   (cond
    [(or (eq? 'unix (system-type))
         (and (eq? 'macosx (system-type))
@@ -35,7 +35,11 @@
       (and bin-dir
            (file-exists?
             (build-path bin-dir
-                        (format "~a~a" kind (variant-suffix variant #f))))))]
+                        (format "~a~a" 
+                                (case kind 
+                                  [(mzscheme) 'racket]
+                                  [(mred) 'gracket])
+                                (variant-suffix variant #f))))))]
    [(eq? 'macosx (system-type))
     ;; kind must be mred, because mzscheme case is caught above
     (directory-exists? (build-path (find-gui-bin-dir)
@@ -51,8 +55,8 @@
 
 (define (available-variants kind)
   (let* ([cased-kind-name (if (eq? kind 'mzscheme)
-                              "MzScheme"
-                              "MrEd")]
+                              "Racket"
+                              "GRacket")]
          [normal-kind (system-type 'gc)]
          [alt-kind (if (eq? '3m normal-kind)
                        'cgc
@@ -78,9 +82,13 @@
                          null)])
     (append normal alt script script-alt)))
 
+(define (available-gracket-variants)
+  (available-variants 'mred))
 (define (available-mred-variants)
   (available-variants 'mred))
 
+(define (available-racket-variants)
+  (available-variants 'mzscheme))
 (define (available-mzscheme-variants)
   (available-variants 'mzscheme))
 
@@ -323,7 +331,9 @@
                 (make-absolute-path-header bindir)))]
          [exec (format
                 "exec \"${bindir}/~a~a\" ~a"
-                (or alt-exe kind)
+                (or alt-exe (case kind
+                              [(mred) "gracket"]
+                              [(mzscheme) "racket"]))
                 (if alt-exe "" (variant-suffix variant #f))
                 pre-str)]
          [args (format
@@ -434,12 +444,12 @@
 
 ;; OS X launcher code:
 
-                                        ; make-macosx-launcher : symbol (listof str) pathname ->
+;; make-macosx-launcher : symbol (listof str) pathname ->
 (define (make-macosx-launcher kind variant flags dest aux)
   (if (or (eq? kind 'mzscheme) (script-variant? variant))
-      ;; MzScheme or script launcher is the same as for Unix
+      ;; Racket or script launcher is the same as for Unix
       (make-unix-launcher kind variant flags dest aux)
-      ;; MrEd "launcher" is a stand-alone executable
+      ;; Gracket "launcher" is a stand-alone executable
       (make-embedding-executable dest (eq? kind 'mred) #f
                                  null null null
                                  flags
@@ -474,11 +484,15 @@
     [(macos)   make-macos-launcher]
     [(macosx)  make-macosx-launcher]))
 
-(define (make-mred-launcher flags dest [aux null])
+(define (make-gracket-launcher flags dest [aux null])
   ((get-maker) 'mred (current-launcher-variant) flags dest aux))
+(define (make-mred-launcher flags dest [aux null])
+  ((get-maker) 'mred (current-launcher-variant) (list* "-I" "scheme/gui/init" flags) dest aux))
 
-(define (make-mzscheme-launcher flags dest [aux null])
+(define (make-racket-launcher flags dest [aux null])
   ((get-maker) 'mzscheme (current-launcher-variant) flags dest aux))
+(define (make-mzscheme-launcher flags dest [aux null])
+  ((get-maker) 'mzscheme (current-launcher-variant) (list* "-I" "scheme/init" flags) dest aux))
 
 (define (strip-suffix s)
   (path-replace-suffix s #""))
@@ -530,19 +544,23 @@
                (let ([d (read)])
                  (list (cons 'uti-exports d)))))))))))
 
-(define (make-mred-program-launcher file collection dest)
+(define (make-gracket-program-launcher file collection dest)
   (make-mred-launcher (list "-l-" (string-append collection "/" file))
                       dest
                       (build-aux-from-path
                        (build-path (collection-path collection)
                                    (strip-suffix file)))))
+(define (make-mred-program-launcher file collection dest)
+  (make-gracket-program-launcher file collection dest))
 
-(define (make-mzscheme-program-launcher file collection dest)
+(define (make-racket-program-launcher file collection dest)
   (make-mzscheme-launcher (list "-l-" (string-append collection "/" file))
                           dest
                           (build-aux-from-path
                            (build-path (collection-path collection)
                                        (strip-suffix file)))))
+(define (make-mzscheme-program-launcher file collection dest)
+  (make-racket-program-launcher file collection dest))
 
 (define (unix-sfx file mred?)
   (string-downcase (regexp-replace* #px"\\s" file "-")))
@@ -571,25 +589,37 @@
           (path-replace-suffix p #".app")
           p))))
 
-(define (mred-program-launcher-path name)
+(define (gracket-program-launcher-path name)
   (program-launcher-path name #t))
+(define (mred-program-launcher-path name)
+  (gracket-program-launcher-path name))
 
-(define (mzscheme-program-launcher-path name)
+(define (racket-program-launcher-path name)
   (case (system-type)
     [(macosx)
      (add-file-suffix (build-path (find-console-bin-dir) (unix-sfx name #f))
                       (current-launcher-variant)
                       #f)]
     [else (program-launcher-path name #f)]))
+(define (mzscheme-program-launcher-path name)
+  (racket-program-launcher-path name))
 
+(define (gracket-launcher-is-directory?)
+  #f)
+(define (racket-launcher-is-directory?)
+  #f)
 (define (mred-launcher-is-directory?)
   #f)
 (define (mzscheme-launcher-is-directory?)
   #f)
 
-(define (mred-launcher-is-actually-directory?)
+(define (gracket-launcher-is-actually-directory?)
   (and (eq? 'macosx (system-type))
        (not (script-variant? (current-launcher-variant)))))
+(define (mred-launcher-is-actually-directory?)
+  (gracket-launcher-is-actually-directory?))
+(define (racket-launcher-is-actually-directory?)
+  #f)
 (define (mzscheme-launcher-is-actually-directory?)
   #f)
 
@@ -600,27 +630,39 @@
     [(macosx) (values "app" '(packages) '(("App" "*.app")))]
     [else (values #f null null)]))
 
-(define (mred-launcher-add-suffix path)
+(define (gracket-launcher-add-suffix path)
   (embedding-executable-add-suffix path #t))
+(define (mred-launcher-add-suffix path)
+  (gracket-launcher-add-suffix path))
 
-(define (mzscheme-launcher-add-suffix path)
+(define (racket-launcher-add-suffix path)
   (embedding-executable-add-suffix path #f))
+(define (mzscheme-launcher-add-suffix path)
+  (racket-launcher-add-suffix path))
 
-(define (mred-launcher-put-file-extension+style+filters)
+(define (gracket-launcher-put-file-extension+style+filters)
   (put-file-extension+style+filters
    (if (and (eq? 'macosx (system-type))
             (script-variant? (current-launcher-variant)))
      'unix
      (system-type))))
+(define (mred-launcher-put-file-extension+style+filters)
+  (gracket-launcher-put-file-extension+style+filters))
 
-(define (mzscheme-launcher-put-file-extension+style+filters)
+(define (racket-launcher-put-file-extension+style+filters)
   (put-file-extension+style+filters
    (if (eq? 'macosx (system-type)) 'unix (system-type))))
+(define (mzscheme-launcher-put-file-extension+style+filters)
+  (racket-launcher-put-file-extension+style+filters))
 
+(define (gracket-launcher-up-to-date? dest [aux null])
+  (racket-launcher-up-to-date? dest aux))
 (define (mred-launcher-up-to-date? dest [aux null])
-  (mzscheme-launcher-up-to-date? dest aux))
-
+  (racket-launcher-up-to-date? dest aux))
 (define (mzscheme-launcher-up-to-date? dest [aux null])
+  (racket-launcher-up-to-date? dest aux))
+
+(define (racket-launcher-up-to-date? dest [aux null])
   (cond
     ;; When running Setup PLT under Windows, the
     ;;  launcher process stays running until MzScheme
@@ -635,6 +677,14 @@
     ;;  a fancy check, but for now always re-create
     ;;  launchers.
     [else #f]))
+
+(define (install-gracket-program-launcher file collection name)
+  (make-gracket-program-launcher file collection
+                                 (gracket-program-launcher-path name)))
+
+(define (install-racket-program-launcher file collection name)
+  (make-racket-program-launcher file collection
+                                (racket-program-launcher-path name)))
 
 (define (install-mred-program-launcher file collection name)
   (make-mred-program-launcher file collection

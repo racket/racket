@@ -62,15 +62,22 @@ command line does not specify a @scheme[require] flag
 @Flag{u}/@DFlag{require-script}) before any @scheme[eval],
 @scheme[load], or read-eval-print-loop flag (@Flag{e}/@DFlag{eval},
 @Flag{f}/@DFlag{load}, @Flag{r}/@DFlag{script}, @Flag{m}/@DFlag{main},
-or @Flag{i}/@DFlag{repl}). The
-initialization library can be changed with the @Flag{I}
-@tech{configuration option}.
+or @Flag{i}/@DFlag{repl}). The initialization library can be changed
+with the @Flag{I} @tech{configuration option}. The
+@scheme['configure-runtime] property of the initialization library's
+language is used before the library is instantiated; see
+@secref["configure-runtime"].
 
 After potentially loading the initialization module, expression
 @scheme[eval]s, files @scheme[load]s, and module @scheme[require]s are
 executed in the order that they are provided on the command line. If
 any raises an uncaught exception, then the remaining @scheme[eval]s,
-@scheme[load]s, and @scheme[require]s are skipped.
+@scheme[load]s, and @scheme[require]s are skipped. If the first
+@scheme[require] precedes any @scheme[eval] or @scheme[load] so that
+the initialization library is skipped, then the
+@scheme['configure-runtime] property of the required module's library
+language is used before the module is instantiated; see
+@secref["configure-runtime"].
 
 After running all command-line expressions, files, and modules,
 MzScheme or MrEd then starts a read-eval-print loop for interactive
@@ -362,3 +369,43 @@ of the collapsed set.
 
 Extra arguments following the last option are available from the
 @indexed-scheme[current-command-line-arguments] parameter.
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "configure-runtime"]{Language Run-Time Configuration}
+
+When a module is implemented using @hash-lang{}, the language after
+@hash-lang{} can specify configuration actions to perform when a
+module using the language is the main module of a program. The
+language specifies run-time configuration by
+
+@itemlist[
+
+ @item{attaching a @scheme['module-language] @tech{syntax property} to
+       the module as read from its source (see @scheme[module] and
+       @scheme[module-compiled-language-info]);}
+
+ @item{having the function indicated by the @scheme['module-language]
+       @tech{syntax property} recognize the
+       @scheme['configure-runtime] key, for which it returns a list of
+       vectors; each vector must have the form @scheme[(vector _mp
+       _name _val)] where @scheme[_mp] is a @tech{module path},
+       @scheme[_name] is a symbol, and @scheme[_val] is an arbitrary
+       value; and}
+
+ @item{having each function called as @scheme[((dynamic-require _mp
+       _name) _val)] configure the run-time environment, typically by
+       setting parameters such as @scheme[current-print].}
+
+]
+
+The @schememodname[scheme/base] and @schememodname[scheme] languages
+do not currently specify a run-time configuration action.
+
+A @scheme['configure-runtime] query returns a list of vectors, instead
+of directly configuring the environment, so that the indicated modules
+to be bundled with a program when creating a stand-alone
+executable; see @secref[#:doc '(lib "scribblings/mzc/mzc.scrbl") "exe"].
+
+For information on defining a new @hash-lang[] language, see
+@schememodname[syntax/module-reader].

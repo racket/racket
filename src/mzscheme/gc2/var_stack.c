@@ -1,5 +1,5 @@
 
-void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_mem)
+void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_mem, struct NewGC *gc)
 {
   long size, count;
   void ***p, **a;
@@ -36,7 +36,7 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_
 	  if (SHALLOWER_STACK_ADDRESS(a, limit)) {
 	    while (count--) {
 	      X_source(stack_mem, a);
-	      gcX(a);
+	      gcX2(a, gc);
 	      a++;
 	    }
 	  }
@@ -44,7 +44,7 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_
 	  a = (void **)((char *)a + delta);
 	  if (SHALLOWER_STACK_ADDRESS(a, limit)) {
 	    X_source(stack_mem, a);
-	    gcX(a);
+	    gcX2(a, gc);
 	  }
 	}
 	p++;
@@ -64,13 +64,13 @@ void GC_X_variable_stack(void **var_stack, long delta, void *limit, void *stack_
 	a = (void **)((char *)a + delta);
 	while (count--) {
 	  X_source(stack_mem, a);
-	  gcX(a);
+	  gcX2(a, gc);
 	  a++;
 	}
       } else {
 	a = (void **)((char *)a + delta);
 	X_source(stack_mem, a);
-	gcX(a);
+	gcX2(a, gc);
       }
       p++;
     }

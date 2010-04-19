@@ -152,7 +152,7 @@ the corresponding import. Each @scheme[tagged-sig-id] in an
 @scheme[import] clause.}
 
 @defform/subs[
-#:literals (define-syntaxes define-values open extends contracted)
+#:literals (define-syntaxes define-values define-values-for-export open extends contracted)
 (define-signature id extension-decl
   (sig-elem ...))
 
@@ -163,7 +163,8 @@ the corresponding import. Each @scheme[tagged-sig-id] in an
  [sig-elem
   id
   (define-syntaxes (id ...) expr)
-  (define-values (value-id ...) expr) 
+  (define-values (id ...) expr) 
+  (define-values-for-export (id ...) expr) 
   (contracted [id contract] ...)
   (open sig-spec) 
   (sig-form-id . datum)])]{
@@ -190,6 +191,11 @@ of bindings for import or export:
  introduces code that effectively prefixes every unit that imports the
  signature.  Free variables in the definition's @scheme[expr] are
  treated the same as for @scheme[define-syntaxes].}
+
+ @item{Each @scheme[define-values-for-export] form in a signature
+ declaration introduces code that effectively suffixes every unit that
+ exports the signature.  Free variables in the definition's
+ @scheme[expr] are treated the same as for @scheme[define-syntaxes].}
 
  @item{Each @scheme[contracted] form in a signature declaration means
  that a unit exporting the signature must supply a variable definition
@@ -218,6 +224,7 @@ the extended signature. Furthermore, any implementation of the new
 signature can be used as an implementation of the extended signature.}
 
 @defkeywords[[(open sig-spec) _sig-elem define-signature]
+             [(define-values-for-export (id ...) expr) _sig-elem define-signature]
              [(contracted [id contract] ...) _sig-elem define-signature]
              [(only sig-spec id ...) _sig-spec unit]
              [(except sig-spec id ...) _sig-spec unit]
@@ -232,7 +239,7 @@ signature can be used as an implementation of the extended signature.}
 
 @defidform[extends]{
 
-This form is allowed only within @scheme[define-signature].}
+Allowed only within @scheme[define-signature].}
 
 @; ------------------------------------------------------------------------
 
@@ -618,7 +625,7 @@ like @scheme[define-unit].}
 @defform*[
 [(define-signature-form sig-form-id expr)
  (define-signature-form (sig-form-id id) body ...+)]
-]
+]{
 
 Binds @scheme[sig-form-id] for use within a @scheme[define-signature]
 form.

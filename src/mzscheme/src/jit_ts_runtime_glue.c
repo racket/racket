@@ -218,3 +218,25 @@ case SIG_z_p:
      
      break;
   }
+case SIG_si_s:
+  {
+     prim_si_s f = (prim_si_s)future->prim_func;
+     Scheme_Object* retval;
+     
+     retval = 
+     f(future->arg_s0, future->arg_i1);
+     future->retval_s = retval;
+     send_special_result(future, retval);
+     break;
+  }
+case SIG_sis_v:
+  {
+     prim_sis_v f = (prim_sis_v)future->prim_func;
+     
+     
+     
+     f(future->arg_s0, future->arg_i1, future->arg_s2);
+     
+     
+     break;
+  }

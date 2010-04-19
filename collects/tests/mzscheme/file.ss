@@ -707,7 +707,7 @@
 (test "hello\"hello\"" get-output-string sp)
 (arity-test (port-display-handler sp) 2 2)
 (arity-test (port-write-handler sp) 2 2)
-(arity-test (port-print-handler sp) 2 2)
+(arity-test (port-print-handler sp) 2 3)
 (err/rt-test ((port-display-handler sp) 8 8))
 (err/rt-test ((port-write-handler sp) 8 8))
 (err/rt-test ((port-print-handler sp) 8 8))

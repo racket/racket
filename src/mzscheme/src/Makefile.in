@@ -1,5 +1,5 @@
 #
-# Makefile for mzscheme basic sources
+# Makefile for racket basic sources
 #
 
 srcdir = @srcdir@
@@ -106,8 +106,8 @@ all:
 	$(MAKE) mzobjects
 
 mzheaders: $(srcdir)/schemex.h $(srcdir)/schemexm.h $(srcdir)/schemex.inc $(srcdir)/schexn.h schsys.h \
-           $(srcdir)/../include/mzscheme.exp $(srcdir)/../include/mzwin.def $(srcdir)/../include/gmzwin.def \
-           $(srcdir)/../include/mzscheme3m.exp $(srcdir)/../include/mzwin3m.def 
+           $(srcdir)/../include/racket.exp $(srcdir)/../include/mzwin.def $(srcdir)/../include/gmzwin.def \
+           $(srcdir)/../include/racket3m.exp $(srcdir)/../include/mzwin3m.def 
 
 mzobjects: $(OBJS)
 
@@ -123,11 +123,11 @@ $(srcdir)/schemexm.h : $(srcdir)/schemef.h $(srcdir)/makex
 $(srcdir)/schemex.inc : $(srcdir)/schemef.h $(srcdir)/makex
 	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/schemex.inc ; else $(PERL) -s -- $(srcdir)/makex -assign < $(srcdir)/schemef.h > $(srcdir)/schemex.inc ; fi
 
-$(srcdir)/../include/mzscheme.exp : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/mzscheme.exp ; else $(PERL) -s -- $(srcdir)/makex -exports < $(srcdir)/schemef.h > $(srcdir)/../include/mzscheme.exp ; fi
+$(srcdir)/../include/racket.exp : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/racket.exp ; else $(PERL) -s -- $(srcdir)/makex -exports < $(srcdir)/schemef.h > $(srcdir)/../include/racket.exp ; fi
 
-$(srcdir)/../include/mzscheme3m.exp : $(srcdir)/schemef.h $(srcdir)/makex
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/mzscheme3m.exp ; else $(PERL) -s -- $(srcdir)/makex -exports -precisegc < $(srcdir)/schemef.h > $(srcdir)/../include/mzscheme3m.exp ; fi
+$(srcdir)/../include/racket3m.exp : $(srcdir)/schemef.h $(srcdir)/makex
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/racket3m.exp ; else $(PERL) -s -- $(srcdir)/makex -exports -precisegc < $(srcdir)/schemef.h > $(srcdir)/../include/racket3m.exp ; fi
 
 $(srcdir)/../include/mzwin.def : $(srcdir)/schemef.h $(srcdir)/makex
 	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/../include/mzwin.def ; else $(PERL) -s -- $(srcdir)/makex -winex < $(srcdir)/schemef.h > $(srcdir)/../include/mzwin.def ; fi

@@ -61,7 +61,7 @@ the grammar for @scheme[_module-path] for @scheme[require],
 
 A parameter that determines the current @deftech{module name
 resolver}, which manages the conversion from other kinds of module
-references to a symbol or @tech{resolved module path}. For example,
+references to a @tech{resolved module path}. For example,
 when the expander encounters @scheme[(require _module-path)] where
 @scheme[_module-path] is not an identifier, then the expander passes
 @scheme['_module-path] to the module name resolver to obtain a symbol
@@ -104,11 +104,13 @@ the table and the corresponding file is loaded with a variant of
 
 While loading a file, the default @tech{module name resolver} sets the
 @scheme[current-module-declare-name] parameter to the resolved module
-name. Also, the default @tech{module name resolver} records in a
-private @tech{continuation mark} the filename being loaded, and it
-checks whether such a mark already exists; if such a continuation mark
-does exist in the current continuation, then the @exnraise[exn:fail]
-with a message about a dependency cycle.
+name (while the @tech{compiled-load handler} sets
+@scheme[current-module-declare-source]). Also, the default
+@tech{module name resolver} records in a private @tech{continuation
+mark} the module being loaded, and it checks whether such a mark
+already exists; if such a continuation mark does exist in the current
+continuation, then the @exnraise[exn:fail] with a message about a
+dependency cycle.
 
 Module loading is suppressed (i.e., @scheme[#f] is supplied as a third
 argument to the module name resolver) when resolving module paths in
@@ -133,6 +135,16 @@ a @scheme[module] declaration (when the parameter value is not
 @scheme[#f]). In that case, the @scheme[_id] from the @scheme[module]
 declaration is ignored, and the parameter's value is used as the name
 of the declared module.}
+
+@defparam[current-module-declare-source src (or/c symbol? (and/c path? complete-path?) #f)]{
+
+A parameter that determines source information to be associated with a
+module when evaluating a @scheme[module] declaration. Source
+information is used in error messages and reflected by
+@scheme[variable-reference->module-source]. When the parameter value
+is @scheme[#f], the module's name (as determined by
+@scheme[current-module-declare-name]) is used as the source name
+instead of the parameter value.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "modpathidx"]{Compiled Modules and References}
@@ -223,7 +235,7 @@ above).}
 
 Combines @scheme[path] and @scheme[mpi] to create a new @tech{module
 path index}. The @scheme[path] argument can @scheme[#f] only if
-@scheme[mpi] is also @scheme[false].}
+@scheme[mpi] is also @scheme[#f].}
 
 @defproc[(compiled-module-expression? [v any/c]) boolean?]{
 
@@ -305,11 +317,11 @@ module's declaration though the @indexed-scheme['module-language]
 If no information is available for the module, the result is
 @scheme[#f]. Otherwise, the result is @scheme[(vector _mp _name _val)]
 such that @scheme[((dynamic-require _mp _name) _val)] should return
-function that takes a single argument. The function's argument is a
-key for reflected information, and the result is a value associated
-with that key.  Acceptable keys and the interpretation of results is
-up to external tools, such as DrScheme.  If no information is
-available for a given key, the result should be @scheme[#f].
+function that takes two arguments. The function's arguments are a key
+for reflected information and a default value.  Acceptable keys and
+the interpretation of results is up to external tools, such as
+DrScheme.  If no information is available for a given key, the result
+should be the given default value.
 
 See also @scheme[module->language-info].}
 
@@ -367,14 +379,18 @@ more than the namespace's @tech{base phase}.}
 
 
 @defproc[(module->language-info 
-          [mod (or/c module-path? path? resolved-module-path?)])
+          [mod (or/c module-path? path? resolved-module-path?)]
+          [load? any/c #f])
          (or/c #f (vector/c module-path? symbol? any/c))]{
 
 Returns information intended to reflect the ``language'' of the
-implementation of @scheme[mod], which must be declared (but not
-necessarily @tech{instantiate}d or @tech{visit}ed) in the current
-namespace. The information is the same as would have been returned by
-@scheme[module-compiled-language-info] applied to the module's
+implementation of @scheme[mod]. If @scheme[load?] is @scheme[#f], the
+module named by @scheme[mod] must be declared (but not necessarily
+@tech{instantiate}d or @tech{visit}ed) in the current namespace;
+otherwise, @scheme[mod] may be loaded (as for @scheme[dynamic-require]
+and other functions). The information returned by
+@scheme[module->language-info] is the same as would have been returned
+by @scheme[module-compiled-language-info] applied to the module's
 implementation as compiled code.}
 
 

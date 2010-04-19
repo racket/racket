@@ -938,7 +938,7 @@ void scheme_out_of_string_range(const char *name, const char *which,
 		     scheme_make_provided_string(i, 2, NULL),
 		     start, len,
 		     is_byte ? "byte-" : "",
-                     SCHEME_VECTORP(s) ? "vector" : "string",
+                     SCHEME_CHAPERONE_VECTORP(s) ? "vector" : "string",
 		     sstr, slen);
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -946,7 +946,7 @@ void scheme_out_of_string_range(const char *name, const char *which,
 		     name, which,
 		     scheme_make_provided_string(i, 0, NULL),
 		     is_byte ? "byte-" : "",
-                     SCHEME_VECTORP(s) ? "vector" : "string");
+                     SCHEME_CHAPERONE_VECTORP(s) ? "vector" : "string");
   }
 }
 
@@ -981,7 +981,7 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
   long len;
   long start, finish;
 
-  if (SCHEME_VECTORP(str))
+  if (SCHEME_CHAPERONE_VECTORP(str))
     len = SCHEME_VEC_SIZE(str);
   else if (SCHEME_CHAR_STRINGP(str))
     len = SCHEME_CHAR_STRTAG_VAL(str);
@@ -1931,7 +1931,8 @@ char *scheme_version(void)
 }
 
 #ifdef MZ_PRECISE_GC
-# define VERSION_SUFFIX " [3m]"
+/* don't print " [3m]", which is the default: */
+# define VERSION_SUFFIX ""
 #else
 # ifdef USE_SENORA_GC
 #  define VERSION_SUFFIX " [cgc~]"
@@ -1945,9 +1946,9 @@ char *scheme_banner(void)
   if (embedding_banner)
     return embedding_banner;
   else
-    return "Welcome to MzScheme"
-      " v" MZSCHEME_VERSION VERSION_SUFFIX
-      ", Copyright (c) 2004-2010 PLT Scheme Inc.\n";
+    return ("Welcome to Racket"
+            " v" MZSCHEME_VERSION VERSION_SUFFIX
+            ".\n");
 }
 
 void scheme_set_banner(char *s)
@@ -2008,9 +2009,13 @@ static void putenv_str_table_put_name(Scheme_Object *name, Scheme_Object *value)
   void *original_gc;
   Scheme_Object *name_copy;
   original_gc = GC_switch_to_master_gc();
+  scheme_start_atomic();
+
   name_copy = (Scheme_Object *) clone_str_with_gc((const char *) name);
   create_putenv_str_table_if_needed();
   scheme_hash_set(putenv_str_table, name_copy, value);
+
+  scheme_end_atomic_no_swap();
   GC_switch_back_from_master(original_gc);
 #else
   create_putenv_str_table_if_needed();
@@ -2026,10 +2031,14 @@ static void putenv_str_table_put_name_value(Scheme_Object *name, Scheme_Object *
   Scheme_Object *name_copy;
   Scheme_Object *value_copy;
   original_gc = GC_switch_to_master_gc();
+  scheme_start_atomic();
+
   name_copy = (Scheme_Object *) clone_str_with_gc((const char *) name);
   value_copy = (Scheme_Object *) clone_str_with_gc((const char *) value);
   create_putenv_str_table_if_needed();
   scheme_hash_set(putenv_str_table, name_copy, value_copy);
+
+  scheme_end_atomic_no_swap();
   GC_switch_back_from_master(original_gc);
 #else
   create_putenv_str_table_if_needed();
@@ -2044,8 +2053,12 @@ static Scheme_Object *putenv_str_table_get(Scheme_Object *name) {
   void *original_gc;
   Scheme_Object *value; 
   original_gc = GC_switch_to_master_gc();
+  scheme_start_atomic();
+
   create_putenv_str_table_if_needed();
   value = scheme_hash_get(putenv_str_table, name);
+
+  scheme_end_atomic_no_swap();
   GC_switch_back_from_master(original_gc);
   return value;
 #else
@@ -2347,7 +2360,7 @@ int scheme_strncmp(const char *a, const char *b, int len)
 
 static Scheme_Object *ok_cmdline(int argc, Scheme_Object **argv)
 {
-  if (SCHEME_VECTORP(argv[0])) {
+  if (SCHEME_CHAPERONE_VECTORP(argv[0])) {
     Scheme_Object *vec = argv[0], *vec2, *str;
     int i, size = SCHEME_VEC_SIZE(vec);
 

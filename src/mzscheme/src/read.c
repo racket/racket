@@ -118,6 +118,8 @@ static Scheme_Object *print_pair_curly(int, Scheme_Object *[]);
 static Scheme_Object *print_mpair_curly(int, Scheme_Object *[]);
 static Scheme_Object *print_honu(int, Scheme_Object *[]);
 static Scheme_Object *print_syntax_width(int, Scheme_Object *[]);
+static Scheme_Object *print_reader(int, Scheme_Object *[]);
+static Scheme_Object *print_as_qq(int, Scheme_Object *[]);
 
 static int scheme_ellipses(mzchar* buffer, int length);
 
@@ -536,6 +538,8 @@ void scheme_init_read(Scheme_Env *env)
   GLOBAL_PARAMETER("print-mpair-curly-braces",      print_mpair_curly,      MZCONFIG_PRINT_MPAIR_CURLY,           env);
   GLOBAL_PARAMETER("print-honu",                    print_honu,             MZCONFIG_HONU_MODE,                   env);
   GLOBAL_PARAMETER("print-syntax-width",            print_syntax_width,     MZCONFIG_PRINT_SYNTAX_WIDTH,          env);
+  GLOBAL_PARAMETER("print-reader-abbreviations",    print_reader,           MZCONFIG_PRINT_READER,                env);
+  GLOBAL_PARAMETER("print-as-quasiquote",           print_as_qq,            MZCONFIG_PRINT_AS_QQ,                 env);
 
   GLOBAL_PRIM_W_ARITY("make-readtable",     make_readtable,     1, -1,      env);
   GLOBAL_FOLDING_PRIM("readtable?",         readtable_p,        1, 1, 1,    env);
@@ -751,6 +755,18 @@ static Scheme_Object *
 print_honu(int argc, Scheme_Object *argv[])
 {
   DO_CHAR_PARAM("print-honu", MZCONFIG_HONU_MODE);
+}
+
+static Scheme_Object *
+print_reader(int argc, Scheme_Object *argv[])
+{
+  DO_CHAR_PARAM("print-reader-abbreviations", MZCONFIG_PRINT_READER);
+}
+
+static Scheme_Object *
+print_as_qq(int argc, Scheme_Object *argv[])
+{
+  DO_CHAR_PARAM("print-as-quasiquote", MZCONFIG_PRINT_AS_QQ);
 }
 
 static Scheme_Object *good_syntax_width(int c, Scheme_Object **argv)
@@ -2113,9 +2129,13 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       result = obj;
       scheme_hash_set(dht, obj, result);
     }
-  } else if (SCHEME_VECTORP(obj)) {
+  } else if (SCHEME_VECTORP(obj)
+             || (clone && SCHEME_CHAPERONE_VECTORP(obj))) {
     int i, len, diff = 0;
     Scheme_Object *prev_rr, *prev_v;
+
+    if (SCHEME_NP_CHAPERONEP(obj))
+      obj = scheme_chaperone_vector_copy(obj);
 
     len = SCHEME_VEC_SIZE(obj);
 
@@ -2146,10 +2166,16 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       scheme_hash_set(dht, obj, result);
     }
   } else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_table_placeholder_type)
-             || SCHEME_HASHTRP(obj)) {
+             || SCHEME_HASHTRP(obj)
+             || (clone && SCHEME_NP_CHAPERONEP(obj) 
+                 && (SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(obj))
+                     || SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj))))) {
     Scheme_Hash_Tree *t, *base;
     Scheme_Object *a, *key, *val, *lst;
     int kind;
+
+    if (SCHEME_NP_CHAPERONEP(obj))
+      obj = scheme_chaperone_hash_table_copy(obj);
 
     if (SCHEME_HASHTRP(obj)) {
       int i;
@@ -2224,22 +2250,27 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
         scheme_hash_set(t2, key, val);
       }
     }
-  } else if (SCHEME_STRUCTP(obj)) {
-    Scheme_Structure *s = (Scheme_Structure *)obj;
+  } else if (SCHEME_STRUCTP(obj)
+             || (clone && SCHEME_CHAPERONE_STRUCTP(obj))) {
+    Scheme_Structure *s;
+    if (clone && SCHEME_CHAPERONEP(obj))
+      s = (Scheme_Structure *)SCHEME_CHAPERONE_VAL(obj);
+    else
+      s = (Scheme_Structure *)obj;
     if (s->stype->prefab_key) {
       /* prefab */
       int c, i, diff;
       Scheme_Object *prev_v, *v;
 
       if (clone) {
-        result = scheme_clone_prefab_struct_instance(s);
+        result = scheme_clone_prefab_struct_instance((Scheme_Structure *)obj);
       }
       scheme_hash_set(dht, obj, result);
 
       c = s->stype->num_slots;
       diff = 0;
       for (i = 0; i < c; i++) {
-        prev_v = s->slots[i];
+        prev_v = ((Scheme_Structure *)result)->slots[i];
 	v = resolve_references(prev_v, port, top, dht, tht, clone, tail_depth + 1);
         if (!SAME_OBJ(prev_v, v))
           diff = 1;
@@ -4809,6 +4840,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_LET_ONE:
     case CPT_LET_ONE_FLONUM:
+    case CPT_LET_ONE_UNUSED:
       {
 	Scheme_Let_One *lo;
 	int et;
@@ -4823,6 +4855,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	et = scheme_get_eval_type(lo->value);
         if (ch == CPT_LET_ONE_FLONUM)
           et |= LET_ONE_FLONUM;
+        if (ch == CPT_LET_ONE_UNUSED)
+          et |= LET_ONE_UNUSED;
         SCHEME_LET_EVAL_TYPE(lo) = et;
 	
 	return (Scheme_Object *)lo;

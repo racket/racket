@@ -193,42 +193,48 @@
   ;; shorter ones too, but that adds a ton of code to the result (about 2k).
   (define-syntax-rule (no-key x) x)
   (unless (list? l) (raise-type-error 'remove-duplicates "list" l))
-  (let ([h (cond [(< (length l) 40) #f]
-                 [(eq? =? eq?) (make-hasheq)]
-                 [(eq? =? equal?) (make-hash)]
-                 [else #f])])
-    (if h
-      ;; Using a hash table when the list is long enough and when using
-      ;; `equal?'  or `eq?'.  The length threshold (40) was determined by
-      ;; trying it out with lists of length n holding (random n) numbers.
-      (let-syntax ([loop
-                    (syntax-rules ()
-                      [(_ getkey)
-                       (let loop ([l l])
-                         (if (null? l)
-                           l
-                           (let* ([x (car l)] [k (getkey x)] [l (cdr l)])
-                             (if (hash-ref h k #f)
-                               (loop l)
-                               (begin (hash-set! h k #t)
-                                      (cons x (loop l)))))))])])
-        (if key (loop key) (loop no-key)))
-      ;; plain n^2 list traversal (optimized for common cases)
-      (let ([key (or key (lambda (x) x))])
-        (let-syntax ([loop (syntax-rules ()
-                             [(_ search)
-                              (let loop ([l l] [seen null])
-                                (if (null? l)
-                                  l
-                                  (let* ([x (car l)] [k (key x)] [l (cdr l)])
-                                    (if (search k seen)
-                                      (loop l seen)
-                                      (cons x (loop l (cons k seen)))))))])])
-          (cond [(eq? =? equal?) (loop member)]
-                [(eq? =? eq?)    (loop memq)]
-                [(eq? =? eqv?)   (loop memv)]
-                [else (loop (lambda (x seen)
-                              (ormap (lambda (y) (=? x y)) seen)))]))))))
+  (let* ([len (length l)]
+         [h (cond [(<= len 1) #t]
+                  [(<= len 40) #f]
+                  [(eq? =? eq?) (make-hasheq)]
+                  [(eq? =? equal?) (make-hash)]
+                  [else #f])])
+    (case h
+      [(#t) l]
+      [(#f)
+       ;; plain n^2 list traversal (optimized for common cases) for short lists
+       ;; and for equalities other than `eq?' or `equal?'  The length threshold
+       ;; above (40) was determined by trying it out with lists of length n
+       ;; holding (random n) numbers.
+       (let ([key (or key (lambda (x) x))])
+         (let-syntax ([loop (syntax-rules ()
+                              [(_ search)
+                               (let loop ([l l] [seen null])
+                                 (if (null? l)
+                                   l
+                                   (let* ([x (car l)] [k (key x)] [l (cdr l)])
+                                     (if (search k seen)
+                                       (loop l seen)
+                                       (cons x (loop l (cons k seen)))))))])])
+           (cond [(eq? =? equal?) (loop member)]
+                 [(eq? =? eq?)    (loop memq)]
+                 [(eq? =? eqv?)   (loop memv)]
+                 [else (loop (lambda (x seen)
+                               (ormap (lambda (y) (=? x y)) seen)))])))]
+      [else
+       ;; Use a hash for long lists with simple hash tables.
+       (let-syntax ([loop
+                     (syntax-rules ()
+                       [(_ getkey)
+                        (let loop ([l l])
+                          (if (null? l)
+                            l
+                            (let* ([x (car l)] [k (getkey x)] [l (cdr l)])
+                              (if (hash-ref h k #f)
+                                (loop l)
+                                (begin (hash-set! h k #t)
+                                       (cons x (loop l)))))))])])
+         (if key (loop key) (loop no-key)))])))
 
 (define (filter-map f l . ls)
   (unless (and (procedure? f) (procedure-arity-includes? f (add1 (length ls))))

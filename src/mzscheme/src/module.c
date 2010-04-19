@@ -43,6 +43,7 @@ SHARED_OK static mzrt_mutex *modpath_table_mutex;
 /* locals */
 static Scheme_Object *current_module_name_resolver(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_module_name_prefix(int argc, Scheme_Object *argv[]);
+static Scheme_Object *current_module_name_source(int argc, Scheme_Object *argv[]);
 static Scheme_Object *dynamic_require_for_syntax(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require_copy(int argc, Scheme_Object *argv[]);
@@ -375,6 +376,7 @@ void scheme_init_module(Scheme_Env *env)
 
   GLOBAL_PARAMETER("current-module-name-resolver",  current_module_name_resolver, MZCONFIG_CURRENT_MODULE_RESOLVER, env);
   GLOBAL_PARAMETER("current-module-declare-name",   current_module_name_prefix,   MZCONFIG_CURRENT_MODULE_NAME,     env);
+  GLOBAL_PARAMETER("current-module-declare-source", current_module_name_source,   MZCONFIG_CURRENT_MODULE_SRC,      env);
 
   GLOBAL_PRIM_W_ARITY("dynamic-require",                  scheme_dynamic_require,     2, 3, env);
   GLOBAL_PRIM_W_ARITY("dynamic-require-for-syntax",       dynamic_require_for_syntax, 2, 3, env);
@@ -398,7 +400,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("resolved-module-path-name",        resolved_module_path_name,  1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-provide-protected?",        module_export_protected_p,  2, 2, env);
   GLOBAL_PRIM_W_ARITY("module->namespace",                module_to_namespace,        1, 1, env);
-  GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 2, env);
   GLOBAL_PRIM_W_ARITY("module->imports",                  module_to_imports,          1, 1, env);
   GLOBAL_PRIM_W_ARITY2("module->exports",                 module_to_exports,          1, 1, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("module-path?",                     is_module_path,             1, 1, env);
@@ -449,6 +451,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   }
 
   kernel->modname = kernel_modname;
+  kernel->modsrc = kernel_modname;
   kernel->requires = scheme_null;
   kernel->et_requires = scheme_null;
   kernel->tt_requires = scheme_null;
@@ -502,6 +505,7 @@ void scheme_finish_kernel(Scheme_Env *env)
       Scheme_Module_Exports *me;
       me = make_module_exports();
       kernel->me = me;
+      kernel->me->modsrc = kernel_modname;
     }
 
     kernel->me->rt->provides = exs;
@@ -853,6 +857,30 @@ current_module_name_prefix(int argc, Scheme_Object *argv[])
 			     -1, prefix_p, "resolved-module-path or #f", 1);
 }
 
+static Scheme_Object *source_p(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *o = argv[0];
+  
+  if (!SCHEME_FALSEP(o)
+      && !SCHEME_SYMBOLP(o)
+      && (!SCHEME_PATHP(o)
+          || !scheme_is_complete_path(SCHEME_PATH_VAL(o),
+                                      SCHEME_PATH_LEN(o),
+                                      SCHEME_PLATFORM_PATH_KIND)))
+    return NULL;
+
+  return o;
+}
+
+static Scheme_Object *
+current_module_name_source(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-module-declared-name",
+			     scheme_make_integer(MZCONFIG_CURRENT_MODULE_SRC),
+			     argc, argv,
+			     -1, source_p, "symbol, complete path, or #f", 1);
+}
+
 /**********************************************************************/
 /*                            procedures                              */
 /**********************************************************************/
@@ -991,7 +1019,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                   scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                                    "%s: name is provided as syntax: %V by module: %V",
                                    errname,
-                                   name, srcm->modname);
+                                   name, srcm->modsrc);
                 }
               }
 	      return NULL;
@@ -1050,7 +1078,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 			     "%s: name is not provided: %V by module: %V",
 			     errname,
-			     name, srcm->modname);
+			     name, srcm->modsrc);
           }
 	  return NULL;
 	}
@@ -1082,14 +1110,14 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 			 "%s: name is protected: %V from module: %V",
 			 errname,
-			 name, srcm->modname);
+			 name, srcm->modsrc);
     }
 
     if (!menv || !menv->toplevel) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                        "%s: module initialization failed: %V",
                        errname,
-                       srcm->modname);
+                       srcm->modsrc);
     }
     
     b = scheme_bucket_from_table(menv->toplevel, (const char *)srcname);
@@ -2601,7 +2629,8 @@ static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[
   if (SCHEME_MODNAMEP(argv[0]))
     name = argv[0];
   else
-    name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false), 1);
+    name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false),
+                                 (argc > 1) ? SCHEME_TRUEP(argv[1]) : 0);
 
   if (SAME_OBJ(name, kernel_modname))
     m = kernel;
@@ -3436,7 +3465,7 @@ static void check_certified(Scheme_Object *stx, Scheme_Object *certs,
                           "access from an uncertified context to %s %s from module: %D",
                           prot ? "protected" : "unexported",
                           var ? "variable" : "syntax",
-                          env->module->modname);
+                          env->module->modsrc);
     }
   }
 }
@@ -3642,7 +3671,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
     long srclen;
     
     if (from_env->module)
-      srcstr = scheme_display_to_string(from_env->module->modname, &srclen);
+      srcstr = scheme_display_to_string(from_env->module->modsrc, &srclen);
     else {
       srcstr = "";
       srclen = 0;
@@ -3652,7 +3681,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
                         "module mismatch, probably from old bytecode whose dependencies have changed: "
                         "variable not provided (directly or indirectly%s) from module: %D%s%t at source phase level: %d",
                         (position >= 0) ? " and at the expected position" : "",
-                        env->module->modname,
+                        env->module->modsrc,
                         srclen ? " accessed from module: " : "",
                         srcstr, srclen,
                         env->mod_phase);
@@ -3746,6 +3775,40 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Sch
 void scheme_module_force_lazy(Scheme_Env *env, int previous)
 {
   /* not anymore */
+}
+
+static int wait_registry(Scheme_Env *env)
+{
+  Scheme_Object *lock, *a[1];
+
+  while (1) {
+    lock = scheme_hash_get(env->module_registry, scheme_false);
+    if (!lock)
+      return 1;
+
+    if (SAME_OBJ(SCHEME_CDR(lock), (Scheme_Object *)scheme_current_thread))
+      return 0;
+
+    a[0] = SCHEME_CAR(lock);
+    a[1] = SCHEME_CDR(lock);
+    (void)scheme_sync(1, a);
+  }
+}
+
+static void lock_registry(Scheme_Env *env)
+{
+  Scheme_Object *lock;
+  lock = scheme_make_pair(scheme_make_sema(0),
+                          (Scheme_Object *) scheme_current_thread);
+  scheme_hash_set(env->module_registry, scheme_false, lock);
+}
+
+static void unlock_registry(Scheme_Env *env)
+{
+  Scheme_Object *lock;
+  lock = scheme_hash_get(env->module_registry, scheme_false);
+  scheme_post_sema(SCHEME_CAR(lock));
+  scheme_hash_set(env->module_registry, scheme_false, NULL);
 }
 
 XFORM_NONGCING static long make_key(int base_phase, int eval_exp, int eval_run)
@@ -4286,7 +4349,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     if (SAME_OBJ(m->modname, SCHEME_CAR(l))) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 		       "module: import cycle detected at: %D",
-		       m->modname);
+		       m->modsrc);
     }
   }
 
@@ -4363,6 +4426,9 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
 {
   Scheme_Object *v, *prev;
   Scheme_Env *menv;
+  int need_lock;
+
+  need_lock = wait_registry(env);
 
   v = MODCHAIN_AVAIL(env->modchain, pos);
   if (!SCHEME_FALSEP(v)) {
@@ -4380,6 +4446,9 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
     }
     v = prev;
 
+    if (need_lock)
+      lock_registry(env);
+
     while (SCHEME_NAMESPACEP(v)) {
       menv = (Scheme_Env *)v;
       v = menv->available_next[pos];
@@ -4388,6 +4457,9 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
                    NULL, 1, 0, base_phase,
                    scheme_null);
     }
+
+    if (need_lock)
+      unlock_registry(env);
   }
 }
 
@@ -4435,7 +4507,7 @@ static void *eval_module_body_k(void)
 static void eval_module_body(Scheme_Env *menv, Scheme_Env *env)
 {
 #ifdef MZ_USE_JIT
-  (void)scheme_module_run_start(menv, env, scheme_make_pair(menv->module->modname, scheme_true));
+  (void)scheme_module_run_start(menv, env, scheme_make_pair(menv->module->modsrc, scheme_true));
 #else
   (void)scheme_module_run_finish(menv, env);
 #endif
@@ -4599,7 +4671,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
 {
   Scheme_Module *m;
   Scheme_Env *env;
-  Scheme_Object *prefix, *insp;
+  Scheme_Object *prefix, *insp, *src;
   Scheme_Config *config;
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
@@ -4615,14 +4687,21 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
       name = prefix;
     else
       name = scheme_intern_resolved_module_path(name);
+    src = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_SRC);
+    if (SCHEME_FALSEP(src))
+      src = prefix;
+    else
+      src = scheme_intern_resolved_module_path(src);
     insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
   }
   else {
     name = scheme_intern_resolved_module_path(name);
+    src = name;
     insp = scheme_get_current_inspector();
   }
 
   m->modname = name;
+  m->modsrc = src;
   m->requires = scheme_null;
   m->et_requires = scheme_null;
   m->tt_requires = scheme_null;
@@ -4634,6 +4713,7 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
     Scheme_Module_Exports *me;
     me = make_module_exports();
     m->me = me;
+    me->modsrc = src;
   }
 
   scheme_hash_set(for_env->export_registry, m->modname, (Scheme_Object *)m->me);
@@ -5026,12 +5106,15 @@ module_execute(Scheme_Object *data)
   Scheme_Module *m;
   Scheme_Env *env;
   Scheme_Env *old_menv;
-  Scheme_Object *prefix, *insp, **rt_insps, **et_insps;
+  Scheme_Config *config;
+  Scheme_Object *prefix, *src, *insp, **rt_insps, **et_insps;
 
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   memcpy(m, data, sizeof(Scheme_Module));
 
-  prefix = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_NAME);
+  config = scheme_current_config();
+
+  prefix = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_NAME);
   if (SCHEME_MODNAMEP(prefix)) {
     m->modname = prefix;
     
@@ -5052,6 +5135,13 @@ module_execute(Scheme_Object *data)
       }
     }
   }
+
+  src = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_SRC);
+  if (!SCHEME_FALSEP(src)) {
+    src = scheme_intern_resolved_module_path(src);
+    m->modsrc = src;
+  } else
+    m->modsrc = m->modname;
 
   env = scheme_environment_from_dummy(m->dummy);
 
@@ -5085,7 +5175,8 @@ module_execute(Scheme_Object *data)
     et_insps = NULL;
 
   if (!SAME_OBJ(rt_insps, m->me->rt->provide_insps)
-      || !SAME_OBJ(et_insps, m->me->et->provide_insps)) {
+      || !SAME_OBJ(et_insps, m->me->et->provide_insps)
+      || !SAME_OBJ(m->me->modsrc, m->modsrc)) {
     /* have to clone m->me, etc. */
     Scheme_Module_Exports *naya_me;
     Scheme_Module_Phase_Exports *pt;
@@ -5093,6 +5184,7 @@ module_execute(Scheme_Object *data)
     naya_me = MALLOC_ONE_TAGGED(Scheme_Module_Exports);
     memcpy(naya_me, m->me, sizeof(Scheme_Module_Exports));
     m->me = naya_me;
+    m->me->modsrc = m->modsrc;
 
     if (!SAME_OBJ(rt_insps, m->me->rt->provide_insps)) {
       pt = MALLOC_ONE_TAGGED(Scheme_Module_Phase_Exports);
@@ -5785,6 +5877,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   rmp = SCHEME_STX_VAL(nm);
   rmp = scheme_intern_resolved_module_path(rmp);
   m->modname = rmp;
+  m->modsrc = rmp;
 
   LOG_START_EXPAND(m);
 
@@ -5809,6 +5902,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     Scheme_Module_Exports *me;
     me = make_module_exports();
     m->me = me;
+    me->modsrc = m->modsrc;
   }
 
   top_env = env->genv;
@@ -9971,6 +10065,7 @@ static Scheme_Object *write_module(Scheme_Object *obj)
     l = cons(scheme_false, l);
 
   l = cons(m->me->src_modidx, l);
+  l = cons(SCHEME_PTR_VAL(m->modsrc), l);
   l = cons(SCHEME_PTR_VAL(m->modname), l);
 
   return l;
@@ -10013,6 +10108,12 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   if (!SCHEME_PAIRP(obj)) return_NULL();
   e = scheme_intern_resolved_module_path(SCHEME_CAR(obj));
   m->modname = e;
+  obj = SCHEME_CDR(obj);
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  e = scheme_intern_resolved_module_path(SCHEME_CAR(obj));
+  m->modsrc = e;
+  m->me->modsrc = e;
   obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();

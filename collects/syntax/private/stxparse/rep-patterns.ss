@@ -52,7 +52,7 @@ A ListPattern is a subtype of SinglePattern; one of
 #|
 A GhostPattern is one of
   (make-ghost:cut Base)
-  (make-ghost:fail Base stx stx)
+  (make-ghost:fail Base bool stx stx)
   (make-ghost:bind Base (listof clause:attr))
 * (make-ghost:and Base (listof GhostPattern))
   (make-ghost:parse Base SinglePattern stx)
@@ -61,7 +61,7 @@ ghost:and is desugared below in create-* procedures
 |#
 
 (define-struct ghost:cut (attrs) #:prefab)
-(define-struct ghost:fail (attrs when message) #:prefab)
+(define-struct ghost:fail (attrs early? when message) #:prefab)
 (define-struct ghost:bind (attrs clauses) #:prefab)
 (define-struct ghost:and (attrs patterns) #:prefab)
 (define-struct ghost:parse (attrs pattern expr) #:prefab)
@@ -227,8 +227,8 @@ A Kind is one of
 (define (create-ghost:cut)
   (make ghost:cut null))
 
-(define (create-ghost:fail condition message)
-  (make ghost:fail null condition message))
+(define (create-ghost:fail early? condition message)
+  (make ghost:fail null early? condition message))
 
 (define (create-ghost:and patterns)
   (let ([attrs (append-iattrs (map pattern-attrs patterns))])

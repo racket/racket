@@ -569,6 +569,7 @@
       #:modules (cons `(#%mzc: (file ,(car source-files)))
                       (map (lambda (l) `(#t (lib ,l)))
                            (exe-embedded-libraries)))
+      #:configure-via-first-module? #t
       #:literal-expression
       (parameterize ([current-namespace (make-base-namespace)])
         (compile

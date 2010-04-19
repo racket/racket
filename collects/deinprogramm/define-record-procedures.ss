@@ -6,11 +6,13 @@
 	 define-record-procedures-parametric-2)
 
 (require scheme/include
+	 scheme/promise
+	 mzlib/struct
          mzlib/pconvert-prop
          mzlib/pretty
+	 deinprogramm/contract/contract
 	 deinprogramm/contract/contract-syntax)
 
-(require deinprogramm/deinprogramm-struct)
 (require (for-syntax scheme/base)
          (for-syntax deinprogramm/syntax-checkers)
          (for-syntax stepper/private/shared))
