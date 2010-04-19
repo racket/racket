@@ -150,11 +150,9 @@
          [rng (or/c Values? ValuesDots?)]
          [rest (or/c #f Type/c)] 
          [drest (or/c #f (cons/c Type/c (or/c natural-number/c symbol?)))]
-         [kws (listof Keyword?)]
-         ;; order is: fixed, rest/drest, keywords
-         [names (listof identifier?)])
+         [kws (listof Keyword?)])
     #:no-provide
-    [#:intern (list dom rng rest drest kws (map hash-id names))]
+    [#:intern (list dom rng rest drest kws)]
     [#:frees (combine-frees 
               (append (map (compose flip-variances free-vars*) 
                            (append (if rest (list rest) null)
@@ -183,8 +181,7 @@
                       (type-rec-id rng)
                       (and rest (type-rec-id rest))
                       (and drest (cons (type-rec-id (car drest)) (cdr drest)))
-                      (map type-rec-id kws)
-                      names)])
+                      (map type-rec-id kws))])
 
 ;; top-arr is the supertype of all function types
 (dt top-arr () [#:fold-rhs #:base])
@@ -413,7 +410,7 @@
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions 
-       [#:arr dom rng rest drest kws names
+       [#:arr dom rng rest drest kws
               (*arr (map sb dom)
                     (sb rng)
                     (if rest (sb rest) #f)
@@ -459,7 +456,7 @@
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions
-       [#:arr dom rng rest drest kws names
+       [#:arr dom rng rest drest kws
               (*arr (map sb dom)
                     (sb rng)
                     (if rest (sb rest) #f)
@@ -467,8 +464,7 @@
                         (cons (sb (car drest))
                               (if (eqv? (cdr drest) (+ count outer)) (F-n image) (cdr drest)))
                         #f)
-                    (map sb kws)
-                    names)]
+                    (map sb kws))]
        [#:ValuesDots rs dty dbound
                      (*ValuesDots (map sb rs)
                                   (sb dty)
