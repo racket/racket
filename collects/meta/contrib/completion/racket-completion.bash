@@ -101,7 +101,7 @@ _rico()
 
     if [ $COMP_CWORD -eq 1 ]; then
       # removing the empty string on the next line breaks things.  such as my brain.
-      local cmds=$( echo '' '--help' ;  for x in `rico --help 2>&1 | sed -n -e 's/^  \(.[^ ]*\).*/\1/p'` ; do echo ${x} ; done )
+      local cmds=$( echo '' '--help' ;  for x in `racket -e '(begin (require rico/all-tools) (for ([(k v) (all-tools)]) (printf "~a\n" k)))'` ; do echo ${x} ; done )
       COMPREPLY=($(compgen -W "${cmds}" -- ${cur}))  
     elif [ $COMP_CWORD -eq 2 ]; then
       # Here we'll handle the main rico commands
