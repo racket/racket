@@ -36,4 +36,42 @@
     (+ x (string-length y))
     0)
 
+;; Example 8
+(: strnum? (Any -> Boolean : (U String Number)))
+(define (strnum? x)
+  (or (string? x) (number? x)))
+
+;; Example 9
+(if (let ([tmp (number? x)]) (if tmp tmp (string? x))) (f x) 0)
+
+;; Example 10
+(define: p : (Pair Any Any) (cons 1 2))
+(if (number? (car p)) (add1 (car p)) 7)
+
+;; Example 11
+(define: (g [arg : (Pair Number Number)]) : Number 0)
+(lambda: ([p : (Pair Any Any)])
+  (if (and (number? (car p)) (number? (cdr p)))
+      (g p)
+      'no))
+
+;; Example 12
+(: carnum? : (Pair Any Any) -> Boolean : Number @ car)
+(define (carnum? x)
+  (number? (car x)))
+
+;; Example 13
+(cond [(and (number? x) (string? z)) (add1 x)]
+      [(number? x) (add1 z)]
+      [else 0])
+
+;; Example 14
+(lambda: ([input : (U Number String)]
+          [extra : (Pair Any Any)])
+  (cond
+    [(and (number? input) (number? (car extra)))
+     (+ input (car extra))]
+    [(number? (car extra))
+     (+ (string-length input) (car extra))]
+    [else 0]))
 
