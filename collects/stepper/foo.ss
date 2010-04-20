@@ -1,0 +1,3 @@
+#lang scheme
+
+"bogus file"
