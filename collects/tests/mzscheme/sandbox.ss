@@ -285,9 +285,9 @@
    --top--
    (let* ([tmp       (make-temporary-file "sandboxtest~a" 'directory)]
           [strpath   (lambda xs (path->string (apply build-path xs)))]
-          [schemelib (strpath (collection-path "scheme"))]
-          [list-lib  (strpath schemelib "list.rkt")]
-          [list-zo   (strpath schemelib "compiled" "list_rkt.zo")]
+          [racketlib (strpath (collection-path "racket"))]
+          [list-lib  (strpath racketlib "list.rkt")]
+          [list-zo   (strpath racketlib "compiled" "list_rkt.zo")]
           [test-lib  (strpath tmp "sandbox-test.ss")]
           [test-zo   (strpath tmp "compiled" "sandbox-test_ss.zo")]
           [test2-lib (strpath tmp "sandbox-test2.ss")]
@@ -296,7 +296,7 @@
         (make-base-evaluator!)
         --eval--
         ;; reading from collects is allowed
-        (list? (directory-list ,schemelib))
+        (list? (directory-list ,racketlib))
         (file-exists? ,list-lib) => #t
         (input-port? (open-input-file ,list-lib)) => #t
         ;; writing is forbidden
@@ -304,13 +304,13 @@
         ;; reading from other places is forbidden
         (directory-list ,tmp) =err> "`read' access denied"
         ;; no network too
-        (require scheme/tcp)
+        (require racket/tcp)
         (tcp-listen 12345) =err> "network access denied"
         --top--
         ;; reading from a specified require is fine
         (with-output-to-file test-lib
           (lambda ()
-            (printf "~s\n" '(module sandbox-test scheme/base
+            (printf "~s\n" '(module sandbox-test racket/base
                               (define x 123) (provide x)))))
         (make-base-evaluator/reqs! `(,test-lib))
         --eval--
@@ -322,7 +322,7 @@
         ;; should work also for module evaluators
         ;; --> NO!  Shouldn't make user code require whatever it wants
         ;; (make-module-evaluator!
-        ;;   `(module foo scheme/base (require (file ,test-lib))))
+        ;;   `(module foo racket/base (require (file ,test-lib))))
         ;; --eval--
         ;; x => 123
         ;; (length (with-input-from-file ,test-lib read)) => 5
@@ -340,7 +340,7 @@
         (list? (directory-list ,tmp))
         (open-output-file ,(build-path tmp "blah")) =err> "access denied"
         (delete-directory ,(build-path tmp "blah")) =err> "access denied"
-        (list? (directory-list ,schemelib))
+        (list? (directory-list ,racketlib))
         ;; we can read/write/delete list-zo, but we can't load bytecode from
         ;; it due to the code inspector
         (copy-file ,list-zo ,test-zo) => (void)
@@ -368,7 +368,7 @@
         ;; bytecode from test2-lib is explicitly allowed
         (load/use-compiled ,test2-lib)
         (require 'list) => (void))
-     ((dynamic-require 'scheme/file 'delete-directory/files) tmp))
+     ((dynamic-require 'racket/file 'delete-directory/files) tmp))
 
    ;; languages and requires
    --top--
@@ -389,7 +389,7 @@
    (eq? (ev "6") (ev "(sub1 (* 2 3.5))"))
    (eq? (ev "6") (ev "(sub1 (* 2 x))"))
    --top--
-   (make-base-evaluator/reqs! '(scheme/list))
+   (make-base-evaluator/reqs! '(racket/list))
    --eval--
    (last-pair '(1 2 3)) => '(3)
    (last-pair null) =err> "expected argument of type"

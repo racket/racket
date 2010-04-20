@@ -5,74 +5,18 @@
          (for-syntax racket/base racket/list syntax/stx
                      racket/struct-info))
 
-;; This module is full of unsafe bindings that are not provided to requiring
-;; modules.  Instead, an `unsafe!' binding is provided that makes these unsafe
-;; bindings available.  The following two syntaxes do that: `provide*' is like
-;; `provide', but using `(unsafe id)' registers an unsafe binding.  Then,
-;; `define-unsafer' should be used with a binding that will expose the unsafe
-;; bindings.  This might move elsewhere at some point if it turns out to be
-;; useful in other contexts.
-(provide provide* define-unsafer)
-(define-syntaxes (provide* define-unsafer)
-  (let ((unsafe-bindings '()))
-    (values
-     (lambda (stx)
-       (syntax-case stx ()
-         [(_ p ...)
-          (let loop ([provides '()]
-                     [unsafes  '()]
-                     [ps (syntax->list #'(p ...))])
-            (if (null? ps)
-              (begin (set! unsafe-bindings
-                           (append unsafe-bindings (reverse unsafes)))
-                     (with-syntax ([(p ...) provides]) #'(provide p ...)))
-              (syntax-case (car ps) (unsafe)
-                [(unsafe u)
-                 (syntax-case #'u (rename-out)
-                   [(rename-out [from to])
-                    (loop provides (cons (cons #'from #'to) unsafes) (cdr ps))]
-                   [id (identifier? #'id)
-                    (loop provides (cons (cons #'id #'id) unsafes) (cdr ps))]
-                   [_
-                    (raise-syntax-error 'provide* "bad unsafe usage"
-                                        (car ps) stx)])]
-                [_ (loop (cons (car ps) provides) unsafes (cdr ps))])))]))
-     (lambda (stx)
-       (syntax-case stx ()
-         [(_ unsafe)
-          (with-syntax ([(from ...)  (map car unsafe-bindings)]
-                        [(to   ...)  (map cdr unsafe-bindings)]
-                        [(id   ...) (generate-temporaries unsafe-bindings)])
-            (set! unsafe-bindings '())
-            #'(begin
-                (provide (protect-out unsafe))
-                (define-syntax (unsafe stx)
-                  (syntax-case stx ()
-                    [(_) (with-syntax ([(id ...) (list (datum->syntax
-                                                        stx 'to stx)
-                                                       ...)])
-                           #'(begin (define-syntax id
-                                      (make-rename-transformer (syntax-property
-                                                                (syntax-property
-                                                                 #'from
-                                                                 'not-provide-all-defined
-                                                                 #t)
-                                                                'nominal-id
-                                                                'to)))
-                                    ...))]))))])))))
-
-(provide* ctype-sizeof ctype-alignof compiler-sizeof
-          (unsafe malloc) (unsafe free) (unsafe end-stubborn-change)
-          cpointer? ptr-equal? ptr-add (unsafe ptr-ref) (unsafe ptr-set!) (unsafe cast)
-          ptr-offset ptr-add! offset-ptr? set-ptr-offset!
-          vector->cpointer flvector->cpointer saved-errno lookup-errno
-          ctype? make-ctype make-cstruct-type (unsafe make-sized-byte-string) ctype->layout
-          _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
-          _fixint _ufixint _fixnum _ufixnum
-          _float _double _double*
-          _bool _pointer _gcpointer _scheme (rename-out [_scheme _racket]) _fpointer function-ptr
-          (unsafe memcpy) (unsafe memmove) (unsafe memset)
-          (unsafe malloc-immobile-cell) (unsafe free-immobile-cell))
+(provide ctype-sizeof ctype-alignof compiler-sizeof
+         malloc free end-stubborn-change
+         cpointer? ptr-equal? ptr-add ptr-ref ptr-set! (protect-out cast)
+         ptr-offset ptr-add! offset-ptr? set-ptr-offset!
+         vector->cpointer flvector->cpointer saved-errno lookup-errno
+         ctype? make-ctype make-cstruct-type make-sized-byte-string ctype->layout
+         _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
+         _fixint _ufixint _fixnum _ufixnum
+         _float _double _double*
+         _bool _pointer _gcpointer _scheme (rename-out [_scheme _racket]) _fpointer function-ptr
+         memcpy memmove memset
+         malloc-immobile-cell free-immobile-cell)
 
 (define-syntax define*
   (syntax-rules ()
@@ -145,8 +89,8 @@
 (define lib-suffix-re (regexp (string-append "\\." lib-suffix "$")))
 (define suffix-before-version? (not (equal? lib-suffix "dylib")))
 
-(provide* (unsafe (rename-out [get-ffi-lib ffi-lib]))
-          ffi-lib? ffi-lib-name)
+(provide (protect-out (rename-out [get-ffi-lib ffi-lib]))
+         ffi-lib? ffi-lib-name)
 (define get-ffi-lib
   (case-lambda
    [(name) (get-ffi-lib name "")]
@@ -214,7 +158,7 @@
     (ptr-set! ffi-obj type new)))
 
 ;; This is better handled with `make-c-parameter'
-(provide* (unsafe ffi-obj-ref))
+(provide (protect-out ffi-obj-ref))
 (define ffi-obj-ref
   (case-lambda
    [(name lib) (ffi-obj-ref name lib #f)]
@@ -228,7 +172,7 @@
 ;; get-ffi-obj is implemented as a syntax only to be able to propagate the
 ;; foreign name into the type syntax, which allows generated wrappers to have a
 ;; proper name.
-(provide* (unsafe get-ffi-obj))
+(provide (protect-out get-ffi-obj))
 (define get-ffi-obj*
   (case-lambda
    [(name lib type) (get-ffi-obj* name lib type #f)]
@@ -254,7 +198,7 @@
 ;; It is important to use the set-ffi-obj! wrapper because it takes care of
 ;; keeping a handle on the object -- otherwise, setting a callback hook will
 ;; crash when the Scheme function is gone.
-(provide* (unsafe set-ffi-obj!))
+(provide (protect-out set-ffi-obj!))
 (define (set-ffi-obj! name lib type new)
   (ffi-set! (ffi-obj (get-ffi-obj-name 'set-ffi-obj! name)
                      (get-ffi-lib-internal lib))
@@ -262,7 +206,7 @@
 
 ;; Combining the above two in a `define-c' special form which makes a Scheme
 ;; `binding', first a `parameter'-like constructor:
-(provide* (unsafe make-c-parameter))
+(provide (protect-out make-c-parameter))
 (define (make-c-parameter name lib type)
   (let ([obj (ffi-obj (get-ffi-obj-name 'make-c-parameter name)
                       (get-ffi-lib-internal lib))])
@@ -270,7 +214,7 @@
                  [(new) (ffi-set! obj type new)])))
 ;; Then the fake binding syntax, uses the defined identifier to name the
 ;; object:
-(provide* (unsafe define-c))
+(provide (protect-out define-c))
 (define-syntax (define-c stx)
   (syntax-case stx ()
     [(_ var-name lib-name type-expr)
@@ -1035,9 +979,9 @@
 
 (define-struct cvector (ptr type length))
 
-(provide* cvector? cvector-length cvector-type cvector-ptr
-          ;; make-cvector* is a dangerous operation
-          (unsafe (rename-out [make-cvector make-cvector*])))
+(provide cvector? cvector-length cvector-type cvector-ptr
+         ;; make-cvector* is a dangerous operation
+         (protect-out (rename-out [make-cvector make-cvector*])))
 
 (define _cvector* ; used only as input types
   (make-ctype _pointer cvector-ptr
@@ -1230,8 +1174,8 @@
 
 ;; Make these operations available for unsafe interfaces (they can be used to
 ;; grab a hidden tag value and break code).
-(provide* (unsafe cpointer-tag) (unsafe set-cpointer-tag!)
-          (unsafe cpointer-has-tag?) (unsafe cpointer-push-tag!))
+(provide cpointer-tag set-cpointer-tag!
+         cpointer-has-tag? cpointer-push-tag!)
 
 ;; Defined as syntax for efficiency, but can be used as procedures too.
 (define-syntax (cpointer-has-tag? stx)
@@ -1661,7 +1605,7 @@
           (ptr-set! cblock type i (car l))
           (loop (cdr l) (add1 i))))
       cblock)))
-(provide* (unsafe cblock->list))
+(provide (protect-out cblock->list))
 (define (cblock->list cblock type len)
   (cond [(zero? len) '()]
         [(cpointer? cblock)
@@ -1683,7 +1627,7 @@
             (ptr-set! cblock type i (vector-ref v i))
             (loop (add1 i))))
         cblock))))
-(provide* (unsafe cblock->vector))
+(provide (protect-out cblock->vector))
 (define (cblock->vector cblock type len)
   (cond [(zero? len) '#()]
         [(cpointer? cblock)
@@ -1725,4 +1669,3 @@
                         (let loop () (will-execute killer-executor) (loop))))))))
   (will-register killer-executor obj finalizer))
 
-(define-unsafer unsafe!)

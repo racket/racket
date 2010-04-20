@@ -156,9 +156,10 @@ docsrc-filter   := (+ (collects: "setup/scribble.ss") ; only with doc sources
                       std-docs)
 man-filter      := (man: "*")
 tests-filter    := (+ (collects: "**/tests/") (srcfile: "tests.ss"))
-gui-filter      := (- (+ (collects: "**/gui/") (srcfile: "gui.ss"))
+gui-filter      := (- (+ (collects: "**/gui/") (srcfile: "gui.rkt"))
                       ;; for use in mz code that works in mr too
-                      (srcfile: "scheme/gui/dynamic.ss"))
+                      (srcfile: "scheme/gui/dynamic.rkt")
+                      (srcfile: "racket/gui/dynamic.rkt"))
 tools-filter    := (+ (collects: "**/tools/") (srcfile: "tools.ss"))
 
 ;; these are in the doc directory, but are comitted in svn and should be
