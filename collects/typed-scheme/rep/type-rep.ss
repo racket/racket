@@ -151,7 +151,6 @@
          [rest (or/c #f Type/c)] 
          [drest (or/c #f (cons/c Type/c (or/c natural-number/c symbol?)))]
          [kws (listof Keyword?)])
-    #:no-provide
     [#:intern (list dom rng rest drest kws)]
     [#:frees (combine-frees 
               (append (map (compose flip-variances free-vars*) 
@@ -618,11 +617,6 @@
                      (list syms (PolyDots-body* syms t))))
                  (list nps bp)))])))
 
-(define-match-expander arr:*
-  (lambda (stx)
-    (syntax-parse stx
-      [(_ dom rng rest drest kws)
-       (syntax/loc stx (arr: dom rng rest drest kws))])))
 ;(trace subst subst-all)
 
 (provide
@@ -632,8 +626,6 @@
  Mu-unsafe: Poly-unsafe:
  PolyDots-unsafe:
  Mu? Poly? PolyDots?
- arr
- arr?
  Type? Filter? Object?
  Type/c
  Poly-n
@@ -651,9 +643,7 @@
              [PolyDots* make-PolyDots]
              [Mu-body* Mu-body]
              [Poly-body* Poly-body]
-             [PolyDots-body* PolyDots-body]
-	     [*arr make-arr]
-             [arr:* arr:]))
+             [PolyDots-body* PolyDots-body]))
 
 (p/c [type-equal? (Rep? Rep? . -> . boolean?)])
 
