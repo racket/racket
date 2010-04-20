@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/contract/base
-         scheme/dict
+#lang racket/base
+(require racket/contract/base
+         racket/dict
          "private/keyword.ss")
 
 (define optstx (or/c syntax? false/c))

@@ -7,7 +7,7 @@
 (require (for-template scheme/base
                        "unit-keywords.ss"
                        "unit-runtime.ss"))
-(require scheme/private/define-struct)
+(require racket/private/define-struct)
 
 (provide (struct-out var-info)
          (struct-out signature)

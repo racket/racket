@@ -1,12 +1,12 @@
-#lang scheme/base
-(require scheme/contract/base
-         scheme/list
+#lang racket/base
+(require racket/contract/base
+         racket/list
          "minimatch.ss"
-         scheme/stxparam
+         racket/stxparam
          syntax/stx
-         (for-syntax scheme/base)
+         (for-syntax racket/base)
          (for-syntax syntax/stx)
-         (for-syntax scheme/private/sc)
+         (for-syntax racket/private/sc)
          (for-syntax "rep-data.ss")
          (for-syntax "../util.ss")
          "runtime.ss")

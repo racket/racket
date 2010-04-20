@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide add-plt-segment
          get/set-dylib-path)

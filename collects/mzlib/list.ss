@@ -1,31 +1,13 @@
-#lang mzscheme
+#lang racket/base
 
 ;; The `first', etc. operations in this library
 ;;  work on pairs, not lists.
 
-(require (only scheme/base
-               foldl
-               foldr
-
-               remv
-               remq
-               remove
-               remv*
-               remq*
-               remove*
-
-               findf
-               memf
-               assf
-
-               filter
-
-               sort)
-         (only scheme/list
-               cons?
-               empty?
-               empty
-               last-pair))
+(require (only-in scheme/list
+                  cons?
+                  empty?
+                  empty
+                  last-pair))
 
 (provide first
          second

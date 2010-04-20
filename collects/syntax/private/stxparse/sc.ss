@@ -1,12 +1,12 @@
-#lang scheme/base
-(require (for-syntax scheme/base
-                     scheme/private/sc
+#lang racket/base
+(require (for-syntax racket/base
+                     racket/private/sc
                      unstable/syntax
                      unstable/struct
                      "minimatch.ss"
                      "rep-data.ss"
                      "rep.ss")
-         scheme/list
+         racket/list
          syntax/stx
          "parse.ss"
          "runtime.ss"

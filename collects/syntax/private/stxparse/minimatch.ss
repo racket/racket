@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 (require unstable/struct
-         (for-syntax scheme/base scheme/struct-info unstable/struct))
+         (for-syntax racket/base racket/struct-info unstable/struct))
 (provide match make)
 
 (define-syntax (match stx)

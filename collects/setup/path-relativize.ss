@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/promise)
+#lang racket/base
+(require racket/promise)
 
 (provide make-relativize)
 

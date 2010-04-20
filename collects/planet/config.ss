@@ -1,4 +1,4 @@
-(module config mzscheme
+(module config racket/base
   (require "private/define-config.ss") 
   (define-parameters
     (PLANET-SERVER-NAME       "planet.plt-scheme.org")

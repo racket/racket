@@ -3,15 +3,14 @@
 ;;  used by contract.ss, which is used by port.ss --- so we
 ;;  break the cycle with this module.
 
-(module port mzscheme
-  (require "../etc.ss")
+(module port racket/base
   (provide open-output-nowhere
 	   relocate-output-port
 	   transplant-output-port
 	   transplant-to-relocate)
 
   (define open-output-nowhere
-    (opt-lambda ([name 'nowhere] [specials-ok? #t])
+    (lambda ([name 'nowhere] [specials-ok? #t])
       (make-output-port 
        name
        always-evt
@@ -42,13 +41,13 @@
        close?)))
 
   (define relocate-output-port
-    (opt-lambda (p line col pos [close? #t])
+    (lambda (p line col pos [close? #t])
       (transplant-to-relocate
        transplant-output-port
        p line col pos close?)))
   
   (define transplant-output-port
-    (opt-lambda (p location-proc pos [close? #t] [count-lines!-proc void])
+    (lambda (p location-proc pos [close? #t] [count-lines!-proc void])
       (make-output-port
        (object-name p)
        p

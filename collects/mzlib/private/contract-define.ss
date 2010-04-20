@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
 (provide define/contract)
 
-(require (for-syntax scheme/base
+(require (for-syntax racket/base
                      unstable/srcloc
-                     (prefix-in a: scheme/contract/private/helpers))
-         (only-in scheme/contract/private/base contract))
+                     (prefix-in a: racket/contract/private/helpers))
+         (only-in racket/contract/private/base contract))
 
 ;; First, we have the old define/contract implementation, which
 ;; is still used in mzlib/contract.

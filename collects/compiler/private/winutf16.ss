@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide bytes->utf-16-bytes
          utf-16-bytes->bytes)

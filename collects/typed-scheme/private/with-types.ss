@@ -9,7 +9,7 @@
 	 "extra-procs.ss"
          "prims.ss"
          "base-types.ss"
-         scheme/contract/regions scheme/contract/base         
+         racket/contract/regions racket/contract/base
          (for-syntax 
           "base-types-extra.ss"
           unstable/debug

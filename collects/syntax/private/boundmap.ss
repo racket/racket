@@ -1,6 +1,6 @@
 
-(module boundmap mzscheme
-  (require mzlib/etc)
+(module boundmap racket/base
+  (require (for-syntax racket/base))
   
   (define-syntax (make-mapping-code stx)
     (syntax-case stx ()
@@ -25,31 +25,31 @@
             (let ([make-identifier-mapping
                    (lambda ()
                      (make-identifier-mapping
-                      (make-hash-table)))])
+                      (make-hasheq)))])
               make-identifier-mapping))
           
           (define identifier-mapping-get
-            (opt-lambda (bi id [fail (lambda () 
-                                       (error 'identifier-mapping-get
-                                              "no mapping for ~e"
-                                              id))])
+            (lambda (bi id [fail (lambda () 
+                                   (error 'identifier-mapping-get
+                                          "no mapping for ~e"
+                                          id))])
               (let ([i (ormap (lambda (i)
                                 (and (identifier=? (car i) id)
                                      i))
-                              (hash-table-get (identifier-mapping-ht bi)
-                                              (identifier->symbol id) 
-                                              null))])
+                              (hash-ref (identifier-mapping-ht bi)
+                                        (identifier->symbol id) 
+                                        null))])
                 (if i
                     (cdr i)
                     (fail)))))
           
           (define identifier-mapping-put!
             (lambda (bi id v)
-              (let ([l (hash-table-get
+              (let ([l (hash-ref
                         (identifier-mapping-ht bi)
                         (identifier->symbol id) 
                         null)])
-                (hash-table-put!
+                (hash-set!
                  (identifier-mapping-ht bi)
                  (identifier->symbol id) 
                  (let loop ([l l])
@@ -61,11 +61,11 @@
           
           (define identifier-mapping-for-each
             (lambda (bi f)
-              (hash-table-for-each (identifier-mapping-ht bi)
-                                   (lambda (k v)
-                                     (for-each (lambda (i)
-                                                 (f (car i) (cdr i)))
-                                               v)))))
+              (hash-for-each (identifier-mapping-ht bi)
+                             (lambda (k v)
+                               (for-each (lambda (i)
+                                           (f (car i) (cdr i)))
+                                         v)))))
           
           (define identifier-mapping-map
             (lambda (bi f)
@@ -76,7 +76,7 @@
                    (set! r (cons (f k v) r))))
                 (reverse r))))
           
-          (provide (rename mk-identifier-mapping make-identifier-mapping))
+          (provide (rename-out [mk-identifier-mapping make-identifier-mapping]))
           (provide identifier-mapping?
 		   identifier-mapping-get
 		   identifier-mapping-put!
@@ -121,4 +121,4 @@
    module-identifier-mapping-put!
    module-identifier-mapping-for-each
    module-identifier-mapping-map
-   module-identifier=?))
+   free-identifier=?))

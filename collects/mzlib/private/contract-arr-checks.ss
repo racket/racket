@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (provide (all-defined-out))
-(require scheme/contract/private/guts)
+(require racket/contract/private/guts)
 
 (define empty-case-lambda/c
   (flat-named-contract '(case->)

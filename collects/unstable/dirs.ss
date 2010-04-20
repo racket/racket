@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Unstable library by: Carl Eastlund <cce@ccs.neu.edu>
-;; intended for use in scheme/contract, so don't try to add contracts!
+;; intended for use in racket/contract, so don't try to add contracts!
 
-(require scheme/dict
+(require racket/dict
          setup/path-relativize
          setup/dirs
          (only-in planet/config [CACHE-DIR find-planet-dir]))

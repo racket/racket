@@ -172,8 +172,8 @@ Not an exception in the above sense:
 (define (gen-kernstruct filename)
   (define preamble '(module kernstruct '#%kernel
                       (#%require (for-syntax '#%kernel))
-                      (#%require "define.ss")
-                      (#%require (for-syntax "struct-info.ss"))
+                      (#%require "define.rkt")
+                      (#%require (for-syntax "struct-info.rkt"))
                       
                       (#%provide (all-defined))))
   

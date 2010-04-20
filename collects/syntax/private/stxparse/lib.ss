@@ -1,15 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
 (require "sc.ss"
          "../util.ss"
          syntax/stx
-         scheme/struct-info
+         racket/struct-info
          unstable/srcloc
-         (for-syntax scheme/base
+         (for-syntax racket/base
                      "rep.ss"
                      (only-in "rep-data.ss" make-literalset))
-         (for-template scheme/base
-                       scheme/contract/base))
+         (for-template racket/base
+                       racket/contract/base))
 
 (provide identifier
          boolean

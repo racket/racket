@@ -4,13 +4,13 @@
 	   mzlib/etc
 	   mzlib/list
            ;; core [de]serializer:
-           scheme/private/serialize)
+           racket/private/serialize)
 
   (provide define-serializable-struct
 	   define-serializable-struct/versions
 
            ;; core [de]serializer:
-           (all-from scheme/private/serialize))
+           (all-from racket/private/serialize))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; define-serializable-struct

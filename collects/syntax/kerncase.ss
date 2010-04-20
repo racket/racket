@@ -1,7 +1,7 @@
 
-(module kerncase scheme/base
-  (require (for-syntax scheme/base)
-           (for-template scheme/base))
+(module kerncase racket/base
+  (require (for-syntax racket/base)
+           (for-template racket/base))
 
   (define-syntax kernel-syntax-case-internal
     (lambda (stx)
