@@ -7,7 +7,7 @@
  (only-in scheme/list cons? take drop add-between last filter-map)
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
- (only-in scheme/match/runtime match:error)
+ (only-in racket/match/runtime match:error)
  scheme/promise
  string-constants/string-constant
  ;(prefix-in ce: test-engine/scheme-tests)

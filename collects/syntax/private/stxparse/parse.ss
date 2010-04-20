@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (for-syntax scheme/base
-                     scheme/private/sc
+                     racket/private/sc
                      syntax/stx
                      syntax/id-table
                      syntax/keyword

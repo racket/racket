@@ -1,7 +1,7 @@
 
 #lang scheme/base
 (require (for-syntax scheme/base)
-         (for-syntax scheme/private/struct-info)
+         (for-syntax racket/private/struct-info)
          scheme/list
          scheme/match
          unstable/struct

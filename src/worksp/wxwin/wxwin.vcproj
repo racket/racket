@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxwindow\contrib\wxxpm\libxpm.34b\lib,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxwindow\contrib\wxxpm\libxpm.34b\lib,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -110,7 +110,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxwindow\contrib\wxxpm\libxpm.34b\lib,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxwindow\contrib\wxxpm\libxpm.34b\lib,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"

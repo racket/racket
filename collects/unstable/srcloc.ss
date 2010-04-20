@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; Unstable library by: Carl Eastlund <cce@ccs.neu.edu>
 ;; intended for use in scheme/contract, so don't try to add contracts!

@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 (require "contract-arrow.ss"
-         scheme/contract/private/guts
-         scheme/private/class-internal
+         racket/contract/private/guts
+         racket/private/class-internal
          "contract-arr-checks.ss")
 
-(require (for-syntax scheme/base
-                     scheme/contract/private/helpers
+(require (for-syntax racket/base
+                     racket/contract/private/helpers
                      "contract-arr-obj-helpers.ss"))
 
 (provide mixin-contract

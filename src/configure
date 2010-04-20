@@ -577,7 +577,7 @@ PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
 ac_unique_file="PLT Scheme"
-ac_unique_file="mzscheme/src/bignum.c"
+ac_unique_file="racket/src/bignum.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -767,7 +767,7 @@ CXXFLAGS
 CCC
 CXXCPP
 XMKMF'
-ac_subdirs_all='mzscheme/gc/libatomic_ops
+ac_subdirs_all='racket/gc/libatomic_ops
 foreign/gcc/libffi
 wxcommon/jpeg
 wxxt/src/x/wbuild '
@@ -1818,7 +1818,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-ac_config_headers="$ac_config_headers mzscheme/mzconfig.h"
+ac_config_headers="$ac_config_headers racket/mzconfig.h"
 
 
 # Check whether --enable-gracket was given.
@@ -2213,7 +2213,7 @@ fi
 ###### Make sure GRacket is really there ######
 
 if test "${enable_gracket}" = "yes" ; then
-  if test ! -d $srcdir/mred ; then
+  if test ! -d $srcdir/gracket ; then
     enable_gracket=no
   fi
 fi
@@ -5850,7 +5850,7 @@ case $OS in
     ;;
   AIX)
     enable_cgcdefault="yes"
-    EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../mzscheme/include/racket.exp"
+    EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../racket/include/racket.exp"
     ;;
   FreeBSD)
     LIBS="$LIBS -rdynamic"
@@ -5931,7 +5931,7 @@ case $OS in
     if test "${enable_shared}" = "yes" ; then
       ar_libtool_no_undefined=" -no-undefined"
       LIBRACKET_DEP="libmzgc.la -liconv"
-      LIBGRACKET_DEP="../mzscheme/libmzgc.la ../mzscheme/libgracket.la"
+      LIBGRACKET_DEP="../racket/libmzgc.la ../racket/libgracket.la"
     fi
     EXE_SUFFIX=".exe"
     ;;
@@ -12018,7 +12018,7 @@ if test "${enable_shared}" = "yes" ; then
   if test "$INCLUDEDEP" = "-include" ; then
     plt_lib_version="\$(FWVERSION)"
   else
-    plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/mzscheme/src/schvers.h | cut -d '"' -f 2`
+    plt_lib_version=`grep " MZSCHEME_VERSION " ${srcdir}/racket/src/schvers.h | cut -d '"' -f 2`
   fi
 
   AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
@@ -12173,10 +12173,10 @@ mk_needed_dir()
 }
 
 makefiles="Makefile
-           mzscheme/Makefile
-             mzscheme/src/Makefile mzscheme/dynsrc/Makefile
-             mzscheme/gc/Makefile mzscheme/sgc/Makefile
-             mzscheme/gc2/Makefile"
+           racket/Makefile
+             racket/src/Makefile racket/dynsrc/Makefile
+             racket/gc/Makefile racket/sgc/Makefile
+             racket/gc2/Makefile"
 
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then
@@ -12185,7 +12185,7 @@ fi
 
 if test "${LIBATOM}" = "LIBATOM_USE" ; then
   ac_aux_dir=
-for ac_dir in mzscheme/gc/libatomic_ops  "$srcdir"/mzscheme/gc/libatomic_ops ; do
+for ac_dir in racket/gc/libatomic_ops  "$srcdir"/racket/gc/libatomic_ops ; do
   if test -f "$ac_dir/install-sh"; then
     ac_aux_dir=$ac_dir
     ac_install_sh="$ac_aux_dir/install-sh -c"
@@ -12201,8 +12201,8 @@ for ac_dir in mzscheme/gc/libatomic_ops  "$srcdir"/mzscheme/gc/libatomic_ops ; d
   fi
 done
 if test -z "$ac_aux_dir"; then
-  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in mzscheme/gc/libatomic_ops  \"$srcdir\"/mzscheme/gc/libatomic_ops " >&5
-echo "$as_me: error: cannot find install-sh or install.sh in mzscheme/gc/libatomic_ops  \"$srcdir\"/mzscheme/gc/libatomic_ops " >&2;}
+  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in racket/gc/libatomic_ops  \"$srcdir\"/racket/gc/libatomic_ops " >&5
+echo "$as_me: error: cannot find install-sh or install.sh in racket/gc/libatomic_ops  \"$srcdir\"/racket/gc/libatomic_ops " >&2;}
    { (exit 1); exit 1; }; }
 fi
 
@@ -12215,7 +12215,7 @@ ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
 ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
-  subdirs="$subdirs mzscheme/gc/libatomic_ops"
+  subdirs="$subdirs racket/gc/libatomic_ops"
 
 fi
 
@@ -12281,9 +12281,9 @@ if test "${enable_gracket}" = "yes" ; then
   fi
 
   makefiles="$makefiles
-             mred/Makefile
-               mred/wxs/Makefile
-               mred/gc2/Makefile"
+             gracket/Makefile
+               gracket/wxs/Makefile
+               gracket/gc2/Makefile"
 
   if test "${enable_libpng}" != "yes" ; then
     makefiles="$makefiles
@@ -12927,7 +12927,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "mzscheme/mzconfig.h") CONFIG_HEADERS="$CONFIG_HEADERS mzscheme/mzconfig.h" ;;
+    "racket/mzconfig.h") CONFIG_HEADERS="$CONFIG_HEADERS racket/mzconfig.h" ;;
     "$makefiles") CONFIG_FILES="$CONFIG_FILES $makefiles" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5

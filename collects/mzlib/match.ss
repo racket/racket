@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/match/legacy-match)
-(provide (all-from-out scheme/match/legacy-match))
+(require racket/match/legacy-match)
+(provide (all-from-out racket/match/legacy-match))

@@ -1,5 +1,5 @@
 ; Don't change this module to #lang, since it's used by syntax/module-reader
-(module readerr mzscheme
+(module readerr racket/private/base
   (provide raise-read-error
 	   raise-read-eof-error)
 

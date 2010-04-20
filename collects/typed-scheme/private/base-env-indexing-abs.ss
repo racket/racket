@@ -12,7 +12,7 @@
  (only-in '#%kernel [apply kernel:apply])
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
- (only-in scheme/match/runtime match:error matchable? match-equality-test)
+ (only-in racket/match/runtime match:error matchable? match-equality-test)
  (for-template scheme) 
  (rename-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Nat -Nat*]))
 

@@ -6,7 +6,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MzCOM", "MzCOM.vcproj", "{3
 		{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90} = {A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmzsch", "..\libmzsch\libmzsch.vcproj", "{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libracket", "..\libracket\libracket.vcproj", "{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}"
 	ProjectSection(ProjectDependencies) = postProject
 		{66548E7B-294E-40EF-B7C0-C8D6D7E6234F} = {66548E7B-294E-40EF-B7C0-C8D6D7E6234F}
 	EndProjectSection

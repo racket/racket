@@ -1,8 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base)
-         mzlib/etc
-         scheme/contract/base
+(require (for-syntax racket/base)
+         racket/contract/base
          mzlib/list
          "private/port.ss")
 
@@ -118,13 +117,13 @@
 ;;  0 always (which implies that the `read' proc must not return
 ;;  a pipe input port).
 (define make-input-port/read-to-peek
-  (opt-lambda (name read fast-peek close
-                    [location-proc #f]
-                    [count-lines!-proc void]
-                    [init-position 1]
-                    [buffer-mode-proc #f]
-                    [buffering? #f]
-                    [on-consumed #f])
+  (lambda (name read fast-peek close
+                [location-proc #f]
+                [count-lines!-proc void]
+                [init-position 1]
+                [buffer-mode-proc #f]
+                [buffering? #f]
+                [on-consumed #f])
     (define lock-semaphore (make-semaphore 1))
     (define commit-semaphore (make-semaphore 1))
     (define-values (peeked-r peeked-w) (make-pipe))
@@ -440,7 +439,7 @@
              (buffer-mode-proc mode)])))))
 
 (define peeking-input-port
-  (opt-lambda (orig-in [name (object-name orig-in)] [delta 0])
+  (lambda (orig-in [name (object-name orig-in)] [delta 0])
     (make-input-port/read-to-peek
      name
      (lambda (s)
@@ -452,11 +451,11 @@
      void)))
 
 (define relocate-input-port
-  (opt-lambda (p line col pos [close? #t])
+  (lambda (p line col pos [close? #t])
     (transplant-to-relocate transplant-input-port p line col pos close?)))
 
 (define transplant-input-port
-  (opt-lambda (p location-proc pos [close? #t] [count-lines!-proc void])
+  (lambda (p location-proc pos [close? #t] [count-lines!-proc void])
     (make-input-port
      (object-name p)
      (lambda (s)
@@ -486,7 +485,7 @@
   ;; thread when write evts are active; otherwise, we use a lock semaphore.
   ;; (Actually, the lock semaphore has to be used all the time, to guard
   ;; the flag indicating whether the manager thread is running.)
-  (opt-lambda ([limit (expt 2 64)] [in-name 'pipe] [out-name 'pipe])
+  (lambda ([limit (expt 2 64)] [in-name 'pipe] [out-name 'pipe])
     (let-values ([(r w) (make-pipe limit)]
                  [(more) null]
                  [(more-last) #f]
@@ -724,7 +723,7 @@
       (values in out))))
 
 (define input-port-append
-  (opt-lambda (close-orig? . ports)
+  (lambda (close-orig? . ports)
     (make-input-port
      (map object-name ports)
      (lambda (str)
@@ -815,7 +814,7 @@
             (loop half skip)))))))
 
 (define make-limited-input-port
-  (opt-lambda (port limit [close-orig? #t])
+  (lambda (port limit [close-orig? #t])
     (let ([got 0])
       (make-input-port
        (object-name port)
@@ -1208,13 +1207,13 @@
               (loop (add1 i) (add1 j))]))))]))
 
 (define reencode-input-port
-  (opt-lambda (port encoding [error-bytes #f] [close? #f]
-                    [name (object-name port)]
-                    [newline-convert? #f]
-                    [decode-error (lambda (msg port)
-                                    (error 'reencode-input-port
-                                           (format "~a: ~e" msg)
-                                           port))])
+  (lambda (port encoding [error-bytes #f] [close? #f]
+                [name (object-name port)]
+                [newline-convert? #f]
+                [decode-error (lambda (msg port)
+                                (error 'reencode-input-port
+                                       (format "~a: ~e" msg)
+                                       port))])
     (let ([c (let ([c (bytes-open-converter encoding "UTF-8")])
                (if newline-convert? (mcons c #f) c))]
           [ready-bytes (make-bytes 1024)]
@@ -1345,13 +1344,13 @@
 ;; --------------------------------------------------
 
 (define reencode-output-port
-  (opt-lambda (port encoding [error-bytes #f] [close? #f]
-                    [name (object-name port)]
-                    [convert-newlines-to #f]
-                    [decode-error (lambda (msg port)
-                                    (error 'reencode-input-port
-                                           (format "~a: ~e" msg)
-                                           port))])
+  (lambda (port encoding [error-bytes #f] [close? #f]
+                [name (object-name port)]
+                [convert-newlines-to #f]
+                [decode-error (lambda (msg port)
+                                (error 'reencode-input-port
+                                       (format "~a: ~e" msg)
+                                       port))])
     (let ([c (bytes-open-converter "UTF-8" encoding)]
           [ready-bytes (make-bytes 1024)]
           [ready-start 0]
@@ -1664,7 +1663,7 @@
 ;; ----------------------------------------
 
 (define dup-output-port
-  (opt-lambda (p [close? #f])
+  (lambda (p [close? #f])
     (let ([new (transplant-output-port
                 p
                 (lambda () (port-next-location p))
@@ -1677,7 +1676,7 @@
       new)))
 
 (define dup-input-port
-  (opt-lambda (p [close? #f])
+  (lambda (p [close? #f])
     (let ([new (transplant-input-port
                 p
                 (lambda () (port-next-location p))

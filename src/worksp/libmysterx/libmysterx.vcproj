@@ -71,7 +71,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain_ss.dll"
 				LinkIncremental="0"
 				SuppressStartupBanner="true"
@@ -166,7 +166,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mscoree.lib mzdyn.obj"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libracketxxxxxxx.lib mscoree.lib mzdyn.obj"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain_ss.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -260,7 +260,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
+				AdditionalDependencies="htmlhelp.lib libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\mxmain_ss.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -355,7 +355,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="htmlhelp.lib libmzsch3mxxxxxxx.lib mzdyn3m.obj"
+				AdditionalDependencies="htmlhelp.lib libracket3mxxxxxxx.lib mzdyn3m.obj"
 				OutputFile="..\..\..\collects\mysterx\private\compiled\native\win32\i386\3m\mxmain_ss.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

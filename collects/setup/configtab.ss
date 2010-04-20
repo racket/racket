@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 ;; Defines a language to be used by the "config.ss" file
 
-(require scheme/promise
-         (for-syntax scheme/base))
+(require racket/promise
+         (for-syntax racket/base))
 
 (provide (rename-out [config-module-begin #%module-begin])
          define

@@ -18,7 +18,7 @@
                          (and 
                          (and (len . < . (bytes-length s))
                                 (bytes=? p (subbytes s 0 len))) 
-                           (let ([ext (let ([m (regexp-match #rx#"([.][a-z]+)?[.](ss|sls)$" 
+                           (let ([ext (let ([m (regexp-match #rx#"([.][a-z]+)?[.](rkt|ss|sls)$" 
                                                              (subbytes s len))])
                                         (and m 
                                              (or (not (cadr m))
@@ -37,7 +37,7 @@
                                               ext)))))))))
                      files))]
                   [versions
-                   (let* ([eo '(#".mzscheme.ss" #".mzscheme.sls" #".ss" #".sls")]
+                   (let* ([eo '(#".mzscheme.ss" #".mzscheme.sls" #".ss" #".sls" #".rkt")]
                           [ext< (lambda (a b)
                                   (> (length (member a eo)) (length (member b eo))))])
                    (sort candidate-versions

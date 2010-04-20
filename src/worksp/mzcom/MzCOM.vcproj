@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\include,."
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,GC_DLL"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -67,7 +67,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib"
 				OutputFile="..\..\..\$(ProjectName)CGC.exe"
 				SuppressStartupBanner="true"
@@ -132,7 +132,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\include,."
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -157,7 +157,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzschxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib"
 				OutputFile="..\..\..\$(ProjectName)CGC.exe"
 				LinkIncremental="1"
@@ -223,7 +223,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\include,."
+				AdditionalIncludeDirectories="..,..\..\racket\include,."
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,GC_DLL,MZCOM_3M"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -249,8 +249,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkLibraryDependencies="false"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libmzsch3mxxxxxxx.dll"
-				AdditionalDependencies="delayimp.lib ..\..\..\lib\msvc\libmzsch3mxxxxxxx.lib"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracket3mxxxxxxx.dll"
+				AdditionalDependencies="delayimp.lib ..\..\..\lib\msvc\libracket3mxxxxxxx.lib"
 				OutputFile="..\..\..\$(ProjectName).exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

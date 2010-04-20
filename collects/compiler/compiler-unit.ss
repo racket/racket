@@ -173,7 +173,7 @@
                                                  (bytes=? (subbytes b 0 len) skip-path)))
                                           -inf.0))])
         (let* ([sses (append
-                      ;; Find all .ss/.scm files:
+                      ;; Find all .rkt/.ss/.scm files:
                       (filter extract-base-filename/ss (directory-list))
                       ;; Add specified doc sources:
                       (if skip-docs?

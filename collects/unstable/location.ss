@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require unstable/srcloc
-         (for-syntax scheme/base
+         (for-syntax racket/base
                      unstable/srcloc
                      unstable/dirs))
 

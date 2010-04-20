@@ -4,7 +4,7 @@
 (Section 'basic)
 
 (require scheme/flonum
-         scheme/private/norm-arity)
+         racket/private/norm-arity)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

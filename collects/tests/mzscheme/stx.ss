@@ -479,7 +479,7 @@
 
 (test '('#%kernel case-lambda (lib "scheme/init") case-lambda 0 0 0)
       identifier-binding* #'case-lambda)
-(test '("private/promise.ss" delay* (lib "scheme/init") delay 0 0 0)
+(test '("private/promise.rkt" delay* (lib "scheme/init") delay 0 0 0)
       identifier-binding* #'delay)
 (test '('#%kernel #%module-begin (lib "scheme/init") #%plain-module-begin 0 0 0)
       identifier-binding* #'#%plain-module-begin)

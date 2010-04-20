@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "dirs.ss" "path-relativize.ss")
 
 (provide path->main-collects-relative

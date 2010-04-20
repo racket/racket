@@ -1,4 +1,4 @@
 
-(module name scheme/base
-  (require scheme/private/name)
+(module name racket/base
+  (require racket/private/name)
   (provide syntax-local-infer-name))

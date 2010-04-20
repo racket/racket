@@ -15,7 +15,7 @@
 #include "../../../wxcommon/Region.h"
 #include "wx_pdf.h"
 #include "wx_graphics.h"
-#include "../../../mzscheme/include/scheme.h"
+#include "../../../racket/include/scheme.h"
 
 #include "../../../wxcommon/wxGLConfig.h"
 

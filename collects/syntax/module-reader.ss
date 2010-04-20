@@ -1,12 +1,11 @@
-(module module-reader scheme/base
-  (require syntax/readerr)
+(module module-reader racket/private/base
+  (require syntax/readerr
+           (for-syntax racket/private/base))
 
   (provide (rename-out [provide-module-reader #%module-begin]
                        [wrap wrap-read-all])
            make-meta-reader
-           (except-out (all-from-out scheme/base) #%module-begin))
-
-  (require (for-syntax scheme/base))
+           (except-out (all-from-out racket/private/base) #%module-begin))
 
   (define ar? procedure-arity-includes?)
 

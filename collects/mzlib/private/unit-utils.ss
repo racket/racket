@@ -4,7 +4,7 @@
                      syntax/boundmap
                      "unit-compiletime.ss"
                      "unit-syntax.ss")
-         scheme/contract/base)
+         racket/contract/base)
 
 (provide (for-syntax build-key
                      check-duplicate-sigs

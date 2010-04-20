@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 #|
 
@@ -8,8 +8,8 @@ Use syntax/modcollapse instead.
 
 |#
 
-(require scheme/string
-         scheme/list
+(require racket/string
+         racket/list
          "modhelp.ss")
 
 (define (collapse-module-path s relto-mp)

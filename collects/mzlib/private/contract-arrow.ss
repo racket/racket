@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/contract/private/guts
-         scheme/contract/private/opt
+(require racket/contract/private/guts
+         racket/contract/private/opt
          "contract-arr-checks.ss")
-(require (for-syntax scheme/base)
-         (for-syntax scheme/contract/private/opt-guts)
-         (for-syntax scheme/contract/private/helpers)
+(require (for-syntax racket/base)
+         (for-syntax racket/contract/private/opt-guts)
+         (for-syntax racket/contract/private/helpers)
          (for-syntax "contract-arr-obj-helpers.ss")
          (for-syntax syntax/stx)
          (for-syntax syntax/name))

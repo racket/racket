@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 ;; owner: ryanc
 (require syntax/kerncase
          syntax/stx
          unstable/struct
-         (for-syntax scheme/base
-                     scheme/private/sc)
-         (for-template scheme/base))
+         (for-syntax racket/base
+                     racket/private/sc)
+         (for-template racket/base))
 
 (provide unwrap-syntax
 

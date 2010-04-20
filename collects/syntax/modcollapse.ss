@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/contract/base
+(require racket/contract/base
          "private/modcollapse-noctc.ss")
 
 (define simple-rel-to-module-path-v/c

@@ -106,7 +106,7 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
-				RelativePath="..\..\mzscheme\dynsrc\start.c"
+				RelativePath="..\..\racket\dynsrc\start.c"
 				>
 			</File>
 			<File

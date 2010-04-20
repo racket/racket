@@ -22,7 +22,7 @@
 #include "wximgfil.h"
 #include "wximgxbm.h"
 
-#include "../../../mzscheme/include/scheme.h"
+#include "../../../racket/include/scheme.h"
 
 // Resource counting
 #if 0

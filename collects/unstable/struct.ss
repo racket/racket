@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 ;; owner: ryanc
-(require (for-syntax scheme/base
-                     scheme/struct-info))
+(require (for-syntax racket/base
+                     racket/struct-info))
 (provide make
          struct->list
          (for-syntax get-struct-info))
