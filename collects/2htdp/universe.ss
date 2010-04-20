@@ -179,7 +179,7 @@
                    [(V) (set! rec? #'V)]
                    [_ (err '#'record? stx)])))]
             [args 
-             (->args 'big-bang stx (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
+             (->args 'big-bang stx (syntax w) (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
        #`(let* ([esp (make-eventspace)]
                 [thd (eventspace-handler-thread esp)])
            (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
@@ -276,7 +276,7 @@
     [(universe u) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u bind ...)
      (let*
-         ([args (->args 'universe stx (syntax (bind ...)) AllSpec UniSpec void "universe")]
+         ([args (->args 'universe stx (syntax u) (syntax (bind ...)) AllSpec UniSpec void "universe")]
           [domain (map (compose syntax-e car) args)])
        (cond
          [(not (memq 'on-new domain))
