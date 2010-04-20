@@ -16,13 +16,6 @@
          (p/c [name c])))
 
 ;; this implements the sequence invariant described on the first page relating to Bot
-#;
-(define (lcombine l1 l2)
-  (cond [(memq (make-LBot) l1)
-         (make-LFilterSet (list (make-LBot)) null)]
-        [(memq (make-LBot) l2)
-         (make-LFilterSet null (list (make-LBot)))]
-        [else (make-LFilterSet l1 l2)]))
 
 (define (combine l1 l2)
   (match* (l1 l2) 

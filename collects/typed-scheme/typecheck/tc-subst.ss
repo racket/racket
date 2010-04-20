@@ -17,14 +17,14 @@
          (p/c [name c])))
 
 (d/c/p (open-Result r objs)
-       (-> Result? (listof Object?) Result?)
-       (for/fold ([r r])
-         ([(o k) (in-indexed (in-list objs))])
-         (match r
-           [(Result: t fs old-obj)
-            (make-Result (subst-type t k o #t)
-                         (subst-filter-set t fs o #t)
-                         (subst-object t old-obj o #t))])))
+       (-> Result? (listof Object?) (values Type/c FilterSet? Object?))
+       (match r
+         [(Result: t fs old-obj)
+          (for/fold ([t t] [fs fs] [old-obj old-obj])
+            ([(o k) (in-indexed (in-list objs))])
+            (values (subst-type t k o #t)
+                    (subst-filter-set fs k o #t)
+                    (subst-object old-obj k o #t)))]))
 
 (d/c/p (subst-filter-set fs k o polarity)
        (-> FilterSet? integer? Object? boolean? FilterSet?)
