@@ -557,7 +557,8 @@
                             (define name (path->string rev-pth))
                             (define url (format "~a/" name))
                             (define rev (string->number name))
-                            (define log (read-cache (revision-commit-msg rev)))
+                            (define log-pth (revision-commit-msg rev))
+                            (define log (read-cache log-pth))
                             (define committer (svn-rev-log-author log))
                             (define commit-msg (string-first-line (svn-rev-log-msg log)))
                             (define title 
@@ -566,7 +567,7 @@
                                       commit-msg))
                             (define (no-rendering-row)
                               (define mtime 
-                                (file-or-directory-modify-seconds (build-path builds-pth rev-pth)))
+                                (file-or-directory-modify-seconds log-pth))
                               
                               `(tr ([class "dir"]
                                     [title ,title])
