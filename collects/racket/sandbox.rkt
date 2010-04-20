@@ -545,7 +545,7 @@
 (define (evaluate-program program limit-thunk uncovered!)
   (when uncovered!
     (parameterize ([current-code-inspector orig-code-inspector])
-      (eval `(,#'#%require scheme/private/sandbox-coverage))))
+      (eval `(,#'#%require racket/private/sandbox-coverage))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
                (identifier? #'mod)
