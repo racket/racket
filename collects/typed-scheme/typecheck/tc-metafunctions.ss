@@ -30,6 +30,9 @@
           [((Bot:) _) (-FS -bot -top)]
           [(_ _) (-FS l1 l2)]))
 
+(provide combine)
+
+
 (d/c/p (abstract-filters results)
      (tc-results? . -> . (or/c Values? ValuesDots?))     
      (match results
@@ -83,111 +86,7 @@
     [(list (FilterSet: f+ f-) ...)
      (make-FilterSet (make-AndFilter f+) (make-AndFilter f-))]))
 
-(d/c/p (apply-filter fs ids os [polarity #t])
-  (->* (FilterSet/c (listof identifier?) (listof Object?)) (boolean?) FilterSet/c)
-  (match fs
-    [(FilterSet: f+ f-)
-     (combine (subst-filter* f+ ids os polarity) 
-	      (subst-filter* f- ids os polarity))]))
 
-(d/c/p (apply-type t ids os [polarity #t])
-  (->* (Type/c (listof identifier?) (listof Object?)) (boolean?) Type/c)
-  (for/fold ([t t]) ([i (in-list ids)] [o (in-list os)])
-    (subst-type t i o polarity)))
-
-(d/c/p (apply-object t ids os [polarity #t])
-  (->* (Object? (listof identifier?) (listof Object?)) (boolean?) Object?)
-  (for/fold ([t t]) ([i (in-list ids)] [o (in-list os)])
-    (subst-object t i o polarity)))
-
-(define (subst-filter* f ids os polarity)
-  (-> Filter/c (listof identifier?) (listof Object?) boolean? Filter/c)
-  (for/fold ([f f]) ([i (in-list ids)] [o (in-list os)])
-    (subst-filter f i o polarity)))
-
-(d/c/p (subst-filter-set fs id o polarity)
-       (-> FilterSet? identifier? Object? boolean? FilterSet?)
-  (match fs
-    [(FilterSet: f+ f-)
-     (combine (subst-filter f+ id o polarity) 
-	      (subst-filter f- id o polarity))]))
-
-(define (subst-type t id o polarity)
-  (define (st t) (subst-type t id o polarity))
-  (d/c (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs id o polarity))
-  (type-case (#:Type st 
-	      #:Filter sf
-	      #:Object (lambda (f) (subst-object f id o polarity)))
-	      t))
-
-(define (subst-object t id o polarity)
-  (match t
-    [(NoObject:) t]
-    [(Empty:) t]
-    [(Path: p i)
-     (if (free-identifier=? i id)
-	 (match o
-	   [(Empty:) (make-Empty)]
-	   ;; the result is not from an annotation, so it isn't a NoObject
-	   [(NoObject:) (make-Empty)]
-	   [(Path: p* i*) (make-Path (append p p*) i*)])
-	 t)]))
-
-;; this is the substitution metafunction 
-(d/c/p (subst-filter f id o polarity)
-  (-> Filter/c identifier? Object? boolean? Filter/c)
-  (define (ap f) (subst-filter f o polarity))
-  (define (tf-matcher t p i id o polarity maker)
-    (match o
-      [(or (Empty:) (NoObject:)) (if polarity -top -bot)]
-      [(Path: p* i*)
-       (cond [(free-identifier=? i id)
-	      (maker
-	       (subst-type t id o polarity)
-	       (append p p*) 
-	       i*)]
-	     [(id-free-in? id t) (if polarity -top -bot)]
-	     [else f])]))
-  (match f
-    [(ImpFilter: ant consq)
-     (make-ImpFilter (subst-filter ant id o (not polarity)) (ap consq))]
-    [(AndFilter: fs) (make-AndFilter (map ap fs))]
-    [(OrFilter: fs) (make-OrFilter (map ap fs))]
-    [(Bot:) -bot]
-    [(Top:) -top]
-    [(TypeFilter: t p i)
-     (tf-matcher t p i id o polarity make-TypeFilter)]
-    [(NotTypeFilter: t p i)
-     (tf-matcher t p i id o polarity make-NotTypeFilter)]))
-
-(define (id-free-in? id type)
-  (let/ec 
-   return
-   (define (for-object o)
-     (object-case (#:Type for-type)
-		  o
-		  [#:Path p i
-			  (if (free-identifier=? i id)
-			      (return #t)
-			      o)]))
-   (define (for-filter o)
-     (filter-case (#:Type for-type
-		   #:Filter for-filter)
-		  o
-		  [#:NotTypeFilter t p i
-				   (if (free-identifier=? i id)
-				       (return #t)
-				       o)]
-		  [#:TypeFilter t p i
-				(if (free-identifier=? i id)
-				    (return #t)
-				    o)]))
-   (define (for-type t)
-     (type-case (#:Type for-type
-		 #:Filter for-filter
-		 #:Object for-object)
-		t))
-   (for-type type)))
 
 #|
 #;
@@ -253,7 +152,7 @@
   (match tc
     [(tc-results: ts) (-values ts)]))
 
-(provide combine-props tc-results->values subst-object subst-type)
+(provide combine-props tc-results->values)
 
 (define (combine-props new-props old-props)
   (define-values (new-atoms new-formulas) 

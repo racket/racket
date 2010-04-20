@@ -3,6 +3,7 @@
 (require (rename-in "../utils/utils.ss" [infer r:infer])
          "signatures.ss" "tc-metafunctions.ss"
          "tc-app-helper.ss" "find-annotation.ss"
+         "tc-subst.ss"
          syntax/parse scheme/match mzlib/trace scheme/list 
 	 unstable/sequence
          ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
@@ -731,7 +732,7 @@
   ;(printf "got to here 0~a~n" args-stx)
   (match* (ftype0 argtys)
     ;; we check that all kw args are optional
-    [((arr: dom (Values: (list (Result: t-r f-r o-r) ...)) rest #f (list (Keyword: _ _ #f) ...))
+    [((arr: dom (Values: (and results (list (Result: t-r f-r o-r) ...))) rest #f (and kws (list (Keyword: _ _ #f) ...)))
       (list (tc-result1: t-a phi-a o-a) ...))
      ;(printf "got to here 1~a~n" args-stx)
      (when check?
@@ -746,21 +747,16 @@
              [arg-t (in-list t-a)])
          (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
      ;(printf "got to here 2 ~a ~a ~a ~n" dom names o-a)
-     (let-values ([(names o-a)
-                   (for/lists (n o) ([(d nm) (in-indexed (in-list dom))]
-                                     [oa (in-list o-a)])
-                     (values nm oa))])
-       ;(printf "got to here 3~a~n" args-stx)
-       (let* (;; Listof[FilterSet]
-              [f-r (for/list ([f f-r])
-                     (apply-filter f names o-a))]
-              ;; Listof[Object]
-              [o-r (for/list ([o o-r])
-                     (apply-object o names o-a))]
-              ;; Listof[Type]
-              [t-r (for/list ([t t-r])
-                     (apply-type t names o-a))])
-         (ret t-r f-r o-r)))]
+     (let* ([dom-count (length dom)]
+            [arg-count (+ dom-count (if rest 1 0) (length kws))]
+            [o-a (for/list ([nm (in-range arg-count)]
+                            [oa (in-sequence-forever (in-list o-a) (make-Empty))])
+                   (if (>= nm dom-count) (make-Empty) oa))])
+       (define-values (t-r f-r o-r)
+         (for/lists (t-r f-r o-r) 
+           ([r (in-list results)])
+           (open-Result r o-a)))
+       (ret t-r f-r o-r))]
     [((arr: _ _ _ drest '()) _)
      (int-err "funapp with drest args NYI")]
     [((arr: _ _ _ _ kws) _)
