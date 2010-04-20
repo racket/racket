@@ -31,8 +31,8 @@
 			    "-UseDF" "-o" 
 			    (path->string
 			     (path-replace-suffix app #".rsrc.OSX"))))])
-    ; (rez-it "MzScheme") ; useless under OS X...
-    (rez-it "GRacket" "MrEd"))
+    ; (rez-it "Racket") ; useless under OS X...
+    (rez-it "GRacket" "GRacket"))
 
   ; make .app templates in the right places:
 
@@ -122,7 +122,7 @@
 
     (create-app (build-path (current-directory) (if for-3m? 'up 'same))
                 (string-append "GRacket" suffix)
-		"MrEd"
+		"GRacket"
 		"APPLmReD"
 		(make-info-plist (string-append "GRacket" suffix) "mReD" #t))
 

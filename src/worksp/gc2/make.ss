@@ -97,7 +97,7 @@
 				 (list->vector 
 				  (append
 				   (list "-u"
-					 "../../mzscheme/gc2/xform.ss"
+					 "../../racket/gc2/xform.ss"
 					 "--setup"
 					 ".")
 				   (if objdest
@@ -143,25 +143,25 @@
     (unless (system- (format "cl.exe ~a /MT /Zi ~a /c ~a /Fdxsrc/ /Fo~a" flags opt-flags c o))
       (error "failed compile"))))
 
-(define common-deps (list "../../mzscheme/gc2/xform.ss"
-			  "../../mzscheme/gc2/xform-mod.ss"))
+(define common-deps (list "../../racket/gc2/xform.ss"
+			  "../../racket/gc2/xform-mod.ss"))
 
 (define (find-obj f d) (format "../~a/release/~a.obj" d f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define mz-inc "/I ../../mzscheme/include /I .. ")
+(define mz-inc "/I ../../racket/include /I .. ")
 
-(try "precomp.c" (list* "../../mzscheme/src/schvers.h"
+(try "precomp.c" (list* "../../racket/src/schvers.h"
 			common-deps)
      "xsrc/precomp.h" #f 
-     (string-append mz-inc "/I ../../mzscheme/src")
+     (string-append mz-inc "/I ../../racket/src")
      #f "" "" #f #f)
 
 (for-each
  (lambda (x)
-   (try (format "../../mzscheme/src/~a.c" x)
-	(list* (format "../../mzscheme/src/~a.c" x)
+   (try (format "../../racket/src/~a.c" x)
+	(list* (format "../../racket/src/~a.c" x)
 	       common-deps)
 	(format "xsrc/~a.c" x)
 	(format "xsrc/~a.obj" x)
@@ -179,8 +179,8 @@
 	#f))
  srcs)
 
-(try "../../mzscheme/main.c"
-     (list* "../../mzscheme/main.c"
+(try "../../racket/main.c"
+     (list* "../../racket/main.c"
 	    common-deps)
      "xsrc/main.c"
      "xsrc/main.obj"
@@ -199,22 +199,22 @@
      (string-append
       mz-inc
       "/I../../foreign/libffi_msvc "
-      "/I../../mzscheme/src ")
+      "/I../../racket/src ")
      #f
      ""
      ""
      #f
      #f)
 
-(c-compile "../../mzscheme/gc2/gc2.c" "xsrc/gc2.obj"
+(c-compile "../../racket/gc2/gc2.c" "xsrc/gc2.obj"
            (append
 	    (list "../mzconfig.h")
-	    (map (lambda (f) (build-path "../../mzscheme/" f))
+	    (map (lambda (f) (build-path "../../racket/" f))
 		 '("include/scheme.h"
 		   "include/schthread.h"
 		   "src/schpriv.h"
 		   "src/stypes.h"))
-	    (map (lambda (f) (build-path "../../mzscheme/gc2/" f))
+	    (map (lambda (f) (build-path "../../racket/gc2/" f))
 		 '("gc2.c"
 		   "newgc.c"
 		   "vm_win.c"
@@ -229,7 +229,7 @@
 		"/D MZ_GC_BACKTRACE "
 		"")
 	    mz-inc))
-(c-compile "../../mzscheme/src/mzsj86.c" "xsrc/mzsj86.obj" '() mz-inc)
+(c-compile "../../racket/src/mzsj86.c" "xsrc/mzsj86.obj" '() mz-inc)
 
 (define dll "../../../lib/libracket3mxxxxxxx.dll")
 (define exe "../../../Racket.exe")
@@ -272,21 +272,21 @@
 				     ""))))
 	(error 'winmake "~a link failed" (if exe? "EXE" "DLL"))))))
 
-(c-compile "../mzscheme/uniplt.c"
+(c-compile "../racket/uniplt.c"
 	   "xsrc/uniplt.obj"
 	   null
 	   " -Dwx_msw")
 
 (let ([objs (list*
-	     "../libmzsch/Release/uniplt.obj"
+	     "../libracket/Release/uniplt.obj"
 	     "xsrc/gc2.obj"
 	     "xsrc/mzsj86.obj"
 	     "xsrc/foreign.obj"
-	     (find-obj "gmp" "libmzsch")
-	     (find-obj "ffi" "libmzsch")
-	     (find-obj "win32" "libmzsch")
-	     (find-obj "prep_cif" "libmzsch")
-	     (find-obj "types" "libmzsch")
+	     (find-obj "gmp" "libracket")
+	     (find-obj "ffi" "libracket")
+	     (find-obj "win32" "libracket")
+	     (find-obj "prep_cif" "libracket")
+	     (find-obj "types" "libracket")
 	     (map
 	      (lambda (n)
 		(format "xsrc/~a.obj" n))
@@ -301,10 +301,10 @@
 		    "rc /l 0x409  /I ../../wxwindow/include/msw /I ../../wxwindow/contrib/fafa "
 		    (format "/fo~a ~a" res rc)))))
 
-(check-rc "mzscheme.res" "../mzscheme/mzscheme.rc")
+(check-rc "racket.res" "../racket/racket.rc")
 
 (let ([objs (list
-	     "mzscheme.res"
+	     "racket.res"
 	     "xsrc/main.obj"
 	     "xsrc/uniplt.obj"
 	     "../../../lib/msvc/libracket3mxxxxxxx.lib")])
@@ -315,16 +315,16 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define wx-inc (string-append "/I ../../mzscheme/include "
+(define wx-inc (string-append "/I ../../racket/include "
 			      "/I .. "
-			      "/I ../../mzscheme/gc2 "
+			      "/I ../../racket/gc2 "
 			      "/I ../../wxwindow/include/msw "
 			      "/I ../../wxwindow/include/base "
-			      "/I ../../mred/wxme "
+			      "/I ../../gracket/wxme "
 			      "/I ../../wxwindow/contrib/wxxpm/libxpm.34b/lib "
 			      "/I ../../wxWindow/contrib/fafa "
 			      "/I ../../wxcommon/jpeg /I ../jpeg /I ../../wxcommon/zlib "))
-(try "wxprecomp.cxx" (list* "../../mzscheme/src/schvers.h" common-deps)
+(try "wxprecomp.cxx" (list* "../../racket/src/schvers.h" common-deps)
      "xsrc/wxprecomp.h" #f wx-inc #f "" "-DGC2_AS_IMPORT" #f #f)
 
 (define (wx-try base proj x use-precomp? suffix indirect?)
@@ -336,7 +336,7 @@
 	 (format "xsrc/~a.obj" x)
 	 wx-inc
 	 (and use-precomp? "xsrc/wxprecomp.h")
-	 "-DGC2_JUST_MACROS /FI../../../mzscheme/gc2/gc2.h"
+	 "-DGC2_JUST_MACROS /FI../../../racket/gc2/gc2.h"
 	 (string-append "-DGC2_AS_IMPORT"
 			(if backtrace-gc?
 			    " /D MZ_GC_BACKTRACE"
@@ -429,19 +429,19 @@
     "wxscheme"))
 
 (for-each (lambda (x)
-	    (wx-try "mred/wxs" "wxs" x #t "cxx" #f))
+	    (wx-try "gracket/wxs" "wxs" x #t "cxx" #f))
 	  wxs-srcs)
 
-(define mred-srcs
-  '("mred"
-    "mredmsw"))
+(define gracket-srcs
+  '("gracket"
+    "gracketmsw"))
 
 (for-each (lambda (x)
-	    (wx-try "mred" "libmred" x #t "cxx" #f))
-	  mred-srcs)
+	    (wx-try "gracket" "libgracket" x #t "cxx" #f))
+	  gracket-srcs)
 
 (wx-try "wxcommon" "wxme" "wxJPEG" #t "cxx" #f)
-(wx-try "mzscheme/utils" "wxme" "xcglue" #f "c" #f)
+(wx-try "racket/utils" "wxme" "xcglue" #f "c" #f)
 (c-compile "../../wxcommon/wxGC.cxx"
 	   "xsrc/wxGC.obj"
 	   null
@@ -458,7 +458,7 @@
 		     (append wxwin-base-srcs
 			     wxwin-msw-srcs
 			     wxs-srcs
-			     mred-srcs)))]
+			     gracket-srcs)))]
       [libs (list
 	     "../../../lib/msvc/libracket3mxxxxxxx.lib"
 	     "../wxutils/Release/wxutils.lib"
@@ -472,13 +472,13 @@
 		 "winmm.lib")])
   (link-dll (append objs libs) null win-libs "../../../lib/libgracket3mxxxxxxx.dll" "" #f))
 
-(wx-try "mred" "mred" "mrmain" #f "cxx" #t)
+(wx-try "gracket" "gracket" "grmain" #f "cxx" #t)
 
-(check-rc "mred.res" "../mred/mred.rc")
+(check-rc "gracket.res" "../gracket/gracket.rc")
 
 (let ([objs (list
-	     "mred.res"
-	     "xsrc/mrmain.obj"
+	     "gracket.res"
+	     "xsrc/grmain.obj"
 	     "xsrc/uniplt.obj"
 	     "../../../lib/msvc/libracket3mxxxxxxx.lib"
 	     "../../../lib/msvc/libgracket3mxxxxxxx.lib")])
@@ -489,8 +489,8 @@
 	      "delayimp.lib") 
 	    "../../../GRacket.exe" " /subsystem:windows" #t))
 
-(system- "cl.exe /MT /O2 /DMZ_PRECISE_GC /I../../mzscheme/include /I.. /c ../../mzscheme/dynsrc/mzdyn.c /Fomzdyn3m.obj")
-(system- "lib.exe -def:../../mzscheme/dynsrc/mzdyn.def -out:mzdyn3m.lib")
+(system- "cl.exe /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj")
+(system- "lib.exe -def:../../racket/dynsrc/mzdyn.def -out:mzdyn3m.lib")
 
 (define (copy-file/diff src dest)
   (unless (and (file-exists? dest)

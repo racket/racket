@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="libmzgc"
-	ProjectGUID="{66548E7B-294E-40EF-B7C0-C8D6D7E6234F}"
+	Name="Racket"
+	ProjectGUID="{EB7023C8-6D72-4DE4-ADFC-3913C4C70991}"
 	>
 	<Platforms>
 		<Platform
@@ -17,7 +17,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_BUILD;MD_LIB_MAIN;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32,_DEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -56,7 +56,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
+				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"
 			/>
 			<Tool
@@ -64,12 +64,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="unicows.lib delayimp.lib user32.lib"
+				OutputFile="..\..\..\RacketCGC.exe"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
+				SubSystem="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -94,13 +95,14 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;mkmzdynd.bat&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -126,8 +128,8 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32,NDEBUG,_CONSOLE,GC_DLL,_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -150,12 +152,14 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalDependencies="unicows.lib delayimp.lib user32.lib"
+				OutputFile="..\..\..\RacketCGC.exe"
+				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				ProgramDatabaseFile="..\..\..\RacketCGC.pdb"
+				SubSystem="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -180,6 +184,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;mkmzdyn.bat&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -188,90 +193,38 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
-				RelativePath="..\..\Racket\Gc\Allchblk.c"
+				RelativePath="..\..\Racket\Main.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Alloc.c"
+				RelativePath=".\racket.rc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Blacklst.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Dyn_load.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Finalize.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Headers.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mach_dep.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Malloc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mallocx.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mark.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mark_rts.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Misc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\New_hblk.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Obj_map.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Os_dep.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Reclaim.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Stubborn.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\win32_threads.c"
+				RelativePath="uniplt.c"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl"
+			Filter="h;hpp;hxx;hm;inl;fi;fd"
 			>
+			<File
+				RelativePath=".\resource.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
 			>
+			<File
+				RelativePath=".\racket.ico"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

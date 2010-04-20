@@ -65,7 +65,7 @@
 #endif
 
 #include "wx_rgn.h"
-#include "../mzscheme/include/scheme.h"
+#include "../racket/include/scheme.h"
 
 extern void *wxPostScriptDrawText(Scheme_Object *f, const char *fontname, 
                                   const char *text, int dt, Bool combine, int use16, 

@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="libmzgc"
-	ProjectGUID="{66548E7B-294E-40EF-B7C0-C8D6D7E6234F}"
+	Name="libmzsch"
+	ProjectGUID="{A6713577-7DFB-48F8-B8C1-7DB2D7C51F90}"
 	>
 	<Platforms>
 		<Platform
@@ -41,10 +41,11 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_BUILD;MD_LIB_MAIN;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,..\..\racket\src,..\..\foreign\libffi_msvc,$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
+				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -65,11 +66,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalDependencies="Unicows.lib WS2_32.lib Shell32.lib User32.lib"
+				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				BaseAddress="0x10400000"
+				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -123,11 +125,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/Oy-"
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
+				AdditionalIncludeDirectories="..,..\..\racket\include,..\..\racket\src,..\..\foreign\libffi_msvc,$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_DLL;__STDC__;LIBMZ_EXPORTS;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -151,11 +154,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalDependencies="Unicows.lib WS2_32.lib Shell32.lib User32.lib"
+				OutputFile="..\..\..\lib\libracketxxxxxxx.dll"
 				SuppressStartupBanner="true"
 				GenerateDebugInformation="true"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				BaseAddress="0x10400000"
+				ImportLibrary="..\..\..\lib\msvc\libracketxxxxxxx.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -191,75 +195,195 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\Racket\Gc\Allchblk.c"
+				RelativePath="..\..\Racket\Src\Bignum.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Alloc.c"
+				RelativePath="..\..\Racket\Src\Bool.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Blacklst.c"
+				RelativePath="..\..\Racket\Src\builtin.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Dyn_load.c"
+				RelativePath="..\..\Racket\Src\Char.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Finalize.c"
+				RelativePath="..\..\Racket\Src\Complex.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Headers.c"
+				RelativePath="..\..\Racket\Src\Dynext.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Mach_dep.c"
+				RelativePath="..\..\Racket\Src\Env.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Malloc.c"
+				RelativePath="..\..\Racket\Src\Error.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Mallocx.c"
+				RelativePath="..\..\Racket\Src\Eval.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Mark.c"
+				RelativePath="..\..\foreign\libffi_msvc\ffi.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Mark_rts.c"
+				RelativePath="..\..\Racket\Src\File.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Misc.c"
+				RelativePath="..\..\foreign\foreign.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\New_hblk.c"
+				RelativePath="..\..\Racket\Src\Fun.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Obj_map.c"
+				RelativePath="..\..\Racket\Src\Future.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Os_dep.c"
+				RelativePath="..\..\Racket\Src\gmp\gmp.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Reclaim.c"
+				RelativePath="..\..\Racket\Src\Hash.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Stubborn.c"
+				RelativePath="..\..\Racket\Src\jit.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\win32_threads.c"
+				RelativePath="..\..\Racket\Src\List.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\module.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\mzrt.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\mzsj86.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\network.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\numarith.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Number.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\numcomp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\numstr.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\places.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Port.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\portfun.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\foreign\libffi_msvc\prep_cif.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Print.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Rational.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Read.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Regexp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Salloc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Sema.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Setjmpup.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\String.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Struct.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\stxobj.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Symbol.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Syntax.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\thread.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\Type.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\foreign\libffi_msvc\types.c"
+				>
+			</File>
+			<File
+				RelativePath="..\racket\uniplt.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Racket\Src\vector.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\foreign\libffi_msvc\win32.c"
 				>
 			</File>
 		</Filter>

@@ -1,20 +1,27 @@
 //Microsoft Developer Studio generated resource script.
+
 //
+
 #include "resource.h"
 
+
+
 /////////////////////////////////////////////////////////////////////////////
-//
-// Icon
+
 //
 
+// Icon
+
+//
+
+
+
 // Icon with lowest ID value placed first to ensure application icon
+
 // remains consistent on all systems.
-#ifdef MRSTART
-APPLICATION             ICON    DISCARDABLE     "mrstart.ico"
-#endif
-#ifdef MZSTART
-APPLICATION             ICON    DISCARDABLE     "mzstart.ico"
-#endif
+
+APPLICATION             ICON    DISCARDABLE     "racket.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -39,26 +46,11 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "PLT Scheme Inc.\0"
-#ifdef MRSTART
-            VALUE "FileDescription", "Racket GUI Launcher\0"
-#endif
-#ifdef MZSTART
-            VALUE "FileDescription", "Racket Launcher\0"
-#endif
+            VALUE "FileDescription", "Racket application\0"
+            VALUE "InternalName", "Racket\0"
             VALUE "FileVersion", "4, 2, 5, 10\0"
-#ifdef MRSTART
-            VALUE "InternalName", "mrstart\0"
-#endif
-#ifdef MZSTART
-            VALUE "InternalName", "mzstart\0"
-#endif
-            VALUE "LegalCopyright", "Copyright © 1996-2010\0"
-#ifdef MRSTART
-            VALUE "OriginalFilename", "MrStart.exe\0"
-#endif
-#ifdef MZSTART
-            VALUE "OriginalFilename", "MzStart.exe\0"
-#endif
+            VALUE "LegalCopyright", "Copyright Å© 1995-2010\0"
+            VALUE "OriginalFilename", "racket.exe\0"
             VALUE "ProductName", "Racket\0"
             VALUE "ProductVersion", "4, 2, 5, 10\0"
         END

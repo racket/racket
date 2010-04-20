@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="libmzgc"
-	ProjectGUID="{66548E7B-294E-40EF-B7C0-C8D6D7E6234F}"
+	Name="GRacket"
+	ProjectGUID="{D59A2B28-330B-41F5-8261-F5BC1019E163}"
 	>
 	<Platforms>
 		<Platform
@@ -14,10 +14,10 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug"
-			ConfigurationType="2"
+			Name="Release|Win32"
+			OutputDirectory="Release"
+			IntermediateDirectory="Release"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
@@ -40,11 +40,14 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_BUILD;MD_LIB_MAIN;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\racket\include,..\..\racket\utils,..\..\wxwindow\contrib\fafa"
+				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
+				StringPooling="true"
+				RuntimeLibrary="0"
+				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -58,18 +61,22 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
+				AdditionalIncludeDirectories="..\..\wxwindow\include\msw;..\..\wxwindow\contrib\fafa"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libgracketxxxxxxx.dll"
+				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				OutputFile="..\..\..\GRacketCGC.exe"
+				LinkIncremental="1"
 				SuppressStartupBanner="true"
+				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="true"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
+				SubSystem="2"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -97,14 +104,13 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
-			ConfigurationType="2"
+			Name="Debug|Win32"
+			OutputDirectory="Debug"
+			IntermediateDirectory="Debug"
+			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
-			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -123,14 +129,11 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="true"
-				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
-				StringPooling="true"
-				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="true"
+				Optimization="0"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\racket\include,..\..\racket\utils,..\..\wxwindow\contrib\fafa"
+				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
@@ -144,18 +147,21 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
 				Culture="1033"
+				AdditionalIncludeDirectories="..\..\wxwindow\include\msw;..\..\wxwindow\contrib\fafa"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Unicows.lib User32.lib"
-				OutputFile="..\..\..\lib\$(ProjectName)xxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libgracketxxxxxxx.dll"
+				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
+				OutputFile="..\..\..\GRacketCGC.exe"
 				SuppressStartupBanner="true"
+				IgnoreDefaultLibraryNames="libcd.lib"
 				GenerateDebugInformation="true"
-				ImportLibrary="..\..\..\lib\msvc\$(ProjectName)xxxxxxx.lib"
+				ProgramDatabaseFile="..\..\..\GRacketCGC.pdb"
+				SubSystem="2"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -188,90 +194,70 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
-				RelativePath="..\..\Racket\Gc\Allchblk.c"
+				RelativePath=".\Gracket.rc"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Alloc.c"
+				RelativePath="..\..\gracket\grmain.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Racket\Gc\Blacklst.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Dyn_load.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Finalize.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Headers.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mach_dep.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Malloc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mallocx.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mark.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Mark_rts.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Misc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\New_hblk.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Obj_map.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Os_dep.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Reclaim.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\Stubborn.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Racket\Gc\win32_threads.c"
+				RelativePath="..\racket\uniplt.c"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl"
+			Filter="h;hpp;hxx;hm;inl;fi;fd"
 			>
+			<File
+				RelativePath="..\..\gracket\gracket.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\racket\utils\xcglue.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+			Filter="ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe"
 			>
+			<File
+				RelativePath=".\BULLSEYE.CUR"
+				>
+			</File>
+			<File
+				RelativePath=".\child.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\fafa.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\HAND.CUR"
+				>
+			</File>
+			<File
+				RelativePath=".\mdi.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\gracket.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\std.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\WATCH1.CUR"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
