@@ -197,9 +197,7 @@
                                          (lambda ()
                                            (define l (pth-cmd))
                                            (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))]
-                                                      ["HOME" (home-dir (current-worker))])
-                                             ; XXX Maybe this should destroy the old home and copy in a new one
-                                             ;     Otherwise it is a source of randomness
+                                                      ["HOME" (make-fresh-home-dir)])
                                              (with-temporary-directory
                                                  (run/collect/wait/log log-pth 
                                                                        #:timeout pth-timeout
@@ -234,14 +232,6 @@
    (build-path log-dir "src" "build" "set-browser.ss")
    mzscheme-path 
    (list "-t" (path->string* (build-path (drdr-directory) "set-browser.ss"))))
-  ; Make home directories
-  (cache/file/timestamp
-   (build-path rev-dir "homedir-dup")
-   (lambda ()
-     (notify! "Copying home directory for each worker")
-     (for ([i (in-range (number-of-cpus))])
-       (with-handlers ([exn:fail? void])
-         (copy-directory/files (hash-ref (current-env) "HOME") (home-dir i))))))
   ; And go
   (notify! "Starting testing")
   (test-directory collects-pth top-sema)
@@ -250,10 +240,11 @@
   (notify! "Stopping testing")
   (stop-job-queue! test-workers))
 
-(define (home-dir i)
-  (format "~a~a"
-          (hash-ref (current-env) "HOME")
-          i))
+(define (make-fresh-home-dir)
+  (define new-dir (make-temporary-file "home~a" 'directory))
+  (with-handlers ([exn:fail? void])
+    (copy-directory/files (hash-ref (current-env) "HOME") new-dir))
+  (path->string new-dir))
 
 (define (recur-many i r f)
   (if (zero? i)
