@@ -36,6 +36,7 @@ static void register_traversers(void);
 # endif
 
 static void *place_start_proc(void *arg);
+static void *place_start_proc_after_stack(void *data_arg, void *stack_base);
 
 # define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
@@ -608,6 +609,14 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_in_master(Scheme_Object *base
 
 static void *place_start_proc(void *data_arg) {
   void *stack_base;
+  void *rc;
+  stack_base = PROMPT_STACK(stack_base);
+  rc = place_start_proc_after_stack(data_arg, stack_base);
+  stack_base = NULL;
+  return rc;
+}
+  
+static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   Place_Start_Data *place_data;
   Scheme_Object *place_main;
   Scheme_Object *a[2], *channel;
@@ -615,7 +624,6 @@ static void *place_start_proc(void *data_arg) {
   long rc = 0;
   ptid = mz_proc_thread_self();
   
-  stack_base = PROMPT_STACK(stack_base);
   place_data = (Place_Start_Data *) data_arg;
   data_arg = NULL;
  
