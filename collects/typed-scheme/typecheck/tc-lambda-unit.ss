@@ -23,20 +23,24 @@
 
 (d-s/c lam-result ([args (listof (list/c identifier? Type/c))] 
                    [kws (listof (list/c keyword? identifier? Type/c boolean?))]
-                   [rest (or/c #f Type/c)]
-                   [drest (or/c #f (cons/c Type/c symbol?))]
+                   [rest (or/c #f (list/c identifier? Type/c))]
+                   [drest (or/c #f (list/c identifier? Type/c symbol?))]
                    [body tc-results?])
        #:transparent)
 
 (define (lam-result->type lr)
   (match lr
     [(struct lam-result ((list (list arg-ids arg-tys) ...) (list (list kw kw-id kw-ty req?) ...) rest drest body))
-     (make-arr 
-      arg-tys
-      (abstract-filters body)
-      #:kws (map make-Keyword kw kw-ty req?)
-      #:rest rest
-      #:drest drest)]))
+     (let ([arg-names (append arg-ids
+                              (if rest (list (car rest)) null)
+                              (if drest (list (car drest)) null)
+                              kw-id)])
+       (make-arr 
+        arg-tys
+        (abstract-results body arg-names)
+        #:kws (map make-Keyword kw kw-ty req?)
+        #:rest (if rest (second rest) #f)
+        #:drest (if drest (cdr drest) #f)))]))
 
 (define (expected-str tys-len rest-ty drest arg-len rest)
   (format "Expected function with ~a argument~a~a, but got function with ~a argument~a~a"

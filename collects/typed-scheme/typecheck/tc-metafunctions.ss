@@ -26,18 +26,19 @@
 (provide combine)
 
 
-(d/c/p (abstract-filters results)
-     (tc-results? . -> . (or/c Values? ValuesDots?))     
+(d/c/p (abstract-results results arg-names)
+     (tc-results? (listof identifier?) . -> . (or/c Values? ValuesDots?))
+     (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
      (match results
        [(tc-results: ts fs os dty dbound)
         (make-ValuesDots 
          (for/list ([t ts] [f fs] [o os])
-           (make-Result t f o))
+           (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o)))
          dty dbound)]
        [(tc-results: ts fs os)
         (make-Values
          (for/list ([t ts] [f fs] [o os])
-           (make-Result t f o)))]))
+           (make-Result t (abstract-filter arg-names keys f) (abstract-object arg-names keys o))))]))
 
 
 (d/c (abstract-object ids keys o)
@@ -59,14 +60,14 @@
      (combine (abo ids keys f+) (abo ids keys f-))]
     [(NoFilter:) (combine -top -top)]))
 
-(d/c (abo xs idxs f [inc 0])
+(d/c (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
   (define (lookup y)
-    (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) (+ inc i)))
+    (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i))
   (define-match-expander lookup:
     (syntax-rules ()
       [(_ i) (app lookup (? values i))]))
-  (define (rec f) (abo xs idxs f inc))
+  (define (rec f) (abo xs idxs f))
   (define (sb-t t) t)
   (filter-case (#:Type sb-t #:Filter rec) f
                [#:TypeFilter t p (lookup: idx)
@@ -81,56 +82,6 @@
 
 
 
-#|
-#;
-(define/contract (split-lfilters lf idx)  
-  (LatentFilterSet/c index/c . -> . LatentFilterSet/c)
-  (define (idx= lf)
-    (match lf
-      [(LBot:) #t]
-      [(LNotTypeFilter: _ _ idx*) (= idx* idx)]
-      [(LTypeFilter: _ _ idx*) (= idx* idx)]))
-  (match lf
-    [(LFilterSet: lf+ lf-)
-     (make-LFilterSet (filter idx= lf+) (filter idx= lf-))]))
-
-(define-match-expander T-FS:
-  (lambda (stx) #'(FilterSet: _ (list (Bot:)))))
-(define-match-expander F-FS:
-  (lambda (stx) #'(FilterSet: (list (Bot:)) _)))
-
-#;
-(d/c (combine-filter f1 f2 f3 t2 t3 o2 o3)
-  (FilterSet/c FilterSet/c FilterSet/c Type? Type? Object? Object? . -> . tc-results?)
-  (define (mk f) (ret (Un t2 t3) f (make-Empty)))
-  (match* (f1 f2 f3)
-    [((T-FS:) f _) (ret t2 f o2)]
-    [((F-FS:) _ f) (ret t3 f o3)]
-    ;; the student expansion
-    [(f (T-FS:) (F-FS:)) (mk f)]
-    ;; skipping the general or/predicate rule because it's really complicated
-    ;; or/predicate special case for one elem lists
-    ;; note that we are relying on equal? on identifiers here
-    [((FilterSet: (list (TypeFilter: t pi x)) (list (NotTypeFilter: t pi x)))
-      (T-FS:)
-      (FilterSet: (list (TypeFilter: s pi x)) (list (NotTypeFilter: s pi x))))
-     (mk (make-FilterSet (list (make-TypeFilter (Un t s) pi x)) (list (make-NotTypeFilter (Un t s) pi x))))]
-    ;; or
-    [((FilterSet: f1+ f1-) (T-FS:) (FilterSet: f3+ f3-)) (mk (combine null (append f1- f3-)))]
-    ;; and
-    [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) 
-     (mk (combine (append f1+ f2+)		  
-                  (append (for/list ([f f1-]
-                                     #:when (not (null? f2+)))
-			    (make-ImpFilter f2+ (list f)))
-			  (for/list ([f f2-]
-                                     #:when (not (null? f1+)))
-			    (make-ImpFilter f1+ (list f))))))]
-    [(f f* f*) (mk f*)]
-    [(_ _ _)
-     ;; could intersect f2 and f3 here
-     (mk (make-FilterSet null null))]))
-|#
 
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
 (d/c/p (values->tc-results tc)
