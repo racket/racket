@@ -54,7 +54,7 @@
                   (find-system-path 'run-file)
                   (car cmdline))
          #f])])
-  (fprintf (current-error-port) "Usage: rico <command> <option> ... <arg> ...\n\n")
+  (fprintf (current-error-port) "Usage: racket-tool <command> <option> ... <arg> ...\n\n")
   (fprintf (current-error-port) "~a commands:\n" (if show-all? 
                                                      "Available"
                                                      "Frequently used"))
@@ -72,7 +72,7 @@
                      (caddr i))))))
     (printf "\nA command can be specified by an unambigous prefix.")
     (unless show-all?
-      (printf "\nSee `rico --help' for a complete list of commands."))
-    (printf "\nSee `rico <command> --help' for help on a command.")
+      (printf "\nSee `racket-tool --help' for a complete list of commands."))
+    (printf "\nSee `racket-tool <command> --help' for help on a command.")
     (newline)
     (exit (if show-all? 0 1)))

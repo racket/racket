@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/cmdline
-         rico/command-name
+         tool/command-name
          compiler/zo-parse
          compiler/decompile
          scheme/pretty)

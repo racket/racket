@@ -36,7 +36,7 @@
    (lambda (renderer part ri)
      (let ([s (resolve-get part ri `(,which ,(auto-bib-key bib-entry)))])
        (list (make-link-element #f 
-                                (list s (auto-bib-specific bib-entry))
+                                (list (or s "???") (auto-bib-specific bib-entry))
                                 `(autobib ,(auto-bib-key bib-entry))))))
    (lambda () "(???)")
    (lambda () "(???)")))
