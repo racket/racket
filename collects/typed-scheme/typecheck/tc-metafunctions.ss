@@ -62,11 +62,13 @@
 
 (d/c (abo xs idxs f)
   ((listof identifier?) (listof name-ref/c) Filter/c . -> . Filter/c)
-  (define (lookup y)
-    (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i))
+  (d/c (lookup y)
+       (identifier? . -> . (or/c #f integer?))
+       (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i))
   (define-match-expander lookup:
     (syntax-rules ()
-      [(_ i) (app lookup (? values i))]))
+      [(_ i) (or (? identifier? (app lookup (? values i)))
+                 i)]))
   (define (rec f) (abo xs idxs f))
   (define (sb-t t) t)
   (filter-case (#:Type sb-t #:Filter rec) f
