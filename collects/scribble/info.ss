@@ -5,5 +5,5 @@
 (define compile-omit-paths '("test-reader.ss"))
 
 (define racket-tools
-  '(("scribble" scribble/run "render scribble" #f)))
+  '(("scribble" scribble/run "render a Scribble document" #f)))
 
