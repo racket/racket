@@ -31,8 +31,8 @@
 (define fluxbox-path
   (make-parameter "/usr/bin/fluxbox"))
 
-(define plt-repository 
-  (make-parameter "http://svn.plt-scheme.org/plt/trunk"))
+(define (plt-repository)
+  (build-path (plt-directory) "repo"))
 
 (define current-make-timeout-seconds
   (make-parameter (* 60 30)))
@@ -96,7 +96,7 @@
  [make-path (parameter/c string?)]
  [Xvfb-path (parameter/c string?)]
  [fluxbox-path (parameter/c string?)]
- [plt-repository (parameter/c string?)]
+ [plt-repository (-> path?)]
  [path-timing-log (path-string? . -> . path?)]
  [path-timing-png (path-string? . -> . path?)]
  [path-timing-png-prefix (path-string? . -> . path?)]

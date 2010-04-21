@@ -10,7 +10,7 @@
          "notify.ss"
          "path-utils.ss"
          "sema.ss"
-         "svn.ss")
+         "scm.ss")
 
 (define current-env (make-parameter (make-immutable-hash empty)))
 (define-syntax-rule (with-env ([env-expr val-expr] ...) expr ...)
@@ -43,18 +43,7 @@
                (path->string co-dir))]
        (notify! "Checking out ~a@~a into ~a"
                 repo rev to-dir)
-       (run/collect/wait/log
-        ; XXX Give it its own timeout
-        #:timeout (current-make-install-timeout-seconds)
-        #:env (current-env)
-        (build-path log-dir "svn-checkout")
-        (svn-path)
-        (list 
-         "checkout"
-         "--quiet"
-         "-r" (number->string rev)
-         repo
-         to-dir)))))
+       (scm-checkout rev repo to-dir))))
   ;; Make the build directory
   (make-directory* build-dir)
   ;; Run Configure, Make, Make Install
@@ -285,7 +274,7 @@
                   ["HOME" (path->string home-dir)])
          (unless (read-cache* (revision-commit-msg rev))
            (write-cache! (revision-commit-msg rev)
-                         (svn-revision-log rev (plt-repository))))
+                         (get-scm-commit-msg rev (plt-repository))))
          (build-revision rev)
          (recur-many (number-of-cpus)
                      (lambda (j inner)

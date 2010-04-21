@@ -1,30 +1,25 @@
 #lang scheme
-(require "svn.ss"
+(require "scm.ss"
          "retry.ss")
 
 (define current-monitoring-interval-seconds
   (make-parameter 60))
 
-(define (monitor-svn repos start-rev notify-newer! notify-user!)
+(define (monitor-scm repos start-rev notify-newer! notify-user!)
   (define (monitor-w/o-wait prev-rev)
-    (define all-logs
-      (svn-revision-logs-after prev-rev repos))
-    (define new-logs
-      (filter-not 
-       (lambda (l) (= (svn-rev-log-num l) prev-rev))
-       all-logs))
-    (match new-logs
+    (define new-revs
+      (scm-revisions-after prev-rev repos))
+    (match new-revs
       [(list)
        ; There has not yet been more revisions
        (monitor prev-rev)]
-      [(cons log newer)
-       (define new-rev (svn-rev-log-num log))
+      [(cons new-rev newer)
        ; Notify of newer ones
        (notify-newer! newer)
        ; There was a commit that we care about. Notify, then recur
        (retry-until-success
         (format "Notifying of revision ~a" new-rev)
-        (notify-user! prev-rev new-rev log))       
+        (notify-user! prev-rev new-rev))       
        (monitor new-rev)]))
   (define (monitor prev-rev)
     (sleep (current-monitoring-interval-seconds))
@@ -34,8 +29,8 @@
 (provide/contract
  [current-monitoring-interval-seconds 
   (parameter/c exact-nonnegative-integer?)]
- [monitor-svn 
+ [monitor-scm
   (string? exact-nonnegative-integer? 
-           ((listof svn-rev-log?) . -> . void)
-           (exact-nonnegative-integer? exact-nonnegative-integer? svn-rev-log? . -> . void)
+           ((listof exact-nonnegative-integer?) . -> . void)
+           (exact-nonnegative-integer? exact-nonnegative-integer? . -> . void)
            . -> . any)])

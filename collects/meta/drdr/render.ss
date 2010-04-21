@@ -5,12 +5,11 @@
          "config.ss"
          "diff.ss"
          "list-count.ss"
-         "svn.ss"
          "cache.ss"
          (except-in "dirstruct.ss"
                     revision-trunk-dir)
          "status.ss"
-         "monitor-svn.ss"
+         "monitor-scm.ss"
          (only-in "metadata.ss"
                   PROP:command-line
                   PROP:timeout)
@@ -489,7 +488,8 @@
 
 (require web-server/servlet-env
          web-server/http
-         web-server/dispatch)
+         web-server/dispatch
+         "scm.ss")
 (define how-many-revs 45)
 (define (show-revisions req)
   (define builds-pth (plt-build-directory))

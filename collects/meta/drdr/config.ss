@@ -2,12 +2,12 @@
 
 (require "cache.ss"
          "dirstruct.ss"
-         "svn.ss"
-         "monitor-svn.ss")
+         "scm.ss"
+         "monitor-scm.ss")
 
 (plt-directory "/opt/plt")
 (drdr-directory "/opt/svn/drdr")
-(svn-path "/usr/bin/svn")
+(git-path "/usr/bin/git")
 (Xvfb-path "/usr/bin/Xvfb")
 (current-make-install-timeout-seconds (* 60 60))
 (current-make-timeout-seconds (* 60 60))                                       

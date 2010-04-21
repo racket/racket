@@ -1,7 +1,7 @@
 #lang scheme
 (require scheme/file
          "diff.ss"
-         "svn.ss"
+         "scm.ss"
          "list-count.ss"
          "notify.ss"
          "cache.ss"
