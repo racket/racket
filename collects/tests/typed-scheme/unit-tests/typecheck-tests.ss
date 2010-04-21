@@ -12,7 +12,6 @@
          (rename-in (types utils union convenience abbrev)
                     [Un t:Un]
                     [true-lfilter -true-lfilter]
-pecheck-tests.ss
                     [true-filter -true-filter]
                     [-> t:->])
          (utils tc-utils utils)
@@ -485,8 +484,8 @@ pecheck-tests.ss
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (t:-> Univ Univ : (-LFS (list (-not-filter (-val #f))) (list (-filter (-val #f)))) : (make-LPath null 0))]
-;                (make-pred-ty Univ Univ (-val #f) 0 null)]
+                ;(t:-> Univ Univ : (-FS (list (-not-filter (-val #f))) (list (-filter (-val #f)))) : (make-Path null 0))]
+                (make-pred-ty Univ Univ (-val #f) 0 null)]
         [tc-e/t (let* ([z (ann 1 : Any)]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
