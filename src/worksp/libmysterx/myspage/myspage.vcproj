@@ -74,7 +74,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
+				AdditionalDependencies="libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
 				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\..\..\lib\msvc"
@@ -173,7 +173,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
+				AdditionalDependencies="libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
 				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -275,7 +275,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libmzgcxxxxxxx.lib libmzschxxxxxxx.lib mzdyn.obj"
+				AdditionalDependencies="libmzgcxxxxxxx.lib libracketxxxxxxx.lib mzdyn.obj"
 				OutputFile="..\..\..\..\lib\$(ProjectName).dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

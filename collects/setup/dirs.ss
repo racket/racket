@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/promise
+(require racket/promise
          (prefix-in config: config)
          compiler/private/winutf16
          compiler/private/mach-o
@@ -184,7 +184,7 @@
          (cond
           [(not rel) #f] ; no framework reference found!?
           [(regexp-match
-            #rx#"^(@executable_path/)?(.*?)PLT_M(?:rEd|zScheme).framework"
+            #rx#"^(@executable_path/)?(.*?)G?Racket.framework"
             rel)
            => (lambda (m)
                 (let ([b (caddr m)])

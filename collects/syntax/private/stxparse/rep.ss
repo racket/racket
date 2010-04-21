@@ -1,9 +1,9 @@
-#lang scheme/base
-(require (for-template scheme/base)
+#lang racket/base
+(require (for-template racket/base)
          (for-template "runtime.ss")
-         scheme/contract/base
+         racket/contract/base
          "minimatch.ss"
-         scheme/dict
+         racket/dict
          syntax/id-table
          syntax/stx
          syntax/keyword

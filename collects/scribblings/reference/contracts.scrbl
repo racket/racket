@@ -17,11 +17,11 @@ another. Programmers specify the behavior of a module exports via
 @scheme[provide/contract] and the contract system enforces those
 constraints.
 
-@note-lib[scheme/contract #:use-sources (scheme/contract/private/ds
-                                         scheme/contract/private/base
-                                         scheme/contract/private/guts
-                                         scheme/contract/private/misc
-                                         scheme/contract/private/provide)]
+@note-lib[scheme/contract #:use-sources (racket/contract/private/ds
+                                         racket/contract/private/base
+                                         racket/contract/private/guts
+                                         racket/contract/private/misc
+                                         racket/contract/private/provide)]
 
 @deftech{Contracts} come in two forms: those constructed by the
 various operations listed in this section of the manual, and various

@@ -53,6 +53,8 @@
   transform the clauses into the initial arguments specification 
   for a new expression that instantiates the appropriate class
   
+  ensure that the initial state (state0) is not in the shape of a clause
+
   ensure that all clauses mention only keywords specified in AllSpec or PartSpec
   move the contracts from AppSpecl and PartSpec to the clauses 
   
@@ -60,12 +62,13 @@
   
   if anything fails, use the legal keyword to specialize the error message
 |#
-(define (->args tag stx clauses AllSpec PartSpec ->rec? legal)
+(define (->args tag stx state0 clauses AllSpec PartSpec ->rec? legal)
   (define msg (format "not a legal clause in a ~a description" legal))
   (define Spec (append AllSpec PartSpec))
   (define kwds (map (compose (curry datum->syntax stx) car) Spec))
   (define spec (clauses-use-kwd (syntax->list clauses) ->rec? msg kwds))
   (duplicates? tag spec)
+  (not-a-clause tag stx state0 kwds)
   (map (lambda (x) 
          (define kw (car x))
          (define-values (key coercion)
@@ -77,6 +80,15 @@
                  (loop (cdr kwds) (cdr Spec)))))
          (list key (coercion (cdr x))))
        spec))
+
+;; Symbol Syntax Syntax [Listof Kw] -> true
+;; effect: if state0 looks like a clause, raise special error 
+(define (not-a-clause tag stx state0 kwds)
+  (syntax-case state0 ()
+    [(kw . E) 
+     ((->kwds-in kwds) #'kw) 
+     (raise-syntax-error tag "missing initial state" stx)]
+    [_ #t]))
 
 ;; Symbol [Listof kw] -> true
 ;; effect: raise syntax error about duplicated clause 

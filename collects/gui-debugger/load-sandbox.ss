@@ -2,7 +2,7 @@
   
   (require syntax/moddep
            mzlib/class
-           scheme/private/namespace
+           racket/private/namespace
            mred)  
   
   (provide eval/annotations

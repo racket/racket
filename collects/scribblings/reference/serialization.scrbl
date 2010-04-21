@@ -8,7 +8,7 @@
 
 @title[#:tag "serialization"]{Serialization}
 
-@note-lib-only[scheme/serialize #:use-sources (scheme/private/serialize)]
+@note-lib-only[scheme/serialize #:use-sources (racket/private/serialize)]
 
 @defproc[(serializable? [v any/c]) boolean?]{
 

@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\mzscheme\include,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\racket\include,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
@@ -110,7 +110,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\mzscheme\include,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..,..\..\racket\gc,..\..\racket\include,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\wxWindow\contrib\fafa,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -162,91 +162,91 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_BMAP.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_BMAP.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_BUTN.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_BUTN.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_CHCE.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_CHCE.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_CKBX.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_CKBX.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_CNVS.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_CNVS.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_DC.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_DC.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_EVNT.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_EVNT.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_FRAM.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_FRAM.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_GAGE.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_GAGE.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_GDI.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_GDI.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_GLOB.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_GLOB.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_ITEM.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_ITEM.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_LBOX.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_LBOX.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MENU.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_MENU.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_MISC.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_MISC.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_OBJ.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_OBJ.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_PANL.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_PANL.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_RADO.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_RADO.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_SLID.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_SLID.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_TABC.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_TABC.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXS_WIN.cxx"
+				RelativePath="..\..\gracket\Wxs\WXS_WIN.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\WXSCHEME.cxx"
+				RelativePath="..\..\gracket\Wxs\WXSCHEME.cxx"
 				>
 			</File>
 		</Filter>
@@ -255,87 +255,87 @@
 			Filter="h;hpp;hxx;hm;inl;fi;fd"
 			>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_bmap.h"
+				RelativePath="..\..\gracket\Wxs\wxs_bmap.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_butn.h"
+				RelativePath="..\..\gracket\Wxs\wxs_butn.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_chce.h"
+				RelativePath="..\..\gracket\Wxs\wxs_chce.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_ckbx.h"
+				RelativePath="..\..\gracket\Wxs\wxs_ckbx.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_cnvs.h"
+				RelativePath="..\..\gracket\Wxs\wxs_cnvs.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_dc.h"
+				RelativePath="..\..\gracket\Wxs\wxs_dc.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_evnt.h"
+				RelativePath="..\..\gracket\Wxs\wxs_evnt.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_fram.h"
+				RelativePath="..\..\gracket\Wxs\wxs_fram.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_gage.h"
+				RelativePath="..\..\gracket\Wxs\wxs_gage.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_gdi.h"
+				RelativePath="..\..\gracket\Wxs\wxs_gdi.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_glob.h"
+				RelativePath="..\..\gracket\Wxs\wxs_glob.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_item.h"
+				RelativePath="..\..\gracket\Wxs\wxs_item.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_lbox.h"
+				RelativePath="..\..\gracket\Wxs\wxs_lbox.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_misc.h"
+				RelativePath="..\..\gracket\Wxs\wxs_misc.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_obj.h"
+				RelativePath="..\..\gracket\Wxs\wxs_obj.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_panl.h"
+				RelativePath="..\..\gracket\Wxs\wxs_panl.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_rado.h"
+				RelativePath="..\..\gracket\Wxs\wxs_rado.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_slid.h"
+				RelativePath="..\..\gracket\Wxs\wxs_slid.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_text.h"
+				RelativePath="..\..\gracket\Wxs\wxs_text.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxs_win.h"
+				RelativePath="..\..\gracket\Wxs\wxs_win.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\mred\Wxs\wxscheme.h"
+				RelativePath="..\..\gracket\Wxs\wxscheme.h"
 				>
 			</File>
 		</Filter>

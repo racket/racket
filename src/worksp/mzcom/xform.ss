@@ -5,7 +5,7 @@
 (require mzlib/restart)
 
 (define cpp-flags "/D _CRT_SECURE_NO_DEPRECATE /D WIN32 /D _USE_DECLSPECS_FOR_SAL=0 /D _USE_ATTRIBUTES_FOR_SAL=0")
-(define includes "/I ../../mzscheme/include /I . /I .. /I ../../mzcom")
+(define includes "/I ../../racket/include /I . /I .. /I ../../mzcom")
 
 (define (xform src dest)
   (parameterize ([use-compiled-file-paths (list "compiled")])
@@ -13,7 +13,7 @@
                       (list->vector 
                        (append
                         (list "-u"
-                              "../../mzscheme/gc2/xform.ss"
+                              "../../racket/gc2/xform.ss"
                               "--setup"
 			      "../gc2"
                               "--indirect"

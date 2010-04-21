@@ -11,7 +11,7 @@
         (namespace-require '(for-syntax scheme/base))
         (namespace-require '(for-template scheme/base))
         (namespace-require 'scheme/contract)
-        (namespace-require '(only scheme/contract/private/arrow procedure-accepts-and-more?))
+        (namespace-require '(only racket/contract/private/arrow procedure-accepts-and-more?))
         (namespace-require 'scheme/class)
         (namespace-require 'scheme/promise))
       n))

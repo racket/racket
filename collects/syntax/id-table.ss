@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 (require (for-syntax scheme/base)
-         scheme/contract/base
-         scheme/dict
+         racket/contract/base
+         racket/dict
          "private/id-table.ss")
 #|
 (provide id-table-position?)

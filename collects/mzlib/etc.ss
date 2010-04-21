@@ -1,8 +1,8 @@
 #lang mzscheme
 
 (require setup/main-collects
-         scheme/local
-         scheme/bool
+         racket/local
+         racket/bool
          (only scheme/base
                build-string
                build-list

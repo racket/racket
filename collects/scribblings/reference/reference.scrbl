@@ -37,14 +37,14 @@ language.
 @defmodulelang*[(scheme/base scheme) 
                 ;; Use sources for overlap with `mzscheme':
                 #:use-sources ('#%kernel
-                               scheme/private/more-scheme
-                               scheme/private/misc
-                               scheme/private/qqstx
-                               scheme/private/stxcase-scheme
-                               scheme/private/letstx-scheme
-                               scheme/private/define
-                               scheme/private/stx
-                               scheme/private/map)]{
+                               racket/private/more-scheme
+                               racket/private/misc
+                               racket/private/qqstx
+                               racket/private/stxcase-scheme
+                               racket/private/letstx-scheme
+                               racket/private/define
+                               racket/private/stx
+                               racket/private/map)]{
 
 Unless otherwise noted, the bindings defined in this manual are
 exported by the @schememodname[scheme/base] and @schememodname[scheme]

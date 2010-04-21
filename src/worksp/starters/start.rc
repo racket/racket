@@ -40,10 +40,10 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "PLT Scheme Inc.\0"
 #ifdef MRSTART
-            VALUE "FileDescription", "PLT Scheme GUI Launcher\0"
+            VALUE "FileDescription", "Racket GUI Launcher\0"
 #endif
 #ifdef MZSTART
-            VALUE "FileDescription", "PLT Scheme Launcher\0"
+            VALUE "FileDescription", "Racket Launcher\0"
 #endif
             VALUE "FileVersion", "4, 2, 5, 10\0"
 #ifdef MRSTART
@@ -59,7 +59,7 @@ BEGIN
 #ifdef MZSTART
             VALUE "OriginalFilename", "MzStart.exe\0"
 #endif
-            VALUE "ProductName", "PLT Scheme\0"
+            VALUE "ProductName", "Racket\0"
             VALUE "ProductVersion", "4, 2, 5, 10\0"
         END
     END

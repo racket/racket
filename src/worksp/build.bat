@@ -1,7 +1,7 @@
-cd mzscheme
-devenv mzscheme.sln /Build Release
-cd ..\mred
-devenv mred.sln /Build Release
+cd racket
+devenv racket.sln /Build Release
+cd ..\gracket
+devenv gracket.sln /Build Release
 cd ..
 
 cd gc2

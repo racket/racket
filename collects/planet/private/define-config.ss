@@ -1,4 +1,5 @@
-(module define-config mzscheme
+(module define-config racket/base
+  (require (for-syntax racket/base))
 
   (provide define-parameters)
 

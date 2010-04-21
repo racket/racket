@@ -16,7 +16,7 @@
                      "private/unit-syntax.ss"))
   
 (require mzlib/etc
-         scheme/contract/base
+         racket/contract/base
          scheme/stxparam
          unstable/location
          "private/unit-contract.ss"

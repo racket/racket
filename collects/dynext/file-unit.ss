@@ -48,7 +48,7 @@
                      [else #f]))
              extract-base-filename)])
       (values
-       (mk 'extract-base-filename/ss #"ss|scm" "Scheme" #f)
+       (mk 'extract-base-filename/ss #"rkt|ss|scm" "Racket" #f)
        (mk 'extract-base-filename/c
            #"c|cc|cxx|cpp|c[+][+]|m" "C" ".c, .cc, .cxx, .cpp, .c++, or .m")
        (mk 'extract-base-filename/kp #"kp" "constant pool" ".kp")

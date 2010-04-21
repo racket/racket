@@ -1,0 +1,416 @@
+srcdir = @srcdir@
+builddir = @builddir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+libpltdir = @libpltdir@
+collectsdir = @collectsdir@
+
+# for version.mak:
+mainsrcdir = @srcdir@/../..
+@INCLUDEDEP@ @srcdir@/../version.mak
+
+CC = @CC@
+CPP = @CPP@
+CXX = @CXX@
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB = @RANLIB@
+
+MOST_CPPFLAGS = @PREFLAGS@ @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
+CPPFLAGS = -I$(builddir)/.. -I$(srcdir)/../include $(MOST_CPPFLAGS)
+CFLAGS = -I$(builddir)/.. -I$(srcdir)/../include @CFLAGS@ $(MOST_CPPFLAGS) @COMPFLAGS@ @PROFFLAGS@
+LIBS = @LIBS@
+
+ARLIBFLAGS = @LDFLAGS@ $(LIBS)
+
+DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
+
+XFORM_SETUP = ../racket@CGC@ -cqu $(srcdir)/xform.ss --setup .
+XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" @XFORMFLAGS@ -o
+XSRCDIR = xsrc
+XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
+SRCDIR = $(srcdir)/../src
+
+FOREIGN_USED_OBJ = foreign.@LTO@
+FOREIGN_NOT_USED_OBJ = 
+
+OBJS =  salloc.@LTO@ \
+	bignum.@LTO@ \
+	bool.@LTO@ \
+	builtin.@LTO@ \
+	char.@LTO@ \
+	complex.@LTO@ \
+	dynext.@LTO@ \
+	env.@LTO@ \
+	error.@LTO@ \
+	eval.@LTO@ \
+	file.@LTO@ \
+	fun.@LTO@ \
+	future.@LTO@ \
+	hash.@LTO@ \
+	jit.@LTO@ \
+	list.@LTO@ \
+	module.@LTO@ \
+	mzrt.@LTO@ \
+	network.@LTO@ \
+	numarith.@LTO@ \
+	number.@LTO@ \
+	numcomp.@LTO@ \
+	numstr.@LTO@ \
+	places.@LTO@ \
+	port.@LTO@ \
+	portfun.@LTO@ \
+	print.@LTO@ \
+	rational.@LTO@ \
+	read.@LTO@ \
+	regexp.@LTO@ \
+	sema.@LTO@ \
+	setjmpup.@LTO@ \
+	string.@LTO@ \
+	struct.@LTO@ \
+	stxobj.@LTO@ \
+	symbol.@LTO@ \
+	syntax.@LTO@ \
+	thread.@LTO@ \
+	type.@LTO@ \
+	vector.@LTO@ \
+	$(@FOREIGN_IF_USED@_OBJ)
+
+FOREIGN_USED_C = $(XSRCDIR)/foreign.c
+FOREIGN_NOT_USED_C =
+
+XSRCS = $(XSRCDIR)/salloc.c \
+	$(XSRCDIR)/bignum.c \
+	$(XSRCDIR)/bool.c \
+	$(XSRCDIR)/builtin.c \
+	$(XSRCDIR)/char.c \
+	$(XSRCDIR)/complex.c \
+	$(XSRCDIR)/dynext.c \
+	$(XSRCDIR)/env.c \
+	$(XSRCDIR)/error.c \
+	$(XSRCDIR)/eval.c \
+	$(XSRCDIR)/file.c \
+	$(XSRCDIR)/fun.c \
+	$(XSRCDIR)/future.c \
+	$(XSRCDIR)/hash.c \
+	$(XSRCDIR)/jit.c \
+	$(XSRCDIR)/list.c \
+	$(XSRCDIR)/module.c \
+	$(XSRCDIR)/network.c \
+	$(XSRCDIR)/numarith.c \
+	$(XSRCDIR)/numcomp.c \
+	$(XSRCDIR)/number.c \
+	$(XSRCDIR)/numstr.c \
+	$(XSRCDIR)/places.c \
+	$(XSRCDIR)/port.c \
+	$(XSRCDIR)/portfun.c \
+	$(XSRCDIR)/print.c \
+	$(XSRCDIR)/rational.c \
+	$(XSRCDIR)/read.c \
+	$(XSRCDIR)/regexp.c \
+	$(XSRCDIR)/sema.c \
+	$(XSRCDIR)/setjmpup.c \
+	$(XSRCDIR)/string.c \
+	$(XSRCDIR)/struct.c \
+	$(XSRCDIR)/stxobj.c \
+	$(XSRCDIR)/symbol.c \
+	$(XSRCDIR)/syntax.c \
+	$(XSRCDIR)/thread.c \
+	$(XSRCDIR)/type.c \
+	$(XSRCDIR)/vector.c \
+	$(@FOREIGN_IFUSED@_C) \
+	$(XSRCDIR)/main.c
+
+all: xsrc
+	$(MAKE) $(XSRCDIR)/precomp.h
+	$(MAKE) xobjects
+	$(MAKE) ../racket3m
+
+xsrcs: $(XSRCS)
+
+xsrc:
+	mkdir xsrc
+
+xobjects: $(OBJS) main.@LTO@
+
+XFORMDEP = $(srcdir)/gc2.h $(srcdir)/gc2_obj.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss \
+           $(srcdir)/precomp.c $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
+           $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schemef.h \
+           $(srcdir)/../src/stypes.h $(srcdir)/../include/schthread.h $(srcdir)/../src/mzrt.h 
+
+LIGHTNINGDEP = $(srcdir)/../src/lightning/i386/core.h $(srcdir)/../src/lightning/i386/core-common.h \
+               $(srcdir)/../src/lightning/i386/asm.h $(srcdir)/../src/lightning/i386/asm-common.h \
+               $(srcdir)/../src/lightning/i386/fp.h $(srcdir)/../src/lightning/i386/fp-common.h \
+               $(srcdir)/../src/lightning/i386/funcs.h $(srcdir)/../src/lightning/i386/funcs-common.h \
+               $(srcdir)/../src/lightning/ppc/core.h $(srcdir)/../src/lightning/ppc/core-common.h \
+               $(srcdir)/../src/lightning/ppc/asm.h $(srcdir)/../src/lightning/ppc/asm-common.h \
+               $(srcdir)/../src/lightning/ppc/fp.h $(srcdir)/../src/lightning/ppc/fp-common.h \
+               $(srcdir)/../src/lightning/ppc/funcs.h $(srcdir)/../src/lightning/ppc/funcs-common.h
+
+$(XSRCDIR)/precomp.h : $(XFORMDEP)  $(srcdir)/../src/schvers.h
+	env XFORM_PRECOMP=yes $(XFORM_NOPRECOMP) $(XSRCDIR)/precomp.h $(srcdir)/precomp.c
+
+$(XSRCDIR)/salloc.c: ../src/salloc.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/salloc.c $(SRCDIR)/salloc.c
+$(XSRCDIR)/bignum.c: ../src/bignum.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/bignum.c $(SRCDIR)/bignum.c
+$(XSRCDIR)/bool.c: ../src/bool.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/bool.c $(SRCDIR)/bool.c
+$(XSRCDIR)/builtin.c: ../src/builtin.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/builtin.c $(SRCDIR)/builtin.c
+$(XSRCDIR)/char.c: ../src/char.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/char.c $(SRCDIR)/char.c
+$(XSRCDIR)/complex.c: ../src/complex.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/complex.c $(SRCDIR)/complex.c
+$(XSRCDIR)/dynext.c: ../src/dynext.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/dynext.c $(SRCDIR)/dynext.c
+$(XSRCDIR)/env.c: ../src/env.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+	$(XFORM) $(XSRCDIR)/env.c $(SRCDIR)/env.c
+$(XSRCDIR)/error.c: ../src/error.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/error.c $(SRCDIR)/error.c
+$(XSRCDIR)/eval.c: ../src/eval.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/eval.c $(SRCDIR)/eval.c
+$(XSRCDIR)/file.c: ../src/file.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/file.c $(SRCDIR)/file.c
+$(XSRCDIR)/fun.c: ../src/fun.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/fun.c $(SRCDIR)/fun.c
+$(XSRCDIR)/future.c: ../src/future.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/future.c $(SRCDIR)/future.c
+$(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
+$(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
+	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
+$(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
+$(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/list.c $(SRCDIR)/list.c
+$(XSRCDIR)/network.c: ../src/network.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/network.c $(SRCDIR)/network.c
+$(XSRCDIR)/numarith.c: ../src/numarith.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/numarith.c $(SRCDIR)/numarith.c
+$(XSRCDIR)/number.c: ../src/number.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/number.c $(SRCDIR)/number.c
+$(XSRCDIR)/numcomp.c: ../src/numcomp.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/numcomp.c $(SRCDIR)/numcomp.c
+$(XSRCDIR)/numstr.c: ../src/numstr.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/numstr.c $(SRCDIR)/numstr.c
+$(XSRCDIR)/places.c: ../src/places.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+	$(XFORM) $(XSRCDIR)/places.c $(SRCDIR)/places.c
+$(XSRCDIR)/port.c: ../src/port.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/port.c $(SRCDIR)/port.c
+$(XSRCDIR)/portfun.c: ../src/portfun.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/portfun.c $(SRCDIR)/portfun.c
+$(XSRCDIR)/print.c: ../src/print.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/print.c $(SRCDIR)/print.c
+$(XSRCDIR)/rational.c: ../src/rational.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/rational.c $(SRCDIR)/rational.c
+$(XSRCDIR)/read.c: ../src/read.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/read.c $(SRCDIR)/read.c
+$(XSRCDIR)/regexp.c: ../src/regexp.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/regexp.c $(SRCDIR)/regexp.c
+$(XSRCDIR)/sema.c: ../src/sema.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/sema.c $(SRCDIR)/sema.c
+$(XSRCDIR)/setjmpup.c: ../src/setjmpup.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/setjmpup.c $(SRCDIR)/setjmpup.c
+$(XSRCDIR)/string.c: ../src/string.@LTO@ $(XFORMDEP)
+	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(CPPFLAGS)" -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
+$(XSRCDIR)/struct.c: ../src/struct.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
+$(XSRCDIR)/stxobj.c: ../src/stxobj.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/stxobj.c $(SRCDIR)/stxobj.c
+$(XSRCDIR)/symbol.c: ../src/symbol.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
+	$(XFORM) $(XSRCDIR)/symbol.c $(SRCDIR)/symbol.c
+$(XSRCDIR)/syntax.c: ../src/syntax.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/syntax.c $(SRCDIR)/syntax.c
+$(XSRCDIR)/thread.c: ../src/thread.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/thread.c $(SRCDIR)/thread.c
+$(XSRCDIR)/type.c: ../src/type.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/type.c $(SRCDIR)/type.c
+$(XSRCDIR)/vector.c: ../src/vector.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/vector.c $(SRCDIR)/vector.c
+$(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
+	$(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS) -I../../foreign/gcc/libffi/include -I${SRCDIR}/../../racket/src" -o $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
+$(XSRCDIR)/main.c: ../main.@LTO@ $(XFORMDEP)
+	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_COLLECTS_DIR) $(srcdir)/../main.c
+
+salloc.@LTO@: $(XSRCDIR)/salloc.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/salloc.c -o salloc.@LTO@
+bignum.@LTO@: $(XSRCDIR)/bignum.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/bignum.c -o bignum.@LTO@
+bool.@LTO@: $(XSRCDIR)/bool.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/bool.c -o bool.@LTO@
+builtin.@LTO@: $(XSRCDIR)/builtin.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/builtin.c -o builtin.@LTO@
+char.@LTO@: $(XSRCDIR)/char.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/char.c -o char.@LTO@
+complex.@LTO@: $(XSRCDIR)/complex.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/complex.c -o complex.@LTO@
+dynext.@LTO@: $(XSRCDIR)/dynext.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/dynext.c -o dynext.@LTO@
+env.@LTO@: $(XSRCDIR)/env.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/env.c -o env.@LTO@
+error.@LTO@: $(XSRCDIR)/error.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/error.c -o error.@LTO@
+eval.@LTO@: $(XSRCDIR)/eval.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/eval.c -o eval.@LTO@
+file.@LTO@: $(XSRCDIR)/file.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/file.c -o file.@LTO@
+fun.@LTO@: $(XSRCDIR)/fun.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/fun.c -o fun.@LTO@
+future.@LTO@: $(XSRCDIR)/future.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/future.c -o future.@LTO@
+hash.@LTO@: $(XSRCDIR)/hash.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
+jit.@LTO@: $(XSRCDIR)/jit.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit.c -o jit.@LTO@
+list.@LTO@: $(XSRCDIR)/list.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
+module.@LTO@: $(XSRCDIR)/module.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
+mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h $(XFORMDEP)
+	$(CC) $(CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
+network.@LTO@: $(XSRCDIR)/network.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
+numarith.@LTO@: $(XSRCDIR)/numarith.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/numarith.c -o numarith.@LTO@
+number.@LTO@: $(XSRCDIR)/number.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/number.c -o number.@LTO@
+numcomp.@LTO@: $(XSRCDIR)/numcomp.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/numcomp.c -o numcomp.@LTO@
+numstr.@LTO@: $(XSRCDIR)/numstr.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/numstr.c -o numstr.@LTO@
+places.@LTO@: $(XSRCDIR)/places.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/places.c -o places.@LTO@
+port.@LTO@: $(XSRCDIR)/port.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/port.c -o port.@LTO@
+portfun.@LTO@: $(XSRCDIR)/portfun.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/portfun.c -o portfun.@LTO@
+print.@LTO@: $(XSRCDIR)/print.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/print.c -o print.@LTO@
+rational.@LTO@: $(XSRCDIR)/rational.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/rational.c -o rational.@LTO@
+read.@LTO@: $(XSRCDIR)/read.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/read.c -o read.@LTO@
+regexp.@LTO@: $(XSRCDIR)/regexp.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/regexp.c -o regexp.@LTO@
+sema.@LTO@: $(XSRCDIR)/sema.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/sema.c -o sema.@LTO@
+setjmpup.@LTO@: $(XSRCDIR)/setjmpup.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/setjmpup.c -o setjmpup.@LTO@
+string.@LTO@: $(XSRCDIR)/string.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/string.c -o string.@LTO@
+struct.@LTO@: $(XSRCDIR)/struct.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/struct.c -o struct.@LTO@
+stxobj.@LTO@: $(XSRCDIR)/stxobj.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/stxobj.c -o stxobj.@LTO@
+symbol.@LTO@: $(XSRCDIR)/symbol.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/symbol.c -o symbol.@LTO@
+syntax.@LTO@: $(XSRCDIR)/syntax.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/syntax.c -o syntax.@LTO@
+thread.@LTO@: $(XSRCDIR)/thread.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/thread.c -o thread.@LTO@
+type.@LTO@: $(XSRCDIR)/type.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/type.c -o type.@LTO@
+vector.@LTO@: $(XSRCDIR)/vector.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/vector.c -o vector.@LTO@
+foreign.@LTO@: $(XSRCDIR)/foreign.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/foreign.c -o foreign.@LTO@
+main.@LTO@: $(XSRCDIR)/main.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
+
+gc2.@LTO@: \
+		$(srcdir)/alloc_cache.c \
+		$(srcdir)/backtrace.c \
+		$(srcdir)/commongc_internal.h \
+		$(srcdir)/platforms.h \
+		$(srcdir)/fnls.c \
+		$(srcdir)/gc2.c \
+		$(srcdir)/gc2.h \
+		$(srcdir)/gc2_dump.h \
+		$(srcdir)/gc2_obj.h \
+		$(srcdir)/immobile_boxes.c \
+		$(srcdir)/../include/scheme.h \
+		$(srcdir)/../include/schthread.h \
+		$(srcdir)/../include/../sconfig.h \
+		$(srcdir)/../include/../uconfig.h \
+		$(srcdir)/../include/../src/stypes.h \
+		$(srcdir)/../include/../src/schexn.h \
+		$(srcdir)/../include/../gc2/gc2.h \
+		$(srcdir)/../include/../src/schemef.h \
+		$(builddir)/../mzconfig.h \
+		$(srcdir)/../src/mzrt.h \
+		$(srcdir)/../src/schpriv.h \
+		$(srcdir)/../utils/splay.c \
+		$(srcdir)/mem_account.c \
+		$(srcdir)/msgprint.c \
+		$(srcdir)/my_qsort.c \
+		$(srcdir)/newgc.c \
+		$(srcdir)/newgc.h \
+		$(srcdir)/page_range.c \
+		$(srcdir)/protect_range.c \
+		$(srcdir)/rlimit_heapsize.c \
+		$(srcdir)/roots.c \
+		$(srcdir)/stack_comp.c \
+		$(srcdir)/sighand.c \
+		$(srcdir)/var_stack.c \
+		$(srcdir)/vm.c \
+		$(srcdir)/vm_memalign.c \
+		$(srcdir)/vm_mmap.c \
+		$(srcdir)/vm_osk.c \
+		$(srcdir)/vm_osx.c \
+		$(srcdir)/weak.c
+	$(CC) $(CFLAGS) -I$(builddir)/.. -c $(srcdir)/gc2.c -o gc2.@LTO@
+
+FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@
+FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
+FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
+
+FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
+FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
+FOREIGN_NOT_USED_LIB = 
+FOREIGN_NOT_USED_OBJSLIB = 
+
+EXTRA_GMP := $(if @EXTRA_GMP_OBJ@,../src/@EXTRA_GMP_OBJ@,)
+
+EXTRA_OBJS_T = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB)
+EXTRA_OBJS_L = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
+
+../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
+	$(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
+	$(RANLIB) ../libracket3m.@LIBSFX@
+
+../racket@MMM@@NOT_OSX@: main.@LTO@ ../libracket3m.@LIBSFX@
+	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+
+# The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
+#  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative
+#  path.
+
+MZFWMMM = Racket.framework/Versions/$(FWVERSION)_3m/Racket
+
+$(MZFWMMM): ../libracket3m.@LIBSFX@
+	mkdir -p "Racket.framework/Versions/$(FWVERSION)_3m"
+	@MZLINKER@ -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load ../libracket3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+	rm -f Racket.framework/Racket
+	ln -s Versions/$(FWVERSION)_3m/Racket Racket.framework/Racket	
+
+../racket@MMM@@OSX@: $(MZFWMMM) main.@LTO@
+	@MZLINKER@ -o ../racket@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket
+	mkdir -p "../Racket.framework/Versions/$(FWVERSION)_3m"
+	cp "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
+	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"
+
+clean:
+	/bin/rm -f ../racket@MMM@ *.@LTO@ $(XSRCDIR)/*
+	/bin/rm -rf xform-collects
+	/bin/rm -rf Racket.framework
+
+#--------------------------------------------------
+
+test.@LTO@: $(srcdir)/test.c
+	$(CC) $(CFLAGS) -c $(srcdir)/test.c -o test.@LTO@
+
+gct: test.@LTO@ gc2.@LTO@
+	$(CC) -o gct test.@LTO@ gc2.@LTO@

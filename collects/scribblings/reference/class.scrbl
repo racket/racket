@@ -77,7 +77,7 @@
 
 @guideintro["classes"]{classes and objects}
 
-@note-lib[scheme/class #:use-sources (scheme/private/class-internal)]
+@note-lib[scheme/class #:use-sources (racket/private/class-internal)]
 
 A @deftech{class} specifies
 

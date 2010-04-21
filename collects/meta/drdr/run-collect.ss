@@ -2,6 +2,7 @@
 (require "status.ss"
          "notify.ss"
          "rewriting.ss"
+         "dirstruct.ss"
          "cache.ss")
 
 (define (command+args+env->command+args 
@@ -97,6 +98,17 @@
     
     final-status))
 
+(define-syntax regexp-replace**
+  (syntax-rules ()
+    [(_ () s) s]
+    [(_ ([pat0 subst0]
+         [pat subst]
+         ...)
+        s)
+     (regexp-replace* pat0
+                      (regexp-replace** ([pat subst] ...) s)
+                      subst0)]))
+
 (define (run/collect/wait/log log-path command 
                               #:timeout timeout 
                               #:env env
@@ -105,8 +117,20 @@
   (cache/file
    log-path
    (lambda ()
+     (define rev (number->string (current-rev)))
+     (define home (hash-ref env "HOME"))
+     (define tmp (hash-ref env "TMPDIR"))
+     (define cwd (path->string (current-directory)))
+     (define (rewrite s)
+       (regexp-replace** ([rev "<current-rev>"]
+                          [home "<home>"]
+                          [tmp "<tmp>"]
+                          [cwd "<cwd>"])
+                         s))
+     
      (set! ran? #t)
      (rewrite-status
+      #:rewrite rewrite
       (run/collect/wait
        #:timeout timeout
        #:env env

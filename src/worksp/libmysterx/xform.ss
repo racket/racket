@@ -1,4 +1,3 @@
-
 #lang scheme/base
 
 (use-compiled-file-paths null)
@@ -8,8 +7,8 @@
 (define cpp-flags "/D _CRT_SECURE_NO_DEPRECATE /D WIN32 /D _USE_DECLSPECS_FOR_SAL=0 /D _USE_ATTRIBUTES_FOR_SAL=0")
 (define includes 
   (string-append
-   "/I ../../mzscheme/include /I . /I .. /I ../../mysterx"
-   " /I ../../mzscheme/src" ; for schvers.h
+   "/I ../../racket/include /I . /I .. /I ../../mysterx"
+   " /I ../../racket/src" ; for schvers.h
    " /I myssink /I ../../mysterx/myssink"
    " /I myspage /I ../../mysterx/myspage"))
 
@@ -28,7 +27,7 @@
 				[else dep])])
 		      (> t (file-or-directory-modify-seconds dep))))
 		  (append (if precomp?
-			      (list "../../mzscheme/src/schvers.h")
+			      (list "../../racket/src/schvers.h")
 			      (if use-precomp (list use-precomp) null))
 			  (list src)
 			  (let ([deps (path-replace-suffix dest #".sdep")])
@@ -43,7 +42,7 @@
                       (list->vector 
                        (append
                         (list "-u"
-                              "../../mzscheme/gc2/xform.ss"
+                              "../../racket/gc2/xform.ss"
                               "--setup"
 			      "../gc2"
                               "--indirect"

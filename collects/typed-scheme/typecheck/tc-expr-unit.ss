@@ -12,11 +12,11 @@
          (except-in (utils tc-utils stxclass-util))
          (env lexical-env)
          (only-in (env type-environments) lookup current-tvars extend-env)
-         scheme/private/class-internal
+         racket/private/class-internal
          (except-in syntax/parse id)
          (only-in srfi/1 split-at))
 
-(require (for-template scheme/base scheme/private/class-internal))
+(require (for-template scheme/base racket/private/class-internal))
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ check-subforms^)
 (export tc-expr^)

@@ -9,7 +9,7 @@
          (private typed-renaming)
          (rep type-rep)
 	 (utils tc-utils)
-         scheme/contract/private/provide unstable/list
+         racket/contract/private/provide unstable/list
          unstable/debug
          unstable/syntax scheme/struct-info scheme/match
          "def-binding.ss" syntax/parse)

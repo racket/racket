@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/contract/base
-         scheme/dict
+#lang racket/base
+(require racket/contract/base
+         racket/dict
          syntax/stx
          syntax/id-table
          "../util.ss"

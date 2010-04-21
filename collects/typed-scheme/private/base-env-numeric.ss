@@ -11,7 +11,7 @@
    (only-in '#%kernel [apply kernel:apply])
    scheme/promise scheme/system
    (only-in string-constants/private/only-once maybe-print-message)
-   (only-in scheme/match/runtime match:error matchable? match-equality-test)
+   (only-in racket/match/runtime match:error matchable? match-equality-test)
    (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos])))
   
   (define-for-syntax all-num-types (list -Pos -Nat -Integer -ExactRational -Flonum -Real N))

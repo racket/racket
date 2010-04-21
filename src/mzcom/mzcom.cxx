@@ -96,7 +96,7 @@ LPCTSTR FindOneOf(LPCTSTR p1, LPCTSTR p2)
 }
 
 #define DLL_RELATIVE_PATH L"lib"
-#include "../mzscheme/delayed.inc"
+#include "../racket/delayed.inc"
 
 /////////////////////////////////////////////////////////////////////////////
 //

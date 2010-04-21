@@ -1,13 +1,13 @@
 This directory contains 
 
- - solution files and project files for building MzScheme and MrEd
+ - solution files and project files for building Racket and GRacket
     with Microsoft Visual Studio 8.0 and up (which work with the
     Express 2005 version of Visual Studio);
 
  - mzconfig.h which is a manual version of information that is
     gathered automatically when using the "configure" script;
 
- - scripts for building 3m variants of MzScheme and MrEd using
+ - scripts for building 3m variants of Racket and GRacket using
     Visual Studio command-line tools; and
 
  - solution files and project files for building MzCOM and MysterX
@@ -15,18 +15,18 @@ This directory contains
     support ATL and MFC).
 
 Visual Studio Express is available for free from Microsoft; it can be
-used to build MzScheme and MrEd, but not MzCOM and MysterX.
+used to build Racket and GRacket, but not MzCOM and MysterX.
 
-MzScheme and MrEd also compile with Cygwin gcc (a free compiler from
+Racket and GRacket also compile with Cygwin gcc (a free compiler from
 GNU and Cygnus Solutions), but the result is a Unix-style
 installation, not a Window-style installation. To compile with gcc,
 follow the instructions in plt\src\README (which contains a short
 Windows-specific section).
 
-With an MSVC-built MzScheme, compatible extensions can be built with
+With an MSVC-built Racket, compatible extensions can be built with
 other compilers. Build with Cygwin and copy the installed plt\lib\gcc
 to a MSVC-based build to support Cygwin-built extensions. To support
-Borland-built extensions, cd to plt\src\mzscheme\dynsrc and run
+Borland-built extensions, cd to plt\src\racket\dynsrc and run
 mkbordyn.bat (which requires bcc23.exe, of course).
 
 As always, please report bugs via one of the following:
@@ -38,7 +38,7 @@ As always, please report bugs via one of the following:
  scheme@plt-scheme.org
 
 ----------------------------------------------------------------------
-Building MzScheme and MrEd
+Building Racket and GRacket
 ----------------------------------------------------------------------
 
 If you're using MSVC 8.0 (not Express), and if `devenv.exe' is in your
@@ -47,13 +47,13 @@ path, then you can just run
 from its own directory to perform all steps up to "Versioning",
 including the MzCOM and MysterX steps.
 
-The CGC variants of MzScheme, MzCOM, MrEd, and MysterX can be built
+The CGC variants of Racket, MzCOM, GRacket, and MysterX can be built
 via Visual Studio projects. The 3m variants are built by a Scheme
 script that runs the MSVC command-line tools. (See "CGC versus 3m"
 in plt\src\README if you don't know about the two variants.)
 
 The 3m build requires some parts of the CGC build:
-       plt\src\worksp\mzscheme
+       plt\src\worksp\racket
        plt\src\worksp\wxutils
        plt\src\worksp\jpeg
        plt\src\worksp\png
@@ -62,35 +62,35 @@ It's simplest to just build the main CGC solutions, which
 automatically build all of the above projects, and then build
 3m.
 
-Building MzSchemeCGC and MrEdCGC
+Building RacketCGC and GRacketCGC
 --------------------------------
 
-The CGC source code for MzSchemeCGC and MrEdCGC is split into several
+The CGC source code for RacketCGC and GRacketCGC is split into several
 projects that are grouped into a few solutions. To build the `X'
 solution with Visual Studio, open the file plt\src\worksp\X\X.sln.
 
-To build MzSchemeCGC, build the MzScheme solution in
-   plt\src\worksp\mzscheme - makes plt\MzSchemeCGC.exe
+To build RacketCGC, build the Racket solution in
+   plt\src\worksp\racket - makes plt\RacketCGC.exe
 
    [When you open the solution, it may default to "Debug"configuration.
     Switch to "Release" before building.]
 
-To build MrEdCGC, build the MrEd solution:
-   plt\src\worksp\mred - makes plt\MrEdCGC.exe
+To build GRacketCGC, build the GRacket solution:
+   plt\src\worksp\gracket - makes plt\GRacketCGC.exe
 
    [Again, switch to the "Release" configuration if necessary.]
 
-The build processes for MzSchemeCGC automatically builds
+The build processes for RacketCGC automatically builds
    libmzgc - makes plt\lib\libmzgcxxxxxxx.dll and
              plt\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
-   mzsrc - makes plt\lib\libmzschxxxxxxx.dll and
+   mzsrc - makes plt\lib\libracketxxxxxxx.dll and
                  plt\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
 
-The build process for MrEdCGC automatically builds
+The build process for GRacketCGC automatically builds
    libmzgc - as above
-   libmzsch - as above
-   libmred - makes plt\lib\libmredxxxxxxx.dll and
-                   plt\src\worksp\libmred\Release\libmredxxxxxxx.lib
+   libracket - as above
+   libgracket - makes plt\lib\libgracketxxxxxxx.dll and
+                plt\src\worksp\libgracket\Release\libgracketxxxxxxx.lib
    wxutils - makes plt\src\worksp\wxutils\Release\wxutils.lib
    wxwin - makes plt\src\worksp\wxwin\Release\wxwin.lib
    wxs  - makes plt\src\worksp\wxs\Release\wxs.lib
@@ -99,15 +99,15 @@ The build process for MrEdCGC automatically builds
    png  - makes plt\src\worksp\jpeg\Release\png.lib
    zlib  - makes plt\src\worksp\jpeg\Release\zlib.lib
 
-In addition, building MzSchemeCGC executes
-   plt\src\mzscheme\dynsrc\mkmzdyn.bat
+In addition, building RacketCGC executes
+   plt\src\racket\dynsrc\mkmzdyn.bat
 which copies .exp, .obj, and .lib files into plt\lib\, and also copies
 DLLs from the "extradlls" directory to to plt\lib\.
 
-Building MzScheme3m and MrEd3m
+Building Racket3m and GRacket3m
 ------------------------------
 
-After MzSchemeCGC and MrEdCGC are built, you can can build 3m
+After RacketCGC and GRacketCGC are built, you can can build 3m
 binaries:
 
  1. Ensure that the Visual Studio command-line tools are in your
@@ -116,13 +116,13 @@ binaries:
 
  2. Change directories to plt\src\worksp\gc2 and run
 
-      ..\..\..\mzschemecgc.exe -cu make.ss
+      ..\..\..\racketcgc.exe -cu make.ss
 
-The resulting MzScheme.exe and MrEd.exe will appear in the "plt"
-directory, along with DLLs libmzsch3mxxxxxxx.dll and
-libmred3mxxxxxxx.dll in plt/lib. (There is no corresponding
+The resulting Racket.exe and GRacket.exe will appear in the "plt"
+directory, along with DLLs libracket3mxxxxxxx.dll and
+libgracket3mxxxxxxx.dll in plt/lib. (There is no corresponding
 libmzgc3mxxxxxxx.dll.  Instead, it is merged with
-libmzsch3mxxxxxxx.dll.)
+libracket3mxxxxxxx.dll.)
 
 Building Collections and Other Executables
 ------------------------------------------
@@ -137,10 +137,10 @@ following solutions:
    [The "mzstart" and "mrstart" programs have no CGC versus 3m
     distinction.]
 
-Then, set up all the other executables (besides MrEd[CGC].exe and
-MzScheme[CGC].exe) by running
+Then, set up all the other executables (besides GRacket[CGC].exe and
+Racket[CGC].exe) by running
 
-   mzscheme.exe -l- setup
+   racket.exe -l- setup
 
 This last step makes the .zo files, too. To skip compiling .zos, add
 -n to the end of the above command.
@@ -164,13 +164,13 @@ be replaced with a specific version.
 
 To replace the "xxxxxxx" with a specific version, run
 
-  mzscheme -l setup/winvers
+  racket -l setup/winvers
 
 in a shell.
 
 The "winvers.ss" program will have to make a temporary copy of
-mzscheme.exe and the "lib" sub-directory (into the temporary
-directory), and it will re-launch MzScheme a couple of times. Every
+racket.exe and the "lib" sub-directory (into the temporary
+directory), and it will re-launch Racket a couple of times. Every
 ".exe", ".dll", ".lib", ".def", ".exp", and ".pdb" file within the
 "plt" tree is updated to replace "xxxxxxxx" with a specific version
 number.
@@ -181,7 +181,7 @@ Building MzCOM and MysterX
 
 Beware that MzCOM and MysterX do not build with Express versions of
 Visual Studio. Otherwise, building MzCOMCGC and MysterXCGC is similar
-to building MzSchemeCGC. Building the 3m variants is a little
+to building RacketCGC. Building the 3m variants is a little
 different.
 
 Building MzCOM
@@ -196,7 +196,7 @@ After building MzCOMCGC, you can build the 3m variant by
 
  1. Change directories to plt\src\worksp\mzcom and run
 
-      ..\..\..\mzschemecgc.exe -cu xform.ss
+      ..\..\..\racketcgc.exe -cu xform.ss
 
  2. Switch to the "3m" configuration in the MzCOM solution
     (in Visual Studio).
@@ -219,7 +219,7 @@ After building MysterXCGC, you can build the 3m variant by
 
  1. Change directories to plt\src\worksp\libmysterx and run
 
-      ..\..\..\mzschemecgc.exe -cu xform.ss
+      ..\..\..\racketcgc.exe -cu xform.ss
 
  2. Switch to the "3m" configuration in the libmysterx solution
     (in Visual Studio).
@@ -233,13 +233,13 @@ The result is mxmain.dll (no 3m suffix) in
 Finding DLLs
 ----------------------------------------------------------------------
 
-Since the DLLs libmzsch3mxxxxxxx.dll (or libmzgcxxxxxxx.dll and
-libmzschxxxxxxx.dll) and libmred3mxxxxxxx.dll (or libmredxxxxxxx.dll)
-are installed into plt\lib\ instead of just plt\, the normal search
-path for DLLs would not find them when running "MzScheme.exe" or
-"MrEd.exe". To find the DLLs, the executables are "delayload" linked
-with the DLLs, and the executables explicitly load the DLLs from
-plt\lib\ on start-up.
+Since the DLLs libracket3mxxxxxxx.dll (or libmzgcxxxxxxx.dll and
+libracketxxxxxxx.dll) and libgracket3mxxxxxxx.dll (or
+libgracketxxxxxxx.dll) are installed into plt\lib\ instead of just
+plt\, the normal search path for DLLs would not find them when running
+"Racket.exe" or "GRacket.exe". To find the DLLs, the executables are
+"delayload" linked with the DLLs, and the executables explicitly load
+the DLLs from plt\lib\ on start-up.
 
 The relative DLL path is embedded in each executable, and it can be
 replaced with a path of up to 512 characters. The path is stored in
@@ -255,26 +255,26 @@ See also ..\README for information on the embedded "collects" path in
 the executables.
 
 ----------------------------------------------------------------------
-Embedding MzScheme
+Embedding Racket
 ----------------------------------------------------------------------
 
-The MzScheme DLLs can be used within an embedding application.
+The Racket DLLs can be used within an embedding application.
 
 The libraries
 
-    plt\lib\win32\msvc\libmzsch3mxxxxxxx.lib
-    plt\lib\win32\msvc\libmzschxxxxxxx.lib
+    plt\lib\win32\msvc\libracket3mxxxxxxx.lib
+    plt\lib\win32\msvc\libracketxxxxxxx.lib
     plt\lib\win32\msvc\libmzgcxxxxxxx.lib
 
 which are created by the mzsrc and gc projects, provide linking
-information for using the libmzsch3mxxxxxxx.dll, libmzschxxxxxxx.dll,
-and libmzgcxxxxxxx.dll DLLs. The versioning script adjusts the names,
-as described above.
+information for using the libracket3mxxxxxxx.dll,
+libracketxxxxxxx.dll, and libmzgcxxxxxxx.dll DLLs. The versioning
+script adjusts the names, as described above.
 
-See the "Inside PLT MzScheme" manual for more information about using
-these libraries to embed MzScheme in an application.
+See the "Inside PLT Racket" manual for more information about using
+these libraries to embed Racket in an application.
 
 
-If you need MzScheme to link to a DLL-based C library (instead of
-statically linking to the C library within the MzScheme DLL), then
-compile MzScheme with the /MD flag.
+If you need Racket to link to a DLL-based C library (instead of
+statically linking to the C library within the Racket DLL), then
+compile Racket with the /MD flag.

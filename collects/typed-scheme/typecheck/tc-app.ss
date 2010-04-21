@@ -8,7 +8,7 @@
 	 unstable/sequence
          ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
          scheme/bool
-         (only-in scheme/private/class-internal make-object do-make-object)
+         (only-in racket/private/class-internal make-object do-make-object)
          (only-in '#%kernel [apply k:apply])
          ;; end fixme
          (for-syntax syntax/parse scheme/base (utils tc-utils))
@@ -22,7 +22,7 @@
          (for-template 
           (only-in '#%kernel [apply k:apply])
           "internal-forms.ss" scheme/base scheme/bool
-          (only-in scheme/private/class-internal make-object do-make-object)))
+          (only-in racket/private/class-internal make-object do-make-object)))
 
 (import tc-expr^ tc-lambda^ tc-dots^ tc-let^)
 (export tc-app^)

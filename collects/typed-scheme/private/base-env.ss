@@ -12,7 +12,7 @@
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in mzscheme make-namespace)
- (only-in scheme/match/runtime match:error matchable? match-equality-test)
+ (only-in racket/match/runtime match:error matchable? match-equality-test)
  (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
              (only-in (rep type-rep) make-HashtableTop make-MPairTop make-BoxTop make-VectorTop)))
 

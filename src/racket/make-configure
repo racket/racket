@@ -1,0 +1,44 @@
+#!/bin/sh
+#|
+cd "`dirname \"$0\"`"
+src="configure.ac"
+tgt="../configure"
+if [ ! -e "$src" ]; then echo "abort: did not find $src"; exit 1; fi
+echo "Creating $tgt from $src"
+if [ -e "$tgt" ]; then
+  /bin/echo -n "overwriting $tgt, Ctrl-C to abort, enter to continue "; read R;
+fi
+autoconf "$src" | racket -qr "$0" > "$tgt"
+chmod +x "$tgt"
+exit 0
+|#
+
+;; When autoconf produces `configure', it includes many
+;;  options that do not apply to PLT software. We want to
+;;  get rid of them, so that `configure --help' produces
+;;  valid information.
+
+(define skip-rxs
+  (map (lambda (s)
+	 (regexp (format "^  --~a=DIR" s)))
+       '(sbindir 
+	 libexecdir 
+	 sysconfdir
+	 sharedstatedir
+	 localstatedir
+	 oldincludedir
+	 infodir)))
+
+(let loop ()
+  (let ([l (read-line)])
+    (unless (eof-object? l)
+      (if (ormap (lambda (rx)
+		   (regexp-match rx l))
+		 skip-rxs)
+	  ;; Skip
+	  (loop)
+	  ;; Copy
+	  (begin
+	    (printf "~a~n" l)
+	    (loop))))))
+

@@ -297,6 +297,9 @@
 	" if so, it produces the suffix of the list that starts with x"
 	" if not, it produces false."
 	" (it compares values with the eqv? predicate.)")
+      ((beginner-member member?) (any (listof any) -> boolean)
+	"to determine whether some value is on the list"
+	" (comparing values with equal?)")
       ((beginner-member member) (any (listof any) -> boolean)
 	"to determine whether some value is on the list"
 	" (comparing values with equal?)")

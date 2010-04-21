@@ -29,21 +29,21 @@ all:
 	$(MAKE) @MAIN_VARIANT@
 
 3m:
-	cd mzscheme; $(MAKE) 3m
+	cd racket; $(MAKE) 3m
 	$(MAKE) @MAKE_GRACKET@-3m
 
 gracket-3m:
-	cd mred; $(MAKE) 3m
+	cd gracket; $(MAKE) 3m
 
 no-3m:
 	$(NOOP)
 
 cgc:
-	cd mzscheme; $(MAKE) cgc
+	cd racket; $(MAKE) cgc
 	$(MAKE) @MAKE_GRACKET@-cgc
 
 gracket-cgc:
-	cd mred; $(MAKE) cgc
+	cd gracket; $(MAKE) cgc
 
 no-cgc:
 	$(NOOP)
@@ -83,20 +83,20 @@ no-run:
 	$(NOOP)
 
 copytree-run:
-	mzscheme/racket@CGC@ -u \
+	racket/racket@CGC@ -u \
           "$(srcdir)/../collects/setup/unixstyle-install.ss" \
           make-install-copytree "$(srcdir)/.." \
           $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"
 
 install-gracket-post-collects:
-	cd mred; $(MAKE) install-post-collects
+	cd gracket; $(MAKE) install-post-collects
 
 install-no-post-collects:
 	$(NOOP)
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
-          mzscheme/racket@CGC@ -u \
+          racket/racket@CGC@ -u \
             "$(srcdir)/../collects/setup/unixstyle-install.ss" \
             make-install-destdir-fix "$(srcdir)/.." \
             $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
@@ -106,13 +106,13 @@ fix-paths:
 
 install-3m-common:
 	$(MAKE) install-common-first
-	cd mzscheme; $(MAKE) install-3m
+	cd racket; $(MAKE) install-3m
 	$(MAKE) install-@MAKE_GRACKET@-3m
 	$(MAKE) install-common-middle
 
 install-3m:
 	$(MAKE) install-3m-common
-	mzscheme/racket@MMM@ $(SETUP_ARGS)
+	racket/racket@MMM@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-3m:
@@ -123,19 +123,19 @@ install-no-3m:
 	$(NOOP)
 
 install-gracket-3m:
-	cd mred; $(MAKE) install-3m
+	cd gracket; $(MAKE) install-3m
 
 # CGC install ----------------------------------------
 
 install-cgc-common:
 	$(MAKE) install-common-first
-	cd mzscheme; $(MAKE) install-cgc
+	cd racket; $(MAKE) install-cgc
 	$(MAKE) install-@MAKE_GRACKET@-cgc
 	$(MAKE) install-common-middle
 
 install-cgc:
 	$(MAKE) install-cgc-common
-	mzscheme/racket@CGC@ $(SETUP_ARGS)
+	racket/racket@CGC@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-cgc:
@@ -146,19 +146,19 @@ install-no-cgc:
 	$(NOOP)
 
 install-gracket-cgc:
-	cd mred; $(MAKE) install-cgc
+	cd gracket; $(MAKE) install-cgc
 
 # Both install ----------------------------------------
 
 install-both-common:
 	$(MAKE) install-common-first
-	cd mzscheme; $(MAKE) install-both
+	cd racket; $(MAKE) install-both
 	$(MAKE) install-@MAKE_GRACKET@-both
 	$(MAKE) install-common-middle
 
 install-both:
 	$(MAKE) install-both-common
-	mzscheme/racket@MAIN_VARIANT@ $(SETUP_ARGS)
+	racket/racket@MAIN_VARIANT@ $(SETUP_ARGS)
 	$(MAKE) install-common-last
 
 plain-install-both:
@@ -169,10 +169,10 @@ install-no-both:
 	$(NOOP)
 
 install-gracket-both:
-	cd mred; $(MAKE) install-both
+	cd gracket; $(MAKE) install-both
 
 # Clean ----------------------------------------
 
 clean:
-	cd mzscheme; $(MAKE) clean
-	if [ -d mred ]; then cd mred; $(MAKE) clean; fi
+	cd racket; $(MAKE) clean
+	if [ -d gracket ]; then cd gracket; $(MAKE) clean; fi

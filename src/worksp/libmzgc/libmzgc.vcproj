@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\MzScheme\Gc\Include,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;GC_BUILD;MD_LIB_MAIN;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -126,7 +126,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..\..\MzScheme\Gc\Include,$(NOINHERIT)"
+				AdditionalIncludeDirectories="..\..\Racket\Gc\Include,$(NOINHERIT)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;GC_BUILD;SILENT;OLD_BLOCK_ALLOC;LARGE_CONFIG;ATOMIC_UNCOLLECTABLE;INITIAL_MARK_STACK_SIZE=8192;GC_DLL;_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -191,75 +191,75 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Allchblk.c"
+				RelativePath="..\..\Racket\Gc\Allchblk.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Alloc.c"
+				RelativePath="..\..\Racket\Gc\Alloc.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Blacklst.c"
+				RelativePath="..\..\Racket\Gc\Blacklst.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Dyn_load.c"
+				RelativePath="..\..\Racket\Gc\Dyn_load.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Finalize.c"
+				RelativePath="..\..\Racket\Gc\Finalize.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Headers.c"
+				RelativePath="..\..\Racket\Gc\Headers.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Mach_dep.c"
+				RelativePath="..\..\Racket\Gc\Mach_dep.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Malloc.c"
+				RelativePath="..\..\Racket\Gc\Malloc.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Mallocx.c"
+				RelativePath="..\..\Racket\Gc\Mallocx.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Mark.c"
+				RelativePath="..\..\Racket\Gc\Mark.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Mark_rts.c"
+				RelativePath="..\..\Racket\Gc\Mark_rts.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Misc.c"
+				RelativePath="..\..\Racket\Gc\Misc.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\New_hblk.c"
+				RelativePath="..\..\Racket\Gc\New_hblk.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Obj_map.c"
+				RelativePath="..\..\Racket\Gc\Obj_map.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Os_dep.c"
+				RelativePath="..\..\Racket\Gc\Os_dep.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Reclaim.c"
+				RelativePath="..\..\Racket\Gc\Reclaim.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\Stubborn.c"
+				RelativePath="..\..\Racket\Gc\Stubborn.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Mzscheme\Gc\win32_threads.c"
+				RelativePath="..\..\Racket\Gc\win32_threads.c"
 				>
 			</File>
 		</Filter>

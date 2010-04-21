@@ -2,7 +2,7 @@
   
   ;; All of the implementation is actually in private/class-internal.ss,
   ;;  which provides extra (private) functionality to contract.ss.
-  (require scheme/private/class-internal)
+  (require racket/private/class-internal)
   
   (provide (rename class-traced class)
            (rename class*-traced class*)

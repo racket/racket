@@ -4,8 +4,8 @@ srcdir = @srcdir@
 builddir = @builddir@
 CC = @CC@
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ \
-         -I$(builddir)/../mzscheme \
-         -I$(srcdir)/../mzscheme/include -I$(srcdir)/../mzscheme/src \
+         -I$(builddir)/../racket \
+         -I$(srcdir)/../racket/include -I$(srcdir)/../racket/src \
          -Igcc/libffi/include
 ARFLAGS = @ARFLAGS@
 
@@ -20,9 +20,9 @@ gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la:
 	cd gcc/libffi; $(MAKE) libffi@FOREIGN_CONVENIENCE@.la
 
 foreign.@LTO@: $(srcdir)/foreign.c \
-           $(srcdir)/../mzscheme/include/scheme.h \
-           $(srcdir)/../mzscheme/src/schemef.h \
-           $(srcdir)/../mzscheme/src/schpriv.h
+           $(srcdir)/../racket/include/scheme.h \
+           $(srcdir)/../racket/src/schemef.h \
+           $(srcdir)/../racket/src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/foreign.c -o foreign.@LTO@
 
 clean:
