@@ -65,7 +65,7 @@
 ;; sets the flag box to #f if anything becomes (U)
 (d/c (env+ env fs flag)
   (env? (listof Filter/c) (box/c #t). -> . env?)
-  (define-values (imps atoms) (combine-props fs (env-props env)))
+  (define-values (imps atoms) (debug combine-props fs (env-props env)))
   (for/fold ([Γ (replace-props env imps)]) ([f atoms])
     (match f
       [(Bot:) (set-box! flag #f) (env-map (lambda (x) (cons (car x) (Un))) Γ)]

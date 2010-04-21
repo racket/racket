@@ -297,7 +297,12 @@
         (match result
           [(list) -bot]
           [(list f) f]
-          [(list f1 f2) (opposite? f1 f2) -top]
+          [(list f1 f2) 
+           (if (opposite? f1 f2)
+               -top
+               (if (filter-equal? f1 f2)
+                   f1
+                   (make-OrFilter (list f1 f2))))]
           [_ (make-OrFilter result)])
         (match (car fs)
           [(and t (Top:)) t]
@@ -312,7 +317,11 @@
           [(list) -top]
           [(list f) f]
           ;; don't think this is useful here
-          #;[(list f1 f2) (opposite? f1 f2) -bot]
+          [(list f1 f2) (if (opposite? f1 f2)
+                            -bot
+                            (if (filter-equal? f1 f2)
+                                f1
+                                (make-AndFilter (list f1 f2))))]
           [_ (make-AndFilter result)])
         (match (car fs)
           [(and t (Bot:)) t]

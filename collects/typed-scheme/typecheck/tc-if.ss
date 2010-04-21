@@ -41,9 +41,7 @@
       [else (ret (Un))]))
   (match (single-value tst)
     [(tc-result1: _ (and f1 (FilterSet: fs+ fs-)) _)
-     (let*-values ([(flag+ flag-) (values (box #t) (box #t))]
-                   [(derived-imps+ derived-atoms+)
-                    (combine-props (list fs+) (env-props (lexical-env)))])
+     (let*-values ([(flag+ flag-) (values (box #t) (box #t))])
        (match-let* ([(tc-results: ts fs2 os2) (with-lexical-env (env+ (lexical-env) (list fs+) flag+) (tc thn (unbox flag+)))]
                     [(tc-results: us fs3 os3) (with-lexical-env (env+ (lexical-env) (list fs-) flag-) (tc els (unbox flag-)))])
          ;; if we have the same number of values in both cases
@@ -58,7 +56,7 @@
                                       (-FS -top -top)]
                                      [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
                                       (-FS (-or (-and fs+ f2+) (-and fs- f3+))
-                                           (-or (-and fs+ f2-) (-and fs- f3-)))])]
+                                           (debug -or (-and fs+ f2-) (-and fs- f3-)))])]
                                   [type (Un t2 t3)]
                                   [object (if (object-equal? o2 o3) o2 (make-Empty))])
                               ;(printf "result filter is: ~a\n" filter)
