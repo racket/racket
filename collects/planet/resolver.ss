@@ -212,10 +212,16 @@ subdirectory.
          pkg-promise->pkg
          install-pkg
          get-planet-module-path/pkg
-         install?)
+         download?
+         install?
+         exn:fail:planet?
+         make-exn:fail:planet)
 
-;; if #f, will not install packages and instead give an error
+;; if #f, will not install packages and instead raise a exn:fail:install? error
 (define install? (make-parameter #t))
+;; if #f, will not download packages and instead raise a exn:fail:install? error
+(define download? (make-parameter #t))
+(define-struct (exn:fail:planet exn:fail) ())
 
 ;; update doc index only once for a set of installs:
 (define planet-nested-install (make-parameter #f))
@@ -511,6 +517,12 @@ subdirectory.
      (string-append "PLaneT could not download the requested package: " s)]))
 
 (define (download-package pkg)
+  (unless (download?)
+    (raise (make-exn:fail:planet
+            (format
+             "PLaneT error: cannot download package ~s since the download? parameter is set to #f"
+             (list (car (pkg-spec-path pkg)) (pkg-spec-name pkg)))
+            (current-continuation-marks))))
   ((if (USE-HTTP-DOWNLOADS?) download-package/http download-package/planet)
    pkg))
 
@@ -539,7 +551,7 @@ subdirectory.
 ;; installed file
 (define (install-pkg pkg path maj min)
   (unless (install?)
-    (raise (make-exn:fail
+    (raise (make-exn:fail:planet
             (format
              "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
              (list (car (pkg-spec-path pkg)) (pkg-spec-name pkg) maj min))

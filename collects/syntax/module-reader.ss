@@ -216,7 +216,7 @@
            #:read-spec
            [read-spec
             (lambda (in)
-              (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(?=\\s|$)" in)])
+              (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(?=\\s|$)" in)]) ;; if this changes, the regexp in planet's lang/reader.ss must also change
                 (and spec (let ([s (cadr spec)])
                             (if (equal? s "") #f s)))))])
     (define (get in export-sym src line col pos spec-as-stx? mk-fail-thunk)
