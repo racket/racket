@@ -83,7 +83,11 @@
      '(s-exp/lang/reader
        mzscheme/lang/reader
        scheme/base/lang/reader
-       scheme/lang/reader))
+       scheme/lang/reader
+       scheme/private/provider/lang/reader
+       racket/base/lang/reader
+       racket/private/lang/reader
+       racket/lang/reader))
 
 (current-library-collection-paths 
  (list (build-path (current-directory) "xform-collects")))
