@@ -69,12 +69,12 @@
   (for/fold ([Γ (replace-props env imps)]) ([f atoms])
     (match f
       [(Bot:) (set-box! flag #f) (env-map (lambda (x) (cons (car x) (Un))) Γ)]
-      [(ImpFilter: _ _) Γ]
       [(or (TypeFilter: _ _ x) (NotTypeFilter: _ _ x))
        (update-type/lexical (lambda (x t) (let ([new-t (update t f)])
                                             (when (type-equal? new-t (Un))
                                               (set-box! flag #f))
                                             new-t))
-                            x Γ)])))
+                            x Γ)]
+      [_ Γ])))
 
 (p/c [env+ (env? (listof Filter/c) (box/c #t). -> . env?)])

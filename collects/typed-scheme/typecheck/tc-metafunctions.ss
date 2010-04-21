@@ -91,19 +91,16 @@
 (provide combine-props tc-results->values)
 
 (define (combine-props new-props old-props)
-  (define-values (new-atoms new-formulas) 
-    (partition (lambda (e) (or (TypeFilter? e) (NotTypeFilter? e))) new-props))
-  (values new-formulas new-atoms)
-  #;#;
-  (define-values (derived-imps derived-atoms)
-    (for/fold 
-        ([derived-imps null]
-         [derived-atoms null])
-      ([o old-props])
-      (match o
-        [(ImpFilter: as cs)
-         (let ([as* (remove* new-atoms as filter-equal?)])
-           (if (null? as*)
-               (values derived-imps (append cs new-atoms))
-               (values (cons (make-ImpFilter as* cs) derived-imps) derived-atoms)))])))
-  (values (append new-imps derived-imps) (append new-atoms derived-atoms)))
+  (define (atomic-prop? p) (or (TypeFilter? p) (NotTypeFilter? p)))
+  (define-values (new-atoms new-formulas) (partition atomic-prop? new-props))
+  (let loop ([derived-props null] 
+             [derived-atoms new-atoms]
+             [worklist (append old-props new-formulas)])
+    (if (null? worklist)
+        (values derived-props derived-atoms)
+        (let ([p (car worklist)])
+          (match p      
+            [(AndFilter: ps) (loop derived-props derived-atoms (append ps (cdr worklist)))]
+            [(TypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
+            [(NotTypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
+            [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))
