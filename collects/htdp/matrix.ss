@@ -2,6 +2,52 @@
 
 ;; 4. integrate with snips
 
+#|
+
+From: Mark Engelberg <mark.engelberg@gmail.com>
+
+
+In a flash of inspiration, I searched on matrix, and turned up the
+matrix teachpack.  I really like it!  I especially like:
+* the ease of converting back and forth between "rectangles" and "matrices"
+* the multiple ways of constructing matrices
+* the ability to set cells non-destructively or destructively
+
+Two questions:
+1. The documentation warns that the teachpack is experimental.  Are
+there any major problems I need to be aware of, or is the warning just
+an indicator that the API is likely to continue to be revised?
+2. Are there other similar built-in PLT Scheme libraries that I should
+be aware of, or is this the main one I should be considering?
+
+A few API comments and suggestions:
+
+matrix-render is a nice low-level function for extracting information
+from the matrix in preparation for displaying or printing, but perhaps
+there could also be a higher-level matrix->string function.
+For example,
+(define (matrix->string m col-separator row-separator)
+ (string-join (map (λ (row) (string-join row col-separator))
+(matrix-render m)) row-separator))
+
+Since matrix-ref returns an error with a bogus row,column, it would be
+nice to be able to easily test for that in advance:
+(define (matrix-within-bounds? m i j)
+ (and (<= 0 i) (< i (matrix-rows m)) (<= 0 j) (< j (matrix-cols m))))
+or alternatively adjust matrix-ref to take an optional argument to
+return if the entry is invalid (like hash-ref).
+
+Since matrix-where? returns a list of posn structures, it would be
+ideal if the other matrix functions (e.g., matrix-ref, matrix-set)
+could optionally consume a single posn rather than a separate i and j.
+
+Speaking of which, shouldn't the matrix teachpack automatically
+provide lang/posn so that you can call posn-x and posn-y on the
+position structures returned by matrix-where?
+
+|#
+
+
 (require htdp/matrix-sig
          htdp/matrix-render-sig
          htdp/matrix-unit
