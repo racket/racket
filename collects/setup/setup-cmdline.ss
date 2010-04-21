@@ -6,7 +6,7 @@
 #lang scheme/base
 
 (require scheme/cmdline
-         rico/command-name)
+         tool/command-name)
 
 (provide parse-cmdline)
 
@@ -31,9 +31,9 @@
          [(current-command-name)
           (values (format "~a ~a" name (current-command-name))
                   (program+command-name))]
-         ;; Hack for bootstrapping, if the program name is "rico",
+         ;; Hack for bootstrapping, if the program name is "racket-tool",
          ;; then claim to be the "setup" command:
-         [(equal? (path->string name) "rico")
+         [(equal? (path->string name) "racket-tool")
           (values (format "~a setup" name)
                   (format "~a setup" p))]
          [else

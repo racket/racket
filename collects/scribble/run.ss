@@ -6,6 +6,7 @@
          scheme/cmdline
          scheme/file
          scheme/class
+         tool/command-name
          (prefix-in text:  "text-render.ss")
          (prefix-in html:  "html-render.ss")
          (prefix-in latex: "latex-render.ss")
@@ -35,6 +36,7 @@
 
 (define (run)
   (command-line
+   #:program (short-program+command-name)
    #:once-any
    [("--text") "generate text-format output (the default)"
     (void)]

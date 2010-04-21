@@ -4,11 +4,11 @@
 (provide all-tools)
 
 (define (all-tools)
-  (let* ([dirs (find-relevant-directories '(rico))]
+  (let* ([dirs (find-relevant-directories '(racket-tools))]
          [tools (make-hash)])
     (for ([i (in-list (map get-info/full dirs))]
           [d (in-list dirs)])
-      (let ([entries (let ([l (i 'rico (lambda () null))])
+      (let ([entries (let ([l (i 'racket-tools (lambda () null))])
                        (if (list? l)
                            l
                            (list l)))])
@@ -33,7 +33,7 @@
            [else
             (fprintf
              (current-error-port)
-             "warning: ~s provided bad `rico' spec: ~e"
+             "warning: ~s provided bad `racket-tools' spec: ~e"
              d
              entry)]))))
     tools))

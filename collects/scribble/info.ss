@@ -3,3 +3,7 @@
 (define mzscheme-launcher-names '("scribble"))
 (define mzscheme-launcher-libraries '("run.ss"))
 (define compile-omit-paths '("test-reader.ss"))
+
+(define racket-tools
+  '(("scribble" scribble/run "render scribble" #f)))
+
