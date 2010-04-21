@@ -3,6 +3,7 @@
 (require (rename-in "../utils/utils.ss" [infer r:infer])
          "signatures.ss"
          "tc-metafunctions.ss"
+         "tc-subst.ss"
          mzlib/trace
          scheme/list
          syntax/private/util syntax/stx
@@ -201,9 +202,10 @@
        (match expected          
          [(tc-result1: (and t (Mu: _ _))) (loop (ret (unfold t)))]
          [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
-          (for/list ([args argss] [ret rets] [rest rests] [drest drests])
-            (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies))
-                                    args (values->tc-results ret) rest drest))]
+          (let ([fmls (car (syntax->list formals))])            
+            (for/list ([args argss] [ret rets] [rest rests] [drest drests])
+              (tc/lambda-clause/check fmls (car (syntax->list bodies))
+                                      args (values->tc-results ret (syntax->list fmls)) rest drest)))]
          [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))]
     ;; otherwise
     [else (go (syntax->list formals) (syntax->list bodies) null null null)]))

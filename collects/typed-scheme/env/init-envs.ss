@@ -42,11 +42,18 @@
     [(arr: dom rng rest drest kws)
      `(make-arr ,(sub dom) ,(sub rng) ,(sub rest) ,(sub drest) ,(sub kws))]
     [(TypeFilter: t p i)
-     `(make-TypeFilter ,(sub t) ,(sub p) (quote-syntax ,i))]
+     `(make-TypeFilter ,(sub t) ,(sub p) ,(if (identifier? i)
+                                              `(quote-syntax ,i)
+                                              i))]
     [(NotTypeFilter: t p i)
-     `(make-NotTypeFilter ,(sub t) ,(sub p) (quote-syntax ,i))]
+     `(make-NotTypeFilter ,(sub t) ,(sub p) 
+                          ,(if (identifier? i)
+                               `(quote-syntax ,i)
+                               i))]
     [(Path: p i)
-     `(make-Path ,(sub p) (quote-syntax ,i))]
+     `(make-Path ,(sub p) ,(if (identifier? i)
+                               `(quote-syntax ,i)
+                               i))]
     [(? (lambda (e) (or (Filter? e)
                         (Object? e)
                         (PathElem? e)))

@@ -129,3 +129,17 @@
                                    (and drest (cons (for-type (car drest)) (cdr drest)))
                                    (map for-type kws)))]))
    (for-type type)))
+
+;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
+(d/c/p (values->tc-results tc formals)
+  ((or/c Values? ValuesDots?) (listof identifier?) . -> . tc-results?)
+  (match tc
+    [(ValuesDots: (list rs ...) dty dbound)
+     (let-values ([(ts fs os) (for/lists (ts fs os) ([r (in-list rs)]) (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
+       (ret ts fs os
+            (for/fold ([dty dty]) ([(o k) (in-indexed (in-list formals))])
+              (subst-type dty k (make-Path null o) #t))
+            dbound))]
+    [(Values: (list rs ...))
+     (let-values ([(ts fs os) (for/lists (ts fs os) ([r (in-list rs)]) (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
+       (ret ts fs os))]))

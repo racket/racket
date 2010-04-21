@@ -72,27 +72,17 @@
   (define (rec f) (abo xs idxs f))
   (define (sb-t t) t)
   (filter-case (#:Type sb-t #:Filter rec) f
-               [#:TypeFilter t p (lookup: idx)
-                             (make-TypeFilter t p idx)]
-               [#:NotTypeFilter t p (lookup: idx)
-                                (make-NotTypeFilter t p idx)]))
+               [#:TypeFilter 
+                t p (lookup: idx)
+                (make-TypeFilter t p idx)]
+               [#:NotTypeFilter
+                t p (lookup: idx)
+                (make-NotTypeFilter t p idx)]))
 
 (define (merge-filter-sets fs)
   (match fs
     [(list (FilterSet: f+ f-) ...)
      (make-FilterSet (make-AndFilter f+) (make-AndFilter f-))]))
-
-
-
-
-;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
-(d/c/p (values->tc-results tc)
-  ((or/c Values? ValuesDots?) . -> . tc-results?)
-  (match tc
-    [(ValuesDots: (list (Result: ts fs os) ...) dty dbound)
-     (ret ts fs os dty dbound)]
-    [(Values: (list (Result: ts fs os) ...))
-     (ret ts fs os)]))
 
 (define (tc-results->values tc)
   (match tc
