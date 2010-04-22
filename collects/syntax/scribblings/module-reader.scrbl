@@ -187,12 +187,13 @@ identifiers used by the @scheme[reader-option]s.
 
  @item{@scheme[#:language-info] specifies an implementation of
        reflective information that is used by external tools to
-       manipulate the @emph{compiled} or @emph{declared} form of
-       modules in the language @scheme[_something]. For example, when
-       MzScheme starts a program, it uses information attached to the
-       compiled main module to initialize the run-time environment.
+       manipulate the module in the language @scheme[_something] in
+       its @emph{expanded}, @emph{compiled} or @emph{declared} form
+       (as opposed to source). For example, when MzScheme starts a
+       program, it uses information attached to the main module to
+       initialize the run-time environment.
 
-       Since the compiled/declared form exists at a different time
+       Since the expanded/compiled/declared form exists at a different time
        than when the source is read, a @scheme[#:language-info]
        specification is a vector that indicates an implementation of
        the reflective information, instead of a direct implementation
