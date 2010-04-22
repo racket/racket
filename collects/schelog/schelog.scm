@@ -1,6 +1,26 @@
-#lang scheme
+#lang racket
+
+
+;; TODO: figure out what should actually be 'provide'd.
 
 (provide (all-defined-out))
+
+;; A Note on changes: define-macro isn't so nice, but 
+;; someone (Dorai?) helpfully provided commented-out
+;; versions of each macro in syntax-rules style.  
+;; Unfortunately, they didn't compile, but this seemed
+;; related to an inability to capture the '!' name.
+;; The easiest way to fix this was just to take the 
+;; classic "make 'em put the identifier in there" approach,
+;; which means that uses of cut and rel must now include 
+;; a bang explicitly.  It wouldn't be too hard to change
+;; back to a capturing macro; I know syntax-case can do
+;; it, I don't know if syntax-rules can. 
+
+;; Also, I changed a few top-level mutable bindings into
+;; boxed bindings. 
+
+;;-- JBC, 2010-04-22
 
 
 ;MzScheme version of
@@ -718,12 +738,12 @@
 ;the above could also have been written in a more
 ;Prolog-like fashion, viz.
 
-'(define %member
+#;'(define %member
   (%rel ! (x xs y ys)
     ((x (cons x xs)))
     ((x (cons y ys)) (%member x ys))))
 
-'(define %if-then-else
+#;'(define %if-then-else
   (%rel ! (p q r)
     ((p q r) p ! q)
     ((p q r) r)))
@@ -742,8 +762,11 @@
 
 ; deprecated names -- retained here for backward-compatibility
 
-(define == %=)
-(define %notunify %/=)
+;; JBC, 2010-04-22 -- don't think backward compatibility counts any more. commenting 
+;; these out.
+
+#;(define == %=)
+#;(define %notunify %/=)
 
 #;(define-macro %cut
   (lambda e

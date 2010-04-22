@@ -1,3 +1,7 @@
+# JBC, 2010-04-22:
+# this makefile could probably be usefully rendered in scheme... but
+# I'm not going to try.
+
 
 TRIGGER_FILES = history manifest makefile version.tex \
 		schelog.scm schelog.tex
