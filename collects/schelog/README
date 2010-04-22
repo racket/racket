@@ -11,6 +11,14 @@ certainly not portable any more, and crucially the two macros that cause
 capture of the ! symbol now require uses of the macro to supply the bang, thus
 making them non-capturing.
 
+TODO:
+- pull some part of the docs across from their tex format
+- figure out what to do with the makefile (delete it?)
+- turn more of the implicit test cases into explicit test cases
+- clean up this README file
+- figure out whether there are copyright issues
+
+
                           ...
 
 Schelog is for you if you are interested in any or all

@@ -1,4 +1,0 @@
-#lang racket
-
-#|schelog.scm
-|#
