@@ -1,4 +1,4 @@
 #lang s-exp syntax/module-reader
-scheme/gui
+racket/base
 
 #:language-info '#(scheme/language-info get-info #f)
