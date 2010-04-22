@@ -10,7 +10,7 @@
 (define (get-general-acks)
   (string-append
    "The following individuals contributed to the implementation"
-   " and documentation of PLT Scheme: "
+   " and documentation of Racket: "
    "Yavuz Arkun, "
    "Ian Barland, "
    "Eli Barzilay, "
@@ -84,4 +84,4 @@
    "ChongKai Zhu, "
    "and "
    "Paolo Zoppetti "
-   "for their help translating DrScheme's GUI to other languages."))
+   "for their help translating DrRacket's GUI to other languages."))

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual)
 
-@title{Getting Started with PLT Scheme}
+@title{Getting Started with Racket}
 
 If you are new to programming or if you have the patience to work
 through a textbook:
@@ -15,7 +15,7 @@ through a textbook:
        introduces you to the Module language and building web applications.}
 
  @item{@other-manual['(lib "scribblings/guide/guide.scrbl")] describes
-       the rest of the PLT Scheme language, which is much bigger than
+       the rest of the Racket language, which is much bigger than
        the learning-oriented languages of the textbook. Since you
        learned functional programming from the textbook, you'll be
        able to skim chapters 1 and 2 of the Guide.}
@@ -28,15 +28,15 @@ If you're already a programmer and you're in more of a hurry:
 @itemize[
 
  @item{@other-manual['(lib "scribblings/quick/quick.scrbl")] gives you
-       a taste of PLT Scheme.}
+       a taste of Racket.}
 
  @item{@other-manual['(lib "scribblings/more/more.scrbl")] dives much
        deeper and much faster. If it's too much, just skip to the
        Guide.}
 
  @item{@other-manual['(lib "scribblings/guide/guide.scrbl")] starts
-       with a tutorial on Scheme based, and then it describes the rest
-       of the PLT Scheme language.}
+       with a tutorial on Racket basics, and then it describes the rest
+       of the Racket language.}
 
 ]
 
