@@ -93,7 +93,29 @@
      #:literals (operator ...)
      (pattern operator #:attr func reducer)
      ...)
+   (define-splicing-syntax-class (do-rest context left)
+     (pattern (~seq (~var op operator-class)
+                    (~var right (next context))
+                    (~var new-right (do-rest context ((attribute op.func) left #'right.result))))
+              #:with result (attribute new-right.result))
+     (pattern (~seq) #:with result left))
    (define-splicing-syntax-class (name context)
+     (pattern (~seq (~var left (next context))
+                    (~var rest (do-rest context #'left.result)))
+              #:with result
+              (attribute rest.result)))
+   #;
+   (define-splicing-syntax-class (name context)
+     (pattern (~seq (~var left (next context))
+                    (~var op operator-class)
+                    (~var right (name context)))
+              #:with result
+              (cond [(attribute right)
+                     ((attribute op.func) #'left.result #'right.result)]
+                    [else
+                     #'left.result]))
+
+         #;
      (pattern (~seq (~var left (next context))
                     (~optional (~seq (~var op operator-class) (~var right (name context)))))
               #:with result
@@ -111,11 +133,10 @@
 ;; Where operators defined higher in the table have higher precedence.
 (define-syntax (infix-operators stx)
   (define (create-stuff names operator-stuff)
-    (define make (syntax-lambda (expression next-expression operator-stuff)
+    (define make (syntax-lambda (expression next-expression (ops ...))
                                 #;
                                 (printf "Make infix ~a ~a\n" (syntax->datum #'expression) (syntax->datum #'next-expression))
-                                (with-syntax ([(ops ...) #'operator-stuff])
-                                             #'(define-infix-operator expression next-expression ops ...))))
+                                #'(define-infix-operator expression next-expression ops ...)))
     (for/list ([name1 (drop-last names)]
                [name2 (cdr names)]
                [operator operator-stuff])
@@ -125,11 +146,11 @@
                 (with-syntax ([(name ...) (generate-temporaries #'(operator-stuff ...))])
                              (with-syntax ([(result ...)
                                             (create-stuff (cons #'first
-                                                                             (append
-                                                                              (drop-last (syntax->list #'(name ...)))
-                                                                              (list #'last)))
-                                                                       
-                                                                       (syntax->list #'(operator-stuff ...)))])
+                                                                (append
+                                                                  (drop-last (syntax->list #'(name ...)))
+                                                                  (list #'last)))
+
+                                                          (syntax->list #'(operator-stuff ...)))])
                                           #'(begin
                                              result ...)))]))
 
