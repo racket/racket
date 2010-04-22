@@ -9,7 +9,7 @@
 
 @margin-note{
   @not-on-the-web{
-    This is an installation-specific listing.  Running @exec{plt-help}
+    This is an installation-specific listing.  Running @exec{racket-tool docs}
     may open a different page with local and user-specific
     documentation, including documentation for installed
     @link["http://planet.plt-scheme.org/"]{@|PLaneT|} packages.}}

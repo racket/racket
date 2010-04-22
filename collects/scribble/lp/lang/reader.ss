@@ -6,11 +6,11 @@ scribble/lp/lang/lang
 #:read-syntax read-syntax-inside
 #:whole-body-readers? #t
 #:info (scribble-base-info)
-#:module-info (scribble-base-module-info)
+#:language-info (scribble-base-language-info)
 
 (require scribble/reader
          (only-in scribble/base/reader
                   scribble-base-info
-                  scribble-base-module-info))
+                  scribble-base-language-info))
 
 

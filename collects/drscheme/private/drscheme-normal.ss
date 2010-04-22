@@ -116,14 +116,14 @@
     (build-path (collection-path "icons") "pltbw.gif")]
    [else
     (build-path (collection-path "icons") "plt-flat.gif")])
- "DrScheme"
+ "DrRacket"
  99)
 
 (when (getenv "PLTDRBREAK")
   (printf "PLTDRBREAK: creating break frame\n") (flush-output)
   (let ([to-break (eventspace-handler-thread (current-eventspace))])
     (parameterize ([current-eventspace (make-eventspace)])
-      (let* ([f (new frame% (label "Break DrScheme"))]
+      (let* ([f (new frame% (label "Break DrRacket"))]
              [b (new button% 
                      (label "Break Main Thread")
                      (callback

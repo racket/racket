@@ -1,6 +1,6 @@
 #lang scribble/doc
 
-@title{@bold{Quick}: An Introduction to PLT Scheme with Pictures}
+@title{@bold{Quick}: An Introduction to Racket with Pictures}
 
 @author["Matthew Flatt"]
 
@@ -24,22 +24,22 @@
 
 @; ----------------------------------------------------------------------
 
-This tutorial provides a brief introduction to the PLT Scheme
+This tutorial provides a brief introduction to the Racket
 programming language by using one of its picture-drawing
-libraries. Even if you don't intend to use Scheme for your artistic
+libraries. Even if you don't intend to use Racket for your artistic
 endeavours, the picture library supports interesting and enlightening
 examples. After all, a picture is worth five hundred ``hello world''s.
 
 Along the same lines, we assume that you will run the examples using
-@link[url:download-drscheme]{DrScheme}. Using DrScheme is the fastest
+@link[url:download-drscheme]{DrRacket}. Using DrRacket is the fastest
 way to get a sense of what the language and system feels like, even if
-you eventually use Scheme with Emacs, vi, or some other editor.
+you eventually use Racket with Emacs, vi, or some other editor.
 
 @; ----------------------------------------------------------------------
 @section{Ready...}
 
-@link[url:download-drscheme]{Download PLT Scheme}, install, and then
-start DrScheme.
+@link[url:download-drscheme]{Download Racket}, install, and then
+start DrRacket.
 
 @; ----------------------------------------------------------------------
 @section{Set...}
@@ -47,22 +47,22 @@ start DrScheme.
 To draw pictures, we must first load some picture functions, which are
 part of a library for creating slide presentations.  Copy the
 following into the @defterm{definitions area}, which is the top text
-area that you see in DrScheme:
+area that you see in DrRacket:
 
 @schememod[slideshow]
 
 Then click the @onscreen{Run} button. You'll see the text caret move
 to the bottom text area, which is the @defterm{interactions area}.
 
-If you've used DrScheme before, you might need to manually reset the
-language to @onscreen{Module} via the @menuitem["Language" "Choose
-Language..."] menu item before clicking @onscreen{Run}.
+If you've used DrRacket before, you might need to reset DrRacket to
+use the language declared in the source via the @menuitem["Language"
+"Choose Language..."] menu item before clicking @onscreen{Run}.
 
 @; ----------------------------------------------------------------------
 @section{Go!}
 
 When you type an expression after the @onscreen{>} in the interactions
-window and hit Enter, DrScheme evaluates the expression and prints its
+window and hit Enter, DrRacket evaluates the expression and prints its
 result. An expression can be just a value, such as the number
 @scheme[5] or the string @scheme["art gallery"]:
 
@@ -87,12 +87,12 @@ what happens:
 
 @mr-interaction[(circle 10 20)]
 
-Note that DrScheme highlights in pink the expression that triggered
+Note that DrRacket highlights in pink the expression that triggered
 the error (but pink highlighting is not shown in this documentation).
 
 In addition to basic picture constructors like @scheme[circle] and
 @scheme[rectangle], there's a @scheme[hc-append] function that
-combines pictures. When you start composing function calls in Scheme,
+combines pictures. When you start composing function calls in Racket,
 it looks like this:
 
 @mr-interaction[(hc-append (circle 10) (rectangle 10 20))]
@@ -105,7 +105,7 @@ because it combines pictures horizontally, and the next letter is
 
 If you wonder what other functions exist---perhaps a way to stack
 pictures vertically and left-aligned?---move the text caret to the
-name @scheme[hc-append] and press the F1 key in DrScheme. A browser
+name @scheme[hc-append] and press the F1 key in DrRacket. A browser
 window will open, and it will give you a link to the documentation for
 @scheme[hc-append]. Click the link, and you'll see lots of other
 functions.
@@ -183,7 +183,7 @@ bindings. For example, it can be used inside a function body:
 (four (circle 10))
 ]
 
-More typically, Schemers use the @scheme[let] or @scheme[let*] form
+More typically, Racketeers use the @scheme[let] or @scheme[let*] form
 for local binding. An advantage of @scheme[let] is that it can be used
 in any expression position. Also, it binds many identifiers at once,
 instead of requiring a separate @scheme[define] for each identifier:
@@ -222,7 +222,7 @@ Instead of calling @scheme[circle] as a function, try evaluating just
 That is, the identifier @scheme[circle] is bound to a function
 (a.k.a. ``procedure''), just like @scheme[c] is bound to a
 circle. Unlike a circle picture, there's not a simple way of
-completely printing the function, so DrScheme just prints
+completely printing the function, so DrRacket just prints
 @procedure{circle}.
 
 This example shows that functions are values, just like numbers and
@@ -249,7 +249,7 @@ anonymous function:
 The parenthesized names after a @scheme[lambda] are the arguments to
 the function, and the expression after the argument names is the
 function body. Using the word ``lambda'' instead of ``function'' or
-``procedure'' is part of Scheme's history and culture.
+``procedure'' is part of Racket's history and culture.
 
 A @scheme[define] form for a function is really a shorthand for a
 simple @scheme[define] using @scheme[lambda] as the value. For
@@ -261,13 +261,13 @@ example, the @scheme[series] definition could be written as
     (hc-append 4 (mk 5) (mk 10) (mk 20))))
 ]
 
-Most Schemers prefer to use the shorthand function form with
+Most Racketeers prefer to use the shorthand function form with
 @scheme[define] instead of expanding to @scheme[lambda].
 
 @; ----------------------------------------------------------------------
 @section{Lexical Scope}
 
-Scheme is a lexically scoped language, which means that whenever an
+Racket is a lexically scoped language, which means that whenever an
 identifier is used as an expression, something in the textual
 environment of the expression determines the identifier's
 binding. This rule applies to identifiers in a @scheme[lambda] body as
@@ -308,9 +308,9 @@ different alignment of objects within the picture compared to using
 @; ----------------------------------------------------------------------
 @section{Lists}
 
-Scheme inherits much of its style from the language Lisp, whose name
+Racket inherits much of its style from the language Lisp, whose name
 originally stood for ``LISt Processor,'' and lists remain an important
-part of Scheme.
+part of Racket.
 
 The @scheme[list] function takes any number of arguments and returns
 a list containing the given values:
@@ -326,7 +326,7 @@ here, because parentheses are used for both expressions, such as
 expressions and printed results is no coincidence, but we save that
 bit of culture for @seclink[#:doc '(lib
 "scribblings/guide/guide.scrbl") "quoting-lists"]{discussion
-elsewhere}. In the documentation and in DrScheme, result parentheses
+elsewhere}. In the documentation and in DrRacket, result parentheses
 are printed in blue, unlike expression parentheses.
 
 If you have a list, then you'll eventually want to do something with
@@ -386,7 +386,7 @@ Modules are named and distributed in various ways:
 
 @itemize[
 
- @item{Some modules are packaged in the PLT Scheme distribution or
+ @item{Some modules are packaged in the Racket distribution or
        otherwise installed into a hierarchy of
        @defterm{collections}. For example, the module name
        @schememodname[slideshow/flash] means ``the module implemented
@@ -404,18 +404,18 @@ Modules are named and distributed in various ways:
         (random-gaussian)
        ]
 
-       DrScheme automatically downloads version 1.0 of the
+       DrRacket automatically downloads version 1.0 of the
        @filepath{random.plt} library and then imports the
        @filepath{random.ss} module.}
 
  @item{Some modules live relative to other modules, without
        necessarily belonging to any particular collection or package.
-       For example, in DrScheme, if you save your definitions so far in a
+       For example, in DrRacket, if you save your definitions so far in a
        file @filepath{quick.ss} and add the line
 
         @schemeblock[(provide rainbow square)]
 
-       then you can open a new tab or window in DrScheme, type the new
+       then you can open a new tab or window in DrRacket, type the new
        program @filepath{use.ss} in the same directory as
        @filepath{quick.ss}:
 
@@ -433,7 +433,7 @@ Modules are named and distributed in various ways:
 
 ]
 
-Schemers typically write new programs and libraries as modules that
+Racketeers typically write new programs and libraries as modules that
 import each other through relative paths, and that use existing
 libraries from collections and @scheme[planet]. When a program or
 library developed this way seems useful to others, it can be uploaded
@@ -462,7 +462,7 @@ This helps explain what we meant in the previous section when we said
 that @schememodname[scheme] provides @scheme[require] and the
 function-calling syntax. Libraries are not restricted to exporting
 values, such as functions; they can also define new syntactic
-forms. In this sense, Scheme isn't exactly a language at all; it's
+forms. In this sense, Racket isn't exactly a language at all; it's
 more of an idea for how to structure a language so that you can extend
 it or create entirely new languages.
 
@@ -489,27 +489,27 @@ is @scheme[(hc-append 10 expr (code expr))].  In particular,
 
 Of course, the sword of syntactic extension cuts both ways: inventing
 a new language can make it easier to say what you want, but harder for
-others to understand. As it happens, the developers of PLT Scheme are
-constantly giving talks and writing papers that involve Scheme code,
+others to understand. As it happens, the developers of Racket are
+constantly giving talks and writing papers that involve Racket code,
 and it's worthwhile for everyone who works on those products to know
 about @scheme[code].
 
 In fact, you might want to take a look at the @keep-file["quick.scrbl"]
 @link["quick.scrbl"]{source of this document}. You'll see that it
 starts with @schemefont{#lang}, but otherwise doesn't look a lot
-like Scheme; nevertheless, we build this document by running its
-source as a PLT Scheme program. We have to use a lot more than
-@scheme[syntax-rules] to extend Scheme's syntax enough for writing
-documents, but Scheme's syntactic extension can take you a long way.
+like Racket; nevertheless, we build this document by running its
+source as a Racket program. We have to use a lot more than
+@scheme[syntax-rules] to extend Racket's syntax enough for writing
+documents, but Racket's syntactic extension can take you a long way.
 
 @; ----------------------------------------------------------------------
 @section{Objects}
 
 An object system is another example of a sophisticated language
-extension that is worth learning and using for Scheme users. Objects
+extension that is worth learning and using for Racket users. Objects
 are sometimes better than functions, even when you have
 @scheme[lambda], and objects work especially well for graphical user
-interfaces. The API for Scheme's GUI and graphics system is expressed
+interfaces. The API for Racket's GUI and graphics system is expressed
 in terms of objects and classes.
 
 The class system itself is implemented by the
@@ -568,18 +568,18 @@ that's how a frame manages its children by default.
 @; ----------------------------------------------------------------------
 @section{Where to Go From Here}
 
-This introduction to PLT Scheme purposely avoids many of the
-traditional ways of introducing and distinguishing Lisp or Scheme:
+This introduction to Racket purposely avoids many of the
+traditional ways of introducing and distinguishing Lisp or Racket:
 prefix arithmetic notation, symbols, quoting and quasiquoting lists,
 @scheme[eval], first-class continuations, and the idea that all syntax
 is really just a @scheme[lambda] in disguise. While those are all part
-of PLT Scheme, they are not the main ingredients of day-to-day programming
-in PLT Scheme.
+of Racket, they are not the main ingredients of day-to-day programming
+in Racket.
 
-Instead, PLT Scheme programmers typically program with functions,
+Instead, Racket programmers typically program with functions,
 records, objects, exceptions, regular expressions, modules, and
 threads. That is, instead of a ``minimalist'' language---which is the
-way that Scheme is often described---PLT Scheme offers a rich language
+way that Racket is often described---Racket offers a rich language
 with an extensive set of libraries and tools.
 
 If you are new to programming or if you have the patience to work
@@ -589,10 +589,10 @@ have already read it, or if you want to see where the book will take
 you, then see @other-manual['(lib
 "web-server/scribblings/tutorial/continue.scrbl")].
 
-For experienced programmers, to continue touring PLT Scheme from a
+For experienced programmers, to continue touring Racket from a
 systems-oriented perspective instead of pictures, your next stop is
 @other-manual['(lib "scribblings/more/more.scrbl")].
 
-To instead start learning about the full PLT Scheme language and tools
+To instead start learning about the full Racket language and tools
 in depth, move on to @other-manual['(lib "guide.scrbl"
 "scribblings/guide")].

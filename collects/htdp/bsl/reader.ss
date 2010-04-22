@@ -12,7 +12,7 @@
    #:read (wrap-reader read options)
    #:read-syntax (wrap-reader read-syntax options)
    #:info (make-info options)
-   #:module-info (make-module-info options)
+   #:language-info (make-language-info options)
 
    (define options opts)))
 
@@ -36,5 +36,5 @@
     
     [else (use-default key default)]))
 
-(define (make-module-info options)
-  `#(htdp/bsl/module-info module-info ,options))
+(define (make-language-info options)
+  `#(htdp/bsl/language-info get-info ,options))

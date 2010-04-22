@@ -1,0 +1,85 @@
+Installing Schelog
+
+
+*** JBC, 2010-04-22: I conjecture that (as a collection
+within the PLT tree) installation directions are now
+superfluous.  The below is preserved for posterity.
+
+
+
+
+-
+
+First, obtain the Schelog distribution.  This is
+available at
+
+http://www.ccs.neu.edu/~dorai/schelog/schelog.html
+
+Gunzipping and untarring this file produces a directory
+called "schelog".  This directory contains, among other
+subsidiary files:
+
+the Schelog code file "schelog.scm";
+
+the file INSTALL, which you are now reading.
+
+-
+
+The file schelog.scm in the distribution loads in
+MzScheme (and some other Scheme dialects) without
+configuration.  If it does not load in your
+dialect, you can configure Schelog for it using
+the scmxlate package, which is available at
+http://www.ccs.neu.edu/~dorai/scmxlate/scmxlate.html 
+
+Start your Scheme in the schelog directory, and load
+the file scmxlate/scmxlate.scm , using the correct
+relative or full pathname.  You will be asked what your
+Scheme dialect is.  Answer appropriately.  The
+following symbols are used by the porting
+mechanism to identify the corresponding Scheme
+dialects: bigloo (Bigloo); gambit (Gambit); guile
+(Guile); mitscheme (MIT Scheme); mzscheme (MzScheme);
+petite (Petite Chez Scheme); pscheme (Pocket Scheme);
+scm (SCM); stk (STk).
+
+scmxlate will generate a file called
+"my-schelog.scm", which you may rename to
+"schelog.scm".
+
+Load schelog.scm into your Scheme in order to use
+Schelog. 
+ 
+The distribution comes with an "examples" subdirectory
+containing some sample Schelog programs.  In order to
+try an example file, load it into your Scheme after
+ensuring that "schelog.scm" has already been loaded.
+Follow the instructions in the example file.
+
+-
+
+The file "schelog.tex" contains a tutorial on Schelog.  Run it
+through (plain) TeX to obtain viewable/printable
+documentation.  (You will need to run TeX twice to resolve
+cross references.)
+
+You can get a browsable version of the document by
+calling
+
+tex2page schelog.tex
+
+This browsable version is also available for Web
+viewing at
+
+http://www.ccs.neu.edu/~dorai/schelog/schelog.html
+
+tex2page is available at
+
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-
+
+Concise bug reports, questions, and suggestions
+may be emailed to
+
+ds26 at gte dot com

@@ -13,14 +13,12 @@
 ;; user-specific pages using cookies).  (Note: the subpath must match
 ;; where the corresponding document is generated, this is a hack.)
 (define links
-  `((start   "PLT Scheme"       user "index.html")
+  `((start   "Racket"           user "index.html")
     (search  "Search Manuals"   user "search/index.html")
     ---
     (license "License"          plt  "license/index.html")
     (acks    "Acknowledgements" plt  "acks/index.html")
     (release "Release Notes"    plt  "release/index.html")
-    ---
-    (index   "Master Index"     user "master-index/index.html")
     ---
     (bugreport "Report a Bug"   #f ,(format "~a?v=~a" bug-url (version)))))
 

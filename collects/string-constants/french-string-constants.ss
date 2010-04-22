@@ -93,9 +93,9 @@
   (is-this-your-native-language "Le Français est-il votre langue maternelle ?")
   
   (are-you-sure-you-want-to-switch-languages
-   "Ceci va changer le langage utilisé par l'interface graphique, ce qui va nécessiter un redémarrage de DrScheme. Etes-vous certain de vouloir continuer ?")
+   "Ceci va changer le langage utilisé par l'interface graphique, ce qui va nécessiter un redémarrage de DrRacket. Etes-vous certain de vouloir continuer ?")
   
-  (interact-with-drscheme-in-language "Interagir avec DrScheme en Français")
+  (interact-with-drscheme-in-language "Interagir avec DrRacket en Français")
   
   ;; these two should probably be the same in all languages excepet English.
   ;; they are the button labels (under macos and windows, respectively)
@@ -103,9 +103,9 @@
   (accept-and-quit "Accepter et Quitter")
   (accept-and-exit "Accepter et Quitter")
   
-  ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
+  ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
   (plt "PLT")
-  (drscheme "DrScheme")
+  (drscheme "DrRacket")
   (ok "OK")
   (cancel "Annuler")
   (abort "Abandonner")
@@ -127,13 +127,13 @@
   ;; dialog isn't going to be shown again.
   ;; One version for always using the current choice:
   (dont-ask-again-always-current "Ne jamais redemander (utilisera toujours votre présent choix)")
-  ;; One generic version (ie, on the Quit DrScheme dialog)
+  ;; One generic version (ie, on the Quit DrRacket dialog)
   (dont-ask-again "Ne jamais redemander")
   
   ;;; important urls
   (web-materials "Sites web apparentés") ;; menu item title
   (tool-web-sites "Sites web d'outils")   ;; menu item title
-  (drscheme-homepage "DrScheme")
+  (drscheme-homepage "DrRacket")
   (plt-homepage "PLT")
   (how-to-use-scheme "How to Use Scheme") ;; title of a book.
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
@@ -210,10 +210,10 @@
   (welcome-to-something "Bienvenue dans ~a.")
   
   ; this appears in the drscheme about box.
-  (welcome-to-drscheme-version/language "Bienvenue dans DrScheme, version ~a, ~a.")
+  (welcome-to-drscheme-version/language "Bienvenue dans DrRacket, version ~a, ~a.")
   
-  ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
-  (welcome-to-drscheme "Bienvenue dans DrScheme")
+  ; these appear on subsequent lines in the `Help|Welcome to DrRacket' dialog.
+  (welcome-to-drscheme "Bienvenue dans DrRacket")
   
   (goto-line "Aller à la ligne")
   (goto-line-invalid-number
@@ -316,7 +316,7 @@
   (plt:hd:refreshing-manuals-finished "Terminé.")
   (plt:hd:about-help-desk "A propos de l'Aide")
   (plt:hd:help-desk-about-string
-   "L'Aide est une source complète d'information à propos des logiciels du PLT, y compris DrScheme, MzScheme et MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT.")
+   "L'Aide est une source complète d'information à propos des logiciels du PLT, y compris DrRacket, MzScheme et MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT.")
   (plt:hd:help-on-help "Aide de l'Aide")
   (plt:hd:help-on-help-details "Pour obtenir de l'aide sur comment utiliser l'Aide, suivez le premier lien `Help Desk' à partir de la page principale de l'Aide (pour trouver la page principale, si vous n'y êtes pas déjà, cliquez sur le boutton `Maison' qui apparaît en haut de la fenêtre de l'Aide).")
   (reload "Rafraîchir")
@@ -332,7 +332,7 @@
   (plt:hd:manual-search-ordering "Ordre de recherche dans les manuels")
 
   ;; in the help-desk standalone font preference dialog, on a check box
-  (use-drscheme-font-size "Utiliser la taille de police de DrScheme")
+  (use-drscheme-font-size "Utiliser la taille de police de DrRacket")
   
   ;; in the preferences dialog in drscheme there is example text for help desk font size.
   ;; clicking the links in that text produces a dialog with this message
@@ -393,11 +393,11 @@
   (plt-installer-aborted "Installation abandonnée.") ;; msg that appears in the installation window when installation is aborted
   
   ;;; about box
-  (about-drscheme-frame-title "À propos de DrScheme")
+  (about-drscheme-frame-title "À propos de DrRacket")
   
   ;;; save file in particular format prompting.
   (save-as-plain-text "Sauvegarder ce fichier au format texte ?")
-  (save-in-drs-format "Sauvegarder ce fichier au format DrScheme (non-texte) ?")
+  (save-in-drs-format "Sauvegarder ce fichier au format DrRacket (non-texte) ?")
   (yes "Oui")
   (no "Non")
   
@@ -541,7 +541,7 @@
   (mfs-recur-over-subdirectories "Récursion dans les sous-répertoires")
   (mfs-regexp-filename-filter "Expression régulière pour filtrer les noms de fichiers")
   (mfs-search-string "Chercher la chaîne de caractères")
-  (mfs-drscheme-multi-file-search "DrScheme - Recherche dans des fichiers multiples") ;; results window and error message title
+  (mfs-drscheme-multi-file-search "DrRacket - Recherche dans des fichiers multiples") ;; results window and error message title
   (mfs-not-a-dir "\"~a\" n'est pas un répertoire")
   (mfs-open-file "Ouvrir le fichier")
   (mfs-stop-search "Stopper la recherche")
@@ -586,7 +586,7 @@
   
   ;;; raw menu names -- these must match the 
   ;;; versions below, once the &s have been stripped.
-  ;;; if they don't, DrScheme's menus will appear
+  ;;; if they don't, DrRacket's menus will appear
   ;;; in the wrong order.
   (file-menu "Fichier")
   (edit-menu "Editer")
@@ -774,7 +774,7 @@
   ;; if you have leftover autosave files. to see the dialog,
   ;; start up drscheme and modify (but don't save) a file
   ;; (also, do this with an unsaved file). Wait for the autosave
-  ;; files to appear (typically 5 minutes). Kill DrScheme
+  ;; files to appear (typically 5 minutes). Kill DrRacket
   ;; and restart it. You'll see the dialog
   (autosave-autosave-label: "Fichier auto-sauvegardé :")
   (autosave-original-label: "Fichier original :")
@@ -784,7 +784,7 @@
   
   (autosave-show-autosave "Auto-sauvegarder un fichier") ;; title of a window showing the autosave file
   
-  (autosave-explanation "DrScheme a trouvé des fichiers auto-sauvegardés, qui peuvent contenir votre travail non-sauvegardé.")
+  (autosave-explanation "DrRacket a trouvé des fichiers auto-sauvegardés, qui peuvent contenir votre travail non-sauvegardé.")
   
   (autosave-recovered! "Recouvré !") ;; status of an autosave file
   (autosave-deleted "Effacé")       ;; status of an autosave file
@@ -805,7 +805,7 @@
   
   (definitions-modified 
    "Le texte de la fenêtre de définition a été modifié directement sur le disque dur. Sauvegardez ou retournez à la version sur le disque.")
-  (drscheme-internal-error "Erreur interne de DrScheme.")
+  (drscheme-internal-error "Erreur interne de DrRacket.")
   
   ;;; tools
   (invalid-tool-spec "La spécification d'outil qui se trouve dans le fichier info.ss de la collection ~a est invalide. Espérait soit une chaîne de caractères, soit une liste de chaînes de caractères, trouvé : ~e")
@@ -850,7 +850,7 @@
   (save-definitions-as "Sauvegarder les définitions...")
   (save-definitions "&Sauvegarder les définitions")
   (print-definitions "&Imprimer les définitions...")
-  (about-drscheme "A propos de DrScheme")
+  (about-drscheme "A propos de DrRacket")
   (save-other "Sauvegarder autre")
   (save-definitions-as-text "Sauvegarder les définitions au format texte...")
   (save-interactions "Sauvegarder les interactions")
@@ -967,11 +967,11 @@
   ;;; Teachpack messages
   (select-a-teachpack "Sélectionner un teachpack")
   (clear-teachpack "Enlever le teachpack ~a")
-  (teachpack-error-label "DrScheme - erreur avec un teachpack.")
+  (teachpack-error-label "DrRacket - erreur avec un teachpack.")
   (teachpack-didnt-load "Le fichier teachpack ~a n'a pas été correctement chargé.")
   (add-teachpack-menu-item-label "Ajouter un teachpack...")
   (clear-all-teachpacks-menu-item-label "Enlever tous les teachpacks")
-  (drscheme-teachpack-message-title "DrScheme teachpack")
+  (drscheme-teachpack-message-title "DrRacket teachpack")
   (already-added-teachpack "Le teachpack ~a a déjà été ajouté.")
   
   ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
@@ -1061,7 +1061,7 @@
   (module-language-auto-text "Ligne #lang automatique") ;; shows up in the details section of the module language
   
   ;;; from the `not a language language' used initially in drscheme.
-  (must-choose-language "DrScheme ne peut pas traiter un programme avant que vous aillez sélectionné un langage.")
+  (must-choose-language "DrRacket ne peut pas traiter un programme avant que vous aillez sélectionné un langage.")
   
   ; next two appear before and after the name of a text book (which will be in italics)
   (using-a-textbook-before "Utilisant ")
@@ -1082,7 +1082,7 @@
   
   ;;; debug language
   (unknown-debug-frame "[inconnu]")
-  (backtrace-window-title "Trace - DrScheme")
+  (backtrace-window-title "Trace - DrRacket")
   (files-interactions "les interactions de ~a") ;; filled with a filename
   (current-interactions "interactions")
   (current-definitions "définitions")
@@ -1377,7 +1377,7 @@
   ;The Test engine tool
   ;;
   (test-engine-window-title "Résultats des tests")
-  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "Attacher le rapport de test")
   (test-engine-undock-report "Détacher le rapport de test")
   ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
@@ -1412,7 +1412,7 @@
   (test-engine-trace-error "Trace erronée")
 
   ; The ~F is special marker for the offending values, which may be
-  ; printed specially in DrScheme.
+  ; printed specially in DrRacket.
   (test-engine-check-encountered-error
    "check-expect a rencontré l'erreur suivante au lieu de la valeur attendue, ~F. ~n   :: ~a")
   (test-engine-actual-value-differs-error
@@ -1520,7 +1520,7 @@
   (planet-finished "PLaneT: ~a à jour.")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
   
-  ;; string normalization. To see this, paste some text with a ligature into DrScheme
+  ;; string normalization. To see this, paste some text with a ligature into DrRacket
   ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
   (normalize "Normaliser")
   (leave-alone "Ne pas changer")

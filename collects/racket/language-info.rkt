@@ -1,4 +1,4 @@
-(module get-info "pre-base.ss"
+(module language-info "private/pre-base.ss"
 
   (provide get-info)
   
@@ -6,6 +6,6 @@
     (lambda (key default)
       (case key
         [(configure-runtime)
-         '(#(racket/private/runtime configure #f))]
+         '(#(racket/runtime-config configure #f))]
         [else default]))))
 

@@ -6,19 +6,19 @@
  (is-this-your-native-language "Is uw moedertaal Nederlands?")
 
  (are-you-sure-you-want-to-switch-languages
-  "Wisselen van taal vergt een herstart van DrScheme.  Weet u zeker dat u dit wilt?")
+  "Wisselen van taal vergt een herstart van DrRacket.  Weet u zeker dat u dit wilt?")
 
- (interact-with-drscheme-in-language "Werk in het Nederlands met DrScheme")
+ (interact-with-drscheme-in-language "Werk in het Nederlands met DrRacket")
 
  ;; these two should probably be the same in all languages except English.
  ;; they are the button labels (under macos and windows, respectively)
  ;; that go the with the string above.
- (accept-and-quit "OK, sluit DrScheme maar af")
- (accept-and-exit "OK, sluit DrScheme maar af")
+ (accept-and-quit "OK, sluit DrRacket maar af")
+ (accept-and-exit "OK, sluit DrRacket maar af")
  
- ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
+ ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
  (plt "PLT")
- (drscheme "DrScheme")
+ (drscheme "DrRacket")
  (ok "OK")
  (cancel "Annuleren")
  (untitled "Naamloos")
@@ -31,7 +31,7 @@
 
  ;;; important urls
  (web-materials "Verwante Web Sites") ;; menu item title
- (drscheme-homepage "DrScheme")
+ (drscheme-homepage "DrRacket")
  (plt-homepage "PLT")
  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
@@ -91,10 +91,10 @@
  (welcome-to-something "Welkom bij ~a")
  
  ; this appears in the drscheme about box.
- (welcome-to-drscheme-version/language "Welkom bij DrScheme, versie ~a, ~a")
+ (welcome-to-drscheme-version/language "Welkom bij DrRacket, versie ~a, ~a")
 
- ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
- (welcome-to-drscheme "Welkom bij DrScheme")
+ ; these appear on subsequent lines in the `Help|Welcome to DrRacket' dialog.
+ (welcome-to-drscheme "Welkom bij DrRacket")
 
  (goto-line "Ga naar regel")
  (goto-line-invalid-number
@@ -122,7 +122,7 @@
  (help-desk-n "Hulpbron ~a")
  (about-help-desk "Omtrent de Hulpbron")
  (help-desk-about-string
-  "De Hulpbron bevat complete informatie omtrent PLT programmatuur, waaronder DrScheme, MzScheme, en MrEd.\n\nVersie ~a\nAuteursrecht (c) 1995-2001 PLT")
+  "De Hulpbron bevat complete informatie omtrent PLT programmatuur, waaronder DrRacket, MzScheme, en MrEd.\n\nVersie ~a\nAuteursrecht (c) 1995-2001 PLT")
  (help-on-help "Hulp voor hulp")
  (help-on-help-details "Voor hulp bij het gebruik van de Hulpbron, klik de link `Help Desk' op de startpagina van de Hulpbron. (Om op die startpagina te komen, klik op de Startknop bovenaan het hulpbronvenster.)")
  (find-docs-for "Zoektekst:") ; <**> - This whole part needs redoing.  The "search" button is at the wrong place for natural Dutch..
@@ -195,11 +195,11 @@
  (install-plt-file/no "Bewerk")
  
  ;;; about box
- (about-drscheme-frame-title "Omtrent DrScheme")
+ (about-drscheme-frame-title "Omtrent DrRacket")
  
  ;;; save file in particular format prompting.
  (save-as-plain-text "Bestand opslaan als platte tekst?")
- (save-in-drs-format "Bestand opslaan in DrScheme (niet tekst) -vorm?")
+ (save-in-drs-format "Bestand opslaan in DrRacket (niet tekst) -vorm?")
  (yes "Ja")
  (no "Nee") ; -- I personally prefer 'Neen', but it seems most younger people don't..
  
@@ -289,7 +289,7 @@
  (mfs-recur-over-subdirectories "Recursief in mappen")
  (mfs-regexp-filename-filter "Regexp filename filter")
  (mfs-search-string "Zoektekst")
- (mfs-drscheme-multi-file-search "DrScheme - Multi File Search") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "DrRacket - Multi File Search") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" is geen map")
  (mfs-open-file "Bestand openen")
  (mfs-stop-search "Stop met zoeken")
@@ -330,7 +330,7 @@
  
  ;;; raw menu names -- these must match the 
  ;;; versions below, once the &s have been stripped.
- ;;; if they don't, DrScheme's menus will appear
+ ;;; if they don't, DrRacket's menus will appear
  ;;; in the wrong order.
  (file-menu "Bestand")
  (edit-menu "Bewerken")
@@ -467,7 +467,7 @@
  
  (definitions-modified
   "Het bestand met de definities is gewijzigd.  Gelieve op te slaan of te herladen.")
- (drscheme-internal-error "Interne Fout van DrScheme")
+ (drscheme-internal-error "Interne Fout van DrRacket")
  
  ;;; tools <**>
  (invalid-tool-spec "The tool specification in collection ~a's info.ss file is invalid. Expected either a string or a non-empty list of strings, got: ~e")
@@ -504,7 +504,7 @@
  (save-definitions-as "Definities ops&laan als...")
  (save-definitions "Definities opslaan")
  (print-definitions "Definitions af&drukken...")
- (about-drscheme "Omtrent DrScheme")
+ (about-drscheme "Omtrent DrRacket")
  (save-other "Anderszins opslaan")
  (save-definitions-as-text "Definities opslaan als tekst...")
  (save-interactions "Interacties opslaan")
@@ -578,12 +578,12 @@
  ;;; Teachpack messages
  (select-a-teachpack "Kies een lespakket")
  (clear-teachpack "Verwijder lespakket ~a")
- (teachpack-error-label "DrScheme - fout in lespakket") ; -- translated as "error in Teachpack".
+ (teachpack-error-label "DrRacket - fout in lespakket") ; -- translated as "error in Teachpack".
  (teachpack-didnt-load "Lespakket ~a niet correct geladen.")
  (add-teachpack-menu-item-label "Lespakket toevoegen...")
  (clear-all-teachpacks-menu-item-label "Alle lespakketten verwijderen")
  (teachpack-not-only-one-import "Lespakket unit/sig in ~a moet precies één 'import' hebben.") ; <**> -- ??
- (drscheme-teachpack-message-title "DrScheme-lespakket")
+ (drscheme-teachpack-message-title "DrRacket-lespakket")
  (already-added-teachpack "Lespakket ~a al aanwezig")
  
  ;;; Language dialog
@@ -635,7 +635,7 @@
  ;(module-language-one-line-summary "Execute creates a REPL in the context of the module, including the module's declared language")
   
  ;;; debug language
- (backtrace-window-title "Spoor - DrScheme")
+ (backtrace-window-title "Spoor - DrRacket")
  (files-interactions "~a's interacties") ;; filled with a filename
  (current-interactions "interacties")
  (current-definitions "definities")

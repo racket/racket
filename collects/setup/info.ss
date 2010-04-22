@@ -5,4 +5,4 @@
 (define mzscheme-launcher-libraries '("main.ss"))
 (define mzscheme-launcher-names '("Setup PLT"))
 
-(define rico '(("setup" setup/main "install and build libraries and documentation" 90)))
+(define racket-tools '(("setup" setup/main "install and build libraries and documentation" 90)))

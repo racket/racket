@@ -63,15 +63,8 @@
         (let* ([defs-port (open-input-text-editor defs-text)]
                [read-successfully?
                 (with-handlers ((exn:fail? (λ (x) #f)))
-                  (let/ec k
-                    (let ([orig-security (current-security-guard)])
-                      (parameterize ([current-security-guard
-                                      (make-security-guard
-                                       orig-security
-                                       (lambda (what path modes) #t)
-                                       (lambda (what host port mode) (k #f)))])
-                        (read-language defs-port (λ () (void)))
-                        #t))))])
+                  (read-language defs-port (λ () #f))
+                  #t)])
           (cond
             [read-successfully?
              (let* ([str (send defs-text get-text 0 (file-position defs-port))]

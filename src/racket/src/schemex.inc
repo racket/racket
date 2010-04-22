@@ -154,6 +154,7 @@
   scheme_extension_table->scheme_eval_string_with_prompt = scheme_eval_string_with_prompt;
   scheme_extension_table->scheme_eval_string_multi_with_prompt = scheme_eval_string_multi_with_prompt;
   scheme_extension_table->scheme_eval_string_all_with_prompt = scheme_eval_string_all_with_prompt;
+  scheme_extension_table->scheme_eval_all_with_prompt = scheme_eval_all_with_prompt;
   scheme_extension_table->scheme_eval_module_string = scheme_eval_module_string;
   scheme_extension_table->_scheme_apply_known_prim_closure = _scheme_apply_known_prim_closure;
   scheme_extension_table->_scheme_apply_known_prim_closure_multi = _scheme_apply_known_prim_closure_multi;

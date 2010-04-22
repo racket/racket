@@ -6,32 +6,32 @@
 
 @main-page['license]
 
-PLT software and documentation is distributed under the GNU Lesser
+Racket software and documentation is distributed under the GNU Lesser
 General Public License (LGPL).  This means
 
 @itemize[
 
- @item{You can link PLT software (such as MzScheme or MrEd) into
+ @item{You can link Racket software (such as Racket) into
        proprietary applications, provided you follow the specific
        rules stated in the LGPL.}
 
- @item{You can modify PLT software. If you distribute a modified
+ @item{You can modify Racket software. If you distribute a modified
        version, you must distribute it under the terms of the LGPL,
        which in particular means that you must release the source code
        for the modified software.}
 
 ]
 
-See @filepath{doc/release-notes/COPYING.LIB} in your PLT installation
+See @filepath{doc/release-notes/COPYING.LIB} in your Racket installation
 for more information.
 
 @copyright{
-  PLT Scheme
+  Racket
   Copyright (c) 1995-2003 PLT
   Copyright (c) 2004-2010 PLT Scheme Inc.
 }
 
-PLT software includes or extends the following copyrighted material:
+Racket software includes or extends the following copyrighted material:
 
 @copyright{
   DrScheme
