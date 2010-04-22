@@ -3470,11 +3470,6 @@ typedef struct Scheme_Place_Async_Channel {
   void *wakeup_signal;
 } Scheme_Place_Async_Channel;
 
-Scheme_Object *scheme_place_async_channel_create();
-void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
-Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch);
-
-
 Scheme_Env *scheme_place_instance_init();
 void scheme_place_instance_destroy();
 void scheme_kill_green_thread_timer();
