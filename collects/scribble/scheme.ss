@@ -667,7 +667,8 @@
               (null? s)
               (hash? s)
               (graph-defn? s)
-              (graph-reference? s))
+              (graph-reference? s)
+              (struct-proxy? s))
           (gen-typeset c multi-line? prefix1 prefix suffix color? qq?)
           (typeset-atom c 
                         (letrec ([mk

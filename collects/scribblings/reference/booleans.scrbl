@@ -218,7 +218,7 @@ values. For opaque structure types, @scheme[equal?] is the same as
 
 @section{Boolean Synonyms}
 
-@note-lib[scheme/bool]
+@note-lib[racket/bool]
 
 @defthing[true boolean?]{A synonym for @scheme[#t].}
 

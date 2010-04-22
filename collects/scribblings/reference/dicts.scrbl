@@ -3,7 +3,7 @@
           scribble/eval)
 
 @(define dict-eval (make-base-eval))
-@(interaction-eval #:eval dict-eval (require scheme/dict))
+@(interaction-eval #:eval dict-eval (require racket/dict))
 
 @title[#:tag "dicts"]{Dictionaries}
 
@@ -24,7 +24,7 @@ values. The following datatypes are all dictionaries:
 
 ]
 
-@note-lib[scheme/dict]
+@note-lib[racket/dict]
 
 @defproc[(dict? [v any/c]) boolean?]{
 

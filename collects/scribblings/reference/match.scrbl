@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "mz.ss"
           "match-grammar.ss"
-          scheme/match)
+          racket/match)
 
 @(define match-eval (make-base-eval))
-@(interaction-eval #:eval match-eval (require scheme/match))
+@(interaction-eval #:eval match-eval (require racket/match))
 
 @title[#:tag "match"]{Pattern Matching}
 
@@ -14,7 +14,7 @@ The @scheme[match] form and related forms support general pattern
 matching on Scheme values. See also @secref["regexp"] for information
 on regular-expression matching on strings, bytes, and streams.
 
-@note-lib[scheme/match #:use-sources (scheme/match)]
+@note-lib[racket/match #:use-sources (racket/match)]
 
 @defform/subs[(match val-expr clause ...)
               ([clause [pat expr ...+]

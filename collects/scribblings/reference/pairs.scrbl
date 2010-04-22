@@ -1,9 +1,9 @@
 #lang scribble/doc
 @(require "mz.ss"
           scribble/scheme
-          scheme/generator
-          scheme/list
-          (for-syntax scheme/base))
+          racket/generator
+          racket/list
+          (for-syntax racket/base))
 
 @(define (generate-c_r-example proc)
   (define (make-it start n)
@@ -648,10 +648,10 @@ Like @scheme[assoc], but finds an element using the predicate
 @; ----------------------------------------
 @section{Additional List Functions and Synonyms}
 
-@note-lib[scheme/list]
+@note-lib[racket/list]
 @(define list-eval (make-base-eval))
 @(interaction-eval #:eval list-eval
-                   (require scheme/list (only-in scheme/function negate)))
+                   (require racket/list (only-in racket/function negate)))
 
 @defthing[empty null?]{The empty list.
 @mz-examples[#:eval list-eval

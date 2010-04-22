@@ -1,19 +1,19 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-syntax scheme/base)
-          (for-label scheme/serialize))
+          (for-syntax racket/base)
+          (for-label racket/serialize))
 
 @(define posn-eval (make-base-eval))
-@(interaction-eval #:eval posn-eval (require (for-syntax scheme/base)))
+@(interaction-eval #:eval posn-eval (require (for-syntax racket/base)))
 
-@title[#:tag "define-struct"]{Defining Structure Types: @scheme[define-struct]}
+@title[#:tag "define-struct"]{Defining Structure Types: @scheme[struct]}
 
 @guideintro["define-struct"]{@scheme[define-struct]}
 
-@defform/subs[(define-struct id-maybe-super (field ...)
-                             struct-option ...)
-              ([id-maybe-super id
-                               (id super-id)]
+@defform/subs[(struct id maybe-super (field ...)
+                      struct-option ...)
+              ([maybe-super code:blank
+                            super-id]
                [field field-id
                       [field-id field-option ...]]
                [struct-option #:mutable
@@ -34,7 +34,7 @@ Creates a new @techlink{structure type} (or uses a pre-existing
 structure type if @scheme[#:prefab] is specified), and binds
 transformers and variables related to the @tech{structure type}.
 
-A @scheme[define-struct] form with @math{n} @scheme[field]s defines up
+A @scheme[struct] form with @math{n} @scheme[field]s defines up
 to @math{4+2n} names:
 
 @itemize[
@@ -42,16 +42,15 @@ to @math{4+2n} names:
  @item{@schemeidfont{struct:}@scheme[id], a @deftech{structure type
        descriptor} value that represents the @tech{structure type}.}
 
- @item{@scheme[constructor-id] (which defaults to
-       @schemeidfont{make-}@scheme[id]), a @deftech{constructor}
-       procedure that takes @math{m} arguments and returns a new
-       instance of the @tech{structure type}, where @math{m} is the
-       number of @scheme[field]s that do not include an
-       @scheme[#:auto] option.}
+ @item{@scheme[constructor-id] (which defaults to @scheme[id]), a
+       @deftech{constructor} procedure that takes @math{m} arguments
+       and returns a new instance of the @tech{structure type}, where
+       @math{m} is the number of @scheme[field]s that do not include
+       an @scheme[#:auto] option.}
 
  @item{@scheme[id]@schemeidfont{?}, a @deftech{predicate} procedure
        that returns @scheme[#t] for instances of the @tech{structure
-       type} (constructed by @schemeidfont{make-}@scheme[id] or the
+       type} (constructed by @scheme[constructor-id] or the
        @tech{constructor} for a subtype) and @scheme[#f] for any other
        value.}
 
@@ -125,7 +124,7 @@ If the @scheme[#:omit-define-syntaxes] option is supplied, then
 @scheme[id] is not bound as a transformer. If the
 @scheme[#:omit-define-values] option is supplied, then none of the
 usual variables are bound, but @scheme[id] is bound. If both are
-supplied, then the @scheme[define-struct] form is equivalent to
+supplied, then the @scheme[struct] form is equivalent to
 @scheme[(begin)].
 
 If @scheme[#:auto] is supplied as a @scheme[field-option], then the
@@ -147,27 +146,28 @@ For serialization, see @scheme[define-serializable-struct].
 
 @defexamples[
 #:eval posn-eval
-(define-struct posn (x y [z #:auto])
-               #:auto-value 0
-               #:transparent)
-(make-posn 1 2)
-(posn? (make-posn 1 2))
-(posn-y (make-posn 1 2))
+(struct posn (x y [z #:auto])
+  #:auto-value 0
+  #:transparent)
+(posn 1 2)
+(posn? (posn 1 2))
+(posn-y (posn 1 2))
 ]
 
 @defs+int[
 #:eval posn-eval
-[(define-struct (color-posn posn) (hue) #:mutable)
- (define cp (make-color-posn 1 2 "blue"))]
+[(struct color-posn posn (hue) #:mutable)
+ (define cp (color-posn 1 2 "blue"))]
 (color-posn-hue cp)
 cp
 (set-posn-z! cp 3)
 ]}
 
+
 @defform[(struct-field-index field-id)]{
 
 This form can only appear as an expression within a
-@scheme[define-struct] form; normally, it is used with
+@scheme[struct] form; normally, it is used with
 @scheme[#:property], especially for a property like
 @scheme[prop:procedure]. The result of a @scheme[struct-field-index]
 expression is an exact, non-negative integer that corresponds to the
@@ -176,12 +176,36 @@ position within the structure declaration of the field named by
 
 @defexamples[
 #:eval posn-eval
-(define-struct mood-procedure (base rating)
-               #:property prop:procedure (struct-field-index base))
-(define happy+ (make-mood-procedure add1 10))
+(struct mood-procedure (base rating)
+  #:property prop:procedure (struct-field-index base))
+(define happy+ (mood-procedure add1 10))
 (happy+ 2)
 (mood-procedure-rating happy+)
 ]}
+
+
+@defform/subs[(define-struct id-maybe-super (field ...)
+                             struct-option ...)
+              ([id-maybe-super id
+                               (id super-id)])]{
+
+Like @scheme[struct], except that the syntax for supplying a
+@scheme[super-id] is different, and the default constructor name
+use a @schemeidfont{make-} prefix on @scheme[id].
+
+This form is provided for backward compatibility; @scheme[struct] is
+preferred.
+
+@defexamples[
+#:eval posn-eval
+(define-struct posn (x y [z #:auto])
+   #:auto-value 0
+   #:transparent)
+(make-posn 1 2)
+(posn? (make-posn 1 2))
+(posn-y (make-posn 1 2))
+]}
+
 
 @defform[(define-struct/derived (id . rest-form) 
            id-maybe-super (field ...) struct-option ...)]{

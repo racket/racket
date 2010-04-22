@@ -256,7 +256,7 @@ Windows examples.
 (build-path p2 p1) 
  (code:comment @#,t{Unix and Windows: raises @scheme[exn:fail:contract]; @scheme[p1] is absolute})
 (build-path p1 p2) 
- (code:comment @#,t{Unix: is @scheme["/home/joeuser/src/scheme/../../docs/Scheme"]})
+ (code:comment @#,t{Unix: is @scheme["/home/joeuser/src/racket/../../docs/Scheme"]})
  (code:comment @#,t{Windows: is @scheme["C:\\Joe's Files\\src\\scheme\\..\\..\\docs\\Scheme"]})
 ]}
 
@@ -496,7 +496,7 @@ to the end.}
 @;------------------------------------------------------------------------
 @section{More Path Utilities}
 
-@note-lib[scheme/path]
+@note-lib[racket/path]
 
 @defproc[(explode-path [path (or/c path-string? path-for-some-system?)]) 
          (listof (or/c path-for-some-system? 'up 'same))]{

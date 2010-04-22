@@ -453,7 +453,7 @@ and @scheme[v2], and its result is returned by
 
 A @idefterm{primitive procedure} is a built-in procedure that is
 implemented in low-level language. Not all procedures of
-@schememodname[scheme/base] are primitives, but many are. The
+@schememodname[racket/base] are primitives, but many are. The
 distinction is mainly useful to other low-level code.
 
 @defproc[(primitive? [v any/c]) boolean?]{
@@ -479,9 +479,9 @@ applied.}
 @; ----------------------------------------
 @section{Additional Procedure Functions}
 
-@note-lib[scheme/function]
+@note-lib[racket/function]
 @(define fun-eval (make-base-eval))
-@(interaction-eval #:eval fun-eval (require scheme/function))
+@(interaction-eval #:eval fun-eval (require racket/function))
 
 @defproc[(const [v any]) procedure?]{
 

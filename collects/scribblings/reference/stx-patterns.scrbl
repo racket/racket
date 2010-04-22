@@ -6,7 +6,7 @@
 @(define syntax-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require (for-syntax scheme/base)))
+       (the-eval '(require (for-syntax racket/base)))
        the-eval)))
 
 @title[#:tag "stx-patterns"]{Pattern-Based Syntax Matching}
@@ -80,9 +80,9 @@ A syntax object matches a @scheme[pattern] as follows:
 
  @specsubform[(pattern ...+ . pattern)]{
 
- The last @scheme[pattern] must not be a @scheme/form[(pattern ...)],
- @scheme/form[(pattern ...+ . pattern)], @scheme/form[(pattern ... pattern
- ellipses pattern ...)], or @scheme/form[(pattern ... pattern ellipses
+ The last @scheme[pattern] must not be a @racket/form[(pattern ...)],
+ @racket/form[(pattern ...+ . pattern)], @racket/form[(pattern ... pattern
+ ellipses pattern ...)], or @racket/form[(pattern ... pattern ellipses
  pattern ... . pattern)] form.
 
  Like the previous kind of pattern, but matches syntax objects that
@@ -155,7 +155,7 @@ A syntax object matches a @scheme[pattern] as follows:
  @scheme[const].}
 
 @mz-examples[
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 (define-syntax (swap stx)
   (syntax-case stx ()
     [(_ a b) #'(let ([t a])
@@ -490,4 +490,4 @@ get the identifier's transformer value, and then test the value with
 @scheme[syntax-pattern-variable?].
 
 The @scheme[syntax-pattern-variable?] procedure is provided
-@scheme[for-syntax] by @schememodname[scheme/base].}
+@scheme[for-syntax] by @schememodname[racket/base].}

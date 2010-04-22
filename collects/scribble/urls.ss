@@ -1,8 +1,10 @@
+#lang racket/base
 
-(module urls mzscheme
-  (provide (all-defined))
+(provide (all-defined-out)
+         (rename-out [url:drracket url:drscheme]
+                     [url:download-drracket url:download-drscheme]))
 
-  (define url:drscheme "http://www.drscheme.org/")
-  (define url:download-drscheme "http://download.plt-scheme.org/drscheme/")
-  
-  (define url:planet "http://planet.plt-scheme.org/"))
+(define url:drracket "http://racket-lang.org/")
+(define url:download-drracket "http://racket-lang.org/")
+
+(define url:planet "http://planet.plt-scheme.org/")

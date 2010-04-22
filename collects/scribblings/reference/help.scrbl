@@ -2,9 +2,9 @@
 @(require "mz.ss"
           scribble/core
           scribble/html-properties
-          (for-label scheme/help
+          (for-label racket/help
                      net/url
-                     scheme/gui))
+                     racket/gui/base))
 
 @; Beware of this hard-wired link to the main doc page:
 @(define main-doc-page
@@ -18,7 +18,7 @@
 
 @title{Interactive Help}
 
-@note-init-lib[scheme/help]
+@note-init-lib[racket/help]
 
 @deftogether[(
 @defidform[help]
@@ -67,8 +67,8 @@ introduces a binding without actually executing the
 documentation, but cannot or do not want to run the providing module.
 
 @schemeblock[
-(require scheme/gui) (code:comment @#,t{does not work in @exec{mzscheme}})
-(require (for-label scheme/gui)) (code:comment @#,t{ok in @exec{mzscheme}})
+(require racket/gui) (code:comment @#,t{does not work in @exec{mzscheme}})
+(require (for-label racket/gui)) (code:comment @#,t{ok in @exec{mzscheme}})
 (help frame%)
 ]
 
@@ -82,7 +82,7 @@ The @scheme[(help id #:from module-path)] variant is similar to
 @scheme[for-label] in a temporary namespace.)
 
 @schemeblock[
-(help frame% #:from scheme/gui) (code:comment @#,t{equivalent to the above})
+(help frame% #:from racket/gui) (code:comment @#,t{equivalent to the above})
 ]
 
 The @scheme[(help #:search datum ...)] form is similar to

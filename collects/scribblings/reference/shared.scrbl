@@ -1,12 +1,12 @@
 #lang scribble/doc
 @(require "mz.ss"
           scribble/struct
-          scheme/shared
-          (for-label scheme/shared))
+          racket/shared
+          (for-label racket/shared))
 
 
 @(define shared-eval (make-base-eval))
-@(interaction-eval #:eval shared-eval (require scheme/shared))
+@(interaction-eval #:eval shared-eval (require racket/shared))
 
 @(define maker
    (make-element #f (list
@@ -20,7 +20,7 @@
 
 @title[#:tag "shared"]{Constructing Graphs: @scheme[shared]}
 
-@note-lib[scheme/shared]
+@note-lib[racket/shared]
 
 @defform[(shared ([id expr] ...) body ...+)]{
 

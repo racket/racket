@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/struct
           scribble/scheme
-          (for-syntax scheme/base)
+          (for-syntax racket/base)
           "mz.ss"
           "prog-steps.ss")
 

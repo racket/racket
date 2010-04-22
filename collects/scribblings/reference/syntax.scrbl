@@ -1,24 +1,24 @@
 #lang scribble/doc
 @(require "mz.ss"
           scribble/bnf
-          (for-label (only-in scheme/require-transform
+          (for-label (only-in racket/require-transform
                               make-require-transformer)
-                     scheme/require-syntax
-                     scheme/require
-                     (only-in scheme/provide-transform
+                     racket/require-syntax
+                     racket/require
+                     (only-in racket/provide-transform
                               make-provide-transformer)
-                     scheme/provide-syntax
-                     scheme/provide
-                     scheme/nest
-                     scheme/package
-                     scheme/splicing
-                     scheme/runtime-path))
+                     racket/provide-syntax
+                     racket/provide
+                     racket/nest
+                     racket/package
+                     racket/splicing
+                     racket/runtime-path))
 
 @(define require-eval (make-base-eval))
 @(define syntax-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require (for-syntax scheme/base)))
+       (the-eval '(require (for-syntax racket/base)))
        the-eval)))
 @(define meta-in-eval (syntax-eval))
 
@@ -208,7 +208,7 @@ be preserved in marshaled bytecode. See also
 See also @secref["module-eval-model"] and @secref["mod-parse"].
 
 @defexamples[#:eval (syntax-eval)
-(module duck scheme/base
+(module duck racket/base
   (provide num-eggs quack)
   (define num-eggs 2)
   (define (quack n)
@@ -222,7 +222,7 @@ See also @secref["module-eval-model"] and @secref["mod-parse"].
 Legal only in a @tech{module begin context}, and handled by the
 @scheme[module] form.
 
-The @scheme[#%module-begin] form of @schememodname[scheme/base] wraps
+The @scheme[#%module-begin] form of @schememodname[racket/base] wraps
 every top-level expression to print non-@|void-const| results using
 @scheme[current-print].}
 
@@ -297,7 +297,7 @@ The syntax of @scheme[require-spec] can be extended via
 @scheme[require-spec]s are specified in a @scheme[require], the
 bindings of each @scheme[require-spec] are visible for expanding later
 @scheme[require-spec]s. The pre-defined forms (as exported by
-@scheme[scheme/base]) are as follows:
+@scheme[racket/base]) are as follows:
 
  @specsubform[module-path]{ Imports all exported bindings from the
   named module, using the export identifiers as the local identifiers.
@@ -314,7 +314,7 @@ bindings of each @scheme[require-spec] are visible for expanding later
   error is reported.
 
   @defexamples[#:eval (syntax-eval)
-    (require (only-in scheme/tcp
+    (require (only-in racket/tcp
 	              tcp-listen
                       (tcp-accept my-accept)))
     tcp-listen
@@ -329,7 +329,7 @@ bindings of each @scheme[require-spec] are visible for expanding later
   reported.
 
   @defexamples[#:eval (syntax-eval)
-    (require (except-in scheme/tcp
+    (require (except-in racket/tcp
 	                tcp-listen))
     tcp-accept
     tcp-listen
@@ -342,7 +342,7 @@ bindings of each @scheme[require-spec] are visible for expanding later
   identifiers before prefixing.
 
   @defexamples[#:eval (syntax-eval)
-    (require (prefix-in tcp: scheme/tcp))
+    (require (prefix-in tcp: racket/tcp))
     tcp:tcp-accept
     tcp:tcp-listen
   ]}
@@ -354,7 +354,7 @@ bindings of each @scheme[require-spec] are visible for expanding later
   describes, a syntax error is reported.
   
   @defexamples[#:eval (syntax-eval)
-    (require (rename-in scheme/tcp
+    (require (rename-in racket/tcp
                         (tcp-accept accept)
 			(tcp-listen listen)))
     accept
@@ -365,8 +365,8 @@ bindings of each @scheme[require-spec] are visible for expanding later
   The union of the @scheme[require-spec]s.
   
   @defexamples[#:eval (syntax-eval)
-    (require (combine-in (only-in scheme/tcp tcp-accept)
-                         (only-in scheme/tcp tcp-listen)))
+    (require (combine-in (only-in racket/tcp tcp-accept)
+                         (only-in racket/tcp tcp-listen)))
     tcp-accept
     tcp-listen
   ]}
@@ -563,7 +563,7 @@ corresponds to the default @tech{module name resolver}.
  @scheme[_rel-string], @scheme[id] must not contain @litchar{.}.
 
  @examples[#:eval require-eval
-   (eval:alts (require scheme/tcp) (void))]}
+   (eval:alts (require racket/tcp) (void))]}
 
  @defsubform[(file string)]{Similar to the plain @scheme[rel-string]
  case, but @scheme[string] is a path---possibly absolute---using the
@@ -878,7 +878,7 @@ follows.
    (module nest2 scheme
     (define-for-syntax eggs 2)
     (provide (for-syntax eggs)))
-   (require (for-meta 2 scheme/base)
+   (require (for-meta 2 racket/base)
             (for-syntax 'nest2))
    (define-syntax (test stx)
     (define-syntax (show-eggs stx)
@@ -1023,7 +1023,7 @@ context of the @scheme[phaseless-spec] form.}
 
 @subsection{Additional @scheme[require] Forms}
 
-@note-lib-only[scheme/require]
+@note-lib-only[racket/require]
 
 The following forms support more complex selection and manipulation of
 sets of imported identifiers.
@@ -1034,7 +1034,7 @@ sets of imported identifiers.
   expression (see @secref["regexp"]).
 
 @defexamples[#:eval (syntax-eval)
-(module zoo scheme/base
+(module zoo racket/base
   (provide tunafish swordfish blowfish
            monkey lizard ant)
   (define tunafish 1)
@@ -1043,7 +1043,7 @@ sets of imported identifiers.
   (define monkey 4)
   (define lizard 5)
   (define ant 6))
-(require scheme/require)
+(require racket/require)
 (require (matching-identifiers-in #rx"\\w*fish" 'zoo))
 tunafish
 swordfish
@@ -1071,7 +1071,7 @@ monkey
   (provide (all-from-out 'earth)
            (all-from-out 'mars)))
 
-(require scheme/require)
+(require racket/require)
 (require (subtract-in 'solar-system 'earth))
 land
 aliens
@@ -1092,8 +1092,8 @@ aliens
                 (and (regexp-match? #rx"^[a-z-]+$" name)
                      (regexp-replace
                       #rx"-" (string-titlecase name) "")))
-              scheme/base))]
-  will get the @scheme[scheme/base] bindings that match the regexp,
+              racket/base))]
+  will get the @scheme[racket/base] bindings that match the regexp,
   and renamed to use ``camel case.''}
 
 @defform[(path-up rel-string ...)]{
@@ -1111,16 +1111,16 @@ This form is useful in setting up a ``project environment''.  For
 example, you can write a @filepath{config.ss} file in the root
 directory of your project with:
 @schememod[
-  scheme/base
-  (require scheme/require-syntax (for-syntax "utils/in-here.ss"))
+  racket/base
+  (require racket/require-syntax (for-syntax "utils/in-here.ss"))
   ;; require form for my utilities
   (provide utils-in)
   (define-require-syntax utils-in in-here-transformer)
 ]
 and in @filepath{utils/in-here.ss} in the root:
 @schememod[
-  scheme/base
-  (require scheme/runtime-path)
+  racket/base
+  (require racket/runtime-path)
   (provide in-here-transformer)
   (define-runtime-path here ".")
   (define (in-here-transformer stx)
@@ -1132,14 +1132,14 @@ and in @filepath{utils/in-here.ss} in the root:
 ]
 Finally, you can use it via @scheme[path-up]:
 @schemeblock[
-  (require scheme/require (path-up "config.ss") (utils-in foo))]
+  (require racket/require (path-up "config.ss") (utils-in foo))]
 Note that the order of requires in this form is important, as each of
 the first two bind the identifier used in the following.
 
 An alternative in this scenario is to use @scheme[path-up] directly to
 get to the utility module:
 @schemeblock[
-  (require scheme/require (path-up "utils/foo.ss"))]
+  (require racket/require (path-up "utils/foo.ss"))]
 but then you need to be careful with subdirectories that are called
 @filepath{utils}, which will override the one in the project's root.
 In other words, the previous method requires a single unique name.}
@@ -1148,7 +1148,7 @@ In other words, the previous method requires a single unique name.}
 
 @subsection{Additional @scheme[provide] Forms}
 
-@note-lib-only[scheme/provide]
+@note-lib-only[racket/provide]
 
 @defform[(matching-identifiers-out regexp provide-spec)]{ Like
   @scheme[provide-spec], but including only exports of bindings with
@@ -1694,7 +1694,7 @@ See also @scheme[local], which supports local bindings with
 @;------------------------------------------------------------------------
 @section[#:tag "local"]{Local Definitions: @scheme[local]}
 
-@note-lib[scheme/local]
+@note-lib[racket/local]
 
 @defform[(local [definition ...] body ...+)]{
 
@@ -2073,7 +2073,7 @@ bound (at @tech{phase level} 1).}
 
 @subsection[#:tag "require-syntax"]{@scheme[require] Macros}
 
-@note-lib-only[scheme/require-syntax]
+@note-lib-only[racket/require-syntax]
 
 @defform*[[(define-require-syntax id expr)
            (define-require-syntax (id args ...) body ...+)]]{
@@ -2095,7 +2095,7 @@ expands to a definition of the first form where the @scheme[expr] is a
 
 @subsection[#:tag "provide-syntax"]{@scheme[provide] Macros}
 
-@note-lib-only[scheme/provide-syntax]
+@note-lib-only[racket/provide-syntax]
 
 @defform*[[(define-provide-syntax id expr)
            (define-provide-syntax (id args ...) body ...+)]]{
@@ -2420,7 +2420,7 @@ provides a hook to control interactive evaluation through
 @;------------------------------------------------------------------------
 @section[#:tag "nest"]{Flattening Syntactic Sequences: @scheme[nest]}
 
-@note-lib[scheme/nest]
+@note-lib[racket/nest]
 
 @defform[(nest ([datum ...+] ...) body ...+)]{
 

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss"
           scribble/scheme
-          (for-label scheme/mpair))
+          (for-label racket/mpair))
 
 @title[#:tag "mpairs"]{Mutable Pairs and Lists}
 
@@ -52,7 +52,7 @@ Changes the @tech{mutable pair} @scheme[p] so that its second element is
 @; ----------------------------------------
 @section{Mutable List Functions}
 
-@note-lib-only[scheme/mpair]
+@note-lib-only[racket/mpair]
 
 For functions described in this section, contracts are not directly
 enforced. In particular, when a @tech{mutable list} is expected,

@@ -1,21 +1,21 @@
 #lang scribble/doc
 @(require "common.ss"
-          (for-label scheme/gui/dynamic))
+          (for-label racket/gui/dynamic))
 
 @title{Dynamic Loading}
 
-@defmodule[scheme/gui/dynamic]{The @schememodname[scheme/gui/dynamic]
-library provides functions for dynamically accessing the PLT Scheme
-GUI toolbox, instead of directly requiring @scheme[scheme/gui] or
-@scheme[scheme/gui/base].}
+@defmodule[racket/gui/dynamic]{The @racketmodname[racket/gui/dynamic]
+library provides functions for dynamically accessing the PLT Racket
+GUI toolbox, instead of directly requiring @racket[racket/gui] or
+@racket[racket/gui/base].}
 
 @defproc[(gui-available?) boolean?]{
 
-Returns @scheme[#t] if dynamic access to the GUI bindings are
+Returns @racket[#t] if dynamic access to the GUI bindings are
 available---that is, that the program is being run as a
 @exec{mred}-based application, as opposed to a pure
-@exec{mzscheme}-based application, and that GUI modules are attached
-to the namespace in which @scheme[scheme/gui/dynamic] was
+@exec{mzracket}-based application, and that GUI modules are attached
+to the namespace in which @racket[racket/gui/dynamic] was
 instantiated.
 
 This predicate can be used in code that optionally uses GUI elements
@@ -24,5 +24,5 @@ when they are available.}
 
 @defproc[(gui-dynamic-require [sym symbol?]) any]{
 
-Like @scheme[dynamic-require], but specifically to access exports of
-@scheme[scheme/gui/base].}
+Like @racket[dynamic-require], but specifically to access exports of
+@racket[racket/gui/base].}
