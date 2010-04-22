@@ -11,7 +11,7 @@ READ_ONLY static Scheme_Object *scheme_def_place_exit_proc;
 
 SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(mz_proc_thread *proc_thread_self);
-Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
+static Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_sleep(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[]);
@@ -21,15 +21,16 @@ static Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_channel_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *args[]);
 
-Scheme_Object *scheme_place_async_channel_create();
-Scheme_Object *scheme_place_bi_channel_create();
-Scheme_Object *scheme_place_bi_peer_channel_create(Scheme_Object *orig);
+static Scheme_Object *scheme_place_async_channel_create();
+static Scheme_Object *scheme_place_bi_channel_create();
+static Scheme_Object *scheme_place_bi_peer_channel_create(Scheme_Object *orig);
 static void scheme_place_bi_channel_set_signal(Scheme_Object *cho);
 static int scheme_place_channel_ready(Scheme_Object *so);
 
-void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
-Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch);
-Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table *ht);
+
+static void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
+static Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch);
+static Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Table *ht);
 
 # ifdef MZ_PRECISE_GC
 static void register_traversers(void);
