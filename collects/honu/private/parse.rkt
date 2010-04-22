@@ -2,9 +2,11 @@
 
 (require "contexts.ss"
          "util.ss"
-         (for-template "literals.ss")
+         (for-template "literals.ss"
+                       "language.ss")
          syntax/parse
          syntax/parse/experimental/splicing
+         (for-syntax syntax/parse)
          scheme/splicing
          syntax/stx
          (for-syntax "util.ss")
@@ -14,7 +16,8 @@
 
 (define-syntax-class block
   [pattern (#%braces statement ...)
-           #:with result (parse-block-one/2 #'(statement ...) the-block-context)])
+           #:with result (let-values ([(body rest) (parse-block-one/2 #'(statement ...) the-block-context)])
+                           body)])
 
 (define-syntax-class function
   [pattern (type:id name:id (#%parens args ...) body:block . rest)
@@ -33,6 +36,21 @@
        ;; [(equal? start end) count]
        [else (loop (stx-cdr start) (add1 count))]))))
 
+(define-primitive-splicing-syntax-class (honu-transformer context)
+  #:attrs (result)
+  #:description "honu-expr"
+  (lambda (stx fail)
+    (cond
+     [(stx-null? stx) (fail)]
+     [(get-transformer stx) => (lambda (transformer)
+                                 (printf "Transforming honu macro ~a\n" (car stx))
+                                 (let-values ([(used rest)
+                                               (transformer stx context)])
+                                   (list rest (syntax-object-position stx rest)
+                                         used)))]
+     
+     [else (fail)])))
+
 (define-primitive-splicing-syntax-class (honu-expr context)
   #:attributes (result)
   #:description "honu-expr"
@@ -40,6 +58,7 @@
     (cond
      [(stx-null? stx) (fail)]
      [(get-transformer stx) => (lambda (transformer)
+                                 (printf "Transforming honu macro ~a\n" (car stx))
                                  (let-values ([(used rest)
                                                (transformer stx context)])
                                    (list (syntax-object-position stx rest)
@@ -59,8 +78,12 @@
            #:with call #'(e.result arg.result ...)])
 
 (define-splicing-syntax-class (expression-last context)
+  [pattern (~seq (~var e (honu-transformer context))) #:with result #'e.result]
+
   [pattern (~seq (~var call (call context))) #:with result #'call.call]
   [pattern (~seq x:number) #:with result #'x]
+  [pattern (~seq x:id) #:with result #'x]
+  #;
   [pattern (~seq (~var e (honu-expr context))) #:with result #'e.result]
   )
 
@@ -78,6 +101,8 @@
                      ((attribute op.func) #'left.result #'right.result)]
                     [else
                      #'left.result])))))
+
+
 
 ;;   (infix-operators ([honu-* ...]
 ;;                     [honu-- ...])
@@ -98,7 +123,8 @@
   (syntax-case stx ()
                [(_ first last operator-stuff ...)
                 (with-syntax ([(name ...) (generate-temporaries #'(operator-stuff ...))])
-                             (with-syntax ([(result ...) (create-stuff (cons #'first
+                             (with-syntax ([(result ...)
+                                            (create-stuff (cons #'first
                                                                              (append
                                                                               (drop-last (syntax->list #'(name ...)))
                                                                               (list #'last)))
@@ -136,7 +162,9 @@
                                        [honu-- (sl (left right) #'(- left right))])
                                       ([honu-* (sl (left right) #'(* left right))]
                                        [honu-% (sl (left right) #'(modulo left right))]
-                                       [honu-/ (sl (left right) #'(/ left right))])))
+                                       [honu-/ (sl (left right) #'(/ left right))])
+                                      ([honu-. (sl (left right) #'(field-access right left))])
+                                      ))
 
     (define-splicing-syntax-class (ternary context)
       #:literals (honu-? honu-:)

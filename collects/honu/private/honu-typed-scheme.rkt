@@ -320,6 +320,23 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 
 |#
 
+(define-honu-syntax honu-provide
+  (lambda (stx ctx)
+    (syntax-parse stx
+      #:literals (semicolon)
+      [(_ something:id semicolon . rest)
+       (values #'(provide something)
+               #'rest)])))
+
+(define-honu-syntax honu-macro-item
+  (lambda (stx ctx)
+    (syntax-parse stx
+      #:literals (#%braces)
+      [(_ name:id (#%braces literals (#%braces literal ...)
+                   items ...) . rest)
+       (values #'(define-syntax-class name [pattern x])
+               #'rest)])))
+
 (define-honu-syntax honu-if
   (lambda (stx ctx)
     (define (parse-complete-block stx)

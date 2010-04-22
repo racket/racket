@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "honu.ss"
+(require "honu-typed-scheme.ss"
          (for-syntax "debug.ss"
                      "contexts.ss"
                      scheme/base
@@ -364,6 +364,7 @@
 
 (define-honu-syntax honu-macro
   (lambda (stx ctx)
+    (printf "Executing honu macro\n")
     (syntax-case stx (#%parens #%braces)
       [(_ (#%parens honu-literal ...)
           (#%braces (#%braces name pattern ...))
@@ -422,7 +423,9 @@
                          out (... ...) rrest)
                       #;
                       #'rrest))])))
-          #'rest))])))
+          #'rest))]
+      [else (raise-syntax-error 'honu-macro "fail!")]
+      )))
 
 ;; (my-syntax guz (_ display (#%parens x ...)) (+ x ...))
 ;; (guz display (#%parens 1 2 3 4))

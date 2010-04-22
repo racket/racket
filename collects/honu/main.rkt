@@ -1,14 +1,24 @@
 #lang scheme/base
 
+(require scheme/class)
+
 (require "private/honu-typed-scheme.ss"
          ;; "private/honu.ss"
          "private/parse.ss"
          "private/literals.ss"
          "private/macro.ss")
 
+(define test-x-class
+  (class object%
+    (init-field tuna)
+    (super-new)))
+
+(define x (new test-x-class [tuna 5]))
+
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
                      (honu-top #%top)
-                     (semicolon \;)
+                     (semicolon \;
+                                )
                      (honu-+ +)
                      (honu-* *)
                      (honu-/ /)
@@ -16,8 +26,11 @@
                      (honu-? ?)
                      (honu-: :)
                      (honu-comma |,|)
+                     (honu-. |.|)
                      )
          #%datum
+         #%braces
+         x
          true
          false
          display
@@ -26,6 +39,9 @@
          else
          (rename-out
            (honu-if if)
+           (honu-provide provide)
+           (honu-macro-item macroItem)
+           (honu-macro macro)
            ))
 
 #;
