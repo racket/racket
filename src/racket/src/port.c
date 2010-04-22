@@ -7792,7 +7792,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       {
 	Scheme_Object *dir;
 	dir = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
-	scheme_os_setcwd(SCHEME_PATH_VAL(dir), 0);
+	if (!scheme_os_setcwd(SCHEME_PATH_VAL(dir), 1)) {
+          scheme_console_printf("racket: chdir failed to: %s\n", SCHEME_BYTE_STR_VAL(dir));
+          _exit(1);
+        }
       }
 
       /* Exec new process */
@@ -7816,7 +7819,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
         /* using scheme_signal_error will leave us in the forked process,
 	   so use scheme_console_printf instead */
-        scheme_console_printf("mzscheme: exec failed (%d)\n", err);
+        scheme_console_printf("racket: exec failed (%d)\n", err);
 
 	/* back to MzScheme signal dispositions: */
 	START_XFORM_SKIP;
