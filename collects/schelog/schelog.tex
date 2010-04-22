@@ -1,0 +1,1572 @@
+\magnification\magstephalf
+
+\input tex2page
+\input btxmac
+\texonly
+%\input 2col
+
+\sidemargin 1.75 true in
+
+%\input defun
+
+% avoiding overfull boxes, without making
+% paragraphs too bad
+
+\pretolerance -1
+\emergencystretch 5pt
+\tolerance 3000
+
+\hfuzz 1pt
+
+\hyphenpenalty -1000
+\exhyphenpenalty -1000
+\doublehyphendemerits -100000
+\finalhyphendemerits  -100000
+
+% ! is special char for makeindex
+%\def\bang{!}
+
+\let\n\noindent
+
+\let\origverb\verb
+
+\def\verb{\def\verbatimhook{\parindent0pt \relax}\origverb}
+
+\def\p{\let\verbatimhook\relax\origverb}
+
+%sign for ``evaluates to''
+\def\y{$\Rightarrow$}
+
+%notation for true nil
+\def\t{{\tt()}$^{\rm true}$}
+
+\overfullrule 0pt
+
+
+\def\ar/#1{{\it/#1\/}}
+
+\hyphenation{sche-log}
+
+\let\ab\allowbreak
+
+
+%that's all
+%\input ptm
+
+\endtexonly
+
+\htmlonly
+\def\defun#1#2{%
+\evalh{(do-end-para)}%
+\rawhtml<table bgcolor="#e5e5e5"  width=90% cellpadding=0 cellspacing=0><tr ><td align=left>\endrawhtml
+#2%
+\rawhtml</td><td align=right>\endrawhtml{#1}%
+\rawhtml</td></tr></table>\endrawhtml
+\evalh{(do-para)}}
+
+\def\t{()\rawhtml<sup><small>true</small></sup>\endrawhtml}
+\def\y{{\tt =>}}
+
+
+\endhtmlonly
+
+\let\byline\centerline
+
+\def\defproc{\defun{[{\it procedure}]}}
+\def\defpred{\defun{[{\it predicate}]}}
+\def\defmac{\defun{[{\it macro}]}}
+\def\defgoal{\defun{[{\it goal}]}}
+\def\defflag{\defun{[{\it flag}]}}
+
+\def\newsection{\htmlpagebreak\section}
+
+\let\q\scm
+\let\sverbatim\scm
+
+\scmkeyword{%which %rel %assert %assert-a %let %and %or %is
+! %free-vars
+}
+
+\texonly
+\def\t{()$^t$}
+\def\y{$\Rightarrow$}
+\endtexonly
+
+\title{Programming in Schelog}
+
+\byline{\urlh{http://www.ccs.neu.edu/~dorai}{Dorai
+Sitaram}}
+%\byline{\urlh{mailto:ds26@gte.com}{ds26@gte.com}}
+\byline{\urlh{schelog.tar.gz}{\htmlonly Download
+\endhtmlonly Version \input ./schelog-version }}
+\htmlonly
+\byline{\urlh{INSTALL}{Installation instructions}}
+\endhtmlonly
+
+\bigskip
+
+\n Schelog is an {\em embedding} of
+Prolog-style logic programming in Scheme.  ``Embedding''
+means you don't lose Scheme: You can use Prolog-style and
+conventional Scheme code fragments alongside each other.
+Schelog contains the full repertoire of Prolog features,
+including meta-logical and second-order (``set'')
+predicates, leaving out only those features that could more
+easily and more efficiently be done with Scheme
+subexpressions.
+
+The Schelog implementation uses the approach to logic
+programming described in Felleisen \cite{mf:prolog} and
+Haynes \cite{logick}.  In contrast to earlier Lisp simulations of
+Prolog \cite{campbell},
+which used explicit continuation
+arguments to store failure (backtrack) information, the
+Felleisen and Haynes model uses the implicit reified
+continuations of Scheme as provided by the operator
+\q{call-with-current-continuation} (aka \q{call/cc}).  This
+allows Schelog to be an {\em embedding}, ie, logic
+programming is not built as a new language on top of Scheme,
+but is used alongside Scheme's other features.  Both styles
+of programming may be mixed to any extent that a project
+needs.
+
+The Schelog user does not need to know about the
+implementation mechanism or about \q{call/cc} and
+continuations to get on with the business of
+doing logic programming with Schelog.
+
+This text is a gentle introduction to Schelog syntax
+and programming.  It assumes a working knowledge of
+Scheme and an awareness of, if not actual programming
+experience with, Prolog.  If you need assistance in
+either language, you may consult
+\cite{sicp,tls,tss,eopl,r5rs,t-y-scheme} for Scheme, and
+\cite{bratko,ok:prolog,aop} for Prolog.
+There are doubtless many other excellent books and
+online documents available.
+
+\beginsection Contents
+
+\tableofcontents
+
+\newsection{Simple Goals and Queries}
+\label{simple}
+
+Schelog objects are the same as Scheme objects.  However, there
+are two subsets of these objects that are of special
+interest to Schelog: {\em goals} and {\em predicates}.  We
+will first look at some simple goals.
+Section \ref{predicates} will introduce predicates and ways
+of making  complex goals using predicates.
+
+A goal is an object whose truth or falsity we can check.  A
+goal that turns out to be true is said to succeed.
+A goal that turns out to be false is said to
+fail.
+
+Two simple goals that are provided in Schelog are:
+
+\sverbatim{
+%true
+%fail
+}
+
+\n The  goal \q{%true} succeeds.  The goal \q{%fail}
+always fails.
+
+(The names of all Schelog primitive objects
+start with \q{%}.  This is to avoid clashes with the names
+of conventional Scheme objects of related meaning.
+User-created objects in Schelog are not required to
+follow this convention.)
+
+A Schelog user can {\em query} a goal by wrapping it in a
+\q{%which}-form.
+
+\sverbatim{
+(%which () %true)
+}
+
+\n evaluates to \q{()}, indicating success, whereas:
+
+\sverbatim{
+(%which () %fail)
+}
+
+\n evaluates to \q{#f}, indicating failure.
+
+Note 1: The second subexpression of the \q{%which}-form
+is the empty list \q{()}.  Later (sec \ref{solving-goals}),
+we will see \q{%which}es
+with other lists as the second subform.
+
+Note 2: The distinction between successful and failing goals
+depends on Scheme's distinguishing \q{#f} from
+\q{()}.  We will see later (sec \ref{false-vs-nil})
+what to do in Scheme dialects where \q{#f} and \q{()} are
+identical.  For the moment, we will use the annotation
+\q{|t} to signal that \q{()} is being used as a true
+value.
+
+Henceforth, we will use the notation:
+
+\sverbatim{
+E |y F
+}
+
+\n to say that \q{E}  {\em evaluates to} \q{F}.   Thus,
+
+\sverbatim{
+(%which () %true) |y |t
+}
+
+\newsection{Predicates}
+\label{predicates}
+
+More interesting goals are created by applying a special
+kind of Schelog object called a {\em predicate} (or
+{\em relation}) to other
+Schelog objects.  Schelog comes with some primitive
+predicates, such as the arithmetic operators
+\q{%=:=} and \q{%<},
+standing for arithmetic ``equal'' and ``less than''
+respectively.  For example, the following are some goals
+involving these predicates:
+
+\sverbatim{
+(%which () (%=:= 1 1)) |y |t
+(%which () (%< 1 2))   |y |t
+(%which () (%=:= 1 2)) |y #f
+(%which () (%< 1 1))   |y #f
+}
+
+\n Other arithmetic predicates are
+\q{%>} (``greater than''),
+\q{%<=} (``less than or equal''),
+\q{%>=} (``greater than or equal''), and
+\q{%=/=} (``not equal'').
+
+Schelog predicates are not to be confused with conventional
+Scheme predicates (such as \q{<} and \q{=}).  Schelog
+predicates, when applied to arguments, produce goals
+that
+may either succeed or fail.  Scheme predicates, when applied
+to arguments, yield a boolean value.  Henceforth, we will
+use the term ``predicate'' to mean Schelog predicates.
+Conventional predicates will be explicitly called ``Scheme
+predicates''.
+
+\subsection{Predicates Introducing Facts}
+\label{facts}
+
+Users can create their own predicates using the Schelog form
+\q{%rel}.  For example, let's
+define the predicate \q{%knows}:
+
+\sverbatim{
+(define %knows
+  (%rel ()
+    [('Odysseus 'TeX)]
+    [('Odysseus 'Scheme)]
+    [('Odysseus 'Prolog)]
+    [('Odysseus 'Penelope)]
+    [('Penelope 'TeX)]
+    [('Penelope 'Prolog)]
+    [('Penelope 'Odysseus)]
+    [('Telemachus 'TeX)]
+    [('Telemachus 'calculus)]))
+}
+
+\n The expression has the expected meaning.  Each
+{\em clause} in the \q{%rel} establishes a {\em fact}:
+Odysseus
+knows TeX, Telemachus knows calculus, \&c.  In general, if we
+apply the predicate to the arguments in any one of its
+clauses, we will get a successful goal.  Thus, since
+\q{%knows} has a clause that reads
+\q{[('Odysseus 'TeX)]}, the goal
+\q{(%knows 'Odysseus 'TeX)}
+will be true.
+
+(In the code in
+this text, brackets have the same behavior as parentheses.
+We use a mix of brackets and parentheses solely to improve
+the readability of the code for humans.]
+
+We can now get answers for the following types of queries:
+
+\sverbatim{
+(%which ()
+  (%knows 'Odysseus 'TeX))
+|y |t
+
+(%which ()
+  (%knows 'Telemachus 'Scheme))
+|y #f
+}
+
+\subsection{Predicates with Rules}
+\label{rules}
+
+Predicates can be more complicated than the above bald
+recitation of facts.  The predicate clauses can be {\em rules}, eg,
+
+\sverbatim{
+(define %computer-literate
+  (%rel (person)
+    [(person)
+      (%knows person 'TeX)
+      (%knows person 'Scheme)]
+    [(person)
+      (%knows person 'TeX)
+      (%knows person 'Prolog)]))
+}
+
+\n This defines the predicate
+\q{%computer-literate} in
+terms of the predicate \q{%knows}.  In effect, a person is
+defined as computer-literate if they know TeX and
+Scheme, {\em or} TeX and Prolog.
+
+Note that this use of
+\q{%rel} employs a local {\em logic variable} called \q{person}.
+In general, a \q{%rel}-expression can have a list of symbols
+as its second subform.  These name new logic variables that
+can be used within the body of the \q{%rel}.
+
+The following query can now be answered:
+
+\sverbatim{
+(%which ()
+  (%computer-literate 'Penelope))
+|y |t
+}
+
+\n Since Penelope knows TeX and Prolog, she is computer-literate.
+
+\subsection{Solving Goals}
+\label{solving-goals}
+
+The above queries are yes/no questions.  Logic programming
+allows more: We can formulate a goal with {\em uninstantiated}
+logic variables and then ask the querying process to
+provide, if possible, values for these variables that cause
+the goal to succeed.  For instance, the query:
+
+\sverbatim{
+(%which (what)
+  (%knows 'Odysseus what))
+}
+
+\n asks for an instantiation of the logic variable \q{what}
+that satisfies the goal \q{(%knows 'Odysseus what)}.
+In other words, we are asking, ``What does Odysseus know?''
+
+Note that this use of \q{%which} --- like \q{%rel}
+in the definition of \q{%computer-literate} ---
+uses a local logic
+variable, \q{what}.  In general, the second subform of
+\q{%which} can be a list of local logic variables.  The
+\q{%which}-query returns an answer that is a list of
+bindings, one for each logic variable mentioned in its
+second subform.  Thus,
+
+\sverbatim{
+(%which (what)
+  (%knows 'Odysseus what))
+|y ([what TeX])
+}
+
+\n But that is not all that wily Odysseus knows.  Schelog
+provides a zero-argument procedure (``thunk'') called
+\q{%more}
+that {\em retries} the goal in the last
+\q{%which}-query for a different solution.
+
+\sverbatim{
+(%more) |y ([what Scheme])
+}
+
+\n We can keep pumping for more solutions:
+
+\sverbatim{
+(%more) |y ([what Prolog])
+(%more) |y ([what Penelope])
+(%more) |y #f
+}
+
+\n The final \q{#f} shows that there are no more
+solutions.  This is because there are no more clauses in the
+\q{%knows} predicate that list Odysseus as knowing anything
+else.
+
+\subsubsection{A Note on {\tt\#f} vs {\tt()}}
+\label{false-vs-nil}
+
+It is now clear why \q{|t} was the right choice for truth in
+the previous yes/no \q{%which}-queries that had no logic
+variables (sec \ref{simple}).  \q{%which} returns a
+list of bindings
+for true
+goals: the list is empty when there are no variables.
+
+For such Schemes as don't distinguish between \q{()} and
+\q{#f}, we can still ask fruitful yes/no queries.  Simply
+use a dummy local
+variable in the
+\q{%which}-expression.  Truth will give an (ignorable)
+binding for the dummy variable, while falsity will, as
+usual, produce \q{#f}.
+
+\sverbatim{
+(%which (bingo)
+  (%knows 'Odysseus 'TeX))
+|y ([bingo _])
+
+(%which (bingo)
+  (%knows 'Odysseus 'calculus))
+|y #f
+}
+
+\subsection{ Asserting Extra Clauses}
+\label{assert}
+
+We can add more clauses to a predicate after it has already
+been defined with a \q{%rel}.  Schelog provides the
+\q{%assert} form for this purpose.  Eg,
+
+\sverbatim{
+(%assert %knows ()
+  [('Odysseus 'archery)])
+}
+
+\n tacks on a new clause at the end of the existing clauses
+of the \q{%knows}
+predicate.  Now, the query:
+
+\sverbatim{
+(%which (what)
+  (%knows 'Odysseus what))
+}
+
+\n gives TeX, Scheme, Prolog, and Penelope, as before, but
+a subsequent \q{(%more)} yields a new result: \q{archery}.
+
+The Schelog form \q{%assert-a} is similar to \q{%assert} but
+adds clauses {\em before} any of the current clauses.
+
+Both \q{%assert} and \q{%assert-a} assume that the variable
+they are adding to already names a predicate (presumably
+defined using \q{%rel}).
+In order to allow defining a predicate entirely through
+\q{%assert}s,  Schelog provides an empty predicate value
+\q{%empty-rel}.  \q{%empty-rel} takes any number of arguments
+and always fails.  A typical use of the
+\q{%empty-rel} and \q{%assert} combination:
+
+\sverbatim{
+(define %parent %empty-rel)
+
+(%assert %parent ()
+  [('Laertes 'Odysseus)])
+
+(%assert %parent ()
+  [('Odysseus 'Telemachus)]
+  [('Penelope 'Telemachus)])
+}
+
+(Schelog does not provide a predicate for {\em retracting}
+assertions, since we can keep track of older versions of
+predicates using conventional Scheme features (\q{let} and \q{set!}).)
+
+\subsection{Local Variables}
+\label{local-vars}
+
+The local logic variables of \q{%rel}- and
+\q{%which}-expressions are in reality introduced by the
+Schelog syntactic form called \q{%let}.  (\q{%rel} and
+\q{%which} are macros written using \q{%let}.)
+
+\q{%let} introduces new lexically scoped logic variables.
+Supposing, instead of
+
+\sverbatim{
+(%which (what)
+  (%knows 'Odysseus what))
+}
+
+\n we had asked
+
+\sverbatim{
+(%let (what)
+  (%which ()
+    (%knows 'Odysseus what)))
+}
+
+\n This query, too, succeeds five times, since
+Odysseus knows five things.  However, \q{%which} emits
+bindings only for the local variables that {\em it}
+introduces.  Thus, this query emits \q{|t} five times before
+\q{(%more)} finally returns \q{#f}.
+
+\newsection{Using Conventional Scheme Expressions in Schelog}
+\label{scheme-w-schelog}
+
+The arguments of Schelog predicates can be any Scheme
+objects.  In particular, composite structures such as lists,
+vectors and strings can be used, as also Scheme expressions
+using the full array of Scheme's construction and
+decomposition operators.  For instance, consider the
+following goal:
+
+\sverbatim{
+(%member x '(1 2 3))
+}
+
+\n Here, \q{%member} is a predicate, \q{x} is a logic
+variable, and \q{'(1 2 3)} is a structure.  Given a suitably
+intuitive definition for \q{%member}, the above goal
+succeeds for \q{x} = \q{1}, \q{2}, and \q{3}.
+
+Now to defining predicates like \q{%member}:
+
+\sverbatim{
+(define %member
+  (%rel (x y xs)
+    [(x (cons x xs))]
+    [(x (cons y xs))
+      (%member x xs)]))
+}
+
+\n Ie, \q{%member} is defined with three local variables:
+\q{x},  \q{y}, \q{xs}.  It  has two
+clauses, identifying the two ways of determining membership.
+
+The first clause of \q{%member} states a fact: For any
+\q{x}, \q{x} is a member of a list whose head is also \q{x}.
+
+The second clause of \q{%member} is a rule: \q{x} is a
+member of a list if we can show that it is a member of the
+{\em tail} of that list.  In other words, the original
+\q{%member} goal is translated into a {\em sub}goal, which is also
+a \q{%member} goal.
+
+Note that the variable \q{y} in the definition of
+\q{%member} occurs only once in the second clause.  As such,
+it doesn't need you to make the effort of naming it.  (Names
+help only in matching a second occurrence to a first.)  Schelog
+lets you use the expression \q{(_)} to denote an anonymous
+variable.  (Ie, \q{_} is a thunk that generates a fresh
+anonymous variable at each call.)  The predicate \q{%member} can be
+rewritten as
+
+\sverbatim{
+(define %member
+  (%rel (x xs)
+    [(x (cons x (_)))]
+    [(x (cons (_) xs))
+      (%member x xs)]))
+}
+
+\subsection{Constructors}
+\label{constructors}
+
+We can use constructors --- Scheme procedures for creating
+structures --- to simulate data types in Schelog.  For
+instance, let's define a natural-number data-type where
+\q{0} denotes zero, and \q{(succ x)} denotes the natural number
+whose immediate predecessor is \q{x}.   The constructor
+\q{succ} can
+be defined in Scheme as:
+
+\sverbatim{
+(define succ
+  (lambda (x)
+    (vector 'succ x)))
+}
+
+\n Addition and multiplication can be defined as:
+
+\sverbatim{
+(define %add
+  (%rel (x y z)
+    [(0 y y)]
+    [((succ x) y (succ z))
+      (%add x y z)]))
+
+(define %times
+  (%rel (x y z z1)
+    [(0 y 0)]
+    [((succ x) y z)
+     (%times x y z1)
+     (%add y z1 z)]))
+}
+
+\n We can do a lot of arithmetic with this in place.  For
+instance, the factorial predicate looks like:
+
+\sverbatim{
+(define %factorial
+  (%rel (x y y1)
+    [(0 (succ 0))]
+    [((succ x) y)
+      (%factorial x y1)
+      (%times (succ x) y1 y)]))
+}
+
+\subsection{\tt\%is}
+\label{is}
+
+The above is a very inefficient way to do arithmetic,
+especially when the underlying language Scheme offers
+excellent arithmetic facilities (including a comprehensive
+number ``tower'' and exact rational arithmetic).  One
+problem with using Scheme calculations directly in Schelog
+clauses is that the expressions used may contain logic
+variables that need to be dereferenced.  Schelog provides
+the predicate \q{%is} that takes care of this.  The goal
+
+\sverbatim{
+(%is X E)
+}
+
+\n unifies \q{X} with the value of \q{E} considered as a
+Scheme expression.  \q{E} can have logic variables, but
+usually they should at least be bound, as unbound variables
+may not be palatable values to the Scheme operators used in
+\q{E}.
+
+We can now directly use the numbers of Scheme to write a
+more efficient \q{%factorial} predicate:
+
+\sverbatim{
+(define %factorial
+  (%rel (x y x1 y1)
+    [(0 1)]
+    [(x y) (%is x1 (- x 1))
+           (%factorial x1 y1)
+           (%is y (* y1 x))]))
+}
+
+\n A price that this efficiency comes with is that we can
+use \q{%factorial} only with its first argument already
+instantiated.  In many cases, this is not an unreasonable
+constraint.  In fact, given this limitation, there is
+nothing to prevent us from using Scheme's factorial
+directly:
+
+\sverbatim{
+(define %factorial
+  (%rel (x y)
+    [(x y)
+     (%is y (scheme-factorial
+	      x))]))
+}
+
+\n or better yet, ``in-line'' any calls to \q{%factorial} with
+\q{%is}-expressions calling \q{scheme-factorial}, where the
+latter is defined in the usual manner:
+
+\sverbatim{
+(define scheme-factorial
+  (lambda (n)
+    (if (= n 0) 1
+        (* n (factorial
+	       (- n 1))))))
+}
+
+\subsection{Lexical Scoping}
+\label{lexical-scoping}
+
+One can use Scheme's lexical scoping to enhance predicate
+definition.  Here is a list-reversal predicate defined using
+a hidden auxiliary predicate:
+
+\sverbatim{
+(define %reverse
+  (letrec
+    ([revaux
+       (%rel (x y z w)
+	 [('() y y)]
+	 [((cons x y) z w)
+	   (revaux y
+	     (cons x z) w)])])
+    (%rel (x y)
+      [(x y) (revaux x '() y)])))
+}
+
+\n \q{(revaux X Y Z)} uses \q{Y} as an accumulator for
+reversing \q{X} into \q{Z}.  (\q{Y} starts out as \q{()}.
+Each head of \q{X} is \q{cons}ed on to \q{Y}.  Finally, when
+\q{X} has wound down to \q{()}, \q{Y} contains the reversed
+list and can be returned as \q{Z}.)
+
+\q{revaux} is used purely as a helper predicate for
+\q{%reverse}, and so it can be concealed within a lexical
+contour.  We use \q{letrec} instead of \q{let} because
+\q{revaux} is a recursive procedure.
+
+\subsection{Type Predicates}
+\label{type-predicates}
+
+Schelog provides a couple of predicates that let the user
+probe the type of objects.
+
+The goal
+
+\sverbatim{
+(%constant X)
+}
+
+\n succeeds if \q{X} is an {\em atomic} object, ie, not a
+list or vector.
+
+The predicate \q{%compound}, the negation of \q{%constant},
+checks if its argument is  indeed a list or a vector.
+
+The above are merely the logic-program\-ming equivalents of
+corresponding Scheme predicates.  Users can use the
+predicate \q{%is} and Scheme predicates to write more type
+checks in Schelog.  Thus, to test if \q{X} is a string, the
+following goal could be used:
+
+\sverbatim{
+(%is #t (string? X))
+}
+
+\n User-defined Scheme predicates, in addition to primitive Scheme
+predicates, can be thus imported.
+
+\newsection{Backtracking}
+\label{backtracking}
+
+It is helpful to go into the following evaluation (sec \ref{rules})
+in a
+little detail:
+
+\sverbatim{
+(%which ()
+  (%computer-literate 'Penelope))
+|y |t
+}
+
+\n  The starting goal
+is:
+
+\sverbatim{
+G0 = (%computer-literate Penelope)
+}
+
+\n (I've taken out the quote because \q{Penelope} is the result
+of evaluating \q{'Penelope}.)
+
+Schelog tries to match this with the head of the first
+clause of \q{%computer-literate}.  It succeeds, generating a
+binding  \q{[person Penelope]}.
+
+But this means it now has two new goals --- {\em subgoals}
+--- to solve.  These are the goals in the body of the
+matching clause, with the logic variables substituted by
+their instantiations:
+
+\sverbatim{
+G1 = (%knows Penelope TeX)
+G2 = (%knows Penelope Scheme)
+}
+
+\n For \q{G1}, Schelog attempts matches with the clauses of
+\q{%knows}, and succeeds at the fifth try.  (There are no
+subgoals in this case, because the bodies of these ``fact''
+clauses are empty, in contrast to the ``rule'' clauses of
+\q{%computer-literate}.)
+Schelog then tries to solve \q{G2} against the clauses of
+\q{%knows}, and since there is no clause stating that
+Penelope knows Scheme, it fails.
+
+All is not lost though.  Schelog now {\em backtracks} to the
+goal that was solved just before, viz., \q{G1}.  It
+{\em retries} \q{G1}, ie, tries to solve it in a
+different way.
+This entails searching down the previously unconsidered
+\q{%knows}
+clauses for \q{G1}, ie, the sixth onwards.  Obviously,
+Schelog fails again, because the fact that Penelope knows
+TeX occurs only once.
+
+Schelog now backtracks to the goal before \q{G1}, ie,
+\q{G0}.  We abandon the current successful match with the
+first clause-head of \q{%computer-literate}, and try the
+next clause-head.  Schelog succeeds, again producing a binding
+\q{[person Penelope]}, and two new subgoals:
+
+\sverbatim{
+G3 = (%knows Penelope TeX)
+G4 = (%knows Penelope Prolog)
+}
+
+\n It is now easy to trace that Schelog finds both \q{G3} and \q{G4} to be
+true.  Since both of \q{G0}'s subgoals are true, \q{G0} is
+itself considered true.  And this is what Schelog reports.  The
+interested reader can now trace  why the
+following query has a different denouement:
+
+\sverbatim{
+(%which ()
+  (%computer-literate 'Telemachus))
+|y #f
+}
+
+\newsection{Unification}
+\label{unification}
+
+When we say that a goal matches with a clause-head, we mean
+that the predicate and argument positions line up.  Before
+making this comparison, Schelog dereferences all already
+bound logic variables.  The resulting structures are then
+compared to see if they are recursively identical.  Thus,
+\q{1} unifies with \q{1}, and \q{(list 1 2)} with \q{'(1
+2)}; but \q{1} and
+\q{2} do not unify, and neither do \q{'(1 2)} and \q{'(1
+3)}.
+
+In general, there could be quite a few uninstantiated logic
+variables in the compared objects.  Unification will then
+endeavor to find the most natural way of binding these
+variables so that we arrive at structurally identical
+objects.  Thus, \q{(list x 1)}, where \q{x} is an unbound logic
+variable, unifies with \q{'(0 1)}, producing the
+binding
+\q{[x 0]}.
+
+Unification is thus a goal, and Schelog makes the unification predicate
+available  to the user as \q{%=}.   Eg,
+
+\sverbatim{
+(%which (x)
+  (%= (list x 1) '(0 1))
+|y ([x 0])
+}
+
+\n Schelog also provides the predicate \q{%/=}, the {\em negation} of
+\q{%=}.  \q{(%/= X Y)} succeeds if and only if \q{X} does
+{\em not} unify with \q{Y}.
+
+Unification goals constitute the basic subgoals that all
+Schelog goals devolve to.  A goal succeeds because all the
+eventual unification subgoals that it decomposes to in at
+least one of its subgoal-branching succeeded.  It fails
+because every possible subgoal-branching was thwarted by the
+failure of a crucial unification subgoal.
+
+Going back to the example in sec \ref{backtracking}, the goal
+\q{(%computer-literate 'Penelope)} succeeds because
+(a) it unified with
+\q{(%computer-literate person)}; and then (b) with the binding
+\q{[person Penelope]} in place, \q{(%knows person 'TeX)}
+unified with \q{(%knows 'Penelope 'TeX)} and
+\q{(%knows person 'Prolog)} unified with \q{(%knows 'Penelope
+'Prolog)}.
+
+In contrast, the goal \q{(%computer-literate 'Telemachus)}
+fails because, with \q{[person Telemachus]},
+the subgoals \q{(%knows person 'Scheme)} and
+\q{(%knows person 'Prolog)} have no facts they can
+unify with.
+
+\subsection{The Occurs Check}
+
+A robust unification algorithm uses the {\em
+occurs check}, which ensures that a logic variable
+isn't bound to a structure that contains itself.  
+Not performing the check can cause the unification
+to go into an infinite loop in some cases.  On the
+other hand, performing the occurs check greatly
+increases the time taken by unification, even in cases
+that wouldn't require the check.
+
+Schelog uses the global variable
+\q{*schelog-use-occurs-check?*} to decide whether to
+use the occurs check.  By default, this variable is 
+\q{#f}, ie, Schelog disables the occurs check.  To
+enable the check, 
+
+\q{
+(set! *schelog-use-occurs-check?* #t)
+}
+
+\newsection{Conjuctions and Disjunctions}
+\label{and-or}
+
+Goals may be combined using the forms \q{%and}
+and \q{%or}
+to form compound goals.  (For \q{%not}, see sec \ref{not}.)
+Eg,
+
+\sverbatim{
+(%which (x)
+  (%and (%member x '(1 2 3))
+        (%< x 3)))
+}
+
+\n gives solutions for \q{x} that satisfy both the
+argument goals of the \q{%and}.
+Ie, \q{x} should both be a member of \q{'(1 2 3)}
+{\em and}  be less than \q{3}.    The first
+solution is
+
+\sverbatim{
+([x 1])
+}
+
+\n Typing \q{(%more)} gives another solution:
+
+\sverbatim{
+([x 2])
+}
+
+\n There are no more solutions, because \q{[x 3]} satisfies
+the first but not the second goal.
+
+Similarly, the query
+
+\sverbatim{
+(%which (x)
+  (%or (%member x '(1 2 3))
+       (%member x '(3 4 5))))
+}
+
+\n lists all \q{x} that are members of either list.
+
+\sverbatim{
+           ([x 1])
+(%more) |y ([x 2])
+(%more) |y ([x 3])
+(%more) |y ([x 3])
+(%more) |y ([x 4])
+(%more) |y ([x 5])
+}
+
+\n (Yes, \q{([x 3])} is listed twice.)
+
+We can rewrite the predicate \q{%computer-literate}
+from sec \ref{rules} using \q{%and} and \q{%or}:
+
+\sverbatim{
+(define %computer-literate
+  (%rel (person)
+    [(person)
+     (%or
+       (%and (%knows person
+	       'TeX)
+	     (%knows person
+	       'Scheme))
+       (%and (%knows person
+	       'TeX)
+	     (%knows person
+	       'Prolog)))]))
+}
+
+\n Or,  more succinctly:
+
+\sverbatim{
+(define %computer-literate
+  (%rel (person)
+    [(person)
+      (%and (%knows person
+	      'TeX)
+        (%or (%knows person
+	       'Scheme)
+	     (%knows person
+	       'Prolog)))]))
+}
+
+\n We can even dispense with the \q{%rel} altogether:
+
+\sverbatim{
+(define %computer-literate
+  (lambda (person)
+    (%and (%knows person
+	    'TeX)
+      (%or (%knows person
+	     'Scheme)
+	(%knows person
+	  'Prolog)))))
+}
+
+\n This last looks like a conventional Scheme predicate
+definition, and is arguably
+the most readable format for a Scheme programmer.
+
+\newsection{Manipulating Logic Variables}
+\label{lv-manip}
+
+Schelog provides special predicates for probing logic
+variables, without risking their getting bound.
+
+\subsection{Checking for Variables}
+\label{var}
+
+The goal
+
+\sverbatim{
+(%== X Y)
+}
+
+\n succeeds if \q{X} and \q{Y} are {\em identical} objects.  This
+is not quite the unification predicate \q{%=}, for \q{%==}
+doesn't touch unbound objects the way \q{%=} does.  Eg,
+\q{%==} will not equate an unbound logic variable with a
+bound one, nor will it equate two unbound logic variables
+unless they are the {\em same} variable.
+
+The predicate \q{%/==} is the negation of \q{%==}.
+
+The goal
+
+\sverbatim{
+(%var X)
+}
+
+\n succeeds if \q{X} isn't completely bound --- ie, it has at
+least one unbound logic variable in its innards.
+
+The predicate \q{%nonvar} is the negation of \q{%var}.
+
+\subsection{Preserving Variables}
+\label{freeze}
+
+Schelog lets the user protect a term with variables from
+unification by allowing that term to be treated as a
+(completely) bound object.  The predicates provided for this
+purpose are
+\q{%freeze},
+\q{%melt}, \q{%melt-new}, and \q{%copy}.
+
+The goal
+
+\sverbatim{
+(%freeze S F)
+}
+
+\n unifies \q{F} to the frozen version of \q{S}.  Any lack
+of bindings in \q{S} are preserved no matter how much you
+toss \q{F} about.
+
+The goal
+
+\sverbatim{
+(%melt F S)
+}
+
+\n retrieves the object frozen in \q{F} into \q{S}.
+
+The goal
+
+\sverbatim{
+(%melt-new F S)
+}
+
+\n is similar to \q{%melt},
+except that when \q{S} is made,  the unbound variables in
+\q{F} are replaced by brand-new unbound variables.
+
+The goal
+
+\sverbatim{
+(%copy S C)
+}
+
+\n is an abbreviation for \q{(%freeze S F)}
+followed by \q{(%melt-new F C)}.
+
+\newsection{The Cut ({\tt!})}
+\label{cut}
+
+The cut (called \q{!}) is a special goal that is used to
+prune backtracking options.  Like the \q{%true} goal, the
+cut goal too succeeds, when accosted by the Schelog
+subgoaling engine.  However, when a further subgoal down the
+line fails, and time comes to retry the cut goal, Schelog
+will refuse to try alternate clauses for the predicate in
+whose definition the cut occurs.  In other words, the cut
+causes Schelog to commit to all the decisions made from the
+time that the predicate was selected to match a subgoal till
+the time the cut was satisfied.
+
+For example, consider again the \q{%factorial}
+predicate, as defined in sec \ref{is}:
+
+\sverbatim{
+(define %factorial
+  (%rel (x y x1 y1)
+    [(0 1)]
+    [(x y) (%is x1 (- x 1))
+           (%factorial x1 y1)
+           (%is y (* y1 x))]))
+}
+
+\n Clearly,
+
+\sverbatim{
+(%which ()
+  (%factorial 0 1)) |y |t
+(%which (n)
+  (%factorial 0 n)) |y ([n 1])
+}
+
+\n But what if we asked for \q{(%more)} for either query?
+Backtracking will try
+the second clause of \q{%factorial}, and sure enough the
+clause-head unifies, producing binding \q{[x 0]}.
+We now get three subgoals.  Solving the first, we get \q{[x1
+-1]}, and then we have to solve \q{(%factorial -1 y1)}.  It
+is easy to see there is no end to this, as we fruitlessly
+try to get the factorials of numbers that get more and more
+negative.
+
+If we placed a cut at the first clause:
+
+\sverbatim{
+...
+[(0 1) !]
+...
+}
+
+\n the attempt to find more solutions for \q{(%factorial 0
+1)} is nipped in the bud.
+
+Calling \q{%factorial} with a {\em negative} number would  still cause an
+infinite loop.   To take care of that problem as well, we
+use another cut:
+
+\sverbatim{
+(define %factorial
+  (%rel (x y x1 y1)
+    [(0 1) !]
+    [(x y) (< x 0) ! %fail]
+    [(x y) (%is x1 (- x 1))
+           (%factorial x1 y1)
+           (%is y (* y1 x))]))
+}
+
+Using {\em raw} cuts as above can get very confusing.  For this
+reason, it is advisable to use it hidden away in
+well-understood abstractions.  Two such common abstractions
+are the conditional and negation.
+
+\subsection{Conditional Goals}
+\label{if-then-else}
+
+An ``if ... then ... else ...'' predicate can be defined
+as follows
+
+\sverbatim{
+(define %if-then-else
+  (%rel (p q r)
+    [(p q r) p ! q]
+    [(p q r) r]))
+}
+
+\n (Note that for the first time we have predicate arguments that
+are themselves goals.)
+
+Consider the goal
+
+\sverbatim{
+G0 = (%if-then-else Gbool
+		Gthen Gelse)
+}
+
+\n We first unify \q{G0} with the first clause-head,
+giving
+\q{[p Gbool]}, \q{[q Gthen]}, \q{[r Gelse]}.  \q{Gbool} can
+now either succeed or fail.
+
+Case 1:  If \q{Gbool} fails, backtracking will cause the
+\q{G0} to unify with the second clause-head.  \q{r} is bound
+to \q{Gelse}, and so \q{Gelse} is tried, as expected.
+
+Case 2: If \q{Gbool} succeeds, the cut commits to this
+clause of the \q{%if-then-else}.  We now try \q{Gthen}.  If
+\q{Gthen} should now fail --- or even if we simply retry for
+more solutions --- we are guaranteed that the second
+clause-head will not be tried.  If it were not for the cut,
+\q{G0} would attempt to unify with the second clause-head, which will
+of course succeed, and \q{Gelse} {\em will} be tried.
+
+\subsection{Negation as Failure}
+\label{not}
+
+Another common abstraction using the cut is {\em negation}.
+The negation of goal \q{G} is defined as \q{(%not G)}, where
+the predicate \q{%not} is defined as follows:
+
+\sverbatim{
+(define %not
+  (%rel ()
+    [(g) g ! %fail]
+    [(g) %true]))
+}
+
+\n Thus, \q{g}'s negation is deemed a failure if \q{g}
+succeeds, and a success if \q{g} fails.  This is of course
+confusing goal failure with falsity.  In some cases, this
+view of negation is actually helpful.
+
+\newsection{Set Predicates}
+\label{set-of}
+
+The goal
+
+\sverbatim{
+(%bag-of X G Bag)
+}
+
+\n unifies with \q{Bag} the list of all instantiations of
+\q{X} for which \q{G} succeeds.  Thus, the following query
+asks for all the things known --- ie, the collection of things
+such that someone knows them:
+
+\sverbatim{
+(%which (things-known)
+  (%let (someone x)
+    (%bag-of x (%knows someone x)
+      things-known)))
+|y ([things-known
+      (TeX Scheme Prolog
+       Penelope TeX Prolog
+       Odysseus TeX calculus)])
+}
+
+\n This is the only solution for this goal:
+
+\sverbatim{
+(%more) |y #f
+}
+
+\n Note that some things --- eg, TeX --- are enumerated
+more than once.  This is because more than one person knows
+TeX.  To remove duplicates, use the predicate
+\q{%set-of}
+instead of \q{%bag-of}:
+
+\sverbatim{
+(%which (things-known)
+  (%let (someone x)
+    (%set-of x (%knows someone x)
+      things-known)))
+|y ([things-known
+      (TeX Scheme Prolog
+       Penelope Odysseus calculus)])
+}
+
+\n In the above, the free variable \q{someone} in the
+\q{%knows}-goal is used as if it
+were existentially quantified.  In contrast, Prolog's
+versions of
+\q{%bag-of} and \q{%set-of} fix it for each solution of the
+set-predicate goal.  We can do it too with some additional
+syntax that identifies the free variable.
+Eg,
+
+\sverbatim{
+(%which (someone things-known)
+  (%let (x)
+    (%bag-of x
+      (%free-vars (someone)
+        (%knows someone x))
+      things-known)))
+|y ([someone Odysseus]
+    [things-known
+      (TeX Scheme Prolog
+       Penelope)])
+}
+
+\n The bag of things known by {\em one} someone is
+returned.  That someone is Odysseus.  The query can be
+retried for more solutions, each listing the things known by
+a different someone:
+
+\sverbatim{
+(%more) |y ([someone Penelope]
+            [things-known
+              (TeX Prolog
+	       Odysseus)])
+(%more) |y ([someone Telemachus]
+            [things-known
+              (TeX calculus)])
+(%more) |y #f
+}
+
+Schelog also provides two variants of these set predicates,
+viz., \q{%bag-of-1} and \q{%set-of-1}.  These act like \q{%bag-of}
+and \q{%set-of} but fail if the resulting bag or set is empty.
+
+\newsection{Glossary of Schelog Primitives}
+\label{glossary}
+
+This section lists, in ascii order, all the Schelog
+primitives, with a brief explanation for each.  Each entry is
+identified
+\texonly
+ --- on the right-hand side of its entry title ---
+\endtexonly
+as either {\em procedure}, {\em macro}, {\em predicate}, 
+{\em goal}, or {\em flag}.  (Note that predicates and goals are also
+procedures.  We nevertheless use the more specific names
+because of their importance to Schelog programming.)
+
+Following Prolog style, a predicate's arity is also noted in
+its title.  Thus, \q{%<}\ar/2 means that \q{%<} takes two
+arguments.  Variable-arity predicates use an asterisk
+instead of a number, eg, \q{%and}\ar/*.
+
+\defpred{\q{%/=}\ar/2}
+
+\q{%/=} is the negation of \q{%=}.
+The goal \q{(%/= E1 E2)} succeeds if \q{E1} can not be unified
+with \q{E2}.
+
+\defpred{\q{%/==}\ar/2}
+
+\q{%/==} is the negation of \q{%==}.
+The goal \q{(%/== E1 E2)} succeeds if \q{E1} and \q{E2} are not
+identical.
+
+\defpred{\q{%<}\ar/2}
+
+The goal \q{(%< E1 E2)} succeeds if \q{E1} and \q{E2} are bound to
+numbers and \q{E1} is less than \q{E2}.
+
+\defpred{\q{%<=}\ar/2}
+
+The goal \q{(%<= E1 E2)} succeeds if \q{E1} and \q{E2} are bound to
+numbers and \q{E1} is less than or equal to \q{E2}.
+
+\defpred{\q{%=}\ar/2}
+
+The goal \q{(%= E1 E2)} succeeds if \q{E1} can be unified with
+\q{E2}.  Any resulting bindings for logic variables are kept.
+
+\defpred{\q{%=/=}\ar/2}
+
+The goal \q{(%=/= E1 E2)} succeeds if \q{E1} and \q{E2} are bound to
+numbers and \q{E1} is not equal to \q{E2}.
+
+\defpred{\q{%=:=}\ar/2}
+
+The goal \q{(%=:= E1 E2)} succeeds if \q{E1} and \q{E2} are bound to
+numbers and \q{E1} is equal to \q{E2}.
+
+\defpred{\q{%==}\ar/2}
+
+The goal \q{(%== E1 E2)} succeeds if \q{E1} is {\em identical}
+to \q{E2}.  They should be structurally equal.  If containing
+logic variables, they should have the same variables in the
+same position.  Unlike a \q{%=}-call, this goal will not bind
+any logic variables.
+
+\defpred{\q{%>}\ar/2}
+
+The goal \q{(%> E1 E2)} succeeds if \q{E1} and \q{E2} are bound to
+numbers and \q{E1} is greater than \q{E2}.
+
+\defpred{\q{%>=}\ar/2}
+
+The goal \q{(%>= E1 E2)} succeeds if \q{E1} and \q{E2} are bound to
+numbers and \q{E1} is greater than or equal to \q{E2}.
+
+\defmac{\q{%and}\ar/*}
+
+The goal \q{(%and G ...)} succeeds if all the goals
+\q{G}, ..., succeed.
+
+\defpred{\q{%append}\ar/3}
+
+The goal \q{(%append E1 E2 E3)} succeeds if \q{E3} is unifiable
+with the list obtained by appending \q{E1} and \q{E2}
+
+\defmac{\q{%assert}}
+
+The form  \q{(%assert Pname (V ...) C ...)} adds the clauses
+\q{C}, ..., to the {\em end} of the predicate that is the value of
+the Scheme variable \q{Pname}.  The variables \q{V}, ..., are
+local logic variables for \q{C}, ...
+
+\defmac{\q{%assert-a}}
+
+Like \q{%assert}, but adds the new clauses to the {\em front}
+of the existing predicate.
+
+\defpred{\q{%bag-of}\ar/3}
+
+The goal \q{(%bag-of E1 G E2)} unifies with \q{E2} the {\em bag}
+(multiset)
+of all the
+instantiations of \q{E1} for which goal \q{G} succeeds.
+
+\defpred{\q{%bag-of-1}\ar/3}
+
+Similar to \q{%bag-of}, but fails if the bag is empty.
+
+\defpred{\q{%compound}\ar/1}
+
+The goal \q{(%compound E)} succeeds if \q{E} is a non-atomic
+structure, ie, a vector or a list.
+
+\defpred{\q{%constant}\ar/1}
+
+The goal \q{(%compound E)} succeeds if \q{E} is an atomic
+structure, ie, not a vector or a list.
+
+\defpred{\q{%copy}\ar/2}
+
+The goal \q{(%copy F S)} unifies with \q{S} a copy of the
+frozen structure in \q{F}.
+
+\defpred{\q{%empty-rel}\ar/*}
+
+The goal \q{(%empty-rel E ...)} always fails.  The {\em value}
+\q{%empty-rel} is used as a starting value for predicates
+that can later be enhanced with \q{%assert} and \q{%assert-a}.
+
+\defgoal{\q{%fail}}
+
+The goal \q{%fail} always fails.
+
+\defmac{\q{%free-vars}}
+
+The form \q{(%free-vars (V ...) G)} identifies
+the occurrences of the variables \q{V}, ..., in goal
+\q{G} as free.  It is used to avoid existential quantification
+in calls to set predicates (\q{%bag-of}, \q{%set-of}, \&c.).
+
+\defpred{\q{%freeze}\ar/2}
+
+The goal \q{(%freeze S F)} unifies with \q{F} a new frozen
+version of the structure in \q{S}.  Freezing implies that all
+the unbound variables are preserved.  \q{F} can henceforth be
+used as {\em bound} object with no fear of its variables
+getting bound by unification.
+
+\defpred{\q{%if-then-else}\ar/3}
+
+The goal \q{(%if-then-else G1 G2 G3)} tries \q{G1} first: if it
+succeeds, tries \q{G2}; if not, tries \q{G3}.
+
+\defpred{\q{%is}\ar/2}
+
+The goal \q{(%is E1 E2)} unifies with \q{E1} the result of
+evaluating \q{E2} as a Scheme expression.  \q{E2} may contain
+logic variables, which are dereferenced automatically.
+Fails if \q{E2} contains unbound logic variables.
+(Note: Unlike other Schelog predicates, \q{%is} is implemented
+as a macro and not a procedure.)
+
+\defmac{\q{%let}}
+
+The form \q{(%let (V ...) E ...)} introduces \q{V}, ..., as
+lexically scoped logic variables to be used in \q{E}, ...
+
+\defpred{\q{%melt}\ar/2}
+
+The goal \q{(%melt F S)} unifies  \q{S} with the thawed
+(original) form of the frozen structure in \q{F}.
+
+\defpred{\q{%melt-new}\ar/2}
+
+The goal \q{(%melt-new F S)} unifies \q{S} with a thawed
+{\em copy} of the frozen structure in \q{F}.  This means
+new logic variables are used for unbound logic variables in
+\q{F}
+
+\defpred{\q{%member}\ar/2}
+
+The goal \q{(%member E1 E2)} succeeds if \q{E1} is a member
+of the list in \q{E2}.
+
+\defpred{\q{%nonvar}\ar/1}
+
+\q{%nonvar} is the negation of \q{%var}.
+The goal \q{(%nonvar E)} succeeds if \q{E} is completely
+instantiated, ie, it has no unbound variable in it.
+
+\defpred{\q{%not}\ar/1}
+
+The goal \q{(%not G)} succeeds if \q{G} fails.
+
+\defproc{\q{%more}}
+
+The thunk \q{%more} produces more instantiations of the
+variables in the most recent \q{%which}-form that satisfy the
+goals in that \q{%which}-form.  If no more solutions can
+be found, \q{%more} returns \q{#f}.
+
+\defmac{\q{%or}\ar/*}
+
+The goal \q{(%or G ...)} succeeds if one of \q{G}, ..., tried
+in that order, succeeds.
+
+\defmac{\q{%rel}}
+
+The form \q{(%rel (V ...) C ...)} creates a predicate object.
+Each clause \q{C} is of the form \q{[(E ...) G ...]}, signifying
+that the goal created by applying the predicate object to
+anything that matches \q{(E ...)} is deemed to succeed if all
+the goals \q{G}, ..., can, in their turn, be shown to succeed.
+
+\defpred{\q{%repeat}\ar/0}
+
+The goal \q{(%repeat)} always succeeds (even on retries).
+Used for failure-driven loops.
+
+\defflag{\q{*schelog-use-occurs-check?*}}
+
+If the global flag
+\q{*schelog-use-occurs-check?*} is false (the default), 
+Schelog's unification will not use the occurs check.
+If it is true, the occurs check is enabled.
+
+\defpred{\q{%set-of}\ar/3}
+
+The goal \q{(%set-of E1 G E2)} unifies with \q{E2} the {\em set}
+of all the
+instantiations of \q{E1} for which goal \q{G} succeeds.
+
+\defpred{\q{%set-of-1}\ar/3}
+
+Similar to \q{%set-of}, but fails if the set is empty.
+
+\defgoal{\q{%true}}
+
+The goal \q{%true} succeeds.  Fails on retry.
+
+\defpred{\q{%var}\ar/1}
+
+The goal \q{(%var E)} succeeds if \q{E} is not completely
+instantiated, ie, it has at least one unbound variable in
+it.
+
+\defmac{\q{%which}}
+
+The form \q{(%which (V ...) G ...)} returns an instantiation
+of the variables \q{V}, ..., that satisfies all of \q{G},
+...  If \q{G}, ..., cannot be satisfied, returns \q{#f}.
+Calling the thunk \q{%more} produces more
+instantiations, if available.
+
+\defproc{\q{_} ~~(underscore)}
+
+A thunk that produces a new logic variable.  Can be
+used in situations where we want a logic variable but
+don't want to name it.  (\q{%let}, in contrast, introduces new
+lexical names for the logic variables it creates.)
+
+\newsection{References}
+\label{references}
+
+
+\bibliographystyle{plain}
+\bibliography{schelog}
+
+\bye

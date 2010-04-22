@@ -1,0 +1,109 @@
+June 1, 2003
+
+Include Gauche as a target dialect.  Alex Shinn 
+provided Gauche recognition to scmxlate (q.v.).
+
+3h5
+
+Mar 25, 2003
+
+%assert documentation bugfix.  From Steve Pothier.
+
+3h4
+
+15 Jul 2001
+
+Added optional Occurs Check, suggested by Brad Lucier.
+Brad also points out that the examples/houses.scm
+puzzle, as written, needs the Occurs Check.  ("as
+written"...?  Well, Prolog doesn't have the Occurs
+Check, and this famous puzzle is offered as an exercise
+in the Prolog textbook _The Art of Prolog_ (Sterling &
+Shapiro).  So I'm thinking perhaps there is a
+less naive solution that doesn't rely on the Occurs
+Check.)
+
+3h3
+
+Feb 28, 2000
+
+Gambit port improvement from Brad Lucier: eval
+define-macro explicitly to make macros usable after
+loading
+
+Sep 20, 1999
+
+3h
+
+Ported to Pocket Scheme (Ben Goetter) and Petite Chez Scheme.
+
+Jan 31, 1999
+
+3g1
+
+Minor bugfix for Gambit install
+
+May 2, 1998
+
+3g
+
+Ported to STk
+
+April 19, 1998
+
+3f
+
+Porting mechanism refined: ports to mzscheme, scm,
+guile, gambit, mitscheme, bigloo.
+
+April 1997
+
+3e
+
+Extensible mechanism added for porting to various
+Scheme dialects
+
+3d
+
+maybeini4gambit.scm (Brad Lucier)
+
+Corrected () in evaluable positions to '(), as Gambit
+won't accept unquoted ()s.  (Brad Lucier)
+
+3c
+
+maybeini4mzscheme.scm.
+
+Equal strings unify (Paul Prescod).
+
+HTML version of doc included.
+
+v. 3b
+
+Fixed bug in %and and %or.  (Using macros for now -- these were
+procedures in v. 3, 3a.)
+
+v. 3a
+
+Added maybeini4mitscheme.scm (for Tore Amble).
+
+March 1997
+
+v. 3
+
+Added syntax for asserting additional clauses to an existing
+relation.
+
+Set-predicates rewritten.  (Free variables given choice of
+treatment as in Prolog.  Previously they had all been
+assumed to be existentially quantified.)
+
+Improved tutorial documentation.
+
+Feb 1993
+
+Second release.
+
+1989
+
+First release.
