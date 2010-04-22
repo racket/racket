@@ -206,10 +206,6 @@
         (br)
         "Current time: " ,(date->string (seconds->date (current-seconds)) #t)))
 
-(define (revision-svn-url rev)
-  (format "http://svn.plt-scheme.org/view?view=rev&revision=~a"
-          rev))
-
 (define (render-event e)
   (with-handlers ([exn:fail?
                    (lambda (x)
@@ -611,10 +607,13 @@
                             (define rev (string->number name))
                             (define log (read-cache (future-record-path rev)))
                             (define-values (committer title)
-                              (log->committer+title log))                            
+                              (log->committer+title log))
+                            (define url
+                              (format "http://github.com/plt/racket/commit/~a"
+                                      (git-push-end-commit log)))
                             `(tr ([class "dir"]
                                   [title ,title])
-                                 (td (a ([href ,(revision-svn-url name)]) ,name))
+                                 (td (a ([href ,url]) ,name))
                                  (td ([class "building"] [colspan "6"])
                                      "")
                                  (td ([class "author"]) ,committer))]
