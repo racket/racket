@@ -36,14 +36,14 @@ please adhere to these guidelines:
   has changed and needs to be re-translated.  Do not erase the old
   version, it might help us translate the new one.  Do not move it
   either.  Just comment it out and add the short comment.  After the
-  next svn update DrScheme will automatically tell us translators that
+  next svn update DrRacket will automatically tell us translators that
   a new string needs to be translated, we will find your comment in
   the file, and know what to do.
-	Some evil evil people might think that, since DrScheme automatically
+	Some evil evil people might think that, since DrRacket automatically
   informs us of new strings to be translated, an easier thing to do
   when modifying an existing string would be to simply rename it at
   the same time.  This works, except that if you do that, we
-  translators will get two warnings from DrScheme:
+  translators will get two warnings from DrRacket:
 		language english had but french does not:
 		(new-name "New String")
 		language french had but english does not:
@@ -93,9 +93,9 @@ please adhere to these guidelines:
  (is-this-your-native-language "Is Japanese Your Native Language?")
 
  (are-you-sure-you-want-to-switch-languages
-  "GUI で使用する自然言語を変更します。DrScheme を再起動する必要があります。よろしいですか？")
+  "GUI で使用する自然言語を変更します。DrRacket を再起動する必要があります。よろしいですか？")
 
- (interact-with-drscheme-in-language "DrScheme を日本語で使う")
+ (interact-with-drscheme-in-language "DrRacket を日本語で使う")
 
  ;; these two should probably be the same in all languages excepet English.
  ;; they are the button labels (under macos and windows, respectively)
@@ -103,9 +103,9 @@ please adhere to these guidelines:
  (accept-and-quit "承認して終了")
  (accept-and-exit "承認して終了")
 
- ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
+ ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
  (plt "PLT")
- (drscheme "DrScheme")
+ (drscheme "DrRacket")
  (ok "OK")
  (cancel "キャンセル")
  (abort "中止")
@@ -127,13 +127,13 @@ please adhere to these guidelines:
  ;; dialog isn't going to be shown again.
   ;; One version for always using the current choice:
  (dont-ask-again-always-current "今後このメッセージを表示しない (現在の選択が使われます)")
-  ;; One generic version (ie, on the Quit DrScheme dialog)
+  ;; One generic version (ie, on the Quit DrRacket dialog)
  (dont-ask-again                "今後このメッセージを表示しない")
 
  ;;; important urls
  (web-materials "関連するウェブサイト") ;; menu item title
  (tool-web-sites "ツールのウェブサイト")   ;; menu item title
- (drscheme-homepage "DrScheme")
+ (drscheme-homepage "DrRacket")
  (plt-homepage "PLT")
  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
@@ -208,10 +208,10 @@ please adhere to these guidelines:
  (welcome-to-something "~a にようこそ！")
 
  ; this appears in the drscheme about box.
- (welcome-to-drscheme-version/language "Welcome to DrScheme, version ~a, ~a")
+ (welcome-to-drscheme-version/language "Welcome to DrRacket, version ~a, ~a")
 
- ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
- (welcome-to-drscheme "Welcome to DrScheme")
+ ; these appear on subsequent lines in the `Help|Welcome to DrRacket' dialog.
+ (welcome-to-drscheme "Welcome to DrRacket")
 
  (goto-line "行番号を指定して移動")
  (goto-line-invalid-number
@@ -311,7 +311,7 @@ please adhere to these guidelines:
  (plt:hd:refreshing-manuals-finished "完了しました。")
  (plt:hd:about-help-desk "ヘルプデスクについて")
  (plt:hd:help-desk-about-string
-  "ヘルプデスクは PLT ソフトウェア (DrScheme, MzScheme, MrEd など) に関する完全な情報を提供します。\n\nバージョン ~a\nCopyright (c) ~a-~a PLT")
+  "ヘルプデスクは PLT ソフトウェア (DrRacket, MzScheme, MrEd など) に関する完全な情報を提供します。\n\nバージョン ~a\nCopyright (c) ~a-~a PLT")
  (plt:hd:help-on-help "ヘルプのヘルプ")
  (plt:hd:help-on-help-details "ヘルプデスクの使い方については、ヘルプデスクのホームページにある最初の `Help Desk' というリンクをたどってください。(ホームページを表示するには、ヘルプデスク ウィンドウの上部にある [ホーム] ボタンを押します。)")
   (reload "再読み込み") ;; refresh the page in a web browser
@@ -327,7 +327,7 @@ please adhere to these guidelines:
   (plt:hd:manual-search-ordering "マニュアルの検索順序")
 
   ;; in the help-desk standalone font preference dialog, on a check box
-  (use-drscheme-font-size "DrScheme のフォンサイズを使用する")
+  (use-drscheme-font-size "DrRacket のフォンサイズを使用する")
   
   ;; in the preferences dialog in drscheme there is example text for help desk font size.
   ;; clicking the links in that text produces a dialog with this message
@@ -388,11 +388,11 @@ please adhere to these guidelines:
  (plt-installer-aborted "中止しました") ;; msg that appears in the installation window when installation is aborted
 
  ;;; about box
- (about-drscheme-frame-title "DrScheme について")
+ (about-drscheme-frame-title "DrRacket について")
 
  ;;; save file in particular format prompting.
  (save-as-plain-text "このファイルをプレーンテキストで保存しますか？")
- (save-in-drs-format "このファイルを DrScheme 専用のバイナリ形式で保存しますか？")
+ (save-in-drs-format "このファイルを DrRacket 専用のバイナリ形式で保存しますか？")
  (yes "はい")
  (no "いいえ")
 
@@ -419,7 +419,7 @@ please adhere to these guidelines:
  (auto-save-files "ファイルを自動保存する")
  (backup-files "ファイルをバックアップする")
  (map-delete-to-backspace "Delete キーを Backspace キーとして処理する")
- (verify-exit "DrScheme 終了時に確認をとる")
+ (verify-exit "DrRacket 終了時に確認をとる")
  (ask-before-changing-format "保存形式を変更する前に確認をとる")
  (wrap-words-in-editor-buffers "エディタでテキストを折り返して表示する")
  (show-status-line "ステータス行を表示する")
@@ -536,7 +536,7 @@ please adhere to these guidelines:
  (mfs-recur-over-subdirectories "サブディレクトリ内を再帰的に検索")
  (mfs-regexp-filename-filter "ファイル名を正規表現でフィルタ")
  (mfs-search-string "検索語")
- (mfs-drscheme-multi-file-search "DrScheme - 複数ファイルからの検索") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "DrRacket - 複数ファイルからの検索") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" はディレクトリではありません")
  (mfs-open-file "ファイルを開く")
  (mfs-stop-search "検索を中止")
@@ -581,7 +581,7 @@ please adhere to these guidelines:
 
  ;;; raw menu names -- these must match the
  ;;; versions below, once the &s have been stripped.
- ;;; if they don't, DrScheme's menus will appear
+ ;;; if they don't, DrRacket's menus will appear
  ;;; in the wrong order.
  (file-menu "ファイル")
  (edit-menu "編集")
@@ -767,7 +767,7 @@ please adhere to these guidelines:
   ;; if you have leftover autosave files. to see the dialog,
   ;; start up drscheme and modify (but don't save) a file
   ;; (also, do this with an unsaved file). Wait for the autosave
-  ;; files to appear (typically 5 minutes). Kill DrScheme
+  ;; files to appear (typically 5 minutes). Kill DrRacket
   ;; and restart it. You'll see the dialog
   (autosave-autosave-label: "自動保存ファイル:")
   (autosave-original-label: "元のファイル:")
@@ -777,7 +777,7 @@ please adhere to these guidelines:
 
   (autosave-show-autosave "自動保存ファイル") ;; title of a window showing the autosave file
 
-  (autosave-explanation "DrScheme は自動保存ファイルを検出しました。自動保存ファイルには、未保存の作業結果が含まれている可能性があります。")
+  (autosave-explanation "DrRacket は自動保存ファイルを検出しました。自動保存ファイルには、未保存の作業結果が含まれている可能性があります。")
 
   (autosave-recovered! "復元しました！") ;; status of an autosave file
   (autosave-deleted "削除しました")       ;; status of an autosave file
@@ -798,7 +798,7 @@ please adhere to these guidelines:
 
  (definitions-modified
   "定義テキストがファイルシステム上で変更されました。定義テキストを保存するか復元してください。")
- (drscheme-internal-error "DrScheme 内部エラー")
+ (drscheme-internal-error "DrRacket 内部エラー")
 
  ;;; tools
  (invalid-tool-spec "コレクション ~a の info.ss ファイルに記述されているツール仕様が不正です。文字列か空でない文字列リストでなければなりませんが、次の値が記述されています: ~e")
@@ -842,7 +842,7 @@ please adhere to these guidelines:
  (save-definitions-as "定義に名前を付けて保存(&A)...")
  (save-definitions "定義の保存")
  (print-definitions "定義を印刷...")
- (about-drscheme "DrSchemeについて")
+ (about-drscheme "DrRacketについて")
  (save-other "その他の保存")
  (save-definitions-as-text "定義をテキストに保存...")
  (save-interactions "対話の保存")
@@ -959,11 +959,11 @@ please adhere to these guidelines:
  ;;; Teachpack messages
  (select-a-teachpack "ティーチパックの選択")
  (clear-teachpack "ティーチパック ~a を消去")
- (teachpack-error-label "DrScheme - ティーチパック エラー")
+ (teachpack-error-label "DrRacket - ティーチパック エラー")
  (teachpack-didnt-load "ティーチパック ファイル ~a は、正しくロードされませんでした。")
  (add-teachpack-menu-item-label "ティーチパックの追加...")
  (clear-all-teachpacks-menu-item-label "すべてのティーチパックを消去")
- (drscheme-teachpack-message-title "DrScheme ティーチパック")
+ (drscheme-teachpack-message-title "DrRacket ティーチパック")
  (already-added-teachpack "ティーチパック ~a はすでに追加されています")
 
   ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
@@ -1049,7 +1049,7 @@ please adhere to these guidelines:
   (module-language-auto-text "#lang 行を自動的に追加する") ;; shows up in the details section of the module language
 
   ;;; from the `not a language language' used initially in drscheme.
-  (must-choose-language "DrScheme は、プログラミング言語を選択しなければプログラムを実行できません。")
+  (must-choose-language "DrRacket は、プログラミング言語を選択しなければプログラムを実行できません。")
 
   ; next two appear before and after the name of a text book (which will be in italics)
   (using-a-textbook-before "")
@@ -1070,7 +1070,7 @@ please adhere to these guidelines:
 
  ;;; debug language
  (unknown-debug-frame "[unknown]")
- (backtrace-window-title "バックトレース - DrScheme")
+ (backtrace-window-title "バックトレース - DrRacket")
  (files-interactions "~a's interactions") ;; filled with a filename
  (current-interactions "interactions")
  (current-definitions "definitions")
@@ -1356,7 +1356,7 @@ please adhere to these guidelines:
   ;;The Test engine tool
   ;;
   (test-engine-window-title "テスト結果")
-  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "テスト結果を切り離して表示する")
   (test-engine-undock-report "テスト結果を統合して表示する")
   ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
@@ -1443,7 +1443,7 @@ please adhere to these guidelines:
   (planet-finished "PLaneT: 完了 ~a.")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
   
-  ;; string normalization. To see this, paste some text with a ligature into DrScheme
+  ;; string normalization. To see this, paste some text with a ligature into DrRacket
   ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
   (normalize "Normalize")
   (leave-alone "Leave alone")

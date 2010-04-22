@@ -4,15 +4,15 @@
   "Ist Deutsch Ihre Muttersprache?")
 
  (are-you-sure-you-want-to-switch-languages
-  "Dies wird die Sprache der DrScheme-Benutzeroberfläche ändern und erfordert einen Neustart von DrScheme.  Sind Sie sicher?")
+  "Dies wird die Sprache der DrRacket-Benutzeroberfläche ändern und erfordert einen Neustart von DrRacket.  Sind Sie sicher?")
 
- (interact-with-drscheme-in-language "Deutsche Benutzeroberfläche für DrScheme")
+ (interact-with-drscheme-in-language "Deutsche Benutzeroberfläche für DrRacket")
 
  (accept-and-quit "In Ordnung - Beenden")
  (accept-and-exit "In Ordnung - Beenden")
- ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
+ ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
  (plt "PLT")
- (drscheme "DrScheme")
+ (drscheme "DrRacket")
  (ok "OK")
  ;; We can't use "Abbrechen" here because that's much closer in
  ;; meaning to "abort", and it appears in dialogs saying "Quit?" "OK"
@@ -35,7 +35,7 @@
 
  (web-materials "Verwandte Web-Seiten")
  (tool-web-sites "Web-Seiten mit Tools")
- (drscheme-homepage "DrScheme")
+ (drscheme-homepage "DrRacket")
  (plt-homepage "PLT")
  (how-to-use-scheme "How to Use Scheme")
  (teachscheme!-homepage "TeachScheme!")
@@ -113,10 +113,10 @@
  (welcome-to-something "Willkommen bei ~a")
  
  ; this appears in the drscheme about box.
- (welcome-to-drscheme-version/language "Willkommen bei DrScheme! (Version ~a, ~a)")
+ (welcome-to-drscheme-version/language "Willkommen bei DrRacket! (Version ~a, ~a)")
 
- ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
- (welcome-to-drscheme "Willkommen bei DrScheme")
+ ; these appear on subsequent lines in the `Help|Welcome to DrRacket' dialog.
+ (welcome-to-drscheme "Willkommen bei DrRacket")
 
  (goto-line "Zu Zeile springen")
  (goto-line-invalid-number
@@ -216,7 +216,7 @@
  (plt:hd:refreshing-manuals-finished "Fertig.")
  (plt:hd:about-help-desk "Über das Hilfezentrum")
  (plt:hd:help-desk-about-string
-  "Das Hilfezentrum ist die primäre Quelle für Information über die PLT-Software,insbesondere DrScheme, MzScheme und MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
+  "Das Hilfezentrum ist die primäre Quelle für Information über die PLT-Software,insbesondere DrRacket, MzScheme und MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
  (plt:hd:help-on-help "Hilfe zur Hilfe")
  (plt:hd:help-on-help-details "Hilfe zum Hilfezentrum befindet sich auf der Homepage des Hilfezentrums unter `Help Desk'.   (Die Homepage des Hilfezentrums ist über den `Home'-Knopf zu erreichen.)")
   (reload "Aktualisieren") ;; refresh the page in a web browser
@@ -231,7 +231,7 @@
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "Suchreihenfolge Handbuch")
 
-  (use-drscheme-font-size "DrScheme-Schriftgröße verwenden")
+  (use-drscheme-font-size "DrRacket-Schriftgröße verwenden")
 
   (help-desk-this-is-just-example-text
    "Dies ist nur ein Beispieltext für das Setzen der Schriftgröße.  Öffnen sie das Hilfezentrum (im \"Hilfe\"-Menü), um diesen Links zu folgen.")
@@ -289,11 +289,11 @@
  (plt-installer-aborted "Abgebrochen.")
   
  ;;; about box
- (about-drscheme-frame-title "Über DrScheme")
+ (about-drscheme-frame-title "Über DrRacket")
  
  ;;; save file in particular format prompting.
  (save-as-plain-text "Diese Datei als Text speichern?")
- (save-in-drs-format "Diese Datei im DrScheme-Format (kein Text) speichern?")
+ (save-in-drs-format "Diese Datei im DrRacket-Format (kein Text) speichern?")
  (yes "Ja")
  (no "Nein")
  
@@ -439,7 +439,7 @@
  (mfs-recur-over-subdirectories "In Unterverzeichnisse abtauchen")
  (mfs-regexp-filename-filter "Regulärer Ausdruck Dateinamen-Filter")
  (mfs-search-string "Zeichenkette suchen")
- (mfs-drscheme-multi-file-search "DrScheme - Suche in mehreren Dateien") ;; results window and error message title
+ (mfs-drscheme-multi-file-search "DrRacket - Suche in mehreren Dateien") ;; results window and error message title
  (mfs-not-a-dir "\"~a\" ist kein Verzeichnis")
  (mfs-open-file "Datei öffnen")
  (mfs-stop-search "Suche stoppen")
@@ -484,7 +484,7 @@
  
  ;;; raw menu names -- these must match the 
  ;;; versions below, once the &s have been stripped.
- ;;; if they don't, DrScheme's menus will appear
+ ;;; if they don't, DrRacket's menus will appear
  ;;; in the wrong order.
  (file-menu "Datei")
  (edit-menu "Bearbeiten")
@@ -668,7 +668,7 @@
   ;; if you have leftover autosave files. to see the dialog,
   ;; start up drscheme and modify (but don't save) a file
   ;; (also, do this with an unsaved file). Wait for the autosave
-  ;; files to appear (typically 5 minutes). Kill DrScheme
+  ;; files to appear (typically 5 minutes). Kill DrRacket
   ;; and restart it. You'll see the dialog
   (autosave-autosave-label: "Automatisch gespeicherte Datei:")
   (autosave-original-label: "Ursprüngliche Datei:")
@@ -678,7 +678,7 @@
 
   (autosave-show-autosave "Automatisch gespeicherte Datei") ;; title of a window showing the autosave file
 
-  (autosave-explanation "DrScheme hat automatisch gespeicherte Dateien gefunden, die nicht regulär gespeicherten Inhalt enthalten könnten.")
+  (autosave-explanation "DrRacket hat automatisch gespeicherte Dateien gefunden, die nicht regulär gespeicherten Inhalt enthalten könnten.")
 
   (autosave-recovered! "Zurückgeholt!") ;; status of an autosave file
   (autosave-deleted "Gelöscht")       ;; status of an autosave file
@@ -699,7 +699,7 @@
  
  (definitions-modified 
   "Die Definitionen wurden auf der Platte geändert; bitte speichern sie die Definitionen oder holen Sie diese von der Platte zurück.")
- (drscheme-internal-error "Interner Fehler in DrScheme")
+ (drscheme-internal-error "Interner Fehler in DrRacket")
  
  ;;; tools
  (invalid-tool-spec "Die Tool-Spezifikation in der Datei info.ss der Kollektion ~a enthält Fehler. Da sollte eine Zeichenkette oder eine Liste von Zeichenketten stehen, tatsächlich steht dort aber: ~e")
@@ -744,7 +744,7 @@
  (save-definitions-as "Definitionen speichern unter...")
  (save-definitions "Definitionen speichern")
  (print-definitions "Definition drucken...")
- (about-drscheme "Über DrScheme")
+ (about-drscheme "Über DrRacket")
  (save-other "Speichern unter")
  (save-definitions-as-text "Definitionen als Text speichern...")
  (save-interactions "Interaktionen speichern")
@@ -863,11 +863,11 @@
  ;;; Teachpack messages
  (select-a-teachpack "Teachpack auswählen")
  (clear-teachpack "Teachpack ~a entfernen")
- (teachpack-error-label "DrScheme - Teachpack-Fehler")
+ (teachpack-error-label "DrRacket - Teachpack-Fehler")
  (teachpack-didnt-load "Die Teachpack-Datei ~a konnte nicht korrekt geladen werden.")
  (add-teachpack-menu-item-label "Teachpack hinzufügen...")
  (clear-all-teachpacks-menu-item-label "Alle Teachpacks entfernen")
- (drscheme-teachpack-message-title "DrScheme-Teachpack")
+ (drscheme-teachpack-message-title "DrRacket-Teachpack")
  (already-added-teachpack "Teachpack ~a ist schon dabei")
 
  ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
@@ -958,7 +958,7 @@
  (module-language-auto-text "Automatisch Zeile mit #lang") ;; shows up in the details section of the module language
 
   ;;; from the `not a language language' used initially in drscheme.
- (must-choose-language "DrScheme kann keine Programme verarbeiten, bis Sie eine Sprache auswählen.")
+ (must-choose-language "DrRacket kann keine Programme verarbeiten, bis Sie eine Sprache auswählen.")
  
  ;; next two appear before and after the name of a text book (which will be in italics)
  (using-a-textbook-before "Benutzen Sie ")
@@ -980,7 +980,7 @@
 
  ;;; debug language
  (unknown-debug-frame "[unbekannt]")
- (backtrace-window-title "Backtrace - DrScheme")
+ (backtrace-window-title "Backtrace - DrRacket")
  (files-interactions "Interaktionen von ~a") ;; filled with a filename
  (current-interactions "Interaktionen")
  (current-definitions "Definitionen")
@@ -1277,7 +1277,7 @@
   ;;The test engine tool
   ;;
   (test-engine-window-title "Testresultate")
-  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "Testresultate andocken")
  (test-engine-undock-report "Testresultate abdocken")
   ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
@@ -1421,7 +1421,7 @@
   (planet-finished "PLaneT: fertig mit ~a.")
   (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
 
- ;; string normalization. To see this, paste some text with a ligature into DrScheme
+ ;; string normalization. To see this, paste some text with a ligature into DrRacket
  ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
  (normalize "Normalisieren")
  (leave-alone "Unverändert lassen")

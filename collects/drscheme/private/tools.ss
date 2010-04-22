@@ -133,7 +133,7 @@ string-constants)
 
 ;; candidate-tool? : installed-tool -> boolean
 ;; Predicate for tools selected for execution in this
-;; run of DrScheme (depending on env variables and preferences)
+;; run of DrRacket (depending on env variables and preferences)
 (define candidate-tool?
   (cond
     [(getenv "PLTNOTOOLS")
@@ -456,7 +456,7 @@ string-constants)
 ;;                 (-> void)
 ;;              -> (listof successfully-loaded-tool)
 ;; filters out the tools that raise exceptions during the phase.
-;; extras is the thunk for DrScheme init stuff on this phase.
+;; extras is the thunk for DrRacket init stuff on this phase.
 (define (run-one-phase _the-phase err-fmt selector tools extras)
   (set! current-phase _the-phase)
   (extras)
@@ -503,7 +503,7 @@ string-constants)
      (define advisory
        (new message%
             (parent main)
-            (label "Changes to tool configuration will take effect the next time you start DrScheme.")))
+            (label "Changes to tool configuration will take effect the next time you start DrRacket.")))
      (define listing
        (new list-box%
             (parent main)
@@ -522,7 +522,7 @@ string-constants)
      (define location-editor (send location get-editor))
      (define configuration
        (new radio-box%
-            (label "Load the tool when DrScheme starts?")
+            (label "Load the tool when DrRacket starts?")
             (parent info)
             (choices (list load-action skip-action #| default-action |#))
             (callback (lambda _ (on-select-policy)))))

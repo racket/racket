@@ -19,7 +19,7 @@
   (define sc-use-language-in-source "Use the language declared in the source")
   (define sc-choose-a-language "Choose a language")
   (define sc-lang-in-source-discussion
-    "The #lang line at the start of a program declares its language. This is the default and preferred mode for DrScheme.")
+    "The #lang line at the start of a program declares its language. This is the default and preferred mode for DrRacket.")
 
   (provide language-configuration@)
   
@@ -49,7 +49,7 @@
             (string-constant no-language-chosen)))
     
     ;; languages : (listof (instanceof language<%>))
-    ;; all of the languages supported in DrScheme
+    ;; all of the languages supported in DrRacket
     (define languages null)
     
     ;; add-language : (instanceof language%) -> void
