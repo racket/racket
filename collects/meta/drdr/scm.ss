@@ -1,5 +1,6 @@
 #lang scheme
 (require "svn.ss"
+         "path-utils.ss"
          net/url
          scheme/system)
 (provide
@@ -20,7 +21,7 @@
               "0" "")
           (number->string n)))
 
-(define-struct push-data (who start-commit end-commit branches) #:prefab)
+(define-struct push-data (who end-commit branches) #:prefab)
 
 (define (push-info push-n)
   (define push-n100s (quotient push-n 100))
@@ -31,21 +32,27 @@
       (string->url 
        (format "~a/pushes/~a/~a" git-url-base push-n100s push-nrem)))))
   (match ls
-    [(list (regexp #rx"^([^ ]+) +([0-9abcdef]+) +([0-9abcdef]+)$" (list _ who start-commit end-commit))
-           (regexp #rx"^([0-9abcdef]+) +([0-9abcdef]+) +(.+)$" (list _ _ _ branch))
+    [(list (regexp #rx"^([^ ]+) +([0-9abcdef]+)$" (list _ who end-commit))
+           (regexp #rx"^([0-9abcdef]+) +([0-9abcdef]+) +(.+)$" (list _ bstart bend branch))
            ...)
-     (make-push-data who start-commit end-commit branch)]
+     (make-push-data who end-commit 
+                     (make-immutable-hash
+                      (map (lambda (b bs be) (cons b (vector bs be)))
+                           branch bstart bend)))]
     [_
      #f]))
 
-(define (system/output-port #:stdout [init-stdout #f] . as)
+(define (system/output-port #:k k #:stdout [init-stdout #f] . as)
+  (define _ (printf "~S~n" as))
   (define-values (sp stdout stdin stderr)
     (apply subprocess init-stdout #f #f as))
-  (subprocess-wait sp)
-  stdout)
+  (begin0 (k stdout)
+          (subprocess-wait sp)))
 
 (define-struct git-push (num author commits) #:prefab)
-(define-struct git-commit (hash author date msg mfiles) #:prefab)
+(define-struct git-commit (hash author date msg) #:prefab)
+(define-struct (git-diff git-commit) (mfiles) #:prefab)
+(define-struct (git-merge git-commit) (from to) #:prefab)
 
 (define (read-until-empty-line in-p)
   (let loop ()
@@ -60,77 +67,107 @@
          (list* (regexp-replace #rx"^ +" l "") (loop))]))))
 
 (define (read-commit in-p)
-  (match-define (regexp #rx"^commit +(.+)$" (list _ hash)) (read-line in-p))
-  (match-define (regexp #rx"^Author: +(.+)$" (list _ author)) (read-line in-p))
-  (match-define (regexp #rx"^Date: +(.+)$" (list _ date)) (read-line in-p))
-  (define _1 (read-line in-p))
-  (define msg (read-until-empty-line in-p))
-  (define mfiles (read-until-empty-line in-p))
-  (make-git-commit hash author date msg mfiles))
+  (match (read-line in-p)
+    [(? eof-object?)
+     #f]
+    [(regexp #rx"^commit +(.+)$" (list _ hash))
+     (match (read-line in-p)
+       [(regexp #rx"^Merge: +(.+) +(.+)$" (list _ from to))
+        (match-define (regexp #rx"^Author: +(.+)$" (list _ author)) (read-line in-p))
+        (match-define (regexp #rx"^Date: +(.+)$" (list _ date)) (read-line in-p))
+        (define _1 (read-line in-p))
+        (define msg (read-until-empty-line in-p))
+        (make-git-merge hash author date msg from to)]
+       [(regexp #rx"^Author: +(.+)$" (list _ author))
+        (match-define (regexp #rx"^Date: +(.+)$" (list _ date)) (read-line in-p))
+        (define _1 (read-line in-p))
+        (define msg (read-until-empty-line in-p))
+        (define mfiles (read-until-empty-line in-p))
+        (make-git-diff hash author date msg mfiles)])]))
 
 (define port-empty? port-closed?)
 
 (define (read-commits in-p)
-  (if (port-empty? in-p)
-      empty
-      (list* (read-commit in-p)
-             (read-commits in-p))))
+  (cond
+    [(port-empty? in-p)
+     empty]
+    [(read-commit in-p)
+     => (lambda (c) 
+          (printf "~S~n" c)
+          (list* c (read-commits in-p)))]
+    [else
+     empty]))
 
 (define (parse-push num author in-p)
   (make-git-push num author (read-commits in-p)))
 
 (define (get-scm-commit-msg rev repo)
-  (match-define (struct push-data (who start-commit end-commit branches)) (push-info rev))
-  (scm-update repo)
-  (parse-push 
-   rev who 
-   (parameterize ([current-directory repo])
-     (system/output-port (git-path) "log" "--date=iso" "--name-only" (format "~a..~a" start-commit end-commit)))))
+  (match-define (struct push-data (who _ branches)) (push-info rev))
+  (match-define (vector start-commit end-commit) (hash-ref branches master-branch))
+  (parameterize ([current-directory repo])
+    (system/output-port 
+     #:k (curry parse-push rev who)
+     (git-path)
+     "--no-pager" "log" "--date=iso" "--name-only"
+     (format "~a..~a" start-commit end-commit))))
 (provide/contract
- [struct git-push ([num exact-nonnegative-integer?]
-                   [author string?]
-                   [commits (listof git-commit?)])]
- [struct git-commit ([hash string?]
-                     [author string?]
-                     [date string?]
-                     [msg (listof string?)]
-                     [mfiles (listof string?)])]
- [get-scm-commit-msg (exact-nonnegative-integer? string? . -> . git-push?)])
+ [struct git-push 
+         ([num exact-nonnegative-integer?]
+          [author string?]
+          [commits (listof git-commit?)])]
+ [struct git-commit 
+         ([hash string?]
+          [author string?]
+          [date string?]
+          [msg (listof string?)])]
+ [struct git-diff 
+         ([hash string?]
+          [author string?]
+          [date string?]
+          [msg (listof string?)]
+          [mfiles (listof string?)])]
+ [struct git-merge 
+         ([hash string?]
+          [author string?]
+          [date string?]
+          [msg (listof string?)]
+          [from string?]
+          [to string?])]
+ [get-scm-commit-msg (exact-nonnegative-integer? path-string? . -> . git-push?)])
 
 (define (scm-export rev repo file dest)
   (define commit
     (push-data-end-commit (push-info rev)))
-  (scm-update repo)
-  (call-with-output-file* 
-   dest
-   #:exists 'truncate/replace
-   (lambda (file-port)
-     (parameterize ([current-directory repo])
-       (system/output-port #:stdout file-port
-                           (git-path)
-                           "archive" commit file))))
+  (define cmd
+    (format "~S archive --format=tar ~S ~S | tar -O -xf - ~S > ~S"
+            (git-path) commit file file dest))
+  (parameterize ([current-directory repo])
+    (system cmd))
   (void))
 
 (define (scm-checkout rev repo dest)
-  (scm-update repo)
-  (system* (git-path) "clone" (path->string repo) (path->string dest))
+  (system* (git-path) "clone" (path->string* repo) (path->string* dest))
   (parameterize ([current-directory dest])
-    (system* (git-path) "checkout" (push-data-end-commit (push-info rev)))))
+    (system* (git-path) "checkout" (push-data-end-commit (push-info rev))))
+  (void))
 
 (define (scm-update repo)
   (parameterize ([current-directory repo])
-    (system* (git-path) "fetch" git-url-base)))
+    (system* (git-path) "fetch" git-url-base))
+  (void))
 
-(define (scm-revisions-after cur-rev repo)
+(define master-branch "refs/heads/master")
+
+(define (scm-revisions-after cur-rev)
   (define newest-rev (newest-push))
   (for/list ([rev (in-range (add1 cur-rev) newest-rev)]
              #:when
              (let ([info (push-info rev)])
-               (and info
-                    (member "refs/heads/master" (push-data-branches info)))))
+               (and info (hash-has-key? (push-data-branches info) master-branch))))
     rev))
 
 (provide/contract
- [scm-revisions-after (exact-nonnegative-integer? path? . -> . void?)]
- [scm-export (exact-nonnegative-integer? path? string? path? . -> . void?)]
- [scm-checkout (exact-nonnegative-integer? path? path? . -> . void?)])
+ [scm-update (path? . -> . void?)]
+ [scm-revisions-after (exact-nonnegative-integer? . -> . void?)]
+ [scm-export (exact-nonnegative-integer? path-string? string? path-string? . -> . void?)]
+ [scm-checkout (exact-nonnegative-integer? path-string? path-string? . -> . void?)])

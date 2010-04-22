@@ -104,6 +104,7 @@
   (define pth (revision-commit-msg (current-rev)))
   (define msg-v (read-cache* pth))
   (match msg-v
+    ; XXX git push
     [(struct svn-rev-log (num author date msg changes))
      (define url (format "http://svn.plt-scheme.org/view?view=rev&revision=~a" num))
      (define (timestamp pth)
@@ -183,6 +184,7 @@
         (define-values (title breadcrumb) (path->breadcrumb log-pth #f))
         (define the-base-path
           (base-path log-pth))
+        ; XXX git url
         (define svn-url
           (format "http://svn.plt-scheme.org/view/trunk/~a?view=markup&pathrev=~a"
                   the-base-path
@@ -486,6 +488,23 @@
   (if (eof-object? v)
       "" v))
 
+(define log->committer+title 
+  (match-lambda
+    [(struct git-push (num author commits))
+     (define lines (append-map git-commit-msg commits))
+     (define title
+       (if (empty? lines)
+           ""
+           (first lines)))
+     (values author title)]
+    [(struct svn-rev-log (num author date msg changes))
+     (define commit-msg (string-first-line msg))
+     (define title 
+       (format "~a - ~a"
+               (svn-date->nice-date date)
+               commit-msg))
+     (values author title)]))
+
 (require web-server/servlet-env
          web-server/http
          web-server/dispatch
@@ -540,13 +559,8 @@
                             (define name (path->string rev-pth))
                             (define rev (string->number name))
                             (define log (read-cache (future-record-path rev)))
-                            (define committer (svn-rev-log-author log))
-                            (define commit-msg (string-first-line (svn-rev-log-msg log)))
-                            (define title 
-                              (format "~a - ~a"
-                                      (svn-date->nice-date (svn-rev-log-date log))
-                                      commit-msg))
-                            
+                            (define-values (committer title)
+                              (log->committer+title log))                            
                             `(tr ([class "dir"]
                                   [title ,title])
                                  (td (a ([href ,(revision-svn-url name)]) ,name))
@@ -559,12 +573,8 @@
                             (define rev (string->number name))
                             (define log-pth (revision-commit-msg rev))
                             (define log (read-cache log-pth))
-                            (define committer (svn-rev-log-author log))
-                            (define commit-msg (string-first-line (svn-rev-log-msg log)))
-                            (define title 
-                              (format "~a - ~a"
-                                      (svn-date->nice-date (svn-rev-log-date log))
-                                      commit-msg))
+                            (define-values (committer title)
+                              (log->committer+title log))
                             (define (no-rendering-row)
                               (define mtime 
                                 (file-or-directory-modify-seconds log-pth))
