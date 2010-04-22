@@ -11020,15 +11020,18 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
                  1, -1, 1, scheme_false, 0, NULL, 0);
 }
 
-static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int cont, int w_prompt)
+static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, Scheme_Env *env, 
+                                         int cont, int w_prompt)
 /* cont == -2 => module (no result)
    cont == -1 => single result
    cont == 1 -> multiple result ok
-   cont == 2 -> multiple result ok, use current_print to show results */
+   cont == 2 -> #%top-interaction, multiple result ok, use current_print to show results */
 {
-  Scheme_Object *port, *expr, *result = scheme_void;
+  Scheme_Object *expr, *result = scheme_void;
 
-  port = scheme_make_byte_string_input_port(str);
+  if (!port)
+    port = scheme_make_byte_string_input_port(str);
+
   do {
     expr = scheme_read_syntax(port, scheme_false);
 
@@ -11055,6 +11058,9 @@ static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int c
       else
         result = scheme_eval(expr, env);
     } else {
+      if (cont == 2)
+        expr = scheme_make_pair(scheme_intern_symbol("#%top-interaction"), expr);
+
       if (w_prompt)
         result = scheme_eval_multi_with_prompt(expr, env);
       else
@@ -11090,37 +11096,43 @@ static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int c
 
 Scheme_Object *scheme_eval_string_all(const char *str, Scheme_Env *env, int cont)
 {
-  return do_eval_string_all(str, env, cont, 0);
+  return do_eval_string_all(NULL, str, env, cont, 0);
 }
 
 Scheme_Object *scheme_eval_string(const char *str, Scheme_Env *env)
 {
-  return do_eval_string_all(str, env, -1, 0);
+  return do_eval_string_all(NULL, str, env, -1, 0);
 }
 
 Scheme_Object *scheme_eval_module_string(const char *str, Scheme_Env *env)
 {
-  return do_eval_string_all(str, env, -2, 0);
+  return do_eval_string_all(NULL, str, env, -2, 0);
 }
 
 Scheme_Object *scheme_eval_string_multi(const char *str, Scheme_Env *env)
 {
-  return do_eval_string_all(str, env, 0, 0);
+  return do_eval_string_all(NULL, str, env, 0, 0);
 }
 
 Scheme_Object *scheme_eval_string_all_with_prompt(const char *str, Scheme_Env *env, int cont)
 {
-  return do_eval_string_all(str, env, cont, 1);
+  return do_eval_string_all(NULL, str, env, cont, 1);
+}
+
+Scheme_Object *scheme_eval_all_with_prompt(Scheme_Object *port, Scheme_Env *env, int cont)
+{
+  if (!port) port = scheme_orig_stdin_port;
+  return do_eval_string_all(port, NULL, env, cont, 1);
 }
 
 Scheme_Object *scheme_eval_string_with_prompt(const char *str, Scheme_Env *env)
 {
-  return do_eval_string_all(str, env, -1, 1);
+  return do_eval_string_all(NULL, str, env, -1, 1);
 }
 
 Scheme_Object *scheme_eval_string_multi_with_prompt(const char *str, Scheme_Env *env)
 {
-  return do_eval_string_all(str, env, 0, 1);
+  return do_eval_string_all(NULL, str, env, 0, 1);
 }
 
 void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs)
