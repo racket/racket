@@ -50,7 +50,7 @@
   (define props:get-prop
     (hash-ref! props-cache rev
                (lambda ()
-                 (define tmp-file (make-temporary-file "props~a.ss"))
+                 (define tmp-file (make-temporary-file "props~a.ss" #f (current-temporary-directory)))
                  (and
                   ; Checkout the props file
                   (scm-export

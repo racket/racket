@@ -230,7 +230,7 @@
   (stop-job-queue! test-workers))
 
 (define (make-fresh-home-dir)
-  (define new-dir (make-temporary-file "home~a" 'directory))
+  (define new-dir (make-temporary-file "home~a" 'directory (current-temporary-directory)))
   (with-handlers ([exn:fail? void])
     (copy-directory/files (hash-ref (current-env) "HOME") new-dir))
   (path->string new-dir))
@@ -263,6 +263,7 @@
      (make-directory* tmp-dir)
      ; We are running inside of a test directory so that random files are stored there
      (parameterize ([current-directory test-dir]
+                    [current-temporary-directory tmp-dir]
                     [current-rev rev])
        (with-env (["PLTSTDERR" "error"]
                   ["TMPDIR" (path->string tmp-dir)]

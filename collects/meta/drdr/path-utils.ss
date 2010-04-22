@@ -1,6 +1,9 @@
 #lang scheme
 (require scheme/file)
 
+(define current-temporary-directory
+  (make-parameter #f))
+
 (define (directory-list->directory-list* l)
   (sort (filter-not (compose 
                      (lambda (s)
@@ -41,6 +44,7 @@
       (path->string pth-string)))
 
 (provide/contract
+ [current-temporary-directory (parameter/c (or/c false/c path-string?))]
  [safely-delete-directory (path-string? . -> . void)]
  [directory-list->directory-list* ((listof path?) . -> . (listof path?))]
  [directory-list* (path-string? . -> . (listof path?))]
