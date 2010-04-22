@@ -20,8 +20,6 @@
     (acks    "Acknowledgements" plt  "acks/index.html")
     (release "Release Notes"    plt  "release/index.html")
     ---
-    (index   "Master Index"     user "master-index/index.html")
-    ---
     (bugreport "Report a Bug"   #f ,(format "~a?v=~a" bug-url (version)))))
 
 ;; Section definitions for manuals that appear on the start page.
