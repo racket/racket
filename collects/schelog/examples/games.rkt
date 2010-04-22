@@ -1,6 +1,8 @@
 #lang scheme
 
-(require "../schelog.scm" "./puzzle.scm")
+(require "../schelog.rkt" 
+         "./puzzle.rkt"
+         schemeunit)
 
 ;;This example is from Sterling & Shapiro, p. 214.
 ;;
@@ -85,3 +87,6 @@
 ;;ask (solve-puzzle %games) to get the solution, which is
 ;;
 ;;((michael is the australian) (richard plays tennis))
+
+(check-equal? (solve-puzzle %games)
+              '((solution= ((michael is the australian) (richard plays tennis)))))

@@ -1,3 +1,7 @@
+#lang racket
+
+(require "../schelog.rkt")
+
 ;This is a very trivial program.  In Prolog, it would be:
 ;
 ;    city(amsterdam).

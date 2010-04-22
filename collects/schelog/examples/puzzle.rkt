@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "../schelog.scm")
+(require "../schelog.rkt")
 
 (provide (all-defined-out))
 

@@ -1,4 +1,6 @@
-;last change: 2003-06-01
+#lang racket
+
+#|;last change: 2003-06-01
 
 bigloo
 gambit
@@ -14,3 +16,4 @@ scsh
 stk
 sxm
 umbscheme
+|#

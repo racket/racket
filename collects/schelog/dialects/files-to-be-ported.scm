@@ -1,1 +1,4 @@
-schelog.scm
+#lang racket
+
+#|schelog.scm
+|#

@@ -1,3 +1,7 @@
+#lang racket
+
+(require "../schelog.rkt")
+
 ;The following is a simple database about a certain family in England.
 ;Should be a piece of cake, but given here so that you can hone
 ;your ability to read the syntax.
