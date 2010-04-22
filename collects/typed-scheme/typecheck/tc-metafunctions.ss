@@ -90,7 +90,21 @@
 
 (provide combine-props tc-results->values)
 
-(define (combine-props new-props old-props)
+(define (resolve atoms prop)
+  (for/fold ([prop prop])
+    ([a (in-list atoms)])
+    (match prop
+      [(AndFilter: ps)
+       (let loop ([ps ps] [result null])
+         (if (null? ps)
+             (-and result)
+             (let ([p (car ps)])
+               (cond [(opposite? a p) -bot]
+                     [(implied-atomic? p a) (loop (cdr ps) result)]
+                     [else (loop (cdr ps) (cons p result))]))))]
+      [_ prop])))
+
+(define (combine-props new-props old-props flag)
   (define (atomic-prop? p) (or (TypeFilter? p) (NotTypeFilter? p)))
   (define-values (new-atoms new-formulas) (partition atomic-prop? new-props))
   (let loop ([derived-props null] 
@@ -98,9 +112,12 @@
              [worklist (append old-props new-formulas)])
     (if (null? worklist)
         (values derived-props derived-atoms)
-        (let ([p (car worklist)])
+        (let* ([p (car worklist)]
+               [p (resolve derived-atoms p)])
           (match p      
             [(AndFilter: ps) (loop derived-props derived-atoms (append ps (cdr worklist)))]
             [(TypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
             [(NotTypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
+            [(Top:) (loop derived-props derived-atoms (cdr worklist))]
+            [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]
             [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))

@@ -279,55 +279,6 @@
     [(Path: p i) (-not-filter t i p)]
     [_ -top]))
 
-(define (opposite? f1 f2)
-  (match* (f1 f2)
-          [((TypeFilter: t1 p1 i1)
-            (NotTypeFilter: t2 p1 i2))
-           (and (type-equal? t1 t2)                
-                (free-identifier=? i1 i2))]
-          [((NotTypeFilter: t2 p1 i2)
-            (TypeFilter: t1 p1 i1))
-           (and (type-equal? t1 t2)                
-                (free-identifier=? i1 i2))]
-          [(_ _) #f]))
-
-(define (-or . args) 
-  (let loop ([fs args] [result null])
-    (if (null? fs)
-        (match result
-          [(list) -bot]
-          [(list f) f]
-          [(list f1 f2) 
-           (if (opposite? f1 f2)
-               -top
-               (if (filter-equal? f1 f2)
-                   f1
-                   (make-OrFilter (list f1 f2))))]
-          [_ (make-OrFilter result)])
-        (match (car fs)
-          [(and t (Top:)) t]
-          [(OrFilter: fs*) (loop (cdr fs) (append fs* result))]
-          [(Bot:) (loop (cdr fs) result)]
-          [t (loop (cdr fs) (cons t result))]))))
-
-(define (-and . args) 
-  (let loop ([fs args] [result null])
-    (if (null? fs)
-        (match result
-          [(list) -top]
-          [(list f) f]
-          ;; don't think this is useful here
-          [(list f1 f2) (if (opposite? f1 f2)
-                            -bot
-                            (if (filter-equal? f1 f2)
-                                f1
-                                (make-AndFilter (list f1 f2))))]
-          [_ (make-AndFilter result)])
-        (match (car fs)
-          [(and t (Bot:)) t]
-          [(AndFilter: fs*) (loop (cdr fs) (append fs* result))]
-          [(Top:) (loop (cdr fs) result)]
-          [t (loop (cdr fs) (cons t result))]))))
 
 (d/c (-not-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)

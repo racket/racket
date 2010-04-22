@@ -68,3 +68,68 @@
 (define Syntax-Sexp (-Sexpof Any-Syntax))
 
 (define Ident (-Syntax -Symbol))
+
+(define (opposite? f1 f2)
+  (match* (f1 f2)
+          [((TypeFilter: t1 p1 i1)
+            (NotTypeFilter: t2 p1 i2))
+           (and (free-identifier=? i1 i2)
+                (subtype t1 t2))]
+          [((NotTypeFilter: t2 p1 i2)
+            (TypeFilter: t1 p1 i1))
+           (and (free-identifier=? i1 i2)
+                (subtype t1 t2))]
+          [(_ _) #f]))
+
+;; is f1 implied by f2?
+(define (implied-atomic? f1 f2)
+  (if (filter-equal? f1 f2)
+      #t
+      (match* (f1 f2)
+              [((TypeFilter: t1 p1 i1)
+                (TypeFilter: t2 p1 i2))
+               (and (free-identifier=? i1 i2)
+                    (subtype t1 t2))]
+              [((NotTypeFilter: t2 p1 i2)
+                (NotTypeFilter: t1 p1 i1))
+               (and (free-identifier=? i1 i2)
+                    (subtype t1 t2))]
+              [(_ _) #f])))
+
+(define (-or . args) 
+  (let loop ([fs args] [result null])
+    (if (null? fs)
+        (match result
+          [(list) -bot]
+          [(list f) f]
+          [(list f1 f2) 
+           (if (opposite? f1 f2)
+               -top
+               (if (filter-equal? f1 f2)
+                   f1
+                   (make-OrFilter (list f1 f2))))]
+          [_ (make-OrFilter result)])
+        (match (car fs)
+          [(and t (Top:)) t]
+          [(OrFilter: fs*) (loop (cdr fs) (append fs* result))]
+          [(Bot:) (loop (cdr fs) result)]
+          [t (loop (cdr fs) (cons t result))]))))
+
+(define (-and . args) 
+  (let loop ([fs args] [result null])
+    (if (null? fs)
+        (match result
+          [(list) -top]
+          [(list f) f]
+          ;; don't think this is useful here
+          [(list f1 f2) (if (opposite? f1 f2)
+                            -bot
+                            (if (filter-equal? f1 f2)
+                                f1
+                                (make-AndFilter (list f1 f2))))]
+          [_ (make-AndFilter result)])
+        (match (car fs)
+          [(and t (Bot:)) t]
+          [(AndFilter: fs*) (loop (cdr fs) (append fs* result))]
+          [(Top:) (loop (cdr fs) result)]
+          [t (loop (cdr fs) (cons t result))]))))
