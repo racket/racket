@@ -564,7 +564,7 @@ are also available from @schememodname[scheme/foreign].
  (string->date #f "string->date")
 )]
 
-Care most be taken NOT to confuse the internal date structure with the
+Take care NOT to confuse the internal date structure with the
 PLT Scheme @scheme[date]; they are not the same, and all procedures
 from the SRFI library expect the former.
 
