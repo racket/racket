@@ -133,3 +133,4 @@ _rico()
 }
 
 complete -F _rico rico
+complete -F _rico racket-tool
