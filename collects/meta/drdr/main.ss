@@ -3,12 +3,12 @@
 (require scheme/system
          "dirstruct.ss"
          "analyze.ss"
-         "monitor-svn.ss"
+         "monitor-scm.ss"
          "notify.ss"
          "retry.ss"
          "config.ss"
          "plt-build.ss"
-         "svn.ss"
+         "scm.ss"
          "cache.ss"
          "path-utils.ss")
 
@@ -55,15 +55,15 @@
 
 (notify! "Last revision is r~a" cur-rev)
 (handle-revision prev-rev cur-rev)
-(notify! "Starting to monitor SVN @ r~a" cur-rev)
-(monitor-svn (plt-repository)
+(notify! "Starting to monitor @ r~a" cur-rev)
+(monitor-scm (plt-repository)
              cur-rev
              (lambda (newer)
-               (for ([l (in-list newer)])
-                 (write-cache! (future-record-path (svn-rev-log-num l)) l)))
-             (lambda (prev-rev cur-rev _log)
+               (for ([rev (in-list newer)])
+                 (write-cache! (future-record-path rev)
+                               (get-scm-commit-msg rev (plt-repository)))))
+             (lambda (prev-rev cur-rev)
                (handle-revision prev-rev cur-rev)
                
                ; We have problems running for a long time so just restart after each rev
-               (exit 0)
-               ))
+               (exit 0)))

@@ -1,0 +1,55 @@
+README
+Schelog
+Dorai Sitaram
+ds26@gte.com
+
+
+*** JBC 2010-04-22: this package has been TAMPERED WITH in an unscrupulous and
+undisciplined way by John Clements 2010-04-22 in order to see how difficult it
+would be to get it to compile in PLT 4.2.5.  The answer is "not hard", but it's
+certainly not portable any more, and crucially the two macros that cause
+capture of the ! symbol now require uses of the macro to supply the bang, thus
+making them non-capturing.
+
+TODO:
+- pull some part of the docs across from their tex format
+- figure out what to do with the makefile (delete it?)
+- turn more of the implicit test cases into explicit test cases
+- clean up this README file
+- figure out whether there are copyright issues
+
+
+                          ...
+
+Schelog is for you if you are interested in any or all
+of the following: Scheme, Prolog, logic, logic
+programming, AI, and expert systems.
+
+Schelog is an embedding of logic programming a la
+Prolog in Scheme.  "Embedding" means you don't lose
+Scheme: You can use Prolog-style and conventional
+Scheme code fragments alongside each other.  Schelog
+contains the full repertoire of Prolog features,
+including meta-logical and second-order ("set")
+predicates, leaving out only those features that could
+be more easily and more efficiently done with Scheme
+subexpressions.  The Schelog distribution includes
+examples and comprehensive documentation.
+
+Schelog has been tested successfully on the following
+Scheme dialects:
+
+Bigloo, Gambit, Guile, MIT Scheme, MzScheme, Petite
+Chez Scheme, Pocket Scheme, SCM, and STk.
+
+                          ...
+
+The Schelog distribution is available at the URL:
+
+  http://www.cs.rice.edu/CS/PLT/packages/schelog/
+
+Unpacking (using gunzip and tar xf) the Schelog distribution
+produces a directory called "schelog".  In it is a file
+called INSTALL which contains detailed installation
+instructions.  Read INSTALL now.
+

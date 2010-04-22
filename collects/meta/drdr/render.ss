@@ -5,12 +5,11 @@
          "config.ss"
          "diff.ss"
          "list-count.ss"
-         "svn.ss"
          "cache.ss"
          (except-in "dirstruct.ss"
                     revision-trunk-dir)
          "status.ss"
-         "monitor-svn.ss"
+         "monitor-scm.ss"
          (only-in "metadata.ss"
                   PROP:command-line
                   PROP:timeout)
@@ -100,54 +99,101 @@
 
 (define (svn-date->nice-date date)
   (regexp-replace "^(....-..-..)T(..:..:..).*Z$" date "\\1 \\2"))
+(define (git-date->nice-date date)
+  (regexp-replace "^(....-..-..) (..:..:..).*$" date "\\1 \\2"))
 
 (define (format-commit-msg)
   (define pth (revision-commit-msg (current-rev)))
-  (define msg-v (read-cache* pth))
-  (match msg-v
+  (define (timestamp pth)
+    (with-handlers ([exn:fail? (lambda (x) "")])
+      (date->string (seconds->date (read-cache (build-path (revision-dir (current-rev)) pth))) #t)))
+  (define bdate/s (timestamp "checkout-done"))
+  (define bdate/e (timestamp "integrated"))
+  (match (read-cache* pth)
+    [(struct git-push (num author commits))
+     `(table ([class "data"])
+             (tr ([class "author"]) (td "Author:") (td ,author))
+             (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
+             (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
+             ,@(append-map
+                (match-lambda
+                  [(struct git-merge (hash author date msg from to))
+                   `((tr ([class "hash"]) (td "Commit:") (td (a ([href ,(format "http://github.com/plt/racket/commit/~a" hash)]) ,hash)))
+                     (tr ([class "date"]) (td "Date:") (td ,(git-date->nice-date date)))
+                     (tr ([class "author"]) (td "Author:") (td ,author))
+                     (tr ([class "msg"]) (td "Log:") (td (pre ,@msg)))
+                     (tr ([class "merge"]) (td "Merge:") (td "From " ,from " to " ,to)))]
+                  [(struct git-diff (hash author date msg mfiles))
+                   (define cg-id (symbol->string (gensym 'changes)))
+                   (define ccss-id (symbol->string (gensym 'changes)))
+                   `((tr ([class "hash"]) (td "Commit:") (td (a ([href ,(format "http://github.com/plt/racket/commit/~a" hash)]) ,hash)))
+                     (tr ([class "date"]) (td "Date:") (td ,(git-date->nice-date date)))
+                     (tr ([class "author"]) (td "Author:") (td ,author))
+                     (tr ([class "msg"]) (td "Log:") (td (pre ,@msg)))
+                     (tr ([class "changes"]) 
+                         (td 
+                          (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" cg-id ccss-id)])
+                             (span ([id ,cg-id]) 9658) "Changes:"))
+                         (td
+                          (div ([id ,ccss-id]
+                                [style "display: none;"])
+                               ,@(for/list ([path (in-list mfiles)])
+                                         `(p ([class "output"])
+                                             ,(if (regexp-match #rx"^collects" path)
+                                                  (local [(define path-w/o-trunk
+                                                            (apply build-path (explode-path path)))
+                                                          (define html-path
+                                                            (if (looks-like-directory? path)
+                                                                (format "~a/" path-w/o-trunk)
+                                                                path-w/o-trunk))
+                                                          (define path-url
+                                                            (path->string* html-path))
+                                                          (define path-tested?
+                                                            #t)]
+                                                    (if path-tested?
+                                                        `(a ([href ,path-url]) ,path)
+                                                        path))
+                                                  path)))))))])
+                commits))]
+     
     [(struct svn-rev-log (num author date msg changes))
      (define url (format "http://svn.plt-scheme.org/view?view=rev&revision=~a" num))
-     (define (timestamp pth)
-       (with-handlers ([exn:fail? (lambda (x) "")])
-         (date->string (seconds->date (read-cache (build-path (revision-dir (current-rev)) pth))) #t)))
-     (define bdate/s (timestamp "checkout-done"))
-     (define bdate/e (timestamp "integrated"))
      (define cg-id (symbol->string (gensym 'changes)))
      (define ccss-id (symbol->string (gensym 'changes)))
      `(table ([class "data"])
-             (tr ([class "author"]) (td "Author:") (td ,author))
-             (tr ([class "date"]) (td "Commit Date:") (td ,(svn-date->nice-date date)))
-             (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
-             (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
-             (tr ([class "msg"]) (td "Log:") (td (pre ,msg)))
-             (tr ([class "changes"]) 
-                 (td 
-                  (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" cg-id ccss-id)])
-                     (span ([id ,cg-id]) 9658) "Changes:"))
-                 (td
-                  (div ([id ,ccss-id]
-                        [style "display: none;"])
-                       ,@(map (match-lambda
-                                [(struct svn-change (action path))
-                                 `(p ([class "output"])
-                                     ,(symbol->string action) " " 
-                                     ,(if (regexp-match #rx"^/trunk/collects" path)
-                                          (local [(define path-w/o-trunk
-                                                    (apply build-path (list-tail (explode-path path) 2)))
-                                                  (define html-path
-                                                    (if (looks-like-directory? path)
-                                                        (format "~a/" path-w/o-trunk)
-                                                        path-w/o-trunk))
-                                                  (define path-url
-                                                    (path->string* html-path))
-                                                  (define path-tested?
-                                                    #t)]
-                                            (if path-tested?
-                                                `(a ([href ,path-url]) ,path)
-                                                path))
-                                          path))])
-                              changes))))
-             (tr (td nbsp) (td (a ([href ,url]) "View Commit"))))]
+              (tr ([class "author"]) (td "Author:") (td ,author))
+              (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
+              (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
+              (tr ([class "rev"]) (td "Commit:") (td (a ([href ,url]) ,(number->string num))))
+              (tr ([class "date"]) (td "Date:") (td ,(svn-date->nice-date date)))
+              (tr ([class "msg"]) (td "Log:") (td (pre ,msg)))
+              (tr ([class "changes"]) 
+                  (td 
+                   (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" cg-id ccss-id)])
+                      (span ([id ,cg-id]) 9658) "Changes:"))
+                  (td
+                   (div ([id ,ccss-id]
+                         [style "display: none;"])
+                        ,@(map (match-lambda
+                                 [(struct svn-change (action path))
+                                  `(p ([class "output"])
+                                      ,(symbol->string action) " " 
+                                      ,(if (regexp-match #rx"^/trunk/collects" path)
+                                           (local [(define path-w/o-trunk
+                                                     (apply build-path (list-tail (explode-path path) 2)))
+                                                   (define html-path
+                                                     (if (looks-like-directory? path)
+                                                         (format "~a/" path-w/o-trunk)
+                                                         path-w/o-trunk))
+                                                   (define path-url
+                                                     (path->string* html-path))
+                                                   (define path-tested?
+                                                     #t)]
+                                             (if path-tested?
+                                                 `(a ([href ,path-url]) ,path)
+                                                 path))
+                                           path))])
+                               changes)))))]
     [else
      'nbsp]))
 
@@ -159,10 +205,6 @@
            "Need help?")
         (br)
         "Current time: " ,(date->string (seconds->date (current-seconds)) #t)))
-
-(define (revision-svn-url rev)
-  (format "http://svn.plt-scheme.org/view?view=rev&revision=~a"
-          rev))
 
 (define (render-event e)
   (with-handlers ([exn:fail?
@@ -184,10 +226,16 @@
         (define-values (title breadcrumb) (path->breadcrumb log-pth #f))
         (define the-base-path
           (base-path log-pth))
-        (define svn-url
-          (format "http://svn.plt-scheme.org/view/trunk/~a?view=markup&pathrev=~a"
-                  the-base-path
-                  (current-rev)))
+        (define scm-url
+          (if ((current-rev) . < . 20000)
+              (format "http://svn.plt-scheme.org/view/trunk/~a?view=markup&pathrev=~a"
+                      the-base-path
+                      (current-rev))
+              (local [(define msg (read-cache* (revision-commit-msg (current-rev))))]
+                (if msg
+                    (format "http://github.com/plt/racket/blob/~a~a"
+                            (git-push-end-commit msg) the-base-path)
+                    "#"))))
         (define prev-rev-url (format "/~a~a" (previous-rev) the-base-path))
         (define cur-rev-url (format "/~a~a" "current" the-base-path))
         (define output (map render-event output-log))
@@ -208,7 +256,7 @@
                             (tr (td "Duration:") (td ,(format-duration-ms dur)))
                             (tr (td "Timeout:") (td ,(if (timeout? log) checkmark-entity "")))
                             (tr (td "Exit Code:") (td ,(if (exit? log) (number->string (exit-code log)) "")))
-                            (tr (td nbsp) (td (a ([href ,svn-url]) "View File"))))
+                            (tr (td nbsp) (td (a ([href ,scm-url]) "View File"))))
                      ,(if (lc-zero? changed)
                           ""
                           `(div ([class "error"])
@@ -269,8 +317,8 @@
              (div ([class "dirlog, content"])
                   ,breadcrumb
                   ,(if show-commit-msg?
-                       (format-commit-msg)
-                       "")
+                        (format-commit-msg)
+                        "")
                   ,(local [(define (path->url pth)
                              (format "http://drdr.plt-scheme.org/~a~a" (current-rev) pth))
                            
@@ -487,9 +535,27 @@
   (if (eof-object? v)
       "" v))
 
+(define log->committer+title 
+  (match-lambda
+    [(struct git-push (num author commits))
+     (define lines (append-map git-commit-msg commits))
+     (define title
+       (if (empty? lines)
+           ""
+           (first lines)))
+     (values author title)]
+    [(struct svn-rev-log (num author date msg changes))
+     (define commit-msg (string-first-line msg))
+     (define title 
+       (format "~a - ~a"
+               (svn-date->nice-date date)
+               commit-msg))
+     (values author title)]))
+
 (require web-server/servlet-env
          web-server/http
-         web-server/dispatch)
+         web-server/dispatch
+         "scm.ss")
 (define how-many-revs 45)
 (define (show-revisions req)
   (define builds-pth (plt-build-directory))
@@ -540,16 +606,14 @@
                             (define name (path->string rev-pth))
                             (define rev (string->number name))
                             (define log (read-cache (future-record-path rev)))
-                            (define committer (svn-rev-log-author log))
-                            (define commit-msg (string-first-line (svn-rev-log-msg log)))
-                            (define title 
-                              (format "~a - ~a"
-                                      (svn-date->nice-date (svn-rev-log-date log))
-                                      commit-msg))
-                            
+                            (define-values (committer title)
+                              (log->committer+title log))
+                            (define url
+                              (format "http://github.com/plt/racket/commit/~a"
+                                      (git-push-end-commit log)))
                             `(tr ([class "dir"]
                                   [title ,title])
-                                 (td (a ([href ,(revision-svn-url name)]) ,name))
+                                 (td (a ([href ,url]) ,name))
                                  (td ([class "building"] [colspan "6"])
                                      "")
                                  (td ([class "author"]) ,committer))]
@@ -559,12 +623,8 @@
                             (define rev (string->number name))
                             (define log-pth (revision-commit-msg rev))
                             (define log (read-cache log-pth))
-                            (define committer (svn-rev-log-author log))
-                            (define commit-msg (string-first-line (svn-rev-log-msg log)))
-                            (define title 
-                              (format "~a - ~a"
-                                      (svn-date->nice-date (svn-rev-log-date log))
-                                      commit-msg))
+                            (define-values (committer title)
+                              (log->committer+title log))
                             (define (no-rendering-row)
                               (define mtime 
                                 (file-or-directory-modify-seconds log-pth))

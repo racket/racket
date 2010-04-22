@@ -1,8 +1,7 @@
 #lang scheme
 (require "path-utils.ss"
          "dirstruct.ss"
-         "svn.ss"
-         scheme/system)
+         "scm.ss")
 
 (define (testable-file? pth)
   (define suffix (filename-extension pth))
@@ -51,15 +50,14 @@
   (define props:get-prop
     (hash-ref! props-cache rev
                (lambda ()
-                 (define tmp-file (make-temporary-file "props~a.ss"))
+                 (define tmp-file (make-temporary-file "props~a.ss" #f (current-temporary-directory)))
                  (and
                   ; Checkout the props file
-                  (system* (svn-path) 
-                           "export"
-                           "--quiet"
-                           "-r" (number->string rev)
-                           (format "~a/collects/meta/props" (plt-repository))
-                           (path->string tmp-file))
+                  (scm-export
+                   rev
+                   (plt-repository)
+                   "collects/meta/props" 
+                   tmp-file)
                   ; Dynamic require it
                   (begin0
                     (dynamic-require `(file ,(path->string tmp-file))

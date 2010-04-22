@@ -3,18 +3,53 @@
 
 @title[#:tag "faq"]{Troubleshooting and Tips}
 
-@section{Why are my servlets not updating on the server when I change the code on disk?}
+@section{Why are my templates not updating on the server when I change the file on disk?}
 
-@(require (for-label web-server/dispatchers/dispatch-servlets))
+Templates are compiled into your application, so when you change them there is no connection between that change in the filesystem and the compiled bytecode that is already loaded in a running Web server process. For more discussion, see @secref["update-servlets"].
 
-By default, the server uses @scheme[make-cached-url->servlet] to load servlets
+@section{Why are templates compiled into programs?}
+
+@(require (for-label web-server/templates))
+
+Since templates can include arbitrary Scheme code, macros, etc and refer to
+arbitrary identifiers, @scheme[include-template] is really just an obscured
+@scheme[require].
+
+@section[#:tag "update-servlets"]{Why are my stateful servlets not updating on the server when I change the file on disk?}
+
+@(require (for-label web-server/dispatchers/dispatch-servlets
+                     web-server/servlet-env))
+
+If you are using @scheme[serve/servlet], it starts a Web server that directly references a closure that has no connection
+to some file on the disk.
+
+If you are using the command-line tool, or configuration file, then by default,
+the server uses @scheme[make-cached-url->servlet] to load servlets
 from the disk. As it loads them, they are cached and the disk is not referred to for future
 requests. This ensures that there is a single namespace for each servlet, so that different instances
 can share resources, such as database connections, and communicate through the store. The default
 configuration of the server (meaning the dispatcher sequence used when you load a configuration file)
-provides a special URL to localhost that will reset the cache: @filepath{/conf/refresh-servlets}. If
-you want the server to reload your changed servlet code, then GET this URL and the server will reload the
-servlet on the next request.
+provides a special URL to localhost that will reset the cache: @filepath{/conf/refresh-servlets}.
+
+If you want the server to reload your changed servlet code, then GET this URL and the server will reload the
+servlet on the next request. However, you may be surprised by what happens on the next request. For more discussion, see @secref["refresh-servlets"].
+
+@section[#:tag "refresh-servlets"]{After refreshing my stateful servlet, old captured continuations don't change or old global effects are gone. Why?}
+
+Every load of your servlet is in a fresh namespace. When you refresh, a new namespace without the old effects is created. Old captured continuations
+refer to the original namespace and will never update. It is impossible, in general, to port a continuation from one namespace to another, because the
+code could be arbitrarily different.
+
+@section{How are stateless servlets different from stateful servlets vis a vis refreshing?}
+
+Continuations are serialized with a hash that ensures that any source
+code modifications makes all the old continuations incompatible for
+the same reason native continuations naturally are.
+
+However, this hash only protects against changes in a single source file. Therefore if you modularize
+your application, then only continuations that refer to changed source files will be incompatible.
+For example, if you put all your templates in a single module, then it can change without
+invalidating old continuations.
 
 @section{What special considerations are there for security with the Web Server?}
 

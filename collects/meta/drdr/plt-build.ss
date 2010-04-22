@@ -10,7 +10,7 @@
          "notify.ss"
          "path-utils.ss"
          "sema.ss"
-         "svn.ss")
+         "scm.ss")
 
 (define current-env (make-parameter (make-immutable-hash empty)))
 (define-syntax-rule (with-env ([env-expr val-expr] ...) expr ...)
@@ -43,18 +43,7 @@
                (path->string co-dir))]
        (notify! "Checking out ~a@~a into ~a"
                 repo rev to-dir)
-       (run/collect/wait/log
-        ; XXX Give it its own timeout
-        #:timeout (current-make-install-timeout-seconds)
-        #:env (current-env)
-        (build-path log-dir "svn-checkout")
-        (svn-path)
-        (list 
-         "checkout"
-         "--quiet"
-         "-r" (number->string rev)
-         repo
-         to-dir)))))
+       (scm-checkout rev repo to-dir))))
   ;; Make the build directory
   (make-directory* build-dir)
   ;; Run Configure, Make, Make Install
@@ -90,6 +79,20 @@
      (delete-directory/files tempdir))))
 (define-syntax-rule (with-temporary-directory e)
   (call-with-temporary-directory (lambda () e)))
+
+(define (call-with-temporary-home-directory thunk)
+  (define new-dir (make-temporary-file "home~a" 'directory (current-temporary-directory)))
+  (dynamic-wind
+   (lambda ()
+     (with-handlers ([exn:fail? void])
+       (copy-directory/files (hash-ref (current-env) "HOME") new-dir)))
+   (lambda ()
+     (with-env (["HOME" (path->string new-dir)])
+       (thunk)))
+   (lambda ()
+     (delete-directory/files new-dir))))
+(define-syntax-rule (with-temporary-home-directory e)
+  (call-with-temporary-home-directory (lambda () e)))
 
 (define (with-running-program command args thunk)
   (define-values (new-command new-args)
@@ -196,14 +199,14 @@
                                          test-workers
                                          (lambda ()
                                            (define l (pth-cmd))
-                                           (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))]
-                                                      ["HOME" (make-fresh-home-dir)])
-                                             (with-temporary-directory
-                                                 (run/collect/wait/log log-pth 
-                                                                       #:timeout pth-timeout
-                                                                       #:env (current-env)
-                                                                       (first l)
-                                                                       (rest l))))
+                                           (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))])
+                                             (with-temporary-home-directory
+                                                 (with-temporary-directory
+                                                     (run/collect/wait/log log-pth 
+                                                                           #:timeout pth-timeout
+                                                                           #:env (current-env)
+                                                                           (first l)
+                                                                           (rest l)))))
                                            (semaphore-post dir-sema)))
                                         (semaphore-post dir-sema)))))))
                       files)
@@ -240,12 +243,6 @@
   (notify! "Stopping testing")
   (stop-job-queue! test-workers))
 
-(define (make-fresh-home-dir)
-  (define new-dir (make-temporary-file "home~a" 'directory))
-  (with-handlers ([exn:fail? void])
-    (copy-directory/files (hash-ref (current-env) "HOME") new-dir))
-  (path->string new-dir))
-
 (define (recur-many i r f)
   (if (zero? i)
       (f)
@@ -274,6 +271,7 @@
      (make-directory* tmp-dir)
      ; We are running inside of a test directory so that random files are stored there
      (parameterize ([current-directory test-dir]
+                    [current-temporary-directory tmp-dir]
                     [current-rev rev])
        (with-env (["PLTSTDERR" "error"]
                   ["TMPDIR" (path->string tmp-dir)]
@@ -285,7 +283,7 @@
                   ["HOME" (path->string home-dir)])
          (unless (read-cache* (revision-commit-msg rev))
            (write-cache! (revision-commit-msg rev)
-                         (svn-revision-log rev (plt-repository))))
+                         (get-scm-commit-msg rev (plt-repository))))
          (build-revision rev)
          (recur-many (number-of-cpus)
                      (lambda (j inner)

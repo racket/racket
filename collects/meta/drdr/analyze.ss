@@ -1,7 +1,7 @@
 #lang scheme
 (require scheme/file
          "diff.ss"
-         "svn.ss"
+         "scm.ss"
          "list-count.ss"
          "notify.ss"
          "cache.ss"
@@ -129,7 +129,7 @@
       responsible))
   (define committer
     (with-handlers ([exn:fail? (lambda (x) #f)])
-      (svn-rev-log-author 
+      (scm-commit-author 
        (read-cache*
         (revision-commit-msg cur-rev)))))
   (define diff
@@ -317,7 +317,7 @@
                  (or
                   (and committer? 
                        (with-handlers ([exn:fail? (lambda (x) #f)])
-                         (svn-rev-log-author (read-cache (revision-commit-msg (current-rev))))))
+                         (scm-commit-author (read-cache (revision-commit-msg (current-rev))))))
                   (or (path-responsible (trunk-path dir-pth))
                       "unknown"))
                  
