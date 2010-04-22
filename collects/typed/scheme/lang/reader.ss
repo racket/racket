@@ -5,14 +5,14 @@ typed/scheme
 #:read r:read
 #:read-syntax r:read-syntax
 #:info make-info
-#:module-info make-module-info
+#:language-info make-language-info
 
 (define (make-info key default use-default)
   (case key
     [else (use-default key default)]))
 
-(define make-module-info
-  `#(typed-scheme/module-info module-info ()))
+(define make-language-info
+  `#(typed-scheme/language-info get-info ()))
 
 
 (require (prefix-in r: typed-scheme/typed-reader))

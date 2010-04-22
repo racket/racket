@@ -1,10 +1,10 @@
 #lang scheme/base
 (require typed-scheme/typed-reader)
-(provide module-info configure)
+(provide get-info configure)
 
-(define ((module-info arg) key default)
+(define ((get-info arg) key default)
   (case key
-    [(configure-runtime) `(#(typed-scheme/module-info configure ()))]
+    [(configure-runtime) `(#(typed-scheme/language-info configure ()))]
     [else default]))
 
 ;; options currently always empty

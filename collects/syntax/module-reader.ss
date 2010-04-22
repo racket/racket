@@ -41,7 +41,7 @@
         [#:wrapper2            ~wrapper2            #'#f]
         [#:whole-body-readers? ~whole-body-readers? #'#f]
         [#:info                ~info                #'#f]
-        [#:module-info         ~module-get-info     #'#f]
+        [#:language-info       ~module-get-info     #'#f]
         [(when (equal? (and lang #t) (and ~lang #t))
            (err (string-append
                  "must specify either a module language, or #:language"

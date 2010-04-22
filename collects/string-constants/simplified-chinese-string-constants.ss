@@ -20,9 +20,9 @@
   (is-this-your-native-language "中文是你的母语吗？")
   
   (are-you-sure-you-want-to-switch-languages
-   "为了改变界面语言，现在需要重新启动DrScheme。你确定吗？")
+   "为了改变界面语言，现在需要重新启动DrRacket。你确定吗？")
   
-  (interact-with-drscheme-in-language "使用简体中文作DrScheme界面语言")
+  (interact-with-drscheme-in-language "使用简体中文作DrRacket界面语言")
   
   ;; these two should probably be the same in all languages excepet English.
   ;; they are the button labels (under macos and windows, respectively)
@@ -30,9 +30,9 @@
   (accept-and-quit "接受并退出")
   (accept-and-exit "接受并退出")
   
-  ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
+  ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
   (plt "PLT")
-  (drscheme "DrScheme")
+  (drscheme "DrRacket")
   (ok "确定")
   (cancel "取消")
   (abort "中止")
@@ -54,13 +54,13 @@
   ;; dialog isn't going to be shown again.
   ;; One version for always using the current choice:
   (dont-ask-again-always-current "不再询问(总是使用当前设置)")
-  ;; One generic version (ie, on the Quit DrScheme dialog)
+  ;; One generic version (ie, on the Quit DrRacket dialog)
   (dont-ask-again                "不再询问")
   
   ;;; important urls
   (web-materials "相关网站") ;; menu item title
   (tool-web-sites "Tools网站")   ;; menu item title
-  (drscheme-homepage "DrScheme")
+  (drscheme-homepage "DrRacket")
   (plt-homepage "PLT")
   (how-to-use-scheme "How to Use Scheme") ;; title of a book.
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
@@ -135,10 +135,10 @@
   (welcome-to-something "欢迎来到~a")
   
   ; this appears in the drscheme about box.
-  (welcome-to-drscheme-version/language "欢迎使用DrScheme，版本~a，~a")
+  (welcome-to-drscheme-version/language "欢迎使用DrRacket，版本~a，~a")
   
-  ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
-  (welcome-to-drscheme "欢迎使用DrScheme")
+  ; these appear on subsequent lines in the `Help|Welcome to DrRacket' dialog.
+  (welcome-to-drscheme "欢迎使用DrRacket")
   
   (goto-line "跳至...行")
   (goto-line-invalid-number
@@ -233,7 +233,7 @@
   (plt:hd:refreshing-manuals-finished "完成。")
   (plt:hd:about-help-desk "关于Help Desk")
   (plt:hd:help-desk-about-string
-   "Help Desk是PLT软件的信息来源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)~a-~a PLT")
+   "Help Desk是PLT软件的信息来源，其中包含了DrRacket，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)~a-~a PLT")
   (plt:hd:help-on-help "关于帮助的帮助")
   (plt:hd:help-on-help-details "关于使用Help Desk的帮助，请参见Help Desk主页中的第一个链接“Help Desk”。（要进入Help Desk的主页，请单击Help Desk视窗上方的“主页”按钮。）")
   (reload "刷新") ;; refresh the page in a web browser
@@ -249,7 +249,7 @@
   (plt:hd:manual-search-ordering "搜索手册的顺序")
   
   ;; in the help-desk standalone font preference dialog, on a check box
-  (use-drscheme-font-size "使用和DrScheme相同的字号")
+  (use-drscheme-font-size "使用和DrRacket相同的字号")
   
   ;; in the preferences dialog in drscheme there is example text for help desk font size.
   ;; clicking the links in that text produces a dialog with this message
@@ -310,7 +310,7 @@
   (plt-installer-aborted "安装中止。") ;; msg that appears in the installation window when installation is aborted
   
   ;;; about box
-  (about-drscheme-frame-title "关于DrScheme")
+  (about-drscheme-frame-title "关于DrRacket")
   
   ;;; save file in particular format prompting.
   (save-as-plain-text "保存本文件为纯文本？")
@@ -453,7 +453,7 @@
   (mfs-recur-over-subdirectories "包含子目录")
   (mfs-regexp-filename-filter "文件名筛选(正则表达式)")
   (mfs-search-string "查找字符串")
-  (mfs-drscheme-multi-file-search "DrScheme——多文件查找") ;; results window and error message title
+  (mfs-drscheme-multi-file-search "DrRacket——多文件查找") ;; results window and error message title
   (mfs-not-a-dir "\"~a\"不是目录")
   (mfs-open-file "打开文件")
   (mfs-stop-search "停止搜索")
@@ -498,7 +498,7 @@
   
   ;;; raw menu names -- these must match the 
   ;;; versions below, once the &s have been stripped.
-  ;;; if they don't, DrScheme's menus will appear
+  ;;; if they don't, DrRacket's menus will appear
   ;;; in the wrong order.
   (file-menu "文件")
   (edit-menu "编辑")
@@ -677,7 +677,7 @@
   ;; if you have leftover autosave files. to see the dialog,
   ;; start up drscheme and modify (but don't save) a file
   ;; (also, do this with an unsaved file). Wait for the autosave
-  ;; files to appear (typically 5 minutes). Kill DrScheme
+  ;; files to appear (typically 5 minutes). Kill DrRacket
   ;; and restart it. You'll see the dialog
   (autosave-autosave-label: "自动保存文件：")
   (autosave-original-label: "原始文件：")
@@ -687,7 +687,7 @@
   
   (autosave-show-autosave "自动保存文件") ;; title of a window showing the autosave file
   
-  (autosave-explanation "DrScheme发现了自动保存的文件，其中可能包含你没有保存过的程序")
+  (autosave-explanation "DrRacket发现了自动保存的文件，其中可能包含你没有保存过的程序")
   
   (autosave-recovered! "已恢复！") ;; status of an autosave file
   (autosave-deleted "已删除")       ;; status of an autosave file
@@ -708,7 +708,7 @@
   
   (definitions-modified 
     "当前磁盘文件已被修改；请保存或恢复文件。")
-  (drscheme-internal-error "DrScheme内部错误")
+  (drscheme-internal-error "DrRacket内部错误")
   
   ;;; tools
   (invalid-tool-spec "Collection ~a中info.ss的tool定义不正确。需要一个字符串或者一个非空表，得到：~e")
@@ -752,7 +752,7 @@
   (save-definitions-as "将定义另存为(&A)")
   (save-definitions "保存定义")
   (print-definitions "打印定义...")
-  (about-drscheme "关于DrScheme")
+  (about-drscheme "关于DrRacket")
   (save-other "其他保存方式")
   (save-definitions-as-text "将定义保存为文本...")
   (save-interactions "保存交互")
@@ -869,11 +869,11 @@
   ;;; Teachpack messages
   (select-a-teachpack "选择教学包")
   (clear-teachpack "卸载教学包~a")
-  (teachpack-error-label "DrScheme——教学包出错")
+  (teachpack-error-label "DrRacket——教学包出错")
   (teachpack-didnt-load "无法装载教学包~a。")
   (add-teachpack-menu-item-label "加载教学包...")
   (clear-all-teachpacks-menu-item-label "卸载全部教学包")
-  (drscheme-teachpack-message-title "DrScheme教学包")
+  (drscheme-teachpack-message-title "DrRacket教学包")
   (already-added-teachpack "教学包~a已装载")
   
   ; ~a is filled with the teachpack's name; the message appears in the teachpack selection dialog when a user installs a new teachpack
@@ -956,7 +956,7 @@
   ;(module-language-one-line-summary "运行程序将提供一个包含该module的REPL")
   
   ;;; from the `not a language language' used initially in drscheme.
-  (must-choose-language "在继续操作之前，你必须为DrScheme选择一种语言。")
+  (must-choose-language "在继续操作之前，你必须为DrRacket选择一种语言。")
   
   ; next two appear before and after the name of a text book (which will be in italics)
   (using-a-textbook-before "使用")
@@ -972,12 +972,12 @@
   ; the three string constants are concatenated together and the middle
   ; one is hyperlinked to the dialog that suggests various languages
   (get-guidance-before "请通过“语言”菜单中的“选择语言”命名进行语言选择，或者")
-  (get-guidance-during "由DrScheme帮助你选择")
+  (get-guidance-during "由DrRacket帮助你选择")
   (get-guidance-after "。")
   
   ;;; debug language
   (unknown-debug-frame "[未知]")
-  (backtrace-window-title "向后跟踪 - DrScheme")
+  (backtrace-window-title "向后跟踪 - DrRacket")
   (files-interactions "~a的交互") ;; filled with a filename
   (current-interactions "交互")
   (current-definitions "定义")
@@ -1014,7 +1014,7 @@
   ;;The Test engine tool
   ;;
   (test-engine-window-title "测试结果")
-  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "在面板中显示测试报告")
   (test-engine-undock-report "独立显示测试报告")
   ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not

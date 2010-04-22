@@ -144,6 +144,7 @@ EXPORTS
  scheme_eval_string_with_prompt
  scheme_eval_string_multi_with_prompt
  scheme_eval_string_all_with_prompt
+ scheme_eval_all_with_prompt
  scheme_eval_module_string
  scheme_current_argument_stack
  scheme_call_with_prompt

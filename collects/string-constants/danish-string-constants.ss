@@ -36,14 +36,14 @@ please adhere to these guidelines:
   has changed and needs to be re-translated.  Do not erase the old
   version, it might help us translate the new one.  Do not move it
   either.  Just comment it out and add the short comment.  After the
-  next svn update DrScheme will automatically tell us translators that
+  next svn update DrRacket will automatically tell us translators that
   a new string needs to be translated, we will find your comment in
   the file, and know what to do.
-	Some evil evil people might think that, since DrScheme automatically
+	Some evil evil people might think that, since DrRacket automatically
   informs us of new strings to be translated, an easier thing to do
   when modifying an existing string would be to simply rename it at
   the same time.  This works, except that if you do that, we
-  translators will get two warnings from DrScheme:
+  translators will get two warnings from DrRacket:
 		language english had but french does not:
 		(new-name "New String")
 		language french had but english does not:
@@ -95,7 +95,7 @@ please adhere to these guidelines:
   (are-you-sure-you-want-to-switch-languages
       "Dette ændrer sproget i den grafiske brugerflade. Er du sikker?")
   
-  (interact-with-drscheme-in-language "Arbejd med DrScheme på Dansk")
+  (interact-with-drscheme-in-language "Arbejd med DrRacket på Dansk")
   
   ;; these two should probably be the same in all languages except English.
   ;; they are the button labels (under macos and windows, respectively)
@@ -103,9 +103,9 @@ please adhere to these guidelines:
   (accept-and-quit "Accepter og afslut")
   (accept-and-exit "Accepter og afslut")
   
-  ;;; general purpose (DrScheme is hereby a word in every language, by decree of Robby :)
+  ;;; general purpose (DrRacket is hereby a word in every language, by decree of Robby :)
   (plt "PLT")
-  (drscheme "DrScheme")
+  (drscheme "DrRacket")
   (ok "Ok")
   (cancel "Fortryd")
   (abort "Afbryd")
@@ -125,13 +125,13 @@ please adhere to these guidelines:
   ;; dialog isn't going to be shown again.
   ;; One version for always using the current choice:
   (dont-ask-again-always-current "Spørg ikke igen (brugt altid nuværende valg)")
-  ;; One generic version (ie, on the Quit DrScheme dialog)
+  ;; One generic version (ie, on the Quit DrRacket dialog)
   (dont-ask-again                "Spørg ikke igen")
   
   ;;; important urls
   (web-materials "Relaterede websites") ;; menu item title
   (tool-web-sites "Tool Web Sites")   ;; menu item title
-  (drscheme-homepage "DrScheme")
+  (drscheme-homepage "DrRacket")
   (plt-homepage "PLT")
   (how-to-use-scheme "How to Use Scheme") ;; title of a book.
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
@@ -206,10 +206,10 @@ please adhere to these guidelines:
   (welcome-to-something "Velkommen til ~a")
   
   ; this appears in the drscheme about box.
-  (welcome-to-drscheme-version/language "Velkommen til DrScheme, version ~a, ~a")
+  (welcome-to-drscheme-version/language "Velkommen til DrRacket, version ~a, ~a")
   
-  ; these appear on subsequent lines in the `Help|Welcome to DrScheme' dialog.
-  (welcome-to-drscheme "Velkommen til DrScheme")
+  ; these appear on subsequent lines in the `Help|Welcome to DrRacket' dialog.
+  (welcome-to-drscheme "Velkommen til DrRacket")
   
   (goto-line "Gå til linje")
   (goto-line-invalid-number
@@ -294,7 +294,7 @@ please adhere to these guidelines:
   (plt:hd:refreshing-manuals-finished "Færdig.")
   (plt:hd:about-help-desk "Om hjælpebord")
   (plt:hd:help-desk-about-string
-   "Hjælpebordet er en fuldstændig kilde af information om PLT-software, inklusive DrScheme, MzScheme og MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
+   "Hjælpebordet er en fuldstændig kilde af information om PLT-software, inklusive DrRacket, MzScheme og MrEd.\n\nVersion ~a\nCopyright (c) ~a-~a PLT")
   (plt:hd:help-on-help "Hjælp om hjælp")
   (plt:hd:help-on-help-details "For hjælp om Hjælpebord, følg linket `How to use Help Desk'-linket på hjælpebordets startside.")
   (reload "Opdater") ;; refresh the page in a web browser
@@ -310,7 +310,7 @@ please adhere to these guidelines:
   (plt:hd:manual-search-ordering "Søgeorden")
   
   ;; in the help-desk standalone font preference dialog, on a check box
-  (use-drscheme-font-size "Brug DrScheme's fontstørrelse")
+  (use-drscheme-font-size "Brug DrRacket's fontstørrelse")
   
   ;; in the preferences dialog in drscheme there is example text for help desk font size.
   ;; clicking the links in that text produces a dialog with this message
@@ -367,11 +367,11 @@ please adhere to these guidelines:
   
   
   ;;; about box
-  (about-drscheme-frame-title "Om DrScheme")
+  (about-drscheme-frame-title "Om DrRacket")
   
   ;;; save file in particular format prompting.
   (save-as-plain-text "Gem denne fil som tekt?")
-  (save-in-drs-format "Gem denne fil i det DrScheme-specifikke ikke-tekst format?")
+  (save-in-drs-format "Gem denne fil i det DrRacket-specifikke ikke-tekst format?")
   (yes "Ja")
   (no "Nej")
   
@@ -489,7 +489,7 @@ please adhere to these guidelines:
   (mfs-recur-over-subdirectories "Rekursivt i undermapper")
   (mfs-regexp-filename-filter "Regexp filnavnsfilter")
   (mfs-search-string "Søgestreng")
-  (mfs-drscheme-multi-file-search "DrScheme - Søgning i flere filer") ;; results window and error message title
+  (mfs-drscheme-multi-file-search "DrRacket - Søgning i flere filer") ;; results window and error message title
   (mfs-not-a-dir "\"~a\" er ikke en mappe")
   (mfs-open-file "Åbn fil")
   (mfs-stop-search "Stop søgning")
@@ -533,7 +533,7 @@ please adhere to these guidelines:
   
   ;;; raw menu names -- these must match the
   ;;; versions below, once the &s have been stripped.
-  ;;; if they don't, DrScheme's menus will appear
+  ;;; if they don't, DrRacket's menus will appear
   ;;; in the wrong order.
   (file-menu "Filer")
   (edit-menu "Rediger")
@@ -693,7 +693,7 @@ please adhere to these guidelines:
   ;; if you have leftover autosave files. to see the dialog,
   ;; start up drscheme and modify (but don't save) a file
   ;; (also, do this with an unsaved file). Wait for the autosave
-  ;; files to appear (typically 5 minutes). Kill DrScheme
+  ;; files to appear (typically 5 minutes). Kill DrRacket
   ;; and restart it. You'll see the dialog
   (autosave-autosave-label: "Autosave-fil:")
   (autosave-original-label: "Original fil:")
@@ -703,7 +703,7 @@ please adhere to these guidelines:
   
   (autosave-show-autosave "Autosave-fil") ;; title of a window showing the autosave file
   
-  (autosave-explanation "DrScheme fandt autosavede filer, som måske indeholde ugemt arbejde.")
+  (autosave-explanation "DrRacket fandt autosavede filer, som måske indeholde ugemt arbejde.")
   
   (autosave-recovered! "Gendannet!") ;; status of an autosave file
   (autosave-deleted "Slettet")       ;; status of an autosave file
@@ -724,7 +724,7 @@ please adhere to these guidelines:
   
   (definitions-modified
     "Definitionsteksten er blevet ændret i filsystemet; gem venligst eller brug 'vend tilbage' for at bruge den gamle version")
-  (drscheme-internal-error "Intern fejl i DrScheme")
+  (drscheme-internal-error "Intern fejl i DrRacket")
   
   ;;; tools
   (invalid-tool-spec "Værkstøjsspecifikationen i collection ~a's info.ss filen er ugyldig. Forventede enten en streng eller en ikke-tom liste af strenge, fik: ~e")
@@ -763,7 +763,7 @@ please adhere to these guidelines:
   (save-definitions-as "Gem definitioner som...")
   (save-definitions "Gem definitioner")
   (print-definitions "Udskriv definitioner...")
-  (about-drscheme "Om DrScheme")
+  (about-drscheme "Om DrRacket")
   (save-other "Gem andet")
   (save-definitions-as-text "Gem definitioner som tekst...")
   (save-interactions "Gem interaktioner")
@@ -873,11 +873,11 @@ please adhere to these guidelines:
   ;;; TeachPack messages
   (select-a-teachpack "Vælg undervisningspakke")
   (clear-teachpack "Fjern undervisningspakken ~a")
-  (teachpack-error-label "DrScheme - Undervisningspakkefejl")
+  (teachpack-error-label "DrRacket - Undervisningspakkefejl")
   (teachpack-didnt-load "Undervisningspakkefilen ~a blev ikke hentet rigtigt.")
   (add-teachpack-menu-item-label "Tilføj Undervisningspakke")
   (clear-all-teachpacks-menu-item-label "Fjern alle undervisningspakker")
-  (drscheme-teachpack-message-title "DrScheme Undervisningspakke")
+  (drscheme-teachpack-message-title "DrRacket Undervisningspakke")
   (already-added-teachpack "Undervisningspakken ~a er allerede tilføjet")
   
   ;;; Language dialog
@@ -939,7 +939,7 @@ please adhere to these guidelines:
   ;(module-language-one-line-summary "En kørsel åbner en REPL i i modulets sammenhæng, inkluderer modulets deklarede sprog")
   
   ;;; from the `not a language language' used initially in drscheme.
-  (must-choose-language "DrScheme kan ikke køre programmer før du vælger et programmeringssprog.")
+  (must-choose-language "DrRacket kan ikke køre programmer før du vælger et programmeringssprog.")
   
   ; next two appear before and after the name of a text book (which will be in italics)
   (using-a-textbook-before "Bruger du ")
@@ -959,7 +959,7 @@ please adhere to these guidelines:
   
   ;;; debug language
   (unknown-debug-frame "[ukendt]")
-  (backtrace-window-title "Tilbagesporing - DrScheme")
+  (backtrace-window-title "Tilbagesporing - DrRacket")
   (files-interactions "~a's interaktioner") ;; filled with a filename
   (current-interactions "interaktioner")
   (current-definitions "definitioner")

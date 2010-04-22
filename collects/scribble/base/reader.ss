@@ -7,18 +7,18 @@
                      #%module-begin)
          scribble-base-info
          scribble-base-reader-info
-         scribble-base-module-info)
+         scribble-base-language-info)
 
 (define-syntax-rule (module-begin lang #:wrapper1 wrapper1)
   (#%reader-module-begin
    lang
 
-   #:read        scribble:read-inside
-   #:read-syntax scribble:read-syntax-inside
+   #:read          scribble:read-inside
+   #:read-syntax   scribble:read-syntax-inside
    #:whole-body-readers? #t
-   #:wrapper1    wrapper1
-   #:info        (scribble-base-info)
-   #:module-info (scribble-base-module-info)))
+   #:wrapper1      wrapper1
+   #:info          (scribble-base-info)
+   #:language-info (scribble-base-language-info)))
 
 ;; Settings that apply just to the surface syntax:
 (define (scribble-base-reader-info)
@@ -36,6 +36,5 @@
        (dynamic-require 'scribble/tools/drscheme-buttons 'drscheme-buttons)]
       [else ((scribble-base-reader-info) key defval default)])))
 
-(define (scribble-base-module-info)
-  (lambda (modpath data)
-    #f))
+(define (scribble-base-language-info)
+  '#(racket/language-info get-info #f))

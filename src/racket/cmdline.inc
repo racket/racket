@@ -256,12 +256,14 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     mz_jmp_buf * volatile save, newbuf;
 
     for (i = 0; i < fa->a->num_enl; i++) {
-      if (fa->eval_kind[i] == mzcmd_LOAD) {
-	if (!scheme_load(fa->evals_and_loads[i])) {
+      if ((fa->eval_kind[i] == mzcmd_LOAD)
+          && strcmp(fa->evals_and_loads[i], "-")) {
+        if (!scheme_load(fa->evals_and_loads[i])) {
 	  exit_val = 1;
 	  break;
 	}
       } else if ((fa->eval_kind[i] == mzcmd_EVAL)
+                 || (fa->eval_kind[i] == mzcmd_LOAD) /* stdin */
                  || (fa->eval_kind[i] == mzcmd_REQUIRE_FILE)
                  || (fa->eval_kind[i] == mzcmd_REQUIRE_LIB)
                  || (fa->eval_kind[i] == mzcmd_REQUIRE_PLANET)
@@ -274,6 +276,9 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
         if (!scheme_setjmp(newbuf)) {
           if (fa->eval_kind[i] == mzcmd_EVAL) {
             scheme_eval_string_all_with_prompt(fa->evals_and_loads[i], fa->global_env, 2);
+          } else if (fa->eval_kind[i] == mzcmd_LOAD) {
+            /* eval from stdin */
+            scheme_eval_all_with_prompt(NULL, fa->global_env, 2);
           } else if (fa->eval_kind[i] == mzcmd_EMBEDDED) {
             Scheme_Object *s, *e, *a[3], *eload;
             eload = scheme_builtin_value("embedded-load");
@@ -712,7 +717,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
   eval_kind = (int *)malloc(sizeof(int) * argc);
   num_enl = 0;
 
-  while (!no_more_switches && argc && argv[0][0] == '-' && !is_number_arg(argv[0] + 1)) {
+  while (!no_more_switches 
+         && argc 
+         && argv[0][0] == '-' 
+         && argv[0][1]
+         && !is_number_arg(argv[0] + 1)) {
     real_switch = argv[0];
 
     if (!strcmp("--help", argv[0]))
@@ -1029,7 +1038,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
       /* No args => repl */
       use_repl = 1;
       init_ns = 1;
-    } else if (argv[0][0] != '-') {
+    } else {
       /* No switches => -u mode */
       script_mode = 1;
       no_more_switches = 1;

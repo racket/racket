@@ -33,7 +33,7 @@ language, though it may also be @scheme[require]d to get
                   (code:line #:wrapper2    wrapper2-expr)
                   (code:line #:language    lang-expr)
                   (code:line #:info        info-expr)
-                  (code:line #:module-info module-info-expr)])
+                  (code:line #:language-info language-info-expr)])
   #:contracts ([read-expr (input-port? . -> . any/c)]
                [read-syntax-expr (any/c input-port? . -> . any/c)]
                [whole-expr any/c]
@@ -185,41 +185,42 @@ identifiers used by the @scheme[reader-option]s.
        function) currently just returns the default for
        @scheme['color-lexer].}
 
- @item{@scheme[#:module-info] specifies an implementation of
+ @item{@scheme[#:language-info] specifies an implementation of
        reflective information that is used by external tools to
-       manipulate the @emph{compiled} form of modules in the language
-       @scheme[_something]. For example, when MzScheme starts a
-       program, it uses information attached to the compiled main
-       module to initialize the run-time environment.
+       manipulate the module in the language @scheme[_something] in
+       its @emph{expanded}, @emph{compiled} or @emph{declared} form
+       (as opposed to source). For example, when MzScheme starts a
+       program, it uses information attached to the main module to
+       initialize the run-time environment.
 
-       Since the compiled form exists at a different time than when
-       the source is read, a @scheme[#:module-info] specification is a
-       vector that indicates an implementation of the reflective
-       information, instead of a direct implementation as a function
-       like @scheme[#:info]. The first element of the vector is a
-       module path, the second is a symbol corresponding to a function
-       exported from the module, and the last element is a value to be
-       passed to the function. The last value in the vector must be
-       one that can be written with @scheme[write] and read back with
-       @scheme[read]. When the exported function indicated by the
-       first two vector elements is called with the value from the
-       last vector element, the result should be a function or two
-       arguments: a symbol and a default value. The symbol and default
-       value are used as for the @scheme[#:info] function (but without
-       an extra default-filtering function).
+       Since the expanded/compiled/declared form exists at a different time
+       than when the source is read, a @scheme[#:language-info]
+       specification is a vector that indicates an implementation of
+       the reflective information, instead of a direct implementation
+       as a function like @scheme[#:info]. The first element of the
+       vector is a module path, the second is a symbol corresponding
+       to a function exported from the module, and the last element is
+       a value to be passed to the function. The last value in the
+       vector must be one that can be written with @scheme[write] and
+       read back with @scheme[read]. When the exported function
+       indicated by the first two vector elements is called with the
+       value from the last vector element, the result should be a
+       function or two arguments: a symbol and a default value. The
+       symbol and default value are used as for the @scheme[#:info]
+       function (but without an extra default-filtering function).
 
-       The value specified by @scheme[#:module-info] is attached to
+       The value specified by @scheme[#:language-info] is attached to
        the @scheme[module] form that is parsed from source through the
        @scheme['module-language] syntax property. See @scheme[module]
        for more information.
 
-       The expression after @scheme[#:module-info] is placed into a
+       The expression after @scheme[#:language-info] is placed into a
        context where @scheme[language-module] are
        @scheme[language-data] are bound, the same as for
        @scheme[#:info].
 
        In the case of the MzScheme run-time configuration example,
-       MzScheme uses the @scheme[#:module-info] vector to obtain a
+       MzScheme uses the @scheme[#:language-info] vector to obtain a
        function, and then it passes @scheme['configure-runtime] to the
        function to obtain information about configuring the runtime
        environment. See also @secref[#:doc refman "configure-runtime"].}
