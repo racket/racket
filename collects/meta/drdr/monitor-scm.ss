@@ -31,7 +31,7 @@
  [current-monitoring-interval-seconds 
   (parameter/c exact-nonnegative-integer?)]
  [monitor-scm
-  (string? exact-nonnegative-integer? 
+  (path-string? exact-nonnegative-integer? 
            ((listof exact-nonnegative-integer?) . -> . void)
            (exact-nonnegative-integer? exact-nonnegative-integer? . -> . void)
            . -> . any)])

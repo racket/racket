@@ -80,6 +80,20 @@
 (define-syntax-rule (with-temporary-directory e)
   (call-with-temporary-directory (lambda () e)))
 
+(define (call-with-temporary-home-directory thunk)
+  (define new-dir (make-temporary-file "home~a" 'directory (current-temporary-directory)))
+  (dynamic-wind
+   (lambda ()
+     (with-handlers ([exn:fail? void])
+       (copy-directory/files (hash-ref (current-env) "HOME") new-dir)))
+   (lambda ()
+     (with-env (["HOME" (path->string new-dir)])
+       (thunk)))
+   (lambda ()
+     (delete-directory/files new-dir))))
+(define-syntax-rule (with-temporary-home-directory e)
+  (call-with-temporary-home-directory (lambda () e)))
+
 (define (with-running-program command args thunk)
   (define-values (new-command new-args)
     (command+args+env->command+args
@@ -185,14 +199,14 @@
                                          test-workers
                                          (lambda ()
                                            (define l (pth-cmd))
-                                           (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))]
-                                                      ["HOME" (make-fresh-home-dir)])
-                                             (with-temporary-directory
-                                                 (run/collect/wait/log log-pth 
-                                                                       #:timeout pth-timeout
-                                                                       #:env (current-env)
-                                                                       (first l)
-                                                                       (rest l))))
+                                           (with-env (["DISPLAY" (format ":~a" (+ XSERVER-OFFSET (current-worker)))])
+                                             (with-temporary-home-directory
+                                                 (with-temporary-directory
+                                                     (run/collect/wait/log log-pth 
+                                                                           #:timeout pth-timeout
+                                                                           #:env (current-env)
+                                                                           (first l)
+                                                                           (rest l)))))
                                            (semaphore-post dir-sema)))
                                         (semaphore-post dir-sema)))))))
                       files)
@@ -228,12 +242,6 @@
   (semaphore-wait top-sema)
   (notify! "Stopping testing")
   (stop-job-queue! test-workers))
-
-(define (make-fresh-home-dir)
-  (define new-dir (make-temporary-file "home~a" 'directory (current-temporary-directory)))
-  (with-handlers ([exn:fail? void])
-    (copy-directory/files (hash-ref (current-env) "HOME") new-dir))
-  (path->string new-dir))
 
 (define (recur-many i r f)
   (if (zero? i)

@@ -135,14 +135,30 @@
           [to string?])]
  [get-scm-commit-msg (exact-nonnegative-integer? path-string? . -> . git-push?)])
 
+(define (git-push-end-commit gp)
+  (git-commit-hash (first (git-push-commits gp))))
+(provide/contract
+ [git-push-end-commit (git-push? . -> . string?)])
+
+(define scm-commit-author
+  (match-lambda
+    [(? git-push? gp) (git-push-author gp)]
+    [(? svn-rev-log? srl) (svn-rev-log-author srl)]))
+(provide/contract
+ [scm-commit-author ((or/c git-push? svn-rev-log?) . -> . string?)])
+
 (define (scm-export rev repo file dest)
   (define commit
     (push-data-end-commit (push-info rev)))
-  (define cmd
-    (format "~S archive --format=tar ~S ~S | tar -O -xf - ~S > ~S"
-            (git-path) commit file file dest))
-  (parameterize ([current-directory repo])
-    (system cmd))
+  (call-with-output-file*
+   dest
+   #:exists 'truncate/replace
+   (lambda (file-port)
+     (parameterize ([current-directory repo])
+       (system/output-port
+        #:k void
+        #:stdout file-port
+        (git-path) "--no-pager" "show" (format "~a:~a" commit file)))))
   (void))
 
 (define (scm-checkout rev repo dest)
@@ -168,6 +184,6 @@
 
 (provide/contract
  [scm-update (path? . -> . void?)]
- [scm-revisions-after (exact-nonnegative-integer? . -> . void?)]
+ [scm-revisions-after (exact-nonnegative-integer? . -> . (listof exact-nonnegative-integer?))]
  [scm-export (exact-nonnegative-integer? path-string? string? path-string? . -> . void?)]
  [scm-checkout (exact-nonnegative-integer? path-string? path-string? . -> . void?)])
