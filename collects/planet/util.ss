@@ -41,12 +41,13 @@
  unlink-all
  lookup-package-by-keys
  resolve-planet-path
- (struct-out exn:fail:planet)
  display-plt-file-structure
  display-plt-archived-file
  get-package-from-cache
  install-pkg
- pkg->download-url)
+ pkg->download-url
+ exn:fail:planet?
+ make-exn:fail:planet)
 
 (provide/contract
  [get-package-spec
@@ -102,8 +103,6 @@
 ;;   -- delete files from cache directory
 ;;   -- remove any existing linkage for package
 ;; returns void if the removal worked; raises an exception if no package existed.
-
-(define-struct (exn:fail:planet exn:fail) ())
 
 (define (remove-pkg owner name maj min)
   (let ((p (get-installed-package owner name maj min)))

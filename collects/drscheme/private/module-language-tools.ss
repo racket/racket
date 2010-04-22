@@ -9,6 +9,9 @@
          scheme/gui/base
          "drsig.ss")
 
+(define op (current-output-port))
+(define (oprintf . args) (apply fprintf op args))
+
 (define-unit module-language-tools@
   (import [prefix drscheme:unit: drscheme:unit^]
           [prefix drscheme:module-language: drscheme:module-language^]
@@ -18,7 +21,7 @@
 
   (define-local-member-name initialized? move-to-new-language)
 
-  (define-struct opt-out-toolbar-button (make-button id))
+  (define-struct opt-out-toolbar-button (make-button id) #:transparent)
   (define opt-out-toolbar-buttons '())
   
   (define (add-opt-out-toolbar-button make-button id) 
@@ -98,18 +101,18 @@
       
       (define/public (move-to-new-language)
         (let* ([port (open-input-text-editor this)]
+               ;; info-result : (or/c #f   [#lang without a known language]
+               ;;                     (vector <get-info-proc>) [no #lang line, so we use the '#lang racket' info proc]
+               ;;                     <get-info-proc>  [the get-info proc for the program in the definitions]
                [info-result (with-handlers ((exn:fail? (λ (x) #f)))
-                              (parameterize ([current-reader-guard
-                                              (let ([old (current-reader-guard)])
-                                                (lambda (g)
-                                                  (if (and (pair? g)
-                                                           (eq? (car g) 'planet))
-                                                      (error "#lang planet disbled")
-                                                      (old g))))])
-                                ;; FIXME: do something so that we don't
-                                ;; have to disable all planet packages.
-                                (read-language port (lambda () #f))))])
-          ;; sometimes I get eof here, but I don't know why and can't seem to 
+                              (read-language 
+                               port
+                               (lambda () 
+                                 ;; fall back to whatever #lang racket does if
+                                 ;; we don't have a #lang line present in the file
+                                 (vector (read-language (open-input-string "#lang racket"))))))])
+          
+          ; sometimes I get eof here, but I don't know why and can't seem to 
           ;; make it happen outside of DrScheme
           (when (eof-object? info-result)
             (fprintf (current-error-port) "file ~s produces eof from read-language\n"
@@ -128,10 +131,18 @@
                  (contract (or/c #f (listof (list/c string?
                                                     (is-a?/c bitmap%)
                                                     (-> (is-a?/c drscheme:unit:frame<%>) any))))
-                           (info-result 'drscheme:toolbar-buttons #f)
-                           (get-lang-name pos)
+                           ((if (vector? info-result)
+                                (vector-ref info-result 0)
+                                info-result)
+                            'drscheme:toolbar-buttons #f)
+                           (if (vector? info-result)
+                               'hash-lang-racket
+                               (get-lang-name pos))
                            'drscheme/private/module-language-tools)
-                 (info-result 'drscheme:opt-out-toolbar-buttons '())))))))
+                 ((if (vector? info-result)
+                      (vector-ref info-result 0)
+                      info-result)
+                  'drscheme:opt-out-toolbar-buttons '())))))))
 
       (inherit get-tab)
       

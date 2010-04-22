@@ -12,16 +12,7 @@
                   [(init) (file-position p)]
                   [(start-line start-col start-pos) (port-next-location p)])
       (let ([get-info (with-handlers ([exn:fail? (lambda (exn) 'fail)])
-                        (parameterize ([current-reader-guard
-                                        (let ([old (current-reader-guard)])
-                                          (lambda (g)
-                                            (if (and (pair? g)
-                                                     (eq? (car g) 'planet))
-                                                (error "#lang planet disbled")
-                                                (old g))))])
-                          ;; FIXME: do something so that we don't
-                          ;; have to disable all planet packages.
-                          (read-language p (lambda () #f))))]
+                        (read-language p (lambda () #f)))]
             [sync-ports (lambda ()
                           (read-bytes (- (file-position p) init) in))])
         (cond

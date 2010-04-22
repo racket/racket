@@ -463,6 +463,30 @@ The @schememodname[planet] module (as opposed to the reader used with
 
 The planet collection provides configuration and utilities for using PLaneT. 
 
+@subsection{Resolver}
+
+@defmodule[planet/resolver]
+
+The primary purpose of this library to for @scheme[require] to find
+@PLaneT packages. It also, however, provides some utilities for manipulating
+the resolvers behavior.
+
+@defproc[(resolve-planet-path [planet-path any/c]) path?]{
+  Returns the path where the file named by the require spec @scheme[planet-path] is located in the current installation.
+}
+
+@defparam[download? dl? boolean?]{
+  A parameter that controls if @PLaneT attempts to download a planet package that isn't already present.
+  If the package isn't present, the resolver will raise the @scheme[exn:fail:planet?] exception
+  instead of downloading it.
+}
+
+@defparam[install? inst? boolean?]{
+  A parameter that controls if @PLaneT attempts to install a planet package that isn't already installed.                                  
+  If the package isn't installed, the resolver will raise the @scheme[exn:fail:planet?] exception
+  instead of installing it.
+}
+
 @subsection{Client Configuration}
 
 @defmodule[planet/config]
@@ -658,6 +682,10 @@ package minor version, or @scheme[#f] if the expression appears outside the
 context of a package. The others are convenience macros that
 select out the relevant field, or return @scheme[#f] if the expression
 appears outside the context of a PLaneT package.}
+
+@defproc[(exn:fail:planet? [val any/c]) boolean?]{
+  Returns @scheme[#t] if @scheme[val] is                                                   
+}
 
 @subsection{Terse Status Updates}
 
