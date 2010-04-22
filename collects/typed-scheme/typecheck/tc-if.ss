@@ -56,7 +56,7 @@
                                       (-FS -top -top)]
                                      [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
                                       (-FS (-or (-and fs+ f2+) (-and fs- f3+))
-                                           (debug -or (-and fs+ f2-) (-and fs- f3-)))])]
+                                           (-or (-and fs+ f2-) (-and fs- f3-)))])]
                                   [type (Un t2 t3)]
                                   [object (if (object-equal? o2 o3) o2 (make-Empty))])
                               ;(printf "result filter is: ~a\n" filter)

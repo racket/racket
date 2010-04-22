@@ -284,12 +284,8 @@
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
      (make-NotTypeFilter t p i))
 
-(define-syntax-rule (with-names (vars ...) . e)
-  (let-values ([(vars ...) (apply values (generate-temporaries '(vars ...)))])
-    . e))
-
-(define-syntax-rule (asym-pred (var) dom rng filter)
-  (with-names (var) (make-Function (list (make-arr* (list dom) rng #:filters filter)))))
+(define (asym-pred dom rng filter)
+  (make-Function (list (make-arr* (list dom) rng #:filters filter))))
 
 (d/c make-pred-ty
   (case-> (c:-> Type/c Type/c)

@@ -41,16 +41,16 @@
 ;; numeric predicates
 [zero? (make-pred-ty (list N) B -Zero)]
 [number? (make-pred-ty N)]
-[integer? (asym-pred (x) Univ B (-FS (-filter (Un -Integer -Flonum) x)
-				     (-not-filter -Integer x)))]
+[integer? (asym-pred Univ B (-FS (-filter (Un -Integer -Flonum) 0)
+				     (-not-filter -Integer 0)))]
 [exact-integer? (make-pred-ty -Integer)]
 [real? (make-pred-ty -Real)]
 [inexact-real? (make-pred-ty -Flonum)]
 [complex? (make-pred-ty N)]
 [rational? (make-pred-ty -Real)]
-[exact? (asym-pred (x) N B (-FS -top (-not-filter -ExactRational x)))]
-[inexact? (asym-pred (x) N B  (-FS -top (-not-filter -Flonum x)))]
-[fixnum? (asym-pred (x) Univ B (-FS (-filter -Integer x) -top))]
+[exact? (asym-pred N B (-FS -top (-not-filter -ExactRational 0)))]
+[inexact? (asym-pred N B  (-FS -top (-not-filter -Flonum 0)))]
+[fixnum? (asym-pred Univ B (-FS (-filter -Integer 0) -top))]
 [positive? (-> -Real B)]
 [negative? (-> -Real B)]
 [exact-positive-integer? (make-pred-ty -Pos)]
