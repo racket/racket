@@ -1,7 +1,7 @@
 #lang scheme/base
-(provide module-info)
+(provide get-info)
 
-(define ((module-info options) key default)
+(define ((get-info options) key default)
   (case key
     [(configure-runtime) `(#(htdp/bsl/runtime configure ,options))]
     [else default]))
