@@ -230,7 +230,7 @@
 (define-syntax (%cut-delimiter stx)
   (syntax-case stx ()
     ((%cut-delimiter g)
-     (with-syntax ([! #'!])
+     (with-syntax ([! (datum->syntax stx '!)])
        (syntax/loc stx
          (lambda (__fk)
            (let ((! (lambda (__fk2) __fk)))
@@ -247,7 +247,7 @@
 (define-syntax (%rel stx)
   (syntax-case stx ()
     ((%rel (v ...) ((a ...) subgoal ...) ...)
-     (with-syntax ([! #'!])
+     (with-syntax ([! (datum->syntax stx '!)])
        (syntax/loc stx
          (lambda __fmls
            (lambda (__fk)
