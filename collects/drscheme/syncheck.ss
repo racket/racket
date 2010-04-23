@@ -2276,16 +2276,28 @@ If the namespace does not, they are colored the unbound color.
       (parameterize ([current-namespace user-namespace]
                      [current-directory user-directory]
                      [current-load-relative-directory user-directory])
-        (let ([ans (with-handlers ([exn:fail? (λ (x) #f)])
-                     (cond
-                       [(module-path-index? datum)
-                        (resolved-module-path-name 
-                         (module-path-index-resolve datum))]
-                       [else
-                        (resolved-module-path-name 
-                         ((current-module-name-resolver) datum #f #f))]))])
-          (and (path? ans)
-               ans))))
+        (let* ([rkt-path/mod-path
+                (with-handlers ([exn:fail? (λ (x) #f)])
+                  (cond
+                    [(module-path-index? datum)
+                     (resolved-module-path-name 
+                      (module-path-index-resolve datum))]
+                    [else
+                     (resolved-module-path-name 
+                      ((current-module-name-resolver) datum #f #f))]))]
+               [rkt-path/f (and (path? rkt-path/mod-path) rkt-path/mod-path)])
+          (let/ec k
+            (unless (path? rkt-path/f) (k rkt-path/f))
+            (when (file-exists? rkt-path/f) (k rkt-path/f))
+            (let* ([bts (path->bytes rkt-path/f)]
+                   [len (bytes-length bts)])
+              (unless (and (len . >= . 4) 
+                           (bytes=? #".rkt" (subbytes bts (- len 4))))
+                (k rkt-path/f))
+              (let ([ss-path (bytes->path (bytes-append (subbytes bts 0 (- len 4)) #".ss"))])
+                (unless (file-exists? ss-path)
+                  (k rkt-path/f))
+                ss-path))))))
     
     ;; make-require-open-menu : path -> menu -> void
     (define (make-require-open-menu file)
