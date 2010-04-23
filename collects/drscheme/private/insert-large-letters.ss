@@ -2,7 +2,7 @@
 
 (require typed/mred/mred
          typed/framework/framework
-         scheme/class
+         racket/class
          string-constants/string-constant)
 
 

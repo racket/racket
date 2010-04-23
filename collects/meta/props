@@ -812,6 +812,7 @@ path/s is either such a string or a list of them.
 "collects/handin-server/web-status-server.ss" drdr:command-line "mzc ~s"
 "collects/help" responsible (robby)
 "collects/help/bug-report.ss" drdr:command-line "mred-text -t ~s"
+"collects/help/help.ss" drdr:command-line "mzc ~s"
 "collects/hierlist/hierlist.ss" drdr:command-line "mred-text -t ~s"
 "collects/honu" responsible (mflatt rafkind)
 "collects/htdp" responsible (matthias)
@@ -897,8 +898,8 @@ path/s is either such a string or a list of them.
 "collects/make" responsible (mflatt)
 "collects/meta" responsible (eli)
 "collects/meta/check-dists.ss" drdr:command-line ""
-"collects/meta/drdr" responsible (jay) drdr:command-line ""
 "collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line ""
+"collects/meta/drdr" responsible (jay) drdr:command-line ""
 "collects/mred/edit-main.ss" drdr:command-line "mzc ~s"
 "collects/mred/edit.ss" drdr:command-line "mred-text -t ~s"
 "collects/mred/lang/main.ss" drdr:command-line "mred-text -t ~s"

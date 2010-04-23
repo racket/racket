@@ -109,6 +109,7 @@ Applies the procedure @scheme[proc] to each element in
 @scheme[set] in an unspecified order, accumulating the results
 into a list.}
 
+
 @defproc[(set-for-each [set set?]
                        [proc (any/c . -> . any)])
          void?]{
@@ -116,7 +117,21 @@ into a list.}
 Applies @scheme[proc] to each element in @scheme[set] (for the
 side-effects of @scheme[proc]) in an unspecified order.}
 
+
 @defproc[(in-set [set set?]) sequence?]{
 
 Explicitly converts a set to a sequence for use with @scheme[for] and
 other forms.}
+
+@deftogether[(
+@defform[(for/set (for-clause ...) body ...+)]
+@defform[(for/seteq (for-clause ...) body ...+)]
+@defform[(for/seteqv (for-clause ...) body ...+)]
+@defform[(for*/set (for-clause ...) body ...+)]
+@defform[(for*/seteq (for-clause ...) body ...+)]
+@defform[(for*/seteqv (for-clause ...) body ...+)]
+)]{
+
+Analogous to @scheme[for/list] and @scheme[for*/list], but to
+construct a set instead of a list.}
+

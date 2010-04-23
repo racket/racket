@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (require "launcher-bootstrap.ss")
 
 (current-namespace (make-base-empty-namespace))
-(namespace-require 'scheme/base)
+(namespace-require 'racket/base)
 
 (startup)

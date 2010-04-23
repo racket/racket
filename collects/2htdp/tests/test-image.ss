@@ -46,6 +46,7 @@
          scheme/class
          scheme/gui/base
          schemeunit
+         (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?))
 
 (require (for-syntax scheme/base))
@@ -201,6 +202,14 @@
              (* (sin (* pi 1/6)) 100))
 (check-close (image-height (rotate 30 (ellipse 0 100 'solid 'blue)))
              (ceiling (* (cos (* pi 1/6)) 100)))
+
+;; zero-sized htdp/image images should also work
+(test (image-width (1:text "" 18 "blue"))
+      =>
+      0)
+(test (image-height (1:rectangle 10 0 'solid "red"))
+      =>
+      0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

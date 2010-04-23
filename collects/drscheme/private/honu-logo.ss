@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 (provide draw-honu)
 
-(require scheme/class
-         scheme/gui/base
+(require racket/class
+         racket/gui/base
          "palaka.ss")
 
 (define pi (atan 0 -1))

@@ -1,12 +1,12 @@
-#lang scheme/base
+#lang racket/base
 (provide module-language-tools@)
 (require mrlib/switchable-button 
          mrlib/bitmap-label
-         scheme/contract
+         racket/contract
          framework
          scheme/unit
-         scheme/class
-         scheme/gui/base
+         racket/class
+         racket/gui/base
          "drsig.ss")
 
 (define op (current-output-port))

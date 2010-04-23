@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
 (provide module-language@)
 (require scheme/unit
-         scheme/class
-         scheme/list
-         scheme/path
-         scheme/contract
+         racket/class
+         racket/list
+         racket/path
+         racket/contract
          mred
          compiler/embed
          compiler/cm
@@ -382,7 +382,7 @@
                           #:literal-expression
                           (begin
                             (parameterize ([current-namespace (make-base-empty-namespace)])
-                              (namespace-require 'scheme/base)
+                              (namespace-require 'racket/base)
                               (compile 
                                `(namespace-require '',(string->symbol (path->string short-program-name))))))
                           #:cmdline '("-U" "--")))))
@@ -672,7 +672,7 @@
       (raise-hopeless-syntax-error "bad syntax in name position of module"
                                    stx name))
     (when filename (check-filename-matches filename name* stx))
-    (let* (;; rewrite the module to use the scheme/base version of `module'
+    (let* (;; rewrite the module to use the racket/base version of `module'
            [mod  (datum->syntax #'here 'module mod)]
            [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx stx)])
       (values name lang expr)))

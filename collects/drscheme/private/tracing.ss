@@ -1,12 +1,12 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/contract
+(require racket/contract
          scheme/unit
-         scheme/class
-         scheme/path
-         scheme/port
-         scheme/list
-         scheme/gui/base
+         racket/class
+         racket/path
+         racket/port
+         racket/list
+         racket/gui/base
          string-constants
          framework
          (prefix-in tr: trace/stacktrace)

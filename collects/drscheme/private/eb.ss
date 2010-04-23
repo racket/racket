@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          framework/splash
-         scheme/gui/base)
+         racket/gui/base)
 
 (provide install-eb)
 (define (install-eb)

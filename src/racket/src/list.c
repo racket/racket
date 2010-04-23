@@ -100,11 +100,15 @@ static Scheme_Object *make_weak_hasheqv(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_immutable_hash(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_immutable_hasheq(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_immutable_hasheqv(int argc, Scheme_Object *argv[]);
+static Scheme_Object *direct_hash(int argc, Scheme_Object *argv[]);
+static Scheme_Object *direct_hasheq(int argc, Scheme_Object *argv[]);
+static Scheme_Object *direct_hasheqv(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_count(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_copy(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_eq_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_eqv_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *hash_equal_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_weak_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_put_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_put(int argc, Scheme_Object *argv[]);
@@ -511,6 +515,21 @@ scheme_init_list (Scheme_Env *env)
 						    "make-immutable-hasheqv",
 						    1, 1),
 			     env);
+  scheme_add_global_constant("hash",
+			     scheme_make_immed_prim(direct_hash,
+						    "hash",
+						    0, -1),
+			     env);
+  scheme_add_global_constant("hasheq",
+			     scheme_make_immed_prim(direct_hasheq,
+						    "hasheq",
+						    0, -1),
+			     env);
+  scheme_add_global_constant("hasheqv",
+			     scheme_make_immed_prim(direct_hasheqv,
+						    "hasheqv",
+						    0, -1),
+			     env);
   scheme_add_global_constant("hash?",
 			     scheme_make_folding_prim(hash_p,
 						      "hash?",
@@ -524,6 +543,11 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant("hash-eqv?",
 			     scheme_make_folding_prim(hash_eqv_p,
 						      "hash-eqv?",
+						      1, 1, 1),
+			     env);
+  scheme_add_global_constant("hash-equal?",
+			     scheme_make_folding_prim(hash_equal_p,
+						      "hash-equal?",
 						      1, 1, 1),
 			     env);
   scheme_add_global_constant("hash-weak?",
@@ -1817,6 +1841,42 @@ static Scheme_Object *make_immutable_hasheqv(int argc, Scheme_Object *argv[])
   return make_immutable_table("make-immutable-hasheqv", 2, argc, argv);
 }
 
+static Scheme_Object *direct_table(const char *who, int kind, int argc, Scheme_Object *argv[])
+{
+  int i;
+  Scheme_Hash_Tree *ht;
+
+  if (argc & 0x1) {
+    scheme_arg_mismatch(who,
+                        "key does not have a value (i.e., an odd number of arguments were provided): ",
+                        argv[argc-1]);
+    return NULL;
+  }
+
+  ht = scheme_make_hash_tree(kind);
+
+  for (i = 0; i < argc; i += 2) {
+    ht = scheme_hash_tree_set(ht, argv[i], argv[i+1]);
+  }
+
+  return (Scheme_Object *)ht;
+}
+
+static Scheme_Object *direct_hash(int argc, Scheme_Object *argv[])
+{
+  return direct_table("hash", 1, argc, argv);
+}
+
+static Scheme_Object *direct_hasheq(int argc, Scheme_Object *argv[])
+{
+  return direct_table("hasheq", 0, argc, argv);
+}
+
+static Scheme_Object *direct_hasheqv(int argc, Scheme_Object *argv[])
+{
+  return direct_table("hasheqv", 2, argc, argv);
+}
+
 Scheme_Hash_Table *scheme_make_hash_table_equal()
 {
   Scheme_Hash_Table *t;
@@ -2000,6 +2060,29 @@ static Scheme_Object *hash_eqv_p(int argc, Scheme_Object *argv[])
       return scheme_true;
   } else {
     scheme_wrong_type("hash-eqv?", "hash", 0, argc, argv);
+  }
+  
+  return scheme_false;
+}
+
+static Scheme_Object *hash_equal_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o = argv[0];
+
+  if (SCHEME_CHAPERONEP(o)) 
+    o = SCHEME_CHAPERONE_VAL(o);
+
+  if (SCHEME_HASHTP(o)) {
+    if (((Scheme_Hash_Table *)o)->compare == compare_equal)
+      return scheme_true;
+  } else if (SCHEME_HASHTRP(o)) {
+    if (SCHEME_HASHTR_FLAGS((Scheme_Hash_Tree *)o) & 0x1)
+      return scheme_true;
+  } else if (SCHEME_BUCKTP(o)) {
+    if (((Scheme_Bucket_Table *)o)->compare == compare_equal)
+      return scheme_true;
+  } else {
+    scheme_wrong_type("hash-equal?", "hash", 0, argc, argv);
   }
   
   return scheme_false;

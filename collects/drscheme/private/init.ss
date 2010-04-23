@@ -1,8 +1,7 @@
 #lang scheme/unit
   (require string-constants
            "drsig.ss"
-           mzlib/list
-           mred)
+           racket/gui/base)
   
   
   (import)

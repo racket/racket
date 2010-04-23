@@ -1,9 +1,9 @@
 #lang scheme/unit
 
-(require scheme/class
-         scheme/list
-         scheme/runtime-path
-         scheme/contract
+(require racket/class
+         racket/list
+         racket/runtime-path
+         racket/contract
          setup/getinfo
          mred
          framework
@@ -13,7 +13,7 @@
          mrlib/switchable-button
 string-constants)
 
-(require (for-syntax scheme/base scheme/match))
+(require (for-syntax racket/base racket/match))
 
 (import [prefix drscheme:frame: drscheme:frame^]
         [prefix drscheme:unit: drscheme:unit^]
