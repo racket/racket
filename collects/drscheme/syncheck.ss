@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 #|
 
 Check Syntax separates two classes of identifiers,

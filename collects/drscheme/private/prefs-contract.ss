@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base)
+(require (for-syntax racket/base)
          framework/framework)
 
 (provide (rename-out [-preferences:get preferences:get])

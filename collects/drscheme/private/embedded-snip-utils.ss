@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/class
-         scheme/gui/base)
+#lang racket/base
+(require racket/class
+         racket/gui/base)
 
 (provide get-enclosing-editor-frame)
 

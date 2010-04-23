@@ -1,7 +1,7 @@
 #lang scheme/unit
   (require string-constants
-           mzlib/class
-           mzlib/list
+           racket/class
+	   racket/list
            framework
            "drsig.ss")
   
@@ -23,7 +23,7 @@
   
   (define (not-a-language-language? l)
     (and (not (null? l))
-         (equal? (car (last-pair l))
+         (equal? (last l)
                  (string-constant no-language-chosen))))
   
   (define (add-initial-modes)

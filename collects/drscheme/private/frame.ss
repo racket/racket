@@ -1,9 +1,8 @@
 #lang scheme/unit
   (require string-constants
-           mzlib/match
-           mzlib/class
-           mzlib/string
-           mzlib/list
+           racket/match
+           racket/class
+           racket/string
            "drsig.ss"
            mred
            framework
@@ -11,7 +10,7 @@
            net/head
            setup/plt-installer
            help/bug-report
-           scheme/file)
+           racket/file)
   
   (import [prefix drscheme:unit: drscheme:unit^]
           [prefix drscheme:app: drscheme:app^]

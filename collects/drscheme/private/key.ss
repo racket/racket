@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang racket/base
   (provide break-threads)
   (define super-cust (current-custodian))
   (define first-child (make-custodian))

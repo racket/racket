@@ -1,7 +1,7 @@
-#lang mzscheme
-  (require mzlib/class
-           mzlib/pretty
-           mred)
+#lang racket/base
+  (require racket/class
+           racket/pretty
+           racket/gui/base)
   
   (define head-size 40)
   (define small-bitmap-factor 1/2)
