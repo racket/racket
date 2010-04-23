@@ -19,13 +19,13 @@
 ;  solve([]).
 
 (define %solve-puzzle
-  (%rel ! (clues queries solution)
+  (%rel (clues queries solution)
     ((clues queries solution)
       (%solve clues)
       (%solve queries))))
 
 (define %solve
-  (%rel ! (clue clues)
+  (%rel (clue clues)
     (((cons clue clues))
       clue 
       (%solve clues))

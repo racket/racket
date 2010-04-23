@@ -9,7 +9,7 @@
 ;(%father X Y) :- X is the father of Y.
 
 (define %father
-  (%rel ! ()
+  (%rel ()
     (('terach 'abraham)) (('terach 'nachor)) (('terach 'haran))
     (('abraham 'isaac)) (('haran 'lot)) (('haran 'milcah))
     (('haran 'yiscah))))
@@ -17,14 +17,14 @@
 ;(%mother X Y) :- X is the mother of Y.
 
 (define %mother
-  (%rel ! () (('sarah 'isaac))))
+  (%rel () (('sarah 'isaac))))
 
 (define %male
-  (%rel ! ()
+  (%rel ()
     (('terach)) (('abraham)) (('isaac)) (('lot)) (('haran)) (('nachor))))
 
 (define %female
-  (%rel ! ()
+  (%rel ()
     (('sarah)) (('milcah)) (('yiscah))))
 
 ;AoP, ch. 17.  Finding all the children of a particular
@@ -36,13 +36,13 @@
 (define %children-1
 
   (letrec ((children-aux
-	     (%rel ! (x a cc c)
+	     (%rel (x a cc c)
 	       ((x a cc)
                  (%father x c) (%not (%member c a)) !
                  (children-aux x (cons c a) cc))
 	       ((x cc cc)))))
 
-    (%rel ! (x cc)
+    (%rel (x cc)
       ((x cc) (children-aux x '() cc)))))
 
 (define terachs-kids-test
@@ -79,7 +79,7 @@
 ;Uses set predicate %bag-of
 
 (define %children
-  (%rel ! (x kids c)
+  (%rel (x kids c)
     ((kids) (%set-of c (%father x c) kids))))
 
 (define dad-kids-test-2
