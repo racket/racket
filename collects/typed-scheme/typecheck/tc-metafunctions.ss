@@ -118,6 +118,21 @@
             [(AndFilter: ps) (loop derived-props derived-atoms (append ps (cdr worklist)))]
             [(TypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
             [(NotTypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
+            [(OrFilter: ps) 
+             (let ([new-or
+                    (let or-loop ([ps ps] [result null])
+                      (cond 
+                        [(null? ps) (apply -or result)]
+                        [(for/or ([other-p (in-list (append derived-props derived-atoms))])
+                             (opposite? (car ps) other-p))
+                         (or-loop (cdr ps) result)]
+                        [(for/or ([other-p (in-list derived-atoms)])
+                             (implied-atomic? (car ps) other-p))
+                         -top]
+                        [else (or-loop (cdr ps) (cons (car ps) result))]))])
+               (if (OrFilter? new-or)
+                   (loop (cons new-or derived-props) derived-atoms (cdr worklist))
+                   (loop derived-props derived-atoms (cons new-or (cdr worklist)))))]
             [(Top:) (loop derived-props derived-atoms (cdr worklist))]
             [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]
             [_ (loop (cons p derived-props) derived-atoms (cdr worklist))])))))

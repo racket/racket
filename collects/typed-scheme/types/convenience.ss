@@ -6,6 +6,7 @@
 	 (types comparison printer union subtype utils)
          scheme/list scheme/match scheme/promise
          (for-syntax syntax/parse scheme/base)
+         unstable/debug
          (for-template scheme/base))
 
 (provide (all-defined-out)
@@ -97,23 +98,34 @@
               [(_ _) #f])))
 
 (define (-or . args) 
+  (define (distribute args)
+    (define-values (ands others) (partition AndFilter? args))
+    (if (null? ands)
+        (make-OrFilter others)
+        (match-let ([(AndFilter: elems) (car ands)])
+          (apply -and (for/list ([a (in-list elems)])
+                        (apply -or a (append (cdr ands) others)))))))
   (let loop ([fs args] [result null])
     (if (null? fs)
         (match result
           [(list) -bot]
           [(list f) f]
-          [(list f1 f2) 
-           (if (opposite? f1 f2)
-               -top
-               (if (filter-equal? f1 f2)
-                   f1
-                   (make-OrFilter (list f1 f2))))]
-          [_ (make-OrFilter result)])
+          [(or (list f1 (AndFilter: fs))
+               (list (AndFilter: fs) f1))
+           (apply -and (for/list ([f (in-list fs)]) (-or f1 f)))]
+          [_ (distribute result)])
         (match (car fs)
           [(and t (Top:)) t]
-          [(OrFilter: fs*) (loop (cdr fs) (append fs* result))]
+          [(OrFilter: fs*) (loop (append fs* (cdr fs)) result)]
           [(Bot:) (loop (cdr fs) result)]
-          [t (loop (cdr fs) (cons t result))]))))
+          [t 
+           (cond [(for/or ([f (in-list (append (cdr fs) result))])
+                    (opposite? f t))
+                  -top]
+                 [(for/or ([f (in-list result)]) (or (filter-equal? f t) (implied-atomic? t f)))
+                  (loop (cdr fs) result)]
+                 [else
+                  (loop (cdr fs) (cons t result))])]))))
 
 (define (-and . args) 
   (let loop ([fs args] [result null])
