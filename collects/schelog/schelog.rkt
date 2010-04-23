@@ -1,28 +1,4 @@
 #lang racket
-
-
-;; TODO: figure out what should actually be 'provide'd.
-
-(provide (all-defined-out))
-
-;; A Note on changes: define-macro isn't so nice, but 
-;; someone (Dorai?) helpfully provided commented-out
-;; versions of each macro in syntax-rules style.  
-;; Unfortunately, they didn't compile, but this seemed
-;; related to an inability to capture the '!' name.
-;; The easiest way to fix this was just to take the 
-;; classic "make 'em put the identifier in there" approach,
-;; which means that uses of cut and rel must now include 
-;; a bang explicitly.  It wouldn't be too hard to change
-;; back to a capturing macro; I know syntax-case can do
-;; it, I don't know if syntax-rules can. 
-
-;; Also, I changed a few top-level mutable bindings into
-;; boxed bindings. 
-
-;;-- JBC, 2010-04-22
-
-
 ;MzScheme version of
 ;schelog.scm
 ;Schelog
@@ -105,11 +81,6 @@
     ((%let (x ...) . e)
      (let ((x (schelog:make-ref)) ...)
        . e))))
-
-#;(define-macro %let
-    (lambda (xx . ee)
-      `(let ,(map (lambda (x) `(,x (schelog:make-ref))) xx)
-         ,@ee)))
 
 ;the unify predicate
 
@@ -195,18 +166,6 @@
           ...
           (__fk 'fail)))))))
 
-#;(define-macro %or
-    (lambda gg
-      `(lambda (__fk)
-         (call-with-current-continuation
-          (lambda (__sk)
-            ,@(map (lambda (g)
-                     `(call-with-current-continuation
-                       (lambda (__fk)
-                         (__sk ((schelog:deref* ,g) __fk)))))
-                   gg)
-            (__fk 'fail))))))
-
 ;conjunction
 
 (define-syntax %and
@@ -217,12 +176,7 @@
               ...)
          __fk)))))
 
-#;(define-macro %and
-    (lambda gg
-      `(lambda (__fk)
-         (let* ,(map (lambda (g) `(__fk ((schelog:deref* ,g) __fk))) gg)
-           __fk))))
-
+; XXX JM This should work better
 (define (! fk) (error '! "May only be used inside goal expression."))
 
 ;cut
@@ -235,12 +189,6 @@
          (lambda (__fk)
            (let ((! (lambda (__fk2) __fk)))
              ((schelog:deref* g) __fk))))))))
-
-#;(define-macro %cut-delimiter
-    (lambda (g)
-      `(lambda (__fk)
-         (let ((! (lambda (__fk2) __fk)))
-           ((schelog:deref* ,g) __fk)))))
 
 ;Prolog-like sugar
 
@@ -263,27 +211,6 @@
                              (__sk __fk))))
                         ...
                         (__fk 'fail))))))))))))
-
-#;(define-macro %rel
-    (lambda (vv . cc)
-      `(lambda __fmls
-         (lambda (__fk)
-           (call-with-current-continuation
-            (lambda (__sk)
-              (let ((! (lambda (fk1) __fk)))
-                (%let ,vv
-                      ,@(map (lambda (c)
-                               `(call-with-current-continuation
-                                 (lambda (__fk)
-                                   (let* ((__fk ((%= __fmls (list ,@(car c)))
-                                                 __fk))
-                                          ,@(map (lambda (sg)
-                                                   `(__fk ((schelog:deref* ,sg)
-                                                           __fk)))
-                                                 (cdr c)))
-                                     (__sk __fk)))))
-                             cc)
-                      (__fk 'fail)))))))))
 
 ;the fail and true preds
 
@@ -310,21 +237,6 @@
     ((%is (1) x fk)
      (if (and (schelog:ref? x) (schelog:unbound-ref? x))
          (fk 'fail) (schelog:deref* x)))))
-
-#;(define-macro %is
-    (lambda (v e)
-      (letrec ((%is-help (lambda (e fk)
-                           (cond ((pair? e)
-                                  (cond ((eq? (car e) 'quote) e)
-                                        (else
-                                         (map (lambda (e1)
-                                                (%is-help e1 fk)) e))))
-                                 (else
-                                  `(if (and (schelog:ref? ,e)
-                                            (schelog:unbound-ref? ,e))
-                                       (,fk 'fail) (schelog:deref* ,e)))))))
-        `(lambda (__fk)
-           ((%= ,v ,(%is-help e '__fk)) __fk)))))
 
 ;defining arithmetic comparison operators
 
@@ -570,24 +482,6 @@
                (%or (apply __new-addition __fmls)
                     (apply __old-rel __fmls))))))))
 
-#;(define-macro %assert
-    (lambda (rel-name vv . cc)
-      `(set! ,rel-name
-             (let ((__old-rel ,rel-name)
-                   (__new-addition (%rel ,vv ,@cc)))
-               (lambda __fmls
-                 (%or (apply __old-rel __fmls)
-                      (apply __new-addition __fmls)))))))
-
-#;(define-macro %assert-a
-    (lambda (rel-name vv . cc)
-      `(set! ,rel-name
-             (let ((__old-rel ,rel-name)
-                   (__new-addition (%rel ,vv ,@cc)))
-               (lambda __fmls
-                 (%or (apply __new-addition __fmls)
-                      (apply __old-rel __fmls)))))))
-
 ;set predicates
 
 (define schelog:set-cons
@@ -599,11 +493,6 @@
     ((%free-vars (v ...) g)
      (cons 'schelog:goal-with-free-vars
            (cons (list v ...) g)))))
-
-#;(define-macro %free-vars
-    (lambda (vv g)
-      `(cons 'schelog:goal-with-free-vars
-             (cons (list ,@vv) ,g))))
 
 (define schelog:goal-with-free-vars?
   (lambda (x)
@@ -696,22 +585,6 @@
                     '(v ...)
                     (list v ...)))))))))
 
-#;(define-macro %which
-    (lambda (vv g)
-      `(%let ,vv
-             (call-with-current-continuation
-              (lambda (__qk)
-                (set! schelog:*more-k* __qk)
-                (set! schelog:*more-fk*
-                      ((schelog:deref* ,g)
-                       (lambda (d)
-                         (set! schelog:*more-fk* #f)
-                         (schelog:*more-k* #f))))
-                (schelog:*more-k*
-                 (map (lambda (nam val) (list nam (schelog:deref* val)))
-                      ',vv
-                      (list ,@vv))))))))
-
 (define %more
   (lambda ()
     (call-with-current-continuation
@@ -741,16 +614,6 @@
 ;the above could also have been written in a more
 ;Prolog-like fashion, viz.
 
-#;'(define %member
-     (%rel ! (x xs y ys)
-           ((x (cons x xs)))
-           ((x (cons y ys)) (%member x ys))))
-
-#;'(define %if-then-else
-     (%rel ! (p q r)
-           ((p q r) p ! q)
-           ((p q r) r)))
-
 (define %append
   (%rel (x xs ys zs)
         (('() ys ys))
@@ -763,36 +626,10 @@
         (())
         (() (%repeat))))
 
-; deprecated names -- retained here for backward-compatibility
-
-;; JBC, 2010-04-22 -- don't think backward compatibility counts any more. commenting 
-;; these out.
-
-#;(define == %=)
-#;(define %notunify %/=)
-
-#;(define-macro %cut
-    (lambda e
-      `(%cur-delimiter ,@e)))
-
-#;(define-macro rel
-    (lambda e
-      `(%rel ,@e)))
-(define %eq %=:=)
-(define %gt %>)
-(define %ge %>=)
-(define %lt %<)
-(define %le %<=)
-(define %ne %=/=)
-(define %ident %==)
-(define %notident %/==)
-;(define-syntax %exists (syntax-rules () ((%exists vv g) g)))
-
-#;(define-macro %exists (lambda (vv g) g))
-
-#;(define-macro which
-    (lambda e
-      `(%which ,@e)))
-(define more %more)
-
-;end of file
+(provide %/= %/== %< %<= %= %=/= %== %> %>= %and %append
+         %assert %assert-a %bag-of %bag-of-1 %compound
+         %constant %copy %empty-rel %fail %free-vars
+         %freeze %if-then-else %is %let %melt %melt-new
+         %member %nonvar %not %more %or %rel %repeat
+         schelog-use-occurs-check?
+         %set-of %set-of-1 %true %var %which _ !)
