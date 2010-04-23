@@ -49,11 +49,13 @@ Within such specifications,
 
 @itemize[
 
- @item{@racket[...] indicates zero or more
-       repetitions of the preceding datum.}
+ @item{@racket[...] indicates zero or more repetitions of the
+       preceding datum; more generally, @math{N} consecutive
+       @racket[...]s a row indicate a consecutive repetition of the
+       preceding @math{N} datums.}
 
- @item{@racket[...+] indicates one or
-       more repetitions of the preceding datum.}
+ @item{@racket[...+] indicates one or more repetitions of the
+       preceding datum.}
 
  @item{Italic meta-identifiers play the role of non-terminals. Some
        meta-identifier names imply syntactic constraints:
