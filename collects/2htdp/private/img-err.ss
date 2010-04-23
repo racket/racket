@@ -20,6 +20,7 @@
          lang/posn
          scheme/gui/base
          "../../mrlib/image-core.ss"
+         (prefix-in cis: "../../mrlib/cache-image-snip.ss")
          (for-syntax scheme/base
                      scheme/list))
 
@@ -270,9 +271,26 @@
     [else arg]))
 
 (define (image-snip->image is)
-  (bitmap->image (send is get-bitmap)
-                 (or (send is get-bitmap-mask)
-                     (send (send is get-bitmap) get-loaded-mask))))
+  (let ([bm (send is get-bitmap)])
+    (cond
+      [(not bm)
+       ;; this might mean we have a cache-image-snip% 
+       ;; or it might mean we have a useless snip.
+       (let-values ([(w h) (if (is-a? is cis:cache-image-snip%)
+                               (send is get-size)
+                               (values 0 0))])
+         (make-image (make-polygon
+                      (list (make-point 0 0)
+                            (make-point w 0)
+                            (make-point w h)
+                            (make-point 0 h))
+                      'solid "black")
+                     (make-bb w h h)
+                     #f))]
+      [else
+       (bitmap->image bm
+                      (or (send is get-bitmap-mask)
+                          (send bm get-loaded-mask)))])))
 
 (define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
   (let ([w (send bm get-width)]
