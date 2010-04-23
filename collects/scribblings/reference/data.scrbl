@@ -108,7 +108,7 @@ used as an ephemeron key (see @secref["ephemerons"]).
  @scheme[(string->symbol str)], but the resulting symbol is a new
  @tech{unreadable symbol}. Calling @scheme[string->unreadable-symbol]
  twice with equivalent @scheme[str]s returns the same symbol, but
- @scheme[read] never produces the symbol.}
+ @scheme[read] never produces the symbol.
 
 @examples[(string->unreadable-symbol "Apple") 
           (eq? 'a (string->unreadable-symbol "a"))

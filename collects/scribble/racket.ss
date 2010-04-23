@@ -519,7 +519,7 @@
                              (set! src-col (+ src-col (- (syntax-span c) 2)))
                              (set! src-col (+ src-col (- (syntax-column (vector-ref vec 0))
                                                          (syntax-column c)
-                                                         1)))))))
+                                                         1))))))
                 (when (struct? (syntax-e c))
                   (out "#s" p-color)
                   (set! src-col (+ src-col 2)))
@@ -532,7 +532,7 @@
                 (hash-set! next-col-map src-col dest-col)
                 (let lloop ([l (cond
                                 [(vector? (syntax-e c))
-                                   (vector->short-list (syntax-e c) syntax-e)]
+                                 (vector->short-list (syntax-e c) syntax-e)]
                                 [(struct? (syntax-e c))
                                  (let ([l (vector->list (struct->vector (syntax-e c)))])
                                    ;; Need to build key datum, syntax-ize it internally, and
@@ -599,7 +599,7 @@
                      p-color)
                 (set! src-col (+ src-col 1))
                 #;
-                (hash-set! next-col-map src-col dest-col))]
+                (hash-set! next-col-map src-col dest-col)))]
            [(box? (syntax-e c))
             (advance c init-line!)
             (let ([quote-depth (to-quoted "`" qq? quote-depth out color? inc-src-col)])
@@ -700,7 +700,8 @@
               (hash? s)
               (graph-defn? s)
               (graph-reference? s)
-              (struct-proxy? s))
+              (struct-proxy? s)
+              (and qq? (identifier? c)))
           (gen-typeset c multi-line? prefix1 prefix suffix color? qq?)
           (typeset-atom c 
                         (letrec ([mk
