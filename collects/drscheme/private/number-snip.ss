@@ -1,6 +1,6 @@
-#lang mzscheme
+#lang racket/base
   (require mred
-           mzlib/class
+           racket/class
            framework)
   
   (provide snip-class)

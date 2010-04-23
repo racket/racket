@@ -1,12 +1,12 @@
-#lang scheme/base
+#lang racket/base
 
 (require mred
-         scheme/class
-         scheme/cmdline
-         scheme/list
+         racket/class
+         racket/cmdline
+         racket/list
          framework/private/bday
          framework/splash
-         scheme/file
+         racket/file
          "eb.ss")
 
 (define files-to-open (command-line #:args filenames filenames))

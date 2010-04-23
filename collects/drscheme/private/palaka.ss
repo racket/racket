@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/class scheme/gui/base)
+#lang racket/base
+(require racket/class racket/gui/base)
 (provide draw-palaka palaka-pattern-size)
 
 (define scale 1)

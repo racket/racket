@@ -1,4 +1,4 @@
-(module installer mzscheme
+#lang racket/base
   (require mzlib/file
            mzlib/etc
            launcher)
@@ -18,4 +18,4 @@
        (mred-program-launcher-path "DrScheme")
        (cons
         `(exe-name . "DrScheme")
-        (build-aux-from-path (build-path (collection-path "drscheme") "drscheme")))))))
+        (build-aux-from-path (build-path (collection-path "drscheme") "drscheme"))))))

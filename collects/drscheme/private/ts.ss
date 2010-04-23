@@ -1,5 +1,4 @@
-#reader scribble/reader
-#lang scheme/base
+#lang at-exp racket/base
 
 (require scribble/decode
          scribble/manual)
