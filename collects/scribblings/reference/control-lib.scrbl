@@ -1,17 +1,17 @@
 #lang scribble/doc
-@(require "mz.ss"
-          (for-label scheme/control))
+@(require (except-in "mz.ss" set)
+          (for-label racket/control))
 
 @title{Classical Control Operators}
 
-@note-lib-only[scheme/control]
+@note-lib-only[racket/control]
 
 @(define control-eval
          (let ([the-eval (make-base-eval)])
-          (the-eval '(require scheme/control))
+          (the-eval '(require racket/control))
           the-eval))
 
-The @scheme[scheme/control] library provides various control operators
+The @scheme[racket/control] library provides various control operators
 from the research literature on higher-order control operators, plus a
 few extra convenience forms. These control operators are implemented
 in terms of @scheme[call-with-continuation-prompt],

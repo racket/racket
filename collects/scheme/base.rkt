@@ -1,3 +1,3 @@
+#lang scheme/private
 
-(module base racket/base
-  (provide (except-out (all-from-out racket/base) struct)))
+(provide (except-out (all-from-out racket/base) struct))

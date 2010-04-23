@@ -1,8 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss"
-          scheme/class
-          (for-syntax scheme/base)
-          (for-label scheme/trait))
+          racket/class
+          (for-syntax racket/base)
+          (for-label racket/trait))
 
 @(begin
 
@@ -70,14 +70,14 @@
 
 )
 
-@(interaction-eval #:eval class-eval (require scheme/class))
+@(interaction-eval #:eval class-eval (require racket/class))
 
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
 
 @guideintro["classes"]{classes and objects}
 
-@note-lib[scheme/class #:use-sources (racket/private/class-internal)]
+@note-lib[racket/class #:use-sources (racket/private/class-internal)]
 
 A @deftech{class} specifies
 
@@ -1275,7 +1275,7 @@ Evaluation of a @scheme[mixin] form checks that the
 
 @section[#:tag "trait"]{Traits}
 
-@note-lib-only[scheme/trait]
+@note-lib-only[racket/trait]
 
 A @deftech{trait} is a collection of methods that can be converted to
 a @tech{mixin} and then applied to a @tech{class}. Before a trait is

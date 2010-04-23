@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/struct-info))
+          (for-label racket/struct-info))
 
 @(define struct-eval (make-base-eval))
 
@@ -628,7 +628,7 @@ imported structure type, in which case the user is expected to know
 the set of fields that are listed in the signature for the structure
 type.
 
-@note-lib-only[scheme/struct-info]
+@note-lib-only[racket/struct-info]
 
 @defproc[(struct-info? [v any/c]) boolean?]{
 

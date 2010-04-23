@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/date))
+          (for-label racket/date))
 
 @title[#:tag "time"]{Time}
  
@@ -54,7 +54,7 @@ sensitive to the value of the @envvar{TZ} environment variable,
 especially on Unix platforms; consult the system documentation
 (usually under @tt{tzset}) for details.
 
-See also the @schememodname[scheme/date] library.}
+See also the @schememodname[racket/date] library.}
 
 
 @defproc[(current-milliseconds) exact-integer?]{
@@ -123,7 +123,7 @@ result is the result of @scheme[expr].}
 
 @section[#:tag "date-string"]{Date Utilities}
 
-@note-lib-only[scheme/date]
+@note-lib-only[racket/date]
 
 @defproc[(date->string [date date?][time? any/c #f]) string?]{
 

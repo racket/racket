@@ -1,13 +1,13 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-syntax scheme/base)
+          (for-syntax racket/base)
           scribble/scheme
-	  (for-label scheme/generator))
+	  (for-label racket/generator))
 
 @(define generator-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require scheme/generator))
+       (the-eval '(require racket/generator))
        the-eval)))
 
 @(define (info-on-seq where what)
@@ -324,7 +324,7 @@ sequence; if no more elements are available, the
 @exnraise[exn:fail:contract].}
 
 @section{Iterator Generators}
-@defmodule[scheme/generator]
+@defmodule[racket/generator]
 @defform[(generator () body ...)]{ Creates a function that returns a
 value through @scheme[yield], each time it is invoked. When
 the generator runs out of values to yield, the last value it computed

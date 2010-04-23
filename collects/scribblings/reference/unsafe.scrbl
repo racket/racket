@@ -1,17 +1,17 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/unsafe/ops
-                     scheme/flonum
-                     (only-in scheme/foreign
+          (for-label racket/unsafe/ops
+                     racket/flonum
+                     (only-in racket/unsafe/ffi
                               f64vector?
                               f64vector-ref
                               f64vector-set!)))
 
 @title[#:tag "unsafe"]{Unsafe Operations}
 
-@defmodule[scheme/unsafe/ops]
+@defmodule[racket/unsafe/ops]
 
-All fuctions and forms provided by @schememodname[scheme/base] and
+All fuctions and forms provided by @schememodname[racket/base] and
 @schememodname[scheme] check their arguments to ensure that the
 arguments conform to contracts and other constraints. For example,
 @scheme[vector-ref] checks its arguments to ensure that the first
@@ -19,7 +19,7 @@ argument is a vector, that the second argument is an exact integer,
 and that the second argument is between @scheme[0] and one less than
 the vector's length, inclusive.
 
-Functions provided by @schememodname[scheme/unsafe/ops] are
+Functions provided by @schememodname[racket/unsafe/ops] are
 @deftech{unsafe}. They have certain constraints, but the constraints
 are not checked, which allows the system to generate and execute
 faster code. If arguments violate an unsafe function's constraints,

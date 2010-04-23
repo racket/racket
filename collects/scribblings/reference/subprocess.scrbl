@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/system))
+          (for-label racket/system))
 
 @title[#:tag "subprocess"]{Processes}
 
@@ -26,7 +26,7 @@
 
 Creates a new process in the underlying operating system to execute
 @scheme[command] asynchronously. See also @scheme[system] and
-@scheme[process] from @schememodname[scheme/system].
+@scheme[process] from @schememodname[racket/system].
 
 The @scheme[command] argument is a path to a program executable, and
 the @scheme[arg]s are command-line arguments for the program. Under
@@ -226,7 +226,7 @@ real process ID).
 
 @section{Simple Subprocesses}
 
-@note-lib-only[scheme/system]
+@note-lib-only[racket/system]
 
 @defproc[(system [command string?]) boolean?]{
 

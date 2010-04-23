@@ -1,12 +1,12 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/stxparam
-                     scheme/stxparam-exptime
-                     scheme/splicing))
+          (for-label racket/stxparam
+                     racket/stxparam-exptime
+                     racket/splicing))
 
 @title[#:tag "stxparam"]{Syntax Parameters}
 
-@note-lib-only[scheme/stxparam]
+@note-lib-only[racket/stxparam]
 
 @defform[(define-syntax-parameter id expr)]{
 
@@ -49,9 +49,9 @@ the target's value.}
 
 @section{Syntax Parameter Inspection}
 
-@defmodule*/no-declare[(scheme/stxparam-exptime)]
+@defmodule*/no-declare[(racket/stxparam-exptime)]
 
-@declare-exporting[scheme/stxparam-exptime scheme/stxparam]
+@declare-exporting[racket/stxparam-exptime racket/stxparam]
 
 @defproc[(syntax-parameter-value [id-stx syntax?]) any]{
 
@@ -62,9 +62,9 @@ value of the @tech{syntax parameter}, as adjusted by
 @scheme[syntax-parameterize] form.
 
 This binding is provided @scheme[for-syntax] by
-@schememodname[scheme/stxparam], since it is normally used in a
+@schememodname[racket/stxparam], since it is normally used in a
 transformer. It is provided normally by
-@schememodname[scheme/stxparam-exptime].}
+@schememodname[racket/stxparam-exptime].}
 
 
 @defproc[(make-parameter-rename-transformer [id-stx syntax?]) any]{
@@ -87,6 +87,6 @@ treated specially by @scheme[syntax-local-value], unlike the result
 of @scheme[make-rename-transformer].
 
 This binding is provided @scheme[for-syntax] by
-@schememodname[scheme/stxparam], since it is normally used in a
+@schememodname[racket/stxparam], since it is normally used in a
 transformer. It is provided normally by
-@schememodname[scheme/stxparam-exptime].}
+@schememodname[racket/stxparam-exptime].}

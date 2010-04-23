@@ -19,14 +19,14 @@
            [ns (parameterize ([current-namespace this-ns]) ; ensures correct phase
                  (make-empty-namespace))])
       (namespace-attach-module this-ns
-                               'scheme/base 
+                               'racket/base 
                                ns)
       ns))
 
   (define (make-base-namespace)
     (let ([ns (make-base-empty-namespace)])
       (parameterize ([current-namespace ns])
-        (namespace-require 'scheme/base))
+        (namespace-require 'racket/base))
       ns))
 
   ;; ----------------------------------------

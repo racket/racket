@@ -5,21 +5,21 @@
 
 @author["Matthew Flatt" "Robert Bruce Findler" "John Clements"]
 
-@declare-exporting[scheme/gui/base scheme/gui #:use-sources (mred)]
+@declare-exporting[racket/gui/base racket/gui #:use-sources (mred)]
 
 This reference manual describes the GUI toolbox that is part of PLT
- Scheme and whose core is implemented by the MrEd executable.
+ Racket and whose core is implemented by the MrEd executable.
 
-@defmodule*/no-declare[(scheme/gui/base)]{The
-@schememodname[scheme/gui/base] library provides all of the class,
+@defmodule*/no-declare[(racket/gui/base)]{The
+@racketmodname[racket/gui/base] library provides all of the class,
 interface, and procedure bindings defined in this manual. At run time,
 this library needs primitive graphics support that the MrEd executable
-provides; this library cannot run in MzScheme.}
+provides; this library cannot run in MzRacket.}
 
-@defmodulelang*/no-declare[(scheme/gui)]{The
-@schememodname[scheme/gui] language combines all bindings of the
-@schememodname[scheme] language and the
-@schememodname[scheme/gui/base] modules.}
+@defmodulelang*/no-declare[(racket/gui)]{The
+@racketmodname[racket/gui] language combines all bindings of the
+@racketmodname[racket] language and the
+@racketmodname[racket/gui/base] modules.}
 
 
 @table-of-contents[]

@@ -8,7 +8,7 @@
 @;------------------------------------------------------------------------
 @section[#:tag "tcp"]{TCP}
 
-@note-lib[scheme/tcp]
+@note-lib[racket/tcp]
 
 For information about TCP in general, see @italic{TCP/IP Illustrated,
  Volume 1} by W. Richard Stevens.
@@ -257,7 +257,7 @@ port returned by @scheme[tcp-accept], @scheme[tcp-connect],
 @;------------------------------------------------------------------------
 @section[#:tag "udp"]{UDP}
 
-@note-lib[scheme/udp]
+@note-lib[racket/udp]
 
 For information about UDP in general, see @italic{TCP/IP Illustrated,
 Volume 1} by W. Richard Stevens.

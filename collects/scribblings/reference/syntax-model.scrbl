@@ -4,7 +4,7 @@
           "mz.ss")
 
 @(define scheme-eval (make-base-eval))
-@(interaction-eval #:eval scheme-eval (require (for-syntax scheme/base)))
+@(interaction-eval #:eval scheme-eval (require (for-syntax racket/base)))
 
 @;------------------------------------------------------------------------
 @title[#:tag "syntax-model"]{Syntax Model}
@@ -117,7 +117,7 @@ other information.
 
 For example, a @schemeidfont{car} @tech{identifier} might have
 @tech{lexical information} that designates it as the @scheme[car] from
-the @schememodname[scheme/base] language (i.e., the built-in
+the @schememodname[racket/base] language (i.e., the built-in
 @scheme[car]). Similarly, a @schemeidfont{lambda} identifier's
 @tech{lexical information} may indicate that it represents a procedure
 form. Some other @tech{identifier}'s @tech{lexical information} may
@@ -239,7 +239,7 @@ is significant. For example, the second case for @scheme[_expr] is a
 @tech{syntax-object} list whose first element is an @tech{identifier},
 where the @tech{identifier}'s @tech{lexical information} specifies a
 binding to the @scheme[#%plain-lambda] of the
-@schememodname[scheme/base] language (i.e., the @tech{identifier} is
+@schememodname[racket/base] language (i.e., the @tech{identifier} is
 @scheme[free-identifier=?] to one whose binding is
 @scheme[#%plain-lambda]). In all cases, identifiers above typeset as
 syntactic-form names refer to the bindings defined in

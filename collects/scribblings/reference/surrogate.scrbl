@@ -1,13 +1,13 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/surrogate
-                     scheme/class))
+          (for-label racket/surrogate
+                     racket/class))
 
 @title{Surrogates}
  
-@note-lib-only[scheme/surrogate]
+@note-lib-only[racket/surrogate]
 
-The @schememodname[scheme/surrogate] library provides an abstraction
+The @schememodname[racket/surrogate] library provides an abstraction
 for building an instance of the @deftech{proxy design pattern}. The
 pattern consists of two objects, a @defterm{host} and a
 @defterm{surrogate} object. The host object delegates method calls to

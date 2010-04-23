@@ -1,10 +1,10 @@
 
-(module reader-example scheme/base
+(module reader-example racket/base
   (require scribble/struct
            scribble/decode
            scribble/manual
            scribble/scheme
-           scheme/class)
+           racket/class)
 
   (provide reader-examples
            read-quote-table

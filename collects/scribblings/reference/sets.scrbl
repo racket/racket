@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/set))
+          (for-label racket/set))
 
 @title[#:tag "sets"]{Sets}
 
@@ -16,7 +16,7 @@ unpredictable in much the same way that @tech{hash table} operations are
 unpredictable when keys are mutated.
 
 
-@note-lib-only[scheme/set]
+@note-lib[racket/set]
 
 @defproc[(set? [v any/c]) boolean?]{
 

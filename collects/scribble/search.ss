@@ -1,10 +1,11 @@
-(module search scheme/base
+(module search racket/base
   (require "struct.ss"
            "basic.ss"
            setup/main-collects
            syntax/modcode)
 
-  (provide find-scheme-tag)
+  (provide find-racket-tag
+           (rename-out [find-racket-tag find-scheme-tag]))
 
   (define module-info-cache (make-hasheq))
 
@@ -21,7 +22,7 @@
     (with-handlers* ([exn:fail? (lambda (exn) (fail-thunk))])
       (thunk)))
 
-  (define (find-scheme-tag part ri stx/binding phase-level)
+  (define (find-racket-tag part ri stx/binding phase-level)
     ;; The phase-level argument is used only when `stx/binding'
     ;; is an identifier.
     ;;
@@ -169,7 +170,7 @@
                                               ;; have changed in inconsistent ways. So just say #f
                                               ;; for now.
                                               #;
-                                              (error 'find-scheme-tag
+                                              (error 'find-racket-tag
                                                      "dead end when looking for binding source: ~e"
                                                      id)
                                               (loop queue rqueue need-result?)))))

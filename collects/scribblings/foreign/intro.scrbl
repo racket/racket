@@ -12,23 +12,13 @@ information in @|InsideMzScheme|, which defines how PLT Scheme
 interacts with C APIs in general.
 
 Since using the FFI entails many safety concerns that Scheme
-programmers can normally ignore, merely importing
-@schememodname[scheme/foreign] with @scheme[(require scheme/foreign)]
-does not import all of the FFI functionality. Only safe functionality
-is immediately imported. For example, @scheme[ptr-equal?] can never
-cause memory corruption or an invalid memory access, so it is
-immediately available on import.
-
-Use @scheme[(@#,indexed-scheme[unsafe!])] at the top-level of a
-module that imports @schememodname[scheme/foreign] to make unsafe
-features accessible. (For additional safety, the @scheme[unsafe!] is
-itself protected; see @secref[#:doc '(lib
-"scribblings/reference/reference.scrbl") "modprotect"].)  Using this
-macro should be considered as a declaration that your code is itself
-unsafe, therefore can lead to serious problems in case of bugs: it is
-your responsibility to provide a safe interface. Bindings that become
-available only via @scheme[unsafe!] are documented in this manual in
-sections with titles starting ``Unsafe.''
+programmers can normally ignore, the library name includes
+@schemeidfont{unsafe}. Importing the library macro should be
+considered as a declaration that your code is itself unsafe, therefore
+can lead to serious problems in case of bugs: it is your
+responsibility to provide a safe interface. If your library provides
+an unsafe interface, then it should have @schemeidfont{unsafe} in its
+name, too.
 
 For examples of common FFI usage patterns, see the defined interfaces
 in the @filepath{ffi} collection.

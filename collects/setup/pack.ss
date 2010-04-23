@@ -178,7 +178,7 @@
   (define (std-filter path)
     (let-values ([(base name dir?) (split-path path)])
       (let ([name (path->bytes name)])
-	(not (or (regexp-match #rx#"^(?:CVS|[.]svn|[.]cvsignore|compiled|doc)$"
+	(not (or (regexp-match #rx#"^(?:CVS|[.]svn|[.]git|[.]cvsignore|compiled|doc)$"
                                name)
 		 (regexp-match #rx#"~$|^#.*#$|^[.]#" name)
 		 (regexp-match #rx#"[.]plt$" name))))))

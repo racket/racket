@@ -1,16 +1,16 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/async-channel))
+          (for-label racket/async-channel))
 
 @(define async-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require scheme/async-channel))
+       (the-eval '(require racket/async-channel))
        the-eval)))
 
 @title[#:tag "async-channel"]{Buffered Asynchronous Channels}
 
-@note-lib-only[scheme/async-channel]
+@note-lib-only[racket/async-channel]
 
 @margin-note/ref{See also @secref["threadmbox"].}
 

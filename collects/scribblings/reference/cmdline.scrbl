@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/cmdline))
+          (for-label racket/cmdline))
 
 @title{Command-Line Parsing}
 
-@note-lib[scheme/cmdline]
+@note-lib[racket/cmdline]
 
 @defform/subs[#:literals (multi once-each once-any final jelp-labels args 
                           help-labels =>)

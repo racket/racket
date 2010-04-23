@@ -1,14 +1,14 @@
-#lang scheme/base
+#lang racket/base
 
 (require scribble/eval
          scribble/core
          scribble/scheme
-         scheme/class
-         scheme/file
-         scheme/runtime-path
-         scheme/serialize
+         racket/class
+         racket/file
+         racket/runtime-path
+         racket/serialize
          "private/gui-eval-exn.ss"
-         scheme/system)
+         racket/system)
 
 (define-syntax define-mr
   (syntax-rules ()
@@ -28,13 +28,16 @@
 (define-mr gui-interaction-eval-show interaction-eval-show)
 (define-mr gui-def+int def+int)
 (define-mr gui-defs+int defs+int)
-(define-mr gui-schememod+eval schememod+eval)
-(define-mr gui-schemeblock+eval schemeblock+eval)
+(define-mr gui-racketmod+eval racketmod+eval)
+(define-mr gui-racketblock+eval racketblock+eval)
+
+(provide (rename-out [gui-racketmod+eval gui-schememod+eval]
+                     [gui-racketblock+eval gui-schemeblock+eval]))
 
 (define mred? (getenv "MREVAL"))
 
 (when mred?
-  (gui-eval '(require scheme/gui/base))
+  (gui-eval '(require racket/gui/base))
   (gui-eval '(require slideshow)))
 
 ;; This one needs to be relative, because it ends up in the

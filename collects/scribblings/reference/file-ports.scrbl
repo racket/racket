@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss"
-          scheme/file)
+          racket/file)
 
 @(begin
   ;; ignore expressions at the top-level so that they don't print #<void>
@@ -12,8 +12,8 @@
   (define file-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require (for-syntax scheme/base)
-			   scheme/file))
+       (the-eval '(require (for-syntax racket/base)
+			   racket/file))
        (the-eval '(define some-file (make-temporary-file)))
        (the-eval '(define some-other-file (make-temporary-file)))
        the-eval)))

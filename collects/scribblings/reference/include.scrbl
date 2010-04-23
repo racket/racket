@@ -3,7 +3,7 @@
 
 @title[#:tag "include"]{File Inclusion}
 
-@note-lib[scheme/include]
+@note-lib[racket/include]
 
 @defform/subs[#:literals (file lib)
               (include path-spec)

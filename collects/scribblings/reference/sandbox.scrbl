@@ -2,9 +2,9 @@
 @(require "mz.ss"
           scheme/sandbox
           (for-label scheme/sandbox
-                     scheme/port
-                     (only-in scheme/gui make-gui-namespace)
-                     scheme/gui/dynamic))
+                     racket/port
+                     (only-in racket/gui make-gui-namespace)
+                     racket/gui/dynamic))
 
 @(define box-eval (make-base-eval))
 @(interaction-eval #:eval box-eval (require scheme/sandbox))
@@ -138,9 +138,9 @@ top-level namespace:
 #:eval box-eval
 (define base-module-eval 
   (code:comment @#,t{a module cannot have free variables...})
-  (make-evaluator 'scheme/base '(define (f) later)))
+  (make-evaluator 'racket/base '(define (f) later)))
 (define base-module-eval 
-  (make-evaluator 'scheme/base '(define (f) later)
+  (make-evaluator 'racket/base '(define (f) later)
                                '(define later 5)))
 (base-module-eval '(f))
 
@@ -163,7 +163,7 @@ restriction is enforced).
 @schemeblock[
 (define base-module-eval2
   (code:comment @#,t{equivalent to @scheme[base-module-eval]:})
-  (make-module-evaluator '(module m scheme/base
+  (make-module-evaluator '(module m racket/base
                             (define (f) later)
                             (define later 5))))
 ]
@@ -201,7 +201,7 @@ calls to a single evaluator.  Usually this is not a problem, but in
 some cases you can get the evaluator function available inside the
 sandboxed code, for example:
 @schemeblock[
-(let ([e (make-evaluator 'scheme/base)])
+(let ([e (make-evaluator 'racket/base)])
   (e (,e 1)))
 ]
 An error will be signalled in such cases.
@@ -220,7 +220,7 @@ that you can easily start a sandboxed read-eval-print-loop.  For
 example, here is a quick implementation of a networked REPL:
 
 @schemeblock[
-(define e (make-evaluator 'scheme/base))
+(define e (make-evaluator 'racket/base))
 (let-values ([(i o) (tcp-accept (tcp-listen 9999))])
   (parameterize ([current-input-port  i]
                  [current-output-port o]
@@ -250,7 +250,7 @@ used from a module (by using a new namespace):
                  [sandbox-error-output o]
                  [current-namespace (make-empty-namespace)])
     (parameterize ([current-eval
-                    (make-evaluator 'scheme/base)])
+                    (make-evaluator 'racket/base)])
       (read-eval-print-loop))
     (fprintf o "\nBye...\n")
     (close-output-port o)))
@@ -571,7 +571,7 @@ with the per-expression limit specified by
 sandbox, as well as from the interaction will count against the
 sandbox limit.  For example, in the last interaction of this code,
 @schemeblock[
-  (define e (make-evaluator 'scheme/base))
+  (define e (make-evaluator 'racket/base))
   (e '(define a 1))
   (e '(for ([i (in-range 20)]) (set! a (cons (make-bytes 500000) a))))
 ]
@@ -598,11 +598,11 @@ per-evaluation limits (useful in case more limit kinds are available
 in future versions). The default is @scheme[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
-environment too --- even @scheme[(make-evaluator 'scheme/base)] can
+environment too --- even @scheme[(make-evaluator 'racket/base)] can
 fail if the limits are strict enough.  For example,
 @schemeblock[
   (parameterize ([sandbox-eval-limits '(0.25 5)])
-    (make-evaluator 'scheme/base '(sleep 2)))
+    (make-evaluator 'racket/base '(sleep 2)))
 ]
 will throw an error instead of creating an evaluator.  Therefore, to
 avoid surprises you need to catch errors that happen when the sandbox
@@ -878,7 +878,7 @@ your own permissions, for example,
 
 @defthing[gui? boolean?]{
 
-True if the @schememodname[scheme/gui] module can be used, @scheme[#f]
+True if the @schememodname[racket/gui] module can be used, @scheme[#f]
 otherwise; see @scheme[gui-available?].
 
 Various aspects of the @schememodname[scheme/sandbox] library change

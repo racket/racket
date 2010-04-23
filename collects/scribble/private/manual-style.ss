@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "../decode.ss"
          "../struct.ss"
          "../base.ss"
@@ -7,9 +7,9 @@
          (only-in "../core.ss" make-style plain)
          "manual-utils.ss"
          "on-demand.ss"
-         scheme/list
-         scheme/contract
-         scheme/string)
+         racket/list
+         racket/contract
+         racket/string)
 
 (provide (rename-out [hyperlink link])
          (rename-out [other-doc other-manual])
@@ -23,12 +23,26 @@
   (() () #:rest (listof pre-content?) . ->* . element?))
 (define-syntax-rule (provide-styling id ...)
   (provide/contract [id styling-f/c] ...))
-(provide-styling schememodfont schemeoutput
-                 schemeerror schemefont schemevalfont schemeresultfont schemeidfont schemevarfont
-                 schemeparenfont schemekeywordfont schememetafont
+(provide-styling racketmodfont racketoutput
+                 racketerror racketfont racketvalfont racketresultfont racketidfont racketvarfont
+                 racketparenfont racketkeywordfont racketmetafont
                  onscreen defterm filepath exec envvar Flag DFlag PFlag DPFlag math
                  procedure
                  indexed-file indexed-envvar idefterm pidefterm)
+(define-syntax-rule (provide-scheme-styling [rid sid] ...)
+  (provide/contract [rename rid sid styling-f/c] ...))
+(provide-scheme-styling [racketmodfont schememodfont]
+                        [racketoutput schemeoutput]
+                        [racketerror schemeerror]
+                        [racketfont schemefont]
+                        [racketvalfont schemevalfont]
+                        [racketresultfont schemeresultfont]
+                        [racketidfont schemeidfont]
+                        [racketvarfont schemevarfont]
+                        [racketparenfont schemeparenfont]
+                        [racketkeywordfont schemekeywordfont]
+                        [racketmetafont schememetafont])
+                 
 (provide void-const
          undefined-const)
 (provide/contract
@@ -68,23 +82,23 @@
 (define (idefterm . str)
   (let ([c (decode-content str)])
     (make-element 'italic c)))
-(define (schemefont . str)
+(define (racketfont . str)
   (apply tt str))
-(define (schemevalfont . str)
+(define (racketvalfont . str)
   (make-element value-color (decode-content str)))
-(define (schemeresultfont . str)
+(define (racketresultfont . str)
   (make-element result-color (decode-content str)))
-(define (schemeidfont . str)
+(define (racketidfont . str)
   (make-element symbol-color (decode-content str)))
-(define (schemevarfont . str)
+(define (racketvarfont . str)
   (make-element variable-color (decode-content str)))
-(define (schemeparenfont . str)
+(define (racketparenfont . str)
   (make-element paren-color (decode-content str)))
-(define (schememetafont . str)
+(define (racketmetafont . str)
   (make-element meta-color (decode-content str)))
-(define (schememodfont . str)
+(define (racketmodfont . str)
   (make-element module-color (decode-content str)))
-(define (schemekeywordfont . str)
+(define (racketkeywordfont . str)
   (make-element keyword-color (decode-content str)))
 (define (filepath . str)
   (make-element 'tt (append (list "\"") (decode-content str) (list "\""))))
@@ -124,9 +138,9 @@
 (define (procedure . str)
   (make-element result-color `("#<procedure:" ,@(decode-content str) ">")))
 
-(define (schemeoutput . str)
+(define (racketoutput . str)
   (make-element output-color (decode-content str)))
-(define (schemeerror . str)
+(define (racketerror . str)
   (make-element error-color (decode-content str)))
 
 (define (t . str)
@@ -150,13 +164,13 @@
 (define (hash-lang)
   (make-link-element
    module-link-color
-   (list (schememodfont "#lang"))
+   (list (racketmodfont "#lang"))
    `(part ,(doc-prefix '(lib "scribblings/guide/guide.scrbl") "hash-lang"))))
 
 (define-on-demand void-const
-  (schemeresultfont "#<void>"))
+  (racketresultfont "#<void>"))
 (define-on-demand undefined-const
-  (schemeresultfont "#<undefined>"))
+  (racketresultfont "#<undefined>"))
 
 (define (link url 
               #:underline? [underline? #t]

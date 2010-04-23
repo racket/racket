@@ -1,18 +1,18 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/pretty
-                     scheme/gui/base))
+          (for-label racket/pretty
+                     racket/gui/base))
 
 @title{Init Libraries}
 
-@defmodule*/no-declare[(scheme/init)]{The @schememodname[scheme/init]
+@defmodule*/no-declare[(racket/init)]{The @schememodname[racket/init]
 library is the default start-up library for MzScheme. It re-exports
-the @schememodname[scheme], @schememodname[scheme/enter] and
-@schememodname[scheme/help] libraries, and it sets
+the @schememodname[scheme], @schememodname[racket/enter] and
+@schememodname[racket/help] libraries, and it sets
 @scheme[current-print] to use @scheme[pretty-print].}
 
-@defmodule*/no-declare[(scheme/gui/init)]{The
-@schememodname[scheme/gui/init] library is the default start-up
-library for MrEd. It re-exports the @schememodname[scheme/init] and
-@schememodname[scheme/gui/base] libraries, and it sets
+@defmodule*/no-declare[(racket/gui/init)]{The
+@schememodname[racket/gui/init] library is the default start-up
+library for MrEd. It re-exports the @schememodname[racket/init] and
+@schememodname[racket/gui/base] libraries, and it sets
 @scheme[current-load] to use @scheme[text-editor-load-handler].}

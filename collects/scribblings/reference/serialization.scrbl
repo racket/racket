@@ -1,14 +1,14 @@
 #lang scribble/doc
 @(require "mz.ss"
-          scheme/serialize
-          (for-label scheme/serialize))
+          racket/serialize
+          (for-label racket/serialize))
 
 @(define ser-eval (make-base-eval))
-@(interaction-eval #:eval ser-eval (require scheme/serialize))
+@(interaction-eval #:eval ser-eval (require racket/serialize))
 
 @title[#:tag "serialization"]{Serialization}
 
-@note-lib-only[scheme/serialize #:use-sources (racket/private/serialize)]
+@note-lib-only[racket/serialize #:use-sources (racket/private/serialize)]
 
 @defproc[(serializable? [v any/c]) boolean?]{
 

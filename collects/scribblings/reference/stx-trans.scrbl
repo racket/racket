@@ -1,13 +1,13 @@
 #lang scribble/doc
 @(require (except-in "mz.ss" import export)
-          (for-syntax scheme/base)
-          (for-label scheme/require-transform
-                     scheme/require-syntax
-                     scheme/provide-transform
-                     scheme/provide-syntax))
+          (for-syntax racket/base)
+          (for-label racket/require-transform
+                     racket/require-syntax
+                     racket/provide-transform
+                     racket/provide-syntax))
 
 @(define stx-eval (make-base-eval))
-@(interaction-eval #:eval stx-eval (require (for-syntax scheme/base)))
+@(interaction-eval #:eval stx-eval (require (for-syntax racket/base)))
 
 @(define (transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the
@@ -766,7 +766,7 @@ identifier.}
 
 @section[#:tag "require-trans"]{@scheme[require] Transformers}
 
-@note-lib-only[scheme/require-transform]
+@note-lib-only[racket/require-transform]
 
 A @tech{transformer binding} whose value is a structure with the
 @scheme[prop:require-transformer] property implements a derived
@@ -890,7 +890,7 @@ necessary to expand it.}
 
 @section[#:tag "provide-trans"]{@scheme[provide] Transformers}
 
-@note-lib-only[scheme/provide-transform]
+@note-lib-only[racket/provide-transform]
 
 A @tech{transformer binding} whose value is a structure with the
 @scheme[prop:provide-transformer] property implements a derived

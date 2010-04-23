@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/port))
+          (for-label racket/port))
 
 @title[#:tag "encodings"]{Encodings and Locales}
 

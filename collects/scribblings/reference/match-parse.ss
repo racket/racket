@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 (require scribble/scheme
          scribble/basic
          scribble/struct
          scribble/manual
-         (for-label scheme/base))
+         (for-label racket/base))
 
 (provide parse-match-grammar)
 

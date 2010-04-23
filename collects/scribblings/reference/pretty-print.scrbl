@@ -4,7 +4,7 @@
 
 @title[#:tag "pretty-print"]{Pretty Printing}
 
-@note-lib[scheme/pretty]
+@note-lib[racket/pretty]
 
 @defproc[(pretty-print [v any/c] [port output-port? (current-output-port)])
          void?]{
