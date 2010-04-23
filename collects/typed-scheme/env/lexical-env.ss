@@ -10,7 +10,8 @@
          (typecheck tc-metafunctions)
 	 (except-in (types utils convenience) -> ->*))
 
-(provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical)
+(provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical
+         with-lexical-env/extend/props)
 (p/c
  [lookup-type/lexical ((identifier?) (env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
  [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (env?) . ->* . env?)])
@@ -19,14 +20,16 @@
 (define lexical-env (make-parameter (make-empty-env free-identifier=?)))
 
 ;; run code in a new env
-(define-syntax with-lexical-env
-  (syntax-rules ()
-    [(_ e . b) (parameterize ([lexical-env e]) . b)]))
+(define-syntax-rule (with-lexical-env e . b)
+  (parameterize ([lexical-env e]) . b))
 
 ;; run code in an extended env
-(define-syntax with-lexical-env/extend
-  (syntax-rules ()
-    [(_ is ts . b) (parameterize ([lexical-env (extend/values is ts (lexical-env))]) . b)]))
+(define-syntax-rule (with-lexical-env/extend is ts . b)
+  (with-lexical-env (extend/values is ts (lexical-env)) . b))
+
+;; run code in an extended env and with replaced props
+(define-syntax-rule (with-lexical-env/extend/props is ts ps . b)
+  (with-lexical-env (replace-props (extend/values is ts (lexical-env)) ps) . b))
 
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
 ;; identifer -> Type

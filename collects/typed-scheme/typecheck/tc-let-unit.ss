@@ -4,10 +4,11 @@
 (require "signatures.ss" "tc-metafunctions.ss"
          (types utils convenience)
          (private type-annotation parse-type)
-	 (env lexical-env type-alias-env type-env)
+	 (env lexical-env type-alias-env type-env type-environments)
          syntax/free-vars
          mzlib/trace
-         scheme/match
+         scheme/match (prefix-in c: scheme/contract)
+         (except-in scheme/contract -> ->* one-of/c)
          syntax/kerncase syntax/parse
          (for-template 
           scheme/base
@@ -19,17 +20,27 @@
 (import tc-expr^)
 (export tc-let^)
 
-(define (do-check expr->type namess types form exprs body clauses expected)
+(d/c (do-check expr->type namess results form exprs body clauses expected)
+     ((syntax? syntax? tc-results? . c:-> . any/c)
+      (listof (listof identifier?)) (listof tc-results?)
+      syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?)
+      . c:-> . 
+      tc-results?)
+     (define-values (types props)
+       (for/lists (t p) 
+         ([r (in-list results)])
+         (match r [(tc-results: ts fs os) (values ts null)])))     
   ;; extend the lexical environment for checking the body
-  (with-lexical-env/extend 
+  (with-lexical-env/extend/props
    ;; the list of lists of name
    namess
    ;; the types
    types
+   (append (apply append props) (env-props (lexical-env)))
    (for-each expr->type
              clauses
              exprs 
-             (map ret types))
+             results)
    (if expected 
        (tc-exprs/check (syntax->list body) expected)
        (tc-exprs (syntax->list body)))))
@@ -85,7 +96,7 @@
         [else
          ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a~n" (syntax-e v))) vs)) names)
          (do-check (lambda (stx e t) (tc-expr/check e t))
-                   names (map (lambda (l) (map get-type l)) names) form exprs body clauses expected)]))))
+                   names (map (lambda (l) (map (compose ret get-type) l)) names) form exprs body clauses expected)]))))
 
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
@@ -108,11 +119,10 @@
          #;[inferred-types (map (tc-expr-t/maybe-expected expected) exprs)]
          ;; the annotated types of the name (possibly using the inferred types)
          [types (for/list ([name names] [e exprs]) 
-                  (match (get-type/infer name e (tc-expr-t/maybe-expected expected) 
-                                         tc-expr/check)
-                    [(tc-results: ts) ts]))]
+                  (get-type/infer name e (tc-expr-t/maybe-expected expected) 
+                                         tc-expr/check))]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
-    (do-check void names types form types body clauses expected)))
+    (do-check void names types form exprs body clauses expected)))
 
 

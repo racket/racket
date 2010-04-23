@@ -1,12 +1,13 @@
 #lang scheme/base  
 (require "../utils/utils.ss"
-         (rep type-rep filter-rep object-rep)
+         (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          "abbrev.ss" (only-in scheme/contract current-blame-format)
 	 (types comparison printer union subtype utils)
          scheme/list scheme/match scheme/promise
          (for-syntax syntax/parse scheme/base)
-         unstable/debug
+         unstable/debug syntax/id-table scheme/dict
+         scheme/trace
          (for-template scheme/base))
 
 (provide (all-defined-out)
@@ -97,6 +98,32 @@
                     (subtype t1 t2))]
               [(_ _) #f])))
 
+(define (compact props)
+  (define tf-map (make-hash))
+  (define ntf-map (make-hash))
+  (let loop ([props props] [others null])
+    (if (null? props)
+        (append others
+                (for/list ([v (in-dict-values tf-map)]) v)
+                (for/list ([v (in-dict-values ntf-map)]) v))
+        (match (car props)
+          [(and p (TypeFilter: t1 f1 x))
+           (hash-update! tf-map
+                         (list f1 (hash-id x))
+                         (match-lambda [(TypeFilter: t2 _ _) (make-TypeFilter (Un t1 t2) f1 x)]
+                                       [p (int-err "got something that isn't a typefilter ~a" p)])
+                         p)
+           (loop (cdr props) others)]
+          #;
+          [(and p (NotTypeFilter: t1 f1 x))
+           (hash-update! ntf-map
+                         (list f1 (hash-id x))
+                         (match-lambda [(NotTypeFilter: t2 _ _) (make-NotTypeFilter (restrict t1 t2) f1 x)]
+                                       [p (int-err "got something that isn't a nottypefilter ~a" p)])
+                         p)
+           (loop (cdr props) others)]
+          [p (loop (cdr props) (cons p others))]))))
+
 (define (-or . args) 
   (define (distribute args)
     (define-values (ands others) (partition AndFilter? args))
@@ -104,16 +131,13 @@
         (make-OrFilter others)
         (match-let ([(AndFilter: elems) (car ands)])
           (apply -and (for/list ([a (in-list elems)])
-                        (apply -or a (append (cdr ands) others)))))))
+                        (apply -or a (append (cdr ands) others)))))))  
   (let loop ([fs args] [result null])
     (if (null? fs)
         (match result
           [(list) -bot]
           [(list f) f]
-          [(or (list f1 (AndFilter: fs))
-               (list (AndFilter: fs) f1))
-           (apply -and (for/list ([f (in-list fs)]) (-or f1 f)))]
-          [_ (distribute result)])
+          [_ (distribute (compact result))])
         (match (car fs)
           [(and t (Top:)) t]
           [(OrFilter: fs*) (loop (append fs* (cdr fs)) result)]
