@@ -1,4 +1,4 @@
-(module default-code-style mzscheme
+#lang racket/base
   (provide color-default-code-styles
            bw-default-code-styles
            code-style-color
@@ -24,4 +24,4 @@
           (list 'unbound-variable (make-code-style "red" #f #f #f))
           (list 'bound-variable (make-code-style "navy" #f #f #f))
           (list 'primitive (make-code-style "navy" #f #f #f))
-          (list 'constant (make-code-style '(51 135 39) #f #f #f)))))
+          (list 'constant (make-code-style '(51 135 39) #f #f #f))))

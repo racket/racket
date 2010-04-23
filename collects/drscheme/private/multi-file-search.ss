@@ -2,8 +2,8 @@
   (require framework
            mzlib/class
            mred
-           scheme/file
-           scheme/path
+           racket/file
+           racket/path
            mzlib/thread
            mzlib/async-channel
            string-constants

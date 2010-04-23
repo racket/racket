@@ -1,4 +1,5 @@
-(module tool mzscheme
-  (require "private/drsig.ss")
-  (provide drscheme:tool^
-           drscheme:tool-exports^))
+#lang racket/base
+(require "private/drsig.ss")
+(provide drscheme:tool^
+	 drscheme:tool-exports^)
+

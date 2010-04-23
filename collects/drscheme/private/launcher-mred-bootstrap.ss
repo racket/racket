@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/gui/base "launcher-bootstrap.ss")
+(require racket/gui/base "launcher-bootstrap.ss")
 
 (current-namespace (make-gui-empty-namespace))
-(namespace-require 'scheme/gui/base)
-(namespace-require 'scheme/class)
+(namespace-require 'racket/gui/base)
+(namespace-require 'racket/class)
 
 (startup)

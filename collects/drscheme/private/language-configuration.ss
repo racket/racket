@@ -1,13 +1,13 @@
-#lang scheme/base
+#lang racket/base
   (require scheme/unit
            mrlib/hierlist
-           scheme/class
-           scheme/contract
-           scheme/string
-           scheme/list
+           racket/class
+           racket/contract
+           racket/string
+           racket/list
+           racket/gui/base
            "drsig.ss"
            string-constants
-           mred
            framework
            setup/getinfo
            syntax/toplevel
@@ -1252,7 +1252,12 @@
                (message-box
                 (string-constant drscheme)
                 (format
-                 "The drscheme-language-position, drscheme-language-modules, drscheme-language-numbers, and drscheme-language-readers specifications aren't correct. Expected (listof (cons string (listof string))), (listof (listof string)), (listof (listof number)), (listof string), (listof string), and (listof module-spec) respectively, where the lengths of the outer lists are the same. Got ~e, ~e, ~e, ~e, ~e, and ~e"
+                 (string-append
+                  "The drscheme-language-position, drscheme-language-modules, drscheme-language-numbers,"
+                  " and drscheme-language-readers specifications aren't correct. Expected"
+                  " (listof (cons string (listof string))), (listof (listof string)), (listof (listof number)), (listof string),"
+                  " (listof string), and (listof module-spec) respectively, where the lengths of the outer lists are the same."
+                  " Got ~e, ~e, ~e, ~e, ~e, and ~e")
                  lang-positions
                  lang-modules
                  numberss
@@ -1431,7 +1436,7 @@
       (let ([words #f])
         (λ ()
           (unless words
-            (set! words (text:get-completions/manuals '(scheme/base scheme/contract))))
+            (set! words (text:get-completions/manuals '(racket/base racket/contract))))
           words)))
     
     (define get-all-manual-keywords

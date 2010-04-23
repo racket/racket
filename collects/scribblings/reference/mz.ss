@@ -90,7 +90,7 @@
   (provide exnraise Exn)
   
   (provide margin-note/ref
-           refalso moreref Guide guideintro guidesecref
+           refalso moreref Guide guideintro guidealso guidesecref
            HonuManual)
   
   (define (margin-note/ref . s)
@@ -117,6 +117,10 @@
            (decode-content (append (list finger (guidesecref tag) " in " Guide " introduces ")
                                    s
                                    (list ".")))))
+
+  (define (guidealso tag)
+    (apply margin-note
+           (decode-content (append (list finger "See also " (guidesecref tag) " in " Guide ".")))))
   
   (define Guide
     (other-manual '(lib "scribblings/guide/guide.scrbl")))

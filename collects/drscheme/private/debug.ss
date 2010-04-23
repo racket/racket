@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 #|
 
@@ -10,11 +10,11 @@ profile todo:
 
 (require errortrace/errortrace-key
          scheme/unit
-         scheme/contract
+         racket/contract
          errortrace/stacktrace
-         scheme/class
-         scheme/path
-         scheme/gui/base
+         racket/class
+         racket/path
+         racket/gui/base
          string-constants
          framework
          framework/private/bday
@@ -23,9 +23,9 @@ profile todo:
          "bindings-browser.ss"
          net/sendurl
          net/url
-         scheme/match
+         racket/match
          mrlib/include-bitmap
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 
 (define orig (current-output-port))
 

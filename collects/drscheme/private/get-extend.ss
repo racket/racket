@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-(require scheme/class
+(require racket/class
          "drsig.ss")
 
 (import [prefix drscheme:unit: drscheme:unit^]
