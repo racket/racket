@@ -42,8 +42,12 @@
   (match (single-value tst)
     [(tc-result1: _ (and f1 (FilterSet: fs+ fs-)) _)
      (let*-values ([(flag+ flag-) (values (box #t) (box #t))])
-       (match-let* ([(tc-results: ts fs2 os2) (with-lexical-env (env+ (lexical-env) (list fs+) flag+) (tc thn (unbox flag+)))]
-                    [(tc-results: us fs3 os3) (with-lexical-env (env+ (lexical-env) (list fs-) flag-) (tc els (unbox flag-)))])
+       (match-let* ([env-thn (env+ (lexical-env) (list fs+) flag+)]
+                    [env-els (env+ (lexical-env) (list fs-) flag-)]
+                    [new-thn-props (env-props env-thn)]
+                    [new-els-props (env-props env-els)]
+                    [(tc-results: ts fs2 os2) (with-lexical-env env-thn (tc thn (unbox flag+)))]
+                    [(tc-results: us fs3 os3) (with-lexical-env env-els (tc els (unbox flag-)))])
          ;; if we have the same number of values in both cases
          (cond [(= (length ts) (length us))
                 (let ([r (combine-results

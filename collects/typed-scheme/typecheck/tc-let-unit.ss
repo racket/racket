@@ -5,8 +5,9 @@
          (types utils convenience)
          (private type-annotation parse-type)
 	 (env lexical-env type-alias-env type-env type-environments)
+         (rep type-rep)
          syntax/free-vars
-         mzlib/trace
+         mzlib/trace unstable/debug
          scheme/match (prefix-in c: scheme/contract)
          (except-in scheme/contract -> ->* one-of/c)
          syntax/kerncase syntax/parse
@@ -26,17 +27,29 @@
       syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?)
       . c:-> . 
       tc-results?)
-     (define-values (types props)
-       (for/lists (t p) 
-         ([r (in-list results)])
-         (match r [(tc-results: ts fs os) (values ts null)])))     
-  ;; extend the lexical environment for checking the body
+     (w/c t/p ([types (listof (listof Type/c))]
+               [props (listof (listof Filter?))])
+          (define-values (types props)
+            (for/lists (t p) 
+              ([r (in-list results)]
+               [names (in-list namess)])
+              (match r 
+                [(tc-results: ts (FilterSet: fs+ fs-) os) 
+                 (values ts
+                         (for/list ([n names]
+                                    [f+ fs+]
+                                    [f- fs-])
+                           (-and (make-ImpFilter (make-NotTypeFilter (-val #f) null n) f+)
+                                 (make-ImpFilter (make-TypeFilter (-val #f) null n) f-))))]))))
+     ;; extend the lexical environment for checking the body
   (with-lexical-env/extend/props
    ;; the list of lists of name
    namess
    ;; the types
    types
-   (append (apply append props) (env-props (lexical-env)))
+   (w/c append-region
+    #:result (listof Filter?)
+    (append (apply append props) (env-props (lexical-env))))
    (for-each expr->type
              clauses
              exprs 

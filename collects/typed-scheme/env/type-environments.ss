@@ -37,7 +37,7 @@
     [(struct env (eq? l props))
     (make-env eq? (filter f l) props)]))
 
-(define (make-empty-env p?) (make env p? null null))
+(define (make-empty-env p?) (make-env p? null null))
 
 ;; the initial type variable environment - empty
 ;; this is used in the parsing of types
@@ -51,23 +51,23 @@
 
 (r:d/c (env-map f e)
   ((pair? . -> . pair?) env? . -> . env?)
-  (make env (env-eq? e) (map f (env-l e)) (env-props e)))
+  (make-env (env-eq? e) (map f (env-l e)) (env-props e)))
 
 ;; extend that works on single arguments
 (define (extend e k v) 
   (match e
-    [(struct env (f l p)) (make env f (cons (cons k v) l) p)]
+    [(struct env (f l p)) (make-env f (cons (cons k v) l) p)]
     [_ (int-err "extend: expected environment, got ~a" e)]))
 
 (define (extend-env ks vs e)
   (match e
-    [(struct env (f l p)) (make env f (append (map cons ks vs) l) p)]
+    [(struct env (f l p)) (make-env f (append (map cons ks vs) l) p)]
     [_ (int-err "extend-env: expected environment, got ~a" e)]))
 
 (define (replace-props e props)
   (match e
     [(struct env (f l p))
-     (make env f l props)]))
+     (make-env f l props)]))
 
 (define (lookup e key fail)
   (match e
