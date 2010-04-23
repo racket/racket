@@ -6,6 +6,7 @@
          set-empty? set-count
          set-member? set-add set-remove
          set-union set-intersect set-subtract
+         set-subset?
          set-map set-for-each 
          (rename-out [*in-set in-set])
          for/set for/seteq for/seteqv
@@ -162,6 +163,18 @@
       (unless (set? s) (apply raise-type-error 'set-subtract "set" i sets)))
     (for/fold ([set set]) ([set2 (in-list sets)])
       (set-subtract set set2))]))
+
+(define (set-subset? set1 set2)
+  (unless (set? set1) (raise-type-error 'set-subset? "set" 0 set1 set2))
+  (unless (set? set2) (raise-type-error 'set-subset? "set" 1 set1 set2))
+  (let ([ht1 (set-ht set1)]
+        [ht2 (set-ht set2)])
+    (unless (and (eq? (hash-eq? ht1) (hash-eq? ht2))
+                 (eq? (hash-eqv? ht1) (hash-eqv? ht2)))
+      (raise-mismatch-error 'set-subset? "second set's equivalence predicate is not the same as the first set: "
+                            set2))
+    (for/and ([v (in-hash-keys ht2)])
+      (hash-ref ht1 v #f))))
 
 (define (set-map set proc)
   (unless (set? set) (raise-type-error 'set-map "set" 0 set proc))
