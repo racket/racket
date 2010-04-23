@@ -314,8 +314,9 @@ path/s is either such a string or a list of them.
                                sub))))
     (and (or (pair? (tree-subs tree)) (pair? (tree-props tree))) tree))
   (let (;; temp file in the same directory => fail early if cannot write to it
-        ;; and make a rename possible
-        [temp (make-temporary-file (format "~a~~a" this-file))])
+        ;; and make a rename possible; copy from this file to preserve being
+        ;; executable
+        [temp (make-temporary-file (format "~a~~a" this-file) this-file)])
     (dynamic-wind
       void
       (lambda ()
