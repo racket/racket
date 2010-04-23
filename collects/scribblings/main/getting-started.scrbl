@@ -8,11 +8,12 @@ through a textbook:
 
 @itemize[
 
- @item{@italic{@link["http:///www.htdp.org/"]{How to
-       Design Programs}} is the best place to start.}
+ @item{@italic{@link["http:///www.htdp.org/"]{How to Design Programs}}
+       is the best place to start. Whenever the book says ``Scheme,''
+       you can read it as ``Racket.''}
 
  @item{@other-manual['(lib "web-server/scribblings/tutorial/continue.scrbl")]
-       introduces you to the Module language and building web applications.}
+       introduces you to modules and building web applications.}
 
  @item{@other-manual['(lib "scribblings/guide/guide.scrbl")] describes
        the rest of the Racket language, which is much bigger than
