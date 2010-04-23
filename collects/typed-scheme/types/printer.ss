@@ -34,9 +34,13 @@
   (match c
     [(FilterSet: thn els) (fp "(~a | ~a)" thn els)]
     [(NoFilter:) (fp "-")]
+    [(NotTypeFilter: type (list) (? syntax? id)) (fp "(! ~a @ ~a)" type (syntax-e id))]
     [(NotTypeFilter: type (list) id) (fp "(! ~a @ ~a)" type id)]
+    [(NotTypeFilter: type path (? syntax? id)) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
     [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path id)]
+    [(TypeFilter: type (list) (? syntax? id)) (fp "(~a @ ~a)" type (syntax-e id))]
     [(TypeFilter: type (list) id) (fp "(~a @ ~a)" type id)]
+    [(TypeFilter: type path (? syntax? id)) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
     [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path id)]
     [(Bot:) (fp "Bot")]
     [(Top:) (fp "Top")]
