@@ -663,6 +663,11 @@
                        paren-color))
               (set! src-col (+ src-col 3))
               ((loop init-line! quote-depth qq?) (graph-defn-r (syntax-e c))))]
+           [(and (keyword? (syntax-e c)) qq?)
+            (advance c init-line!)
+            (let ([quote-depth (to-quoted "`" qq? quote-depth out color? inc-src-col)])
+              (typeset-atom c out color? quote-depth qq?)
+              (set! src-col (+ src-col (or (syntax-span c) 1))))]
            [else
             (advance c init-line!)
             (typeset-atom c out color? quote-depth qq?)
@@ -701,7 +706,8 @@
               (graph-defn? s)
               (graph-reference? s)
               (struct-proxy? s)
-              (and qq? (identifier? c)))
+              (and qq? (or (identifier? c)
+                           (keyword? (syntax-e c)))))
           (gen-typeset c multi-line? prefix1 prefix suffix color? qq?)
           (typeset-atom c 
                         (letrec ([mk

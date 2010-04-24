@@ -6,7 +6,7 @@
 
 @title[#:tag "structures" #:style 'toc]{Structures}
 
-@guideintro["define-struct"]{structure types via @scheme[define-struct]}
+@guideintro["define-struct"]{structure types via @racket[struct]}
 
 A @deftech{structure type} is a record datatype composing a number of
 @idefterm{fields}. A @deftech{structure}, an instance of a structure
@@ -15,8 +15,8 @@ the structure type. A structure instance is created with a
 type-specific @tech{constructor} procedure, and its field values are
 accessed and changed with type-specific @tech{accessor} and
 @tech{mutator} procedures. In addition, each structure type has a
-@tech{predicate} procedure that answers @scheme[#t] for instances of
-the structure type and @scheme[#f] for any other value.
+@tech{predicate} procedure that answers @racket[#t] for instances of
+the structure type and @racket[#f] for any other value.
 
 A structure type's fields are essentially unnamed, though names are
 supported for error-reporting purposes. The constructor procedure
@@ -49,7 +49,7 @@ accessed with subtype-specific selectors. Subtype-specific
 @tech{accessors} and @tech{mutators} for the first @math{m} fields do
 not exist.
 
-The @scheme[define-struct] form and @scheme[make-struct-type]
+The @racket[struct] form and @racket[make-struct-type]
 procedure typically create a new structure type, but they can also
 access @deftech{prefab} (i.e., previously fabricated) structure types
 that are globally shared, and whose instances can be parsed and
@@ -65,15 +65,15 @@ field), and field mutability.
 @refalso["serialization"]{reading and writing structures}
 
 @index['("structures" "equality")]{Two} structure values are
-@scheme[eqv?] if and only if they are @scheme[eq?]. Two structure
-values are @scheme[equal?] if they are @scheme[eq?]. By default, two
-structure values are also @scheme[equal?] if they are instances of the
+@racket[eqv?] if and only if they are @racket[eq?]. Two structure
+values are @racket[equal?] if they are @racket[eq?]. By default, two
+structure values are also @racket[equal?] if they are instances of the
 same structure type, no fields are opaque, and the results of applying
-@scheme[struct->vector] to the structs are
-@scheme[equal?]. (Consequently, @scheme[equal?]  testing for
+@racket[struct->vector] to the structs are
+@racket[equal?]. (Consequently, @racket[equal?]  testing for
 structures may depend on the current inspector.) A structure type can
-override the default @scheme[equal?] definition through the
-@scheme[prop:equal+hash] property.
+override the default @racket[equal?] definition through the
+@racket[prop:equal+hash] property.
 
 @local-table-of-contents[]
 
@@ -107,74 +107,74 @@ override the default @scheme[equal?] definition through the
                   struct-accessor-procedure?
                   struct-mutator-procedure?)]{
 
-Creates a new structure type, unless @scheme[inspector] is
-@scheme['prefab], in which case @scheme[make-struct-type] accesses a
-@techlink{prefab} structure type.  The @scheme[name] argument is used
-as the type name. If @scheme[super-type] is not @scheme[#f], the
+Creates a new structure type, unless @racket[inspector] is
+@racket['prefab], in which case @racket[make-struct-type] accesses a
+@techlink{prefab} structure type.  The @racket[name] argument is used
+as the type name. If @racket[super-type] is not @racket[#f], the
 resulting type is a subtype of the corresponding structure type.
 
 The resulting structure type has
-@math{@scheme[init-field-cnt]+@scheme[auto-field-cnt]} fields (in
-addition to any fields from @scheme[super-type]), but only
-@scheme[init-field-cnt] constructor arguments (in addition to any
-constructor arguments from @scheme[super-type]). The remaining fields
-are initialized with @scheme[auto-v]. The total field count (including
-@scheme[super-type] fields) must be no more than 32768.
+@math{@racket[init-field-cnt]+@racket[auto-field-cnt]} fields (in
+addition to any fields from @racket[super-type]), but only
+@racket[init-field-cnt] constructor arguments (in addition to any
+constructor arguments from @racket[super-type]). The remaining fields
+are initialized with @racket[auto-v]. The total field count (including
+@racket[super-type] fields) must be no more than 32768.
 
-The @scheme[props] argument is a list of pairs, where the @scheme[car]
+The @racket[props] argument is a list of pairs, where the @racket[car]
 of each pair is a structure type property descriptor, and the
-@scheme[cdr] is an arbitrary value. A property can be specified
-multiple times in in @scheme[props] (including properties that are
+@racket[cdr] is an arbitrary value. A property can be specified
+multiple times in in @racket[props] (including properties that are
 automatically added by properties that are directly included in
-@scheme[props]) only if the associated values are @scheme[eq?],
+@racket[props]) only if the associated values are @racket[eq?],
 otherwise the @exnraise[exn:fail:contract]. See @secref["structprops"]
-for more information about properties. When @scheme[inspector] is
-@scheme['prefab], then @scheme[props] must be @scheme[null].
+for more information about properties. When @racket[inspector] is
+@racket['prefab], then @racket[props] must be @racket[null].
 
-The @scheme[inspector] argument normally controls access to reflective
+The @racket[inspector] argument normally controls access to reflective
 information about the structure type and its instances; see
-@secref["inspectors"] for more information. If @scheme[inspector] is
-@scheme['prefab], then the resulting @tech{prefab} structure type and
+@secref["inspectors"] for more information. If @racket[inspector] is
+@racket['prefab], then the resulting @tech{prefab} structure type and
 its instances are always transparent.
 
-If @scheme[proc-spec] is an integer or procedure, instances of the
-structure type act as procedures. See @scheme[prop:procedure] for
-further information.  Providing a non-@scheme[#f] value for
-@scheme[proc-spec] is the same as pairing the value with
-@scheme[prop:procedure] at the end of @scheme[props], plus including
-@scheme[proc-spec] in @scheme[immutables] when @scheme[proc-spec] is
+If @racket[proc-spec] is an integer or procedure, instances of the
+structure type act as procedures. See @racket[prop:procedure] for
+further information.  Providing a non-@racket[#f] value for
+@racket[proc-spec] is the same as pairing the value with
+@racket[prop:procedure] at the end of @racket[props], plus including
+@racket[proc-spec] in @racket[immutables] when @racket[proc-spec] is
 an integer.
 
-The @scheme[immutables] argument provides a list of field
+The @racket[immutables] argument provides a list of field
 positions. Each element in the list must be unique, otherwise
 @exnraise[exn:fail:contract]. Each element must also fall in the range
-@scheme[0] (inclusive) to @scheme[init-field-cnt] (exclusive), otherwise
+@racket[0] (inclusive) to @racket[init-field-cnt] (exclusive), otherwise
 @exnraise[exn:fail:contract].
 
-The @scheme[guard] argument is either a procedure of @math{n+1}
-arguments or @scheme[#f], where @math{n} is the number of arguments
+The @racket[guard] argument is either a procedure of @math{n+1}
+arguments or @racket[#f], where @math{n} is the number of arguments
 for the new structure type's constructor (i.e.,
-@scheme[init-field-cnt] plus constructor arguments implied by
-@scheme[super-type], if any). If @scheme[guard] is a procedure, then
+@racket[init-field-cnt] plus constructor arguments implied by
+@racket[super-type], if any). If @racket[guard] is a procedure, then
 the procedure is called whenever an instance of the type is
 constructed, or whenever an instance of a subtype is created.  The
-arguments to @scheme[guard] are the values provided for the
+arguments to @racket[guard] are the values provided for the
 structure's first @math{n} fields, followed by the name of the
-instantiated structure type (which is @scheme[name], unless a subtype
-is instantiated). The @scheme[guard] result must be @math{n} values,
+instantiated structure type (which is @racket[name], unless a subtype
+is instantiated). The @racket[guard] result must be @math{n} values,
 which become the actual values for the structure's fields. The
-@scheme[guard] can raise an exception to prevent creation of a
+@racket[guard] can raise an exception to prevent creation of a
 structure with the given field values. If a structure subtype has its
 own guard, the subtype guard is applied first, and the first @math{n}
 values produced by the subtype's guard procedure become the first
-@math{n} arguments to @scheme[guard]. When @scheme[inspector] is
-@scheme['prefab], then @scheme[guard] must be @scheme[#f].
+@math{n} arguments to @racket[guard]. When @racket[inspector] is
+@racket['prefab], then @racket[guard] must be @racket[#f].
 
-If @scheme[constructor-name] is not @scheme[#f], it is used as the
+If @racket[constructor-name] is not @racket[#f], it is used as the
 name of the generated @tech{constructor} procedure as returned by
-@scheme[object-name] or in the printed form of the constructor value.
+@racket[object-name] or in the printed form of the constructor value.
 
-The result of @scheme[make-struct-type] is five values:
+The result of @racket[make-struct-type] is five values:
 
 @itemize[
 
@@ -186,7 +186,7 @@ The result of @scheme[make-struct-type] is five values:
 
  @item{an @tech{accessor} procedure, which consumes a structure and a field
  index between @math{0} (inclusive) and
- @math{@scheme[init-field-cnt]+@scheme[auto-field-cnt]} (exclusive),
+ @math{@racket[init-field-cnt]+@racket[auto-field-cnt]} (exclusive),
  and}
 
  @item{a @tech{mutator} procedure, which consumes a structure, a field
@@ -249,14 +249,14 @@ The result of @scheme[make-struct-type] is five values:
                                                  (symbol->string (format "field~a" field-pos))])
          procedure?]{
 
-Returns a field accessor that is equivalent to @scheme[(lambda (s)
-(accessor-proc s field-pos))].  The @scheme[accessor-proc] must be
-an @tech{accessor} returned by @scheme[make-struct-type]. The name of the
+Returns a field accessor that is equivalent to @racket[(lambda (s)
+(accessor-proc s field-pos))].  The @racket[accessor-proc] must be
+an @tech{accessor} returned by @racket[make-struct-type]. The name of the
 resulting procedure for debugging purposes is derived from
-@scheme[field-name] and the name of @scheme[accessor-proc]'s
-structure type if @scheme[field-name] is a symbol.
+@racket[field-name] and the name of @racket[accessor-proc]'s
+structure type if @racket[field-name] is a symbol.
 
-For examples, see @scheme[make-struct-type].}
+For examples, see @racket[make-struct-type].}
 
 @defproc[(make-struct-field-mutator [mutator-proc struct-mutator-procedure?]
                                     [field-pos exact-nonnegative-integer?]
@@ -264,14 +264,14 @@ For examples, see @scheme[make-struct-type].}
                                                 (symbol->string (format "field~a" field-pos))])
          procedure?]{
 
-Returns a field mutator that is equivalent to @scheme[(lambda (s v)
-(mutator-proc s field-pos v))].  The @scheme[mutator-proc] must be
-a @tech{mutator} returned by @scheme[make-struct-type]. The name of the
+Returns a field mutator that is equivalent to @racket[(lambda (s v)
+(mutator-proc s field-pos v))].  The @racket[mutator-proc] must be
+a @tech{mutator} returned by @racket[make-struct-type]. The name of the
 resulting procedure for debugging purposes is derived from
-@scheme[field-name] and the name of @scheme[mutator-proc]'s
-structure type if @scheme[field-name] is a symbol.
+@racket[field-name] and the name of @racket[mutator-proc]'s
+structure type if @racket[field-name] is a symbol.
 
-For examples, see @scheme[make-struct-type].}
+For examples, see @racket[make-struct-type].}
 
 
 @;------------------------------------------------------------------------
@@ -281,9 +281,9 @@ A @deftech{structure type property} allows per-type information to be
  associated with a structure type (as opposed to per-instance
  information associated with a structure value). A property value is
  associated with a structure type through the
- @scheme[make-struct-type] procedure (see
- @secref["creatingmorestructs"]) or through the @scheme[#:property]
- option of @scheme[define-struct].  Subtypes inherit the property
+ @racket[make-struct-type] procedure (see
+ @secref["creatingmorestructs"]) or through the @racket[#:property]
+ option of @racket[struct].  Subtypes inherit the property
  values of their parent types, and subtypes can override an inherited
  property value with a new value.
 
@@ -301,12 +301,12 @@ Creates a new structure type property and returns three values:
 @itemize[
 
  @item{a @deftech{structure type property descriptor}, for use with
-       @scheme[make-struct-type] and @scheme[define-struct];}
+       @racket[make-struct-type] and @racket[struct];}
 
  @item{a @deftech{property predicate} procedure, which takes an
-       arbitrary value and returns @scheme[#t] if the value is a
+       arbitrary value and returns @racket[#t] if the value is a
        descriptor or instance of a structure type that has a value for
-       the property, @scheme[#f] otherwise;}
+       the property, @racket[#f] otherwise;}
 
  @item{an @deftech{property accessor} procedure, which returns the
        value associated with the structure type given its descriptor or
@@ -316,30 +316,30 @@ Creates a new structure type property and returns three values:
 
 ]
 
-If the optional @scheme[guard] is supplied as a procedure, it is
-called by @scheme[make-struct-type] before attaching the property to a
-new structure type. The @scheme[guard] must accept two arguments:
-a value for the property supplied to @scheme[make-struct-type], and a
+If the optional @racket[guard] is supplied as a procedure, it is
+called by @racket[make-struct-type] before attaching the property to a
+new structure type. The @racket[guard] must accept two arguments:
+a value for the property supplied to @racket[make-struct-type], and a
 list containing information about the new structure type. The list
-contains the values that @scheme[struct-type-info] would return for
+contains the values that @racket[struct-type-info] would return for
 the new structure type if it skipped the immediate current-inspector
 control check (but not the check for exposing an ancestor structure
 type, if any; see @secref["inspectors"]).
 
-The result of calling @scheme[guard] is associated with the property
+The result of calling @racket[guard] is associated with the property
 in the target structure type, instead of the value supplied to
-@scheme[make-struct-type]. To reject a property association (e.g.,
-because the value supplied to @scheme[make-struct-type] is
-inappropriate for the property), the @scheme[guard] can raise an
-exception. Such an exception prevents @scheme[make-struct-type] from
+@racket[make-struct-type]. To reject a property association (e.g.,
+because the value supplied to @racket[make-struct-type] is
+inappropriate for the property), the @racket[guard] can raise an
+exception. Such an exception prevents @racket[make-struct-type] from
 returning a structure type descriptor.
 
-The optional @scheme[supers] argument is a list of properties that are
+The optional @racket[supers] argument is a list of properties that are
 automatically associated with some structure type when the newly
 created property is associated to the structure type. Each property in
-@scheme[supers] is paired with a procedure that receives the value
+@racket[supers] is paired with a procedure that receives the value
 supplied for the new property (after it is processed by
-@scheme[guard]) and returns a value for the associated property (which
+@racket[guard]) and returns a value for the associated property (which
 is then sent to that property's guard, of any).
 
 @examples[
@@ -371,119 +371,119 @@ is then sent to that property's guard, of any).
 
 @defproc[(struct-type-property? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @tech{structure type property
-descriptor} value, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a @tech{structure type property
+descriptor} value, @racket[#f] otherwise.}
 
 @defproc[(struct-type-property-accessor-procedure? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an accessor procedure produced
-by @scheme[make-struct-type-property], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an accessor procedure produced
+by @racket[make-struct-type-property], @racket[#f] otherwise.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "struct-copy"]{Copying and Updating Structures}
 
 @defform[(struct-copy id struct-expr [field-id expr] ...)]{
 
-Creates a new instance of the structure type @scheme[id] with the same
-field values as the structure produced by @scheme[struct-expr], except
-that the value of each supplied @scheme[field-id] is instead
-determined by the corresponding @scheme[expr].
+Creates a new instance of the structure type @racket[id] with the same
+field values as the structure produced by @racket[struct-expr], except
+that the value of each supplied @racket[field-id] is instead
+determined by the corresponding @racket[expr].
 
-The @scheme[id] must have a @tech{transformer binding} that
+The @racket[id] must have a @tech{transformer binding} that
 encapsulates information about a structure type (i.e., like the
-initial identifier bound by @scheme[define-struct]), and the binding
+initial identifier bound by @racket[struct]), and the binding
 must supply a constructor, a predicate, and all field accessors.
 
-Each @scheme[field-id] is combined with @scheme[id] to form
-@scheme[id]@schemeidfont{-}@scheme[field-id] (using the lexical
-context of @scheme[field-id]), which must be one of the accessor
-bindings in @scheme[id]. The accessor bindings determined by different
-@scheme[field-id]s must be distinct. The order of the
-@scheme[field-id]s need not match the order of the corresponding
+Each @racket[field-id] is combined with @racket[id] to form
+@racket[id]@racketidfont{-}@racket[field-id] (using the lexical
+context of @racket[field-id]), which must be one of the accessor
+bindings in @racket[id]. The accessor bindings determined by different
+@racket[field-id]s must be distinct. The order of the
+@racket[field-id]s need not match the order of the corresponding
 fields in the structure type.
 
-The @scheme[struct-expr] is evaluated first. The result must be an
-instance of the @scheme[id] structure type, otherwise the
-@exnraise[exn:fail:contract]. Next, the field @scheme[expr]s are
+The @racket[struct-expr] is evaluated first. The result must be an
+instance of the @racket[id] structure type, otherwise the
+@exnraise[exn:fail:contract]. Next, the field @racket[expr]s are
 evaluated in order (even if the fields that correspond to the
-@scheme[field-id]s are in a different order). Finally, the new
+@racket[field-id]s are in a different order). Finally, the new
 structure instance is created.
 
-The result of @scheme[struct-expr] can be an instance of a sub-type of
-@scheme[id], but the resulting copy is an immediate instance of
-@scheme[id] (not the sub-type).}
+The result of @racket[struct-expr] can be an instance of a sub-type of
+@racket[id], but the resulting copy is an immediate instance of
+@racket[id] (not the sub-type).}
 
 @;------------------------------------------------------------------------
 @section[#:tag "structutils"]{Structure Utilities}
 
 @defproc[(struct->vector [v any/c] [opaque-v any/c '...]) vector?]{
 
-Creates a vector representing @scheme[v].  The first slot of the
+Creates a vector representing @racket[v].  The first slot of the
 result vector contains a symbol whose printed name has the form
-@schemeidfont{struct:}@scheme[_id]. Each remaining slot contains
-either the value of a field in @scheme[v], if it is accessible via the
-current inspector, or @scheme[opaque-v] for a field that is not
-accessible. A single @scheme[opaque-v] value is used in the vector for
+@racketidfont{struct:}@racket[_id]. Each remaining slot contains
+either the value of a field in @racket[v], if it is accessible via the
+current inspector, or @racket[opaque-v] for a field that is not
+accessible. A single @racket[opaque-v] value is used in the vector for
 contiguous inaccessible fields. (Consequently, the size of the vector
-does not match the size of the @scheme[struct] if more than one field
+does not match the size of the @racket[struct] if more than one field
 is inaccessible.)}
 
-@defproc[(struct? [v any/c]) any]{ Returns @scheme[#t] if
- @scheme[struct-info] exposes any structure types of @scheme[v] with
- the current inspector, @scheme[#f] otherwise.
+@defproc[(struct? [v any/c]) any]{ Returns @racket[#t] if
+ @racket[struct-info] exposes any structure types of @racket[v] with
+ the current inspector, @racket[#f] otherwise.
 
- Typically, when @scheme[(struct? v)] is true, then
- @scheme[(struct->vector v)] exposes at least one field value. It is
- possible, however, for the only visible types of @scheme[v] to
+ Typically, when @racket[(struct? v)] is true, then
+ @racket[(struct->vector v)] exposes at least one field value. It is
+ possible, however, for the only visible types of @racket[v] to
  contribute zero fields.}
 
-@defproc[(struct-type? [v any/c]) boolean?]{Returns @scheme[#t] if
- @scheme[v] is a structure type descriptor value, @scheme[#f]
+@defproc[(struct-type? [v any/c]) boolean?]{Returns @racket[#t] if
+ @racket[v] is a structure type descriptor value, @racket[#f]
  otherwise.}
 
 @defproc[(struct-constructor-procedure? [v any/c]) boolean?]{Returns
- @scheme[#t] if @scheme[v] is a constructor procedure generated by
- @scheme[define-struct] or @scheme[make-struct-type], @scheme[#f]
+ @racket[#t] if @racket[v] is a constructor procedure generated by
+ @racket[struct] or @racket[make-struct-type], @racket[#f]
  otherwise.}
 
 @defproc[(struct-predicate-procedure? [v any/c]) boolean?]{Returns
- @scheme[#t] if @scheme[v] is a predicate procedure generated by
- @scheme[define-struct] or @scheme[make-struct-type], @scheme[#f]
+ @racket[#t] if @racket[v] is a predicate procedure generated by
+ @racket[struct] or @racket[make-struct-type], @racket[#f]
  otherwise.}
 
 @defproc[(struct-accessor-procedure? [v any/c]) boolean?]{Returns
- @scheme[#t] if @scheme[v] is an accessor procedure generated by
- @scheme[define-struct], @scheme[make-struct-type], or
- @scheme[make-struct-field-accessor], @scheme[#f] otherwise.}
+ @racket[#t] if @racket[v] is an accessor procedure generated by
+ @racket[struct], @racket[make-struct-type], or
+ @racket[make-struct-field-accessor], @racket[#f] otherwise.}
 
 @defproc[(struct-mutator-procedure? [v any/c]) boolean?]{Returns
- @scheme[#t] if @scheme[v] is a mutator procedure generated by
- @scheme[define-struct], @scheme[make-struct-type], or
- @scheme[make-struct-field-mutator], @scheme[#f] otherwise.}
+ @racket[#t] if @racket[v] is a mutator procedure generated by
+ @racket[struct], @racket[make-struct-type], or
+ @racket[make-struct-field-mutator], @racket[#f] otherwise.}
 
 @defproc[(prefab-struct-key [v any/c]) (or/c #f symbol? list?)]{
 
-Returns @scheme[#f] if @scheme[v] is not an instance of a
+Returns @racket[#f] if @racket[v] is not an instance of a
 @tech{prefab} structure type. Otherwise, the result is the shorted key
-that could be used with @scheme[make-prefab-struct] to create an instance
+that could be used with @racket[make-prefab-struct] to create an instance
 of the structure type.
 
 @examples[
 (prefab-struct-key #s(cat "Garfield"))
-(define-struct cat (name) #:prefab)
-(define-struct (cute-cat cat) (shipping-dest) #:prefab)
-(make-cute-cat "Nermel" "Abu Dhabi")
-(prefab-struct-key (make-cute-cat "Nermel" "Abu Dhabi"))
+(struct cat (name) #:prefab)
+(struct cute-cat cat (shipping-dest) #:prefab)
+(cute-cat "Nermel" "Abu Dhabi")
+(prefab-struct-key (cute-cat "Nermel" "Abu Dhabi"))
 ]}
 
 
 @defproc[(make-prefab-struct [key (or/c symbol? list?)] [v any/c] ...) struct?]{
 
 Creates an instance of a @tech{prefab} structure type, using the
-@scheme[v]s as field values. The @scheme[key] and the number of
-@scheme[v]s determine the @tech{prefab} structure type.
+@racket[v]s as field values. The @racket[key] and the number of
+@racket[v]s determine the @tech{prefab} structure type.
 
-A @scheme[key] identifies a structure type based on a list with the
+A @racket[key] identifies a structure type based on a list with the
 following items:
 
 @itemize[
@@ -502,7 +502,7 @@ following items:
 
  @item{A vector of exact, nonnegative integers that indicate mutable
        non-automatic fields in the structure type, counting from
-       @scheme[0] and not including fields from the supertype (if
+       @racket[0] and not including fields from the supertype (if
        any).}
 
  @item{Nothing else, if the structure type has no
@@ -511,17 +511,17 @@ following items:
 
 ]
 
-An empty vector and an auto-field list that starts with @scheme[0] can
+An empty vector and an auto-field list that starts with @racket[0] can
 be omitted. Furthermore, the first integer (which indicates the number
 of non-automatic fields) can be omitted, since it can be inferred from
-the number of supplied @scheme[v]s. Finally, a single symbol can be
+the number of supplied @racket[v]s. Finally, a single symbol can be
 used instead of a list that contains only a symbol (in the case that
 the structure type has no supertype, no automatic fields, and no
 mutable fields).
 
 The total field count must be no more than 32768. If the number of
-fields indicated by @scheme[key] is inconsistent with the number of
-supplied @scheme[v]s, the @exnraise[exn:fail:contract].
+fields indicated by @racket[key] is inconsistent with the number of
+supplied @racket[v]s, the @exnraise[exn:fail:contract].
 
 @examples[
 (make-prefab-struct 'clown "Binky" "pie")
@@ -536,29 +536,29 @@ supplied @scheme[v]s, the @exnraise[exn:fail:contract].
          struct-type?]{
 
 Returns a @tech{structure type descriptor} for the @tech{prefab}
-structure type specified by the combination of @scheme[key] and
-@scheme[field-count].}
+structure type specified by the combination of @racket[key] and
+@racket[field-count].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}
 
-The @scheme[define-struct] form binds the name of a structure type as
+The @racket[struct] form binds the name of a structure type as
 a @tech{transformer binding} that records the other identifiers bound
 to the structure type, the constructor procedure, the predicate
 procedure, and the field accessor and mutator procedures. This
 information can be used during the expansion of other expressions via
-@scheme[syntax-local-value].
+@racket[syntax-local-value].
 
-For example, the @scheme[define-struct] variant for subtypes uses the
-base type name @scheme[_t] to find the variable
-@schemeidfont{struct:}@scheme[_t] containing the base type's descriptor; it
+For example, the @racket[struct] variant for subtypes uses the
+base type name @racket[_t] to find the variable
+@racketidfont{struct:}@racket[_t] containing the base type's descriptor; it
 also folds the field accessor and mutator information for the base
 type into the information for the subtype. As another example, the
-@scheme[match] form uses a type name to find the predicates and field
-accessors for the structure type. The @scheme[struct] form in an
-imported signature for @scheme[unit] causes the @scheme[unit]
+@racket[match] form uses a type name to find the predicates and field
+accessors for the structure type. The @racket[struct] form in an
+imported signature for @racket[unit] causes the @racket[unit]
 transformer to generate information about imported structure types, so
-that @scheme[match] and subtyping @scheme[define-struct] forms work
+that @racket[match] and subtyping @racket[struct] forms work
 within the unit.
 
 The expansion-time information for a structure type can be represented
@@ -568,17 +568,17 @@ encapsulated procedure must return):
 @itemize[
 
  @item{an identifier that is bound to the structure type's descriptor,
- or @scheme[#f] it none is known;}
+ or @racket[#f] it none is known;}
 
  @item{an identifier that is bound to the structure type's constructor,
- or @scheme[#f] it none is known;}
+ or @racket[#f] it none is known;}
 
  @item{an identifier that is bound to the structure type's predicate,
- or @scheme[#f] it none is known;}
+ or @racket[#f] it none is known;}
 
  @item{a list of identifiers bound to the field accessors of the
- structure type, optionally with @scheme[#f] as the list's last
- element. A @scheme[#f] as the last element indicates that the
+ structure type, optionally with @racket[#f] as the list's last
+ element. A @racket[#f] as the last element indicates that the
  structure type may have additional fields, otherwise the list is a
  reliable indicator of the number of fields in the structure
  type. Furthermore, the accessors are listed in reverse order for the
@@ -586,44 +586,44 @@ encapsulated procedure must return):
  sharing in the lists for a subtype and its base type.)}
 
  @item{a list of identifiers bound to the field mutators of
- the structure type, or @scheme[#f] for each field that has no known
- mutator, and optionally with an extra @scheme[#f] as the list's last
- element (if the accessor list has such a @scheme[#f]). The list's
- order and the meaning of a final @scheme[#f] are the same as for the
+ the structure type, or @racket[#f] for each field that has no known
+ mutator, and optionally with an extra @racket[#f] as the list's last
+ element (if the accessor list has such a @racket[#f]). The list's
+ order and the meaning of a final @racket[#f] are the same as for the
  accessor identifiers, and the length of the mutator list is the same
  as the accessor list's length.}
 
  @item{an identifier that determines a super-type for the structure
- type, @scheme[#f] if the super-type (if any) is unknown, or
- @scheme[#t] if there is no super-type. If a super-type is specified,
+ type, @racket[#f] if the super-type (if any) is unknown, or
+ @racket[#t] if there is no super-type. If a super-type is specified,
  the identifier is also bound to structure-type expansion-time
  information.}
 
 ]
 
 Instead of this direct representation, the representation can be a
-structure created by @scheme[make-struct-info] (or an instance of a
-subtype of @scheme[struct:struct-info]), which encapsulates a
+structure created by @racket[make-struct-info] (or an instance of a
+subtype of @racket[struct:struct-info]), which encapsulates a
 procedure that takes no arguments and returns a list of six
 elements. Alternately, the representation can be a structure whose
-type has the @scheme[prop:struct-info] @tech{structure type property}.
+type has the @racket[prop:struct-info] @tech{structure type property}.
 Finally, the representation can be an instance of a structure type
-derived from @scheme[struct:struct-info] or with the
-@scheme[prop:struct-info] property that also implements
-@scheme[prop:procedure], and where the instance is further is wrapped
-by @scheme[make-set!-transformer].
+derived from @racket[struct:struct-info] or with the
+@racket[prop:struct-info] property that also implements
+@racket[prop:procedure], and where the instance is further is wrapped
+by @racket[make-set!-transformer].
 
-Use @scheme[struct-info?] to recognize all allowed forms of the
-information, and use @scheme[extract-struct-info] to obtain a list
+Use @racket[struct-info?] to recognize all allowed forms of the
+information, and use @racket[extract-struct-info] to obtain a list
 from any representation.
 
 The implementor of a syntactic form can expect users of the form to
 know what kind of information is available about a structure type. For
-example, the @scheme[match] implementation works with structure
+example, the @racket[match] implementation works with structure
 information containing an incomplete set of accessor bindings, because
 the user is assumed to know what information is available in the
-context of the @scheme[match] expression. In particular, the
-@scheme[match] expression can appear in a @scheme[unit] form with an
+context of the @racket[match] expression. In particular, the
+@racket[match] expression can appear in a @racket[unit] form with an
 imported structure type, in which case the user is expected to know
 the set of fields that are listed in the signature for the structure
 type.
@@ -632,17 +632,17 @@ type.
 
 @defproc[(struct-info? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is either a six-element list with
+Returns @racket[#t] if @racket[v] is either a six-element list with
 the correct shape for representing structure-type information, a
-procedure encapsulated by @scheme[make-struct-info], a structure with
-the @scheme[prop:struct-info] property, or a structure type derived
-from @scheme[struct:struct-info] or with @scheme[prop:struct-info] and
-wrapped with @scheme[make-set!-transformer].}
+procedure encapsulated by @racket[make-struct-info], a structure with
+the @racket[prop:struct-info] property, or a structure type derived
+from @racket[struct:struct-info] or with @racket[prop:struct-info] and
+wrapped with @racket[make-set!-transformer].}
 
 @defproc[(checked-struct-info? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a procedure encapsulated by
-@scheme[make-struct-info] and produced by @scheme[define-struct], but
+Returns @racket[#t] if @racket[v] is a procedure encapsulated by
+@racket[make-struct-info] and produced by @racket[struct], but
 only when no parent type is specified or the parent type is also
 specified through a transformer binding to such a value.}
 
@@ -656,20 +656,20 @@ form.}
          (and/c struct-info? list?)]{
 
 Extracts the list form of the structure type information represented
-by @scheme[v].}
+by @racket[v].}
 
 @defthing[struct:struct-info struct-type?]{
 
 The @tech{structure type descriptor} for the structure type returned
-by @scheme[make-struct-info]. This @tech{structure type descriptor} is
+by @racket[make-struct-info]. This @tech{structure type descriptor} is
 mostly useful for creating structure subtypes. The structure type
 includes a guard that checks an instance's first field in the same way
-as @scheme[make-struct-info].}
+as @racket[make-struct-info].}
 
 @defthing[prop:struct-info struct-type-property?]{
 
 The @tech{structure type property} for creating new structure types
-like @scheme[struct:struct-info]. The property value must a procedure
+like @racket[struct:struct-info]. The property value must a procedure
 of one argument that takes an instance structure and returns
 structure-type information in list form.}
 
