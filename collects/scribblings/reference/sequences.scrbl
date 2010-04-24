@@ -331,8 +331,9 @@ the generator runs out of values to yield, the last value it computed
 will be returned for future invocations of the generator. Generators
 can be safely nested.
 
-Note: the first form must be @scheme[()], and in the future this will
-hold argument names that are used in the initial generator call.
+Note: The first form must be @scheme[()]. In the future, the
+@scheme[()] position will hold argument names that are used for the
+initial generator call.
 
 @examples[#:eval (generator-eval)
 (define g (generator ()

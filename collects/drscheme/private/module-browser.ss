@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require mred
-         scheme/class
+         racket/class
          syntax/moddep
          syntax/toplevel
          framework/framework
@@ -9,7 +9,7 @@
          mrlib/graph
          "drsig.ss"
          scheme/unit
-         scheme/async-channel
+         racket/async-channel
          setup/private/lib-roots)
 
 (define-struct req (filename key))

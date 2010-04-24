@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket/base
 
-(require mred/mred)
+(require racket/gui/base racket/class)
 (provide bitmap-message%)
 
 (define bitmap-message%

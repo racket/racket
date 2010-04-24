@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require scheme/gui/base "private/key.ss")
 
 (define debugging? (getenv "PLTDRDEBUG"))

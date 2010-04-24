@@ -9,3 +9,8 @@
 
 # a common convenient place to set the PLTADDON directory to
 /add-on/
+
+# common backups, autosaves, and lock files
+*~
+\#*
+.#*

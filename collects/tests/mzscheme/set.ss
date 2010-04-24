@@ -50,6 +50,11 @@
   (test #t set-member? (set-remove s 5) 3)
   (test #f set-member? (set-remove s 3) 3)
 
+  (test #t set-subset? s (set 1 3))
+  (test #t set-subset? s (set 1 2 3))
+  (test #f set-subset? s (set 1 4))
+  (test #t set-subset? s (set))
+
   (test 3 set-count (set-union s))
   (test 6 set-count (set-union s (set 3 4 5 6)))
   (test 6 set-count (set-union (set 3 4 5 6) s))
@@ -99,6 +104,10 @@
         
 
   (void))
+
+;; ----------------------------------------
+
+(test (set 1 2 3) 'for/set (for/set ([i '(0 1 2)]) (add1 i)))
 
 ;; ----------------------------------------
 

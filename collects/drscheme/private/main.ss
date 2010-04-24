@@ -7,7 +7,7 @@
          framework
          mzlib/class
          mzlib/list
-         scheme/path
+         racket/path
          browser/external
          setup/plt-installer)
 

@@ -1,2 +1,2 @@
-(module main scheme/base
-  (require "drscheme.ss"))
+#lang racket/base
+(require "drscheme.ss")

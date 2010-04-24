@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/gui/base
-         scheme/class
+#lang racket/base
+(require racket/gui/base
+         racket/class
          profile/sampler
          profile/render-text
          profile/analyzer

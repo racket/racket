@@ -217,8 +217,8 @@ category, which is @indexed-scheme['lu], @indexed-scheme['ll],
 @indexed-scheme['cn].}
 
 @defproc[(make-known-char-range-list) 
-         (listof (list/c nonnegative-integer?
-                         nonnegative-integer?
+         (listof (list/c exact-nonnegative-integer?
+                         exact-nonnegative-integer?
                          boolean?))]{
 
 Produces a list of three-element lists, where each three-element list

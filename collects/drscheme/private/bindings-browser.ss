@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang racket/base
 #|
 
 CODE COPIED (with permission ...) from syntax-browser.ss
@@ -9,13 +9,10 @@ Marshalling (and hence the 'read' method of the snipclass omitted for fast proto
 |#
 
 
-  (require mzlib/pretty
-           mzlib/list
-           mzlib/class
-           mred
-           mzlib/match
-           mzlib/string
-           mzlib/contract)
+  (require racket/pretty
+           racket/class
+           racket/gui/base
+           racket/contract)
   
   (provide render-bindings/snip)
 
@@ -64,7 +61,7 @@ Marshalling (and hence the 'read' method of the snipclass omitted for fast proto
                     ; how to enrich the notion of an output-port to get 'bold'ing to 
                     ; work otherwise...
                     (let* ([before (send output-text last-position)])
-                      (pretty-print (syntax-object->datum stx))
+                      (pretty-print (syntax->datum stx))
                       (let* ([post-newline (send output-text last-position)])
                         (send output-text delete post-newline) ; delete the trailing \n. yuck!
                         (send output-text insert " ")
@@ -164,7 +161,7 @@ Marshalling (and hence the 'read' method of the snipclass omitted for fast proto
   
   (define black-style-delta (make-object style-delta% 'change-normal-color))
   (define green-style-delta (make-object style-delta%))
-  (send green-style-delta set-delta-foreground "forest green")
+  (void (send green-style-delta set-delta-foreground "forest green"))
 
   (define turn-snip%
     (class snip%

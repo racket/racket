@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 #|
 
@@ -20,15 +20,15 @@ TODO
 ;;          user's io ports, to aid any debugging printouts.
 ;;          (esp. useful when debugging the users's io)
 
-(require scheme/class
-         scheme/path
-         scheme/pretty
+(require racket/class
+         racket/path
+         racket/pretty
          scheme/unit
-         scheme/list
+         racket/list
          
          string-constants
          setup/xref
-         scheme/gui/base
+         racket/gui/base
          framework
          browser/external
          "drsig.ss"

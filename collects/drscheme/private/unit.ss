@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 #|
 
 closing:
@@ -11,12 +11,12 @@ module browser threading seems wrong.
 
 |#
 
-  (require scheme/contract
+  (require racket/contract
            scheme/unit
-           scheme/class
-           scheme/path
-           scheme/port
-           scheme/list
+           racket/class
+           racket/path
+           racket/port
+           racket/list
            string-constants
            framework
            mrlib/name-message

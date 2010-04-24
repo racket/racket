@@ -43,7 +43,7 @@
 
   (define (*prog-steps cont? objs defs progs)
     (make-table
-     '((valignment top top top top top top))
+     '((valignment baseline baseline baseline baseline baseline baseline))
      (apply
       append
       (for/list ([obj (or objs (in-naturals))]

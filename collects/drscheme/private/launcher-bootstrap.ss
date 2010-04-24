@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 
 (provide startup)
 
-(require scheme/file)
+(require racket/file)
 
 (define (read-from-string s) (read (open-input-string s)))
 

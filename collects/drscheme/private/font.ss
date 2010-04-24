@@ -1,8 +1,8 @@
-#lang mzscheme
-  (require mzlib/unit
-           mzlib/class
+#lang racket/base
+  (require scheme/unit
+           racket/class
+           racket/gui/base
            "drsig.ss"
-           mred
            framework
            string-constants)
   
