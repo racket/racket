@@ -431,8 +431,8 @@ platform-dependent := ; hook for package rules
 mz-extras :+= (- (package: "setup-plt" #:collection "setup/")
                  (cond (not dr) => (srcfile: "plt-installer{|-sig|-unit}.ss")))
 
-;; -------------------- racket-tool
-mz-extras :+= (package: "tool")
+;; -------------------- raco
+mz-extras :+= (package: "raco")
 
 ;; -------------------- launcher
 mz-extras :+= (- (collects: "launcher")

@@ -4,11 +4,11 @@
 (provide all-tools)
 
 (define (all-tools)
-  (let* ([dirs (find-relevant-directories '(racket-tools))]
+  (let* ([dirs (find-relevant-directories '(raco-commands))]
          [tools (make-hash)])
     (for ([i (in-list (map get-info/full dirs))]
           [d (in-list dirs)])
-      (let ([entries (let ([l (i 'racket-tools (lambda () null))])
+      (let ([entries (let ([l (i 'raco-commands (lambda () null))])
                        (if (list? l)
                            l
                            (list l)))])
@@ -33,7 +33,7 @@
            [else
             (fprintf
              (current-error-port)
-             "warning: ~s provided bad `racket-tools' spec: ~e"
+             "warning: ~s provided bad `raco-commands' spec: ~e"
              d
              entry)]))))
     tools))

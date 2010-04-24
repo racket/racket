@@ -11,7 +11,7 @@ PLANNED FEATURES:
            (only mzlib/list sort)
            net/url
            mzlib/match
-           tool/command-name
+           raco/command-name
            
            "config.ss"
            "private/planet-shared.ss"

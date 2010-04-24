@@ -6,7 +6,7 @@
          scheme/cmdline
          scheme/file
          scheme/class
-         tool/command-name
+         raco/command-name
          (prefix-in text:  "text-render.ss")
          (prefix-in html:  "html-render.ss")
          (prefix-in latex: "latex-render.ss")
