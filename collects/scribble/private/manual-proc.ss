@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require "../decode.ss"
          "../struct.ss"
          "../scheme.ss"
@@ -16,9 +16,9 @@
          "on-demand.ss"
          scheme/string
          scheme/list
-         (for-syntax scheme/base)
-         (for-label scheme/base
-                    scheme/class))
+         (for-syntax racket/base)
+         (for-label racket/base
+                    racket/class))
 
 (provide defproc defproc* defstruct
          defparam defparam* defboolparam
@@ -560,11 +560,15 @@
                                              #f))
                                          fields)))))])
                         (if (pair? name)
-                          (to-element (list just-name
-                                            (make-just-context
-                                             (cadr name)
-                                             (cadr (syntax-e stx-id)))))
-                          just-name))]
+                            (make-element
+                             #f
+                             (list just-name
+                                   (hspace 1)
+                                   (to-element
+                                    (make-just-context
+                                     (cadr name)
+                                     (cadr (syntax-e stx-id))))))
+                            just-name))]
                      [short-width
                       (apply + (length fields) 8
                              (append
@@ -584,14 +588,17 @@
                   (make-omitable-paragraph
                    (list
                     (to-element
-                     `(,(schemeparenfont "struct")
+                     `(,(scheme struct)
                        ,the-name
                        ,(map field-view fields)))))
                   (make-table
                    #f
                    (append
                     (list
-                     (list (to-flow (schemeparenfont "(struct"))
+                     (list (to-flow (make-element #f 
+                                                  (list
+                                                   (schemeparenfont "(")
+                                                   (scheme struct))))
                            flow-spacer
                            (to-flow the-name)
                            (if (or (null? fields)
