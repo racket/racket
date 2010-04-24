@@ -9,15 +9,15 @@
          "drsig.rkt"
          "../acks.rkt")
 
-(import [prefix drscheme:unit: drscheme:unit^]
-        [prefix drscheme:frame: drscheme:frame^]
-        [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
-        [prefix help-desk: drscheme:help-desk^]
-        [prefix drscheme:tools: drscheme:tools^])
-(export drscheme:app^)
+(import [prefix drracket:unit: drracket:unit^]
+        [prefix drracket:frame: drracket:frame^]
+        [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+        [prefix help-desk: drracket:help-desk^]
+        [prefix drracket:tools: drracket:tools^])
+(export drracket:app^)
 
 (define about-frame%
-  (class (drscheme:frame:basics-mixin (frame:standard-menus-mixin frame:basic%))
+  (class (drracket:frame:basics-mixin (frame:standard-menus-mixin frame:basic%))
     (init-field main-text)
     (define/private (edit-menu:do const)
       (send main-text do-edit-operation const))
@@ -184,18 +184,18 @@
       (send* e
         (insert "  The A List (c) 1997-2001 Kyle Hammond\n")))
     
-    (let ([tools (sort (drscheme:tools:get-successful-tools)
+    (let ([tools (sort (drracket:tools:get-successful-tools)
                        (lambda (a b)
-                         (string<? (path->string (drscheme:tools:successful-tool-spec a))
-                                   (path->string (drscheme:tools:successful-tool-spec b)))))])
+                         (string<? (path->string (drracket:tools:successful-tool-spec a))
+                                   (path->string (drracket:tools:successful-tool-spec b)))))])
       (unless (null? tools)
         (let loop ([actions1 '()] [actions2 '()] [tools tools])
           (if (pair? tools)
               (let* ([successful-tool (car tools)]
-                     [name (drscheme:tools:successful-tool-name successful-tool)]
-                     [spec (drscheme:tools:successful-tool-spec successful-tool)]
-                     [bm   (drscheme:tools:successful-tool-bitmap successful-tool)]
-                     [url  (drscheme:tools:successful-tool-url successful-tool)])
+                     [name (drracket:tools:successful-tool-name successful-tool)]
+                     [spec (drracket:tools:successful-tool-spec successful-tool)]
+                     [bm   (drracket:tools:successful-tool-bitmap successful-tool)]
+                     [url  (drracket:tools:successful-tool-url successful-tool)])
                 (define (action)
                   (send e insert "  ")
                   (when bm
@@ -366,11 +366,11 @@
     (add (string-constant how-to-design-programs) "http://www.htdp.org/")
     
     (for-each (λ (tool)
-                (cond [(drscheme:tools:successful-tool-url tool) 
+                (cond [(drracket:tools:successful-tool-url tool) 
                        =>
                        (λ (url)
-                         (add (drscheme:tools:successful-tool-name tool) url tool-urls-menu))]))
-              (drscheme:tools:get-successful-tools))
+                         (add (drracket:tools:successful-tool-name tool) url tool-urls-menu))]))
+              (drracket:tools:get-successful-tools))
     
     (let loop ([additional additional])
       (cond

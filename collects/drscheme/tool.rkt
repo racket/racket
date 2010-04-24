@@ -1,5 +1,6 @@
 #lang racket/base
 (require "private/drsig.ss")
-(provide drscheme:tool^
-	 drscheme:tool-exports^)
-
+(provide drracket:tool^
+         drracket:tool-exports^
+         (rename-out [drracket:tool^ drscheme:tool^]
+                     [drracket:tool-exports^ drscheme:tool-exports^]))

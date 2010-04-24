@@ -11,18 +11,18 @@
          browser/external
          setup/plt-installer)
 
-(import [prefix drscheme:app: drscheme:app^]
-        [prefix drscheme:unit: drscheme:unit^]
-        [prefix drscheme:get/extend: drscheme:get/extend^]
-        [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
-        [prefix drscheme:language: drscheme:language^]
-        [prefix drscheme:module-language: drscheme:module-language^]
-        [prefix drscheme:tools: drscheme:tools^]
-        [prefix drscheme:debug: drscheme:debug^]
-        [prefix drscheme:frame: drscheme:frame^]
-        [prefix drscheme:font: drscheme:font^]
-        [prefix drscheme:modes: drscheme:modes^]
-        [prefix drscheme:help-desk: drscheme:help-desk^])
+(import [prefix drracket:app: drracket:app^]
+        [prefix drracket:unit: drracket:unit^]
+        [prefix drracket:get/extend: drracket:get/extend^]
+        [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+        [prefix drracket:language: drracket:language^]
+        [prefix drracket:module-language: drracket:module-language^]
+        [prefix drracket:tools: drracket:tools^]
+        [prefix drracket:debug: drracket:debug^]
+        [prefix drracket:frame: drracket:frame^]
+        [prefix drracket:font: drracket:font^]
+        [prefix drracket:modes: drracket:modes^]
+        [prefix drracket:help-desk: drracket:help-desk^])
 (export)
 
 
@@ -78,11 +78,11 @@
 
 (application-about-handler
  (λ ()
-   (drscheme:app:about-drscheme)))
+   (drracket:app:about-drscheme)))
 
-(drscheme:modes:add-initial-modes)
+(drracket:modes:add-initial-modes)
 
-(namespace-set-variable-value! 'help-desk:frame-mixin drscheme:frame:basics-mixin)
+(namespace-set-variable-value! 'help-desk:frame-mixin drracket:frame:basics-mixin)
 
 (finder:default-filters (list* '("Racket (.rkt)" "*.rkt")
                                '("Racket (.ss)" "*.ss")
@@ -153,7 +153,7 @@
 (preferences:set-default 'drscheme:user-defined-keybindings
                          '()
                          (λ (x) (and (list? x) 
-                                     (andmap (λ (x) (or (path? x) (drscheme:frame:planet-spec? x)))
+                                     (andmap (λ (x) (or (path? x) (drracket:frame:planet-spec? x)))
                                              x))))
 (preferences:set-default 'drscheme:install-plt-dialog
                          '(#t "" "") ; url-selected?, url string, file string
@@ -271,7 +271,7 @@
  list?)
 
 
-(drscheme:font:setup-preferences)
+(drracket:font:setup-preferences)
 (color-prefs:add-background-preferences-panel)
 (scheme:add-preferences-panel)
 (scheme:add-coloring-preferences-panel)
@@ -360,15 +360,15 @@
      (make-check-box 'drscheme:test-coverage-ask-about-clearing?
                      (string-constant test-coverage-ask?)
                      warnings-panel))))
-(drscheme:debug:add-prefs-panel)
+(drracket:debug:add-prefs-panel)
 (install-help-browser-preference-panel)
-(drscheme:tools:add-prefs-panel)
+(drracket:tools:add-prefs-panel)
 
-(drscheme:language:register-capability 'drscheme:tabify-menu-callback 
+(drracket:language:register-capability 'drscheme:tabify-menu-callback 
                                        (or/c false/c (-> (is-a?/c text%) number? number? void?))
                                        (λ (t a b) (send t tabify-selection a b)))
-(drscheme:language:register-capability 'drscheme:autocomplete-words (listof string?) '())
-(drscheme:language:register-capability 'drscheme:define-popup
+(drracket:language:register-capability 'drscheme:autocomplete-words (listof string?) '())
+(drracket:language:register-capability 'drscheme:define-popup
                                        (or/c (cons/c string? string?) 
                                              (list/c string? string? string?)
                                              #f)
@@ -376,34 +376,34 @@
 
 ;; The default is #f to keep whatever the user chose as their context.
 ;; If it's "", then we will kill the user's choice.
-(drscheme:language:register-capability 'drscheme:help-context-term
+(drracket:language:register-capability 'drscheme:help-context-term
                                        (or/c false/c string?)
                                        #f)
 
-(drscheme:language:register-capability 'drscheme:special:insert-fraction (flat-contract boolean?) #t)
-(drscheme:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)
-(drscheme:language:register-capability 'drscheme:special:insert-lambda (flat-contract boolean?) #t)
-(drscheme:language:register-capability 'drscheme:special:insert-image (flat-contract boolean?) #t)
-(drscheme:language:register-capability 'drscheme:special:insert-comment-box (flat-contract boolean?) #t)
-(drscheme:language:register-capability 'drscheme:language-menu-title 
+(drracket:language:register-capability 'drscheme:special:insert-fraction (flat-contract boolean?) #t)
+(drracket:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)
+(drracket:language:register-capability 'drscheme:special:insert-lambda (flat-contract boolean?) #t)
+(drracket:language:register-capability 'drscheme:special:insert-image (flat-contract boolean?) #t)
+(drracket:language:register-capability 'drscheme:special:insert-comment-box (flat-contract boolean?) #t)
+(drracket:language:register-capability 'drscheme:language-menu-title 
                                        (flat-contract string?)
                                        (string-constant scheme-menu-name))
 
-(drscheme:language:register-capability 'drscheme:teachpack-menu-items
-                                       (or/c false/c (flat-contract drscheme:unit:teachpack-callbacks?))
+(drracket:language:register-capability 'drscheme:teachpack-menu-items
+                                       (or/c false/c (flat-contract drracket:unit:teachpack-callbacks?))
                                        #f)
 
 (handler:current-create-new-window
  (let ([drscheme-current-create-new-window
         (λ (filename)
-          (drscheme:unit:open-drscheme-window filename))])
+          (drracket:unit:open-drscheme-window filename))])
    drscheme-current-create-new-window))
 
 ;; add a catch-all handler to open drscheme files
 (handler:insert-format-handler 
  "Units"
  (λ (filename) #t)
- drscheme:unit:open-drscheme-window)
+ drracket:unit:open-drscheme-window)
 
 ;; add a handler to open .plt files.
 (handler:insert-format-handler 
@@ -421,27 +421,27 @@
    (run-installer filename)
    #f))
 
-(drscheme:tools:load/invoke-all-tools
+(drracket:tools:load/invoke-all-tools
  (λ () (void))
  (λ () 
-   (drscheme:language-configuration:add-built-in-languages)
-   (drscheme:module-language:add-module-language)
-   (drscheme:language-configuration:add-info-specified-languages)))
+   (drracket:language-configuration:add-built-in-languages)
+   (drracket:module-language:add-module-language)
+   (drracket:language-configuration:add-info-specified-languages)))
 
 ;; no more extension after this point
-(drscheme:get/extend:get-interactions-canvas)
-(drscheme:get/extend:get-definitions-canvas)
-(drscheme:get/extend:get-unit-frame)
-(drscheme:get/extend:get-interactions-text)
-(drscheme:get/extend:get-definitions-text)
-(drscheme:language-configuration:get-languages)
+(drracket:get/extend:get-interactions-canvas)
+(drracket:get/extend:get-definitions-canvas)
+(drracket:get/extend:get-unit-frame)
+(drracket:get/extend:get-interactions-text)
+(drracket:get/extend:get-definitions-text)
+(drracket:language-configuration:get-languages)
 
 ;; this default can only be set *after* the
 ;; languages have all be registered by tools
 (preferences:set-default
- drscheme:language-configuration:settings-preferences-symbol
- (drscheme:language-configuration:get-default-language-settings)
- drscheme:language-configuration:language-settings?)
+ drracket:language-configuration:settings-preferences-symbol
+ (drracket:language-configuration:get-default-language-settings)
+ drracket:language-configuration:language-settings?)
 
 ;; if the unmarshaller returns #f, that will fail the
 ;; test for this preference, reverting back to the default.
@@ -449,10 +449,10 @@
 ;; of the default collection and may not be the default
 ;; specified above (of course).
 (preferences:set-un/marshall
- drscheme:language-configuration:settings-preferences-symbol
+ drracket:language-configuration:settings-preferences-symbol
  (λ (x)
-   (let ([lang (drscheme:language-configuration:language-settings-language x)]
-         [settings (drscheme:language-configuration:language-settings-settings x)])
+   (let ([lang (drracket:language-configuration:language-settings-language x)]
+         [settings (drracket:language-configuration:language-settings-settings x)])
      (list (send lang get-language-numbers)
            (send lang marshall-settings settings))))
  (λ (x)
@@ -469,15 +469,15 @@
                                  ;; drscheme, for a sort of backwards compatibility
                                  (equal? (send x get-language-position) lang-nums))
                              x))
-                      (drscheme:language-configuration:get-languages))])
+                      (drracket:language-configuration:get-languages))])
           (and lang
                (let ([settings (send lang unmarshall-settings marshalled-settings)])
-                 (drscheme:language-configuration:make-language-settings
+                 (drracket:language-configuration:make-language-settings
                   lang
                   (or settings (send lang default-settings)))))))))
 
 (let ([drs-handler-recent-items-super%
-       (class (drscheme:frame:basics-mixin
+       (class (drracket:frame:basics-mixin
                (frame:standard-menus-mixin
                 frame:basic%))
          (define/override (edit-menu:between-select-all-and-find menu)
@@ -487,12 +487,13 @@
 
 (cond
   [(current-eventspace-has-menu-root?)
-   (drscheme:frame:create-root-menubar)
+   (drracket:frame:create-root-menubar)
    (preferences:set 'framework:exit-when-no-frames #f)]
   [else
    (preferences:set 'framework:exit-when-no-frames #t)])
 
 
+;; is this used anywhere?
 (let* ([sl (editor:get-standard-style-list)]
        [sd (make-object style-delta%)])
   (send sd set-delta-foreground (make-object color% 255 0 0))
@@ -501,6 +502,8 @@
         (send sl find-or-create-style
               (send sl find-named-style "text:ports err")
               sd)))  
+
+
 (define repl-error-pref 'drscheme:read-eval-print-loop:error-color)
 (define repl-out-pref 'drscheme:read-eval-print-loop:out-color)
 (define repl-value-pref 'drscheme:read-eval-print-loop:value-color)
@@ -538,7 +541,7 @@
           (let loop ([item item])
             (cond
               [(is-a? item top-level-window<%>)
-               (and (is-a? item drscheme:unit:frame%)
+               (and (is-a? item drracket:unit:frame%)
                     item)]
               [(is-a? item menu-item<%>)
                (loop (send item get-parent))]
@@ -587,13 +590,13 @@
 (autosave:restore-autosave-files/gui)
 
 ;; install user's keybindings
-(for-each drscheme:frame:add-keybindings-item 
+(for-each drracket:frame:add-keybindings-item 
           (preferences:get 'drscheme:user-defined-keybindings))
 
 ;; the initial window doesn't set the 
 ;; unit object's state correctly, yet.
 (define (make-basic)
-  (let* ([frame (drscheme:unit:open-drscheme-window)]
+  (let* ([frame (drracket:unit:open-drscheme-window)]
          [interactions-edit (send frame get-interactions-text)]
          [definitions-edit (send frame get-interactions-text)]
          [filename (send definitions-edit get-filename)])
@@ -632,7 +635,7 @@
        [frames
         (map (λ (f) (handler:edit-file
                      f
-                     (λ () (drscheme:unit:open-drscheme-window f))))
+                     (λ () (drracket:unit:open-drscheme-window f))))
              no-dups)])
   (when (null? (filter (λ (x) x) frames))
     (make-basic))

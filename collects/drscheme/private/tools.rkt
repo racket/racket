@@ -15,21 +15,21 @@ string-constants)
 
 (require (for-syntax racket/base racket/match))
 
-(import [prefix drscheme:frame: drscheme:frame^]
-        [prefix drscheme:unit: drscheme:unit^]
-        [prefix drscheme:rep: drscheme:rep^]
-        [prefix drscheme:get/extend: drscheme:get/extend^]
-        [prefix drscheme:language: drscheme:language^]
-        [prefix drscheme:language-configuration: drscheme:language-configuration^]
-        [prefix drscheme:help-desk: drscheme:help-desk^]
-        [prefix drscheme:init: drscheme:init^]
-        [prefix drscheme:debug: drscheme:debug^]
-        [prefix drscheme:eval: drscheme:eval^]
-        [prefix drscheme:modes: drscheme:modes^]
-        [prefix drscheme:tracing: drscheme:tracing^]
-        [prefix drscheme:module-language: drscheme:module-language^]
-        [prefix drscheme:module-language-tools: drscheme:module-language-tools^])
-(export drscheme:tools^)
+(import [prefix drracket:frame: drracket:frame^]
+        [prefix drracket:unit: drracket:unit^]
+        [prefix drracket:rep: drracket:rep^]
+        [prefix drracket:get/extend: drracket:get/extend^]
+        [prefix drracket:language: drracket:language^]
+        [prefix drracket:language-configuration: drracket:language-configuration^]
+        [prefix drracket:help-desk: drracket:help-desk^]
+        [prefix drracket:init: drracket:init^]
+        [prefix drracket:debug: drracket:debug^]
+        [prefix drracket:eval: drracket:eval^]
+        [prefix drracket:modes: drracket:modes^]
+        [prefix drracket:tracing: drracket:tracing^]
+        [prefix drracket:module-language: drracket:module-language^]
+        [prefix drracket:module-language-tools: drracket:module-language-tools^])
+(export drracket:tools^)
 
 ;; An installed-tool is
 ;; (make-installed-tool directory-record module-spec string/#f string/#f string/#f string/#f)
@@ -97,7 +97,7 @@ string-constants)
                             (let ([sp (open-output-string)])
                               (parameterize ([current-error-port sp]
                                              [current-error-port sp])
-                                (drscheme:init:original-error-display-handler (exn-message table) table))
+                                (drracket:init:original-error-display-handler (exn-message table) table))
                               (get-output-string sp)))
                     #f
                     '(ok stop))
@@ -342,18 +342,18 @@ string-constants)
 ;; invoke-tool : unit/sig string -> (values (-> void) (-> void))
 ;; invokes the tools and returns the two phase thunks.
 (define (invoke-tool unit tool-name)
-  (define-unit-binding unit@ unit (import drscheme:tool^) (export drscheme:tool-exports^))
-  (language-object-abstraction drscheme:language:object/c #f)
+  (define-unit-binding unit@ unit (import drracket:tool^) (export drracket:tool-exports^))
+  (language-object-abstraction drracket:language:object/c #f)
   (wrap-tool-inputs 
    (let ()
      (define-values/invoke-unit unit@
-       (import drscheme:tool^) (export drscheme:tool-exports^))
+       (import drracket:tool^) (export drracket:tool-exports^))
      (values phase1 phase2))
    tool-name))
 
 ;; show-error : string (union exn TST) -> void
 (define (show-error title x)
-  (parameterize ([drscheme:init:error-display-handler-message-box-title
+  (parameterize ([drracket:init:error-display-handler-message-box-title
                   title])
     ((error-display-handler)
      (if (exn? x)

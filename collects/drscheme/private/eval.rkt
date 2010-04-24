@@ -18,12 +18,12 @@
   
   (provide eval@)
   (define-unit eval@
-    (import [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
-            [prefix drscheme:rep: drscheme:rep^]
-            [prefix drscheme:init: drscheme:init^]
-            [prefix drscheme:language: drscheme:language^]
-            [prefix drscheme:unit: drscheme:unit^])
-    (export drscheme:eval^)
+    (import [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+            [prefix drracket:rep: drracket:rep^]
+            [prefix drracket:init: drracket:init^]
+            [prefix drracket:language: drracket:language^]
+            [prefix drracket:unit: drracket:unit^])
+    (export drracket:eval^)
     
     (define (traverse-program/multiple language-settings
                                        init
@@ -33,18 +33,18 @@
                      language-settings
                      init
                      kill-termination)])
-        (let ([language (drscheme:language-configuration:language-settings-language
+        (let ([language (drracket:language-configuration:language-settings-language
                          language-settings)]
-              [settings (drscheme:language-configuration:language-settings-settings
+              [settings (drracket:language-configuration:language-settings-settings
                          language-settings)])
           (λ (input iter complete-program?)
             (let-values ([(port src)
                           (cond
                             [(input-port? input) (values input #f)]
                             [else (values
-                                   (let* ([text (drscheme:language:text/pos-text input)]
-                                          [start (drscheme:language:text/pos-start input)]
-                                          [end (drscheme:language:text/pos-end input)]
+                                   (let* ([text (drracket:language:text/pos-text input)]
+                                          [start (drracket:language:text/pos-start input)]
+                                          [end (drracket:language:text/pos-end input)]
                                           [text-port (open-input-text-editor text start end values
                                                                              (send text get-port-name))])
                                      (port-count-lines! text-port)
@@ -56,7 +56,7 @@
                                                                                  (+ start 1))])
                                        (port-count-lines! relocated-port)
                                        relocated-port))
-                                   (drscheme:language:text/pos-text input))])])
+                                   (drracket:language:text/pos-text input))])])
               (parameterize ([current-eventspace eventspace])
                 (queue-callback
                  (λ ()
@@ -109,9 +109,9 @@
       (let* ([user-custodian (make-custodian)]
              [eventspace (parameterize ([current-custodian user-custodian])
                            (make-eventspace))]
-             [language (drscheme:language-configuration:language-settings-language
+             [language (drracket:language-configuration:language-settings-language
                         language-settings)]
-             [settings (drscheme:language-configuration:language-settings-settings
+             [settings (drracket:language-configuration:language-settings-settings
                         language-settings)]
              [eventspace-main-thread #f]
              [run-in-eventspace
@@ -135,7 +135,7 @@
          (λ ()
            (current-custodian user-custodian)
            (set-basic-parameters drs-snip-classes)
-           (drscheme:rep:current-language-settings language-settings)))
+           (drracket:rep:current-language-settings language-settings)))
         (send language on-execute settings run-in-eventspace)
         (run-in-eventspace
          (λ ()
@@ -174,7 +174,7 @@
       (current-ps-setup (make-object ps-setup%))
       
       (current-namespace (make-empty-namespace))
-      (for-each (λ (x) (namespace-attach-module drscheme:init:system-namespace x))
+      (for-each (λ (x) (namespace-attach-module drracket:init:system-namespace x))
                 to-be-copied-module-names))
     
     ;; these module specs are copied over to each new user's namespace 

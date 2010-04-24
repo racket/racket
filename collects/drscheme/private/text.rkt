@@ -4,7 +4,7 @@
            framework)
   
   (import)
-  (export drscheme:text^)
+  (export drracket:text^)
   (define text<%>
     (interface (scheme:text<%>)
       printing-on

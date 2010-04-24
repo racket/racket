@@ -24,15 +24,15 @@
   (provide language-configuration@)
   
   (define-unit language-configuration@
-    (import [prefix drscheme:unit: drscheme:unit^]
-            [prefix drscheme:rep: drscheme:rep^]
-            [prefix drscheme:init: drscheme:init^]
-            [prefix drscheme:language: drscheme:language^]
-            [prefix drscheme:app: drscheme:app^]
-            [prefix drscheme:tools: drscheme:tools^]
-            [prefix drscheme:help-desk: drscheme:help-desk^]
-            [prefix drscheme:module-language: drscheme:module-language^])
-    (export drscheme:language-configuration/internal^)
+    (import [prefix drracket:unit: drracket:unit^]
+            [prefix drracket:rep: drracket:rep^]
+            [prefix drracket:init: drracket:init^]
+            [prefix drracket:language: drracket:language^]
+            [prefix drracket:app: drracket:app^]
+            [prefix drracket:tools: drracket:tools^]
+            [prefix drracket:help-desk: drracket:help-desk^]
+            [prefix drracket:module-language: drracket:module-language^])
+    (export drracket:language-configuration/internal^)
     
     ;; settings-preferences-symbol : symbol
     ;; this pref used to depend on `version', but no longer does.
@@ -58,12 +58,12 @@
     (define add-language
       (λ (language [front? #f])
         
-        (drscheme:tools:only-in-phase 'drscheme:language:add-language 'phase2)
+        (drracket:tools:only-in-phase 'drscheme:language:add-language 'phase2)
         (for-each
          (λ (i<%>)
            (unless (is-a? language i<%>)
-             (error 'drscheme:language:add-language "expected language ~e to implement ~e, forgot to use drscheme:language:get-default-mixin ?" language i<%>)))
-         (drscheme:language:get-language-extensions))
+             (error 'drracket:language:add-language "expected language ~e to implement ~e, forgot to use drracket:language:get-default-mixin ?" language i<%>)))
+         (drracket:language:get-language-extensions))
         
         (ensure-no-duplicate-numbers language languages)
         (set! languages 
@@ -76,7 +76,7 @@
        (λ (l2)
          (when (equal? (send l1 get-language-numbers)
                        (send l2 get-language-numbers))
-           (error 'drscheme:language-configuration:add-language
+           (error 'drracket:language-configuration:add-language
                   "found two languages with the same result from get-language-numbers: ~s, ~s and ~s"
                   (send l1 get-language-numbers)
                   (send l1 get-language-position)
@@ -85,8 +85,8 @@
     
     ;; get-languages : -> (listof languages)
     (define (get-languages) 
-      (drscheme:tools:only-in-phase
-       'drscheme:language-configuration:get-languages
+      (drracket:tools:only-in-phase
+       'drracket:language-configuration:get-languages
        'init-complete)
       languages)
     
@@ -516,13 +516,13 @@
                            (andmap string? positions)
                            (= (length positions) (length numbers))
                            ((length numbers) . >= . 1))
-                (error 'drscheme:language
+                (error 'drracket:language
                        "languages position and numbers must be lists of strings and numbers, respectively, must have the same length,  and must each contain at least one element, got: ~e ~e"
                        positions numbers))
               
               (when (null? (cdr positions))
                 (unless (equal? positions (list (string-constant module-language-name)))
-                  (error 'drscheme:language
+                  (error 'drracket:language
                          "Only the module language may be at the top level. Other languages must have at least two levels")))
               
               (send languages-hier-list clear-fringe-cache)
@@ -741,7 +741,7 @@
         (define (open-current-language)
           (when (and language-to-show settings-to-show)
             (cond
-              [(is-a? language-to-show drscheme:module-language:module-language<%>)
+              [(is-a? language-to-show drracket:module-language:module-language<%>)
                (module-language-selected)]
               [else
                (send languages-hier-list focus) ;; only focus when the module language isn't selected
@@ -1055,7 +1055,7 @@
                         (label native-lang-string)
                         (parent welcome-after-panel)
                         (stretchable-width #t)
-                        (callback (λ (x1 x2) (drscheme:app:switch-language-to dialog language))))))
+                        (callback (λ (x1 x2) (drracket:app:switch-language-to dialog language))))))
                   (string-constants is-this-your-native-language)
                   (all-languages))))
     
@@ -1202,10 +1202,10 @@
                (for-each
                 (λ (lang-module lang-position lang-numbers one-line-summary url reader-spec)
                   (let ([%
-                         ((drscheme:language:get-default-mixin)
-                          (drscheme:language:module-based-language->language-mixin
-                           (drscheme:language:simple-module-based-language->module-based-language-mixin
-                            drscheme:language:simple-module-based-language%)))]
+                         ((drracket:language:get-default-mixin)
+                          (drracket:language:module-based-language->language-mixin
+                           (drracket:language:simple-module-based-language->module-based-language-mixin
+                            drracket:language:simple-module-based-language%)))]
                         [reader
                          (if reader-spec
                              (with-handlers ([exn:fail?
@@ -1335,7 +1335,7 @@
                 [else `(expand ',res)]))))
         (super-instantiate ())))
     
-    (define-struct (simple-settings+assume drscheme:language:simple-settings) (no-redef?))
+    (define-struct (simple-settings+assume drracket:language:simple-settings) (no-redef?))
     (define simple-settings+assume->vector (make-->vector simple-settings+assume))
 
     (define (macro-stepper-mixin %)
@@ -1344,7 +1344,7 @@
         (define/augment (capability-value key)
           (cond
            [(eq? key 'macro-stepper:enabled) #t]
-           [else (inner (drscheme:language:get-capability-default key)
+           [else (inner (drracket:language:get-capability-default key)
                         capability-value key)]))))
 
     (define (assume-mixin %)
@@ -1391,12 +1391,12 @@
                   (simple-settings+assume->vector (default-settings))))
 
         (define/private (extend-simple-settings s no-redef?)
-          (make-simple-settings+assume (drscheme:language:simple-settings-case-sensitive s)
-                                       (drscheme:language:simple-settings-printing-style s)
-                                       (drscheme:language:simple-settings-fraction-style s)
-                                       (drscheme:language:simple-settings-show-sharing s)
-                                       (drscheme:language:simple-settings-insert-newlines s)
-                                       (drscheme:language:simple-settings-annotations s)
+          (make-simple-settings+assume (drracket:language:simple-settings-case-sensitive s)
+                                       (drracket:language:simple-settings-printing-style s)
+                                       (drracket:language:simple-settings-fraction-style s)
+                                       (drracket:language:simple-settings-show-sharing s)
+                                       (drracket:language:simple-settings-insert-newlines s)
+                                       (drracket:language:simple-settings-annotations s)
                                        no-redef?))
 
         (define/override (use-namespace-require/copy-from-setting? s)
@@ -1452,7 +1452,7 @@
              [extras-mixin
               (λ (mred-launcher? one-line-summary)
                 (λ (%)
-                  (class* % (drscheme:language:language<%>)
+                  (class* % (drracket:language:language<%>)
                     (define/override (get-one-line-summary) one-line-summary)
                     (inherit get-module get-transformer-module get-init-code
                              use-namespace-require/copy-from-setting?)
@@ -1461,11 +1461,11 @@
                         [(eq? key 'drscheme:autocomplete-words) 
                          (get-all-manual-keywords)]
                         [else (inner
-                               (drscheme:language:get-capability-default key)
+                               (drracket:language:get-capability-default key)
                                capability-value key)]))
                     (define/override (create-executable setting parent program-filename)
                       (let ([executable-fn
-                             (drscheme:language:put-executable
+                             (drracket:language:put-executable
                               parent
                               program-filename
                               #t
@@ -1474,7 +1474,7 @@
                                   (string-constant save-a-mred-launcher)
                                   (string-constant save-a-mzscheme-launcher)))])
                         (when executable-fn
-                          (drscheme:language:create-module-based-launcher
+                          (drracket:language:create-module-based-launcher
                            program-filename
                            executable-fn
                            (get-module)
@@ -1488,10 +1488,10 @@
                 (let ([%
                        (extra-mixin
                         ((extras-mixin mred-launcher? one-line-summary)
-                         ((drscheme:language:get-default-mixin)
-                          (drscheme:language:module-based-language->language-mixin
-                           (drscheme:language:simple-module-based-language->module-based-language-mixin
-                            drscheme:language:simple-module-based-language%)))))])
+                         ((drracket:language:get-default-mixin)
+                          (drracket:language:module-based-language->language-mixin
+                           (drracket:language:simple-module-based-language->module-based-language-mixin
+                            drracket:language:simple-module-based-language%)))))])
                   (instantiate % ()
                     (module module)
                     (language-id id)
@@ -1528,7 +1528,7 @@
     
     (define (not-a-language-extra-mixin %)
       (class* % (not-a-language-language<%>)
-        (define/override (get-style-delta) drscheme:rep:error-delta)
+        (define/override (get-style-delta) drracket:rep:error-delta)
         
         (define/override (first-opened) 
           (not-a-language-message)
@@ -1544,7 +1544,7 @@
         (define/augment (capability-value v)
           (case v
             [(drscheme:check-syntax-button) #f]
-            [else (inner (drscheme:language:get-capability-default v)
+            [else (inner (drracket:language:get-capability-default v)
                          capability-value v)]))
         
         (super-new)))
@@ -1599,7 +1599,7 @@
                 green-style-delta)))
       
       (define (language-still-unchanged?)
-        (let ([rep (drscheme:rep:current-rep)])
+        (let ([rep (drracket:rep:current-rep)])
           (cond
             [rep 
              (let* ([next-settings (send (send rep get-definitions-text) get-next-settings)]

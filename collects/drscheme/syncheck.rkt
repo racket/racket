@@ -38,7 +38,7 @@ If the namespace does not, they are colored the unbound color.
          net/uri-codec
          browser/external
          (for-syntax scheme/base)
-         "syncheck-drscheme-button.rkt")
+         "syncheck-drracket-button.rkt")
 (provide tool@)
 
 (define o (current-output-port))

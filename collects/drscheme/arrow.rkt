@@ -1,8 +1,8 @@
 #lang racket/base
 
-(require scheme/class
-         scheme/math
-         scheme/gui/base)
+(require racket/class
+         racket/math
+         racket/gui/base)
 
 (provide draw-arrow)
 

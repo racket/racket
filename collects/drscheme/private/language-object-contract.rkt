@@ -79,9 +79,9 @@
                  
                  (capability-value 
                   (->d ([s (and/c symbol? 
-                                  drscheme:language:capability-registered?)])
+                                  drracket:language:capability-registered?)])
                        ()
-                       [res (drscheme:language:get-capability-contract s)]))))])
+                       [res (drracket:language:get-capability-contract s)]))))])
            #`(begin
                (define id (reconstitute #,ctc provide?))
                #,@(if (syntax-e #'provide?)

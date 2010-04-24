@@ -12,12 +12,12 @@
            help/bug-report
            racket/file)
   
-  (import [prefix drscheme:unit: drscheme:unit^]
-          [prefix drscheme:app: drscheme:app^]
-          [prefix help: drscheme:help-desk^]
-          [prefix drscheme:multi-file-search: drscheme:multi-file-search^]
-          [prefix drscheme:init: drscheme:init^])
-  (export (rename drscheme:frame^
+  (import [prefix drracket:unit: drracket:unit^]
+          [prefix drracket:app: drracket:app^]
+          [prefix help: drracket:help-desk^]
+          [prefix drracket:multi-file-search: drracket:multi-file-search^]
+          [prefix drracket:init: drracket:init^])
+  (export (rename drracket:frame^
                   [-mixin mixin]))
   
   (define basics<%> (interface (frame:standard-menus<%>)))
@@ -143,13 +143,13 @@
       (define/override (help-menu:before-about help-menu)
         (make-help-desk-menu-item help-menu))
       
-      (define/override (help-menu:about-callback item evt) (drscheme:app:about-drscheme))
+      (define/override (help-menu:about-callback item evt) (drracket:app:about-drscheme))
       (define/override (help-menu:about-string) (string-constant about-drscheme))
       (define/override (help-menu:create-about?) #t)
       
       (define/public (get-additional-important-urls) '())
       (define/override (help-menu:after-about menu)
-        (drscheme:app:add-important-urls-to-help-menu
+        (drracket:app:add-important-urls-to-help-menu
          menu 
          (get-additional-important-urls))
         (new menu-item%
@@ -159,7 +159,7 @@
               (λ (x y)
                 (help-desk:report-bug))))
         
-        (drscheme:app:add-language-items-to-help-menu menu))
+        (drracket:app:add-language-items-to-help-menu menu))
       
       (define/override (file-menu:new-string) (string-constant new-menu-item))
       (define/override (file-menu:open-string) (string-constant open-menu-item))
@@ -179,7 +179,7 @@
           (parent menu)
           (callback
            (λ (_1 _2)
-             (drscheme:multi-file-search:multi-file-search))))
+             (drracket:multi-file-search:multi-file-search))))
         (new separator-menu-item% (parent menu)))
       
       (define/override (edit-menu:between-find-and-preferences menu)
@@ -387,7 +387,7 @@
             (string-append "http://" url)))
         parent)]
       [else (parameterize ([error-display-handler
-                            drscheme:init:original-error-display-handler])
+                            drracket:init:original-error-display-handler])
               (run-installer
                (string->path (send file-text-field get-value))))]))
 
@@ -453,7 +453,7 @@
         (queue-callback (λ () (semaphore-post wait-to-start))) 
         (send d show #t) 
         (when exn (raise exn))
-        (parameterize ([error-display-handler drscheme:init:original-error-display-handler])
+        (parameterize ([error-display-handler drracket:init:original-error-display-handler])
           (run-installer tmp-filename
                          (λ ()
                            (delete-file tmp-filename)))))))
@@ -581,7 +581,7 @@
         (parent file-menu)
         (callback
          (λ (_1 _2)
-           (drscheme:multi-file-search:multi-file-search))))
+           (drracket:multi-file-search:multi-file-search))))
       (unless (current-eventspace-has-standard-menus?)
         (new separator-menu-item% (parent file-menu))
         (new menu-item%

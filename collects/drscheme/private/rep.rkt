@@ -80,18 +80,18 @@ TODO
   (parameterize-break #f (current-break-parameterization)))
 
 (define-unit rep@
-  (import (prefix drscheme:init: drscheme:init^)
-          (prefix drscheme:language-configuration: drscheme:language-configuration/internal^)
-          (prefix drscheme:language: drscheme:language^)
-          (prefix drscheme:app: drscheme:app^)
-          (prefix drscheme:frame: drscheme:frame^)
-          (prefix drscheme:unit: drscheme:unit^)
-          (prefix drscheme:text: drscheme:text^)
-          (prefix drscheme:help-desk: drscheme:help-desk^)
-          (prefix drscheme:debug: drscheme:debug^)
-          [prefix drscheme:eval: drscheme:eval^]
-          [prefix drscheme:module-language: drscheme:module-language^])
-  (export (rename drscheme:rep^
+  (import (prefix drracket:init: drracket:init^)
+          (prefix drracket:language-configuration: drracket:language-configuration/internal^)
+          (prefix drracket:language: drracket:language^)
+          (prefix drracket:app: drracket:app^)
+          (prefix drracket:frame: drracket:frame^)
+          (prefix drracket:unit: drracket:unit^)
+          (prefix drracket:text: drracket:text^)
+          (prefix drracket:help-desk: drracket:help-desk^)
+          (prefix drracket:debug: drracket:debug^)
+          [prefix drracket:eval: drracket:eval^]
+          [prefix drracket:module-language: drracket:module-language^])
+  (export (rename drracket:rep^
                   [-text% text%]
                   [-text<%> text<%>]))
   
@@ -241,7 +241,7 @@ TODO
          (λ (frame) (printf " ~s\n" frame))
          (continuation-mark-set->context (exn-continuation-marks exn)))
         (printf "\n"))
-      (drscheme:debug:error-display-handler/stacktrace msg exn stack)))
+      (drracket:debug:error-display-handler/stacktrace msg exn stack)))
   
   (define (main-user-eventspace-thread?)
     (let ([rep (current-rep)])
@@ -257,7 +257,7 @@ TODO
                  (let ([canvas (send obj get-canvas)])
                    (and canvas
                         (let ([frame (send canvas get-top-level-window)])
-                          (and (is-a? frame drscheme:unit:frame%)
+                          (and (is-a? frame drracket:unit:frame%)
                                frame))))))]
          [add-drs-function
           (λ (name f)
@@ -268,7 +268,7 @@ TODO
             (λ (obj evt)
               (let ([fr (get-frame obj)])
                 (and fr
-                     (is-a? fr drscheme:unit:frame<%>)
+                     (is-a? fr drracket:unit:frame<%>)
                      (< i (send fr get-tab-count))
                      (begin (send fr change-to-nth-tab i)
                             #t)))))])
@@ -277,22 +277,22 @@ TODO
     (send drs-bindings-keymap add-function "search-help-desk"
           (λ (obj evt)
             (if (not (and (is-a? obj text%) (get-frame obj))) ; is `get-frame' needed?
-              (drscheme:help-desk:help-desk)
+              (drracket:help-desk:help-desk)
               (let* ([start (send obj get-start-position)]
                      [end (send obj get-end-position)]
                      [str (if (= start end)
-                            (drscheme:unit:find-symbol obj start)
+                            (drracket:unit:find-symbol obj start)
                             (send obj get-text start end))])
                 (if (or (not str) (equal? "" str))
-                  (drscheme:help-desk:help-desk)
+                  (drracket:help-desk:help-desk)
                   (let* ([l (send obj get-canvas)]
                          [l (and l (send l get-top-level-window))]
-                         [l (and l (is-a? l drscheme:unit:frame<%>) (send l get-definitions-text))]
+                         [l (and l (is-a? l drracket:unit:frame<%>) (send l get-definitions-text))]
                          [l (and l (send l get-next-settings))]
-                         [l (and l (drscheme:language-configuration:language-settings-language l))]
+                         [l (and l (drracket:language-configuration:language-settings-language l))]
                          [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
                          [name (and l (send l get-language-name))])
-                    (drscheme:help-desk:help-desk
+                    (drracket:help-desk:help-desk
                      str (and ctxt (list ctxt name)))))))))
     (add-drs-function "execute"  (λ (frame) (send frame execute-callback)))
     (add-drs-function "next-tab" (λ (frame) (send frame next-tab)))
@@ -325,7 +325,7 @@ TODO
   ;; drs-bindings-keymap-mixin :
   ;;   ((implements editor:keymap<%>) -> (implements editor:keymap<%>))
   ;;   for any x that is an instance of the resulting class,
-  ;;     (is-a? (send (send x get-canvas) get-top-level-frame) drscheme:unit:frame%)
+  ;;     (is-a? (send (send x get-canvas) get-top-level-frame) drracket:unit:frame%)
   (define drs-bindings-keymap-mixin
     (mixin (editor:keymap<%>) (editor:keymap<%>)
       (define/override (get-keymaps)
@@ -336,7 +336,7 @@ TODO
   ;; queue is full):
   (define output-limit-size 2000)
   
-  (define (printf . args) (apply fprintf drscheme:init:original-output-port args))
+  (define (printf . args) (apply fprintf drracket:init:original-output-port args))
   
   (define setup-scheme-interaction-mode-keymap
     (λ (keymap)
@@ -418,24 +418,24 @@ TODO
   ;; determines if the settings in `language-settings'
   ;; correspond to the default settings of the language.
   (define (is-default-settings? language-settings)
-    (send (drscheme:language-configuration:language-settings-language language-settings)
+    (send (drracket:language-configuration:language-settings-language language-settings)
           default-settings?
-          (drscheme:language-configuration:language-settings-settings language-settings)))
+          (drracket:language-configuration:language-settings-settings language-settings)))
   
   (define (extract-language-name language-settings defs-text)
     (cond
-      [(is-a? (drscheme:language-configuration:language-settings-language language-settings)
-              drscheme:module-language:module-language<%>)
-       (send (drscheme:language-configuration:language-settings-language language-settings)
+      [(is-a? (drracket:language-configuration:language-settings-language language-settings)
+              drracket:module-language:module-language<%>)
+       (send (drracket:language-configuration:language-settings-language language-settings)
              get-users-language-name defs-text)]
       [else
-       (send (drscheme:language-configuration:language-settings-language language-settings)
+       (send (drracket:language-configuration:language-settings-language language-settings)
              get-language-name)]))
   (define (extract-language-style-delta language-settings)
-    (send (drscheme:language-configuration:language-settings-language language-settings)
+    (send (drracket:language-configuration:language-settings-language language-settings)
           get-style-delta))
   (define (extract-language-url language-settings)
-    (send (drscheme:language-configuration:language-settings-language language-settings)
+    (send (drracket:language-configuration:language-settings-language language-settings)
           get-language-url))
   
   (define-struct sexp (left right prompt))
@@ -585,8 +585,8 @@ TODO
       (define/public (get-definitions-text) definitions-text)
       
       (unless (is-a? context context<%>)
-        (error 'drscheme:rep:text% 
-               "expected an object that implements drscheme:rep:context<%> as initialization argument, got: ~e"
+        (error 'drracket:rep:text% 
+               "expected an object that implements drracket:rep:context<%> as initialization argument, got: ~e"
                context))
       
       (define/public (get-context) context)
@@ -600,7 +600,7 @@ TODO
       ;; =User= (probably doesn't matter)
       (define/private queue-system-callback
         (λ (ut thunk [always? #f])
-          (parameterize ([current-eventspace drscheme:init:system-eventspace])
+          (parameterize ([current-eventspace drracket:init:system-eventspace])
             (queue-callback 
              (λ ()
                (when (or always? (eq? ut (get-user-thread)))
@@ -631,8 +631,8 @@ TODO
         (for-each 
          (λ (v) 
            (let* ([ls (current-language-settings)]
-                  [lang (drscheme:language-configuration:language-settings-language ls)]
-                  [settings (drscheme:language-configuration:language-settings-settings ls)])
+                  [lang (drracket:language-configuration:language-settings-language ls)]
+                  [settings (drracket:language-configuration:language-settings-settings ls)])
              (send lang render-value/format
                    v
                    settings
@@ -749,7 +749,7 @@ TODO
                                  [start (- (srcloc-position loc) 1)]
                                  [span (srcloc-span loc)]
                                  [finish (+ start span)])
-                            (send file highlight-range start finish (drscheme:debug:get-error-color) #f 'high)))
+                            (send file highlight-range start finish (drracket:debug:get-error-color) #f 'high)))
                         locs)])
               
               (when (and definitions-text error-arrows)
@@ -1114,8 +1114,8 @@ TODO
         (run-in-evaluation-thread
          (λ () ; =User=, =Handler=, =No-Breaks=
            (let* ([settings (current-language-settings)]
-                  [lang (drscheme:language-configuration:language-settings-language settings)]
-                  [settings (drscheme:language-configuration:language-settings-settings settings)]
+                  [lang (drracket:language-configuration:language-settings-language settings)]
+                  [settings (drracket:language-configuration:language-settings-settings settings)]
                   [dummy-value (box #f)]
                   [get-sexp/syntax/eof 
                    (if complete-program?
@@ -1256,7 +1256,7 @@ TODO
             ; setup standard parameters
             (let ([snip-classes
                    ; the snip-classes in the DrScheme eventspace's snip-class-list
-                   (drscheme:eval:get-snip-classes)]
+                   (drracket:eval:get-snip-classes)]
                   [drs-eventspace (current-eventspace)])
               (queue-user/wait
                (λ () ; =User=, =No-Breaks=
@@ -1270,7 +1270,7 @@ TODO
                   (λ ()
                     ;; forward system events the user's logger, and record any
                     ;; events that happen on the user's logger to show in the GUI
-                    (let ([sys-evt (make-log-receiver drscheme:init:system-logger 'debug)]
+                    (let ([sys-evt (make-log-receiver drracket:init:system-logger 'debug)]
                           [user-evt (make-log-receiver user-logger 'debug)])
                       (let loop ()
                         (sync
@@ -1285,7 +1285,7 @@ TODO
                          (handle-evt
                           user-evt
                           (λ (vec)
-                            (parameterize ([current-eventspace drscheme:init:system-eventspace])
+                            (parameterize ([current-eventspace drracket:init:system-eventspace])
                               (queue-callback (λ () (new-log-message vec))))
                             (loop))))))))
                  
@@ -1315,16 +1315,16 @@ TODO
             (planet-terse-set-key (gensym))
             (planet-terse-register
              (lambda (tag package)
-               (parameterize ([current-eventspace drscheme:init:system-eventspace])
+               (parameterize ([current-eventspace drracket:init:system-eventspace])
                  (queue-callback (λ () (new-planet-info tag package))))))
             
             ;; disable breaks until an evaluation actually occurs
             (send context set-breakables #f #f)
             
             ;; initialize the language
-            (send (drscheme:language-configuration:language-settings-language user-language-settings)
+            (send (drracket:language-configuration:language-settings-language user-language-settings)
                   on-execute
-                  (drscheme:language-configuration:language-settings-settings user-language-settings)
+                  (drracket:language-configuration:language-settings-settings user-language-settings)
                   (let ([run-on-user-thread (lambda (t) 
                                               (queue-user/wait 
                                                (λ ()
@@ -1340,11 +1340,11 @@ TODO
                  (with-handlers ((void (λ (x) 
                                          (set! exn x)
                                          (set! raised-exn? #t))))
-                   (drscheme:language:setup-setup-values))))
+                   (drracket:language:setup-setup-values))))
               (when raised-exn?
                 (fprintf 
                  (current-error-port)
-                 "copied exn raised when setting up snip values (thunk passed as third argume to drscheme:language:add-snip-value)\n")
+                 "copied exn raised when setting up snip values (thunk passed as third argume to drracket:language:add-snip-value)\n")
                 (raise exn)))
             
             ;; allow extensions to this class to do some setup work
@@ -1513,10 +1513,10 @@ TODO
         (current-custodian user-custodian)
         (current-load text-editor-load-handler)
         
-        (drscheme:eval:set-basic-parameters snip-classes)
+        (drracket:eval:set-basic-parameters snip-classes)
         (current-rep this)
         (let ([dir (or (send context get-directory)
-                       drscheme:init:first-dir)])
+                       drracket:init:first-dir)])
           (current-directory dir))
         
         (set! user-namespace-box (make-weak-box (current-namespace)))
@@ -1575,14 +1575,14 @@ TODO
       (define/public (new-empty-console)
         (queue-user/wait
          (λ () ; =User=, =No-Breaks=
-           (send (drscheme:language-configuration:language-settings-language user-language-settings)
+           (send (drracket:language-configuration:language-settings-language user-language-settings)
                  first-opened))))
       
       (define/public (reset-console)
         (when (thread? thread-killed)
           (kill-thread thread-killed))
         (send context clear-annotations)
-        (drscheme:debug:hide-backtrace-window)
+        (drracket:debug:hide-backtrace-window)
         (shutdown-user-custodian)
         (clear-input-port)
         (clear-box-input-port)
@@ -1633,9 +1633,9 @@ TODO
         
         (let ([osf (get-styles-fixed)])
           (set-styles-fixed #f)
-          (send (drscheme:language-configuration:language-settings-language user-language-settings)
+          (send (drracket:language-configuration:language-settings-language user-language-settings)
                 extra-repl-information
-                (drscheme:language-configuration:language-settings-settings user-language-settings)
+                (drracket:language-configuration:language-settings-settings user-language-settings)
                 (open-output-text-editor this 'end))
           (set-styles-fixed osf))
         
@@ -1663,7 +1663,7 @@ TODO
                                      (version:version) (system-type 'gc))
                         welcome-delta)
           (set-clickback before after 
-                         (λ args (drscheme:app:about-drscheme))
+                         (λ args (drracket:app:about-drscheme))
                          click-delta))
         (set! setting-up-repl? #f)
         (thaw-colorer)
@@ -1672,7 +1672,7 @@ TODO
         
         (queue-user/wait
          (λ () ; =User=, =No-Breaks=
-           (send (drscheme:language-configuration:language-settings-language user-language-settings)
+           (send (drracket:language-configuration:language-settings-language user-language-settings)
                  first-opened)))
         
         (insert-prompt)
@@ -1825,7 +1825,7 @@ TODO
   (send input-delta set-delta-foreground (make-object color% 0 150 0))
   
   ;; insert-error-in-text : (is-a?/c text%)
-  ;;                        (union #f (is-a?/c drscheme:rep:text<%>))
+  ;;                        (union #f (is-a?/c drracket:rep:text<%>))
   ;;                        string?
   ;;                        exn?
   ;;                        (union false? (and/c string? directory-exists?))
@@ -1947,7 +1947,7 @@ TODO
   ;; other position.
   (define (open-file-and-highlight filename position other-position)
     (let ([file (handler:edit-file filename)])
-      (when (and (is-a? file drscheme:unit:frame%)
+      (when (and (is-a? file drracket:unit:frame%)
                  position)
         (if other-position
             (send (send file get-interactions-text)
@@ -1966,7 +1966,7 @@ TODO
         (define/override (get-all-words)
           (let* ([definitions-text (get-defs this)]
                  [settings (send definitions-text get-next-settings)]
-                 [language (drscheme:language-configuration:language-settings-language settings)])
+                 [language (drracket:language-configuration:language-settings-language settings)])
             (send language capability-value 'drscheme:autocomplete-words)))
         (super-new))))
   

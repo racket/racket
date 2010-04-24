@@ -33,7 +33,7 @@ module browser threading seems wrong.
            "drsig.rkt"
            "auto-language.rkt"
            "insert-large-letters.rkt"
-           (prefix-in drscheme:arrow: "../arrow.rkt")
+           (prefix-in drracket:arrow: "../arrow.rkt")
            
            mred
            (prefix-in mred: mred)
@@ -51,23 +51,23 @@ module browser threading seems wrong.
   (define define-button-long-label "(define ...)")
   
   (define-unit unit@
-    (import [prefix help-desk: drscheme:help-desk^]
-            [prefix drscheme:app: drscheme:app^]
-            [prefix drscheme:frame: drscheme:frame^]
-            [prefix drscheme:text: drscheme:text^]
-            [prefix drscheme:rep: drscheme:rep^]
-            [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
-            [prefix drscheme:language: drscheme:language^]
-            [prefix drscheme:get/extend: drscheme:get/extend^]
-            [prefix drscheme:module-overview: drscheme:module-overview^]
-            [prefix drscheme:tools: drscheme:tools^]
-            [prefix drscheme:eval: drscheme:eval^]
-            [prefix drscheme:init: drscheme:init^]
-            [prefix drscheme:module-language: drscheme:module-language^]
-            [prefix drscheme:module-language-tools: drscheme:module-language-tools^]
-            [prefix drscheme:modes: drscheme:modes^]
-            [prefix drscheme:debug: drscheme:debug^])
-    (export (rename drscheme:unit^
+    (import [prefix help-desk: drracket:help-desk^]
+            [prefix drracket:app: drracket:app^]
+            [prefix drracket:frame: drracket:frame^]
+            [prefix drracket:text: drracket:text^]
+            [prefix drracket:rep: drracket:rep^]
+            [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+            [prefix drracket:language: drracket:language^]
+            [prefix drracket:get/extend: drracket:get/extend^]
+            [prefix drracket:module-overview: drracket:module-overview^]
+            [prefix drracket:tools: drracket:tools^]
+            [prefix drracket:eval: drracket:eval^]
+            [prefix drracket:init: drracket:init^]
+            [prefix drracket:module-language: drracket:module-language^]
+            [prefix drracket:module-language-tools: drracket:module-language-tools^]
+            [prefix drracket:modes: drracket:modes^]
+            [prefix drracket:debug: drracket:debug^])
+    (export (rename drracket:unit^
                     [-frame% frame%]
                     [-frame<%> frame<%>]))
     
@@ -78,7 +78,7 @@ module browser threading seems wrong.
       get-i
       set-i)
     (define tab<%>
-      (interface (drscheme:rep:context<%>)
+      (interface (drracket:rep:context<%>)
         get-frame
         get-defs
         get-ints
@@ -119,7 +119,7 @@ module browser threading seems wrong.
          (old menu text event)
          (when (and (is-a? text text%)
                     (or (is-a? text (get-definitions-text%))
-                        (is-a? text drscheme:rep:text%))
+                        (is-a? text drracket:rep:text%))
                     (is-a? event mouse-event%))
            
            (let ([add-sep
@@ -148,7 +148,7 @@ module browser threading seems wrong.
                         [l (and l (send l get-top-level-window))]
                         [l (and l (is-a? l -frame<%>) (send l get-definitions-text))]
                         [l (and l (send l get-next-settings))]
-                        [l (and l (drscheme:language-configuration:language-settings-language l))]
+                        [l (and l (drracket:language-configuration:language-settings-language l))]
                         [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
                         [name (and l (send l get-language-name))])
                    (unless (string=? str "")
@@ -331,7 +331,7 @@ module browser threading seems wrong.
                  (and (number? v)
                       v))))))
     
-    ;; create-executable : (instanceof drscheme:unit:frame<%>) -> void
+    ;; create-executable : (instanceof drracket:unit:frame<%>) -> void
     (define (create-executable frame)
       (let* ([definitions-text (send frame get-definitions-text)]
              [program-filename (send definitions-text get-filename)])
@@ -350,9 +350,9 @@ module browser threading seems wrong.
                       #f
                       frame))
              (let ([settings (send definitions-text get-next-settings)])
-               (send (drscheme:language-configuration:language-settings-language settings)
+               (send (drracket:language-configuration:language-settings-language settings)
                      create-executable
-                     (drscheme:language-configuration:language-settings-settings settings)
+                     (drracket:language-configuration:language-settings-settings settings)
                      frame
                      program-filename)))])))
     
@@ -385,11 +385,11 @@ module browser threading seems wrong.
                 (apply super-make-object args))]
              [get-program-editor-mixin
               (λ ()
-                (drscheme:tools:only-in-phase 'drscheme:unit:get-program-editor-mixin 'phase2 'init-complete)
+                (drracket:tools:only-in-phase 'drscheme:unit:get-program-editor-mixin 'phase2 'init-complete)
                 program-editor-mixin)]
              [add-to-program-editor-mixin
               (λ (mixin)
-                (drscheme:tools:only-in-phase 'drscheme:unit:add-to-program-editor-mixin 'phase1)
+                (drracket:tools:only-in-phase 'drscheme:unit:add-to-program-editor-mixin 'phase1)
                 (let ([old program-editor-mixin])
                   (set! program-editor-mixin (λ (x) (mixin (old x))))))])
         (values get-program-editor-mixin
@@ -442,7 +442,7 @@ module browser threading seems wrong.
     (define get-definitions-text%
       (let ([definitions-text% #f])
         (λ ()
-          (drscheme:tools:only-in-phase 'phase2 'init-complete)
+          (drracket:tools:only-in-phase 'phase2 'init-complete)
           (unless definitions-text%
             (set! definitions-text% (make-definitions-text%)))
           definitions-text%)))
@@ -451,14 +451,14 @@ module browser threading seems wrong.
       (let ([definitions-super%
               ((get-program-editor-mixin)
                (text:first-line-mixin
-                (drscheme:module-language:module-language-put-file-mixin
+                (drracket:module-language:module-language-put-file-mixin
                  (scheme:text-mixin
                   (color:text-mixin
-                   (drscheme:rep:drs-bindings-keymap-mixin
+                   (drracket:rep:drs-bindings-keymap-mixin
                     (mode:host-text-mixin
                      (text:delegate-mixin
                       (text:foreground-color-mixin
-                       (drscheme:rep:drs-autocomplete-mixin
+                       (drracket:rep:drs-autocomplete-mixin
                         (λ (x) x)
                         (text:normalize-paste-mixin
                          text:info%)))))))))))])
@@ -475,29 +475,29 @@ module browser threading seems wrong.
           
           (inherit get-surrogate set-surrogate)
           (define/public (set-current-mode mode)
-            (let ([surrogate (drscheme:modes:mode-surrogate mode)])
+            (let ([surrogate (drracket:modes:mode-surrogate mode)])
               (set-surrogate surrogate)
               (when interactions-text
                 (send interactions-text set-surrogate surrogate)
                 (send interactions-text set-submit-predicate
-                      (drscheme:modes:mode-repl-submit mode)))))
+                      (drracket:modes:mode-repl-submit mode)))))
           
           (define/public (is-current-mode? mode)
-            (let ([surrogate (drscheme:modes:mode-surrogate mode)])
+            (let ([surrogate (drracket:modes:mode-surrogate mode)])
               (eq? surrogate (get-surrogate))))
           
           (define/public (change-mode-to-match)
             (let* ([language-settings (get-next-settings)]
                    [language-name (and language-settings
-                                       (send (drscheme:language-configuration:language-settings-language
+                                       (send (drracket:language-configuration:language-settings-language
                                               language-settings)
                                              get-language-position))])
-              (let loop ([modes (drscheme:modes:get-modes)])
+              (let loop ([modes (drracket:modes:get-modes)])
                 (cond
                   [(null? modes) (error 'change-mode-to-match
                                         "didn't find a matching mode")]
                   [else (let ([mode (car modes)])
-                          (if ((drscheme:modes:mode-matches-language mode) language-name)
+                          (if ((drracket:modes:mode-matches-language mode) language-name)
                               (unless (is-current-mode? mode)
                                 (set-current-mode mode))
                               (loop (cdr modes))))]))))
@@ -517,8 +517,8 @@ module browser threading seems wrong.
           
           (define/augment (on-save-file filename fmt)
             (inner (void) on-save-file filename fmt)
-            (let* ([lang (drscheme:language-configuration:language-settings-language next-settings)]
-                   [settings (drscheme:language-configuration:language-settings-settings next-settings)]
+            (let* ([lang (drracket:language-configuration:language-settings-language next-settings)]
+                   [settings (drracket:language-configuration:language-settings-settings next-settings)]
                    [name-mod (send lang get-reader-module)])
               (when name-mod ;; the reader-module method's result is used a test of whether or not the get-metadata method is used for this language
                 (let ([metadata (send lang get-metadata (filename->modname filename) settings)])
@@ -571,12 +571,12 @@ module browser threading seems wrong.
                 (let-values ([(matching-language settings)
                               (pick-new-language
                                this
-                               (drscheme:language-configuration:get-languages)
+                               (drracket:language-configuration:get-languages)
                                module-language
                                module-language-settings)])
                   (when matching-language
                     (set-next-settings
-                     (drscheme:language-configuration:make-language-settings 
+                     (drracket:language-configuration:make-language-settings 
                       matching-language
                       settings)
                      #f))))
@@ -607,7 +607,7 @@ module browser threading seems wrong.
           (field
            [needs-execution-state #f]
            [already-warned-state #f]
-           [execute-settings (preferences:get drscheme:language-configuration:settings-preferences-symbol)]
+           [execute-settings (preferences:get drracket:language-configuration:settings-preferences-symbol)]
            [next-settings execute-settings])
           
           (define/private (set-needs-execution-state! s) (set! needs-execution-state s))
@@ -622,9 +622,9 @@ module browser threading seems wrong.
           
           (define/pubment (get-next-settings) next-settings)
           (define/pubment (set-next-settings _next-settings [update-prefs? #t])
-            (when (or (send (drscheme:language-configuration:language-settings-language _next-settings)
+            (when (or (send (drracket:language-configuration:language-settings-language _next-settings)
                             get-reader-module)
-                      (send (drscheme:language-configuration:language-settings-language next-settings)
+                      (send (drracket:language-configuration:language-settings-language next-settings)
                             get-reader-module))
               (set-modified #t))
             (set! next-settings _next-settings)
@@ -635,11 +635,11 @@ module browser threading seems wrong.
                 (send f language-changed)))
             
             (highlight-first-line
-             (is-a? (drscheme:language-configuration:language-settings-language _next-settings)
-                    drscheme:module-language:module-language<%>))
+             (is-a? (drracket:language-configuration:language-settings-language _next-settings)
+                    drracket:module-language:module-language<%>))
             
-            (let ([lang (drscheme:language-configuration:language-settings-language next-settings)]
-                  [sets (drscheme:language-configuration:language-settings-settings next-settings)])
+            (let ([lang (drracket:language-configuration:language-settings-language next-settings)]
+                  [sets (drracket:language-configuration:language-settings-settings next-settings)])
               (preferences:set
                'drscheme:recent-language-names
                (limit-length
@@ -651,7 +651,7 @@ module browser threading seems wrong.
             
             (when update-prefs?
               (preferences:set
-               drscheme:language-configuration:settings-preferences-symbol
+               drracket:language-configuration:settings-preferences-symbol
                next-settings))
             
             (remove-auto-text)
@@ -662,14 +662,14 @@ module browser threading seems wrong.
             (inner (void) after-set-next-settings s))
           
           (define/public (this-and-next-language-the-same?)
-            (let ([execute-lang (drscheme:language-configuration:language-settings-language execute-settings)]
-                  [next-lang (drscheme:language-configuration:language-settings-language next-settings)])
+            (let ([execute-lang (drracket:language-configuration:language-settings-language execute-settings)]
+                  [next-lang (drracket:language-configuration:language-settings-language next-settings)])
               (and (eq? execute-lang next-lang)
                    (equal?
                     (send execute-lang marshall-settings 
-                          (drscheme:language-configuration:language-settings-settings execute-settings))
+                          (drracket:language-configuration:language-settings-settings execute-settings))
                     (send execute-lang marshall-settings 
-                          (drscheme:language-configuration:language-settings-settings next-settings))))))
+                          (drracket:language-configuration:language-settings-settings next-settings))))))
           
           (define/pubment (set-needs-execution-message msg)
             (set-needs-execution-state! msg))
@@ -746,7 +746,7 @@ module browser threading seems wrong.
           (define/private (draw-arrow dc dx dy pt1 pt2)
             (let-values ([(x1 y1) (find-poss (srcloc-source pt1) (- (srcloc-position pt1) 1) (srcloc-position pt1))]
                          [(x2 y2) (find-poss (srcloc-source pt2) (- (srcloc-position pt2) 1) (srcloc-position pt2))])
-              (drscheme:arrow:draw-arrow dc x1 y1 x2 y2 dx dy)))
+              (drracket:arrow:draw-arrow dc x1 y1 x2 y2 dx dy)))
           
           (inherit dc-location-to-editor-location)
           (define/private (find-poss text left-pos right-pos)
@@ -770,14 +770,14 @@ module browser threading seems wrong.
           ;; inserts the auto-text if any, and executes the text if so
           (define/private (insert-auto-text)
             (define lang
-              (drscheme:language-configuration:language-settings-language
+              (drracket:language-configuration:language-settings-language
                next-settings))
             (define auto-text
               (and (not really-modified?)
                    (not (get-filename))
-                   (is-a? lang drscheme:module-language:module-language<%>)
+                   (is-a? lang drracket:module-language:module-language<%>)
                    (send lang get-auto-text
-                         (drscheme:language-configuration:language-settings-settings
+                         (drracket:language-configuration:language-settings-settings
                           next-settings))))
             (when auto-text
               (begin-edit-sequence #f)
@@ -816,8 +816,8 @@ module browser threading seems wrong.
           ;; insert the default-text
           (queue-callback (lambda () (insert-auto-text)))
           (highlight-first-line
-           (is-a? (drscheme:language-configuration:language-settings-language next-settings)
-                  drscheme:module-language:module-language<%>))
+           (is-a? (drracket:language-configuration:language-settings-language next-settings)
+                  drracket:module-language:module-language<%>))
           (inherit set-max-undo-history)
           (set-max-undo-history 'forever))))
     
@@ -852,16 +852,16 @@ module browser threading seems wrong.
               (and (preferences:get 'drscheme:switch-to-module-language-automatically?)
                    (ormap 
                     (λ (lang)
-                      (and (is-a? lang drscheme:module-language:module-language<%>)
+                      (and (is-a? lang drracket:module-language:module-language<%>)
                            lang))
-                    (drscheme:language-configuration:get-languages)))]
+                    (drracket:language-configuration:get-languages)))]
              [module-language-settings
               (let ([prefs-setting (preferences:get 
-                                    drscheme:language-configuration:settings-preferences-symbol)])
+                                    drracket:language-configuration:settings-preferences-symbol)])
                 (cond
-                  [(eq? (drscheme:language-configuration:language-settings-language prefs-setting)
+                  [(eq? (drracket:language-configuration:language-settings-language prefs-setting)
                         module-language)
-                   (drscheme:language-configuration:language-settings-settings prefs-setting)]
+                   (drracket:language-configuration:language-settings-settings prefs-setting)]
                   [else 
                    (and module-language
                         (send module-language default-settings))]))])
@@ -909,7 +909,7 @@ module browser threading seems wrong.
                   [frame (and canvas (send canvas get-top-level-window))])
              (when (is-a? frame -frame<%>)
                (let* ([language-settings (send (send frame get-definitions-text) get-next-settings)]
-                      [new-language (drscheme:language-configuration:language-settings-language language-settings)]
+                      [new-language (drracket:language-configuration:language-settings-language language-settings)]
                       [capability-info (send new-language capability-value 'drscheme:define-popup)])
                  (when capability-info
                    (let* ([current-pos (get-pos editor event)]
@@ -951,7 +951,7 @@ module browser threading seems wrong.
         (init-field frame)
         
         (unless (is-a? frame -frame<%>)
-          (error 'func-defs-canvas "frame is not a drscheme:unit:frame<%>"))
+          (error 'func-defs-canvas "frame is not a drracket:unit:frame<%>"))
         
         (define sort-by-name? (preferences:get 'drscheme:defns-popup-sort-by-name?))
         (define sorting-name (if sort-by-name?
@@ -964,13 +964,13 @@ module browser threading seems wrong.
                                  (string-constant sort-by-position) 
                                  (string-constant sort-by-name))))
         
-        (define drscheme:define-popup-capability-info
-          (drscheme:language:get-capability-default 'drscheme:define-popup))
+        (define define-popup-capability-info
+          (drracket:language:get-capability-default 'drscheme:define-popup))
         
         (inherit set-message set-hidden?)
         (define/public (language-changed new-language vertical?)
-          (set! drscheme:define-popup-capability-info (send new-language capability-value 'drscheme:define-popup))
-          (let ([define-name (get-drscheme:define-popup-name drscheme:define-popup-capability-info
+          (set! define-popup-capability-info (send new-language capability-value 'drscheme:define-popup))
+          (let ([define-name (get-define-popup-name define-popup-capability-info
                                                              vertical?)])
             (cond
               [define-name
@@ -979,9 +979,9 @@ module browser threading seems wrong.
               [else
                (set-hidden? #t)])))
         (define/override (fill-popup menu reset)
-          (when drscheme:define-popup-capability-info
+          (when define-popup-capability-info
             (let* ([text (send frame get-definitions-text)]
-                   [unsorted-defns (get-definitions (car drscheme:define-popup-capability-info)
+                   [unsorted-defns (get-definitions (car define-popup-capability-info)
                                                     (not sort-by-name?)
                                                     text)]
                    [defns (if sort-by-name?
@@ -1186,8 +1186,8 @@ module browser threading seems wrong.
     (define horizontal-dragable/def-int% (dragable/def-int-mixin panel:horizontal-dragable%))
     
     (define super-frame%
-      (drscheme:frame:mixin
-       (drscheme:frame:basics-mixin 
+      (drracket:frame:mixin
+       (drracket:frame:basics-mixin 
         (frame:searchable-text-mixin 
          (frame:searchable-mixin
           (frame:text-info-mixin 
@@ -1203,7 +1203,7 @@ module browser threading seems wrong.
                     frame%)))))))))))))))
     
     (define tab%
-      (class* object% (drscheme:rep:context<%> tab<%>)
+      (class* object% (drracket:rep:context<%> tab<%>)
         (init-field frame
                     defs
                     i
@@ -1385,7 +1385,7 @@ module browser threading seems wrong.
       show-planet-status)
     
     (define -frame<%>
-      (interface (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
+      (interface (drracket:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
         get-insert-menu
         get-special-menu
         get-interactions-text
@@ -1416,7 +1416,7 @@ module browser threading seems wrong.
     
 
     (define frame-mixin
-      (mixin (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
+      (mixin (drracket:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
         (-frame<%>)
         (init filename)
         (inherit set-label-prefix get-show-menu
@@ -1635,7 +1635,7 @@ module browser threading seems wrong.
                (unless planet-message
                  (new message% 
                       [parent planet-status-panel]
-                      [label drscheme:debug:small-planet-bitmap])
+                      [label drracket:debug:small-planet-bitmap])
                  (set! planet-message (new message% [parent planet-status-panel] [label ""] [stretchable-width #t]))
                  (set! planet-logger-button
                        (new button%
@@ -1915,8 +1915,8 @@ module browser threading seems wrong.
             (send transcript-parent-panel change-children (λ (l) (list transcript-panel)))
 
             (let* ([settings (send definitions-text get-next-settings)]
-                   [language (drscheme:language-configuration:language-settings-language settings)]
-                   [name (get-drscheme:define-popup-name (send language capability-value 'drscheme:define-popup)
+                   [language (drracket:language-configuration:language-settings-language settings)]
+                   [name (get-define-popup-name (send language capability-value 'drscheme:define-popup)
                                                          vertical?)])
               (when name
                 (send func-defs-canvas set-message #f name)))
@@ -2040,13 +2040,13 @@ module browser threading seems wrong.
         
         (define/public (language-changed)
           (let* ([settings (send definitions-text get-next-settings)]
-                 [language (drscheme:language-configuration:language-settings-language settings)])
+                 [language (drracket:language-configuration:language-settings-language settings)])
             (send func-defs-canvas language-changed language (or (toolbar-is-left?) (toolbar-is-right?)))
             (send language-message set-yellow/lang
                   (not (send definitions-text this-and-next-language-the-same?))
                   (string-append (send language get-language-name)
                                  (if (send language default-settings? 
-                                           (drscheme:language-configuration:language-settings-settings settings))
+                                           (drracket:language-configuration:language-settings-settings settings))
                                      ""
                                      (string-append " " (string-constant custom)))))
             (when (is-a? scheme-menu menu%)
@@ -2179,7 +2179,7 @@ module browser threading seems wrong.
                     candidate))
              candidate-prefixes)))
         
-        [define/override get-canvas% (λ () (drscheme:get/extend:get-definitions-canvas))]
+        [define/override get-canvas% (λ () (drracket:get/extend:get-definitions-canvas))]
         
         (define/public (update-running running?)
           (send running-canvas set-running running?))
@@ -2203,7 +2203,7 @@ module browser threading seems wrong.
             (toggle-show/hide-interactions)
             (update-shown)))
         
-        (define/override (get-editor%) (drscheme:get/extend:get-definitions-text))
+        (define/override (get-editor%) (drracket:get/extend:get-definitions-text))
         (define/public (still-untouched?)
           (and (send definitions-text still-untouched?)
                (let* ([prompt (send interactions-text get-prompt)]
@@ -2274,13 +2274,13 @@ module browser threading seems wrong.
                   (for-each (λ (mode) 
                               (let* ([item
                                       (new checkable-menu-item%
-                                           (label (drscheme:modes:mode-name mode))
+                                           (label (drracket:modes:mode-name mode))
                                            (parent menu)
                                            (callback 
                                             (λ (_1 _2) (send definitions-text set-current-mode mode))))])
                                 (when (send definitions-text is-current-mode? mode)
                                   (send item check #t))))
-                            (drscheme:modes:get-modes))))))
+                            (drracket:modes:get-modes))))))
         
         
         
@@ -2318,14 +2318,14 @@ module browser threading seems wrong.
           (handle-split canvas-to-be-split
                         (λ (x) (set! definitions-canvases x))
                         definitions-canvases
-                        (drscheme:get/extend:get-definitions-canvas)
+                        (drracket:get/extend:get-definitions-canvas)
                         definitions-text))
         
         (define/private (split-interactions canvas-to-be-split)
           (handle-split canvas-to-be-split
                         (λ (x) (set! interactions-canvases x))
                         interactions-canvases
-                        (drscheme:get/extend:get-interactions-canvas)
+                        (drracket:get/extend:get-interactions-canvas)
                         interactions-text))
         
         (define/private (handle-split canvas-to-be-split set-canvases! canvases canvas% text)
@@ -2685,13 +2685,13 @@ module browser threading seems wrong.
             ;; if the language is not-a-language, and the buffer looks like a module,
             ;; automatically make the switch to the module language
             (let ([next-settings (send definitions-text get-next-settings)])
-              (when (is-a? (drscheme:language-configuration:language-settings-language next-settings) 
-                           drscheme:language-configuration:not-a-language-language<%>)
+              (when (is-a? (drracket:language-configuration:language-settings-language next-settings) 
+                           drracket:language-configuration:not-a-language-language<%>)
                 (when (looks-like-module? definitions-text)
                   (let-values ([(module-language module-language-settings) (get-module-language/settings)])
                     (when (and module-language module-language-settings)
                       (send definitions-text set-next-settings 
-                            (drscheme:language-configuration:make-language-settings
+                            (drracket:language-configuration:make-language-settings
                              module-language
                              module-language-settings)))))))
             
@@ -2777,7 +2777,7 @@ module browser threading seems wrong.
         (define/private (initialize-definitions-canvas)
           (unless definitions-canvas
             (set! definitions-canvas
-                  (new (drscheme:get/extend:get-definitions-canvas)
+                  (new (drracket:get/extend:get-definitions-canvas)
                        (parent resizable-panel)
                        (editor definitions-text)))))
         
@@ -2815,15 +2815,15 @@ module browser threading seems wrong.
         ;; creates a new tab and updates the GUI for that new tab
         (define/private create-new-tab
           (lambda ([filename #f])
-            (let* ([defs (new (drscheme:get/extend:get-definitions-text))]
+            (let* ([defs (new (drracket:get/extend:get-definitions-text))]
                    [tab-count (length tabs)]
-                   [new-tab (new (drscheme:get/extend:get-tab)
+                   [new-tab (new (drracket:get/extend:get-tab)
                                  (defs defs)
                                  (i tab-count)
                                  (frame this)
                                  (defs-shown? #t)
                                  (ints-shown? (not filename)))]
-                   [ints (make-object (drscheme:get/extend:get-interactions-text) new-tab)])
+                   [ints (make-object (drracket:get/extend:get-interactions-text) new-tab)])
               (send new-tab set-ints ints)
               (set! tabs (append tabs (list new-tab)))
               (send tabs-panel append 
@@ -3244,10 +3244,10 @@ module browser threading seems wrong.
         
         (define/private (can-browse-language?)
           (let* ([lang/config (send (get-definitions-text) get-next-settings)]
-                 [lang (drscheme:language-configuration:language-settings-language lang/config)]
+                 [lang (drracket:language-configuration:language-settings-language lang/config)]
                  [strs (send lang get-language-position)]
                  [can-browse?
-                  (or (is-a? lang drscheme:module-language:module-language<%>)
+                  (or (is-a? lang drracket:module-language:module-language<%>)
                       (ormap (λ (x) (regexp-match #rx"PLT" x))
                              strs))])
             (unless can-browse?
@@ -3260,7 +3260,7 @@ module browser threading seems wrong.
           (send module-browser-panel begin-container-sequence)
           (unless module-browser-ec 
             (set! module-browser-pb 
-                  (drscheme:module-overview:make-module-overview-pasteboard
+                  (drracket:module-overview:make-module-overview-pasteboard
                    #t
                    (λ (x) (mouse-currently-over x))))
             (set! module-browser-ec (make-object editor-canvas%
@@ -3349,9 +3349,9 @@ module browser threading seems wrong.
               (send module-browser-planet-path-check-box enable #f)
               (send module-browser-name-length-choice enable #f)
               (disable-evaluation-in-tab current-tab)
-              (drscheme:module-overview:fill-pasteboard 
+              (drracket:module-overview:fill-pasteboard 
                module-browser-pb
-               (drscheme:language:make-text/pos
+               (drracket:language:make-text/pos
                 definitions-text
                 0
                 (send definitions-text last-position))
@@ -3570,7 +3570,7 @@ module browser threading seems wrong.
         
         (define/private (get-current-capability-value key)
           (let* ([language-settings (send (get-definitions-text) get-next-settings)]
-                 [new-language (drscheme:language-configuration:language-settings-language language-settings)])
+                 [new-language (drracket:language-configuration:language-settings-language language-settings)])
             (send new-language capability-value key)))
         
         (define language-menu 'uninited-language-menu)
@@ -3580,7 +3580,7 @@ module browser threading seems wrong.
         (define/public (get-special-menu) insert-menu)
         
         (define/public (choose-language-callback)
-          (let ([new-settings (drscheme:language-configuration:language-dialog
+          (let ([new-settings (drracket:language-configuration:language-dialog
                                #f
                                (send definitions-text get-next-settings)
                                this)])
@@ -3593,15 +3593,15 @@ module browser threading seems wrong.
           (let ([tp-callbacks (get-current-capability-value 'drscheme:teachpack-menu-items)])
             (cond
               [tp-callbacks
-               (let* ([language (drscheme:language-configuration:language-settings-language
+               (let* ([language (drracket:language-configuration:language-settings-language
                                  (send (get-definitions-text) get-next-settings))]
-                      [settings (drscheme:language-configuration:language-settings-settings
+                      [settings (drracket:language-configuration:language-settings-settings
                                  (send (get-definitions-text) get-next-settings))]
                       [tp-names ((teachpack-callbacks-get-names tp-callbacks) settings)]
                       [update-settings
                        (λ (settings)
                          (send (get-definitions-text) set-next-settings 
-                               (drscheme:language-configuration:make-language-settings language settings))
+                               (drracket:language-configuration:make-language-settings language settings))
                          (send (get-definitions-text) teachpack-changed))])
                  (set! teachpack-items
                        (list*
@@ -3648,7 +3648,7 @@ module browser threading seems wrong.
                                                              (and 
                                                               (send l capability-value 'drscheme:teachpack-menu-items)
                                                               (format "\n  ~a" (send l get-language-name))))
-                                                           (drscheme:language-configuration:get-languages))))))
+                                                           (drracket:language-configuration:get-languages))))))
                                            this))])))])))
         
         (define/private (initialize-menus)
@@ -3660,7 +3660,7 @@ module browser threading seems wrong.
                                           #f
                                           language-menu-on-demand))]
                  [_ (set! scheme-menu (new (get-menu%) 
-                                           [label (drscheme:language:get-capability-default
+                                           [label (drracket:language:get-capability-default
                                                    'drscheme:language-menu-title)]
                                            [parent mb]))]
                  [send-method
@@ -3739,7 +3739,7 @@ module browser threading seems wrong.
             (make-object menu:can-restore-menu-item%
               (string-constant module-browser...)
               scheme-menu
-              (λ (x y) (drscheme:module-overview:module-overview this)))
+              (λ (x y) (drracket:module-overview:module-overview this)))
             (make-object separator-menu-item% scheme-menu)
             
             (let ([cap-val
@@ -3747,7 +3747,7 @@ module browser threading seems wrong.
                      (let* ([tab (get-current-tab)]
                             [defs (send tab get-defs)]
                             [settings (send defs get-next-settings)]
-                            [language (drscheme:language-configuration:language-settings-language settings)])
+                            [language (drracket:language-configuration:language-settings-language settings)])
                        (send language capability-value 'drscheme:tabify-menu-callback)))])
               (new menu:can-restore-menu-item%
                    [label (string-constant reindent-menu-item-label)]
@@ -3838,7 +3838,7 @@ module browser threading seems wrong.
                          (let ([language-settings (send definitions-text get-next-settings)])
                            (let-values ([(comment-prefix comment-character)
                                          (if language-settings
-                                             (send (drscheme:language-configuration:language-settings-language
+                                             (send (drracket:language-configuration:language-settings-language
                                                     language-settings)
                                                    get-comment-character)
                                              (values ";" #\;))])
@@ -3912,10 +3912,10 @@ module browser threading seems wrong.
         ;                          
         ;                          
         
-        (define definitions-text (new (drscheme:get/extend:get-definitions-text)))
+        (define definitions-text (new (drracket:get/extend:get-definitions-text)))
         
         ;; tabs : (listof tab)
-        (define tabs (list (new (drscheme:get/extend:get-tab)
+        (define tabs (list (new (drracket:get/extend:get-tab)
                                 (defs definitions-text)
                                 (frame this)
                                 (i 0)
@@ -3927,7 +3927,7 @@ module browser threading seems wrong.
         ;; corresponds to the tabs-panel's active button.
         (define current-tab (car tabs))
         
-        (define interactions-text (new (drscheme:get/extend:get-interactions-text) 
+        (define interactions-text (new (drracket:get/extend:get-interactions-text) 
                                        (context (car tabs))))
         (send (car tabs) set-ints interactions-text)
         
@@ -3998,7 +3998,7 @@ module browser threading seems wrong.
         [define definitions-canvas #f]
         (initialize-definitions-canvas)
         [define definitions-canvases (list definitions-canvas)]
-        [define interactions-canvas (new (drscheme:get/extend:get-interactions-canvas)
+        [define interactions-canvas (new (drracket:get/extend:get-interactions-canvas)
                                          (parent resizable-panel)
                                          (editor interactions-text))]
         [define interactions-canvases (list interactions-canvas)]
@@ -4140,8 +4140,8 @@ module browser threading seems wrong.
         (set! newest-frame this)
         (send definitions-canvas focus)))
     
-    ;; get-drscheme:define-popup-name : (or/c #f (cons/c string? string?) (list/c string? string? string)) boolean -> (or/c #f string?)
-    (define (get-drscheme:define-popup-name info vertical?)
+    ;; get-define-popup-name : (or/c #f (cons/c string? string?) (list/c string? string? string)) boolean -> (or/c #f string?)
+    (define (get-define-popup-name info vertical?)
       (and info
            (if vertical?
                (if (pair? (cdr info))
@@ -4424,7 +4424,7 @@ module browser threading seems wrong.
                       [marshalled-settings (cdr name/settings)]
                       [lang (ormap
                              (λ (l) (and (equal? (send l get-language-name) name) l))
-                             (drscheme:language-configuration:get-languages))])
+                             (drracket:language-configuration:get-languages))])
                  (when lang
                    ;; this test can fail when a language has been added wrongly via the tools interface
                    ;; just ignore that menu item, in that case.
@@ -4439,7 +4439,7 @@ module browser threading seems wrong.
                              (λ (x y)
                                (send (send frame get-definitions-text)
                                      set-next-settings
-                                     (drscheme:language-configuration:make-language-settings
+                                     (drracket:language-configuration:make-language-settings
                                       lang
                                       settings)))]))))))
              (preferences:get 'drscheme:recent-language-names))
@@ -4592,7 +4592,7 @@ module browser threading seems wrong.
                                            (forget-saved-bug-report item)
                                            (send-url
                                             (url->string
-                                             (drscheme:debug:bug-info->ticket-url item))))]
+                                             (drracket:debug:bug-info->ticket-url item))))]
                                [label (string-constant bug-track-report)]))
            (void)))
        pref) ;; reverse list so first elements end up on top of list
@@ -4705,7 +4705,7 @@ module browser threading seems wrong.
 
     (define first-frame? #t)
     (define (create-new-drscheme-frame filename)
-      (let* ([drs-frame% (drscheme:get/extend:get-unit-frame)]
+      (let* ([drs-frame% (drracket:get/extend:get-unit-frame)]
              [frame (new drs-frame% (filename filename))])
         (send (send frame get-interactions-text) initialize-console)
         (when first-frame?

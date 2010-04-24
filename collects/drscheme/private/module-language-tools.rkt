@@ -13,11 +13,11 @@
 (define (oprintf . args) (apply fprintf op args))
 
 (define-unit module-language-tools@
-  (import [prefix drscheme:unit: drscheme:unit^]
-          [prefix drscheme:module-language: drscheme:module-language^]
-          [prefix drscheme:language: drscheme:language^]
-          [prefix drscheme:language-configuration: drscheme:language-configuration^])
-  (export drscheme:module-language-tools^)
+  (import [prefix drracket:unit: drracket:unit^]
+          [prefix drracket:module-language: drracket:module-language^]
+          [prefix drracket:language: drracket:language^]
+          [prefix drracket:language-configuration: drracket:language-configuration^])
+  (export drracket:module-language-tools^)
 
   (define-local-member-name initialized? move-to-new-language)
 
@@ -32,7 +32,7 @@
   (define tab<%> (interface ()))
   
   (define tab-mixin
-    (mixin (drscheme:unit:tab<%>) (tab<%>)
+    (mixin (drracket:unit:tab<%>) (tab<%>)
       (inherit get-frame)
       (define toolbar-buttons '())
       (define/public (get-lang-toolbar-buttons) toolbar-buttons)
@@ -46,7 +46,7 @@
   
   (define frame<%> (interface ()))
   (define frame-mixin
-    (mixin (drscheme:unit:frame<%>) (frame<%>)
+    (mixin (drracket:unit:frame<%>) (frame<%>)
       (inherit unregister-toolbar-button get-definitions-text)
   
       (define toolbar-button-panel #f)
@@ -72,7 +72,7 @@
   
   (define definitions-text<%> (interface ()))
   (define definitions-text-mixin
-    (mixin (text:basic<%> drscheme:unit:definitions-text<%>) (definitions-text<%>)
+    (mixin (text:basic<%> drracket:unit:definitions-text<%>) (definitions-text<%>)
       (inherit get-next-settings)
       (define in-module-language? #f)      ;; true when we are in the module language
       (define hash-lang-last-location #f)  ;; non-false when we know where the hash-lang line ended
@@ -130,7 +130,7 @@
                 (register-new-buttons
                  (contract (or/c #f (listof (list/c string?
                                                     (is-a?/c bitmap%)
-                                                    (-> (is-a?/c drscheme:unit:frame<%>) any))))
+                                                    (-> (is-a?/c drracket:unit:frame<%>) any))))
                            ((if (vector? info-result)
                                 (vector-ref info-result 0)
                                 info-result)
@@ -197,10 +197,10 @@
       
       (define/augment (after-set-next-settings settings)
         (update-in-module-language?
-         (is-a? (drscheme:language-configuration:language-settings-language settings)
-                drscheme:module-language:module-language<%>))
+         (is-a? (drracket:language-configuration:language-settings-language settings)
+                drracket:module-language:module-language<%>))
         (inner (void) after-set-next-settings settings))
       (super-new)
       (set! in-module-language? 
-            (is-a? (drscheme:language-configuration:language-settings-language (get-next-settings))
-                   drscheme:module-language:module-language<%>)))))
+            (is-a? (drracket:language-configuration:language-settings-language (get-next-settings))
+                   drracket:module-language:module-language<%>)))))

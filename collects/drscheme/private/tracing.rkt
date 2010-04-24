@@ -15,11 +15,11 @@
 (provide tracing@)
 
 (define-unit tracing@
-  (import [prefix drscheme:frame: drscheme:frame^]
-          [prefix drscheme:rep: drscheme:rep^]
-          [prefix drscheme:init: drscheme:init^]
-          [prefix drscheme:unit: drscheme:unit^])
-  (export drscheme:tracing^)
+  (import [prefix drracket:frame: drracket:frame^]
+          [prefix drracket:rep: drracket:rep^]
+          [prefix drracket:init: drracket:init^]
+          [prefix drracket:unit: drracket:unit^])
+  (export drracket:tracing^)
   
   (define-local-member-name
     get-tracing-text
@@ -41,7 +41,7 @@
       (let ([name (cond
                     [(identifier? inferred-name) (syntax-e inferred-name)]
                     [else (object-name inferred-name)])]
-            [rep (drscheme:rep:current-rep)])
+            [rep (drracket:rep:current-rep)])
         (when (and name rep)
           (let ([canvas (send rep get-canvas)])
             (when canvas
@@ -74,7 +74,7 @@
                                           ;; Queue callback to write trace line ---
                                           ;; low priority, so that infinite loops don't stop the user
                                           ;;  from clicking "Break"
-                                          (parameterize ([current-eventspace drscheme:init:system-eventspace])
+                                          (parameterize ([current-eventspace drracket:init:system-eventspace])
                                             (queue-callback
                                              (lambda ()
                                                (send tab tracing:add-line (get-output-string sp))
@@ -89,7 +89,7 @@
     (import tr:stacktrace-imports^) (export tr:stacktrace^))
   
   (define tab-mixin
-    (mixin (drscheme:unit:tab<%> drscheme:rep:context<%>) (tab-tracing<%>)
+    (mixin (drracket:unit:tab<%> drracket:rep:context<%>) (tab-tracing<%>)
       (inherit get-frame)
       
       (define tracing-visible? #f)
@@ -160,7 +160,7 @@
   (send clickback-delta set-delta 'change-underline #t)
   
   (define frame-mixin 
-    (mixin (drscheme:frame:<%> drscheme:unit:frame<%>) ()
+    (mixin (drracket:frame:<%> drracket:unit:frame<%>) ()
       (inherit get-current-tab)
       (define show-tracing-menu-item #f)
       (define tracing-visible? #f)

@@ -15,8 +15,8 @@
   (provide font@)
   
   (define-unit font@
-    (import [prefix drscheme:language-configuration: drscheme:language-configuration/internal^])
-    (export drscheme:font^)
+    (import [prefix drracket:language-configuration: drracket:language-configuration/internal^])
+    (export drracket:font^)
     
     (define (setup-preferences)
       (preferences:add-panel
@@ -205,10 +205,10 @@
             'framework:standard-style-list:font-size
             (λ (p v) (send size-slider set-value v)))
            (preferences:add-callback
-            drscheme:language-configuration:settings-preferences-symbol
+            drracket:language-configuration:settings-preferences-symbol
             (λ (p v)
               (update-text v)))
-           (update-text (preferences:get drscheme:language-configuration:settings-preferences-symbol))
+           (update-text (preferences:get drracket:language-configuration:settings-preferences-symbol))
            (send ex-panel set-alignment 'left 'center)
            (send ex-panel stretchable-height #f)
            (send canvas allow-tab-exit #t)

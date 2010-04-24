@@ -6,7 +6,7 @@
            "drsig.rkt")
   
   (import)
-  (export drscheme:modes^)
+  (export drracket:modes^)
   
   (define-struct mode (name surrogate repl-submit matches-language))
   (define modes (list))

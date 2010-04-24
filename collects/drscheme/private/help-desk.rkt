@@ -10,19 +10,19 @@
          help/private/buginfo
          "drsig.rkt")
 
-(import [prefix drscheme:frame: drscheme:frame^]
-        [prefix drscheme:language-configuration: drscheme:language-configuration/internal^])
-(export drscheme:help-desk^)
+(import [prefix drracket:frame: drracket:frame^]
+        [prefix drracket:language-configuration: drracket:language-configuration/internal^])
+(export drracket:help-desk^)
 
 (define (-add-help-desk-font-prefs b) '(add-help-desk-font-prefs b))
 
 ;; : -> string
 (define (get-computer-language-info)
   (let* ([language/settings (preferences:get 
-                             drscheme:language-configuration:settings-preferences-symbol)]
-         [language (drscheme:language-configuration:language-settings-language
+                             drracket:language-configuration:settings-preferences-symbol)]
+         [language (drracket:language-configuration:language-settings-language
                     language/settings)]
-         [settings (drscheme:language-configuration:language-settings-settings
+         [settings (drracket:language-configuration:language-settings-settings
                     language/settings)])
     (format
      "~s"

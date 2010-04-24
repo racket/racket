@@ -31,13 +31,13 @@ profile todo:
 
 (provide debug@)
 (define-unit debug@
-  (import [prefix drscheme:rep: drscheme:rep^]
-          [prefix drscheme:frame: drscheme:frame^]
-          [prefix drscheme:unit: drscheme:unit^]
-          [prefix drscheme:language: drscheme:language^]
-          [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
-          [prefix drscheme:init: drscheme:init^])
-  (export drscheme:debug^)
+  (import [prefix drracket:rep: drracket:rep^]
+          [prefix drracket:frame: drracket:frame^]
+          [prefix drracket:unit: drracket:unit^]
+          [prefix drracket:language: drracket:language^]
+          [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+          [prefix drracket:init: drracket:init^])
+  (export drracket:debug^)
   
   
   (define (printf . args) (apply fprintf orig args))
@@ -257,7 +257,7 @@ profile todo:
   ;; adds in the bug icon, if there are contexts to display
   (define (make-debug-error-display-handler orig-error-display-handler)
     (define (debug-error-display-handler msg exn)
-      (let ([rep (drscheme:rep:current-rep)])
+      (let ([rep (drracket:rep:current-rep)])
         (cond
           [rep
            (error-display-handler/stacktrace 
@@ -275,8 +275,8 @@ profile todo:
   (define (error-display-handler/stacktrace 
            msg exn 
            [pre-stack #f]
-           #:interactions-text [ints (drscheme:rep:current-rep)]
-           #:definitions-text [defs (let ([rep (drscheme:rep:current-rep)])
+           #:interactions-text [ints (drracket:rep:current-rep)]
+           #:definitions-text [defs (let ([rep (drracket:rep:current-rep)])
                                       (and rep
                                            (send rep get-definitions-text)))])
                                                                      
@@ -305,7 +305,7 @@ profile todo:
       (when (and ints
                  (eq? (current-error-port) 
                       (send ints get-err-port)))
-        (parameterize ([current-eventspace drscheme:init:system-eventspace])
+        (parameterize ([current-eventspace drracket:init:system-eventspace])
           (queue-callback
            (λ ()
              ;; need to make sure that the user's eventspace is still the same
@@ -328,7 +328,7 @@ profile todo:
         [(path? src)
          (let ([frame (send (group:get-the-frame-group) locate-file src)])
            (and frame
-                (is-a? frame drscheme:unit:frame<%>)
+                (is-a? frame drracket:unit:frame<%>)
                 (cons (make-weak-box (send frame get-definitions-text))
                       (send (send frame get-definitions-text) get-edition-number))))]
         [else #f])))
@@ -346,12 +346,12 @@ profile todo:
                 (let ([note (new planet-note%)])
                   (send note set-callback (λ () 
                                             ;; =Kernel= =Handler=
-                                            (drscheme:unit:forget-saved-bug-report table)
+                                            (drracket:unit:forget-saved-bug-report table)
                                             (send-url (url->string gp-url))))
-                  (parameterize ([current-eventspace drscheme:init:system-eventspace])
+                  (parameterize ([current-eventspace drracket:init:system-eventspace])
                     (queue-callback
                      (λ ()
-                       (drscheme:unit:record-saved-bug-report table))))
+                       (drracket:unit:record-saved-bug-report table))))
                   (write-special note (current-error-port))
                   (display #\space (current-error-port))))))))))
   
@@ -389,7 +389,7 @@ profile todo:
   (define (exn->trace exn)
     (let ([sp (open-output-string)])
       (parameterize ([current-error-port sp])
-        (drscheme:init:original-error-display-handler (exn-message exn) exn))
+        (drracket:init:original-error-display-handler (exn-message exn) exn))
       (get-output-string sp)))
   
   ;; =User=
@@ -433,9 +433,9 @@ profile todo:
                [do-line/col (λ () (fprintf (current-error-port) ":~a:~a" line col))]
                [do-pos (λ () (fprintf (current-error-port) "::~a" pos))]
                [src-loc-in-defs/ints?
-                (let ([rep (drscheme:rep:current-rep)])
+                (let ([rep (drracket:rep:current-rep)])
                   (and rep
-                       (is-a? rep drscheme:rep:text<%>)
+                       (is-a? rep drracket:rep:text<%>)
                        (let ([defs (send rep get-definitions-text)])
                          (or (send rep port-name-matches? src)
                              (eq? rep src)
@@ -534,7 +534,7 @@ profile todo:
                     [(is-a? (syntax-source src-stx) editor<%>)
                      (syntax-source src-stx)]
                     [else 
-                     (let* ([rep (drscheme:rep:current-rep)])
+                     (let* ([rep (drracket:rep:current-rep)])
                        (and
                         rep
                         (let ([defs (send rep get-definitions-text)])
@@ -587,7 +587,7 @@ profile todo:
   
   ;; backtrace-frame% : (extends frame:basic<%>)
   (define backtrace-frame%
-    (class (drscheme:frame:basics-mixin (frame:standard-menus-mixin frame:basic%))
+    (class (drracket:frame:basics-mixin (frame:standard-menus-mixin frame:basic%))
       (define/override (on-size x y)
         (preferences:set 'drscheme:backtrace-window-width x)
         (preferences:set 'drscheme:backtrace-window-height y)
@@ -759,7 +759,7 @@ profile todo:
                               =>
                               (λ (frame)
                                 (cond
-                                  [(is-a? frame drscheme:unit:frame%)
+                                  [(is-a? frame drracket:unit:frame%)
                                    (let loop ([tabs (send frame get-tabs)])
                                      (cond
                                        [(null? tabs) (values #f void)]
@@ -841,7 +841,7 @@ profile todo:
     (let* ([untitled (string-constant unknown-debug-frame)]
            [canvas (send editor get-canvas)]
            [frame (and canvas (send canvas get-top-level-window))])
-      (if (is-a? frame drscheme:unit:frame%)
+      (if (is-a? frame drracket:unit:frame%)
           (let ([filename (send (send frame get-definitions-text) get-filename)])
             (cond
               [(and filename (eq? editor (send frame get-interactions-text)))
@@ -873,7 +873,7 @@ profile todo:
                [editor (cond
                          [(path? debug-source)
                           (cond
-                            [(and frame (is-a? frame drscheme:unit:frame%))
+                            [(and frame (is-a? frame drracket:unit:frame%))
                              (send frame get-definitions-text)]
                             [(and frame (is-a? frame frame:editor<%>))
                              (send frame get-editor)]
@@ -883,7 +883,7 @@ profile todo:
                           =>
                           values]
                          [else #f])]
-               [rep (and (is-a? frame drscheme:unit:frame%)
+               [rep (and (is-a? frame drracket:unit:frame%)
                          (send frame get-interactions-text))])
           (when frame
             (send frame show #t))
@@ -927,7 +927,7 @@ profile todo:
   
   (define (initialize-test-coverage-point key expr)
     (unless (hash? (thread-cell-ref current-test-coverage-info))
-      (let ([rep (drscheme:rep:current-rep)])
+      (let ([rep (drracket:rep:current-rep)])
         (when rep
           (let ([ut (eventspace-handler-thread (send rep get-user-eventspace))])
             (when (eq? ut (current-thread))
@@ -959,7 +959,7 @@ profile todo:
       ask-about-clearing-test-coverage?))
   
   (define test-coverage-interactions-text-mixin
-    (mixin (drscheme:rep:text<%> text:basic<%>) (test-coverage-interactions-text<%>)
+    (mixin (drracket:rep:text<%> text:basic<%>) (test-coverage-interactions-text<%>)
       (inherit get-context)
       (field [test-coverage-info #f]
              [test-coverage-on-style #f]
@@ -987,7 +987,7 @@ profile todo:
       (super-new)))
   
   (define test-coverage-definitions-text-mixin
-    (mixin ((class->interface text%) drscheme:unit:definitions-text<%>) ()
+    (mixin ((class->interface text%) drracket:unit:definitions-text<%>) ()
       (inherit get-canvas get-tab)
       
       (define/private (clear-test-coverage?)
@@ -1054,7 +1054,7 @@ profile todo:
   (send erase-test-coverage-style-delta set-transparent-text-backing-on #t)
   
   (define test-coverage-tab-mixin
-    (mixin (drscheme:rep:context<%> drscheme:unit:tab<%>) (test-coverage-tab<%>)
+    (mixin (drracket:rep:context<%> drracket:unit:tab<%>) (test-coverage-tab<%>)
       
       (field [internal-clear-test-coverage-display #f])
       
@@ -1298,7 +1298,7 @@ profile todo:
   ;; imported into errortrace
   (define (initialize-profile-point key name expr)
     (unless (thread-cell-ref current-profile-info)
-      (let ([rep (drscheme:rep:current-rep)])
+      (let ([rep (drracket:rep:current-rep)])
         (when rep
           (let ([ut (eventspace-handler-thread (send rep get-user-eventspace))])
             (when (eq? ut (current-thread))
@@ -1340,17 +1340,17 @@ profile todo:
                                     (prof-info-time info)))))))
     (void))
   
-  (define (get-color-value/pref val max-val drscheme:profile:low-color drscheme:profile:high-color drscheme:profile:scale)
+  (define (get-color-value/pref val max-val drracket:profile:low-color drracket:profile:high-color drracket:profile:scale)
     (let* ([adjust
-            (case drscheme:profile:scale
+            (case drracket:profile:scale
               [(sqrt) sqrt]
               [(square) (λ (x) (* x x))]
               [(linear) (λ (x) x)])]
            [factor (adjust (if (zero? max-val) 0 (/ val max-val)))]
            [get-rgb-value
             (λ (sel)
-              (let ([small (sel drscheme:profile:low-color)]
-                    [big (sel drscheme:profile:high-color)])
+              (let ([small (sel drracket:profile:low-color)]
+                    [big (sel drracket:profile:high-color)])
                 (inexact->exact (floor (+ (* factor (- big small)) small)))))])
       (make-object color% 
         (get-rgb-value (λ (x) (send x red)))
@@ -1383,7 +1383,7 @@ profile todo:
   
   ;; profile-definitions-mixin : mixin
   (define profile-definitions-text-mixin
-    (mixin ((class->interface text%) drscheme:unit:definitions-text<%>) ()
+    (mixin ((class->interface text%) drracket:unit:definitions-text<%>) ()
       (inherit get-canvas get-tab)
       
       (define/augment (can-insert? x y)
@@ -1445,7 +1445,7 @@ profile todo:
     )
   
   (define profile-tab-mixin
-    (mixin (drscheme:unit:tab<%>) (profile-interactions-tab<%>)
+    (mixin (drracket:unit:tab<%>) (profile-interactions-tab<%>)
       (define profile-info-visible? #f)
       (define/public (get-profile-info-visible?) profile-info-visible?)
       
@@ -1503,7 +1503,7 @@ profile todo:
   ;; profile-unit-frame-mixin : mixin
   ;; adds profiling to the unit frame
   (define profile-unit-frame-mixin
-    (mixin (drscheme:unit:frame<%> drscheme:frame:<%>) ()
+    (mixin (drracket:unit:frame<%> drracket:frame:<%>) ()
       
       (inherit get-interactions-text get-current-tab)
       
@@ -1975,7 +1975,7 @@ profile todo:
     (let ([frame (handler:edit-file filename)])
       (when (and frame
                  pos
-                 (is-a? frame drscheme:unit:frame%))
+                 (is-a? frame drracket:unit:frame%))
         (let ([defs (send frame get-definitions-text)])
           (send defs set-position (- pos 1))))))
   
@@ -2072,14 +2072,14 @@ profile todo:
         (set! in-on-paint? #t)
         (let* ([dc (get-dc)]
                [dummy-pen (send dc get-pen)]
-               [drscheme:profile:low-color (preferences:get 'drscheme:profile:low-color)]
-               [drscheme:profile:high-color (preferences:get 'drscheme:profile:high-color)]
-               [drscheme:profile:scale (preferences:get 'drscheme:profile:scale)])
+               [drracket:profile:low-color (preferences:get 'drscheme:profile:low-color)]
+               [drracket:profile:high-color (preferences:get 'drscheme:profile:high-color)]
+               [drracket:profile:scale (preferences:get 'drscheme:profile:scale)])
           (let-values ([(w h) (get-client-size)])
             (let loop ([n 0])
               (when (n . <= . w)
                 (send pen set-color 
-                      (get-color-value/pref n w drscheme:profile:low-color drscheme:profile:high-color drscheme:profile:scale))
+                      (get-color-value/pref n w drracket:profile:low-color drracket:profile:high-color drracket:profile:scale))
                 (send dc set-pen pen)
                 (send dc draw-line n 0 n h)
                 (send dc set-pen dummy-pen)

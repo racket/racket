@@ -3,13 +3,13 @@
 (require racket/class
          "drsig.rkt")
 
-(import [prefix drscheme:unit: drscheme:unit^]
-        [prefix drscheme:frame: drscheme:frame^]
-        [prefix drscheme:rep: drscheme:rep^]
-        [prefix drscheme:debug: drscheme:debug^]
-        [prefix drscheme:tracing: drscheme:tracing^]
-        [prefix drscheme:module-language-tools: drscheme:module-language-tools^])
-(export drscheme:get/extend^)
+(import [prefix drracket:unit: drracket:unit^]
+        [prefix drracket:frame: drracket:frame^]
+        [prefix drracket:rep: drracket:rep^]
+        [prefix drracket:debug: drracket:debug^]
+        [prefix drracket:tracing: drracket:tracing^]
+        [prefix drracket:module-language-tools: drracket:module-language-tools^])
+(export drracket:get/extend^)
 
 (define make-extender
   (λ (get-base% name)
@@ -45,47 +45,47 @@
          built)))))
 
 (define (get-base-tab%)
-  (drscheme:module-language-tools:tab-mixin
-   (drscheme:tracing:tab-mixin
-    (drscheme:debug:test-coverage-tab-mixin
-     (drscheme:debug:profile-tab-mixin
-      drscheme:unit:tab%)))))
+  (drracket:module-language-tools:tab-mixin
+   (drracket:tracing:tab-mixin
+    (drracket:debug:test-coverage-tab-mixin
+     (drracket:debug:profile-tab-mixin
+      drracket:unit:tab%)))))
 
 (define-values (extend-tab get-tab) (make-extender get-base-tab% 'tab%))
 
 (define (get-base-interactions-canvas%)
-  drscheme:unit:interactions-canvas%)
+  drracket:unit:interactions-canvas%)
 
 (define-values (extend-interactions-canvas get-interactions-canvas)
   (make-extender get-base-interactions-canvas% 'interactions-canvas%))
 
 (define (get-base-definitions-canvas%)
-  drscheme:unit:definitions-canvas%)
+  drracket:unit:definitions-canvas%)
 
 (define-values (extend-definitions-canvas get-definitions-canvas)
   (make-extender get-base-definitions-canvas% 'definitions-canvas%))  
 
 (define (get-base-unit-frame%) 
-  (drscheme:module-language-tools:frame-mixin
-   (drscheme:tracing:frame-mixin
-    (drscheme:debug:profile-unit-frame-mixin
-     drscheme:unit:frame%))))
+  (drracket:module-language-tools:frame-mixin
+   (drracket:tracing:frame-mixin
+    (drracket:debug:profile-unit-frame-mixin
+     drracket:unit:frame%))))
 
 (define-values (extend-unit-frame get-unit-frame)
-  (make-extender get-base-unit-frame% 'drscheme:unit:frame))
+  (make-extender get-base-unit-frame% 'drracket:unit:frame))
 
 (define (get-base-interactions-text%)
-  (drscheme:debug:test-coverage-interactions-text-mixin
-   drscheme:rep:text%))
+  (drracket:debug:test-coverage-interactions-text-mixin
+   drracket:rep:text%))
 
 (define-values (extend-interactions-text get-interactions-text)
   (make-extender get-base-interactions-text% 'interactions-text%))
 
 (define (get-base-definitions-text%)
-  (drscheme:module-language-tools:definitions-text-mixin
-   (drscheme:debug:test-coverage-definitions-text-mixin
-    (drscheme:debug:profile-definitions-text-mixin
-     (drscheme:unit:get-definitions-text%)))))
+  (drracket:module-language-tools:definitions-text-mixin
+   (drracket:debug:test-coverage-definitions-text-mixin
+    (drracket:debug:profile-definitions-text-mixin
+     (drracket:unit:get-definitions-text%)))))
 
 (define-values (extend-definitions-text get-definitions-text)
   (make-extender get-base-definitions-text% 'definitions-text%))

@@ -5,7 +5,7 @@
   
   
   (import)
-  (export drscheme:init^)
+  (export drracket:init^)
   
   (define original-output-port (current-output-port))
   (define original-error-port (current-error-port))

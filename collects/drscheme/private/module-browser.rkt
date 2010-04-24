@@ -23,11 +23,11 @@
 (define unknown-module-name "? unknown module name")
 
 (define-unit module-overview@
-  (import [prefix drscheme:frame: drscheme:frame^]
-          [prefix drscheme:eval: drscheme:eval^]
-          [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
-          [prefix drscheme:language: drscheme:language^])
-  (export drscheme:module-overview^)
+  (import [prefix drracket:frame: drracket:frame^]
+          [prefix drracket:eval: drracket:eval^]
+          [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+          [prefix drracket:language: drracket:language^])
+  (export drracket:module-overview^)
   
   (define filename-constant (string-constant module-browser-filename-format))
   (define font-size-gauge-label (string-constant module-browser-font-size-gauge-label))
@@ -675,7 +675,7 @@
     (define text/pos 
       (let ([t (make-object text:basic%)])
         (send t load-file filename)
-        (drscheme:language:make-text/pos
+        (drracket:language:make-text/pos
          t
          0
          (send t last-position))))
@@ -738,7 +738,7 @@
                               [(3) 1]))
                  (callback
                   (λ (x y)
-                    ;; note: the preference drscheme:module-browser:name-length is also used for the View|Show Module Browser version of the module browser
+                    ;; note: the preference drracket:module-browser:name-length is also used for the View|Show Module Browser version of the module browser
                     ;; here we just treat any pref value except '3' as if it were for the long names.
                     (let ([selection (send module-browser-name-length-choice get-selection)])
                       (preferences:set 'drscheme:module-browser:name-length (+ 2 selection))
@@ -807,7 +807,7 @@
     
     (define init-dir
       (let* ([bx (box #f)]
-             [filename (send (drscheme:language:text/pos-text text/pos) get-filename bx)])
+             [filename (send (drracket:language:text/pos-text text/pos) get-filename bx)])
         (if (and filename
                  (not (unbox bx)))
             (let-values ([(base name dir) (split-path filename)])
@@ -847,8 +847,8 @@
     (define complete-program? #t)
 
     (define stupid-internal-define-syntax1
-      ((drscheme:eval:traverse-program/multiple
-        (preferences:get (drscheme:language-configuration:get-settings-preferences-symbol))
+      ((drracket:eval:traverse-program/multiple
+        (preferences:get (drracket:language-configuration:get-settings-preferences-symbol))
         init
         kill-termination)
        text/pos
@@ -903,7 +903,7 @@
        #t]))
   
   (define overview-frame%
-    (class (drscheme:frame:basics-mixin
+    (class (drracket:frame:basics-mixin
             frame:standard-menus%)
       (define/override (edit-menu:between-select-all-and-find menu) (void))
       (define/override (edit-menu:between-redo-and-cut menu) (void))

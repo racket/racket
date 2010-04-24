@@ -9,9 +9,9 @@
            string-constants
            "drsig.rkt")
   
-  (import [prefix drscheme:frame: drscheme:frame^]
-          [prefix drscheme:unit: drscheme:unit^])
-  (export drscheme:multi-file-search^)
+  (import [prefix drracket:frame: drracket:frame^]
+          [prefix drracket:unit: drracket:unit^])
+  (export drracket:multi-file-search^)
   
   ;; multi-file-search : -> void
   ;; opens a dialog to configure the search and initiates the search
@@ -252,7 +252,7 @@
         (when current-file
           (let ([f (handler:edit-file current-file)])
             (when (and f
-                       (is-a? f drscheme:unit:frame<%>))
+                       (is-a? f drracket:unit:frame<%>))
               (let* ([t (send f get-definitions-text)]
                      [pos (+ (send t paragraph-start-position line-in-current-file)
                              col-in-current-file)])
@@ -351,7 +351,7 @@
   
   ;; thread: eventspace main thread
   (define search-size-frame%
-    (class (drscheme:frame:basics-mixin 
+    (class (drracket:frame:basics-mixin 
             (frame:searchable-mixin
              frame:standard-menus%))
       (init-field name)

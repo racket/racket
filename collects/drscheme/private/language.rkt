@@ -29,11 +29,11 @@
          compiler/bundle-dist
          "rep.rkt")
   
-  (import [prefix drscheme:debug: drscheme:debug^]
-          [prefix drscheme:tools: drscheme:tools^]
-          [prefix drscheme:rep: drscheme:rep^]
-          [prefix drscheme:help-desk: drscheme:help-desk^])
-  (export drscheme:language^)
+  (import [prefix drracket:debug: drracket:debug^]
+          [prefix drracket:tools: drracket:tools^]
+          [prefix drracket:rep: drracket:rep^]
+          [prefix drracket:help-desk: drracket:help-desk^])
+  (export drracket:language^)
   
   (define original-output-port (current-output-port))
   (define (printf . args) (apply fprintf original-output-port args)) 
@@ -458,22 +458,22 @@
            [(debug)
             (current-compile (el:make-errortrace-compile-handler))
             (error-display-handler 
-             (drscheme:debug:make-debug-error-display-handler
+             (drracket:debug:make-debug-error-display-handler
               (error-display-handler)))
             (use-compiled-file-paths
              (cons (build-path "compiled" "errortrace")
                    (use-compiled-file-paths)))]
            
            [(debug/profile)
-            (drscheme:debug:profiling-enabled #t)
+            (drracket:debug:profiling-enabled #t)
             (error-display-handler 
-             (drscheme:debug:make-debug-error-display-handler
+             (drracket:debug:make-debug-error-display-handler
               (error-display-handler)))
-            (current-eval (drscheme:debug:make-debug-eval-handler (current-eval)))]
+            (current-eval (drracket:debug:make-debug-eval-handler (current-eval)))]
            
            [(debug/profile test-coverage)
-            (drscheme:debug:test-coverage-enabled #t)
-            (current-eval (drscheme:debug:make-debug-eval-handler (current-eval)))]))
+            (drracket:debug:test-coverage-enabled #t)
+            (current-eval (drracket:debug:make-debug-eval-handler (current-eval)))]))
        
        (global-port-print-handler
         (λ (value port)
@@ -1225,21 +1225,21 @@
   
   (define language-extensions null)
   (define (get-language-extensions) 
-    (drscheme:tools:only-in-phase
-     'drscheme:language:get-default-mixin
+    (drracket:tools:only-in-phase
+     'drracket:language:get-default-mixin
      'phase2)
     language-extensions)
   
   (define (default-mixin x) x)
   (define (get-default-mixin)
-    (drscheme:tools:only-in-phase
-     'drscheme:language:get-default-mixin
+    (drracket:tools:only-in-phase
+     'drracket:language:get-default-mixin
      'phase2)
     default-mixin)
   
   (define (extend-language-interface extension<%> default-impl)
-    (drscheme:tools:only-in-phase
-     'drscheme:language:extend-language-interface
+    (drracket:tools:only-in-phase
+     'drracket:language:extend-language-interface
      'phase1)
     (set! default-mixin (compose default-impl default-mixin))
     (set! language-extensions (cons extension<%> language-extensions)))

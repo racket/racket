@@ -20,12 +20,12 @@
 (define (oprintf . args) (apply fprintf op args))
 
 (define-unit module-language@
-  (import [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
-          [prefix drscheme:language: drscheme:language^]
-          [prefix drscheme:unit: drscheme:unit^]
-          [prefix drscheme:rep: drscheme:rep^]
-          [prefix drscheme:init: drscheme:init^])
-  (export drscheme:module-language^)
+  (import [prefix drracket:language-configuration: drracket:language-configuration/internal^]
+          [prefix drracket:language: drracket:language^]
+          [prefix drracket:unit: drracket:unit^]
+          [prefix drracket:rep: drracket:rep^]
+          [prefix drracket:init: drracket:init^])
+  (export drracket:module-language^)
   
   (define module-language<%>
     (interface ()
@@ -36,27 +36,27 @@
   (define (add-module-language)
     (define module-language%
       (module-mixin
-       ((drscheme:language:get-default-mixin)
-        (drscheme:language:module-based-language->language-mixin
-         (drscheme:language:simple-module-based-language->module-based-language-mixin
-          drscheme:language:simple-module-based-language%)))))
-    (drscheme:language-configuration:add-language
+       ((drracket:language:get-default-mixin)
+        (drracket:language:module-based-language->language-mixin
+         (drracket:language:simple-module-based-language->module-based-language-mixin
+          drracket:language:simple-module-based-language%)))))
+    (drracket:language-configuration:add-language
      (new module-language%)))
   
   ;; collection-paths : (listof (union 'default string))
   ;; command-line-args : (vectorof string)
   ;; auto-text : string
-  (define-struct (module-language-settings drscheme:language:simple-settings)
+  (define-struct (module-language-settings drracket:language:simple-settings)
     (collection-paths command-line-args auto-text compilation-on? full-trace?))
   
   (define default-compilation-on? #t)
   (define default-full-trace? #t)
-  (define default-auto-text "#lang scheme\n")  
+  (define default-auto-text "#lang racket\n")  
   
-  ;; module-mixin : (implements drscheme:language:language<%>)
-  ;;             -> (implements drscheme:language:language<%>)
+  ;; module-mixin : (implements drracket:language:language<%>)
+  ;;             -> (implements drracket:language:language<%>)
   (define (module-mixin %)
-    (class* % (drscheme:language:language<%> module-language<%>)
+    (class* % (drracket:language:language<%> module-language<%>)
       
       (inherit get-language-name)
       (define/public (get-users-language-name defs-text)
@@ -89,11 +89,11 @@
       (define/augment (capability-value key)
         (cond
           [(eq? key 'drscheme:autocomplete-words)
-           (drscheme:language-configuration:get-all-manual-keywords)]
-          [else (drscheme:language:get-capability-default key)]))
+           (drracket:language-configuration:get-all-manual-keywords)]
+          [else (drracket:language:get-capability-default key)]))
       
       ;; config-panel : as in super class
-      ;; uses drscheme:language:simple-module-based-language-config-panel
+      ;; uses drracket:language:simple-module-based-language-config-panel
       ;; and adds a collection paths configuration to it.
       (define/override (config-panel parent)
         (module-language-config-panel parent))
@@ -167,7 +167,7 @@
                              (and super
                                   (apply make-module-language-settings
                                          (append
-                                          (vector->list (drscheme:language:simple-settings->vector super))
+                                          (vector->list (drracket:language:simple-settings->vector super))
                                           (list collection-paths
                                                 command-line-args
                                                 auto-text
@@ -175,7 +175,7 @@
                                                 ;; current versions of drscheme do not allow this combination
                                                 ;; in the first place (compilation is only allowed in 'none
                                                 ;; and 'debug mode), but older versions might.
-                                                (and (memq (drscheme:language:simple-settings-annotations super) 
+                                                (and (memq (drracket:language:simple-settings-annotations super) 
                                                            '(none debug))
                                                      compilation-on?)
                                                 
@@ -200,7 +200,7 @@
            
            (when (module-language-settings-compilation-on? settings)
              
-             (let ([annotations (drscheme:language:simple-settings-annotations settings)])
+             (let ([annotations (drracket:language:simple-settings-annotations settings)])
                (case annotations
                  [(none)
                   (use-compiled-file-paths
@@ -349,7 +349,7 @@
       
       ;; printer settings are just ignored here.
       (define/override (create-executable setting parent program-filename)
-        (let* ([executable-specs (drscheme:language:create-executable-gui
+        (let* ([executable-specs (drracket:language:create-executable-gui
                                   parent program-filename #t #t)])
           (when executable-specs
             (let ([launcher? (eq? 'launcher (car executable-specs))]
@@ -367,7 +367,7 @@
                            (let-values ([(base name dir) (split-path program-filename)])
                              (path-replace-suffix name #""))])
                       ((if (eq? 'distribution (car executable-specs))
-                           drscheme:language:create-distribution-for-executable
+                           drracket:language:create-distribution-for-executable
                            (lambda (executable-filename gui? make)
                              (make executable-filename)))
                        executable-filename
@@ -398,7 +398,7 @@
   ;; can be called with #f to just kill the repl (in case we want to kill it
   ;; but keep the highlighting of a previous error)
   (define (raise-hopeless-exception exn [prefix #f] [suffix #f])
-    (define rep (drscheme:rep:current-rep))
+    (define rep (drracket:rep:current-rep))
     ;; Throw an error as usual if we don't have the drscheme rep, then we just
     ;; raise the exception as normal.  (It can happen in some rare cases like
     ;; having a single empty scheme box in the definitions.)
@@ -413,7 +413,7 @@
     (let ([s (make-semaphore 0)]
           [msg (string-append "\nInteractions disabled"
                               (if suffix (string-append ": " suffix) "."))])
-      (parameterize ([current-eventspace drscheme:init:system-eventspace])
+      (parameterize ([current-eventspace drracket:init:system-eventspace])
         (queue-callback
          (λ ()
            (send rep call-without-reset-highlighting
@@ -451,7 +451,7 @@
     (define left-debugging-radio-box #f)
     (define right-debugging-radio-box #f)
     (define simple-case-lambda
-      (drscheme:language:simple-module-based-language-config-panel
+      (drracket:language:simple-module-based-language-config-panel
        new-parent
        #:case-sensitive #t
        
@@ -634,7 +634,7 @@
        (let ([simple-settings (simple-case-lambda)])
          (apply make-module-language-settings
                 (append 
-                 (vector->list (drscheme:language:simple-settings->vector simple-settings))
+                 (vector->list (drracket:language:simple-settings->vector simple-settings))
                  (list (get-collection-paths)
                        (get-command-line-args)
                        (get-auto-text)
@@ -687,7 +687,7 @@
          (let ([canvas (send source get-canvas)])
            (and canvas
                 (let ([frame (send canvas get-top-level-window)])
-                  (and (is-a? frame drscheme:unit:frame%)
+                  (and (is-a? frame drracket:unit:frame%)
                        (let* ([b (box #f)]
                               [filename (send (send frame get-definitions-text)
                                               get-filename
@@ -716,10 +716,10 @@
       (define/override (put-file directory default-name)
         (let ([tlw (get-top-level-window)])
           (if (and tlw
-                   (is-a? tlw drscheme:unit:frame<%>))
+                   (is-a? tlw drracket:unit:frame<%>))
               (let* ([definitions-text (send tlw get-definitions-text)]
                      [module-language?
-                      (is-a? (drscheme:language-configuration:language-settings-language
+                      (is-a? (drracket:language-configuration:language-settings-language
                               (send definitions-text get-next-settings))
                              module-language<%>)]
                      [module-default-filename
