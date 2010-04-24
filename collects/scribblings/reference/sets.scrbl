@@ -103,13 +103,13 @@ runs in time proportional to the total size of all given
 @scheme[set]s except the first one.}
 
 
-@defproc[(set-subset? [set set?] [set2 set?]) boolean?]{
+@defproc[(subset? [set set?] [set2 set?]) boolean?]{
 
-Returns @scheme[#t] if every member of @scheme[set2] is in
-@scheme[set], @scheme[#f] otherwise. The @scheme[set] and
+Returns @scheme[#t] if every member of @scheme[set] is in
+@scheme[set2], @scheme[#f] otherwise. The @scheme[set] and
 @scheme[set2] must use the same equivalence predicate
 (@scheme[equal?], @scheme[eq?], or @scheme[eqv?]).  This operation
-runs in time proportional to the size of @scheme[set2].}
+runs in time proportional to the size of @scheme[set].}
 
 
 @defproc[(set-map [set set?]
