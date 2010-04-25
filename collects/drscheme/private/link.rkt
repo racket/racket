@@ -8,6 +8,7 @@
          "debug.rkt"
          "module-language.rkt"
          "tools.rkt"
+         "tools-drs.rkt"
          "language.rkt"
          "language-configuration.rkt"
          "drsig.rkt"
@@ -40,7 +41,7 @@
           drracket:tracing^
           drracket:module-language^
           drracket:module-language-tools^)
-  (link init@ tools@ modes@ text@ eval@ frame@ rep@ language@
+  (link init@ tools@ tools-drs@ modes@ text@ eval@ frame@ rep@ language@
         module-overview@ unit@ debug@ multi-file-search@ get-extend@
         language-configuration@ font@ module-language@ module-language-tools@
         help-desk@ tracing@ app@

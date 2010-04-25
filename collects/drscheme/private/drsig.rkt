@@ -11,6 +11,7 @@
          drracket:language-configuration^
          drracket:language-configuration/internal^
          drracket:tools^
+         drracket:tools-drs^
          drracket:get/extend^
          drracket:unit^
          drracket:frame^
@@ -28,7 +29,9 @@
          drracket:tracing^
          drracket:tool-exports^
          drracket:tool^
-         drracket:tool-cm^)
+         drracket:tool-cm^
+         drscheme:tool^
+         drscheme:tool-cm^)
 
 (define-signature drracket:modes-cm^
   ())
@@ -144,6 +147,11 @@
    only-in-phase
    load/invoke-all-tools
    add-prefs-panel))
+
+(define-signature drracket:tools-drs-cm^
+  ())
+(define-signature drracket:tools-drs^ extends drracket:tools-drs-cm^
+  (invoke-drs-tool))
 
 (define-signature drracket:get/extend-cm^
   ())
@@ -318,32 +326,42 @@
   (phase1 
    phase2))
 
-(define-signature drracket:tool-cm^
-  ((open (prefix drracket:debug: drracket:debug-cm^))
-   (open (prefix drracket:unit: drracket:unit-cm^))
-   (open (prefix drracket:rep: drracket:rep-cm^))
-   (open (prefix drracket:frame: drracket:frame-cm^))
-   (open (prefix drracket:get/extend: drracket:get/extend-cm^))
-   (open (prefix drracket:language-configuration: drracket:language-configuration-cm^))
-   (open (prefix drracket:language: drracket:language-cm^))
-   (open (prefix drracket:help-desk: drracket:help-desk-cm^))
-   (open (prefix drracket:eval: drracket:eval-cm^))
-   (open (prefix drracket:modes: drracket:modes-cm^))
-   (open (prefix drracket:tracing: drracket:tracing-cm^))
-   (open (prefix drracket:module-language: drracket:module-language-cm^))
-   (open (prefix drracket:module-language-tools: drracket:module-language-tools-cm^))))
+(define-signature no-prefix:tool-cm^
+  ((open (prefix debug: drracket:debug-cm^))
+   (open (prefix unit: drracket:unit-cm^))
+   (open (prefix rep: drracket:rep-cm^))
+   (open (prefix frame: drracket:frame-cm^))
+   (open (prefix get/extend: drracket:get/extend-cm^))
+   (open (prefix language-configuration: drracket:language-configuration-cm^))
+   (open (prefix language: drracket:language-cm^))
+   (open (prefix help-desk: drracket:help-desk-cm^))
+   (open (prefix eval: drracket:eval-cm^))
+   (open (prefix modes: drracket:modes-cm^))
+   (open (prefix tracing: drracket:tracing-cm^))
+   (open (prefix module-language: drracket:module-language-cm^))
+   (open (prefix module-language-tools: drracket:module-language-tools-cm^))))
 
-(define-signature drracket:tool^ 
-  ((open (prefix drracket:debug: drracket:debug^))
-   (open (prefix drracket:unit: drracket:unit^))
-   (open (prefix drracket:rep: drracket:rep^))
-   (open (prefix drracket:frame: drracket:frame^))
-   (open (prefix drracket:get/extend: drracket:get/extend^))
-   (open (prefix drracket:language-configuration: drracket:language-configuration^))
-   (open (prefix drracket:language: drracket:language^))
-   (open (prefix drracket:help-desk: drracket:help-desk^))
-   (open (prefix drracket:eval: drracket:eval^))
-   (open (prefix drracket:modes: drracket:modes^))
-   (open (prefix drracket:tracing: drracket:tracing^))
-   (open (prefix drracket:module-language: drracket:module-language^))
-   (open (prefix drracket:module-language-tools: drracket:module-language-tools^))))
+(define-signature drracket:tool-cm^
+  ((open (prefix drracket: no-prefix:tool-cm^))))
+(define-signature drscheme:tool-cm^
+  ((open (prefix drscheme: no-prefix:tool-cm^))))
+
+(define-signature no-prefix:tool^ 
+  ((open (prefix debug: drracket:debug^))
+   (open (prefix unit: drracket:unit^))
+   (open (prefix rep: drracket:rep^))
+   (open (prefix frame: drracket:frame^))
+   (open (prefix get/extend: drracket:get/extend^))
+   (open (prefix language-configuration: drracket:language-configuration^))
+   (open (prefix language: drracket:language^))
+   (open (prefix help-desk: drracket:help-desk^))
+   (open (prefix eval: drracket:eval^))
+   (open (prefix modes: drracket:modes^))
+   (open (prefix tracing: drracket:tracing^))
+   (open (prefix module-language: drracket:module-language^))
+   (open (prefix module-language-tools: drracket:module-language-tools^))))
+
+(define-signature drracket:tool^
+  ((open (prefix drracket: no-prefix:tool^))))
+(define-signature drscheme:tool^
+  ((open (prefix drscheme: no-prefix:tool^))))

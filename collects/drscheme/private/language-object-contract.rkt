@@ -1,4 +1,3 @@
-#reader scribble/reader
 #lang racket/base
 (require (for-syntax racket/base)
          scribble/srcdoc

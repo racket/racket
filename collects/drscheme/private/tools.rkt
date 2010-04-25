@@ -28,7 +28,8 @@ string-constants)
         [prefix drracket:modes: drracket:modes^]
         [prefix drracket:tracing: drracket:tracing^]
         [prefix drracket:module-language: drracket:module-language^]
-        [prefix drracket:module-language-tools: drracket:module-language-tools^])
+        [prefix drracket:module-language-tools: drracket:module-language-tools^]
+        [prefix drracket:tools-drs: drracket:tools-drs^])
 (export drracket:tools^)
 
 ;; An installed-tool is
@@ -296,7 +297,8 @@ string-constants)
                                     coll-dir in-path)
                             x))])
           (let-values ([(phase1-thunk phase2-thunk) 
-                        (invoke-tool unit (string->symbol (or name (path->string coll-dir))))])
+                        (drracket:tools-drs:invoke-drs-tool unit (string->symbol (or name (path->string coll-dir))))
+                        #;(invoke-tool unit (string->symbol (or name (path->string coll-dir))))])
             (set! successfully-loaded-tools 
                   (cons (make-successfully-loaded-tool
                          tool-path
@@ -327,7 +329,7 @@ string-constants)
                                           [ctc (datum->syntax #'tool-name ctc)])
                               #`[name (contract (let ([name ctc]) name)
                                                 name 
-                                                'drscheme 
+                                                'drracket 
                                                 tool-name
                                                 (quote name)
                                                 (quote-syntax name))]))
