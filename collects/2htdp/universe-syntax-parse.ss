@@ -111,7 +111,7 @@
   (big-bang 1 (on-tick add1))
   (big-bang 2 (on-tick add1 1/2))
   (big-bang 3 (on-draw add1 1/2 1/3))
-  (big-bang 4 (on-mouse add1 1 2))
+  ; (big-bang 4 (on-mouse add1 1 2))
   )
 
 (require 'utest)
