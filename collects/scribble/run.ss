@@ -34,12 +34,14 @@
       (let ([v (read i)])
         (and (eof-object? (read i)) v)))))
 
+(current-render-mixin html:render-mixin)
+
 (define (run)
   (command-line
    #:program (short-program+command-name)
    #:once-any
    [("--text") "generate text-format output (the default)"
-    (void)]
+    (current-render-mixin text:render-mixin)]
    [("--html") "generate HTML-format output file"
     (current-render-mixin html:render-mixin)]
    [("--htmls") "generate HTML-format output directory"

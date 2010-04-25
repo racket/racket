@@ -54,7 +54,7 @@
                                        1 0 #f
                                        (list (cons prop:procedure
                                                    (lambda (v stx)
-                                                     (self-ctor-transformer (ref v 0) stx))))
+                                                     (self-ctor-transformer ((ref v 0)) stx))))
                                        (current-inspector) #f '(0))])
       make-))
   (define-values-for-syntax (make-self-ctor-checked-struct-info)
@@ -63,7 +63,7 @@
                                        1 0 #f
                                        (list (cons prop:procedure
                                                    (lambda (v stx)
-                                                     (self-ctor-transformer (ref v 0) stx))))
+                                                     (self-ctor-transformer ((ref v 0)) stx))))
                                        (current-inspector) #f '(0))])
       make-))
 
@@ -203,6 +203,7 @@
                            (#:mutable . #f)
                            (#:guard . #f)
                            (#:constructor-name . #f)
+                           (#:only-constructor? . #f)
                            (#:omit-define-values . #f)
                            (#:omit-define-syntaxes . #f))]
                  [nongen? #f])
@@ -259,14 +260,17 @@
           (loop (cdr p)
                 (extend-config config '#:inspector #'#f)
                 nongen?)]
-         [(eq? '#:constructor-name (syntax-e (car p)))
+         [(or (eq? '#:constructor-name (syntax-e (car p)))
+              (eq? '#:extra-constructor-name (syntax-e (car p))))
           (check-exprs 1 p "identifier")
           (when (lookup config '#:constructor-name)
-            (bad "multiple #:constructor-name keys" (car p)))
+            (bad "multiple #:constructor-name or #:extra-constructor-name keys" (car p)))
           (unless (identifier? (cadr p))
             (bad "need an identifier after #:constructor-name" (cadr p)))
           (loop (cddr p)
-                (extend-config config '#:constructor-name (cadr p))
+                (extend-config (extend-config config '#:constructor-name (cadr p))
+                               '#:only-constructor?
+                               (eq? '#:constructor-name (syntax-e (car p))))
                 nongen?)]
          [(eq? '#:prefab (syntax-e (car p)))
           (when (lookup config '#:inspector)
@@ -360,7 +364,7 @@
                          (car field-stxes))]
                        [else
                         (loop (cdr fields) (cdr field-stxes) #f)]))])
-               (let*-values ([(inspector super-expr props auto-val guard ctor-name mutable?
+               (let*-values ([(inspector super-expr props auto-val guard ctor-name ctor-only? mutable?
                                          omit-define-values? omit-define-syntaxes?)
                               (let ([config (parse-props #'fm (syntax->list #'(prop ...)) super-id)])
                                 (values (lookup config '#:inspector)
@@ -369,11 +373,13 @@
                                         (lookup config '#:auto-value)
                                         (lookup config '#:guard)
                                         (lookup config '#:constructor-name)
+                                        (lookup config '#:only-constructor?)
                                         (lookup config '#:mutable)
                                         (lookup config '#:omit-define-values)
                                         (lookup config '#:omit-define-syntaxes)))]
                              [(self-ctor?)
-                              (and ctor-name (bound-identifier=? id ctor-name))])
+                              (and ctor-name (bound-identifier=? id ctor-name))]
+                             [(name-as-ctor?) (or self-ctor? (not ctor-only?))])
                  (when mutable?
                    (for-each (lambda (f f-stx)
                                (when (field-mutable? f)
@@ -454,7 +460,7 @@
                                                                          (cons i (loop (add1 i) (cdr fields)))]
                                                                         [else (loop (add1 i) (cdr fields))]))
                                                                   #,guard
-                                                                  '#,ctor-name))])
+                                                                  '#,(if ctor-only? ctor-name id)))])
                                   (values struct: make- ?
                                           #,@(let loop ([i 0][fields fields])
                                                (if (null? fields)
@@ -476,10 +482,10 @@
                                                       #`(quote-syntax #,(prune sel))
                                                       sel)))]
 				  [mk-info (if super-info-checked?
-                                               (if self-ctor?
+                                               (if name-as-ctor?
                                                    #'make-self-ctor-checked-struct-info
                                                    #'make-checked-struct-info)
-                                               (if self-ctor?
+                                               (if name-as-ctor?
                                                    #'make-self-ctor-struct-info
                                                    #'make-struct-info))])
                               (quasisyntax/loc stx
@@ -488,7 +494,9 @@
                                    (lambda ()
                                      (list
                                       (quote-syntax #,(prune struct:))
-                                      (quote-syntax #,(prune make-))
+                                      (quote-syntax #,(prune (if (and ctor-name self-ctor?)
+                                                                 id
+                                                                 make-)))
                                       (quote-syntax #,(prune ?))
                                       (list
                                        #,@(map protect (reverse sels))
@@ -517,8 +525,8 @@
                                             (if super-expr
                                                 #f
                                                 #t))))
-                                   #,@(if self-ctor?
-                                          (list #`(quote-syntax #,make-))
+                                   #,@(if name-as-ctor?
+                                          (list #`(lambda () (quote-syntax #,make-)))
                                           null))))))])
                      (let ([result
                             (cond

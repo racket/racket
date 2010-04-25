@@ -617,19 +617,28 @@ Like @scheme[defparam], but the contract on a parameter argument is
 
 Like @scheme[defproc], but for a non-procedure binding.}
 
-
-@defform/subs[(defstruct struct-name ([field-name contract-expr-datum] ...)
-                flag-keywords
-                pre-flow ...)
-              ([struct-name id
-                            (id super-id)]
-               [flag-keywords code:blank
-                              #:mutable
-                              (code:line #:inspector #f)
-                              (code:line #:mutable #:inspector #f)])]{
+@deftogether[(
+@defform[       (defstruct* struct-name ([field-name contract-expr-datum] ...)
+                  maybe-mutable maybe-non-opaque maybe-constructor
+                  pre-flow ...)]
+@defform/subs[  (defstruct struct-name ([field-name contract-expr-datum] ...)
+                  maybe-mutable maybe-non-opaque maybe-constructor
+                  pre-flow ...)
+               ([struct-name id
+                             (id super-id)]
+                [maybe-mutable code:blank
+                               #:mutable]
+                [maybe-non-opaque code:blank
+                                  #:prefab
+                                  #:transparent]
+                [maybe-constructor code:blank
+                                   (code:line #:constructor-name constructor-id)
+                                   (code:line #:extra-constructor-name constructor-id)])]
+)]{
 
 Similar to @scheme[defform] or @scheme[defproc], but for a structure
-definition.}
+definition. The @scheme[defstruct*] form corresponds to @scheme[struct],
+while @scheme[defstruct] corresponds to @scheme[define-struct].}
 
 
 @defform[(deftogether [def-expr ...] pre-flow ...)]{

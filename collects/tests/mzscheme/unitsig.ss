@@ -334,7 +334,7 @@
 		      M@)])
       (export)))
     (test (string-append "(5 #(struct:a 5 6) #<struct-type:a> (proc: y)"
-			 " (proc: make-x) (proc: x?)"
+			 " (proc: x) (proc: x?)"
 			 " (proc: x-z) (proc: both) (proc: a?))"
 			 "(5 #t #(struct:a 5 6) #t #f #(struct:x 1 2 ...) #t #t #f #t)")
 	  get-output-string p)))

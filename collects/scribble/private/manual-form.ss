@@ -25,7 +25,9 @@
          specsubform specsubform/subs specspecsubform specspecsubform/subs
          specsubform/inline
          defsubform defsubform*
-         schemegrammar schemegrammar*
+         racketgrammar racketgrammar*
+         (rename-out [racketgrammar schemegrammar]
+                     [racketgrammar* schemegrammar*])
          var svar)
 
 (define-syntax (defform*/subs stx)
@@ -269,32 +271,32 @@
    ([form/maybe (#f spec)])
    (*specsubform 'spec null #f null null null (lambda () (list desc ...)))))
 
-(define-syntax schemegrammar
+(define-syntax racketgrammar
   (syntax-rules ()
     [(_ #:literals (lit ...) id clause ...)
      (with-scheme-variables
       (lit ...)
       ([non-term (id clause ...)])
-      (*schemegrammar '(lit ...)
+      (*racketgrammar '(lit ...)
                       '(id clause ...)
                       (lambda ()
                         (list (list (scheme id)
                                     (schemeblock0/form clause) ...)))))]
-    [(_ id clause ...) (schemegrammar #:literals () id clause ...)]))
+    [(_ id clause ...) (racketgrammar #:literals () id clause ...)]))
 
-(define-syntax schemegrammar*
+(define-syntax racketgrammar*
   (syntax-rules ()
     [(_ #:literals (lit ...) [id clause ...] ...)
      (with-scheme-variables
       (lit ...)
       ([non-term (id clause ...)] ...)
-      (*schemegrammar '(lit ...)
+      (*racketgrammar '(lit ...)
                       '(id ... clause ... ...)
                       (lambda ()
                         (list (list (scheme id) (schemeblock0/form clause) ...)
                               ...))))]
     [(_ [id clause ...] ...)
-     (schemegrammar* #:literals () [id clause ...] ...)]))
+     (racketgrammar* #:literals () [id clause ...] ...)]))
 
 (define-syntax-rule (var id)
   (*var 'id))
@@ -409,7 +411,7 @@
 (define (*schemerawgrammar style nonterm clause1 . clauses)
   (*schemerawgrammars style (list nonterm) (list (cons clause1 clauses))))
 
-(define (*schemegrammar lits s-expr clauseses-thunk)
+(define (*racketgrammar lits s-expr clauseses-thunk)
   (let ([l (clauseses-thunk)])
     (*schemerawgrammars #f
                         (map (lambda (x)

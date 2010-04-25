@@ -100,7 +100,7 @@
   (test (string->symbol "Capital")
 	object-name
 	(eval (read (open-input-string "(let ([Capital (lambda () 10)]) Capital)"))))
-  (test (string->symbol "make-CP")
+  (test (string->symbol "CP")
 	object-name
 	(eval (read (open-input-string "(let () (define-struct CP (a)) make-CP)")))))
 

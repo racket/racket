@@ -1372,16 +1372,10 @@ void scheme_wrong_field_type(Scheme_Object *c_name,
 			     Scheme_Object *o)
 {
   const char *s;
-  char *s2;
-  int l;
   Scheme_Object *a[1];
   a[0] = o;
   s = scheme_symbol_name(c_name);
-  l = strlen(s);
-  s2 = (char *)scheme_malloc_atomic(l + 6);
-  memcpy(s2, "make-", 5);
-  memcpy(s2 + 5, s, l + 1);
-  scheme_wrong_type(s2, expected, -1, 0, a);
+  scheme_wrong_type(s, expected, -1, 0, a);
 }
 
 void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o)
@@ -3467,7 +3461,7 @@ void scheme_init_exn(Scheme_Env *env)
 
 #define EXN_PARENT(id) exn_table[id].type
 
-#define EXN_FLAGS SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_SET
+#define EXN_FLAGS (SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_NO_MAKE_PREFIX)
 
 #define SETUP_STRUCT(id, parent, name, argc, args, props, guard) \
     { tmpo = scheme_make_struct_type_from_string(name, parent, argc, props, guard, 1); \

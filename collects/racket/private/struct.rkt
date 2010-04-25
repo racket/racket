@@ -14,6 +14,7 @@
       (cond
        [(syntax? config) (config-has-name? (syntax-e config))]
        [(pair? config) (or (eq? (syntax-e (car config)) '#:constructor-name)
+                           (eq? (syntax-e (car config)) '#:extra-constructor-name)
                            (config-has-name? (cdr config)))]
        [else #f]))
     (with-syntax ([orig stx])

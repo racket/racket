@@ -367,9 +367,10 @@
     (let* ([not-there (gensym)]
            [up (lambda (who mut? set ht key xform default)
                  (unless (and (hash? ht)
-                              (or (not mut?)
-                                  (not (immutable? ht))))
-                   (raise-type-error who (if mut? "mutable hash" "hash") ht))
+                              (if mut?
+                                  (not (immutable? ht))
+                                  (immutable? ht)))
+                   (raise-type-error who (if mut? "mutable hash table" "immutable hash table") ht))
                  (unless (and (procedure? xform)
                               (procedure-arity-includes? xform 1))
                    (raise-type-error who "procedure (arity 1)" xform))
@@ -391,9 +392,14 @@
                (hash-update! ht key xform not-there)])]
             [hash-has-key?
              (lambda (ht key)
+               (unless (hash? ht)
+                 (raise-type-error 'hash-has-key? "hash table" 0 ht key))
                (not (eq? not-there (hash-ref ht key not-there))))]
             [hash-ref!
              (lambda (ht key new)
+               (unless (and (hash? ht)
+                            (not (immutable? ht)))
+                 (raise-type-error 'hash-ref! "mutable hash table" 0 ht key new))
                (let ([v (hash-ref ht key not-there)])
                  (if (eq? not-there v)
                    (let ([n (if (procedure? new) (new) new)])

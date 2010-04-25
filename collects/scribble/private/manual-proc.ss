@@ -20,7 +20,7 @@
          (for-label racket/base
                     racket/class))
 
-(provide defproc defproc* defstruct
+(provide defproc defproc* defstruct defstruct*
          defparam defparam* defboolparam
          defthing defthing* 
          defthing/proc ; XXX unknown contract
@@ -485,42 +485,90 @@
 
 ;; ----------------------------------------
 
-(define-syntax defstruct
-  (syntax-rules ()
-    [(_ name fields #:mutable #:inspector #f desc ...)
-     (**defstruct name fields #f #t #f desc ...)]
-    [(_ name fields #:mutable #:transparent desc ...)
-     (**defstruct name fields #f #t #f desc ...)]
-    [(_ name fields #:mutable #:prefab desc ...)
-     (**defstruct name fields #f #t #t desc ...)]
-    [(_ name fields #:mutable desc ...)
-     (**defstruct name fields #f #f #f desc ...)]
-    [(_ name fields #:inspector #f desc ...)
-     (**defstruct name fields #t #t #f desc ...)]
-    [(_ name fields #:transparent desc ...)
-     (**defstruct name fields #t #t #f desc ...)]
-    [(_ name fields #:prefab desc ...)
-     (**defstruct name fields #t #t #t desc ...)]
-    [(_ name fields desc ...)
-     (**defstruct name fields #t #f #f desc ...)]))
+(define-syntax-rule (define-defstruct defstruct default-cname)
+  (...
+   (define-syntax defstruct
+     (syntax-rules ()
+       [(_ name fields #:constructor-name cname #:mutable #:inspector #f desc ...)
+        (**defstruct name fields #f #t #f cname #f desc ...)]
+       [(_ name fields #:extra-constructor-name cname #:mutable #:inspector #f desc ...)
+        (**defstruct name fields #f #t #f cname #t desc ...)]
+       [(_ name fields #:mutable #:inspector #f desc ...)
+        (**defstruct name fields #f #t #f default-cname #t desc ...)]
+       [(_ name fields #:constructor-name cname #:mutable #:transparent desc ...)
+        (**defstruct name fields #f #t #f cname #f desc ...)]
+       [(_ name fields #:extra-constructor-name cname #:mutable #:transparent desc ...)
+        (**defstruct name fields #f #t #f cname #t desc ...)]
+       [(_ name fields #:mutable #:transparent desc ...)
+        (**defstruct name fields #f #t #f default-cname #t desc ...)]
+       [(_ name fields #:constructor-name cname #:mutable #:prefab desc ...)
+        (**defstruct name fields #f #t #t cname #f desc ...)]
+       [(_ name fields #:extra-constructor-name cname #:mutable #:prefab desc ...)
+        (**defstruct name fields #f #t #t cname #t desc ...)]
+       [(_ name fields #:mutable #:prefab desc ...)
+        (**defstruct name fields #f #t #t default-cname #t desc ...)]
+       [(_ name fields #:constructor-name cname #:mutable desc ...)
+        (**defstruct name fields #f #f #f cname #f desc ...)]
+       [(_ name fields #:extra-constructor-name cname #:mutable desc ...)
+        (**defstruct name fields #f #f #f cname #t desc ...)]
+       [(_ name fields #:mutable desc ...)
+        (**defstruct name fields #f #f #f default-cname #f desc ...)]
+       [(_ name fields #:constructor-name cname #:inspector #f desc ...)
+        (**defstruct name fields #t #t #f cname #f desc ...)]
+       [(_ name fields #:extra-constructor-name cname #:inspector #f desc ...)
+        (**defstruct name fields #t #t #f cname #t desc ...)]
+       [(_ name fields #:inspector #f desc ...)
+        (**defstruct name fields #t #t #f default-cname #t desc ...)]
+       [(_ name fields #:constructor-name cname #:transparent desc ...)
+        (**defstruct name fields #t #t #f cname #f desc ...)]
+       [(_ name fields #:extra-constructor-name cname #:transparent desc ...)
+        (**defstruct name fields #t #t #f cname #t desc ...)]
+       [(_ name fields #:transparent desc ...)
+        (**defstruct name fields #t #t #f default-cname #t desc ...)]
+       [(_ name fields #:constructor-name cname #:prefab desc ...)
+        (**defstruct name fields #t #t #t cname #f desc ...)]
+       [(_ name fields #:extra-constructor-name cname #:prefab desc ...)
+        (**defstruct name fields #t #t #t cname #t desc ...)]
+       [(_ name fields #:prefab desc ...)
+        (**defstruct name fields #t #t #t default-cname #t desc ...)]
+       [(_ name fields #:constructor-name cname desc ...)
+        (**defstruct name fields #t #f #f cname #f desc ...)]
+       [(_ name fields #:extra-constructor-name cname desc ...)
+        (**defstruct name fields #t #f #f cname #t desc ...)]
+       [(_ name fields desc ...)
+        (**defstruct name fields #t #f #f default-cname #t desc ...)]))))
+
+(define-defstruct defstruct #t)
+(define-defstruct defstruct* #f)
 
 (define-syntax-rule (**defstruct name ([field field-contract] ...) immutable?
-                                 transparent? prefab? desc ...)
+                                 transparent? prefab? cname extra-cname? desc ...)
   (with-togetherable-scheme-variables
    ()
    ()
-   (*defstruct (quote-syntax/loc name) 'name
+   (*defstruct (quote-syntax/loc name) 'name (quote-syntax/loc cname) extra-cname?
                '([field field-contract] ...)
                (list (lambda () (schemeblock0 field-contract)) ...)
                immutable? transparent? prefab? (lambda () (list desc ...)))))
 
-(define (*defstruct stx-id name fields field-contracts immutable? transparent? prefab?
+(define (*defstruct stx-id name alt-cname-id extra-cname?
+                    fields field-contracts immutable? transparent? prefab?
                     content-thunk)
   (define (field-name f) ((if (pair? (car f)) caar car) f))
   (define (field-view f)
     (if (pair? (car f)) (make-shaped-parens (car f) #\[) (car f)))
-  (make-box-splice
-   (cons
+  (define cname-id
+    (cond
+     [(identifier? alt-cname-id) alt-cname-id]
+     [(not (syntax-e alt-cname-id)) #f]
+     [else (let ([name-id (if (identifier? stx-id)
+                              stx-id
+                              (car (syntax-e stx-id)))])
+             (datum->syntax name-id
+                            (string->symbol (format "make-~a" (syntax-e name-id)))
+                            name-id
+                            name-id))]))
+  (define main-table
     (make-table
      'boxed
      (cons
@@ -543,8 +591,10 @@
                                 (list* (list 'info name)
                                        (list 'type 'struct: name)
                                        (list 'predicate name '?)
-                                       (list 'constructor 'make- name)
                                        (append
+                                        (if cname-id
+                                            (list (list 'constructor (syntax-e cname-id)))
+                                            null)
                                         (map (lambda (f)
                                                (list 'accessor name '-
                                                      (field-name f)))
@@ -584,96 +634,111 @@
                                    fields)))])
                 (if (and (short-width . < . max-proto-width)
                          immutable?
-                         (not transparent?))
+                         (not transparent?)
+                         (not cname-id))
                   (make-omitable-paragraph
                    (list
                     (to-element
                      `(,(scheme struct)
                        ,the-name
                        ,(map field-view fields)))))
-                  (make-table
-                   #f
-                   (append
-                    (list
-                     (list (to-flow (make-element #f 
-                                                  (list
-                                                   (schemeparenfont "(")
-                                                   (scheme struct))))
-                           flow-spacer
-                           (to-flow the-name)
-                           (if (or (null? fields)
-                                   (short-width . < . max-proto-width))
-                               flow-spacer
-                               (to-flow (make-element
-                                         #f (list spacer (schemeparenfont "(")))))
-                           (to-flow (if (or (null? fields)
-                                            (short-width . < . max-proto-width))
-                                        (make-element
-                                         #f (cons (to-element (map field-view
-                                                                   fields))
-                                                  (if (and immutable?
-                                                           (not transparent?))
-                                                      (list (schemeparenfont ")"))
-                                                      null)))
-                                        (to-element (field-view (car fields)))))))
-                    (if (short-width . < . max-proto-width)
-                      null
-                      (let loop ([fields (if (null? fields)
-                                           fields (cdr fields))])
-                        (if (null? fields)
+                  (let* ([one-right-column?
+                          (or (null? fields)
+                              (short-width . < . max-proto-width))]
+                         [a-right-column
+                          (lambda (c)
+                            (if one-right-column?
+                                (list flow-spacer flow-spacer c)
+                                (list flow-spacer flow-spacer c 'cont 'cont)))])
+                    (make-table
+                     #f
+                     (append
+                      (list
+                       (append
+                        (list (to-flow (make-element #f 
+                                                     (list
+                                                      (schemeparenfont "(")
+                                                      (scheme struct))))
+                              flow-spacer)
+                        (if one-right-column?
+                            (list (to-flow (make-element
+                                            #f
+                                            (list* the-name
+                                                   spacer
+                                                   (to-element (map field-view
+                                                                    fields))
+                                                   (if (and immutable?
+                                                            (not transparent?)
+                                                            (not cname-id))
+                                                       (list (schemeparenfont ")"))
+                                                       null)))))
+                            (list (to-flow the-name)
+                                  (to-flow (make-element
+                                            #f (list spacer (schemeparenfont "("))))
+                                  (to-flow (to-element (field-view (car fields))))))))
+                      (if (short-width . < . max-proto-width)
                           null
-                          (cons
-                           (let ([fld (car fields)])
-                             (list flow-spacer flow-spacer
-                                   flow-spacer flow-spacer
-                                   (to-flow
-                                    (let ([e (to-element (field-view fld))])
-                                      (if (null? (cdr fields))
-                                        (make-element
-                                         #f
-                                         (list e (schemeparenfont
-                                                  (if (and immutable?
-                                                           (not transparent?))
-                                                    "))" ")"))))
-                                        e)))))
-                           (loop (cdr fields))))))
-                    (cond
-                      [(and (not immutable?) transparent?)
-                       (list
-                        (list flow-spacer flow-spacer
-                              (to-flow (to-element '#:mutable))
-                              'cont
-                              'cont)
-                        (list flow-spacer flow-spacer
-                              (to-flow (make-element
-                                        #f
-                                        (list (if prefab?
-                                                  (to-element '#:prefab)
-                                                  (to-element '#:transparent))
-                                              (schemeparenfont ")"))))
-                              'cont
-                              'cont))]
-                      [(not immutable?)
-                       (list
-                        (list flow-spacer flow-spacer
-                              (to-flow (make-element
-                                        #f
-                                        (list (to-element '#:mutable)
-                                              (schemeparenfont ")"))))
-                              'cont
-                              'cont))]
-                      [transparent?
-                       (list
-                        (list flow-spacer flow-spacer
-                              (to-flow (make-element
-                                        #f
-                                        (list (if prefab?
-                                                  (to-element '#:prefab)
-                                                  (to-element '#:transparent))
-                                              (schemeparenfont ")"))))
-                              'cont
-                              'cont))]
-                      [else null]))))))))
+                          (let loop ([fields (if (null? fields)
+                                                 fields (cdr fields))])
+                            (if (null? fields)
+                                null
+                                (cons
+                                 (let ([fld (car fields)])
+                                   (list flow-spacer flow-spacer
+                                         flow-spacer flow-spacer
+                                         (to-flow
+                                          (let ([e (to-element (field-view fld))])
+                                            (if (null? (cdr fields))
+                                                (make-element
+                                                 #f
+                                                 (list e (schemeparenfont
+                                                          (if (and immutable?
+                                                                   (not transparent?)
+                                                                   (not cname-id))
+                                                              "))" 
+                                                              ")"))))
+                                                e)))))
+                                 (loop (cdr fields))))))
+                      (if cname-id
+                          (list (a-right-column
+                                 (to-flow (make-element 
+                                           #f
+                                           (append
+                                            (list (to-element (if extra-cname?
+                                                                  '#:extra-constructor-name
+                                                                  '#:constructor-name))
+                                                  (hspace 1)
+                                                  (to-element cname-id))
+                                            (if (and immutable?
+                                                     (not transparent?))
+                                                (list (schemeparenfont ")"))
+                                                null))))))
+                          null)
+                      (cond
+                       [(and (not immutable?) transparent?)
+                        (list
+                         (a-right-column (to-flow (to-element '#:mutable)))
+                         (a-right-column (to-flow (make-element
+                                                   #f
+                                                   (list (if prefab?
+                                                             (to-element '#:prefab)
+                                                             (to-element '#:transparent))
+                                                         (schemeparenfont ")"))))))]
+                       [(not immutable?)
+                        (list
+                         (a-right-column (to-flow (make-element
+                                                   #f
+                                                   (list (to-element '#:mutable)
+                                                         (schemeparenfont ")"))))))]
+                       [transparent?
+                        (list
+                         (a-right-column (to-flow (make-element
+                                                   #f
+                                                   (list (if prefab?
+                                                             (to-element '#:prefab)
+                                                             (to-element '#:transparent))
+                                                         (schemeparenfont ")"))))))]
+                       [else null])))))))))
       (map (lambda (v field-contract)
              (cond
                [(pair? v)
@@ -688,7 +753,10 @@
                                flow-spacer
                                (make-flow (list (field-contract))))))))]
                [else null]))
-           fields field-contracts)))
+           fields field-contracts))))
+  (make-box-splice
+   (cons
+    main-table
     (content-thunk))))
 
 ;; ----------------------------------------
@@ -709,49 +777,87 @@
               (list (schemeblock0 result) ...)
               (lambda () (list desc ...)))))
 
-(define (*defthing stx-ids names form? result-contracts content-thunk)
+(define (*defthing stx-ids names form? result-contracts content-thunk
+                   [result-values (map (lambda (x) #f) result-contracts)])
   (make-box-splice
    (cons
     (make-table
      'boxed
      (map
-      (lambda (stx-id name result-contract)
+      (lambda (stx-id name result-contract result-value)
         (list
          (make-flow
           (make-table-if-necessary
            "argcontract"
-           (list
+           (let* ([result-block
+                   (and result-value
+                        (if (block? result-value)
+                            result-value
+                            (make-omitable-paragraph (list result-value))))]
+                  [contract-block
+                   (if (block? result-contract)
+                       result-contract
+                       (make-omitable-paragraph (list result-contract)))]
+                  [total-width (+ (string-length (format "~a" name))
+                                  3
+                                  (block-width contract-block)
+                                  (if result-block
+                                      (+ (block-width result-block) 3)
+                                      0))])
+           (append
             (list
-             (make-flow
+             (append
               (list
-               (make-omitable-paragraph
+               (make-flow
                 (list
-                 (let ([target-maker
-                        ((if form? id-to-form-target-maker id-to-target-maker)
-                         stx-id #t)]
-                       [content (list (definition-site name stx-id form?))])
-                   (if target-maker
-                     (target-maker
-                      content
-                      (lambda (tag)
-                        (make-toc-target-element
-                         #f
-                         (list
-                          (make-index-element
-                           #f
-                           content
-                           tag
-                           (list (symbol->string name))
-                           content
-                           (with-exporting-libraries
-                            (lambda (libs) (make-thing-index-desc name libs)))))
-                         tag)))
-                     (car content)))
-                 spacer ":" spacer))))
-             (make-flow (list (if (block? result-contract)
-                                result-contract
-                                (make-omitable-paragraph (list result-contract)))))))))))
-      stx-ids names result-contracts))
+                 (make-omitable-paragraph
+                  (list
+                   (let ([target-maker
+                          ((if form? id-to-form-target-maker id-to-target-maker)
+                           stx-id #t)]
+                         [content (list (definition-site name stx-id form?))])
+                     (if target-maker
+                         (target-maker
+                          content
+                          (lambda (tag)
+                            (make-toc-target-element
+                             #f
+                             (list
+                              (make-index-element
+                               #f
+                               content
+                               tag
+                               (list (symbol->string name))
+                               content
+                               (with-exporting-libraries
+                                (lambda (libs) (make-thing-index-desc name libs)))))
+                             tag)))
+                         (car content)))))))
+               (make-flow
+                (list
+                 (make-omitable-paragraph
+                  (list
+                   spacer ":" spacer))))
+               (make-flow (list contract-block)))
+              (if (and result-value
+                       (total-width . < . 60))
+                  (list
+                   (to-flow (make-element #f (list spacer "=" spacer)))
+                   (make-flow (list result-block)))
+                  null)))
+            (if (and result-value
+                     (total-width . >= . 60))
+                (list
+                 (list
+                  (make-table-if-necessary
+                   "argcontract"
+                   (list
+                    (list flow-spacer 
+                          (to-flow (make-element #f (list spacer "=" spacer)))
+                          (make-flow (list result-block)))))
+                  'cont))
+                null)))))))
+      stx-ids names result-contracts result-values))
     (content-thunk))))
 
 (define (defthing/proc id contract descs)
