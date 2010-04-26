@@ -109,14 +109,14 @@
  
  (let ([rel %empty-rel])
    (test (%which (y) (rel 'x y)) => #f
-         (%assert rel () [('x 1)])
+         (%assert! rel () [('x 1)])
          (%which (y) (rel 'x y)) => `([y . 1])
          (%more) => #f
-         (%assert-a rel () [('x 2)])
+         (%assert-after! rel () [('x 2)])
          (%which (y) (rel 'x y)) => `([y . 2])
          (%more) => `([y . 1])
          (%more) => #f
-         (%assert rel () [('x 3)])
+         (%assert! rel () [('x 3)])
          (%which (y) (rel 'x y)) => `([y . 2])
          (%more) => `([y . 1])
          (%more) => `([y . 3])

@@ -285,10 +285,10 @@ else.
 
 We can add more clauses to a predicate after it has already
 been defined with a @scheme[%rel].  Schelog provides the
-@scheme[%assert] form for this purpose.  Eg,
+@scheme[%assert!] form for this purpose.  Eg,
 
 @schemeblock+eval[#:eval schelog-eval
-(%assert %knows ()
+(%assert! %knows ()
   [('Odysseus 'archery)])
 ]
 
@@ -308,25 +308,25 @@ a subsequent @scheme[(%more)] yields a new result:
 (%more)
 ]
 
-The Schelog form @scheme[%assert-a] is similar to @scheme[%assert] but
+The Schelog form @scheme[%assert-after!] is similar to @scheme[%assert!] but
 adds clauses @emph{before} any of the current clauses.
 
-Both @scheme[%assert] and @scheme[%assert-a] assume that the variable
+Both @scheme[%assert!] and @scheme[%assert-after!] assume that the variable
 they are adding to already names a predicate (presumably
 defined using @scheme[%rel]).
 In order to allow defining a predicate entirely through
-@scheme[%assert]s,  Schelog provides an empty predicate value
+@scheme[%assert!]s,  Schelog provides an empty predicate value
 @scheme[%empty-rel].  @scheme[%empty-rel] takes any number of arguments
 and always fails.  A typical use of the
-@scheme[%empty-rel] and @scheme[%assert] combination:
+@scheme[%empty-rel] and @scheme[%assert!] combination:
 
 @schemeblock+eval[#:eval schelog-eval
 (define %parent %empty-rel)
 
-(%assert %parent ()
+(%assert! %parent ()
   [('Laertes 'Odysseus)])
 
-(%assert %parent ()
+(%assert! %parent ()
   [('Odysseus 'Telemachus)]
   [('Penelope 'Telemachus)])
 ]
@@ -1130,6 +1130,8 @@ and @scheme[%set-of] but fail if the resulting bag or set is empty.
 @(define-syntax-rule (defgoal id pre ...)
    (defthing id goal/c pre ...))
 
+@subsection{Racket Predicates}
+
 @defproc[(logic-var? [x any/c]) boolean?]{Identifies a logic variable.}
 
 @defproc[(atom? [x any/c]) boolean?]{Identifies atomic values that may appear in Schelog programs. Equivalent to the contract @scheme[(or/c number? symbol? string? empty?)].}
@@ -1142,165 +1144,24 @@ and @scheme[%set-of] but fail if the resulting bag or set is empty.
 
 @defthing[goal/c contract?]{A contract for goals.}
 
-@defpred[(%/= [E1 unifiable?] [E2 unifiable?])]{@scheme[%/=] is the negation of @scheme[%=].
-The goal @scheme[(%/= E1 E2)] succeeds if @scheme[E1] can not be unified
-with @scheme[E2].}
+@subsection{User Interface}
 
-@defpred[(%/== [E1 unifiable?] [E2 unifiable?])]{
-@scheme[%/==] is the negation of @scheme[%==].
-The goal @scheme[(%/== E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are not
-identical.}
-
-@defpred[(%< [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%< E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
-numbers and @scheme[E1] is less than @scheme[E2].}
-
-@defpred[(%<= [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%<= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
-numbers and @scheme[E1] is less than or equal to @scheme[E2].}
-
-@defpred[(%= [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%= E1 E2)] succeeds if @scheme[E1] can be unified with
-@scheme[E2].  Any resulting bindings for logic variables are kept.}
-
-@defpred[(%=/= [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%=/= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
-numbers and @scheme[E1] is not equal to @scheme[E2].}
-
-@defpred[(%=:= [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%=:= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
-numbers and @scheme[E1] is equal to @scheme[E2].}
-
-@defpred[(%== [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%== E1 E2)] succeeds if @scheme[E1] is @emph{identical}
-to @scheme[E2].  They should be structurally equal.  If containing
-logic variables, they should have the same variables in the
-same position.  Unlike a @scheme[%=]-call, this goal will not bind
-any logic variables.}
-
-@defpred[(%> [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%> E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
-numbers and @scheme[E1] is greater than @scheme[E2].}
-
-@defpred[(%>= [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%>= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
-numbers and @scheme[E1] is greater than or equal to @scheme[E2].}
-
-@defform[(%and G ...) #:contracts ([G goal/c])]{
-The goal @scheme[(%and G ...)] succeeds if all the goals
-@scheme[G], ..., succeed.}
-
-@defpred[(%append [E1 unifiable?] [E2 unifiable?] [E3 unifiable?])]{
-The goal @scheme[(%append E1 E2 E3)] succeeds if @scheme[E3] is unifiable
-with the list obtained by appending @scheme[E1] and @scheme[E2].}
-
-@defform[(%assert Pname (V ...) clause ...)
-         #:contracts ([Pname identifier?]
-                      [V identifier?])]{
-Adds the clauses
-@scheme[clauses], ..., to the @emph{end} of the predicate that is the value of
-the Scheme variable @scheme[Pname].  The variables @scheme[V], ..., are
-local logic variables for @scheme[clause], ....}
-
-@defform[(%assert-a Pname (V ...) clause ...)
-         #:contracts ([Pname identifier?]
-                      [V identifier?])]{
-Like @scheme[%assert], but adds the new clauses to the @emph{front}
-of the existing predicate.}
-
-@defpred[(%bag-of [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
-The goal @scheme[(%bag-of E1 G E2)] unifies with @scheme[E2] the @emph{bag}
-(multiset)
-of all the
-instantiations of @scheme[E1] for which goal @scheme[G] succeeds.}
-
-@defpred[(%bag-of-1 [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
-Similar to @scheme[%bag-of], but fails if the bag is empty.}
-
-@defpred[(%compound [E unifiable?])]{
-The goal @scheme[(%compound E)] succeeds if @scheme[E] is a non-atomic
-structure, ie, a vector or a list.}
-
-@defpred[(%constant [E unifiable?])]{
-The goal @scheme[(%compound E)] succeeds if @scheme[E] is an atomic
-structure, ie, not a vector or a list.}
-
-@defpred[(%copy [F unifiable?] [S unifiable?])]{
-The goal @scheme[(%copy F S)] unifies with @scheme[S] a copy of the
-frozen structure in @scheme[F].}
-
-@defform[(%cut-delimiter . any)]{
-Introduces a cut point. See @secref{cut}.}
-
-@defpred[(%empty-rel [E unifiable?] ...)]{
-The goal @scheme[(%empty-rel E ...)] always fails.  The @emph{value}
-@scheme[%empty-rel] is used as a starting value for predicates
-that can later be enhanced with @scheme[%assert] and @scheme[%assert-a].}
-
-@defgoal[%fail]{
-The goal @scheme[%fail] always fails.}
-
-@defform[(%free-vars (V ...) G)
+@defform[(%which (V ...) G ...)
          #:contracts ([V identifier?]
                       [G goal/c])]{
-Identifies
-the occurrences of the variables @scheme[V], ..., in goal
-@scheme[G] as free.  It is used to avoid existential quantification
-in calls to set predicates (@scheme[%bag-of], @scheme[%set-of], &c.).}
-
-@defpred[(%freeze [S unifiable?] [F unifiable?])]{
-The goal @scheme[(%freeze S F)] unifies with @scheme[F] a new frozen
-version of the structure in @scheme[S].  Freezing implies that all
-the unbound variables are preserved.  @scheme[F] can henceforth be
-used as @emph{bound} object with no fear of its variables
-getting bound by unification.}
-
-@defpred[(%if-then-else [G1 goal/c] [G2 goal/c] [G3 goal/c])]{
-The goal @scheme[(%if-then-else G1 G2 G3)] tries @scheme[G1] first: if it
-succeeds, tries @scheme[G2]; if not, tries @scheme[G3].}
-
-@defform[(%is E1 E2)]{
-The goal @scheme[(%is E1 E2)] unifies with @scheme[E1] the result of
-evaluating @scheme[E2] as a Scheme expression.  @scheme[E2] may contain
-logic variables, which are dereferenced automatically.
-Fails if @scheme[E2] contains unbound logic variables.}
-
-@defform[(%let (V ...) expr ...)
-         #:contracts ([V identifier?])]{
-Introduces @scheme[V], ..., as
-lexically scoped logic variables to be used in @scheme[expr], ...}
-
-@defpred[(%melt [F unifiable?] [S unifiable?])]{
-The goal @scheme[(%melt F S)] unifies @scheme[S] with the thawed
-(original) form of the frozen structure in @scheme[F].}
-
-@defpred[(%melt-new [F unifiable?] [S unifiable?])]{
-The goal @scheme[(%melt-new F S)] unifies @scheme[S] with a thawed
-@emph{copy} of the frozen structure in @scheme[F].  This means
-new logic variables are used for unbound logic variables in
-@scheme[F].}
-
-@defpred[(%member [E1 unifiable?] [E2 unifiable?])]{
-The goal @scheme[(%member E1 E2)] succeeds if @scheme[E1] is a member
-of the list in @scheme[E2].}
-
-@defpred[(%nonvar [E unifiable?])]{
-@scheme[%nonvar] is the negation of @scheme[%var].
-The goal @scheme[(%nonvar E)] succeeds if @scheme[E] is completely
-instantiated, ie, it has no unbound variable in it.}
-
-@defpred[(%not [G goal/c])]{
-The goal @scheme[(%not G)] succeeds if @scheme[G] fails.}
-
+Returns an @scheme[answer?]
+of the variables @scheme[V], ..., that satisfies all of @scheme[G],
+...  If @scheme[G], ..., cannot be satisfied, returns @scheme[#f].
+Calling the thunk @scheme[%more] produces more
+instantiations, if available.}
+                                  
 @defproc[(%more) answer?]{
 The thunk @scheme[%more] produces more instantiations of the
 variables in the most recent @scheme[%which]-form that satisfy the
 goals in that @scheme[%which]-form.  If no more solutions can
 be found, @scheme[%more] returns @scheme[#f].}
 
-@defform[(%or G ...) #:contracts ([G goal/c])]{
-The goal @scheme[(%or G ...)] succeeds if one of @scheme[G], ..., tried
-in that order, succeeds.}
+@subsection{Relations}
 
 @defform/subs[(%rel (V ...) clause ...)
               ([clause [(E ...) G ...]])
@@ -1313,14 +1174,146 @@ that the goal created by applying the predicate object to
 anything that matches @scheme[(E ...)] is deemed to succeed if all
 the goals @scheme[G], ..., can, in their turn, be shown to succeed.}
 
+@defpred[(%empty-rel [E unifiable?] ...)]{
+The goal @scheme[(%empty-rel E ...)] always fails.  The @emph{value}
+@scheme[%empty-rel] is used as a starting value for predicates
+that can later be enhanced with @scheme[%assert!] and @scheme[%assert-after!].}
+
+@defform[(%assert! Pname (V ...) clause ...)
+         #:contracts ([Pname identifier?]
+                      [V identifier?])]{
+Adds the clauses
+@scheme[clauses], ..., to the @emph{end} of the predicate that is the value of
+the Scheme variable @scheme[Pname].  The variables @scheme[V], ..., are
+local logic variables for @scheme[clause], ....}
+
+@defform[(%assert-after! Pname (V ...) clause ...)
+         #:contracts ([Pname identifier?]
+                      [V identifier?])]{
+Like @scheme[%assert!], but adds the new clauses to the @emph{front}
+of the existing predicate.}
+                                       
+@subsection{Logic Variables}
+
+@defproc[(_) logic-var?]{
+A thunk that produces a new logic variable.  Can be
+used in situations where we want a logic variable but
+don't want to name it.  (@scheme[%let], in contrast, introduces new
+lexical names for the logic variables it creates.)
+}
+
+@defform[(%let (V ...) expr ...)
+         #:contracts ([V identifier?])]{
+Introduces @scheme[V], ..., as
+lexically scoped logic variables to be used in @scheme[expr], ...}
+                                       
+@subsection{Cut}
+
+@defform[(%cut-delimiter . any)]{
+Introduces a cut point. See @secref{cut}.}
+
+@defidform[!]{
+The cut goal, see @secref{cut}.
+                  
+May only be used syntactically inside @scheme[%cut-delimiter] or @scheme[%rel].}
+
+@subsection{Logical Operators}
+
+@defgoal[%fail]{
+The goal @scheme[%fail] always fails.}
+
+@defgoal[%true]{
+The goal @scheme[%true] succeeds.  Fails on retry.}
+
 @defpred[(%repeat)]{
 The goal @scheme[(%repeat)] always succeeds (even on retries).
-Used for failure-driven loops.}
+Useful for failure-driven loops.}
+
+@defform[(%and G ...) #:contracts ([G goal/c])]{
+The goal @scheme[(%and G ...)] succeeds if all the goals
+@scheme[G], ..., succeed.}
+
+@defform[(%or G ...) #:contracts ([G goal/c])]{
+The goal @scheme[(%or G ...)] succeeds if one of @scheme[G], ..., tried
+in that order, succeeds.}
+
+@defpred[(%not [G goal/c])]{
+The goal @scheme[(%not G)] succeeds if @scheme[G] fails.}
+
+@defpred[(%if-then-else [G1 goal/c] [G2 goal/c] [G3 goal/c])]{
+The goal @scheme[(%if-then-else G1 G2 G3)] tries @scheme[G1] first: if it
+succeeds, tries @scheme[G2]; if not, tries @scheme[G3].}
+
+@subsection{Unification}
+
+@defpred[(%= [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%= E1 E2)] succeeds if @scheme[E1] can be unified with
+@scheme[E2].  Any resulting bindings for logic variables are kept.}
+
+@defpred[(%/= [E1 unifiable?] [E2 unifiable?])]{@scheme[%/=] is the negation of @scheme[%=].
+The goal @scheme[(%/= E1 E2)] succeeds if @scheme[E1] can not be unified
+with @scheme[E2].}
+
+@defpred[(%== [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%== E1 E2)] succeeds if @scheme[E1] is @emph{identical}
+to @scheme[E2].  They should be structurally equal.  If containing
+logic variables, they should have the same variables in the
+same position.  Unlike a @scheme[%=]-call, this goal will not bind
+any logic variables.}
+
+@defpred[(%/== [E1 unifiable?] [E2 unifiable?])]{
+@scheme[%/==] is the negation of @scheme[%==].
+The goal @scheme[(%/== E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are not
+identical.}
+
+@defform[(%is E1 E2)]{
+The goal @scheme[(%is E1 E2)] unifies with @scheme[E1] the result of
+evaluating @scheme[E2] as a Scheme expression.  @scheme[E2] may contain
+logic variables, which are dereferenced automatically.
+Fails if @scheme[E2] contains unbound logic variables.}
 
 @defparam[use-occurs-check? on? boolean?]{
 If this is false (the default), 
 Schelog's unification will not use the occurs check.
 If it is true, the occurs check is enabled.}
+
+@subsection{Numeric Predicates}
+
+@defpred[(%< [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%< E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
+numbers and @scheme[E1] is less than @scheme[E2].}
+
+@defpred[(%<= [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%<= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
+numbers and @scheme[E1] is less than or equal to @scheme[E2].}
+
+@defpred[(%=/= [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%=/= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
+numbers and @scheme[E1] is not equal to @scheme[E2].}
+
+@defpred[(%=:= [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%=:= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
+numbers and @scheme[E1] is equal to @scheme[E2].}
+
+@defpred[(%> [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%> E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
+numbers and @scheme[E1] is greater than @scheme[E2].}
+
+@defpred[(%>= [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%>= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
+numbers and @scheme[E1] is greater than or equal to @scheme[E2].}
+
+@subsection{List Predicates}
+
+@defpred[(%append [E1 unifiable?] [E2 unifiable?] [E3 unifiable?])]{
+The goal @scheme[(%append E1 E2 E3)] succeeds if @scheme[E3] is unifiable
+with the list obtained by appending @scheme[E1] and @scheme[E2].}
+
+@defpred[(%member [E1 unifiable?] [E2 unifiable?])]{
+The goal @scheme[(%member E1 E2)] succeeds if @scheme[E1] is a member
+of the list in @scheme[E2].}
+
+@subsection{Set Predicates}
 
 @defpred[(%set-of [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
 The goal @scheme[(%set-of E1 G E2)] unifies with @scheme[E2] the @emph{set}
@@ -1329,36 +1322,67 @@ instantiations of @scheme[E1] for which goal @scheme[G] succeeds.}
 
 @defpred[(%set-of-1 [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
 Similar to @scheme[%set-of], but fails if the set is empty.}
+                                       
+@defpred[(%bag-of [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
+The goal @scheme[(%bag-of E1 G E2)] unifies with @scheme[E2] the @emph{bag}
+(multiset)
+of all the
+instantiations of @scheme[E1] for which goal @scheme[G] succeeds.}
 
-@defgoal[%true]{
-The goal @scheme[%true] succeeds.  Fails on retry.}
+@defpred[(%bag-of-1 [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
+Similar to @scheme[%bag-of], but fails if the bag is empty.}
+
+@defform[(%free-vars (V ...) G)
+         #:contracts ([V identifier?]
+                      [G goal/c])]{
+Identifies
+the occurrences of the variables @scheme[V], ..., in goal
+@scheme[G] as free.  It is used to avoid existential quantification
+in calls to set predicates (@scheme[%bag-of], @scheme[%set-of], &c.).}
+
+@subsection{Schelog Predicates}
+
+@defpred[(%compound [E unifiable?])]{
+The goal @scheme[(%compound E)] succeeds if @scheme[E] is a non-atomic
+structure, ie, a vector or a list.}
+
+@defpred[(%constant [E unifiable?])]{
+The goal @scheme[(%compound E)] succeeds if @scheme[E] is an atomic
+structure, ie, not a vector or a list.}
 
 @defpred[(%var [E unifiable?])]{
 The goal @scheme[(%var E)] succeeds if @scheme[E] is not completely
 instantiated, ie, it has at least one unbound variable in
 it.}
 
-@defform[(%which (V ...) G ...)
-         #:contracts ([V identifier?]
-                      [G goal/c])]{
-Returns an @scheme[answer?]
-of the variables @scheme[V], ..., that satisfies all of @scheme[G],
-...  If @scheme[G], ..., cannot be satisfied, returns @scheme[#f].
-Calling the thunk @scheme[%more] produces more
-instantiations, if available.}
-                                
-@defproc[(_) logic-var?]{
-A thunk that produces a new logic variable.  Can be
-used in situations where we want a logic variable but
-don't want to name it.  (@scheme[%let], in contrast, introduces new
-lexical names for the logic variables it creates.)
-}
+@defpred[(%nonvar [E unifiable?])]{
+@scheme[%nonvar] is the negation of @scheme[%var].
+The goal @scheme[(%nonvar E)] succeeds if @scheme[E] is completely
+instantiated, ie, it has no unbound variable in it.}
 
-@defidform[!]{
-The cut goal, see @secref{cut}.
-                  
-May only be used syntactically inside @scheme[%cut-delimiter] or @scheme[%rel].}
+@subsection{Logic Variable Manipulation}
 
+@defpred[(%freeze [S unifiable?] [F unifiable?])]{
+The goal @scheme[(%freeze S F)] unifies with @scheme[F] a new frozen
+version of the structure in @scheme[S].  Freezing implies that all
+the unbound variables are preserved.  @scheme[F] can henceforth be
+used as @emph{bound} object with no fear of its variables
+getting bound by unification.}
+
+@defpred[(%melt [F unifiable?] [S unifiable?])]{
+The goal @scheme[(%melt F S)] unifies @scheme[S] with the thawed
+(original) form of the frozen structure in @scheme[F].}
+
+@defpred[(%melt-new [F unifiable?] [S unifiable?])]{
+The goal @scheme[(%melt-new F S)] unifies @scheme[S] with a thawed
+@emph{copy} of the frozen structure in @scheme[F].  This means
+new logic variables are used for unbound logic variables in
+@scheme[F].}
+
+@defpred[(%copy [F unifiable?] [S unifiable?])]{
+The goal @scheme[(%copy F S)] unifies with @scheme[S] a copy of the
+frozen structure in @scheme[F].}
+                                       
 @bibliography[
  @bib-entry[#:key "sicp" 
                   #:author "Harold Abelson and Gerald Jay Sussman with Julie Sussman"

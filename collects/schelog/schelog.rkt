@@ -354,9 +354,9 @@
 (define (%empty-rel . args)
   %fail)
 
-(define-syntax %assert
+(define-syntax %assert!
   (syntax-rules ()
-    ((%assert rel-name (v ...) ((a ...) subgoal ...) ...)
+    ((_ rel-name (v ...) ((a ...) subgoal ...) ...)
      (set! rel-name
            (let ((__old-rel rel-name)
                  (__new-addition (%rel (v ...) ((a ...) subgoal ...) ...)))
@@ -364,9 +364,9 @@
                (%or (apply __old-rel __fmls)
                     (apply __new-addition __fmls))))))))
 
-(define-syntax %assert-a
+(define-syntax %assert-after!
   (syntax-rules ()
-    ((%assert-a rel-name (v ...) ((a ...) subgoal ...) ...)
+    ((_ rel-name (v ...) ((a ...) subgoal ...) ...)
      (set! rel-name
            (let ((__old-rel rel-name)
                  (__new-addition (%rel (v ...) ((a ...) subgoal ...) ...)))
@@ -512,7 +512,7 @@
   (->* () () #:rest (listof unifiable?) goal/c))
 
 ; XXX Add contracts in theses macro expansions
-(provide %and %assert %assert-a %cut-delimiter %free-vars %is %let
+(provide %and %assert! %assert-after! %cut-delimiter %free-vars %is %let
          %or %rel %which !)
 (provide/contract
  [goal/c contract?]
