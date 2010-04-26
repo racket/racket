@@ -5,8 +5,8 @@
 	  scribblings/reference/mz
 	  "utils.ss"
          (for-label unstable/sequence
-                    scheme/contract
-                    scheme/base))
+                    racket/contract
+                    racket/base))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/sequence))
@@ -19,7 +19,7 @@
 
 
 @defproc[(in-syntax [stx syntax?]) sequence?]{
-Produces a sequence equivalent to @scheme[(syntax->list lst)].
+Produces a sequence equivalent to @racket[(syntax->list lst)].
 @speed[in-syntax "syntax"]
 
 @examples[#:eval the-eval
@@ -28,15 +28,15 @@ Produces a sequence equivalent to @scheme[(syntax->list lst)].
 
 @defproc[(in-pairs [seq sequence?]) sequence?]{
 Produces a sequence equivalent to
- @scheme[(in-parallel (sequence-lift car seq) (sequence-lift cdr seq))].
+ @racket[(in-parallel (sequence-lift car seq) (sequence-lift cdr seq))].
 }
 
 @defproc[(in-sequence-forever [seq sequence?] [val any/c]) sequence?]{
-Produces a sequence whose values are the elements of @scheme[seq], followed by @scheme[val] repeated.
+Produces a sequence whose values are the elements of @racket[seq], followed by @racket[val] repeated.
 }
 
 @defproc[(sequence-lift [f procedure?] [seq sequence?]) sequence?]{
-Produces the sequence of @scheme[f] applied to each element of @scheme[seq].
+Produces the sequence of @racket[f] applied to each element of @racket[seq].
 @examples[#:eval the-eval
 (for/list ([x (sequence-lift add1 (in-range 10))])
   x)]

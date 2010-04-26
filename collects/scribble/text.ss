@@ -1,5 +1,5 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/promise "text/output.ss" "text/syntax-utils.ss")
-(provide (all-from-out scheme/promise "text/output.ss")
+(require racket/promise "text/output.ss" "text/syntax-utils.ss")
+(provide (all-from-out racket/promise "text/output.ss")
          begin/text include/text)

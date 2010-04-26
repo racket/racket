@@ -1,4 +1,4 @@
-#lang at-exp scheme/base
+#lang at-exp racket/base
 (require scribble/base scribble/manual scribble/core)
 (provide unstable
          unstable-header

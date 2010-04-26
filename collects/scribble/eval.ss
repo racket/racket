@@ -5,7 +5,7 @@
            "scheme.ss"
            "decode.ss"
            racket/file
-           scheme/sandbox
+           racket/sandbox
            racket/promise
            mzlib/string
            (for-syntax racket/base))

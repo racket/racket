@@ -1,12 +1,21 @@
 #lang scribble/manual
 @(require (for-syntax racket)
-          (for-label (only-in scheme/foreign unsafe! provide* define-unsafer)))
+          (for-label (only-in scheme/foreign unsafe! provide* define-unsafer)
+                     (only-in racket/base make-base-namespace make-base-empty-namespace)))
 
-@(define-syntax-rule (def-extras unit-struct)
+@(define-syntax-rule (def-extras unit-struct
+                                 make-base-namespace-id
+                                 make-base-empty-namespace-id)
   (begin
-    (require (for-label scheme))
-    (define unit-struct (racket struct))))
-@(def-extras unit-struct)
+    (require (for-label (only-in scheme struct)
+                        (only-in racket/base make-base-namespace
+                                             make-base-empty-namespace)))
+    (define unit-struct (racket struct))
+    (define make-base-namespace-id (racket make-base-namespace))
+    (define make-base-empty-namespace-id (racket make-base-empty-namespace))))
+@(def-extras unit-struct
+             make-base-namespace-id
+             make-base-empty-namespace-id)
 
 @(define-syntax-rule (compat-except sid rid . rest)
    (begin
@@ -29,7 +38,20 @@ old name.
 @schememodname[scheme/unit] is exported, instead}
 
 @compat-except[scheme/base racket/base]{, except that
-@schememodname[racket]'s @scheme[struct] is not exported}
+@schememodname[racket]'s @scheme[struct] is not exported, and
+@scheme[make-base-namespace] and @scheme[make-base-empty-namespace]
+are different}
+
+@defproc[(make-base-empty-namespace) namespace?]{
+
+Like @|make-base-empty-namespace-id| from @schememodname[racket/base],
+but with @schememodname[scheme/base] attached.}
+
+@defproc[(make-base-namespace) namespace?]{
+
+Like @|make-base-namespace-id| from @schememodname[racket/base], but
+with @schememodname[scheme/base] attached.}
+
 
 @compat[scheme/async-channel racket/async-channel]
 @compat[scheme/bool racket/bool]
