@@ -692,7 +692,7 @@ static void *allocate_big(const size_t request_size_bytes, int type)
     return objptr;
   }
 }
-
+#define MED_NEXT_SEARCH_SLOT(page) ((page)->previous_size)
 inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int pos) {
   mpage *page;
   int n;
@@ -702,11 +702,11 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
   page->size = sz;
   page->size_class = 1;
   page->page_type = PAGE_BIG;
-  page->previous_size = PREFIX_SIZE;
+  MED_NEXT_SEARCH_SLOT(page) = PREFIX_SIZE;
   page->live_size = sz;
   GCVERBOSEPAGE("NEW MED PAGE", page);
 
-  for (n = page->previous_size; ((n + sz) <= APAGE_SIZE); n += sz) {
+  for (n = MED_NEXT_SEARCH_SLOT(page); ((n + sz) <= APAGE_SIZE); n += sz) {
     objhead *info = (objhead *)PTR(NUM(page->addr) + n);
     info->dead = 1;
     info->size = gcBYTES_TO_WORDS(sz);
@@ -728,12 +728,12 @@ inline static void *medium_page_realloc_dead_slot(NewGC *gc, const int sz, const
   mpage *page;
 
   for (page = gc->med_freelist_pages[pos]; page; page = gc->med_freelist_pages[pos] = page->prev) {
-    for (n = page->previous_size; ((n + sz) <= APAGE_SIZE); n += sz) {
+    for (n = MED_NEXT_SEARCH_SLOT(page); ((n + sz) <= APAGE_SIZE); n += sz) {
       objhead * info = (objhead *)PTR(NUM(page->addr) + n);
       if (info->dead) {
         void *p;
 
-        page->previous_size = (n + sz);
+        MED_NEXT_SEARCH_SLOT(page) = (n + sz);
         page->live_size += sz;
 
         info->dead = 0;
@@ -798,7 +798,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
       objhead *info;
 
       page = create_new_medium_page(gc, sz, pos);
-      info = (objhead *)PTR(NUM(page->addr) + page->previous_size);
+      info = (objhead *)PTR(NUM(page->addr) + MED_NEXT_SEARCH_SLOT(page));
 
       info->dead = 0;
       info->type = type;
@@ -817,6 +817,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
   }
 }
 
+#define GEN0_ALLOC_SIZE(page) ((page)->previous_size)
 inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_size) {
   mpage *newmpage;
 
@@ -824,7 +825,7 @@ inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_
   newmpage->addr = malloc_dirty_pages(gc, page_size, APAGE_SIZE);
   newmpage->size_class = 0;
   newmpage->size = PREFIX_SIZE;
-  newmpage->previous_size = page_size;
+  GEN0_ALLOC_SIZE(newmpage) = page_size;
   pagemap_add_with_size(gc->page_maps, newmpage, page_size);
   GCVERBOSEPAGE("NEW gen0", newmpage);
 
@@ -877,7 +878,7 @@ unsigned long GC_make_jit_nursery_page(int count) {
 }
 
 inline static void gen0_free_jit_nursery_page(NewGC *gc, mpage *page) {
-  gen0_free_nursery_mpage(gc, page, page->previous_size);
+  gen0_free_nursery_mpage(gc, page, GEN0_ALLOC_SIZE(page));
 }
 
 inline static mpage *gen0_create_new_mpage(NewGC *gc) {
