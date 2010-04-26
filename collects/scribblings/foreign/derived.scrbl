@@ -1,7 +1,15 @@
 #lang scribble/doc
 @(require "utils.ss")
 
-@title{Derived Utilities}
+@title[#:style 'toc]{Derived Utilities}
+
+@local-table-of-contents[]
+
+@; ------------------------------------------------------------
+
+@include-section["define.scrbl"]
+
+@; ------------------------------------------------------------
 
 @section[#:tag "foreign:tagged-pointers"]{Tagged C Pointer Types}
 
@@ -59,10 +67,6 @@ type produced by @scheme[_cpointer/null] type. Finally,
 @schemevarfont{id}@schemeidfont{?}  is defined as a predicate, and
 @schemevarfont{id}@schemeidfont{-tag} is defined as an accessor to
 obtain a tag. The tag is the string form of @schemevarfont{id}.}
-
-@; ----------------------------------------
-
-@subsection{Unsafe Tagged C Pointer Functions}
 
 @defproc*[([(cpointer-has-tag? [cptr any/c] [tag any/c]) boolean?]
            [(cpointer-push-tag! [cptr any/c] [tag any/c]) void])]{
@@ -151,9 +155,6 @@ Converts the @scheme[cvec] C vector object to a list of values.}
 Converts the list @scheme[lst] to a C vector of the given
 @scheme[type].}
 
-@; ----------------------------------------
-
-@subsection{Unsafe C Vector Construction}
 
 @defproc[(make-cvector* [cptr any/c] [type ctype?]
                         [length exact-nonnegative-integer?])
@@ -166,9 +167,9 @@ situations where the @scheme[type] and @scheme[length] are known.}
 
 @; ------------------------------------------------------------
 
-@section{SRFI-4 Vectors}
+@section[#:tag "homogeneous-vectors"]{Homogenous Vectors}
 
-SRFI-4 vectors are similar to C vectors (see
+Homogenous vectors are similar to C vectors (see
 @secref["foreign:cvector"]), except that they define different types
 of vectors, each with a hard-wired type.
 
@@ -271,3 +272,14 @@ aliases for @schemeidfont{byte} operations.}
 @srfi-4-vector[f32 _float]
 @srfi-4-vector[f64 _double*]
 
+@; ------------------------------------------------------------
+
+@include-section["alloc.scrbl"]
+
+@; ------------------------------------------------------------
+
+@include-section["atomic.scrbl"]
+
+@; ------------------------------------------------------------
+
+@include-section["objc.scrbl"]

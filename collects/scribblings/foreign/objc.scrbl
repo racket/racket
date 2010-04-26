@@ -1,21 +1,24 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
-          (for-label scheme/base
-                     scheme/contract
-                     (except-in scheme/foreign ->)
-                     "private/objc-doc-unsafe.ss"))
+          (for-label racket/base
+                     racket/contract
+                     racket/unsafe/ffi/objc
+                     (except-in racket/unsafe/ffi ->)
+                     (only-in ffi/objc objc-unsafe!)
+                     (only-in scheme/foreign unsafe!)))
 
 @(define objc-eval (make-base-eval))
 @(interaction-eval #:eval objc-eval (define-struct cpointer:id ()))
 
 @(define seeCtype
-   @elem{see @secref[#:doc '(lib "scribblings/foreign/foreign.scrbl") "ctype"]})
+   @elem{see @secref["ctype"]})
 
-@title{@bold{Objective-C} FFI}
+@title{Objective-C FFI}
 
-@defmodule[ffi/objc]{The @schememodname[ffi/objc] library builds on
-@schememodname[scheme/foreign] to support interaction with
+@defmodule[racket/unsafe/ffi/objc]{The
+@racketmodname[racket/unsafe/ffi/objc] library builds on
+@racketmodname[racket/unsafe/ffi] to support interaction with
 @link["http://developer.apple.com/documentation/Cocoa/Conceptual/ObjectiveC/"]{Objective-C}.}
 
 The library supports Objective-C interaction in two layers. The upper
@@ -23,24 +26,9 @@ layer provides syntactic forms for sending messages and deriving
 subclasses. The lower layer is a think wrapper on the
 @link["http://developer.apple.com/DOCUMENTATION/Cocoa/Reference/ObjCRuntimeRef/index.html"]{Objective-C
 runtime library} functions. Even the upper layer is unsafe and
-relatively low-level compared to normal Scheme libraries, because
+relatively low-level compared to normal Racket libraries, because
 argument and result types must be declared in terms of FFI C types
 (@seeCtype).
-
-@bold{Important:} Most of the bindings documented here are available
-only after an @scheme[(objc-unsafe!)] declaration in the importing
-module.
-
-@table-of-contents[]
-
-@; ----------------------------------------------------------------------
-
-@section{Using Unsafe Bindings}
-
-@defform[(objc-unsafe!)]{
-
-Analogous to @scheme[(unsafe!)], makes unsafe bindings of
-@schememodname[ffi/objc] available in the importing module.}
 
 @; ----------------------------------------------------------------------
 
@@ -52,11 +40,11 @@ The type of an Objective-C object, an opaque pointer.}
 
 @defthing[_Class ctype?]{
 
-The type of an Objective-C class, which is also an @scheme[_id].}
+The type of an Objective-C class, which is also an @racket[_id].}
 
 @defthing[_Protocol ctype?]{
 
-The type of an Objective-C protocol, which is also an @scheme[_id].}
+The type of an Objective-C protocol, which is also an @racket[_id].}
 
 @defthing[_SEL ctype?]{
 
@@ -64,17 +52,17 @@ The type of an Objective-C selector, an opaque pointer.}
 
 @defthing[_BOOL ctype?]{
 
-The Objective-C boolean type. Scheme values are converted for C in the
-usual way: @scheme[#f] is false and any other value is true. C values
-are converted to Scheme booleans.}
+The Objective-C boolean type. Racket values are converted for C in the
+usual way: @racket[#f] is false and any other value is true. C values
+are converted to Racket booleans.}
 
 @defthing[YES boolean?]{
 
-Synonym for @scheme[#t]}
+Synonym for @racket[#t]}
 
 @defthing[NO boolean?]{
 
-Synonym for @scheme[#f]}
+Synonym for @racket[#f]}
 
 @; ----------------------------------------------------------------------
 
@@ -88,13 +76,13 @@ Synonym for @scheme[#f]}
                      (code:line #:type ctype-expr method-id arg)])]{
 
 Sends a message to the Objective-C object produced by
-@scheme[obj-expr]. When a type is omitted for either the result or an
-argument, the type is assumed to be @scheme[_id], otherwise it must
+@racket[obj-expr]. When a type is omitted for either the result or an
+argument, the type is assumed to be @racket[_id], otherwise it must
 be specified as an FFI C type (@seeCtype).
 
-If a single @scheme[method-id] is provided with no arguments, then
-@scheme[method-id] must not end with @litchar{:}; otherwise, each
-@scheme[method-id] must end with @litchar{:}.
+If a single @racket[method-id] is provided with no arguments, then
+@racket[method-id] must not end with @litchar{:}; otherwise, each
+@racket[method-id] must end with @litchar{:}.
 
 @examples[
 #:eval objc-eval
@@ -107,14 +95,14 @@ If a single @scheme[method-id] is provided with no arguments, then
 @defform*[[(tellv obj-expr method-id)
            (tellv obj-expr arg ...)]]{
 
-Like @scheme[tell], but with a result type @scheme[_void].}
+Like @racket[tell], but with a result type @racket[_void].}
 
 @defform[(import-class class-id ...)]{
 
-Defines each @scheme[class-id] to the class (a value with FFI type
-@scheme[_Class]) that is registered with the string form of
-@scheme[class-id]. The registered class is obtained via
-@scheme[objc_lookUpClass].
+Defines each @racket[class-id] to the class (a value with FFI type
+@racket[_Class]) that is registered with the string form of
+@racket[class-id]. The registered class is obtained via
+@racket[objc_lookUpClass].
 
 @examples[
 #:eval objc-eval
@@ -123,10 +111,10 @@ Defines each @scheme[class-id] to the class (a value with FFI type
 
 @defform[(import-protocol protocol-id ...)]{
 
-Defines each @scheme[protocol-id] to the protocol (a value with FFI type
-@scheme[_Protocol]) that is registered with the string form of
-@scheme[protocol-id]. The registered class is obtained via
-@scheme[objc_getProtocol].
+Defines each @racket[protocol-id] to the protocol (a value with FFI type
+@racket[_Protocol]) that is registered with the string form of
+@racket[protocol-id]. The registered class is obtained via
+@racket[objc_getProtocol].
 
 @examples[
 #:eval objc-eval
@@ -148,46 +136,46 @@ Defines each @scheme[protocol-id] to the protocol (a value with FFI type
                [mode + - +a -a]
                [arg (code:line method-id [ctype-expr arg-id])])]{
 
-Defines @scheme[class-id] as a new, registered Objective-C class (of
-FFI type @scheme[_Class]). The @scheme[superclass-expr] should produce
-an Objective-C class or @scheme[#f] for the superclass. An optional
-@scheme[#:mixins] clause can specify mixins defined with
-@scheme[define-objc-mixin]. An optional @scheme[#:protocols] clause
+Defines @racket[class-id] as a new, registered Objective-C class (of
+FFI type @racket[_Class]). The @racket[superclass-expr] should produce
+an Objective-C class or @racket[#f] for the superclass. An optional
+@racket[#:mixins] clause can specify mixins defined with
+@racket[define-objc-mixin]. An optional @racket[#:protocols] clause
 can specify Objective-C protocols to be implemented by the class.
 
-Each @scheme[field-id] is an instance field that holds a Scheme value
-and that is initialized to @scheme[#f] when the object is
-allocated. The @scheme[field-id]s can be referenced and @scheme[set!]
-directly when the method @scheme[body]s. Outside the object, they can
-be referenced and set with @scheme[get-ivar] and @scheme[set-ivar!].
+Each @racket[field-id] is an instance field that holds a Racket value
+and that is initialized to @racket[#f] when the object is
+allocated. The @racket[field-id]s can be referenced and @racket[set!]
+directly when the method @racket[body]s. Outside the object, they can
+be referenced and set with @racket[get-ivar] and @racket[set-ivar!].
 
-Each @scheme[method] adds or overrides a method to the class (when
-@scheme[mode] is @scheme[-] or @scheme[-a]) to be called on instances,
-or it adds a method to the meta-class (when @scheme[mode] is
-@scheme[+] or @scheme[+a]) to be called on the class itself. All
+Each @racket[method] adds or overrides a method to the class (when
+@racket[mode] is @racket[-] or @racket[-a]) to be called on instances,
+or it adds a method to the meta-class (when @racket[mode] is
+@racket[+] or @racket[+a]) to be called on the class itself. All
 result and argument types must be declared using FFI C types
-(@seeCtype). When @scheme[mode] is @scheme[+a] or @scheme[-a], the
-method is called in atomic mode (see @scheme[_cprocedure]).
+(@seeCtype). When @racket[mode] is @racket[+a] or @racket[-a], the
+method is called in atomic mode (see @racket[_cprocedure]).
 
-If a @scheme[method] is declared with a single @scheme[method-id] and
-no arguments, then @scheme[method-id] must not end with
-@litchar{:}. Otherwise, each @scheme[method-id] must end with
+If a @racket[method] is declared with a single @racket[method-id] and
+no arguments, then @racket[method-id] must not end with
+@litchar{:}. Otherwise, each @racket[method-id] must end with
 @litchar{:}.
 
-If the special method @scheme[dealloc] is declared for mode
-@scheme[-], it must not call the superclass method, because a
-@scheme[(super-tell dealloc)] is added to the end of the method
-automatically. In addition, before @scheme[(super-tell dealloc)],
-space for each @scheme[field-id] within the instance is deallocated.
+If the special method @racket[dealloc] is declared for mode
+@racket[-], it must not call the superclass method, because a
+@racket[(super-tell dealloc)] is added to the end of the method
+automatically. In addition, before @racket[(super-tell dealloc)],
+space for each @racket[field-id] within the instance is deallocated.
 
 @examples[
 #:eval objc-eval
 (eval:alts
  (define-objc-class MyView NSView
    [bm] (code:comment @#,elem{<- one field})
-   (- _scheme (swapBitwmap: [_scheme new-bm])
+   (- _racket (swapBitwmap: [_racket new-bm])
       (begin0 bm (set! bm new-bm)))
-   (- _void (drawRect: [@#,schemeidfont{_NSRect} exposed-rect])
+   (- _void (drawRect: [@#,racketidfont{_NSRect} exposed-rect])
       (super-tell drawRect: exposed-rect)
       (draw-bitmap-region bm exposed-rect))
    (- _void (dealloc)
@@ -201,45 +189,45 @@ space for each @scheme[field-id] within the instance is deallocated.
            [field-id ...]
            method)]{
 
-Like @scheme[define-objc-class], but defines a mixin to be combined
+Like @racket[define-objc-class], but defines a mixin to be combined
 with other method definitions through either
-@scheme[define-objc-class] or @scheme[define-objc-mixin]. The
-specified @scheme[field-id]s are not added by the mixin, but must be a
-subset of the @scheme[field-id]s declared for the class to which the
+@racket[define-objc-class] or @racket[define-objc-mixin]. The
+specified @racket[field-id]s are not added by the mixin, but must be a
+subset of the @racket[field-id]s declared for the class to which the
 methods are added.}
 
 
 @defidform[self]{
 
-When used within the body of a @scheme[define-objc-class] or
-@scheme[define-objc-mixin] method, refers to the object whose method
+When used within the body of a @racket[define-objc-class] or
+@racket[define-objc-mixin] method, refers to the object whose method
 was called. This form cannot be used outside of a
-@scheme[define-objc-class] or @scheme[define-objc-mixin] method.}
+@racket[define-objc-class] or @racket[define-objc-mixin] method.}
 
 @defform*[[(super-tell result-type method-id)
            (super-tell result-type arg ...)]]{
 
-When used within the body of a @scheme[define-objc-class] or
-@scheme[define-objc-mixin] method, calls a superclass method. The
-@scheme[result-type] and @scheme[arg] sub-forms have the same syntax
-as in @scheme[tell]. This form cannot be used outside of a
-@scheme[define-objc-class] or @scheme[define-objc-mixin] method.}
+When used within the body of a @racket[define-objc-class] or
+@racket[define-objc-mixin] method, calls a superclass method. The
+@racket[result-type] and @racket[arg] sub-forms have the same syntax
+as in @racket[tell]. This form cannot be used outside of a
+@racket[define-objc-class] or @racket[define-objc-mixin] method.}
 
 
 @defform[(get-ivar obj-expr field-id)]{
 
-Extracts the Scheme value of a field in a class created with
-@scheme[define-objc-class].}
+Extracts the Racket value of a field in a class created with
+@racket[define-objc-class].}
 
 @defform[(set-ivar! obj-expr field-id value-expr)]{
 
-Sets the Scheme value of a field in a class created with
-@scheme[define-objc-class].}
+Sets the Racket value of a field in a class created with
+@racket[define-objc-class].}
 
 @defform[(selector method-id)]{
 
-Returns a selector (of FFI type @scheme[_SEL]) for the string form of
-@scheme[method-id].
+Returns a selector (of FFI type @racket[_SEL]) for the string form of
+@racket[method-id].
 
 @examples[
 (eval:alts (tellv button setAction: #:type _SEL (selector terminate:)) (void))
@@ -247,8 +235,8 @@ Returns a selector (of FFI type @scheme[_SEL]) for the string form of
 
 @defproc[(objc-is-a? [obj _id] [cls _Class]) boolean?]{
 
-Check whether @scheme[obj] is an instance of the Objective-C class
-@scheme[cls].}
+Check whether @racket[obj] is an instance of the Objective-C class
+@racket[cls].}
 
 @; ----------------------------------------------------------------------
 
@@ -285,9 +273,9 @@ Returns the class of an object (or the meta-class of a class).}
                           [type-encoding string?])
          boolean?]{
 
-Adds a method to a class. The @scheme[type] argument must be a FFI C
-type (@seeCtype) that matches both @scheme[imp] and the not
-Objective-C type string @scheme[type-encoding].}
+Adds a method to a class. The @racket[type] argument must be a FFI C
+type (@seeCtype) that matches both @racket[imp] and the not
+Objective-C type string @racket[type-encoding].}
 
 @defproc[(class_addIvar [cls _Class] [name string?] [size exact-nonnegative-integer?]
                         [log-alignment exact-nonnegative-integer?] [type-encoding string?])
@@ -299,14 +287,14 @@ Adds an instance variable to an Objective-C class.}
                                      [name string?])
          (values _Ivar any/c)]{
 
-Gets the value of an instance variable whose type is @scheme[_pointer].}
+Gets the value of an instance variable whose type is @racket[_pointer].}
 
 @defproc[(object_setInstanceVariable [obj _id]
                                      [name string?]
                                      [val any/c])
          _Ivar]{
 
-Sets the value of an instance variable whose type is @scheme[_pointer].}
+Sets the value of an instance variable whose type is @racket[_pointer].}
 
 @defthing[_Ivar ctype?]{
 
@@ -318,9 +306,9 @@ The type of an Objective-C instance variable, an opaque pointer.}
           [arg any/c])
          any/c]{
 
-Calls the Objective-C method on @scheme[_id] named by @scheme[sel].
-The @scheme[types] vector must contain one more than the number of
-supplied @scheme[arg]s; the first FFI C type in @scheme[type] is used
+Calls the Objective-C method on @racket[_id] named by @racket[sel].
+The @racket[types] vector must contain one more than the number of
+supplied @racket[arg]s; the first FFI C type in @racket[type] is used
 as the result type.}
 
 @defproc[((objc_msgSendSuper/typed [types (vector/c result-ctype arg-ctype ...)])
@@ -329,7 +317,7 @@ as the result type.}
           [arg any/c])
          any/c]{
 
-Like @scheme[objc_msgSend/typed], but for a super call.}
+Like @racket[objc_msgSend/typed], but for a super call.}
 
 @deftogether[(
 @defproc[(make-objc_super [id _id] [super _Class]) _objc_super]
@@ -337,3 +325,20 @@ Like @scheme[objc_msgSend/typed], but for a super call.}
 )]{
 
 Constructor and FFI C type use for super calls.}
+
+@table-of-contents[]
+
+@; ----------------------------------------------------------------------
+
+@section{Legacy Library}
+
+@defmodule[ffi/objc]{The @racketmodname[ffi/objc] library is a
+deprecated entry point to @racketmodname[racket/unsafe/ffi/objc]. It
+exports only safe operations directly, and unsafe operations are
+imported using @racket[objc-unsafe!].}
+
+@defform[(objc-unsafe!)]{
+
+Analogous to @racket[(unsafe!)], makes unsafe bindings of
+@racketmodname[racket/unsafe/ffi/objc] available in the importing
+module.}
