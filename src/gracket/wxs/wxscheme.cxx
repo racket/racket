@@ -2514,10 +2514,10 @@ Scheme_Object *wxSchemeFindDirectory(int argc, Scheme_Object **argv)
     
     if (which == id_init_file)
       return append_path(home,
-			 scheme_make_path("/.mredrc" + ends_in_slash));
+			 scheme_make_path("/.gracketrc" + ends_in_slash));
     if (which == id_setup_file)
       return append_path(home,
-			 scheme_make_path("/.mred.resources" + ends_in_slash));
+			 scheme_make_path("/.gracket.resources" + ends_in_slash));
 
     if (which == id_x_display) {
 # if defined(wx_x)
@@ -2541,10 +2541,10 @@ Scheme_Object *wxSchemeFindDirectory(int argc, Scheme_Object **argv)
     
     if (which == id_init_file)
       return append_path(home,
-			 scheme_make_path("\\mredrc.ss" + ends_in_slash));
+			 scheme_make_path("\\gracketrc.rkt" + ends_in_slash));
     if (which == id_setup_file)
       return append_path(home,
-			 scheme_make_path("\\mred.ini" + ends_in_slash));  
+			 scheme_make_path("\\gracket.ini" + ends_in_slash));  
     
     if (which == id_x_display)
       return scheme_false;
@@ -2584,10 +2584,10 @@ Scheme_Object *wxSchemeFindDirectory(int argc, Scheme_Object **argv)
 
   if (which == id_init_file)
     return append_path(home,
-		       scheme_make_path(":mredrc.ss" + ends_in_colon));
+		       scheme_make_path(":gracketrc.rkt" + ends_in_colon));
   if (which == id_setup_file)
     return append_path(home,
-		       scheme_make_path(":mred.fnt" + ends_in_colon));  
+		       scheme_make_path(":gracket.fnt" + ends_in_colon));  
 #endif
 
   return scheme_void;
@@ -2778,9 +2778,9 @@ int wxGetPreference(const char *name, char *res, long len)
     if (!ends_in_slash)
       s[l++] = '/';
 # ifdef wx_mac
-    memcpy(s + l, "org.plt-scheme.prefs.ss", 24);
+    memcpy(s + l, "org.racket-lang.prefs.rkt", 24);
 # else
-    memcpy(s + l, "plt-prefs.ss", 13);
+    memcpy(s + l, "racket-prefs.rkt", 13);
 # endif
 #endif
 
@@ -2796,7 +2796,7 @@ int wxGetPreference(const char *name, char *res, long len)
     memcpy(s, home, l);
     if (!ends_in_slash)
       s[l++] = '\\';
-    memcpy(s + l, "plt-prefs.ss", 13);
+    memcpy(s + l, "racket-prefs.rkt", 13);
 #endif
 
     /*************** Mac OS Classic ***************/
@@ -2825,7 +2825,7 @@ int wxGetPreference(const char *name, char *res, long len)
       memcpy(s, home, l);
       if (!ends_in_slash)
 	s[l++] = ':';
-      memcpy(s + l, "org.plt-scheme.prefs.ss", 24);
+      memcpy(s + l, "org.racket-lang.prefs.rkt", 24);
     }
 #endif
 
