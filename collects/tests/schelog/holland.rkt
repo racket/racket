@@ -1,6 +1,7 @@
 #lang racket
 
-(require "../schelog.rkt")
+(require schelog
+         tests/eli-tester)
 
 ;This is a very trivial program.  In Prolog, it would be:
 ;
@@ -12,29 +13,34 @@
 (define %city
   (lambda (x)
     (%or (%= x 'amsterdam)
-	 (%= x 'brussels))))
+         (%= x 'brussels))))
 
 (define %country
   (lambda (x)
     (%or (%= x 'holland)
-	 (%= x 'belgium))))
+         (%= x 'belgium))))
 
 ;For a more Prolog-style syntax, you can rewrite the same thing,
 ;using the `%rel' macro, as the following:
 
-'(define %city
+(define %city*
   (%rel ()
-    (('amsterdam))
-    (('brussels))))
+        (('amsterdam))
+        (('brussels))))
 
-'(define %country
+(define %country*
   (%rel ()
-    (('holland))
-    (('belgium))))
+        (('holland))
+        (('belgium))))
 
 ;Typical easy queries:
-;
-; (%which (x) (%city x)) succeeds twice
-; (%which (x) (%country x)) succeeds twice
-; (%which () (%city 'amsterdam)) succeeds
-; (%which () (%country 'amsterdam)) fails
+(test 
+ (%which (x) (%city x)) 
+ (%more)  
+ (%more) => #f
+ (%which (x) (%country x))
+ (%more) 
+ (%more) => #f
+ (%which () (%city 'amsterdam))
+ (%more) => #f
+ (%which () (%country 'amsterdam)) => #f)

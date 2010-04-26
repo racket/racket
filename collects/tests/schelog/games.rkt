@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket
 
-(require "../schelog.rkt" 
+(require schelog
          "./puzzle.rkt"
          schemeunit)
 
@@ -20,7 +20,7 @@
     (list 'person name country sport)))
 
 (define %games
-  (%rel ! (clues queries solution the-men
+  (%rel (clues queries solution the-men
 	 n1 n2 n3 c1 c2 c3 s1 s2 s3)
     ((clues queries solution)
      (%= the-men
@@ -29,7 +29,7 @@
      (%games-queries the-men queries solution))))
     
 (define %games-clues
-  (%rel ! (the-men clue1-man1 clue1-man2 clue2-man1 clue2-man2 clue3-man)
+  (%rel (the-men clue1-man1 clue1-man2 clue2-man1 clue2-man2 clue3-man)
     ((the-men
        (list
 	 (%did-better clue1-man1 clue1-man2 the-men)
@@ -46,7 +46,7 @@
 	 (%sport clue3-man 'cricket))))))
 
 (define %games-queries
-  (%rel ! (the-men man1 man2 aussies-name dicks-sport)
+  (%rel (the-men man1 man2 aussies-name dicks-sport)
     ((the-men
        (list
 	 (%member man1 the-men)
@@ -61,25 +61,25 @@
 	 (list 'richard 'plays dicks-sport))))))
 	 
 (define %did-better
-  (%rel ! (a b c)
+  (%rel (a b c)
     ((a b (list a b c)))
     ((a c (list a b c)))
     ((b c (list a b c)))))
 
 (define %name
-  (%rel ! (name country sport)
+  (%rel (name country sport)
     (((person name country sport) name))))
 
 (define %country
-  (%rel ! (name country sport)
+  (%rel (name country sport)
     (((person name country sport) country))))
 
 (define %sport
-  (%rel ! (name country sport)
+  (%rel (name country sport)
     (((person name country sport) sport))))
 
 (define %first
-  (%rel ! (car cdr)
+  (%rel (car cdr)
     (((cons car cdr) car))))
 
 ;;With the above as the database, and also loading the file
@@ -89,4 +89,4 @@
 ;;((michael is the australian) (richard plays tennis))
 
 (check-equal? (solve-puzzle %games)
-              '((solution= ((michael is the australian) (richard plays tennis)))))
+              '((solution= . ((michael is the australian) (richard plays tennis)))))

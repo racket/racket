@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../schelog.rkt")
+(require schelog)
 
 ;Exercise 14.1 (iv) from Sterling & Shapiro, p. 217-8  
 
@@ -29,25 +29,25 @@
   (lambda (hue nation pet drink cigarette)
     (list 'house hue nation pet drink cigarette)))
 
-(define %hue (%rel ! (h) (((house h (_) (_) (_) (_)) h))))
-(define %nation (%rel ! (n) (((house (_) n (_) (_) (_)) n))))
-(define %pet (%rel ! (p) (((house (_) (_) p (_) (_)) p))))
-(define %drink (%rel ! (d) (((house (_) (_) (_) d (_)) d))))
-(define %cigarette (%rel ! (c) (((house (_) (_) (_) (_) c) c))))
+(define %hue (%rel (h) (((house h (_) (_) (_) (_)) h))))
+(define %nation (%rel (n) (((house (_) n (_) (_) (_)) n))))
+(define %pet (%rel (p) (((house (_) (_) p (_) (_)) p))))
+(define %drink (%rel (d) (((house (_) (_) (_) d (_)) d))))
+(define %cigarette (%rel (c) (((house (_) (_) (_) (_) c) c))))
 
 (define %adjacent
-  (%rel ! (a b)
+  (%rel (a b)
     ((a b (list a b (_) (_) (_))))
     ((a b (list (_) a b (_) (_))))
     ((a b (list (_) (_) a b (_))))
     ((a b (list (_) (_) (_) a b)))))
 
 (define %middle
-  (%rel ! (a)
+  (%rel (a)
     ((a (list (_) (_) a (_) (_))))))
 
 (define %houses
-  (%rel ! (row-of-houses clues queries solution
+  (%rel (row-of-houses clues queries solution
 	 h1 h2 h3 h4 h5 n1 n2 n3 n4 n5 p1 p2 p3 p4 p5
 	 d1 d2 d3 d4 d5 c1 c2 c3 c4 c5)
     ((clues queries solution)
@@ -62,7 +62,7 @@
      (%houses-queries row-of-houses queries solution))))
 
 (define %houses-clues
-  (%rel ! (row-of-houses abode1 abode2 abode3 abode4 abode5 abode6 abode7
+  (%rel (row-of-houses abode1 abode2 abode3 abode4 abode5 abode6 abode7
 	 abode8 abode9 abode10 abode11 abode12 abode13 abode14 abode15)
     ((row-of-houses
        (list
@@ -126,7 +126,7 @@
 	 (%hue abode15 'blue))))))
 
 (define %houses-queries
-  (%rel ! (row-of-houses abode1 abode2 zebra-owner water-drinker)
+  (%rel (row-of-houses abode1 abode2 zebra-owner water-drinker)
     ((row-of-houses
        (list
 	 (%member abode1 row-of-houses)
@@ -140,13 +140,9 @@
        (list (list zebra-owner 'owns 'the 'zebra)
 	 (list water-drinker 'drinks 'water))))))
 
-;Load puzzle.scm and type (solve-puzzle %houses)
-
-;Note: This program, as written, requires
-;the occurs check.  Make sure the global
-;*schelog-use-occurs-check?* is set to #t before
-;calling solve-puzzle.  If not, you will get into
-;an infinite loop.
-
-;Note 2: Perhaps there is a way to rewrite the 
+;Note: Perhaps there is a way to rewrite the 
 ;program so that it doesn't rely on the occurs check.
+
+(require "puzzle.rkt" tests/eli-tester)
+(use-occurs-check? #t)
+(test (solve-puzzle %houses))

@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../schelog.rkt"
+(require schelog
          schemeunit)
 
 ;The following is the "Biblical" database from "The Art of
@@ -9,7 +9,7 @@
 ;(%father X Y) :- X is the father of Y.
 
 (define %father
-  (%rel ! ()
+  (%rel ()
     (('terach 'abraham)) (('terach 'nachor)) (('terach 'haran))
     (('abraham 'isaac)) (('haran 'lot)) (('haran 'milcah))
     (('haran 'yiscah))))
@@ -17,14 +17,14 @@
 ;(%mother X Y) :- X is the mother of Y.
 
 (define %mother
-  (%rel ! () (('sarah 'isaac))))
+  (%rel () (('sarah 'isaac))))
 
 (define %male
-  (%rel ! ()
+  (%rel ()
     (('terach)) (('abraham)) (('isaac)) (('lot)) (('haran)) (('nachor))))
 
 (define %female
-  (%rel ! ()
+  (%rel ()
     (('sarah)) (('milcah)) (('yiscah))))
 
 ;AoP, ch. 17.  Finding all the children of a particular
@@ -36,13 +36,13 @@
 (define %children-1
 
   (letrec ((children-aux
-	     (%rel ! (x a cc c)
+	     (%rel (x a cc c)
 	       ((x a cc)
                  (%father x c) (%not (%member c a)) !
                  (children-aux x (cons c a) cc))
 	       ((x cc cc)))))
 
-    (%rel ! (x cc)
+    (%rel (x cc)
       ((x cc) (children-aux x '() cc)))))
 
 (define terachs-kids-test
@@ -53,7 +53,7 @@
       (%children-1 'terach cc))))
 
 (check-equal? (terachs-kids-test)
-              `((cc (haran nachor abraham))))
+              `((cc . (haran nachor abraham))))
 
 (define dad-kids-test
   ;find a father and all his children.  Returns
@@ -65,7 +65,7 @@
       (%children-1 f cc))))
 
 (check-equal? (dad-kids-test)
-              `((f terach) (cc (haran nachor abraham))))
+              `((f . terach) (cc . (haran nachor abraham))))
 
 (define terachs-kids-test-2
   ;find all the kids of Terach, using %set-of.
@@ -75,11 +75,14 @@
       (%which (kk)
         (%set-of k (%father 'terach k) kk)))))
 
+(check-equal? (terachs-kids-test-2)
+              `((kk . (abraham nachor haran))))
+
 ;This is a better definition of the %children predicate.
 ;Uses set predicate %bag-of
 
 (define %children
-  (%rel ! (x kids c)
+  (%rel (x kids c)
     ((kids) (%set-of c (%father x c) kids))))
 
 (define dad-kids-test-2
@@ -93,6 +96,9 @@
                      (%father dad x))
           kids)))))
 
+(check-equal? (dad-kids-test-2)
+              `((dad . terach) (kids . (abraham nachor haran))))
+
 (define dad-kids-test-3
   ;looks like dad-kids-test-2, but dad is now
   ;existentially quantified.  returns a set of
@@ -102,6 +108,9 @@
       (%which (dad kids)
         (%set-of x (%father dad x)
           kids)))))
+
+(check-equal? (dad-kids-test-3)
+              `((dad . _) (kids . (abraham nachor haran isaac lot milcah yiscah))))
 
 (define dad-kids-test-4
   ;find the set of dad-kids.
@@ -114,6 +123,9 @@
 	(%set-of (list dad kids)
 	  (%set-of x (%father dad x) kids)
 	  dad-kids)))))
+
+(check-equal? (dad-kids-test-4)
+              `((dad-kids . ((_ (abraham nachor haran isaac lot milcah yiscah))))))
 
 (define dad-kids-test-5
   ;the correct solution.  dad is
@@ -128,3 +140,6 @@
                        (%father dad x))
             kids)
 	  dad-kids)))))
+
+(check-equal? (dad-kids-test-5)
+              `((dad-kids . ((terach (abraham nachor haran)) (abraham (isaac)) (haran (lot milcah yiscah))))))

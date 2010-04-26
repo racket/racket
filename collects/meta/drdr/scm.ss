@@ -135,9 +135,12 @@
           [to string?])]
  [get-scm-commit-msg (exact-nonnegative-integer? path-string? . -> . git-push?)])
 
+(define (git-push-start-commit gp)
+  (git-commit-hash (last (git-push-commits gp))))
 (define (git-push-end-commit gp)
   (git-commit-hash (first (git-push-commits gp))))
 (provide/contract
+ [git-push-start-commit (git-push? . -> . string?)]
  [git-push-end-commit (git-push? . -> . string?)])
 
 (define scm-commit-author

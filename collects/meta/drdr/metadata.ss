@@ -7,7 +7,7 @@
   (define suffix (filename-extension pth))
   (and suffix
        (ormap (lambda (bs) (bytes=? suffix bs))
-              (list #"ss" #"scm" #"scrbl"))))
+              (list #"ss" #"scm" #"scrbl" #"rkt"))))
 
 (define PROP:command-line "drdr:command-line")
 (define PROP:timeout "drdr:timeout")
@@ -65,5 +65,7 @@
                     (delete-file tmp-file))))))
   (unless props:get-prop
     (error 'get-prop "Could not load props file for ~e" (current-rev)))
-  (props:get-prop a-path prop def
-                  #:as-string? as-string?))
+  ; XXX get-prop is stupid and errors when a-path is invalid rather than returning def
+  (with-handlers ([exn? (lambda (x) def)])
+    (props:get-prop a-path prop def
+                    #:as-string? as-string?)))
