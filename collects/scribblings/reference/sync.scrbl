@@ -3,7 +3,7 @@
 
 @title[#:tag "all-sync" #:style 'toc]{Synchronization}
 
-Scheme's synchronization toolbox spans three layers:
+Racket's synchronization toolbox spans three layers:
 
 @itemize[
 

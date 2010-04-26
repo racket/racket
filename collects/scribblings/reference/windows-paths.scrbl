@@ -2,7 +2,7 @@
 @(require scribble/bnf
           "mz.ss")
 
-@(define MzAdd (italic "Scheme-specific:"))
+@(define MzAdd (italic "Racket-specific:"))
 
 @title[#:tag "windowspaths"]{Windows Path Conventions}
 
@@ -21,14 +21,14 @@ colon, a UNC path of the form
 @litchar{RED\}@nonterm{element}. (Variants of @litchar{\\?\}
 paths are described further below.)
 
-Scheme fails to implement the usual Windows path syntax in one
-way. Outside of Scheme, a pathname @filepath{C:rant.txt} can be a
+Racket fails to implement the usual Windows path syntax in one
+way. Outside of Racket, a pathname @filepath{C:rant.txt} can be a
 drive-specific relative path. That is, it names a file @filepath{rant.txt}
 on drive @filepath{C:}, but the complete path to the file is determined by
-the current working directory for drive @filepath{C:}. Scheme does not
+the current working directory for drive @filepath{C:}. Racket does not
 support drive-specific working directories (only a working directory
-across all drives, as reflected by the @scheme[current-directory]
-parameter). Consequently, Scheme implicitly converts a path like
+across all drives, as reflected by the @racket[current-directory]
+parameter). Consequently, Racket implicitly converts a path like
 @filepath{C:rant.txt} into @filepath["C:\\rant.txt"].
 
 @itemize[
@@ -40,7 +40,7 @@ parameter). Consequently, Scheme implicitly converts a path like
 
 ]
 
-Otherwise, Scheme follows standard Windows path conventions, but also
+Otherwise, Racket follows standard Windows path conventions, but also
  adds @litchar{\\?\REL} and @litchar{\\?\RED} conventions to
  deal with paths inexpressible in the standard convention, plus
  conventions to deal with excessive @litchar{\}s in @litchar{\\?\}
@@ -145,7 +145,7 @@ include @litchar{\}.
         @litchar{\\?\REL\\}@nonterm{element} is a relative
         path, as long as the path does not end with two consecutive
         @litchar{\}s, and as long as the path contains no sequence of
-        three or more @litchar{\}s. This Scheme-specific path form
+        three or more @litchar{\}s. This Racket-specific path form
         supports relative paths with elements that are not normally
         expressible in Windows paths (e.g., a final element that ends
         in a space). The @litchar{REL} part must be exactly the three
@@ -171,7 +171,7 @@ include @litchar{\}.
         drive-relative path, as long as the path does not end with two
         consecutive @litchar{\}s, and as long as the path contains
         no sequence of three or more @litchar{\}s. This
-        Scheme-specific path form supports drive-relative paths (i.e.,
+        Racket-specific path form supports drive-relative paths (i.e.,
         absolute given a drive) with elements that are not normally
         expressible in Windows paths. The @litchar{RED} part must be
         exactly the three uppercase letters, and @litchar{/}s cannot
@@ -186,7 +186,7 @@ include @litchar{\}.
 
 ]
 
-Three additional Scheme-specific rules provide meanings to character
+Three additional Racket-specific rules provide meanings to character
 sequences that are otherwise ill-formed as Windows paths:
 
 @itemize[
@@ -214,8 +214,8 @@ sequences that are otherwise ill-formed as Windows paths:
 
 ]
 
-Outside of Scheme, except for @litchar{\\?\} paths, pathnames are
- typically limited to 259 characters. Scheme internally converts
+Outside of Racket, except for @litchar{\\?\} paths, pathnames are
+ typically limited to 259 characters. Racket internally converts
  pathnames to @litchar{\\?\} form as needed to avoid this
  limit. The operating system cannot access files through
  @litchar{\\?\} paths that are longer than 32,000 characters or
@@ -227,8 +227,8 @@ into bytes preserves ASCII characters, and all special characters
 mentioned above are ASCII, so all of the rules are the same.
 
 Beware that the @litchar{\} path separator is an escape character
-in Scheme strings. Thus, the path @litchar{\\?\REL\..\\..}  as
-a string must be written @scheme["\\\\?\\REL\\..\\\\.."].
+in Racket strings. Thus, the path @litchar{\\?\REL\..\\..}  as
+a string must be written @racket["\\\\?\\REL\\..\\\\.."].
 
 A path that ends with a directory separator syntactically refers to a
 directory.  In addition, a path syntactcially refers to a directory if
@@ -248,54 +248,54 @@ converted to single @litchar{/}s (except at the beginning of a shared
 folder name), a @litchar{/} is inserted after the colon in a drive
 specification if it is missing.
 
-For @scheme[(bytes->path-element _bstr)], @litchar{/}s, colons,
+For @racket[(bytes->path-element _bstr)], @litchar{/}s, colons,
 trailing dots, trailing whitespace, and special device names (e.g.,
-``aux'') in @scheme[_bstr] are encoded as a literal part of the path
-element by using a @litchar{\\?\REL} prefix.  The @scheme[bstr]
+``aux'') in @racket[_bstr] are encoded as a literal part of the path
+element by using a @litchar{\\?\REL} prefix.  The @racket[bstr]
 argument must not contain a @litchar{\}, otherwise the
 @exnraise[exn:fail:contract].
 
-For @scheme[(path-element->bytes _path)] or
-@scheme[(path-element->string _path)], if the byte-string form of
-@scheme[_path] starts with a @litchar{\\?\REL}, the prefix is not
+For @racket[(path-element->bytes _path)] or
+@racket[(path-element->string _path)], if the byte-string form of
+@racket[_path] starts with a @litchar{\\?\REL}, the prefix is not
 included in the result.
 
-For @scheme[(build-path _base-path _sub-path ...)], trailing spaces
-and periods are removed from the last element of @scheme[_base-path]
-and all but the last @scheme[_sub-path] (unless the element consists of
+For @racket[(build-path _base-path _sub-path ...)], trailing spaces
+and periods are removed from the last element of @racket[_base-path]
+and all but the last @racket[_sub-path] (unless the element consists of
 only spaces and peroids), except for those that start with
-@litchar{\\?\}. If @scheme[_base-path] starts @litchar{\\?\},
+@litchar{\\?\}. If @racket[_base-path] starts @litchar{\\?\},
 then after each non-@litchar{\\?\REL\} and
-non-@litchar{\\?\RED\} @scheme[_sub-path] is added, all
+non-@litchar{\\?\RED\} @racket[_sub-path] is added, all
 @litchar{/}s in the addition are converted to @litchar{\}s,
 multiple consecutive @litchar{\}s are converted to a single
 @litchar{\}, added @litchar{.} elements are removed, and added
 @litchar{..} elements are removed along with the preceding element;
-these conversions are not performed on the original @scheme[_base-path]
+these conversions are not performed on the original @racket[_base-path]
 part of the result or on any @litchar{\\?\REL\} or
-@litchar{\\?\RED\} or @scheme[_sub-path].  If a
+@litchar{\\?\RED\} or @racket[_sub-path].  If a
 @litchar{\\?\REL\} or @litchar{\\?\RED\}
-@scheme[_sub-path] is added to a non-@litchar{\\?\}
-@scheme[_base-path], the @scheme[_base-path] (with any additions up
+@racket[_sub-path] is added to a non-@litchar{\\?\}
+@racket[_base-path], the @racket[_base-path] (with any additions up
 to the @litchar{\\?\REL\} or @litchar{\\?\RED\}
-@scheme[_sub-path]) is simplified and converted to a
+@racket[_sub-path]) is simplified and converted to a
 @litchar{\\?\} path.  In other cases, a @litchar{\} may be
 added or removed before combining paths to avoid changing the root
 meaning of the path (e.g., combining @litchar{//x} and @litchar{y}
 produces @litchar{/x/y}, because @litchar{//x/y} would be a UNC path
 instead of a drive-relative path).
 
-For @scheme[(simplify-path _path _use-filesystem?)], @scheme[_path] is
-expanded, and if @scheme[_path] does not start with
+For @racket[(simplify-path _path _use-filesystem?)], @racket[_path] is
+expanded, and if @racket[_path] does not start with
 @litchar{\\?\}, trailing spaces and periods are removed, a
 @litchar{/} is inserted after the colon in a drive specification if it
 is missing, and a @litchar{\} is inserted after @litchar{\\?\}
 as a root if there are elements and no extra @litchar{\}
 already. Otherwise, if no indicators or redundant separators are in
-@scheme[_path], then @scheme[_path] is returned.
+@racket[_path], then @racket[_path] is returned.
 
-For @scheme[(split-path _path)] producing @scheme[_base],
-@scheme[_name], and @scheme[_must-be-dir?], splitting a path that does
+For @racket[(split-path _path)] producing @racket[_base],
+@racket[_name], and @racket[_must-be-dir?], splitting a path that does
 not start with @litchar{\\?\} can produce parts that start with
 @litchar{\\?\}. For example, splitting @litchar{C:/x~/aux/}
 produces @litchar{\\?\C:\x~\} and @litchar{\\?\REL\\aux};
