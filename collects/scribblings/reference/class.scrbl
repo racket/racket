@@ -216,7 +216,7 @@ structure type property's guard, if any).
 @defexamples[
 #:eval class-eval
 (define i (interface* () ([prop:custom-write 
-                           (lambda (obj port write?) (void))])
+                           (lambda (obj port mode) (void))])
             method1 method2 method3))
 ]}
 

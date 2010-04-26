@@ -647,37 +647,36 @@ As an example, consider the following module:
 
 @(begin
 #reader scribble/comment-reader
-[schemeblock
-(module product mzscheme
-  (require mzlib/contract)
+[racketmod
+racket
 
-  (define-contract-struct kons (hd tl))
+(define-contract-struct kons (hd tl))
   
-  ;; @scheme[sorted-list/gt : number -> contract]
-  ;; produces a contract that accepts
-  ;; sorted kons-lists whose elements
-  ;; are all greater than @scheme[num].
-  (define (sorted-list/gt num)
-    (or/c null?
-          (kons/dc [hd (>=/c num)]
-                   [tl (hd) (sorted-list/gt hd)])))
+;; @scheme[sorted-list/gt : number -> contract]
+;; produces a contract that accepts
+;; sorted kons-lists whose elements
+;; are all greater than @scheme[num].
+(define (sorted-list/gt num)
+  (or/c null?
+        (kons/dc [hd (>=/c num)]
+                 [tl (hd) (sorted-list/gt hd)])))
   
-  ;; @scheme[product : kons-list -> number]
-  ;; computes the product of the values
-  ;; in the list. if the list contains
-  ;; zero, it avoids traversing the rest
-  ;; of the list.
-  (define (product l)
-    (cond
-      [(null? l) 1]
-      [else
-       (if (zero? (kons-hd l))
-           0
-           (* (kons-hd l) 
-              (product (kons-tl l))))]))
-  
-  (provide kons? make-kons kons-hd kons-tl)
-  (provide/contract [product (-> (sorted-list/gt -inf.0) number?)]))
+;; @scheme[product : kons-list -> number]
+;; computes the product of the values
+;; in the list. if the list contains
+;; zero, it avoids traversing the rest
+;; of the list.
+(define (product l)
+  (cond
+    [(null? l) 1]
+    [else
+     (if (zero? (kons-hd l))
+         0
+         (* (kons-hd l) 
+            (product (kons-tl l))))]))
+ 
+(provide kons? make-kons kons-hd kons-tl)
+(provide/contract [product (-> (sorted-list/gt -inf.0) number?)])
 ])
 
 The module provides a single function, @scheme[product] whose contract

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss")
 
-@title[#:tag "running" #:style 'toc]{Running PLT Scheme}
+@title[#:tag "running" #:style 'toc]{Running Racket}
 
 @local-table-of-contents[]
 

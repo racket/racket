@@ -34,8 +34,9 @@ old name.
 @table-of-contents[]
 
 @compat-except[scheme racket]{, except that @schememodname[racket]'s
-@scheme[struct] is not exported, and a @|unit-struct| from
-@schememodname[scheme/unit] is exported, instead}
+@scheme[struct] is not exported, the @|unit-struct| from
+@schememodname[scheme/unit] is exported, @schememodname[scheme/set]
+is not re-exported, and @schememodname[scheme/nest] is re-exported}
 
 @compat-except[scheme/base racket/base]{, except that
 @schememodname[racket]'s @scheme[struct] is not exported, and
@@ -111,7 +112,57 @@ must occur after all the @scheme[provide*] forms to which it refers.}
 @compat[scheme/match racket/match]
 @compat[scheme/math racket/math]
 @compat[scheme/mpair racket/mpair]
-@compat[scheme/nest racket/nest]
+
+@;------------------------------------------------------------------------
+@section[#:tag "nest"]{schememodname[scheme/nest]}
+
+@defmodule[scheme/nest]
+
+@defform[(nest ([datum ...+] ...) body ...+)]{
+
+Combines nested expressions that syntactically drift to the right into
+a more linear textual format, much in the same way that @racket[let*]
+linearizes a sequence of nested @racket[let] expressions.
+
+For example,
+
+@racketblock[
+(nest ([let ([x 10]
+             [y 6])]
+       [with-handlers ([exn:fail? (lambda (x) 15)])]
+       [parameterize ([current-output-port (current-error-port)])]
+       [let-values ([(d r) (quotient/remainder x y)])])
+  (display (+ d r)))
+]
+
+is equivalent to
+
+@racketblock[
+(let ([x 10]
+      [y 6])
+  (with-handlers ([exn:fail? (lambda (x) 15)])
+    (parameterize ([current-output-port (current-error-port)])
+      (let-values ([(d r) (quotient/remainder x y)])
+        (display (+ d r))))))
+]
+
+The @racket[nest] form is unusual in that it has no semantics apart
+from its expansion, and its implementation is easier to understand
+than a precise prose description:
+
+@racketblock[
+(define-syntax nest
+  (syntax-rules ()
+    [(nest () body0 body ...)
+     (let () body0 body ...)]
+    [(nest ([form forms ...]) body0 body ...)
+     (form forms ... (let () body0 body ...))]
+    [(nest ([form forms ...] . more) body0 body ...)
+     (form forms ... (nest more body0 body ...))]))
+]}
+
+@; ----------------------------------------
+
 @compat[scheme/package racket/package]
 @compat[scheme/path racket/path]
 @compat[scheme/port racket/port]

@@ -6,7 +6,7 @@
           scribble/core 
           racket/list)
 
-@(define (scheme-extra-libs)
+@(define (racket-extra-libs)
    (make-delayed-element
     (lambda (renderer p ri)
       (let ([mods (append-map
@@ -35,7 +35,7 @@ friendlier (though less precise and less complete) overview of the
 language.
 
 @defmodulelang*[(racket/base racket)
-                ;; Use sources for overlap with `mzscheme':
+                ;; Use sources for overlap with `scheme' and `mzscheme':
                 #:use-sources ('#%kernel
                                racket/private/more-scheme
                                racket/private/misc
@@ -48,11 +48,11 @@ language.
                                racket/private/base)]{
 
 Unless otherwise noted, the bindings defined in this manual are
-exported by the @schememodname[racket/base] and @schememodname[racket]
+exported by the @racketmodname[racket/base] and @racketmodname[racket]
 languages.}
 
-@margin-note{The @schememodname[racket] library combines
-@schememodname[racket/base]@scheme-extra-libs[].}
+@margin-note{The @racketmodname[racket] library combines
+@racketmodname[racket/base]@racket-extra-libs[].}
 
 @table-of-contents[]
 

@@ -57,6 +57,7 @@ ROSYM Scheme_Object *syntax_symbol;
 ROSYM Scheme_Object *quasisyntax_symbol;
 ROSYM Scheme_Object *unsyntax_symbol;
 ROSYM Scheme_Object *unsyntax_splicing_symbol;
+ROSYM Scheme_Object *qq_ellipses;
 
 /* Flag for debugging compiled code in printed form: */
 #define NO_COMPACT 0
@@ -175,6 +176,7 @@ void scheme_init_print(Scheme_Env *env)
   REGISTER_SO(quasisyntax_symbol);
   REGISTER_SO(unsyntax_symbol);
   REGISTER_SO(unsyntax_splicing_symbol);
+  REGISTER_SO(qq_ellipses);
   quote_symbol = scheme_intern_symbol("quote");
   quasiquote_symbol = scheme_intern_symbol("quasiquote");
   unquote_symbol = scheme_intern_symbol("unquote");
@@ -183,6 +185,7 @@ void scheme_init_print(Scheme_Env *env)
   quasisyntax_symbol = scheme_intern_symbol("quasisyntax");
   unsyntax_symbol = scheme_intern_symbol("unsyntax");
   unsyntax_splicing_symbol = scheme_intern_symbol("unsyntax-splicing");
+  qq_ellipses = scheme_make_symbol("..."); /* uninterned */
 
 #ifdef MZ_PRECISE_GC
   register_traversers();
@@ -1836,7 +1839,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  const char *s;
 
           if (notdisplay >= 3) {
-            if (notdisplay == 4) {
+            if (SAME_OBJ(qq_ellipses, obj)) {
+              /* no quoting */
+            } else if (notdisplay == 4) {
               if (SAME_OBJ(obj, unquote_symbol)
                   || SAME_OBJ(obj, unquote_splicing_symbol))
                 print_utf8_string(pp, ",'", 0, 2);
@@ -2156,7 +2161,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         Scheme_Object *vec, *prefab;
         print_compact(pp, CPT_PREFAB);
         prefab = ((Scheme_Structure *)obj)->stype->prefab_key;
-        vec = scheme_struct_to_vector(obj, NULL, pp->inspector);
+        vec = scheme_struct_to_vector(obj, (notdisplay >= 3) ? qq_ellipses : NULL, pp->inspector);
         SCHEME_VEC_ELS(vec)[0] = SCHEME_CDR(prefab);
         print_vector(vec, notdisplay, compact, ht, mt, pp, 1);
       } else if (compact || !pp->print_unreadable) {
@@ -2171,7 +2176,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	if (pb) {
           Scheme_Object *vec, *prefab;
           prefab = ((Scheme_Structure *)obj)->stype->prefab_key;
-	  vec = scheme_struct_to_vector(obj, NULL, pp->inspector);
+	  vec = scheme_struct_to_vector(obj, (notdisplay >= 3) ? qq_ellipses : NULL, pp->inspector);
           if ((notdisplay >= 3) && !prefab) {
             notdisplay = to_unquoted(pp, notdisplay);
             vec = scheme_vector_to_list(vec);

@@ -24,7 +24,6 @@
          racket/promise
          racket/bool
          racket/local
-         racket/nest
          (for-syntax racket/base))
 
 (provide (all-from-out racket/contract
@@ -50,6 +49,5 @@
                        racket/cmdline
                        racket/promise
                        racket/bool
-                       racket/local
-                       racket/nest)
+                       racket/local)
          (for-syntax (all-from-out racket/base)))
