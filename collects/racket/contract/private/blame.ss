@@ -87,8 +87,13 @@
     (pretty-display v port)
     (get-output-string port)))
 
+(define (pretty-format/write v [columns (pretty-print-columns)])
+  (let ([port (open-output-string)])
+    (pretty-write v port)
+    (get-output-string port)))
+
 (define show/display (show pretty-format/display))
-(define show/write (show pretty-format))
+(define show/write (show pretty-format/write))
 
 (define (show-line-break line port len cols)
   (newline port)

@@ -140,7 +140,7 @@ path/s is either such a string or a list of them.
   ;; need updating if more characters are allowed in the future.
   #rx"[^/.a-zA-Z0-9%_+-]")
 
-(define (validate-path-string path-string who)
+(define (validate-path-string path-string who [only-warn? #f])
   (define (bad why)
     (error* who "invalid path argument, expecting a ~a, got: ~e"
             why path-string))
@@ -149,10 +149,12 @@ path/s is either such a string or a list of them.
              (regexp-match? rx:bad-path path-string))
     (bad "relative `/'-delimited string, no `/' suffix, `//', `.', or `..'"))
   (when (regexp-match? rx:bad-pathchar path-string)
-    (error* who "invalid path argument, ~s is not allowed, got: ~e\n~a~a"
-            (regexp-match rx:bad-pathchar path-string) path-string
-            "(note: if paths with this character are needed, then this"
-            " script needs to be exteded to allow them)")))
+    (if only-warn?
+      (warn "~s is a bad path argument" path-string)
+      (error* who "invalid path argument, ~s is not allowed, got: ~e\n~a~a"
+              (regexp-match rx:bad-pathchar path-string) path-string
+              "(note: if paths with this character are needed, then this"
+              " script needs to be exteded to allow them)"))))
 
 (define (parse-prop-string prop str who)
   (with-handlers ([exn? (lambda (e)
@@ -162,7 +164,7 @@ path/s is either such a string or a list of them.
 
 (define (get-prop path-string prop-name [default get-prop]
                   #:strict? [strict? #f] #:as-string? [as-string? #f])
-  (validate-path-string path-string 'get-prop)
+  (validate-path-string path-string 'get-prop #t) ; no errors
   (let ([upchain
          ;; take the chain going up from the most specific node, so that
          ;; properties of a directory apply to subpaths
@@ -314,8 +316,9 @@ path/s is either such a string or a list of them.
                                sub))))
     (and (or (pair? (tree-subs tree)) (pair? (tree-props tree))) tree))
   (let (;; temp file in the same directory => fail early if cannot write to it
-        ;; and make a rename possible
-        [temp (make-temporary-file (format "~a~~a" this-file))])
+        ;; and make a rename possible; copy from this file to preserve being
+        ;; executable
+        [temp (make-temporary-file (format "~a~~a" this-file) this-file)])
     (dynamic-wind
       void
       (lambda ()
@@ -812,6 +815,7 @@ path/s is either such a string or a list of them.
 "collects/handin-server/web-status-server.ss" drdr:command-line "mzc ~s"
 "collects/help" responsible (robby)
 "collects/help/bug-report.ss" drdr:command-line "mred-text -t ~s"
+"collects/help/help.ss" drdr:command-line "mzc ~s"
 "collects/hierlist/hierlist.ss" drdr:command-line "mred-text -t ~s"
 "collects/honu" responsible (mflatt rafkind)
 "collects/htdp" responsible (matthias)
@@ -897,8 +901,8 @@ path/s is either such a string or a list of them.
 "collects/make" responsible (mflatt)
 "collects/meta" responsible (eli)
 "collects/meta/check-dists.ss" drdr:command-line ""
-"collects/meta/drdr" responsible (jay) drdr:command-line ""
 "collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line ""
+"collects/meta/drdr" responsible (jay) drdr:command-line ""
 "collects/mred/edit-main.ss" drdr:command-line "mzc ~s"
 "collects/mred/edit.ss" drdr:command-line "mred-text -t ~s"
 "collects/mred/lang/main.ss" drdr:command-line "mred-text -t ~s"
@@ -1093,7 +1097,7 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/matcher-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/pict-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/rg-test.ss" drdr:command-line "mzc ~s"
-"collects/redex/tests/run-tests.ss" drdr:command-line "mred-text ~s --examples --no-bitmaps" drdr:timeout 180
+"collects/redex/tests/run-tests.ss" drdr:command-line "mred-text ~s --examples --no-bitmaps" drdr:timeout 240
 "collects/redex/tests/term-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/tl-test.ss" drdr:command-line "mzc ~s"
 "collects/repos-time-stamp" responsible (eli)

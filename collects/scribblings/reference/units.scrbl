@@ -1,6 +1,6 @@
 #lang scribble/doc
-@(require (except-in "mz.ss" link)
-          (for-label scheme/unit-exptime))
+@(require "mz.ss"
+          (for-label racket/unit-exptime))
 
 @(define-syntax defkeywords
    (syntax-rules (*)
@@ -29,8 +29,8 @@ Units with suitably matching signatures can be @deftech{linked}
 together to form a larger unit, and a unit with no imports can be
 @deftech{invoked} to execute its body.
 
-@note-lib[scheme/unit #:use-sources (mzlib/unit)]{ The
-@schememodname[scheme/unit] module name can be used as a language name
+@note-lib[racket/unit #:use-sources (mzlib/unit)]{ The
+@schememodname[racket/unit] module name can be used as a language name
 with @schemefont{#lang}; see @secref["single-unit"].}
 
 @local-table-of-contents[]
@@ -167,7 +167,17 @@ the corresponding import. Each @scheme[tagged-sig-id] in an
   (define-values-for-export (id ...) expr) 
   (contracted [id contract] ...)
   (open sig-spec) 
-  (sig-form-id . datum)])]{
+  (struct id (field ...) struct-option ...) 
+  (sig-form-id . datum)]
+
+ [field id
+        [id #:mutable]]
+ [struct-option #:mutable
+                (code:line #:constructor-name constructor-id)
+                (code:line #:extra-constructor-name constructor-id)
+                #:omit-constructor
+                #:omit-define-syntaxes
+                #:omit-define-values])]{
 
 Binds an identifier to a signature that specifies a group
 of bindings for import or export:
@@ -211,10 +221,15 @@ of bindings for import or export:
  @item{Each @scheme[(open sig-spec)] adds to the signature everything
  specified by @scheme[sig-spec].}
 
+ @item{Each @scheme[(struct id (field ...) struct-option ...)]  adds
+ all of the identifiers that would be bound by @scheme[(struct id
+ (field ...) field-option ...)], where the extra option
+ @scheme[#:omit-constructor] omits the constructor identifier.}
+
  @item{Each @scheme[(sig-form-id . datum)] extends the signature in a
  way that is defined by @scheme[sig-form-id], which must be bound by
  @scheme[define-signature-form].  One such binding is for
- @scheme[struct].}
+ @scheme[struct/ctc].}
 
 ]
 
@@ -641,30 +656,14 @@ declarations; @scheme[define-signature] has no splicing @scheme[begin]
 form.)}
 
 @defform/subs[
-(struct id (field ...) option ...) 
+(struct/ctc id ([field contract-expr] ...) struct-option ...) 
 
 ([field id
         [id #:mutable]]
- [option #:mutable
-         #:omit-constructor
-         #:omit-define-syntaxes
-         #:omit-define-values])]{
-
-For use with @scheme[define-signature]. The expansion of a
-@scheme[struct] signature form includes all of the identifiers that
-would be bound by @scheme[(define-struct id (field ...) option ...)],
-where the extra option @scheme[#:omit-constructor] omits the
-@schemeidfont{make-}@scheme[id] identifier.}
-
-@defform/subs[
-(struct/ctc id ([field contract-expr] ...) option ...) 
-
-([field id
-        [id #:mutable]]
- [option #:mutable
-         #:omit-constructor
-         #:omit-define-syntaxes
-         #:omit-define-values])]{
+ [struct-option #:mutable
+                #:omit-constructor
+                #:omit-define-syntaxes
+                #:omit-define-values])]{
 
 For use with @scheme[define-signature]. The @scheme[struct/ctc] form works
 similarly to @scheme[struct], but the constructor, predicate, field
@@ -724,7 +723,7 @@ contract.  The unit name is used for the positive blame of the contract.}
 
 @section[#:tag "single-unit"]{Single-Unit Modules}
 
-When @schememodname[scheme/unit] is used as a language name with
+When @schememodname[racket/unit] is used as a language name with
 @schemefont{#lang}, the module body is treated as a unit body.  The
 body must match the following @scheme[_module-body] grammar:
 
@@ -756,7 +755,7 @@ suffix). If the module name ends in @schemeidfont{-unit}, then
 
 @section{Single-Signature Modules}
 
-@defmodulelang[scheme/signature]{The @schememodname[scheme/signature]
+@defmodulelang[racket/signature]{The @schememodname[racket/signature]
 language treats a module body as a unit signature.}
 
 The body must match the following @scheme[_module-body] grammar:
@@ -767,8 +766,8 @@ The body must match the following @scheme[_module-body] grammar:
 ]
 
 See @secref["creatingunits"] for the grammar of @scheme[_sig-spec].
-Unlike the body of a @schememodname[scheme/unit] module, a
-@scheme[require] in a @schememodname[scheme/signature] module must be
+Unlike the body of a @schememodname[racket/unit] module, a
+@scheme[require] in a @schememodname[racket/signature] module must be
 a literal use of @scheme[require].
 
 
@@ -784,9 +783,9 @@ name before @schemeidfont{-sig}. Otherwise, the module name serves as
 
 @section{Transformer Helpers}
 
-@defmodule[scheme/unit-exptime #:use-sources (mzlib/unit-exptime)]
+@defmodule[racket/unit-exptime #:use-sources (mzlib/unit-exptime)]
 
-The @schememodname[scheme/unit-exptime] library provides procedures
+The @schememodname[racket/unit-exptime] library provides procedures
 that are intended for use by macro transformers. In particular, the
 library is typically imported using @scheme[for-syntax] into a module
 that defines macro with @scheme[define-syntax].

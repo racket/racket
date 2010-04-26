@@ -1,9 +1,9 @@
 #lang scheme/unit
 
-(require scheme/gui/base
+(require racket/gui/base
          browser/external
          framework
-         scheme/class
+         racket/class
          net/url
          setup/dirs
          help/search

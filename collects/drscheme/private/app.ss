@@ -1,10 +1,8 @@
 #lang scheme/unit
 
-(require mzlib/class
-         mzlib/list
-         scheme/file
+(require racket/class
          string-constants
-         mred
+         racket/gui/base
          framework
          browser/external
          setup/getinfo

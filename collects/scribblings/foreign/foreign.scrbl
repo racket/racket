@@ -5,20 +5,15 @@
 
 @author["Eli Barzilay"]
 
-@defmodule[scheme/foreign #:use-sources ('#%foreign
-                                         racket/unsafe/ffi)]
+@defmodule[racket/unsafe/ffi #:use-sources ('#%foreign)]
 
-The @schememodname[scheme/foreign] library enables the direct use of
+The @schememodname[racket/unsafe/ffi] library enables the direct use of
 C-based APIs within Scheme programs---without writing any new C
 code. From the Scheme perspective, functions and data with a C-based
 API are @idefterm{foreign}, hence the term @defterm{foreign
 interface}. Furthermore, since most APIs consist mostly of functions,
 the foreign interface is sometimes called a @defterm{foreign function
 interface}, abbreviated @deftech{FFI}.
-
-@bold{Important:} Many of the bindings documented here (the ones in
-sections with titles starting ``Unsafe'') are available only after an
-@scheme[(unsafe!)] declaration in the importing module.
 
 @table-of-contents[]
 

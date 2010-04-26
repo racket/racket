@@ -30,7 +30,7 @@ with @scheme[namespace-attach-module].}
 
 @defproc[(make-base-empty-namespace) namespace?]{
 
-Creates a new empty namespace, but with @schememodname[scheme/base]
+Creates a new empty namespace, but with @schememodname[racket/base]
 attached. The namespace's @tech{base phase} is the same as the
 @tech{phase} in which the @scheme[make-base-empty-namespace]
 function was created.}
@@ -38,7 +38,7 @@ function was created.}
 
 @defproc[(make-base-namespace) namespace?]{
 
-Creates a new namespace with @schememodname[scheme/base] attached and
+Creates a new namespace with @schememodname[racket/base] attached and
 @scheme[require]d into the top-level environment. The namespace's
 @tech{base phase} is the same as the @tech{phase} in which the
 @scheme[make-base-namespace] function was created.}

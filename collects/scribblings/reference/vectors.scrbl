@@ -148,10 +148,10 @@ _i)] is the value produced by @scheme[(proc _i)].
 @; ----------------------------------------
 @section{Additional Vector Functions}
 
-@note-lib[scheme/vector]
+@note-lib[racket/vector]
 @(define vec-eval (make-base-eval))
 @(interaction-eval #:eval vec-eval
-                   (require scheme/vector))
+                   (require racket/vector))
 
 @defproc[(vector-map [proc procedure?] [vec vector?] ...+) 
          vector?]{

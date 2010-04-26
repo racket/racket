@@ -27,7 +27,7 @@
       (parameterize ([current-launcher-variant variant])
         (mk-launcher '("-l-" "help/help")
                      (mk-path "plt-help")       ;; change to "Racket Docs"
-                     `([exe-name . "plt-help"]  ;; get rid of this (in favor of 'racket-tool docs')
+                     `([exe-name . "plt-help"]  ;; get rid of this (in favor of 'raco docs')
                        [relative? . #t]
                        [framework-root . #f]
                        [dll-dir . #f]

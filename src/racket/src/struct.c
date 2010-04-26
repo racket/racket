@@ -171,7 +171,7 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 #define icons scheme_make_pair
 #define _intern scheme_intern_symbol
 
-#define BUILTIN_STRUCT_FLAGS SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_EXPTIME
+#define BUILTIN_STRUCT_FLAGS (SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_MAKE_PREFIX)
 
 #define TYPE_NAME(base, blen) make_name("struct:", base, blen, "", NULL, 0, "", 1)
 #define CSTR_NAME(base, blen) make_name("", base, blen, "", NULL, 0, "", 1)

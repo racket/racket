@@ -5,7 +5,7 @@
 @(define contract-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require scheme/contract))
+       (the-eval '(require racket/contract))
        the-eval)))
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
@@ -17,7 +17,7 @@ another. Programmers specify the behavior of a module exports via
 @scheme[provide/contract] and the contract system enforces those
 constraints.
 
-@note-lib[scheme/contract #:use-sources (racket/contract/private/ds
+@note-lib[racket/contract #:use-sources (racket/contract/private/ds
                                          racket/contract/private/base
                                          racket/contract/private/guts
                                          racket/contract/private/misc

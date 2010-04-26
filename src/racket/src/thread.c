@@ -4234,7 +4234,8 @@ void scheme_thread_block(float sleep_time)
 
   /* Check for major GC request from master GC */
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
-  GC_check_master_gc_request(); 
+  if (!do_atomic)
+    GC_check_master_gc_request(); 
 #endif
   
   if (sleep_end > 0) {
@@ -6625,7 +6626,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_PRINT_PAIR_CURLY, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_MPAIR_CURLY, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_READER, scheme_false);
-  init_param(cells, paramz, MZCONFIG_PRINT_AS_QQ, scheme_false);
+  init_param(cells, paramz, MZCONFIG_PRINT_AS_QQ, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_SYNTAX_WIDTH, scheme_make_integer(32));
 
   init_param(cells, paramz, MZCONFIG_HONU_MODE, scheme_false);

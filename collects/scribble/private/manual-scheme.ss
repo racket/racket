@@ -1,38 +1,57 @@
-#lang scheme/base
+#lang racket/base
 (require "../decode.ss"
          "../struct.ss"
          "../scheme.ss"
          "../search.ss"
          "../basic.ss"
-         scheme/list
+         racket/list
          "manual-utils.ss"
          "manual-style.ss"
-         (for-syntax scheme/base)
-         (for-label scheme/base))
+         (for-syntax racket/base)
+         (for-label racket/base))
 
-(provide schemeblock SCHEMEBLOCK schemeblock/form
-         schemeblock0 SCHEMEBLOCK0 schemeblock0/form
-         schemeblockelem
-         schemeinput
-         schememod
-         scheme SCHEME scheme/form schemeresult schemeid 
-         schememodname
-         schememodlink indexed-scheme
-         schemelink)
+(provide racketblock RACKETBLOCK racketblock/form
+         racketblock0 RACKETBLOCK0 racketblock0/form
+         racketblockelem
+         racketinput
+         racketmod
+         racket RACKET racket/form racketresult racketid 
+         racketmodname
+         racketmodlink indexed-racket
+         racketlink
+         
+         (rename-out [racketblock schemeblock]
+                     [RACKETBLOCK SCHEMEBLOCK]
+                     [racketblock/form schemeblock/form]
+                     [racketblock0 schemeblock0]
+                     [RACKETBLOCK0 SCHEMEBLOCK0]
+                     [racketblock0/form schemeblock0/form]
+                     [racketblockelem schemeblockelem]
+                     [racketinput schemeinput]
+                     [racketmod schememod]
+                     [racket scheme]
+                     [RACKET SCHEME]
+                     [racket/form scheme/form]
+                     [racketresult schemeresult]
+                     [racketid schemeid]
+                     [racketmodname schememodname]
+                     [racketmodlink schememodlink]
+                     [indexed-racket indexed-scheme]
+                     [racketlink schemelink]))
 
-(define-code schemeblock0 to-paragraph)
-(define-code schemeblock (to-paragraph/prefix (hspace 2) (hspace 2) ""))
-(define-code SCHEMEBLOCK (to-paragraph/prefix (hspace 2) (hspace 2) "")
+(define-code racketblock0 to-paragraph)
+(define-code racketblock (to-paragraph/prefix (hspace 2) (hspace 2) ""))
+(define-code RACKETBLOCK (to-paragraph/prefix (hspace 2) (hspace 2) "")
                          UNSYNTAX)
-(define-code SCHEMEBLOCK0 to-paragraph UNSYNTAX)
+(define-code RACKETBLOCK0 to-paragraph UNSYNTAX)
 (define interaction-prompt (make-element 'tt (list "> " )))
-(define-code schemeinput
+(define-code racketinput
   (to-paragraph/prefix
    (make-element #f (list (hspace 2) interaction-prompt))
    (hspace 4)
    ""))
 
-(define-syntax (schememod stx)
+(define-syntax (racketmod stx)
   (syntax-case stx ()
     [(_ #:file filename lang rest ...)
      (with-syntax ([modtag (datum->syntax
@@ -45,7 +64,7 @@
                                                    `(as-modname-link
                                                      ',#'lang
                                                      (to-element ',#'lang))
-                                                   #'(scheme lang)))))
+                                                   #'(racket lang)))))
                             #'lang)]
                    [(file ...)
                     (if (syntax-e #'filename)
@@ -55,9 +74,9 @@
                           `(code:comment (unsyntax (t "In \"" ,(syntax-e #'filename) "\":")))
                           #'filename))
                         null)])
-       (syntax/loc stx (schemeblock file ... modtag rest ...)))]
+       (syntax/loc stx (racketblock file ... modtag rest ...)))]
     [(_ lang rest ...)
-     (syntax/loc stx (schememod #:file #f lang rest ...))]))
+     (syntax/loc stx (racketmod #:file #f lang rest ...))]))
 
 (define (to-element/result s)
   (make-element result-color (list (to-element/no-color s))))
@@ -91,25 +110,25 @@
     (make-shaped-parens s val)
     s))
 
-(define-code schemeblockelem to-element)
+(define-code racketblockelem to-element)
 
-(define-code scheme to-element unsyntax keep-s-expr add-sq-prop)
-(define-code SCHEME to-element UNSYNTAX keep-s-expr add-sq-prop)
-(define-code schemeresult to-element/result unsyntax keep-s-expr add-sq-prop)
-(define-code schemeid to-element/id unsyntax keep-s-expr add-sq-prop)
-(define-code *schememodname to-element unsyntax keep-s-expr add-sq-prop)
+(define-code racket to-element unsyntax keep-s-expr add-sq-prop)
+(define-code RACKET to-element UNSYNTAX keep-s-expr add-sq-prop)
+(define-code racketresult to-element/result unsyntax keep-s-expr add-sq-prop)
+(define-code racketid to-element/id unsyntax keep-s-expr add-sq-prop)
+(define-code *racketmodname to-element unsyntax keep-s-expr add-sq-prop)
 
-(define-syntax schememodname
+(define-syntax racketmodname
   (syntax-rules (unsyntax)
-    [(schememodname #,n)
+    [(racketmodname #,n)
      (let ([sym n])
        (as-modname-link sym (to-element sym)))]
-    [(schememodname n)
-     (as-modname-link 'n (*schememodname n))]))
+    [(racketmodname n)
+     (as-modname-link 'n (*racketmodname n))]))
 
-(define-syntax schememodlink
+(define-syntax racketmodlink
   (syntax-rules (unsyntax)
-    [(schememodlink n content ...)
+    [(racketmodlink n content ...)
      (*as-modname-link 'n (elem #:style #f content ...))]))
 
 (define (as-modname-link s e)
@@ -122,10 +141,10 @@
                      (list e)
                      `(mod-path ,(format "~s" s))))
 
-(define-syntax-rule (indexed-scheme x)
-  (add-scheme-index 'x (scheme x)))
+(define-syntax-rule (indexed-racket x)
+  (add-racket-index 'x (racket x)))
 
-(define (add-scheme-index s e)
+(define (add-racket-index s e)
   (let ([k (cond [(and (pair? s) (eq? (car s) 'quote)) (format "~s" (cadr s))]
                  [(string? s) s]
                  [else (format "~s" s)])])
@@ -139,11 +158,11 @@
          #'(let ([ellipses #f])
              (base a)))])))
 
-(define-/form schemeblock0/form schemeblock0)
-(define-/form schemeblock/form schemeblock)
-(define-/form scheme/form scheme)
+(define-/form racketblock0/form racketblock0)
+(define-/form racketblock/form racketblock)
+(define-/form racket/form racket)
 
-(define (*schemelink stx-id id . s)
+(define (*racketlink stx-id id . s)
   (let ([content (decode-content s)])
     (make-delayed-element
      (lambda (r p ri)
@@ -151,11 +170,11 @@
         (make-link-element
          #f
          content
-         (or (find-scheme-tag p ri stx-id #f)
+         (or (find-racket-tag p ri stx-id #f)
              `(undef ,(format "--UNDEFINED:~a--" (syntax-e stx-id)))))))
      (lambda () content)
      (lambda () content))))
 
-(define-syntax-rule (schemelink id . content)
-  (*schemelink (quote-syntax id) 'id . content))
+(define-syntax-rule (racketlink id . content)
+  (*racketlink (quote-syntax id) 'id . content))
 

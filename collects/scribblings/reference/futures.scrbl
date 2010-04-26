@@ -1,18 +1,15 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme
-                     scheme/base
-                     scheme/contract
-                     scheme/future))
+          (for-label racket/future))
 
 @(define future-eval (make-base-eval))
-@(interaction-eval #:eval future-eval (require scheme/future))
+@(interaction-eval #:eval future-eval (require racket/future))
 
 @title[#:tag "futures"]{Futures for Parallelism}
 
 @guideintro["effective-futures"]{futures}
 
-@note-lib[scheme/future]
+@note-lib[racket/future]
 
 @margin-note{Currently, parallel support for @scheme[future] is
 enabled by default for Windows, Linux x86/x86_64, and Mac OS X
@@ -21,7 +18,7 @@ x86/x86_64. To enable support for other platforms, use
 Scheme.}
 
 The @scheme[future] and @scheme[touch] functions from
-@schememodname[scheme/future] provide access to parallelism as
+@schememodname[racket/future] provide access to parallelism as
 supported by the hardware and operation system.
 In contrast to @scheme[thread], which provides concurrency for
 arbitrary computations without parallelism, @scheme[future] provides

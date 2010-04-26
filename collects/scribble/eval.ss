@@ -1,20 +1,20 @@
 
-(module eval scheme/base
+(module eval racket/base
   (require "manual.ss"
            "struct.ss"
            "scheme.ss"
            "decode.ss"
-           scheme/file
-           scheme/sandbox
-           scheme/promise
+           racket/file
+           racket/sandbox
+           racket/promise
            mzlib/string
-           (for-syntax scheme/base))
+           (for-syntax racket/base))
 
   (provide interaction
            interaction-eval
            interaction-eval-show
-           schemeblock+eval
-           schememod+eval
+           racketblock+eval (rename-out [racketblock+eval schemeblock+eval])
+           racketmod+eval (rename-out [racketmod+eval schememod+eval])
            def+int
            defs+int
            examples
@@ -38,8 +38,8 @@
 
   (define maxlen 60)
 
-  (namespace-require 'scheme/base)
-  (namespace-require '(for-syntax scheme/base))
+  (namespace-require 'racket/base)
+  (namespace-require '(for-syntax racket/base))
 
   (define (literal-string style s)
     (let ([m (regexp-match #rx"^(.*)(  +)(.*)$" s)])
@@ -118,7 +118,7 @@
                                                       (list
                                                        (hspace 2)
                                                        (elem #:style result-color
-                                                             (to-element/no-color v))))))))
+                                                             (to-element/no-color v #:qq? (print-as-quasiquote)))))))))
                             val-list))))
              (loop (cdr expr-paras)
                    (cdr val-list+outputs)
@@ -314,7 +314,7 @@
 
   (define (show-val v)
     (elem #:style result-color
-          (to-element/no-color v)))
+          (to-element/no-color v #:qq? (print-as-quasiquote))))
 
   (define (do-interaction-eval-show ev e)
     (parameterize ([current-command-line-arguments #()])
@@ -325,31 +325,31 @@
       [(_ #:eval ev e) (do-interaction-eval-show ev (quote-expr e))]
       [(_ e) (do-interaction-eval-show #f (quote-expr e))]))
 
-  (define-syntax schemeinput*
+  (define-syntax racketinput*
     (syntax-rules (eval:alts code:comment)
-      [(_ (code:comment . rest)) (schemeblock (code:comment . rest))]
-      [(_ (eval:alts a b)) (schemeinput* a)]
-      [(_ e) (schemeinput e)]))
+      [(_ (code:comment . rest)) (racketblock (code:comment . rest))]
+      [(_ (eval:alts a b)) (racketinput* a)]
+      [(_ e) (racketinput e)]))
 
-  (define-code schemeblock+line (to-paragraph/prefix (hspace 2) 
+  (define-code racketblock+line (to-paragraph/prefix (hspace 2) 
                                                      (hspace 2)
                                                      (list " ")))
 
-  (define-syntax (schemedefinput* stx)
+  (define-syntax (racketdefinput* stx)
     (syntax-case stx (define define-values define-struct)
       [(_ (define . rest))
        (syntax-case stx ()
-         [(_ e) #'(schemeblock+line e)])]
+         [(_ e) #'(racketblock+line e)])]
       [(_ (define-values . rest))
        (syntax-case stx ()
-         [(_ e) #'(schemeblock+line e)])]
+         [(_ e) #'(racketblock+line e)])]
       [(_ (define-struct . rest))
        (syntax-case stx ()
-         [(_ e) #'(schemeblock+line e)])]
+         [(_ e) #'(racketblock+line e)])]
       [(_ (code:line (define . rest) . rest2))
        (syntax-case stx ()
-         [(_ e) #'(schemeblock+line e)])]
-      [(_ e) #'(schemeinput* e)]))
+         [(_ e) #'(racketblock+line e)])]
+      [(_ e) #'(racketinput* e)]))
 
   (define (do-titled-interaction ev t shows evals)
     (interleave t
@@ -358,41 +358,41 @@
 
   (define-syntax titled-interaction
     (syntax-rules ()
-      [(_ #:eval ev t schemeinput* e ...)
-       (do-titled-interaction ev t (list (schemeinput* e) ...) (list (quote-expr e) ...))]
-      [(_ t schemeinput* e ...)
-       (titled-interaction #:eval (make-base-eval) t schemeinput* e ...)]))
+      [(_ #:eval ev t racketinput* e ...)
+       (do-titled-interaction ev t (list (racketinput* e) ...) (list (quote-expr e) ...))]
+      [(_ t racketinput* e ...)
+       (titled-interaction #:eval (make-base-eval) t racketinput* e ...)]))
 
     (define-syntax interaction
       (syntax-rules ()
-        [(_ #:eval ev e ...) (titled-interaction #:eval ev #f schemeinput* e ...)]
-        [(_ e ...) (titled-interaction #f schemeinput* e ...)]))
+        [(_ #:eval ev e ...) (titled-interaction #:eval ev #f racketinput* e ...)]
+        [(_ e ...) (titled-interaction #f racketinput* e ...)]))
 
-  (define-syntax schemeblock+eval
+  (define-syntax racketblock+eval
     (syntax-rules ()
       [(_ #:eval ev e ...)
        (let ([eva ev])
          (#%expression
           (begin (interaction-eval #:eval eva e) ...
-                 (schemeblock e ...))))]
+                 (racketblock e ...))))]
       [(_ e ...)
-       (schemeblock+eval #:eval (make-base-eval) e ...)]))
+       (racketblock+eval #:eval (make-base-eval) e ...)]))
 
-  (define-syntax schememod+eval
+  (define-syntax racketmod+eval
     (syntax-rules ()
       [(_ #:eval ev name e ...)
        (let ([eva ev])
          (#%expression
           (begin (interaction-eval #:eval eva e) ...
-                 (schememod name e ...))))]
+                 (racketmod name e ...))))]
       [(_ name e ...)
-       (schememod+eval #:eval (make-base-eval) name e ...)]))
+       (racketmod+eval #:eval (make-base-eval) name e ...)]))
 
   (define-syntax def+int
     (syntax-rules ()
       [(_ #:eval ev def e ...)
        (let ([eva ev])
-         (column (list (schemeblock+eval #:eval eva def)
+         (column (list (racketblock+eval #:eval eva def)
                        blank-line
                        (interaction #:eval eva e ...))))]
       [(_ def e ...) 
@@ -402,7 +402,7 @@
     (syntax-rules ()
       [(_ #:eval ev [def ...] e ...)
        (let ([eva ev])
-         (column (list (schemeblock+eval #:eval eva def ...)
+         (column (list (racketblock+eval #:eval eva def ...)
                        blank-line
                        (interaction #:eval eva e ...))))]
       [(_ [def ...] e ...)
@@ -421,27 +421,27 @@
   (define-syntax examples
     (syntax-rules ()
       [(_ #:eval ev e ...)
-       (titled-interaction #:eval ev (pick-example-title e ...) schemeinput* e ...)]
+       (titled-interaction #:eval ev (pick-example-title e ...) racketinput* e ...)]
       [(_ e ...)
-       (titled-interaction (pick-example-title e ...)  schemeinput* e ...)]))
+       (titled-interaction (pick-example-title e ...)  racketinput* e ...)]))
   (define-syntax examples*
     (syntax-rules ()
       [(_ #:eval ev example-title e ...)
-       (titled-interaction #:eval ev example-title schemeinput* e ...)]
+       (titled-interaction #:eval ev example-title racketinput* e ...)]
       [(_ example-title e ...)
-       (titled-interaction example-title schemeinput* e ...)]))
+       (titled-interaction example-title racketinput* e ...)]))
   (define-syntax defexamples
     (syntax-rules ()
       [(_ #:eval ev e ...)
-       (titled-interaction #:eval ev (pick-example-title e ...)  schemedefinput* e ...)]
+       (titled-interaction #:eval ev (pick-example-title e ...)  racketdefinput* e ...)]
       [(_ e ...)
-       (titled-interaction (pick-example-title e ...)  schemedefinput* e ...)]))
+       (titled-interaction (pick-example-title e ...)  racketdefinput* e ...)]))
   (define-syntax defexamples*
     (syntax-rules ()
       [(_ #:eval ev example-title e ...)
-       (titled-interaction #:eval ev example-title schemedefinput* e ...)]
+       (titled-interaction #:eval ev example-title racketdefinput* e ...)]
       [(_ example-title e ...)
-       (titled-interaction example-title schemedefinput* e ...)]))
+       (titled-interaction example-title racketdefinput* e ...)]))
 
   (define blank-line (make-paragraph (list 'nbsp)))
 

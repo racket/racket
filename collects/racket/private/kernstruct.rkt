@@ -6,266 +6,438 @@
   (#%require "define.rkt")
   (#%require (for-syntax "struct-info.rkt"))
   (#%provide (all-defined))
-  (define-syntax exn
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn)
-        (quote-syntax make-exn)
-        (quote-syntax exn?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        #t))))
-  (define-syntax exn:fail
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail)
-        (quote-syntax make-exn:fail)
-        (quote-syntax exn:fail?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn)))))
-  (define-syntax exn:fail:contract
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:contract)
-        (quote-syntax make-exn:fail:contract)
-        (quote-syntax exn:fail:contract?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail)))))
-  (define-syntax exn:fail:contract:arity
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:contract:arity)
-        (quote-syntax make-exn:fail:contract:arity)
-        (quote-syntax exn:fail:contract:arity?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail:contract)))))
-  (define-syntax exn:fail:contract:divide-by-zero
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:contract:divide-by-zero)
-        (quote-syntax make-exn:fail:contract:divide-by-zero)
-        (quote-syntax exn:fail:contract:divide-by-zero?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail:contract)))))
-  (define-syntax exn:fail:contract:non-fixnum-result
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:contract:non-fixnum-result)
-        (quote-syntax make-exn:fail:contract:non-fixnum-result)
-        (quote-syntax exn:fail:contract:non-fixnum-result?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail:contract)))))
-  (define-syntax exn:fail:contract:continuation
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:contract:continuation)
-        (quote-syntax make-exn:fail:contract:continuation)
-        (quote-syntax exn:fail:contract:continuation?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail:contract)))))
-  (define-syntax exn:fail:contract:variable
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:contract:variable)
-        (quote-syntax make-exn:fail:contract:variable)
-        (quote-syntax exn:fail:contract:variable?)
-        (list
-         (quote-syntax exn:fail:contract:variable-id)
-         (quote-syntax exn-continuation-marks)
-         (quote-syntax exn-message))
-        '(#f #f #f)
-        (quote-syntax exn:fail:contract)))))
-  (define-syntax exn:fail:syntax
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:syntax)
-        (quote-syntax make-exn:fail:syntax)
-        (quote-syntax exn:fail:syntax?)
-        (list
-         (quote-syntax exn:fail:syntax-exprs)
-         (quote-syntax exn-continuation-marks)
-         (quote-syntax exn-message))
-        '(#f #f #f)
-        (quote-syntax exn:fail)))))
-  (define-syntax exn:fail:read
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:read)
-        (quote-syntax make-exn:fail:read)
-        (quote-syntax exn:fail:read?)
-        (list
-         (quote-syntax exn:fail:read-srclocs)
-         (quote-syntax exn-continuation-marks)
-         (quote-syntax exn-message))
-        '(#f #f #f)
-        (quote-syntax exn:fail)))))
-  (define-syntax exn:fail:read:eof
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:read:eof)
-        (quote-syntax make-exn:fail:read:eof)
-        (quote-syntax exn:fail:read:eof?)
-        (list
-         (quote-syntax exn:fail:read-srclocs)
-         (quote-syntax exn-continuation-marks)
-         (quote-syntax exn-message))
-        '(#f #f #f)
-        (quote-syntax exn:fail:read)))))
-  (define-syntax exn:fail:read:non-char
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:read:non-char)
-        (quote-syntax make-exn:fail:read:non-char)
-        (quote-syntax exn:fail:read:non-char?)
-        (list
-         (quote-syntax exn:fail:read-srclocs)
-         (quote-syntax exn-continuation-marks)
-         (quote-syntax exn-message))
-        '(#f #f #f)
-        (quote-syntax exn:fail:read)))))
-  (define-syntax exn:fail:filesystem
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:filesystem)
-        (quote-syntax make-exn:fail:filesystem)
-        (quote-syntax exn:fail:filesystem?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail)))))
-  (define-syntax exn:fail:filesystem:exists
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:filesystem:exists)
-        (quote-syntax make-exn:fail:filesystem:exists)
-        (quote-syntax exn:fail:filesystem:exists?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail:filesystem)))))
-  (define-syntax exn:fail:filesystem:version
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:filesystem:version)
-        (quote-syntax make-exn:fail:filesystem:version)
-        (quote-syntax exn:fail:filesystem:version?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail:filesystem)))))
-  (define-syntax exn:fail:network
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:network)
-        (quote-syntax make-exn:fail:network)
-        (quote-syntax exn:fail:network?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail)))))
-  (define-syntax exn:fail:out-of-memory
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:out-of-memory)
-        (quote-syntax make-exn:fail:out-of-memory)
-        (quote-syntax exn:fail:out-of-memory?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail)))))
-  (define-syntax exn:fail:unsupported
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:unsupported)
-        (quote-syntax make-exn:fail:unsupported)
-        (quote-syntax exn:fail:unsupported?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail)))))
-  (define-syntax exn:fail:user
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:fail:user)
-        (quote-syntax make-exn:fail:user)
-        (quote-syntax exn:fail:user?)
-        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
-        '(#f #f)
-        (quote-syntax exn:fail)))))
-  (define-syntax exn:break
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:exn:break)
-        (quote-syntax make-exn:break)
-        (quote-syntax exn:break?)
-        (list
-         (quote-syntax exn:break-continuation)
-         (quote-syntax exn-continuation-marks)
-         (quote-syntax exn-message))
-        '(#f #f #f)
-        (quote-syntax exn)))))
-  (define-syntax arity-at-least
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:arity-at-least)
-        (quote-syntax make-arity-at-least)
-        (quote-syntax arity-at-least?)
-        (list (quote-syntax arity-at-least-value))
-        '(#f)
-        #t))))
-  (define-syntax date
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:date)
-        (quote-syntax make-date)
-        (quote-syntax date?)
-        (list
-         (quote-syntax date-time-zone-offset)
-         (quote-syntax date-dst?)
-         (quote-syntax date-year-day)
-         (quote-syntax date-week-day)
-         (quote-syntax date-year)
-         (quote-syntax date-month)
-         (quote-syntax date-day)
-         (quote-syntax date-hour)
-         (quote-syntax date-minute)
-         (quote-syntax date-second))
-        '(#f #f #f #f #f #f #f #f #f #f)
-        #t))))
-  (define-syntax srcloc
-    (make-struct-info
-     (λ ()
-       (list
-        (quote-syntax struct:srcloc)
-        (quote-syntax make-srcloc)
-        (quote-syntax srcloc?)
-        (list
-         (quote-syntax srcloc-span)
-         (quote-syntax srcloc-position)
-         (quote-syntax srcloc-column)
-         (quote-syntax srcloc-line)
-         (quote-syntax srcloc-source))
-        '(#f #f #f #f #f)
-        #t)))))
+  (define-values-for-syntax
+   (make-self-ctr-struct-info)
+   (letrec-values (((struct: make- ? ref set!)
+                    (make-struct-type
+                     'self-ctor-struct-info
+                     struct:struct-info
+                     1
+                     0
+                     #f
+                     (list
+                      (cons
+                       prop:procedure
+                       (lambda (v stx)
+                         (let-values (((id) ((ref v 0))))
+                           (if (symbol? (syntax-e stx))
+                             id
+                             (datum->syntax
+                              stx
+                              (cons id (cdr (syntax-e stx)))
+                              stx
+                              stx))))))
+                     (current-inspector)
+                     #f
+                     '(0))))
+     make-))
+  (begin
+    (#%require (rename '#%kernel kernel:exn exn))
+    (define make-exn kernel:exn)
+    (define-syntax exn
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn)
+          (quote-syntax make-exn)
+          (quote-syntax exn?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          #t))
+       (λ () (quote-syntax kernel:exn)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:fail exn:fail))
+    (define make-exn:fail kernel:exn:fail)
+    (define-syntax exn:fail
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail)
+          (quote-syntax make-exn:fail)
+          (quote-syntax exn:fail?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn)))
+       (λ () (quote-syntax kernel:exn:fail)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:fail:contract exn:fail:contract))
+    (define make-exn:fail:contract kernel:exn:fail:contract)
+    (define-syntax exn:fail:contract
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:contract)
+          (quote-syntax make-exn:fail:contract)
+          (quote-syntax exn:fail:contract?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail)))
+       (λ () (quote-syntax kernel:exn:fail:contract)))))
+  (begin
+    (#%require
+     (rename '#%kernel kernel:exn:fail:contract:arity exn:fail:contract:arity))
+    (define make-exn:fail:contract:arity kernel:exn:fail:contract:arity)
+    (define-syntax exn:fail:contract:arity
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:contract:arity)
+          (quote-syntax make-exn:fail:contract:arity)
+          (quote-syntax exn:fail:contract:arity?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail:contract)))
+       (λ () (quote-syntax kernel:exn:fail:contract:arity)))))
+  (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:contract:divide-by-zero
+             exn:fail:contract:divide-by-zero))
+    (define make-exn:fail:contract:divide-by-zero
+      kernel:exn:fail:contract:divide-by-zero)
+    (define-syntax exn:fail:contract:divide-by-zero
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:contract:divide-by-zero)
+          (quote-syntax make-exn:fail:contract:divide-by-zero)
+          (quote-syntax exn:fail:contract:divide-by-zero?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail:contract)))
+       (λ () (quote-syntax kernel:exn:fail:contract:divide-by-zero)))))
+  (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:contract:non-fixnum-result
+             exn:fail:contract:non-fixnum-result))
+    (define make-exn:fail:contract:non-fixnum-result
+      kernel:exn:fail:contract:non-fixnum-result)
+    (define-syntax exn:fail:contract:non-fixnum-result
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:contract:non-fixnum-result)
+          (quote-syntax make-exn:fail:contract:non-fixnum-result)
+          (quote-syntax exn:fail:contract:non-fixnum-result?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail:contract)))
+       (λ () (quote-syntax kernel:exn:fail:contract:non-fixnum-result)))))
+  (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:contract:continuation
+             exn:fail:contract:continuation))
+    (define make-exn:fail:contract:continuation
+      kernel:exn:fail:contract:continuation)
+    (define-syntax exn:fail:contract:continuation
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:contract:continuation)
+          (quote-syntax make-exn:fail:contract:continuation)
+          (quote-syntax exn:fail:contract:continuation?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail:contract)))
+       (λ () (quote-syntax kernel:exn:fail:contract:continuation)))))
+  (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:contract:variable
+             exn:fail:contract:variable))
+    (define make-exn:fail:contract:variable kernel:exn:fail:contract:variable)
+    (define-syntax exn:fail:contract:variable
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:contract:variable)
+          (quote-syntax make-exn:fail:contract:variable)
+          (quote-syntax exn:fail:contract:variable?)
+          (list
+           (quote-syntax exn:fail:contract:variable-id)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail:contract)))
+       (λ () (quote-syntax kernel:exn:fail:contract:variable)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:fail:syntax exn:fail:syntax))
+    (define make-exn:fail:syntax kernel:exn:fail:syntax)
+    (define-syntax exn:fail:syntax
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:syntax)
+          (quote-syntax make-exn:fail:syntax)
+          (quote-syntax exn:fail:syntax?)
+          (list
+           (quote-syntax exn:fail:syntax-exprs)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail)))
+       (λ () (quote-syntax kernel:exn:fail:syntax)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:fail:read exn:fail:read))
+    (define make-exn:fail:read kernel:exn:fail:read)
+    (define-syntax exn:fail:read
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:read)
+          (quote-syntax make-exn:fail:read)
+          (quote-syntax exn:fail:read?)
+          (list
+           (quote-syntax exn:fail:read-srclocs)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail)))
+       (λ () (quote-syntax kernel:exn:fail:read)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:fail:read:eof exn:fail:read:eof))
+    (define make-exn:fail:read:eof kernel:exn:fail:read:eof)
+    (define-syntax exn:fail:read:eof
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:read:eof)
+          (quote-syntax make-exn:fail:read:eof)
+          (quote-syntax exn:fail:read:eof?)
+          (list
+           (quote-syntax exn:fail:read-srclocs)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail:read)))
+       (λ () (quote-syntax kernel:exn:fail:read:eof)))))
+  (begin
+    (#%require
+     (rename '#%kernel kernel:exn:fail:read:non-char exn:fail:read:non-char))
+    (define make-exn:fail:read:non-char kernel:exn:fail:read:non-char)
+    (define-syntax exn:fail:read:non-char
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:read:non-char)
+          (quote-syntax make-exn:fail:read:non-char)
+          (quote-syntax exn:fail:read:non-char?)
+          (list
+           (quote-syntax exn:fail:read-srclocs)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn:fail:read)))
+       (λ () (quote-syntax kernel:exn:fail:read:non-char)))))
+  (begin
+    (#%require
+     (rename '#%kernel kernel:exn:fail:filesystem exn:fail:filesystem))
+    (define make-exn:fail:filesystem kernel:exn:fail:filesystem)
+    (define-syntax exn:fail:filesystem
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:filesystem)
+          (quote-syntax make-exn:fail:filesystem)
+          (quote-syntax exn:fail:filesystem?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail)))
+       (λ () (quote-syntax kernel:exn:fail:filesystem)))))
+  (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:filesystem:exists
+             exn:fail:filesystem:exists))
+    (define make-exn:fail:filesystem:exists kernel:exn:fail:filesystem:exists)
+    (define-syntax exn:fail:filesystem:exists
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:filesystem:exists)
+          (quote-syntax make-exn:fail:filesystem:exists)
+          (quote-syntax exn:fail:filesystem:exists?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail:filesystem)))
+       (λ () (quote-syntax kernel:exn:fail:filesystem:exists)))))
+  (begin
+    (#%require
+     (rename '#%kernel
+             kernel:exn:fail:filesystem:version
+             exn:fail:filesystem:version))
+    (define make-exn:fail:filesystem:version
+      kernel:exn:fail:filesystem:version)
+    (define-syntax exn:fail:filesystem:version
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:filesystem:version)
+          (quote-syntax make-exn:fail:filesystem:version)
+          (quote-syntax exn:fail:filesystem:version?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail:filesystem)))
+       (λ () (quote-syntax kernel:exn:fail:filesystem:version)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:fail:network exn:fail:network))
+    (define make-exn:fail:network kernel:exn:fail:network)
+    (define-syntax exn:fail:network
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:network)
+          (quote-syntax make-exn:fail:network)
+          (quote-syntax exn:fail:network?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail)))
+       (λ () (quote-syntax kernel:exn:fail:network)))))
+  (begin
+    (#%require
+     (rename '#%kernel kernel:exn:fail:out-of-memory exn:fail:out-of-memory))
+    (define make-exn:fail:out-of-memory kernel:exn:fail:out-of-memory)
+    (define-syntax exn:fail:out-of-memory
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:out-of-memory)
+          (quote-syntax make-exn:fail:out-of-memory)
+          (quote-syntax exn:fail:out-of-memory?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail)))
+       (λ () (quote-syntax kernel:exn:fail:out-of-memory)))))
+  (begin
+    (#%require
+     (rename '#%kernel kernel:exn:fail:unsupported exn:fail:unsupported))
+    (define make-exn:fail:unsupported kernel:exn:fail:unsupported)
+    (define-syntax exn:fail:unsupported
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:unsupported)
+          (quote-syntax make-exn:fail:unsupported)
+          (quote-syntax exn:fail:unsupported?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail)))
+       (λ () (quote-syntax kernel:exn:fail:unsupported)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:fail:user exn:fail:user))
+    (define make-exn:fail:user kernel:exn:fail:user)
+    (define-syntax exn:fail:user
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:fail:user)
+          (quote-syntax make-exn:fail:user)
+          (quote-syntax exn:fail:user?)
+          (list
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f)
+          (quote-syntax exn:fail)))
+       (λ () (quote-syntax kernel:exn:fail:user)))))
+  (begin
+    (#%require (rename '#%kernel kernel:exn:break exn:break))
+    (define make-exn:break kernel:exn:break)
+    (define-syntax exn:break
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:exn:break)
+          (quote-syntax make-exn:break)
+          (quote-syntax exn:break?)
+          (list
+           (quote-syntax exn:break-continuation)
+           (quote-syntax exn-continuation-marks)
+           (quote-syntax exn-message))
+          '(#f #f #f)
+          (quote-syntax exn)))
+       (λ () (quote-syntax kernel:exn:break)))))
+  (begin
+    (#%require (rename '#%kernel kernel:arity-at-least arity-at-least))
+    (define make-arity-at-least kernel:arity-at-least)
+    (define-syntax arity-at-least
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:arity-at-least)
+          (quote-syntax make-arity-at-least)
+          (quote-syntax arity-at-least?)
+          (list (quote-syntax arity-at-least-value))
+          '(#f)
+          #t))
+       (λ () (quote-syntax kernel:arity-at-least)))))
+  (begin
+    (#%require (rename '#%kernel kernel:date date))
+    (define make-date kernel:date)
+    (define-syntax date
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:date)
+          (quote-syntax make-date)
+          (quote-syntax date?)
+          (list
+           (quote-syntax date-time-zone-offset)
+           (quote-syntax date-dst?)
+           (quote-syntax date-year-day)
+           (quote-syntax date-week-day)
+           (quote-syntax date-year)
+           (quote-syntax date-month)
+           (quote-syntax date-day)
+           (quote-syntax date-hour)
+           (quote-syntax date-minute)
+           (quote-syntax date-second))
+          '(#f #f #f #f #f #f #f #f #f #f)
+          #t))
+       (λ () (quote-syntax kernel:date)))))
+  (begin
+    (#%require (rename '#%kernel kernel:srcloc srcloc))
+    (define make-srcloc kernel:srcloc)
+    (define-syntax srcloc
+      (make-self-ctr-struct-info
+       (λ ()
+         (list
+          (quote-syntax struct:srcloc)
+          (quote-syntax make-srcloc)
+          (quote-syntax srcloc?)
+          (list
+           (quote-syntax srcloc-span)
+           (quote-syntax srcloc-position)
+           (quote-syntax srcloc-column)
+           (quote-syntax srcloc-line)
+           (quote-syntax srcloc-source))
+          '(#f #f #f #f #f)
+          #t))
+       (λ () (quote-syntax kernel:srcloc))))))

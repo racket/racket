@@ -4,7 +4,7 @@
           scribble/html-properties
           scribble/latex-properties
           scribble/core 
-          scheme/list)
+          racket/list)
 
 @(define (scheme-extra-libs)
    (make-delayed-element
@@ -25,16 +25,16 @@
                    (make-css-addition "extras.css")
                    (make-tex-addition "extras.tex"))))
 
-@title[#:style (extras)]{@bold{Reference}: PLT Scheme}
+@title[#:style (extras)]{@bold{Reference}: Racket}
 
 @author["Matthew Flatt" "PLT"]
 
-This manual defines the core PLT Scheme language and describes its
+This manual defines the core Racket language and describes its
 most prominent libraries. The companion manual @|Guide| provides a
 friendlier (though less precise and less complete) overview of the
 language.
 
-@defmodulelang*[(scheme/base scheme) 
+@defmodulelang*[(racket/base racket)
                 ;; Use sources for overlap with `mzscheme':
                 #:use-sources ('#%kernel
                                racket/private/more-scheme
@@ -44,14 +44,15 @@ language.
                                racket/private/letstx-scheme
                                racket/private/define
                                racket/private/stx
-                               racket/private/map)]{
+                               racket/private/map
+                               racket/private/base)]{
 
 Unless otherwise noted, the bindings defined in this manual are
-exported by the @schememodname[scheme/base] and @schememodname[scheme]
+exported by the @schememodname[racket/base] and @schememodname[racket]
 languages.}
 
-@margin-note{The @schememodname[scheme] library combines
-@schememodname[scheme/base]@scheme-extra-libs[].}
+@margin-note{The @schememodname[racket] library combines
+@schememodname[racket/base]@scheme-extra-libs[].}
 
 @table-of-contents[]
 

@@ -84,6 +84,7 @@
        mzscheme/lang/reader
        scheme/base/lang/reader
        scheme/lang/reader
+       scheme/private/lang/reader
        scheme/private/provider/lang/reader
        racket/base/lang/reader
        racket/private/lang/reader

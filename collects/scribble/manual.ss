@@ -23,8 +23,9 @@
                        "private/manual-bib.ss"
                        "private/manual-form.ss"
                        "private/manual-class.ss"
-                       "private/manual-unit.ss"
-                       "private/manual-vars.ss")
+                       "private/manual-unit.ss")
+         (except-out (all-from-out "private/manual-vars.ss")
+                     *deftogether)
          (except-out (all-from-out "private/manual-proc.ss")
                      *defthing))
 

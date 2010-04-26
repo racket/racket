@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/promise))
+          (for-label racket/promise))
 
 @title{Delayed Evaluation}
 
-@note-lib[scheme/promise]
+@note-lib[racket/promise]
 
 A @deftech{promise} encapsulates an expression to be evaluated on
 demand via @scheme[force]. After a promise has been @scheme[force]d,

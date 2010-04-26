@@ -1,10 +1,12 @@
 #lang scheme/base
 
-(require "search.ss" scheme/cmdline scheme/list scheme/string)
+(require "search.ss" scheme/cmdline scheme/list scheme/string
+         raco/command-name) 
 
 ;; Minimal command-line arguments, the query string can contain all
 ;; kinds of magic.
 (command-line
+ #:program (short-program+command-name)
  #:handlers
  (lambda (_ . ts)
    (if (null? ts)

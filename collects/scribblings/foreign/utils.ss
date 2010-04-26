@@ -1,20 +1,20 @@
-#lang scheme/base
+#lang racket/base
 
 (require scribble/manual
          scribble/struct
          scribble/decode
          (only-in "../inside/utils.ss" cpp)
-         (for-syntax scheme/base)
-         (for-label scheme/base
-                    scheme/contract
-                    (except-in "unsafe-foreign.ss" ->)))
+         (for-syntax racket/base)
+         (for-label racket/base
+                    racket/contract
+                    (except-in racket/unsafe/ffi ->)))
 
 (provide cpp
          InsideMzScheme
          (all-from-out scribble/manual)
-         (for-label (all-from-out scheme/base
-                                  scheme/contract
-                                  "unsafe-foreign.ss")))
+         (for-label (all-from-out racket/base
+                                  racket/contract
+                                  racket/unsafe/ffi)))
 
 
 (define InsideMzScheme

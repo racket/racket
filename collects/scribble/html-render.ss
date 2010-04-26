@@ -486,56 +486,67 @@
              (table-blockss table)))
           (define ps
             ((if (nearly-top? d) values cdr)
-             (let flatten ([d d])
-               (append*
-                ;; don't include the section if it's in the TOC
-                (if (nearly-top? d) null (list d))
-                ;; get internal targets:
-                (append-map block-targets (part-blocks d))
-                (map (lambda (p) (if (part-whole-page? p ri) null (flatten p)))
-                     (part-parts d))))))
-          (define any-parts? (ormap part? ps))
+             (let flatten ([d d][prefixes null][top? #t])
+               (let ([prefixes (if (and (not top?) (part-tag-prefix d))
+                                   (cons (part-tag-prefix d) prefixes)
+                                   prefixes)])
+                 (append*
+                  ;; don't include the section if it's in the TOC
+                  (if (nearly-top? d) null (list (cons d prefixes)))
+                  ;; get internal targets:
+                  (map (lambda (v) (cons v prefixes)) (append-map block-targets (part-blocks d)))
+                  (map (lambda (p) (if (part-whole-page? p ri) null (flatten p prefixes #f)))
+                       (part-parts d)))))))
+          (define any-parts? (ormap (compose part? car) ps))
           (if (null? ps)
             null
             `((div ([class ,box-class])
                 ,@(get-onthispage-label)
                 (table ([class "tocsublist"] [cellspacing "0"])
                   ,@(map (lambda (p)
-                           `(tr
-                             (td
-                              ,@(if (part? p)
-                                  `((span ([class "tocsublinknumber"])
-                                      ,@(format-number
-                                         (collected-info-number
-                                          (part-collected-info p ri))
-                                         '((tt nbsp)))))
-                                  '(""))
-                              ,@(if (toc-element? p)
-                                  (render-content (toc-element-toc-content p)
-                                                  d ri)
-                                  (parameterize ([current-no-links #t]
-                                                 [extra-breaking? #t])
-                                    `((a ([href
-                                           ,(format
-                                             "#~a"
-                                             (anchor-name
-                                              (add-current-tag-prefix
-                                               (tag-key (if (part? p)
-                                                            (car (part-tags p))
-                                                            (target-element-tag p))
-                                                        ri))))]
-                                          [class
-                                           ,(cond
-                                              [(part? p) "tocsubseclink"]
-                                              [any-parts? "tocsubnonseclink"]
-                                              [else "tocsublink"])]
-                                          [pltdoc "x"])
-                                         ,@(render-content
-                                            (if (part? p)
-                                              (or (part-title-content p)
-                                                  "???")
-                                              (element-content p))
-                                            d ri))))))))
+                           (let ([p (car p)]
+                                 [prefixes (cdr p)]
+                                 [add-tag-prefixes
+                                  (lambda (t prefixes)
+                                    (if (null? prefixes)
+                                        t
+                                        (cons (car t) (append prefixes (cdr t)))))])
+                             `(tr
+                               (td
+                                ,@(if (part? p)
+                                      `((span ([class "tocsublinknumber"])
+                                              ,@(format-number
+                                                 (collected-info-number
+                                                  (part-collected-info p ri))
+                                                 '((tt nbsp)))))
+                                      '(""))
+                                ,@(if (toc-element? p)
+                                      (render-content (toc-element-toc-content p)
+                                                      d ri)
+                                      (parameterize ([current-no-links #t]
+                                                     [extra-breaking? #t])
+                                        `((a ([href
+                                               ,(format
+                                                 "#~a"
+                                                 (anchor-name
+                                                  (add-tag-prefixes
+                                                   (tag-key (if (part? p)
+                                                                (car (part-tags p))
+                                                                (target-element-tag p))
+                                                            ri)
+                                                   prefixes)))]
+                                              [class
+                                                  ,(cond
+                                                    [(part? p) "tocsubseclink"]
+                                                    [any-parts? "tocsubnonseclink"]
+                                                    [else "tocsublink"])]
+                                              [pltdoc "x"])
+                                             ,@(render-content
+                                                (if (part? p)
+                                                    (or (part-title-content p)
+                                                        "???")
+                                                    (element-content p))
+                                                d ri)))))))))
                          ps))))))))
 
     (define/public (extract-part-body-id d ri)

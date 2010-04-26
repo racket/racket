@@ -948,7 +948,7 @@
                                                  (object-name p)
                                                  p))])
                   (raise
-                   (make-exn:fail:contract
+                   (exn:fail:contract
                     (if extra-kw
                         (if (keyword-procedure? p)
                             (format
@@ -1028,7 +1028,7 @@
                                 (cond
                                  [(integer? a) (+ a delta)]
                                  [(arity-at-least? a)
-                                  (make-arity-at-least (+ (arity-at-least-value a) delta))]
+                                  (arity-at-least (+ (arity-at-least-value a) delta))]
                                  [else
                                   (map loop a)])))]
                  [new-arity (inc-arity arity 2)]

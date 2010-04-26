@@ -1,9 +1,9 @@
-#lang mzscheme
+#lang racket/base
 
   (require mred
-           mzlib/unit
-           mzlib/port
-           mzlib/class
+           scheme/unit
+           racket/port
+           racket/class
            syntax/toplevel
            framework
            "drsig.ss")
@@ -11,7 +11,7 @@
   ;; to ensure this guy is loaded (and the snipclass installed) in the drscheme namespace & eventspace
   ;; these things are for effect only!
   (require mrlib/cache-image-snip
-           (prefix image-core: mrlib/image-core))
+           (prefix-in image-core: mrlib/image-core))
   
   (define op (current-output-port))
   (define (oprintf . args) (apply fprintf op args))
@@ -173,7 +173,7 @@
       (error-print-width 250)
       (current-ps-setup (make-object ps-setup%))
       
-      (current-namespace (make-namespace 'empty))
+      (current-namespace (make-empty-namespace))
       (for-each (λ (x) (namespace-attach-module drscheme:init:system-namespace x))
                 to-be-copied-module-names))
     

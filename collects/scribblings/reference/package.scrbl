@@ -1,13 +1,13 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/package))
+          (for-label racket/package))
 
 @(define pack-eval (make-base-eval))
-@interaction-eval[#:eval pack-eval (require scheme/package)]
+@interaction-eval[#:eval pack-eval (require racket/package)]
 
 @title[#:tag "package"]{Limiting Scope: @scheme[define-package], @scheme[open-package], ...}
 
-@note-lib-only[scheme/package]
+@note-lib-only[racket/package]
 
 @deftogether[(
 @defform[(define-package package-id exports form ...)]
@@ -129,7 +129,7 @@ cookies
 
 The @scheme[package?], @scheme[package-exported-identifiers], and
 @scheme[package-original-identifiers] functions are exported
-@scheme[for-syntax] by @schememodname[scheme/package].
+@scheme[for-syntax] by @schememodname[racket/package].
 
 The @scheme[package?] predicate returns @scheme[#t] if @scheme[v] is a
 package value as obtained by @scheme[syntax-local-value] on an

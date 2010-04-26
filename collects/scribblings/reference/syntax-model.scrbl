@@ -3,13 +3,13 @@
           (for-syntax mzscheme)
           "mz.ss")
 
-@(define scheme-eval (make-base-eval))
-@(interaction-eval #:eval scheme-eval (require (for-syntax scheme/base)))
+@(define racket-eval (make-base-eval))
+@(interaction-eval #:eval racket-eval (require (for-syntax racket/base)))
 
 @;------------------------------------------------------------------------
 @title[#:tag "syntax-model"]{Syntax Model}
 
-The syntax of a Scheme program is defined by
+The syntax of a Racket program is defined by
 
 @itemize[
 
@@ -22,7 +22,7 @@ The syntax of a Scheme program is defined by
 ]
 
 For details on the @tech{read} phase, see @secref["reader"]. Source
-code is normally read in @scheme[read-syntax] mode, which produces a
+code is normally read in @racket[read-syntax] mode, which produces a
 @tech{syntax object}.
 
 The @tech{expand} phase recursively processes a @tech{syntax object}
@@ -38,7 +38,7 @@ new binding information.
 @guideintro["binding"]{binding}
 
 An @deftech{identifier} is source-program entity. Parsing (i.e.,
-expanding) a Scheme program reveals that some @tech{identifiers}
+expanding) a Racket program reveals that some @tech{identifiers}
 correspond to @tech{variables}, some refer to syntactic forms, and
 some are quoted to produce a symbol or a syntax object.
 
@@ -55,13 +55,13 @@ uses of an @tech{identifier} refer to the @tech{shadowing}
 
 For example, as a bit of source, the text
 
-@schemeblock[(let ([x 5]) x)]
+@racketblock[(let ([x 5]) x)]
 
-includes two @tech{identifiers}: @scheme[let] and @scheme[x] (which
+includes two @tech{identifiers}: @racket[let] and @racket[x] (which
 appears twice). When this source is parsed in a typical
-@tech{environment}, @scheme[x] turns out to represent a
-@tech{variable} (unlike @scheme[let]). In particular, the first
-@scheme[x] @tech{binds} the second @scheme[x].
+@tech{environment}, @racket[x] turns out to represent a
+@tech{variable} (unlike @racket[let]). In particular, the first
+@racket[x] @tech{binds} the second @racket[x].
 
 A @deftech{top-level binding} is a @tech{binding} from a definition at
 the top-level; a @deftech{module binding} is a binding from a
@@ -73,10 +73,10 @@ identifiers are called @tech{unbound} in a module context.
 
 Throughout the documentation, @tech{identifiers} are typeset to
 suggest the way that they are parsed. A black, boldface
-@tech{identifier} like @scheme[lambda] indicates as a reference to a
-syntactic form. A plain blue @tech{identifier} like @schemeidfont{x}
+@tech{identifier} like @racket[lambda] indicates as a reference to a
+syntactic form. A plain blue @tech{identifier} like @racketidfont{x}
 is a @tech{variable} or a reference to an unspecified @tech{top-level
-variable}. A hyperlinked @tech{identifier} @scheme[cons] is a
+variable}. A hyperlinked @tech{identifier} @racket[cons] is a
 reference to a specific @tech{top-level variable}.
 
 Every binding has a @deftech{phase level} in which it can be
@@ -108,17 +108,17 @@ different phase levels.
 @;------------------------------------------------------------------------
 @section[#:tag "stxobj-model"]{Syntax Objects}
 
-A @deftech{syntax object} combines a simpler Scheme value, such as a
+A @deftech{syntax object} combines a simpler Racket value, such as a
 symbol or pair, with @deftech{lexical information} about bindings,
 source-location information, @tech{syntax properties}, and
 @tech{syntax certificates}. In particular, an @tech{identifier} is
 represented as a symbol object that combines a symbol and lexical and
 other information.
 
-For example, a @schemeidfont{car} @tech{identifier} might have
-@tech{lexical information} that designates it as the @scheme[car] from
-the @schememodname[scheme/base] language (i.e., the built-in
-@scheme[car]). Similarly, a @schemeidfont{lambda} identifier's
+For example, a @racketidfont{car} @tech{identifier} might have
+@tech{lexical information} that designates it as the @racket[car] from
+the @racketmodname[racket/base] language (i.e., the built-in
+@racket[car]). Similarly, a @racketidfont{lambda} identifier's
 @tech{lexical information} may indicate that it represents a procedure
 form. Some other @tech{identifier}'s @tech{lexical information} may
 indicate that it references a @tech{top-level variable}.
@@ -128,42 +128,42 @@ an @tech{identifier} or simple constant, its internal components can
 be extracted. Even for extracted identifier, detailed information
 about binding is available mostly indirectly; two identifiers can be
 compared to see if they refer to the same binding (i.e.,
-@scheme[free-identifier=?]), or whether each identifier would bind the
+@racket[free-identifier=?]), or whether each identifier would bind the
 other if one was in a binding position and the other in an expression
-position (i.e., @scheme[bound-identifier=?]).
+position (i.e., @racket[bound-identifier=?]).
 
 For example, the when the program written as
 
-@schemeblock[(let ([x 5]) (+ x 6))]
+@racketblock[(let ([x 5]) (+ x 6))]
 
 is represented as a @tech{syntax object}, then two @tech{syntax
-objects} can be extracted for the two @scheme[x]s. Both the
-@scheme[free-identifier=?] and @scheme[bound-identifier=?] predicates
-will indicate that the @scheme[x]s are the same. In contrast, the
-@scheme[let] @tech{identifier} is not @scheme[free-identifier=?] or
-@scheme[bound-identifier=?] to either @scheme[x].
+objects} can be extracted for the two @racket[x]s. Both the
+@racket[free-identifier=?] and @racket[bound-identifier=?] predicates
+will indicate that the @racket[x]s are the same. In contrast, the
+@racket[let] @tech{identifier} is not @racket[free-identifier=?] or
+@racket[bound-identifier=?] to either @racket[x].
 
 The @tech{lexical information} in a @tech{syntax object} is
 independent of the other half, and it can be copied to a new syntax
-object in combination with an arbitrary other Scheme value. Thus,
+object in combination with an arbitrary other Racket value. Thus,
 identifier-@tech{binding} information in a @tech{syntax object} is
 predicated on the symbolic name of the @tech{identifier} as well as
 the identifier's @tech{lexical information}; the same question with
 the same @tech{lexical information} but different base value can
 produce a different answer.
 
-For example, combining the lexical information from @scheme[let] in
-the program above to @scheme['x] would not produce an identifier that
-is @scheme[free-identifier=?] to either @scheme[x], since it does not
-appear in the scope of the @scheme[x] binding. Combining the lexical
-context of the @scheme[6] with @scheme['x], in contrast, would produce
-an identifier that is @scheme[bound-identifier=?] to both @scheme[x]s.
+For example, combining the lexical information from @racket[let] in
+the program above to @racket['x] would not produce an identifier that
+is @racket[free-identifier=?] to either @racket[x], since it does not
+appear in the scope of the @racket[x] binding. Combining the lexical
+context of the @racket[6] with @racket['x], in contrast, would produce
+an identifier that is @racket[bound-identifier=?] to both @racket[x]s.
 
-The @scheme[quote-syntax] form bridges the evaluation of a program and
-the representation of a program. Specifically, @scheme[(quote-syntax
+The @racket[quote-syntax] form bridges the evaluation of a program and
+the representation of a program. Specifically, @racket[(quote-syntax
 _datum)] produces a syntax object that preserves all of the lexical
-information that @scheme[_datum] had when it was parsed as part of the
-@scheme[quote-syntax] form.
+information that @racket[_datum] had when it was parsed as part of the
+@racket[quote-syntax] form.
 
 @;------------------------------------------------------------------------
 @section[#:tag "expansion"]{Expansion@aux-elem{ (Parsing)}}
@@ -184,7 +184,7 @@ following grammar:
 
 @margin-note{Beware that the symbolic names of identifiers in a fully
 expanded program may not match the symbolic names in the grammar. Only
-the binding (according to @scheme[free-identifier=?]) matters.}
+the binding (according to @racket[free-identifier=?]) matters.}
 
 @schemegrammar*[
 #:literals (#%expression module #%plain-module-begin begin #%provide
@@ -217,7 +217,7 @@ the binding (according to @scheme[free-identifier=?]) matters.}
       (letrec-values (((id ...) expr) ...)
         expr ...+)
       (set! id expr)
-      (@#,scheme[quote] datum)
+      (@#,racket[quote] datum)
       (quote-syntax datum)
       (with-continuation-mark expr expr expr)
       (#%plain-app expr ...+)
@@ -235,29 +235,29 @@ information} on its @tech{identifiers} indicates the
 @tech{parse}.
 
 More specifically, the typesetting of identifiers in the above grammar
-is significant. For example, the second case for @scheme[_expr] is a
+is significant. For example, the second case for @racket[_expr] is a
 @tech{syntax-object} list whose first element is an @tech{identifier},
 where the @tech{identifier}'s @tech{lexical information} specifies a
-binding to the @scheme[#%plain-lambda] of the
-@schememodname[scheme/base] language (i.e., the @tech{identifier} is
-@scheme[free-identifier=?] to one whose binding is
-@scheme[#%plain-lambda]). In all cases, identifiers above typeset as
+binding to the @racket[#%plain-lambda] of the
+@racketmodname[racket/base] language (i.e., the @tech{identifier} is
+@racket[free-identifier=?] to one whose binding is
+@racket[#%plain-lambda]). In all cases, identifiers above typeset as
 syntactic-form names refer to the bindings defined in
 @secref["syntax"].
 
 Only @tech{phase levels} 0 and 1 are relevant for the parse of a
-program (though the @scheme[_datum] in a @scheme[quote-syntax] form
+program (though the @racket[_datum] in a @racket[quote-syntax] form
 preserves its information for all @tech{phase level}s). In particular,
-the relevant @tech{phase level} is 0, except for the @scheme[_expr]s
-in a @scheme[define-syntax], @scheme[define-syntaxes],
-@scheme[define-for-syntax], or @scheme[define-values-for-syntax] form,
+the relevant @tech{phase level} is 0, except for the @racket[_expr]s
+in a @racket[define-syntax], @racket[define-syntaxes],
+@racket[define-for-syntax], or @racket[define-values-for-syntax] form,
 in which case the relevant @tech{phase level} is 1 (for which
-comparisons are made using @scheme[free-transformer-identifier=?]
-instead of @scheme[free-identifier=?]).
+comparisons are made using @racket[free-transformer-identifier=?]
+instead of @racket[free-identifier=?]).
 
-In addition to the grammar above, @scheme[letrec-syntaxes+values] can
+In addition to the grammar above, @racket[letrec-syntaxes+values] can
 appear in a fully local-expanded expression, such as the result from
-@scheme[local-expand] when the stop list is empty.
+@racket[local-expand] when the stop list is empty.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "expand-steps"]{Expansion Steps}
@@ -274,15 +274,15 @@ the @tech{syntax object} being expanded:
        @tech{binding} other than as a @tech{top-level variable}, that
        @tech{binding} is used to continue. If the @tech{identifier}
        has no @tech{binding}, a new @tech{syntax-object} symbol
-       @scheme['#%top] is created using the @tech{lexical information}
-       of the @tech{identifier}; if this @schemeidfont{#%top}
+       @racket['#%top] is created using the @tech{lexical information}
+       of the @tech{identifier}; if this @racketidfont{#%top}
        @tech{identifier} has no @tech{binding} (other than as a
        @tech{top-level variable}), then parsing fails with an
-       @scheme[exn:fail:syntax] exception. Otherwise, the new
+       @racket[exn:fail:syntax] exception. Otherwise, the new
        @tech{identifier} is combined with the original
        @tech{identifier} in a new @tech{syntax-object} pair (also
        using the same @tech{lexical information} as the original
-       @tech{identifier}), and the @schemeidfont{#%top} @tech{binding}
+       @tech{identifier}), and the @racketidfont{#%top} @tech{binding}
        is used to continue.}
 
  @item{If it is a @tech{syntax-object} pair whose first element is an
@@ -291,26 +291,26 @@ the @tech{syntax object} being expanded:
       the @tech{identifier}'s @tech{binding} is used to continue.}
 
  @item{If it is a @tech{syntax-object} pair of any other form, then a
-       new @tech{syntax-object} symbol @scheme['#%app] is created
+       new @tech{syntax-object} symbol @racket['#%app] is created
        using the @tech{lexical information} of the pair. If the
-       resulting @schemeidfont{#%app} @tech{identifier} has no
-       binding, parsing fails with an @scheme[exn:fail:syntax]
+       resulting @racketidfont{#%app} @tech{identifier} has no
+       binding, parsing fails with an @racket[exn:fail:syntax]
        exception. Otherwise, the new @tech{identifier} is combined
        with the original pair to form a new @tech{syntax-object} pair
        (also using the same @tech{lexical information} as the original
-       pair), and the @schemeidfont{#%app} @tech{binding} is used to
+       pair), and the @racketidfont{#%app} @tech{binding} is used to
        continue.}
 
  @item{If it is any other syntax object, then a new
-       @tech{syntax-object} symbol @scheme['#%datum] is created using
+       @tech{syntax-object} symbol @racket['#%datum] is created using
        the @tech{lexical information} of the original @tech{syntax
-       object}. If the resulting @schemeidfont{#%datum}
+       object}. If the resulting @racketidfont{#%datum}
        @tech{identifier} has no @tech{binding}, parsing fails with an
-       @scheme[exn:fail:syntax] exception. Otherwise, the new
+       @racket[exn:fail:syntax] exception. Otherwise, the new
        @tech{identifier} is combined with the original @tech{syntax
        object} in a new @tech{syntax-object} pair (using the same
        @tech{lexical information} as the original pair), and the
-       @schemeidfont{#%datum} @tech{binding} is used to continue.}
+       @racketidfont{#%datum} @tech{binding} is used to continue.}
 
 ]
 
@@ -321,24 +321,24 @@ things:
 @itemize[
 
  @item{A @tech{transformer binding}, such as introduced by
-       @scheme[define-syntax] or @scheme[let-syntax]. If the
+       @racket[define-syntax] or @racket[let-syntax]. If the
        associated value is a procedure of one argument, the procedure
        is called as a @tech{syntax transformer} (described below), and
        parsing starts again with the @tech{syntax-object} result. If
        the @tech{transformer binding} is to any other kind of value,
-       parsing fails with an @scheme[exn:fail:syntax] exception. The
-       call to the @tech{syntax transformer} is @scheme[parameterize]d
-       to set @scheme[current-namespace] to a @tech{namespace} that
+       parsing fails with an @racket[exn:fail:syntax] exception. The
+       call to the @tech{syntax transformer} is @racket[parameterize]d
+       to set @racket[current-namespace] to a @tech{namespace} that
        shares @tech{bindings} and @tech{variables} with the namespace
        being used to expand, except that its @tech{base phase} is one
        greater.}
 
  @item{A @tech{variable} @tech{binding}, such as introduced by a
-       module-level @scheme[define] or by @scheme[let]. In this case,
+       module-level @racket[define] or by @racket[let]. In this case,
        if the form being parsed is just an @tech{identifier}, then it
        is parsed as a reference to the corresponding
        @tech{variable}. If the form being parsed is a
-       @tech{syntax-object} pair, then an @scheme[#%app] is added to
+       @tech{syntax-object} pair, then an @racket[#%app] is added to
        the front of the @tech{syntax-object} pair in the same way as
        when the first item in the @tech{syntax-object} pair is not an
        identifier (third case in the previous enumeration), and
@@ -357,7 +357,7 @@ things:
 
 Each expansion step occurs in a particular @deftech{context}, and
 transformers and core syntactic forms may expand differently for
-different @tech{contexts}. For example, a @scheme[module] form is
+different @tech{contexts}. For example, a @racket[module] form is
 allowed only in a @tech{top-level context}, and it fails in other
 contexts. The possible @tech{contexts} are as follows:
 
@@ -365,7 +365,7 @@ contexts. The possible @tech{contexts} are as follows:
 
  @item{@deftech{top-level context} : outside of any module, definition, or
        expression, except that sub-expressions of a top-level
-       @scheme[begin] form are also expanded as top-level forms.}
+       @racket[begin] form are also expanded as top-level forms.}
 
  @item{@deftech{module-begin context} : inside the body of a module, as the
        only form within the module.}
@@ -382,7 +382,7 @@ contexts. The possible @tech{contexts} are as follows:
 ]
 
 Different core @tech{syntactic forms} parse sub-forms using different
-@tech{contexts}. For example, a @scheme[let] form always parses the
+@tech{contexts}. For example, a @racket[let] form always parses the
 right-hand expressions of a binding in an @tech{expression context},
 but it starts parsing the body in an @tech{internal-definition
 context}.
@@ -395,58 +395,58 @@ core syntactic forms are encountered:
 
 @itemize[
 
- @item{When a @scheme[require] form is encountered at the top level or
+ @item{When a @racket[require] form is encountered at the top level or
        module level, all lexical information derived from the top
        level or the specific module's level are extended with bindings
        from the specified modules. If not otherwise indicated in the
-       @scheme[require] form, bindings are introduced at the
+       @racket[require] form, bindings are introduced at the
        @tech{phase level}s specified by the exporting modules:
-       @tech{phase level} 0 for each normal @scheme[provide],
-       @tech{phase level} 1 for each @scheme[for-syntax]
-       @scheme[provide], and so on. The @scheme[for-meta]
-       @scheme[provide] form allows exports at an arbitrary
+       @tech{phase level} 0 for each normal @racket[provide],
+       @tech{phase level} 1 for each @racket[for-syntax]
+       @racket[provide], and so on. The @racket[for-meta]
+       @racket[provide] form allows exports at an arbitrary
        @tech{phase level} (as long as a binding exists within the
        module at the @tech{phase level}).
 
-       A @scheme[for-syntax] sub-form within @scheme[require] imports
+       A @racket[for-syntax] sub-form within @racket[require] imports
        similarly, but the resulting bindings have a @tech{phase level}
        that is one more than the exported @tech{phase levels}, when
        exports for the @tech{label phase level} are still imported at
        the @tech{label phase level}. More generally, a
-       @scheme[for-meta] sub-form within @scheme[require] imports with
+       @racket[for-meta] sub-form within @racket[require] imports with
        the specified @tech{phase level} shift; if the specified shift
-       is @scheme[#f], or if @scheme[for-label] is used to import,
+       is @racket[#f], or if @racket[for-label] is used to import,
        then all bindings are imported into the @tech{label phase
        level}.}
 
- @item{When a @scheme[define], @scheme[define-values],
-       @scheme[define-syntax], or @scheme[define-syntaxes] form is
+ @item{When a @racket[define], @racket[define-values],
+       @racket[define-syntax], or @racket[define-syntaxes] form is
        encountered at the top level or module level, all lexical
        information derived from the top level or the specific module's
        level is extended with bindings for the specified identifiers
        at @tech{phase level} 0 (i.e., the @tech{base environment} is
        extended).}
 
- @item{When a @scheme[define-for-syntax] or
-       @scheme[define-values-for-syntax] form is encountered at the
+ @item{When a @racket[define-for-syntax] or
+       @racket[define-values-for-syntax] form is encountered at the
        top level or module level, bindings are introduced as for
-       @scheme[define-values], but at @tech{phase level} 1 (i.e., the
+       @racket[define-values], but at @tech{phase level} 1 (i.e., the
        @tech{transformer environment} is extended).}
 
- @item{When a @scheme[let-values] form is encountered, the body of the
-       @scheme[let-values] form is extended (by creating new
+ @item{When a @racket[let-values] form is encountered, the body of the
+       @racket[let-values] form is extended (by creating new
        @tech{syntax objects}) with bindings for the specified
        identifiers. The same bindings are added to the identifiers
        themselves, so that the identifiers in binding position are
-       @scheme[bound-identifier=?] to uses in the fully expanded form,
-       and so they are not @scheme[bound-identifier=?] to other
+       @racket[bound-identifier=?] to uses in the fully expanded form,
+       and so they are not @racket[bound-identifier=?] to other
        identifiers. The bindings are available for use at the
-       @tech{phase level} at which the @scheme[let-values] form is
+       @tech{phase level} at which the @racket[let-values] form is
        expanded.}
 
- @item{When a @scheme[letrec-values] or
-       @scheme[letrec-syntaxes+values] form is encountered, bindings
-       are added as for @scheme[let-values], except that the
+ @item{When a @racket[letrec-values] or
+       @racket[letrec-syntaxes+values] form is encountered, bindings
+       are added as for @racket[let-values], except that the
        right-hand-side expressions are also extended with the
        bindings.}
 
@@ -457,26 +457,26 @@ core syntactic forms are encountered:
 
 A new binding in lexical information maps to a new variable. The
 identifiers mapped to this variable are those that currently have the
-same binding (i.e., that are currently @scheme[bound-identifier=?]) to
+same binding (i.e., that are currently @racket[bound-identifier=?]) to
 the identifier associated with the binding.
 
 For example, in
 
-@schemeblock[
+@racketblock[
 (let-values ([(x) 10]) (+ x y))
 ]
 
-the binding introduced for @scheme[x] applies to the @scheme[x] in the
-body, but not the @scheme[y] n the body, because (at the point in
-expansion where the @scheme[let-values] form is encountered) the
-binding @scheme[x] and the body @scheme[y] are not
-@scheme[bound-identifier=?].
+the binding introduced for @racket[x] applies to the @racket[x] in the
+body, but not the @racket[y] n the body, because (at the point in
+expansion where the @racket[let-values] form is encountered) the
+binding @racket[x] and the body @racket[y] are not
+@racket[bound-identifier=?].
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "transformer-model"]{Transformer Bindings}
 
 In a @tech{top-level context} or @tech{module context}, when the
-expander encounters a @scheme[define-syntaxes] form, the binding that
+expander encounters a @racket[define-syntaxes] form, the binding that
 it introduces for the defined identifiers is a @deftech{transformer
 binding}. The @tech{value} of the @tech{binding} exists at expansion
 time, rather than run time (though the two times can overlap), though
@@ -484,13 +484,13 @@ the binding itself is introduced with @tech{phase level} 0 (i.e., in
 the @tech{base environment}).
 
 The @tech{value} for the binding is obtained by evaluating the
-expression in the @scheme[define-syntaxes] form. This expression must
+expression in the @racket[define-syntaxes] form. This expression must
 be @tech{expand}ed (i.e. parsed) before it can be evaluated, and it is
 expanded at @tech{phase level} 1 (i.e., in the @tech{transformer
 environment}) instead of @tech{phase level} 0.
 
-If the resulting @scheme[value] is a procedure of one argument or
-the result of @scheme[make-set!-transformer] on a procedure, then it
+If the resulting @racket[value] is a procedure of one argument or
+the result of @racket[make-set!-transformer] on a procedure, then it
 is used as a @deftech{syntax transformer} (a.k.a. @deftech{macro}).
 The procedure is expected to accept a syntax object and return a
 syntax object. A use of the binding (at @tech{phase level} 0) triggers
@@ -503,7 +503,7 @@ applies to all sub-@tech{syntax objects}). The result of the
 transformer is similarly extended with the same @tech{syntax
 mark}. When a @tech{syntax object}'s @tech{lexical information}
 includes the same mark twice in a row, the marks effectively
-cancel. Otherwise, two identifiers are @scheme[bound-identifier=?]
+cancel. Otherwise, two identifiers are @racket[bound-identifier=?]
 (that is, one can bind the other) only if they have the same binding
 and if they have the same marks---counting only marks that were added
 after the binding.
@@ -512,7 +512,7 @@ This marking process helps keep binding in an expanded program
 consistent with the lexical structure of the source program. For
 example, the expanded form of the program
 
-@schemeblock[
+@racketblock[
 (define x 12)
 (define-syntax m
   (syntax-rules ()
@@ -522,7 +522,7 @@ example, the expanded form of the program
 
 is
 
-@schemeblock[
+@racketblock[
 (define x 12)
 (define-syntax m
   (syntax-rules ()
@@ -530,42 +530,42 @@ is
 (let-values ([(x) 10]) x)
 ]
 
-However, the result of the last expression is @scheme[12], not
-@scheme[10]. The reason is that the transformer bound to @scheme[m]
-introduces the binding @scheme[x], but the referencing @scheme[x] is
-present in the argument to the transformer. The introduced @scheme[x]
-is the one left with a mark, and the reference @scheme[x] has no mark,
-so the binding @scheme[x] is not @scheme[bound-identifier=?] to the
-body @scheme[x].
+However, the result of the last expression is @racket[12], not
+@racket[10]. The reason is that the transformer bound to @racket[m]
+introduces the binding @racket[x], but the referencing @racket[x] is
+present in the argument to the transformer. The introduced @racket[x]
+is the one left with a mark, and the reference @racket[x] has no mark,
+so the binding @racket[x] is not @racket[bound-identifier=?] to the
+body @racket[x].
 
-The @scheme[set!] form works with the @scheme[make-set!-transformer]
-and @scheme[prop:set!-transformer] property to support
-@deftech{assignment transformers} that transform @scheme[set!]
+The @racket[set!] form works with the @racket[make-set!-transformer]
+and @racket[prop:set!-transformer] property to support
+@deftech{assignment transformers} that transform @racket[set!]
 expressions. An @tech{assignment transformer} contains a procedure
-that is applied by @scheme[set!] in the same way as a normal
+that is applied by @racket[set!] in the same way as a normal
 transformer by the expander.
 
-The @scheme[make-rename-transformer] procedure or
-@scheme[prop:rename-transformer] property creates a value that is also
-handled specially by the expander and by @scheme[set!] as a
-transformer binding's value. When @scheme[_id] is bound to a
+The @racket[make-rename-transformer] procedure or
+@racket[prop:rename-transformer] property creates a value that is also
+handled specially by the expander and by @racket[set!] as a
+transformer binding's value. When @racket[_id] is bound to a
 @deftech{rename transformer} produced by
-@scheme[make-rename-transformer], it is replaced with the target
-identifier passed to @scheme[make-rename-transformer]. In addition, as
+@racket[make-rename-transformer], it is replaced with the target
+identifier passed to @racket[make-rename-transformer]. In addition, as
 long as the target identifier does not have a true value for the
-@scheme['not-free-identifier=?] @tech{syntax property}, the lexical information that
-contains the binding of @scheme[_id] is also enriched so that
-@scheme[_id] is @scheme[free-identifier=?] to the target identifier,
-@scheme[identifier-binding] returns the same results for both
-identifiers, and @scheme[provide] exports @scheme[_id] as the target
+@racket['not-free-identifier=?] @tech{syntax property}, the lexical information that
+contains the binding of @racket[_id] is also enriched so that
+@racket[_id] is @racket[free-identifier=?] to the target identifier,
+@racket[identifier-binding] returns the same results for both
+identifiers, and @racket[provide] exports @racket[_id] as the target
 identifier. Finally, the binding is treated specially by
-@scheme[syntax-local-value], and
-@scheme[syntax-local-make-delta-introducer] as used by @tech{syntax
+@racket[syntax-local-value], and
+@racket[syntax-local-make-delta-introducer] as used by @tech{syntax
 transformer}s.
 
 In addition to using marks to track introduced identifiers, the
 expander tracks the expansion history of a form through @tech{syntax
-properties} such as @scheme['origin]. See @secref["stxprops"] for
+properties} such as @racket['origin]. See @secref["stxprops"] for
 more information.
 
 Finally, the expander uses @tech{syntax certificates} to control the
@@ -573,15 +573,15 @@ way that unexported and protected @tech{module bindings} are used. See
 @secref["stxcerts"] for more information on @tech{syntax
 certificates}.
 
-The expander's handling of @scheme[letrec-values+syntaxes] is similar
-to its handling of @scheme[define-syntaxes]. A
-@scheme[letrec-values+syntaxes] mist be expanded in an arbitrary phase
+The expander's handling of @racket[letrec-values+syntaxes] is similar
+to its handling of @racket[define-syntaxes]. A
+@racket[letrec-values+syntaxes] mist be expanded in an arbitrary phase
 level @math{n} (not just 0), in which case the expression for the
 @tech{transformer binding} is expanded at @tech{phase level} @math{n+1}.
 
-The expression in a @scheme[define-for-syntax] or
-@scheme[define-values-for-syntax] form is expanded and evaluated in
-the same way as for @scheme[syntax]. However, the introduced binding
+The expression in a @racket[define-for-syntax] or
+@racket[define-values-for-syntax] form is expanded and evaluated in
+the same way as for @racket[syntax]. However, the introduced binding
 is a variable binding at @tech{phase level} 1 (not a @tech{transformer
 binding} at @tech{phase level} 0).
 
@@ -595,9 +595,9 @@ forms. Partial expansion works by cutting off the normal recursion
 expansion when the relevant binding is for a primitive syntactic form.
 
 As a special case, when expansion would otherwise add an
-@schemeidfont{#%app}, @schemeidfont{#%datum}, or @schemeidfont{#%top}
+@racketidfont{#%app}, @racketidfont{#%datum}, or @racketidfont{#%top}
 identifier to an expression, and when the binding turns out to be the
-primitive @scheme[#%app], @scheme[#%datum], or @scheme[#%top] form,
+primitive @racket[#%app], @racket[#%datum], or @racket[#%top] form,
 then expansion stops without adding the identifier.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -611,72 +611,72 @@ recursively expands only until the form becomes one of the following:
 
 @itemize[
 
- @item{A @scheme[define-values] or @scheme[define-syntaxes] form, for
+ @item{A @racket[define-values] or @racket[define-syntaxes] form, for
        any form other than the last one: The definition form is not
        expanded further. Instead, the next form is expanded partially,
        and so on. As soon as an expression form is found, the
        accumulated definition forms are converted to a
-       @scheme[letrec-values] (if no @scheme[define-syntaxes] forms
-       were found) or @scheme[letrec-syntaxes+values] form, moving the
+       @racket[letrec-values] (if no @racket[define-syntaxes] forms
+       were found) or @racket[letrec-syntaxes+values] form, moving the
        expression forms to the body to be expanded in expression
        context.
 
-       When a @scheme[define-values] form is discovered, the lexical
+       When a @racket[define-values] form is discovered, the lexical
        context of all syntax objects for the body sequence is
        immediately enriched with bindings for the
-       @scheme[define-values] form before expansion continues. When a
-       @scheme[define-syntaxes] form is discovered, the right-hand
+       @racket[define-values] form before expansion continues. When a
+       @racket[define-syntaxes] form is discovered, the right-hand
        side is expanded and evaluated (as for a
-       @scheme[letrec-values+syntaxes] form), and a transformer
+       @racket[letrec-values+syntaxes] form), and a transformer
        binding is installed for the body sequence before expansion
        continues.}
 
- @item{A primitive expression form other than @scheme[begin]: The
+ @item{A primitive expression form other than @racket[begin]: The
        expression is expanded in an expression context, along with all
        remaining body forms. If any definitions were found, this
        expansion takes place after conversion to a
-       @scheme[letrec-values] or @scheme[letrec-syntaxes+values]
+       @racket[letrec-values] or @racket[letrec-syntaxes+values]
        form. Otherwise, the expressions are expanded immediately.}
 
- @item{A @scheme[begin] form: The sub-forms of the @scheme[begin] are
+ @item{A @racket[begin] form: The sub-forms of the @racket[begin] are
        spliced into the internal-definition sequence, and partial
        expansion continues with the first of the newly-spliced forms
-       (or the next form, if the @scheme[begin] had no sub-forms).}
+       (or the next form, if the @racket[begin] had no sub-forms).}
 
 ]
 
-If the last expression form turns out to be a @scheme[define-values]
-or @scheme[define-syntaxes] form, expansion fails with a syntax error.
+If the last expression form turns out to be a @racket[define-values]
+or @racket[define-syntaxes] form, expansion fails with a syntax error.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "mod-parse"]{Module Phases and Visits}
 
-A @scheme[require] form not only introduces @tech{bindings} at
+A @racket[require] form not only introduces @tech{bindings} at
 expansion time, but also @deftech{visits} the referenced module when
 it is encountered by the expander. That is, the expander
-instantiates any @scheme[define-for-syntax]ed variables defined
+instantiates any @racket[define-for-syntax]ed variables defined
 in the module, and also evaluates all expressions for
-@scheme[define-syntaxes] @tech{transformer bindings}.
+@racket[define-syntaxes] @tech{transformer bindings}.
 
-Module @tech{visits} propagate through @scheme[require]s in the same
+Module @tech{visits} propagate through @racket[require]s in the same
 way as module @tech{instantiation}. Moreover, when a module is
-@tech{visit}ed at @tech{phase} 0, any module that it @scheme[require]s
-@scheme[for-syntax] is @tech{instantiate}d at @tech{phase} 1, while
-further @scheme[require]s @scheme[for-template] leading back
+@tech{visit}ed at @tech{phase} 0, any module that it @racket[require]s
+@racket[for-syntax] is @tech{instantiate}d at @tech{phase} 1, while
+further @racket[require]s @racket[for-template] leading back
 to @tech{phase} 0 causes the required module to be visited at
 @tech{phase} 0 (i.e., not @tech{instantiate}d).
 
 During compilation, the top-level of module context is itself
 implicitly @tech{visit}ed. Thus, when the expander encounters
-@scheme[(require (for-syntax ....))], it immediately
+@racket[(require (for-syntax ....))], it immediately
 @tech{instantiate}s the required module at @tech{phase} 1, in addition
 to adding bindings at @tech{phase level} 1 (i.e., the
 @tech{transformer environment}). Similarly, the expander immediately
-evaluates any @scheme[define-values-for-syntax] form that it
+evaluates any @racket[define-values-for-syntax] form that it
 encounters.
 
 @tech{Phases} beyond 0 are @tech{visit}ed on demand. For example,
-when the right-hand side of a @tech{phase}-0 @scheme[let-syntax] is to
+when the right-hand side of a @tech{phase}-0 @racket[let-syntax] is to
 be expanded, then modules that are @tech{available} at @tech{phase} 1
 are visited. More generally, initiating expansion at @tech{phase}
 @math{n} @tech{visit}s modules at @tech{phase} @math{n}, which in turn
@@ -686,14 +686,14 @@ modules in the enclosing @tech{namespace}'s @tech{module registry};
 a per-registry lock prevents multiple threads from concurrently
 instantiating and visiting available modules.
 
-When the expander encounters @scheme[require] and @scheme[(require
+When the expander encounters @racket[require] and @racket[(require
 (for-syntax ....))] within a @tech{module context}, the resulting
 @tech{visits} and @tech{instantiations} are specific to the expansion
 of the enclosing module, and are kept separate from @tech{visits} and
 @tech{instantiations} triggered from a @tech{top-level context} or
 from the expansion of a different module. Along the same lines, when a
 module is attached to a namespace through
-@scheme[namespace-attach-module], modules that it @scheme[require]s
+@racket[namespace-attach-module], modules that it @racket[require]s
 are transitively attached, but instances are attached only at
 phases at or below the namespace's @tech{base phase}.
 
@@ -710,7 +710,7 @@ When a top-level definition binds an identifier that originates from a
 (define-syntax def-and-use-of-x
   (syntax-rules ()
     [(def-and-use-of-x val)
-     (code:comment @#,t{@scheme[x] below originates from this macro:})
+     (code:comment @#,t{@racket[x] below originates from this macro:})
      (begin (define x val) x)]))
 (define x 1)
 x
@@ -720,7 +720,7 @@ x
 (define-syntax def-and-use
   (syntax-rules ()
     [(def-and-use x val)
-     (code:comment @#,t{@scheme{x} below was provided by the macro use:})
+     (code:comment @#,t{@racket{x} below was provided by the macro use:})
      (begin (define x val) x)]))
 (def-and-use x 3)
 x
@@ -733,12 +733,12 @@ For a top-level definition (outside of a module), the order of
  definition were not present. (No such dependency on order occurs
  within a module, since a module binding covers the entire module
  body.) To support the declaration of an identifier before its use,
- the @scheme[define-syntaxes] form avoids binding an identifier if the
- body of the @scheme[define-syntaxes] declaration produces zero
+ the @racket[define-syntaxes] form avoids binding an identifier if the
+ body of the @racket[define-syntaxes] declaration produces zero
  results.
 
 @examples[
-#:eval scheme-eval
+#:eval racket-eval
 (define bucket-1 0)
 (define bucket-2 0)
 (define-syntax def-and-set!-use-of-x
@@ -755,7 +755,7 @@ bucket-2
   (syntax-rules ()
     [(def-and-use)
      (begin
-      (code:comment @#,t{Initial reference to @scheme[even] precedes definition:})
+      (code:comment @#,t{Initial reference to @racket[even] precedes definition:})
       (define (odd x) (if (zero? x) #f (even (sub1 x))))
       (define (even x) (if (zero? x) #t (odd (sub1 x))))
       (odd 17))]))
@@ -765,7 +765,7 @@ bucket-2
   (syntax-rules ()
     [(def-and-use)
      (begin
-      (code:comment @#,t{Declare before definition via no-values @scheme[define-syntaxes]:})
+      (code:comment @#,t{Declare before definition via no-values @racket[define-syntaxes]:})
       (define-syntaxes (odd even) (values))
       (define (odd x) (if (zero? x) #f (even (sub1 x))))
       (define (even x) (if (zero? x) #t (odd (sub1 x))))
@@ -773,29 +773,29 @@ bucket-2
 (defs-and-uses)
 ]
 
-Macro-generated @scheme{require} and @scheme{provide}
+Macro-generated @racket{require} and @racket{provide}
  clauses also introduce and reference generation-specific bindings:
 
 @itemize[
 
- @item{In @scheme[require], for a @scheme[_require-spec] of the form
- @scheme[(rename-in [_orig-id _bind-id])] or @scheme[(only-in
- .... [_orig-id _bind-id])], the @scheme[_bind-id] is bound only for
+ @item{In @racket[require], for a @racket[_require-spec] of the form
+ @racket[(rename-in [_orig-id _bind-id])] or @racket[(only-in
+ .... [_orig-id _bind-id])], the @racket[_bind-id] is bound only for
  uses of the identifier generated by the same macro expansion as
- @scheme[_bind-id]. In @scheme[require] for other
- @scheme[_require-spec]s, the generator of the @scheme[_require-spec]
+ @racket[_bind-id]. In @racket[require] for other
+ @racket[_require-spec]s, the generator of the @racket[_require-spec]
  determines the scope of the bindings.}
 
- @item{In @scheme[provide], for a @scheme[_provide-spec] of the form
- @scheme[_id], the exported identifier is the one that binds
- @scheme[_id] within the module in a generator-specific way, but the
- external name is the plain @scheme[_id]. The exceptions for
- @scheme[all-except-out] are similarly determined in a
- generator-specific way, as is the @scheme[_orig-id] binding of a
- @scheme[rename-out] form, but plain identifiers are used for the
- external names. For @scheme[all-defined-out], only identifiers with
+ @item{In @racket[provide], for a @racket[_provide-spec] of the form
+ @racket[_id], the exported identifier is the one that binds
+ @racket[_id] within the module in a generator-specific way, but the
+ external name is the plain @racket[_id]. The exceptions for
+ @racket[all-except-out] are similarly determined in a
+ generator-specific way, as is the @racket[_orig-id] binding of a
+ @racket[rename-out] form, but plain identifiers are used for the
+ external names. For @racket[all-defined-out], only identifiers with
  definitions having the same generator as the
- @scheme[(all-defined-out)] form are exported; the external name is
+ @racket[(all-defined-out)] form are exported; the external name is
  the plain identifier from the definition.}
 
 ]
@@ -815,7 +815,7 @@ string, so it is suitable for saving and re-loading code.
 
 Although individual read, expand, compile, and evaluate operations are
 available, the operations are often combined automatically. For
-example, the @scheme[eval] procedure takes a syntax object and expands
+example, the @racket[eval] procedure takes a syntax object and expands
 it, compiles it, and evaluates it.
 
 @;------------------------------------------------------------------------
@@ -826,7 +826,7 @@ manipulate namespaces.}
 
 A @deftech{namespace} is a top-level mapping from symbols to binding
 information. It is the starting point for expanding an expression; a
-@tech{syntax object} produced by @scheme[read-syntax] has no initial
+@tech{syntax object} produced by @racket[read-syntax] has no initial
 lexical context; the @tech{syntax object} can be expanded after
 initializing it with the mappings of a particular namespace. A
 namespace is also the starting point evaluating expanded code, where
@@ -850,7 +850,7 @@ An ``empty'' namespace maps all symbols to top-level variables.
 Certain evaluations extend a namespace for future expansions;
 importing a module into the top-level adjusts the namespace bindings
 for all of the imported named, and evaluating a top-level
-@scheme[define] form updates the namespace's mapping to refer to a
+@racket[define] form updates the namespace's mapping to refer to a
 variable (in addition to installing a value into the variable).
 
 A namespace also has a @deftech{module registry} that maps module
@@ -863,9 +863,9 @@ distinct set of module instances in each @tech{phase}. That is, even
 though module declarations are shared for all @tech{phase levels},
 module instances are distinct for each @tech{phase}. Each namespace
 has a @deftech{base phase}, which corresponds to the phase used by
-reflective operations such as @scheme[eval] and
-@scheme[dynamic-require]. In particular, using @scheme[eval] on a
-@scheme[require] form @tech{instantiates} a module in the namespace's
+reflective operations such as @racket[eval] and
+@racket[dynamic-require]. In particular, using @racket[eval] on a
+@racket[require] form @tech{instantiates} a module in the namespace's
 @tech{base phase}.
 
 After a namespace is created, module instances from existing
@@ -890,14 +890,14 @@ and to start evaluating expanded/compiled code.
 @examples[
 (code:line
  (define x 'orig) (code:comment @#,t{define in the original namespace}))
-(code:comment @#,t{The following @scheme[let] expression is compiled in the original})
-(code:comment @#,t{namespace, so direct references to @scheme[x] see @scheme['orig].})
+(code:comment @#,t{The following @racket[let] expression is compiled in the original})
+(code:comment @#,t{namespace, so direct references to @racket[x] see @racket['orig].})
 (code:line
  (let ([n (make-base-namespace)]) (code:comment @#,t{make new namespace})
    (parameterize ([current-namespace n]) 
      (eval '(define x 'new)) (code:comment @#,t{evals in the new namespace})
-     (display x) (code:comment @#,t{displays @scheme['orig]})
-     (display (eval 'x)))) (code:comment @#,t{displays @scheme['new]}))
+     (display x) (code:comment @#,t{displays @racket['orig]})
+     (display (eval 'x)))) (code:comment @#,t{displays @racket['new]}))
 ]
 
 A @tech{namespace} is purely a top-level entity, not to be confused
@@ -924,7 +924,7 @@ x
 (define x 7)
 x
 (f)
-(module m mzscheme (define x 8) (provide x))
+(module m racket (define x 8) (provide x))
 (require 'm)
 (eval:alts x (eval 'x))
 (f)
@@ -937,28 +937,28 @@ To improve error reporting, names are inferred at compile-time for
 certain kinds of values, such as procedures. For example, evaluating
 the following expression:
 
-@schemeblock[
+@racketblock[
 (let ([f (lambda () 0)]) (f 1 2 3))
 ]
 
 produces an error message because too many arguments are provided to
-the procedure. The error message is able to report @schemeidfont{f} as
-the name of the procedure. In this case, Scheme decides, at
-compile-time, to name as @scheme['f] all procedures created by the
-@scheme[let]-bound @scheme[lambda].
+the procedure. The error message is able to report @racketidfont{f} as
+the name of the procedure. In this case, Racket decides, at
+compile-time, to name as @racket['f] all procedures created by the
+@racket[let]-bound @racket[lambda].
 
 Names are inferred whenever possible for procedures. Names closer to
 an expression take precedence. For example, in
 
-@schemeblock[
+@racketblock[
 (define my-f
   (let ([f (lambda () 0)]) f))
 ]
 
-the procedure bound to @scheme[my-f] will have the inferred name
-@scheme['f].
+the procedure bound to @racket[my-f] will have the inferred name
+@racket['f].
 
-When an @indexed-scheme['inferred-name] property is attached to a
+When an @indexed-racket['inferred-name] property is attached to a
 syntax object for an expression (see @secref["stxprops"]), the
 property value is used for naming the expression, and it overrides any
 name that was inferred from the expression's context. Normally, the
@@ -967,8 +967,8 @@ property value should be a symbol or an identifier.
 When an inferred name is not available, but a source location is
 available, a name is constructed using the source location
 information. Inferred and property-assigned names are also available
-to syntax transformers, via @scheme[syntax-local-name].
+to syntax transformers, via @racket[syntax-local-name].
 
 @;----------------------------------------
 
-@close-eval[scheme-eval]
+@close-eval[racket-eval]

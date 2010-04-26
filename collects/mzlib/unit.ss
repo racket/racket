@@ -142,19 +142,22 @@
                                (syntax-case stx ()
                                  [(_ arg ...) (datum->syntax
                                                stx
-                                               (cons (self-name-struct-info-id me)
+                                               (cons ((self-name-struct-info-id me))
                                                      #'(arg ...))
                                                stx
                                                stx)]
-                                 [_ (let ([id (self-name-struct-info-id me)])
+                                 [_ (let ([id ((self-name-struct-info-id me))])
                                       (datum->syntax id
                                                       (syntax-e id)
                                                       stx
                                                       stx))]))
    #:omit-define-syntaxes))
 
+(define-for-syntax option-keywords
+  "#:mutable, #:constructor-name, #:extra-constructor-name, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values")
+
 ;; Replacement `struct' signature form for `scheme/unit':
-(define-for-syntax (do-struct~ stx type-as-ctr?)
+(define-for-syntax (do-struct~ stx extra-make?)
   (syntax-case stx ()
     ((_ name (field ...) opt ...)
      (begin
@@ -175,53 +178,85 @@
                                             stx
                                             field)])))
                  (syntax->list #'(field ...)))
-       (let-values ([(no-ctr? mutable? no-stx? no-rt?)
-                     (let loop ([opts (syntax->list #'(opt ...))]
-                                [no-ctr? #f]
-                                [mutable? #f]
-                                [no-stx? #f]
-                                [no-rt? #f])
-                       (if (null? opts)
-                           (values no-ctr? mutable? no-stx? no-rt?)
-                           (let ([opt (car opts)])
-                             (case (syntax-e opt)
-                               [(#:omit-constructor)
-                                (if no-ctr?
-                                    (raise-syntax-error #f
-                                                        "redundant option"
-                                                        stx
-                                                        opt)
-                                    (loop (cdr opts) #t mutable? no-stx? no-rt?))]
-                               [(#:mutable)
-                                (if mutable?
-                                    (raise-syntax-error #f
-                                                        "redundant option"
-                                                        stx
-                                                        opt)
-                                    (loop (cdr opts) no-ctr? #t no-stx? no-rt?))]
-                               [(#:omit-define-syntaxes)
-                                (if no-stx?
-                                    (raise-syntax-error #f
-                                                        "redundant option"
-                                                        stx
-                                                        opt)
-                                    (loop (cdr opts) no-ctr? mutable? #t no-rt?))]
-                               [(#:omit-define-values)
-                                (if no-rt?
-                                    (raise-syntax-error #f
-                                                        "redundant option"
-                                                        stx
-                                                        opt)
-                                    (loop (cdr opts) no-ctr? mutable? no-stx? #t))]
-                               [else
-                                (raise-syntax-error #f
-                                                    (string-append
-                                                     "expected a keyword to specify option: "
-                                                     "#:mutable, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values")
-                                                    stx
-                                                    opt)]))))]
-                    [(tmp-name) (and type-as-ctr?
-                                     (car (generate-temporaries #'(name))))])
+       (let*-values ([(no-ctr? mutable? no-stx? no-rt? opt-cname)
+                      (let loop ([opts (syntax->list #'(opt ...))]
+                                 [no-ctr? #f]
+                                 [mutable? #f]
+                                 [no-stx? #f]
+                                 [no-rt? #f]
+                                 [cname #f])
+                        (if (null? opts)
+                            (values no-ctr? mutable? no-stx? no-rt? cname)
+                            (let ([opt (car opts)])
+                              (case (syntax-e opt)
+                                [(#:constructor-name #:extra-constructor-name)
+                                 (if cname
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (if (null? (cdr opts))
+                                         (raise-syntax-error #f
+                                                             "missing identifier after option"
+                                                             stx
+                                                             opt)
+                                         (if (identifier? (cadr opts))
+                                             (loop (cddr opts) #f mutable? no-stx? no-rt?
+                                                   (if (eq? (syntax-e opt) '#:extra-constructor-name)
+                                                       (list (cadr opts))
+                                                       (cadr opts)))
+                                             (raise-syntax-error #f
+                                                                 "not an identifier for a constructor name"
+                                                                 stx
+                                                                 (cadr opts)))))]
+                                [(#:omit-constructor)
+                                 (if no-ctr?
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (loop (cdr opts) #t mutable? no-stx? no-rt? cname))]
+                                [(#:mutable)
+                                 (if mutable?
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (loop (cdr opts) no-ctr? #t no-stx? no-rt? cname))]
+                                [(#:omit-define-syntaxes)
+                                 (if no-stx?
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (loop (cdr opts) no-ctr? mutable? #t no-rt? cname))]
+                                [(#:omit-define-values)
+                                 (if no-rt?
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (loop (cdr opts) no-ctr? mutable? no-stx? #t cname))]
+                                [else
+                                 (raise-syntax-error #f
+                                                     (string-append
+                                                      "expected a keyword to specify option: "
+                                                      option-keywords)
+                                                     stx
+                                                     opt)]))))]
+                     [(def-cname) (cond
+                                   [opt-cname (if (pair? opt-cname)
+                                                  (car opt-cname)
+                                                  opt-cname)]
+                                   [extra-make? #f]
+                                   [else (car (generate-temporaries #'(name)))])]
+                     [(cname) (cond
+                               [opt-cname (if (pair? opt-cname)
+                                              (cons def-cname #'name)
+                                              (cons opt-cname opt-cname))]
+                               [extra-make? #f]
+                               [else (cons def-cname #'name)])]
+                     [(self-ctr?) (and cname (bound-identifier=? #'name (cdr cname)))])
          (cons
           #`(define-syntaxes (name)
               #,(let ([e (build-struct-expand-info
@@ -229,19 +264,19 @@
                           #f (not mutable?)
                           #f '(#f) '(#f)
                           #:omit-constructor? no-ctr?
-                          #:constructor-name (and type-as-ctr? (cons #'name tmp-name)))])
-                  (if type-as-ctr?
+                          #:constructor-name def-cname)])
+                  (if self-ctr?
                       #`(make-self-name-struct-info 
                          (lambda () #,e)
-                         (quote-syntax #,tmp-name))
+                         (lambda () (quote-syntax #,def-cname)))
                       e)))
           (let ([names (build-struct-names #'name (syntax->list #'(field ...))
                                            #f (not mutable?)
-                                           #:constructor-name (and type-as-ctr? 
-                                                                   (cons #'name tmp-name)))])
+                                           #:constructor-name def-cname)])
             (cond
              [no-ctr? (cons (car names) (cddr names))]
-             [tmp-name (cons #`(define-values-for-export (#,tmp-name) name) names)]
+             [self-ctr? (cons #`(define-values-for-export (#,def-cname) name) 
+                              names)]
              [else names]))))))
     ((_ name fields opt ...)
      (raise-syntax-error #f
@@ -258,9 +293,9 @@
                          stx))))
 
 (define-signature-form (struct~s stx)
-  (do-struct~ stx #f))
-(define-signature-form (struct~r stx)
   (do-struct~ stx #t))
+(define-signature-form (struct~r stx)
+  (do-struct~ stx #f))
 
 (define-signature-form (struct/ctc stx)
   (parameterize ((error-syntax stx))
@@ -347,7 +382,7 @@
        (raise-stx-err "missing name and fields")))))
 
 ;; Replacement struct/ctc form for `scheme/unit':
-(define-for-syntax (do-struct~/ctc stx type-as-ctr?)
+(define-for-syntax (do-struct~/ctc stx extra-make?)
   (syntax-case stx ()
     ((_ name ([field ctc] ...) opt ...)
      (begin
@@ -368,53 +403,85 @@
                                             stx
                                             field)])))
                  (syntax->list #'(field ...)))
-       (let-values ([(no-ctr? mutable? no-stx? no-rt?)
-                     (let loop ([opts (syntax->list #'(opt ...))]
-                                [no-ctr? #f]
-                                [mutable? #f]
-                                [no-stx? #f]
-                                [no-rt? #f])
-                       (if (null? opts)
-                           (values no-ctr? mutable? no-stx? no-rt?)
-                           (let ([opt (car opts)])
-                             (case (syntax-e opt)
-                               [(#:omit-constructor)
-                                (if no-ctr?
-                                    (raise-syntax-error #f
-                                                        "redundant option"
-                                                        stx
-                                                        opt)
-                                    (loop (cdr opts) #t mutable? no-stx? no-rt?))]
-                               [(#:mutable)
-                                (if mutable?
-                                    (raise-syntax-error #f
-                                                        "redundant option"
-                                                        stx
-                                                        opt)
-                                    (loop (cdr opts) no-ctr? #t no-stx? no-rt?))]
-                               [(#:omit-define-syntaxes)
-                                (if no-stx?
-                                    (raise-syntax-error #f
-                                                        "redundant option"
-                                                        stx
-                                                        opt)
-                                    (loop (cdr opts) no-ctr? mutable? #t no-rt?))]
-                               [(#:omit-define-values)
-                                (if no-rt?
-                                    (raise-syntax-error #f
-                                                        "redundant option"
-                                                        stx
-                                                        opt)
-                                    (loop (cdr opts) no-ctr? mutable? no-stx? #t))]
-                               [else
-                                (raise-syntax-error #f
-                                                    (string-append
-                                                     "expected a keyword to specify option: "
-                                                     "#:mutable, #:omit-constructor, #:omit-define-syntaxes, or #:omit-define-values")
-                                                    stx
-                                                    opt)]))))]
-                    [(tmp-name) (and type-as-ctr?
-                                     (car (generate-temporaries #'(name))))])
+       (let*-values ([(no-ctr? mutable? no-stx? no-rt? opt-cname)
+                      (let loop ([opts (syntax->list #'(opt ...))]
+                                 [no-ctr? #f]
+                                 [mutable? #f]
+                                 [no-stx? #f]
+                                 [no-rt? #f]
+                                 [cname #f])
+                        (if (null? opts)
+                            (values no-ctr? mutable? no-stx? no-rt? cname)
+                            (let ([opt (car opts)])
+                              (case (syntax-e opt)
+                                [(#:constructor-name #:extra-constructor-name)
+                                 (if cname
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (if (null? (cdr opts))
+                                         (raise-syntax-error #f
+                                                             "missing identifier after option"
+                                                             stx
+                                                             opt)
+                                         (if (identifier? (cadr opts))
+                                             (loop (cddr opts) #f mutable? no-stx? no-rt?
+                                                   (if (eq? (syntax-e opt) '#:extra-constructor-name)
+                                                       (list (cadr opts))
+                                                       (cadr opts)))
+                                             (raise-syntax-error #f
+                                                                 "not an identifier for a constructor name"
+                                                                 stx
+                                                                 (cadr opts)))))]
+                                [(#:omit-constructor)
+                                 (if no-ctr?
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (loop (cdr opts) #t mutable? no-stx? no-rt? cname))]
+                                [(#:mutable)
+                                 (if mutable?
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (loop (cdr opts) no-ctr? #t no-stx? no-rt? cname))]
+                                [(#:omit-define-syntaxes)
+                                 (if no-stx?
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (loop (cdr opts) no-ctr? mutable? #t no-rt? cname))]
+                                [(#:omit-define-values)
+                                 (if no-rt?
+                                     (raise-syntax-error #f
+                                                         "redundant option"
+                                                         stx
+                                                         opt)
+                                     (loop (cdr opts) no-ctr? mutable? no-stx? #t cname))]
+                                [else
+                                 (raise-syntax-error #f
+                                                     (string-append
+                                                      "expected a keyword to specify option: "
+                                                      option-keywords)
+                                                     stx
+                                                     opt)]))))]
+                     [(def-cname) (cond
+                                   [opt-cname (if (pair? opt-cname)
+                                                  (car opt-cname)
+                                                  opt-cname)]
+                                   [extra-make? #f]
+                                   [else (car (generate-temporaries #'(name)))])]
+                     [(cname) (cond
+                               [opt-cname (if (pair? opt-cname)
+                                              (cons def-cname #'name)
+                                              (cons def-cname def-cname))]
+                               [extra-make? #f]
+                               [else (cons def-cname #'name)])]
+                     [(self-ctr?) (and cname (bound-identifier=? #'name (cdr cname)))])
          (define (add-contracts l)
            (let* ([pred (caddr l)]
                   [ctor-ctc #`(-> ctc ... #,pred)]
@@ -435,20 +502,29 @@
                     (map list (cdddr l) field-ctcs))))
          (cons
           #`(define-syntaxes (name)
-              #,(build-struct-expand-info
-                 #'name (syntax->list #'(field ...))
-                 #f (not mutable?)
-                 #f '(#f) '(#f)
-                 #:omit-constructor? no-ctr?
-                 #:constructor-name (and type-as-ctr? (cons #'name tmp-name))))
+              #,(let ([e (build-struct-expand-info
+                          #'name (syntax->list #'(field ...))
+                          #f (not mutable?)
+                          #f '(#f) '(#f)
+                          #:omit-constructor? no-ctr?
+                          #:constructor-name def-cname)])
+                  (if self-ctr?
+                      #`(make-self-name-struct-info 
+                         (lambda () #,e)
+                         (lambda () (quote-syntax #,def-cname)))
+                      e)))
           (let* ([names (add-contracts
                          (build-struct-names #'name (syntax->list #'(field ...))
                                              #f (not mutable?)
-                                             #:constructor-name (and type-as-ctr? 
-                                                                     (cons #'name tmp-name))))]
+                                             #:constructor-name def-cname))]
                  [cpairs (cons 'contracted
-                               (if no-ctr? (cddr names) (cdr names)))])
-            (list (car names) cpairs))))))
+                               (cond
+                                [no-ctr? (cddr names)]
+                                [else (cdr names)]))]
+                 [l (list (car names) cpairs)])
+            (if self-ctr?
+                (cons #`(define-values-for-export (#,def-cname) name) l)
+                l))))))
     ((_ name fields opt ...)
      (raise-syntax-error #f
                          "bad syntax; expected a parenthesized sequence of fields"
@@ -464,9 +540,9 @@
                          stx))))
 
 (define-signature-form (struct~s/ctc stx)
-  (do-struct~/ctc stx #f))
-(define-signature-form (struct~r/ctc stx)
   (do-struct~/ctc stx #t))
+(define-signature-form (struct~r/ctc stx)
+  (do-struct~/ctc stx #f))
 
 ;; build-val+macro-defs : sig -> (list syntax-object^3)
 (define-for-syntax (build-val+macro-defs sig)

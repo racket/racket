@@ -1,17 +1,17 @@
-(module mz scheme/base
+(module mz racket/base
   (require scribble/struct
            scribble/manual
            scribble/eval
            scribble/decode
-           scheme/contract
+           racket/contract
            "../icons.ss")
   
   (provide (all-from-out scribble/manual)
            (all-from-out scribble/eval)
-           (all-from-out scheme/contract))
+           (all-from-out racket/contract))
   
-  (require (for-label scheme))
-  (provide (for-label (all-from-out scheme)))
+  (require (for-label racket))
+  (provide (for-label (all-from-out racket)))
   
   (provide mz-examples)
   (define mz-eval (make-base-eval))
@@ -30,7 +30,7 @@
     (syntax-rules ()
       [(_ lib #:use-sources (src ...) . more)
        (begin
-         (declare-exporting lib scheme #:use-sources (src ...))
+         (declare-exporting lib racket #:use-sources (src ...))
          (defmodule*/no-declare (lib)
            (t (make-collect-element
                #f null
@@ -39,8 +39,8 @@
               "The bindings documented in this section are provided by the "
               (schememodname lib)
               " and "
-              (schememodname scheme)
-              " libraries, but not " (schememodname scheme/base)
+              (schememodname racket)
+              " libraries, but not " (schememodname racket/base)
               "."
               . more)))]
       [(_ lib . more)
@@ -51,16 +51,16 @@
     (syntax-rules ()
       [(_ lib #:use-sources (src ...) . more)
        (begin
-         (declare-exporting lib scheme/init #:use-sources (src ...))
+         (declare-exporting lib racket/init #:use-sources (src ...))
          (defmodule*/no-declare (lib)
            (t "The bindings documented in this section are provided by the "
               (schememodname lib)
               " and "
-              (schememodname scheme/init)
+              (schememodname racket/init)
               " libraries, which means that they are available when "
-              (exec "mzscheme") " is started with no command-line arguments."
-              " They are not provided by " (schememodname scheme/base)
-              " or " (schememodname scheme) "."
+              (exec "racket") " is started with no command-line arguments."
+              " They are not provided by " (schememodname racket/base)
+              " or " (schememodname racket) "."
               . more)))]
       [(_ lib . more)
        (note-init-lib lib #:use-sources () . more)]))
@@ -72,8 +72,8 @@
        (defmodule lib #:use-sources (src ...)
          (t "The bindings documented in this section are provided by the "
             (schememodname lib)
-            " library, not " (schememodname scheme/base)
-            " or " (schememodname scheme)
+            " library, not " (schememodname racket/base)
+            " or " (schememodname racket)
             "."
             . more))]
       [(_ lib . more)
@@ -90,7 +90,7 @@
   (provide exnraise Exn)
   
   (provide margin-note/ref
-           refalso moreref Guide guideintro guidesecref
+           refalso moreref Guide guideintro guidealso guidesecref
            HonuManual)
   
   (define (margin-note/ref . s)
@@ -117,6 +117,10 @@
            (decode-content (append (list finger (guidesecref tag) " in " Guide " introduces ")
                                    s
                                    (list ".")))))
+
+  (define (guidealso tag)
+    (apply margin-note
+           (decode-content (append (list finger "See also " (guidesecref tag) " in " Guide ".")))))
   
   (define Guide
     (other-manual '(lib "scribblings/guide/guide.scrbl")))

@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/enter))
+          (for-label racket/enter))
 
 @title[#:tag "enter"]{Interactive Module Loading}
 
-@note-init-lib[scheme/enter]
+@note-init-lib[racket/enter]
 
 @defform*[[(enter! module-path)
            (enter! #f)]]{
@@ -27,7 +27,7 @@ are first loaded (either directly or indirectly through transitive
 @scheme[require]s) via @scheme[enter!].
 
 After switching namespaces to the designated module, @scheme[enter!]
-automatically requires @scheme[scheme/enter] into the namespace, so
+automatically requires @scheme[racket/enter] into the namespace, so
 that @scheme[enter!] can be used to switch namespaces again.
 
 When it loads or re-loads a module from a file, @scheme[enter!] prints

@@ -1,15 +1,15 @@
 #lang scribble/doc
 @(require "mz.ss"
-          scheme/math
+          racket/math
           scribble/extract
-          (for-label scheme/math
-                     scheme/flonum
-                     scheme/fixnum
-                     scheme/unsafe/ops
-                     scheme/require))
+          (for-label racket/math
+                     racket/flonum
+                     racket/fixnum
+                     racket/unsafe/ops
+                     racket/require))
 
 @(define math-eval (make-base-eval))
-@(interaction-eval #:eval math-eval (require scheme/math))
+@(interaction-eval #:eval math-eval (require racket/math))
 
 @title[#:tag "numbers"]{Numbers}
 
@@ -70,7 +70,7 @@ infinity, or @scheme[+nan.0] if no such limit exists.
 A @deftech{fixnum} is an exact integer whose two's complement
 representation fit into 31 bits on a 32-bit platform or 63 bits on a
 64-bit platform; furthermore, no allocation is required when computing
-with fixnums. See also the @schememodname[scheme/fixnum] module, below.
+with fixnums. See also the @schememodname[racket/fixnum] module, below.
 
 Two fixnums that are @scheme[=] are also the same
 according to @scheme[eq?]. Otherwise, the result of @scheme[eq?]
@@ -453,7 +453,7 @@ used.
 @defproc[(log [z number?]) number?]{ Returns the natural logarithm of
  @scheme[z].  The result is normally inexact, but it is
  @scheme[0] when @scheme[z] is an exact @scheme[1]. When @scheme[z]
- is exact @scheme[0], @exnraise[exn:fail:contract:divide-by-zero].}
+ is exact @scheme[0], @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(log (exp 1)) (log 2+3i) (log 1)]}
 
@@ -875,15 +875,15 @@ is little-endian.}
 @; ------------------------------------------------------------------------
 @section{Inexact-Real (Flonum) Operations}
 
-@defmodule[scheme/flonum]
+@defmodule[racket/flonum]
 
-The @schememodname[scheme/flonum] library provides operations like
+The @schememodname[racket/flonum] library provides operations like
 @scheme[fl+] that consume and produce only real @tech{inexact
 numbers}, which are also known as @deftech{flonums}. Flonum-specific
 operations provide can better performance when used consistently, and
 they are as safe as generic operations like @scheme[+].
 
-@margin-note{See @guidesecref["fixnums+flonums"].}
+@guidealso["fixnums+flonums"]
 
 @subsection{Flonum Arithmetic}
 
@@ -953,10 +953,10 @@ so the result is always a @tech{flonum}.
 A @deftech{flvector} is like a @tech{vector}, but it holds only
 inexact real numbers. This representation can be more compact, and
 unsafe operations on @tech{flvector}s (see
-@schememodname[scheme/unsafe/ops]) can execute more efficiently than
+@schememodname[racket/unsafe/ops]) can execute more efficiently than
 unsafe operations on @tech{vectors} of inexact reals.
 
-An f64vector as provided by @schememodname[scheme/foreign] stores the
+An f64vector as provided by @schememodname[racket/unsafe/ffi] stores the
 same kinds of values as an @tech{flvector}, but with extra
 indirections that make f64vectors more convenient for working with
 foreign libraries. The lack of indirections make unsafe
@@ -1005,25 +1005,25 @@ first slot is position @scheme[0], and the last slot is one less than
                        
 @section{Fixnum Operations}
 
-@defmodule[scheme/fixnum]
+@defmodule[racket/fixnum]
 
-The @schememodname[scheme/fixnum] library provides operations like
+The @schememodname[racket/fixnum] library provides operations like
 @scheme[fx+] that consume and produce only fixnums. The operations in
 this library are meant to be safe versions of unsafe operations like
 @scheme[unsafe-fx+]. These safe operations are generally no faster
 than using generic primitives like @scheme[+].
 
-The expected use of the @schememodname[scheme/fixnum] library is for
-code where the @scheme[require] of @schememodname[scheme/fixnum] is
+The expected use of the @schememodname[racket/fixnum] library is for
+code where the @scheme[require] of @schememodname[racket/fixnum] is
 replaced with
 
 @schemeblock[(require (filtered-in
                        (λ (name) (regexp-replace #rx"unsafe-" name ""))
-                       scheme/unsafe/ops))]
+                       racket/unsafe/ops))]
 
 to drop in unsafe versions of the library. Alternately, when
 encountering crashes with code that uses unsafe fixnum operations, use
-the @schememodname[scheme/fixnum] library to help debug the problems.
+the @schememodname[racket/fixnum] library to help debug the problems.
 
 @deftogether[(
 @defproc[(fx+ [a fixnum?][b fixnum?]) fixnum?]
@@ -1078,9 +1078,9 @@ Safe versions of @scheme[unsafe-fx=], @scheme[unsafe-fx<],
 @; ------------------------------------------------------------------------
 @section{Extra Constants and Functions}
 
-@note-lib[scheme/math]
+@note-lib[racket/math]
 
-@defthing[pi real]{
+@defthing[pi real?]{
 
 An approximation to the ratio of a circle's circumference to its
 diameter: @number->string[pi].}

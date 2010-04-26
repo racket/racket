@@ -22,6 +22,7 @@
              for/last for*/last
              for/hash for*/hash
              for/hasheq for*/hasheq
+             for/hasheqv for*/hasheqv
 
              for/fold/derived for*/fold/derived
 
@@ -328,7 +329,7 @@
       [(hash? v) (:hash-key+val-gen v)]
       [(:sequence? v) (make-sequence who ((:sequence-ref v) v))]
       [else (raise
-             (make-exn:fail:contract
+             (exn:fail:contract
               (format "for: expected a sequence for ~a, got something else: ~v"
                       (if (= 1 (length who))
                           (car who)
@@ -946,6 +947,14 @@
 
   (define-for-variants (for/hasheq for*/hasheq)
     ([table #hasheq()])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x)
+      #`(let-values ([(key val) #,x])
+          (hash-set table key val))))
+
+  (define-for-variants (for/hasheqv for*/hasheqv)
+    ([table #hasheqv()])
     (lambda (x) x)
     (lambda (rhs) rhs)
     (lambda (x)

@@ -175,7 +175,23 @@ Not an exception in the above sense:
                       (#%require "define.rkt")
                       (#%require (for-syntax "struct-info.rkt"))
                       
-                      (#%provide (all-defined))))
+                      (#%provide (all-defined))
+
+                      (define-values-for-syntax (make-self-ctr-struct-info)
+                        (letrec-values ([(struct: make- ? ref set!)
+                                         (make-struct-type 'self-ctor-struct-info struct:struct-info
+                                                           1 0 #f
+                                                           (list (cons prop:procedure
+                                                                       (lambda (v stx)
+                                                                         (let-values ([(id) ((ref v 0))])
+                                                                           (if (symbol? (syntax-e stx))
+                                                                               id
+                                                                               (datum->syntax stx
+                                                                                              (cons id (cdr (syntax-e stx)))
+                                                                                              stx
+                                                                                              stx))))))
+                                                           (current-inspector) #f '(0))])
+                          make-))))
   
   (define (sss . args)
     (string->symbol (apply string-append (map (λ (x) (if (symbol? x) (symbol->string x) x)) args))))
@@ -185,17 +201,23 @@ Not an exception in the above sense:
   
   (define (gen-ds name-string fields parent)
     (let* ([name (sss name-string)]
+           [kern-name (sss "kernel:" name)]
            [sn (sss "struct:" name)]
            [mn (sss "make-" name)]
            [pn (sss name "?")]
            [fds `(list ,@(map (λ (x) `(quote-syntax ,x)) fields))]
            [fdsset! `'(,@(map (λ (x) #f) fields))]
            [prnt (if (non-parent parent) #t `(quote-syntax ,parent))])
-      `(define-syntax ,name (make-struct-info (λ () (list (quote-syntax ,sn)
-                                                          (quote-syntax ,mn)                              
-                                                          (quote-syntax ,pn)                              
-                                                          ,fds
-                                                          ,fdsset! ,prnt))))))
+      `(begin
+         (#%require (rename '#%kernel ,kern-name ,name))
+         (define ,mn ,kern-name)
+         (define-syntax ,name (make-self-ctr-struct-info 
+                               (λ () (list (quote-syntax ,sn)
+                                           (quote-syntax ,mn)
+                                           (quote-syntax ,pn)                              
+                                           ,fds
+                                           ,fdsset! ,prnt))
+                               (λ () (quote-syntax ,kern-name)))))))
   
   (define (parent-sym x)
     (let ([parent (ex-parent x)])

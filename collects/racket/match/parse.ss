@@ -153,6 +153,9 @@
     [(mcons e1 e2) (make-MPair (parse #'e1) (parse #'e2))]
     [(struct s pats)
      (parse-struct stx cert parse #'s #'pats)]
+    [(s . pats)
+     (struct-info? (syntax-local-value #'s (lambda () #f)))
+     (parse-struct stx cert parse #'s #'pats)]
     [(? p q1 qs ...)
      (make-And (cons (make-Pred (cert #'p))
                      (map parse (syntax->list #'(q1 qs ...)))))]

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss"
           (for-label framework/preferences
-                     scheme/runtime-path
+                     racket/runtime-path
                      setup/dirs))
 
 @title{Filesystem}
@@ -398,9 +398,9 @@ can be particularly slow under Windows.}
 @;------------------------------------------------------------------------
 @section[#:tag "runtime-path"]{Declaring Paths Needed at Run Time}
 
-@note-lib-only[scheme/runtime-path]
+@note-lib-only[racket/runtime-path]
 
-The @schememodname[scheme/runtime-path] library provides forms for
+The @schememodname[racket/runtime-path] library provides forms for
 accessing files and directories at run time using a path that are
 usually relative to an enclosing source file. Unlike using
 @scheme[collection-path], @scheme[define-runtime-path] exposes each
@@ -409,7 +409,7 @@ so that files and directories needed at run time are carried along in
 a distribution.
 
 In addition to the bindings described below,
-@schememodname[scheme/runtime-path] provides @scheme[#%datum] in
+@schememodname[racket/runtime-path] provides @scheme[#%datum] in
 @tech{phase level} 1, since string constants are often used as
 compile-time expressions with @scheme[define-runtime-path].
 
@@ -426,7 +426,7 @@ result of @scheme[expr]. The path is normally computed by taking a
 relative path result from @scheme[expr] and adding it to a path for
 the enclosing file (which is computed as described below). However,
 tools like the executable creator can also arrange (by colluding with
-@schememodname[scheme/runtime-path]) to have a different base path
+@schememodname[racket/runtime-path]) to have a different base path
 substituted in a generated executable. If @scheme[expr] produces an
 absolute path, it is normally returned directly, but again may be
 replaced by an executable creator. In all cases, the executable
@@ -579,7 +579,7 @@ bound through @scheme[define-runtime-module-path].}
 @;------------------------------------------------------------------------
 @section[#:tag "file-lib"]{More File and Directory Utilities}
 
-@note-lib[scheme/file]
+@note-lib[racket/file]
 
 @defproc[(file->string [path path-string?]
                        [#:mode mode-flag (or/c 'binary 'text) 'binary])

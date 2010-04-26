@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/set))
+          (for-label racket/set))
 
 @title[#:tag "sets"]{Sets}
 
@@ -16,7 +16,7 @@ unpredictable in much the same way that @tech{hash table} operations are
 unpredictable when keys are mutated.
 
 
-@note-lib-only[scheme/set]
+@note-lib[racket/set]
 
 @defproc[(set? [v any/c]) boolean?]{
 
@@ -52,10 +52,12 @@ to a later element takes precedence over the later element.}
 Returns @scheme[#t] if @scheme[set] has no members, @scheme[#f]
 otherwise.}
 
+
 @defproc[(set-member? [set set?] [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is in @scheme[set], @scheme[#f]
 otherwise.}
+
 
 @defproc[(set-add [set set?] [v any/c]) set?]{
 
@@ -101,6 +103,15 @@ runs in time proportional to the total size of all given
 @scheme[set]s except the first one.}
 
 
+@defproc[(subset? [set set?] [set2 set?]) boolean?]{
+
+Returns @scheme[#t] if every member of @scheme[set] is in
+@scheme[set2], @scheme[#f] otherwise. The @scheme[set] and
+@scheme[set2] must use the same equivalence predicate
+(@scheme[equal?], @scheme[eq?], or @scheme[eqv?]).  This operation
+runs in time proportional to the size of @scheme[set].}
+
+
 @defproc[(set-map [set set?]
                   [proc (any/c . -> . any/c)])
          (listof any/c)]{
@@ -109,6 +120,7 @@ Applies the procedure @scheme[proc] to each element in
 @scheme[set] in an unspecified order, accumulating the results
 into a list.}
 
+
 @defproc[(set-for-each [set set?]
                        [proc (any/c . -> . any)])
          void?]{
@@ -116,7 +128,21 @@ into a list.}
 Applies @scheme[proc] to each element in @scheme[set] (for the
 side-effects of @scheme[proc]) in an unspecified order.}
 
+
 @defproc[(in-set [set set?]) sequence?]{
 
 Explicitly converts a set to a sequence for use with @scheme[for] and
 other forms.}
+
+@deftogether[(
+@defform[(for/set (for-clause ...) body ...+)]
+@defform[(for/seteq (for-clause ...) body ...+)]
+@defform[(for/seteqv (for-clause ...) body ...+)]
+@defform[(for*/set (for-clause ...) body ...+)]
+@defform[(for*/seteq (for-clause ...) body ...+)]
+@defform[(for*/seteqv (for-clause ...) body ...+)]
+)]{
+
+Analogous to @scheme[for/list] and @scheme[for*/list], but to
+construct a set instead of a list.}
+

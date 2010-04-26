@@ -344,7 +344,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
               (notes: "COPYING.LIB" "COPYING-libscheme.txt")
               (doc: "doc-license.txt") ; needed (when docs are included)
               (doc+src: "reference/" "guide/" "quick/" "more/"
-                        "foreign/" "inside/" "places/"
+                        "foreign/" "inside/" ;; "places/" <- not ready yet
                         "honu/")
               (doc: "*.{html|css|js|sxref}")
               (scribblings: "{{info|icons}.ss|*.png}" "compiled")
@@ -431,8 +431,8 @@ platform-dependent := ; hook for package rules
 mz-extras :+= (- (package: "setup-plt" #:collection "setup/")
                  (cond (not dr) => (srcfile: "plt-installer{|-sig|-unit}.ss")))
 
-;; -------------------- racket-tool
-mz-extras :+= (package: "tool")
+;; -------------------- raco
+mz-extras :+= (package: "raco")
 
 ;; -------------------- launcher
 mz-extras :+= (- (collects: "launcher")

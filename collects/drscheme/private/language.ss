@@ -9,17 +9,17 @@
          
          ;; NOTE: this module instantiates stacktrace itself, so we have
          ;; to be careful to not mix that instantiation with the one
-         ;; drscheme/private/debug.ss does. errortrace-lib's is for the
+         ;; drracket/private/debug.ss does. errortrace-lib's is for the
          ;; compilation handling, DrScheme's is for profiling and test coverage
          ;; (which do not do compilation)
          (prefix-in el: errortrace/errortrace-lib) 
          
          mzlib/pconvert
-         scheme/pretty
+         racket/pretty
          mzlib/struct
-         scheme/class
-         scheme/file
-         scheme/list
+         racket/class
+         racket/file
+         racket/list
          compiler/embed
          launcher
          mred

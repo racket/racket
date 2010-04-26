@@ -1,8 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss"
           scribble/bnf
-          (for-label scheme/pretty
-                     scheme/gui/base))
+          (for-label racket/pretty
+                     racket/gui/base))
 
 @(define (FlagFirst n) (as-index (Flag n)))
 @(define (DFlagFirst n) (as-index (DFlag n)))
@@ -21,13 +21,13 @@ The core PLT Scheme run-time system is available in two main variants:
 @itemize[
 
  @item{MzScheme, which provides the primitives libraries on which
-       @schememodname[scheme/base] is implemented. Under Unix and Mac
+       @schememodname[racket/base] is implemented. Under Unix and Mac
        OS X, the executable is called
        @as-index{@exec{mzscheme}}. Under Windows, the executable is
        called @as-index{@exec{MzScheme.exe}}.}
 
  @item{MrEd, which extends @exec{mzscheme} with GUI primitives on
-       which @schememodname[scheme/gui/base] is implemented. Under
+       which @schememodname[racket/gui/base] is implemented. Under
        Unix, the executable is called @as-index{@exec{mred}}. Under
        Windows, the executable is called
        @as-index{@exec{MrEd.exe}}. Under Mac OS X, the @exec{mred}
@@ -44,8 +44,8 @@ On startup, the top-level environment contains no bindings---not even
 that start with @schemeidfont{#%} are defined, but they are not meant
 for direct use, and the set of such modules can change.  For example,
 the @indexed-scheme['#%kernel] module is eventually used to bootstrap
-the implemetation of @schememodname[scheme/base], and
-@scheme['#%mred-kernel] is used for @schememodname[scheme/gui/base].
+the implemetation of @schememodname[racket/base], and
+@scheme['#%mred-kernel] is used for @schememodname[racket/gui/base].
 
 The first action of MzScheme or MrEd is to initialize
 @scheme[current-library-collection-paths] to the result of
@@ -55,8 +55,8 @@ are extra directory paths provided in order in the command line with
 @Flag{S}/@DFlag{search}. An executable created from the MzScheme or
 MrEd executable can embed paths used as @scheme[_pre-extras].
 
-MzScheme and MrEd next @scheme[require] @schememodname[scheme/init]
-and @schememodname[scheme/gui/init], respectively, but only if the
+MzScheme and MrEd next @scheme[require] @schememodname[racket/init]
+and @schememodname[racket/gui/init], respectively, but only if the
 command line does not specify a @scheme[require] flag
 (@Flag{t}/@DFlag{require}, @Flag{l}/@DFlag{lib}, or
 @Flag{u}/@DFlag{require-script}) before any @scheme[eval],
@@ -199,8 +199,8 @@ flags:
         instead of @scheme[graphical-read-eval-print-loop].}
 
   @item{@FlagFirst{n} or @DFlagFirst{no-lib} : Skips requiring the
-        initialization library (i.e., @schememodname[scheme/init] or
-        @schememodname[scheme/gui/init], unless it is changed with the
+        initialization library (i.e., @schememodname[racket/init] or
+        @schememodname[racket/gui/init], unless it is changed with the
         @Flag{I} flag) when not otherwise disabled.}
 
   @item{@FlagFirst{v} or @DFlagFirst{version} : Shows
@@ -399,7 +399,7 @@ language specifies run-time configuration by
 
 ]
 
-The @schememodname[scheme/base] and @schememodname[scheme] languages
+The @schememodname[racket/base] and @schememodname[scheme] languages
 do not currently specify a run-time configuration action.
 
 A @scheme['configure-runtime] query returns a list of vectors, instead

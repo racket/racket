@@ -533,7 +533,7 @@
                         (loop (cdr l1)
                               (+ i 1)))])))
        
-       ;; get-field-counts/struct-names : syntax syntax -> (listof (cons symbol number))
+       ;; get-field-counts/struct-names : syntax syntax -> (listof (cons number symbol))
        ;; returns a list of numbers corresponding to the numbers of fields for each of the parent structs
        (define (get-field-counts/struct-names struct-name provide-stx)
          (let loop ([parent-info-id struct-name])
@@ -544,7 +544,7 @@
                [(boolean? parent-info) null]
                [else
                 (let ([fields (list-ref parent-info 3)]
-                      [constructor (list-ref parent-info 1)])
+                      [predicate (list-ref parent-info 2)])
                   (cond
                     [(and (not (null? fields))
                           (not (last fields)))
@@ -554,16 +554,16 @@
                       provide-stx
                       struct-name)]
                     [else
-                     (cons (cons (length fields) (constructor->struct-name provide-stx constructor))
+                     (cons (cons (length fields) (predicate->struct-name provide-stx predicate))
                            (loop (list-ref parent-info 5)))]))]))))
        
-       (define (constructor->struct-name orig-stx stx)
+       (define (predicate->struct-name orig-stx stx)
          (and stx
-              (let ([m (regexp-match #rx"^make-(.*)$" (format "~a" (syntax-e stx)))])
+              (let ([m (regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx)))])
                 (cond
                   [m (cadr m)]
                   [else (raise-syntax-error 'contract-base.ss
-                                            "unable to cope with a struct maker whose name doesn't begin with `make-'"
+                                            "unable to cope with a struct supertype whose predicate doesn't end with `?'"
                                             orig-stx)]))))
        
        ;; build-constructor-contract : syntax (listof syntax) syntax -> syntax

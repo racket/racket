@@ -6,8 +6,11 @@
          set-empty? set-count
          set-member? set-add set-remove
          set-union set-intersect set-subtract
+         subset?
          set-map set-for-each 
-         (rename-out [*in-set in-set]))
+         (rename-out [*in-set in-set])
+         for/set for/seteq for/seteqv
+         for*/set for*/seteq for*/seteqv)
 
 (define-struct set (ht)
   #:omit-define-syntaxes
@@ -161,6 +164,18 @@
     (for/fold ([set set]) ([set2 (in-list sets)])
       (set-subtract set set2))]))
 
+(define (subset? set2 set1)
+  (unless (set? set2) (raise-type-error 'subset? "set" 0 set2 set1))
+  (unless (set? set1) (raise-type-error 'subset? "set" 0 set2 set1))
+  (let ([ht1 (set-ht set1)]
+        [ht2 (set-ht set2)])
+    (unless (and (eq? (hash-eq? ht1) (hash-eq? ht2))
+                 (eq? (hash-eqv? ht1) (hash-eqv? ht2)))
+      (raise-mismatch-error 'set-subset? "second set's equivalence predicate is not the same as the first set: "
+                            set2))
+    (for/and ([v (in-hash-keys ht2)])
+      (hash-ref ht1 v #f))))
+
 (define (set-map set proc)
   (unless (set? set) (raise-type-error 'set-map "set" 0 set proc))
   (unless (and (procedure? proc)
@@ -206,3 +221,17 @@
            #t
            ;; loop args
            ((hash-iterate-next ht pos)))]])))
+
+(define-syntax-rule (define-for for/fold/derived for/set set)
+  (define-syntax (for/set stx)
+    (syntax-case stx ()
+      [(_ bindings . body)
+       (quasisyntax/loc stx
+         (for/fold/derived #,stx ([s (set)]) bindings (set-add s (let () . body))))])))
+
+(define-for for/fold/derived for/set set)
+(define-for for*/fold/derived for*/set set)
+(define-for for/fold/derived for/seteq seteq)
+(define-for for*/fold/derived for*/seteq seteq)
+(define-for for/fold/derived for/seteqv seteqv)
+(define-for for*/fold/derived for*/seteqv seteqv)

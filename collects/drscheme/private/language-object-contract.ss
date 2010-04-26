@@ -1,14 +1,14 @@
 #reader scribble/reader
-#lang scheme/base
-(require (for-syntax scheme/base)
+#lang racket/base
+(require (for-syntax racket/base)
          scribble/srcdoc
-         scheme/class
-         scheme/gui/base
-         scheme/contract
+         racket/class
+         racket/gui/base
+         racket/contract
          "recon.ss")
-(require/doc scheme/base scribble/manual)
+(require/doc racket/base scribble/manual)
 
-(require (for-meta 2 scheme/base))
+(require (for-meta 2 racket/base))
 
 (provide language-object-abstraction)
 

@@ -774,6 +774,8 @@
      #t]
     [(make pat:head _base _head tail)
      (check-list-pattern tail stx)]
+    [(make pat:ghost _base _ghost tail)
+     (check-list-pattern tail stx)]
     [(make pat:dots _base _head tail)
      (check-list-pattern tail stx)]
     [(make pat:compound _base '#:pair (list _head tail))

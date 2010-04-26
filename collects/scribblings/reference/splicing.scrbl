@@ -1,17 +1,17 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/splicing
-                     scheme/stxparam
-                     scheme/local))
+          (for-label racket/splicing
+                     racket/stxparam
+                     racket/local))
 
 @(define splice-eval (make-base-eval))
-@interaction-eval[#:eval splice-eval (require scheme/splicing 
-                                              scheme/stxparam
-                                              (for-syntax scheme/base))]
+@interaction-eval[#:eval splice-eval (require racket/splicing 
+                                              racket/stxparam
+                                              (for-syntax racket/base))]
 
 @title[#:tag "splicing"]{Local Binding with Splicing Body}
 
-@note-lib-only[scheme/splicing]
+@note-lib-only[racket/splicing]
 
 @deftogether[(
 @defidform[splicing-let]
