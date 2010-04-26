@@ -121,7 +121,7 @@
          __fk)))))
 
 (define-syntax-parameter !
-  (λ (stx) (raise-syntax-error '! "May only be used inside goal expression." stx)))
+  (λ (stx) (raise-syntax-error '! "May only be used syntactically inside %rel or %cut-delimiter expression." stx)))
 
 (define-syntax %cut-delimiter
   (syntax-rules ()
@@ -157,20 +157,23 @@
   (lambda (fk) fk))
 
 (define-syntax %is
-  (syntax-rules (quote)
+  (syntax-rules ()
     ((%is v e)
      (lambda (__fk)
-       ((%= v (%is (1) e __fk)) __fk)))
-    
-    ((%is (1) (quote x) fk) (quote x))
-    ((%is (1) (x ...) fk)
-     ((%is (1) x fk) ...))
-    ((%is (1) x fk)
+       ((%= v (%is/fk e __fk)) __fk)))))
+(define-syntax %is/fk
+  (syntax-rules (quote)
+    ((%is/fk (quote x) fk) (quote x))
+    ((%is/fk (x ...) fk)
+     ((%is/fk x fk) ...))
+    ((%is/fk x fk)
      (if (and (logic-var? x) (unbound-logic-var? x))
          (fk 'fail) (logic-var-val* x)))))
 
 (define ((make-binary-arithmetic-relation f) x y)
-  (%is #t (f x y)))
+  (%and (%is #t (number? x))
+        (%is #t (number? y))
+        (%is #t (f x y))))
 
 (define %=:= (make-binary-arithmetic-relation =))
 (define %> (make-binary-arithmetic-relation >))
