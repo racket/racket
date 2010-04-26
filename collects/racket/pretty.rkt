@@ -403,6 +403,7 @@
               #t))))
 
    (define-struct unquoted (val))
+   (define struct-ellipses (string->uninterned-symbol "..."))
 
    (define (generic-write obj display? width pport
 			  print-graph? print-struct? print-hash-table? print-vec-length? 
@@ -737,7 +738,7 @@
 		  obj pport #t
 		  #f #f
 		  (lambda ()
-                    (let* ([v (struct->vector obj)]
+                    (let* ([v (struct->vector obj struct-ellipses)]
                            [pf? (prefab?! obj v)])
                       (let ([qd (if pf?
                                     (to-quoted out qd "`")
@@ -796,7 +797,8 @@
              (orig-write obj pport)]
             [(and qd (or (symbol? obj)
                          (keyword? obj)))
-             (to-quoted out qd "'")
+             (unless (eq? obj struct-ellipses)
+               (to-quoted out qd "'"))
              (orig-write obj pport)]
             [(unquoted? obj)
              (let ([qd (to-unquoted out qd)])
@@ -894,7 +896,7 @@
                            (let ([qd (to-unquoted out qd)])
                              (write-custom pp* obj pport depth display? width qd))]
 			  [(struct? obj) ; print-struct is on if we got here
-                           (let* ([v (struct->vector obj)]
+                           (let* ([v (struct->vector obj struct-ellipses)]
                                   [pf? (prefab?! obj v)])
                              (let ([qd (if pf?
                                            (to-quoted out qd "`")
