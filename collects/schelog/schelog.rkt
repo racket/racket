@@ -213,8 +213,7 @@
 (define %>= (make-binary-arithmetic-relation >=))
 (define %< (make-binary-arithmetic-relation <))
 (define %<= (make-binary-arithmetic-relation <=))
-(define %=/= (make-binary-arithmetic-relation
-              (lambda (m n) (not (= m n)))))
+(define %=/= (make-binary-arithmetic-relation (compose not =)))
 
 ;type predicates
 
