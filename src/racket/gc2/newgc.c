@@ -1171,7 +1171,8 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
 #ifdef MZ_USE_PLACES
 inline static void master_set_max_size(NewGC *gc)
 {
-  gc->gen0.max_size = gc->gen0.current_size + GEN0_INITIAL_SIZE;
+  gc->gen0.max_size = GEN0_INITIAL_SIZE;
+  gc->gen0.current_size = 0;
 }
 #endif
 
