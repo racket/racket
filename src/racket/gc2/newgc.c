@@ -3280,6 +3280,10 @@ static void repair_heap(NewGC *gc)
               break;
             case PAGE_ATOMIC:
               start += info->size;
+              break;
+            default:
+              printf("Unhandled info->type %i\n", info->type);
+              abort();
             }
             info->mark = 0;
 #ifdef MZ_USE_PLACES
