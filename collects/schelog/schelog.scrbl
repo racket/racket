@@ -726,13 +726,13 @@ increases the time taken by unification, even in cases
 that wouldn't require the check.
 
 Schelog uses the global parameter
-@scheme[schelog-use-occurs-check?] to decide whether to
+@scheme[use-occurs-check?] to decide whether to
 use the occurs check.  By default, this variable is 
 @scheme[#f], ie, Schelog disables the occurs check.  To
 enable the check, 
 
 @schemeblock[
-(schelog-use-occurs-check? #t)
+(use-occurs-check? #t)
 ]
 
 @section[#:tag "and-or"]{Conjuctions and Disjunctions}
@@ -1220,6 +1220,9 @@ structure, ie, not a vector or a list.}
 The goal @scheme[(%copy F S)] unifies with @scheme[S] a copy of the
 frozen structure in @scheme[F].}
 
+@defform[(%cut-delimiter . any)]{
+Introduces a cut point. See @secref{cut}.}
+
 @defpred[(%empty-rel [E any/c] ...)]{
 The goal @scheme[(%empty-rel E ...)] always fails.  The @emph{value}
 @scheme[%empty-rel] is used as a starting value for predicates
@@ -1305,7 +1308,7 @@ the goals @scheme[G], ..., can, in their turn, be shown to succeed.}
 The goal @scheme[(%repeat)] always succeeds (even on retries).
 Used for failure-driven loops.}
 
-@defboolparam[schelog-use-occurs-check? on?]{
+@defboolparam[use-occurs-check? on?]{
 If this is false (the default), 
 Schelog's unification will not use the occurs check.
 If it is true, the occurs check is enabled.}
@@ -1342,8 +1345,10 @@ don't want to name it.  (@scheme[%let], in contrast, introduces new
 lexical names for the logic variables it creates.)
 }
 
-@defgoal[!]{
-The cut goal, see @secref{cut}.}
+@defidform[!]{
+The cut goal, see @secref{cut}.
+                  
+May only be used syntactically inside @scheme[%cut-delimiter] or @scheme[%rel].}
 
 @bibliography[
  @bib-entry[#:key "sicp" 

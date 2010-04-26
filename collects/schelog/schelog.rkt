@@ -1,51 +1,40 @@
 #lang racket
+(require scheme/stxparam)
+
 ;Dorai Sitaram
 ;1989, revised Feb. 1993, Mar. 1997
 
-;logic variables and their manipulation
-(define-struct iref (val) #:mutable)
+(define-struct logic-var (val) #:mutable)
 
 (define *unbound* '_)
 
-;;makes a fresh unbound ref;
 ;;unbound refs point to themselves
 (define (make-ref [val *unbound*])
-  (make-iref val))
+  (make-logic-var val))
 
 (define _ make-ref)
-
-(define ref? iref?)
-(define deref iref-val)
-(define set-ref! set-iref-val!)
-
-(define (unbound-ref? r)
-  (and (ref? r) (eq? (deref r) *unbound*)))
-
+(define (unbound-logic-var? r)
+  (and (logic-var? r) (eq? (logic-var-val r) *unbound*)))
 (define (unbind-ref! r)
-  (set-ref! r *unbound*))
+  (set-logic-var-val! r *unbound*))
 
-;frozen logic vars
 (define-struct frozen (val))
 (define (freeze-ref r)
   (make-ref (make-frozen r)))
 (define (thaw-frozen-ref r)
-  (frozen-val (deref r)))
-(define (frozen-ref? r)
-  (frozen? (deref r)))
+  (frozen-val (logic-var-val r)))
+(define (frozen-logic-var? r)
+  (frozen? (logic-var-val r)))
 
-;deref a structure completely (except the frozen ones, i.e.)
-
-(define (deref* s)
-  (cond ((ref? s)
-         (if (frozen-ref? s) s
-             (deref* (deref s))))
-        ((pair? s) (cons (deref* (car s))
-                         (deref* (cdr s))))
+(define (logic-var-val* s)
+  (cond ((logic-var? s)
+         (if (frozen-logic-var? s) s
+             (logic-var-val* (logic-var-val s))))
+        ((pair? s) (cons (logic-var-val* (car s))
+                         (logic-var-val* (cdr s))))
         ((vector? s)
-         (vector-map deref* s))
+         (vector-map logic-var-val* s))
         (else s)))
-
-;%let introduces new logic variables
 
 (define-syntax %let
   (syntax-rules ()
@@ -53,18 +42,16 @@
      (let ((x (_)) ...)
        . e))))
 
-;the unify predicate
-
-(define schelog-use-occurs-check? (make-parameter #f))
+(define use-occurs-check? (make-parameter #f))
 
 (define (occurs-in? var term)
-  (and (schelog-use-occurs-check?)
+  (and (use-occurs-check?)
        (let loop ((term term))
          (cond ((eqv? var term) #t)
-               ((ref? term)
-                (cond ((unbound-ref? term) #f)
-                      ((frozen-ref? term) #f)
-                      (else (loop (deref term)))))
+               ((logic-var? term)
+                (cond ((unbound-logic-var? term) #f)
+                      ((frozen-logic-var? term) #f)
+                      (else (loop (logic-var-val term)))))
                ((pair? term)
                 (or (loop (car term)) (loop (cdr term))))
                ((vector? term)
@@ -80,29 +67,26 @@
             (fk 'fail)))
          (unify1
           (lambda (t1 t2 s)
-            ;(printf "unify1 ~s ~s~%" t1 t2)
             (cond ((eqv? t1 t2) s)
-                  ((ref? t1)
-                   (cond ((unbound-ref? t1)
+                  ((logic-var? t1)
+                   (cond ((unbound-logic-var? t1)
                           (cond ((occurs-in? t1 t2)
                                  (cleanup-n-fail s))
                                 (else 
-                                 (set-ref! t1 t2)
+                                 (set-logic-var-val! t1 t2)
                                  (cons t1 s))))
-                         ((frozen-ref? t1)
-                          (cond ((ref? t2)
-                                 (cond ((unbound-ref? t2)
-                                        ;(printf "t2 is unbound~%")
+                         ((frozen-logic-var? t1)
+                          (cond ((logic-var? t2)
+                                 (cond ((unbound-logic-var? t2)
                                         (unify1 t2 t1 s))
-                                       ((frozen-ref? t2)
+                                       ((frozen-logic-var? t2)
                                         (cleanup-n-fail s))
                                        (else
-                                        (unify1 t1 (deref t2) s))))
+                                        (unify1 t1 (logic-var-val t2) s))))
                                 (else (cleanup-n-fail s))))
                          (else 
-                          ;(printf "derefing t1~%") 
-                          (unify1 (deref t1) t2 s))))
-                  ((ref? t2) (unify1 t2 t1 s))
+                          (unify1 (logic-var-val t1) t2 s))))
+                  ((logic-var? t2) (unify1 t2 t1 s))
                   ((and (pair? t1) (pair? t2))
                    (unify1 (cdr t1) (cdr t2)
                            (unify1 (car t1) (car t2) s)))
@@ -121,63 +105,53 @@
 
 (define %= unify)
 
-;disjunction
-
 (define-syntax %or
   (syntax-rules ()
     ((%or g ...)
      (lambda (__fk)
        (let/cc __sk
          (let/cc __fk
-             (__sk ((deref* g) __fk)))
-          ...
-          (__fk 'fail))))))
-
-;conjunction
+           (__sk ((logic-var-val* g) __fk)))
+         ...
+         (__fk 'fail))))))
 
 (define-syntax %and
   (syntax-rules ()
     ((%and g ...)
      (lambda (__fk)
-       (let* ((__fk ((deref* g) __fk))
+       (let* ((__fk ((logic-var-val* g) __fk))
               ...)
          __fk)))))
 
-; XXX JM This should work better
-(define (! fk) (error '! "May only be used inside goal expression."))
+(define-syntax-parameter !
+  (λ (stx) (raise-syntax-error '! "May only be used inside goal expression." stx)))
 
-;cut
-
-(define-syntax (%cut-delimiter stx)
-  (syntax-case stx ()
+(define-syntax %cut-delimiter
+  (syntax-rules ()
     ((%cut-delimiter g)
-     (with-syntax ([! (datum->syntax stx '!)])
-       (syntax/loc stx
-         (lambda (__fk)
-           (let ((! (lambda (__fk2) __fk)))
-             ((deref* g) __fk))))))))
+     (lambda (__fk)
+       (let ((this-! (lambda (__fk2) __fk)))
+         (syntax-parameterize 
+          ([! (make-rename-transformer #'this-!)])
+          ((logic-var-val* g) __fk)))))))
 
-;Prolog-like sugar
-
-(define-syntax (%rel stx)
-  (syntax-case stx ()
+(define-syntax %rel
+  (syntax-rules ()
     ((%rel (v ...) ((a ...) subgoal ...) ...)
-     (with-syntax ([! (datum->syntax stx '!)])
-       (syntax/loc stx
-         (lambda __fmls
-           (lambda (__fk)
-             (let/cc __sk
-               (let ((! (lambda (fk1) __fk)))
-                 (%let (v ...)
-                       (let/cc __fk
-                         (let* ((__fk ((%= __fmls (list a ...)) __fk))
-                                (__fk ((deref* subgoal) __fk))
-                                ...)
-                           (__sk __fk)))
-                       ...
-                       (__fk 'fail)))))))))))
-
-;the fail and true preds
+     (lambda __fmls
+       (lambda (__fk)
+         (let/cc __sk
+           (let ((this-! (lambda (fk1) __fk)))
+             (syntax-parameterize 
+              ([! (make-rename-transformer #'this-!)])
+              (%let (v ...)
+                    (let/cc __fk
+                      (let* ((__fk ((%= __fmls (list a ...)) __fk))
+                             (__fk ((logic-var-val* subgoal) __fk))
+                             ...)
+                        (__sk __fk)))
+                    ...
+                    (__fk 'fail))))))))))
 
 (define %fail
   (lambda (fk) (fk 'fail)))
@@ -187,8 +161,6 @@
 
 ;for structures ("functors"), use Scheme's list and vector
 ;functions and anything that's built using them.
-
-;arithmetic
 
 (define-syntax %is
   (syntax-rules (quote)
@@ -200,10 +172,8 @@
     ((%is (1) (x ...) fk)
      ((%is (1) x fk) ...))
     ((%is (1) x fk)
-     (if (and (ref? x) (unbound-ref? x))
-         (fk 'fail) (deref* x)))))
-
-;defining arithmetic comparison operators
+     (if (and (logic-var? x) (unbound-logic-var? x))
+         (fk 'fail) (logic-var-val* x)))))
 
 (define ((make-binary-arithmetic-relation f) x y)
   (%is #t (f x y)))
@@ -215,22 +185,20 @@
 (define %<= (make-binary-arithmetic-relation <=))
 (define %=/= (make-binary-arithmetic-relation (compose not =)))
 
-;type predicates
-
 (define (constant? x)
-  (cond ((ref? x)
-         (cond ((unbound-ref? x) #f)
-               ((frozen-ref? x) #t)
-               (else (constant? (deref x)))))
+  (cond ((logic-var? x)
+         (cond ((unbound-logic-var? x) #f)
+               ((frozen-logic-var? x) #t)
+               (else (constant? (logic-var-val x)))))
         ((pair? x) #f)
         ((vector? x) #f)
         (else #t)))
 
 (define (compound? x)
-  (cond ((ref? x)
-         (cond ((unbound-ref? x) #f)
-               ((frozen-ref? x) #f)
-               (else (compound? (deref x)))))
+  (cond ((logic-var? x)
+         (cond ((unbound-logic-var? x) #f)
+               ((frozen-logic-var? x) #f)
+               (else (compound? (logic-var-val x)))))
         ((pair? x) #t)
         ((vector? x) #t)
         (else #f)))
@@ -243,13 +211,11 @@
   (lambda (fk)
     (if (compound? x) fk (fk 'fail))))
 
-;metalogical type predicates
-
 (define (var? x)
-  (cond ((ref? x)
-         (cond ((unbound-ref? x) #t)
-               ((frozen-ref? x) #f)
-               (else (var? (deref x)))))
+  (cond ((logic-var? x)
+         (cond ((unbound-logic-var? x) #t)
+               ((frozen-logic-var? x) #f)
+               (else (var? (logic-var-val x)))))
         ((pair? x) (or (var? (car x)) (var? (cdr x))))
         ((vector? x) (var? (vector->list x)))
         (else #f)))
@@ -259,8 +225,6 @@
 
 (define (%nonvar x)
   (lambda (fk) (if (var? x) (fk 'fail) fk)))
-
-; negation of unify
 
 (define ((make-negation p) . args) 
   ;basically inlined cut-fail
@@ -273,46 +237,44 @@
 (define %/=
   (make-negation %=))
 
-;identical
-
 (define (ident? x y)
-  (cond ((ref? x)
-         (cond ((unbound-ref? x)
-                (cond ((ref? y)
-                       (cond ((unbound-ref? y) (eq? x y))
-                             ((frozen-ref? y) #f)
-                             (else (ident? x (deref y)))))
+  (cond ((logic-var? x)
+         (cond ((unbound-logic-var? x)
+                (cond ((logic-var? y)
+                       (cond ((unbound-logic-var? y) (eq? x y))
+                             ((frozen-logic-var? y) #f)
+                             (else (ident? x (logic-var-val y)))))
                       (else #f)))
-               ((frozen-ref? x)
-                (cond ((ref? y)
-                       (cond ((unbound-ref? y) #f)
-                             ((frozen-ref? y) (eq? x y))
-                             (else (ident? x (deref y)))))
+               ((frozen-logic-var? x)
+                (cond ((logic-var? y)
+                       (cond ((unbound-logic-var? y) #f)
+                             ((frozen-logic-var? y) (eq? x y))
+                             (else (ident? x (logic-var-val y)))))
                       (else #f)))
-               (else (ident? (deref x) y))))
+               (else (ident? (logic-var-val x) y))))
         ((pair? x)
-         (cond ((ref? y)
-                (cond ((unbound-ref? y) #f)
-                      ((frozen-ref? y) #f)
-                      (else (ident? x (deref y)))))
+         (cond ((logic-var? y)
+                (cond ((unbound-logic-var? y) #f)
+                      ((frozen-logic-var? y) #f)
+                      (else (ident? x (logic-var-val y)))))
                ((pair? y)
                 (and (ident? (car x) (car y))
                      (ident? (cdr x) (cdr y))))
                (else #f)))
         ((vector? x)
-         (cond ((ref? y)
-                (cond ((unbound-ref? y) #f)
-                      ((frozen-ref? y) #f)
-                      (else (ident? x (deref y)))))
+         (cond ((logic-var? y)
+                (cond ((unbound-logic-var? y) #f)
+                      ((frozen-logic-var? y) #f)
+                      (else (ident? x (logic-var-val y)))))
                ((vector? y)
                 (ident? (vector->list x)
-                                (vector->list y)))
+                        (vector->list y)))
                (else #f)))
         (else
-         (cond ((ref? y)
-                (cond ((unbound-ref? y) #f)
-                      ((frozen-ref? y) #f)
-                      (else (ident? x (deref y)))))
+         (cond ((logic-var? y)
+                (cond ((unbound-logic-var? y) #f)
+                      ((frozen-logic-var? y) #f)
+                      (else (ident? x (logic-var-val y)))))
                ((pair? y) #f)
                ((vector? y) #f)
                (else (eqv? x y))))))
@@ -323,30 +285,27 @@
 (define (%/== x y)
   (lambda (fk) (if (ident? x y) (fk 'fail) fk)))
 
-;variables as objects
-
 (define (freeze s)
   (let ((dict '()))
     (let loop ((s s))
-      (cond ((ref? s)
-             (cond ((or (unbound-ref? s) (frozen-ref? s))
+      (cond ((logic-var? s)
+             (cond ((or (unbound-logic-var? s) (frozen-logic-var? s))
                     (let ((x (assq s dict)))
                       (if x (cdr x)
                           (let ((y (freeze-ref s)))
                             (set! dict (cons (cons s y) dict))
                             y))))
-                   ;((frozen-ref? s) s) ;?
-                   (else (loop (deref s)))))
+                   (else (loop (logic-var-val s)))))
             ((pair? s) (cons (loop (car s)) (loop (cdr s))))
             ((vector? s)
              (list->vector (map loop (vector->list s))))
             (else s)))))
 
 (define (melt f)
-  (cond ((ref? f)
-         (cond ((unbound-ref? f) f)
-               ((frozen-ref? f) (thaw-frozen-ref f))
-               (else (melt (deref f)))))
+  (cond ((logic-var? f)
+         (cond ((unbound-logic-var? f) f)
+               ((frozen-logic-var? f) (thaw-frozen-ref f))
+               (else (melt (logic-var-val f)))))
         ((pair? f)
          (cons (melt (car f)) (melt (cdr f))))
         ((vector? f)
@@ -356,15 +315,15 @@
 (define (melt-new f)
   (let ((dict '()))
     (let loop ((f f))
-      (cond ((ref? f)
-             (cond ((unbound-ref? f) f)
-                   ((frozen-ref? f)
+      (cond ((logic-var? f)
+             (cond ((unbound-logic-var? f) f)
+                   ((frozen-logic-var? f)
                     (let ((x (assq f dict)))
                       (if x (cdr x)
                           (let ((y (_)))
                             (set! dict (cons (cons f y) dict))
                             y))))
-                   (else (loop (deref f)))))
+                   (else (loop (logic-var-val f)))))
             ((pair? f) (cons (loop (car f)) (loop (cdr f))))
             ((vector? f)
              (list->vector (map loop (vector->list f))))
@@ -389,15 +348,11 @@
   (lambda (fk)
     ((%= (copy s) c) fk)))
 
-;negation as failure
-
 (define (%not g)
   (lambda (fk)
     (if (let/cc k
-          ((deref* g) (lambda (d) (k #f))))
+          ((logic-var-val* g) (lambda (d) (k #f))))
         (fk 'fail) fk)))
-
-;assert, asserta
 
 (define (%empty-rel . args)
   %fail)
@@ -421,8 +376,6 @@
              (lambda __fmls
                (%or (apply __new-addition __fmls)
                     (apply __old-rel __fmls))))))))
-
-;set predicates
 
 (define (set-cons e s)
   (if (member e s) s (cons e s)))
@@ -450,14 +403,12 @@
         (let* ((acc '())
                (fk-final
                 (lambda (d)
-                  ;;(set! acc (reverse! acc))
                   (sk ((separate-bags fvv bag acc) fk))))
                (fk-retry (goal fk-final)))
-          (set! acc (kons (deref* lv2) acc))
+          (set! acc (kons (logic-var-val* lv2) acc))
           (fk-retry 'retry))))))
 
 (define (separate-bags fvv bag acc)
-  ;;(format #t "Accum: ~s~%" acc)
   (let ((bags (let loop ((acc acc)
                          (current-fvv #f) (current-bag '())
                          (bags '()))
@@ -469,7 +420,6 @@
                             (loop (cdr acc) x-fvv (cons x-lv current-bag) bags)
                             (loop (cdr acc) x-fvv (list x-lv)
                                   (cons (cons current-fvv current-bag) bags)))))))))
-    ;;(format #t "Bags: ~a~%" bags)
     (if (null? bags) (%= bag '())
         (let ((fvv-bag (cons fvv bag)))
           (let loop ((bags bags))
@@ -480,8 +430,6 @@
 (define %bag-of (make-bag-of cons))
 (define %set-of (make-bag-of set-cons))
 
-;%bag-of-1, %set-of-1 hold if there's at least one solution
-
 (define (%bag-of-1 x g b)
   (%and (%bag-of x g b)
         (%= b (cons (_) (_)))))
@@ -490,14 +438,8 @@
   (%and (%set-of x g s)
         (%= s (cons (_) (_)))))
 
-;user interface
-
-;(%which (v ...) query) returns #f if query fails and instantiations
-;of v ... if query succeeds.  In the latter case, type (%more) to
-;retry query for more instantiations.
-
 (define *more-k* (box 'forward))
-(define *more-fk* (box 'forward))
+(define *more-fk* (box (λ (d) (error '%more "No active %which"))))
 
 (define-syntax %which
   (syntax-rules ()
@@ -506,12 +448,12 @@
            (let/cc __qk
              (set-box! *more-k* __qk)
              (set-box! *more-fk*
-                       ((deref* g)
+                       ((logic-var-val* g)
                         (lambda (d)
                           (set-box! *more-fk* #f)
                           ((unbox *more-k*) #f))))
              ((unbox *more-k*)
-              (list (list 'v (deref* v))
+              (list (list 'v (logic-var-val* v))
                     ...)))))))
 
 (define (%more)
@@ -520,9 +462,6 @@
     (if (unbox *more-fk*)
         ((unbox *more-fk*) 'more)
         #f)))
-
-;end of embedding code.  The following are
-;some utilities, written in Schelog
 
 (define (%member x y)
   (%let (xs z zs)
@@ -537,9 +476,6 @@
     (%and p ! q)
     r)))
 
-;the above could also have been written in a more
-;Prolog-like fashion, viz.
-
 (define %append
   (%rel (x xs ys zs)
         (('() ys ys))
@@ -547,15 +483,14 @@
          (%append xs ys zs))))
 
 (define %repeat
-  ;;failure-driven loop
   (%rel ()
         (())
         (() (%repeat))))
 
-(provide %/= %/== %< %<= %= %=/= %== %> %>= %and %append
+(provide %/= %/== %< %<= %= %=/= %== %=:= %> %>= %and %append
          %assert %assert-a %bag-of %bag-of-1 %compound
-         %constant %copy %empty-rel %fail %free-vars
+         %constant %copy %cut-delimiter %empty-rel %fail %free-vars
          %freeze %if-then-else %is %let %melt %melt-new
          %member %nonvar %not %more %or %rel %repeat
-         schelog-use-occurs-check?
+         use-occurs-check?
          %set-of %set-of-1 %true %var %which _ !)
