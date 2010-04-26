@@ -60,7 +60,7 @@
  (%more) => #f
  (%which () (%=:= 'a 'a)) => #f
  (%which () (%=:= 1 2)) => #f
-
+ 
  (%which () (%== 1 1)) => empty
  (%more) => #f
  (%which (x) (%== x x)) => `((x . _))
@@ -121,7 +121,7 @@
          (%more) => `([y . 1])
          (%more) => `([y . 3])
          (%more) => #f))
-         
+ 
  (%which (y) (%let (x) (%bag-of x (%or (%= x 1) (%= x 1) (%= x 2)) y))) => `([y . (1 1 2)])
  (%more) => #f
  ; XXX I don't know a program that would get these outputs
@@ -156,7 +156,8 @@
  (%which () (%constant empty)) => empty
  (%more) => #f
  
- ; XXX %copy
+ (%which (x) (%let (y) (%and (%copy x y) (%= y 1)))) => `([x . _])
+ (%more) => #f
  
  ! =error> "syntactically"
  
@@ -175,9 +176,41 @@
  
  (%which () %fail) => #f
  
- ; XXX %free-vars
+ ; %free-vars example from documentation
+ (local [(define %knows
+           (%rel ()
+                 [('Odysseus 'TeX)]
+                 [('Odysseus 'Scheme)]
+                 [('Odysseus 'Prolog)]
+                 [('Odysseus 'Penelope)]
+                 [('Penelope 'TeX)]
+                 [('Penelope 'Prolog)]
+                 [('Penelope 'Odysseus)]
+                 [('Telemachus 'TeX)]
+                 [('Telemachus 'calculus)]))]
+   (test (%which (someone things-known)
+                 (%let (x)
+                       (%set-of x (%knows someone x)
+                                things-known)))
+         =>
+         `((someone . _) (things-known TeX Scheme Prolog Penelope Odysseus calculus))
+         (%more) => #f
+         (%which (someone things-known)
+                 (%let (x)
+                       (%bag-of x
+                                (%free-vars (someone)
+                                            (%knows someone x))
+                                things-known)))
+         =>
+         `((someone . Odysseus) (things-known TeX Scheme Prolog Penelope))
+         (%more) =>
+         `((someone . Penelope) (things-known TeX Prolog Odysseus))
+         (%more) =>
+         `((someone . Telemachus) (things-known TeX calculus))
+         (%more) =>
+         #f))
  
- ; XXX %freeze
+ (%which (x) (%let (y) (%and (%freeze x y) (%nonvar y)))) => `([x . _])
  
  (%which () (%if-then-else %true %true %true)) => empty
  (%more) => #f
@@ -193,9 +226,11 @@
  (%which () (%let (x) (%= x x))) => empty
  (%more) => #f
  
- ; XXX %melt
+ (%which (x) (%let (y z) (%and (%freeze x y) (%melt y z) (%= z 1)))) => `([x . 1])
+ (%more) => #f
  
- ; XXX %melt-ne
+ (%which (x) (%let (y z) (%and (%freeze x y) (%melt-new y z) (%= z 1)))) => `([x . _])
+ (%more) => #f
  
  (%which () (%member 3 (list 1 2 3))) => empty
  (%more) => #f
@@ -230,7 +265,7 @@
  (let ([rel (%rel () [(1) !] [(1) (%repeat)])])
    (test (%which () (rel 1)) => empty
          (%more) => #f))
-         
+ 
  (local [(define (many-%more n)
            (if (zero? n)
                empty
@@ -245,7 +280,7 @@
  (parameterize ([use-occurs-check? #t])
    (%which () (%let (x) (%= x (cons 1 x)))))
  => #f
-
+ 
  (%which (y) (%let (x) (%set-of x (%or (%= x 1) (%= x 1) (%= x 2)) y))) => `([y . (1 2)])
  (%more) => #f
  ; XXX I don't know a program that would get these outputs
