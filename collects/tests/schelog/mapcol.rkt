@@ -79,7 +79,6 @@
   (%rel ()
     (('(red yellow blue white)))))
 
-;ask (%which (M) (%test-color 'test M)) or
-;ask (%which (M) (%test-color 'western-europe M)) for the
-;respective (non-unique) colorings.
-
+(require tests/eli-tester)
+(test (%which (M) (%test-color 'test M))
+      (%which (M) (%test-color 'western-europe M)))

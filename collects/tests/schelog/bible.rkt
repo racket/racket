@@ -75,6 +75,9 @@
       (%which (kk)
         (%set-of k (%father 'terach k) kk)))))
 
+(check-equal? (terachs-kids-test-2)
+              `((kk (abraham nachor haran))))
+
 ;This is a better definition of the %children predicate.
 ;Uses set predicate %bag-of
 
@@ -93,6 +96,9 @@
                      (%father dad x))
           kids)))))
 
+(check-equal? (dad-kids-test-2)
+              `((dad terach) (kids (abraham nachor haran))))
+
 (define dad-kids-test-3
   ;looks like dad-kids-test-2, but dad is now
   ;existentially quantified.  returns a set of
@@ -102,6 +108,9 @@
       (%which (dad kids)
         (%set-of x (%father dad x)
           kids)))))
+
+(check-equal? (dad-kids-test-3)
+              `((dad _) (kids (abraham nachor haran isaac lot milcah yiscah))))
 
 (define dad-kids-test-4
   ;find the set of dad-kids.
@@ -114,6 +123,9 @@
 	(%set-of (list dad kids)
 	  (%set-of x (%father dad x) kids)
 	  dad-kids)))))
+
+(check-equal? (dad-kids-test-4)
+              `((dad-kids ((_ (abraham nachor haran isaac lot milcah yiscah))))))
 
 (define dad-kids-test-5
   ;the correct solution.  dad is
@@ -128,3 +140,6 @@
                        (%father dad x))
             kids)
 	  dad-kids)))))
+
+(check-equal? (dad-kids-test-5)
+              `((dad-kids ((terach (abraham nachor haran)) (abraham (isaac)) (haran (lot milcah yiscah))))))

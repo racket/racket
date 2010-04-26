@@ -30,7 +30,7 @@
 ;(%count x n) holds if n is the number of elements in x without
 ;counting duplicates
 
-'(define %count
+(define %count*
   (%rel (x n y)
     ((x n) (%remdup x y) (%length y n))))
 
@@ -54,7 +54,7 @@
 
 ;(%reverse x y) holds if the y is the reversal of x
 
-'(define %reverse
+(define %reverse*
   (%rel (x y z yy)
     (('() '()))
     (((cons x y) z) (%reverse y yy) (%append yy (list x) z))))
@@ -71,7 +71,7 @@
 
 ;(%fact n m) holds if m = n!
 
-'(define %fact
+(define %fact*
   (%rel (n n! n-1 n-1!)
     ((0 1))
     ((n n!) (%is n-1 (- n 1)) (%fact n-1 n-1!) (%is n! (* n n-1!)))))

@@ -140,13 +140,9 @@
        (list (list zebra-owner 'owns 'the 'zebra)
 	 (list water-drinker 'drinks 'water))))))
 
-;Load puzzle.scm and type (solve-puzzle %houses)
-
-;Note: This program, as written, requires
-;the occurs check.  Make sure the global
-;*schelog-use-occurs-check?* is set to #t before
-;calling solve-puzzle.  If not, you will get into
-;an infinite loop.
-
-;Note 2: Perhaps there is a way to rewrite the 
+;Note: Perhaps there is a way to rewrite the 
 ;program so that it doesn't rely on the occurs check.
+
+(require "puzzle.rkt" tests/eli-tester)
+(schelog-use-occurs-check? #t)
+(test (solve-puzzle %houses))
