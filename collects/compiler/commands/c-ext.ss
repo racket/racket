@@ -7,7 +7,7 @@
 
 (require (prefix-in compiler:option: "../option.ss")
          "../compiler.ss"
-         tool/command-name
+         raco/command-name
          mzlib/cmdline
          dynext/file
          dynext/compile

@@ -1,5 +1,5 @@
 
-;; Because `racket-tool setup' is used to rebuild .zos, check for "setup"
+;; Because `raco setup' is used to rebuild .zos, check for "setup"
 ;; directly.
 
 ;; Note that this file is listed in "info.ss" so that it never gets a
@@ -19,4 +19,4 @@
                          (cdr
                           (vector->list cmdline)))])
           (dynamic-require 'setup/main #f))
-        (dynamic-require 'tool/tool #f))))
+        (dynamic-require 'raco/raco #f))))

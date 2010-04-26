@@ -5,4 +5,4 @@
 (define mzscheme-launcher-libraries '("planet.ss"))
 (define scribblings '(("planet.scrbl" (multi-page) (tool))))
 
-(define racket-tools '(("planet" planet/planet "manage Planet package installations" 80)))
+(define raco-commands '(("planet" planet/planet "manage Planet package installations" 80)))

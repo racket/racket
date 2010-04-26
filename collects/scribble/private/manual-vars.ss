@@ -14,7 +14,7 @@
 
 (provide/contract
  [struct (box-splice splice) ([run list?])]) ; XXX ugly copying
-(provide deftogether
+(provide deftogether *deftogether
          with-scheme-variables
          with-togetherable-scheme-variables)
 
@@ -109,7 +109,7 @@
 
 
 (define (*deftogether boxes body-thunk)
-  (make-splice
+  (make-box-splice
    (cons
     (make-table
      'boxed

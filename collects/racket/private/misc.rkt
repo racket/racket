@@ -99,7 +99,7 @@
       (let-values ([(base name dir?) (split-path n)])
 	(if dir?
 	    (raise
-	     (make-exn:fail:filesystem
+	     (exn:fail:filesystem
 	      (string->immutable-string
 	       (format "load/cd: cannot open a directory: ~s" n))
 	      (current-continuation-marks)))
@@ -108,7 +108,7 @@
 		(begin
 		  (if (not (directory-exists? base))
 		      (raise
-		       (make-exn:fail:filesystem
+		       (exn:fail:filesystem
 			(string->immutable-string
 			 (format 
 			  "load/cd: directory of ~s does not exist (current directory is ~s)" 

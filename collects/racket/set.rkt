@@ -6,7 +6,7 @@
          set-empty? set-count
          set-member? set-add set-remove
          set-union set-intersect set-subtract
-         set-subset?
+         subset?
          set-map set-for-each 
          (rename-out [*in-set in-set])
          for/set for/seteq for/seteqv
@@ -164,9 +164,9 @@
     (for/fold ([set set]) ([set2 (in-list sets)])
       (set-subtract set set2))]))
 
-(define (set-subset? set1 set2)
-  (unless (set? set1) (raise-type-error 'set-subset? "set" 0 set1 set2))
-  (unless (set? set2) (raise-type-error 'set-subset? "set" 1 set1 set2))
+(define (subset? set2 set1)
+  (unless (set? set2) (raise-type-error 'subset? "set" 0 set2 set1))
+  (unless (set? set1) (raise-type-error 'subset? "set" 0 set2 set1))
   (let ([ht1 (set-ht set1)]
         [ht2 (set-ht set2)])
     (unless (and (eq? (hash-eq? ht1) (hash-eq? ht2))

@@ -37,16 +37,20 @@
                               ";" vc "/PlatformSDK/lib"))))
 
 (require dynext/compile dynext/link mzlib/etc)
-(let ([c  (build-path (this-expression-source-directory) "foreign-test.c")]
-      [o  (build-path (current-directory) "foreign-test.o")]
-      [so (build-path (current-directory)
-                      (bytes->path (bytes-append #"foreign-test"
-                                                 (system-type 'so-suffix))))])
-  (when (file-exists? o) (delete-file o))
-  (when (file-exists? so) (delete-file so))
-  (parameterize ([current-standard-link-libraries '()])
-    (compile-extension #t c o '())
-    (link-extension #t (list o) so)))
+(define delete-test-files
+  (let ([c  (build-path (this-expression-source-directory) "foreign-test.c")]
+        [o  (build-path (current-directory) "foreign-test.o")]
+        [so (build-path (current-directory)
+                        (bytes->path (bytes-append #"foreign-test"
+                                                   (system-type 'so-suffix))))])
+    (when (file-exists? o) (delete-file o))
+    (when (file-exists? so) (delete-file so))
+    (parameterize ([current-standard-link-libraries '()])
+      (compile-extension #t c o '())
+      (link-extension #t (list o) so))
+    (lambda ()
+      (when (file-exists? o) (delete-file o))
+      (when (file-exists? so) (delete-file so)))))
 
 (define test-lib (ffi-lib "./foreign-test"))
 
@@ -217,6 +221,8 @@
   (test #f ptr-equal? #f (ptr-add #f 8))
   (test #t ptr-equal? #f (ptr-add (ptr-add #f 8) -8))
   )
+
+(delete-test-files)
 
 (report-errs)
 

@@ -106,9 +106,7 @@
 	      (list 
 	       (+ "struct:" name)
 	       (if ctr-name 
-                   (if (pair? ctr-name)
-                       (cdr ctr-name)
-                       ctr-name)
+                   ctr-name
                    (+ "make-" name))
 	       (+ name "?"))
 	      (let loop ([l fields])
@@ -341,5 +339,5 @@
    [build-struct-names
     (->* (identifier? (listof identifier?) boolean? boolean?)
          ((or/c #f syntax?) 
-          #:constructor-name (or/c #f identifier? (cons/c identifier? identifier?)))
+          #:constructor-name (or/c #f identifier?))
          (listof identifier?))]))

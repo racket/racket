@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/cmdline
-         tool/command-name
+         raco/command-name
          scheme/pretty)
 
 (define source-files

@@ -329,7 +329,7 @@
       [(hash? v) (:hash-key+val-gen v)]
       [(:sequence? v) (make-sequence who ((:sequence-ref v) v))]
       [else (raise
-             (make-exn:fail:contract
+             (exn:fail:contract
               (format "for: expected a sequence for ~a, got something else: ~v"
                       (if (= 1 (length who))
                           (car who)

@@ -1,0 +1,77 @@
+From: Robby Findler <robby@eecs.northwestern.edu>
+Date: June 16, 2009 5:16:50 PM EDT
+To: Matthias Felleisen <matthias@ccs.neu.edu>
+Subject: Fwd: Universe key handler request
+
+I was cleaning out my inbox and found this. Probably too late, but I
+thought I'd still pass it on in case you'd forgotten. 
+
+Robby
+
+Forwarded conversation
+Subject: Universe key handler request
+------------------------
+
+From: Robby Findler <robby@eecs.northwestern.edu>
+Date: Tue, Feb 24, 2009 at 9:22 AM
+To: matthias@ccs.neu.edu
+
+
+Can you make the key handlers in universe take 3 arguments instead of
+2? That is, it takes a world, a key-event and a boolean where the key
+event does not include 'release and the Boolean indicates if the key
+was pressed down or not.
+
+Robby
+
+----------
+From: Matthias Felleisen <matthias@ccs.neu.edu>
+Date: Tue, Feb 24, 2009 at 9:24 AM
+To: Robby Findler <robby@eecs.northwestern.edu>
+
+
+
+I guess. Why is this useful?
+
+
+----------
+From: Matthias Felleisen <matthias@ccs.neu.edu>
+Date: Tue, Feb 24, 2009 at 9:25 AM
+To: Robby Findler <robby@eecs.northwestern.edu>
+
+
+
+P.S. and how would you signal the release of a key?
+
+
+----------
+From: Robby Findler <robby@eecs.northwestern.edu>
+Date: Tue, Feb 24, 2009 at 9:29 AM
+To: Matthias Felleisen <matthias@ccs.neu.edu>
+
+
+the Boolean!
+
+It is useful for multiple key presses that overlap but it is also
+useful that it matches what you think when you look at a keyboard.
+
+Robby
+
+
+----------
+From: Matthias Felleisen <matthias@ccs.neu.edu>
+Date: Tue, Feb 24, 2009 at 10:19 AM
+To: Robby Findler <robby@eecs.northwestern.edu>
+
+
+
+
+Wait. Say I press a key
+
+Ê*------------------------------||-------------------------------------*
+Êkey-press Ê Êholding it down Êthe event handler is called with #t Ê more key presses, no release?
+
+when does the program find out that I have released the key?
+
+
+

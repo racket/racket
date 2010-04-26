@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/cmdline
-         tool/command-name
+         raco/command-name
          compiler/zo-parse
          compiler/decompile
          scheme/pretty)

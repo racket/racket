@@ -172,7 +172,9 @@ the corresponding import. Each @scheme[tagged-sig-id] in an
 
  [field id
         [id #:mutable]]
- [srtuct-option #:mutable
+ [struct-option #:mutable
+                (code:line #:constructor-name constructor-id)
+                (code:line #:extra-constructor-name constructor-id)
                 #:omit-constructor
                 #:omit-define-syntaxes
                 #:omit-define-values])]{
@@ -222,7 +224,7 @@ of bindings for import or export:
  @item{Each @scheme[(struct id (field ...) struct-option ...)]  adds
  all of the identifiers that would be bound by @scheme[(struct id
  (field ...) field-option ...)], where the extra option
- @scheme[#:omit-constructor] omits the @scheme[id] identifier.}
+ @scheme[#:omit-constructor] omits the constructor identifier.}
 
  @item{Each @scheme[(sig-form-id . datum)] extends the signature in a
  way that is defined by @scheme[sig-form-id], which must be bound by

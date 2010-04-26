@@ -15,15 +15,14 @@
                           (type-ascription (let ([ons (current-namespace)]
                                                  [ns (make-empty-namespace)])
                                              (parameterize ([current-namespace ns])
-                                               (namespace-attach-module ons 'scheme/base ns)
-                                               (namespace-require 'scheme/base)
+                                               (namespace-attach-module ons 'racket/base ns)
+                                               (namespace-require 'racket/base)
                                                (namespace-require 'typed-scheme/private/prims)
                                                (namespace-require 'typed-scheme/private/base-types)
                                                (namespace-require 'typed-scheme/private/base-types-extra)
                                                (expand 'ann-stx))))
                           ty))
 
-#reader typed-scheme/typed-reader
 (define (type-annotation-tests)
   (test-suite 
    "Type Annotation tests"

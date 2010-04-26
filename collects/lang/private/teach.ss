@@ -38,7 +38,8 @@
 	   mzlib/list
 	   mzlib/math
            scheme/match
-           "set-result.ss")
+           "set-result.ss"
+           (only racket/base define-struct))
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
 		      syntax/kerncase
@@ -753,12 +754,13 @@
 			      (lambda (def-proc-names)
 				(with-syntax ([(def-proc-name ...) def-proc-names]
 					      [(proc-name ...) proc-names])
-				  (stepper-syntax-property #`(define-values (def-proc-name ...)
-						       (let ()
-							 (define-struct name_ (field_ ...) (make-inspector))
-							 (values proc-name ...)))
-						   'stepper-define-struct-hint
-						   stx))))])
+				  (stepper-syntax-property 
+                                   #`(define-values (def-proc-name ...)
+                                       (let ()
+                                         (define-struct name_ (field_ ...) #:transparent #:constructor-name #,(car proc-names))
+                                         (values proc-name ...)))
+                                   'stepper-define-struct-hint
+                                   stx))))])
                  (let ([defn
                          (quasisyntax/loc stx
                            (begin
