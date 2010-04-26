@@ -1120,25 +1120,27 @@ and @scheme[%set-of] but fail if the resulting bag or set is empty.
 
 @section[#:tag "glossary"]{Glossary of Schelog Primitives}
 
-@; XXX goal?
-
 @(define-syntax (defpred stx)
    (syntax-case stx ()
      [(_ (id arg ...) pre ...)
         (syntax/loc stx
           (defproc (id arg ...)
-            goal?
+            goal/c
             pre ...))]))
 @(define-syntax-rule (defgoal id pre ...)
-   (defthing id goal? pre ...))
+   (defthing id goal/c pre ...))
 
 @defproc[(logic-var? [x any/c]) boolean?]{Identifies a logic variable.}
 
-@defproc[(atom? [x any/c]) boolean?]{Identifies atomic values that may appear in Schelog programs. Equivalent to the contract @scheme[(or/c number? symbol? string?)].}
+@defproc[(atom? [x any/c]) boolean?]{Identifies atomic values that may appear in Schelog programs. Equivalent to the contract @scheme[(or/c number? symbol? string? empty?)].}
 
 @defproc[(unifiable? [x any/c]) boolean?]{Identifies values that may appear in Schelog programs. Either an @scheme[atom?], @scheme[logic-var?], pair of @scheme[unifiable?], or vector of @scheme[unifiable?]s.}
 
-@defproc[(answer? [x any/c]) boolean?]{Identifies answers returned by @scheme[%more] and @scheme[%which]. Equivalent to the contract @scheme[(or/c false/c (listof (cons/c symbol? atom?)))].}
+@defproc[(answer-value? [x any/c]) boolean?]{Identifies values that may appear in @scheme[answer?]. Either an @scheme[atom?], pair of @scheme[answer-value?], or vector of @scheme[answer-value?]s.}
+
+@defproc[(answer? [x any/c]) boolean?]{Identifies answers returned by @scheme[%more] and @scheme[%which]. Equivalent to the contract @scheme[(or/c false/c (listof (cons/c symbol? answer-value?)))].}
+
+@defthing[goal/c contract?]{A contract for goals.}
 
 @defpred[(%/= [E1 unifiable?] [E2 unifiable?])]{@scheme[%/=] is the negation of @scheme[%=].
 The goal @scheme[(%/= E1 E2)] succeeds if @scheme[E1] can not be unified
@@ -1184,7 +1186,7 @@ numbers and @scheme[E1] is greater than @scheme[E2].}
 The goal @scheme[(%>= E1 E2)] succeeds if @scheme[E1] and @scheme[E2] are bound to
 numbers and @scheme[E1] is greater than or equal to @scheme[E2].}
 
-@defform[(%and G ...) #:contracts ([G goal?])]{
+@defform[(%and G ...) #:contracts ([G goal/c])]{
 The goal @scheme[(%and G ...)] succeeds if all the goals
 @scheme[G], ..., succeed.}
 
@@ -1206,13 +1208,13 @@ local logic variables for @scheme[clause], ....}
 Like @scheme[%assert], but adds the new clauses to the @emph{front}
 of the existing predicate.}
 
-@defpred[(%bag-of [E1 unifiable?] [G goal?] [E2 unifiable?])]{
+@defpred[(%bag-of [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
 The goal @scheme[(%bag-of E1 G E2)] unifies with @scheme[E2] the @emph{bag}
 (multiset)
 of all the
 instantiations of @scheme[E1] for which goal @scheme[G] succeeds.}
 
-@defpred[(%bag-of-1 [E1 unifiable?] [G goal?] [E2 unifiable?])]{
+@defpred[(%bag-of-1 [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
 Similar to @scheme[%bag-of], but fails if the bag is empty.}
 
 @defpred[(%compound [E unifiable?])]{
@@ -1240,7 +1242,7 @@ The goal @scheme[%fail] always fails.}
 
 @defform[(%free-vars (V ...) G)
          #:contracts ([V identifier?]
-                      [G goal?])]{
+                      [G goal/c])]{
 Identifies
 the occurrences of the variables @scheme[V], ..., in goal
 @scheme[G] as free.  It is used to avoid existential quantification
@@ -1253,7 +1255,7 @@ the unbound variables are preserved.  @scheme[F] can henceforth be
 used as @emph{bound} object with no fear of its variables
 getting bound by unification.}
 
-@defpred[(%if-then-else [G1 goal?] [G2 goal?] [G3 goal?])]{
+@defpred[(%if-then-else [G1 goal/c] [G2 goal/c] [G3 goal/c])]{
 The goal @scheme[(%if-then-else G1 G2 G3)] tries @scheme[G1] first: if it
 succeeds, tries @scheme[G2]; if not, tries @scheme[G3].}
 
@@ -1287,7 +1289,7 @@ of the list in @scheme[E2].}
 The goal @scheme[(%nonvar E)] succeeds if @scheme[E] is completely
 instantiated, ie, it has no unbound variable in it.}
 
-@defpred[(%not [G goal?])]{
+@defpred[(%not [G goal/c])]{
 The goal @scheme[(%not G)] succeeds if @scheme[G] fails.}
 
 @defproc[(%more) answer?]{
@@ -1296,7 +1298,7 @@ variables in the most recent @scheme[%which]-form that satisfy the
 goals in that @scheme[%which]-form.  If no more solutions can
 be found, @scheme[%more] returns @scheme[#f].}
 
-@defform[(%or G ...) #:contracts ([G goal?])]{
+@defform[(%or G ...) #:contracts ([G goal/c])]{
 The goal @scheme[(%or G ...)] succeeds if one of @scheme[G], ..., tried
 in that order, succeeds.}
 
@@ -1304,7 +1306,7 @@ in that order, succeeds.}
               ([clause [(E ...) G ...]])
               #:contracts ([V identifier?]
                            [E expression?]
-                           [G goal?])]{
+                           [G goal/c])]{
 Returns a predicate function.
 Each clause @scheme[C] signifies
 that the goal created by applying the predicate object to
@@ -1315,17 +1317,17 @@ the goals @scheme[G], ..., can, in their turn, be shown to succeed.}
 The goal @scheme[(%repeat)] always succeeds (even on retries).
 Used for failure-driven loops.}
 
-@defboolparam[use-occurs-check? on?]{
+@defparam[use-occurs-check? on? boolean?]{
 If this is false (the default), 
 Schelog's unification will not use the occurs check.
 If it is true, the occurs check is enabled.}
 
-@defpred[(%set-of [E1 unifiable?] [G goal?] [E2 unifiable?])]{
+@defpred[(%set-of [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
 The goal @scheme[(%set-of E1 G E2)] unifies with @scheme[E2] the @emph{set}
 of all the
 instantiations of @scheme[E1] for which goal @scheme[G] succeeds.}
 
-@defpred[(%set-of-1 [E1 unifiable?] [G goal?] [E2 unifiable?])]{
+@defpred[(%set-of-1 [E1 unifiable?] [G goal/c] [E2 unifiable?])]{
 Similar to @scheme[%set-of], but fails if the set is empty.}
 
 @defgoal[%true]{
@@ -1338,7 +1340,7 @@ it.}
 
 @defform[(%which (V ...) G ...)
          #:contracts ([V identifier?]
-                      [G goal?])]{
+                      [G goal/c])]{
 Returns an @scheme[answer?]
 of the variables @scheme[V], ..., that satisfies all of @scheme[G],
 ...  If @scheme[G], ..., cannot be satisfied, returns @scheme[#f].

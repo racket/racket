@@ -36,15 +36,6 @@
          (vector-map logic-var-val* s))
         (else s)))
 
-(define (atom? x) (or (number? x) (symbol? x) (string? x)))
-(define unifiable?
-  (match-lambda
-    [(? atom?) #t]
-    [(cons (? unifiable?) (? unifiable?)) #t]
-    [(vector (? unifiable?) ...) #t]
-    [(? logic-var?) #t]
-    [_ #f]))
-
 (define-syntax %let
   (syntax-rules ()
     ((%let (x ...) . e)
@@ -164,9 +155,6 @@
 
 (define %true
   (lambda (fk) fk))
-
-;for structures ("functors"), use Scheme's list and vector
-;functions and anything that's built using them.
 
 (define-syntax %is
   (syntax-rules (quote)
@@ -386,20 +374,20 @@
 (define (set-cons e s)
   (if (member e s) s (cons e s)))
 
+(define-struct goal-with-free-vars (vars subgoal))
+
 (define-syntax %free-vars
   (syntax-rules ()
     ((%free-vars (v ...) g)
-     (cons 'goal-with-free-vars
-           (cons (list v ...) g)))))
-
-(define (goal-with-free-vars? x)
-  (and (pair? x) (eq? (car x) 'goal-with-free-vars)))
+     (make-goal-with-free-vars
+           (list v ...) 
+           g))))
 
 (define ((make-bag-of kons) lv goal bag)
   (let ((fvv '()))
     (when (goal-with-free-vars? goal)
-      (set! fvv (cadr goal))
-      (set! goal (cddr goal)))
+      (set! fvv (goal-with-free-vars-vars goal))
+      (set! goal (goal-with-free-vars-subgoal goal)))
     (make-bag-of-aux kons fvv lv goal bag)))
 
 (define (make-bag-of-aux kons fvv lv goal bag)
@@ -447,12 +435,6 @@
 (define *more-k* (box 'forward))
 (define *more-fk* (box (λ (d) (error '%more "No active %which"))))
 
-(define answer?
-  (match-lambda
-    [#f #t]
-    [(list (cons (? symbol?) (? atom?)) ...) #t]
-    [_ #f]))
-
 (define-syntax %which
   (syntax-rules ()
     ((%which (v ...) g)
@@ -499,11 +481,73 @@
         (())
         (() (%repeat))))
 
-(provide logic-var? answer? atom? unifiable?
-         %/= %/== %< %<= %= %=/= %== %=:= %> %>= %and %append
-         %assert %assert-a %bag-of %bag-of-1 %compound
-         %constant %copy %cut-delimiter %empty-rel %fail %free-vars
-         %freeze %if-then-else %is %let %melt %melt-new
-         %member %nonvar %not %more %or %rel %repeat
-         use-occurs-check?
-         %set-of %set-of-1 %true %var %which _ !)
+(define (atom? x)
+  (or (number? x) (symbol? x) (string? x) (empty? x)))
+(define answer-value?
+  (match-lambda
+    [(? atom?) #t]
+    [(cons (? answer-value?) (? answer-value?)) #t]
+    [(vector (? answer-value?) ...) #t]
+    [x #f]))
+(define answer?
+  (match-lambda
+    [#f #t]
+    [(list (cons (? symbol?) (? answer-value?)) ...) #t]
+    [_ #f]))
+(define unifiable?
+  (match-lambda
+    [(? atom?) #t]
+    [(cons (? unifiable?) (? unifiable?)) #t]
+    [(vector (? unifiable?) ...) #t]
+    [(? logic-var?) #t]
+    [x #f]))
+(define fk? (symbol? . -> . any))
+(define goal/c 
+  (or/c goal-with-free-vars?
+        (fk? . -> . fk?)))
+(define relation/c
+  (->* () () #:rest (listof unifiable?) goal/c))
+
+; XXX Add contracts in theses macro expansions
+(provide %and %assert %assert-a %cut-delimiter %free-vars %is %let
+         %or %rel %which !)
+(provide/contract
+ [goal/c contract?]
+ [logic-var? (any/c . -> . boolean?)]
+ [atom? (any/c . -> . boolean?)]
+ [unifiable? (any/c . -> . boolean?)]
+ [answer-value? (any/c . -> . boolean?)]
+ [answer? (any/c . -> . boolean?)]
+ [%/= (unifiable? unifiable? . -> . goal/c)]
+ [%/== (unifiable? unifiable? . -> . goal/c)]
+ [%< (unifiable? unifiable? . -> . goal/c)]
+ [%<= (unifiable? unifiable? . -> . goal/c)]
+ [%= (unifiable? unifiable? . -> . goal/c)]
+ [%=/= (unifiable? unifiable? . -> . goal/c)]
+ [%=:= (unifiable? unifiable? . -> . goal/c)]
+ [%== (unifiable? unifiable? . -> . goal/c)]
+ [%> (unifiable? unifiable? . -> . goal/c)]
+ [%>= (unifiable? unifiable? . -> . goal/c)]
+ [%append (unifiable? unifiable? unifiable? . -> . goal/c)]
+ [%bag-of (unifiable? goal/c unifiable? . -> . goal/c)]
+ [%bag-of-1 (unifiable? goal/c unifiable? . -> . goal/c)]
+ [%compound (unifiable? . -> . goal/c)]
+ [%constant (unifiable? . -> . goal/c)]
+ [%copy (unifiable? unifiable? . -> . goal/c)]
+ [%empty-rel relation/c]
+ [%fail goal/c]
+ [%freeze (unifiable? unifiable? . -> . goal/c)]
+ [%if-then-else (goal/c goal/c goal/c . -> . goal/c)]
+ [%melt (unifiable? unifiable? . -> . goal/c)]
+ [%melt-new (unifiable? unifiable? . -> . goal/c)]
+ [%member (unifiable? unifiable? . -> . goal/c)]
+ [%nonvar (unifiable? . -> . goal/c)]
+ [%not (goal/c . -> . goal/c)]
+ [%more (-> answer?)]
+ [%repeat (-> goal/c)]
+ [use-occurs-check? (parameter/c boolean?)]
+ [%set-of (unifiable? goal/c unifiable? . -> . goal/c)]
+ [%set-of-1 (unifiable? goal/c unifiable? . -> . goal/c)]
+ [%true goal/c]
+ [%var (unifiable? . -> . goal/c)]
+ [_ (-> logic-var?)]) 
