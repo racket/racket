@@ -3520,13 +3520,6 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
   int next_gc_full;
 
-#ifdef MZ_USE_PLACES
-  if (postmaster_and_place_gc(gc)) {
-    mzrt_rwlock_rdlock(MASTERGCINFO->cangc);
-    /* printf("RD MGCLOCK garbage_collect %i\n", gc->place_id); */
-  }
-#endif
-
   old_mem_use = gc->memory_in_use;
   old_gen0    = gc->gen0.current_size;
 
@@ -3780,8 +3773,6 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {
-    /* printf("UN RD MGCLOCK garbage_collect %i\n", gc->place_id); */
-    mzrt_rwlock_unlock(MASTERGCINFO->cangc);
     if (gc->gc_full) { 
        wait_if_master_in_progress(gc);
     }
