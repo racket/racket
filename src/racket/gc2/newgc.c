@@ -146,11 +146,11 @@ static void GCVERBOSEprintf(const char *fmt, ...) {
 static void GCVERBOSEPAGE(const char *msg, mpage* page) {
   NewGC *gc = GC_get_GC();
   if(postmaster_and_master_gc(gc)) {
-    GCVERBOSEprintf("%s %p %p %p\n", msg, page, page->addr, (void*)((long)page->addr + real_page_size(page)));
+    GCVERBOSEprintf("%s %p: %p %p %p\n", msg, gc, page, page->addr, (void*)((long)page->addr + real_page_size(page)));
   }
 }
 # ifdef KILLING_DEBUG
-static void killing_debug(NewGC *gc, void *info);
+static void killing_debug(NewGC *gc, mpage *page, objhead *info);
 # endif
 #else
 # define GCVERBOSEPAGE(msg, page) /* EMPTY */
@@ -2345,8 +2345,10 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         page->live_size += ohead->size;
         record_backtrace(page, p);
         push_ptr(gc, p);
-      } else GCDEBUG((DEBUGOUTF, "Not marking %p (it's old; %p / %i)\n",
-                      p, page, page->previous_size));
+      } 
+      else {
+        GCDEBUG((DEBUGOUTF, "Not marking %p (it's old; %p / %i)\n", p, page, page->previous_size));
+      }
     } else {
       /* this is a generation 0 object. This means that we do have
          to do all of the above. Fun, fun, fun. */
@@ -3073,10 +3075,10 @@ static void fprintf_buffer(FILE* file, char* buf, int l) {
   fprintf(file, "\n"); 
 }
 
-static void fprintf_debug(NewGC *gc, const char *msg, objhead *info, FILE* file, int isgc) {
+static void fprintf_debug(NewGC *gc, mpage *page, const char *msg, objhead *info, FILE* file, int isgc) {
   if (!isgc || postmaster_and_master_gc(gc)) {
     Scheme_Object *obj = OBJHEAD_TO_OBJPTR(info);
-    fprintf(file, "%s %p ot %i it %i im %i is %i is >> 3 %i\n", msg, obj, obj->type, info->type, info->mark, info->size, info->size >> 3);
+    fprintf(file, "%s %p ot %i it %i im %i is %i is >> 3 %i %p %i\n", msg, obj, obj->type, info->type, info->mark, info->size, info->size >> 3, page, page->marked_on);
     switch (obj->type) {
       case scheme_unix_path_type:
         if (pagemap_find_page(gc->page_maps, SCHEME_PATH_VAL(obj))) {
@@ -3091,7 +3093,9 @@ static void fprintf_debug(NewGC *gc, const char *msg, objhead *info, FILE* file,
         break;
       case scheme_resolved_module_path_type:
         if (pagemap_find_page(gc->page_maps, SCHEME_PTR_VAL(obj))) {
-          fprintf_debug(gc, "RMP ", OBJPTR_TO_OBJHEAD(SCHEME_PTR_VAL(obj)), file, isgc);
+          /*
+            fprintf_debug(gc, page, "RMP ", OBJPTR_TO_OBJHEAD(SCHEME_PTR_VAL(obj)), file, isgc);
+          */
         }
         else {
           fprintf(file, "RMP %p already freed and out of bounds\n", SCHEME_PATH_VAL(obj));
@@ -3102,11 +3106,8 @@ static void fprintf_debug(NewGC *gc, const char *msg, objhead *info, FILE* file,
     }
   }
 }
-static void killing_debug(NewGC *gc, void *info) {
-  fprintf_debug(gc, "killing", (objhead *) info, gcdebugOUT(), 1);
-}
-static void marking_rmp_debug(NewGC *gc, void *info) {
-  fprintf_debug(gc, "marking rmp", (objhead *) info, gcdebugOUT(), 0);
+static void killing_debug(NewGC *gc, mpage *page, objhead *info) {
+  fprintf_debug(gc, page, "killing", info, gcdebugOUT(), 1);
 }
 #endif
 
@@ -3286,7 +3287,7 @@ static void repair_heap(NewGC *gc)
 #endif
           } else {
 #ifdef KILLING_DEBUG
-            killing_debug(gc, info);
+            killing_debug(gc, page, info);
 #endif
             info->dead = 1;
             start += info->size;
