@@ -144,5 +144,5 @@
 ;program so that it doesn't rely on the occurs check.
 
 (require "puzzle.rkt" tests/eli-tester)
-(schelog-use-occurs-check? #t)
+(use-occurs-check? #t)
 (test (solve-puzzle %houses))

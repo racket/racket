@@ -36,6 +36,15 @@
          (vector-map logic-var-val* s))
         (else s)))
 
+(define (atom? x) (or (number? x) (symbol? x) (string? x)))
+(define unifiable?
+  (match-lambda
+    [(? atom?) #t]
+    [(cons (? unifiable?) (? unifiable?)) #t]
+    [(vector (? unifiable?) ...) #t]
+    [(? logic-var?) #t]
+    [_ #f]))
+
 (define-syntax %let
   (syntax-rules ()
     ((%let (x ...) . e)
@@ -60,48 +69,45 @@
 
 (define (unify t1 t2)
   (lambda (fk)
-    (letrec
-        ((cleanup-n-fail
-          (lambda (s)
-            (for-each unbind-ref! s)
-            (fk 'fail)))
-         (unify1
-          (lambda (t1 t2 s)
-            (cond ((eqv? t1 t2) s)
-                  ((logic-var? t1)
-                   (cond ((unbound-logic-var? t1)
-                          (cond ((occurs-in? t1 t2)
-                                 (cleanup-n-fail s))
-                                (else 
-                                 (set-logic-var-val! t1 t2)
-                                 (cons t1 s))))
-                         ((frozen-logic-var? t1)
-                          (cond ((logic-var? t2)
-                                 (cond ((unbound-logic-var? t2)
-                                        (unify1 t2 t1 s))
-                                       ((frozen-logic-var? t2)
-                                        (cleanup-n-fail s))
-                                       (else
-                                        (unify1 t1 (logic-var-val t2) s))))
-                                (else (cleanup-n-fail s))))
-                         (else 
-                          (unify1 (logic-var-val t1) t2 s))))
-                  ((logic-var? t2) (unify1 t2 t1 s))
-                  ((and (pair? t1) (pair? t2))
-                   (unify1 (cdr t1) (cdr t2)
-                           (unify1 (car t1) (car t2) s)))
-                  ((and (string? t1) (string? t2))
-                   (if (string=? t1 t2) s
-                       (cleanup-n-fail s)))
-                  ((and (vector? t1) (vector? t2))
-                   (unify1 (vector->list t1)
-                           (vector->list t2) s))
-                  (else
-                   (for-each unbind-ref! s)
-                   (fk 'fail))))))
-      (let ((s (unify1 t1 t2 '())))
-        (lambda (d)
-          (cleanup-n-fail s))))))
+    (define (cleanup-n-fail s)
+      (for-each unbind-ref! s)
+      (fk 'fail))
+    (define (unify1 t1 t2 s)
+      (cond ((eqv? t1 t2) s)
+            ((logic-var? t1)
+             (cond ((unbound-logic-var? t1)
+                    (cond ((occurs-in? t1 t2)
+                           (cleanup-n-fail s))
+                          (else 
+                           (set-logic-var-val! t1 t2)
+                           (cons t1 s))))
+                   ((frozen-logic-var? t1)
+                    (cond ((logic-var? t2)
+                           (cond ((unbound-logic-var? t2)
+                                  (unify1 t2 t1 s))
+                                 ((frozen-logic-var? t2)
+                                  (cleanup-n-fail s))
+                                 (else
+                                  (unify1 t1 (logic-var-val t2) s))))
+                          (else (cleanup-n-fail s))))
+                   (else 
+                    (unify1 (logic-var-val t1) t2 s))))
+            ((logic-var? t2) (unify1 t2 t1 s))
+            ((and (pair? t1) (pair? t2))
+             (unify1 (cdr t1) (cdr t2)
+                     (unify1 (car t1) (car t2) s)))
+            ((and (string? t1) (string? t2))
+             (if (string=? t1 t2) s
+                 (cleanup-n-fail s)))
+            ((and (vector? t1) (vector? t2))
+             (unify1 (vector->list t1)
+                     (vector->list t2) s))
+            (else
+             (for-each unbind-ref! s)
+             (fk 'fail))))
+    (define s (unify1 t1 t2 '()))
+    (lambda (d)
+      (cleanup-n-fail s))))
 
 (define %= unify)
 
@@ -441,6 +447,12 @@
 (define *more-k* (box 'forward))
 (define *more-fk* (box (λ (d) (error '%more "No active %which"))))
 
+(define answer?
+  (match-lambda
+    [#f #t]
+    [(list (cons (? symbol?) (? atom?)) ...) #t]
+    [_ #f]))
+
 (define-syntax %which
   (syntax-rules ()
     ((%which (v ...) g)
@@ -453,7 +465,7 @@
                           (set-box! *more-fk* #f)
                           ((unbox *more-k*) #f))))
              ((unbox *more-k*)
-              (list (list 'v (logic-var-val* v))
+              (list (cons 'v (logic-var-val* v))
                     ...)))))))
 
 (define (%more)
@@ -487,7 +499,8 @@
         (())
         (() (%repeat))))
 
-(provide %/= %/== %< %<= %= %=/= %== %=:= %> %>= %and %append
+(provide logic-var? answer? atom? unifiable?
+         %/= %/== %< %<= %= %=/= %== %=:= %> %>= %and %append
          %assert %assert-a %bag-of %bag-of-1 %compound
          %constant %copy %cut-delimiter %empty-rel %fail %free-vars
          %freeze %if-then-else %is %let %melt %melt-new

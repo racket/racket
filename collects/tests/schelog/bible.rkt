@@ -53,7 +53,7 @@
       (%children-1 'terach cc))))
 
 (check-equal? (terachs-kids-test)
-              `((cc (haran nachor abraham))))
+              `((cc . (haran nachor abraham))))
 
 (define dad-kids-test
   ;find a father and all his children.  Returns
@@ -65,7 +65,7 @@
       (%children-1 f cc))))
 
 (check-equal? (dad-kids-test)
-              `((f terach) (cc (haran nachor abraham))))
+              `((f . terach) (cc . (haran nachor abraham))))
 
 (define terachs-kids-test-2
   ;find all the kids of Terach, using %set-of.
@@ -76,7 +76,7 @@
         (%set-of k (%father 'terach k) kk)))))
 
 (check-equal? (terachs-kids-test-2)
-              `((kk (abraham nachor haran))))
+              `((kk . (abraham nachor haran))))
 
 ;This is a better definition of the %children predicate.
 ;Uses set predicate %bag-of
@@ -97,7 +97,7 @@
           kids)))))
 
 (check-equal? (dad-kids-test-2)
-              `((dad terach) (kids (abraham nachor haran))))
+              `((dad . terach) (kids . (abraham nachor haran))))
 
 (define dad-kids-test-3
   ;looks like dad-kids-test-2, but dad is now
@@ -110,7 +110,7 @@
           kids)))))
 
 (check-equal? (dad-kids-test-3)
-              `((dad _) (kids (abraham nachor haran isaac lot milcah yiscah))))
+              `((dad . _) (kids . (abraham nachor haran isaac lot milcah yiscah))))
 
 (define dad-kids-test-4
   ;find the set of dad-kids.
@@ -125,7 +125,7 @@
 	  dad-kids)))))
 
 (check-equal? (dad-kids-test-4)
-              `((dad-kids ((_ (abraham nachor haran isaac lot milcah yiscah))))))
+              `((dad-kids . ((_ (abraham nachor haran isaac lot milcah yiscah))))))
 
 (define dad-kids-test-5
   ;the correct solution.  dad is
@@ -142,4 +142,4 @@
 	  dad-kids)))))
 
 (check-equal? (dad-kids-test-5)
-              `((dad-kids ((terach (abraham nachor haran)) (abraham (isaac)) (haran (lot milcah yiscah))))))
+              `((dad-kids . ((terach (abraham nachor haran)) (abraham (isaac)) (haran (lot milcah yiscah))))))

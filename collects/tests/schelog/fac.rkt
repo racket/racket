@@ -21,6 +21,6 @@
  => #f
  (%which (x)
          (%factorial 3 x))
- => `((x 6))
+ => `((x . 6))
  (%more)
  => #f)

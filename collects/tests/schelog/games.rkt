@@ -89,4 +89,4 @@
 ;;((michael is the australian) (richard plays tennis))
 
 (check-equal? (solve-puzzle %games)
-              '((solution= ((michael is the australian) (richard plays tennis)))))
+              '((solution= . ((michael is the australian) (richard plays tennis)))))
