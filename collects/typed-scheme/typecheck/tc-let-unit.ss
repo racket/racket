@@ -109,7 +109,7 @@
         [else
          ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a~n" (syntax-e v))) vs)) names)
          (do-check (lambda (stx e t) (tc-expr/check e t))
-                   names (map (lambda (l) (map (compose ret get-type) l)) names) form exprs body clauses expected)]))))
+                   names (map (λ (l) (ret (map get-type l))) names) form exprs body clauses expected)]))))
 
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
