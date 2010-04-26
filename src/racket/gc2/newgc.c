@@ -1946,8 +1946,6 @@ static void wait_if_master_in_progress(NewGC *gc) {
       }
     }
     if (last_one_here) {
-      int i = 0;
-      int maxid = MASTERGCINFO->next_GC_id;
       NewGC *saved_gc;
       
       GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
@@ -1967,9 +1965,13 @@ static void wait_if_master_in_progress(NewGC *gc) {
         GCVERBOSEprintf("END MASTER COLLECTION\n");
 #endif
 
-        /* wake everyone back up */  
-        for (i=2; i < maxid; i++) {
-          mzrt_sema_post(MASTERGCINFO->wait_sema);
+        {
+          int i = 0;
+          int maxid = MASTERGCINFO->next_GC_id;
+          /* wake everyone back up */  
+          for (i=2; i < maxid; i++) {
+            mzrt_sema_post(MASTERGCINFO->wait_sema);
+          }
         }
       }
       GC_switch_back_from_master(saved_gc);
@@ -2258,7 +2260,9 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
 #endif
   }
 
+  /* MED OR BIG PAGE */
   if(page->size_class) {
+    /* BIG PAGE */
     if(page->size_class > 1) {
       /* This is a bigpage. The first thing we do is see if its been marked
          previously */
@@ -2315,7 +2319,9 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       record_backtrace(page, p);
       push_ptr(gc, p);
     }
-  } else {
+  } 
+  /* SMALL_PAGE from gen0 or gen1 */
+  else {
     objhead *ohead = OBJPTR_TO_OBJHEAD(p);
 
     if(ohead->mark) {
