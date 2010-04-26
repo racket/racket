@@ -17,7 +17,7 @@ typedef struct mpage {
   unsigned char mprotected    :1;
 */
   unsigned char back_pointers ;
-  unsigned char size_class    ; /* 1 => med; 2 => big; 3 => big marked */
+  unsigned char size_class    ; /* 0 => small; 1 => med; 2 => big; 3 => big marked */
   unsigned char page_type     ; 
   unsigned char marked_on     ;
   unsigned char has_new       ;

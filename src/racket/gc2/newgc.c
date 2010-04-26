@@ -692,7 +692,7 @@ static void *allocate_big(const size_t request_size_bytes, int type)
     return objptr;
   }
 }
-
+#define MED_NEXT_SEARCH_SLOT(page) ((page)->previous_size)
 inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int pos) {
   mpage *page;
   int n;
@@ -702,11 +702,11 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
   page->size = sz;
   page->size_class = 1;
   page->page_type = PAGE_BIG;
-  page->previous_size = PREFIX_SIZE;
+  MED_NEXT_SEARCH_SLOT(page) = PREFIX_SIZE;
   page->live_size = sz;
   GCVERBOSEPAGE("NEW MED PAGE", page);
 
-  for (n = page->previous_size; ((n + sz) <= APAGE_SIZE); n += sz) {
+  for (n = MED_NEXT_SEARCH_SLOT(page); ((n + sz) <= APAGE_SIZE); n += sz) {
     objhead *info = (objhead *)PTR(NUM(page->addr) + n);
     info->dead = 1;
     info->size = gcBYTES_TO_WORDS(sz);
@@ -728,12 +728,12 @@ inline static void *medium_page_realloc_dead_slot(NewGC *gc, const int sz, const
   mpage *page;
 
   for (page = gc->med_freelist_pages[pos]; page; page = gc->med_freelist_pages[pos] = page->prev) {
-    for (n = page->previous_size; ((n + sz) <= APAGE_SIZE); n += sz) {
+    for (n = MED_NEXT_SEARCH_SLOT(page); ((n + sz) <= APAGE_SIZE); n += sz) {
       objhead * info = (objhead *)PTR(NUM(page->addr) + n);
       if (info->dead) {
         void *p;
 
-        page->previous_size = (n + sz);
+        MED_NEXT_SEARCH_SLOT(page) = (n + sz);
         page->live_size += sz;
 
         info->dead = 0;
@@ -798,7 +798,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
       objhead *info;
 
       page = create_new_medium_page(gc, sz, pos);
-      info = (objhead *)PTR(NUM(page->addr) + page->previous_size);
+      info = (objhead *)PTR(NUM(page->addr) + MED_NEXT_SEARCH_SLOT(page));
 
       info->dead = 0;
       info->type = type;
@@ -817,6 +817,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
   }
 }
 
+#define GEN0_ALLOC_SIZE(page) ((page)->previous_size)
 inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_size) {
   mpage *newmpage;
 
@@ -824,7 +825,7 @@ inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_
   newmpage->addr = malloc_dirty_pages(gc, page_size, APAGE_SIZE);
   newmpage->size_class = 0;
   newmpage->size = PREFIX_SIZE;
-  newmpage->previous_size = page_size;
+  GEN0_ALLOC_SIZE(newmpage) = page_size;
   pagemap_add_with_size(gc->page_maps, newmpage, page_size);
   GCVERBOSEPAGE("NEW gen0", newmpage);
 
@@ -877,7 +878,7 @@ unsigned long GC_make_jit_nursery_page(int count) {
 }
 
 inline static void gen0_free_jit_nursery_page(NewGC *gc, mpage *page) {
-  gen0_free_nursery_mpage(gc, page, page->previous_size);
+  gen0_free_nursery_mpage(gc, page, GEN0_ALLOC_SIZE(page));
 }
 
 inline static mpage *gen0_create_new_mpage(NewGC *gc) {
@@ -1170,7 +1171,8 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
 #ifdef MZ_USE_PLACES
 inline static void master_set_max_size(NewGC *gc)
 {
-  gc->gen0.max_size = gc->gen0.current_size + GEN0_INITIAL_SIZE;
+  gc->gen0.max_size = GEN0_INITIAL_SIZE;
+  gc->gen0.current_size = 0;
 }
 #endif
 
@@ -1944,8 +1946,6 @@ static void wait_if_master_in_progress(NewGC *gc) {
       }
     }
     if (last_one_here) {
-      int i = 0;
-      int maxid = MASTERGCINFO->next_GC_id;
       NewGC *saved_gc;
       
       GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
@@ -1965,9 +1965,13 @@ static void wait_if_master_in_progress(NewGC *gc) {
         GCVERBOSEprintf("END MASTER COLLECTION\n");
 #endif
 
-        /* wake everyone back up */  
-        for (i=2; i < maxid; i++) {
-          mzrt_sema_post(MASTERGCINFO->wait_sema);
+        {
+          int i = 0;
+          int maxid = MASTERGCINFO->next_GC_id;
+          /* wake everyone back up */  
+          for (i=2; i < maxid; i++) {
+            mzrt_sema_post(MASTERGCINFO->wait_sema);
+          }
         }
       }
       GC_switch_back_from_master(saved_gc);
@@ -2256,7 +2260,9 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
 #endif
   }
 
+  /* MED OR BIG PAGE */
   if(page->size_class) {
+    /* BIG PAGE */
     if(page->size_class > 1) {
       /* This is a bigpage. The first thing we do is see if its been marked
          previously */
@@ -2313,7 +2319,9 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       record_backtrace(page, p);
       push_ptr(gc, p);
     }
-  } else {
+  } 
+  /* SMALL_PAGE from gen0 or gen1 */
+  else {
     objhead *ohead = OBJPTR_TO_OBJHEAD(p);
 
     if(ohead->mark) {
