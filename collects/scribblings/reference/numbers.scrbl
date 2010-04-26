@@ -453,7 +453,7 @@ used.
 @defproc[(log [z number?]) number?]{ Returns the natural logarithm of
  @scheme[z].  The result is normally inexact, but it is
  @scheme[0] when @scheme[z] is an exact @scheme[1]. When @scheme[z]
- is exact @scheme[0], @exnraise[exn:fail:contract:divide-by-zero].}
+ is exact @scheme[0], @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(log (exp 1)) (log 2+3i) (log 1)]}
 
@@ -883,7 +883,7 @@ numbers}, which are also known as @deftech{flonums}. Flonum-specific
 operations provide can better performance when used consistently, and
 they are as safe as generic operations like @scheme[+].
 
-@margin-note{See @guidesecref["fixnums+flonums"].}
+@guidealso["fixnums+flonums"]
 
 @subsection{Flonum Arithmetic}
 
@@ -1080,7 +1080,7 @@ Safe versions of @scheme[unsafe-fx=], @scheme[unsafe-fx<],
 
 @note-lib[racket/math]
 
-@defthing[pi real]{
+@defthing[pi real?]{
 
 An approximation to the ratio of a circle's circumference to its
 diameter: @number->string[pi].}

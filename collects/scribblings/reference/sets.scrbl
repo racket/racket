@@ -52,10 +52,12 @@ to a later element takes precedence over the later element.}
 Returns @scheme[#t] if @scheme[set] has no members, @scheme[#f]
 otherwise.}
 
+
 @defproc[(set-member? [set set?] [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is in @scheme[set], @scheme[#f]
 otherwise.}
+
 
 @defproc[(set-add [set set?] [v any/c]) set?]{
 
@@ -99,6 +101,15 @@ given @scheme[set]s must use the same equivalence predicate
 (@scheme[equal?], @scheme[eq?], or @scheme[eqv?]).  This operation
 runs in time proportional to the total size of all given
 @scheme[set]s except the first one.}
+
+
+@defproc[(set-subset? [set set?] [set2 set?]) boolean?]{
+
+Returns @scheme[#t] if every member of @scheme[set2] is in
+@scheme[set], @scheme[#f] otherwise. The @scheme[set] and
+@scheme[set2] must use the same equivalence predicate
+(@scheme[equal?], @scheme[eq?], or @scheme[eqv?]).  This operation
+runs in time proportional to the size of @scheme[set2].}
 
 
 @defproc[(set-map [set set?]

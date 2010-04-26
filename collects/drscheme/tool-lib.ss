@@ -9,7 +9,7 @@ all of the names in the tools library, for use defining keybindings
 |#
 (require scheme/class
          scheme/gui/base
-         scheme/unit
+         (except-in scheme/unit struct)
          scheme/contract
          scheme/class
          
