@@ -4,7 +4,7 @@
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
 (require "signatures.ss"
          (rep type-rep filter-rep object-rep)
-         (rename-in (types convenience subtype union utils comparison remove-intersect abbrev)
+         (rename-in (types convenience subtype union utils comparison remove-intersect abbrev filter-ops)
                     [remove *remove])
          (env lexical-env type-environments)
          (r:infer infer)
@@ -53,6 +53,7 @@
          ;(printf "old els-props: ~a\n" (env-props (lexical-env)))
          ;(printf "fs-: ~a~n" fs-)
          ;(printf "els-props: ~a~n" (env-props env-els))
+         ;(printf "thn-props: ~a~n" (env-props env-thn))
          ;(printf "new-els-props: ~a~n" new-els-props)
          ;; if we have the same number of values in both cases
          (cond [(= (length ts) (length us))

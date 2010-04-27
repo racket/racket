@@ -4,7 +4,7 @@
          (prefix-in r: "../utils/utils.ss")
          scheme/match (r:rep filter-rep rep-utils type-rep) unstable/struct
          (except-in (r:utils tc-utils) make-env)
-         (r:typecheck tc-metafunctions))
+         #;(r:typecheck tc-metafunctions))
 
 (provide current-tvars
          extend

@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss")
-(require (rename-in (types subtype convenience remove-intersect union utils)                   
+(require (rename-in (types subtype convenience remove-intersect union utils filter-ops)                   
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
@@ -16,28 +16,23 @@
   (begin (d/c (name . args) c . body)
          (p/c [name c])))
 
-(define (name-ref=? a b)
-  (or (eq? a b)
-      (and (identifier? a)
-           (identifier? b)
-           (free-identifier=? a b))))
-
-(d/c/p (open-Result r objs)
-       (-> Result? (listof Object?) (values Type/c FilterSet? Object?))
+(d/c/p (open-Result r objs ts)
+       (-> Result? (listof Object?) (listof Type/c) (values Type/c FilterSet? Object?))
        (match r
          [(Result: t fs old-obj)
           (for/fold ([t t] [fs fs] [old-obj old-obj])
-            ([(o k) (in-indexed (in-list objs))])
+            ([(o k) (in-indexed (in-list objs))]
+             [arg-ty (in-list ts)])
             (values (subst-type t k o #t)
-                    (subst-filter-set fs k o #t)
+                    (subst-filter-set fs k o #t arg-ty)
                     (subst-object old-obj k o #t)))]))
 
-(d/c/p (subst-filter-set fs k o polarity)
-       (-> FilterSet? name-ref/c Object? boolean? FilterSet?)
+(d/c/p (subst-filter-set fs k o polarity t)
+       (-> FilterSet? name-ref/c Object? boolean? Type/c FilterSet?)
   (match fs
     [(FilterSet: f+ f-)
-     (combine (subst-filter f+ k o polarity) 
-	      (subst-filter f- k o polarity))]))
+     (combine (subst-filter (-and (make-TypeFilter t null k) f+) k o polarity)
+	      (subst-filter (-and (make-TypeFilter t null k) f-) k o polarity))]))
 
 (d/c/p (subst-type t k o polarity)
      (-> Type/c name-ref/c Object? boolean? Type/c)

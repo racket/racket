@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss")
-(require (rename-in (types subtype convenience remove-intersect union utils)                   
+(require (rename-in (types subtype convenience remove-intersect union utils filter-ops)                   
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
@@ -146,7 +146,9 @@
                (if (OrFilter? new-or)
                    (loop (cons new-or derived-props) derived-atoms (cdr worklist))
                    (loop derived-props derived-atoms (cons new-or (cdr worklist)))))]
+            [(TypeFilter: (== (Un) type-equal?) _ _) (set-box! flag #f) (values derived-props derived-atoms)]
             [(TypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
+            [(NotTypeFilter: (== Univ type-equal?) _ _) (set-box! flag #f) (values derived-props derived-atoms)]
             [(NotTypeFilter: _ _ _) (loop derived-props (cons p derived-atoms) (cdr worklist))]
             [(Top:) (loop derived-props derived-atoms (cdr worklist))]
             [(Bot:) (set-box! flag #f) (values derived-props derived-atoms)]

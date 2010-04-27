@@ -748,15 +748,19 @@
          (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
      ;(printf "got to here 2 ~a ~a ~a ~n" dom names o-a)
      (let* ([dom-count (length dom)]
-            [arg-count (+ dom-count (if rest 1 0) (length kws))]
-            [o-a (for/list ([nm (in-range arg-count)]
-                            [oa (in-sequence-forever (in-list o-a) (make-Empty))])
-                   (if (>= nm dom-count) (make-Empty) oa))])
-       (define-values (t-r f-r o-r)
-         (for/lists (t-r f-r o-r) 
-           ([r (in-list results)])
-           (open-Result r o-a)))
-       (ret t-r f-r o-r))]
+            [arg-count (+ dom-count (if rest 1 0) (length kws))])
+       (let-values
+           ([(o-a t-a) (for/lists (os ts)
+                         ([nm (in-range arg-count)]
+                          [oa (in-sequence-forever (in-list o-a) (make-Empty))]
+                          [ta (in-sequence-forever (in-list t-a) (Un))])
+                         (values (if (>= nm dom-count) (make-Empty) oa)
+                                 ta))])
+         (define-values (t-r f-r o-r)
+           (for/lists (t-r f-r o-r) 
+             ([r (in-list results)])
+             (open-Result r o-a t-a)))
+         (ret t-r f-r o-r)))]
     [((arr: _ _ _ drest '()) _)
      (int-err "funapp with drest args NYI")]
     [((arr: _ _ _ _ kws) _)
