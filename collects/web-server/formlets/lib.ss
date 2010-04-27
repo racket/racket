@@ -13,13 +13,11 @@
 
 (define (cross f p)
   (lambda (i)
-    (let*-values ([(x1 g i) (f i)]
-                  [(x2 q i) (p i)])
+    (let*-values ([(x1 a1 i) (f i)]
+                  [(x2 a2 i) (p i)])
       (values (append x1 x2)
               (lambda (env)
-                (let ([ge (g env)]
-                      [qe (q env)])
-                  (ge qe)))
+                (call-with-values (lambda () (a2 env)) (a1 env)))
               i))))
 
 ;; This is gross because OCaml auto-curries
@@ -70,23 +68,25 @@
 (define xexpr-forest/c
   (listof pretty-xexpr/c))
 
-(define (formlet/c c)
+(define-syntax-rule (formlet/c* c)
   (integer? . -> . 
             (values xexpr-forest/c
-                    ((listof binding?) . -> . (coerce-contract 'formlet/c c))
+                    ((listof binding?) . -> . c)
                     integer?)))
+(define formlet*/c (formlet/c* any))
+(define (formlet/c . c)
+  (formlet/c* (apply values (map (curry coerce-contract 'formlet/c) c))))
 
 (define alpha any/c)
 (define beta any/c)
 
 (provide/contract
  [xexpr-forest/c contract?]
- [formlet/c (any/c . -> . contract?)]
+ [formlet*/c contract?]
+ [formlet/c (() () #:rest (listof any/c) . ->* . contract?)]
  [pure (alpha
         . -> . (formlet/c alpha))]
- [cross ((formlet/c (alpha . -> . beta))
-         (formlet/c alpha)
-         . -> . (formlet/c beta))]
+ [cross ((formlet/c procedure?) formlet*/c . -> . formlet*/c)]
  [cross* (((formlet/c (() () #:rest (listof alpha) . ->* . beta)))
           () #:rest (listof (formlet/c alpha))
           . ->* . (formlet/c beta))]
@@ -95,4 +95,4 @@
  [text (string? . -> . (formlet/c procedure?))]
  [tag-xexpr (symbol? (listof (list/c symbol? string?)) (formlet/c alpha) . -> . (formlet/c alpha))]
  [formlet-display ((formlet/c alpha) . -> . xexpr-forest/c)]
- [formlet-process ((formlet/c alpha) request? . -> . alpha)])
+ [formlet-process (formlet*/c request? . -> . any)])

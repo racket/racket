@@ -4,9 +4,9 @@
          "lib.ss")
 
 (provide/contract
- [send/formlet (((formlet/c any/c))
+ [send/formlet ((formlet*/c)
                 (#:wrap (pretty-xexpr/c . -> . response/c))                 
-                . ->* . any/c)])
+                . ->* . any)])
 
 (define (send/formlet f
                       #:wrap 
@@ -23,7 +23,7 @@
               ,@(formlet-display f)))))))
 
 (provide/contract
- [embed-formlet (embed/url/c (formlet/c any/c) . -> . pretty-xexpr/c)])
+ [embed-formlet (embed/url/c formlet*/c . -> . pretty-xexpr/c)])
 
 (define (embed-formlet embed/url f)
   `(form ([action ,(embed/url
