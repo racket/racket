@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/port
-         scheme/path
-         scheme/list
-         scheme/string
+(require racket/port
+         racket/path
+         racket/list
+         racket/string
          syntax/moddep
-         scheme/gui/dynamic
+         racket/gui/dynamic
          planet/config)
 
 (provide gui?
@@ -53,7 +53,7 @@
 
 (define gui? (gui-available?))
 
-(define-syntax mz/mr ; use a value for mzscheme, or pull a mred binding
+(define-syntax mz/mr ; use a value for mzracket, or pull a mred binding
   (syntax-rules ()
     [(mz/mr mzval mrsym)
      (if gui? (gui-dynamic-require 'mrsym) mzval)]))
@@ -479,8 +479,8 @@
          ;; needed to make the test-engine work
          (let ([orig-ns (namespace-anchor->empty-namespace anchor)])
            (parameterize ([current-namespace orig-ns])
-             (dynamic-require 'scheme/class #f))
-           (namespace-attach-module orig-ns 'scheme/class))]))
+             (dynamic-require 'racket/class #f))
+           (namespace-attach-module orig-ns 'racket/class))]))
 
 ;; Returns a single (module ...) or (begin ...) expression (a `begin' list
 ;; will be evaluated one by one -- the language might not have a `begin').
@@ -490,7 +490,7 @@
 ;; A more general solution would be to create a new module that exports
 ;; the given language plus all of the given extra requires.
 ;;
-;; We use `#%requre' because, unlike the `require' of scheme/base,
+;; We use `#%requre' because, unlike the `require' of racket/base,
 ;; it comes from `#%kernel', so it's always present through
 ;; transitive requires.
 (define (build-program language requires input-program)
@@ -882,7 +882,7 @@
        (if (eq? h default-sandbox-exit-handler)
          (lambda _ (terminate+kill! 'exited #f))
          h))]
-    ;; Note the above definition of `current-eventspace': in MzScheme, it
+    ;; Note the above definition of `current-eventspace': in Racket, it
     ;; is an unused parameter.  Also note that creating an eventspace
     ;; starts a thread that will eventually run the callback code (which
     ;; evaluates the program in `run-in-bg') -- so this parameterization

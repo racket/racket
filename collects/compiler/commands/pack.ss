@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/cmdline
-         tool/command-name
+         raco/command-name
          setup/pack
          setup/getinfo
          compiler/distribute)

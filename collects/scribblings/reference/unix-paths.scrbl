@@ -9,7 +9,7 @@ In @|AllUnix| paths, a @litchar{/} separates elements of the path,
 preceding path, and @litchar{..} as a path element always means the
 parent of the directory indicated by the preceding path. A leading
 @litchar{~} in a path is not treated specially, but
-@scheme[expand-user-path] can be used to convert a leading @litchar{~}
+@racket[expand-user-path] can be used to convert a leading @litchar{~}
 element to a user-specific directory. No other character or byte has a
 special meaning within a path. Multiple adjacent @litchar{/} are
 equivalent to a single @litchar{/} (i.e., they act as a single path
@@ -26,13 +26,13 @@ directory, as does any path whose last element is @litchar{.} or
 A @|AllUnix| path is @techlink{cleanse}d by replacing multiple adjacent
 @litchar{/}s with a single @litchar{/}.
 
-For @scheme[(bytes->path-element _bstr)], @scheme[bstr] must not
+For @racket[(bytes->path-element _bstr)], @racket[bstr] must not
 contain any @litchar{/}, otherwise the @exnraise[exn:fail:contract].
-The result of @scheme[(path-element->bytes _path)] or
-@scheme[(path-element->string _path)] is always the same as the result
-of @scheme[(path->bytes _path)] and @scheme[(path->string
+The result of @racket[(path-element->bytes _path)] or
+@racket[(path-element->string _path)] is always the same as the result
+of @racket[(path->bytes _path)] and @racket[(path->string
 _path)]. Since that is not the case for other platforms, however,
-@scheme[path-element->bytes] and @scheme[path-element->string] should
+@racket[path-element->bytes] and @racket[path-element->string] should
 be used when converting individual path elements.
 
 Under Mac OS X, Finder aliases are zero-length files.

@@ -9,14 +9,14 @@
      (nonterm s (subscript "n")))
    (define (sub n) (subscript n))
    (define (nonalpha)
-     @elem{; the next character must not be @schemelink[char-alphabetic?]{alphabetic}.})
+     @elem{; the next character must not be @racketlink[char-alphabetic?]{alphabetic}.})
    (define (graph-tag) @kleenerange[1 8]{@nonterm{digit@sub{10}}})
    (define (graph-defn) @elem{@litchar{#}@graph-tag[]@litchar{=}})
    (define (graph-ref) @elem{@litchar{#}@graph-tag[]@litchar{#}}))
 
 @title[#:tag "reader" #:style 'quiet]{The Reader}
 
-Scheme's reader is a recursive-descent parser that can be configured
+Racket's reader is a recursive-descent parser that can be configured
 through a @seclink["readtables"]{readtable} and various other
 @tech{parameters}. This section describes the reader's parsing when
 using the default readtable.
@@ -25,15 +25,15 @@ Reading from a stream produces one @deftech{datum}. If the result
 datum is a compound value, then reading the datum typically requires
 the reader to call itself recursively to read the component data.
 
-The reader can be invoked in either of two modes: @scheme[read] mode,
-or @scheme[read-syntax] mode. In @scheme[read-syntax] mode, the result
+The reader can be invoked in either of two modes: @racket[read] mode,
+or @racket[read-syntax] mode. In @racket[read-syntax] mode, the result
 is always a @techlink{syntax object} that includes
 source-location and (initially empty) lexical information wrapped
-around the sort of datum that @scheme[read] mode would produce. In the
+around the sort of datum that @racket[read] mode would produce. In the
 case of pairs, vectors, and boxes, the content is also
 wrapped recursively as a syntax object. Unless specified otherwise,
-this section describes the reader's behavior in @scheme[read] mode,
-and @scheme[read-syntax] mode does the same modulo wrapping the final
+this section describes the reader's behavior in @racket[read] mode,
+and @racket[read-syntax] mode does the same modulo wrapping the final
 result.
 
 Reading is defined in terms of Unicode characters; see
@@ -43,7 +43,7 @@ to a character stream.
 @;------------------------------------------------------------------------
 @section[#:tag "default-readtable-dispatch"]{Delimiters and Dispatch}
 
-Along with @schemelink[char-whitespace?]{whitespace}, the following
+Along with @racketlink[char-whitespace?]{whitespace}, the following
 characters are @defterm{delimiters}:
 
 @t{
@@ -122,7 +122,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#!}]{may start a reader extension; see @secref["parse-reader"]}
   @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["parse-quote"]}
   @dispatch[@litchar{#,}]{starts an syntax [splicing] unquote; see @secref["parse-quote"]}
-  @dispatch[@litchar{#~}]{starts compiled code; see @scheme[current-compile]}
+  @dispatch[@litchar{#~}]{starts compiled code; see @racket[current-compile]}
 
   @dispatch[@cilitchar{#i}]{starts a number; see @secref["parse-number"]}
   @dispatch[@cilitchar{#e}]{starts a number; see @secref["parse-number"]}
@@ -139,7 +139,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@cilitchar{#ci}]{switches case sensitivity; see @secref["parse-symbol"]}
   @dispatch[@cilitchar{#cs}]{switches case sensitivity; see @secref["parse-symbol"]}
 
-  @dispatch[@cilitchar["#sx"]]{starts a Scheme expression; see @secref["parse-honu"]}
+  @dispatch[@cilitchar["#sx"]]{starts a Racket expression; see @secref["parse-honu"]}
 
   @dispatch[@litchar{#hx}]{starts a Honu expression; see @secref["parse-honu"]}
 
@@ -167,12 +167,12 @@ A sequence that does not start with a delimiter or @litchar{#} is
 parsed as either a symbol or a number (see
 @secref["parse-number"]), except that @litchar{.} by itself is
 never parsed as a symbol or character (unless the
-@scheme[read-accept-dot] parameter is set to @scheme[#f]). A
+@racket[read-accept-dot] parameter is set to @racket[#f]). A
 @as-index{@litchar{#%}} also starts a symbol. A successful number
 parse takes precedence over a symbol parse.
 
 @index["case-sensitivity"]{@index["case-insensitive"]{When}} the
-@scheme[read-case-sensitive] @tech{parameter} is set to @scheme[#f],
+@racket[read-case-sensitive] @tech{parameter} is set to @racket[#f],
 characters in the sequence that are not quoted by @litchar{|} or
 @litchar{\} are first case-normalized. If the reader encounters
 @as-index{@litchar{#ci}}, @litchar{#CI}, @litchar{#Ci}, or
@@ -213,7 +213,7 @@ which specifies its parsing as an exact or inexact number; see
 non-terminal names suggest, a number that has no exactness specifier
 and matches only @nunterm{inexact-number} is normally parsed as an
 inexact number, otherwise it is parsed as an exact number. If the
-@scheme[read-decimal-as-inexact] @tech{parameter} is set to @scheme[#f], then
+@racket[read-decimal-as-inexact] @tech{parameter} is set to @racket[#f], then
 all numbers without an exactness specifier are instead parsed as
 exact.
 
@@ -327,18 +327,18 @@ containing the element surrounded by @litchar{.}s as the first
 element, followed by the others in the read order. This convention
 supports a kind of @as-index{infix} notation at the reader level.
 
-In @scheme[read-syntax] mode, the recursive reads for the pair/list
-elements are themselves in @scheme[read-syntax] mode, so that the
+In @racket[read-syntax] mode, the recursive reads for the pair/list
+elements are themselves in @racket[read-syntax] mode, so that the
 result is list or pair of syntax objects that it itself wrapped as a
 syntax object. If the reader constructs nested pairs because the input
 included a single delimited @litchar{.}, then only the innermost pair
 and outtermost pair are wrapped as syntax objects. Whether wrapping a
 pair or list, if the pair or list was formed with @litchar{[} and
-@litchar{]}, then a @indexed-scheme['paren-shape] property is attached
-to the result with the value @scheme[#\[]; if the list or pair was
+@litchar{]}, then a @indexed-racket['paren-shape] property is attached
+to the result with the value @racket[#\[]; if the list or pair was
 formed with @litchar["{"] and @litchar["}"], then a
-@scheme['paren-shape] property is attached to the result with the
-value @scheme[#\{].
+@racket['paren-shape] property is attached to the result with the
+value @racket[#\{].
 
 If a delimited @litchar{.} appears in any other configuration, then
 the @exnraise[exn:fail:read]. Similarly, if the reader encounters a
@@ -356,18 +356,18 @@ being parsed, then the @exnraise[exn:fail:read].
 "(1 . 2 . 3)"
 ]
 
-If the @scheme[read-square-bracket-as-paren] @tech{parameter} is set to
-@scheme[#f], then when then reader encounters @litchar{[} and
+If the @racket[read-square-bracket-as-paren] @tech{parameter} is set to
+@racket[#f], then when then reader encounters @litchar{[} and
 @litchar{]}, the @exnraise{exn:fail:read}. Similarly, If the
-@scheme[read-curly-brace-as-paren] @tech{parameter} is set to @scheme[#f],
+@racket[read-curly-brace-as-paren] @tech{parameter} is set to @racket[#f],
 then when then reader encounters @litchar["{"] and @litchar["}"], the
 @exnraise{exn:fail:read}.
 
-If the @scheme[read-accept-dot] @tech{parameter} is set to
-@scheme[#f], then a delimited @litchar{.} triggers an
-@scheme[exn:fail:read] exception. If the
-@scheme[read-accept-infix-dot] @tech{parameter} is set to @scheme[#f],
-then multiple delimited @litchar{.}s trigger an @scheme[exn:fail:read]
+If the @racket[read-accept-dot] @tech{parameter} is set to
+@racket[#f], then a delimited @litchar{.} triggers an
+@racket[exn:fail:read] exception. If the
+@racket[read-accept-infix-dot] @tech{parameter} is set to @racket[#f],
+then multiple delimited @litchar{.}s trigger an @racket[exn:fail:read]
 exception, instead of the infix conversion.
 
 @section[#:tag "parse-string"]{Reading Strings}
@@ -423,14 +423,14 @@ Within a string sequence, the following escape sequences are
        4]{@nonterm{digit@sub{16}}}}: like @litchar{\x}, but with up
        to four hexadecimal digits (longer sequences take precedence).
        The resulting hexadecimal number must be a valid argument to
-       @scheme[integer->char], otherwise the
+       @racket[integer->char], otherwise the
        @exnraise[exn:fail:read].}
 
  @item{@as-index{@litchar{\U}@kleenerange[1
        8]{@nonterm{digit@sub{16}}}}: like @litchar{\x}, but with up
        to eight hexadecimal digits (longer sequences take precedence).
        The resulting hexadecimal number must be a valid argument to
-       @scheme[integer->char], otherwise the
+       @racket[integer->char], otherwise the
        @exnraise[exn:fail:read].}
 
  @item{@as-index{@litchar{\}@nonterm{newline}}: elided, where
@@ -480,21 +480,21 @@ encountered before a terminating line, the @exnraise[exn:fail:read].
 
 When the reader enounters @as-index{@litchar{'}}, it recursively
 reads one datum, and forms a new list containing the symbol
-@scheme['quote] and the following datum. This convention is mainly
-useful for reading Scheme code, where @scheme['s] can be used as a
-shorthand for @scheme[(code:quote s)].
+@racket['quote] and the following datum. This convention is mainly
+useful for reading Racket code, where @racket['s] can be used as a
+shorthand for @racket[(code:quote s)].
 
 Several other sequences are recognized and transformed in a similar
 way. Longer prefixes take precedence over short ones:
 
-@read-quote-table[(list @litchar{'} @scheme[quote])
-                  (list @as-index{@litchar{`}} @scheme[quasiquote])
-                  (list @as-index{@litchar{,}} @scheme[unquote])
-                  (list @as-index{@litchar[",@"]} @scheme[unquote-splicing])
-                  (list @as-index{@litchar{#'}} @scheme[syntax])
-                  (list @as-index{@litchar{#`}} @scheme[quasisyntax])
-                  (list @as-index{@litchar{#,}} @scheme[unsyntax])
-                  (list @as-index{@litchar["#,@"]} @scheme[unsyntax-splicing])]
+@read-quote-table[(list @litchar{'} @racket[quote])
+                  (list @as-index{@litchar{`}} @racket[quasiquote])
+                  (list @as-index{@litchar{,}} @racket[unquote])
+                  (list @as-index{@litchar[",@"]} @racket[unquote-splicing])
+                  (list @as-index{@litchar{#'}} @racket[syntax])
+                  (list @as-index{@litchar{#`}} @racket[quasisyntax])
+                  (list @as-index{@litchar{#,}} @racket[unsyntax])
+                  (list @as-index{@litchar["#,@"]} @racket[unsyntax-splicing])]
 
 @reader-examples[
 "'apple"
@@ -502,16 +502,16 @@ way. Longer prefixes take precedence over short ones:
 ]
 
 The @litchar{`}, @litchar{,}, and @litchar[",@"] forms are disabled when
-the @scheme[read-accept-quasiquote] @tech{parameter} is set to
-@scheme[#f], in which case the @exnraise[exn:fail:read], instead.
+the @racket[read-accept-quasiquote] @tech{parameter} is set to
+@racket[#f], in which case the @exnraise[exn:fail:read], instead.
 
 @section[#:tag "parse-comment"]{Reading Comments}
 
 A @as-index{@litchar{;}} starts a line comment. When the reader
 encounters @litchar{;}, it skips past all characters until the
 next linefeed (ASCII 10), carriage return (ASCII 13), next-line
-(Unicode @scheme[#x0085]), line-separator (Unicode @scheme[#x2028]),
-or line-separator (Unicode @scheme[#x2028]) character.
+(Unicode @racket[#x0085]), line-separator (Unicode @racket[#x2028]),
+or line-separator (Unicode @racket[#x2028]) character.
 
 A @as-index{@litchar{#|}} starts a nestable block comment.  When the
 reader encounters @litchar{#|}, it skips past all characters
@@ -543,8 +543,8 @@ file.
 When the reader encounters a @litchar{#(}, @litchar{#[}, or
 @litchar["#{"], it starts parsing a vector; see @secref["vectors"] for
 information on vectors. The @litchar{#[} and @litchar["#{"] forms can
-be disabled through the @scheme[read-square-bracket-as-paren] and
-@scheme[read-curly-brace-as-paren] @tech{parameters}.
+be disabled through the @racket[read-square-bracket-as-paren] and
+@racket[read-curly-brace-as-paren] @tech{parameters}.
 
 The elements of the vector are recursively read until a matching
 @litchar{)}, @litchar{]}, or @litchar["}"] is found, just as for
@@ -556,11 +556,11 @@ An optional vector length can be specified between the @litchar{#} and
 using a sequence of decimal digits, and the number of elements
 provided for the vector must be no more than the specified size. If
 fewer elements are provided, the last provided element is used for the
-remaining vector slots; if no elements are provided, then @scheme[0]
+remaining vector slots; if no elements are provided, then @racket[0]
 is used for all slots.
 
-In @scheme[read-syntax] mode, each recursive read for the vector
-elements is also in @scheme[read-syntax] mode, so that the wrapped
+In @racket[read-syntax] mode, each recursive read for the vector
+elements is also in @racket[read-syntax] mode, so that the wrapped
 vector's elements are also wraped as syntax objects, and the vector is
 immutable.
 
@@ -577,8 +577,8 @@ When the reader encounters a @litchar{#s(}, @litchar{#s[}, or
 @litchar["#s{"], it starts parsing an instance of a @tech{prefab}
 @tech{structure type}; see @secref["structures"] for information on
 @tech{structure types}.  The @litchar{#s[} and @litchar["#s{"] forms
-can be disabled through the @scheme[read-square-bracket-as-paren] and
-@scheme[read-curly-brace-as-paren] @tech{parameters}.
+can be disabled through the @racket[read-square-bracket-as-paren] and
+@racket[read-curly-brace-as-paren] @tech{parameters}.
 
 The elements of the structure are recursively read until a matching
 @litchar{)}, @litchar{]}, or @litchar["}"] is found, just as for lists
@@ -588,13 +588,13 @@ list for an infix conversion.
 
 The first element is used as the structure descriptor, and it must
 have the form (when quoted) of a possible argument to
-@scheme[make-prefab-struct]; in the simplest case, it can be a
+@racket[make-prefab-struct]; in the simplest case, it can be a
 symbol. The remaining elements correspond to field values within the
 structure.
 
-In @scheme[read-syntax] mode, the structure type must not have any
+In @racket[read-syntax] mode, the structure type must not have any
 mutable fields. The structure's elements are read in
-@scheme[read-syntax] mode, so that the wrapped structure's elements
+@racket[read-syntax] mode, so that the wrapped structure's elements
 are also wraped as syntax objects.
 
 If the first structure element is not a valid @tech{prefab} structure
@@ -605,7 +605,7 @@ indicated @tech{prefab} structure type, the @exnraise[exn:fail:read].
 @section[#:tag "parse-hashtable"]{Reading Hash Tables}
 
 A @as-index{@litchar{#hash}} starts an immutable hash-table constant
-with key matching based on @scheme[equal?]. The characters after
+with key matching based on @racket[equal?]. The characters after
 @litchar{hash} must parse as a list of pairs (see
 @secref["parse-pair"]) with a specific use of delimited @litchar{.}:
 it must appear between the elements of each pair in the list, and
@@ -615,18 +615,18 @@ each pair is the associated value.
 
 A @as-index{@litchar{#hasheq}} starts a hash table like
 @litchar{#hash}, except that it constructs a hash table based on
-@scheme[eq?] instead of @scheme[equal?].
+@racket[eq?] instead of @racket[equal?].
 
 A @as-index{@litchar{#hasheqv}} starts a hash table like
 @litchar{#hash}, except that it constructs a hash table based on
-@scheme[eqv?] instead of @scheme[equal?].
+@racket[eqv?] instead of @racket[equal?].
 
 In all cases, the table is constructed by adding each mapping to the
  hash table from left to right, so later mappings can hide earlier
  mappings if the keys are equivalent.
 
 @reader-examples[
-#:example-note @elem{, where @scheme[make-...] stands for @scheme[make-immutable-hash]}
+#:example-note @elem{, where @racket[make-...] stands for @racket[make-immutable-hash]}
 "#hash()"
 "#hasheq()"
 "#hash((\"a\" . 5))"
@@ -641,8 +641,8 @@ parsing a box; see @secref["boxes"] for information on boxes. The
 content of the box is determined by recursively reading the next
 datum.
 
-In @scheme[read-syntax] mode, the recursive read for the box content
-is also in @scheme[read-syntax] mode, so that the wrapped box's
+In @racket[read-syntax] mode, the recursive read for the box content
+is also in @racket[read-syntax] mode, so that the wrapped box's
 content is also wraped as a syntax object, and the box is immutable.
 
 @reader-examples[
@@ -688,7 +688,7 @@ one of the following forms:
        as @litchar{#\}@nonterm{c} and the characters following it
        do not match any of the previous cases, and as long as the
        character after @nonterm{c} is not
-       @schemelink[char-alphabetic?]{alphabetic}.}
+       @racketlink[char-alphabetic?]{alphabetic}.}
 
 ]
 
@@ -717,10 +717,10 @@ A @as-index{@litchar{#rx}} or @as-index{@litchar{#px}} starts a
 regular expression. The characters immediately after @litchar{#rx} or
 @litchar{#px} must parse as a string or byte string (see
 @secref["parse-string"]). A @litchar{#rx} prefix starts a regular
-expression as would be constructed by @scheme[regexp], @litchar{#px}
-as constructed by @scheme[pregexp], @litchar{#rx#} as constructed by
-@scheme[byte-regexp], and @litchar{#px#} as constructed by
-@scheme[byte-pregexp].
+expression as would be constructed by @racket[regexp], @litchar{#px}
+as constructed by @racket[pregexp], @litchar{#rx#} as constructed by
+@racket[byte-regexp], and @litchar{#px#} as constructed by
+@racket[byte-pregexp].
 
 @reader-examples[
 "#rx\".*\""
@@ -744,8 +744,8 @@ reference is replaced by the datum read for the corresponding
 datum after it. A @graph-defn[] definition can appear at most once,
 and a @graph-defn[] definition must appear before a @graph-ref[]
 reference appears, otherwise the @exnraise[exn:fail:read]. If the
-@scheme[read-accept-graph] parameter is set to @scheme[#f], then
-@graph-defn[] or @graph-ref[] triggers a @scheme[exn:fail:read]
+@racket[read-accept-graph] parameter is set to @racket[#f], then
+@graph-defn[] or @graph-ref[] triggers a @racket[exn:fail:read]
 exception.
 
 Although a comment parsed via @litchar{#;} discards the datum
@@ -770,51 +770,51 @@ stream.
 
 The reader recursively reads the next datum after @litchar{#reader},
 and passes it to the procedure that is the value of the
-@scheme[current-reader-guard] @tech{parameter}; the result is used as a
-module path. The module path is passed to @scheme[dynamic-require]
-with either @scheme['read] or @scheme['read-syntax] (depending on
-whether the reader is in @scheme[read] or @scheme[read-syntax]
+@racket[current-reader-guard] @tech{parameter}; the result is used as a
+module path. The module path is passed to @racket[dynamic-require]
+with either @racket['read] or @racket['read-syntax] (depending on
+whether the reader is in @racket[read] or @racket[read-syntax]
 mode).
 
 The arity of the resulting procedure determines whether it accepts
-extra source-location information: a @schemeidfont{read} procedure
+extra source-location information: a @racketidfont{read} procedure
 accepts either one argument (an input port) or five, and a
-@schemeidfont{read-syntax} procedure accepts either two arguments (a
+@racketidfont{read-syntax} procedure accepts either two arguments (a
 name value and an input port) or six. In either case, the four
 optional arguments are the reader's module path (as a syntax object in
-@scheme[read-syntax] mode) followed by the line (positive exact
-integer or @scheme[#f]), column (non-negative exact integer or
-@scheme[#f]), and position (positive exact integer or @scheme[#f]) of
+@racket[read-syntax] mode) followed by the line (positive exact
+integer or @racket[#f]), column (non-negative exact integer or
+@racket[#f]), and position (positive exact integer or @racket[#f]) of
 the start of the @litchar{#reader} form. The input port is the one
 whose stream contained @litchar{#reader}, where the stream position is
 immediately after the recursively-read module path.
 
 The procedure should produce a datum result.  If the result is a
-syntax object in @scheme[read] mode, then it is converted to a datum
-using @scheme[syntax->datum]; if the result is not a syntax object in
-@scheme[read-syntax] mode, then it is converted to one using
-@scheme[datum->syntax]. See also @secref["reader-procs"] for
+syntax object in @racket[read] mode, then it is converted to a datum
+using @racket[syntax->datum]; if the result is not a syntax object in
+@racket[read-syntax] mode, then it is converted to one using
+@racket[datum->syntax]. See also @secref["reader-procs"] for
 information on the procedure's results.
 
-If the @scheme[read-accept-reader] @tech{parameter} is set to
-@scheme[#f], then if the reader encounters @litchar{#reader}, the
+If the @racket[read-accept-reader] @tech{parameter} is set to
+@racket[#f], then if the reader encounters @litchar{#reader}, the
 @exnraise[exn:fail:read].
 
-@guideintro["hash-lang"]{@schememodfont["#lang"]}
+@guideintro["hash-lang"]{@racketmodfont["#lang"]}
 
 The @as-index{@litchar{#lang}} reader form is similar to
 @litchar{#reader}, but more constrained: the @litchar{#lang} must be
 followed by a single space (ASCII 32), and then a non-empty sequence
 of alphanumeric ASCII, @litchar{+}, @litchar{-}, @litchar{_}, and/or
 @litchar{/} characters terminated by
-@schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
+@racketlink[char-whitespace?]{whitespace} or an end-of-file.  The
 sequence must not start or end with @litchar{/}. A sequence
 @litchar{#lang }@nonterm{name} is equivalent to
 @litchar{#reader }@nonterm{name}@litchar{/lang/reader}. Note
 that the terminating whitespace (if any) is not consumed before the
 external reading procedure is called.
 
-@margin-note{The @schememodname[syntax/module-reader] library provides a
+@margin-note{The @racketmodname[syntax/module-reader] library provides a
              domain-specific language for writing language readers.}
 
 Finally, @as-index{@litchar{#!}} is a synonym for @litchar{#lang}
@@ -831,22 +831,22 @@ file, possibly after comment forms, to specify the syntax of a module.
 
 @defmodulelang[s-exp]
 
-The @scheme[s-exp] ``language'' is a kind of meta-language. It
-@scheme[read]s the S-expression that follows @litchar{#lang s-exp} and
-uses it as the language of a @scheme[module] form. It also reads all
+The @racket[s-exp] ``language'' is a kind of meta-language. It
+@racket[read]s the S-expression that follows @litchar{#lang s-exp} and
+uses it as the language of a @racket[module] form. It also reads all
 remaining S-expressions until an end-of-file, using them for the body
-of the generated @scheme[module].
+of the generated @racket[module].
 
 That is,
 
-@schememod[
+@racketmod[
 s-exp _module-path
 _form ...
 ]
 
 is equivalent to
 
-@schemeblock[
+@racketblock[
 (module _name _module-path
   _form ...)
 ]
@@ -855,11 +855,11 @@ is equivalent to
 
 @defmodulelang[reader]
 
-The @scheme[reader] ``language'' is a kind of meta-language. It
-@scheme[read]s the S-expression that follows @litchar{#lang reader}
+The @racket[reader] ``language'' is a kind of meta-language. It
+@racket[read]s the S-expression that follows @litchar{#lang reader}
 and uses it as a module path (relative to the module being read) that
-effectively takes the place of @schememodname[reader]. In other words,
-the @schememodname[reader] meta-language generalizes the syntax of the
+effectively takes the place of @racketmodname[reader]. In other words,
+the @racketmodname[reader] meta-language generalizes the syntax of the
 module specified after @hash-lang[] to be a module path, and without
 the implicit addition of @litchar{/lang/reader} to the path.
 

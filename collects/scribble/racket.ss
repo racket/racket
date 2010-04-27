@@ -118,6 +118,8 @@
   (define-struct (cached-delayed-element delayed-element) (cache-key))
   (define-struct (cached-element element) (cache-key))
 
+  (define qq-ellipses (string->uninterned-symbol "..."))
+
   (define (make-id-element c s)
     (let* ([key (and id-element-cache
                      (let ([b (identifier-label-binding c)])
@@ -201,7 +203,7 @@
                                              is-var?)))
                                (values (substring s 1) #t #f)
                                (values s #f #f))))])
-          (let ([quote-depth (if (and qq? (identifier? c))
+          (let ([quote-depth (if (and qq? (identifier? c) (not (eq? qq-ellipses (syntax-e c))))
                                  (let ([quote-depth
                                         (if (and (quote-depth . < . 2)
                                                  (memq (syntax-e c) '(unquote unquote-splicing)))
@@ -663,6 +665,11 @@
                        paren-color))
               (set! src-col (+ src-col 3))
               ((loop init-line! quote-depth qq?) (graph-defn-r (syntax-e c))))]
+           [(and (keyword? (syntax-e c)) qq?)
+            (advance c init-line!)
+            (let ([quote-depth (to-quoted "`" qq? quote-depth out color? inc-src-col)])
+              (typeset-atom c out color? quote-depth qq?)
+              (set! src-col (+ src-col (or (syntax-span c) 1))))]
            [else
             (advance c init-line!)
             (typeset-atom c out color? quote-depth qq?)
@@ -701,7 +708,8 @@
               (graph-defn? s)
               (graph-reference? s)
               (struct-proxy? s)
-              (and qq? (identifier? c)))
+              (and qq? (or (identifier? c)
+                           (keyword? (syntax-e c)))))
           (gen-typeset c multi-line? prefix1 prefix suffix color? qq?)
           (typeset-atom c 
                         (letrec ([mk
@@ -950,7 +958,7 @@
                                                    (if pf
                                                        (prefab-struct-key v)
                                                        (object-name v)))
-                                                 (cdr (vector->list (struct->vector v))))]
+                                                 (cdr (vector->list (struct->vector v qq-ellipses))))]
                                           [else v])])
                              (if (null? v)
                                  null

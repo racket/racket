@@ -113,6 +113,16 @@
         [(box a) a]
         [(cons x y) (+ x y)]
         [_ 0])))
+
+   (comp
+    6
+    (let ()
+      (match (make-X 1 2 3)
+        [(X a b c) (+ a b c)]
+        [(box a) a]
+        [(cons x y) (+ x y)]
+        [_ 0])))
+
    
    (comp
     6

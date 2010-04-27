@@ -7,8 +7,6 @@
    -- take out counting; replace by 0.25 delay
 
    -- make window resizable :: why
-   -- what if clauses are repeated in world and/or universe descriptions? 
-   -- what if the initial world or universe state is omitted? the error message is bad then. 
 |#
 
 (require (for-syntax "private/syn-aux.ss" scheme/function)

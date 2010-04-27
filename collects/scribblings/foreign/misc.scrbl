@@ -74,9 +74,6 @@ Returns a platform-specific value corresponding to a Posix @tt{errno}
 symbol. The set of supported symbols is likely to expand in the
 future.}
 
-@; ----------------------------------------------------------------------
-
-@section{Unsafe Miscellaneous Operations}
 
 @defproc[(cast [v any/c][from-type ctype?][to-type ctype?]) any/c]{
 

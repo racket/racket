@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
 (require scribble/core
          scribble/html-properties
          scribble/manual
-         (prefix-in scheme: scribble/scheme)
+         (prefix-in racket: scribble/racket)
          (prefix-in scribble: scribble/reader))
 
 (define-syntax bounce-for-label
@@ -15,12 +15,12 @@
                     (provide (for-label (all-from-out mod))))]
     [(_ mod ...) (begin (bounce-for-label mod) ...)]))
 
-(bounce-for-label (all-except scheme (link) ())
+(bounce-for-label (all-except racket (link) ())
                   scribble/core
                   scribble/base-render
                   scribble/decode
                   scribble/manual
-                  scribble/scheme
+                  scribble/racket
                   scribble/html-properties
                   scribble/latex-properties
                   scribble/eval
@@ -94,7 +94,7 @@
              (map (lambda (x)
                     (let ([@expr (if x (litchar/lines (car x)) "")]
                           [sexpr (if x
-                                   (scheme:to-paragraph
+                                   (racket:to-paragraph
                                     ((norm-spacing 0) (cadr x)))
                                    "")]
                           [reads-as (if x reads-as "")])
@@ -103,7 +103,7 @@
 
 ;; stuff for the preprocessor examples
 
-(require scheme/list (for-syntax scheme/base scheme/list))
+(require racket/list (for-syntax racket/base racket/list))
 
 (define max-textsample-width 45)
 

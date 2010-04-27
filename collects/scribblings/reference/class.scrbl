@@ -215,8 +215,9 @@ structure type property's guard, if any).
 
 @defexamples[
 #:eval class-eval
-(define i (interface* () ([prop:custom-write (lambda (obj port write?) (void))])
-                      method1 method2 method3))
+(define i (interface* () ([prop:custom-write 
+                           (lambda (obj port mode) (void))])
+            method1 method2 method3))
 ]}
 
 @; ------------------------------------------------------------------------
@@ -1284,7 +1285,7 @@ renamed, and multiple traits can be merged to form a new trait.
 
 @defform/subs[#:literals (public pubment public-final override override-final overment augment augride
                           augment-final private inherit inherit/super inherit/inner rename-super
-                          inherit-field)
+                          field inherit-field)
 
               (trait trait-clause ...)
               ([trait-clause (public maybe-renamed ...)

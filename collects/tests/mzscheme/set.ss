@@ -50,10 +50,10 @@
   (test #t set-member? (set-remove s 5) 3)
   (test #f set-member? (set-remove s 3) 3)
 
-  (test #t set-subset? s (set 1 3))
-  (test #t set-subset? s (set 1 2 3))
-  (test #f set-subset? s (set 1 4))
-  (test #t set-subset? s (set))
+  (test #t subset? (set 1 3) s)
+  (test #t subset? (set 1 2 3) s)
+  (test #f subset? (set 1 4) s)
+  (test #t subset? (set) s)
 
   (test 3 set-count (set-union s))
   (test 6 set-count (set-union s (set 3 4 5 6)))

@@ -7,20 +7,20 @@
 @section-index["column numbers"]
 @section-index["port positions"]
 
-By default, Scheme keeps track of the @deftech{position} in a port as
+By default, Racket keeps track of the @deftech{position} in a port as
 the number of bytes that have been read from or written to any port
 (independent of the read/write position, which is accessed or changed
-with @scheme[file-position]). Optionally, however, Scheme can track
+with @racket[file-position]). Optionally, however, Racket can track
 the position in terms of characters (after UTF-8 decoding), instead of
 bytes, and it can track @deftech{line locations} and @deftech{column
 locations}; this optional tracking must be specifically enabled for a
-port via @scheme[port-count-lines!] or the
-@scheme[port-count-lines-enabled] parameter. Position, line, and
-column locations for a port are used by @scheme[read-syntax] and
-@scheme[read-honu-syntax]. Position and line locations are numbered
+port via @racket[port-count-lines!] or the
+@racket[port-count-lines-enabled] parameter. Position, line, and
+column locations for a port are used by @racket[read-syntax] and
+@racket[read-honu-syntax]. Position and line locations are numbered
 from @math{1}; column locations are numbered from @math{0}.
 
-When counting lines, Scheme treats linefeed, return, and
+When counting lines, Racket treats linefeed, return, and
 return-linefeed combinations as a line terminator and as a single
 position (on all platforms). Each tab advances the column count to one
 before the next multiple of @math{8}. When a sequence of bytes in the
@@ -45,7 +45,7 @@ position only when line and column counting is enabled.
 Turns on line and column counting for a port. Counting can be turned
 on at any time, though generally it is turned on before any data is
 read from or written to a port. When a port is created, if the value
-of the @scheme[port-count-lines-enabled] parameter is true, then line
+of the @racket[port-count-lines-enabled] parameter is true, then line
 counting is automatically enabled for the port. Line counting cannot
 be disabled for a port after it is enabled.}
 
@@ -54,12 +54,12 @@ be disabled for a port after it is enabled.}
                  (or/c exact-nonnegative-integer? #f)
                  (or/c exact-positive-integer? #f))]{
 
-Returns three values: an integer or @scheme[#f] for the line number of
-the next read/written item, an integer or @scheme[#f] for the next
-item's column, and an integer or @scheme[#f] for the next item's
+Returns three values: an integer or @racket[#f] for the line number of
+the next read/written item, an integer or @racket[#f] for the next
+item's column, and an integer or @racket[#f] for the next item's
 position. The next column and position normally increases as bytes are
 read from or written to the port, but if line/character counting is
-enabled for @scheme[port], the column and position results can
+enabled for @racket[port], the column and position results can
 decrease after reading or writing a byte that ends a UTF-8 encoding
 sequence.}
 
@@ -67,5 +67,5 @@ sequence.}
 
 A parameter that determines whether line counting is enabled
 automatically for newly created ports. The default value is
-@scheme[#f].}
+@racket[#f].}
 

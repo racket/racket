@@ -2,7 +2,7 @@
 @(require scribble/manual 
           scribble/core scribble/html-properties scribble/latex-properties
           "utils.ss"
-          (for-label scheme/base
+          (for-label racket/base
                      ;; FIXME: need to get this in
                      ;; scribble/text
                      ))
@@ -13,21 +13,21 @@
                                     (make-css-addition "shaded.css")))
       ]{Text Preprocessing}
 
-@defmodulelang[scribble/text]{The @schememodname[scribble/text]
-language provides everything from @scheme[scheme/base] with a few
+@defmodulelang[scribble/text]{The @racketmodname[scribble/text]
+language provides everything from @racket[racket/base] with a few
 changes that make it suitable as a preprocessor language:
 
 @itemize[
 
-  @item{It uses @scheme[read-syntax-inside] to read the body of the
+  @item{It uses @racket[read-syntax-inside] to read the body of the
         module, similar to @secref["docreader"].  This means that by
-        default, all text is read in as Scheme strings; and
-        @seclink["reader"]|{@-forms}| can be used to use Scheme
+        default, all text is read in as Racket strings; and
+        @seclink["reader"]|{@-forms}| can be used to use Racket
         functions and expression escapes.}
 
   @item{Values of expressions are printed with a custom
-        @scheme[output] function.  This function displays most values
-        in a similar way to @scheme[display], except that it is more
+        @racket[output] function.  This function displays most values
+        in a similar way to @racket[display], except that it is more
         convenient for a preprocessor output.}]
 
 }
@@ -42,9 +42,9 @@ changes that make it suitable as a preprocessor language:
 @section{Writing Preprocessor Files}
 
 The combination of the two features makes text in files in the
-@scheme[scribble/text] language be read as strings, which get printed
-out when the module is @scheme[require]d, for example, when a file is
-given as an argument to @exec{mzscheme}.  (In these example the left
+@racket[scribble/text] language be read as strings, which get printed
+out when the module is @racket[require]d, for example, when a file is
+given as an argument to @exec{racket}.  (In these example the left
 part shows the source input, and the right part the printed result.)
 
 @example|-{#lang scribble/text
@@ -58,14 +58,14 @@ part shows the source input, and the right part the printed result.)
            feature on top of feature, but
            blah blah blah.}-|
 
-Using @seclink["reader"]|{@-forms}|, we can define and use Scheme
+Using @seclink["reader"]|{@-forms}|, we can define and use Racket
 functions.
 
 @example|-{#lang scribble/text
-           @(require scheme/list)
+           @(require racket/list)
            @(define Foo "Preprocessing")
            @(define (3x . x)
-              ;; scheme syntax here
+              ;; racket syntax here
               (add-between (list x x x) " "))
            @Foo languages should
            be designed not by piling
@@ -77,10 +77,10 @@ functions.
            feature on top of feature, but
            blah blah blah.}-|
 
-As demonstrated in this case, the @scheme[output] function simply
+As demonstrated in this case, the @racket[output] function simply
 scans nested list structures recursively, which makes them convenient
-for function results.  In addition, @scheme[output] prints most values
-similarly to @scheme[display] --- notable exceptions are void and
+for function results.  In addition, @racket[output] prints most values
+similarly to @racket[display] --- notable exceptions are void and
 false values which cause no output to appear.  This can be used for
 convenient conditional output.
 
@@ -184,7 +184,7 @@ what looks like erroneous indentation.  More about this below.)
 A better approach is to generate newlines only when needed.
 
 @example|-{#lang scribble/text
-           @(require scheme/list)
+           @(require racket/list)
            @(define (counts n str)
               (add-between
                (for/list ([i (in-range 1 (+ n 1))])
@@ -200,9 +200,9 @@ A better approach is to generate newlines only when needed.
            3 Mississippi,
            ... and I'm done.}-|
 
-In fact, this is common enough that the @scheme[scribble/text]
-language provides a convenient facility: @scheme[add-newlines] is a
-function that is similar to @scheme[add-between] using a newline
+In fact, this is common enough that the @racket[scribble/text]
+language provides a convenient facility: @racket[add-newlines] is a
+function that is similar to @racket[add-between] using a newline
 string as the default separator, except that false and void values are
 filtered out before doing so.
 
@@ -262,9 +262,9 @@ that uses the Scribble @"@"-form syntax.)
 
 Because the Scribble reader is uniform, you can use it in place of any
 expression where it is more convenient.  (By convention, we use a
-plain S-expression syntax when we want a Scheme expression escape, and
+plain S-expression syntax when we want a Racket expression escape, and
 an @"@"-form for expressions that render as text, which, in the
-@scheme[scribble/text] language, is any value-producing expression.)
+@racket[scribble/text] language, is any value-producing expression.)
 For example, you can use an @"@"-form for a function that you define.
 
 @example|-{#lang scribble/text
@@ -291,7 +291,7 @@ separate text arguments in the S-expression part of an @"@"-form.
            Either you're with us, or against us.
            }-|
 
-You can even use @"@"-forms with a Scheme quote or quasiquote as the
+You can even use @"@"-forms with a Racket quote or quasiquote as the
 ``head'' part to make it shorter, or use a macro to get grouping of
 sub-parts without dealing with quotes.
 
@@ -317,11 +317,11 @@ sub-parts without dealing with quotes.
            }-|
 
 Yet another solution is to look at the text values and split the input
-arguments based on a specific token.  Using @scheme[match] can make it
+arguments based on a specific token.  Using @racket[match] can make it
 convenient --- you can even specify the patterns with @"@"-forms.
 
 @example|-{#lang scribble/text
-           @(require scheme/match)
+           @(require racket/match)
            @(define (features . text)
               (match text
                 [@list{@|1st|@...
@@ -346,11 +346,11 @@ convenient --- you can even specify the patterns with @"@"-forms.
            }-|
 
 In particular, it is often convenient to split the input by lines,
-identified by delimiting @scheme["\n"] strings.  Since this can be
-useful, a @scheme[split-lines] function is provided.
+identified by delimiting @racket["\n"] strings.  Since this can be
+useful, a @racket[split-lines] function is provided.
 
 @example|-{#lang scribble/text
-           @(require scheme/list)
+           @(require racket/list)
            @(define (features . text)
               (add-between (split-lines text)
                            ", "))
@@ -437,9 +437,9 @@ printouts, as the results are rarely desirable.
            two1  3}-|
 
 Note that you don't need side-effects if you want infinite output.
-The @scheme[output] function iterates thunks and (composable)
+The @racket[output] function iterates thunks and (composable)
 promises, so you can create a loop that is delayed in either form.
-@; Note: there is some sfs-related problem in mzscheme that makes it not
+@; Note: there is some sfs-related problem in racket that makes it not
 @; run in bounded space, so don't show it for nowx.
 
 @example|-{#lang scribble/text
@@ -483,12 +483,12 @@ The Scribble reader ignores indentation spaces in its body.  This is
 an intentional feature, since you usually do not want an expression to
 depend on its position in the source.  But the question is how
 @emph{can} we render some output text with proper indentation.  The
-@scheme[output] function achieves that by assigning a special meaning
+@racket[output] function achieves that by assigning a special meaning
 to lists: when a newline is part of a list's contents, it causes the
 following text to appear with indentation that corresponds to the
 column position at the beginning of the list.  In most cases, this
 makes the output appear ``as intended'' when lists are used for nested
-pieces of text --- either from a literal @scheme[list] expression, or
+pieces of text --- either from a literal @racket[list] expression, or
 an expression that evaluates to a list, or when a list is passed on as
 a value; either as a toplevel expression, or as a nested value; either
 appearing after spaces, or after other output.
@@ -530,11 +530,11 @@ appearing after spaces, or after other output.
                (for/list ([i (in-naturals 1)]
                           [item (in-list items)])
                  @list{@|i|. @item})))
-           Todo: @enumerate[@list{Install PLT Scheme}
+           Todo: @enumerate[@list{Install Racket}
                             @list{Hack, hack, hack}
                             @list{Profit}].
            ---***---
-           Todo: 1. Install PLT Scheme;
+           Todo: 1. Install Racket;
                  2. Hack, hack, hack;
                  3. Profit.}-|
 
@@ -697,8 +697,8 @@ appearing after spaces, or after other output.
   }-|
 
 There are, however, cases when you need more refined control over the
-output.  The @scheme[scribble/text] provides a few functions for such
-cases.  The @scheme[splice] function is used to group together a
+output.  The @racket[scribble/text] provides a few functions for such
+cases.  The @racket[splice] function is used to group together a
 number of values but avoid introducing a new indentation context.
 
 @example|-{#lang scribble/text
@@ -723,9 +723,9 @@ number of values but avoid introducing a new indentation context.
            end
            }-|
 
-The @scheme[disable-prefix] function disables all indentation
+The @racket[disable-prefix] function disables all indentation
 printouts in its contents, including the indentation before the body
-of the @scheme[disable-prefix] value itself.  It is useful, for
+of the @racket[disable-prefix] value itself.  It is useful, for
 example, to print out CPP directives.
 
 @example|-{#lang scribble/text
@@ -758,7 +758,7 @@ example, to print out CPP directives.
            }
            }-|
 
-If there are values after a @scheme[disable-prefix] value on the same
+If there are values after a @racket[disable-prefix] value on the same
 line, they will get indented to the goal column (unless the output is
 already beyond it).
 
@@ -807,7 +807,7 @@ already beyond it).
            }-|
 
 There are cases where each line should be prefixed with some string
-other than a plain indentation.  The @scheme[add-prefix] function
+other than a plain indentation.  The @racket[add-prefix] function
 causes its contents to be printed using some given string prefix for
 every line.  The prefix gets accumulated to an existing indentation,
 and indentation in the contents gets added to the prefix.
@@ -840,11 +840,11 @@ and indentation in the contents gets added to the prefix.
            }
            }-|
 
-When combining @scheme[add-prefix] and @scheme[disable-prefix] there
-is an additional value that can be useful: @scheme[flush].  This is a
-value that causes @scheme[output] to print the current indentation and
+When combining @racket[add-prefix] and @racket[disable-prefix] there
+is an additional value that can be useful: @racket[flush].  This is a
+value that causes @racket[output] to print the current indentation and
 prefix.  This makes it possible to get the ``ignored as a prefix''
-property of @scheme[disable-prefix] but only for a nested prefix.
+property of @racket[disable-prefix] but only for a nested prefix.
 
 @example|-{#lang scribble/text
            @(define (comment . text)
@@ -923,7 +923,7 @@ property of @scheme[disable-prefix] but only for a nested prefix.
 
 Using additional files that contain code for your preprocessing is
 trivial: the preprocessor source is still source code in a module, so
-you can @scheme[require] additional files with utility functions.
+you can @racket[require] additional files with utility functions.
 
 @example|-{#lang scribble/text
            @(require "itemize.ss")
@@ -933,7 +933,7 @@ you can @scheme[require] additional files with utility functions.
                     @list{Hack some
                           more}]
            ---***--- itemize.ss
-           #lang scheme
+           #lang racket
            (provide itemize)
            (define (itemize . items)
              (add-between (map (lambda (item)
@@ -948,7 +948,7 @@ you can @scheme[require] additional files with utility functions.
              more
            }-|
 
-Note that the @seclink["at-exp-lang"]{@scheme[at-exp] language} can
+Note that the @seclink["at-exp-lang"]{@racket[at-exp] language} can
 often be useful here, since such files need to deal with texts.  Using
 it, it is easy to include a lot of textual content.
 
@@ -961,8 +961,8 @@ it, it is easy to include a lot of textual content.
                           more}]
            @summary
            ---***--- stuff.ss
-           #lang at-exp scheme/base
-           (require scheme/list)
+           #lang at-exp racket/base
+           (require racket/list)
            (provide (all-defined-out))
            (define (itemize . items)
              (add-between (map (lambda (item)
@@ -983,17 +983,17 @@ it, it is easy to include a lot of textual content.
            }-|
 
 Of course, the extreme side of this will be to put all of your content
-in a plain Scheme module, using @"@"-forms for convenience.  However,
+in a plain Racket module, using @"@"-forms for convenience.  However,
 there is no need to use the preprocessor language in this case;
-instead, you can @scheme[(require scribble/text)], which will get all
-of the bindings that are available in the @scheme[scribble/text]
-language.  Using @scheme[output], switching from a preprocessed files
-to a Scheme file is very easy ---- choosing one or the other depends
+instead, you can @racket[(require scribble/text)], which will get all
+of the bindings that are available in the @racket[scribble/text]
+language.  Using @racket[output], switching from a preprocessed files
+to a Racket file is very easy ---- choosing one or the other depends
 on whether it is more convenient to write a text file with occasional
-Scheme expressions or the other way.
+Racket expressions or the other way.
 
-@example|-{#lang at-exp scheme/base
-           (require scribble/text scheme/list)
+@example|-{#lang at-exp racket/base
+           (require scribble/text racket/list)
            (define (itemize . items)
              (add-between (map (lambda (item)
                                  @list{* @item})
@@ -1026,12 +1026,12 @@ mostly-text file from a preprocessor file.  It might be because you
 prefer to split the source text to several files, or because you need
 to preprocess a file without even a @litchar{#lang} header (for
 example, an HTML template file that is the result of an external
-editor).  For these cases, the @scheme[scribble/text] language
-provides an @scheme[include] form that includes a file in the
+editor).  For these cases, the @racket[scribble/text] language
+provides an @racket[include] form that includes a file in the
 preprocessor syntax (where the default parsing mode is text).
 
 @example|-{#lang scribble/text
-           @(require scheme/list)
+           @(require racket/list)
            @(define (itemize . items)
               (list
                "<ul>"
@@ -1074,12 +1074,12 @@ preprocessor syntax (where the default parsing mode is text).
            </html>
            }-|
 
-(Using @scheme[require] with a text file in the @scheme[scribble/text]
+(Using @racket[require] with a text file in the @racket[scribble/text]
 language will not work as intended: using the preprocessor language
 means that the text is displayed when the module is invoked, so the
 required file's contents will be printed before any of the requiring
 module's text does.  If you find yourself in such a situation, it is
-better to switch to a Scheme-with-@"@"-expressions file as shown
+better to switch to a Racket-with-@"@"-expressions file as shown
 above.)
 
 @;FIXME: add more text on `restore-prefix', `set-prefix', `with-writer'
@@ -1087,20 +1087,20 @@ above.)
 @;FIXME: add this to the reference section
 @;@defform[(include filename)]{
 @;
-@;Preprocess the @scheme[filename] using the same syntax as
-@;@scheme[scribble/text].  This is similar to using @scheme[load] in a
+@;Preprocess the @racket[filename] using the same syntax as
+@;@racket[scribble/text].  This is similar to using @racket[load] in a
 @;namespace that can access names bound in the current file so included
 @;code can refer to bindings from the including module.  Note, however,
 @;that the including module cannot refer to names that are bound the
-@;included file because it is still a plain scheme module---for such
-@;uses you should still use @scheme[require] as usual.}
+@;included file because it is still a plain racket module---for such
+@;uses you should still use @racket[require] as usual.}
 
 
 @; Two random tests
 @example[#:hidden]|-{
   #lang scribble/text
 
-  @define[name]{PLT Scheme}
+  @define[name]{Racket}
 
   Suggested price list for "@name"
 
@@ -1124,11 +1124,11 @@ above.)
   Total: @items-num items
   Average price: $@|average|.99
   ---***---
-  Suggested price list for "PLT Scheme"
+  Suggested price list for "Racket"
 
-  0. PLT Scheme Home edition: $99.99
-  1. PLT Scheme Professional edition: $149.99
-  2. PLT Scheme Enterprize edition: $349.99
+  0. Racket Home edition: $99.99
+  1. Racket Professional edition: $149.99
+  2. Racket Enterprize edition: $349.99
 
   Total: 3 items
   Average price: $199.99

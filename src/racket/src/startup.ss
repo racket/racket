@@ -236,7 +236,7 @@
       (unless (path-string? s)
         (raise-type-error who "path or valid-path string" s))
       (unless (relative-path? s)
-        (raise (make-exn:fail:contract
+        (raise (exn:fail:contract
                 (string->immutable-string
                  (format "~a: invalid relative path: ~s" who s))
                 (current-continuation-marks))))))
@@ -251,7 +251,7 @@
       (-check-collection 'collection-path collection collection-path)
       (-find-col 'collection-path (lambda (s)
                                     (raise
-                                     (make-exn:fail:filesystem s (current-continuation-marks))))
+                                     (exn:fail:filesystem s (current-continuation-marks))))
                  collection collection-path)))
 
   (define-values (-find-col)

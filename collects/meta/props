@@ -1097,7 +1097,7 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/matcher-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/pict-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/rg-test.ss" drdr:command-line "mzc ~s"
-"collects/redex/tests/run-tests.ss" drdr:command-line "mred-text ~s --examples --no-bitmaps" drdr:timeout 180
+"collects/redex/tests/run-tests.ss" drdr:command-line "mred-text ~s --examples --no-bitmaps" drdr:timeout 240
 "collects/redex/tests/term-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/tl-test.ss" drdr:command-line "mzc ~s"
 "collects/repos-time-stamp" responsible (eli)

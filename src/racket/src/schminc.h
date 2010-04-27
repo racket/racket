@@ -11,7 +11,7 @@
    EXPECTED_PRIM_COUNT to the new value, and then USE_COMPILED_STARTUP
    can be set to 1 again. */
 
-#define USE_COMPILED_STARTUP 1
+#define USE_COMPILED_STARTUP 0
 
 #define EXPECTED_PRIM_COUNT 992
 #define EXPECTED_UNSAFE_COUNT 65

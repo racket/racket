@@ -709,17 +709,6 @@ like @scheme[_bytes], since the string carries its size information
 is present for consistency with the above macros).}
 
 
-@defform*[[(_cvector mode type maybe-len)
-           _cvector]]{
-
-Like @scheme[_bytes], @scheme[_cvector] can be used as a simple type
-that corresponds to a pointer that is managed as a safe C vector on
-the Scheme side; see @secref["foreign:cvector"].  The longer form
-behaves similarly to the @scheme[_list] and @scheme[_vector] custom
-types, except that @scheme[_cvector] is more efficient; no Scheme
-list or vector is needed.}
-
-
 @; ------------------------------------------------------------
 
 @section{C Struct Types}

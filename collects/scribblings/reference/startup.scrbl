@@ -9,29 +9,29 @@
 @(define (PFlagFirst n) (as-index (PFlag n)))
 
 @(define (nontermstr s)
-   @elem{@schemevalfont{"}@nonterm[s]@schemevalfont{"}})
+   @elem{@racketvalfont{"}@nonterm[s]@racketvalfont{"}})
 
 @(define eventspace
    @tech[#:doc '(lib "scribblings/gui/gui.scrbl")]{eventspace})
 
-@title[#:tag "running-sa"]{Running MzScheme or MrEd}
+@title[#:tag "running-sa"]{Running Racket or GRacket}
 
-The core PLT Scheme run-time system is available in two main variants:
+The core Racket run-time system is available in two main variants:
 
 @itemize[
 
- @item{MzScheme, which provides the primitives libraries on which
-       @schememodname[racket/base] is implemented. Under Unix and Mac
+ @item{Racket, which provides the primitives libraries on which
+       @racketmodname[racket/base] is implemented. Under Unix and Mac
        OS X, the executable is called
-       @as-index{@exec{mzscheme}}. Under Windows, the executable is
-       called @as-index{@exec{MzScheme.exe}}.}
+       @as-index{@exec{racket}}. Under Windows, the executable is
+       called @as-index{@exec{Racket.exe}}.}
 
- @item{MrEd, which extends @exec{mzscheme} with GUI primitives on
-       which @schememodname[racket/gui/base] is implemented. Under
-       Unix, the executable is called @as-index{@exec{mred}}. Under
+ @item{GRacket, which extends @exec{racket} with GUI primitives on
+       which @racketmodname[racket/gui/base] is implemented. Under
+       Unix, the executable is called @as-index{@exec{gracket}}. Under
        Windows, the executable is called
-       @as-index{@exec{MrEd.exe}}. Under Mac OS X, the @exec{mred}
-       script launches @as-index{@exec{MrEd.app}}.}
+       @as-index{@exec{GRacket.exe}}. Under Mac OS X, the @exec{gracket}
+       script launches @as-index{@exec{GRacket.app}}.}
 
 ]
 
@@ -40,75 +40,75 @@ The core PLT Scheme run-time system is available in two main variants:
 @section[#:tag "init-actions"]{Initialization}
 
 On startup, the top-level environment contains no bindings---not even
-@scheme[#%app] for function application. Primitive modules with names
-that start with @schemeidfont{#%} are defined, but they are not meant
+@racket[#%app] for function application. Primitive modules with names
+that start with @racketidfont{#%} are defined, but they are not meant
 for direct use, and the set of such modules can change.  For example,
-the @indexed-scheme['#%kernel] module is eventually used to bootstrap
-the implemetation of @schememodname[racket/base], and
-@scheme['#%mred-kernel] is used for @schememodname[racket/gui/base].
+the @indexed-racket['#%kernel] module is eventually used to bootstrap
+the implemetation of @racketmodname[racket/base], and
+@racket['#%mred-kernel] is used for @racketmodname[racket/gui/base].
 
-The first action of MzScheme or MrEd is to initialize
-@scheme[current-library-collection-paths] to the result of
-@scheme[(find-library-collection-paths _pre-extras _extras)], where
-@scheme[_pre-extras] is normally @scheme[null] and @scheme[_extras]
+The first action of Racket or GRacket is to initialize
+@racket[current-library-collection-paths] to the result of
+@racket[(find-library-collection-paths _pre-extras _extras)], where
+@racket[_pre-extras] is normally @racket[null] and @racket[_extras]
 are extra directory paths provided in order in the command line with
-@Flag{S}/@DFlag{search}. An executable created from the MzScheme or
-MrEd executable can embed paths used as @scheme[_pre-extras].
+@Flag{S}/@DFlag{search}. An executable created from the Racket or
+GRacket executable can embed paths used as @racket[_pre-extras].
 
-MzScheme and MrEd next @scheme[require] @schememodname[racket/init]
-and @schememodname[racket/gui/init], respectively, but only if the
-command line does not specify a @scheme[require] flag
+Racket and GRacket next @racket[require] @racketmodname[racket/init]
+and @racketmodname[racket/gui/init], respectively, but only if the
+command line does not specify a @racket[require] flag
 (@Flag{t}/@DFlag{require}, @Flag{l}/@DFlag{lib}, or
-@Flag{u}/@DFlag{require-script}) before any @scheme[eval],
-@scheme[load], or read-eval-print-loop flag (@Flag{e}/@DFlag{eval},
+@Flag{u}/@DFlag{require-script}) before any @racket[eval],
+@racket[load], or read-eval-print-loop flag (@Flag{e}/@DFlag{eval},
 @Flag{f}/@DFlag{load}, @Flag{r}/@DFlag{script}, @Flag{m}/@DFlag{main},
 or @Flag{i}/@DFlag{repl}). The initialization library can be changed
 with the @Flag{I} @tech{configuration option}. The
-@scheme['configure-runtime] property of the initialization library's
+@racket['configure-runtime] property of the initialization library's
 language is used before the library is instantiated; see
 @secref["configure-runtime"].
 
 After potentially loading the initialization module, expression
-@scheme[eval]s, files @scheme[load]s, and module @scheme[require]s are
+@racket[eval]s, files @racket[load]s, and module @racket[require]s are
 executed in the order that they are provided on the command line. If
-any raises an uncaught exception, then the remaining @scheme[eval]s,
-@scheme[load]s, and @scheme[require]s are skipped. If the first
-@scheme[require] precedes any @scheme[eval] or @scheme[load] so that
+any raises an uncaught exception, then the remaining @racket[eval]s,
+@racket[load]s, and @racket[require]s are skipped. If the first
+@racket[require] precedes any @racket[eval] or @racket[load] so that
 the initialization library is skipped, then the
-@scheme['configure-runtime] property of the required module's library
+@racket['configure-runtime] property of the required module's library
 language is used before the module is instantiated; see
 @secref["configure-runtime"].
 
 After running all command-line expressions, files, and modules,
-MzScheme or MrEd then starts a read-eval-print loop for interactive
+Racket or GRacket then starts a read-eval-print loop for interactive
 evaluation if no command line flags are provided other than
 @tech{configuration options}.  If any command-line argument is
 provided that is not a @tech{configuration option}, then the
 read-eval-print-loop is not started, unless the @Flag{i}/@DFlag{repl}
 flag is provided on the command line to
 specifically re-enable it. In addition, just before the command line
-is started, MzScheme loads the file @scheme[(find-system-path
-'init-file)] and MrEd loads the file
-@scheme[(find-graphical-system-path 'init-file)] is loaded, unless the
+is started, Racket loads the file @racket[(find-system-path
+'init-file)] and GRacket loads the file
+@racket[(find-graphical-system-path 'init-file)] is loaded, unless the
 @Flag{q}/@DFlag{no-init-file} flag is specified on the command line.
 
-Finally, before MrEd exists, it waits for all frames to class, all
+Finally, before GRacket exists, it waits for all frames to class, all
 timers to stop, @|etc| in the main @|eventspace| by evaluating
-@scheme[(scheme 'yield)]. This waiting step can be suppressed with the
+@racket[(racket 'yield)]. This waiting step can be suppressed with the
 @Flag{V}/@DFlag{no-yield} command-line flag.
 
 @; ----------------------------------------------------------------------
 
 @section[#:tag "exit-status"]{Exit Status}
 
-The default exit status for a MzScheme or MrEd process is non-zero if
-an error occurs during a command-line @scheme[eval] (via @Flag{e},
-etc.), @scheme[load] (via @Flag{f}, @Flag{r}, etc.), or
-@scheme[require] (via @Flag{-l}, @Flag{t}, etc.), but only when no
+The default exit status for a Racket or GRacket process is non-zero if
+an error occurs during a command-line @racket[eval] (via @Flag{e},
+etc.), @racket[load] (via @Flag{f}, @Flag{r}, etc.), or
+@racket[require] (via @Flag{-l}, @Flag{t}, etc.), but only when no
 read-eval-print loop is started. Otherwise, the default exit status is
-@scheme[0].
+@racket[0].
 
-In all cases, a call to @scheme[exit] (when the default @tech{exit
+In all cases, a call to @racket[exit] (when the default @tech{exit
 handler} is in place) can end the process with a specific status
 value.
 
@@ -120,7 +120,7 @@ value.
 
 @section[#:tag "mz-cmdline"]{Command Line}
 
-The MzScheme and MrEd executables recognize the following command-line
+The Racket and GRacket executables recognize the following command-line
 flags:
 
 @itemize[
@@ -130,35 +130,35 @@ flags:
  @itemize[
 
   @item{@FlagFirst{e} @nonterm{expr} or @DFlagFirst{eval}
-        @nonterm{expr} : @scheme[eval]s @nonterm{expr}. The results of
-        the evaluation are printed via @scheme[current-print].}
+        @nonterm{expr} : @racket[eval]s @nonterm{expr}. The results of
+        the evaluation are printed via @racket[current-print].}
 
   @item{@FlagFirst{f} @nonterm{file} or @DFlagFirst{load}
-        @nonterm{file} : @scheme[load]s @nonterm{file}.}
+        @nonterm{file} : @racket[load]s @nonterm{file}.}
 
   @item{@FlagFirst{t} @nonterm{file} or @DFlagFirst{require}
-        @nonterm{file} : @scheme[require]s @nonterm{file}.}
+        @nonterm{file} : @racket[require]s @nonterm{file}.}
 
   @item{@FlagFirst{l} @nonterm{path} or @DFlagFirst{lib}
-       @nonterm{path} : @scheme[require]s @scheme[(lib
+       @nonterm{path} : @racket[require]s @racket[(lib
        @#,nontermstr{path})].}
 
   @item{@FlagFirst{p} @nonterm{package} :
-       @scheme[require]s @scheme[(planet @#,nontermstr{package})].
+       @racket[require]s @racket[(planet @#,nontermstr{package})].
 
        @margin-note{Despite its name, @DFlag{script} is not usually
        used for Unix scripts. See @guidesecref["scripts"] for more
        information on scripts.}}
 
   @item{@FlagFirst{r} @nonterm{file} or @DFlagFirst{script}
-        @nonterm{file} : @scheme[load]s @nonterm{file} as a
+        @nonterm{file} : @racket[load]s @nonterm{file} as a
         script. This flag is like @Flag{t} @nonterm{file} plus
         @Flag{N} @nonterm{file} to set the program name and @Flag{-}
         to cause all further command-line elements to be treated as
         non-flag arguments.}
 
   @item{@FlagFirst{u} @nonterm{file} or @DFlagFirst{require-script}
-       @nonterm{file} : @scheme[require]s @nonterm{file} as a script;
+       @nonterm{file} : @racket[require]s @nonterm{file} as a script;
        This flag is like @Flag{t} @nonterm{file} plus @Flag{N}
        @nonterm{file} to set the program name and @Flag{-} to cause
        all further command-line elements to be treated as non-flag
@@ -167,22 +167,22 @@ flags:
   @item{@FlagFirst{k} @nonterm{n} @nonterm{m} : Loads code embedded in
         the executable from file position @nonterm{n} to
         @nonterm{m}. This option is normally embedded in a stand-alone
-        binary that also embeds Scheme code.}
+        binary that also embeds Racket code.}
 
   @item{@FlagFirst{m} or @DFlagFirst{main} : Evaluates a call to
-        @schemeidfont{main} as bound in the top-level environment. All
+        @racketidfont{main} as bound in the top-level environment. All
         of the command-line arguments that are not processed as
         options (i.e., the arguments put into
-        @scheme[current-command-line-arguments]) are passed as
-        arguments to @schemeidfont{main}. The results of the call are
-        printed via @scheme[current-print].
+        @racket[current-command-line-arguments]) are passed as
+        arguments to @racketidfont{main}. The results of the call are
+        printed via @racket[current-print].
 
-        The call to @schemeidfont{main} is constructed as an
-        expression @scheme[((unsyntax @schemeidfont{main}) _arg-str
+        The call to @racketidfont{main} is constructed as an
+        expression @racket[((unsyntax @racketidfont{main}) _arg-str
         ...)]  where the lexical context of the expression gives
-        @schemeidfont{#%app} and @schemeidfont{#%datum} bindings as
-        @scheme[#%plain-app] and @scheme[#%datum], but the lexical
-        context of @schemeidfont{main} is the top-level environment.}
+        @racketidfont{#%app} and @racketidfont{#%datum} bindings as
+        @racket[#%plain-app] and @racket[#%datum], but the lexical
+        context of @racketidfont{main} is the top-level environment.}
 
  ]}
 
@@ -191,26 +191,26 @@ flags:
  @itemize[
 
   @item{@FlagFirst{i} or @DFlagFirst{repl} : Runs interactive read-eval-print
-        loop, using either @scheme[read-eval-print-loop] (MzScheme) or
-        @scheme[graphical-read-eval-print-loop] (MrEd) after showing
-        @scheme[(banner)] and loading @scheme[(find-system-path
-        'init-file)]. For MrEd, supply the @Flag{z}/@DFlag{text-repl}
-        configuration option to use @scheme[read-eval-print-loop]
-        instead of @scheme[graphical-read-eval-print-loop].}
+        loop, using either @racket[read-eval-print-loop] (Racket) or
+        @racket[graphical-read-eval-print-loop] (GRacket) after showing
+        @racket[(banner)] and loading @racket[(find-system-path
+        'init-file)]. For GRacket, supply the @Flag{z}/@DFlag{text-repl}
+        configuration option to use @racket[read-eval-print-loop]
+        instead of @racket[graphical-read-eval-print-loop].}
 
   @item{@FlagFirst{n} or @DFlagFirst{no-lib} : Skips requiring the
-        initialization library (i.e., @schememodname[racket/init] or
-        @schememodname[racket/gui/init], unless it is changed with the
+        initialization library (i.e., @racketmodname[racket/init] or
+        @racketmodname[racket/gui/init], unless it is changed with the
         @Flag{I} flag) when not otherwise disabled.}
 
   @item{@FlagFirst{v} or @DFlagFirst{version} : Shows
-        @scheme[(banner)].}
+        @racket[(banner)].}
 
-  @item{@FlagFirst{K} or @DFlagFirst{back} : MrEd, Mac OS X only;
+  @item{@FlagFirst{K} or @DFlagFirst{back} : GRacket, Mac OS X only;
         leave application in the background.}
 
   @item{@FlagFirst{V} @DFlagFirst{no-yield} : Skips final
-        @scheme[(yield 'wait)] action, which normally waits until all
+        @racket[(yield 'wait)] action, which normally waits until all
         frames are closed, @|etc| in the main @|eventspace| before
         exiting.}
 
@@ -222,24 +222,24 @@ flags:
 
   @item{@FlagFirst{c} or @DFlagFirst{no-compiled} : Disables loading
         of compiled byte-code @filepath{.zo} files, by initializing
-        @scheme[current-compiled-file-paths] to @scheme[null].}
+        @racket[current-compiled-file-paths] to @racket[null].}
 
   @item{@FlagFirst{q} or @DFlagFirst{no-init-file} : Skips loading
-        @scheme[(find-system-path 'init-file)] for
+        @racket[(find-system-path 'init-file)] for
         @Flag{i}/@DFlag{repl}.}
 
-  @item{@FlagFirst{z} or @DFlagFirst{text-repl} : MrEd only; changes
+  @item{@FlagFirst{z} or @DFlagFirst{text-repl} : GRacket only; changes
         @Flag{i}/@DFlag{repl} to use
-        @scheme[textual-read-eval-print-loop] instead of
-        @scheme[graphical-read-eval-print-loop].}
+        @racket[textual-read-eval-print-loop] instead of
+        @racket[graphical-read-eval-print-loop].}
 
-  @item{@FlagFirst{I} @nonterm{path} : Sets @scheme[(lib
-        @#,nontermstr{path})] as the path to @scheme[require] to initialize
+  @item{@FlagFirst{I} @nonterm{path} : Sets @racket[(lib
+        @#,nontermstr{path})] as the path to @racket[require] to initialize
         the namespace, unless namespace initialization is disabled.}
 
   @item{@FlagFirst{X} @nonterm{dir} or @DFlagFirst{collects}
         @nonterm{dir} : Sets @nonterm{dir} as the path to the main
-        collection of libraries by making @scheme[(find-system-path
+        collection of libraries by making @racket[(find-system-path
         'collects-dir)] produce @nonterm{dir}.}
 
   @item{@FlagFirst{S} @nonterm{dir} or @DFlagFirst{search}
@@ -251,21 +251,21 @@ flags:
   @item{@FlagFirst{U} or @DFlagFirst{no-user-path} : Omits
         user-specific paths in the search for collections, C
         libraries, etc. by initializing the
-        @scheme[use-user-specific-search-paths] parameter to
-        @scheme[#f].}
+        @racket[use-user-specific-search-paths] parameter to
+        @racket[#f].}
 
   @item{@FlagFirst{N} @nonterm{file} or @DFlagFirst{name}
         @nonterm{file} : sets the name of the executable as reported
-        by @scheme[(find-system-path 'run-file)] to
+        by @racket[(find-system-path 'run-file)] to
         @nonterm{file}.}
 
   @item{@FlagFirst{j} or @DFlagFirst{no-jit} : Disables the
         native-code just-in-time compiler by setting the
-        @scheme[eval-jit-enabled] parameter to @scheme[#f].}
+        @racket[eval-jit-enabled] parameter to @racket[#f].}
 
   @item{@FlagFirst{d} or @DFlagFirst{no-delay} : Disables on-demand
         parsing of compiled code and syntax objects by setting the
-        @scheme[read-on-demand-source] parameter to @scheme[#f].}
+        @racket[read-on-demand-source] parameter to @racket[#f].}
 
   @item{@FlagFirst{b} or @DFlagFirst{binary} : Requests binary mode,
         instead of text mode, for the process's input, out, and error
@@ -310,7 +310,7 @@ If no command-line arguments are supplied other than
 @tech{configuration options}, then the @Flag{i}/@DFlag{repl} flag is
 effectively added.
 
-For MrEd under X11, the follow flags are recognized when they appear
+For GRacket under X11, the follow flags are recognized when they appear
 at the beginning of the command line, and they count as configuration
 options (i.e., they do not disable the read-eval-print loop or prevent
 the insertion of @Flag{u}/@DFlag{require-script}):
@@ -334,15 +334,15 @@ the insertion of @Flag{u}/@DFlag{require-script}):
         @Flag{synchronous} and @Flag{xrm} flags behave in the usual
         way.}
 
-  @item{@FlagFirst{singleInstance} : If an existing MrEd is already
+  @item{@FlagFirst{singleInstance} : If an existing GRacket is already
         running on the same X11 display, if it was started on a
         machine with the same hostname, and if it was started with the
-        same name as reported by @scheme[(find-system-path
+        same name as reported by @racket[(find-system-path
         'run-file)]---possibly set with the @Flag{N}/@DFlag{name}
         command-line argument---then all non-option command-line
         arguments are treated as filenames and sent to the existing
-        MrEd instance via the application file handler (see
-        @scheme[application-file-handler]).}
+        GRacket instance via the application file handler (see
+        @racket[application-file-handler]).}
 
 ]
 
@@ -368,7 +368,7 @@ switches in the same collapsed set, it is implicitly moved to the end
 of the collapsed set.
 
 Extra arguments following the last option are available from the
-@indexed-scheme[current-command-line-arguments] parameter.
+@indexed-racket[current-command-line-arguments] parameter.
 
 @; ----------------------------------------------------------------------
 
@@ -381,31 +381,31 @@ language specifies run-time configuration by
 
 @itemlist[
 
- @item{attaching a @scheme['module-language] @tech{syntax property} to
-       the module as read from its source (see @scheme[module] and
-       @scheme[module-compiled-language-info]);}
+ @item{attaching a @racket['module-language] @tech{syntax property} to
+       the module as read from its source (see @racket[module] and
+       @racket[module-compiled-language-info]);}
 
- @item{having the function indicated by the @scheme['module-language]
+ @item{having the function indicated by the @racket['module-language]
        @tech{syntax property} recognize the
-       @scheme['configure-runtime] key, for which it returns a list of
-       vectors; each vector must have the form @scheme[(vector _mp
-       _name _val)] where @scheme[_mp] is a @tech{module path},
-       @scheme[_name] is a symbol, and @scheme[_val] is an arbitrary
+       @racket['configure-runtime] key, for which it returns a list of
+       vectors; each vector must have the form @racket[(vector _mp
+       _name _val)] where @racket[_mp] is a @tech{module path},
+       @racket[_name] is a symbol, and @racket[_val] is an arbitrary
        value; and}
 
- @item{having each function called as @scheme[((dynamic-require _mp
+ @item{having each function called as @racket[((dynamic-require _mp
        _name) _val)] configure the run-time environment, typically by
-       setting parameters such as @scheme[current-print].}
+       setting parameters such as @racket[current-print].}
 
 ]
 
-The @schememodname[racket/base] and @schememodname[scheme] languages
+The @racketmodname[racket/base] and @racketmodname[racket] languages
 do not currently specify a run-time configuration action.
 
-A @scheme['configure-runtime] query returns a list of vectors, instead
+A @racket['configure-runtime] query returns a list of vectors, instead
 of directly configuring the environment, so that the indicated modules
 to be bundled with a program when creating a stand-alone
 executable; see @secref[#:doc '(lib "scribblings/mzc/mzc.scrbl") "exe"].
 
 For information on defining a new @hash-lang[] language, see
-@schememodname[syntax/module-reader].
+@racketmodname[syntax/module-reader].
