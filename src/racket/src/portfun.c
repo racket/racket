@@ -3701,7 +3701,12 @@ static Scheme_Object *sch_default_global_port_print_handler(int argc, Scheme_Obj
     scheme_wrong_type("default-global-port-print-handler", "non-negative exact integer", 
                       2, argc, argv);
 
-  scheme_internal_print(argv[0], argv[1], argv[2]);
+  if (argc == 2) {
+    scheme_internal_print(argv[0], argv[1], scheme_make_integer(0));
+  }
+  else {
+    scheme_internal_print(argv[0], argv[1], argv[2]);
+  }
 
   return scheme_void;
 }
