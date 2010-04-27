@@ -101,7 +101,9 @@
                     (subtype t1 t2))]
               [(_ _) #f])))
 
-(define (compact props)
+;; props : propositions to compress
+;; or? : is this or OrFilter (alternative is AndFilter)
+(define (compact props or?)
   (define tf-map (make-hash))
   (define ntf-map (make-hash))
   (let loop ([props props] [others null])
@@ -110,18 +112,17 @@
                 (for/list ([v (in-dict-values tf-map)]) v)
                 (for/list ([v (in-dict-values ntf-map)]) v))
         (match (car props)
-          [(and p (TypeFilter: t1 f1 x))
+          [(and p (TypeFilter: t1 f1 x) (? (lambda _ or?)))
            (hash-update! tf-map
                          (list f1 (hash-id x))
                          (match-lambda [(TypeFilter: t2 _ _) (make-TypeFilter (Un t1 t2) f1 x)]
                                        [p (int-err "got something that isn't a typefilter ~a" p)])
                          p)
            (loop (cdr props) others)]
-          #;
-          [(and p (NotTypeFilter: t1 f1 x))
+          [(and p (NotTypeFilter: t1 f1 x) (? (lambda _ (not or?))))
            (hash-update! ntf-map
                          (list f1 (hash-id x))
-                         (match-lambda [(NotTypeFilter: t2 _ _) (make-NotTypeFilter (restrict t1 t2) f1 x)]
+                         (match-lambda [(NotTypeFilter: t2 _ _) (make-NotTypeFilter (Un t1 t2) f1 x)]
                                        [p (int-err "got something that isn't a nottypefilter ~a" p)])
                          p)
            (loop (cdr props) others)]
@@ -144,7 +145,7 @@
         (match result
           [(list) -bot]
           [(list f) f]
-          [_ (distribute (compact result))])
+          [_ (distribute (compact result #t))])
         (match (car fs)
           [(and t (Top:)) t]
           [(OrFilter: fs*) (loop (append fs* (cdr fs)) result)]
@@ -153,7 +154,7 @@
            (cond [(for/or ([f (in-list (append (cdr fs) result))])
                     (opposite? f t))
                   -top]
-                 [(for/or ([f (in-list result)]) (or (filter-equal? f t) (implied-atomic? t f)))
+                 [(for/or ([f (in-list result)]) (or (filter-equal? f t) (implied-atomic? f t)))
                   (loop (cdr fs) result)]
                  [else
                   (loop (cdr fs) (cons t result))])]))))
@@ -169,10 +170,16 @@
                             -bot
                             (if (filter-equal? f1 f2)
                                 f1
-                                (make-AndFilter (list f1 f2))))]
-          [_ (make-AndFilter result)])
+                                (make-AndFilter (compact (list f1 f2) #f))))]
+          [_ (make-AndFilter (compact result #f))])
         (match (car fs)
           [(and t (Bot:)) t]
           [(AndFilter: fs*) (loop (cdr fs) (append fs* result))]
           [(Top:) (loop (cdr fs) result)]
-          [t (loop (cdr fs) (cons t result))]))))
+          [t (cond [(for/or ([f (in-list (append (cdr fs) result))])
+                      (opposite? f t))
+                    -bot]
+                   [(for/or ([f (in-list result)]) (or (filter-equal? f t) (implied-atomic? t f)))
+                    (loop (cdr fs) result)]
+                   [else
+                    (loop (cdr fs) (cons t result))])]))))

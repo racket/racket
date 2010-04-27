@@ -176,7 +176,7 @@
            (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]
           [t (sub-one subst-type t)])
         r))
-  (let ([tr1 (debug maybe-abstract tr1)])
+  (let ([tr1 (maybe-abstract tr1)])
     (match* (tr1 expected)
       ;; these two have to be first so that errors can be allowed in cases where multiple values are expected
       [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) (tc-results: ts2 (NoFilter:) (NoObject:)))
