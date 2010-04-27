@@ -1,13 +1,13 @@
 #lang scribble/doc
 @(require "utils.ss"
-          (for-label racket/unsafe/ffi/alloc
-                     racket/unsafe/ffi/define
-                     racket/unsafe/ffi/atomic))
+          (for-label ffi/unsafe/alloc
+                     ffi/unsafe/define
+                     ffi/unsafe/atomic))
 
 @title{Allocation and Finalization}
 
-@defmodule[racket/unsafe/ffi/alloc]{The
-@schememodname[racket/unsafe/ffi/alloc] library provides utilities for
+@defmodule[ffi/unsafe/alloc]{The
+@schememodname[ffi/unsafe/alloc] library provides utilities for
 ensuring that values allocated through foreign functions are reliably
 deallocated.}
 

@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "utils.ss"
-          (for-label racket/unsafe/ffi/atomic))
+          (for-label ffi/unsafe/atomic))
 
 @title{Atomic Execution}
 
-@defmodule[racket/unsafe/ffi/atomic]
+@defmodule[ffi/unsafe/atomic]
 
 @deftogether[(
 @defproc[(start-atomic) void?]

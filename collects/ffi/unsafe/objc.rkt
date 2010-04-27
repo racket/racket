@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/unsafe/ffi
+(require ffi/unsafe
          racket/stxparam
          (for-syntax racket/base))
 

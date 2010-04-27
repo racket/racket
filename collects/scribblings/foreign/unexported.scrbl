@@ -9,8 +9,8 @@
 
 @declare-exporting['#%foreign]
 
-Parts of the @schememodname[scheme/foreign] library are implemented by
-the MzScheme built-in @schememodname['#%foreign] module.  The
+Parts of the @schememodname[ffi/unsafe] library are implemented by
+the Racket built-in @schememodname['#%foreign] module.  The
 @schememodname['#%foreign] module is not intended for direct use, but
 it exports the following procedures.  If you find any of these useful,
 please let us know.

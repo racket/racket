@@ -1,11 +1,11 @@
 #lang scribble/doc
 @(require "utils.ss"
-          (for-label racket/unsafe/ffi/define
-                     racket/unsafe/ffi/alloc))
+          (for-label ffi/unsafe/define
+                     ffi/unsafe/alloc))
 
 @title{Defining Bindings}
 
-@defmodule[racket/unsafe/ffi/define]
+@defmodule[ffi/unsafe/define]
 
 @defform/subs[(define-ffi-definer define-id ffi-lib-expr
                 option ...)

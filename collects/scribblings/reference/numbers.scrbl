@@ -956,7 +956,7 @@ unsafe operations on @tech{flvector}s (see
 @schememodname[racket/unsafe/ops]) can execute more efficiently than
 unsafe operations on @tech{vectors} of inexact reals.
 
-An f64vector as provided by @schememodname[racket/unsafe/ffi] stores the
+An f64vector as provided by @schememodname[ffi/vector] stores the
 same kinds of values as an @tech{flvector}, but with extra
 indirections that make f64vectors more convenient for working with
 foreign libraries. The lack of indirections make unsafe

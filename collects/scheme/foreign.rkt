@@ -1,16 +1,16 @@
 #lang racket/base
 (require (for-syntax scheme/base))
 
-(define-syntax-rule (provide-except-unsafe lib u! id ...)
+(define-syntax-rule (provide-except-unsafe (ulib ...) u! id ...)
   (begin
-    (require lib)
-    (provide (except-out (all-from-out lib) id ...))
+    (require ulib ...)
+    (provide (except-out (all-from-out ulib ...) id ...))
     (define-syntax (u! stx)
       (syntax-case stx ()
-        [(_) (with-syntax ([lib+ids (datum->syntax stx '(lib id ...))])
+        [(_) (with-syntax ([lib+ids (datum->syntax stx `((,#'combine-in ulib ...) id ...))])
                #'(require (only-in . lib+ids)))]))))
 
-(provide-except-unsafe racket/unsafe/ffi unsafe!
+(provide-except-unsafe (ffi/unsafe ffi/unsafe/cvector ffi/vector) unsafe!
                        
  free end-stubborn-change
  ptr-ref ptr-set! cast

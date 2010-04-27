@@ -5,9 +5,9 @@
 
 @author["Eli Barzilay"]
 
-@defmodule[racket/unsafe/ffi #:use-sources ('#%foreign)]
+@defmodule[ffi/unsafe #:use-sources ('#%foreign)]
 
-The @schememodname[racket/unsafe/ffi] library enables the direct use of
+The @schememodname[ffi/unsafe] library enables the direct use of
 C-based APIs within Racket programs---without writing any new C
 code. From the Racket perspective, functions and data with a C-based
 API are @idefterm{foreign}, hence the term @defterm{foreign
@@ -21,8 +21,8 @@ interface}, abbreviated @deftech{FFI}.
 @include-section["libs.scrbl"]
 @include-section["types.scrbl"]
 @include-section["pointers.scrbl"]
-@include-section["misc.scrbl"]
 @include-section["derived.scrbl"]
+@include-section["misc.scrbl"]
 @include-section["unexported.scrbl"]
 
 @index-section[]

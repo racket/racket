@@ -3,8 +3,8 @@
           scribble/eval
           (for-label racket/base
                      racket/contract
-                     racket/unsafe/ffi/objc
-                     (except-in racket/unsafe/ffi ->)
+                     ffi/unsafe/objc
+                     (except-in ffi/unsafe ->)
                      (only-in ffi/objc objc-unsafe!)
                      (only-in scheme/foreign unsafe!)))
 
@@ -16,9 +16,9 @@
 
 @title{Objective-C FFI}
 
-@defmodule[racket/unsafe/ffi/objc]{The
-@racketmodname[racket/unsafe/ffi/objc] library builds on
-@racketmodname[racket/unsafe/ffi] to support interaction with
+@defmodule[ffi/unsafe/objc]{The
+@racketmodname[ffi/unsafe/objc] library builds on
+@racketmodname[ffi/unsafe] to support interaction with
 @link["http://developer.apple.com/documentation/Cocoa/Conceptual/ObjectiveC/"]{Objective-C}.}
 
 The library supports Objective-C interaction in two layers. The upper
@@ -333,12 +333,12 @@ Constructor and FFI C type use for super calls.}
 @section{Legacy Library}
 
 @defmodule[ffi/objc]{The @racketmodname[ffi/objc] library is a
-deprecated entry point to @racketmodname[racket/unsafe/ffi/objc]. It
+deprecated entry point to @racketmodname[ffi/unsafe/objc]. It
 exports only safe operations directly, and unsafe operations are
 imported using @racket[objc-unsafe!].}
 
 @defform[(objc-unsafe!)]{
 
 Analogous to @racket[(unsafe!)], makes unsafe bindings of
-@racketmodname[racket/unsafe/ffi/objc] available in the importing
+@racketmodname[ffi/unsafe/objc] available in the importing
 module.}

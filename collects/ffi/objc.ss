@@ -11,7 +11,7 @@
                #'(require (only-in . lib+ids)))]))))
 
 (provide-except-unsafe 
- racket/unsafe/ffi/objc objc-unsafe!
+ ffi/unsafe/objc objc-unsafe!
  
  objc_msgSend/typed
  objc_msgSendSuper/typed

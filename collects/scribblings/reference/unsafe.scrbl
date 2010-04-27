@@ -2,7 +2,7 @@
 @(require "mz.ss"
           (for-label racket/unsafe/ops
                      racket/flonum
-                     (only-in racket/unsafe/ffi
+                     (only-in ffi/vector
                               f64vector?
                               f64vector-ref
                               f64vector-set!)))
