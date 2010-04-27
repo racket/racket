@@ -2,8 +2,8 @@
 
 #|
 
-This first time this is loaded, it loads all of drscheme and invokes
-the main unit, starting up drscheme. After that, it just provides
+This first time this is loaded, it loads all of DrRacket and invokes
+the main unit, starting up DrRacket. After that, it just provides
 all of the names in the tools library, for use defining keybindings
 
 |#
@@ -13,19 +13,19 @@ all of the names in the tools library, for use defining keybindings
          racket/contract
          racket/class
          
-         drscheme/private/link
-         drscheme/private/drsig
+         "private/link.rkt"
+         "private/drsig.rkt"
          
          framework
          framework/splash
          
          mrlib/switchable-button
          scribble/srcdoc
-         drscheme/private/language-object-contract)
+         "private/language-object-contract.rkt")
 
 (require (for-syntax scheme/base))
 
-(require/doc drscheme/private/ts scheme/base scribble/manual)
+(require/doc "private/ts.rkt" scheme/base scribble/manual)
 
 (require/doc (for-label errortrace/errortrace-key
                         scheme/pretty 
@@ -53,15 +53,15 @@ all of the names in the tools library, for use defining keybindings
       symbol?
       void?)
   (make-button id)
-  @{Call this function to add another button to DrScheme's toolbar. When buttons are added this way,
-    DrScheme monitors the @tt{#lang} line at the top of the file; when it changes DrScheme queries
+  @{Call this function to add another button to DrRacket's toolbar. When buttons are added this way,
+    DrRacket monitors the @tt{#lang} line at the top of the file; when it changes DrRacket queries
     the language to see if this button should be included.
     These buttons are ``opt out'', meaning that if the language doesn't explicitly ask to not
     have this button (or all such buttons), the button will appear.
     
     @section-index["drscheme:opt-out-toolbar-buttons"]
     See @racket[read-language] for more details on how language's specify how to opt out.
-    DrScheme will invoke the @tt{get-info} proc from @racket[read-language] with
+    DrRacket will invoke the @tt{get-info} proc from @racket[read-language] with
     @tt{'drscheme:opt-out-toolbar-buttons}. If the result is a list of symbols, the
     listed symbols are opted out. If the result is @racket[#f], all buttons are opted
     out. The default is the empty list, meaning that all opt-out buttons appear..
@@ -71,7 +71,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:module-language:add-module-language
   (-> any)
   ()
-  @{Adds the module language to DrScheme. This is called during DrScheme's startup.})
+  @{Adds the module language to DrRacket. This is called during DrRacket's startup.})
  
  (proc-doc/names
   drracket:module-language:module-language-put-file-mixin
@@ -112,7 +112,7 @@ all of the names in the tools library, for use defining keybindings
              @item{ @racket[current-namespace] has been set to a newly
                     created empty namespace. This namespace has the following modules 
                     copied (with @racket[namespace-attach-module])
-                    from DrScheme's original namespace:
+                    from DrRacket's original namespace:
                     @itemize[@item{@racket['mzscheme]}@item{@racket['mred]}]
                     }@item{
                            @racket[read-curly-brace-as-paren]
@@ -131,7 +131,7 @@ all of the names in the tools library, for use defining keybindings
                                                                a parameter that kills the user's custodian.
                                                                }@item{ The snip-class-list, returned by
                                                                       @racket[get-the-snip-class-list]
-                                                                      is initialized with all of the snipclasses in DrScheme's eventspace's snip-class-list.
+                                                                      is initialized with all of the snipclasses in DrRacket's eventspace's snip-class-list.
                                                                       
                                                                       }]})
  
@@ -286,7 +286,7 @@ all of the names in the tools library, for use defining keybindings
     @racket[drracket:language-configuration:make-language-settings]
     for details on that structure.
     
-    If the program is associated with a DrScheme
+    If the program is associated with a DrRacket
     frame, get the frame's language settings from the
     @method[drracket:unit:definitions-text<%> get-next-settings]
     method of 
@@ -345,7 +345,7 @@ all of the names in the tools library, for use defining keybindings
               (defs #f)
               (ints #f)))
   @{Displays the error message represented by the string, adding
-    embellishments like those that appears in the DrScheme REPL,
+    embellishments like those that appears in the DrRacket REPL,
     specifically a clickable icon for the stack trace (if the srcloc location is not empty),
     and a clickable icon for the source of the error (read & syntax errors show their source
     locations and otherwise the first place in the stack trace is shown).
@@ -373,7 +373,7 @@ all of the names in the tools library, for use defining keybindings
     parameter.
     
     If the current-error-port is the definitions window in
-    drscheme, this error handler inserts some debugging
+    DrRacket, this error handler inserts some debugging
     annotations, calls @racket[oedh], and then highlights the
     source location of the runtime error.
     
@@ -408,7 +408,7 @@ all of the names in the tools library, for use defining keybindings
        void?)
   ((debug-info)
    ((edition-pair #f)))
-  @{This function opens a DrScheme to display
+  @{This function opens a DrRacket to display
     @racket[debug-info]. Only the src the position
     and the span fields of the srcloc are considered.
     
@@ -434,7 +434,7 @@ all of the names in the tools library, for use defining keybindings
       void?)
   (error-message dis editions-pairs defs ints)
   @{Shows the backtrace window you get when clicking on the bug in
-    DrScheme's REPL.
+    DrRacket's REPL.
     
     The @racket[error-message] argument is the text of the error,
     @racket[dis] is the debug information, extracted from the
@@ -446,7 +446,7 @@ all of the names in the tools library, for use defining keybindings
     
     The @racket[defs] argument should be non-@racket[#f] if there are 
     possibly stacktrace frames that contain unsaved versions of the 
-    definitions window from drscheme. Similarly, the @racket[ints] argument
+    definitions window from DrRacket. Similarly, the @racket[ints] argument
     should be non-@racket[#f] if there are possibly stacktrace frames that contain
     unsaved versions of the interactions window.
     
@@ -468,7 +468,7 @@ all of the names in the tools library, for use defining keybindings
    ((rep #f)
     (defs #f)))
   @{Shows the backtrace window you get when clicking on the bug in
-    DrScheme's REPL.
+    DrRacket's REPL.
     
     This function simply calls @racket[drracket:debug:show-backtrace-window/edition-pairs],
     using @racket[drracket:debug:srcloc->edition/pair].
@@ -575,7 +575,7 @@ all of the names in the tools library, for use defining keybindings
    ((or/c string? false/c) . -> . (is-a?/c drracket:unit:frame%)))
   (() (filename))
   
-  @{Opens a drscheme frame that displays @racket[filename],
+  @{Opens a DrRacket frame that displays @racket[filename],
                                          or nothing if @racket[filename] is @racket[#f] or not supplied.})
  
  
@@ -607,11 +607,11 @@ all of the names in the tools library, for use defining keybindings
    . -> .
    drracket:modes:mode?)
   (name surrogate repl-submit matches-language)
-  @{Adds a mode to DrScheme. Returns a mode value
+  @{Adds a mode to DrRacket. Returns a mode value
     that identifies the mode.
     
     The first argument, @racket[name], is the name
-    of the mode, used in DrScheme's GUI to allow
+    of the mode, used in DrRacket's GUI to allow
     the user to select this mode.
     
     The @racket[surrogate] argument is set to the
@@ -656,7 +656,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:modes:get-modes
   (-> (listof drracket:modes:mode?))
   ()
-  @{Returns all of the modes currently added to DrScheme.
+  @{Returns all of the modes currently added to DrRacket.
     
     See also
     @racket[drracket:modes:add-mode].})
@@ -734,7 +734,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:rep:get-drs-bindings-keymap
   (-> (is-a?/c keymap%))
   ()
-  @{Returns a keymap that binds various DrScheme-specific
+  @{Returns a keymap that binds various DrRacket-specific
     keybindings. This keymap is used in the definitions
     and interactions window.
     
@@ -790,7 +790,7 @@ all of the names in the tools library, for use defining keybindings
    ((make-mixin-contract drracket:unit:tab<%>) boolean? . -> . void?))
   ((mixin) (mixin before?))
   
-  @{This class implements the tabs in drscheme. One is created for each tab
+  @{This class implements the tabs in DrRacket. One is created for each tab
     in a frame (each frame always has at least one tab, even if the tab bar is not shown)
     
     The argument, @racket[before], controls if the mixin is applied before or
@@ -804,7 +804,7 @@ all of the names in the tools library, for use defining keybindings
    ((make-mixin-contract drracket:rep:text<%>) boolean? . -> . void?))
   ((mixin) (mixin before?))
   
-  @{This text is used in the bottom window of drscheme frames.
+  @{This text is used in the bottom window of DrRacket frames.
     
     The argument, @racket[before], controls if the mixin is applied before or
     after already installed mixins.
@@ -826,7 +826,7 @@ all of the names in the tools library, for use defining keybindings
    ((make-mixin-contract drracket:unit:definitions-text<%>) boolean? . -> . void?))
   ((mixin) (mixin before?))
   
-  @{This text is used in the top window of drscheme frames.
+  @{This text is used in the top window of DrRacket frames.
     
     The argument, @racket[before], controls if the mixin is applied before or
     after already installed mixins.
@@ -848,7 +848,7 @@ all of the names in the tools library, for use defining keybindings
    ((make-mixin-contract drracket:unit:interactions-canvas%) boolean? . -> . void?))
   ((mixin) (mixin before?))
   
-  @{This canvas is used in the bottom window of drscheme frames.
+  @{This canvas is used in the bottom window of DrRacket frames.
     
     The argument, @racket[before], controls if the mixin is applied before or
     after already installed mixins.
@@ -870,7 +870,7 @@ all of the names in the tools library, for use defining keybindings
    ((make-mixin-contract drracket:unit:definitions-canvas%) boolean? . -> . void?))
   ((mixin) (mixin before?))
   
-  @{This canvas is used in the top window of drscheme frames.
+  @{This canvas is used in the top window of DrRacket frames.
     
     The argument, @racket[before], controls if the mixin is applied before or
     after already installed mixins.
@@ -892,7 +892,7 @@ all of the names in the tools library, for use defining keybindings
    ((make-mixin-contract drracket:unit:frame%) boolean? . -> . void?))
   ((mixin) (mixin before?))
   
-  @{This is the frame that implements the main drscheme window.
+  @{This is the frame that implements the main DrRacket window.
     
     The argument, @racket[before], controls if the mixin is applied before or
     after already installed mixins.
@@ -932,7 +932,7 @@ all of the names in the tools library, for use defining keybindings
   (-> syntax? syntax?)
   (stx)
   @{Call this function to add tracing annotations to the a fully-expanded
-    expression. When the program runs, DrScheme will pop open the tracing
+    expression. When the program runs, DrRacket will pop open the tracing
     window to display the trace.})
  
  ;                                                           
@@ -974,7 +974,7 @@ all of the names in the tools library, for use defining keybindings
   ()
   @{This can only be called after all of the tools initialization phases have completed.
     
-    Returns the list of all of the languages installed in DrScheme.})
+    Returns the list of all of the languages installed in DrRacket.})
  
  (proc-doc/names
   drracket:language-configuration:add-language
@@ -984,7 +984,7 @@ all of the names in the tools library, for use defining keybindings
   
   @{@phase[2]
      
-     Adds @racket[language] to the languages offerend by DrScheme.})
+     Adds @racket[language] to the languages offerend by DrRacket.})
  
  (proc-doc/names
   drracket:language-configuration:get-settings-preferences-symbol
@@ -1051,7 +1051,7 @@ all of the names in the tools library, for use defining keybindings
     @racket[drracket:language-configuration:fill-language-dialog].
     
     The @racket[show-welcome?] argument determines if
-    if a ``Welcome to DrScheme'' message and some
+    if a ``Welcome to DrRacket'' message and some
     natural language buttons are shown.
     
     The @racket[language-settings-to-show] argument
@@ -1116,7 +1116,7 @@ all of the names in the tools library, for use defining keybindings
   @{Registers a new capability with a default value for each language
     and a contract on the values the capability might have.
     
-    By default, these capabilities are registered as DrScheme starts up:
+    By default, these capabilities are registered as DrRacket starts up:
     @(let-syntax ([cap (syntax-rules ()
                          [(cap key contract default desc ...)
                           (item @racket['key : contract = default]

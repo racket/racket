@@ -27,7 +27,7 @@ If the namespace does not, they are colored the unbound color.
          syntax/toplevel
          syntax/boundmap
          mrlib/switchable-button
-         (prefix-in drscheme:arrow: drscheme/arrow)
+         (prefix-in drracket:arrow: drscheme/arrow)
          (prefix-in fw: framework/framework)
          mred
          framework
@@ -83,8 +83,8 @@ If the namespace does not, they are colored the unbound color.
 
 (define tool@ 
   (unit 
-    (import drscheme:tool^)
-    (export drscheme:tool-exports^)
+    (import drracket:tool^)
+    (export drracket:tool-exports^)
     
     ;; use this to communicate the frame being
     ;; syntax checked w/out having to add new
@@ -92,7 +92,7 @@ If the namespace does not, they are colored the unbound color.
     (define currently-processing-definitions-text (make-parameter #f))
     
     (define (phase1) 
-      (drscheme:module-language-tools:add-opt-out-toolbar-button
+      (drracket:module-language-tools:add-opt-out-toolbar-button
        (λ (frame parent)
          (new switchable-button%
               (label (string-constant check-syntax))
@@ -100,7 +100,7 @@ If the namespace does not, they are colored the unbound color.
               (parent parent)
               (callback (λ (button) (send frame syncheck:button-callback)))))
        'drscheme:syncheck)
-      (drscheme:unit:add-to-program-editor-mixin clearing-text-mixin))
+      (drracket:unit:add-to-program-editor-mixin clearing-text-mixin))
     (define (phase2) (void))
     
     (define (printf . args) (apply fprintf o args))
@@ -200,7 +200,7 @@ If the namespace does not, they are colored the unbound color.
         (define/private (clean-up)
           (let ([st (find-syncheck-text this)])
             (when (and st
-                       (is-a? st drscheme:unit:definitions-text<%>))
+                       (is-a? st drracket:unit:definitions-text<%>))
               (let ([tab (send st get-tab)])
                 (send tab syncheck:clear-error-message)
                 (send tab syncheck:clear-highlighting)))))
@@ -551,7 +551,7 @@ If the namespace does not, they are colored the unbound color.
                                [end-y   (arrow-end-y arrow)])
                            (unless (and (= start-x end-x)
                                         (= start-y end-y))
-                             (drscheme:arrow:draw-arrow dc start-x start-y end-x end-y dx dy)
+                             (drracket:arrow:draw-arrow dc start-x start-y end-x end-y dx dy)
                              (when (and (var-arrow? arrow) (not (var-arrow-actual? arrow)))
                                (let-values ([(fw fh _d _v) (send dc get-text-extent "x")])
                                  (send dc draw-text "?"
@@ -968,7 +968,7 @@ If the namespace does not, they are colored the unbound color.
     
     (define tab-mixin
       
-      (mixin (drscheme:unit:tab<%>) ()
+      (mixin (drracket:unit:tab<%>) ()
         (inherit is-current-tab? get-defs get-frame)
         
         (define report-error-text (new (fw:text:ports-mixin fw:scheme:text%)))
@@ -1016,7 +1016,7 @@ If the namespace does not, they are colored the unbound color.
         (super-new)))
     
     (define unit-frame-mixin
-      (mixin (drscheme:unit:frame<%>) (syncheck-frame<%>)
+      (mixin (drracket:unit:frame<%>) (syncheck-frame<%>)
         
         (inherit get-button-panel 
                  get-definitions-canvas 
@@ -1035,8 +1035,8 @@ If the namespace does not, they are colored the unbound color.
         (define/private (update-button-visibility/tab tab)
           (update-button-visibility/settings (send (send tab get-defs) get-next-settings)))
         (define/public (update-button-visibility/settings settings)
-          (let* ([lang (drscheme:language-configuration:language-settings-language settings)]
-                 [visible? (and (not (is-a? lang drscheme:module-language:module-language<%>))
+          (let* ([lang (drracket:language-configuration:language-settings-language settings)]
+                 [visible? (and (not (is-a? lang drracket:module-language:module-language<%>))
                                 (send lang capability-value 'drscheme:check-syntax-button))])
             (send check-syntax-button-parent-panel change-children
                   (λ (l)
@@ -1193,7 +1193,7 @@ If the namespace does not, they are colored the unbound color.
                                        
                                        (show-error-report/tab))))
                                   
-                                  (drscheme:debug:error-display-handler/stacktrace 
+                                  (drracket:debug:error-display-handler/stacktrace 
                                    msg 
                                    exn 
                                    '()
@@ -1220,8 +1220,8 @@ If the namespace does not, they are colored the unbound color.
                           (send the-tab reset-offer-kill)
                           (send (send the-tab get-defs) syncheck:init-arrows)
                           
-                          (drscheme:eval:expand-program
-                           (drscheme:language:make-text/pos definitions-text 0 (send definitions-text last-position))
+                          (drracket:eval:expand-program
+                           (drracket:language:make-text/pos definitions-text 0 (send definitions-text last-position))
                            (send definitions-text get-next-settings)
                            #t
                            init-proc
@@ -2547,7 +2547,7 @@ If the namespace does not, they are colored the unbound color.
     ;; add-to-cleanup-texts : (is-a?/c editor<%>) -> void
     (define (add-to-cleanup-texts ed)
       (let ([outermost (find-outermost-editor ed)])
-        (and (is-a? outermost drscheme:unit:definitions-text<%>)
+        (and (is-a? outermost drracket:unit:definitions-text<%>)
              (send outermost syncheck:add-to-cleanup-texts ed))))
     
     (define (find-outermost-editor ed)
@@ -2886,10 +2886,10 @@ If the namespace does not, they are colored the unbound color.
     ;                                          ;      
     
     
-    (add-check-syntax-key-bindings (drscheme:rep:get-drs-bindings-keymap))
+    (add-check-syntax-key-bindings (drracket:rep:get-drs-bindings-keymap))
     (fw:color-prefs:add-to-preferences-panel (string-constant check-syntax)
                                              syncheck-add-to-preferences-panel)
-    (drscheme:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)
-    (drscheme:get/extend:extend-definitions-text make-syncheck-text%)
-    (drscheme:get/extend:extend-unit-frame unit-frame-mixin #f)
-    (drscheme:get/extend:extend-tab tab-mixin)))
+    (drracket:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)
+    (drracket:get/extend:extend-definitions-text make-syncheck-text%)
+    (drracket:get/extend:extend-unit-frame unit-frame-mixin #f)
+    (drracket:get/extend:extend-tab tab-mixin)))

@@ -33,8 +33,8 @@ string-constants)
 (export drracket:tools^)
 
 ;; An installed-tool is
-;; (make-installed-tool directory-record module-spec string/#f string/#f string/#f string/#f)
-(define-struct installed-tool (dir spec bitmap name url))
+;; (make-installed-tool directory-record module-spec string/#f string/#f string/#f string/#f boolean)
+(define-struct installed-tool (dir spec bitmap name url drracket?) #:transparent)
 
 ;; installed-tools : (list-of installed-tool)
 (define installed-tools null)
@@ -82,10 +82,16 @@ string-constants)
 
 ;; all-tool-directories : -> (list-of directory-record)
 (define (all-tool-directories)
-  (find-relevant-directory-records '(tools tool-icons tool-names tool-urls)))
+  (find-relevant-directory-records '(drracket-tools drracket-tool-icons drracket-tool-names drracket-tool-urls
+                                                    tools tool-icons tool-names tool-urls)))
 
 ;; installed-tools-for-directory : directory-record -> (list-of installed-tool)
 (define (installed-tools-for-directory coll-dir)
+  (append (installed-tools-for-directory/keys coll-dir 'tools 'tool-icons 'tool-names 'tool-urls #f)
+          (installed-tools-for-directory/keys coll-dir 'drracket-tools 'drracket-tool-icons 'drracket-tool-names 'drracket-tool-urls #t)))
+
+;; installed-tools-for-directory/keys : directory-record symbol symbol symbol symbol boolean -> (list-of installed-tool)
+(define (installed-tools-for-directory/keys coll-dir tools-key tool-icons-key tool-names-key tool-urls-key drracket-tool?)
   (let ([table (with-handlers ((exn:fail? values))
                  (get-info/full (directory-record-path coll-dir)))])
     (cond
@@ -104,10 +110,10 @@ string-constants)
                     '(ok stop))
        null]
       [else
-       (let* ([tools (table 'tools (lambda () null))]
-              [tool-icons (table 'tool-icons (lambda () (map (lambda (x) #f) tools)))]
-              [tool-names (table 'tool-names (lambda () (map (lambda (x) #f) tools)))]
-              [tool-urls (table 'tool-urls (lambda () (map (lambda (x) #f) tools)))])
+       (let* ([tools (table tools-key (lambda () null))]
+              [tool-icons (table tool-icons-key (lambda () (map (lambda (x) #f) tools)))]
+              [tool-names (table tool-names-key (lambda () (map (lambda (x) #f) tools)))]
+              [tool-urls (table tool-urls-key (lambda () (map (lambda (x) #f) tools)))])
          (unless (= (length tools) (length tool-icons))
            (message-box (string-constant drscheme)
                         (format (string-constant tool-tool-icons-same-length)
@@ -129,7 +135,7 @@ string-constants)
                         #f
                         '(ok stop))
            (set! tool-urls (map (lambda (x) #f) tools)))
-         (map (lambda (t i n u) (make-installed-tool coll-dir t i n u))
+         (map (lambda (t i n u) (make-installed-tool coll-dir t i n u drracket-tool?))
               tools tool-icons tool-names tool-urls))])))
 
 ;; candidate-tool? : installed-tool -> boolean
@@ -242,19 +248,21 @@ string-constants)
                      (installed-tool-spec it)
                      (installed-tool-bitmap it)
                      (installed-tool-name it)
-                     (installed-tool-url it)))
+                     (installed-tool-url it)
+                     (installed-tool-drracket? it)))
 
 ;; load/invoke-tool* :   path
 ;;                       (listof string[sub-collection-name]) 
 ;;                       (union #f (cons string[filename] (listof string[collection-name])))
 ;;                       (union #f string)
 ;;                       (union #f string)
+;;                       boolean
 ;;                    -> void
 ;; `coll' is a collection to load the tool from
 ;; `in-path' is the `coll'-relative collection-path spec for the tool module file
 ;; `icon-spec' is the collection-path spec for the tool's icon, if there is one.
 ;; `name' is the name of the tool (only used in about box)
-(define (load/invoke-tool* coll-dir in-path icon-spec name tool-url)
+(define (load/invoke-tool* coll-dir in-path icon-spec name tool-url drracket?)
   (let* ([icon-path 
           (cond
             [(string? icon-spec)
@@ -297,8 +305,9 @@ string-constants)
                                     coll-dir in-path)
                             x))])
           (let-values ([(phase1-thunk phase2-thunk) 
-                        (drracket:tools-drs:invoke-drs-tool unit (string->symbol (or name (path->string coll-dir))))
-                        #;(invoke-tool unit (string->symbol (or name (path->string coll-dir))))])
+                        (if drracket?
+                            (invoke-tool unit (string->symbol (or name (path->string coll-dir))))
+                            (drracket:tools-drs:invoke-drs-tool unit (string->symbol (or name (path->string coll-dir)))))])
             (set! successfully-loaded-tools 
                   (cons (make-successfully-loaded-tool
                          tool-path
