@@ -4,7 +4,7 @@
 (require (rename-in "../utils/utils.ss" [private private-in]))
 (require syntax/kerncase mzlib/trace
          scheme/match (prefix-in - scheme/contract)
-         "signatures.ss" "tc-envops.ss" "tc-metafunctions.ss"
+         "signatures.ss" "tc-envops.ss" "tc-metafunctions.ss" "tc-subst.ss"
          (types utils convenience union subtype remove-intersect type-table)
          (private-in parse-type type-annotation)
          (rep type-rep)
@@ -12,7 +12,7 @@
          (except-in (utils tc-utils stxclass-util))
          (env lexical-env)
          (only-in (env type-environments) lookup current-tvars extend-env)
-         racket/private/class-internal
+         racket/private/class-internal unstable/debug
          (except-in syntax/parse id)
          (only-in srfi/1 split-at))
 
@@ -158,65 +158,83 @@
 ;;                   (Results Results -> Result)
 ;;                   (Type Results -> Type)
 ;;                   (Type Type -> Type))
-(define (check-below tr1 expected)
-  (match* (tr1 expected)
-    ;; these two have to be first so that errors can be allowed in cases where multiple values are expected
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) (tc-results: ts2 (NoFilter:) (NoObject:)))
-     (ret ts2)]
-    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
-     expected]
-    
-    [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
-     (unless (= (length ts) (length ts2))
-       (tc-error/expr "Expected ~a values, but got ~a" (length ts2) (length ts)))
-     (unless (for/and ([t ts] [s ts2]) (subtype t s))
-       (tc-error/expr "Expected ~a, but got ~a" (stringify ts2) (stringify ts)))
-     (if (= (length ts) (length ts2))
-         (ret ts2 fs os)
-         (ret ts2))]
-    [((tc-result1: t1 f1 o1) (tc-result1: t2 (FilterSet: (Top:) (Top:)) (Empty:)))
-     (cond 
-       [(not (subtype t1 t2))
-        (tc-error/expr "Expected ~a, but got ~a" t2 t1)])
-     expected]
-    [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
-     (cond 
-       [(not (subtype t1 t2))
-        (tc-error/expr "Expected ~a, but got ~a" t2 t1)]
-       [(and (not (filter-equal? f1 f2))
-             (object-equal? o1 o2))
-        (tc-error/expr "Expected result with filter ~a, got filter ~a" f2 f1)]
-       [(not (and (equal? f1 f2) (equal? o1 o2)))
-        (tc-error/expr "Expected result with filter ~a and ~a, got filter ~a and ~a" f2 (print-object o2) f1 (print-object o1))])
-     expected]
-    [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))
-     (unless (andmap subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
-     expected]
-    [((tc-results: t1 fs os) (tc-results: t2 fs os))
-     (unless (= (length t1) (length t2))
-       (tc-error/expr "Expected ~a values, but got ~a" (length t2) (length t1)))
-     (unless (for/and ([t t1] [s t2]) (subtype t s))
-       (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
-     expected]
-    [((tc-result1: t1 f o) (? Type? t2))
-     (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     (ret t2 f o)]
-    [((? Type? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
-     (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     t1]
-    [((? Type? t1) (tc-result1: t2 f o))
-     (if (subtype t1 t2)
-         (tc-error/expr "Expected result with filter ~a and ~a, got ~a" f (print-object o) t1)
+(define (check-below tr1 expected)     
+  (define (maybe-abstract r)
+    (define l (hash-ref to-be-abstr expected #f))
+    (define (sub-one proc i)
+      (for/fold ([s i])
+        ([nm (in-list l)])
+        (proc s nm (make-Empty) #t)))
+    (define (subber proc lst)
+      (for/list ([i (in-list lst)])
+        (sub-one proc i)))
+    (if l
+        (match r
+          [(tc-results: ts fs os) 
+           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
+          [(tc-results: ts fs os dt db) 
+           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]
+          [t (sub-one subst-type t)])
+        r))
+  (let ([tr1 (debug maybe-abstract tr1)])
+    (match* (tr1 expected)
+      ;; these two have to be first so that errors can be allowed in cases where multiple values are expected
+      [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) (tc-results: ts2 (NoFilter:) (NoObject:)))
+       (ret ts2)]
+      [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
+       expected]
+      
+      [((tc-results: ts fs os) (tc-results: ts2 (NoFilter:) (NoObject:)))
+       (unless (= (length ts) (length ts2))
+         (tc-error/expr "Expected ~a values, but got ~a" (length ts2) (length ts)))
+       (unless (for/and ([t ts] [s ts2]) (subtype t s))
+         (tc-error/expr "Expected ~a, but got ~a" (stringify ts2) (stringify ts)))
+       (if (= (length ts) (length ts2))
+           (ret ts2 fs os)
+           (ret ts2))]
+      [((tc-result1: t1 f1 o1) (tc-result1: t2 (FilterSet: (Top:) (Top:)) (Empty:)))
+       (cond 
+         [(not (subtype t1 t2))
+          (tc-error/expr "Expected ~a, but got ~a" t2 t1)])
+       expected]
+      [((tc-result1: t1 f1 o1) (tc-result1: t2 f2 o2))
+       (cond 
+         [(not (subtype t1 t2))
+          (tc-error/expr "Expected ~a, but got ~a" t2 t1)]
+         [(and (not (filter-equal? f1 f2))
+               (object-equal? o1 o2))
+          (tc-error/expr "Expected result with filter ~a, got filter ~a" f2 f1)]
+         [(not (and (equal? f1 f2) (equal? o1 o2)))
+          (tc-error/expr "Expected result with filter ~a and ~a, got filter ~a and ~a" f2 (print-object o2) f1 (print-object o1))])
+       expected]
+      [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))
+       (unless (andmap subtype t1 t2)
+         (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
+       expected]
+      [((tc-results: t1 fs os) (tc-results: t2 fs os))
+       (unless (= (length t1) (length t2))
+         (tc-error/expr "Expected ~a values, but got ~a" (length t2) (length t1)))
+       (unless (for/and ([t t1] [s t2]) (subtype t s))
+         (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
+       expected]
+      [((tc-result1: t1 f o) (? Type? t2))
+       (unless (subtype t1 t2)
          (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     t1]
-    [((? Type? t1) (? Type? t2))
-     (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     expected]
-    [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
+       (ret t2 f o)]
+      [((? Type? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
+       (unless (subtype t1 t2)
+         (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+       t1]
+      [((? Type? t1) (tc-result1: t2 f o))
+       (if (subtype t1 t2)
+           (tc-error/expr "Expected result with filter ~a and ~a, got ~a" f (print-object o) t1)
+           (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+       t1]
+      [((? Type? t1) (? Type? t2))
+       (unless (subtype t1 t2)
+         (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+       expected]
+      [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)])))
 
 (define (tc-expr/check/type form expected)
   #;(syntax? Type/c . -> . tc-results?)

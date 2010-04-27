@@ -310,3 +310,10 @@
 ;; a parameter for the current polymorphic structure being defined
 ;; to allow us to prevent non-regular datatypes
 (define current-poly-struct (make-parameter #f))
+
+;; a table indicating what variables should be abstracted away before using this expected type
+;; keyed on the numeric Rep sequence
+(define to-be-abstr
+  (make-weak-hash))
+
+(provide to-be-abstr)

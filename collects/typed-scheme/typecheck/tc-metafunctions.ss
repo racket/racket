@@ -7,6 +7,7 @@
                     [one-of/c -one-of/c])
          (rep type-rep filter-rep rep-utils) scheme/list
          scheme/contract scheme/match unstable/match scheme/trace
+         unstable/debug
          (for-syntax scheme/base))
 
 ;(provide (all-defined-out))
@@ -125,6 +126,7 @@
           (match p      
             [(AndFilter: ps) (loop derived-props derived-atoms (append ps (cdr worklist)))]
             [(ImpFilter: a c)
+             ;(printf "combining ~a with ~a\n" p (append derived-props derived-atoms))
              (if (for/or ([p (append derived-props derived-atoms)])
                    (implied-atomic? a p))
                  (loop derived-props derived-atoms (cons c (cdr worklist)))

@@ -71,6 +71,9 @@
 
 (define Ident (-Syntax -Symbol))
 
+(define (atomic-filter? e)
+  (or (TypeFilter? e) (NotTypeFilter? e)))
+
 (define (opposite? f1 f2)
   (match* (f1 f2)
           [((TypeFilter: t1 p1 i1)
@@ -124,11 +127,15 @@
            (loop (cdr props) others)]
           [p (loop (cdr props) (cons p others))]))))
 
-(define (-or . args) 
+(define (-or . args)
+  (define mk
+    (case-lambda [() -bot]
+                 [(f) f]
+                 [fs (make-OrFilter fs)]))
   (define (distribute args)
     (define-values (ands others) (partition AndFilter? args))
     (if (null? ands)
-        (make-OrFilter others)
+        (apply mk others)
         (match-let ([(AndFilter: elems) (car ands)])
           (apply -and (for/list ([a (in-list elems)])
                         (apply -or a (append (cdr ands) others)))))))  
@@ -152,7 +159,7 @@
                   (loop (cdr fs) (cons t result))])]))))
 
 (define (-and . args) 
-  (let loop ([fs args] [result null])
+  (let loop ([fs (remove-duplicates args filter-equal?)] [result null])
     (if (null? fs)
         (match result
           [(list) -top]

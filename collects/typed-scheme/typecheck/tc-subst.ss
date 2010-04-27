@@ -6,7 +6,7 @@
                     [->* -->*]
                     [one-of/c -one-of/c])
          (rep type-rep filter-rep rep-utils) scheme/list
-         scheme/contract scheme/match unstable/match
+         scheme/contract scheme/match unstable/match unstable/debug
          (for-syntax scheme/base)
          "tc-metafunctions.ss")
 
@@ -15,6 +15,12 @@
 (define-syntax-rule (d/c/p (name . args) c . body)
   (begin (d/c (name . args) c . body)
          (p/c [name c])))
+
+(define (name-ref=? a b)
+  (or (eq? a b)
+      (and (identifier? a)
+           (identifier? b)
+           (free-identifier=? a b))))
 
 (d/c/p (open-Result r objs)
        (-> Result? (listof Object?) (values Type/c FilterSet? Object?))
@@ -27,14 +33,14 @@
                     (subst-object old-obj k o #t)))]))
 
 (d/c/p (subst-filter-set fs k o polarity)
-       (-> FilterSet? integer? Object? boolean? FilterSet?)
+       (-> FilterSet? name-ref/c Object? boolean? FilterSet?)
   (match fs
     [(FilterSet: f+ f-)
      (combine (subst-filter f+ k o polarity) 
 	      (subst-filter f- k o polarity))]))
 
-(d/c (subst-type t k o polarity)
-     (-> Type/c integer? Object? boolean? Type/c)
+(d/c/p (subst-type t k o polarity)
+     (-> Type/c name-ref/c Object? boolean? Type/c)
   (define (st t) (subst-type t k o polarity))
   (d/c (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs k o polarity))
   (type-case (#:Type st 
@@ -44,20 +50,22 @@
               [#:arr dom rng rest drest kws
                      ;; here we have to increment the count for the domain, where the new bindings are in scope
                      (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
-                            [st* (lambda (t) (subst-type t (+ arg-count k) o polarity))])
+                            [st* (if (integer? k)
+                                     (λ (t) (subst-type t (+ arg-count k) o polarity))
+                                     st)])
                        (make-arr (map st dom)
                                  (st* rng)
                                  (and rest (st rest))
                                  (and drest (cons (st (car drest)) (cdr drest)))
                                  (map st kws)))]))
 
-(d/c (subst-object t k o polarity)
-     (-> Object? integer? Object? boolean? Object?)
+(d/c/p (subst-object t k o polarity)
+     (-> Object? name-ref/c Object? boolean? Object?)
   (match t
     [(NoObject:) t]
     [(Empty:) t]
     [(Path: p i)
-     (if (eq? i k)
+     (if (name-ref=? i k)
 	 (match o
 	   [(Empty:) (make-Empty)]
 	   ;; the result is not from an annotation, so it isn't a NoObject
@@ -67,13 +75,17 @@
 
 ;; this is the substitution metafunction 
 (d/c/p (subst-filter f k o polarity)
-  (-> Filter/c integer? Object? boolean? Filter/c)
-  (define (ap f) (subst-filter f o polarity))
+  (-> Filter/c name-ref/c Object? boolean? Filter/c)
+  (define (ap f) (subst-filter f k o polarity))
   (define (tf-matcher t p i k o polarity maker)
     (match o
-      [(or (Empty:) (NoObject:)) (if polarity -top -bot)]
+      [(or (Empty:) (NoObject:)) 
+       (cond [(name-ref=? i k)
+	      (if polarity -top -bot)]
+	     [(index-free-in? k t) (if polarity -top -bot)]
+             [else f])]
       [(Path: p* i*)
-       (cond [(eq? i k)
+       (cond [(name-ref=? i k)
 	      (maker
 	       (subst-type t k o polarity)
 	       (append p p*) 
@@ -83,8 +95,8 @@
   (match f
     [(ImpFilter: ant consq)
      (make-ImpFilter (subst-filter ant k o (not polarity)) (ap consq))]
-    [(AndFilter: fs) (make-AndFilter (map ap fs))]
-    [(OrFilter: fs) (make-OrFilter (map ap fs))]
+    [(AndFilter: fs) (apply -and (map ap fs))]
+    [(OrFilter: fs) (apply -or (map ap fs))]
     [(Bot:) -bot]
     [(Top:) -top]
     [(TypeFilter: t p i)
@@ -99,7 +111,7 @@
      (object-case (#:Type for-type)
 		  o
 		  [#:Path p i
-			  (if (eq? i k)
+			  (if (name-ref=? i k)
 			      (return #t)
 			      o)]))
    (define (for-filter o)
@@ -107,11 +119,11 @@
 		   #:Filter for-filter)
 		  o
 		  [#:NotTypeFilter t p i
-				   (if (eq? i k)
+				   (if (name-ref=? i k)
 				       (return #t)
 				       o)]
 		  [#:TypeFilter t p i
-				(if (eq? i k)
+				(if (name-ref=? i k)
 				    (return #t)
 				    o)]))
    (define (for-type t)
@@ -128,7 +140,8 @@
                                    (and rest (for-type rest))
                                    (and drest (cons (for-type (car drest)) (cdr drest)))
                                    (map for-type kws)))]))
-   (for-type type)))
+   (for-type type)
+    #f))
 
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
 (d/c/p (values->tc-results tc formals)

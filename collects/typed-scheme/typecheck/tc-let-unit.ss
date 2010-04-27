@@ -1,7 +1,7 @@
 #lang scheme/unit
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
-(require "signatures.ss" "tc-metafunctions.ss"
+(require "signatures.ss" "tc-metafunctions.ss" "tc-subst.ss"
          (types utils convenience)
          (private type-annotation parse-type)
 	 (env lexical-env type-alias-env type-env type-environments)
@@ -36,11 +36,12 @@
               (match r 
                 [(tc-results: ts (FilterSet: fs+ fs-) os) 
                  (values ts
-                         (for/list ([n names]
-                                    [f+ fs+]
-                                    [f- fs-])
-                           (-and (make-ImpFilter (make-NotTypeFilter (-val #f) null n) f+)
-                                 (make-ImpFilter (make-TypeFilter (-val #f) null n) f-))))]))))
+                         (apply append
+                                (for/list ([n names]
+                                           [f+ fs+]
+                                           [f- fs-])
+                                  (list (make-ImpFilter (make-NotTypeFilter (-val #f) null n) f+)
+                                        (make-ImpFilter (make-TypeFilter (-val #f) null n) f-)))))]))))
      ;; extend the lexical environment for checking the body
   (with-lexical-env/extend/props
    ;; the list of lists of name
@@ -49,14 +50,29 @@
    types
    (w/c append-region
     #:result (listof Filter?)
-    (append (apply append props) (env-props (lexical-env))))
+    (define-values (p1 p2)
+      (combine-props (apply append props) (env-props (lexical-env)) (box #t)))
+    (append p1 p2))
    (for-each expr->type
              clauses
              exprs 
              results)
-   (if expected 
-       (tc-exprs/check (syntax->list body) expected)
-       (tc-exprs (syntax->list body)))))
+   (let ([subber (lambda (proc lst)
+                   (for/list ([i (in-list lst)])
+                     (for/fold ([s i])
+                       ([nm (in-list (apply append namess))])
+                       (proc s nm (make-Empty) #t))))])
+     (if expected 
+         (begin
+           (hash-update! to-be-abstr expected
+                         (lambda (old-l) (apply append old-l namess))
+                         null)
+           (tc-exprs/check (syntax->list body) expected))
+         (match (tc-exprs (syntax->list body))           
+           [(tc-results: ts fs os)
+            (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
+           [(tc-results: ts fs os dt db)
+            (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)])))))
 
 (define (tc/letrec-values/check namess exprs body form expected)
   (tc/letrec-values/internal namess exprs body form expected))

@@ -5,4 +5,7 @@
 
 ;(let ([tmp (number? x)]) (if tmp tmp (string? x)))
 
-(if (let ([tmp (number? x)]) (if tmp tmp (string? x))) (f x) 0)
+(if (let ([tmp (number? x)]) 
+      (if tmp tmp (string? x)))
+    (f x)
+    0)
