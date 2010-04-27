@@ -2,4 +2,4 @@
 
 (require scribble/extract)
 
-(provide-extracted (lib "tool-lib.ss" "drscheme"))
+(provide-extracted (lib "tool-lib.rkt" "drscheme"))

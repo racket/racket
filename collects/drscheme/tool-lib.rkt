@@ -13,19 +13,21 @@ all of the names in the tools library, for use defining keybindings
          racket/contract
          racket/class
          
-         "private/link.rkt"
-         "private/drsig.rkt"
+         ;; these have to be absolute requires for `include-extracted' to work with this file.
+         drscheme/private/link
+         drscheme/private/drsig
+         drscheme/private/language-object-contract
          
          framework
          framework/splash
          
          mrlib/switchable-button
-         scribble/srcdoc
-         "private/language-object-contract.rkt")
+         scribble/srcdoc)
 
 (require (for-syntax scheme/base))
 
-(require/doc "private/ts.rkt" scheme/base scribble/manual)
+(require/doc drscheme/private/ts ;; probably this also has to be an absolute require
+             scheme/base scribble/manual)
 
 (require/doc (for-label errortrace/errortrace-key
                         scheme/pretty 
