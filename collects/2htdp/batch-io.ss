@@ -13,23 +13,23 @@
  read-file ;; String -> String
  ;; read the specified file as a string
  
- read-as-1strings ;; String -> [Listof 1String]
+ read-1strings ;; String -> [Listof 1String]
  ;; read the specified file as a list of 1strings (characters)
  
- read-as-lines ;; String -> [Listof String]
+ read-lines ;; String -> [Listof String]
  ;; read the specified file as a list of strings, one per line
  
- read-as-words ;; String -> [Listof String]
+ read-words ;; String -> [Listof String]
  ;; read the specified file as a list of white-space separated tokens
  
- read-as-words/line ;; String -> [Listof [Listof String]]
+ read-words/line ;; String -> [Listof [Listof String]]
  ;; read the specified file as a list of lines, each line as a list of words
  
- read-as-csv ;; String -> [Listof [Listof (U Any)]]
+ read-csv-file ;; String -> [Listof [Listof (U Any)]]
  ;; -- f must be formated as a a file with comma-separated values (Any)
  ;; read the specified file as a list of lists---one per line---of values (Any)
  
- read-as-csv/rows ;; String ([Listof Any] -> X) -> [Listof X]
+ read-csv-file/rows ;; String ([Listof Any] -> X) -> [Listof X]
  ;; -- f must be formated as a a file with comma-separated values (Any)
  ;; read the specified file as a file of comma-separated values, apply the second
  ;; argument to each row, i.e., list of CSV on one line 
@@ -54,33 +54,33 @@
 (def-reader (read-file f)
   (list->string (read-chunks f read-char drop-last-newline)))
 
-(def-reader (read-as-1strings f)
+(def-reader (read-1strings f)
   (map string (read-chunks f read-char drop-last-newline)))
 
-(def-reader (read-as-lines f)
+(def-reader (read-lines f)
   (read-chunks f read-line reverse))
 
-(def-reader (read-as-words f)
-  (read-as-words/line/internal f append))
+(def-reader (read-words f)
+  (read-words/line/internal f append))
 
-(def-reader (read-as-words/line f)
+(def-reader (read-words/line f)
   ;; String -> [Listof [Listof String]]
   ;; read the specified file as a list of lines, each line as a list of words
-  (read-as-words/line/internal f cons))
+  (read-words/line/internal f cons))
 
-(define (read-as-words/line/internal f combine)
+(define (read-words/line/internal f combine)
   (define lines (read-chunks f read-line (lambda (x) x)))
   (foldl (lambda (f r)
            (define fst (filter (compose not (curry string=? "")) (split f)))
            (if (empty? fst) r (combine fst r)))
          '() lines))
 
-(def-reader (read-as-csv f)
-  (read-as-csv/func f))
+(def-reader (read-csv-file f)
+  (read-csv-file/func f))
 
-(def-reader (read-as-csv/rows f row)
-  (check-proc 'read-as-cvs row 1 "one argument" "row")
-  (read-as-csv/func f row))
+(def-reader (read-csv-file/rows f row)
+  (check-proc 'read-csv-file row 1 "one argument" "row")
+  (read-csv-file/func f row))
 
 ;; -----------------------------------------------------------------------------
 ;; writer 
@@ -98,7 +98,7 @@
 ;; auxiliaries 
 
 ;; String [([Listof X] -> Y)] -> [Listof Y]
-(define (read-as-csv/func f [row (lambda (x) x)])
+(define (read-csv-file/func f [row (lambda (x) x)])
   (local ((define (reader o)
             (make-csv-reader o '((strip-leading-whitespace?  . #t)
                                  (strip-trailing-whitespace? . #t)))))
