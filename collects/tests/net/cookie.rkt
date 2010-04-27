@@ -19,12 +19,12 @@
     (syntax-rules ()
       [(o/* x) x]
       [(o/* x f g ...) (f (o/* x g ...))]))
-
+  
   (define (tests)
-
+    
     ;; test the most basic functionality
     (cookie-test (λ (x) x) "a=b; Version=1")
-
+    
     ;; test each modifier individually
     (cookie-test (RC cookie:add-comment "set+a+to+b")
                  "a=b; Comment=set+a+to+b; Version=1")
@@ -54,7 +54,7 @@
                  "a=b; Version=1")
     (cookie-test (RC cookie:version 12)
                  "a=b; Version=12")
-
+    
     ;; test combinations
     (cookie-test (o (RC cookie:add-comment "set+a+to+b")
                     (RC cookie:add-domain ".example.net"))
@@ -66,7 +66,7 @@
                     (RC cookie:version 10)
                     (RC cookie:add-max-age 20))
                  "a=b; Max-Age=20; Path=\"/whatever/wherever/\"; Version=10")
-
+    
     ;; test error cases
     (let ()
       (define-syntax cookie-error-test
@@ -78,7 +78,18 @@
       (cookie-error-test (RC cookie:add-domain "doesntstartwithadot.example.com"))
       (cookie-error-test (RC cookie:add-domain "bad domain.com"))
       (cookie-error-test (RC cookie:add-domain ".bad-domain;com")))
-
+    
+    ; cookie value
+    (test
+     (cookie-value? "value")
+     (cookie-value? "(")
+     (cookie-value? "!")
+     (cookie-value? ")")
+     (cookie-value? ")!")
+     (cookie-value? "(!")
+     (cookie-value? "(!)")
+     (cookie-value? "!)"))
+    
     )
-
+  
   (test do (tests)))
