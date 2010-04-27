@@ -316,13 +316,14 @@
     [#:fold-rhs (match (list pos-flds name-flds methods)
                   [(list
                     pos-tys 
-                    (list (list init-names init-tys) ___)
+                    (list (list init-names init-tys reqd) ___)
                     (list (list mname mty) ___))
                    (*Class
                     (map type-rec-id pos-tys)
                     (map list
                          init-names
-                         (map type-rec-id init-tys))
+                         (map type-rec-id init-tys)
+                         reqd)
                     (map list mname (map type-rec-id mty)))])])
 
 ;; cls : Class
