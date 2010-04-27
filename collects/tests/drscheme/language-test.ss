@@ -1080,7 +1080,7 @@ the settings above should match r5rs
            [get-line (lambda (n) (send interactions get-text 
                                        (send interactions paragraph-start-position n)
                                        (send interactions paragraph-end-position n)))]
-           [line0-expect (format "Welcome to DrScheme, version ~a [3m]." (version:version))]
+           [line0-expect (format "Welcome to DrRacket, version ~a [3m]." (version:version))]
            [line1-expect 
             (if (string? short-lang)
                 (format "Language: ~a" short-lang)

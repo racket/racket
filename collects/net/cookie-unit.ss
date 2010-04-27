@@ -255,7 +255,7 @@
 ;; appear as a block to be legal, and " may only appear as \"
 (define (rfc2068:quoted-string? s)
   (and (regexp-match?
-        #rx"^\"([^\"#\u0000-#\u001F]| |#\return#\newline|#\tab|\\\\\")*\"$"
+        #rx"^\"([^\"\u0000-\u001F]| |\r\n|\t|\\\\\")*\"$"
         s)
        s))
 

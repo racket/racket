@@ -634,10 +634,10 @@ path/s is either such a string or a list of them.
 "collects/ffi/examples/magick.ss" drdr:command-line "mzc ~s"
 "collects/ffi/examples/sndfile.ss" drdr:command-line "mzc ~s"
 "collects/ffi/examples/tcl.ss" drdr:command-line "mzc ~s"
-"collects/ffi/examples/xmmsctrl.ss" drdr:command-line "mzc ~s"
+"collects/ffi/examples/xmmsctrl.ss" drdr:command-line ""
 "collects/ffi/examples/xosd.ss" drdr:command-line "mzc ~s"
 "collects/ffi/magick.ss" drdr:command-line "mzc ~s"
-"collects/ffi/objc.ss" drdr:command-line "mzc ~s"
+"collects/ffi/unsafe/objc.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/private/objc-doc-unsafe.ss" drdr:command-line "mzc ~s"
 "collects/ffi/sndfile.ss" drdr:command-line "mzc ~s"
 "collects/ffi/tcl.ss" drdr:command-line "mzc ~s"
@@ -1058,6 +1058,10 @@ path/s is either such a string or a list of them.
 "collects/plot/view.ss" drdr:command-line "mred-text -t ~s"
 "collects/preprocessor" responsible (eli)
 "collects/profile" responsible (eli)
+"collects/racket/gui/base.rkt" drdr:command-line "mred -t ~s"
+"collects/racket/gui/init.rkt" drdr:command-line "mred -t ~s"
+"collects/racket/gui.rkt" drdr:command-line "mred -t ~s"
+"collects/raco" responsible (mflatt)
 "collects/r5rs" responsible (mflatt)
 "collects/r6rs/run.ss" drdr:command-line "mzc ~s"
 "collects/readline" responsible (mflatt)
@@ -1097,22 +1101,22 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/matcher-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/pict-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/rg-test.ss" drdr:command-line "mzc ~s"
-"collects/redex/tests/run-tests.ss" drdr:command-line "mred-text ~s --examples --no-bitmaps" drdr:timeout 240
+"collects/redex/tests/run-tests.ss" drdr:command-line "mred-text ~s --examples --no-bitmaps" drdr:timeout 300
 "collects/redex/tests/term-test.ss" drdr:command-line "mzc ~s"
 "collects/redex/tests/tl-test.ss" drdr:command-line "mzc ~s"
 "collects/repos-time-stamp" responsible (eli)
 "collects/repos-time-stamp/time-stamp.ss" drdr:command-line "mred-text -t ~s"
-"collects/rico/main.ss" drdr:command-line ""
-"collects/rico/rico.ss" drdr:command-line ""
+"collects/raco/main.ss" drdr:command-line ""
+"collects/raco/raco.ss" drdr:command-line ""
 "collects/scheme/contract/private/arrow.ss" responsible (robby)
 "collects/scheme/contract/private/base.ss" responsible (robby)
 "collects/scheme/contract/private/ds-helpers.ss" responsible (robby)
 "collects/scheme/contract/private/ds.ss" responsible (robby)
 "collects/scheme/contract/private/guts.ss" responsible (robby)
 "collects/scheme/contract/private/helpers.ss" responsible (robby)
-"collects/scheme/gui/base.ss" drdr:command-line "mred-text -t ~s"
-"collects/scheme/gui/init.ss" drdr:command-line "mred-text -t ~s"
-"collects/scheme/gui.ss" drdr:command-line "mred-text -t ~s"
+"collects/scheme/gui/base.rkt" drdr:command-line "mred-text -t ~s"
+"collects/scheme/gui/init.rkt" drdr:command-line "mred-text -t ~s"
+"collects/scheme/gui.rkt" drdr:command-line "mred-text -t ~s"
 "collects/scheme/match" responsible (samth)
 "collects/scheme/match.ss" responsible (samth)
 "collects/schemeunit" responsible (noel ryanc)
@@ -1127,7 +1131,7 @@ path/s is either such a string or a list of them.
 "collects/schemeunit/tool.ss" responsible (ryanc) drdr:command-line "mred-text -t ~s"
 "collects/scribble/run.ss" drdr:command-line "mzc ~s"
 "collects/scribble/tools/drscheme-buttons.ss" drdr:command-line "mred-text ~s"
-"collects/scribble/tools/private/mk-drs-bitmaps.ss" drdr:command-line "mred-text ~s"
+"collects/scribble/tools/private/mk-drs-bitmaps.ss" drdr:command-line "mred-text ~s" drdr:timeout 240
 "collects/scribblings/foreign/unsafe-foreign.ss" drdr:command-line "mzc ~s"
 "collects/scribblings/framework/standard-menus.scrbl" drdr:command-line ""
 "collects/scribblings/guide/contracts-examples/6.ss" drdr:command-line "mzscheme -f ~s"
@@ -1290,7 +1294,7 @@ path/s is either such a string or a list of them.
 "collects/tests/framework/info.ss" drdr:command-line "mzc -k ~s"
 "collects/tests/framework/keys.ss" drdr:command-line "mzc -k ~s"
 "collects/tests/framework/load.ss" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/main.ss" drdr:command-line "mred ~s"
+"collects/tests/framework/main.ss" drdr:command-line "mred ~s" drdr:timeout 240
 "collects/tests/framework/mem.ss" drdr:command-line "mzc -k ~s"
 "collects/tests/framework/panel.ss" drdr:command-line "mzc -k ~s"
 "collects/tests/framework/pasteboard.ss" drdr:command-line "mzc -k ~s"
@@ -1738,5 +1742,65 @@ path/s is either such a string or a list of them.
 "src/wxmac" responsible (mflatt)
 "src/wxwindow" responsible (mflatt)
 "src/wxxt" responsible (mflatt)
-
+"collects/at-exp" responsible (eli)
+"collects/config" responsible (mflatt eli)
+"collects/embedded-gui" responsible (mflatt)
+"collects/eopl" responsible (eli)
+"collects/file" responsible (mflatt)
+"collects/graphics" responsible (mflatt robby)
+"collects/guibuilder" responsible (robby)
+"collects/hierlist" responsible (mflatt)
+"collects/icons" responsible (robby)
+"collects/lang" responsible (mflatt robby matthias)
+"collects/launcher" responsible (mflatt eli)
+"collects/mred" responsible (mflatt robby)
+"collects/mysterx" responsible (mflatt)
+"collects/mzcom" responsible (mflatt)
+"collects/mzlib" responsible (eli cce robby sstrickl mflatt)
+"collects/mzscheme" responsible (mflatt)
+"collects/net" responsible (eli jay)
+"collects/r6rs" responsible (mflatt)
+"collects/racket" responsible (mflatt)
+"collects/raco" responsible (mflatt)
+"collects/reader" responsible (mflatt)
+"collects/rnrs" responsible (mflatt)
+"collects/s-exp" responsible (mflatt eli)
+"collects/schelog" responsible (jay)
+"collects/tests/schelog" responsible (jay)
+"collects/scheme" responsible (mflatt sstrickl samth robby eli)
+"collects/scribble" responsible (mflatt eli)
+"collects/scribblings" responsible (mflatt eli robby mathias)
+"collects/scriblib" responsible (mflatt)
+"collects/setup" responsible (mflatt)
+"collects/slatex" responsible (sstrickl)
+"collects/srfi" responsible (mflatt noel chongkai jay)
+"collects/test-box-recovery" responsible (mflatt)
+"collects/tex2page" responsible (mflatt eli jay)
+"collects/texpict" responsible (mflatt robby)
+"collects/trace" responsible (mflatt robby)
+"collects/unstable" responsible (jay samth cce ryanc)
+"collects/wxme" responsible (mflatt)
+"collects/wxme/xml.ss" responsible (jay)
+"collects/tests" responsible (eli)
+"collects/tests/aligned-pasteboard" responsible (unknown)
+"collects/tests/file" responsible (eli)
+"collects/tests/frtime" responsible (gcooper jay)
+"collects/tests/honu" responsible (rafkind)
+"collects/tests/html" responsible (jay)
+"collects/tests/lazy" responsible (eli)
+"collects/tests/match" responsible (samth)
+"collects/tests/mysterx" responsible (mflatt)
+"collects/tests/mzcom" responsible (mflatt)
+"collects/tests/planet" responsible (robby jay)
+"collects/tests/plot" responsible (eli)
+"collects/tests/profile" responsible (eli)
+"collects/tests/r6rs" responsible (mflatt)
+"collects/tests/scribble" responsible (eli mflatt)
+"collects/tests/srfi" responsible (noel chongkai jay)
+"collects/tests/srpersist" responsible (unknown)
+"collects/tests/syntax-color" responsible (sowens mflatt)
+"collects/tests/test-engine" responsible (kathyg)
+"collects/tests/unstable/generics.ss" responsible (jay)
+"collects/tests/unstable/srcloc.ss" responsible (cce)
+"collects/tests/utils" responsible (unknown)
 #:end-props |#

@@ -11,28 +11,28 @@ A @deftech{weak box} is similar to a normal box (see
 @secref["boxes"]), but when the garbage collector (see
 @secref["gc-model"]) can prove that the content value of a weak box is
 only reachable via weak references, the content of the weak box is
-replaced with @scheme[#f]. A @defterm{@tech{weak reference}} is a
+replaced with @racket[#f]. A @defterm{@tech{weak reference}} is a
 reference through a weak box, through a key reference in a weak hash
 table (see @secref["hashtables"]), through a value in an ephemeron
-where the value can be replaced by @scheme[#f] (see
+where the value can be replaced by @racket[#f] (see
 @secref["ephemerons"]), or through a custodian (see
 @secref["custodians"]).
 
 @defproc[(make-weak-box [v any/c]) weak-box?]{
 
-Returns a new weak box that initially contains @scheme[v].}
+Returns a new weak box that initially contains @racket[v].}
 
 
 @defproc[(weak-box-value [weak-box weak-box?]) any]{
 
-Returns the value contained in @scheme[weak-box]. If the garbage
+Returns the value contained in @racket[weak-box]. If the garbage
 collector has proven that the previous content value of
-@scheme[weak-box] was reachable only through a weak reference, then
-@scheme[#f] is returned.}
+@racket[weak-box] was reachable only through a weak reference, then
+@racket[#f] is returned.}
 
 @defproc[(weak-box? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a weak box, @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a weak box, @racket[#f] otherwise.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "ephemerons"]{Ephemerons}
@@ -44,7 +44,7 @@ An @deftech{ephemeron} is similar to a weak box (see
 
  @item{an ephemeron contains a key and a value; the value can be
  extracted from the ephemeron, but the value is replaced
- by @scheme[#f] when the automatic memory manager can prove that
+ by @racket[#f] when the automatic memory manager can prove that
  either the ephemeron or the key is reachable only through weak
  references (see @secref["weakbox"]); and}
 
@@ -65,20 +65,20 @@ key.
 
 @defproc[(make-ephemeron [key any/c][v any/c]) ephemeron?]{
 
-Returns a new @tech{ephemeron} whose key is @scheme[key] and whose
-value is initially @scheme[v].}
+Returns a new @tech{ephemeron} whose key is @racket[key] and whose
+value is initially @racket[v].}
 
 
 @defproc[(ephemeron-value [ephemeron ephemeron?]) any]{
 
-Returns the value contained in @scheme[ephemeron]. If the garbage
-collector has proven that the key for @scheme[ephemeron] is only
-weakly reachable, then the result is @scheme[#f].}
+Returns the value contained in @racket[ephemeron]. If the garbage
+collector has proven that the key for @racket[ephemeron] is only
+weakly reachable, then the result is @racket[#f].}
 
 
 @defproc[(ephemeron? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an @tech{ephemeron}, @scheme[#f]
+Returns @racket[#t] if @racket[v] is an @tech{ephemeron}, @racket[#f]
 otherwise.}
 
 @;------------------------------------------------------------------------
@@ -94,7 +94,7 @@ executors. A @tech{will} is useful for triggering clean-up actions on
 data associated with an unreachable value, such as closing a port
 embedded in an object when the object is no longer used.
 
-Calling the @scheme[will-execute] or @scheme[will-try-execute]
+Calling the @racket[will-execute] or @racket[will-try-execute]
 procedure executes a will that is ready in the specified will
 executor. Wills are not executed automatically, because certain
 programs need control to avoid race conditions. However, a program can
@@ -113,7 +113,7 @@ the values are reachable from each other.
 A will executor's register is held non-weakly until after the
 corresponding will procedure is executed. Thus, if the content value
 of a weak box (see @secref["weakbox"]) is registered with a will
-executor, the weak box's content is not changed to @scheme[#f] until
+executor, the weak box's content is not changed to @racket[#f] until
 all wills have been executed for the value and the value has been
 proven again reachable through only weak references.
 
@@ -125,34 +125,34 @@ Returns a new will executor with no managed values.}
 
 @defproc[(will-executor? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a will executor, @scheme[#f]
+Returns @racket[#t] if @racket[v] is a will executor, @racket[#f]
 otherwise.}
 
 
 @defproc[(will-register [executor will-executor?][v any/c][proc (any/c . -> . any)])
          void?]{
 
-Registers the value @scheme[v] with the will procedure @scheme[proc]
-in the will executor @scheme[executor]. When @scheme[v] is proven
-unreachable, then the procedure @scheme[proc] is ready to be called
-with @scheme[v] as its argument via @scheme[will-execute] or
-@scheme[will-try-execute].  The @scheme[proc] argument is strongly
+Registers the value @racket[v] with the will procedure @racket[proc]
+in the will executor @racket[executor]. When @racket[v] is proven
+unreachable, then the procedure @racket[proc] is ready to be called
+with @racket[v] as its argument via @racket[will-execute] or
+@racket[will-try-execute].  The @racket[proc] argument is strongly
 referenced until the will procedure is executed.}
 
 
 @defproc[(will-execute [executor will-executor?]) any]{
 
 Invokes the will procedure for a single ``unreachable'' value
-registered with the executor @scheme[executable]. The values returned
-by the will procedure are the result of the @scheme[will-execute]
+registered with the executor @racket[executable]. The values returned
+by the will procedure are the result of the @racket[will-execute]
 call.  If no will is ready for immediate execution,
-@scheme[will-execute] blocks until one is ready.}
+@racket[will-execute] blocks until one is ready.}
 
 
 @defproc[(will-try-execute [executor any/c]) any]{
 
-Like @scheme[will-execute] if a will is ready for immediate
-execution. Otherwise, @scheme[#f] is returned.}
+Like @racket[will-execute] if a will is ready for immediate
+execution. Otherwise, @racket[#f] is returned.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "garbagecollection"]{Garbage Collection}
@@ -163,22 +163,22 @@ Forces an immediate garbage collection. Some effectively unreachable
 data may remain uncollected, because the collector cannot prove that
 it is unreachable.
 
-The @scheme[collect-garbage] procedure provides some control over the
+The @racket[collect-garbage] procedure provides some control over the
 timing of collections, but garbage will obviously be collected even if
 this procedure is never called.}
 
 @defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{
 
 Returns an estimate of the number of bytes of memory occupied by
-reachable data from @scheme[cust]. (The estimate is calculated
+reachable data from @racket[cust]. (The estimate is calculated
 @italic{without} performing an immediate garbage collection;
 performing a collection generally decreases the number returned by
-@scheme[current-memory-use].) If @scheme[cust] is not provided, the
+@racket[current-memory-use].) If @racket[cust] is not provided, the
 estimate is a total reachable from any custodians.
 
-When PLT Scheme is compiled without support for memory accounting, the
+When Racket is compiled without support for memory accounting, the
 estimate is the same (i.e., all memory) for any individual custodian;
-see also @scheme[custodian-memory-accounting-available?].}
+see also @racket[custodian-memory-accounting-available?].}
 
 @defproc[(dump-memory-stats) any]{
 

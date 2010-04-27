@@ -12,7 +12,7 @@
 @defmodule[racket/unsafe/ops]
 
 All fuctions and forms provided by @schememodname[racket/base] and
-@schememodname[scheme] check their arguments to ensure that the
+@schememodname[racket] check their arguments to ensure that the
 arguments conform to contracts and other constraints. For example,
 @scheme[vector-ref] checks its arguments to ensure that the first
 argument is a vector, that the second argument is an exact integer,
@@ -26,9 +26,9 @@ faster code. If arguments violate an unsafe function's constraints,
 the function's behavior and result is unpredictable, and the entire
 system can crash or become corrupted.
 
-All of the exported bindings of @schememodname[scheme] are protected
-in the sense of @scheme[protect-out], so access to unsafe operations
-can be prevented by adjusting the code inspector (see
+All of the exported bindings of @schememodname[racket/unsafe/ops] are
+protected in the sense of @scheme[protect-out], so access to unsafe
+operations can be prevented by adjusting the code inspector (see
 @secref["modprotect"]).
 
 @section{Unsafe Numeric Operations}

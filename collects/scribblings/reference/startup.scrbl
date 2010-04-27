@@ -399,9 +399,6 @@ language specifies run-time configuration by
 
 ]
 
-The @racketmodname[racket/base] and @racketmodname[racket] languages
-do not currently specify a run-time configuration action.
-
 A @racket['configure-runtime] query returns a list of vectors, instead
 of directly configuring the environment, so that the indicated modules
 to be bundled with a program when creating a stand-alone
