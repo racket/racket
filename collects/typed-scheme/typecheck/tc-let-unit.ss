@@ -35,8 +35,8 @@
                [names (in-list namess)])
               (match r 
                 [(tc-results: ts (FilterSet: fs+ fs-) os)
-                 (printf "f+: ~a~n" fs+)
-                 (printf "f-: ~a~n" fs-)
+                 ;(printf "f+: ~a~n" fs+)
+                 ;(printf "f-: ~a~n" fs-)
                  (values ts
                          (apply append
                                 (for/list ([n names]

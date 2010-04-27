@@ -27,7 +27,7 @@
 
 ;; Example 6 has an intentional error
 (define: z : (U Number String) 7)
-(if (and (number? z) (string? y))
+#;(if (and (number? z) (string? y))
     (+ z (string-length y))
     (string-length z))
 

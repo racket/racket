@@ -50,10 +50,10 @@
                                            (env-props env-els))]
                     [(tc-results: ts fs2 os2) (with-lexical-env env-thn (tc thn (unbox flag+)))]
                     [(tc-results: us fs3 os3) (with-lexical-env env-els (tc els (unbox flag-)))])
-         (printf "old els-props: ~a\n" (env-props (lexical-env)))
-         (printf "fs-: ~a~n" fs-)
-         (printf "els-props: ~a~n" (env-props env-els))
-         (printf "new-els-props: ~a~n" new-els-props)
+         ;(printf "old els-props: ~a\n" (env-props (lexical-env)))
+         ;(printf "fs-: ~a~n" fs-)
+         ;(printf "els-props: ~a~n" (env-props env-els))
+         ;(printf "new-els-props: ~a~n" new-els-props)
          ;; if we have the same number of values in both cases
          (cond [(= (length ts) (length us))
                 (let ([r (combine-results
@@ -69,7 +69,7 @@
                                            (-or (apply -and fs+ f2- new-thn-props) (apply -and fs- f3- new-els-props)))])]
                                   [type (Un t2 t3)]
                                   [object (if (object-equal? o2 o3) o2 (make-Empty))])
-                              (printf "result filter is: ~a\n" filter)
+                              ;(printf "result filter is: ~a\n" filter)
                               (ret type filter object))))])
                   (if expected (check-below r expected) r))]
                ;; special case if one of the branches is unreachable
