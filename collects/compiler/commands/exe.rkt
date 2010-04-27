@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/cmdline
-         rico/command-name
+         raco/command-name
          compiler/private/embed
          dynext/file)
 

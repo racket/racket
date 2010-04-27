@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define rico
+(define raco-commands
   '(("make" compiler/commands/make "compile source to bytecode" 100)
     ("exe" compiler/commands/exe "create executable" 20)
     ("pack" compiler/commands/pack "pack files/collections into a .plt archive" 10)
