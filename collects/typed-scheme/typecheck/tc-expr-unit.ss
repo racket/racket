@@ -173,7 +173,7 @@
           [(tc-results: ts fs os) 
            (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
           [(tc-results: ts fs os dt db) 
-           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]
+           (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) (sub-one subst-type dt) db)]
           [t (sub-one subst-type t)])
         r))
   (let ([tr1 (maybe-abstract tr1)])
