@@ -1,12 +1,18 @@
 
 (module slatex-wrapper scheme/base
   (require mzlib/file
+           scheme/contract
 	   mzlib/process
 	   mzlib/sendevent
            "slatex.ss")
 
-  (provide slatex latex pdf-slatex pdf-latex slatex/no-latex
-           filename->latex-filename)
+  (provide/contract
+   [slatex (string? . -> . boolean?)]
+   [pdf-slatex (string? . -> . boolean?)]
+   [slatex/no-latex (string? . -> . boolean?)]
+   [latex (string? . -> . boolean?)]
+   [pdf-latex (string? . -> . boolean?)]
+   [filename->latex-filename (string? . -> . string?)])
   
   (define (add-suffix p s)
     (path->string

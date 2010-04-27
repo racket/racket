@@ -1798,6 +1798,7 @@ path/s is either such a string or a list of them.
 "collects/tests/scribble" responsible (eli mflatt)
 "collects/tests/srfi" responsible (noel chongkai jay)
 "collects/tests/srpersist" responsible (unknown)
+"collects/tests/slatex" responsible (jay sstrickl)
 "collects/tests/syntax-color" responsible (sowens mflatt)
 "collects/tests/test-engine" responsible (kathyg)
 "collects/tests/unstable/generics.ss" responsible (jay)
