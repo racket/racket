@@ -3,13 +3,13 @@
 
 @title[#:tag "threads"]{Threads}
 
-See @secref["thread-model"] for basic information on the PLT Racket
+See @secref["thread-model"] for basic information on the Racket
 thread model. See also @secref["futures"].
 
 When a thread is created, it is placed into the management of the
-@tech{current custodian} and added to the current thread group (see
-@secref["threadgroups"]). A thread can have any number of custodian
-managers added through @racket[thread-resume].
+@tech{current custodian} and added to the current @tech{thread
+group}. A thread can have any number of custodian managers added
+through @racket[thread-resume].
 
 A thread that has not terminated can be garbage collected (see
 @secref["gc-model"]) if it is unreachable and suspended or if it is

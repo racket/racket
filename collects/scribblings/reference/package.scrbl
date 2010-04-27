@@ -5,7 +5,7 @@
 @(define pack-eval (make-base-eval))
 @interaction-eval[#:eval pack-eval (require racket/package)]
 
-@title[#:tag "package"]{Limiting Scope: @scheme[define-package], @scheme[open-package], ...}
+@title[#:tag "package"]{Limiting Scope: @racket[define-package], @racket[open-package], ...}
 
 @note-lib-only[racket/package]
 
@@ -18,34 +18,34 @@
                         (code:line #:all-defined-except (id ...))])]
 )]{
 
-@margin-note{The @scheme[define-package] form is based on the @schemeidfont{module}
+@margin-note{The @racket[define-package] form is based on the @racketidfont{module}
              form of Chez Scheme @cite["Waddell99"].}
 
-The @scheme[define-package] form is similar to @scheme[module], except
-that it can appear in any definition context. The @scheme[form]s
-within a @scheme[define-package] form can be definitions or
+The @racket[define-package] form is similar to @racket[module], except
+that it can appear in any definition context. The @racket[form]s
+within a @racket[define-package] form can be definitions or
 expressions; definitions are not visible outside the
-@scheme[define-package] form, but @scheme[exports] determines a subset
+@racket[define-package] form, but @racket[exports] determines a subset
 of the bindings that can be made visible outside the package using
-the definition form @scheme[(open-package package-id)].
+the definition form @racket[(open-package package-id)].
 
-The @scheme[(id ...)] and @scheme[#:only (id ...)] @scheme[exports]
-forms are equivalent: exactly the listed @scheme[id]s are
-exported. The @scheme[#:all-defined] form exports all definitions from
-the package body, and @scheme[#:all-defined-except (id ...)] exports
-all definitions except the listed @scheme[id]s.
+The @racket[(id ...)] and @racket[#:only (id ...)] @racket[exports]
+forms are equivalent: exactly the listed @racket[id]s are
+exported. The @racket[#:all-defined] form exports all definitions from
+the package body, and @racket[#:all-defined-except (id ...)] exports
+all definitions except the listed @racket[id]s.
 
 All of the usual definition forms work within a
-@scheme[define-package] body, and such definitions are visible to all
+@racket[define-package] body, and such definitions are visible to all
 expressions within the body (and, in particular, the definitions can
-refer to each other). However, @scheme[define-package] handles
-@scheme[define*], @scheme[define*-syntax], @scheme[define*-values],
-@scheme[define*-syntaxes], and
-@scheme[open*-package] specially: the bindings introduced by those
-forms within a @scheme[define-package] body are visible only to
-@scheme[form]s that appear later in the body, and they can shadow any
-binding from preceding @scheme[form]s (even if the preceding binding
-did not use one of the special @schemeidfont{*} definition forms).  If
+refer to each other). However, @racket[define-package] handles
+@racket[define*], @racket[define*-syntax], @racket[define*-values],
+@racket[define*-syntaxes], and
+@racket[open*-package] specially: the bindings introduced by those
+forms within a @racket[define-package] body are visible only to
+@racket[form]s that appear later in the body, and they can shadow any
+binding from preceding @racket[form]s (even if the preceding binding
+did not use one of the special @racketidfont{*} definition forms).  If
 an exported identifier is defined multiple times, the last definition
 is the exported one.
 
@@ -70,17 +70,17 @@ little-russian-doll
 
 @defform[(package-begin form ...)]{
 
-Similar to @scheme[define-package], but it only limits the visible of
-definitions without binding a package name. If the last @scheme[form]
+Similar to @racket[define-package], but it only limits the visible of
+definitions without binding a package name. If the last @racket[form]
 is an expression, then the expression is in @tech{tail position} for
-the @scheme[package-begin] form, so that its result is the
-@scheme[package-begin] result.
+the @racket[package-begin] form, so that its result is the
+@racket[package-begin] result.
 
-A @scheme[package-begin] form can be used as an expression, but if it
+A @racket[package-begin] form can be used as an expression, but if it
 is used in a context where definitions are allowed, then the
 definitions are essentially spliced into the enclosing context (though
 the defined bindings remain hidden outside the
-@scheme[package-begin]).
+@racket[package-begin]).
 
 @examples[
 #:eval pack-eval
@@ -98,10 +98,10 @@ secret
 @defidform[open*-package]
 )]{
 
-Equivalent to @scheme[define], @scheme[define-values],
-@scheme[define-syntax], @scheme[define-syntaxes],
-and @scheme[open-package], except within a
-@scheme[define-package] or @scheme[package-begin] form, where they
+Equivalent to @racket[define], @racket[define-values],
+@racket[define-syntax], @racket[define-syntaxes],
+and @racket[open-package], except within a
+@racket[define-package] or @racket[package-begin] form, where they
 create bindings that are visible only to later body forms.
 
 @examples[
@@ -127,19 +127,19 @@ cookies
 @defproc[(package-original-identifiers [id identifier?]) (listof identifier?)]
 )]{
 
-The @scheme[package?], @scheme[package-exported-identifiers], and
-@scheme[package-original-identifiers] functions are exported
-@scheme[for-syntax] by @schememodname[racket/package].
+The @racket[package?], @racket[package-exported-identifiers], and
+@racket[package-original-identifiers] functions are exported
+@racket[for-syntax] by @racketmodname[racket/package].
 
-The @scheme[package?] predicate returns @scheme[#t] if @scheme[v] is a
-package value as obtained by @scheme[syntax-local-value] on an
+The @racket[package?] predicate returns @racket[#t] if @racket[v] is a
+package value as obtained by @racket[syntax-local-value] on an
 identifier that is bound to a package.
 
-Given such an identifier, the @scheme[package-exported-identifiers]
+Given such an identifier, the @racket[package-exported-identifiers]
 function returns a list of identifiers that corresponding to the
 bindings that would be introduced by opening the package in the
 lexical context being expanded. The
-@scheme[package-original-identifiers] function returns a parallel list
+@racket[package-original-identifiers] function returns a parallel list
 of identifiers for existing bindings of package's exports.}
 
 @; ----------------------------------------------------------------------

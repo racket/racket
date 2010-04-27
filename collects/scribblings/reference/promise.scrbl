@@ -10,9 +10,6 @@ A @deftech{promise} encapsulates an expression to be evaluated on
 demand via @scheme[force]. After a promise has been @scheme[force]d,
 every later @scheme[force] of the promise produces the same result.
 
-This module provides this functionality, and extends it to additional
-kinds of promises with various evaluation strategies.
-
 
 @defproc[(promise? [v any/c]) boolean?]{
 
@@ -31,18 +28,18 @@ This includes multiple values and exceptions.}
 @defform[(lazy body ...+)]{
 
 Like @scheme[delay], if the last @scheme[body] produces a promise when
-forced, then this promise is @scheme[force]d too to obtain a value.
+forced, then this promise is @scheme[force]d, too, to obtain a value.
 In other words, this form creates a composable promise, where the
 computation of its body is ``attached'' to the computation of the
-following promise and a single @scheme[force] iterates through the
+following promise, and a single @scheme[force] iterates through the
 whole chain, tail-calling each step.
 
 Note that the last @scheme[body] of this form must produce a single
-value --- but this value can itself be a @scheme[delay] promise that
+value, but the value can itself be a @scheme[delay] promise that
 returns multiple values.
 
-This form useful for implementing lazy libraries and languages, where
-tail-calls can be wrapped in a promise.}
+The @scheme[lazy] form useful for implementing lazy libraries and
+languages, where tail calls can be wrapped in a promise.}
 
 
 @defproc[(force [v any/c]) any]{
@@ -56,9 +53,6 @@ the promise will raise the same exception every time.
 
 If @scheme[v] is @scheme[force]d again before the original call to
 @scheme[force] returns, then the @exnraise[exn:fail].
-
-Additional kinds of promises are also forced via @scheme[force].  See
-below for further details.
 
 If @scheme[v] is not a promise, then it is returned as the result.}
 
@@ -78,56 +72,74 @@ Returns @scheme[#t] if @scheme[promise] is currently being forced.
 
 @defform[(delay/name body ...+)]{
 
-Creates a ``call by name'' promise, that is similar to
+Creates a ``call-by-name'' promise that is similar to
 @scheme[delay]-promises, except that the resulting value is not
-cached.  It is essentially a thunk, wrapped in a way that
-@scheme[force] recognizes.  Note that if a @scheme[delay/name] promise
-forces itself, no exception is raised.
-@; TODO: clarify that the point is that code that is written using
-@; `force', can be used with these promises too.
+cached.  This kind of promise is essentially a thunk that is wrapped
+in a way that @scheme[force] recognizes.  
 
-Note that this promise is never considered ``running'' or ``forced''
-in the sense of @scheme[promise-running?] and
-@scheme[promise-forced?].}
+If a @scheme[delay/name] promise forces itself, no exception is
+raised, the promise is never considered ``running'' or ``forced'' in
+the sense of @scheme[promise-running?] and @scheme[promise-forced?].}
 
 @defform[(delay/sync body ...+)]{
 
-Conventional promises are not useful when multiple threads attempt to
-force them: when a promise is running, any additional threads that
-@scheme[force] it will get an exception.  @scheme[delay/sync] is
-useful for such cases: if a second thread attempts to @scheme[force]
-such a promise, it will get blocked until the computation is done and
-an answer is available.  If @scheme[force] is used with the promise as
-it is forced from the same thread, an exception is raised.
+Produces a promise where an attempt to @scheme[force] the promise by a
+thread other than one currently running the promise causes the
+@scheme[force] to block until a result is available. This kind of
+promise is also a @tech{synchronizable event} for use with
+@racket[sync]; @racket[sync]ing on the promise does not @scheme[force]
+it, but merely waits until a value is forced by another thread.
 
-In addition, these promises can be used with @scheme[sync], which
-blocks until it has been forced.  Note that using @scheme[sync] this
-way is passive in the sense that it does not trigger evaluation of the
-promise.}
+If a promise created by @scheme[delay/sync] is forced on a thread that
+is already running the promise, an exception is raised in the same way
+as for promises created with @scheme[delay].}
 
-@defform[(delay/thread body ...+)]{
-@; TODO: document #:group keyword
+@defform/subs[(delay/thread body/option ...+)
+              ([body/option body
+                            (code:line #:group thread-group-expr)])]{
 
-This kind of promise begins the computation immediately, but this
-happens on a separate thread.  When the computation is done, the result
-is cached as usual.  Note that exceptions are caught as usual, and will
-only be raised when @scheme[force]d.  If such a promise is
-@scheme[force]d before a value is ready, the calling thread will be
-blocked until the computation terminates.  These promises can also be
-used with @scheme[sync].}
+Like @scheme[delay/sync], but begins the computation immediately on a
+newly created thread. The thread is created under the @tech{thread
+group} specified by @scheme[thread-group-expr], which defaults to
+@scheme[(make-thread-group)]. A @racket[#:group] specification can
+appear at most once.
 
-@defform[(delay/idle body ...+)]{
-@; TODO: document #:wait-for, #:work-while, #:tick, #:use keywords
+Exceptions raised by the @racket[body]s are caught as usual and raised
+only when the promise is @scheme[force]d.}
 
-Similar to @scheme[delay/thread], but the computation thread gets to
-work only when the process is otherwise idle, as determined by
-@scheme[system-idle-evt], and the work is done in small runtime
-fragements, making it overall not raise total CPU use or hurt
-responsiveness.  If the promise is @scheme[forced] before the
-computation is done, it will run the rest of the computation immediately
-without slicing the runtime.  Using @scheme[sync] on these promises
-blocks as is the case with @scheme[delay/sync], and this happens in a
-passive way too, so the computation continues to work in low-priority.
+@defform/subs[(delay/idle body/option ...+)
+              ([body/option body
+                            (code:line #:wait-for wait-evt-expr)
+                            (code:line #:work-while while-evt-expr)
+                            (code:line #:tick tick-secs-expr)
+                            (code:line #:use use-ratio-expr)])]{
+
+Like @scheme[delay/thread], but with the following differences:
+
+@itemlist[
+
+ @item{the computation does not start until the event produced by
+       @scheme[wait-evt-expr] is ready, where the default is
+       @racket[(system-idle-evt)];}
+
+ @item{the computation thread gets to work only when the process is
+       otherwise idle as determined by @scheme[while-evt-expr], which
+       also defaults to @racket[(system-idle-evt)];}
+
+ @item{the thread is allowed to run only periodically: out of every
+       @scheme[tick-secs-expr] (defaults to @scheme[0.2]) seconds, the
+       thread is allowed to run @scheme[use-ratio-expr] (defaults to
+       @scheme[0.12]) of the time proportionally; i.e., the thread
+       runs for @scheme[(* tick-secs-expr use-ratio-expr)] seconds.}
+
+]
+
+If the promise is @scheme[forced] before the computation is done, it
+runs the rest of the computation immediately without waiting on events
+or periodically restricting evaluation.
+
+A @racket[#:wait-for], @racket[#:work-while], @racket[#:tick], or
+@racket[#:use] specification can appear at most once.
 
 @;{
 TODO: Say something on:
