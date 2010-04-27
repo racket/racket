@@ -25,7 +25,11 @@
 
 ;; get-info/full : path -> info/#f
 (define (get-info/full dir)
-  (define file (build-path dir "info.ss"))
+  (or (get-info/full/ext dir "rkt")
+      (get-info/full/ext dir "ss")))
+
+(define (get-info/full/ext dir ext)
+  (define file (build-path dir (format "info.~a" ext)))
   (define (err fmt . args)
     (apply error 'get-info (string-append "info file " fmt " in ~a")
            (append args (list file))))
