@@ -1,35 +1,36 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
-          scheme/list
+          racket/list
           "guide-utils.ss"
 
-          (for-label scheme/list))
+          (for-label racket/list
+                     (only-in racket/class is-a?)))
 
 @(define list-eval (make-base-eval))
-@(interaction-eval #:eval list-eval (require scheme/list))
+@(interaction-eval #:eval list-eval (require racket/list))
 
-@title{Pairs, Lists, and Scheme Syntax}
+@title{Pairs, Lists, and Racket Syntax}
 
-The @scheme[cons] function actually accepts any two values, not just
+The @racket[cons] function actually accepts any two values, not just
 a list for the second argument. When the second argument is not
-@scheme[empty] and not itself produced by @scheme[cons], the result prints
-in a special way. The two values joined with @scheme[cons] are printed
+@racket[empty] and not itself produced by @racket[cons], the result prints
+in a special way. The two values joined with @racket[cons] are printed
 between parentheses, but with a dot (i.e., a period surrounded by
 whitespace) in between:
 
 @interaction[(cons 1 2) (cons "banana" "split")]
 
-Thus, a value produced by @scheme[cons] is not always a list. In
-general, the result of @scheme[cons] is a @defterm{pair}. The more
-traditional name for the @scheme[cons?] function is @scheme[pair?],
+Thus, a value produced by @racket[cons] is not always a list. In
+general, the result of @racket[cons] is a @defterm{pair}. The more
+traditional name for the @racket[cons?] function is @racket[pair?],
 and we'll use the traditional name from now on.
 
-The name @scheme[rest] also makes less sense for non-list pairs; the
-more traditional names for @scheme[first] and @scheme[rest] are
-@scheme[car] and @scheme[cdr], respectively. (Granted, the traditional
+The name @racket[rest] also makes less sense for non-list pairs; the
+more traditional names for @racket[first] and @racket[rest] are
+@racket[car] and @racket[cdr], respectively. (Granted, the traditional
 names are also nonsense. Just remember that ``a'' comes before ``d,''
-and @scheme[cdr] is pronounced ``could-er.'')
+and @racket[cdr] is pronounced ``could-er.'')
 
 @examples[
 #:eval list-eval
@@ -42,24 +43,24 @@ and @scheme[cdr] is pronounced ``could-er.'')
 
 @close-eval[list-eval]
 
-Scheme's pair datatype and its relation to lists is essentially a
+Racket's pair datatype and its relation to lists is essentially a
 historical curiosity, along with the dot notation for printing and the
-funny names @scheme[car] and @scheme[cdr]. Pairs are deeply wired into
-to the culture, specification, and implementation of Scheme, however,
+funny names @racket[car] and @racket[cdr]. Pairs are deeply wired into
+to the culture, specification, and implementation of Racket, however,
 so they survive in the language.
 
 You are perhaps most likely to encounter a non-list pair when making a
 mistake, such as accidentally reversing the arguments to
-@scheme[cons]:
+@racket[cons]:
 
 @interaction[(cons (list 2 3) 1) (cons 1 (list 2 3))]
 
 Non-list pairs are used intentionally, sometimes. For example, the
-@scheme[make-immutable-hash] function takes a list of pairs, where the
-@scheme[car] of each pair is a key and the @scheme[cdr] is an
+@racket[make-hash] function takes a list of pairs, where the
+@racket[car] of each pair is a key and the @racket[cdr] is an
 arbitrary value.
 
-The only thing more confusing to new Schemers than non-list pairs is
+The only thing more confusing to new Racketeers than non-list pairs is
 the printing convention for pairs where the second element @italic{is}
 a pair, but @italic{is not} a list:
 
@@ -68,12 +69,12 @@ a pair, but @italic{is not} a list:
 In general, the rule for printing a pair is as follows: use the dot
 notation always, but if the dot is immediately followed by an open
 parenthesis, then remove the dot, the open parenthesis, and the
-matching close parenthesis. Thus, @schemeresultfont{(0 . (1 . 2))}
-becomes @schemeresult[(0 1 . 2)], and
-@schemeresultfont{(1 . (2 . (3 . ())))} becomes @schemeresult[(1 2 3)].
+matching close parenthesis. Thus, @racketresultfont{`(0 . (1 . 2))}
+becomes @racketresult[`(0 1 . 2)], and
+@racketresultfont{`(1 . (2 . (3 . ())))} becomes @racketresult[`(1 2 3)].
 
 @;------------------------------------------------------------------------
-@section[#:tag "quoting-lists"]{Quoting Pairs and Symbols with @scheme[quote]}
+@section[#:tag "quoting-lists"]{Quoting Pairs and Symbols with @racket[quote]}
 
 After you see
 
@@ -82,79 +83,86 @@ After you see
 ]
 
 enough times, you'll wish (or you're already wishing) that there was a
-way to write just @scheme[((1) (2) (3))] and have it mean the list of
-lists that prints as @schemeresult[((1) (2) (3))]. The @scheme[quote]
+way to write just @racket[((1) (2) (3))] and have it mean the list of
+lists that prints as @racketresult[`((1) (2) (3))]. The @racket[quote]
 form does exactly that:
 
 @interaction[
-(eval:alts (@#,scheme[quote] ((1) (2) (3))) '((1) (2) (3)))
-(eval:alts (@#,scheme[quote] ("red" "green" "blue")) '("red" "green" "blue"))
-(eval:alts (@#,scheme[quote] ()) '())
+(eval:alts (@#,racket[quote] ((1) (2) (3))) '((1) (2) (3)))
+(eval:alts (@#,racket[quote] ("red" "green" "blue")) '("red" "green" "blue"))
+(eval:alts (@#,racket[quote] ()) '())
 ]
 
-The @scheme[quote] form works with the dot notation, too, whether the
+The @racket[quote] form works with the dot notation, too, whether the
 quoted form is normalized by the dot-parenthesis elimination rule or
 not:
 
 @interaction[
-(eval:alts (@#,scheme[quote] (1 . 2)) '(1 . 2))
-(eval:alts (@#,scheme[quote] (0 @#,schemeparenfont{.} (1 . 2))) '(0 . (1 . 2)))
+(eval:alts (@#,racket[quote] (1 . 2)) '(1 . 2))
+(eval:alts (@#,racket[quote] (0 @#,racketparenfont{.} (1 . 2))) '(0 . (1 . 2)))
 ]
 
 Naturally, lists of any kind can be nested:
 
 @interaction[
 (list (list 1 2 3) 5 (list "a" "b" "c"))
-(eval:alts (@#,scheme[quote] ((1 2 3) 5 ("a" "b" "c"))) '((1 2 3) 5 ("a" "b" "c")))
+(eval:alts (@#,racket[quote] ((1 2 3) 5 ("a" "b" "c"))) '((1 2 3) 5 ("a" "b" "c")))
 ]
 
-If you wrap an identifier with @scheme[quote], then you get output
-that looks like an identifier:
+If you wrap an identifier with @racket[quote], then you get output
+that looks like an identifier, but with a @litchar{'} prefix:
 
 @interaction[
-(eval:alts (@#,scheme[quote] jane-doe) 'jane-doe)
+(eval:alts (@#,racket[quote] jane-doe) 'jane-doe)
 ]
 
 A value that prints like an identifier is a @defterm{symbol}. In the
 same way that parenthesized output should not be confused with
 expressions, a printed symbol should not be confused with an
-identifier. In particular, the symbol @scheme[(@#,scheme[quote]
-@#,schemeidfont{map})] has nothing to do with the @schemeidfont{map}
+identifier. In particular, the symbol @racket[(@#,racket[quote]
+@#,racketidfont{map})] has nothing to do with the @racketidfont{map}
 identifier or the predefined function that is bound to
-@scheme[map], except that the symbol and the identifier happen
+@racket[map], except that the symbol and the identifier happen
 to be made up of the same letters.
 
 Indeed, the intrinsic value of a symbol is nothing more than its
 character content. In this sense, symbols and strings are almost the
 same thing, and the main difference is how they print. The functions
-@scheme[symbol->string] and @scheme[string->symbol] convert between
+@racket[symbol->string] and @racket[string->symbol] convert between
 them.
 
 @examples[
 map
-(eval:alts (@#,scheme[quote] @#,schemeidfont{map}) 'map)
-(eval:alts (symbol? (@#,scheme[quote] @#,schemeidfont{map})) (symbol? 'map))
+(eval:alts (@#,racket[quote] @#,racketidfont{map}) 'map)
+(eval:alts (symbol? (@#,racket[quote] @#,racketidfont{map})) (symbol? 'map))
 (symbol? map)
 (procedure? map)
 (string->symbol "map")
-(eval:alts (symbol->string (@#,scheme[quote] @#,schemeidfont{map})) (symbol->string 'map))
+(eval:alts (symbol->string (@#,racket[quote] @#,racketidfont{map})) (symbol->string 'map))
 ]
 
-When @scheme[quote] is used on a parenthesized sequence of
+When @racket[quote] is used on a parenthesized sequence of
 identifiers, it creates a list of symbols:
 
 @interaction[
-(eval:alts (@#,scheme[quote] (@#,schemeidfont{road} @#,schemeidfont{map})) '(road map))
-(eval:alts (car (@#,scheme[quote] (@#,schemeidfont{road} @#,schemeidfont{map}))) (car '(road map)))
-(eval:alts (symbol? (car (@#,scheme[quote] (@#,schemeidfont{road} @#,schemeidfont{map})))) (symbol? (car '(road map))))
+(eval:alts (car (@#,racket[quote] (@#,racketidfont{road} @#,racketidfont{map}))) (car '(road map)))
+(eval:alts (symbol? (car (@#,racket[quote] (@#,racketidfont{road} @#,racketidfont{map})))) (symbol? (car '(road map))))
+]
+
+When a symbol is inside a
+list that is printed with @litchar{`}, the @litchar{'} on the symbol
+is omitted, since @litchar{`} is doing the job already:
+
+@interaction[
+(eval:alts (@#,racket[quote] (@#,racketidfont{road} @#,racketidfont{map})) '(road map))
 ]
 
 @;------------------------------------------------------------------------
-@section{Abbreviating @scheme[quote] with @schemevalfont{'}}
+@section{Abbreviating @racket[quote] with @racketvalfont{'}}
 
-If @scheme[(@#,scheme[quote] (1 2 3))] still seems like too much
+If @racket[(@#,racket[quote] (1 2 3))] still seems like too much
 typing, you can abbreviate by just putting @litchar{'} in front of
-@scheme[(1 2 3)]:
+@racket[(1 2 3)]:
 
 @interaction[
 '(1 2 3)
@@ -162,31 +170,30 @@ typing, you can abbreviate by just putting @litchar{'} in front of
 '((1 2 3) road ("a" "b" "c"))
 ]
 
-In the documentation, @litchar{'} is printed in green along with the
+In the documentation, @litchar{'} within an expression is printed in green along with the
 form after it, since the combination is an expression that is a
-constant. In DrScheme, only the @litchar{'} is colored green. DrScheme
-is more precisely correct, because the meaning of @scheme[quote] can
+constant. In DrRacket, only the @litchar{'} is colored green. DrRacket
+is more precisely correct, because the meaning of @racket[quote] can
 vary depending on the context of an expression. In the documentation,
 however, we routinely assume that standard bindings are in scope, and
 so we paint quoted forms in green for extra clarity.
 
-A @litchar{'} expands to a @scheme[quote] form in quite a literal
+A @litchar{'} expands to a @racket[quote] form in quite a literal
 way. You can see this if you put a @litchar{'} in front of a form that has a
 @litchar{'}:
 
 @interaction[
-(eval:alts (car '(@#,schemevalfont{quote} @#,schemevalfont{road})) 'quote)
+(eval:alts (car '(@#,racketvalfont{quote} @#,racketvalfont{road})) 'quote)
 (car ''road)
 ]
 
 Beware, however, that the @tech{REPL}'s printer recognizes the symbol
-@schemeidfont{quote} when printing output, and then it uses
-@schemeidfont{'} in the output:
+@racketidfont{quote} when printing output, and then it uses
+@racketidfont{'} in the output:
 
 @interaction[
-'road
-''road
-(eval:alts '(@#,schemevalfont{quote} @#,schemevalfont{road}) ''road)
+(eval:alts (list (@#,racketvalfont{quote} (@#,racketvalfont{quote} @#,racketvalfont{road}))) '('road))
+(list ''road)
 ]
 
 @; FIXME:
@@ -194,13 +201,48 @@ Beware, however, that the @tech{REPL}'s printer recognizes the symbol
 @; different than what "list" creates
 
 @;------------------------------------------------------------------------
-@section[#:tag "lists-and-syntax"]{Lists and Scheme Syntax}
+@section{Quasiquoting with @racketvalfont{`}}
+
+At this point, you may wonder why a symbol that is written with
+@litchar{'} prints back with @litchar{'}, while a list that is written
+with @litchar{'} prints back with @litchar{`}:
+
+@interaction[
+'road
+'(left right)
+]
+
+The @litchar{`} character is a shorthand for @racket[quasiquote] in
+the same way that @litchar{'} is short for @racket[quote]. The
+@racket[quasiquote] form is like @scheme[quote], except that the
+content of a @scheme[quasiquote]d form can escape back to a Racket
+expression using @racket[unquote], which is abbreviated @litchar{,}:
+
+@moreguide["qq"]{@racket[quasiquote]}
+
+@interaction[
+`(1 ,(+ 1 1) "buckle my shoe")
+]
+
+The value printer in Racket uses @litchar{`} for a lists in case it
+must escape to print certain kinds of values that cannot be written
+directly under @scheme[quote]. For example, a source-location record
+is created with the @racket[srcloc] function, and it prints like an
+equivalent call to @racket[srcloc]:
+
+@interaction[
+(srcloc "file.rkt" 1 0 1 (+ 4 4))
+(list 'here (srcloc "file.rkt" 1 0 1 8) 'there)
+]
+
+@;------------------------------------------------------------------------
+@section[#:tag "lists-and-syntax"]{Lists and Racket Syntax}
 
 Now that you know the truth about pairs and lists, and now that you've
-seen @scheme[quote], you're ready to understand the main way in which
-we have been simplifying Scheme's true syntax.
+seen @racket[quote], you're ready to understand the main way in which
+we have been simplifying Racket's true syntax.
 
-The syntax of Scheme is not defined directly in terms of character
+The syntax of Racket is not defined directly in terms of character
 streams. Instead, the syntax is determined by two layers:
 
 @itemize[
@@ -223,13 +265,13 @@ One consequence of the read layer for expressions is that you can use
 the dot notation in expressions that are not quoted forms:
 
 @interaction[
-(eval:alts (+ 1 . @#,scheme[(2)]) (+ 1 2))
+(eval:alts (+ 1 . @#,racket[(2)]) (+ 1 2))
 ]
 
-This works because @scheme[(+ 1 . @#,scheme[(2)])] is just another
-way of writing @scheme[(+ 1 2)]. It is practically never a good idea
+This works because @racket[(+ 1 . @#,racket[(2)])] is just another
+way of writing @racket[(+ 1 2)]. It is practically never a good idea
 to write application expressions using this dot notation; it's just a
-consequence of the way Scheme's syntax is defined.
+consequence of the way Racket's syntax is defined.
 
 Normally, @litchar{.} is allowed by the reader only with a
 parenthesized sequence, and only before the last element of the
@@ -245,6 +287,6 @@ conversion enables a kind of general infix notation:
 ]
 
 This two-dot convention is non-traditional, and it has essentially
-nothing to do with the dot notation for non-list pairs. PLT Scheme
+nothing to do with the dot notation for non-list pairs. Racket
 programmers use the infix convention sparingly---mostly for asymmetric
-binary operators such as @scheme[<] and @scheme[is-a?].
+binary operators such as @racket[<] and @racket[is-a?].

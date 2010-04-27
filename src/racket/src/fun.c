@@ -7938,7 +7938,7 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
   
   if ((argv[1] == scheme_parameterization_key)
       || (argv[1] == scheme_break_enabled_key)) {
-    /* Minor hack: these keys are used in "startup.ss" to access
+    /* Minor hack: these keys are used in "startup.rkt" to access
        parameterizations, and we want that access to go through
        prompts. If they keys somehow leaked, it's ok, because that
        doesn't expose anything that isn't already exposed by functions

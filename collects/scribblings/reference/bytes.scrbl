@@ -459,7 +459,7 @@ guaranteed combinations not involving @scheme[""] under Unix, or if it
 is any of the guaranteed combinations (including @scheme[""]) under
 Windows and Mac OS X.
 
-@margin-note{In PLT's software distributions for Windows, a suitable
+@margin-note{In the Racket software distributions for Windows, a suitable
 @filepath{iconv.dll} is included with @filepath{libmzsch@italic{VERS}.dll}.}
 
 The set of available encodings and combinations varies by platform,

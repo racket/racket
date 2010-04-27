@@ -33,4 +33,4 @@ A GIF stream can be in any one of the following states:
 
 ]
 
-@(include-extracted "../gif.ss")
+@(include-extracted "../gif.rkt")

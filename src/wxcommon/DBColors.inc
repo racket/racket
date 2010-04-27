@@ -3,7 +3,7 @@
 
 ; Generating source:
 
-(require (lib "list.ss") (lib "string.ss"))
+(require (lib "list.rkt") (lib "string.rkt"))
 
 ;; The colors:
 

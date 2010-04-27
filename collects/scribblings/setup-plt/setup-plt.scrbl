@@ -1174,14 +1174,10 @@ An @deftech{unpackable} is one of the following:
           (symbol? [(-> any)] . -> . any)
           false/c)]{
 
-   Accepts a path to a directory. It returns @scheme[#f] if there is
-   no @filepath{info.ss} file in the directory. If the
-   @filepath{info.ss} file has the wrong shape (i.e., not a module
-   using @schememodname[setup/infotab] or @scheme[(lib "infotab.ss" "setup")]),
-   or if the @filepath{info.ss} file fails to load, then an exception
-   is raised.
-
-   Otherwise, @scheme[get-info/full] returns an info procedure of one
+   Accepts a path to a directory. If it finds either a well-formed
+   an @filepath{info.rkt} file or an @filepath{info.ss} file (with
+   preference for the @filepath{info.rkt} file), 
+   it returns an info procedure that accepts either one
    or two arguments. The first argument to the info procedure is
    always a symbolic name, and the result is the value of the name in
    the @filepath{info.ss} file, if the name is defined. The optional
@@ -1189,7 +1185,18 @@ An @deftech{unpackable} is one of the following:
    arguments to be called when the name is not defined; the result of
    the info procedure is the result of the @scheme[_thunk] in that
    case. If the name is not defined and no @scheme[_thunk] is
-   provided, then an exception is raised.}
+   provided, then an exception is raised.
+   
+   @scheme[get-info/full] returns @scheme[#f] if there is
+   no @filepath{info.rkt} or @filepath{info.ss} file in the directory. If there is a
+   @filepath{info.rkt} file that has the wrong shape (i.e., not a module
+   using @schememodname[setup/infotab] or @scheme[(lib "infotab.ss" "setup")]),
+   or if the @filepath{info.rkt} file fails to load, then an exception
+   is raised. If the @filepath{info.rkt} file loaded, @scheme[get-info/full]
+   returns the @scheme[get-info] file. If the @filepath{info.rkt} file does not exist, 
+   then @scheme[get-info/full] does
+   the same checks for the @filepath{info.ss} file, either raising an exception
+   or returning the @scheme[get-info] function from the @filepath{info.ss} file.}
 
 @defproc[(find-relevant-directories
           (syms (listof symbol?))

@@ -22,7 +22,7 @@ way that an identifier can be quoted to produce a symbol, a keyword
 can be quoted to produce a value. The same term ``keyword'' is used in
 both cases, but we sometimes use @defterm{keyword value} to refer more
 specifically to the result of a quote-keyword expression or of
-@scheme[string->keyword]. An unquoted keyword is not an expression,
+@racket[string->keyword]. An unquoted keyword is not an expression,
 just as an unquoted identifier does not produce a symbol:
 
 @examples[
@@ -37,12 +37,12 @@ run-time flags and enumerations, use symbols instead of keywords.  The
 example below illustrates the distinct roles of keywords and symbols.
 
 @examples[
-(code:line (define dir (find-system-path 'temp-dir)) (code:comment @#,t{not @scheme['#:temp-dir]}))
+(code:line (define dir (find-system-path 'temp-dir)) (code:comment @#,t{not @racket['#:temp-dir]}))
 (with-output-to-file (build-path dir "stuff.txt")
   (lambda () (printf "example\n"))
-  (code:comment @#,t{optional @scheme[#:mode] argument can be @scheme['text] or @scheme['binary]})
+  (code:comment @#,t{optional @racket[#:mode] argument can be @racket['text] or @racket['binary]})
   #:mode 'text
-  (code:comment @#,t{optional @scheme[#:exists] argument can be @scheme['replace], @scheme['truncate], ...})
+  (code:comment @#,t{optional @racket[#:exists] argument can be @racket['replace], @racket['truncate], ...})
   #:exists 'replace)
 ]
 

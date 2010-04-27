@@ -3,7 +3,7 @@
 
 @title[#:tag "concurrency" #:style 'toc]{Concurrency}
 
-PLT Scheme supports multiple threads of control within a program,
+Racket supports multiple threads of control within a program,
 thread-local storage, some primitive synchronization mechanisms, and a
 framework for composing synchronization abstractions. In addition, the
 @scheme[racket/future] library provides some support for parallelism

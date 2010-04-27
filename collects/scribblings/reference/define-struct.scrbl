@@ -8,7 +8,7 @@
 
 @title[#:tag "define-struct"]{Defining Structure Types: @racket[struct]}
 
-@guideintro["define-struct"]{@racket[define-struct]}
+@guideintro["define-struct"]{@racket[struct]}
 
 @defform/subs[(struct id maybe-super (field ...)
                       struct-option ...)

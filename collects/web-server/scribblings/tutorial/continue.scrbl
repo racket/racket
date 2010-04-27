@@ -2,7 +2,7 @@
 @(require scribble/manual
           (for-label scheme)
           (for-label web-server/servlet)
-          "tutorial-util.ss")
+          "tutorial-util.rkt")
 
 @title{@bold{Continue}: Web Applications in PLT Scheme}
 
@@ -247,7 +247,7 @@ Now that we have the @scheme[render-posts] function handy, let's revisit our
 web application and change our @scheme[start] function to return an interesting
 @scheme[html-response].
 
-@external-file["iteration-1.ss"]
+@external-file["iteration-1.rkt"]
 
 If we press Run, we should see the blog posts in our web browser.
 
@@ -305,7 +305,7 @@ Our start method, then, will first see if the request has a parsable
 post, extend its set of posts if it can, and finally display those
 blog posts.
 
-@external-file["iteration-2.ss"]
+@external-file["iteration-2.rkt"]
 
 This appears to work... but there's an issue with this!  Try to add
 two new posts.  What happens?
@@ -412,7 +412,7 @@ Now that we've been going a little bit in circles, let's move forward
 back to the blog application.  We will adjust the form's action so it
 directs to a URL that's associated to a separate handler.
 
-@external-file["iteration-3.ss"]
+@external-file["iteration-3.rkt"]
 
 Note that the structure of the @scheme[render-blog-page] function looks very
 similar to that of our last @scheme[show-counter] example.  The user can
@@ -472,7 +472,7 @@ variable.
 After doing the adjustments incorporating @scheme[insert-blog-post!], and doing
 a little variable cleanup, our web application now looks like this:
 
-@external-file["iteration-4.ss"]
+@external-file["iteration-4.rkt"]
 
 Open two windows that visit our web application, and start adding in
 posts from both windows.  We should see that both browsers are sharing
@@ -554,7 +554,7 @@ use @scheme[embed/url] itself when it makes those hyperlinked titles.
 
 Our web application now looks like:
 
-@external-file["iteration-5.ss"]
+@external-file["iteration-5.rkt"]
 
 We now have an application that's pretty sophisticated: we can add
 posts and write comments.  Still, there's a problem with this: once
@@ -586,7 +586,7 @@ Although this seems complicated, the shape of our handlers will look
 more-or-less like what we had before.  After we've added all the
 handlers, our web application is fairly functional.
 
-@external-file["iteration-6.ss"]
+@external-file["iteration-6.rkt"]
 
 @section{Decorating With Style!}
 @declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-7
@@ -624,7 +624,7 @@ the web server where that directory is.  The function
 tells the web server to look in the given path when it receives a URL
 that looks like a static resource request.
 
-@bold{Exercise.} Create a simple web application called @filepath{test-static.ss} with the
+@bold{Exercise.} Create a simple web application called @filepath{test-static.rkt} with the
 following content:
 
 @schememod[
@@ -642,7 +642,7 @@ web-server/insta
 ]
 
 Make a subdirectory called @filepath{htdocs} rooted in the same directory as
-the @filepath{test-static.ss} source.  Finally, just to see that we can serve
+the @filepath{test-static.rkt} source.  Finally, just to see that we can serve
 this .css page, create a very simple .css file @filepath{test-static.css} file
 in @filepath{htdocs/} with the following content:
 
@@ -697,7 +697,7 @@ back that fresh new request.
 For example, let's look at a toy application that lets the users add
 names to a roster:
 
-@external-file["no-use-redirect.ss"]
+@external-file["no-use-redirect.rkt"]
 
 This application suffers the same problem as our blog: if the user
 adds a name, and then presses reload, then the same name will be added
@@ -706,7 +706,7 @@ twice.
 We can fix this by changing a single expression.  Can you see what
 changed?
 
-@external-file["use-redirect.ss"]
+@external-file["use-redirect.rkt"]
 
 Double-submit, then, is painlessly easy to mitigate.  Whenever we have
 handlers that mutate the state of our system, we use @scheme[redirect/get] when
@@ -718,7 +718,7 @@ double-submit problem.
 
 With these minor fixes, our blog application now looks like this:
 
-@external-file["iteration-7.ss"]
+@external-file["iteration-7.rkt"]
 
 @section{Abstracting the Model}
 @declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-8
@@ -750,9 +750,9 @@ without breaking the entire system.  Let's do this: we will first rip
 the model out into a separate file.  Once we've done that, then we'll
 look into making the model persist.
 
-Create a new file called @filepath{model.ss} with the following content.
+Create a new file called @filepath{model.rkt} with the following content.
 
-@external-file["model.ss"]
+@external-file["model.rkt"]
 
 This is essentially a cut-and-paste of the lines we identified as our
 model.  It's written in the @schememodname[scheme] language because
@@ -764,7 +764,7 @@ additional expression that looks a little odd at first:
 ]
 
 which tells PLT Scheme to allow other files to have access to
-everything that's defined in the @filepath{model.ss} file.
+everything that's defined in the @filepath{model.rkt} file.
 
 
 We change our web application to use this model.  Going back to our
@@ -772,12 +772,12 @@ web application, we rip out the old model code, and replace it with an
 expression that let's use use the new model.
 
 @schemeblock[
-    (require "model.ss")
+    (require "model.rkt")
 ]
 
-which hooks up our web application module to the @schememodname["model.ss"] module.
+which hooks up our web application module to the @schememodname["model.rkt"] module.
 
-@external-file["iteration-8.ss"]
+@external-file["iteration-8.rkt"]
 
 @section{A Persistent Model}
 @declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-9
@@ -933,11 +933,11 @@ change how @scheme[render-blog-page] adds new posts.)
 
 Our model is now:
 
-@external-file["model-2.ss"]
+@external-file["model-2.rkt"]
 
 And our application is:
 
-@external-file["iteration-9.ss"]
+@external-file["iteration-9.rkt"]
 
 @centerline{------------}
 
@@ -1110,14 +1110,14 @@ The only change that we need to make to the application is to require the new mo
 
 Our model is now:
 
-@external-file["model-3.ss"]
+@external-file["model-3.rkt"]
 
 And our application is:
 
 @schememod[
 web-server/insta
 
-(require "model-3.ss")
+(require "model-3.rkt")
 
 ....
 ]
@@ -1157,7 +1157,7 @@ Second, add the following at the bottom of your application:
                #:extra-files-paths
                (list (build-path _your-path-here "htdocs"))
                #:servlet-path
-               "/servlets/APPLICATION.ss")
+               "/servlets/APPLICATION.rkt")
 ]
 
 You can change the value of the @scheme[#:port] parameter to use a different port.
@@ -1166,11 +1166,11 @@ You can change the value of the @scheme[#:port] parameter to use a different por
 
 You should change @scheme[_your-path-here] to be the path to the parent of your @scheme[htdocs] directory.
 
-You should change @scheme["APPLICATION.ss"] to be the name of your application.
+You should change @scheme["APPLICATION.rkt"] to be the name of your application.
 
 Third, to run your server, you can either press @onscreen{Run} in DrScheme, or type
 
-@commandline{mzscheme -t <file.ss>}
+@commandline{mzscheme -t <file.rkt>}
 
 (With your own file name, of course.) Both of these will start a Web server  for your application.
 

@@ -538,7 +538,7 @@ corresponds to the default @tech{module name resolver}.
     with a @litchar{.}), then @racket[rel-string] names a file within
     the @filepath{mzlib} @tech{collection}. A @filepath{.ss}
     suffix is converted to @filepath{.rkt}. (This convention is for
-    compatibility with older version of PLT Racket.)
+    compatibility with older version of Racket.)
 
     @examples[
     (code:comment @#,t{@filepath{tar.rkt} module from the @filepath{mzlib} collection:})
@@ -551,7 +551,7 @@ corresponds to the default @tech{module name resolver}.
     subcollection, etc., ending with a file name. No suffix is added
     automatically, but a @filepath{.ss} suffix is converted to
     @filepath{.rkt}. (This convention is for compatibility with older
-    version of PLT Racket.)
+    version of Racket.)
 
     @examples[
     (code:comment @#,t{@filepath{tar.rkt} module from the @filepath{mzlib} collection:})
@@ -2303,6 +2303,8 @@ expression).
 
 @;------------------------------------------------------------------------
 @section[#:tag "quasiquote"]{Quasiquoting: @racket[quasiquote], @racket[unquote], and @racket[unquote-splicing]}
+
+@guideintro["qq"]{@racket[quasiquote]}
 
 @defform[(quasiquote datum)]{
 

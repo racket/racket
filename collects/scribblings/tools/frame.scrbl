@@ -2,7 +2,7 @@
 @(require "common.ss")
 @(tools-title "frame")
 
-@defclass[drscheme:frame:name-message% canvas% ()]{
+@defclass[drracket:frame:name-message% canvas% ()]{
 
 This class implements the little filename button in the top-right hand
 side of drscheme's frame.
@@ -31,14 +31,14 @@ hasn't been saved is shown.
 }}}
 
 
-@defmixin[drscheme:frame:mixin (drscheme:frame:basics<%> frame:text-info<%> frame:editor<%>) (drscheme:frame:<%>)]{
+@defmixin[drracket:frame:mixin (drracket:frame:basics<%> frame:text-info<%> frame:editor<%>) (drracket:frame:<%>)]{
 
 Provides an implementation of 
-@scheme[drscheme:frame:<%>] 
+@scheme[drracket:frame:<%>] 
 }
 
 
-@defmixin[drscheme:frame:basics-mixin (frame:standard-menus<%>) (drscheme:frame:basics<%>)]{
+@defmixin[drracket:frame:basics-mixin (frame:standard-menus<%>) (drracket:frame:basics<%>)]{
 
 Use this mixin to establish some common menu items across various DrScheme windows.
 
@@ -176,14 +176,14 @@ Returns @scheme[#t].
 }}
 
 
-@definterface[drscheme:frame:basics<%> (frame:standard-menus<%>)]{
+@definterface[drracket:frame:basics<%> (frame:standard-menus<%>)]{
 
-This interface is the result of the @scheme[drscheme:frame:basics-mixin]
+This interface is the result of the @scheme[drracket:frame:basics-mixin]
 
 }
 
 
-@definterface[drscheme:frame:<%> (frame:editor<%> frame:text-info<%> drscheme:frame:basics<%>)]{
+@definterface[drracket:frame:<%> (frame:editor<%> frame:text-info<%> drracket:frame:basics<%>)]{
 
 
 
@@ -196,7 +196,7 @@ menu.  This method is intended to be overridden. It is
 expected to add other Show/Hide menu items to the show menu.
 
 See also
-@method[drscheme:frame:<%> get-show-menu].
+@method[drracket:frame:<%> get-show-menu].
 
 }
 @methimpl{
@@ -212,10 +212,10 @@ Does nothing.
 @index{View menu}
 
 returns the view menu, for use by the
-@method[drscheme:frame:<%> update-shown] method.
+@method[drracket:frame:<%> update-shown] method.
 
 See also
-@method[drscheme:frame:<%> add-show-menu-items].
+@method[drracket:frame:<%> add-show-menu-items].
 
 The method (and others) uses the word @tt{show} to preserve
 backwards compatibility from when the menu itself was named
@@ -251,7 +251,7 @@ Call this method whenever the state of the show menu might
 need to change.
 
 See also
-@method[drscheme:frame:<%> get-show-menu].
+@method[drracket:frame:<%> get-show-menu].
 
 }
 @methimpl{

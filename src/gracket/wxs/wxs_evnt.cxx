@@ -560,7 +560,7 @@ class wxCommandEvent *objscheme_unbundle_wxCommandEvent(Scheme_Object *obj, cons
 
 
 // This class is not instantiated from Scheme; it is only
-// instantiated to send info to mred.ss:
+// instantiated to send info to mred.rkt:
 
 
 

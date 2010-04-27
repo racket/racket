@@ -3,63 +3,61 @@
           scribble/eval
           "guide-utils.ss")
 
-@title[#:tag "quote"]{Quoting: @scheme[quote] and @schemevalfont{'}}
+@title[#:tag "quote"]{Quoting: @racket[quote] and @racketvalfont{'}}
 
-@refalso["quote"]{@scheme[quote]}
+@refalso["quote"]{@racket[quote]}
 
-The @scheme[quote] form produces a constant:
+The @racket[quote] form produces a constant:
 
-@specform[(#,(schemekeywordfont "quote") datum)]
+@specform[(#,(racketkeywordfont "quote") datum)]
 
-The syntax of a @scheme[datum] is technically specified as anything
-that the @scheme[read] function parses as a single element. The value
-of the @scheme[quote] form is the same value that @scheme[read] would
-produce given @scheme[_datum].
+The syntax of a @racket[datum] is technically specified as anything
+that the @racket[read] function parses as a single element. The value
+of the @racket[quote] form is the same value that @racket[read] would
+produce given @racket[_datum].
 
-To a good approximation, the resulting value is such that
-@scheme[_datum] is the value's printed representation. Thus, it can be
-a symbol, a boolean, a number, a (character or byte) string, a
-character, a keyword, an empty list, a pair (or list) containing more
-such values, a vector containing more such values, a hash table
-containing more such values, or a box containing another such value.
+The @racket[_datum] can be a symbol, a boolean, a number, a (character
+or byte) string, a character, a keyword, an empty list, a pair (or
+list) containing more such values, a vector containing more such
+values, a hash table containing more such values, or a box containing
+another such value.
 
 @examples[
-(eval:alts (#,(schemekeywordfont "quote") apple) 'apple)
-(eval:alts (#,(schemekeywordfont "quote") #t) #t)
-(eval:alts (#,(schemekeywordfont "quote") 42) 42)
-(eval:alts (#,(schemekeywordfont "quote") "hello") "hello")
-(eval:alts (#,(schemekeywordfont "quote") ()) '())
-(eval:alts (#,(schemekeywordfont "quote") ((1 2 3) #2("z" x) . the-end)) '((1 2 3) #2("z" x) . the-end))
-(eval:alts (#,(schemekeywordfont "quote") (1 2 #,(schemeparenfont ".") (3))) '(1 2 . (3)))
+(eval:alts (#,(racketkeywordfont "quote") apple) 'apple)
+(eval:alts (#,(racketkeywordfont "quote") #t) #t)
+(eval:alts (#,(racketkeywordfont "quote") 42) 42)
+(eval:alts (#,(racketkeywordfont "quote") "hello") "hello")
+(eval:alts (#,(racketkeywordfont "quote") ()) '())
+(eval:alts (#,(racketkeywordfont "quote") ((1 2 3) #2("z" x) . the-end)) '((1 2 3) #2("z" x) . the-end))
+(eval:alts (#,(racketkeywordfont "quote") (1 2 #,(racketparenfont ".") (3))) '(1 2 . (3)))
 ]
 
-As the last example above shows, the @scheme[_datum] does not have to
-be the normalized printed form of a value. A
-@scheme[_datum] cannot be a printed representation that starts with
-@litchar{#<}, however, so it cannot be @|void-const|,
-@|undefined-const|, or a procedure.
+As the last example above shows, the @racket[_datum] does not have to
+match the normalized printed form of a value. A @racket[_datum] cannot
+be a printed representation that starts with @litchar{#<}, so it
+cannot be @|void-const|, @|undefined-const|, or a procedure.
 
-The @scheme[quote] form is rarely used for a @scheme[_datum] that is a
+The @racket[quote] form is rarely used for a @racket[_datum] that is a
 boolean, number, or string by itself, since the printed forms of those
-values can already be used as constants. The @scheme[quote] form is
+values can already be used as constants. The @racket[quote] form is
 more typically used for symbols and lists, which have other meanings
 (identifiers, function calls, etc.) when not quoted.
 
 An expression
 
-@specform[(quote @#,schemevarfont{datum})]
+@specform[(quote @#,racketvarfont{datum})]
 
 is a shorthand for
 
-@schemeblock[
-(#,(schemekeywordfont "quote") #,(scheme _datum))
+@racketblock[
+(#,(racketkeywordfont "quote") #,(racket _datum))
 ]
 
 and this shorthand is almost always used instead of
-@scheme[quote]. The shorthand applies even within the @scheme[_datum],
-so it can produce a list containing @scheme[quote].
+@racket[quote]. The shorthand applies even within the @racket[_datum],
+so it can produce a list containing @racket[quote].
 
-@refdetails["parse-quote"]{the @schemevalfont{'} shorthand}
+@refdetails["parse-quote"]{the @racketvalfont{'} shorthand}
 
 @examples[
 'apple

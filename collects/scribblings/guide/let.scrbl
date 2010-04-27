@@ -5,24 +5,24 @@
 
 @title[#:tag "let"]{Local Binding}
 
-Although internal @scheme[define]s can be used for local binding,
-Scheme provides three forms that give the programmer more
-control over bindings: @scheme[let], @scheme[let*], and
-@scheme[letrec].
+Although internal @racket[define]s can be used for local binding,
+Racket provides three forms that give the programmer more
+control over bindings: @racket[let], @racket[let*], and
+@racket[letrec].
 
 @;------------------------------------------------------------------------
-@section{Parallel Binding: @scheme[let]}
+@section{Parallel Binding: @racket[let]}
 
-@refalso["let"]{@scheme[let]}
+@refalso["let"]{@racket[let]}
 
-A @scheme[let] form binds a set of identifiers, each to the result of
-some expression, for use in the @scheme[let] body:
+A @racket[let] form binds a set of identifiers, each to the result of
+some expression, for use in the @racket[let] body:
 
 @specform[(let ([id expr] ...) body ...+)]{}
 
-The @scheme[_id]s are bound ``in parallel.'' That is, no @scheme[_id]
-is bound in the right-hand side @scheme[_expr] for any @scheme[_id],
-but all are available in the @scheme[_body]. The @scheme[_id]s must be
+The @racket[_id]s are bound ``in parallel.'' That is, no @racket[_id]
+is bound in the right-hand side @racket[_expr] for any @racket[_id],
+but all are available in the @racket[_body]. The @racket[_id]s must be
 different from each other.
 
 @examples[
@@ -37,7 +37,7 @@ different from each other.
   me)
 ]
 
-The fact that an @scheme[_id]'s @scheme[_expr] does not see its own
+The fact that an @racket[_id]'s @racket[_expr] does not see its own
 binding is often useful for wrappers that must refer back to the old
 value:
 
@@ -45,12 +45,12 @@ value:
 (let ([+ (lambda (x y)
            (if (string? x)
                (string-append x y)
-               (+ x y)))]) (code:comment @#,t{use original @scheme[+]})
+               (+ x y)))]) (code:comment @#,t{use original @racket[+]})
   (list (+ 1 2)
         (+ "see" "saw")))
 ]
 
-Occasionally, the parallel nature of @scheme[let] bindings is
+Occasionally, the parallel nature of @racket[let] bindings is
 convenient for swapping or rearranging a set of bindings:
 
 @interaction[
@@ -61,23 +61,23 @@ convenient for swapping or rearranging a set of bindings:
     (list me you)))
 ]
 
-The characterization of @scheme[let] bindings as ``parallel'' is not
-meant to imply concurrent evaluation. The @scheme[_expr]s are
+The characterization of @racket[let] bindings as ``parallel'' is not
+meant to imply concurrent evaluation. The @racket[_expr]s are
 evaluated in order, even though the bindings are delayed until all
-@scheme[_expr]s are evaluated.
+@racket[_expr]s are evaluated.
 
 @;------------------------------------------------------------------------
-@section{Sequential Binding: @scheme[let*]}
+@section{Sequential Binding: @racket[let*]}
 
-@refalso["let"]{@scheme[let*]}
+@refalso["let"]{@racket[let*]}
 
-The syntax of @scheme[let*] is the same as @scheme[let]:
+The syntax of @racket[let*] is the same as @racket[let]:
 
 @specform[(let* ([id expr] ...) body ...+)]{}
 
-The difference is that each @scheme[_id] is available for use in later
-@scheme[_expr]s, as well as in the @scheme[_body]. Furthermore, the
-@scheme[_id]s need not be distinct, and the most recent binding is the
+The difference is that each @racket[_id] is available for use in later
+@racket[_expr]s, as well as in the @racket[_body]. Furthermore, the
+@racket[_id]s need not be distinct, and the most recent binding is the
 visible one.
 
 @examples[
@@ -91,8 +91,8 @@ visible one.
   name)
 ]
 
-In other words, a @scheme[let*] form is equivalent to nested
-@scheme[let] forms, each with a single binding:
+In other words, a @racket[let*] form is equivalent to nested
+@racket[let] forms, each with a single binding:
 
 @interaction[
 (let ([name (list "Borroughs")])
@@ -102,22 +102,22 @@ In other words, a @scheme[let*] form is equivalent to nested
 ]
 
 @;------------------------------------------------------------------------
-@section{Recursive Binding: @scheme[letrec]}
+@section{Recursive Binding: @racket[letrec]}
 
-@refalso["let"]{@scheme[letrec]}
+@refalso["let"]{@racket[letrec]}
 
-The syntax of @scheme[letrec] is also the same as @scheme[let]:
+The syntax of @racket[letrec] is also the same as @racket[let]:
 
 @specform[(letrec ([id expr] ...) body ...+)]{}
 
-While @scheme[let] makes its bindings available only in the
-@scheme[_body]s, and @scheme[let*] makes its bindings available to any
-later binding @scheme[_expr], @scheme[letrec] makes its bindings
-available to all other @scheme[_expr]s---even earlier ones. In other
-words, @scheme[letrec] bindings are recursive.
+While @racket[let] makes its bindings available only in the
+@racket[_body]s, and @racket[let*] makes its bindings available to any
+later binding @racket[_expr], @racket[letrec] makes its bindings
+available to all other @racket[_expr]s---even earlier ones. In other
+words, @racket[letrec] bindings are recursive.
 
-The @scheme[_expr]s in a @scheme[letrec] form are most often
-@scheme[lambda] forms for recursive and mutually recursive functions:
+The @racket[_expr]s in a @racket[letrec] form are most often
+@racket[lambda] forms for recursive and mutually recursive functions:
 
 @interaction[
 (letrec ([swing
@@ -145,11 +145,11 @@ The @scheme[_expr]s in a @scheme[letrec] form are most often
   (tarzan-in-tree? "tmp" (find-system-path 'temp-dir)))
 ]
 
-While the @scheme[_expr]s of a @scheme[letrec] form are typically
-@scheme[lambda] expressions, they can be any expression. The
+While the @racket[_expr]s of a @racket[letrec] form are typically
+@racket[lambda] expressions, they can be any expression. The
 expressions are evaluated in order, and after each value is obtained,
-it is immediately associated with its corresponding @scheme[_id]. If
-an @scheme[_id] is referenced before its value is ready, the result is
+it is immediately associated with its corresponding @racket[_id]. If
+an @racket[_id] is referenced before its value is ready, the result is
 @|undefined-const|, as just as for internal definitions.
 
 @interaction[
@@ -161,14 +161,14 @@ an @scheme[_id] is referenced before its value is ready, the result is
 @include-section["named-let.scrbl"]
 
 @; ----------------------------------------
-@section{Multiple Values: @scheme[let-values], @scheme[let*-values], @scheme[letrec-values]}
+@section{Multiple Values: @racket[let-values], @racket[let*-values], @racket[letrec-values]}
 
 @refalso["let"]{multiple-value binding forms}
 
-In the same way that @scheme[define-values] binds multiple
+In the same way that @racket[define-values] binds multiple
 results in a definition (see @secref["multiple-values"]),
-@scheme[let-values], @scheme[let*-values], and
-@scheme[letrec-values] bind multiple results locally.
+@racket[let-values], @racket[let*-values], and
+@racket[letrec-values] bind multiple results locally.
 
 @specform[(let-values ([(id ...) expr] ...)
             body ...+)]
@@ -177,13 +177,13 @@ results in a definition (see @secref["multiple-values"]),
 @specform[(letrec-values ([(id ...) expr] ...)
             body ...+)]
 
-Each @scheme[_expr] must produce as many values as corresponding
-@scheme[_id]s. The binding rules are the same for the forms
-without @schemekeywordfont{-values} forms: the @scheme[_id]s of
-@scheme[let-values] are bound only in the @scheme[_body]s, the
-@scheme[_id]s of @scheme[let*-values]s are bound in
-@scheme[_expr]s of later clauses, and the @scheme[_id]s of
-@scheme[letrec-value]s are bound for all @scheme[_expr]s.
+Each @racket[_expr] must produce as many values as corresponding
+@racket[_id]s. The binding rules are the same for the forms
+without @racketkeywordfont{-values} forms: the @racket[_id]s of
+@racket[let-values] are bound only in the @racket[_body]s, the
+@racket[_id]s of @racket[let*-values]s are bound in
+@racket[_expr]s of later clauses, and the @racket[_id]s of
+@racket[letrec-value]s are bound for all @racket[_expr]s.
 
 @examples[
 (let-values ([(q r) (quotient/remainder 14 3)])

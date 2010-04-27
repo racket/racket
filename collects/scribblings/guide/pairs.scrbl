@@ -11,7 +11,8 @@ procedures extract the first and second elements of the pair,
 respectively. The @scheme[pair?] predicate recognizes pairs.
 
 Some pairs print by wrapping parentheses around the printed forms of
-the two pair elements, putting a @litchar{.} between them.
+the two pair elements, putting a @litchar{`} at the beginning and a
+@litchar{.} between the elements.
 
 @examples[
 (cons 1 2)
@@ -27,8 +28,8 @@ or it is a pair whose first element is a list element and whose second
 element is a list. The @scheme[list?] predicate recognizes lists. The
 @scheme[null?]  predicate recognizes the empty list.
 
-A list prints as a pair of parentheses wrapped around the list
-elements.
+A list prints as a @litchar{`} followed by a pair of parentheses
+wrapped around the list elements.
 
 @examples[
 null
@@ -38,13 +39,13 @@ null
 (list? (cons 1 2))
 ]
 
-An expression with @litchar{'} followed by the printed form of a pair
-or list produces a pair or list constant.
+The @scheme[display] function prints a pair or list without a leading
+@litchar{`}:
 
 @examples[
-'()
-'(1 . 2)
-'(1 2 3)
+(display (cons 1 2))
+(display null)
+(display (list 1 2 3))
 ]
 
 Pairs are immutable (contrary to Lisp tradition), and @scheme[pair?]

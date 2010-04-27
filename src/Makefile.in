@@ -84,7 +84,7 @@ no-run:
 
 copytree-run:
 	racket/racket@CGC@ -u \
-          "$(srcdir)/../collects/setup/unixstyle-install.ss" \
+          "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
           make-install-copytree "$(srcdir)/.." \
           $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"
 
@@ -97,7 +97,7 @@ install-no-post-collects:
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
           racket/racket@CGC@ -u \
-            "$(srcdir)/../collects/setup/unixstyle-install.ss" \
+            "$(srcdir)/../collects/setup/unixstyle-install.rkt" \
             make-install-destdir-fix "$(srcdir)/.." \
             $(ALLDIRINFO) "@INSTALL_ORIG_TREE@"; \
         fi

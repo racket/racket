@@ -5,25 +5,25 @@
 
 @title[#:tag "begin"]{Sequencing}
 
-Scheme programmers prefer to write programs with as few side-effects
+Racket programmers prefer to write programs with as few side-effects
 as possible, since purely functional code is more easily tested and
 composed into larger programs. Interaction with the external
 environment, however, requires sequencing, such as when writing to a
 display, opening a graphical window, or manipulating a file on disk.
 
 @;------------------------------------------------------------------------
-@section{Effects Before: @scheme[begin]}
+@section{Effects Before: @racket[begin]}
 
-@refalso["begin"]{@scheme[begin]}
+@refalso["begin"]{@racket[begin]}
 
-A @scheme[begin] expression sequences expressions:
+A @racket[begin] expression sequences expressions:
 
 @specform[(begin expr ...+)]{}
 
-The @scheme[_expr]s are evaluated in order, and the result of all but
-the last @scheme[_expr] is ignored. The result from the last
-@scheme[_expr] is the result of the @scheme[begin] form, and it is in
-tail position with respect to the @scheme[begin] form.
+The @racket[_expr]s are evaluated in order, and the result of all but
+the last @racket[_expr] is ignored. The result from the last
+@racket[_expr] is the result of the @racket[begin] form, and it is in
+tail position with respect to the @racket[begin] form.
 
 @defexamples[
 (define (print-triangle height)
@@ -36,8 +36,8 @@ tail position with respect to the @scheme[begin] form.
 (print-triangle 4)
 ]
 
-Many forms, such as @scheme[lambda] or @scheme[cond] support a
-sequence of expressions even without a @scheme[begin]. Such positions are
+Many forms, such as @racket[lambda] or @racket[cond] support a
+sequence of expressions even without a @racket[begin]. Such positions are
 sometimes said to have an @defterm{implicit begin}.
 
 @defexamples[
@@ -50,10 +50,10 @@ sometimes said to have an @defterm{implicit begin}.
 (print-triangle 4)
 ]
 
-The @scheme[begin] form is special at the top level, at module level,
-or as a @scheme[body] after only internal definitions. In those
+The @racket[begin] form is special at the top level, at module level,
+or as a @racket[body] after only internal definitions. In those
 positions, instead of forming an expression, the content of
-@scheme[begin] is spliced into the surrounding context.
+@racket[begin] is spliced into the surrounding context.
 
 @defexamples[
 (let ([curly 0])
@@ -67,18 +67,18 @@ This splicing behavior is mainly useful for macros, as we discuss
 later in @secref["macros"].
 
 @;------------------------------------------------------------------------
-@section{Effects After: @scheme[begin0]}
+@section{Effects After: @racket[begin0]}
 
-@refalso["begin"]{@scheme[begin0]}
+@refalso["begin"]{@racket[begin0]}
 
-A @scheme[begin0] expression has the same syntax as a @scheme[begin]
+A @racket[begin0] expression has the same syntax as a @racket[begin]
 expression:
 
 @specform[(begin0 expr ...+)]{}
 
-The difference is that @scheme[begin0] returns the result of the first
-@scheme[expr], instead of the result of the last @scheme[expr]. The
-@scheme[begin0] form is useful for implementing side-effects that
+The difference is that @racket[begin0] returns the result of the first
+@racket[expr], instead of the result of the last @racket[expr]. The
+@racket[begin0] form is useful for implementing side-effects that
 happen after a computation, especially in the case where the
 computation produces an unknown number of results.
 
@@ -93,26 +93,26 @@ computation produces an unknown number of results.
 ]
 
 @;------------------------------------------------------------------------
-@section[#:tag "when+unless"]{Effects If...: @scheme[when] and @scheme[unless]}
+@section[#:tag "when+unless"]{Effects If...: @racket[when] and @racket[unless]}
 
-@refalso["when+unless"]{@scheme[when] and @scheme[unless]}
+@refalso["when+unless"]{@racket[when] and @racket[unless]}
 
-The @scheme[when] form combines an @scheme[if]-style conditional with
+The @racket[when] form combines an @racket[if]-style conditional with
 sequencing for the ``then'' clause and no ``else'' clause:
 
 @specform[(when test-expr then-expr ...)]
 
-If @scheme[_test-expr] produces a true value, then all of the
-@scheme[_then-expr]s are evaluated. Otherwise, no @scheme[_then-expr]s
+If @racket[_test-expr] produces a true value, then all of the
+@racket[_then-expr]s are evaluated. Otherwise, no @racket[_then-expr]s
 are evaluated. The result is @|void-const| in any case.
 
-The @scheme[unless] form is similar:
+The @racket[unless] form is similar:
 
 @specform[(unless test-expr then-expr ...)]
 
-The difference is that the @scheme[_test-expr] result is inverted: the
-@scheme[_then-expr]s are evaluated only if the @scheme[_test-expr]
-result is @scheme[#f].
+The difference is that the @racket[_test-expr] result is inverted: the
+@racket[_then-expr]s are evaluated only if the @racket[_test-expr]
+result is @racket[#f].
 
 @defexamples[
 (define (enumerate lst)

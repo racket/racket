@@ -3,10 +3,10 @@
           scribble/eval
           "guide-utils.ss")
 
-@title[#:tag "to-scheme" #:style 'toc]{Scheme Essentials}
+@title[#:tag "to-scheme" #:style 'toc]{Racket Essentials}
 
-This chapter provides a quick introduction to Scheme as background for
-the rest of the guide. Readers with some Scheme experience can safely
+This chapter provides a quick introduction to Racket as background for
+the rest of the guide. Readers with some Racket experience can safely
 skip to @secref["datatypes"].
 
 @local-table-of-contents[]

@@ -2,16 +2,16 @@
 @(require "common.ss")
 @(tools-title "language")
 
-@definterface[drscheme:language:simple-module-based-language<%> ()]{
+@definterface[drracket:language:simple-module-based-language<%> ()]{
 
 This interface represents the bare essentials when defining
 a module-based language. Use the
-@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+@scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
 mixin to construct an implementation of
-@scheme[drscheme:language:module-based-language<%>] from an implementation of this interface.
+@scheme[drracket:language:module-based-language<%>] from an implementation of this interface.
 
 The class
-@scheme[drscheme:language:simple-module-based-language%] provides an implementation of this interface.
+@scheme[drracket:language:simple-module-based-language%] provides an implementation of this interface.
 
 
 
@@ -19,7 +19,7 @@ The class
            (cons number (listof number))]{
 Returns a list of numbers, whose length must be the same as
 the result of 
-@method[drscheme:language:simple-module-based-language<%> get-language-position]. Each number indicates the sorted order of the
+@method[drracket:language:simple-module-based-language<%> get-language-position]. Each number indicates the sorted order of the
 language positions in the language dialog.
 
 }
@@ -27,7 +27,7 @@ language positions in the language dialog.
 @defmethod[(get-language-position)
            (cons string (listof string))]{
 This method is the same as
-@method[drscheme:language:language<%> get-language-position].
+@method[drracket:language:language<%> get-language-position].
 
 }
 
@@ -36,8 +36,8 @@ This method is the same as
 This method specifies the module that defines the language.
 
 This method replaces 
-@method[drscheme:language:language<%> front-end/complete-program] and
-@method[drscheme:language:language<%> front-end/interaction].
+@method[drracket:language:language<%> front-end/complete-program] and
+@method[drracket:language:language<%> front-end/interaction].
 
 
 The result is expected to be the 
@@ -66,7 +66,7 @@ for this language.
 }}
 
 
-@defclass[drscheme:language:simple-module-based-language% object% (drscheme:language:simple-module-based-language<%>)]{
+@defclass[drracket:language:simple-module-based-language% object% (drracket:language:simple-module-based-language<%>)]{
 
 
 
@@ -79,8 +79,8 @@ for this language.
                       [language-id string?])]{
 
 The init args are used as the results of the
-@method[drscheme:language:simple-module-based-language% get-module] and
-@method[drscheme:language:simple-module-based-language% get-language-position] methods
+@method[drracket:language:simple-module-based-language% get-module] and
+@method[drracket:language:simple-module-based-language% get-language-position] methods
 
 
 }
@@ -132,12 +132,12 @@ returns the corresponding init arg.
 }}
 
 
-@defmixin[drscheme:language:simple-module-based-language->module-based-language-mixin (drscheme:language:simple-module-based-language<%>) (drscheme:language:module-based-language<%>)]{
+@defmixin[drracket:language:simple-module-based-language->module-based-language-mixin (drracket:language:simple-module-based-language<%>) (drracket:language:module-based-language<%>)]{
 
-@index{drscheme:language:simple-settings}
+@index{drracket:language:simple-settings}
 This mixin uses a struct definition for its settings:
 @schemeblock[
-(define-struct drscheme:language:simple-settings
+(define-struct drracket:language:simple-settings
   (case-sensitive  (code:comment @#,t{boolean?})
    printing-style  (code:comment @#,t{(symbols 'constructor 'quasiquote 'write 'print)})
    fraction-style  (code:comment @#,t{(symbols 'mixed-fraction 'mixed-fraction-e})
@@ -169,7 +169,7 @@ Constructs a configuration panel that lets the user
 configure all of the settings for this language.
 
 See also
-@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+@scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
 for details of the
 simple-settings structure, this mixin's @scheme[settings] type.
 }
@@ -187,7 +187,7 @@ The defaults for the settings are
 ]
 
 See also
-@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
+@scheme[drracket:language:simple-module-based-language->module-based-language-mixin] for details of the
 simple-settings structure, this mixins @scheme[settings] type.
 
 
@@ -225,7 +225,7 @@ Returns @scheme['mzscheme].
 Constructs a vector from the structure.
 
 See also
-@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+@scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
 for details of the
 simple-settings structure, this mixins @scheme[settings] type.
 
@@ -254,7 +254,7 @@ debugging annotations. Additionally, it sets the
 to show the debugging annotations when an error is raised.
 
 See also
-@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
+@scheme[drracket:language:simple-module-based-language->module-based-language-mixin] for details of the
 simple-settings structure, this mixin's @scheme[settings] type.
 
 
@@ -268,10 +268,10 @@ Translates the value to a string, based on the settings.
 
 Restores a super struct inspector to render structs properly.
 (See also
-@method[drscheme:language:simple-module-based-language->module-based-language-mixin% on-execute])
+@method[drracket:language:simple-module-based-language->module-based-language-mixin% on-execute])
 
 See also
-@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
+@scheme[drracket:language:simple-module-based-language->module-based-language-mixin] for details of the
 simple-settings structure, this mixin's @scheme[settings] type.
 
 
@@ -285,10 +285,10 @@ Translates the value to a string, based on the settings.
 
 Restores a super struct inspector to render structs properly.
 (See also
-@method[drscheme:language:simple-module-based-language->module-based-language-mixin% on-execute])
+@method[drracket:language:simple-module-based-language->module-based-language-mixin% on-execute])
      
 See also 
-@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+@scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
 for details of the
 simple-settings structure, this mixin's @scheme[settings] type.
 
@@ -303,7 +303,7 @@ Builds a settings structure from the vector, or @scheme[#f] if
 the vector doesn't match the types of the structure.
 
 See also
-@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
+@scheme[drracket:language:simple-module-based-language->module-based-language-mixin] for details of the
 simple-settings structure, this mixin's @scheme[settings] type.
 
 
@@ -320,36 +320,36 @@ Returns @scheme[#t].
 }}
 
 
-@definterface[drscheme:language:module-based-language<%> ()]{
+@definterface[drracket:language:module-based-language<%> ()]{
 
 This interface is for languages that can be implemented
 with MzScheme @scheme[module]s.
 
 Use the
-@scheme[drscheme:language:module-based-language->language-mixin]
+@scheme[drracket:language:module-based-language->language-mixin]
 mixin to construct an implementation of
-@scheme[drscheme:language:language<%>] from an implementation of this interface.
+@scheme[drracket:language:language<%>] from an implementation of this interface.
 
 
 
 @defmethod[(config-panel [parent (is-a?/c panel%)])
            (case-> (-> settings) (settings -> void))]{
 This method is the same as
-@method[drscheme:language:language<%> config-panel].
+@method[drracket:language:language<%> config-panel].
 
 }
 
 @defmethod[(default-settings)
            settings]{
 This method is the same as
-@method[drscheme:language:language<%> default-settings].
+@method[drracket:language:language<%> default-settings].
 
 }
 
 @defmethod[(default-settings? [settings settings])
            boolean?]{
 This method is the same as
-@method[drscheme:language:language<%> default-settings?].
+@method[drracket:language:language<%> default-settings?].
 
 }
 
@@ -369,14 +369,14 @@ environment, based on the settings.
 @defmethod[(get-language-numbers)
            (cons number (listof number))]{
 This method is the same as
-@method[drscheme:language:language<%> get-language-numbers].
+@method[drracket:language:language<%> get-language-numbers].
 
 }
 
 @defmethod[(get-language-position)
            (cons string (listof string))]{
 This method is the same as
-@method[drscheme:language:language<%> get-language-position].
+@method[drracket:language:language<%> get-language-position].
 
 }
 
@@ -390,7 +390,7 @@ The result is expected to be the
 except as value, ie @scheme[quote]d.
 
 See also
-@method[drscheme:language:module-based-language<%> get-transformer-module].
+@method[drracket:language:module-based-language<%> get-transformer-module].
 
 
 }
@@ -428,14 +428,14 @@ If the result is @scheme[#f], no module is required into the
 transformer part of the namespace.
 
 See also
-@method[drscheme:language:module-based-language<%> get-module].
+@method[drracket:language:module-based-language<%> get-module].
 
 }
 
 @defmethod[(marshall-settings [settings settings])
            writable]{
 This method is the same as 
-@method[drscheme:language:language<%> marshall-settings].
+@method[drracket:language:language<%> marshall-settings].
 
 }
 
@@ -443,7 +443,7 @@ This method is the same as
                        [run-in-user-thread ((-> void) -> void)])
            vod]{
 This method is the same as
-@method[drscheme:language:language<%> on-execute].
+@method[drracket:language:language<%> on-execute].
 
 }
 
@@ -452,7 +452,7 @@ This method is the same as
                          [port port])
            void?]{
 This method is the same as
-@method[drscheme:language:language<%> render-value].
+@method[drracket:language:language<%> render-value].
 
 }
 
@@ -462,14 +462,14 @@ This method is the same as
                                 [width (or/c number (symbols 'infinity))])
            void?]{
 This method is the same as
-@method[drscheme:language:language<%> render-value/format].
+@method[drracket:language:language<%> render-value/format].
 
 }
 
 @defmethod[(unmarshall-settings [input writable])
            (or/c settings false/c)]{
 This method is the same as
-@method[drscheme:language:language<%> unmarshall-settings].
+@method[drracket:language:language<%> unmarshall-settings].
 
 }
 
@@ -503,7 +503,7 @@ Defaultly returns @scheme[#f].
 }}}
 
 
-@defmixin[drscheme:language:module-based-language->language-mixin (drscheme:language:module-based-language<%>) (drscheme:language:language<%>)]{
+@defmixin[drracket:language:module-based-language->language-mixin (drracket:language:module-based-language<%>) (drracket:language:language<%>)]{
 
 
 
@@ -516,7 +516,7 @@ Reads a syntax object, from @scheme[input]. Does not use
 
 For languages that use these mixins, there is no difference
 between this method and
-@method[drscheme:language:module-based-language->language-mixin% front-end/interaction].
+@method[drracket:language:module-based-language->language-mixin% front-end/interaction].
 
 
 }
@@ -530,7 +530,7 @@ Reads a syntax object, from @scheme[input]. Does not use
 
 For languages that use these mixins, there is no difference
 between this method and
-@method[drscheme:language:module-based-language->language-mixin% front-end/complete-program].
+@method[drracket:language:module-based-language->language-mixin% front-end/complete-program].
 
 
 }
@@ -540,7 +540,7 @@ between this method and
            string?]{
 
 Returns the last element of the list returned by
-@method[drscheme:language:language<%> get-language-position].
+@method[drracket:language:language<%> get-language-position].
 
 
 }
@@ -553,16 +553,16 @@ Calls the super method.
 
 Uses @scheme[namespace-require]
 to install the result of
-@method[drscheme:language:module-based-language<%> get-module] and
+@method[drracket:language:module-based-language<%> get-module] and
 Uses @scheme[namespace-transformer-require]
 to install the result of 
-@method[drscheme:language:module-based-language<%> get-transformer-module] into the user's namespace.
+@method[drracket:language:module-based-language<%> get-transformer-module] into the user's namespace.
 
 
 }}
 
 
-@definterface[drscheme:language:language<%> ()]{
+@definterface[drracket:language:language<%> ()]{
 
 Implementations of this interface are languages that
 DrScheme supports.
@@ -578,13 +578,13 @@ adding languages to DrScheme.
 
 Returns the language-specific value for some capability. See
 also
-@scheme[drscheme:language:register-capability].
+@scheme[drracket:language:register-capability].
 
 }
 @methimpl{
 
 Defaultly returns the value from:
-@scheme[drscheme:language:get-capability-default].
+@scheme[drracket:language:get-capability-default].
 
 
 }}
@@ -609,8 +609,8 @@ in the executable and @scheme[executable-filename] is the name
 of a file where the executable goes.
 
 See also
-@scheme[drscheme:language:create-module-based-stand-alone-executable] and
-@scheme[drscheme:language:create-module-based-launcher].
+@scheme[drracket:language:create-module-based-stand-alone-executable] and
+@scheme[drracket:language:create-module-based-launcher].
 
 }
 
@@ -624,7 +624,7 @@ Specifies the default settings for this language.
            boolean?]{
 Return @scheme[#t] if the input settings matches the
 default settings obtained via
-@method[drscheme:language:language<%> default-settings].
+@method[drracket:language:language<%> default-settings].
 
 }
 
@@ -636,7 +636,7 @@ no program is run. It is called from the user's eventspace's
 main thread.
 
 See also
-@method[drscheme:rep:text% initialize-console].
+@method[drracket:rep:text% initialize-console].
 
 
 }
@@ -682,16 +682,16 @@ or
 and the use of the expanded code dictates which applies.
 
 See also
-@method[drscheme:language:language<%> front-end/interaction]
+@method[drracket:language:language<%> front-end/interaction]
 and
-@method[drscheme:language:language<%> front-end/finished-complete-program].
+@method[drracket:language:language<%> front-end/finished-complete-program].
 }
 
 @defmethod[(front-end/finished-complete-program [settings settings]) any]{
   This method is called when @onscreen{Run} is clicked, but only after
-  @method[drscheme:language:language<%> front-end/complete-program]
+  @method[drracket:language:language<%> front-end/complete-program]
   has been called. Specifically, 
-  @method[drscheme:language:language<%> front-end/complete-program] is
+  @method[drracket:language:language<%> front-end/complete-program] is
   first called to get a thunk that reads from the program. That thunk
   is called some number of times, eventually returning @scheme[eof],
   or raising an exception. Then, this method is called.
@@ -705,13 +705,13 @@ and
                                   [settings settings])
            (-> (or/c sexp/c syntax? eof-object?))]{
 This method is just like
-@method[drscheme:language:language<%> front-end/complete-program]
+@method[drracket:language:language<%> front-end/complete-program]
 except that it is called with program fragments, for example the
 expressions entered in the interactions window. It is also used in
 other contexts by tools to expand single expressions.
 
 See also
-@method[drscheme:language:language<%> front-end/finished-complete-program].
+@method[drracket:language:language<%> front-end/finished-complete-program].
 }
 
 @defmethod[(get-comment-character)
@@ -734,13 +734,13 @@ the drscheme window.
 @defmethod[(get-language-numbers)
            (cons number (listof number))]{
 This method is used in a manner analogous to
-@method[drscheme:language:language<%> get-language-position].
+@method[drracket:language:language<%> get-language-position].
 
 Each element in the list indicates how the names at that
 point in dialog will be sorted. Names with lower numbers
 appear first. If two languages are added to DrScheme with
 the same strings (as given by the 
-@method[drscheme:language:language<%> get-language-position] method) the corresponding numbers returned by this method
+@method[drracket:language:language<%> get-language-position] method) the corresponding numbers returned by this method
 must be the same. Additionally, no two languages can have the
 same set of numbers.
 
@@ -795,11 +795,11 @@ to this url.
            string?]{
 
 This method is only called when
-@method[drscheme:language:language<%> get-reader-module] returns an sexp.
+@method[drracket:language:language<%> get-reader-module] returns an sexp.
 
 It is expected to return a string that contains N lines,
 where N is the result of calling
-@method[drscheme:language:language<%> get-metadata-lines]. The string is prefixed to the buffer before the file is
+@method[drracket:language:language<%> get-metadata-lines]. The string is prefixed to the buffer before the file is
 saved by DrScheme, and removed from the buffer after it is
 opened in DrScheme.
 
@@ -811,9 +811,9 @@ name, but without the path, and without an extension. The
 @scheme[settings] argument is the current language's settings value.
 
 See also
-@method[drscheme:language:language<%> metadata->settings],
-@method[drscheme:language:language<%> get-metadata-lines], and
-@method[drscheme:language:language<%> get-reader-module].
+@method[drracket:language:language<%> metadata->settings],
+@method[drracket:language:language<%> get-metadata-lines], and
+@method[drracket:language:language<%> get-reader-module].
 
 
 }
@@ -822,14 +822,14 @@ See also
            number]{
 
 This method is only called when
-@method[drscheme:language:language<%> get-reader-module] returns an sexp.
+@method[drracket:language:language<%> get-reader-module] returns an sexp.
 
 The result of the method is a count of the number of lines
 in the strings that
-@method[drscheme:language:language<%> get-metadata] returns. The
-@method[drscheme:language:language<%> get-metadata] function does not necessarily return the same string
+@method[drracket:language:language<%> get-metadata] returns. The
+@method[drracket:language:language<%> get-metadata] function does not necessarily return the same string
 each time it is called (see
-@method[drscheme:language:language<%> metadata->settings]) but it is expected to always return a string with a fixed
+@method[drracket:language:language<%> metadata->settings]) but it is expected to always return a string with a fixed
 number of lines, as indicated by the result of this method.
 
 
@@ -856,13 +856,13 @@ The result of this method is used when saving or loading files.
 
 If the result is a sexp, saved files get a prefix inserted
 at the beginning (the prefix is determined by calling
-@method[drscheme:language:language<%> get-metadata]). When the file is then loaded, DrScheme recognizes this
+@method[drracket:language:language<%> get-metadata]). When the file is then loaded, DrScheme recognizes this
 prefix and sets the language back to match the saved file.
 
 See also
-@method[drscheme:language:language<%> metadata->settings],
-@method[drscheme:language:language<%> get-metadata-lines], and
-@method[drscheme:language:language<%> get-metadata].
+@method[drracket:language:language<%> metadata->settings],
+@method[drracket:language:language<%> get-metadata-lines], and
+@method[drracket:language:language<%> get-metadata].
 
 
 }
@@ -902,15 +902,15 @@ object that can be written out to disk.
            settings]{
 
 This method is only called when
-@method[drscheme:language:language<%> get-reader-module] returns an sexp.
+@method[drracket:language:language<%> get-reader-module] returns an sexp.
 
 When a file is opened in DrScheme, if this language's
-@method[drscheme:language:language<%> get-reader-module] returns an sexp, the prefix of the file
+@method[drracket:language:language<%> get-reader-module] returns an sexp, the prefix of the file
 (the first N lines, where N is the number
 returned by 
-@method[drscheme:language:language<%> get-metadata-lines]) is scanned for @scheme["#reader"] followed by the
+@method[drracket:language:language<%> get-metadata-lines]) is scanned for @scheme["#reader"] followed by the
 result of
-@method[drscheme:language:language<%> get-reader-module]. If that pattern is found, the language is set to this language.
+@method[drracket:language:language<%> get-reader-module]. If that pattern is found, the language is set to this language.
 Also, the entire prefix is passed, as a string,
 to this method which returns a @scheme[settings] value, used as
 the settings for this language.
@@ -1024,7 +1024,7 @@ if doc.txt files should be searched.
                          [port port])
            void?]{
 This method is just like
-@method[drscheme:language:language<%> render-value/format] except that it is expected to put the entire value on a
+@method[drracket:language:language<%> render-value/format] except that it is expected to put the entire value on a
 single line with no newline after the value.
 
 }
@@ -1043,7 +1043,7 @@ newlines in appropriate places and is expected to render a
 newline after the value.
 
 See also
-@method[drscheme:language:language<%> render-value].
+@method[drracket:language:language<%> render-value].
 
 }
 

@@ -110,8 +110,14 @@ Most users will want to use the syntactic shorthand for creating @tech{formlet}s
  @tech{formlet} given by @scheme[_formlet-expr]; the result of this processing this formlet is
  available in the @scheme[yields-expr] as @scheme[_name]. 
  
+ @scheme[,{_formlet-expr . => . (values _name ...)}] embeds the
+ @tech{formlet} given by @scheme[_formlet-expr]; the results of this processing this formlet is
+ available in the @scheme[yields-expr] as @scheme[_name ...]. 
+ 
  @scheme[(#%# _xexpr ...)] renders an @xexpr forest.
 }
+
+@defidform[#%#]{Only allowed inside @scheme[formlet].}
 
 }
 
@@ -128,10 +134,10 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
  Equivalent to @scheme[(listof xexpr/c)]
 }
 
-@defproc[(formlet/c [content any/c]) contract?]{
+@defproc[(formlet/c [content any/c] ...) contract?]{
  Equivalent to @scheme[(integer? . -> . 
             (values xexpr-forest/c
-                    ((listof binding?) . -> . (coerce-contract 'formlet/c content))
+                    ((listof binding?) . -> . (values (coerce-contract 'formlet/c content) ...))
                     integer?))].
                                
  A @tech{formlet}'s internal representation is a function from an initial input number
@@ -139,16 +145,20 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
  input number.
 }
 
+@defthing[formlet*/c contract?]{
+  Equivalent to @scheme[(formlet/c any/c ...)].
+}
+
 @defproc[(pure [value any/c]) (formlet/c any/c)]{
  Constructs a @tech{formlet} that has no rendering and always returns @scheme[value] in
  the processing stage.
 }
 
-@defproc[(cross [f (formlet/c (any/c . -> . any/c))]
-                [g (formlet/c any/c)])
-         (formlet/c any/c)]{
+@defproc[(cross [f (formlet/c procedure?)]
+                [g (formlet/c any/c ...)])
+         (formlet/c any/c ...)]{
  Constructs a @tech{formlet} with a rendering equal to the concatenation of the renderings of @tech{formlet}s @scheme[f] and @scheme[g];
- a processing stage that applies @scheme[g]'s processing result to @scheme[f]'s processing result.
+ a processing stage that applies @scheme[g]'s processing results to @scheme[f]'s processing result.
 }
 
 @defproc[(cross* [f (formlet/c (() () #:rest (listof any/c) . ->* . any/c))]
@@ -185,9 +195,9 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
  Renders @scheme[f].
 }
                         
-@defproc[(formlet-process [f (formlet/c any/c)]
+@defproc[(formlet-process [f (formlet/c any/c ...)]
                           [r request?])
-         any/c]{
+         (values any/c ...)]{
  Runs the processing stage of @scheme[f] on the bindings in @scheme[r].
 }
                
@@ -310,13 +320,13 @@ These @tech{formlet}s are the main combinators for form input.
 
 A few utilities are provided for using @tech{formlet}s in Web applications.
 
-@defproc[(send/formlet [f (formlet/c any/c)]
+@defproc[(send/formlet [f (formlet/c any/c ...)]
                        [#:wrap wrapper
                                (xexpr/c . -> . response/c)
                                (lambda (form-xexpr)
                                  `(html (head (title "Form Entry"))
                                         (body ,form-xexpr)))])
-         any/c]{
+         (values any/c ...)]{
  Uses @scheme[send/suspend] to send @scheme[f]'s rendering (wrapped in a FORM tag whose action is
  the continuation URL (wrapped again by @scheme[wrapper])) to the client.
  When the form is submitted, the request is passed to the
@@ -324,7 +334,7 @@ A few utilities are provided for using @tech{formlet}s in Web applications.
 }
                
 @defproc[(embed-formlet [embed/url embed/url/c]
-                        [f (formlet/c any/c)])
+                        [f (formlet/c any/c ...)])
          xexpr/c]{
  Like @scheme[send/formlet], but for use with @scheme[send/suspend/dispatch].
 }

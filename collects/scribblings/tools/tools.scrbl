@@ -105,14 +105,14 @@ loaded at DrScheme's startup.
 Each of @scheme[tools] files must contain a module that
 @scheme[provide]s @scheme[tool@], which must be bound to a
 @scheme[unit]. The unit
-must import the @scheme[drscheme:tool^] signature, which is
+must import the @scheme[drracket:tool^] signature, which is
 provided by the @FileFirst{tool.ss} library in the
-@scheme[drscheme] collection. The @scheme[drscheme:tool^]
+@scheme[drscheme] collection. The @scheme[drracket:tool^]
 signature contains all of the names listed in this manual.
-The unit must export the @scheme[drscheme:tool-exports^]
+The unit must export the @scheme[drracket:tool-exports^]
 signature. 
 
-The @scheme[drscheme:tool-exports^] signature contains two
+The @scheme[drracket:tool-exports^] signature contains two
 names: @scheme[phase1] and @scheme[phase2]. These names must
 be bound to thunks. After all of the tools are loaded, all of
 the @tt{phase1} functions are called and then all of the
@@ -120,14 +120,14 @@ the @tt{phase1} functions are called and then all of the
 only be called during the dynamic extent of those calls.
 
 This mechanism is designed to support DrScheme's
-@scheme[drscheme:language:language<%>] extension
+@scheme[drracket:language:language<%>] extension
 capabilities. That is, this mechanism enables two tools to
 cooperate via new capabilities of languages. The first phase
 is used for adding functionality that each language must
 support and the second is used for creating instances of
 languages. As an example, a tool may require certain
 specialized language-specific information. It uses phase1 to
-extend the @scheme[drscheme:language:language<%>] interface
+extend the @scheme[drracket:language:language<%>] interface
 and supply a default implementation of the interface
 extension. Then, other languages that are aware of the
 extension can supply non-default implementations of the
@@ -135,15 +135,15 @@ additional functionality.
 
 Phase 1 functions:
 @itemize[
-@item{@scheme[drscheme:language:extend-language-interface]}
-@item{@scheme[drscheme:unit:add-to-program-editor-mixin]}
+@item{@scheme[drracket:language:extend-language-interface]}
+@item{@scheme[drracket:unit:add-to-program-editor-mixin]}
 ]
 
 Phase 2 functions:
 @itemize[
-@item{@scheme[drscheme:language-configuration:add-language]}
-@item{@scheme[drscheme:language:get-default-mixin]}
-@item{@scheme[drscheme:language:get-language-extensions]}
+@item{@scheme[drracket:language-configuration:add-language]}
+@item{@scheme[drracket:language:get-default-mixin]}
+@item{@scheme[drracket:language:get-language-extensions]}
 ]
 
 If the tool raises an error as it is loaded, invoked, or as
@@ -168,8 +168,8 @@ scheme/gui
 
 (define tool@
   (unit
-    (import drscheme:tool^)
-    (export drscheme:tool-exports^)
+    (import drracket:tool^)
+    (export drracket:tool-exports^)
     (define (phase1) (message-box "tool example" "phase1"))
     (define (phase2) (message-box "tool example" "phase2"))
     (message-box "tool example" "unit invoked")))
@@ -297,20 +297,20 @@ not just those that use standard configurations and
 @scheme[module].
 
 Each language is a class that implement the
-@scheme[drscheme:language:language<%>] interface.  DrScheme also
+@scheme[drracket:language:language<%>] interface.  DrScheme also
   provides two simpler interfaces:
-  @scheme[drscheme:language:module-based-language<%>] and
-  @scheme[drscheme:language:simple-module-based-language<%>],
+  @scheme[drracket:language:module-based-language<%>] and
+  @scheme[drracket:language:simple-module-based-language<%>],
   and 
   @scheme[mixins]
-  @scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+  @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
   and
-  @scheme[drscheme:language:module-based-language->language-mixin]
+  @scheme[drracket:language:module-based-language->language-mixin]
   that build implementations of @scheme[language^]s from these simpler interfaces.
 
 Once you have an implementation of the
-@scheme[drscheme:language:language^] interface, call
-@scheme[drscheme:language-configuration:add-language] to add the language
+@scheme[drracket:language:language^] interface, call
+@scheme[drracket:language-configuration:add-language] to add the language
 to DrScheme.
 
 Each language comes with its own type, called
@@ -326,10 +326,10 @@ the current settings for each language.
 @subsection{Language Extensions}
 
 Some tools may require additional functionality from the
-@scheme[drscheme:language:language] interface. The
-@scheme[drscheme:language:extend-language-interface]
+@scheme[drracket:language:language] interface. The
+@scheme[drracket:language:extend-language-interface]
 function and the
-@scheme[drscheme:language:get-default-mixin]
+@scheme[drracket:language:get-default-mixin]
 mixin make this possible.
 
 For example, the MrFlow tool expands a program, analyzes it
@@ -337,14 +337,14 @@ and then displays sets of values for each program point.
 These sets of values should be rendered in the syntax of the
 language that MrFlow analyzes. Since MrFlow doesn't 
 know which languages are available, it can call
-@scheme[drscheme:language:extend-language-interface]
-to extend the @scheme[drscheme:language:language<%>]
+@scheme[drracket:language:extend-language-interface]
+to extend the @scheme[drracket:language:language<%>]
 interface with a method for rendering sets of values and
 provide a default implementation of that method. Tools that
 know about MrFlow can then override the value rendering
 method to provide a language-specific implementation of
 value rendering.  Additionally, since the
-@scheme[drscheme:language:get-default-mixin]
+@scheme[drracket:language:get-default-mixin]
 adds the default implementation for the value-set rendering
 method, all languages at least have some form of value-set
 rendering.
@@ -381,7 +381,7 @@ environment variable to load it in isolation.
 Each frame in DrScheme has certain menus and functionality,
 most of which is achieved by using the framework.
 Additionally, there is one mixin that DrScheme provides to
-augment that. It is @scheme[drscheme:frame:basics-mixin].
+augment that. It is @scheme[drracket:frame:basics-mixin].
 Be sure to mix it into any new frame class that you add to
 DrScheme.
 
@@ -389,12 +389,12 @@ DrScheme.
 
 Each of the names:
 @itemize[
-@item{@scheme[drscheme:get/extend:extend-interactions-text]}
-@item{@scheme[drscheme:get/extend:extend-definitions-text]}
-@item{@scheme[drscheme:get/extend:extend-interactions-canvas]}
-@item{@scheme[drscheme:get/extend:extend-definitions-canvas]}
-@item{@scheme[drscheme:get/extend:extend-unit-frame]}
-@item{@scheme[drscheme:get/extend:extend-tab]}]
+@item{@scheme[drracket:get/extend:extend-interactions-text]}
+@item{@scheme[drracket:get/extend:extend-definitions-text]}
+@item{@scheme[drracket:get/extend:extend-interactions-canvas]}
+@item{@scheme[drracket:get/extend:extend-definitions-canvas]}
+@item{@scheme[drracket:get/extend:extend-unit-frame]}
+@item{@scheme[drracket:get/extend:extend-tab]}]
 is bound to an extender function. In order to change the
 behavior of drscheme, you can derive new classes from the
 standard classes for the frame, texts, canvases. Each
@@ -403,7 +403,7 @@ accepts must take a class as it's argument and return a
 classes derived from that class as its result. For example:
 
 @schemeblock[
-(drscheme:get/extend:extend-interactions-text
+(drracket:get/extend:extend-interactions-text
   (lambda (super%)
     (class super%
       (public method1)
@@ -420,7 +420,7 @@ extends the interactions text class with a method named @tt{method1}.
 Macro-expanding a program may involve arbitrary computation
 and requires the setup of the correct language. To aid this,
 DrScheme's tool interface provides
-@scheme[drscheme:eval:expand-program] to help. Use
+@scheme[drracket:eval:expand-program] to help. Use
 this method to extract the fully expanded program text in a
 particular language.
 
@@ -429,20 +429,20 @@ evaluate arbitrary code that the user wrote, tools that
 expand the user's program should also allow the user to break
 the expansion. To help with this, the tools interfaces
 provides these methods:
-@method[drscheme:rep:context<%> enable-evaluation]
+@method[drracket:rep:context<%> enable-evaluation]
 and
-@method[drscheme:rep:context<%> disable-evaluation].
+@method[drracket:rep:context<%> disable-evaluation].
 Since your tool will be expanding the program text, you
 should be both overriding 
-@method[drscheme:rep:context<%> enable-evaluation]
+@method[drracket:rep:context<%> enable-evaluation]
 and
-@method[drscheme:rep:context<%> disable-evaluation]
+@method[drracket:rep:context<%> disable-evaluation]
 to disable your tool and calling them
 to ensure that only one expansion is happening
 at a time.
 
 Finally, DrScheme provides the
-@method[drscheme:rep:context<%> set-breakables]
+@method[drracket:rep:context<%> set-breakables]
 method. This method controls what behavior the Break button
 has.
 
@@ -452,7 +452,7 @@ has.
 
 DrScheme provides support for multiple editor modes. Tools
 register modes via
-@scheme[drscheme:modes:add-mode]. Each mode is
+@scheme[drracket:modes:add-mode]. Each mode is
 visible in the @onscreen{Modes} submenu of the @onscreen{Edit}
 menu. Initially, DrScheme only supports two modes: scheme
 mode and text mode.
@@ -468,13 +468,13 @@ Drscheme's capability interface provides a mechanism for
 tools to allow languages to hide their GUI interface, if the
 tool does not apply to the language. Tools register
 capabilities keyed with symbols via.
-@scheme[drscheme:language:register-capability]. Once
+@scheme[drracket:language:register-capability]. Once
 registered, a tool can query a language, via the 
-@method[drscheme:language:language<%> capability-value]
+@method[drracket:language:language<%> capability-value]
 method. The result from this method controls whether or not
 the tool shows this part of the GUI for DrScheme.
 
-See @scheme[drscheme:language:register-capability]
+See @scheme[drracket:language:register-capability]
 for a list of the capabilities registered by default.
 
 @section{Check Syntax}
@@ -491,7 +491,11 @@ not taking any advantage of
            (-> (is-a?/c
                 top-level-window<%>)
                any))]{
-  This is meant to be used with the @scheme['drscheme:toolbar-buttons] 
+   This is meant to be used with the @scheme['drscheme:toolbar-buttons] 
+   argument to the info proc returned
+   from @scheme[read-language].
+ }
+toolbar-buttons] 
   argument to the info proc returned
   from @scheme[read-language].
 }

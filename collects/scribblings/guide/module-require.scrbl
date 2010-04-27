@@ -3,44 +3,44 @@
           scribble/eval
           "guide-utils.ss")
 
-@title[#:tag "module-require"]{Imports: @scheme[require]}
+@title[#:tag "module-require"]{Imports: @racket[require]}
 
-The @scheme[require] form imports from another module. A
-@scheme[require] form can appear within a module, in which case it
+The @racket[require] form imports from another module. A
+@racket[require] form can appear within a module, in which case it
 introduces bindings from the specified module into importing module. A
-@scheme[require] form can also appear at the top level, in which case
+@racket[require] form can also appear at the top level, in which case
 it both imports bindings and @deftech{instantiates} the specified
 module; that is, it evaluates the body definitions and expressions of
 the specified module, if they have not been evaluated already.
 
-A single @scheme[require] can specify multiple imports at once:
+A single @racket[require] can specify multiple imports at once:
 
 @specform[(require require-spec ...)]{}
 
-Specifying multiple @scheme[_require-spec]s in a single
-@scheme[require] is essentially the same as using multiple
-@scheme[require]s, each with a single @scheme[_require-spec]. The
+Specifying multiple @racket[_require-spec]s in a single
+@racket[require] is essentially the same as using multiple
+@racket[require]s, each with a single @racket[_require-spec]. The
 difference is minor, and confined to the top-level: a single
-@scheme[require] can import a given identifier at most once, whereas a
-separate @scheme[require] can replace the bindings of a previous
-@scheme[require] (both only at the top level, outside of a module).
+@racket[require] can import a given identifier at most once, whereas a
+separate @racket[require] can replace the bindings of a previous
+@racket[require] (both only at the top level, outside of a module).
 
-The allowed shape of a @scheme[_require-spec] is defined recursively:
+The allowed shape of a @racket[_require-spec] is defined recursively:
 
 @;------------------------------------------------------------------------
 @specspecsubform[module-path]{
 
-In its simplest form, a @scheme[_require-spec] is a
-@scheme[module-path] (as defined in the previous section,
+In its simplest form, a @racket[_require-spec] is a
+@racket[module-path] (as defined in the previous section,
 @secref["module-paths"]). In this case, the bindings introduced
-by @scheme[require] are determined by @scheme[provide] declarations
-within each module referenced by each @scheme[module-path].
+by @racket[require] are determined by @racket[provide] declarations
+within each module referenced by each @racket[module-path].
 
 @examples[
-(module m scheme
+(module m racket
   (provide color)
   (define color "blue"))
-(module n scheme
+(module n racket
   (provide size)
   (define size 17))
 (require 'm 'n)
@@ -55,15 +55,15 @@ within each module referenced by each @scheme[module-path].
                       ([id-maybe-renamed id
                                          [orig-id bind-id]])]{
 
-An @scheme[only-in] form limits the set of bindings that would be introduced
-by a base @scheme[require-spec]. Also, @scheme[only-in] optionally
-renames each binding that is preserved: in a @scheme[[orig-id
-bind-id]] form, the @scheme[orig-id] refers to a binding implied by
-@scheme[require-spec], and @scheme[bind-id] is the name that will be
-bound in the importing context instead of @scheme[bind-id].
+An @racket[only-in] form limits the set of bindings that would be introduced
+by a base @racket[require-spec]. Also, @racket[only-in] optionally
+renames each binding that is preserved: in a @racket[[orig-id
+bind-id]] form, the @racket[orig-id] refers to a binding implied by
+@racket[require-spec], and @racket[bind-id] is the name that will be
+bound in the importing context instead of @racket[bind-id].
 
 @examples[
-(module m (lib "scheme")
+(module m (lib "racket")
   (provide tastes-great?
            less-filling?)
   (define tastes-great? #t)
@@ -79,8 +79,8 @@ less-filling?
 @specspecsubform[#:literals (except-in)
                  (except-in require-spec id ...)]{
 
-This form is the complement of @scheme[only]: it excludes specific
-bindings from the set specified by @scheme[require-spec].
+This form is the complement of @racket[only]: it excludes specific
+bindings from the set specified by @racket[require-spec].
 
 }
 
@@ -88,31 +88,31 @@ bindings from the set specified by @scheme[require-spec].
 @specspecsubform[#:literals (rename-in)
                  (rename-in require-spec [orig-id bind-id] ...)]{
 
-This form supports renaming like @scheme[only-in], but leaving alone
-identifiers from @scheme[require-spec] that are not mentioned as an
-@scheme[orig-id].  }
+This form supports renaming like @racket[only-in], but leaving alone
+identifiers from @racket[require-spec] that are not mentioned as an
+@racket[orig-id].  }
 
 @;------------------------------------------------------------------------
 @specspecsubform[#:literals (prefix-in)
                  (prefix-in prefix-id require-spec)]{
 
-This is a shorthand for renaming, where @scheme[prefix-id] is added to
-the front of each identifier specified by @scheme[require-spec].
+This is a shorthand for renaming, where @racket[prefix-id] is added to
+the front of each identifier specified by @racket[require-spec].
 
 }
 
-The @scheme[only-in], @scheme[except-in], @scheme[rename-in], and
-@scheme[prefix-in] forms can be nested to implement more complex
+The @racket[only-in], @racket[except-in], @racket[rename-in], and
+@racket[prefix-in] forms can be nested to implement more complex
 manipulations of imported bindings. For example,
 
-@schemeblock[(require (prefix-in m: (except-in 'm ghost)))]
+@racketblock[(require (prefix-in m: (except-in 'm ghost)))]
 
-imports all bindings that @scheme[m]
-exports, except for the @scheme[ghost] binding, and with local names
-that are prefixed with @scheme[m:].
+imports all bindings that @racket[m]
+exports, except for the @racket[ghost] binding, and with local names
+that are prefixed with @racket[m:].
 
-Equivalently, the @scheme[prefix-in] could be applied before
-@scheme[except-in], as long as the omission with @scheme[except-in] is
-specified using the @scheme[m:] prefix:
+Equivalently, the @racket[prefix-in] could be applied before
+@racket[except-in], as long as the omission with @racket[except-in] is
+specified using the @racket[m:] prefix:
 
-@schemeblock[(require (except-in (prefix m: 'm) m:ghost))]
+@racketblock[(require (except-in (prefix m: 'm) m:ghost))]
