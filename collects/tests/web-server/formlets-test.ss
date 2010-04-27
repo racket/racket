@@ -301,6 +301,73 @@
                                                               #f "127.0.0.1" 80 "127.0.0.1"))
                                (list "Jay" (make-date 10 6) (make-date 10 8))))))
    
+   ; Multiple value formlets
+   (local [(define (date->xml m d)
+             (format "~a/~a" m d))      
+           (define (submit t)
+             `(input ([type "submit"]) ,t))
+           (define date-formlet
+             (formlet
+              (div
+               "Month:" ,{input-int . => . month}
+               "Day:" ,{input-int . => . day})
+              (values month day)))
+           
+           (define travel-formlet
+             (formlet
+              (div
+               "Name:" ,{input-string . => . name}
+               (div
+                "Arrive:" ,{date-formlet . => . (values arrive-m arrive-d)}
+                "Depart:" ,{date-formlet . => . (values depart-m depart-d)})
+               ,@(list "1" "2" "3")
+               ,(submit "Submit"))
+              (values name arrive-m arrive-d depart-m depart-d)))
+           
+           (define-syntax-rule (check-equal?/values actual-expr expected-expr)
+             (call-with-values (lambda () actual-expr)
+                               (lambda actual
+                                 (call-with-values (lambda () expected-expr)
+                                                   (lambda expected
+                                                     (check-equal? actual expected))))))]
+     (test-suite
+      "Date (values)"
+      
+      (test-case "date->xml"
+                 (check-equal? (date->xml 1 2)
+                               "1/2"))
+      (test-case "date-formlet"
+                 (check-equal? (formlet-display date-formlet)
+                               '((div () "Month:" (input ((name "input_0") (type "text"))) "Day:" (input ((name "input_1") (type "text")))))))
+      (test-case "travel-formlet"
+                 (check-equal? (formlet-display travel-formlet)
+                               '((div
+                                  ()
+                                  "Name:"
+                                  (input ((name "input_0") (type "text")))
+                                  (div
+                                   ()
+                                   "Arrive:"
+                                   (div () "Month:" (input ((name "input_1") (type "text"))) "Day:" (input ((name "input_2") (type "text"))))
+                                   "Depart:"
+                                   (div () "Month:" (input ((name "input_3") (type "text"))) "Day:" (input ((name "input_4") (type "text")))))
+                                  "1"
+                                  "2"
+                                  "3"
+                                  (input ((type "submit")) "Submit")))))
+      (test-case "travel-formlet (proc)"
+                 (check-equal?/values (formlet-process travel-formlet
+                                                       (make-request #"GET" (string->url "http://test.com")
+                                                                     empty
+                                                                     (delay
+                                                                       (list (make-binding:form #"input_0" #"Jay")
+                                                                             (make-binding:form #"input_1" #"10")
+                                                                             (make-binding:form #"input_2" #"6")
+                                                                             (make-binding:form #"input_3" #"10")
+                                                                             (make-binding:form #"input_4" #"8")))
+                                                                     #f "127.0.0.1" 80 "127.0.0.1"))
+                                      (values "Jay" 10 6 10 8)))))
+   
    ))
 
 (require schemeunit/text-ui)
