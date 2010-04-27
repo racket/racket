@@ -27,7 +27,7 @@ ARLIBFLAGS = @LDFLAGS@ $(LIBS)
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
-XFORM_SETUP = ../racket@CGC@ -cqu $(srcdir)/xform.ss --setup .
+XFORM_SETUP = ../racket@CGC@ -cqu $(srcdir)/xform.rkt --setup .
 XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" @XFORMFLAGS@ -o
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
@@ -135,7 +135,7 @@ xsrc:
 
 xobjects: $(OBJS) main.@LTO@
 
-XFORMDEP = $(srcdir)/gc2.h $(srcdir)/gc2_obj.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss \
+XFORMDEP = $(srcdir)/gc2.h $(srcdir)/gc2_obj.h $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt \
            $(srcdir)/precomp.c $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
            $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schemef.h \
            $(srcdir)/../src/stypes.h $(srcdir)/../include/schthread.h $(srcdir)/../src/mzrt.h 

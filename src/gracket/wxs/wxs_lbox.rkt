@@ -1,0 +1,24 @@
+  (define-class list-box% item% () #f
+    get-label-font
+    set-string
+    set-first-visible-item
+    set
+    get-selections
+    get-first-item
+    number-of-visible-items
+    number
+    get-selection
+    set-data
+    get-data
+    selected?
+    set-selection
+    select
+    delete
+    clear
+    append
+    on-drop-file
+    pre-on-event
+    pre-on-char
+    on-size
+    on-set-focus
+    on-kill-focus)

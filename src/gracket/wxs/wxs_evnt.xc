@@ -114,7 +114,7 @@ wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int 
 
 
 // This class is not instantiated from Scheme; it is only
-// instantiated to send info to mred.ss:
+// instantiated to send info to mred.rkt:
 @CLASSBASE wxPopupEvent "popup-event":"control-event" / nofnl
 
 @CREATOR ()

@@ -64,12 +64,12 @@ MZMMM_wx_xt = ../../racket/racket@MMM@
 MZMMM_wx_mac = ../../racket/racket@MMM@
 MZMMM = $(MZMMM_@WXVARIANT@)
 
-XFORM_CMD = $(MZMMM) -cqu $(srcdir)/../../racket/gc2/xform.ss --setup ../../racket/gc2
+XFORM_CMD = $(MZMMM) -cqu $(srcdir)/../../racket/gc2/xform.rkt --setup ../../racket/gc2
 XFORM_CPP_ARGS = -I$(srcdir)/../../racket/gc2 $(NOGCINC) $(XINCLUDE) $(OPTIONS) @PREFLAGS@ $(XFORM_INC_@WXVARIANT@) @JPEG_INC@ @ZLIB_INC@
 
 XFORMXX = $(XFORM_CMD) --cpp "$(CXXCPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o
 XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o
-XFORMDEP = $(srcdir)/../../racket/gc2/xform.ss $(srcdir)/../../racket/gc2/xform-mod.ss $(srcdir)/../../racket/gc2/gc2.h
+XFORMDEP = $(srcdir)/../../racket/gc2/xform.rkt $(srcdir)/../../racket/gc2/xform-mod.rkt $(srcdir)/../../racket/gc2/gc2.h
 
 NONPRECOMPDEP =  $(srcdir)/../../racket/include/schthread.h
 
@@ -1258,9 +1258,9 @@ MRFWRES = GRacket.framework/Versions/$(FWVERSION)_3m/Resources/GRacket.rsrc
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ wx_font.o wx_file_dialog.o $(MRFWRES)
 	$(GRACKETLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o
 
-$(MRFWRES): $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../../mac/cw/GRacket.r
+$(MRFWRES): $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../../mac/cw/GRacket.r
 	rm -rf GRacket.framework/Resources GRacket.framework/GRacket
-	env BUILDBASE=../.. BUILDING_3M=yes ../../racket/racket@CGC@ -cqu $(srcdir)/../../mac/osx_appl.ss $(srcdir)/../.. "@MMM@"
+	env BUILDBASE=../.. BUILDING_3M=yes ../../racket/racket@CGC@ -cqu $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "@MMM@"
 	ln -s Versions/$(FWVERSION)_3m/GRacket GRacket.framework/GRacket
 	ln -s Versions/$(FWVERSION)_3m/Resources GRacket.framework/Resources
 
@@ -1284,7 +1284,7 @@ XSRC_EXTRA_DIR_wx_mac = macxsrc
 ########################################
 
 gen-deps:
-	../../racket/racket@MMM@ -cqu "$(srcdir)/gen-deps.ss"
+	../../racket/racket@MMM@ -cqu "$(srcdir)/gen-deps.rkt"
 
 @INCLUDEDEP@ grmain.dd
 @INCLUDEDEP@ gracket.dd

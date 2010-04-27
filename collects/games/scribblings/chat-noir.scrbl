@@ -1,3 +1,3 @@
 #lang scribble/doc
 @(require scribble/lp-include)
-@(lp-include "../chat-noir/chat-noir-literate.ss")
+@(lp-include "../chat-noir/chat-noir-literate.rkt")

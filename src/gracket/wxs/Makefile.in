@@ -112,14 +112,14 @@ SCRIPTS = $(srcdir)/wxs_bmap.xc $(srcdir)/wxs_butn.xc $(srcdir)/wxs_chce.xc $(sr
           $(srcdir)/wxs_tabc.xc $(srcdir)/wxs_win.xc
 
 # Order matters: superclasses first
-SSDESCS = $(srcdir)/wxs_obj.ss $(srcdir)/wxs_win.ss $(srcdir)/wxs_item.ss \
-          $(srcdir)/wxs_bmap.ss $(srcdir)/wxs_butn.ss $(srcdir)/wxs_chce.ss $(srcdir)/wxs_ckbx.ss \
-          $(srcdir)/wxs_cnvs.ss $(srcdir)/wxs_dc.ss $(srcdir)/wxs_evnt.ss $(srcdir)/wxs_fram.ss \
-          $(srcdir)/wxs_gage.ss $(srcdir)/wxs_gdi.ss $(srcdir)/wxs_glob.ss \
-          $(srcdir)/wxs_lbox.ss \
-          $(srcdir)/wxs_menu.ss $(srcdir)/wxs_misc.ss \
-          $(srcdir)/wxs_panl.ss $(srcdir)/wxs_rado.ss $(srcdir)/wxs_slid.ss \
-          $(srcdir)/wxs_tabc.ss
+SSDESCS = $(srcdir)/wxs_obj.rkt $(srcdir)/wxs_win.rkt $(srcdir)/wxs_item.rkt \
+          $(srcdir)/wxs_bmap.rkt $(srcdir)/wxs_butn.rkt $(srcdir)/wxs_chce.rkt $(srcdir)/wxs_ckbx.rkt \
+          $(srcdir)/wxs_cnvs.rkt $(srcdir)/wxs_dc.rkt $(srcdir)/wxs_evnt.rkt $(srcdir)/wxs_fram.rkt \
+          $(srcdir)/wxs_gage.rkt $(srcdir)/wxs_gdi.rkt $(srcdir)/wxs_glob.rkt \
+          $(srcdir)/wxs_lbox.rkt \
+          $(srcdir)/wxs_menu.rkt $(srcdir)/wxs_misc.rkt \
+          $(srcdir)/wxs_panl.rkt $(srcdir)/wxs_rado.rkt $(srcdir)/wxs_slid.rkt \
+          $(srcdir)/wxs_tabc.rkt
 
 all: libwxscheme.@LIBSFX@
 
@@ -128,13 +128,13 @@ libwxscheme.@LIBSFX@ : $(OBJECTS)
 	$(RANLIB) libwxscheme.@LIBSFX@
 
 test-file:
-	rm -f $(srcdir)/../../../tests/mred/tests.ss
-	$(MAKE) $(srcdir)/../../../tests/mred/tests.ss
+	rm -f $(srcdir)/../../../tests/mred/tests.rkt
+	$(MAKE) $(srcdir)/../../../tests/mred/tests.rkt
 
-kernel.ss : $(srcdir)/../../../collects/mred/private/kernel.ss 
+kernel.rkt : $(srcdir)/../../../collects/mred/private/kernel.rkt 
 
-$(srcdir)/../../../collects/mred/private/kernel.ss : $(SSDESCS) $(srcdir)/khead.ss $(srcdir)/ktail.ss 
-	cat $(srcdir)/khead.ss $(SSDESCS) $(srcdir)/ktail.ss > $(srcdir)/../../../collects/mred/private/kernel.ss
+$(srcdir)/../../../collects/mred/private/kernel.rkt : $(SSDESCS) $(srcdir)/khead.rkt $(srcdir)/ktail.rkt 
+	cat $(srcdir)/khead.rkt $(SSDESCS) $(srcdir)/ktail.rkt > $(srcdir)/../../../collects/mred/private/kernel.rkt
 
 ss: $(SSDESCS)
 
@@ -251,27 +251,27 @@ wxs_tabc.@LTO@ : $(srcdir)/wxs_tabc.cxx $(WXSCHEMEHEADERS) $(TABCDOWHEADERS)
 wxs_win.@LTO@ : $(srcdir)/wxs_win.cxx $(WXSCHEMEHEADERS) $(WINDOWHEADERS)
 	$(WXSCC) $(srcdir)/wxs_win.cxx -o wxs_win.@LTO@
 
-$(srcdir)/wxs_bmap.ss : $(srcdir)/wxs_bmap.cxx
-$(srcdir)/wxs_butn.ss : $(srcdir)/wxs_butn.cxx
-$(srcdir)/wxs_chce.ss : $(srcdir)/wxs_chce.cxx
-$(srcdir)/wxs_ckbx.ss : $(srcdir)/wxs_ckbx.cxx
-$(srcdir)/wxs_cnvs.ss : $(srcdir)/wxs_cnvs.cxx
-$(srcdir)/wxs_dc.ss : $(srcdir)/wxs_dc.cxx
-$(srcdir)/wxs_evnt.ss : $(srcdir)/wxs_evnt.cxx
-$(srcdir)/wxs_fram.ss : $(srcdir)/wxs_fram.cxx
-$(srcdir)/wxs_gage.ss : $(srcdir)/wxs_gage.cxx
-$(srcdir)/wxs_gdi.ss : $(srcdir)/wxs_gdi.cxx
-$(srcdir)/wxs_glob.ss : $(srcdir)/wxs_glob.cxx
-$(srcdir)/wxs_item.ss : $(srcdir)/wxs_item.cxx
-$(srcdir)/wxs_lbox.ss : $(srcdir)/wxs_lbox.cxx
-$(srcdir)/wxs_menu.ss : $(srcdir)/wxs_menu.cxx
-$(srcdir)/wxs_misc.ss : $(srcdir)/wxs_misc.cxx
-$(srcdir)/wxs_obj.ss : $(srcdir)/wxs_obj.cxx
-$(srcdir)/wxs_panl.ss : $(srcdir)/wxs_panl.cxx
-$(srcdir)/wxs_rado.ss : $(srcdir)/wxs_rado.cxx
-$(srcdir)/wxs_slid.ss : $(srcdir)/wxs_slid.cxx
-$(srcdir)/wxs_tabc.ss : $(srcdir)/wxs_tabc.cxx
-$(srcdir)/wxs_win.ss : $(srcdir)/wxs_win.cxx
+$(srcdir)/wxs_bmap.rkt : $(srcdir)/wxs_bmap.cxx
+$(srcdir)/wxs_butn.rkt : $(srcdir)/wxs_butn.cxx
+$(srcdir)/wxs_chce.rkt : $(srcdir)/wxs_chce.cxx
+$(srcdir)/wxs_ckbx.rkt : $(srcdir)/wxs_ckbx.cxx
+$(srcdir)/wxs_cnvs.rkt : $(srcdir)/wxs_cnvs.cxx
+$(srcdir)/wxs_dc.rkt : $(srcdir)/wxs_dc.cxx
+$(srcdir)/wxs_evnt.rkt : $(srcdir)/wxs_evnt.cxx
+$(srcdir)/wxs_fram.rkt : $(srcdir)/wxs_fram.cxx
+$(srcdir)/wxs_gage.rkt : $(srcdir)/wxs_gage.cxx
+$(srcdir)/wxs_gdi.rkt : $(srcdir)/wxs_gdi.cxx
+$(srcdir)/wxs_glob.rkt : $(srcdir)/wxs_glob.cxx
+$(srcdir)/wxs_item.rkt : $(srcdir)/wxs_item.cxx
+$(srcdir)/wxs_lbox.rkt : $(srcdir)/wxs_lbox.cxx
+$(srcdir)/wxs_menu.rkt : $(srcdir)/wxs_menu.cxx
+$(srcdir)/wxs_misc.rkt : $(srcdir)/wxs_misc.cxx
+$(srcdir)/wxs_obj.rkt : $(srcdir)/wxs_obj.cxx
+$(srcdir)/wxs_panl.rkt : $(srcdir)/wxs_panl.cxx
+$(srcdir)/wxs_rado.rkt : $(srcdir)/wxs_rado.cxx
+$(srcdir)/wxs_slid.rkt : $(srcdir)/wxs_slid.cxx
+$(srcdir)/wxs_tabc.rkt : $(srcdir)/wxs_tabc.cxx
+$(srcdir)/wxs_win.rkt : $(srcdir)/wxs_win.cxx
 
 @INCLUDEDEP@ xcglue.d
 @INCLUDEDEP@ wxs_bmap.d
