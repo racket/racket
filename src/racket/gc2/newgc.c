@@ -1876,135 +1876,180 @@ void GC_write_barrier(void *p)
 
 #ifdef MZ_USE_PLACES
 static void NewGCMasterInfo_initialize() {
+  int i;
   MASTERGCINFO = ofm_malloc_zero(sizeof(NewGCMasterInfo));
+  MASTERGCINFO->size = 32;
+  MASTERGCINFO->alive = 0;
+  MASTERGCINFO->ready = 0;
+  MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
+  for (i=0; i < 32; i++ ) {
+    MASTERGCINFO->signal_fds[i] = (void *)-2;
+  }
   mzrt_rwlock_create(&MASTERGCINFO->cangc);
   mzrt_sema_create(&MASTERGCINFO->wait_sema, 0);
 }
 
 static void NewGCMasterInfo_cleanup() {
   mzrt_rwlock_destroy(MASTERGCINFO->cangc);
+  free(MASTERGCINFO->signal_fds);
   free(MASTERGCINFO);
   MASTERGCINFO = NULL;
 }
-
-static void NewGCMasterInfo_set_have_collected(NewGC *gc) {
-  MASTERGCINFO->have_collected[gc->place_id] = 1;
-}
-
 
 /* signals every place to do a full gc at then end of 
    garbage_collect the places will call 
    wait_if_master_in_progress and
    rendezvous for a master gc */
+/* this is only called from the master so the cangc lock should already be held */
 static void master_collect_initiate() {
   if (MASTERGC->major_places_gc == 0) {
     int i = 0;
-    int maxid = MASTERGCINFO->next_GC_id;
+    int size = MASTERGCINFO->size;
+    int count = 0;
     MASTERGC->major_places_gc = 1;
+    MASTERGCINFO->ready = 0;
 
-    for (i=1; i < maxid; i++) {
+    for (i=1; i < size; i++) {
       void *signal_fd = MASTERGCINFO->signal_fds[i];
-      MASTERGCINFO->have_collected[i] = -1;
-      if (signal_fd >= 0 ) { 
+      if (signal_fd < (void*) -2) { 
         scheme_signal_received_at(signal_fd);
-      }
 #if defined(DEBUG_GC_PAGES)
-      printf("%i SIGNALED BUT NOT COLLECTED\n", i);
-      GCVERBOSEprintf("%i SIGNALED BUT NOT COLLECTED\n", i);
+        printf("%i SIGNALED BUT NOT COLLECTED\n", i);
+        GCVERBOSEprintf("%i SIGNALED BUT NOT COLLECTED\n", i);
 #endif
+        count++;
+      }
+      if (count == (MASTERGCINFO->alive -1)) {
+        break;
+      }
     }
+    if (count != (MASTERGCINFO->alive -1)) {
+      printf("GC2 count != MASTERGCINFO->alive %i %li\n", count, MASTERGCINFO->alive);
+      abort();
+    }
+#if defined(DEBUG_GC_PAGES)
+    printf("Woke up %i places for MASTER GC\n", count);
+    GCVERBOSEprintf("Woke up %i places for MASTER GC\n", count);
+#endif
   }
 }
 
+static void collect_master() {
+  NewGC *saved_gc;
+  saved_gc = GC_switch_to_master_gc();
+  {
+#if defined(DEBUG_GC_PAGES)
+    printf("START MASTER COLLECTION\n");
+    GCVERBOSEprintf("START MASTER COLLECTION\n");
+#endif
+    MASTERGC->major_places_gc = 0;
+    garbage_collect(MASTERGC, 1, 0);
+#if defined(DEBUG_GC_PAGES)
+    printf("END MASTER COLLECTION\n");
+    GCVERBOSEprintf("END MASTER COLLECTION\n");
+#endif
 
-static void wait_if_master_in_progress(NewGC *gc) {
-  if (MASTERGC->major_places_gc == 1) {
-    int last_one_here = 1;
-
-    mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
-    GC_LOCK_DEBUG("MGCLOCK GC_switch_to_master_gc\n");
     {
       int i = 0;
-      int maxid = MASTERGCINFO->next_GC_id;
-
-      NewGCMasterInfo_set_have_collected(gc);
-      for (i=1; i < maxid; i++) {
-        int have_collected = MASTERGCINFO->have_collected[i];
-        if (have_collected == 1) {
-#if defined(DEBUG_GC_PAGES)
-            printf("%i READY\n", i);
-            GCVERBOSEprintf("%i READY\n", i);
-#endif
-        }
-        else {
-#if defined(DEBUG_GC_PAGES)
-          printf("%i SIGNALED BUT NOT COLLECTED\n", i);
-          GCVERBOSEprintf("%i SIGNALED BUT NOT COLLECTED\n", i);
-#endif
-          last_one_here = 0; 
-        }
+      int alive = MASTERGCINFO->alive;
+      /* wake everyone back up, except MASTERGC and ourself */  
+      for (i=2; i < alive; i++) {
+        mzrt_sema_post(MASTERGCINFO->wait_sema);
       }
     }
-    if (last_one_here) {
-      NewGC *saved_gc;
-      
-      GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
-      mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+  }
+  GC_switch_back_from_master(saved_gc);
+}
 
-
-      saved_gc = GC_switch_to_master_gc();
-      {
+static void wait_if_master_in_progress(NewGC *gc) {
+  int last_one_here = -1;
+  mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
+  GC_LOCK_DEBUG("MGCLOCK wait_if_master_in_progress\n");
+  {
+    if (MASTERGC->major_places_gc == 1) {
+      MASTERGCINFO->ready++;
 #if defined(DEBUG_GC_PAGES)
-        printf("START MASTER COLLECTION\n");
-        GCVERBOSEprintf("START MASTER COLLECTION\n");
+      printf("%i READY\n", gc->place_id);
+      GCVERBOSEprintf("%i READY\n", i);
 #endif
-        MASTERGC->major_places_gc = 0;
-        garbage_collect(MASTERGC, 1, 0);
-#if defined(DEBUG_GC_PAGES)
-        printf("END MASTER COLLECTION\n");
-        GCVERBOSEprintf("END MASTER COLLECTION\n");
-#endif
-
-        {
-          int i = 0;
-          int maxid = MASTERGCINFO->next_GC_id;
-          /* wake everyone back up */  
-          for (i=2; i < maxid; i++) {
-            mzrt_sema_post(MASTERGCINFO->wait_sema);
-          }
-        }
+      /* don't count MASTERGC*/
+      if ((MASTERGCINFO->alive -1) == MASTERGCINFO->ready) {
+        last_one_here = 1;
       }
-      GC_switch_back_from_master(saved_gc);
+      else {
+        last_one_here = 0; 
+      }
     }
     else {
-      GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
-      mzrt_rwlock_unlock(MASTERGCINFO->cangc);
-
-      /* wait on semaphonre */
-      mzrt_sema_wait(MASTERGCINFO->wait_sema);
+      last_one_here = -1;
     }
+  }
+  GC_LOCK_DEBUG("UNMGCLOCK wait_if_master_in_progress\n");
+  mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+
+  switch(last_one_here) {
+    case -1:
+      /* master doesn't want to collect */
+    return;
+    break;
+    case 0:
+      /* wait on semaphore */
+      mzrt_sema_wait(MASTERGCINFO->wait_sema);
+    break;
+    case 1:
+      /* Your the last one here. */
+      collect_master();
+    break;
+    default:
+      printf("GC2 wait_if_master_in_progress invalid case, unreachable\n");
+      abort();
+    break;
   }
 }
 
-static void NewGCMasterInfo_get_next_id(NewGC *newgc) {
-  int newid;
-  /* this could just be an atomic op if we had those */
-  /* waiting for other threads to finish a possible concurrent GC is not optimal*/
-  mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
-  newid = MASTERGCINFO->next_GC_id++;
-  newgc->place_id = newid;
-  /* printf("ALLOCATED GC OID %li\n", newgc->place_id); */
-  MASTERGCINFO->have_collected = realloc(MASTERGCINFO->have_collected, sizeof(char) * MASTERGCINFO->next_GC_id);
-  MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->next_GC_id);
-  MASTERGCINFO->have_collected[newid] = 0;
-  MASTERGCINFO->signal_fds[newid] = (void *)-1;
+/* MUST CALL WITH cangc lock */
+static long NewGCMasterInfo_find_free_id() {
+  GC_ASSERT(MASTERGCINFO->live <= MASTERGCINFO->size);
+  if ((MASTERGCINFO->alive + 1) == MASTERGCINFO->size) {
+    MASTERGCINFO->size++;
+    MASTERGCINFO->alive++;
+    MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
+    return MASTERGCINFO->size - 1;
+  }
+  else {
+    int i;
+    int size = MASTERGCINFO->size;
+    for (i = 0; i < size; i++) {
+      if (MASTERGCINFO->signal_fds[i] == (void*)-2) {
+        MASTERGCINFO->alive++;
+        return i;
+      }
+    }
+  }
+  printf("Error in MASTERGCINFO table\n");
+  abort();
+} 
+
+static void NewGCMasterInfo_register_gc(NewGC *newgc) {
+  mzrt_rwlock_wrlock(MASTERGCINFO->cangc); 
+  GC_LOCK_DEBUG("MGCLOCK NewGCMasterInfo_register_gc\n");
+  {
+    long newid = NewGCMasterInfo_find_free_id();
+    newgc->place_id = newid;
+    MASTERGCINFO->signal_fds[newid] = (void *)-1;
+  }
+  GC_LOCK_DEBUG("UNMGCLOCK NewGCMasterInfo_register_gc\n");
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 }
 
 void GC_set_put_external_event_fd(void *fd) {
   NewGC *gc = GC_get_GC();
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
-  MASTERGCINFO->signal_fds[gc->place_id] = fd;
+  GC_LOCK_DEBUG("MGCLOCK GC_set_put_external_event_fd\n");
+  {
+    MASTERGCINFO->signal_fds[gc->place_id] = fd;
+  } 
+  GC_LOCK_DEBUG("UNMGCLOCK GC_set_put_external_event_fd\n");
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 }
 #endif
@@ -2027,7 +2072,7 @@ static void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
   }
 
 #ifdef MZ_USE_PLACES
-  NewGCMasterInfo_get_next_id(newgc);
+  NewGCMasterInfo_register_gc(newgc);
 #endif
 
   mark_stack_initialize(newgc);
@@ -2110,6 +2155,31 @@ void GC_construct_child_gc() {
   newgc->primoridal_gc = MASTERGC;
 }
 
+void GC_destruct_child_gc() {
+  NewGC *gc = GC_get_GC();
+  int waiting = 0;
+  do {
+
+    mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
+    GC_LOCK_DEBUG("MGCLOCK GC_destruct_child_gc\n");
+    waiting = MASTERGC->major_places_gc;
+    if (!waiting) {
+      MASTERGCINFO->signal_fds[gc->place_id] = (void *)-2;
+      gc->place_id = -1;
+      MASTERGCINFO->alive--;
+    }
+    GC_LOCK_DEBUG("UNMGCLOCK GC_destruct_child_gc\n");
+    mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+
+
+    if (waiting) {
+      garbage_collect(gc, 1, 0);
+      waiting = 1;
+    }
+  } while (waiting == 1);
+}
+
+
 static inline void save_globals_to_gc(NewGC *gc) {
   gc->saved_GC_variable_stack       = GC_variable_stack;
   gc->saved_GC_gen0_alloc_page_ptr  = GC_gen0_alloc_page_ptr;
@@ -2156,7 +2226,7 @@ void *GC_switch_to_master_gc() {
 
   /*obtain exclusive access to MASTERGC*/
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
-  GC_LOCK_DEBUG("MGCLOCK GC_switch_to_master_gc\n");
+  //GC_LOCK_DEBUG("MGCLOCK GC_switch_to_master_gc\n");
 
   GC_set_GC(MASTERGC);
   restore_globals_from_gc(MASTERGC);
@@ -2169,7 +2239,7 @@ void GC_switch_back_from_master(void *gc) {
   save_globals_to_gc(MASTERGC);
 
   /*release exclusive access to MASTERGC*/
-  GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
+  //GC_LOCK_DEBUG("UNMGCLOCK GC_switch_to_master_gc\n");
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 
   GC_set_GC(gc);

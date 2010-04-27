@@ -567,6 +567,9 @@ void scheme_place_instance_destroy() {
 #if defined(MZ_USE_PLACES)
   scheme_kill_green_thread_timer();
 #endif
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  GC_destruct_child_gc();
+#endif
 }
 
 static void make_kernel_env(void)
