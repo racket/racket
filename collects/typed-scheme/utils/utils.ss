@@ -162,7 +162,11 @@ at least theoretically.
 
 ;; turn contracts on and off - off by default for performance.
 (define-for-syntax enable-contracts? #t)
-(provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
+(provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c d/c/p)
+
+(define-syntax-rule (d/c/p (name . args) c . body)
+  (begin (d/c (name . args) c . body)
+         (p/c [name c])))
 
 ;; these are versions of the contract forms conditionalized by `enable-contracts?'
 (define-syntax p/c

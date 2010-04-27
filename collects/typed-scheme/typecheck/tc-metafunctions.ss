@@ -10,12 +10,6 @@
          unstable/debug
          (for-syntax scheme/base))
 
-;(provide (all-defined-out))
-
-(define-syntax-rule (d/c/p (name . args) c . body)
-  (begin (d/c (name . args) c . body)
-         (p/c [name c])))
-
 ;; this implements the sequence invariant described on the first page relating to Bot
 
 (define (combine l1 l2)

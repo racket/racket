@@ -91,7 +91,7 @@
 
 (define-syntax (tc-e/t stx)
   (syntax-parse stx
-    [(_ e t) (syntax/loc stx (tc-e e #:ret (ret t (-FS (list) (list (make-Bot))))))]))
+    [(_ e t) (syntax/loc stx (tc-e e #:ret (ret t (-FS -top -bot))))]))
 
 ;; duplication of the mzscheme toplevel expander, necessary for expanding the rhs of defines
 ;; note that this ability is never used

@@ -12,10 +12,6 @@
 
 ;(provide (all-defined-out))
 
-(define-syntax-rule (d/c/p (name . args) c . body)
-  (begin (d/c (name . args) c . body)
-         (p/c [name c])))
-
 (d/c/p (open-Result r objs ts)
        (-> Result? (listof Object?) (listof Type/c) (values Type/c FilterSet? Object?))
        (match r
@@ -27,12 +23,13 @@
                     (subst-filter-set fs k o #t arg-ty)
                     (subst-object old-obj k o #t)))]))
 
-(d/c/p (subst-filter-set fs k o polarity t)
-       (-> FilterSet? name-ref/c Object? boolean? Type/c FilterSet?)
+(d/c/p (subst-filter-set fs k o polarity [t #f])
+       (->* (FilterSet? name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
+       (define extra-filter (if t (make-TypeFilter t null k) -top))
   (match fs
     [(FilterSet: f+ f-)
-     (combine (subst-filter (-and (make-TypeFilter t null k) f+) k o polarity)
-	      (subst-filter (-and (make-TypeFilter t null k) f-) k o polarity))]))
+     (combine (subst-filter (-and extra-filter f+) k o polarity)
+	      (subst-filter (-and extra-filter f-) k o polarity))]))
 
 (d/c/p (subst-type t k o polarity)
      (-> Type/c name-ref/c Object? boolean? Type/c)
