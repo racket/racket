@@ -10,22 +10,22 @@ Returns the current time in seconds. This time is always an exact
 integer based on a platform-specific starting date (with a
 platform-specific minimum and maximum value).
 
-The value of @scheme[(current-seconds)] increases as time passes
+The value of @racket[(current-seconds)] increases as time passes
 (increasing by 1 for each second that passes). The current time in
 seconds can be compared with a time returned by
-@scheme[file-or-directory-modify-seconds].}
+@racket[file-or-directory-modify-seconds].}
 
 
 @defproc[(seconds->date [secs-n exact-integer?]) date?]{
 
-Takes @scheme[secs-n], a platform-specific time in seconds returned by
-@scheme[current-seconds] or @scheme[file-or-directory-modify-seconds],
-and returns an instance of the @scheme[date] structure type.  If
-@scheme[secs-n] is too small or large, the @exnraise[exn:fail].
+Takes @racket[secs-n], a platform-specific time in seconds returned by
+@racket[current-seconds] or @racket[file-or-directory-modify-seconds],
+and returns an instance of the @racket[date] structure type.  If
+@racket[secs-n] is too small or large, the @exnraise[exn:fail].
 
-The value returned by @scheme[current-seconds] or
-@scheme[file-or-directory-modify-seconds] is not portable among
-platforms. Convert a time in seconds using @scheme[seconds->date] when
+The value returned by @racket[current-seconds] or
+@racket[file-or-directory-modify-seconds] is not portable among
+platforms. Convert a time in seconds using @racket[seconds->date] when
 portability is needed.}
 
 @defstruct[date ([second (integer-in 0 61)]
@@ -40,21 +40,21 @@ portability is needed.}
                  [time-zone-offset exact-integer?])
                 #:inspector #f]{
 
-Represents a date. For the @scheme[second] field, values of
-@scheme[60] and @scheme[61] are for unusual, but possible for
-leap-seconds. The @scheme[year-day] field reaches @scheme[365] only in
+Represents a date. For the @racket[second] field, values of
+@racket[60] and @racket[61] are for unusual, but possible for
+leap-seconds. The @racket[year-day] field reaches @racket[365] only in
 leap years.
 
-The @scheme[time-zone-offset] field reports the number of seconds east
+The @racket[time-zone-offset] field reports the number of seconds east
 of GMT for the current time zone (e.g., Pacific Standard Time is
-@scheme[-28800]), an exact integer.
+@racket[-28800]), an exact integer.
 
-The value produced for the @scheme[time-zone-offset] field tends to be
+The value produced for the @racket[time-zone-offset] field tends to be
 sensitive to the value of the @envvar{TZ} environment variable,
 especially on Unix platforms; consult the system documentation
 (usually under @tt{tzset}) for details.
 
-See also the @schememodname[racket/date] library.}
+See also the @racketmodname[racket/date] library.}
 
 
 @defproc[(current-milliseconds) exact-integer?]{
@@ -76,11 +76,11 @@ Returns the current time in milliseconds since midnight UTC, January
          exact-integer?]{
 
 Returns an amount of processor time in @tech{fixnum} milliseconds
-that has been consumed by the Scheme process on the underlying
+that has been consumed by the Racket process on the underlying
 operating system. (Under @|AllUnix|, this includes both user and
-system time.)  If @scheme[thread] is @scheme[#f], the reported time
-is for all Scheme threads, otherwise the result is specific to the
-time while @scheme[thread] ran.
+system time.)  If @racket[thread] is @racket[#f], the reported time
+is for all Racket threads, otherwise the result is specific to the
+time while @racket[thread] ran.
 The precision of the result is platform-specific, and
 since the result is a @tech{fixnum}, the value increases only over a
 limited (though reasonably long) time.}
@@ -89,9 +89,9 @@ limited (though reasonably long) time.}
 @defproc[(current-gc-milliseconds) exact-integer?]{
 
 Returns the amount of processor time in @tech{fixnum} milliseconds
-that has been consumed by Scheme's garbage collection so far. This
+that has been consumed by Racket's garbage collection so far. This
 time is a portion of the time reported by
-@scheme[(current-process-milliseconds)], and is similarly limited.}
+@racket[(current-process-milliseconds)], and is similarly limited.}
 
 
 @defproc[(time-apply [proc procedure?]
@@ -104,20 +104,20 @@ time is a portion of the time reported by
 Collects timing information for a procedure application.
 
 Four values are returned: a list containing the result(s) of applying
-@scheme[proc] to the arguments in @scheme[lst], the number of milliseconds of
+@racket[proc] to the arguments in @racket[lst], the number of milliseconds of
 CPU time required to obtain this result, the number of ``real'' milliseconds
 required for the result, and the number of milliseconds of CPU time (included
 in the first result) spent on garbage collection.
 
 The reliability of the timing numbers depends on the platform. If
-multiple MzScheme threads are running, then the reported time may
+multiple Racket threads are running, then the reported time may
 include work performed by other threads.}
 
 @defform[(time expr)]{
 
-Reports @scheme[time-apply]-style timing information for the
-evaluation of @scheme[expr] directly to the current output port.  The
-result is the result of @scheme[expr].}
+Reports @racket[time-apply]-style timing information for the
+evaluation of @racket[expr] directly to the current output port.  The
+result is the result of @racket[expr].}
 
 @; ----------------------------------------------------------------------
 
@@ -128,7 +128,7 @@ result is the result of @scheme[expr].}
 @defproc[(date->string [date date?][time? any/c #f]) string?]{
 
 Converts a date to a string. The returned string contains the time of
-day only if @scheme[time?]. See also @scheme[date-display-format].}
+day only if @racket[time?]. See also @racket[date-display-format].}
 
 
 @defparam[date-display-format format (or/c 'american
@@ -141,7 +141,7 @@ day only if @scheme[time?]. See also @scheme[date-display-format].}
                                            'julian)]{
 
 Parameter that determines the date string format. The initial format
-is @scheme['american].}
+is @racket['american].}
 
 
 @defproc[(find-seconds [second (integer-in 0 61)]
@@ -153,7 +153,7 @@ is @scheme['american].}
          exact-integer?]{
 
 Finds the representation of a date in platform-specific seconds. The
-arguments correspond to the fields of the @scheme[date] structure. If
+arguments correspond to the fields of the @racket[date] structure. If
 the platform cannot represent the specified date, an error is
 signaled, otherwise an integer is returned.}
 

@@ -3,24 +3,25 @@
     "public.text"
     "public.plain-text"))
   ("UTTypeDescription"
-   "PLT Scheme program source")
+   "Racket program source")
   ("UTTypeIdentifier"
-   "org.plt-scheme.source")
+   "org.racket-lang.source")
   ("UTTypeTagSpecification"
    (dict
     (assoc-pair "com.apple.ostype"
                 "TEXT")
     (assoc-pair "public.filename-extension"
-                (array "ss"
+                (array "rkt"
+                       "ss"
                        "scm")))))
  (("UTTypeConformsTo"
     (array
      "public.text"
      "public.plain-text"))
    ("UTTypeDescription"
-    "PLT Scheme documentation source")
+    "Racket documentation source")
    ("UTTypeIdentifier"
-    "org.plt-scheme.scribble")
+    "org.racket-lang.scribble")
    ("UTTypeTagSpecification"
     (dict
      (assoc-pair "com.apple.ostype"

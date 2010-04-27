@@ -121,12 +121,12 @@ cannot have a guard or properties, so using @racket[#:prefab] with
 @racket[#:property] is a syntax error. If a supertype is specified, it
 must also be a @tech{prefab} structure type.
 
-If @racket[constructor-id] is supplied then the @tech{transformer
+If @racket[constructor-id] is supplied, then the @tech{transformer
 binding} of @scheme[id] records @scheme[constructor-id] as the
 constructor binding; as a result, for example, @scheme[struct-out]
 includes @racket[constructor-id] as an export. If
 @racket[constructor-id] is supplied via
-@racket[#:extra-constructor-name] and it is not @racket[id], Applying
+@racket[#:extra-constructor-name] and it is not @racket[id], applying
 @racket[object-name] on the constructor produces the symbolic form of
 @racket[id] rather than @racket[constructor-id]. If
 @racket[constructor-id] is supplied via @racket[#:constructor-name]

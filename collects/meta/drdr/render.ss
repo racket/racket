@@ -101,7 +101,13 @@
   (regexp-replace "^(....-..-..)T(..:..:..).*Z$" date "\\1 \\2"))
 (define (git-date->nice-date date)
   (regexp-replace "^(....-..-..) (..:..:..).*$" date "\\1 \\2"))
-
+(define (log->url log)
+  (define start-commit (git-push-start-commit log))
+  (define end-commit (git-push-end-commit log))
+  (if (string=? start-commit end-commit)
+      (format "http://github.com/plt/racket/commit/~a" end-commit)
+      (format "http://github.com/plt/racket/compare/~a...~a" start-commit end-commit)))
+  
 (define (format-commit-msg)
   (define pth (revision-commit-msg (current-rev)))
   (define (timestamp pth)
@@ -608,9 +614,7 @@
                             (define log (read-cache (future-record-path rev)))
                             (define-values (committer title)
                               (log->committer+title log))
-                            (define url
-                              (format "http://github.com/plt/racket/commit/~a"
-                                      (git-push-end-commit log)))
+                            (define url (log->url log))
                             `(tr ([class "dir"]
                                   [title ,title])
                                  (td (a ([href ,url]) ,name))

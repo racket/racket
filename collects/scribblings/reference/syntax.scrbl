@@ -9,7 +9,6 @@
                               make-provide-transformer)
                      racket/provide-syntax
                      racket/provide
-                     racket/nest
                      racket/package
                      racket/splicing
                      racket/runtime-path))
@@ -2413,54 +2412,6 @@ provides a hook to control interactive evaluation through
 
 @;------------------------------------------------------------------------
 @include-section["package.scrbl"]
-
-@;------------------------------------------------------------------------
-@section[#:tag "nest"]{Flattening Syntactic Sequences: @racket[nest]}
-
-@note-lib[racket/nest]
-
-@defform[(nest ([datum ...+] ...) body ...+)]{
-
-Combines nested expressions that syntactically drift to the right into
-a more linear textual format, much in the same way that @racket[let*]
-linearizes a sequence of nested @racket[let] expressions.
-
-For example,
-
-@racketblock[
-(nest ([let ([x 10]
-             [y 6])]
-       [with-handlers ([exn:fail? (lambda (x) 15)])]
-       [parameterize ([current-output-port (current-error-port)])]
-       [let-values ([(d r) (quotient/remainder x y)])])
-  (display (+ d r)))
-]
-
-is equivalent to
-
-@racketblock[
-(let ([x 10]
-      [y 6])
-  (with-handlers ([exn:fail? (lambda (x) 15)])
-    (parameterize ([current-output-port (current-error-port)])
-      (let-values ([(d r) (quotient/remainder x y)])
-        (display (+ d r))))))
-]
-
-The @racket[nest] form is unusual in that it has no semantics apart
-from its expansion, and its implementation is easier to understand
-than a precise prose description:
-
-@racketblock[
-(define-syntax nest
-  (syntax-rules ()
-    [(nest () body0 body ...)
-     (let () body0 body ...)]
-    [(nest ([form forms ...]) body0 body ...)
-     (form forms ... (let () body0 body ...))]
-    [(nest ([form forms ...] . more) body0 body ...)
-     (form forms ... (nest more body0 body ...))]))
-]}
 
 
 @close-eval[require-eval]

@@ -15,10 +15,6 @@ Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
 @scheme[#f] otherwise.}
 
 
-@; ----------------------------------------------------------------------
-
-@section{Unsafe Library Functions}
-
 @defproc[(ffi-lib [path (or/c path-string? #f)]
                   [version (or/c string? (listof (or/c string? #f)) #f) #f]) any]{
 

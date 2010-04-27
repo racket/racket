@@ -5708,7 +5708,7 @@ enum {
 Scheme_Object *scheme_get_run_cmd(void)
 {
   if (!run_cmd) {
-    return scheme_make_path("mzscheme");
+    return scheme_make_path("racket");
   }
   return run_cmd;
 }
@@ -5738,7 +5738,7 @@ find_system_path(int argc, Scheme_Object **argv)
     which = id_sys_dir;
   else if (argv[0] == exec_file_symbol) {
     if (!exec_cmd) {
-       return scheme_make_path("mzscheme");
+       return scheme_make_path("racket");
     }
     return exec_cmd;
   } else if (argv[0] == run_file_symbol) {
@@ -5798,11 +5798,11 @@ find_system_path(int argc, Scheme_Object **argv)
 	|| (which == id_addon_dir)) {
 #if defined(OS_X) && !defined(XONX)
       if (which == id_addon_dir)
-	home_str = "~/Library/PLT Scheme/";
+	home_str = "~/Library/Racket/";
       else
 	home_str = "~/Library/Preferences/";
 #else
-      home_str = "~/.plt-scheme/";
+      home_str = "~/.racket/";
 #endif 
     } else {
 #if defined(OS_X) && !defined(XONX)
@@ -5836,12 +5836,12 @@ find_system_path(int argc, Scheme_Object **argv)
     ends_in_slash = (SCHEME_PATH_VAL(home))[SCHEME_PATH_LEN(home) - 1] == '/';
     
     if (which == id_init_file)
-      return append_path(home, scheme_make_path("/.mzschemerc" + ends_in_slash));
+      return append_path(home, scheme_make_path("/.racketrc" + ends_in_slash));
     if (which == id_pref_file) {
 #if defined(OS_X) && !defined(XONX)
-      return append_path(home, scheme_make_path("/org.plt-scheme.prefs.ss" + ends_in_slash));
+      return append_path(home, scheme_make_path("/org.racket-lang.prefs" + ends_in_slash));
 #else      
-      return append_path(home, scheme_make_path("/plt-prefs.ss" + ends_in_slash));
+      return append_path(home, scheme_make_path("/racket-prefs" + ends_in_slash));
 #endif
     }
   }
@@ -5977,14 +5977,14 @@ find_system_path(int argc, Scheme_Object **argv)
     if ((which == id_addon_dir)
 	|| (which == id_pref_dir)
 	|| (which == id_pref_file)) {
-      home = append_path(home, scheme_make_path("\\PLT Scheme" + ends_in_slash));
+      home = append_path(home, scheme_make_path("\\Racket" + ends_in_slash));
       ends_in_slash = 0;
     }
 
     if (which == id_init_file)
-      return append_path(home, scheme_make_path("\\mzschemerc.ss" + ends_in_slash));
+      return append_path(home, scheme_make_path("\\racketrc" + ends_in_slash));
     if (which == id_pref_file)
-      return append_path(home, scheme_make_path("\\plt-prefs.ss" + ends_in_slash));
+      return append_path(home, scheme_make_path("\\racket-prefs" + ends_in_slash));
     return home;
   }
 #endif
