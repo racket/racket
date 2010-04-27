@@ -515,7 +515,7 @@ inspector (see @racket[sandbox-make-code-inspector]) which prevents
 loading of untrusted bytecode files --- the sandbox is set-up to allow
 loading bytecode from files that are specified with
 @racket['read-bytecode].  This specification is given by default to
-the PLT collection hierarchy (including user-specific libraries) and
+the Racket collection hierarchy (including user-specific libraries) and
 to libraries that are explicitly specified in an @racket[#:allow-read]
 argument.  (Note that this applies for loading bytecode files only,
 under a lower code inspector it is still impossible to use protected

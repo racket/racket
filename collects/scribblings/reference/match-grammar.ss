@@ -18,6 +18,7 @@ pat     ::= id                                @match anything, bind identifier
          |  (CONS pat pat)                    @match pair of pats
          |  (MCONS pat pat)                   @match mutable pair of pats
          |  (BOX pat)                         @match boxed pat
+         |  (struct-id pat ...)               @match struct-id instance
          |  (STRUCT struct-id (pat ...))      @match struct-id instance
          |  (REGEXP rx-expr)                  @match string
          |  (REGEXP rx-expr pat)              @match string, result with pat

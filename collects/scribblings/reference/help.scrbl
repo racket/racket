@@ -67,8 +67,8 @@ introduces a binding without actually executing the
 documentation, but cannot or do not want to run the providing module.
 
 @schemeblock[
-(require racket/gui) (code:comment @#,t{does not work in @exec{mzscheme}})
-(require (for-label racket/gui)) (code:comment @#,t{ok in @exec{mzscheme}})
+(require racket/gui) (code:comment @#,t{does not work in @exec{racket}})
+(require (for-label racket/gui)) (code:comment @#,t{ok in @exec{racket}})
 (help frame%)
 ]
 

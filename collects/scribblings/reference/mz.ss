@@ -58,7 +58,7 @@
               " and "
               (schememodname racket/init)
               " libraries, which means that they are available when "
-              (exec "racket") " is started with no command-line arguments."
+              " the Racket executable is started with no command-line arguments."
               " They are not provided by " (schememodname racket/base)
               " or " (schememodname racket) "."
               . more)))]

@@ -90,20 +90,24 @@
 
 (provide (rename-out [delay/thread* delay/thread]))
 (define (delay/thread thunk group)
-  (define (run)
-    (call-with-exception-handler
-     (lambda (e) (pset! p (make-reraise e)) (kill-thread (current-thread)))
-     (lambda () (pset! p (call-with-values thunk list)))))
-  (define p
-    (make-promise/thread
-     (make-running-thread
-      (object-name thunk)
-      (if group
-        (parameterize ([current-thread-group (make-thread-group)]) (thread run))
-        (thread run)))))
-  p)
+  (unless (or (not group)
+              (thread-group? group))
+    (raise-type-error 'delay/thread "thread group" group))
+  (let ()
+    (define (run)
+      (call-with-exception-handler
+       (lambda (e) (pset! p (make-reraise e)) (kill-thread (current-thread)))
+       (lambda () (pset! p (call-with-values thunk list)))))
+    (define p
+      (make-promise/thread
+       (make-running-thread
+        (object-name thunk)
+        (if group
+            (parameterize ([current-thread-group group]) (thread run))
+            (thread run)))))
+    p))
 (define-syntax delay/thread*
-  (let ([kwds (list (cons '#:group #'#t))])
+  (let ([kwds (list (cons '#:group #'(make-thread-group)))])
     (lambda (stx) (make-delayer stx #'delay/thread kwds))))
 
 (define-struct (promise/idle promise/thread) ()
@@ -122,54 +126,63 @@
 
 (provide (rename-out [delay/idle* delay/idle]))
 (define (delay/idle thunk wait-for work-while tick use*)
-  (define use (cond [(use* . <= . 0) 0] [(use* . >= . 1) 1] [else use*]))
-  (define work-time (* tick use))
-  (define rest-time (- tick work-time))
-  (define (work)
-    (call-with-exception-handler
-     (lambda (e) (pset! p (make-reraise e)) (kill-thread (current-thread)))
-     (lambda () (pset! p (call-with-values thunk list)))))
-  (define (run)
-    ;; this thread is dedicated to controlling the worker thread, so it's
-    ;; possible to dedicate messages to signaling a `force'.
-    (define force-evt (thread-receive-evt))
-    (sync wait-for force-evt)
-    (pset! p (make-running-thread (object-name thunk) controller-thread))
-    (let ([worker (parameterize ([current-thread-group (make-thread-group)])
-                    (thread work))])
-      (cond
-        [(and (use . >= . 1) (equal? work-while always-evt))
-         ;; as if it was pre-forced
-         (thread-wait worker)]
-        [(use . <= . 0)
-         ;; work only when explicitly forced
-         (thread-suspend worker)
-         (sync force-evt)
-         (thread-wait worker)]
-        [else
-         (thread-suspend worker)
-         (let loop ()
-           ;; rest, then wait for idle time, then resume working
-           (if (eq? (begin0 (or (sync/timeout rest-time force-evt)
-                                (sync work-while force-evt))
-                      (thread-resume worker))
-                    force-evt)
-             ;; forced during one of these => let it run to completion
-             (thread-wait worker)
-             ;; not forced
-             (unless (sync/timeout work-time worker)
-               (thread-suspend worker)
-               (loop))))])))
-  ;; I don't think that a thread-group here is needed, but it doesn't hurt
-  (define controller-thread
-    (parameterize ([current-thread-group (make-thread-group)])
-      (thread run)))
-  ;; the thunk is not really used in the above, make it a function that returns
-  ;; the controller thread so it can be forced (used in the `prop:force')
-  (define p (make-promise/idle
-             (procedure-rename (lambda () controller-thread)
-                               (or (object-name thunk) 'idle-thread))))
-  p)
+  (unless (evt? wait-for)
+    (raise-type-error 'delay/idle "evt" wait-for))
+  (unless (evt? work-while)
+    (raise-type-error 'delay/idle "evt" work-while))
+  (unless (and (real? tick) (not (negative? tick)))
+    (raise-type-error 'delay/idle "nonnegative real" tick))
+  (unless (real? use*)
+    (raise-type-error 'delay/idle "real" use*))
+  (let ()
+    (define use (cond [(use* . <= . 0) 0] [(use* . >= . 1) 1] [else use*]))
+    (define work-time (* tick use))
+    (define rest-time (- tick work-time))
+    (define (work)
+      (call-with-exception-handler
+       (lambda (e) (pset! p (make-reraise e)) (kill-thread (current-thread)))
+       (lambda () (pset! p (call-with-values thunk list)))))
+    (define (run)
+      ;; this thread is dedicated to controlling the worker thread, so it's
+      ;; possible to dedicate messages to signaling a `force'.
+      (define force-evt (thread-receive-evt))
+      (sync wait-for force-evt)
+      (pset! p (make-running-thread (object-name thunk) controller-thread))
+      (let ([worker (parameterize ([current-thread-group (make-thread-group)])
+                      (thread work))])
+        (cond
+         [(and (use . >= . 1) (equal? work-while always-evt))
+          ;; as if it was pre-forced
+          (thread-wait worker)]
+         [(use . <= . 0)
+          ;; work only when explicitly forced
+          (thread-suspend worker)
+          (sync force-evt)
+          (thread-wait worker)]
+         [else
+          (thread-suspend worker)
+          (let loop ()
+            ;; rest, then wait for idle time, then resume working
+            (if (eq? (begin0 (or (sync/timeout rest-time force-evt)
+                                 (sync work-while force-evt))
+                             (thread-resume worker))
+                     force-evt)
+                ;; forced during one of these => let it run to completion
+                (thread-wait worker)
+                ;; not forced
+                (unless (sync/timeout work-time worker)
+                  (thread-suspend worker)
+                  (loop))))])))
+    ;; I don't think that a thread-group here is needed, but it doesn't hurt
+    (define controller-thread
+      (parameterize ([current-thread-group (make-thread-group)])
+        (thread run)))
+    ;; the thunk is not really used in the above, make it a function that returns
+    ;; the controller thread so it can be forced (used in the `prop:force')
+    (define p (make-promise/idle
+               (procedure-rename (lambda () controller-thread)
+                                 (or (object-name thunk) 'idle-thread))))
+    p))
 (define-syntax delay/idle*
   (let ([kwds (list (cons '#:wait-for   #'(system-idle-evt))
                     (cons '#:work-while #'(system-idle-evt))

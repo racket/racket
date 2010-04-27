@@ -64,19 +64,19 @@ by @racket[kind], which must be one of the following:
  if it is defined, otherwise it is the current directory.}
 
  @item{@indexed-racket['init-dir] --- the directory containing the
- initialization file used by stand-alone @exec{mzracket} executable.
+ initialization file used by the Racket executable.
  It is the same as the current user's home directory.}
 
  @item{@indexed-racket['init-file] --- the file loaded at start-up by
- the stand-alone @exec{mzracket} executable. The directory part of the
+ the Racket executable. The directory part of the
  path is the same path as returned for @racket['init-dir].  The file
  name is platform-specific:
 
   @itemize[
 
-  @item{@|AllUnix|: @indexed-file{.mzracketrc}}
+  @item{@|AllUnix|: @indexed-file{.racketrc}}
 
-  @item{Windows: @indexed-file{mzracketrc.rkt}}
+  @item{Windows: @indexed-file{racketrc.rkt}}
 
   ]}
 
@@ -109,7 +109,7 @@ by @racket[kind], which must be one of the following:
  operating system for Windows. Under @|AllUnix|, the
  result is @racket["/"].}
 
- @item{@indexed-racket['exec-file] --- the path of the @exec{mzracket}
+ @item{@indexed-racket['exec-file] --- the path of the Racket
  executable as provided by the operating system for the current
  invocation.
 
@@ -119,10 +119,10 @@ by @racket[kind], which must be one of the following:
  @item{@indexed-racket['run-file] --- the path of the current
   executable; this may be different from result for
   @racket['exec-file] because an alternate path was provided through a
-  @DFlag{name} or @Flag{N} command-line flag to the @exec{mzracket}
-  (or @exec{mred}) executable, or because an embedding executable
+  @DFlag{name} or @Flag{N} command-line flag to the Racket
+  (or GRacket) executable, or because an embedding executable
   installed an alternate path. In particular a ``launcher'' script
-  created by @racket[make-mzracket-launcher] sets this path to the
+  created by @racket[make-racket-launcher] sets this path to the
   script's path.}
 
  @item{@indexed-racket['collects-dir] --- a path to the main
@@ -132,7 +132,7 @@ by @racket[kind], which must be one of the following:
  soft-link or relative to the user's executable search path, so that
  the two results should be combined with
  @racket[find-executable-path].  The @racket['collects-dir] path is
- normally embedded in the @exec{mzracket} executable, but it can be
+ normally embedded in the Racket executable, but it can be
  overridden by the @DFlag{collects} or @Flag{X} command-line flag.}
 
  @item{@indexed-racket['orig-dir] --- the current directory at
@@ -170,7 +170,7 @@ that the file or directory @racket[related-sub] exists in the same
 directory as the executable. The result is then the full path for the
 found @racket[related-sub], instead of the path for the executable.
  
-This procedure is used by the @exec{mzracket} executable to find the
+This procedure is used by the Racket executable to find the
 standard library collection directory (see @secref["collects"]).  In
 this case, @racket[program] is the name used to start Racket and
 @racket[related] is @racket["collects"].  The @racket[related-sub]
