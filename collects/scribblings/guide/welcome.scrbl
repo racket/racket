@@ -3,79 +3,80 @@
           scribble/eval
           scribble/bnf
           "guide-utils.ss"
-          (for-label scheme/enter))
+          (for-label racket/enter))
 
 @(define piece-eval (make-base-eval))
 
-@title[#:tag "intro"]{Welcome to PLT Scheme}
+@title[#:tag "intro"]{Welcome to Racket}
 
-Depending on how you look at it, @bold{PLT Scheme} is
+Depending on how you look at it, @bold{Racket} is
 
 @itemize[
 
- @item{a @defterm{programming language}---a descendant of Scheme, which
-       is a dialect of Lisp;
+ @item{a @defterm{programming language}---a dialect of Lisp and a
+       descendant of Scheme;
 
        @margin-note{See @secref["dialects"] for more information on
-       other dialects of Scheme and how they relate to PLT Scheme.}}
+       other dialects of Lisp and how they relate to Racket.}}
 
  @item{a @defterm{family} of programming languages---variants of
-       Scheme, and more; or}
+       Racket, and more; or}
 
  @item{a set of @defterm{tools}---for using a family of programming languages.}
 ]
 
-Where there is no room for confusion, we use simply @defterm{Scheme}
-to refer to any of these facets of PLT Scheme.
+Where there is no room for confusion, we use simply @defterm{Racket}.
 
-PLT Scheme's two main tools are
+Racket's main tools are
 
 @itemize[
 
- @tool["MzScheme"]{the core compiler, interpreter, and run-time
- system; and}
+ @tool[@exec{racket}]{the core compiler, interpreter, and run-time system;}
 
- @tool["DrScheme"]{the programming environment (which runs on top of
- MzScheme).}
+ @tool["DrRacket"]{the programming environment; and}
+
+ @tool[@exec{raco}]{a command-line tool for executing @bold{Ra}cket
+ @bold{co}mmands that install packages, build libraries, and more.}
 
 ]
 
-Most likely, you'll want to explore PLT Scheme using DrScheme,
+Most likely, you'll want to explore the Racket language using DrRacket,
 especially at the beginning. If you prefer, you can also work with the
-command-line @exec{mzscheme} interpreter and your favorite text
+command-line @exec{racket} interpreter and your favorite text
 editor. The rest of this guide presents the language mostly
 independent of your choice of editor.
 
-If you're using DrScheme, you'll need to choose the proper language,
-because DrScheme accommodates many different variants of
-Scheme. Assuming that you've never used DrScheme before, start it up,
-type the line
+If you're using DrRacket, you'll need to choose the proper language,
+because DrRacket accommodates many different variants of Racket, as
+well as other languages. Assuming that you've never used DrRacket
+before, start it up, type the line
 
-@schememod[scheme]
+@racketmod[racket]
 
-in DrScheme's top text area, and then click the @onscreen{Run} button
-that's above the text area. DrScheme then understands that you mean to
-work in the normal variant of Scheme (as opposed to the smaller
-@schememodname[scheme/base], or many other possibilities).
+in DrRacket's top text area, and then click the @onscreen{Run} button
+that's above the text area. DrRacket then understands that you mean to
+work in the normal variant of Racket (as opposed to the smaller
+@racketmodname[racket/base] or many other possibilities).
 
 @margin-note{@secref["more-hash-lang"] describes some of the other
              possibilities.}
 
-If you've used DrScheme before with something other than a program
-that starts @hash-lang[], DrScheme will remember the last language
+If you've used DrRacket before with something other than a program
+that starts @hash-lang[], DrRacket will remember the last language
 that you used, instead of inferring the language from the @hash-lang[]
 line. In that case, use the @menuitem["Language" "Choose Language..."]
-menu item.  In the dialog that appears, select the first item,
-which is @onscreen{Module}. Put the @hash-lang[] line above in the top
+menu item.  In the dialog that appears, select the first item, which
+tells DrRacket to use the language that is declared in a source
+program via @hash-lang[]. Put the @hash-lang[] line above in the top
 text area, still.
 
 @; ----------------------------------------------------------------------
-@section{Interacting with Scheme}
+@section{Interacting with Racket}
 
-DrScheme's bottom text area and the @exec{mzscheme} command-line
-program (when started with no options) both act as a kind of
-calculator. You type a Scheme expression, hit return, and the answer
-is printed. In the terminology of Scheme, this kind of calculator is
+DrRacket's bottom text area and the @exec{racket} command-line program
+(when started with no options) both act as a kind of calculator. You
+type a Racket expression, hit the Return key, and the answer is
+printed. In the terminology of Racket, this kind of calculator is
 called a @idefterm{read-eval-print loop} or @deftech{REPL}.
 
 A number by itself is an expression, and the answer is just the
@@ -88,20 +89,20 @@ written with double quotes at the start and end of the string:
 
 @interaction["Hello, world!"]
 
-Scheme uses parentheses to wrap larger expressions---almost any kind
+Racket uses parentheses to wrap larger expressions---almost any kind
 of expression, other than simple constants. For example, a function
 call is written: open parenthesis, function name, argument
 expression, and closing parenthesis. The following expression calls
-the built-in function @scheme[substring] with the arguments
-@scheme["the boy out of the country"], @scheme[4], and @scheme[7]:
+the built-in function @racket[substring] with the arguments
+@racket["the boy out of the country"], @racket[4], and @racket[7]:
 
 @interaction[(substring "the boy out of the country" 4 7)]
 
 @; ----------------------------------------------------------------------
 @section{Definitions and Interactions}
 
-You can define your own functions that work like @scheme[substring] by
-using the @scheme[define] form, like this:
+You can define your own functions that work like @racket[substring] by
+using the @racket[define] form, like this:
 
 @def+int[
 #:eval piece-eval
@@ -111,48 +112,48 @@ using the @scheme[define] form, like this:
 (extract "the country out of the boy")
 ]
 
-Although you can evaluate the @scheme[define] form in the @tech{REPL},
+Although you can evaluate the @racket[define] form in the @tech{REPL},
 definitions are normally a part of a program that you want to keep and
-use later. So, in DrScheme, you'd normally put the definition in the
+use later. So, in DrRacket, you'd normally put the definition in the
 top text area---called the @deftech{definitions area}---along with the
 @hash-lang[] prefix:
 
-@schememod[
-scheme
+@racketmod[
+racket
 code:blank
 (define (extract str)
   (substring str 4 7))
 ]
 
-If calling @scheme[(extract "the boy")] is part of the main action of
+If calling @racket[(extract "the boy")] is part of the main action of
 your program, that would go in the @tech{definitions area}, too. But
 if it was just an example expression that you were using to explore
-@scheme[extract], then you'd more likely leave the @tech{definitions
+@racket[extract], then you'd more likely leave the @tech{definitions
 area} as above, click @onscreen{Run}, and then evaluate
-@scheme[(extract "the boy")] in the @tech{REPL}.
+@racket[(extract "the boy")] in the @tech{REPL}.
 
-With @exec{mzscheme}, you'd save the above text in a file using your
-favorite editor. If you save it as @filepath{extract.ss}, then after starting
-@exec{mzscheme} in the same directory, you'd evaluate the following
+With @exec{racket}, you'd save the above text in a file using your
+favorite editor. If you save it as @filepath{extract.rkt}, then after starting
+@exec{racket} in the same directory, you'd evaluate the following
 sequence:
 
 @interaction[
 #:eval piece-eval
-(eval:alts (enter! "extract.ss") (void))
+(eval:alts (enter! "extract.rkt") (void))
 (extract "the gal out of the city")
 ]
 
-The @scheme[enter!] form both loads the code and switches the
-evaluation context to the inside of the module, just like DrScheme's
+The @racket[enter!] form both loads the code and switches the
+evaluation context to the inside of the module, just like DrRacket's
 @onscreen{Run} button.
 
 @; ----------------------------------------------------------------------
 @section{Creating Executables}
 
-If your file (or @tech{definitions area} in DrScheme) contains
+If your file (or @tech{definitions area} in DrRacket) contains
 
-@schememod[
-scheme
+@racketmod[
+racket
 
 (define (extract str)
   (substring str 4 7))
@@ -166,14 +167,13 @@ options:
 
 @itemize[
 
- @item{In DrScheme, you can select the @menuitem["Scheme" "Create
+ @item{In DrRacket, you can select the @menuitem["Racket" "Create
        Executable..."] menu item.}
 
- @item{From a command-line prompt, run @exec{mzc --exe
-       @nonterm{dest-filename} @nonterm{src-filename}}, where
-       @nonterm{src-filename} contains the program. See @secref[#:doc
-       '(lib "scribblings/mzc/mzc.scrbl") "exe"] for more
-       information.}
+ @item{From a command-line prompt, run @exec{raco exe
+       @nonterm{src-filename}}, where @nonterm{src-filename} contains
+       the program. See @secref[#:doc '(lib
+       "scribblings/mzc/mzc.scrbl") "exe"] for more information.}
 
  @item{With Unix or Mac OS X, you can turn the program file into an
        executable script by inserting the line
@@ -181,32 +181,32 @@ options:
        @margin-note{See @secref["scripts"] for more information on
                     script files.}
 
-        @verbatim[#:indent 2]{#! /usr/bin/env mzscheme}
+        @verbatim[#:indent 2]{#! /usr/bin/env racket}
 
        at the very beginning of the file. Also, change the file
        permissions to executable using @exec{chmod +x
        @nonterm{filename}} on the command line.
 
-       The script works as long as @exec{mzscheme} is in the user's
+       The script works as long as @exec{racket} is in the user's
        executable search path.  Alternately, use a full path to
-       @exec{mzscheme} after @tt{#!}  (with a space between @tt{#!}
+       @exec{racket} after @tt{#!}  (with a space between @tt{#!}
        and the path), in which case the user's executable search path
        does not matter.}
 
 ]
 
 @; ----------------------------------------------------------------------
-@section[#:tag "use-module"]{A Note to Readers with Scheme/Lisp Experience}
+@section[#:tag "use-module"]{A Note to Readers with Lisp/Scheme Experience}
 
-If you already know something about Scheme or Lisp, you might be
+If you already know something about Racket or Lisp, you might be
 tempted to put just
 
-@schemeblock[
+@racketblock[
 (define (extract str)
   (substring str 4 7))
 ]
 
-into @filepath{extract.scm} and run @exec{mzscheme} with
+into @filepath{extract.scm} and run @exec{racket} with
 
 @interaction[
 #:eval piece-eval
@@ -214,18 +214,18 @@ into @filepath{extract.scm} and run @exec{mzscheme} with
 (extract "the dog out")
 ]
 
-That will work, because @exec{mzscheme} is willing to imitate a
+That will work, because @exec{racket} is willing to imitate a
 traditional Scheme environment, but we strongly recommend against using
-@scheme[load] or writing programs outside of a module.
+@racket[load] or writing programs outside of a module.
 
 Writing definitions outside of a module leads to bad error messages,
 bad performance, and awkward scripting to combine and run
-programs. The problems are not specific to @exec{mzscheme}; they're
+programs. The problems are not specific to @exec{racket}; they're
 fundamental limitations of the traditional top-level environment,
 which Scheme and Lisp implementations have historically fought with ad
 hoc command-line flags, compiler directives, and build tools. The
 module system is to designed to avoid the problems, so start with
-@hash-lang[], and you'll be happier with PLT Scheme in the long run.
+@hash-lang[], and you'll be happier with Racket in the long run.
 
 @; ----------------------------------------------------------------------
 

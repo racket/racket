@@ -5,17 +5,17 @@
 
 @(interaction-eval (require (lib "mzlib/for.ss")))
 
-@title[#:tag "set!"]{Assignment: @scheme[set!]}
+@title[#:tag "set!"]{Assignment: @racket[set!]}
 
-@refalso["set!"]{@scheme[set!]}
+@refalso["set!"]{@racket[set!]}
 
-Assign to a variable using @scheme[set!]:
+Assign to a variable using @racket[set!]:
 
 @specform[(set! id expr)]
 
-A @scheme[set!] expression evaluates @scheme[_expr] and changes
-@scheme[_id] (which must be bound in the enclosing environment) to the
-resulting value. The result of the @scheme[set!]  expression itself is
+A @racket[set!] expression evaluates @racket[_expr] and changes
+@racket[_id] (which must be bound in the enclosing environment) to the
+resulting value. The result of the @racket[set!]  expression itself is
 @|void-const|.
 
 @defexamples[
@@ -47,9 +47,9 @@ greeted
 @;------------------------------------------------------------------------
 @section[#:tag "using-set!"]{Guidelines for Using Assignment}
 
-Although using @scheme[set!] is sometimes appropriate, Scheme style
-generally discourages the use of @scheme[set!]. The following
-guidelines may help explain when using @scheme[set!] is appropriate.
+Although using @racket[set!] is sometimes appropriate, Racket style
+generally discourages the use of @racket[set!]. The following
+guidelines may help explain when using @racket[set!] is appropriate.
 
 @itemize[
 
@@ -136,7 +136,7 @@ guidelines may help explain when using @scheme[set!] is appropriate.
        ]]  }
 
  @item{For cases where stateful objects are necessary or appropriate,
-       then implementing the object's state with @scheme[set!] is
+       then implementing the object's state with @racket[set!] is
        fine.
 
        @as-examples[@t{Ok example:}
@@ -159,24 +159,24 @@ resulting code is significantly more readable or if it implements a
 significantly better algorithm.
 
 The use of mutable values, such as vectors and hash tables, raises
-fewer suspicions about the style of a program than using @scheme[set!]
-directly. Nevertheless, simply replacing @scheme[set!]s in a program
-with a @scheme[vector-set!]s obviously does not improve the style of
+fewer suspicions about the style of a program than using @racket[set!]
+directly. Nevertheless, simply replacing @racket[set!]s in a program
+with a @racket[vector-set!]s obviously does not improve the style of
 the program.
 
 @;------------------------------------------------------------------------
-@section{Multiple Values: @scheme[set!-values]}
+@section{Multiple Values: @racket[set!-values]}
 
-@refalso["set!"]{@scheme[set!-values]}
+@refalso["set!"]{@racket[set!-values]}
 
-The @scheme[set!-values] form assigns to multiple variables at once,
+The @racket[set!-values] form assigns to multiple variables at once,
 given an expression that produces an appropriate number of values:
 
 @specform[(set!-values (id ...) expr)]
 
-This form is equivalent to using @scheme[let-values] to receive
-multiple results from @scheme[_expr], and then assigning the results
-individually to the @scheme[_id]s using @scheme[set!].
+This form is equivalent to using @racket[let-values] to receive
+multiple results from @racket[_expr], and then assigning the results
+individually to the @racket[_id]s using @racket[set!].
 
 @defexamples[
 (define game

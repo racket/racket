@@ -5,14 +5,14 @@
 
 @(define def-eval (make-base-eval))
 
-@title[#:tag "define"]{Definitions: @scheme[define]}
+@title[#:tag "define"]{Definitions: @racket[define]}
 
 A basic definition has the form
 
 @specform[(define id expr)]{}
 
-in which case @scheme[_id] is bound to the result of
-@scheme[_expr].
+in which case @racket[_id] is bound to the result of
+@racket[_expr].
 
 @defexamples[
 #:eval def-eval
@@ -23,14 +23,14 @@ salutation
 @;------------------------------------------------------------------------
 @section{Function Shorthand}
 
-The @scheme[define] form also supports a shorthand for function
+The @racket[define] form also supports a shorthand for function
 definitions:
 
 @specform[(define (id arg ...) body ...+)]{}
 
 which is a shorthand for
 
-@schemeblock[
+@racketblock[
 (define _id (lambda (_arg ...) _body ...+))
 ]
 
@@ -50,7 +50,7 @@ which is a shorthand for
 (greet "John" "Doe")
 ]
 
-The function shorthand via @scheme[define] also supports a ``rest''
+The function shorthand via @racket[define] also supports a ``rest''
 argument (i.e., a final argument to collect extra arguments in a
 list):
 
@@ -58,7 +58,7 @@ list):
 
 which is a shorthand
 
-@schemeblock[
+@racketblock[
 (define _id (lambda (_arg ... . _rest-id) _body ...+))
 ]
 
@@ -72,7 +72,7 @@ which is a shorthand
 @;------------------------------------------------------------------------
 @section{Curried Function Shorthand}
 
-Consider the following @scheme[make-add-suffix] function that takes a
+Consider the following @racket[make-add-suffix] function that takes a
 string and returns another function that takes a string:
 
 @def+int[
@@ -82,7 +82,7 @@ string and returns another function that takes a string:
     (lambda (s) (string-append s s2))))
 ]
 
-Although it's not common, result of @scheme[make-add-suffix] could be
+Although it's not common, result of @racket[make-add-suffix] could be
 called directly, like this:
 
 @interaction[
@@ -90,21 +90,21 @@ called directly, like this:
 ((make-add-suffix "!") "hello")
 ]
 
-In a sense, @scheme[make-add-suffix] is a function takes two
+In a sense, @racket[make-add-suffix] is a function takes two
 arguments, but it takes them one at a time. A function that takes some
 of its arguments and returns a function to consume more is sometimes
 called a @defterm{curried function}.
 
-Using the function-shorthand form of @scheme[define],
-@scheme[make-add-suffix] can be written equivalently as
+Using the function-shorthand form of @racket[define],
+@racket[make-add-suffix] can be written equivalently as
 
-@schemeblock[
+@racketblock[
 (define (make-add-suffix s2)
   (lambda (s) (string-append s s2)))
 ]
 
 This shorthand reflects the shape of the function call
-@scheme[(make-add-suffix "!")]. The @scheme[define] form further
+@racket[(make-add-suffix "!")]. The @racket[define] form further
 supports a shorthand for defining curried functions that reflects
 nested function calls:
 
@@ -122,26 +122,26 @@ nested function calls:
 (louder "really")
 ]
 
-The full syntax of the function shorthand for @scheme[define] is as follows:
+The full syntax of the function shorthand for @racket[define] is as follows:
 
 @specform/subs[(define (head args) body ...+)
                ([head id
                       (head args)]
                 [args (code:line arg ...)
-                      (code:line arg ... @#,schemeparenfont{.} rest-id)])]{}
+                      (code:line arg ... @#,racketparenfont{.} rest-id)])]{}
 
-The expansion of this shorthand has one nested @scheme[lambda] form
-for each @scheme[_head] in the definition, where the innermost
-@scheme[_head] corresponds to the outermost @scheme[lambda].
+The expansion of this shorthand has one nested @racket[lambda] form
+for each @racket[_head] in the definition, where the innermost
+@racket[_head] corresponds to the outermost @racket[lambda].
 
 
 @;------------------------------------------------------------------------
-@section[#:tag "multiple-values"]{Multiple Values and @scheme[define-values]}
+@section[#:tag "multiple-values"]{Multiple Values and @racket[define-values]}
 
-A Scheme expression normally produces a single result, but some
+A Racket expression normally produces a single result, but some
 expressions can produce multiple results. For example,
-@scheme[quotient] and @scheme[remainder] each produce a single value,
-but @scheme[quotient/remainder] produces the same two values at once:
+@racket[quotient] and @racket[remainder] each produce a single value,
+but @racket[quotient/remainder] produces the same two values at once:
 
 @interaction[
 #:eval def-eval
@@ -154,7 +154,7 @@ As shown above, the @tech{REPL} prints each result value on its own
 line.
 
 Multiple-valued functions can be implemented in terms of the
-@scheme[values] function, which takes any number of values and
+@racket[values] function, which takes any number of values and
 returns them as the results:
 
 @interaction[
@@ -171,13 +171,13 @@ returns them as the results:
 (split-name "Adam Smith")
 ]
 
-The @scheme[define-values] form binds multiple identifiers at once to
+The @racket[define-values] form binds multiple identifiers at once to
 multiple results produced from a single expression:
 
 @specform[(define-values (id ...) expr)]{}
 
-The number of results produced by the @scheme[_expr] must match the
-number of @scheme[_id]s.
+The number of results produced by the @racket[_expr] must match the
+number of @racket[_id]s.
 
 @defexamples[
 #:eval def-eval
@@ -186,23 +186,23 @@ given
 surname
 ]
 
-A @scheme[define] form (that is not a function shorthand) is
-equivalent to a @scheme[define-values] form with a single @scheme[_id].
+A @racket[define] form (that is not a function shorthand) is
+equivalent to a @racket[define-values] form with a single @racket[_id].
 
 @refdetails["define"]{definitions}
 
 @;------------------------------------------------------------------------
 @section[#:tag "intdefs"]{Internal Definitions}
 
-When the grammar for a syntactic form specifies @scheme[_body], then
+When the grammar for a syntactic form specifies @racket[_body], then
 the corresponding form can be either a definition or an expression.
-A definition as a @scheme[_body] is an @defterm{internal definition}.
+A definition as a @racket[_body] is an @defterm{internal definition}.
 
-All internal definitions in a @scheme[_body] sequence must appear
-before any expression, and the last @scheme[_body] must be an
+All internal definitions in a @racket[_body] sequence must appear
+before any expression, and the last @racket[_body] must be an
 expression.
 
-For example, the syntax of @scheme[lambda] is
+For example, the syntax of @racket[lambda] is
 
 @specform[
 (lambda gen-formals
@@ -211,7 +211,7 @@ For example, the syntax of @scheme[lambda] is
 
 so the following are valid instances of the grammar:
 
-@schemeblock[
+@racketblock[
 (lambda (f)                (code:comment @#,elem{no definitions})
   (printf "running\n")
   (f 0))
@@ -236,7 +236,7 @@ so the following are valid instances of the grammar:
   (call f n))
 ]
 
-Internal definitions in a particular @scheme[_body] sequence are
+Internal definitions in a particular @racket[_body] sequence are
 mutually recursive; that is, any definition can refer to any other
 definition---as long as the reference isn't actually evaluated before
 its definition takes place. If a definition is referenced too early,
@@ -249,11 +249,11 @@ the result is a special value @|undefined-const|.
 (weird)
 ]
 
-A sequence of internal definitions using just @scheme[define] is
-easily translated to an equivalent @scheme[letrec] form (as introduced
+A sequence of internal definitions using just @racket[define] is
+easily translated to an equivalent @racket[letrec] form (as introduced
 in the next section). However, other definition forms can appear as a
-@scheme[_body], including @scheme[define-values], @scheme[define-struct] (see
-@secref["define-struct"]) or @scheme[define-syntax] (see
+@racket[_body], including @racket[define-values], @racket[struct] (see
+@secref["define-struct"]) or @racket[define-syntax] (see
 @secref["macros"]).
 
 @refdetails/gory["intdef-body"]{internal definitions}

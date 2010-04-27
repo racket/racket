@@ -17,25 +17,25 @@ shown with @litchar{\u} when the string is printed.
 
 @refdetails/gory["parse-string"]{the syntax of strings}
 
-The @scheme[display] procedure directly writes the characters of a
+The @racket[display] procedure directly writes the characters of a
 string to the current output port (see @secref["i/o"]), in contrast
 to the string-constant syntax used to print a string result.
 
 @examples[
 "Apple"
-(eval:alts @#,schemevalfont{"\u03BB"} "\u03BB")
+(eval:alts @#,racketvalfont{"\u03BB"} "\u03BB")
 (display "Apple")
 (display "a \"quoted\" thing")
 (display "two\nlines")
-(eval:alts (display @#,schemevalfont{"\u03BB"}) (display "\u03BB"))
+(eval:alts (display @#,racketvalfont{"\u03BB"}) (display "\u03BB"))
 ]
 
 A string can be mutable or immutable; strings written directly as
 expressions are immutable, but most other strings are mutable. The
-@scheme[make-string] procedure creates a mutable string given a length
-and optional fill character. The @scheme[string-ref] procedure
+@racket[make-string] procedure creates a mutable string given a length
+and optional fill character. The @racket[string-ref] procedure
 accesses a character from a string (with 0-based indexing); the
-@scheme[string-set!]  procedure changes a character in a mutable
+@racket[string-set!]  procedure changes a character in a mutable
 string.
 
 @examples[
@@ -51,9 +51,9 @@ String ordering and case operations are generally
 users. A few @defterm{locale-dependent} operations are provided that
 allow the way that strings are case-folded and sorted to depend on the
 end-user's locale. If you're sorting strings, for example, use
-@scheme[string<?] or @scheme[string-ci<?] if the sort result should be
-consistent across machines and users, but use @scheme[string-locale<?]
-or @scheme[string-locale-ci<?] if the sort is purely to order strings
+@racket[string<?] or @racket[string-ci<?] if the sort result should be
+consistent across machines and users, but use @racket[string-locale<?]
+or @racket[string-locale-ci<?] if the sort is purely to order strings
 for an end user.
 
 @examples[

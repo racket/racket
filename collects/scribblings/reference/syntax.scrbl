@@ -2304,6 +2304,8 @@ expression).
 @;------------------------------------------------------------------------
 @section[#:tag "quasiquote"]{Quasiquoting: @racket[quasiquote], @racket[unquote], and @racket[unquote-splicing]}
 
+@guideintro["qq"]{@racket[quasiquote]}
+
 @defform[(quasiquote datum)]{
 
 The same as @racket[(quote datum)] if @racket[datum] does not include

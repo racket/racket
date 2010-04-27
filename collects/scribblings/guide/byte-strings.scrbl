@@ -5,8 +5,8 @@
 
 @title[#:tag "bytestrings"]{Bytes and Byte Strings}
 
-A @deftech{byte} is an exact integer between @scheme[0] and
-@scheme[255], inclusive. The @scheme[byte?] predicate recognizes
+A @deftech{byte} is an exact integer between @racket[0] and
+@racket[255], inclusive. The @racket[byte?] predicate recognizes
 numbers that represent bytes.
 
 @examples[
@@ -36,23 +36,23 @@ b
 b
 ]
 
-The @scheme[display] form of a byte string writes its raw bytes to the
+The @racket[display] form of a byte string writes its raw bytes to the
 current output port (see @secref["i/o"]). Technically,
-@scheme[display] of a normal (i.e,. character) string prints the UTF-8
+@racket[display] of a normal (i.e,. character) string prints the UTF-8
 encoding of the string to the current output port, since output is
-ultimately defined in terms of bytes; @scheme[display] of a byte
+ultimately defined in terms of bytes; @racket[display] of a byte
 string, however, writes the raw bytes with no encoding. Along the same
 lines, when this documentation shows output, it technically shows the
 UTF-8-decoded form of the output.
 
 @examples[
 (display #"Apple")
-(eval:alts (code:line (display @#,schemevalfont{"\316\273"})  (code:comment @#,t{same as @scheme["\316\273"]}))
+(eval:alts (code:line (display @#,racketvalfont{"\316\273"})  (code:comment @#,t{same as @racket["\316\273"]}))
            (display "\316\273"))
 (code:line (display #"\316\273") (code:comment @#,t{UTF-8 encoding of @elem["\u03BB"]}))
 ]
 
-For explicitly converting between strings and byte strings, Scheme
+For explicitly converting between strings and byte strings, Racket
 supports three kinds of encodings directly: UTF-8, Latin-1, and the
 current locale's encoding. General facilities for byte-to-byte
 conversions (especially to and from UTF-8) fill the gap to support

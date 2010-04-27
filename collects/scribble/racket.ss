@@ -611,43 +611,64 @@
               ((loop init-line! (if qq? quote-depth +inf.0) qq?) (unbox (syntax-e c))))]
            [(hash? (syntax-e c))
             (advance c init-line!)
-            (let ([equal-table? (not (hash-eq? (syntax-e c)))]
+            (let ([equal-table? (hash-equal? (syntax-e c))]
+                  [eqv-table? (hash-eq? (syntax-e c))]
                   [quote-depth (to-quoted "`" qq? quote-depth out color? inc-src-col)])
               (out (if equal-table?
                        "#hash"
-                       "#hasheq")
+                       (if eqv-table?
+                           "#hasheqv"
+                           "#hasheq"))
                    value-color)
-              (let ([delta (+ 5 (if equal-table? 2 0))]
+              (let ([delta (+ 5 (if equal-table? 0 (if eqv-table? 3 2)))]
                     [orig-col src-col])
                 (set! src-col (+ src-col delta))
                 (hash-set! next-col-map src-col dest-col)
                 ((loop init-line! (if qq? quote-depth +inf.0) qq?)
-                 (let* ([l (sort (hash-map (syntax-e c) cons)
-                                 (lambda (a b)
-                                   (< (or (syntax-position (cdr a)) -inf.0)
-                                      (or (syntax-position (cdr b)) -inf.0))))]
-                        [l2 (for/list ([p (in-list l)])
-                              (let* ([tentative (syntax-ize (car p) 0)]
-                                     [width (syntax-span tentative)])
-                                (datum->syntax
-                                 #f
-                                 (make-forced-pair 
-                                  (syntax-ize (car p)
-                                              (max 0 (- (syntax-column (cdr p)) 
-                                                        width
-                                                        3))
-                                              (syntax-line (cdr p)))
-                                  (cdr p))
-                                 (vector 'here 
-                                         (syntax-line (cdr p))
-                                         (max 0 (- (syntax-column (cdr p)) width 4))
-                                         (max 1 (- (syntax-position (cdr p)) width 4))
-                                         (+ (syntax-span (cdr p)) width 5)))))])
-                   (datum->syntax #f l2 (vector (syntax-source c)
-                                                (syntax-line c)
-                                                (+ (syntax-column c) delta)
-                                                (+ (syntax-position c) delta)
-                                                (max 1 (- (syntax-span c) delta))))))
+                 (let*-values ([(l) (sort (hash-map (syntax-e c) cons)
+                                          (lambda (a b)
+                                            (< (or (syntax-position (cdr a)) -inf.0)
+                                               (or (syntax-position (cdr b)) -inf.0))))]
+                               [(col0) (+ (syntax-column c) delta 2)]
+                               [(l2 pos line) (for/fold ([l2 null][col col0][line (syntax-line c)]) 
+                                                  ([p (in-list l)])
+                                                (let* ([tentative (syntax-ize (car p) 0)]
+                                                       [width (syntax-span tentative)]
+                                                       [col (if (= line (syntax-line (cdr p)))
+                                                                col
+                                                                col0)])
+                                                  (let ([key
+                                                         (let ([e (syntax-ize (car p)
+                                                                         (max 0 (- (syntax-column (cdr p)) 
+                                                                                   width
+                                                                                   3))
+                                                                         (syntax-line (cdr p)))])
+                                                           (if ((syntax-column e) . <= . col)
+                                                               e
+                                                               (datum->syntax #f 
+                                                                              (syntax-e e)
+                                                                              (vector (syntax-source e)
+                                                                                      (syntax-line e)
+                                                                                      col
+                                                                                      (syntax-position e)
+                                                                                      (+ (syntax-span e) (- (syntax-column e) col))))))])
+                                                    (let ([elem
+                                                           (datum->syntax
+                                                            #f
+                                                            (make-forced-pair key (cdr p))
+                                                            (vector 'here 
+                                                                    (syntax-line (cdr p))
+                                                                    (max 0 (- (syntax-column key) 1))
+                                                                    (max 1 (- (syntax-position key) 1))
+                                                                    (+ (syntax-span (cdr p)) (syntax-span key) 5)))])
+                                                      (values (cons elem l2)
+                                                              (+ (syntax-column elem) (syntax-span elem) 2)
+                                                              (syntax-line elem))))))])
+                   (datum->syntax #f (reverse l2) (vector (syntax-source c)
+                                                          (syntax-line c)
+                                                          (+ (syntax-column c) delta)
+                                                          (+ (syntax-position c) delta)
+                                                          (max 1 (- (syntax-span c) delta))))))
                 (set! src-col (+ orig-col (syntax-span c)))))]
            [(graph-reference? (syntax-e c))
             (advance c init-line!)

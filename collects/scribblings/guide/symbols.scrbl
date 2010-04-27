@@ -5,9 +5,9 @@
 
 @title[#:tag "symbols"]{Symbols}
 
-A @deftech{symbol} is an atomic value that prints like an identifier.
-An expression that starts with @litchar{'} and continues with an
-identifier produces a symbol value.
+A @deftech{symbol} is an atomic value that prints like an identifier
+preceded with @litchar{'}.  An expression that starts with @litchar{'}
+and continues with an identifier produces a symbol value.
 
 @examples[
 'a
@@ -15,13 +15,13 @@ identifier produces a symbol value.
 ]
 
 For any sequence of characters, exactly one corresponding symbol is
-@defterm{interned}; calling the @scheme[string->symbol] procedure, or
-@scheme[read]ing a syntactic identifier, produces an interned
+@defterm{interned}; calling the @racket[string->symbol] procedure, or
+@racket[read]ing a syntactic identifier, produces an interned
 symbol. Since interned symbols can be cheaply compared with
-@scheme[eq?] (and thus @scheme[eqv?] or @scheme[equal?]), they serves
+@racket[eq?] (and thus @racket[eqv?] or @racket[equal?]), they serves
 as a convenient values to use for tags and enumerations.
 
-Symbols are case-sensitive. By using a @schemefont{#ci} prefix or in
+Symbols are case-sensitive. By using a @racketfont{#ci} prefix or in
 other ways, the reader can be made to case-fold character sequences to
 arrive at a symbol, but the reader preserves case by default.
 
@@ -30,11 +30,11 @@ arrive at a symbol, but the reader preserves case by default.
 (eq? 'a (string->symbol "a"))
 (eq? 'a 'b)
 (eq? 'a 'A)
-(eval:alts @#,elem{@schemefont{#ci}@schemevalfont{'A}} #ci'A)
+(eval:alts @#,elem{@racketfont{#ci}@racketvalfont{'A}} #ci'A)
 ]
 
 Any string (i.e., any character sequence) can be supplied to
-@scheme[string->symbol] to obtain the corresponding symbol. For reader
+@racket[string->symbol] to obtain the corresponding symbol. For reader
 input, any character can appear directly in an identifier, except for
 whitespace and the following special characters:
 
@@ -61,7 +61,7 @@ special characters or that might otherwise look like numbers.
 
 @refdetails/gory["parse-symbol"]{the syntax of symbols}
 
-The @scheme[display] form of a symbol is the same as the corresponding
+The @racket[display] form of a symbol is the same as the corresponding
 string.
 
 @examples[
@@ -69,9 +69,9 @@ string.
 (display '|6|)
 ]
 
-The @scheme[gensym] and @scheme[string->uninterned-symbol] procedures
+The @racket[gensym] and @racket[string->uninterned-symbol] procedures
 generate fresh @defterm{uninterned} symbols that are not equal
-(according to @scheme[eq?]) to any previously interned or uninterned
+(according to @racket[eq?]) to any previously interned or uninterned
 symbol. Uninterned symbols are useful as fresh tags that cannot be
 confused with any other value.
 

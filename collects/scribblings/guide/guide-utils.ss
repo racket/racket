@@ -1,12 +1,12 @@
-(module guide-utils scheme/base
+(module guide-utils racket/base
   (require scribble/manual
            scribble/struct
            scribble/decode
            scribble/eval
            "../icons.ss")
 
-  (require (for-label scheme/base))
-  (provide (for-label (all-from-out scheme/base)))
+  (require (for-label racket/base))
+  (provide (for-label (all-from-out racket/base)))
 
   (provide Quick MzScheme HtDP
            tool
