@@ -1,9 +1,9 @@
 #lang racket
 
-(require (except-in schelog %append))
+(require (except-in logic %append))
 
 ;A list of trivial programs in Prolog, just so you can get used
-;to schelog syntax.
+;to logic syntax.
 
 ;(%length l n) holds if length(l) = n
 

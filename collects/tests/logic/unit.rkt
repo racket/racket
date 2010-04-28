@@ -1,5 +1,5 @@
 #lang racket
-(require schelog
+(require logic
          tests/eli-tester)
 
 (test
