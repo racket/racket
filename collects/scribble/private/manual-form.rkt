@@ -20,7 +20,7 @@
 
 
 (provide defform defform* defform/subs defform*/subs defform/none
-         defidform
+         defidform defidform/inline
          specform specform/subs
          specsubform specsubform/subs specspecsubform specspecsubform/subs
          specsubform/inline
@@ -173,6 +173,12 @@
      (syntax/loc stx
        (fm #:literals () spec desc ...))]))
 
+(define-syntax (defidform/inline stx)
+  (syntax-case stx ()
+    [(_ id)
+     (identifier? #'id)
+     #'(defform-site (quote-syntax id))]))
+
 (define-syntax (defidform stx)
   (syntax-case stx ()
     [(_ spec-id desc ...)
@@ -307,6 +313,29 @@
 
 (define (meta-symbol? s) (memq s '(... ...+ ?)))
 
+(define (defform-site kw-id)
+  (let ([target-maker (id-to-form-target-maker kw-id #t)]
+        [content (list (definition-site (syntax-e kw-id)
+                         kw-id #t))])
+    (if target-maker
+        (target-maker
+         content
+         (lambda (tag)
+           (make-toc-target-element
+            #f
+            (if kw-id
+                (list (make-index-element
+                       #f content tag
+                       (list (symbol->string (syntax-e kw-id)))
+                       content
+                       (with-exporting-libraries
+                        (lambda (libs)
+                          (make-form-index-desc (syntax-e kw-id)
+                                                libs)))))
+                content)
+            tag)))
+        (car content))))
+
 (define (*defforms kw-id forms form-procs subs sub-procs contract-procs content-thunk)
   (parameterize ([current-meta-list '(... ...+)])
     (make-box-splice
@@ -325,27 +354,7 @@
                       (list (to-element `(,x . ,(cdr form)))))))
                (and kw-id
                     (eq? form (car forms))
-                    (let ([target-maker (id-to-form-target-maker kw-id #t)]
-                          [content (list (definition-site (syntax-e kw-id)
-                                                          kw-id #t))])
-                      (if target-maker
-                        (target-maker
-                         content
-                         (lambda (tag)
-                           (make-toc-target-element
-                            #f
-                            (if kw-id
-                              (list (make-index-element
-                                     #f content tag
-                                     (list (symbol->string (syntax-e kw-id)))
-                                     content
-                                     (with-exporting-libraries
-                                      (lambda (libs)
-                                        (make-form-index-desc (syntax-e kw-id)
-                                                              libs)))))
-                              content)
-                            tag)))
-                        (car content)))))))))
+                    (defform-site kw-id)))))))
          forms form-procs)
         (if (null? sub-procs)
           null

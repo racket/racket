@@ -549,6 +549,13 @@ Like @scheme[defform], but without registering a definition.}
 Like @scheme[defform], but with a plain @scheme[id] as the form.}
 
 
+@defform[(defidform/inline id)]{
+
+Like @scheme[defidform], but @racket[id] is typeset as an inline
+element. Use this form sparingly, because the typeset form does not
+stand out to the reader as a specification of @racket[id].}
+
+
 @defform[(specform maybe-literals datum maybe-contracts
            pre-flow ...)]{
 
