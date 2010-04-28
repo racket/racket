@@ -1,16 +1,20 @@
 #lang scribble/doc
 
 @(require (for-label scheme teachpack/2htdp/batch-io))
-@(require scheme/sandbox scribble/manual scribble/eval scribble/core)
+@(require scheme/sandbox scribble/manual scribble/eval scribble/core
+          scribble/html-properties scribble/latex-properties)
 @(require "shared.ss")
 
 @(require 2htdp/batch-io)
 @(require scheme/runtime-path)
 @(define-runtime-path here ".")
+@(define io-style-extras
+   (list (make-css-addition (build-path here "io.css"))
+         (make-tex-addition (build-path here "io.tex"))))
 @(define (file-is f)
   (define x (parameterize ([current-directory here]) (read-file f)))
   (centered
-    (tabular #:style "searchbox"
+    (tabular #:style (make-style "FileBox" io-style-extras)
       (list (list (verbatim x))))))
 
 @(define-syntax examples-batch-io
@@ -22,7 +26,7 @@
          (interaction-eval #:eval me (require 2htdp/batch-io))
          (interaction-eval #:eval me d)
          ...)
-       (current-directory here)
+       (me `(,current-directory ,here))
        (interaction-eval #:eval me (require lang/htdp-intermediate-lambda))
        me)]))
 
@@ -139,5 +143,6 @@ There is only one writer function at the moment:
 }
 ]
 
-@(delete-file "output.txt")
+@(parameterize ([current-directory here])
+   (delete-file "output.txt"))
 
