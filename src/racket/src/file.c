@@ -5839,9 +5839,9 @@ find_system_path(int argc, Scheme_Object **argv)
       return append_path(home, scheme_make_path("/.racketrc" + ends_in_slash));
     if (which == id_pref_file) {
 #if defined(OS_X) && !defined(XONX)
-      return append_path(home, scheme_make_path("/org.racket-lang.prefs" + ends_in_slash));
+      return append_path(home, scheme_make_path("/org.racket-lang.prefs.rktd" + ends_in_slash));
 #else      
-      return append_path(home, scheme_make_path("/racket-prefs" + ends_in_slash));
+      return append_path(home, scheme_make_path("/racket-prefs.rktd" + ends_in_slash));
 #endif
     }
   }
@@ -5982,9 +5982,9 @@ find_system_path(int argc, Scheme_Object **argv)
     }
 
     if (which == id_init_file)
-      return append_path(home, scheme_make_path("\\racketrc" + ends_in_slash));
+      return append_path(home, scheme_make_path("\\racketrc.rkts" + ends_in_slash));
     if (which == id_pref_file)
-      return append_path(home, scheme_make_path("\\racket-prefs" + ends_in_slash));
+      return append_path(home, scheme_make_path("\\racket-prefs.rktd" + ends_in_slash));
     return home;
   }
 #endif

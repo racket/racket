@@ -149,9 +149,23 @@
                         ;; race condition, but something has gone really wrong
                         ;; if the file disappears.
                         f
-                        ;; Error here bails out through above `with-handlers'
-                        (build-path (collection-path "defaults")
-                                    "plt-prefs.ss"))))]
+                        ;; Look for old PLT Scheme pref file:
+                        (let ([alt-f (case (system-type)
+                                       [(windows)
+                                        (build-path (find-system-path 'pref-dir)
+                                                    'up "PLT Scheme" "plt-prefs.ss")]
+                                       [(macosx)
+                                        (build-path (find-system-path 'pref-dir)
+                                                    "org.plt-scheme.prefs.ss")]
+                                       [(unix)
+                                        (expand-user-path "~/.plt-scheme/plt-prefs.ss")])])
+                          (if (file-exists? alt-f)
+                              alt-f
+                              ;; Last chance: check for a "defaults" collection:
+                              ;; (error here in case there's no "defaults"
+                              ;;  bails out through above `with-handlers')
+                              (build-path (collection-path "defaults")
+                                          "racket-prefs.rktd"))))))]
              [prefs (with-pref-params
                      (lambda ()
                        (with-input-from-file pref-file read)))])

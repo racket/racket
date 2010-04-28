@@ -139,9 +139,9 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 # define INIT_FILENAME "~/.racketrc"
 #else
 # ifdef DOS_FILE_SYSTEM
-#  define INIT_FILENAME "%%HOMEDRIVE%%\\%%HOMEPATH%%\\racketrc"
+#  define INIT_FILENAME "%%HOMEDRIVE%%\\%%HOMEPATH%%\\racketrc.rkts"
 # else
-#  define INIT_FILENAME "PREFERENCES:racketrc"
+#  define INIT_FILENAME "PREFERENCES:racketrc.rkts"
 # endif
 #endif
 #define GET_INIT_FILENAME get_init_filename

@@ -49,8 +49,8 @@ by @racket[kind], which must be one of the following:
  @item{@indexed-racket['pref-file] --- a file that contains a
  symbol-keyed association list of preference values. The file's
  directory path always matches the result returned for
- @racket['pref-dir]. The file name is @filepath{racket-prefs.rkt} under Unix
- and Windows, and it is @filepath{org.racket-lang.prefs.rkt} under Mac OS
+ @racket['pref-dir]. The file name is @filepath{racket-prefs.rktd} under Unix
+ and Windows, and it is @filepath{org.racket-lang.prefs.rktd} under Mac OS
  X. The file's directory might not exist. See also
  @racket[get-preference].}
 
@@ -76,7 +76,7 @@ by @racket[kind], which must be one of the following:
 
   @item{@|AllUnix|: @indexed-file{.racketrc}}
 
-  @item{Windows: @indexed-file{racketrc.rkt}}
+  @item{Windows: @indexed-file{racketrc.rkts}}
 
   ]}
 
@@ -845,9 +845,10 @@ Extracts a preference value from the file designated by
 @racket[(find-system-path 'pref-file)], or by @racket[filename] if it
 is provided and is not @racket[#f].  In the former case, if the
 preference file doesn't exist, @racket[get-preferences] attempts to
-read a @filepath{racket-prefs.rkt} file in the @filepath{defaults}
-collection, instead. If neither file exists, the preference set is
-empty.
+read an @elemref["old-prefs"]{old preferences file}, and then a
+@filepath{racket-prefs.rktd} file in the @filepath{defaults}
+collection, instead. If none of those files exists, the preference set
+is empty.
 
 The preference file should contain a symbol-keyed association list
 (written to the file with the default parameter settings).  Keys
@@ -869,9 +870,22 @@ same as the last time the file was read. Otherwise, the file is
 re-consulted.
 
 See also @racket[put-preferences]. For a more elaborate preference
-system, see @racket[preferences:get].}
+system, see @racket[preferences:get].
 
+@elemtag["old-prefs"]{@bold{Old preferences files}}: When a
+@racket[filename] is not provided and the file indicated by
+@racket[(find-system-path 'pref-file)] does not exist, the following
+paths are checked for compatibility with old versions of Racket:
 
+@itemlist[
+
+ @item{Windows: @racket[(build-path (find-system-path 'pref-dir) 'up "PLT Scheme" "plt-prefs.ss")]}
+
+ @item{Mac OS X: @racket[(build-path (find-system-path 'pref-dir) "org.plt-scheme.prefs.ss")]}
+
+ @item{Unix: @racket[(expand-user-path "~/.plt-scheme/plt-prefs.ss")]}
+
+]}
 
 @defproc[(put-preferences [names (listof symbol?)]
                           [vals list?]
