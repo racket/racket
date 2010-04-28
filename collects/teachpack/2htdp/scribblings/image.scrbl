@@ -4,7 +4,8 @@
                      2htdp/image
                      (except-in lang/htdp-beginner make-posn posn? posn-x posn-y image?)
                      lang/posn
-                     scheme/gui/base)
+                     scheme/gui/base
+                     (only-in scheme/base path-string?))
           lang/posn
           "shared.ss"
           "image-util.ss"
@@ -1044,3 +1045,21 @@ pixel wide pen draws the pixels above and below the line, but each with
 a color that is half of the intensity of the given color. Using a
 @scheme[pen] with with two, colors the pixels above and below the line
 with the full intensity. 
+
+
+@;-----------------------------------------------------------------------------
+@section{Exporting Images to Disk}
+
+In order to use an image as an input to another program (Photoshop, e.g., or 
+a web browser), it is necessary to represent it in a format that these programs
+can understand. The @scheme[save-image] function provides this functionality, 
+writing an image to disk using the @tt{PNG} format. Since this
+format represents an image using a set of pixel values, an image written to disk
+generally contains less information than the image that was written, and cannot be scaled
+or manipulated as cleanly (by any image program).
+
+@defproc[(save-image [image image?] [filename path-string?]) boolean?]{
+ writes an image to the path specified by @scheme[filename], using the
+ @tt{PNG} format.}
+
+
