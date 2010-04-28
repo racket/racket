@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/bool scheme/contract)
+(require racket/bool racket/contract)
 
 (provide poly/c parametric/c opaque/c memory/c)
 

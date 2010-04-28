@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "connection-manager.ss"]{Connection Manager}
+@title[#:tag "connection-manager"]{Connection Manager}
 @(require (for-label web-server/private/connection-manager
                      web-server/private/timer))
 
@@ -15,10 +15,10 @@ for doing this.
            ([timer timer?]
             [i-port input-port?] [o-port output-port?] [custodian custodian?]
             [close? boolean?])]{
- A connection is a pair of ports (@scheme[i-port] and @scheme[o-port]) that is
- ready to close after the current job if @scheme[close?] is @scheme[#t]. Resources
- associated with the connection should be allocated under @scheme[custodian].
- The connection will last until @scheme[timer] triggers.
+ A connection is a pair of ports (@racket[i-port] and @racket[o-port]) that is
+ ready to close after the current job if @racket[close?] is @racket[#t]. Resources
+ associated with the connection should be allocated under @racket[custodian].
+ The connection will last until @racket[timer] triggers.
 }
 
 @defproc[(start-connection-manager)
@@ -32,20 +32,20 @@ for doing this.
                          [cust custodian?]
                          [close? boolean?])
          connection?]{
- Constructs a connection with a timer with a trigger of @scheme[timeout] that calls
- @scheme[kill-connection!].
+ Constructs a connection with a timer with a trigger of @racket[timeout] that calls
+ @racket[kill-connection!].
 }
 
 @defproc[(kill-connection! [c connection?])
          void]{
- Closes the ports associated with @scheme[c], kills the timer, and shuts down
+ Closes the ports associated with @racket[c], kills the timer, and shuts down
  the custodian.
 }
 
 @defproc[(adjust-connection-timeout! [c connection?]
                                      [t number?])
          void]{
- Calls @scheme[increment-timer!] with the timer behind @scheme[c] with @scheme[t].
+ Calls @racket[increment-timer!] with the timer behind @racket[c] with @racket[t].
 }
 
 }

@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 ;; owner: ryanc
-(require scheme/class
-         (for-syntax scheme/base
+(require racket/class
+         (for-syntax racket/base
                      syntax/parse
                      unstable/syntax
-                     "private/class-iop-ct.ss"))
+                     "private/class-iop-ct.rkt"))
 (provide define-interface
          define-interface/dynamic
          define-interface-expander

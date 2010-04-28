@@ -1,5 +1,5 @@
-#lang scheme/base
-(require mzlib/serialize
+#lang racket/base
+(require racket/serialize
          net/url)
 (provide (struct-out mc-question)
          make-cue-page

@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/http/basic-auth
          web-server/http/digest-auth
          web-server/http/request-structs

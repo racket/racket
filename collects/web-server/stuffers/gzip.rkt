@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/private/gzip
          web-server/stuffers/stuffer)
 

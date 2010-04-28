@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/list
-         scheme/contract
+#lang racket/base
+(require racket/list
+         racket/contract
          net/url)
 
 (provide/contract
@@ -32,7 +32,7 @@
 ;;     (define (url-replace-path proc in-url)
 ;;       (foo in-url #:path proc #:query '()))
 
-;; ripped this off from url-unit.ss
+;; ripped this off from url-unit.rkt
 (define (url-path->string strs)
   (apply string-append
          (apply append

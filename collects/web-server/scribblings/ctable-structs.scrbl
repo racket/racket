@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "configuration-table-structs.ss"]{Configuration Table Structure}
+@title[#:tag "configuration-table-structs"]{Configuration Table Structure}
 @(require (for-label web-server/configuration/configuration-table-structs
                      web-server/http
                      net/url
@@ -10,10 +10,10 @@
 @defmodule[web-server/configuration/configuration-table-structs]{
 
 This module provides the following structures that
-represent a standard configuration (see @secref["web-server-unit.ss"]) of the @web-server .
+represent a standard configuration (see @secref["web-server-unit"]) of the @web-server .
 The contracts on this structure influence the valid types of values in
 the configuration table S-expression file format described in
-@secref["configuration-table.ss"].
+@secref["configuration-table"].
 
 @defstruct[configuration-table
            ([port port-number?]

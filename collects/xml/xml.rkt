@@ -1,14 +1,14 @@
-#lang scheme
-(require "private/structures.ss"
-         "private/reader.ss"
-         "private/space.ss"
-         "private/writer.ss"
-         "private/xexpr.ss"
-         "private/syntax.ss")
+#lang racket
+(require "private/structures.rkt"
+         "private/reader.rkt"
+         "private/space.rkt"
+         "private/writer.rkt"
+         "private/xexpr.rkt"
+         "private/syntax.rkt")
 
-(provide (all-from-out "private/structures.ss"
-                       "private/reader.ss"
-                       "private/space.ss"
-                       "private/writer.ss"
-                       "private/xexpr.ss"
-                       "private/syntax.ss"))
+(provide (all-from-out "private/structures.rkt"
+                       "private/reader.rkt"
+                       "private/space.rkt"
+                       "private/writer.rkt"
+                       "private/xexpr.rkt"
+                       "private/syntax.rkt"))

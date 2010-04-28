@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require xml)
 
 ; a dict is (list 'dict assoc-pair ...)

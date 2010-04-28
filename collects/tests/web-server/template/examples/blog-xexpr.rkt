@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/servlet
          xml
          web-server/servlet-env)

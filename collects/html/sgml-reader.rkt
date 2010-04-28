@@ -1,9 +1,9 @@
 ;; copyright by Paul Graunke June 2000 AD
 ;; warning - this was copied from the XML collection.
 ;; It needs to be abstracted back in.
-#lang scheme
+#lang racket
 (require xml
-         (prefix-in scheme: scheme))
+         (prefix-in racket: racket))
 
 ;; Kid-lister : (Symbol -> (U (listof Symbol) #f))
 (define kid-lister/c
@@ -20,7 +20,7 @@
  [gen-read-sgml (kid-lister/c (symbol? symbol? . -> . (or/c symbol? false/c)) . -> . (() (input-port?) . ->* . (listof content/c)))])
 
 (define (file-position in)
-  (make-location 0 0 (scheme:file-position in)))
+  (make-location 0 0 (racket:file-position in)))
 
 ;; Start-tag ::= (make-start-tag Location Location Symbol (listof Attribute))
 (define-struct (start-tag source) (name attrs))

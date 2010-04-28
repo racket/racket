@@ -1,20 +1,20 @@
 #lang scribble/manual
 @(require scribble/eval
-          "utils.ss"
+          "utils.rkt"
           (for-label unstable/find
-                     scheme/contract
-                     scheme/shared
-                     scheme/base))
+                     racket/contract
+                     racket/shared
+                     racket/base))
 
 @title[#:tag "find"]{Find}
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/find))
-@(the-eval '(require scheme/shared))
+@(the-eval '(require racket/shared))
 
 @defmodule[unstable/find]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defproc[(find [pred (-> any/c any/c)]
                [x any/c]
@@ -23,23 +23,23 @@
                [#:get-children get-children (or/c #f (-> any/c (or/c #f list?))) #f])
          list?]{
 
-Returns a list of all values satisfying @scheme[pred] contained in
-@scheme[x] (possibly including @scheme[x] itself). 
+Returns a list of all values satisfying @racket[pred] contained in
+@racket[x] (possibly including @racket[x] itself). 
 
-If @scheme[stop-on-found?] is true, the children of values satisfying
-@scheme[pred] are not examined. If @scheme[stop] is a procedure, then
-the children of values for which @scheme[stop] returns true are not
-examined (but the values themselves are; @scheme[stop] is applied
-after @scheme[pred]). Only the current branch of the search is
+If @racket[stop-on-found?] is true, the children of values satisfying
+@racket[pred] are not examined. If @racket[stop] is a procedure, then
+the children of values for which @racket[stop] returns true are not
+examined (but the values themselves are; @racket[stop] is applied
+after @racket[pred]). Only the current branch of the search is
 stopped, not the whole search.
 
 The search recurs through pairs, vectors, boxes, and the accessible
-fields of structures. If @scheme[get-children] is a procedure, it can
+fields of structures. If @racket[get-children] is a procedure, it can
 override the default notion of a value's children by returning a list
 (if it returns false, the default notion of children is used).
 
-No cycle detection is done, so @scheme[find] on a cyclic graph may
-diverge. To do cycle checking yourself, use @scheme[stop] and a
+No cycle detection is done, so @racket[find] on a cyclic graph may
+diverge. To do cycle checking yourself, use @racket[stop] and a
 mutable table.
 
 @examples[#:eval the-eval
@@ -63,8 +63,8 @@ mutable table.
                      [#:default default any/c (lambda () (error ....))])
          any/c]{
 
-Like @scheme[find], but only returns the first match. If no
-matches are found, @scheme[default] is applied as a thunk if it is a
+Like @racket[find], but only returns the first match. If no
+matches are found, @racket[default] is applied as a thunk if it is a
 procedure or returned otherwise.
 
 @examples[#:eval the-eval

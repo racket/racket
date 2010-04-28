@@ -1,5 +1,5 @@
 #lang web-server
-(require "quiz-lib.ss")
+(require "quiz-lib.rkt")
 (define interface-version 'stateless)
 (provide start interface-version)
 

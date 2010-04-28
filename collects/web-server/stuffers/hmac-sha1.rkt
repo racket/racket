@@ -1,15 +1,13 @@
-#lang scheme
+#lang racket
 (require web-server/stuffers/stuffer
-         scheme/runtime-path
-         (rename-in scheme/foreign
+         racket/runtime-path
+         (rename-in ffi/unsafe
                     [-> f->]))
 
 (define-runtime-path libcrypto-so
   (case (system-type)
     [(windows) '(so "libeay32")]
     [else '(so "libcrypto")]))
-
-(unsafe!)
 
 (define libcrypto
   (with-handlers ([exn:fail? (lambda (x) #f)])

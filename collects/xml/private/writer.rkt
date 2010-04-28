@@ -1,5 +1,5 @@
-#lang scheme
-(require "structures.ss")
+#lang racket
+(require "structures.rkt")
 
 (provide/contract
  [write-xml ((document?) (output-port?) . ->* . void?)]

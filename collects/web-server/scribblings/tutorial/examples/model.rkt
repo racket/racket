@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ;; A blog is a (make-blog posts)
 ;; where posts is a (listof post)

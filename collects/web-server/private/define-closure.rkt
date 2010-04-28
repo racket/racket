@@ -1,5 +1,5 @@
-#lang scheme/base
-(require (for-syntax scheme
+#lang racket/base
+(require (for-syntax racket
                      web-server/lang/closure))
 
 (provide define-closure)

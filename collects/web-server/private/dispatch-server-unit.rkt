@@ -1,9 +1,9 @@
-#lang scheme/unit
+#lang racket/unit
 (require net/tcp-sig
          mzlib/thread)
-(require "web-server-structs.ss"
-         "connection-manager.ss"
-         "dispatch-server-sig.ss")
+(require "web-server-structs.rkt"
+         "connection-manager.rkt"
+         "dispatch-server-sig.rkt")
 
 ;; ****************************************  
 (import tcp^ (prefix config: dispatch-server-config^))

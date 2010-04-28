@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "configuration-table.ss"]{Configuration Table}
+@title[#:tag "configuration-table"]{Configuration Table}
 @(require (for-label web-server/configuration/configuration-table
                      web-server/configuration/configuration-table-structs
                      web-server/dispatchers/dispatch-log))
@@ -9,26 +9,26 @@
 @defmodule[web-server/configuration/configuration-table]{
 
 This module provides functions for
-reading, writing, parsing, and printing @scheme[configuration-table]
+reading, writing, parsing, and printing @racket[configuration-table]
 structures.
 
 @defthing[default-configuration-table-path path?]{The default configuration table S-expression file.}
 
 @defthing[configuration-table-sexpr? (any . -> . boolean?)]{
- Equivalent to @scheme[list?].
+ Equivalent to @racket[list?].
 }
 
 @defproc[(sexpr->configuration-table (sexpr configuration-table-sexpr?))
          configuration-table?]{
- This function converts a @scheme[configuration-table] from an S-expression.
+ This function converts a @racket[configuration-table] from an S-expression.
 }
 
 @defproc[(configuration-table->sexpr (ctable configuration-table?))
          configuration-table-sexpr?]{
- This function converts a @scheme[configuration-table] to an S-expression.
+ This function converts a @racket[configuration-table] to an S-expression.
 }
 
-@schemeblock[
+@racketblock[
 `((port ,integer?)
   (max-waiting ,integer?)
   (initial-connection-timeout ,integer?)
@@ -38,9 +38,9 @@ structures.
    (list ,symbol? ,host-table-sexpr?)
    ...))]
 
-where a @scheme[host-table-sexpr] is:
+where a @racket[host-table-sexpr] is:
 
-@schemeblock[
+@racketblock[
 `(host-table
   (default-indices ,string? ...)
   (log-format ,symbol?)
@@ -67,24 +67,24 @@ where a @scheme[host-table-sexpr] is:
    (mime-types ,path-string?)
    (password-authentication ,path-string?)))]
 
-In this syntax, the @scheme['messages] paths are relative to the
-@scheme['configuration-root] directory.  All the paths in
-@scheme['paths] except for @scheme['servlet-root] are relative to
-@scheme['host-root] (other than @scheme['host-root] obviously.)
-The @scheme['servlet-root] path is relative to @scheme['file-root].
+In this syntax, the @racket['messages] paths are relative to the
+@racket['configuration-root] directory.  All the paths in
+@racket['paths] except for @racket['servlet-root] are relative to
+@racket['host-root] (other than @racket['host-root] obviously.)
+The @racket['servlet-root] path is relative to @racket['file-root].
 
-Allowable @scheme['log-format]s are those accepted by @scheme[log-format->format].
+Allowable @racket['log-format]s are those accepted by @racket[log-format->format].
 
-Note: You almost always want to leave everything in the @scheme['paths] section the default except the @scheme['host-root].
+Note: You almost always want to leave everything in the @racket['paths] section the default except the @racket['host-root].
 
 @defproc[(read-configuration-table (path path-string?))
          configuration-table?]{
-This function reads a @scheme[configuration-table] from @scheme[path].
+This function reads a @racket[configuration-table] from @racket[path].
 }
 
 @defproc[(write-configuration-table (ctable configuration-table?) (path path-string?))
          void]{
-This function writes a @scheme[configuration-table] to @scheme[path].
+This function writes a @racket[configuration-table] to @racket[path].
 }
               
 }

@@ -1,17 +1,17 @@
-#lang scheme/base
+#lang racket/base
 ;; owner: ryanc
-(require scheme/list
-         scheme/class
-         scheme/gui
-         "../private/notify.ss")
-(provide (all-from-out "../private/notify.ss")
+(require racket/list
+         racket/class
+         racket/gui
+         "../private/notify.rkt")
+(provide (all-from-out "../private/notify.rkt")
          menu-option/notify-box
          menu-group/notify-box
          check-box/notify-box
          choice/notify-box)
 
 ;; GUI elements tied to notify-boxes
-;; See unstable/private/notify.ss for the non-gui parts of notify-boxes.
+;; See unstable/private/notify.rkt for the non-gui parts of notify-boxes.
 
 (define (menu-option/notify-box parent label nb)
   (define menu-item

@@ -1,5 +1,5 @@
-#lang scheme/base
-(require mzlib/date)
+#lang racket/base
+(require racket/date)
 (provide (all-defined-out))
 (define interface-version 'v1)
 (define timeout +inf.0)

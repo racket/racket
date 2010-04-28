@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require schemeunit
          net/url
          web-server/http/request-structs
@@ -21,7 +21,7 @@
    "Cookies"
    
    (test-suite
-    "cookie.ss"
+    "cookie.rkt"
     
     (test-suite
      "cookie->header and make-cookie"
@@ -69,7 +69,7 @@
                   (list (cons #"Set-Cookie" #"name=value; Version=1")))))
    
    (test-suite
-    "cookie-parse.ss"
+    "cookie-parse.rkt"
     
     (test-equal? "None"
                  (request-cookies 

@@ -1,5 +1,5 @@
-#lang scheme/base
-(require mzlib/contract)
+#lang racket/base
+(require racket/contract)
 
 (define current-server-custodian (make-parameter #f))
 

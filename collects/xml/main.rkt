@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
-(require "xml.ss")
-(provide (all-from-out "xml.ss"))
+(require "xml.rkt")
+(provide (all-from-out "xml.rkt"))

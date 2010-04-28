@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 ;; owner: ryanc
-(require (for-syntax scheme/base syntax/parse unstable/syntax)
-         scheme/list
-         scheme/class)
+(require (for-syntax racket/base syntax/parse unstable/syntax)
+         racket/list
+         racket/class)
 (provide define-notify
          notify-box%
          notify-box/pref)

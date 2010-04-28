@@ -1,7 +1,7 @@
-#lang scheme/base
-(require mzlib/contract)
-(require "dispatch.ss"
-         "../private/connection-manager.ss")
+#lang racket/base
+(require racket/contract)
+(require web-server/dispatchers/dispatch
+         web-server/private/connection-manager)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make (integer? . -> . dispatcher/c)])

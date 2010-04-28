@@ -31,5 +31,5 @@
   
   (define snip-class (make-object scheme-snipclass%))
   (send snip-class set-version 1)
-  (send snip-class set-classname (format "~s" '(lib "scheme-snipclass.ss" "xml")))
+  (send snip-class set-classname (format "~s" '(lib "scheme-snipclass.rkt" "xml")))
   (send (get-the-snip-class-list) add snip-class))

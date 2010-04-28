@@ -1,14 +1,14 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "web-config-unit.ss" #:tag-prefix "web-config"]{Configuration Units}
+@title[#:tag "web-config-unit" #:tag-prefix "web-config"]{Configuration Units}
 @(require (for-label web-server/web-config-unit
                      web-server/configuration/namespace
                      web-server/configuration/configuration-table
                      web-server/configuration/configuration-table-structs
                      web-server/private/util
                      web-server/servlet/setup
-                     scheme/tcp
+                     racket/tcp
                      (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
                      web-server/web-config-sig))
 
@@ -23,7 +23,7 @@ Provides contains the following identifiers.
 }
 
 @defthing[max-waiting integer?]{
- Passed to @scheme[tcp-accept].
+ Passed to @racket[tcp-accept].
 }
 
 @defthing[virtual-hosts (string? . -> . host?)]{
@@ -39,11 +39,11 @@ Provides contains the following identifiers.
 }
 
 @defthing[listen-ip (or/c false/c string?)]{
- Passed to @scheme[tcp-listen].
+ Passed to @racket[tcp-listen].
 }
 
 @defthing[make-servlet-namespace make-servlet-namespace/c]{
- Passed to @scheme[servlets:make] through @scheme[make-default-path->servlet].
+ Passed to @racket[servlets:make] through @racket[make-default-path->servlet].
 }
 }
              
@@ -58,8 +58,8 @@ Provides contains the following identifiers.
                                            [#:listen-ip listen-ip (or/c false/c string?) #f]
                                            [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c (make-make-servlet-namespace)])
          (unit/c (import) (export web-config^))]{
- Reads the S-expression at @scheme[path] and calls
- @scheme[configuration-table-sexpr->web-config@] appropriately.
+ Reads the S-expression at @racket[path] and calls
+ @racket[configuration-table-sexpr->web-config@] appropriately.
 }
 
 @defproc[(configuration-table-sexpr->web-config@ [sexpr list?]
@@ -70,7 +70,7 @@ Provides contains the following identifiers.
                                                  [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c
                                                                            (make-make-servlet-namespace)])
          (unit/c (import) (export web-config^))]{
- Parses @scheme[sexpr] as a configuration-table and constructs a @scheme[web-config^] unit.
+ Parses @racket[sexpr] as a configuration-table and constructs a @racket[web-config^] unit.
 }
 
 }

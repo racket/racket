@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
          web-server/lang/file-box
          (only-in mzlib/file make-temporary-file))

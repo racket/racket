@@ -1,8 +1,8 @@
-#lang scheme/base
-(require mzlib/contract)
-(require "dispatch.ss"
-         "../private/web-server-structs.ss"
-         "../private/connection-manager.ss")
+#lang racket/base
+(require racket/contract)
+(require web-server/dispatchers/dispatch
+         web-server/private/web-server-structs
+         web-server/private/connection-manager)
 (provide/contract
  [make-gc-thread (integer? . -> . thread?)]
  [interface-version dispatcher-interface-version/c]

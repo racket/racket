@@ -2,32 +2,32 @@
 @(require scribble/struct
           scribble/decode
           scribble/eval
-	  "utils.ss"
-          (for-label scheme/base
-                     scheme/contract
+	  "utils.rkt"
+          (for-label racket/base
+                     racket/contract
                      unstable/syntax))
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/syntax))
-@(the-eval '(require (for-syntax scheme/base unstable/syntax)))
+@(the-eval '(require (for-syntax racket/base unstable/syntax)))
 
 @title[#:tag "syntax"]{Syntax}
 
 @defmodule[unstable/syntax]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defparam[current-syntax-context stx (or/c syntax? false/c)]{
 
-The current contextual syntax object, defaulting to @scheme[#f].  It
+The current contextual syntax object, defaulting to @racket[#f].  It
 determines the special form name that prefixes syntax errors created
-by @scheme[wrong-syntax].
+by @racket[wrong-syntax].
 
 @;{
-If it is a syntax object with a @scheme['report-error-as] syntax
+If it is a syntax object with a @racket['report-error-as] syntax
 property whose value is a symbol, then that symbol is used as the
 special form name. Otherwise, the same rules apply as in
-@scheme[raise-syntax-error].
+@racket[raise-syntax-error].
 }
 
 }
@@ -36,12 +36,12 @@ special form name. Otherwise, the same rules apply as in
          any]{
 
 Raises a syntax error using the result of
-@scheme[(current-syntax-context)] as the ``major'' syntax object and
-the provided @scheme[stx] as the specific syntax object. (The latter,
-@scheme[stx], is usually the one highlighted by DrScheme.) The error
+@racket[(current-syntax-context)] as the ``major'' syntax object and
+the provided @racket[stx] as the specific syntax object. (The latter,
+@racket[stx], is usually the one highlighted by DrRacket.) The error
 message is constructed using the format string and arguments, and it
 is prefixed with the special form name as described under
-@scheme[current-syntax-context].
+@racket[current-syntax-context].
 
 @examples[#:eval the-eval
 (wrong-syntax #'here "expected ~s" 'there)
@@ -49,23 +49,23 @@ is prefixed with the special form name as described under
   (wrong-syntax #'here "expected ~s" 'there))
 ]
 
-A macro using @scheme[wrong-syntax] might set the syntax context at the very
+A macro using @racket[wrong-syntax] might set the syntax context at the very
 beginning of its transformation as follows:
-@SCHEMEBLOCK[
+@RACKETBLOCK[
 (define-syntax (my-macro stx)
   (parameterize ((current-syntax-context stx))
     (syntax-case stx ()
       ___)))
 ]
-Then any calls to @scheme[wrong-syntax] during the macro's
-transformation will refer to @scheme[my-macro] (more precisely, the name that
-referred to @scheme[my-macro] where the macro was used, which may be
+Then any calls to @racket[wrong-syntax] during the macro's
+transformation will refer to @racket[my-macro] (more precisely, the name that
+referred to @racket[my-macro] where the macro was used, which may be
 different due to renaming, prefixing, etc).
 
 @;{
 A macro that expands into a helper macro can insert its own name into
 syntax errors raised by the helper macro by installing a
-@scheme['report-error-as] syntax property on the helper macro
+@racket['report-error-as] syntax property on the helper macro
 expression.
 
 @examples[#:eval the-eval
@@ -90,10 +90,10 @@ expression.
 
 @defform[(define/with-syntax pattern expr)]{
 
-Definition form of @scheme[with-syntax]. That is, it matches the
-syntax object result of @scheme[expr] against @scheme[pattern] and
+Definition form of @racket[with-syntax]. That is, it matches the
+syntax object result of @racket[expr] against @racket[pattern] and
 creates pattern variable definitions for the pattern variables of
-@scheme[pattern].
+@racket[pattern].
 
 @examples[#:eval the-eval
 (define/with-syntax (px ...) #'(a b c))
@@ -104,8 +104,8 @@ creates pattern variable definitions for the pattern variables of
 
 @defform[(define-pattern-variable id expr)]{
 
-Evaluates @scheme[expr] and binds it to @scheme[id] as a pattern
-variable, so @scheme[id] can be used in subsequent @scheme[syntax]
+Evaluates @racket[expr] and binds it to @racket[id] as a pattern
+variable, so @racket[id] can be used in subsequent @racket[syntax]
 patterns.
 
 @examples[#:eval the-eval
@@ -119,7 +119,7 @@ patterns.
 
 @defform[(with-temporaries (temp-id ...) . body)]{
 
-Evaluates @scheme[body] with each @scheme[temp-id] bound as a pattern
+Evaluates @racket[body] with each @racket[temp-id] bound as a pattern
 variable to a freshly generated identifier.
 
 @examples[#:eval the-eval
@@ -131,7 +131,7 @@ variable to a freshly generated identifier.
 @defproc[(generate-temporary [name-base any/c 'g]) identifier?]{
 
 Generates one fresh identifier. Singular form of
-@scheme[generate-temporaries]. If @scheme[name-base] is supplied, it
+@racket[generate-temporaries]. If @racket[name-base] is supplied, it
 is used as the basis for the identifier's name.
 
 }
@@ -139,7 +139,7 @@ is used as the basis for the identifier's name.
 @defproc[(generate-n-temporaries [n exact-nonnegative-integer?])
          (listof identifier?)]{
 
-Generates a list of @scheme[n] fresh identifiers.
+Generates a list of @racket[n] fresh identifiers.
 
 }
 
@@ -150,39 +150,39 @@ Generates a list of @scheme[n] fresh identifiers.
 
 Parameter for tracking disappeared uses. Tracking is ``enabled'' when
 the parameter has a non-false value. This is done automatically by
-forms like @scheme[with-disappeared-uses].
+forms like @racket[with-disappeared-uses].
 
 }
 
 @defform[(with-disappeared-uses stx-expr)
          #:contracts ([stx-expr syntax?])]{
 
-Evaluates the @scheme[stx-expr], catching identifiers looked up using
-@scheme[syntax-local-value/catch]. Adds the caught identifiers to the
-@scheme['disappeared-uses] syntax property of the resulting syntax
+Evaluates the @racket[stx-expr], catching identifiers looked up using
+@racket[syntax-local-value/catch]. Adds the caught identifiers to the
+@racket['disappeared-uses] syntax property of the resulting syntax
 object.
 
 }
 
 @defform[(with-catching-disappeared-uses body-expr)]{
 
-Evaluates the @scheme[body-expr], catching identifiers looked up using
-@scheme[syntax-local-value/catch]. Returns two values: the result of
-@scheme[body-expr] and the list of caught identifiers.
+Evaluates the @racket[body-expr], catching identifiers looked up using
+@racket[syntax-local-value/catch]. Returns two values: the result of
+@racket[body-expr] and the list of caught identifiers.
 
 }
 
 @defproc[(syntax-local-value/catch [id identifier?] [predicate (-> any/c boolean?)])
          any/c]{
 
-Looks up @scheme[id] in the syntactic environment (as
-@scheme[syntax-local-value]). If the lookup succeeds and returns a
-value satisfying the predicate, the value is returned and @scheme[id]
+Looks up @racket[id] in the syntactic environment (as
+@racket[syntax-local-value]). If the lookup succeeds and returns a
+value satisfying the predicate, the value is returned and @racket[id]
 is recorded (``caught'') as a disappeared use. If the lookup fails or
-if the value does not satisfy the predicate, @scheme[#f] is returned
+if the value does not satisfy the predicate, @racket[#f] is returned
 and the identifier is not recorded as a disappeared use.
 
-If not used within the extent of a @scheme[with-disappeared-uses] form
+If not used within the extent of a @racket[with-disappeared-uses] form
 or similar, has no effect.
 
 }
@@ -190,9 +190,9 @@ or similar, has no effect.
 @defproc[(record-disappeared-uses [ids (listof identifier?)])
          void?]{
 
-Add @scheme[ids] to the current disappeared uses.
+Add @racket[ids] to the current disappeared uses.
 
-If not used within the extent of a @scheme[with-disappeared-uses] form
+If not used within the extent of a @racket[with-disappeared-uses] form
 or similar, has no effect.
 
 }
@@ -203,7 +203,7 @@ or similar, has no effect.
                         [v (or/c string? symbol? identifier? keyword? char? number?)] ...)
          symbol?]{
 
-Like @scheme[format], but produces a symbol. The format string must
+Like @racket[format], but produces a symbol. The format string must
 use only @litchar{~a} placeholders. Identifiers in the argument list
 are automatically converted to symbols.
 
@@ -220,11 +220,11 @@ are automatically converted to symbols.
                     [v (or/c string? symbol? identifier? keyword? char? number?)] ...)
          identifier?]{
 
-Like @scheme[format-symbol], but converts the symbol into an
-identifier using @scheme[lctx] for the lexical context, @scheme[src]
-for the source location, @scheme[props] for the properties, and
-@scheme[cert] for the inactive certificates. (See
-@scheme[datum->syntax].)
+Like @racket[format-symbol], but converts the symbol into an
+identifier using @racket[lctx] for the lexical context, @racket[src]
+for the source location, @racket[props] for the properties, and
+@racket[cert] for the inactive certificates. (See
+@racket[datum->syntax].)
 
 The format string must use only @litchar{~a} placeholders. Identifiers
 in the argument list are automatically converted to symbols.
@@ -244,7 +244,7 @@ in the argument list are automatically converted to symbols.
 (better-make-pred none-such)
 ]
 
-(Scribble doesn't show it, but the DrScheme pinpoints the location of
+(Scribble doesn't show it, but the DrRacket pinpoints the location of
 the second error but not of the first.)
 }
 
@@ -252,7 +252,7 @@ the second error but not of the first.)
                                             [stx syntax?])
          syntax?]{
 
-Applies the renamings of @scheme[intdef-ctx] to @scheme[stx].
+Applies the renamings of @racket[intdef-ctx] to @racket[stx].
 
 }
 
@@ -260,9 +260,9 @@ Applies the renamings of @scheme[intdef-ctx] to @scheme[stx].
                             [intdef-ctx (or/c internal-definition-context? #f) #f])
          any]{
 
-Evaluates @scheme[stx] as an expression in the current transformer
+Evaluates @racket[stx] as an expression in the current transformer
 environment (that is, at phase level 1), optionally extended with
-@scheme[intdef-ctx].
+@racket[intdef-ctx].
 
 @examples[#:eval the-eval
 (define-syntax (show-me stx)
@@ -296,8 +296,8 @@ environment (that is, at phase level 1), optionally extended with
                      
 @defform[(with-syntax* ([pattern stx-expr] ...)
            body ...+)]{
-Similar to @scheme[with-syntax], but the pattern variables are bound in the remaining
-@scheme[stx-expr]s as well as the @scheme[body]s, and the @scheme[pattern]s need not 
+Similar to @racket[with-syntax], but the pattern variables are bound in the remaining
+@racket[stx-expr]s as well as the @racket[body]s, and the @racket[pattern]s need not 
 bind distinct pattern variables; later bindings shadow earlier bindings.
 
 @examples[#:eval the-eval
@@ -308,7 +308,7 @@ bind distinct pattern variables; later bindings shadow earlier bindings.
 }
 
 @defproc[(syntax-map [f (-> syntax? A)] [stxl syntax?] ...) (listof A)]{
-Performs @scheme[(map f (syntax->list stxl) ...)].
+Performs @racket[(map f (syntax->list stxl) ...)].
 
 @examples[#:eval the-eval
 (syntax-map syntax-e #'(a b c))]

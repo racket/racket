@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require web-server/servlet
          web-server/managers/timeouts)
 (provide (all-defined-out))

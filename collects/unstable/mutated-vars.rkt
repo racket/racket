@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-template scheme/base)
+(require (for-template racket/base)
          syntax/boundmap syntax/kerncase)
 
 ;; mapping telling whether an identifer is mutated

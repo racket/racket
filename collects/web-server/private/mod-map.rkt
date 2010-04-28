@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (provide/contract
  [compress-serial (list? . -> . list?)]
  [decompress-serial (list? . -> . list?)])

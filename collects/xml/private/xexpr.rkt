@@ -1,8 +1,8 @@
-#lang scheme
-(require scheme/pretty
-         "structures.ss"
-         "reader.ss"
-         "writer.ss")
+#lang racket
+(require racket/pretty
+         "structures.rkt"
+         "reader.rkt"
+         "writer.rkt")
 
 ;; Xexpr ::= String
 ;;        |  (list* Symbol (listof Attribute-srep) (listof Xexpr))

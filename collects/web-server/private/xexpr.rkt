@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/pretty
+#lang racket
+(require racket/pretty
          xml)
 
 (define-struct (exn:pretty exn) (xexpr))

@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 ;; owner: ryanc
-(require (for-template scheme/base
-                       scheme/class)
+(require (for-template racket/base
+                       racket/class)
          syntax/parse
          syntax/stx)
 

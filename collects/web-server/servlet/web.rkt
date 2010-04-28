@@ -1,10 +1,10 @@
-#lang scheme
+#lang racket
 (require net/url)
-(require "../managers/manager.ss"
-         "../private/util.ss"
-         "../private/servlet.ss"
-         "../servlet/web-cells.ss"
-         "../servlet/servlet-structs.ss"
+(require web-server/managers/manager
+         web-server/private/util
+         web-server/private/servlet
+         web-server/servlet/web-cells
+         web-server/servlet/servlet-structs
          web-server/http)
 
 (provide servlet-prompt)

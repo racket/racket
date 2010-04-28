@@ -1,8 +1,8 @@
-#lang scheme/base
-(require (for-syntax scheme/base)
-         scheme/contract
+#lang racket/base
+(require (for-syntax racket/base)
+         racket/contract
          web-server/lang/serial-lambda
-         mzlib/list)
+         racket/list)
 
 (provide/contract
  [web-parameter? (any/c . -> . boolean?)])

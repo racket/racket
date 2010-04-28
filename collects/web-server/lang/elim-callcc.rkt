@@ -1,10 +1,10 @@
-#lang scheme/base
-(require (for-template scheme/base)
+#lang racket/base
+(require (for-template racket/base)
          syntax/kerncase
-         scheme/contract
-         "../lang/abort-resume.ss"
-         (for-template "../lang/abort-resume.ss")
-         "util.ss")
+         racket/contract
+         "abort-resume.rkt"
+         (for-template "abort-resume.rkt")
+         "util.rkt")
 (provide/contract
  [elim-callcc (syntax? . -> . syntax?)])
 

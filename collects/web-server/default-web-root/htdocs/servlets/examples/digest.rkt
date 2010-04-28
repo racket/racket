@@ -1,5 +1,5 @@
 #lang web-server/insta
-(require scheme/pretty)
+(require racket/pretty)
 
 (define private-key "private-key")
 (define opaque "opaque")

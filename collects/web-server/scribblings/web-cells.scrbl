@@ -1,12 +1,12 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "web-cells.ss"]{Web Cells}
+@title[#:tag "web-cells"]{Web Cells}
 @(require (for-label web-server/servlet/web-cells
                      web-server/servlet/web))
 
 @defmodule[web-server/servlet/web-cells]{The
-@schememodname[web-server/servlet/web-cells] library provides the
+@racketmodname[web-server/servlet/web-cells] library provides the
 interface to Web cells.
 
 A Web cell is a kind of state defined relative to the @defterm{frame tree}.
@@ -22,31 +22,31 @@ generated. For more information on their semantics, consult the paper
 
 @defproc[(web-cell? [v any/c])
          boolean?]{
- Determines if @scheme[v] is a web-cell.
+ Determines if @racket[v] is a web-cell.
 }
 
 @defproc[(make-web-cell [v any/c])
          web-cell?]{
- Creates a web-cell with a default value of @scheme[v].
+ Creates a web-cell with a default value of @racket[v].
 }
 
 @defproc[(web-cell-ref [wc web-cell?])
          any/c]{
- Looks up the value of @scheme[wc] found in the nearest
+ Looks up the value of @racket[wc] found in the nearest
  frame.
 }
 
 @defproc[(web-cell-shadow [wc web-cell?]
                           [v any/c])
          void]{
- Binds @scheme[wc] to @scheme[v] in the current frame, shadowing any
- other bindings to @scheme[wc] in the current frame.
+ Binds @racket[wc] to @racket[v] in the current frame, shadowing any
+ other bindings to @racket[wc] in the current frame.
 }
               
 Below is an extended example that demonstrates how Web cells allow
 the creation of reusable Web abstractions without requiring global
 transformations of the program into continuation or store passing style.
-@schememod[
+@racketmod[
  web-server/insta
 
  (define (start initial-request)

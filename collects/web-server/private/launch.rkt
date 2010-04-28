@@ -1,13 +1,12 @@
-#lang scheme
-(require scheme/cmdline
-         scheme/unit
-         mzlib/pregexp
+#lang racket
+(require racket/cmdline
+         racket/unit
          net/tcp-sig
          net/tcp-unit
          net/ssl-tcp-unit)
-(require "../configuration/configuration-table.ss"
-         (except-in "../web-server.ss" serve)
-         "../web-config-unit.ss")
+(require web-server/configuration/configuration-table
+         (except-in web-server/web-server serve)
+         web-server/web-config-unit)
 
 ; this is used by launchers
 ; extract-flag : sym (listof (cons sym alpha)) alpha -> alpha
@@ -49,7 +48,7 @@
       [("-a" "--ip-address")
        ,(lambda (flag ip-address)
           ; note the double backslash I initially left out.  That's a good reason to use Olin's regexps.
-          (let ([addr (pregexp-split "\\." ip-address)])
+          (let ([addr (regexp-split #px"\\." ip-address)])
             (if (and (= 4 (length addr))
                      (andmap (lambda (s)
                                (let ([n (string->number s)])

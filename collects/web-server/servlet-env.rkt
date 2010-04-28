@@ -1,10 +1,10 @@
 ; Derived from plai/web/server, which was based on an older version of this
 ; Also derived from planet/untyped/instaservlet
-#lang scheme
-(require scheme/contract
-         scheme/list
-         scheme/serialize
-         scheme/runtime-path)
+#lang racket
+(require racket/contract
+         racket/list
+         racket/serialize
+         racket/runtime-path)
 (require web-server/managers/lru
          web-server/managers/manager
          web-server/configuration/namespace
@@ -30,7 +30,7 @@
               (link ([rel "stylesheet"] [href "/error.css"])))
             (body (div ([class "section"])
                     (div ([class "title"]) "Server Stopped")
-                    (p "Return to DrScheme.")))))))
+                    (p "Return to DrRacket.")))))))
 
 (define-runtime-path default-web-root
   (list 'lib
@@ -97,7 +97,7 @@
            (* 128 1024 1024))]
 
          #:servlet-path
-         [servlet-path "/servlets/standalone.ss"]
+         [servlet-path "/servlets/standalone.rkt"]
          #:servlet-regexp
          [servlet-regexp (regexp (format "^~a$" (regexp-quote servlet-path)))]
          #:stateless?
@@ -152,7 +152,7 @@
      (let-values ([(clear-cache! url->servlet)
                    (servlets:make-cached-url->servlet
                     (fsmap:filter-url->path
-                     #rx"\\.(ss|scm)$"
+                     #rx"\\.(ss|scm|rkt)$"
                      (fsmap:make-url->valid-path
                       (fsmap:make-url->path servlets-root)))
                     (make-default-path->servlet

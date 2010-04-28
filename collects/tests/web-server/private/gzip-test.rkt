@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require schemeunit
          web-server/private/gzip)
 (provide gzip-tests)

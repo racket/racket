@@ -1,12 +1,12 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
-         "abort-resume-test.ss"
-         "anormal-test.ss"
-         "defun-test.ss"
-         "file-box-test.ss"
-         "labels-test.ss"
-         "stuff-url-test.ss"
-         "web-param-test.ss")
+         "abort-resume-test.rkt"
+         "anormal-test.rkt"
+         "defun-test.rkt"
+         "file-box-test.rkt"
+         "labels-test.rkt"
+         "stuff-url-test.rkt"
+         "web-param-test.rkt")
 (provide all-lang-tests)
 
 (define all-lang-tests  

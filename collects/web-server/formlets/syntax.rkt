@@ -1,7 +1,7 @@
-#lang scheme
-(require (for-syntax scheme syntax/parse)
-         "lib.ss"
-         (for-syntax "lib.ss"))
+#lang racket
+(require (for-syntax racket syntax/parse)
+         "lib.rkt"
+         (for-syntax "lib.rkt"))
 
 (define-syntax (#%# stx) (raise-syntax-error '#%# "Only allowed inside formlet" stx))
 
@@ -58,7 +58,7 @@
 
 (provide formlet #%#)
 
-(require "input.ss")
+(require "input.rkt")
 (define date-formlet
   (formlet
    (div

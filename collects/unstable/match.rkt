@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/match (for-syntax scheme/base))
+(require racket/match (for-syntax racket/base))
 
 (provide ==)
 

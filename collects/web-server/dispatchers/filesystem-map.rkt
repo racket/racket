@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 (require net/url
-         mzlib/list
-         mzlib/contract)
-(require "../private/util.ss")
+         racket/list
+         racket/contract)
+(require web-server/private/util)
 (define url->path/c
-  ((url?) . ->* . (path? (listof path-element?))))
+  ((url?) () . ->* . (values path? (listof path-element?))))
 
 (provide/contract
  [url->path/c contract?]

@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/templates)
 
 (include-template "static.html")

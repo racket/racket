@@ -1,13 +1,13 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 @(require (for-label web-server/dispatchers/dispatch-servlets))
 
 @title{Troubleshooting and Tips}
 
-@section{How do I use Apache with the PLT Web Server?}
+@section{How do I use Apache with the Racket Web Server?}
 
-You may want to put Apache in front of your PLT Web Server application. 
-Apache can rewrite and proxy requests for a private (or public) PLT Web Server:
+You may want to put Apache in front of your Racket Web Server application. 
+Apache can rewrite and proxy requests for a private (or public) Racket Web Server:
 
 @verbatim{
 RewriteRule ^(.*)$ http://localhost:8080/$1 [P]
@@ -31,9 +31,9 @@ exec run-web-server
 
 Using @exec{exec} will reuse the same process, and therefore, the PID file will be accurate.
 
-Second, if you want to make your own Scheme start-up script, you can write:
+Second, if you want to make your own Racket start-up script, you can write:
 @(require (for-label mzlib/os))
-@schemeblock[
+@racketblock[
 (require mzlib/os)
 (with-output-to-file _your-pid-file (lambda () (write (getpid))))
 (_start-server)
@@ -66,4 +66,4 @@ The Web Server will start on port 443 (which can be overridden with the @exec{-p
 
 @section{How do I limit the number of requests serviced at once by the Web Server?}
 
-Refer to @secref["limit.ss"].
+Refer to @secref["limit"].

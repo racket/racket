@@ -1,9 +1,9 @@
-#lang scheme
+#lang racket
 (require schemeunit
          web-server/http
          web-server/dispatchers/dispatch
          net/url
-         scheme/stxparam
+         racket/stxparam
          web-server/dispatch/coercion
          web-server/dispatch/bidi-match
          web-server/dispatch/http-expanders

@@ -1,10 +1,10 @@
-#lang scheme/base
-(require mzlib/contract
+#lang racket/base
+(require racket/contract
          file/md5
-         mzlib/port
-         mzlib/list
-         mzlib/plt-match
-         (only-in srfi/1/list fold filter-map)
+         racket/port
+         racket/list
+         racket/match
+         (only-in srfi/1/list fold)
          (only-in srfi/13/string string-join)
          xml/xml
          web-server/private/connection-manager
@@ -76,7 +76,7 @@
    conn 
    (list* (make-header #"Date" (string->bytes/utf-8 (seconds->gmt-string (current-seconds))))
           (make-header #"Last-Modified" (string->bytes/utf-8 (seconds->gmt-string (response/basic-seconds bresp))))
-          (make-header #"Server" #"PLT Scheme")
+          (make-header #"Server" #"Racket")
           (make-header #"Content-Type" (response/basic-mime bresp))
           (append (if (connection-close? conn)
                       (list (make-header #"Connection" #"close"))
@@ -174,7 +174,7 @@
 ;;     byte-range-spec : (cons integer (U integer #f))
 ;;     suffix-byte-range-spec : (cons #f integer)
 ;;
-;; as described in the comments in dispatchers/dispatch-files.ss.
+;; as described in the comments in dispatchers/dispatch-files.
 ;;
 ;; A boundary is generated only if a multipart/byteranges response needs
 ;; to be generated (i.e. if a Ranges header was specified with more than

@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/stuffers/stuffer
          web-server/stuffers/store
          file/md5)

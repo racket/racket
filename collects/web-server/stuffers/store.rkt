@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (define-struct store (write read))
 
 (define (dir-store home)

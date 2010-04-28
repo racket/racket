@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 (require mzlib/contract
          net/url)
 (require web-server/http/response-structs
          web-server/http/request-structs
-         "../private/util.ss")           
+         "../private/util.rkt")           
 
 ; configuration-table = (make-configuration-table nat nat num host-table (listof (cons str host-table)))
 (define-struct configuration-table

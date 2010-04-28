@@ -1,5 +1,5 @@
-#lang scheme
-(require "dispatch.ss")
+#lang racket
+(require web-server/dispatchers/dispatch)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make (() () #:rest (listof dispatcher/c) . ->* . dispatcher/c)])

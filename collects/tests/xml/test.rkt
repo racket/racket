@@ -1,10 +1,10 @@
-#lang scheme
+#lang racket
 (require schemeunit
          schemeunit/text-ui
          xml
          xml/plist
          mzlib/etc
-         "to-list.ss")
+         "to-list.rkt")
 
 ;; test-bad-read-input : format-str str -> void
 ;; First argument is the input, second is the error message

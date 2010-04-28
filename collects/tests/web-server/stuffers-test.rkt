@@ -1,10 +1,10 @@
-#lang scheme
+#lang racket
 (require schemeunit
          web-server/stuffers
          web-server/private/servlet
          web-server/http
          net/url
-         scheme/serialize)
+         racket/serialize)
 (provide all-stuffers-tests)
 
 (define (stuffer-test s)

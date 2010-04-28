@@ -1,9 +1,9 @@
 #lang scribble/manual
 @(require scribble/eval
-          "utils.ss"
+          "utils.rkt"
           (for-label unstable/struct
-                     scheme/contract
-                     scheme/base))
+                     racket/contract
+                     racket/base))
 
 @title[#:tag "struct"]{Structs}
 
@@ -12,13 +12,13 @@
 
 @defmodule[unstable/struct]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defform[(make struct-id expr ...)]{
 
-Creates an instance of @scheme[struct-id], which must be bound as a
-struct name. The number of @scheme[expr]s is statically checked
-against the number of fields associated with @scheme[struct-id]. If
+Creates an instance of @racket[struct-id], which must be bound as a
+struct name. The number of @racket[expr]s is statically checked
+against the number of fields associated with @racket[struct-id]. If
 they are different, or if the number of fields is not known, an error
 is raised at compile time.
 
@@ -33,15 +33,15 @@ is raised at compile time.
                        [#:on-opaque on-opaque (or/c 'error 'return-false 'skip) 'error])
          (or/c list? #f)]{
 
-Returns a list containing the struct instance @scheme[v]'s
-fields. Unlike @scheme[struct->vector], the struct name itself is not
+Returns a list containing the struct instance @racket[v]'s
+fields. Unlike @racket[struct->vector], the struct name itself is not
 included.
 
-If any fields of @scheme[v] are inaccessible via the current inspector
-the behavior of @scheme[struct->list] is determined by
-@scheme[on-opaque]. If @scheme[on-opaque] is @scheme['error] (the
-default), an error is raised. If it is @scheme['return-false],
-@scheme[struct->list] returns @scheme[#f]. If it is @scheme['skip],
+If any fields of @racket[v] are inaccessible via the current inspector
+the behavior of @racket[struct->list] is determined by
+@racket[on-opaque]. If @racket[on-opaque] is @racket['error] (the
+default), an error is raised. If it is @racket['return-false],
+@racket[struct->list] returns @racket[#f]. If it is @racket['skip],
 the inaccessible fields are omitted from the list.
 
 @examples[#:eval the-eval

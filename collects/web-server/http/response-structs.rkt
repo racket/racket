@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme
+#lang racket
+(require racket
          xml
          web-server/private/xexpr
          web-server/http/request-structs)

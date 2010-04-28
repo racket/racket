@@ -1,6 +1,6 @@
-#lang scheme/base
-(require (for-syntax scheme/base)
-         (for-template scheme/base))
+#lang racket/base
+(require (for-syntax racket/base)
+         (for-template racket/base))
 (provide define-component)
 
 (define-syntax define-component

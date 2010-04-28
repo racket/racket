@@ -1,8 +1,8 @@
-#lang scheme
+#lang racket
 (require web-server/http/request-structs
          net/cookie
          web-server/private/util         
-         scheme/contract)
+         racket/contract)
 
 (define-struct client-cookie 
   (name value domain path)

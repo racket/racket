@@ -1,7 +1,7 @@
-#lang scheme/base
-(require mzlib/contract)
-(require "manager.ss")
-(require "../servlet/servlet-structs.ss")
+#lang racket/base
+(require racket/contract)
+(require "manager.rkt")
+(require web-server/servlet/servlet-structs)
 (provide/contract
  [create-none-manager (expiration-handler/c . -> . manager?)])
 

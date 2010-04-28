@@ -1,15 +1,15 @@
-#lang scheme/base
-(require mzlib/plt-match
+#lang racket/base
+(require racket/match
          net/tcp-sig
          (prefix-in raw: net/tcp-unit)
-         mzlib/unit
-         scheme/contract
-         "dispatchers/dispatch.ss"
-         "private/dispatch-server-sig.ss"
-         "private/dispatch-server-unit.ss"
-         "web-config-sig.ss"
-         "web-server-sig.ss"
-         "web-server-unit.ss"
+         racket/unit
+         racket/contract
+         web-server/dispatchers/dispatch
+         web-server/private/dispatch-server-sig
+         web-server/private/dispatch-server-unit
+         web-server/web-config-sig
+         web-server/web-server-sig
+         web-server/web-server-unit
          (prefix-in http: web-server/http/request))
 (provide/contract
  [serve

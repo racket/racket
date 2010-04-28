@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 ;; owner: ryanc
-(require (for-syntax scheme/base syntax/parse)
+(require (for-syntax racket/base syntax/parse)
          framework/framework)
 (provide pref:get/set)
 

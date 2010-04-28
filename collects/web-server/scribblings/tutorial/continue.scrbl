@@ -1,16 +1,16 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label scheme)
+          (for-label racket)
           (for-label web-server/servlet)
           "tutorial-util.rkt")
 
-@title{@bold{Continue}: Web Applications in PLT Scheme}
+@title{@bold{Continue}: Web Applications in Racket}
 
 @author[(author+email "Danny Yoo" "dyoo@cs.wpi.edu")
         (author+email "Jay McCarthy" "jay@cs.byu.edu")]
 
 How do we make dynamic web applications?  This tutorial will show how we
-can build web applications using PLT Scheme.  As our working example,
+can build web applications using Racket.  As our working example,
 we'll build a simple web journal (a ``blog'').  We'll cover how to start
 up a web server, how to generate dynamic web content, and how to
 interact with the user.
@@ -18,15 +18,15 @@ interact with the user.
 The target audience for this tutorial are students who've gone through
 the design and use of structures in
 @italic{@link["http://www.htdp.org/"]{How to Design Programs}}, with
-some higher-order functions, @scheme[local], and a minor bit of
+some higher-order functions, @racket[local], and a minor bit of
 mutation.
 
 @section{Getting Started}
 
-Everything you needed in this tutorial is provided in @link["http://plt-scheme.org/"]{PLT Scheme}.
-We will be using the DrScheme Module language. Enter the following into the Definition window.
+Everything you needed in this tutorial is provided in @link["http://racket-lang.org/"]{Racket}.
+We will be using the DrRacket Module language. Enter the following into the Definition window.
 
-@schememod[
+@racketmod[
 web-server/insta
 (define (start request)
  '(html
@@ -62,7 +62,7 @@ By the end of this tutorial, we'll have a simple blogging application.
 We start by considering our data definitions.  We want to represent a
 list of posts.  Let's say that a post is:
 
-@schemeblock[(define-struct post (title body))]
+@racketblock[(define-struct post (title body))]
 
 @(defstruct post ([title string?] [body string?]))
 
@@ -74,7 +74,7 @@ A blog, then, will be a list of posts:
 
 As a very simple example of a blog:
 
-@schemeblock[
+@racketblock[
 (define BLOG (list (make-post "First Post!"
                               "Hey, this is my first post!")))
 ]
@@ -90,7 +90,7 @@ constructs a request structure and sends it off to our web
 application.  Our start function will consume requests and produce
 responses.  One basic kind of response is to show an HTML page.
 
-@schemeblock[
+@racketblock[
  (define html-response/c
   (flat-rec-contract 
    html-response
@@ -102,36 +102,36 @@ responses.  One basic kind of response is to show an HTML page.
 
 For example:
 
-The HTML @tt{hello} is represented as @scheme["hello"]. Strings are automatically escaped when output. This guarantees valid HTML. Therefore, the value @scheme["<b>Unfinished tag"] is rendered as @tt{&lt;b&gt;Unfinished tag} not @tt{<b>Unfinished tag}. Similarly, @scheme["<i>Finished tag</i>"] is rendered as @tt{&lt;i&gt;Finished tag&lt;/i&gt;} not @tt{<i>Finished tag</i>}.
+The HTML @tt{hello} is represented as @racket["hello"]. Strings are automatically escaped when output. This guarantees valid HTML. Therefore, the value @racket["<b>Unfinished tag"] is rendered as @tt{&lt;b&gt;Unfinished tag} not @tt{<b>Unfinished tag}. Similarly, @racket["<i>Finished tag</i>"] is rendered as @tt{&lt;i&gt;Finished tag&lt;/i&gt;} not @tt{<i>Finished tag</i>}.
 
 @tt{<p>This is an example</p>} is
 
-@scheme['(p "This is an example")].
+@racket['(p "This is an example")].
 
 @tt{<a href="link.html">Past</a>} is
 
-@scheme['(a ((href "link.html")) "Past")].
+@racket['(a ((href "link.html")) "Past")].
 
 @tt{<p>This is <div class="emph">another</div> example.</p>} is
 
-@scheme['(p "This is " (div ((class "emph")) "another") " example.")].
+@racket['(p "This is " (div ((class "emph")) "another") " example.")].
 
-We can produce these @scheme[html-response]s by using @scheme[cons] and @scheme[list] directly.
+We can produce these @racket[html-response]s by using @racket[cons] and @racket[list] directly.
 Doing so, however, can be notationally heavy.  Consider:
 
-@schemeblock[
+@racketblock[
   (list 'html (list 'head (list 'title "Some title"))
          (list 'body (list 'p "This is a simple static page.")))
 ]
 
 vs:
 
-@schemeblock[
+@racketblock[
   '(html (head (title "Some title"))
          (body (p "This is a simple static page.")))
 ]
 
-They both produce the same @scheme[html-response], but the latter is a lot
+They both produce the same @racket[html-response], but the latter is a lot
 easier to type and read.  We've been using the extended list
 abbreviation form described in @link["http://htdp.org/2003-09-26/Book/curriculum-Z-H-17.html#node_chap_13"]{Section 13} of @link["http://htdp.org/"]{How to Design Programs}:
 by using a leading forward quote mark to concisely represent the list
@@ -139,7 +139,7 @@ structure, we can construct static html responses with aplomb.
 
 However, we can run into a problem when we use simple list
 abbreviation with dynamic content.  If we have expressions to inject
-into the @scheme[html-response] structure, we can't use a simple list-abbreviation
+into the @racket[html-response] structure, we can't use a simple list-abbreviation
 approach because those expressions will be treated literally as part
 of the list structure!
 
@@ -148,7 +148,7 @@ abbreviations, but with the option to treat a portion of the structure
 as a normal expression.  That is, we would like to define a template
 whose placeholders can be easily expressed and filled in dynamically.
 
-Scheme provides this templating functionality with quasiquotation.
+Racket provides this templating functionality with quasiquotation.
 Quasiquotation uses a leading back-quote in front of the whole
 structure.  Like regular quoted list abbreviation, the majority of the
 list structure will be literally preserved in the nested list result.
@@ -156,7 +156,7 @@ In places where we'd like a subexpression's value to be plugged in, we
 prepend an unquoting comma in front of the subexpression.  As an
 example:
 
-@schemeblock[
+@racketblock[
 @code:comment{render-greeting: string -> html-response}
 @code:comment{Consumes a name, and produces a dynamic html-response.}
 (define (render-greeting a-name)
@@ -164,38 +164,38 @@ example:
          (body (p ,(string-append "Hello " a-name)))))
 ]
 
-@bold{Exercise.} Write a function that consumes a @scheme[post] and produces
-an @scheme[html-response] representing that content.
+@bold{Exercise.} Write a function that consumes a @racket[post] and produces
+an @racket[html-response] representing that content.
 
 @defthing[render-post (post? . -> . html-response/c)]
 
 As an example, we want:
 
-@schemeblock[
+@racketblock[
     (render-post (make-post "First post!" "This is a first post."))
 ]
 
 to produce:
 
-@schemeblock[
+@racketblock[
    '(div ((class "post")) "First post!" (p "This is a first post."))
 ]
 
-@bold{Exercise.} Revise @scheme[render-post] to show the number of comments attached
+@bold{Exercise.} Revise @racket[render-post] to show the number of comments attached
 to a post.
 
 @centerline{------------}
 
-If an expression produces a list of @scheme[html-response] fragments, we may
+If an expression produces a list of @racket[html-response] fragments, we may
 want to splice in the elements of a list into our template, rather
 plug in the whole list itself.  In these situations, we can use the
-splicing form @scheme[,@expression].
+splicing form @racket[,@expression].
 
 As an example, we may want a helper function that transforms a
-@scheme[html-response] list into a fragment representing an unordered, itemized
+@racket[html-response] list into a fragment representing an unordered, itemized
 HTML list:
 
-@schemeblock[
+@racketblock[
 @code:comment{render-as-itemized-list: (listof html-response) -> html-response}
 @code:comment{Consumes a list of items, and produces a rendering}
 @code:comment{as an unordered list.}
@@ -209,33 +209,33 @@ HTML list:
   `(li ,a-fragment))
 ]
 
-@bold{Exercise.} Write a function @scheme[render-posts] that consumes a @scheme[(listof post?)]
-and produces an @scheme[html-response] for that content.
+@bold{Exercise.} Write a function @racket[render-posts] that consumes a @racket[(listof post?)]
+and produces an @racket[html-response] for that content.
 
 @defthing[render-posts ((listof post?) . -> . html-response/c)]
 
 As examples:
 
-@schemeblock[
+@racketblock[
 (render-posts empty)
 ]
 
 should produce:
 
-@schemeblock[
+@racketblock[
 '(div ((class "posts")))
 ]
 
 While
 
-@schemeblock[
+@racketblock[
 (render-posts (list (make-post "Post 1" "Body 1")
                     (make-post "Post 2" "Body 2")))
 ]
 
 should produce:
 
-@schemeblock[
+@racketblock[
 '(div ((class "posts"))
       (div ((class "post")) "Post 1" "Body 1")
       (div ((class "post")) "Post 2" "Body 2"))
@@ -243,9 +243,9 @@ should produce:
 
 @centerline{------------}
 
-Now that we have the @scheme[render-posts] function handy, let's revisit our
-web application and change our @scheme[start] function to return an interesting
-@scheme[html-response].
+Now that we have the @racket[render-posts] function handy, let's revisit our
+web application and change our @racket[start] function to return an interesting
+@racket[html-response].
 
 @external-file["iteration-1.rkt"]
 
@@ -262,39 +262,39 @@ will let the user add a new blog entry.  When the user presses the
 submit button, we want the user to see the new post at the top of the
 page.
 
-Until now, we've been passing around a @scheme[request] object without doing
-anything with it.  As we might expect, the @scheme[request] object isn't meant
+Until now, we've been passing around a @racket[request] object without doing
+anything with it.  As we might expect, the @racket[request] object isn't meant
 to be ignored so much!  When a user fills out a web form and submits
-it, that user's browser constructs a new @scheme[request] that holds the form
-values in it.  We can use the function @scheme[request-bindings] to grab at
-the values that the user has filled out.  The type of @scheme[request-bindings]
+it, that user's browser constructs a new @racket[request] that holds the form
+values in it.  We can use the function @racket[request-bindings] to grab at
+the values that the user has filled out.  The type of @racket[request-bindings]
 is:
 
 @defthing[request-bindings (request? . -> . bindings?)]
 
-Along with @scheme[request-bindings], there's another function called
-@scheme[extract-binding/single] that takes this as well as a name, and returns
+Along with @racket[request-bindings], there's another function called
+@racket[extract-binding/single] that takes this as well as a name, and returns
 the value associated to that name.
 
 @defthing[extract-binding/single (symbol? bindings? . -> . string?)]
 
 Finally, we can check to see if a name exists in a binding with
-@scheme[exists-binding?]:
+@racket[exists-binding?]:
 
 @defthing[exists-binding? (symbol? bindings? . -> . boolean?)]
 
-With these functions, we can design functions that consume @scheme[request]s
+With these functions, we can design functions that consume @racket[request]s
 and do something useful.
 
-@bold{Exercise.} Write a function @scheme[can-parse-post?] that consumes a @scheme[bindings?].
-It should produce @scheme[#t] if there exist bindings both for the symbols
-@scheme['title] and @scheme['body], and @scheme[#f] otherwise.
+@bold{Exercise.} Write a function @racket[can-parse-post?] that consumes a @racket[bindings?].
+It should produce @racket[#t] if there exist bindings both for the symbols
+@racket['title] and @racket['body], and @racket[#f] otherwise.
 
 @defthing[can-parse-post? (bindings? . -> . boolean?)]
 
-@bold{Exercise.} Write a function @scheme[parse-post] that consumes a bindings.
-Assume that the bindings structure has values for the symbols @scheme['title]
-and @scheme['body]. @scheme[parse-post] should produce a post containing those values.
+@bold{Exercise.} Write a function @racket[parse-post] that consumes a bindings.
+Assume that the bindings structure has values for the symbols @racket['title]
+and @racket['body]. @racket[parse-post] should produce a post containing those values.
 
 @defthing[parse-post (bindings? . -> . post?)]
 
@@ -318,24 +318,24 @@ blog that only accepts one new blog entry.  Don't worry!  We will fix
 this.
 
 But there's a higher-level problem with our program: although we do
-have a function, @scheme[start], that can respond to requests directed at our
-application's URL, that @scheme[start] function is starting to get overloaded
-with a lot of responsibility.  Conceptually, @scheme[start] is now handling
+have a function, @racket[start], that can respond to requests directed at our
+application's URL, that @racket[start] function is starting to get overloaded
+with a lot of responsibility.  Conceptually, @racket[start] is now handling
 two different kinds of requests: it's either a request for showing a
 blog, or a request for adding a new blog post.
 
-What's happening is that @scheme[start] is becoming a traffic cop --- a
+What's happening is that @racket[start] is becoming a traffic cop --- a
 dispatcher --- for all the behavior of our web application.  As far as
 we know, if we want to add more functionality to our application,
 start needs to know how to deal.  Can we can get different kinds of
 requests to automatically direct themselves to different functions?
 
-The web server library provides a function, @scheme[send/suspend/dispatch],
+The web server library provides a function, @racket[send/suspend/dispatch],
 that allows us to create URLs that direct to different parts of our
 application.  Let's demonstrate a dizzying example.  In a new file,
 enter the following in the definition window.
 
-@schememod[
+@racketmod[
 web-server/insta
 @code:comment{start: request -> html-response}
 (define (start request)
@@ -361,27 +361,27 @@ web-server/insta
 ]
 
 This is a web application that goes round and round.  When a user
-first visits the application, the user starts off in @scheme[phase-1].  The
+first visits the application, the user starts off in @racket[phase-1].  The
 page that's generated has a hyperlink that, when clicked, continues to
-@scheme[phase-2].  The user can click back, and falls back to @scheme[phase-1], and the
+@racket[phase-2].  The user can click back, and falls back to @racket[phase-1], and the
 cycle repeats.
 
-Let's look more closely at the @scheme[send/suspend/dispatch] mechanism.
-@scheme[send/suspend/dispatch] consumes a response-generating function, and it
-gives that response-generator a function called @scheme[embed/url] that we'll
+Let's look more closely at the @racket[send/suspend/dispatch] mechanism.
+@racket[send/suspend/dispatch] consumes a response-generating function, and it
+gives that response-generator a function called @racket[embed/url] that we'll
 use to build special URLs.  What makes these URLs special is this:
 when a web browser visits these URLs, our web application restarts,
 but not from start, but from the handler that we associate to the URL.
-In @scheme[phase-1], the use of @scheme[embed/url] associates the link with @scheme[phase-2], and
+In @racket[phase-1], the use of @racket[embed/url] associates the link with @racket[phase-2], and
 vice versa.
 
 We can be more sophisticated about the handlers associated with
-@scheme[embed/url].  Because the handler is just a request-consuming function,
-it can be defined within a @scheme[local].  Consequently, a local-defined
+@racket[embed/url].  Because the handler is just a request-consuming function,
+it can be defined within a @racket[local].  Consequently, a local-defined
 handler knows about all the variables that are in the scope of its
 definition.  Here's another loopy example:
 
-@schememod[
+@racketmod[
 web-server/insta
 @code:comment{start: request -> html-response}
 (define (start request)
@@ -414,8 +414,8 @@ directs to a URL that's associated to a separate handler.
 
 @external-file["iteration-3.rkt"]
 
-Note that the structure of the @scheme[render-blog-page] function looks very
-similar to that of our last @scheme[show-counter] example.  The user can
+Note that the structure of the @racket[render-blog-page] function looks very
+similar to that of our last @racket[show-counter] example.  The user can
 finally add and see multiple posts to their blog.
 
 Unfortunately, there's still a problem.  To see the problem: add a few
@@ -435,25 +435,25 @@ let's add mutation into the mix.
 There's one small detail we need to touch: in the web-server language,
 structures are immutable by default.  We'll want to override this
 default and get get access to the structure mutators.  To do so, we
-adjust our structure definitions with the @scheme[#:mutable] keyword.
+adjust our structure definitions with the @racket[#:mutable] keyword.
 
-Earlier, we had said that a @scheme[blog] was a list of @scheme[post]s, 
+Earlier, we had said that a @racket[blog] was a list of @racket[post]s, 
 but because we want to allow the blog to be changed, let's revisit our
 definition so that a blog is a mutable structure:
 
-@schemeblock[(define-struct blog (posts) #:mutable)]
+@racketblock[(define-struct blog (posts) #:mutable)]
 
 @defstruct[blog ([posts (listof post?)])]
 
 Mutable structures provide functions to change the fields of a
 structure; in this case, we now have a structure mutator called
-@scheme[set-blog-posts!],
+@racket[set-blog-posts!],
 
 @defthing[set-blog-posts! (blog? (listof post?) . -> . void)]
 
 and this will allow us to change the posts of a blog.
 
-@bold{Exercise.} Write a function @scheme[blog-insert-post!]
+@bold{Exercise.} Write a function @racket[blog-insert-post!]
 
 @defthing[blog-insert-post! (blog? post? . -> . void)]
 
@@ -466,10 +466,10 @@ Since we've changed the data representation of a blog, we'll need to
 revise our web application to use the updated representation.  One
 other thing to note is that, within the web application, because we're
 sharing the same blog value, we don't need to pass it around with our
-handlers anymore: we can get at the current blog through our @scheme[BLOG]
+handlers anymore: we can get at the current blog through our @racket[BLOG]
 variable.
 
-After doing the adjustments incorporating @scheme[insert-blog-post!], and doing
+After doing the adjustments incorporating @racket[insert-blog-post!], and doing
 a little variable cleanup, our web application now looks like this:
 
 @external-file["iteration-4.rkt"]
@@ -492,19 +492,19 @@ posts.
 
 @bold{Exercise.} Make up a few examples of posts.
 
-@bold{Exercise.} Define a function @scheme[post-add-comment!]
+@bold{Exercise.} Define a function @racket[post-add-comment!]
 
 @defthing[post-add-comment! (post? string? . -> . void)]
 
 whose intended side effect is to add a new comment to the end of the post's
 list of comments.
 
-@bold{Exercise.} Adjust @scheme[render-post] so that the produced fragment will include the
+@bold{Exercise.} Adjust @racket[render-post] so that the produced fragment will include the
 comments in an itemized list.
 
 @bold{Exercise.} Because we've extended a post to include comments, other
 post-manipulating parts of the application may need to be adjusted,
-such as uses of @scheme[make-post].  Identify and fix any other part of the
+such as uses of @racket[make-post].  Identify and fix any other part of the
 application that needs to accommodate the post's new structure.
 
 @centerline{------------}
@@ -512,7 +512,7 @@ application that needs to accommodate the post's new structure.
 Once we've changed the data structure of the posts and adjusted our
 functions to deal with this revised structure, the web application
 should be runnable.  The user may even may even see some of the fruits
-of our labor: if the initial @scheme[BLOG] has a post with a comment, the user
+of our labor: if the initial @racket[BLOG] has a post with a comment, the user
 should see those comments now.  But obviously, there's something
 missing: the user doesn't have the user interface to add comments to a
 post!
@@ -542,15 +542,15 @@ should let us add comments.
 @image{scribblings/tutorial/images/flow1.png}
 
 Each point in the diagram corresponds to a request-consuming handler.
-As we might suspect, we'll be using @scheme[send/suspend/dispatch] some more.
+As we might suspect, we'll be using @racket[send/suspend/dispatch] some more.
 Every arrow in the diagram will be realized as a URL that we generate
-with @scheme[embed/url].
+with @racket[embed/url].
 
 This has a slightly messy consequence: previously, we've been
 rendering the list of posts without any hyperlinks.  But since any
-function that generates a special dispatching URL uses @scheme[embed/url] to do
-it, we'll need to adjust @scheme[render-posts] and @scheme[render-post] to consume and
-use @scheme[embed/url] itself when it makes those hyperlinked titles.
+function that generates a special dispatching URL uses @racket[embed/url] to do
+it, we'll need to adjust @racket[render-posts] and @racket[render-post] to consume and
+use @racket[embed/url] itself when it makes those hyperlinked titles.
 
 Our web application now looks like:
 
@@ -558,7 +558,7 @@ Our web application now looks like:
 
 We now have an application that's pretty sophisticated: we can add
 posts and write comments.  Still, there's a problem with this: once
-the user's in a @scheme[post-detail-page], they can't get back to the blog
+the user's in a @racket[post-detail-page], they can't get back to the blog
 without pressing the browser's back button!  That's disruptive.  We
 should provide a page flow that lets us get back to the main
 blog-viewing page, to keep the user from every getting "stuck" in a
@@ -568,13 +568,13 @@ dark corner of the web application.
 @declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-6)]
 
 Here's a diagram of a our revised page flow of our web application.
-Maybe we can just add a BACK link from the @scheme[render-post-detail-page]
+Maybe we can just add a BACK link from the @racket[render-post-detail-page]
 that gets us back to viewing the top-level blog.
 
 @image{scribblings/tutorial/images/flow2.png}
 
-@bold{Exercise.} Adjust @scheme[render-post-detail-page] to include another link that goes
-back to @scheme[render-blog-page].
+@bold{Exercise.} Adjust @racket[render-post-detail-page] to include another link that goes
+back to @racket[render-blog-page].
 
 To make this more interesting, maybe we should enrich the flow a
 bit more.  We can give the user a choice right before committing to
@@ -599,10 +599,10 @@ to our web pages.  For example, if we'd like to turn all of our
 paragraphs green, we might add the following style declaration within
 our response.
 
-@scheme['(style ((type "text/css")) "p { color: green }")]
+@racket['(style ((type "text/css")) "p { color: green }")]
 
 It's tempting to directly embed this style information into our
-@scheme[html-response]s.  However, our source file is already quite busy.  We
+@racket[html-response]s.  However, our source file is already quite busy.  We
 often want to separate the logical representation of our application
 from its presentation.  Rather than directly embed the .css in the
 HTML response, let's instead add a link reference to an separate .css
@@ -617,7 +617,7 @@ applications.
 
 To do this, we set aside a path to store these files, and then tell
 the web server where that directory is.  The function
-@scheme[static-files-path],
+@racket[static-files-path],
 
 @defthing[static-files-path (path-string? -> void)]
 
@@ -627,7 +627,7 @@ that looks like a static resource request.
 @bold{Exercise.} Create a simple web application called @filepath{test-static.rkt} with the
 following content:
 
-@schememod[
+@racketmod[
 web-server/insta
 (define (start request)
   '(html (head (title "Testing"))
@@ -686,11 +686,11 @@ A common pattern that web developers use to dodge the double
 submission problem is to handle state-mutating request in a peculiar
 way: once the user sends over a request that affects change to the
 system, we then redirect them off to a different URL that's safe to
-reload.  To make this happen, we will use the function @scheme[redirect/get].
+reload.  To make this happen, we will use the function @racket[redirect/get].
 
 @defthing[redirect/get (-> request?)]
 
-This @scheme[redirect/get] function has an immediate side effect: it forces the
+This @racket[redirect/get] function has an immediate side effect: it forces the
 user's browser to follow a redirection to a safe URL, and gives us
 back that fresh new request.
 
@@ -709,11 +709,11 @@ changed?
 @external-file["use-redirect.rkt"]
 
 Double-submit, then, is painlessly easy to mitigate.  Whenever we have
-handlers that mutate the state of our system, we use @scheme[redirect/get] when
+handlers that mutate the state of our system, we use @racket[redirect/get] when
 we send our response back.
 
 @bold{Exercise.}
-Revise the blog application with @scheme[redirect/get] to address the
+Revise the blog application with @racket[redirect/get] to address the
 double-submit problem.
 
 With these minor fixes, our blog application now looks like this:
@@ -735,7 +735,7 @@ If we look closely at our web application program, we see a seam
 between the model of our blog, and the web application that uses that
 model.  Let's isolate the model: it's all the stuff near the top:
 
-@schemeblock[
+@racketblock[
     (define-struct blog (posts) #:mutable)
     (define-struct post (title body comments) #:mutable)
     (define BLOG ...)
@@ -755,15 +755,15 @@ Create a new file called @filepath{model.rkt} with the following content.
 @external-file["model.rkt"]
 
 This is essentially a cut-and-paste of the lines we identified as our
-model.  It's written in the @schememodname[scheme] language because
+model.  It's written in the @racketmodname[racket] language because
 the model shouldn't need to worry about web-server stuff.  There's one
 additional expression that looks a little odd at first:
 
-@schemeblock[
+@racketblock[
     (provide (all-defined-out))
 ]
 
-which tells PLT Scheme to allow other files to have access to
+which tells Racket to allow other files to have access to
 everything that's defined in the @filepath{model.rkt} file.
 
 
@@ -771,11 +771,11 @@ We change our web application to use this model.  Going back to our
 web application, we rip out the old model code, and replace it with an
 expression that let's use use the new model.
 
-@schemeblock[
+@racketblock[
     (require "model.rkt")
 ]
 
-which hooks up our web application module to the @schememodname["model.rkt"] module.
+which hooks up our web application module to the @racketmodname["model.rkt"] module.
 
 @external-file["iteration-8.rkt"]
 
@@ -787,20 +787,20 @@ Now that the model is separated into a separate module, we can more easily modif
 its functionality, and in particular, make it persistent.
 
 The first step is to make the model structures serializable. Earlier, we made the
-structures mutable by adding @scheme[#:mutable] to their definitions. We can make
-the structures serializable by adding @scheme[#:prefab]. This tells PLT Scheme that
+structures mutable by adding @racket[#:mutable] to their definitions. We can make
+the structures serializable by adding @racket[#:prefab]. This tells Racket that
 these structures can be "previously fabricated", that is, created before the program
 started running---which is exactly what we want when restoring the blog data from disk.
 Our blog structure definition now looks like:
 
-@schemeblock[
+@racketblock[
     (define-struct blog (posts) #:mutable #:prefab)
 ]
 
-Now @scheme[blog] structures can be read from the outside world with @scheme[read] and written
-with @scheme[write]. However, we need to make sure everything inside a @scheme[blog] structure is
-also marked as @scheme[#:prefab]. If we had a more complicated structure, we would need to ensure
-that everything (transitively) in the structure was @scheme[#:prefab]'d.
+Now @racket[blog] structures can be read from the outside world with @racket[read] and written
+with @racket[write]. However, we need to make sure everything inside a @racket[blog] structure is
+also marked as @racket[#:prefab]. If we had a more complicated structure, we would need to ensure
+that everything (transitively) in the structure was @racket[#:prefab]'d.
 
 @bold{Exercise.} Write the new structure definition for posts.
 
@@ -815,7 +815,7 @@ the blog structure again. Now it will be:
 
 Then, we'll make a function that allows our application to initialize the blog:
 
-@schemeblock[
+@racketblock[
 @code:comment{initialize-blog! : path? -> blog}
 @code:comment{Reads a blog from a path, if not present, returns default}
 (define (initialize-blog! home)
@@ -835,20 +835,20 @@ Then, we'll make a function that allows our application to initialize the blog:
     the-blog))
 ]
 
-@scheme[initialize-blog!] takes a path and tries to @scheme[read] from it. If the path contains
-a @scheme[blog] structure, then @scheme[read] will parse it, because @scheme[blog]s are @scheme[#:prefab].
-If there is no file at the path, or if the file has some spurious data, then @scheme[read] or
-@scheme[with-input-from-file] will throw an exception. @scheme[with-handlers] provides an
-exception handler that will return the default @scheme[blog] structure for all
+@racket[initialize-blog!] takes a path and tries to @racket[read] from it. If the path contains
+a @racket[blog] structure, then @racket[read] will parse it, because @racket[blog]s are @racket[#:prefab].
+If there is no file at the path, or if the file has some spurious data, then @racket[read] or
+@racket[with-input-from-file] will throw an exception. @racket[with-handlers] provides an
+exception handler that will return the default @racket[blog] structure for all
 kinds of errors. 
 
-After @scheme[the-blog] is bound to the newly read (or default) structure, we set the home to the
+After @racket[the-blog] is bound to the newly read (or default) structure, we set the home to the
 correct path. (Notice that we need to convert the path into a string. Why didn't we just make the blog
-structure contain paths? Answer: They can't be used with @scheme[read] and @scheme[write].)
+structure contain paths? Answer: They can't be used with @racket[read] and @racket[write].)
 
 Next, we will need to write a function to save the model to the disk.
 
-@schemeblock[
+@racketblock[
 @code:comment{save-blog! : blog -> void}
 @code:comment{Saves the contents of a blog to its home}
 (define (save-blog! a-blog)
@@ -859,48 +859,48 @@ Next, we will need to write a function to save the model to the disk.
       #:exists 'replace)))
 ]
 
-@scheme[save-blog!] @scheme[write]s the model into its home .
-It provides @scheme[with-output-to-file] with an @scheme[#:exists] flag that tells it to replace the
-file contents if the file at @scheme[blog-home] exists.
+@racket[save-blog!] @racket[write]s the model into its home .
+It provides @racket[with-output-to-file] with an @racket[#:exists] flag that tells it to replace the
+file contents if the file at @racket[blog-home] exists.
 
 This function can now be used to save the blog structure whenever we modify it. Since we only ever modify the
-blog structure in the model, we only need to update @scheme[blog-insert-post!] and @scheme[post-insert-comment!].
+blog structure in the model, we only need to update @racket[blog-insert-post!] and @racket[post-insert-comment!].
 
-@bold{Exercise.} Change @scheme[blog-insert-post!] and @scheme[post-insert-comment!] to call @scheme[save-blog!].
+@bold{Exercise.} Change @racket[blog-insert-post!] and @racket[post-insert-comment!] to call @racket[save-blog!].
 
 @centerline{------------}
 
-You may have had a problem when trying to update @scheme[post-insert-comment!]. It needs to call @scheme[save-blog!]
+You may have had a problem when trying to update @racket[post-insert-comment!]. It needs to call @racket[save-blog!]
 with the blog structure. But, it wasn't passed the blog as an argument. We'll need to add that argument and change the
-application appropriately. While we're at it, let's change @scheme[blog-insert-post!] to accept the contents of the
+application appropriately. While we're at it, let's change @racket[blog-insert-post!] to accept the contents of the
 post structure, rather the structure itself, to better abstract the model interface:
 
 @defthing[blog-insert-post! (blog? string? string? . -> . void)]
 @defthing[post-insert-comment! (blog? post? string? . -> . void)]
 
-@bold{Exercise.} Write the new definitions of @scheme[blog-insert-post!] and @scheme[post-insert-comment!].
-(Remember to call @scheme[save-blog!].)
+@bold{Exercise.} Write the new definitions of @racket[blog-insert-post!] and @racket[post-insert-comment!].
+(Remember to call @racket[save-blog!].)
 
 
 
-In our last iteration of our model, we used @scheme[(provide
+In our last iteration of our model, we used @racket[(provide
 (all-defined-out))] to expose all of the model's definitions.  But we
 often want to hide things like private functions and internal data
 structures from others.  We'll do that here by using a form of
-@scheme[provide] that explicitly names the exposed definitions.
+@racket[provide] that explicitly names the exposed definitions.
 
 For example, if we wanted to limit the exposed functions to
-@scheme[blog-insert-post!] and @scheme[post-insert-comment!], we can
+@racket[blog-insert-post!] and @racket[post-insert-comment!], we can
 do this:
-@schemeblock[
+@racketblock[
     (provide blog-insert-post!
              post-insert-comment!)
 ]
 
 
 Of course, this set of functions is too minimal!  Let's change the
-@scheme[provide] line in the model to:
-@schemeblock[
+@racket[provide] line in the model to:
+@racketblock[
 (provide blog? blog-posts
          post? post-title post-body post-comments
          initialize-blog!
@@ -911,12 +911,12 @@ which captures the essential interactions we do with a blog.
 
 @centerline{------------}
 
-The last step is to change the application. We need to call @scheme[initialize-blog!] to read in the blog structure, and we
-need to pass the blog value that is returned around the application, because there is no longer a @scheme[BLOG] export.
+The last step is to change the application. We need to call @racket[initialize-blog!] to read in the blog structure, and we
+need to pass the blog value that is returned around the application, because there is no longer a @racket[BLOG] export.
 
-First, change @scheme[start] to call @scheme[initialize-blog!] with a path in our home directory:
+First, change @racket[start] to call @racket[initialize-blog!] with a path in our home directory:
 
-@schemeblock[
+@racketblock[
  (define (start request)  
    (render-blog-page 
     (initialize-blog! 
@@ -925,9 +925,9 @@ First, change @scheme[start] to call @scheme[initialize-blog!] with a path in ou
     request))
 ]
 
-@bold{Exercise.} Thread the @scheme[blog] structure through the application appropriately to give
-@scheme[blog-insert-post!] and @scheme[post-insert-comment!] the correct values. (You'll also need to
-change how @scheme[render-blog-page] adds new posts.)
+@bold{Exercise.} Thread the @racket[blog] structure through the application appropriately to give
+@racket[blog-insert-post!] and @racket[post-insert-comment!] the correct values. (You'll also need to
+change how @racket[render-blog-page] adds new posts.)
 
 @centerline{------------}
 
@@ -951,9 +951,9 @@ So, in the next section, we'll talk about how to use an SQL database to store ou
                                   web-server/scribblings/tutorial/dummy-sqlite)]
 @(require (for-label web-server/scribblings/tutorial/dummy-sqlite))
 
-Our next task is to employ an SQL database for the blog model. We'll be using SQLite with the @schememodname[(planet jaymccarthy/sqlite:4)] PLaneT package. We add the following to the top of our model:
+Our next task is to employ an SQL database for the blog model. We'll be using SQLite with the @racketmodname[(planet jaymccarthy/sqlite:4)] PLaneT package. We add the following to the top of our model:
 
-@schemeblock[
+@racketblock[
 (require (prefix-in sqlite: (planet jaymccarthy/sqlite:4)))
 ]
 
@@ -973,22 +973,22 @@ The first thing we should do is decide on the relational structure of our model.
  CREATE TABLE comments (pid INTEGER, content TEXT)
 }
 
-Each post will have an identifier, a title, and a body. This is the same as our old Scheme structure,
+Each post will have an identifier, a title, and a body. This is the same as our old Racket structure,
 except we've added the identifier. (Actually, there was always an identifier---the memory pointer---but now
 we have to make it explicit in the database.)
 
 Each comment is tied to a post by the post's identifier and has textual content. We could have chosen to
-serialize comments with @scheme[write] and add a new TEXT column to the posts table to store the value.
+serialize comments with @racket[write] and add a new TEXT column to the posts table to store the value.
 By adding a new comments table, we are more in accord with the relational style.
 
-A @scheme[blog] structure will simply be a container for the database handle:
+A @racket[blog] structure will simply be a container for the database handle:
 
 @defstruct[blog ([db sqlite:db?])]
 
-@bold{Exercise.} Write the @scheme[blog] structure definition. (It does not need to be mutable or serializable.)
+@bold{Exercise.} Write the @racket[blog] structure definition. (It does not need to be mutable or serializable.)
 
-We can now write the code to initialize a @scheme[blog] structure:
-@schemeblock[
+We can now write the code to initialize a @racket[blog] structure:
+@racketblock[
 @code:comment{initialize-blog! : path? -> blog?}
 @code:comment{Sets up a blog database (if it doesn't exist)}
 (define (initialize-blog! home)
@@ -1012,12 +1012,12 @@ We can now write the code to initialize a @scheme[blog] structure:
   the-blog)
 ]
 
-@scheme[sqlite:open] will create a database if one does not already exist at the @scheme[home] path. But, we still need
+@racket[sqlite:open] will create a database if one does not already exist at the @racket[home] path. But, we still need
 to initialize the database with the table definitions and initial data. 
 
-We used @scheme[blog-insert-post!] and @scheme[post-insert-comment!] to initialize the database. Let's see their implementation:
+We used @racket[blog-insert-post!] and @racket[post-insert-comment!] to initialize the database. Let's see their implementation:
 
-@schemeblock[
+@racketblock[
 @code:comment{blog-insert-post!: blog? string? string? -> void}
 @code:comment{Consumes a blog and a post, adds the post at the top of the blog.}
 (define (blog-insert-post! a-blog title body)
@@ -1041,7 +1041,7 @@ We used @scheme[blog-insert-post!] and @scheme[post-insert-comment!] to initiali
 
 @centerline{------------}
 
-A user could submit a post with a title like, @scheme["null', 'null') and INSERT INTO accounts (username, password) VALUES ('ur','hacked"] and get our simple @scheme[sqlite:insert] to make two INSERTs instead of one. 
+A user could submit a post with a title like, @racket["null', 'null') and INSERT INTO accounts (username, password) VALUES ('ur','hacked"] and get our simple @racket[sqlite:insert] to make two INSERTs instead of one. 
 
  This is called an SQL injection attack. It can be resolved by using
  prepared statements that let SQLite do the proper quoting for us. Refer
@@ -1049,8 +1049,8 @@ A user could submit a post with a title like, @scheme["null', 'null') and INSERT
 
 @centerline{------------}
 
-In @scheme[post-insert-comment!], we used @scheme[post-id], but we have not yet defined the new @scheme[post] structure.
-It @emph{seems} like a @scheme[post] should be represented by an integer id, because the post table contains an integer as the identifying value.
+In @racket[post-insert-comment!], we used @racket[post-id], but we have not yet defined the new @racket[post] structure.
+It @emph{seems} like a @racket[post] should be represented by an integer id, because the post table contains an integer as the identifying value.
 
 However, we cannot tell from this structure
 what blog this posts belongs to, and therefore, what database; so, we could not extract the title or body values,
@@ -1060,9 +1060,9 @@ since we do not know what to query. Therefore, we should associate the blog with
 
 @bold{Exercise.} Write the structure definition for posts.
 
-The only function that creates posts is @scheme[blog-posts]:
+The only function that creates posts is @racket[blog-posts]:
 
-@schemeblock[
+@racketblock[
 @code:comment{blog-posts : blog -> (listof post?)}
 @code:comment{Queries for the post ids}
 (define (blog-posts a-blog)
@@ -1079,11 +1079,11 @@ The only function that creates posts is @scheme[blog-posts]:
            (map row->post (rest rows))])))
 ]
 
-@scheme[sqlite:select] returns a list of vectors. The first element of the list is the name of the columns.
+@racket[sqlite:select] returns a list of vectors. The first element of the list is the name of the columns.
 Each vector has one element for each column. Each element is a string representation of the value.
 
 At this point we can write the functions that operate on posts:
-@schemeblock[
+@racketblock[
 @code:comment{post-title : post -> string?}
 @code:comment{Queries for the title}
 (define (post-title a-post)
@@ -1097,10 +1097,10 @@ At this point we can write the functions that operate on posts:
    0))
 ]
 
-@bold{Exercise.} Write the definition of @scheme[post-body].
+@bold{Exercise.} Write the definition of @racket[post-body].
              
-@bold{Exercise.} Write the definition of @scheme[post-comments].
-(Hint: Use @scheme[blog-posts] as a template, not @scheme[post-title].)
+@bold{Exercise.} Write the definition of @racket[post-comments].
+(Hint: Use @racket[blog-posts] as a template, not @racket[post-title].)
 
 @centerline{------------}
 
@@ -1114,7 +1114,7 @@ Our model is now:
 
 And our application is:
 
-@schememod[
+@racketmod[
 web-server/insta
 
 (require "model-3.rkt")
@@ -1122,24 +1122,24 @@ web-server/insta
 ....
 ]
 
-@section{Leaving DrScheme}
+@section{Leaving DrRacket}
 
-So far, to run our application, we've been pressing @onscreen{Run} in DrScheme. If we were to actually deploy
+So far, to run our application, we've been pressing @onscreen{Run} in DrRacket. If we were to actually deploy
 an application, we'd need to do this differently.
 
 @(require (for-label web-server/servlet-env)
           (for-label web-server/managers/lru))
 
-The simplest way to do this is to use @schememodname[web-server/servlet-env].
+The simplest way to do this is to use @racketmodname[web-server/servlet-env].
 
 First, change the first lines in your application from
-@schememod[
+@racketmod[
 web-server/insta
 ]
 
 to
-@schememod[
-scheme
+@racketmod[
+racket
 
 (require web-server/servlet)
 (provide/contract (start (request? . -> . response/c)))
@@ -1147,7 +1147,7 @@ scheme
 
 Second, add the following at the bottom of your application:
 
-@schemeblock[
+@racketblock[
 (require web-server/servlet-env)
 (serve/servlet start 
                #:launch-browser? #f
@@ -1160,24 +1160,24 @@ Second, add the following at the bottom of your application:
                "/servlets/APPLICATION.rkt")
 ]
 
-You can change the value of the @scheme[#:port] parameter to use a different port.
+You can change the value of the @racket[#:port] parameter to use a different port.
 
-@scheme[#:listen-ip] is set to @scheme[#f] so that the server will listen on @emph{all} available IPs.
+@racket[#:listen-ip] is set to @racket[#f] so that the server will listen on @emph{all} available IPs.
 
-You should change @scheme[_your-path-here] to be the path to the parent of your @scheme[htdocs] directory.
+You should change @racket[_your-path-here] to be the path to the parent of your @racket[htdocs] directory.
 
-You should change @scheme["APPLICATION.rkt"] to be the name of your application.
+You should change @racket["APPLICATION.rkt"] to be the name of your application.
 
-Third, to run your server, you can either press @onscreen{Run} in DrScheme, or type
+Third, to run your server, you can either press @onscreen{Run} in DrRacket, or type
 
-@commandline{mzscheme -t <file.rkt>}
+@commandline{racket -t <file.rkt>}
 
 (With your own file name, of course.) Both of these will start a Web server  for your application.
 
 @centerline{------------}
 
-@scheme[serve/servlet] takes other options and there are more advanced ways of starting the Web Server,
-but you'll have to refer to the PLT Web Server Reference Manual for details.
+@racket[serve/servlet] takes other options and there are more advanced ways of starting the Web Server,
+but you'll have to refer to the Racket Web Server Reference Manual for details.
 
 @section{Using HTTPS}
 
@@ -1209,4 +1209,4 @@ The Web Server will start on port 443 (which can be overridden with the @exec{-p
 
 As you move forward on your own applications, you may find many useful packages on PLaneT. There are interfaces to other
 databases. Many tools for generating HTML, XML, and Javascript output. Etc. There is also an active community of
-users on the @scheme[plt-scheme] mailing list. We welcome new users!
+users on the @racket[plt-scheme] mailing list. We welcome new users!

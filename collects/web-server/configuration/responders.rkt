@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/runtime-path
+#lang racket
+(require racket/runtime-path
          net/url
          web-server/private/xexpr
          web-server/http/response-structs

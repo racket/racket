@@ -1,13 +1,12 @@
-#lang scheme
-(require scheme/runtime-path)
+#lang racket
+(require racket/runtime-path)
 
-(define-runtime-module-path mzscheme-module-spec mzscheme)
-#;(define-runtime-module-path mred-module-spec mred) ; XXX Sometimes I need these, but not always
+(define-runtime-module-path racket-module-spec racket)
 (define mred-module-spec 'mred)
 
-(define default-to-be-copied-module-specs (list mzscheme-module-spec mred-module-spec))
+(define default-to-be-copied-module-specs (list racket-module-spec mred-module-spec))
 
-(define-runtime-module-path scheme/base-module-spec scheme/base)
+(define-runtime-module-path racket/base-module-spec racket/base)
 
 (define (make-make-servlet-namespace
          #:to-be-copied-module-specs [to-be-copied-module-specs empty])    
@@ -26,7 +25,7 @@
     (define new-namespace (make-base-empty-namespace))
     (define additional-names (map get-name additional-specs))
     (parameterize ([current-namespace new-namespace])
-      (namespace-require scheme/base-module-spec)
+      (namespace-require racket/base-module-spec)
       (for-each (lambda (name)
                   (with-handlers ([exn:fail? void])
                     (when name

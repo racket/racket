@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 ;; owned by ryanc
-(require scheme/contract
-         scheme/promise
-         scheme/dict
+(require racket/contract
+         racket/promise
+         racket/dict
          unstable/skip-list)
 
 ;; NOTE-1

@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/serialize)
+#lang racket
+(require racket/serialize)
 
 (define-serializable-struct soft-state-record (thnk))
 (define-struct some (value))

@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
-         "util.ss")
+         "util.rkt")
 (provide lang-tests)
 
 (define (catch-unsafe-context-exn thunk)
@@ -33,7 +33,7 @@
      "Function application with single argument in tail position"
      (let-values ([(test-m00.4)
                    (make-module-eval
-                    (module m00.4 (lib "lang.ss" "web-server")
+                    (module m00.4 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start initial)
                         (let ([f (let ([m 7]) m)])
@@ -44,7 +44,7 @@
      "start-interaction in argument position of a function call"
      (let-values ([(test-m00.3)
                    (make-module-eval
-                    (module m00.3 (lib "lang.ss" "web-server")
+                    (module m00.3 (lib "lang.rkt" "web-server")
                       (define (foo x) 'foo)
                       (provide start)
                       (define (start initial)
@@ -55,7 +55,7 @@
      "identity interaction, dispatch-start called multiple times"
      (let-values ([(test-m00)
                    (make-module-eval
-                    (module m00 (lib "lang.ss" "web-server")
+                    (module m00 (lib "lang.rkt" "web-server")
                       (define (id x) x)
                       (provide start)
                       (define (start initial)
@@ -67,7 +67,7 @@
      "start-interaction in argument position of a primitive"
      (let-values ([(test-m00.1)
                    (make-module-eval
-                    (module m00.1 (lib "lang.ss" "web-server")
+                    (module m00.1 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start initial)
                         (+ 1 initial))))])         
@@ -77,7 +77,7 @@
      "dispatch-start called multiple times for s-i in non-trivial context"
      (let-values ([(test-m00.2)
                    (make-module-eval
-                    (module m00.2 (lib "lang.ss" "web-server")
+                    (module m00.2 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start initial)
                         (+ (+ 1 1) initial))))])         
@@ -88,7 +88,7 @@
      "start-interaction in third position"
      (let-values ([(test-m01)
                    (make-module-eval
-                    (module m01 (lib "lang.ss" "web-server")
+                    (module m01 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start initial)
                         (+ (* 1 2) (* 3 4) initial))))])         
@@ -101,7 +101,7 @@
      "begin with intermediate multiple values"
      (let-values ([(test)
                    (make-module-eval
-                    (module m03 (lib "lang.ss" "web-server")
+                    (module m03 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start x)
                         (begin (printf "Before~n")
@@ -114,7 +114,7 @@
      "begin0 with intermediate multiple values"
      (let-values ([(test)
                    (make-module-eval
-                    (module m03 (lib "lang.ss" "web-server")
+                    (module m03 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start x)
                         (begin0 x
@@ -127,7 +127,7 @@
      "begin0 with multiple values"
      (let-values ([(test)
                    (make-module-eval
-                    (module m03 (lib "lang.ss" "web-server")
+                    (module m03 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start x)
                         (let-values ([(_ ans)
@@ -145,7 +145,7 @@
      "continuation invoked in non-trivial context from within proc"
      (let-values ([(test-m03)
                    (make-module-eval
-                    (module m03 (lib "lang.ss" "web-server")
+                    (module m03 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start x)
                         (let/cc k
@@ -160,7 +160,7 @@
      "non-tail-recursive 'escaping' continuation"
      (let-values ([(test-m04)
                    (make-module-eval
-                    (module m04 (lib "lang.ss" "web-server")
+                    (module m04 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start ln)
                         (let/cc k
@@ -181,7 +181,7 @@
      "tail-recursive escaping continuation"
      (let-values ([(test-m05)
                    (make-module-eval
-                    (module m05 (lib "lang.ss" "web-server")
+                    (module m05 (lib "lang.rkt" "web-server")
                       (provide start)                 
                       
                       (define (start ln)
@@ -208,11 +208,11 @@
      "curried add with call-with-serializable-current-continuation"
      (let ([table-01-eval
             (make-module-eval
-             (module table01 mzscheme
+             (module table01 racket
                (provide store-k
                         lookup-k)
                
-               (define the-table (make-hash-table))
+               (define the-table (hash))
                
                (define (store-k k)
                  (let ([key (string->symbol (symbol->string (gensym 'key)))])
@@ -221,7 +221,7 @@
                (define (lookup-k key-pair)
                  (hash-table-get the-table (car key-pair) (lambda () #f)))))])         
        (table-01-eval
-        '(module m06 (lib "lang.ss" "web-server")
+        '(module m06 (lib "lang.rkt" "web-server")
            (require 'table01)
            (provide start)
            
@@ -252,7 +252,7 @@
      
      (let-values ([(test-m06.1)
                    (make-module-eval
-                    (module m06.1 (lib "lang.ss" "web-server")
+                    (module m06.1 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (gn which)
                         (cadr
@@ -279,7 +279,7 @@
      
      (let-values ([(test-m06.2)
                    (make-module-eval
-                    (module m06.2 (lib "lang.ss" "web-server")
+                    (module m06.2 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (gn #:page which)
                         (cadr
@@ -311,7 +311,7 @@
       "quasi-quote with splicing: need to recertify context for qq-append"
       (let-values ([(test-m01.1)
                     (make-module-eval
-                     (module m01.1 (lib "lang.ss" "web-server")
+                     (module m01.1 (lib "lang.rkt" "web-server")
                        (provide start)
                        (define (start initial)
                          `(,@(list 1 2 initial)))))])         
@@ -322,7 +322,7 @@
       "recertify context test (1)"
       (let-values ([(test-m01.2)
                     (make-module-eval
-                     (module m01.1 (lib "lang.ss" "web-server")
+                     (module m01.1 (lib "lang.rkt" "web-server")
                        (provide start)
                        (define (start initial)
                          `(foo ,@(list 1 2 3)))))])
@@ -332,7 +332,7 @@
       "recertify context test (2)"
       (let-values ([(test-m01.3)
                     (make-module-eval  
-                     (module m01.3 (lib "lang.ss" "web-server")
+                     (module m01.3 (lib "lang.rkt" "web-server")
                        (provide start)
                        (define (start n)
                          `(n ,@(list 1 2 3)))))])
@@ -342,7 +342,7 @@
       "recertify context test (3)"
       (let-values ([(test-m01.4)
                     (make-module-eval
-                     (module m1 (lib "lang.ss" "web-server")
+                     (module m1 (lib "lang.rkt" "web-server")
                        (provide start)
                        (define (start initial)
                          (define (bar n)
@@ -357,7 +357,7 @@
      "mutually recursive even? and odd?"
      (let-values ([(test-m07)
                    (make-module-eval
-                    (module m07 (lib "lang.ss" "web-server")
+                    (module m07 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start initial)
                         (letrec ([even? (lambda (n)
@@ -376,7 +376,7 @@
      "call-with-serializable-current-continuation on rhs of letrec binding forms"
      (let-values ([(test-m08)
                    (make-module-eval
-                    (module m08 (lib "lang.ss" "web-server")
+                    (module m08 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (gn which)
                         (cadr
@@ -411,14 +411,14 @@
      
      (let-values ([(nta-eval)
                    (make-module-eval
-                    (module nta mzscheme
+                    (module nta racket
                       (provide non-tail-apply)
                       
                       (define (non-tail-apply f . args)
                         (let ([result (apply f args)])
                           (printf "result = ~s~n" result)
                           result))))])
-       (nta-eval '(module m09 (lib "lang.ss" "web-server")
+       (nta-eval '(module m09 (lib "lang.rkt" "web-server")
                     (require 'nta)
                     (provide start)
                     (define (start ignore)
@@ -434,7 +434,7 @@
      
      (let-values ([(m10-eval)
                    (make-module-eval
-                    (module m10 (lib "lang.ss" "web-server")
+                    (module m10 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (nta f arg)
                         (let ([result (f arg)])
@@ -449,7 +449,7 @@
      
      (let-values ([(m11-eval)
                    (make-module-eval
-                    (module m11 (lib "lang.ss" "web-server")
+                    (module m11 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start ignore)
                         (map
@@ -465,13 +465,13 @@
      
      (let ([ta-eval
             (make-module-eval
-             (module ta mzscheme
+             (module ta racket
                (provide tail-apply)
                
                (define (tail-apply f . args)
                  (apply f args))))])
        
-       (ta-eval '(module m12 (lib "lang.ss" "web-server")
+       (ta-eval '(module m12 (lib "lang.rkt" "web-server")
                    (require 'ta)
                    (provide start)
                    (define (start initial)
@@ -487,7 +487,7 @@
      
      (let-values ([(m13-eval)
                    (make-module-eval
-                    (module m11 (lib "lang.ss" "web-server")
+                    (module m11 (lib "lang.rkt" "web-server")
                       (provide start)
                       (define (start initial)
                         (map
@@ -504,13 +504,13 @@
      
      (let-values ([(ta-eval)
                    (make-module-eval
-                    (module ta mzscheme
+                    (module ta racket
                       (provide tail-apply)
                       
                       (define (tail-apply f . args)
                         (apply f args))))])
        
-       (ta-eval '(module m14 (lib "lang.ss" "web-server")
+       (ta-eval '(module m14 (lib "lang.rkt" "web-server")
                    (require 'ta)
                    (provide start)
                    (define (start ignore)
@@ -535,7 +535,7 @@
      (check-not-exn
       (lambda ()
         (make-module-eval
-         (module data (lib "lang.ss" "web-server")
+         (module data (lib "lang.rkt" "web-server")
            (require mzlib/contract)
            
            (define x 1)
@@ -548,7 +548,7 @@
      (check-not-exn
       (lambda ()
         (make-module-eval
-         (module data (lib "lang.ss" "web-server")
+         (module data (lib "lang.rkt" "web-server")
            (require mzlib/contract)
            
            (define-struct posn (x y) #:mutable)
@@ -560,7 +560,7 @@
      (check-not-exn
       (lambda ()
         (make-module-eval
-         (module test (lib "lang.ss" "web-server")
+         (module test (lib "lang.rkt" "web-server")
            (define (show-user)
              (define-values (point i) (values #t 1))
              i)))))))

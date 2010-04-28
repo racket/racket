@@ -1,6 +1,6 @@
 #lang web-server/insta
 
-(require "model-2.ss")
+(require "model-2.rkt")
 
 ;; start: request -> html-response
 ;; Consumes a request and produces a page that displays

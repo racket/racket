@@ -1,6 +1,6 @@
-#lang scheme/base
-(require mzlib/serialize
-         mzlib/contract)  
+#lang racket/base
+(require racket/serialize
+         racket/contract)  
 
 (define-serializable-struct internal-file-box (path))
 (define file-box? internal-file-box?)

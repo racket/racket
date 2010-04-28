@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/contract
-         scheme/dict
-         (for-syntax scheme/base))
+#lang racket/base
+(require racket/contract
+         racket/dict
+         (for-syntax racket/base))
 
 ; list-prefix : list? list? -> boolean?
 ; Is l a prefix or r?

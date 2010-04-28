@@ -1,15 +1,15 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit      
          mzlib/list
          web-server/http
-         "../util.ss")
+         "../util.rkt")
 (provide test-add-two-numbers
          test-double-counters
          url0
          url0s)
 
-(define url0 "http://test.com/servlets/example.ss")
-(define url0s (list (build-path "servlets") (build-path "example.ss")))
+(define url0 "http://test.com/servlets/example.rkt")
+(define url0s (list (build-path "servlets") (build-path "example.rkt")))
 
 (define (test-add-two-numbers mkd t p)
   (let* ([x (random 500)]

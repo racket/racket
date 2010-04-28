@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
          web-server/private/cache-table)
 (provide cache-table-tests)

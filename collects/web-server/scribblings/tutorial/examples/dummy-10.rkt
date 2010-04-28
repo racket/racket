@@ -1,6 +1,6 @@
 #lang web-server/insta
 
-(require "dummy-3.ss")
+(require "dummy-3.rkt")
 
 ;; start: request -> html-response
 ;; Consumes a request and produces a page that displays

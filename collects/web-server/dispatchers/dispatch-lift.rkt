@@ -1,6 +1,6 @@
-#lang scheme/base
-(require mzlib/contract)
-(require "dispatch.ss"
+#lang racket/base
+(require racket/contract)
+(require web-server/dispatchers/dispatch
          web-server/http
          web-server/http/response)
 (provide/contract

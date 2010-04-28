@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
          web-server/lang/anormal
          web-server/lang/util)

@@ -1,15 +1,15 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
-         "request-test.ss"
-         "cache-table-test.ss"
-         "response-test.ss"
-         "connection-manager-test.ss"
-         "define-closure-test.ss"
-         "mime-types-test.ss"
-         "url-param-test.ss"
-         "mod-map-test.ss"
-         "gzip-test.ss"
-         "util-test.ss")
+         "request-test.rkt"
+         "cache-table-test.rkt"
+         "response-test.rkt"
+         "connection-manager-test.rkt"
+         "define-closure-test.rkt"
+         "mime-types-test.rkt"
+         "url-param-test.rkt"
+         "mod-map-test.rkt"
+         "gzip-test.rkt"
+         "util-test.rkt")
 (provide all-private-tests)
 
 (define all-private-tests

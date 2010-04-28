@@ -1,5 +1,5 @@
-#lang scheme
-(require "sgml-reader.ss")
+#lang racket
+(require "sgml-reader.rkt")
 (provide/contract
  [html-spec spec/c])
 

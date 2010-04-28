@@ -1,12 +1,12 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "dispatch-servlets.ss"]{Serving Servlets}
+@title[#:tag "dispatch-servlets"]{Serving Servlets}
 @a-dispatcher[web-server/dispatchers/dispatch-servlets
               @elem{defines a dispatcher constructor
                     that runs servlets.}]{
           
-@defthing[url->servlet/c contract?]{Equivalent to @scheme[(url? . -> . servlet?)]}
+@defthing[url->servlet/c contract?]{Equivalent to @racket[(url? . -> . servlet?)]}
 
 @defproc[(make-cached-url->servlet
           [url->path url->path/c]
@@ -14,7 +14,7 @@
          (values (-> void)
                  url->servlet/c)]{
  The first return value flushes the cache. 
- The second is a procedure that uses @scheme[url->path] to resolve the URL to a path, then uses @scheme[path->servlet] to resolve
+ The second is a procedure that uses @racket[url->path] to resolve the URL to a path, then uses @racket[path->servlet] to resolve
  that path to a servlet, caching the results in an internal table.
 }
                         
@@ -28,9 +28,9 @@
                 (url? exn? . -> . response/c)
                 servlet-error-responder])
          dispatcher/c]{
- This dispatcher runs Scheme servlets, using @scheme[url->servlet] to resolve URLs to the underlying servlets.
- If servlets have errors loading, then @scheme[responders-servlet-loading] is used. Other errors are handled with
- @scheme[responders-servlet]. If a servlet raises calls @scheme[next-dispatcher], then the signal is propagated by this dispatcher.
+ This dispatcher runs racket servlets, using @racket[url->servlet] to resolve URLs to the underlying servlets.
+ If servlets have errors loading, then @racket[responders-servlet-loading] is used. Other errors are handled with
+ @racket[responders-servlet]. If a servlet raises calls @racket[next-dispatcher], then the signal is propagated by this dispatcher.
 }
                       
 }
@@ -49,10 +49,10 @@
                      [handler (request? . -> . response/c)])
                     #:mutable]{
   Instances of this structure hold the necessary parts of a servlet:
-  the @scheme[custodian] responsible for the servlet's resources,
-  the @scheme[namespace] the servlet is executed within,
-  the @scheme[manager] responsible for the servlet's continuations,
-  the current @scheme[directory] of the servlet,
-  and the @scheme[handler] for all requests to the servlet.
+  the @racket[custodian] responsible for the servlet's resources,
+  the @racket[namespace] the servlet is executed within,
+  the @racket[manager] responsible for the servlet's continuations,
+  the current @racket[directory] of the servlet,
+  and the @racket[handler] for all requests to the servlet.
  }
 }

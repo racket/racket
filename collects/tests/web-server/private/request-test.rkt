@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require schemeunit
          web-server/private/connection-manager
          web-server/private/timer
@@ -60,7 +60,7 @@
      "URL Query"
      (test-not-exn "Unfinished URL query"
                    (lambda ()
-                     (define ip (open-input-string "GET http://127.0.0.1:8080/servlets/examples/hello.ss?a=1&b: HTTP/1.1"))
+                     (define ip (open-input-string "GET http://127.0.0.1:8080/servlets/examples/hello.rkt?a=1&b: HTTP/1.1"))
                      (read-request
                       (make-connection 0 (make-timer ip +inf.0 (lambda () (void)))
                                        ip

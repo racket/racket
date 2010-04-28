@@ -1,10 +1,10 @@
-#lang scheme/base
-(require mzlib/list
+#lang racket/base
+(require racket/list
          net/url
-         scheme/contract)
-(require "dispatch.ss"
-         "../private/util.ss"
-         "../configuration/responders.ss"
+         racket/contract)
+(require web-server/dispatchers/dispatch
+         web-server/private/util
+         web-server/configuration/responders
          web-server/http
          web-server/http/response)
 

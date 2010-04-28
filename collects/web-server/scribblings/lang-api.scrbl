@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
 @title[#:tag "stateless"]{Stateless Servlets}
 
@@ -7,14 +7,14 @@
 
 @section[#:style 'hidden #:tag "stateless-example"]{Example}
 
-A stateless servlet should @scheme[provide] the following exports:
+A stateless servlet should @racket[provide] the following exports:
 
 @(require (for-label web-server/http
-                     scheme/serialize
+                     racket/serialize
                      (except-in web-server/stuffers stuffer)
                      web-server/managers/none
                      (except-in web-server/managers/manager manager)
-                     "dummy-stateless-servlet.ss")) @; to give a binding context
+                     "dummy-stateless-servlet.rkt")) @; to give a binding context
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-stateless-servlet)]
 
 @defthing[interface-version (one-of/c 'stateless)]{
@@ -24,13 +24,13 @@ A stateless servlet should @scheme[provide] the following exports:
 @defthing[stuffer (stuffer/c serializable? bytes?)]{
  This is the stuffer that will be used for the servlet.
       
- If it is not provided, it defaults to @scheme[default-stuffer].
+ If it is not provided, it defaults to @racket[default-stuffer].
 }
 
 @defthing[manager manager?]{
  This is the manager that will be used for the servlet.
       
- If it is not provided, it defaults to @scheme[(create-none-manager #f)].
+ If it is not provided, it defaults to @racket[(create-none-manager #f)].
 }
 
 @defproc[(start [initial-request request?])
@@ -39,8 +39,8 @@ A stateless servlet should @scheme[provide] the following exports:
  The argument is the HTTP request that initiated the instance.
 }
 
-An example @scheme['stateless] servlet module:
-@schememod[
+An example @racket['stateless] servlet module:
+@racketmod[
  web-server
  (provide interface-version stuffer start)
  (define interface-version 'stateless)
@@ -53,12 +53,12 @@ An example @scheme['stateless] servlet module:
 ]
 
 
-These servlets have an extensive API available to them: @schememodname[net/url], @schememodname[web-server/http],
-@schememodname[web-server/http/bindings],
-@schememodname[web-server/lang/abort-resume], @schememodname[web-server/lang/web], @schememodname[web-server/lang/native],
-@schememodname[web-server/lang/web-param],
-@schememodname[web-server/lang/web-cells], @schememodname[web-server/lang/file-box], @schememodname[web-server/lang/soft], @schememodname[web-server/dispatch], and
-@schememodname[web-server/stuffers].
+These servlets have an extensive API available to them: @racketmodname[net/url], @racketmodname[web-server/http],
+@racketmodname[web-server/http/bindings],
+@racketmodname[web-server/lang/abort-resume], @racketmodname[web-server/lang/web], @racketmodname[web-server/lang/native],
+@racketmodname[web-server/lang/web-param],
+@racketmodname[web-server/lang/web-cells], @racketmodname[web-server/lang/file-box], @racketmodname[web-server/lang/soft], @racketmodname[web-server/dispatch], and
+@racketmodname[web-server/stuffers].
       Some of these are documented in the subsections that follow.
 
 @include-section["serial.scrbl"]

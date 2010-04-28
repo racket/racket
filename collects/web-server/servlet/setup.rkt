@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/serialize
+#lang racket
+(require racket/serialize
          web-server/managers/manager
          web-server/managers/timeouts
          web-server/managers/none
@@ -83,7 +83,7 @@
     (set-servlet-handler! ses (initialize-servlet start)))
   ses)
 
-(require scheme/runtime-path)
+(require racket/runtime-path)
 (define-runtime-module-path web-server/private/servlet:module-path web-server/private/servlet)
 (define-runtime-module-path web-server/http:module-path web-server/http)
 (define common-module-specs

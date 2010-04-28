@@ -1,11 +1,10 @@
-#lang scheme/base
-(require (for-template scheme/base)         
+#lang racket/base
+(require (for-template racket/base)         
          syntax/kerncase
-         mzlib/etc
-         mzlib/list
-         scheme/contract
-         (for-template "../lang/abort-resume.ss")
-         "util.ss")
+         racket/list
+         racket/contract
+         (for-template "abort-resume.rkt")
+         "util.rkt")
 (provide/contract
  [elim-letrec ((listof syntax?) . -> . (syntax? . -> . syntax?))]
  [elim-letrec-term (syntax? . -> . syntax?)])

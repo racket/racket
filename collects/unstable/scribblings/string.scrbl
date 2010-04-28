@@ -1,11 +1,11 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
-          "utils.ss"
+          "utils.rkt"
           (for-label unstable/string
-                     scheme/serialize
-                     scheme/contract
-                     scheme/base))
+                     racket/serialize
+                     racket/contract
+                     racket/base))
 
 @title[#:tag "string"]{Strings}
 
@@ -15,15 +15,15 @@
 
 @defproc[(lowercase-symbol! [sb (or/c string? bytes?)])
          symbol?]{
- Returns @scheme[sb] as a lowercase symbol.
+ Returns @racket[sb] as a lowercase symbol.
 }
 
 @defproc[(read/string [s string?])
          serializable?]{
- @scheme[read]s a value from @scheme[s] and returns it.
+ @racket[read]s a value from @racket[s] and returns it.
 }
 
 @defproc[(write/string [v serializable?])
          string?]{
- @scheme[write]s @scheme[v] to a string and returns it.
+ @racket[write]s @racket[v] to a string and returns it.
 }

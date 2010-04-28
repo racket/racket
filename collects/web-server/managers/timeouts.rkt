@@ -1,9 +1,9 @@
-#lang scheme/base
-(require mzlib/plt-match
-         mzlib/contract)
-(require "manager.ss")
-(require "../private/timer.ss"
-         "../servlet/servlet-structs.ss")
+#lang racket/base
+(require racket/match
+         racket/contract)
+(require "manager.rkt")
+(require web-server/private/timer
+         web-server/servlet/servlet-structs)
 (provide/contract
  [create-timeout-manager (expiration-handler/c number? number? . -> . manager?)])
 

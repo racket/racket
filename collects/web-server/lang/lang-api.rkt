@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require net/url
          web-server/http
          web-server/http/bindings
@@ -11,7 +11,7 @@
          web-server/lang/web-param
          web-server/lang/file-box
          web-server/lang/soft)
-(provide (except-out (all-from-out scheme) #%module-begin)
+(provide (except-out (all-from-out racket) #%module-begin)
          (all-from-out net/url
                        web-server/http
                        web-server/http/bindings

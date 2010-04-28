@@ -1,14 +1,13 @@
-#lang scheme/base
+#lang racket/base
 (require net/url
-         mzlib/plt-match
-         mzlib/pregexp
-         scheme/contract)
+         racket/match
+         racket/contract)
 
-(require "dispatch.ss"
-         "../private/util.ss"
+(require web-server/dispatchers/dispatch
+         web-server/private/util
          web-server/http
          web-server/http/response
-         "../dispatchers/filesystem-map.ss")
+         web-server/dispatchers/filesystem-map)
 
 (provide/contract
  [interface-version dispatcher-interface-version/c]
@@ -78,18 +77,18 @@
         [range-regexp           #px#"^([0-9]*)-([0-9]*)$"]
         [range-error            (lambda (header)
                                   (fprintf (current-error-port)
-                                           (format "Bad Range header: ~s. File a PLT bug report!~n"
+                                           (format "Bad Range header: ~s. File a Racket bug report!~n"
                                                    (header-value header)))
                                   #f)])
     (lambda (headers)
       (let ([header (headers-assq* #"Range" headers)])
         (if header
             (let/ec escape
-              (match (pregexp-match range-header-regexp (header-value header))
+              (match (regexp-match range-header-regexp (header-value header))
                 [(list _ ranges-string)
-                 (let ([ranges (pregexp-split range-delimiter-regexp ranges-string)])
+                 (let ([ranges (regexp-split range-delimiter-regexp ranges-string)])
                    (map (lambda (range-string)
-                          (match (pregexp-match range-regexp range-string)
+                          (match (regexp-match range-regexp range-string)
                             [(list _ start-offset end-offset)
                              (cons (string->number (bytes->string/utf-8 start-offset))
                                    (string->number (bytes->string/utf-8 end-offset)))]

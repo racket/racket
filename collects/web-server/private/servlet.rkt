@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/contract)
-(require "../managers/manager.ss"
+#lang racket/base
+(require racket/contract)
+(require web-server/managers/manager
          web-server/http)
 
 (define servlet-prompt (make-continuation-prompt-tag 'servlet))

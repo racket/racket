@@ -1,5 +1,5 @@
-#lang scheme
-(require "structures.ss")
+#lang racket
+(require "structures.rkt")
 
 (provide/contract
  [read-xml (() (input-port?) . ->* . document?)]

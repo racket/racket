@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket
 (require net/url
-         scheme/serialize
+         racket/serialize
          web-server/private/servlet
          web-server/stuffers/stuffer
          web-server/stuffers/serialize

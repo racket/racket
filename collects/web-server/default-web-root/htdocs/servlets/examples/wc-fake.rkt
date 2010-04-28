@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/servlet)
 (define interface-version 'v1)
 (define timeout +inf.0)

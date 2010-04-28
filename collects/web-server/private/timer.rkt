@@ -1,7 +1,6 @@
-#lang scheme/base
-(require mzlib/list
-         mzlib/contract
-         mzlib/async-channel)
+#lang racket/base
+(require racket/contract
+         racket/async-channel)
 
 (define-struct timer (evt expire-seconds action)
   #:mutable)

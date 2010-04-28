@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit)
 (provide all-managers-tests)
 
@@ -6,7 +6,7 @@
   (test-suite
    "Continuation Managers"
    
-   ; XXX test timeout.ss
-   ; XXX test none.ss
-   ; XXX test lru.ss
+   ; XXX test timeout.rkt
+   ; XXX test none.rkt
+   ; XXX test lru.rkt
    ))

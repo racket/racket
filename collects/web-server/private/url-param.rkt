@@ -1,9 +1,9 @@
-#lang scheme/base
-(require mzlib/contract
+#lang racket/base
+(require racket/contract
          net/url
-         mzlib/plt-match
-         mzlib/list
-         "util.ss")
+         racket/match
+         racket/list
+         "util.rkt")
 (provide/contract
  [extract-param (url? string? . -> . (or/c string? false/c))]
  [insert-param (url? string? string? . -> . url?)])

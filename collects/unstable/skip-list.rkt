@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/contract
-         scheme/dict)
+#lang racket/base
+(require racket/contract
+         racket/dict)
 ;; owned by ryanc
 
 #|
@@ -13,7 +13,7 @@ Levels are indexed starting at 1, as in the paper.
 |#
 
 #|
-(require (rename-in scheme/unsafe/ops
+(require (rename-in racket/unsafe/ops
                     [unsafe-vector-length vector-length]
                     [unsafe-vector-ref vector-ref]
                     [unsafe-vector-set! vector-set!]))

@@ -1,7 +1,7 @@
-#lang scheme
-(require scheme/pretty
-         scheme/runtime-path
-         "configuration-table-structs.ss"
+#lang racket
+(require racket/pretty
+         racket/runtime-path
+         "configuration-table-structs.rkt"
          web-server/http/bindings)
 (define configuration-table-sexpr? list?)
 
@@ -15,7 +15,7 @@
 
 (define-runtime-path default-configuration-table-path
   (list 'lib
-        "web-server/default-web-root/configuration-table.ss"))
+        "web-server/default-web-root/configuration-table.rkt"))
 
 (define (get-binding key bindings default)
   (first (get-binding* key bindings (list default))))

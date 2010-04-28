@@ -1,8 +1,8 @@
-#lang scheme
+#lang racket
 (require syntax/free-vars
          (for-template
-          scheme/base
-          scheme/serialize))
+          racket/base
+          racket/serialize))
 
 (define (define-closure! label fvars stx)
   ; Boxes

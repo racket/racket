@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require (prefix-in sqlite: (planet jaymccarthy/sqlite:4)))
 
 ;; A blog is a (make-blog db)

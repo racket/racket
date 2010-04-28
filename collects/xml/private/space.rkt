@@ -1,5 +1,5 @@
-#lang scheme
-(require "structures.ss")
+#lang racket
+(require "structures.rkt")
 (provide/contract
  [eliminate-whitespace ((listof symbol?) (boolean? . -> . boolean?) . -> . (element? . -> . element?))])
 

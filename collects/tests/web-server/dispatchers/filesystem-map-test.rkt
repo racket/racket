@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
          net/url
          web-server/private/util
@@ -8,8 +8,8 @@
 (define base-dir (collection-path "web-server"))
 (define test-map (make-url->path base-dir))
 (define test-valid-map (make-url->valid-path test-map))
-(define test-filter-map (filter-url->path #rx"\\.(ss|scm)$" test-map))
-(define test-filter-valid-map (filter-url->path #rx"\\.(ss|scm)$" test-valid-map))
+(define test-filter-map (filter-url->path #rx"\\.(ss|scm|rkt)$" test-map))
+(define test-filter-valid-map (filter-url->path #rx"\\.(ss|scm|rkt)$" test-valid-map))
 
 (define (test-url->path 
          url->path file
@@ -31,39 +31,39 @@
    (test-suite
     "url->path"
     (test-case "Simple case"
-               (test-url->path test-map (build-path "dispatchers/filesystem-map.ss")))
+               (test-url->path test-map (build-path "dispatchers/filesystem-map.rkt")))
     (test-case "Strips parameters"
-               (test-url->path test-map (build-path "dispatchers/filesystem-map.ss")
-                               #:url-string "http://test.com/dispatchers/filesystem-map.ss;foo"))
+               (test-url->path test-map (build-path "dispatchers/filesystem-map.rkt")
+                               #:url-string "http://test.com/dispatchers/filesystem-map.rkt;foo"))
     (test-case "Strips outs bad '..'s"
-               (test-url->path test-map (build-path "dispatchers/filesystem-map.ss")
-                               #:url-string "http://test.com/../../dispatchers/filesystem-map.ss"))
+               (test-url->path test-map (build-path "dispatchers/filesystem-map.rkt")
+                               #:url-string "http://test.com/../../dispatchers/filesystem-map.rkt"))
     (test-case "Leaves in good '..'s"
-               (test-url->path test-map (build-path "dispatchers/../dispatchers/filesystem-map.ss"))))
+               (test-url->path test-map (build-path "dispatchers/../dispatchers/filesystem-map.rkt"))))
    
    (test-suite
     "url->valid-path"
     (test-suite
      "Preserves url->path"
      (test-case "Simple case"
-                (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.ss")))
+                (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.rkt")))
      (test-case "Strips parameters"
-                (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.ss")
-                                #:url-string "http://test.com/dispatchers/filesystem-map.ss;foo"))
+                (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.rkt")
+                                #:url-string "http://test.com/dispatchers/filesystem-map.rkt;foo"))
      (test-case "Strips outs bad '..'s"
-                (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.ss")
-                                #:url-string "http://test.com/../../dispatchers/filesystem-map.ss"))
+                (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.rkt")
+                                #:url-string "http://test.com/../../dispatchers/filesystem-map.rkt"))
      (test-case "Leaves in good '..'s"
-                (test-url->path test-valid-map (build-path "dispatchers/../dispatchers/filesystem-map.ss"))))
+                (test-url->path test-valid-map (build-path "dispatchers/../dispatchers/filesystem-map.rkt"))))
     (test-case "Finds valid path underneath"
-               (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.ss/not-a-file")
-                               #:expected (build-path "dispatchers/filesystem-map.ss"))))
+               (test-url->path test-valid-map (build-path "dispatchers/filesystem-map.rkt/not-a-file")
+                               #:expected (build-path "dispatchers/filesystem-map.rkt"))))
    
    
    (test-suite
     "filter-url->path"
     (test-case "Allows right suffix"
-               (test-url->path test-filter-map (build-path "dispatchers/filesystem-map.ss")))
+               (test-url->path test-filter-map (build-path "dispatchers/filesystem-map.rkt")))
     (test-case "Allows right suffix"
                (test-url->path test-filter-map (build-path "dispatchers/filesystem-map.scm")))
     (test-case "Disallows wrong suffix"
@@ -77,5 +77,5 @@
                 (lambda ()
                   (test-url->path test-filter-map (build-path "dispatchers/filesystem-map.html")))))
     (test-case "Allows content after w/ valid"
-               (test-url->path test-filter-valid-map (build-path "dispatchers/filesystem-map.ss/extra/info")
-                               #:expected (build-path "dispatchers/filesystem-map.ss"))))))
+               (test-url->path test-filter-valid-map (build-path "dispatchers/filesystem-map.rkt/extra/info")
+                               #:expected (build-path "dispatchers/filesystem-map.rkt"))))))

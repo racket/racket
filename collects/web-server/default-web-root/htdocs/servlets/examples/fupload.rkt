@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/servlet)
 (provide (all-defined-out))
 (define interface-version 'v1)

@@ -1,19 +1,19 @@
 #lang scribble/manual
 @(require scribble/eval
-          "../utils.ss"
+          "../utils.rkt"
           (for-label unstable/gui/notify
-                     scheme/contract
-                     scheme/class
-                     scheme/base))
+                     racket/contract
+                     racket/class
+                     racket/base))
 
 @title[#:tag "gui-notify"]{Notify-boxes}
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require scheme/class unstable/private/notify))
+@(the-eval '(require racket/class unstable/private/notify))
 
 @defmodule[unstable/gui/notify]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defclass[notify-box% object% ()]{
 
@@ -29,7 +29,7 @@ listeners when the contents of the cell is changed.
 ]
 
 @defconstructor[([value any/c])]{
-  Creates a notify-box initially containing @scheme[value].
+  Creates a notify-box initially containing @racket[value].
 }
 @defmethod[(get) any/c]{
   Gets the value currently stored in the notify-box.
@@ -54,8 +54,8 @@ listeners when the contents of the cell is changed.
           [#:readonly? readonly? boolean? #f])
          (is-a?/c notify-box%)]{
 
-Creates a notify-box with an initial value of @scheme[(proc)]. Unless
-@scheme[readonly?] is true, @scheme[proc] is invoked on the new value
+Creates a notify-box with an initial value of @racket[(proc)]. Unless
+@racket[readonly?] is true, @racket[proc] is invoked on the new value
 when the notify-box is updated.
 
 Useful for tying a notify-box to a preference or parameter. Of course,
@@ -77,13 +77,13 @@ reflected in the notify-box.
 @defform[(define-notify name value-expr)
          #:contracts ([value-expr (is-a?/c notify-box%)])]{
 
-Class-body form. Declares @scheme[name] as a field and
-@schemeidfont{get-@scheme[name]}, @schemeidfont{set-@scheme[name]},
-and @schemeidfont{listen-@scheme[name]} as methods that delegate to
+Class-body form. Declares @racket[name] as a field and
+@racketidfont{get-@racket[name]}, @racketidfont{set-@racket[name]},
+and @racketidfont{listen-@racket[name]} as methods that delegate to
 the @method[notify-box% get], @method[notify-box% set], and
-@method[notify-box% listen] methods of @scheme[value].
+@method[notify-box% listen] methods of @racket[value].
 
-The @scheme[value-expr] argument must evaluate to a notify-box, not
+The @racket[value-expr] argument must evaluate to a notify-box, not
 just the initial contents for a notify box.
 
 Useful for aggregating many notify-boxes together into one
@@ -110,9 +110,9 @@ Useful for aggregating many notify-boxes together into one
           [notify-box (is-a?/c notify-box%)])
          (is-a?/c checkable-menu-item%)]{
 
-Creates a @scheme[checkable-menu-item%] tied to @scheme[notify-box]. The menu item is
-checked whenever @scheme[(send notify-box get)] is true. Clicking the
-menu item toggles the value of @scheme[notify-box] and invokes its listeners.
+Creates a @racket[checkable-menu-item%] tied to @racket[notify-box]. The menu item is
+checked whenever @racket[(send notify-box get)] is true. Clicking the
+menu item toggles the value of @racket[notify-box] and invokes its listeners.
 }
 
 @defproc[(check-box/notify-box
@@ -122,9 +122,9 @@ menu item toggles the value of @scheme[notify-box] and invokes its listeners.
           [notify-box (is-a?/c notify-box%)])
          (is-a?/c check-box%)]{
 
-Creates a @scheme[check-box%] tied to @scheme[notify-box]. The
-check-box is checked whenever @scheme[(send notify-box get)] is
-true. Clicking the check box toggles the value of @scheme[notify-box]
+Creates a @racket[check-box%] tied to @racket[notify-box]. The
+check-box is checked whenever @racket[(send notify-box get)] is
+true. Clicking the check box toggles the value of @racket[notify-box]
 and invokes its listeners.
 }
 
@@ -136,12 +136,12 @@ and invokes its listeners.
           [notify-box (is-a?/c notify-box%)])
          (is-a?/c choice%)]{
 
-Creates a @scheme[choice%] tied to @scheme[notify-box]. The choice
-control has the value @scheme[(send notify-box get)] selected, and
-selecting a different choice updates @scheme[notify-box] and invokes
+Creates a @racket[choice%] tied to @racket[notify-box]. The choice
+control has the value @racket[(send notify-box get)] selected, and
+selecting a different choice updates @racket[notify-box] and invokes
 its listeners.
 
-If the value of @scheme[notify-box] is not in @scheme[choices], either
+If the value of @racket[notify-box] is not in @racket[choices], either
 initially or upon an update, an error is raised.
 }
 
@@ -151,9 +151,9 @@ initially or upon an update, an error is raised.
           [notify-box (is-a?/c notify-box%)])
          (listof (is-a?/c checkable-menu-item%))]{
 
-Returns a list of @scheme[checkable-menu-item%] controls tied to
-@scheme[notify-box]. A menu item is checked when its label is
-@scheme[(send notify-box get)]. Clicking a menu item updates
-@scheme[notify-box] to its label and invokes @scheme[notify-box]'s
+Returns a list of @racket[checkable-menu-item%] controls tied to
+@racket[notify-box]. A menu item is checked when its label is
+@racket[(send notify-box get)]. Clicking a menu item updates
+@racket[notify-box] to its label and invokes @racket[notify-box]'s
 listeners.
 }

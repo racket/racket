@@ -2,7 +2,7 @@
   (require drscheme/tool
            mred
            framework
-           "text-snipclass.ss"
+           "text-snipclass.rkt"
            mzlib/unit
            mzlib/class
 	   mzlib/contract

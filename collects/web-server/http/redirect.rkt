@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/contract)
+#lang racket/base
+(require racket/contract)
 (require web-server/private/util
          web-server/http/response-structs
          web-server/http/request-structs)

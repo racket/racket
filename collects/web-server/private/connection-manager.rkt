@@ -1,6 +1,6 @@
-#lang scheme/base
-(require mzlib/contract
-         "timer.ss")
+#lang racket/base
+(require racket/contract
+         "timer.rkt")
 
 (define-struct connection (id timer i-port o-port custodian close?)
   #:mutable)

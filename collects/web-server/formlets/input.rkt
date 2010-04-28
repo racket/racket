@@ -1,7 +1,7 @@
-#lang scheme
+#lang racket
 (require web-server/http
          web-server/private/xexpr
-         (only-in "lib.ss"
+         (only-in "lib.rkt"
                   formlet/c
                   pure
                   cross))

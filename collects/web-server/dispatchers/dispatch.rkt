@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/contract)
-(require "../private/connection-manager.ss"
+#lang racket/base
+(require racket/contract)
+(require web-server/private/connection-manager
          web-server/http)
 
 (define dispatcher/c

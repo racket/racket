@@ -1,10 +1,10 @@
-#lang scheme/base
-(require (for-template scheme/base)
+#lang racket/base
+(require (for-template racket/base)
          syntax/kerncase
-         scheme/contract
+         racket/contract
          web-server/lang/closure
          (for-template web-server/lang/serial-lambda)
-         "util.ss")
+         "util.rkt")
 (provide/contract
  [defun (syntax? . -> . syntax?)])
 

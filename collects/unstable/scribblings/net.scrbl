@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
-          "utils.ss")
+          "utils.rkt")
 
 @title[#:tag "net" #:style 'toc]{Net}
 

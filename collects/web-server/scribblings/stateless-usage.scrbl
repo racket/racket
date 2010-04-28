@@ -1,6 +1,6 @@
 #lang scribble/doc
-@(require "web-server.ss"
-          (for-label scheme/serialize
+@(require "web-server.rkt"
+          (for-label racket/serialize
                      web-server/lang/abort-resume
                      web-server/lang/web))
 
@@ -8,33 +8,33 @@
                      
 A stateless servlet has the following process performed on it automatically:
 @itemize[
- @item{All uses of @scheme[letrec] are removed and replaced with equivalent uses of
-       @scheme[let] and imperative features.}
+ @item{All uses of @racket[letrec] are removed and replaced with equivalent uses of
+       @racket[let] and imperative features.}
  @item{The program is converted into @link["http://en.wikipedia.org/wiki/Administrative_normal_form"]{ANF} (Administrative Normal Form),
        making all continuations explicit.}
  @item{All continuations and continuations marks are recorded in the
        continuation marks of the expression
        they are the continuation of.}
  @item{All calls to external modules are identified and marked.}
- @item{All uses of @scheme[call/cc] are removed and replaced with
+ @item{All uses of @racket[call/cc] are removed and replaced with
        equivalent gathering of the continuations through the continuation marks installed earlier.}
  @item{The program is defunctionalized with a serializable data-structure for each
-       @scheme[lambda].}
+       @racket[lambda].}
 ]
 
 This process allows the continuations captured by your servlet to be serialized.
 This means they may be stored on the client's browser or the server's disk.
 Thus, your servlet has no cost to the server other than execution. This is
-very attractive if you've used Scheme servlets and had memory problems.
+very attractive if you've used Racket servlets and had memory problems.
 
-This process is defined on all of PLT Scheme and occurs after macro-expansion,
-so you are free to use all interesting features of PLT Scheme. However, there
+This process is defined on all of Racket and occurs after macro-expansion,
+so you are free to use all interesting features of Racket. However, there
 are some considerations you must make.
 
 First, this process drastically changes the structure of your program. It
 will create an immense number of lambdas and structures your program
 did not normally contain. The performance implication of this has not been
-studied with PLT Scheme.
+studied with Racket.
 
 Second, the defunctionalization process is sensitive to the syntactic structure
 of your program. Therefore, if you change your program in a trivial way, for example,
@@ -45,25 +45,25 @@ were changed in a meaningful way.
 
 Third, the values in the lexical scope of your continuations must be serializable
 for the continuations itself to be serializable. This means that you must use
-@scheme[define-serializable-struct] rather than @scheme[define-struct], and take
-care to use modules that do the same. Similarly, you may not use @scheme[parameterize],
+@racket[define-serializable-struct] rather than @racket[define-struct], and take
+care to use modules that do the same. Similarly, you may not use @racket[parameterize],
 because parameterizations are not serializable.
 
 Fourth, and related, this process only runs on your code, not on the code you
-@scheme[require]. Thus, your continuations---to be serializable---must not
+@racket[require]. Thus, your continuations---to be serializable---must not
 be in the context of another module. For example, the following will fail with an @as-index{"unsafe context"}
 exception:
 
-@schemeblock[
+@racketblock[
  (define requests
    (map (lambda (rg) (send/suspend/url rg))
         response-generators))
 ]
-because @scheme[map] is not transformed by the process. However, if you defined
-your own @scheme[map] function, there would be no problem. Another solution is to
-store the @scheme[map] part of the continuation on the server with @scheme[serial->native]
-and @scheme[native->serial]:
-@schemeblock[
+because @racket[map] is not transformed by the process. However, if you defined
+your own @racket[map] function, there would be no problem. Another solution is to
+store the @racket[map] part of the continuation on the server with @racket[serial->native]
+and @racket[native->serial]:
+@racketblock[
  (define requests
    (serial->native
     (map (lambda (rg) (native->serial (send/suspend/url rg)))

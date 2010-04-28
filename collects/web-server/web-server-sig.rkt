@@ -1,3 +1,3 @@
-#lang scheme/base
-(require "private/dispatch-server-sig.ss")
+#lang racket/base
+(require web-server/private/dispatch-server-sig)
 (provide (rename-out [dispatch-server^ web-server^]))

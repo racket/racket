@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/contract)
+#lang racket/base
+(require racket/contract)
 
 (define path-element?
   (or/c path-string? (symbols 'up 'same)))

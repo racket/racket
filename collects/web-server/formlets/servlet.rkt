@@ -1,7 +1,7 @@
-#lang scheme
+#lang racket
 (require web-server/servlet
          web-server/private/xexpr
-         "lib.ss")
+         "lib.rkt")
 
 (provide/contract
  [send/formlet ((formlet*/c)

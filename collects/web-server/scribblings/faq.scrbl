@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
 @title[#:tag "faq"]{Troubleshooting and Tips}
 
@@ -11,20 +11,20 @@ Templates are compiled into your application, so when you change them there is n
 
 @(require (for-label web-server/templates))
 
-Since templates can include arbitrary Scheme code, macros, etc and refer to
-arbitrary identifiers, @scheme[include-template] is really just an obscured
-@scheme[require].
+Since templates can include arbitrary Racket code, macros, etc and refer to
+arbitrary identifiers, @racket[include-template] is really just an obscured
+@racket[require].
 
 @section[#:tag "update-servlets"]{Why are my stateful servlets not updating on the server when I change the file on disk?}
 
 @(require (for-label web-server/dispatchers/dispatch-servlets
                      web-server/servlet-env))
 
-If you are using @scheme[serve/servlet], it starts a Web server that directly references a closure that has no connection
+If you are using @racket[serve/servlet], it starts a Web server that directly references a closure that has no connection
 to some file on the disk.
 
 If you are using the command-line tool, or configuration file, then by default,
-the server uses @scheme[make-cached-url->servlet] to load servlets
+the server uses @racket[make-cached-url->servlet] to load servlets
 from the disk. As it loads them, they are cached and the disk is not referred to for future
 requests. This ensures that there is a single namespace for each servlet, so that different instances
 can share resources, such as database connections, and communicate through the store. The default
@@ -74,20 +74,20 @@ easily built into an application via URLs.
 @(require (for-label xml))
 
 In quirks mode, IE does not parse your page as XML, in particular it will not recognize many instances of
-"empty tag shorthand", e.g. "<img src='...' />", whereas the @web-server uses @schememodname[xml]
-to format XML, which uses empty tag shorthand by default. You can change the default with the @scheme[empty-tag-shorthand]
-parameter: @scheme[(empty-tag-shorthand 'never)].
+"empty tag shorthand", e.g. "<img src='...' />", whereas the @web-server uses @racketmodname[xml]
+to format XML, which uses empty tag shorthand by default. You can change the default with the @racket[empty-tag-shorthand]
+parameter: @racket[(empty-tag-shorthand 'never)].
 
 @section{How do I use templates ``dynamically"?}
 
 @(require (for-label web-server/templates))
 
-A common feature request is to include one template in another dynamically. It should hopefully be obvious that @scheme[include-template] can be included in a template to include a @emph{static} sub-template. For example,
-@schemeblock[
+A common feature request is to include one template in another dynamically. It should hopefully be obvious that @racket[include-template] can be included in a template to include a @emph{static} sub-template. For example,
+@racketblock[
  (include-template "posts.html")
 ]
-may appear inside the @filepath{blog.html} template. But you will quickly find that @scheme[(include-template _expr)] will fail when @scheme[_expr] is not syntactically a path, e.g.:
-@schemeblock[
+may appear inside the @filepath{blog.html} template. But you will quickly find that @racket[(include-template _expr)] will fail when @racket[_expr] is not syntactically a path, e.g.:
+@racketblock[
 ....
 (include-template (if logged-in?
                       "user-info.html"
@@ -96,13 +96,13 @@ may appear inside the @filepath{blog.html} template. But you will quickly find t
 ]
 
 What is the solution? The templating system already allows you to parameterize templates so particular components come from the including scope. There is no reason those values can not be the results of other templates. In the previous example, suppose the includer was
-@schemeblock[
+@racketblock[
 (define (main-page logged-in?)
   (include-template "site.html"))
 ]
 
 We could change it to:
-@schemeblock[
+@racketblock[
 (define (main-page logged-in?)
   (define user-content
     (if logged-in?
@@ -112,7 +112,7 @@ We could change it to:
 ]
 
 and @filepath{site.html} to:
-@schemeblock[
+@racketblock[
 ....
 user-content
 ....
@@ -120,4 +120,4 @@ user-content
 
 This allows you to do the same thing but is safer and more efficient: safer because there is no way to include templates that are not named by the programmer and more efficient because all the templates are compiled (and optimized) with the rest of the code.
 
-If you insist on dynamicism, there is always @scheme[eval].
+If you insist on dynamicism, there is always @racket[eval].

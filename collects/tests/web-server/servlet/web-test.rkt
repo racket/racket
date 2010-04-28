@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
          net/url
          web-server/servlet/web)
@@ -7,7 +7,7 @@
 
 (provide web-tests)
 
-(define url0 (string->url "http://test.com/servlets/example.ss"))
+(define url0 (string->url "http://test.com/servlets/example.rkt"))
 
 (define web-tests
   (test-suite

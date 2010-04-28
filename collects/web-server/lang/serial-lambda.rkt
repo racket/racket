@@ -1,6 +1,6 @@
-#lang scheme
-(require scheme/serialize
-         (for-syntax scheme
+#lang racket
+(require racket/serialize
+         (for-syntax racket
                      web-server/lang/closure
                      web-server/lang/labels))
 

@@ -2,14 +2,14 @@
 @(require scribble/base
           scribble/manual
           scribble/eval	  
-	  "utils.ss"
+	  "utils.rkt"
          (for-label unstable/match
-		    scheme/match
-                    scheme/contract
-                    scheme/base))
+		    racket/match
+                    racket/contract
+                    racket/base))
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require unstable/match scheme/match))
+@(the-eval '(require unstable/match racket/match))
 
 @title[#:tag "match"]{Match}
 
@@ -19,9 +19,9 @@
 
 @defform*[[(== val comparator) (== val)]]{
 A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{match expander} 
-which checks if the matched value is the same as @scheme[val] when
-compared by @scheme[comparator].  If @scheme[comparator] is
-not provided, it defaults to @scheme[equal?].  
+which checks if the matched value is the same as @racket[val] when
+compared by @racket[comparator].  If @racket[comparator] is
+not provided, it defaults to @racket[equal?].  
 
 @examples[#:eval the-eval
 (match (list 1 2 3)

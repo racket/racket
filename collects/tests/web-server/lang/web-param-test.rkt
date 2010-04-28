@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
-         "../util.ss")
+         "../util.rkt")
 (provide web-param-tests)
 
 (define the-dispatch
@@ -19,7 +19,7 @@
      "web-parameterize does not overwrite with multiple parameters"
      (let-values ([(meval)
                    (make-module-eval
-                    (module m (lib "lang.ss" "web-server")
+                    (module m (lib "lang.rkt" "web-server")
                       (define first (make-web-parameter #f))
                       (define second (make-web-parameter #f))
                       (provide start)
@@ -34,7 +34,7 @@
      
      (let-values ([(meval)
                    (make-module-eval
-                    (module m (lib "lang.ss" "web-server")
+                    (module m (lib "lang.rkt" "web-server")
                       (provide start)
                       (define first (make-web-parameter #f))
                       (define second (make-web-parameter #f))

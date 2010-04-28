@@ -1,9 +1,9 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "lang/file-box.ss"]{File Boxes}
+@title[#:tag "lang/file-box"]{File Boxes}
 @(require (for-label web-server/lang/file-box
-                     scheme/serialize))
+                     racket/serialize))
 
 @defmodule[web-server/lang/file-box]{
 
@@ -13,29 +13,29 @@ to them. This module provides a simple API to replace
 boxes in a safe way.
 
 @defproc[(file-box? [v any/c])
-         boolean?]{Checks if @scheme[v] is a file-box.}
+         boolean?]{Checks if @racket[v] is a file-box.}
 
 @defproc[(file-box [p path-string?]
                    [v serializable?])
          file-box?]{
- Creates a file-box that is stored at @scheme[p], with the default
- contents of @scheme[v].
+ Creates a file-box that is stored at @racket[p], with the default
+ contents of @racket[v].
 }
 
 @defproc[(file-unbox [fb file-box?])
          serializable?]{
- Returns the value inside @scheme[fb]
+ Returns the value inside @racket[fb]
 }
 
 @defproc[(file-box-set? [fb file-box?])
          boolean?]{
- Returns @scheme[#t] if @scheme[fb] contains a value.
+ Returns @racket[#t] if @racket[fb] contains a value.
 }
 
 @defproc[(file-box-set! [fb file-box?]
                         [v serializable?])
          void]{
- Saves @scheme[v] in the file represented by @scheme[fb].
+ Saves @racket[v] in the file represented by @racket[fb].
 }
 
 @warning{If you plan on using a load-balancer, make sure your file-boxes

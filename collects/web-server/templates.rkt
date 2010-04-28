@@ -1,7 +1,7 @@
-#lang scheme
+#lang racket
 (require xml
          scribble/text
-         scheme/port)
+         racket/port)
 
 (define-syntax include-template
   (syntax-rules ()

@@ -1,9 +1,9 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 @(require (for-label web-server/servlet
                      web-server/templates
-                     scheme/promise
-                     scheme/list
+                     racket/promise
+                     racket/list
                      xml))
 
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
@@ -15,7 +15,7 @@
 @defmodule[web-server/templates]
 
 The @web-server provides a powerful Web template system for separating the presentation logic of a Web application
-and enabling non-programmers to contribute to PLT-based Web applications.
+and enabling non-programmers to contribute to Racket-based Web applications.
 
 @margin-note{Although all the examples here generate HTML, the template language and the @text-ref it is based on can
              be used to generate any text-based format: C, SQL, form emails, reports, etc.} 
@@ -34,19 +34,19 @@ Suppose we have a file @filepath{static.html} with the contents:
 }|
 
 If we write the following in our code:
-@schemeblock[
+@racketblock[
  (include-template "static.html")
 ]
 
 Then the contents of @filepath{static.html} will be read @emph{at compile time} and compiled into a
-Scheme program that returns the contents of @filepath{static.html} as a string:
-@schemeblock[
+racket program that returns the contents of @filepath{static.html} as a string:
+@racketblock[
  "<html>\n  <head><title>Fastest Templates in the West!</title></head>\n  <body>\n    <h1>Bang!</h1>\n    <h2>Bang!</h2>\n  </body>\n</html>"
 ]
 
 @section{Dynamic}
 
-@scheme[include-template] gives the template access to the @emph{complete lexical context} of the including program. This context can be
+@racket[include-template] gives the template access to the @emph{complete lexical context} of the including program. This context can be
 accessed via the @at-reader-ref syntax. For example, if @filepath{simple.html} contains:
 @verbatim[#:indent 2]|{
  <html>
@@ -59,7 +59,7 @@ accessed via the @at-reader-ref syntax. For example, if @filepath{simple.html} c
 }|
 
 Then
-@schemeblock[
+@racketblock[
  (let ([thing "Templates"])
    (include-template "simple.html"))
 ]
@@ -67,7 +67,7 @@ evaluates to the same content as the static example.
 
 There are no constraints on how the lexical context of the template is populated. For instance, you can built template abstractions
 by wrapping the inclusion of a template in a function:
-@schemeblock[
+@racketblock[
  (define (fast-template thing)
    (include-template "simple.html"))
  
@@ -97,15 +97,15 @@ and
  </html>
 }|
 
-Furthermore, there are no constraints on the Scheme used by templates: they can use macros, structs, continuation marks, threads, etc.
-However, Scheme values that are ultimately returned must be printable by the @|text-ref|.
+Furthermore, there are no constraints on the Racket used by templates: they can use macros, structs, continuation marks, threads, etc.
+However, Racket values that are ultimately returned must be printable by the @|text-ref|.
 For example, consider the following outputs of the 
-title line of different calls to @scheme[fast-template]:
+title line of different calls to @racket[fast-template]:
 
 @itemize[
 
 @item{
-@schemeblock[
+@racketblock[
  (fast-template 'Templates)
 ] 
 @verbatim[#:indent 2]|{
@@ -114,7 +114,7 @@ title line of different calls to @scheme[fast-template]:
 }
 
 @item{
-@schemeblock[
+@racketblock[
  (fast-template 42)
 ] 
 @verbatim[#:indent 2]|{
@@ -123,7 +123,7 @@ title line of different calls to @scheme[fast-template]:
 }
 
 @item{
-@schemeblock[
+@racketblock[
  (fast-template (list "Noo" "dles"))
 ] 
 @verbatim[#:indent 2]|{
@@ -132,7 +132,7 @@ title line of different calls to @scheme[fast-template]:
 }
 
 @item{
-@schemeblock[
+@racketblock[
  (fast-template (lambda () "Thunks"))
 ] 
 @verbatim[#:indent 2]|{
@@ -141,7 +141,7 @@ title line of different calls to @scheme[fast-template]:
 }
 
 @item{
-@schemeblock[
+@racketblock[
  (fast-template (delay "Laziness"))
 ] 
 @verbatim[#:indent 2]|{
@@ -150,7 +150,7 @@ title line of different calls to @scheme[fast-template]:
 }
  
 @item{
-@schemeblock[
+@racketblock[
  (fast-template (fast-template "Embedding"))
 ] 
 @verbatim[#:indent 2]|{
@@ -172,21 +172,21 @@ You must write:
   <head><title>Fastest @"@"s in the West!</title></head>
 }|
 as your template: literal @litchar["@"]s must be replaced with
-@litchar["@\"@\""].  (Note that the double-quotes are basically a Scheme
+@litchar["@\"@\""].  (Note that the double-quotes are basically a Racket
 expression, which can be used for longer strings too.)
 
-The @at-reader-ref will read Scheme identifiers, so it does not terminate identifiers on punctuations or XML angle brackets.  So,
+The @at-reader-ref will read Racket identifiers, so it does not terminate identifiers on punctuations or XML angle brackets.  So,
 @verbatim[#:indent 2]|{
   <head><title>Fastest @thing in the @place!</title></head>
 }|
-will complain that the identifier @scheme[place!</title></head>] is
+will complain that the identifier @racket[place!</title></head>] is
 undefined. You can subvert this by explicitly delimiting the
 identifer:
 @verbatim[#:indent 2]|{
   <head><title>Fastest @thing in the @|place|!</title></head>
 }|
 
-Another gotcha is that since the template is compiled into a Scheme
+Another gotcha is that since the template is compiled into a Racket
 program, only its results will be printed. For example, suppose we
 have the template:
 @verbatim[#:indent 2]|{
@@ -197,16 +197,16 @@ have the template:
  </table>
 }|
 
-If this is included in a lexical context with @scheme[clients] bound
+If this is included in a lexical context with @racket[clients] bound
 to
-@schemeblock[(list (cons "Young" "Brigham") (cons "Smith" "Joseph"))]
+@racketblock[(list (cons "Young" "Brigham") (cons "Smith" "Joseph"))]
 then the template will be printed as:
 @verbatim[#:indent 2]|{
  <table>
  </table>
 }|
-because @scheme[for] does not return the value of the body.
-Suppose that we change the template to use @scheme[for/list] (which combines them into a list):
+because @racket[for] does not return the value of the body.
+Suppose that we change the template to use @racket[for/list] (which combines them into a list):
 @verbatim[#:indent 2]|{
  <table>
   @for/list[([c clients])]{
@@ -222,9 +222,9 @@ Now the result is:
   </tr>
  </table>
 }|
-because only the final expression of the body of the @scheme[for/list]
+because only the final expression of the body of the @racket[for/list]
 is included in the result. We can capture all the sub-expressions by
-using @scheme[list] in the body:
+using @racket[list] in the body:
 @verbatim[#:indent 2]|{
  <table>
   @for/list[([c clients])]{
@@ -243,7 +243,7 @@ Now the result is:
 }|
 
 The templating library provides a syntactic form to deal with this
-issue for you called @scheme[in]:
+issue for you called @racket[in]:
 @verbatim[#:indent 2]|{
  <table>
   @in[c clients]{
@@ -256,13 +256,13 @@ Notice how it also avoids the absurd amount of punctuation on line two.
 @section{HTTP Responses}
 
 The quickest way to generate an HTTP response from a template is using
-the @scheme[list] response type:
-@schemeblock[
+the @racket[list] response type:
+@racketblock[
  (list #"text/html" (include-template "static.html"))
 ]
 
-If you want more control then you can generate a @scheme[response/full] struct:
-@schemeblock[
+If you want more control then you can generate a @racket[response/full] struct:
+@racketblock[
  (make-response/full
   200 #"Okay"
   (current-seconds) TEXT/HTML-MIME-TYPE
@@ -271,29 +271,29 @@ If you want more control then you can generate a @scheme[response/full] struct:
 ]
 
 Finally, if you want to include the contents of a template inside a larger @xexpr :
-@schemeblock[
+@racketblock[
  `(html ,(include-template "static.html"))
 ]
 will result in the literal string being included (and entity-escaped). If you actually want
-the template to be unescaped, then create a @scheme[cdata] structure:
-@schemeblock[
+the template to be unescaped, then create a @racket[cdata] structure:
+@racketblock[
  `(html ,(make-cdata #f #f (include-template "static.html")))
 ]
 
 @section{API Details}
 
 @defform[(include-template path)]{
- Compiles the template at @scheme[path] using the @at-reader-ref syntax within the enclosing lexical context.
+ Compiles the template at @racket[path] using the @at-reader-ref syntax within the enclosing lexical context.
 
  Example:
- @schemeblock[
+ @racketblock[
   (include-template "static.html")
  ]
 }
 
 @defform[(in x xs e ...)]{
  Expands into
- @schemeblock[
+ @racketblock[
   (for/list ([x xs])
    (begin/text e ...))
  ]
@@ -305,18 +305,18 @@ the template to be unescaped, then create a @scheme[cdata] structure:
   }
  }|
  
- Scheme Example:
- @schemeblock[
+ Racket Example:
+ @racketblock[
   (in c clients "<tr><td>" (car c) ", " (cdr c) "</td></tr>")
  ]
 }
          
 @section{Conversion Example}
 
-Al Church has been maintaining a blog with PLT Scheme for some years and would like to convert to @schememodname[web-server/templates].
+Al Church has been maintaining a blog with Racket for some years and would like to convert to @racketmodname[web-server/templates].
 
 The data-structures he uses are defined as:
-@schemeblock[
+@racketblock[
 (define-struct post (title body))
 
 (define posts
@@ -333,7 +333,7 @@ Actually, Al Church-encodes these posts, but for explanatory reasons, we'll use 
 He has divided his code into presentation functions and logic functions. We'll look at the presentation functions first.
 
 The first presentation function defines the common layout of all pages.
-@schemeblock[
+@racketblock[
 (define (template section body)
   `(html
     (head (title "Al's Church: " ,section))
@@ -343,11 +343,11 @@ The first presentation function defines the common layout of all pages.
           ,@body))))
 ]
 
-One of the things to notice here is the @scheme[unquote-splicing] on the @scheme[body] argument.
-This indicates that the @scheme[body] is list of @|xexpr|s. If he had accidentally used only @scheme[unquote]
+One of the things to notice here is the @racket[unquote-splicing] on the @racket[body] argument.
+This indicates that the @racket[body] is list of @|xexpr|s. If he had accidentally used only @racket[unquote]
 then there would be an error in converting the return value to an HTTP response.
 
-@schemeblock[
+@racketblock[
 (define (blog-posted title body k-url)
   `((h2 ,title)
     (p ,body)
@@ -357,7 +357,7 @@ then there would be an error in converting the return value to an HTTP response.
 Here's an example of simple body that uses a list of @|xexpr|s to show the newly posted blog entry, before continuing to redisplay
 the main page. Let's look at a more complicated body:
 
-@schemeblock[
+@racketblock[
 (define (blog-posts k-url)
   (append
    (apply append 
@@ -371,13 +371,13 @@ the main page. Let's look at a more complicated body:
            (input ([type "submit"]))))))
 ]
 
-This function shows a number of common patterns that are required by @|xexpr|s. First, @scheme[append] is used to combine
-different @|xexpr| lists. Second, @scheme[apply append] is used to collapse and combine the results of a @scheme[for/list] 
+This function shows a number of common patterns that are required by @|xexpr|s. First, @racket[append] is used to combine
+different @|xexpr| lists. Second, @racket[apply append] is used to collapse and combine the results of a @racket[for/list] 
 where each iteration results in a list of @|xexpr|s. We'll see that these patterns are unnecessary with templates. Another
 annoying patterns shows up when Al tries to add CSS styling and some JavaScript from Google Analytics to all the pages of
-his blog. He changes the @scheme[template] function to:
+his blog. He changes the @racket[template] function to:
 
-@schemeblock[
+@racketblock[
 (define (template section body)
   `(html
     (head 
@@ -417,7 +417,7 @@ entity-encoded. These are all problems that go away with templates.
 
 
 Before moving to templates, let's look at the logic functions:
-@schemeblock[
+@racketblock[
 (define (extract-post req)
   (define binds
     (request-bindings req))
@@ -443,9 +443,9 @@ Before moving to templates, let's look at the logic functions:
   (display-posts))
 ]
 
-To use templates, we need only change @scheme[template], @scheme[blog-posted], and @scheme[blog-posts]:
+To use templates, we need only change @racket[template], @racket[blog-posted], and @racket[blog-posts]:
 
-@schemeblock[
+@racketblock[
 (define (template section body)
   (list TEXT/HTML-MIME-TYPE
         (include-template "blog.html")))
@@ -498,7 +498,7 @@ Each of the templates are given below:
 
 Notice that this part of the presentation is much simpler, because the CSS and JavaScript
 can be included verbatim, without resorting to any special escape-escaping patterns.
-Similarly, since the @scheme[body] is represented as a string, there is no need to
+Similarly, since the @racket[body] is represented as a string, there is no need to
 remember if splicing is necessary.
 
 @filepath{blog-posted.html}:

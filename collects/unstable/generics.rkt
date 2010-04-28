@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/local
-         (for-syntax scheme/base
-                     scheme/local))
+#lang racket/base
+(require racket/local
+         (for-syntax racket/base
+                     racket/local))
 
 (define-for-syntax (keyword-stx? v)
   (keyword? (syntax->datum v)))
@@ -135,7 +135,7 @@
                        (raise-type-error 'generic name-str this))))))
              ...)))]))
 
-(require scheme/stxparam)
+(require racket/stxparam)
 (define-syntax-parameter define/generic 
   (lambda (stx)
     (raise-syntax-error 'define/generic "only allowed inside define-methods" stx)))
@@ -158,7 +158,7 @@
                       (map (λ (g) (datum->syntax #'mthds (syntax->datum g)))
                            specs)])
          (syntax/loc stx
-           (let ([fake #'generics] ; This is to get the arrow to show up in DrScheme. It is ? arrow, so it isn't that nice.
+           (let ([fake #'generics] ; This is to get the arrow to show up in DrRacket. It is ? arrow, so it isn't that nice.
                  ; XXX this could be a signal to the guard to error early, but is seems okay to allow
                  ;     missing methods
                  [mthd-generic #f]

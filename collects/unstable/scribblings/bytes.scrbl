@@ -1,11 +1,11 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
-          "utils.ss"
+          "utils.rkt"
           (for-label unstable/bytes
-                     scheme/serialize
-                     scheme/contract
-                     scheme/base))
+                     racket/serialize
+                     racket/contract
+                     racket/base))
 
 @title[#:tag "bytes"]{Bytes}
 
@@ -19,10 +19,10 @@
                                                         
 @defproc[(read/bytes [b bytes?])
          serializable?]{
- @scheme[read]s a value from @scheme[b] and returns it.
+ @racket[read]s a value from @racket[b] and returns it.
 }
 
 @defproc[(write/bytes [v serializable?])
          bytes?]{
- @scheme[write]s @scheme[v] to a bytes and returns it.
+ @racket[write]s @racket[v] to a bytes and returns it.
 }

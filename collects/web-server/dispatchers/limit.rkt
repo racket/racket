@@ -1,5 +1,5 @@
-#lang scheme
-(require "dispatch.ss")
+#lang racket
+(require web-server/dispatchers/dispatch)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make ((number? dispatcher/c) (#:over-limit (symbols 'block 'kill-new 'kill-old)) . ->* . dispatcher/c)])

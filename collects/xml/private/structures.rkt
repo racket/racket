@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ; Location = (make-location Nat Nat Nat) | Symbol
 (define-struct location (line char offset))

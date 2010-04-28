@@ -1,8 +1,8 @@
-#lang scheme
-(require scheme/serialize
+#lang racket
+(require racket/serialize
          web-server/stuffers/stuffer
-         "../private/util.ss"
-         "../private/mod-map.ss")
+         web-server/private/util
+         web-server/private/mod-map)
 
 (define serialize-stuffer
   (make-stuffer

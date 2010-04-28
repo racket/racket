@@ -1,5 +1,5 @@
-#lang scheme
-(require "../dummy-sqlite.ss")
+#lang racket
+(require "../dummy-sqlite.rkt")
 
 ;; A blog is a (make-blog db)
 ;; where db is an sqlite database handle

@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/serialize)
+#lang racket
+(require racket/serialize)
 
 (define (read/string str)
   (read (open-input-string str)))

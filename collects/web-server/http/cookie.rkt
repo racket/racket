@@ -1,10 +1,10 @@
-#lang scheme
+#lang racket
 (require net/cookie
          web-server/http/request-structs
          web-server/http/response-structs
          xml
          web-server/private/xexpr
-         scheme/contract)
+         racket/contract)
 
 (provide/contract 
  [make-cookie ((cookie-name? cookie-value?) (#:comment (or/c false/c string?)

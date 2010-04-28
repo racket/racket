@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/stxparam)
+#lang racket
+(require racket/stxparam)
 
 (define-syntax-parameter bidi-match-going-in? #t)
 

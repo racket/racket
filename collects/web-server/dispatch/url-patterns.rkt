@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/dispatch/coercion
          web-server/dispatch/bidi-match)
 

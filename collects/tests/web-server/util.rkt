@@ -1,5 +1,5 @@
-#lang scheme
-(require (for-syntax scheme/base)
+#lang racket
+(require (for-syntax racket/base)
          web-server/private/connection-manager
          web-server/http
          web-server/private/web-server-structs
@@ -161,7 +161,7 @@
     [(_ (module m-id . rest))
      #'(let ([ns (make-base-empty-namespace)])
          (parameterize ([current-namespace ns])
-           (namespace-require 'scheme/base)
+           (namespace-require 'racket/base)
            (namespace-require 'web-server/http)
            (namespace-require 'web-server/lang/abort-resume)
            (namespace-require 'mzlib/serialize)
@@ -178,7 +178,7 @@
 (define (make-eval/mod-path pth)
   (let ([ns (make-base-empty-namespace)])
     (parameterize ([current-namespace ns])
-      (namespace-require 'scheme/base)
+      (namespace-require 'racket/base)
       (namespace-require 'web-server/http)
       (namespace-require 'web-server/lang/abort-resume)
       (namespace-require 'mzlib/serialize)

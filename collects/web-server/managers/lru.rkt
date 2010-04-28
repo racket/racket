@@ -1,8 +1,8 @@
-#lang scheme/base
-(require mzlib/plt-match
-         mzlib/contract)
-(require "manager.ss"
-         "../servlet/servlet-structs.ss")
+#lang racket/base
+(require racket/match
+         racket/contract)
+(require "manager.rkt"
+         web-server/servlet/servlet-structs)
 (provide/contract
  [create-LRU-manager (expiration-handler/c number? number? (-> boolean?)
                                           #:initial-count number?

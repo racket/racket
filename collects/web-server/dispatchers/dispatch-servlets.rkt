@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/contract)
+#lang racket/base
+(require racket/contract)
 (require web-server/servlet/setup
          web-server/managers/manager
          web-server/http

@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 (require web-server/lang/stuff-url
          web-server/stuffers
          schemeunit
          net/url
          mzlib/serialize
-         "../util.ss")
+         "../util.rkt")
 (provide stuff-url-tests)
 
 (define uri0 (string->url "www.google.com")) 
@@ -23,8 +23,8 @@
      (lambda (k*v)
        ((car k*v) k*v))))
 
-(define m00 '(lib "mm00.ss" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
-(define m01 '(lib "mm01.ss" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
+(define m00 '(lib "mm00.rkt" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
+(define m01 '(lib "mm01.rkt" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
 
 (define stuff-url-tests
   (test-suite
@@ -46,7 +46,7 @@
     (test-case "Vectors" (check-true (stuffed-url? (stuff-url test-stuffer uri0 (serialize (vector 3 1 4)))))))
    
    (test-case 
-    "Using stuff-url with lang.ss"
+    "Using stuff-url with lang.rkt"
     (let-values ([(ev) (make-eval/mod-path m00)])
       (let* ([k0 (stuff-unstuff (ev '(serialize (dispatch-start start 'foo)))
                                 uri0)]

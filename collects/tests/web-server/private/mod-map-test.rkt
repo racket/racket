@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 (require schemeunit
          web-server/private/mod-map
          mzlib/serialize
-         "../util.ss")
+         "../util.rkt")
 (provide mod-map-tests)
 
 (define (simplify-unsimplify v)
@@ -19,8 +19,8 @@
      (lambda (k*v)
        ((car k*v) k*v))))  
 
-(define m00 '(lib "mm00.ss" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
-(define m01 '(lib "mm01.ss" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
+(define m00 '(lib "mm00.rkt" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
+(define m01 '(lib "mm01.rkt" "web-server" "default-web-root" "htdocs" "lang-servlets")) 
 
 (define mod-map-tests
   (test-suite
@@ -34,7 +34,7 @@
     (test-case "Vectors" (check-equal? (cidentity (vector 3 1 4)) (vector 3 1 4))))
    
    (test-case
-    "Use compress-serial and decompress-serial with lang.ss (1)"
+    "Use compress-serial and decompress-serial with lang.rkt (1)"
     (let-values ([(ev) (make-eval/mod-path m00)])
       (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start start 'foo))))]
              [k1 (simplify-unsimplify (ev `(serialize (dispatch ,the-dispatch (list (deserialize ',k0) 1)))))]
@@ -42,7 +42,7 @@
         (check-true (= 6 (ev `(dispatch ,the-dispatch (list (deserialize ',k2) 3))))))))
    
    (test-case
-    "Use compress-serial and decompress-serial with lang.ss (2)"
+    "Use compress-serial and decompress-serial with lang.rkt (2)"
     (let-values ([(ev) (make-eval/mod-path m01)])
       (let* ([k0 (simplify-unsimplify (ev '(serialize (dispatch-start start 'foo))))])
         (check-true (= 7 (ev `(dispatch ,the-dispatch (list (deserialize ',k0) 7))))))))))

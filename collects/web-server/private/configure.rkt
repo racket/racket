@@ -1,10 +1,11 @@
-#lang scheme/base
+#lang racket/base
 (require web-server/servlet
          net/url
          mzlib/etc
-         mzlib/list
-         mzlib/pretty
-         (only-in mzlib/file
+         (except-in racket/list
+                    drop)
+         racket/pretty
+         (only-in racket/file
                   make-directory*)
          web-server/configuration/configuration-table-structs
          web-server/configuration/configuration-table
@@ -62,7 +63,7 @@
 (define (set-config-path! new)
   (set! default-configuration-path new))
 
-(define CONFIGURE-SERVLET-NAME "configure.ss")
+(define CONFIGURE-SERVLET-NAME "configure.rkt")
 (define WIDE "70")
 
 ; passwords = (listof realm)
@@ -80,9 +81,8 @@
 (define (build-footer base)
   (let ([scale (lambda (n) (number->string (round (/ n 4))))])
     `(p "Powered by "
-        (a ([href "http://www.plt-scheme.org/"])
-           (img ([width ,(scale 211)] [height ,(scale 76)]
-                                      [src ,(string-append base doc-dir "/plt-logo.gif")]))))))
+        (a ([href "http://www.racket-lang.org/"])
+           "Racket"))))
 
 (define footer (build-footer "/"))
 
@@ -290,7 +290,7 @@
     (when (assq 'edit-passwords bindings)
       (let* ([paths (host-table-paths new)]
              [password-path
-              ;; build-path-unless-absolute is defined in configuration.ss
+              ;; build-path-unless-absolute is defined in configuration
               (build-path-unless-absolute
                (build-path-unless-absolute web-base (paths-host-base paths))
                (paths-passwords paths))])
@@ -305,8 +305,8 @@
 ; request-new-configuration-table : configuration-table configuration-table -> str -> html
 (define (request-new-configuration-table old orig)
   (build-suspender
-   '("PLT Web Server Configuration")
-   `((h1 "PLT Web Server Configuration Management")
+   '("Racket Web Server Configuration")
+   `((h1 "Racket Web Server Configuration Management")
      ,web-server-icon
      "copyright 2001 by Paul Graunke and PLT"
      (hr)
@@ -440,7 +440,7 @@
          [conf (build-path-unless-absolute host-root (paths-conf paths))])
     (build-suspender
      '("Configure Host")
-     `((h1 "PLT Web Server Host configuration")
+     `((h1 "Racket Web Server Host configuration")
        (input ([type "submit"] [value "Save Configuration"]))
        (hr)
        (table
@@ -603,7 +603,7 @@
     (cond
       [(assq 'add-user bindings)
        (edit-realm (make-realm new-name new-pattern
-                               (cons (make-user-pass 'ptg "Scheme-is-cool!") new-allowed)))]
+                               (cons (make-user-pass 'ptg "Racket-is-cool!") new-allowed)))]
       [(assq 'update bindings)
        (make-realm new-name new-pattern new-allowed)]
       [else (error 'edit-realm "Didn't find either 'add-user or 'update in ~s" bindings)])))
@@ -697,7 +697,7 @@
 
 ; write-configuration : configuration-table path -> void
 ; writes out the new configuration file and
-; also copies the configure.ss servlet to the default-host's servlet directory
+; also copies the configure servlet to the default-host's servlet directory
 (define (write-configuration new configuration-path)
   (ensure-configuration-servlet configuration-path (configuration-table-default-host new))
   (ensure-configuration-paths new)
@@ -802,7 +802,7 @@
           file-path
         (lambda (out)
           (pretty-print
-           `(module ,CONFIGURE-SERVLET-NAME mzscheme
+           `(module ,CONFIGURE-SERVLET-NAME racket
               (require (lib ,CONFIGURE-SERVLET-NAME "web-server" "private"))
               (provide (all-from (lib ,CONFIGURE-SERVLET-NAME "web-server" "private")))
               (set-config-path! ,(path->string configuration-path)))

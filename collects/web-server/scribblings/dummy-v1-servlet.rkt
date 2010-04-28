@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (define interface-version #f)
 (define timeout #f)

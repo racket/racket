@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/templates
          xml)
 (provide (all-defined-out))

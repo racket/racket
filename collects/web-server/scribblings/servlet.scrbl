@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
 @title[#:tag "servlet"]{Stateful Servlets}
 
@@ -7,11 +7,11 @@
 
 @section[#:style 'hidden #:tag "servlet-example"]{Example}
 
-A stateful servlet should @scheme[provide] the following exports:
+A stateful servlet should @racket[provide] the following exports:
 
 @(require (for-label web-server/http
                      (except-in web-server/managers/manager manager)
-                     "dummy-v2-servlet.ss")) @; to give a binding context
+                     "dummy-v2-servlet.rkt")) @; to give a binding context
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-v2-servlet)]
 
 @defthing[interface-version (one-of/c 'v2)]{
@@ -30,8 +30,8 @@ A stateful servlet should @scheme[provide] the following exports:
 
 An example version 2 module:
 @(require (for-label web-server/managers/none))
-@schememod[
- scheme
+@racketmod[
+ racket
  (require web-server/managers/none)
  (provide interface-version manager start)
  
@@ -46,9 +46,9 @@ An example version 2 module:
           (body (h1 "Hi Mom!"))))
  ]
 
-These servlets have an extensive API available to them: @schememodname[net/url], @schememodname[web-server/http],
-      @schememodname[web-server/http/bindings], @schememodname[web-server/servlet/servlet-structs], @schememodname[web-server/servlet/web],
-      @schememodname[web-server/servlet/web-cells], and @schememodname[web-server/dispatch].
+These servlets have an extensive API available to them: @racketmodname[net/url], @racketmodname[web-server/http],
+      @racketmodname[web-server/http/bindings], @racketmodname[web-server/servlet/servlet-structs], @racketmodname[web-server/servlet/web],
+      @racketmodname[web-server/servlet/web-cells], and @racketmodname[web-server/dispatch].
       Some of these are documented in the subsections that follow.
 
 @include-section["contracts.scrbl"]

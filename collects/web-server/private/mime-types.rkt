@@ -1,8 +1,8 @@
-#lang scheme/base
-(require scheme/contract
-         scheme/match
-         scheme/promise)
-(require "util.ss"
+#lang racket/base
+(require racket/contract
+         racket/match
+         racket/promise)
+(require "util.rkt"
          web-server/http)
 (provide/contract
  [read-mime-types (path-string? . -> . hash?)]

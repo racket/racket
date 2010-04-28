@@ -1,28 +1,28 @@
-#lang scheme/base
+#lang racket/base
 (require net/tcp-sig
-         mzlib/unit)
-(require "web-server-sig.ss"
-         "web-config-sig.ss"
-         "private/dispatch-server-unit.ss"
-         "private/dispatch-server-sig.ss"
-         "private/web-server-structs.ss"
-         "private/mime-types.ss"
-         "configuration/configuration-table-structs.ss"
-         "private/cache-table.ss"
+         racket/unit)
+(require web-server/web-server-sig
+         web-server/web-config-sig
+         web-server/private/dispatch-server-unit
+         web-server/private/dispatch-server-sig
+         web-server/private/web-server-structs
+         web-server/private/mime-types
+         web-server/configuration/configuration-table-structs
+         web-server/private/cache-table
          (prefix-in http: web-server/http/request))
-(require "dispatchers/dispatch.ss"
+(require web-server/dispatchers/dispatch
          web-server/servlet/setup
-         (prefix-in fsmap: "dispatchers/filesystem-map.ss")
-         (prefix-in sequencer: "dispatchers/dispatch-sequencer.ss")
+         (prefix-in fsmap: web-server/dispatchers/filesystem-map)
+         (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
          (prefix-in timeout: web-server/dispatchers/dispatch-timeout)
-         (prefix-in passwords: "dispatchers/dispatch-passwords.ss")
-         (prefix-in files: "dispatchers/dispatch-files.ss")
-         (prefix-in servlets: "dispatchers/dispatch-servlets.ss")
-         (prefix-in path-procedure: "dispatchers/dispatch-pathprocedure.ss")
-         (prefix-in log: "dispatchers/dispatch-log.ss")
-         (prefix-in host: "dispatchers/dispatch-host.ss")
-         (prefix-in filter: "dispatchers/dispatch-filter.ss")
-         (prefix-in lift: "dispatchers/dispatch-lift.ss"))
+         (prefix-in passwords: web-server/dispatchers/dispatch-passwords)
+         (prefix-in files: web-server/dispatchers/dispatch-files)
+         (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
+         (prefix-in path-procedure: web-server/dispatchers/dispatch-pathprocedure)
+         (prefix-in log: web-server/dispatchers/dispatch-log)
+         (prefix-in host: web-server/dispatchers/dispatch-host)
+         (prefix-in filter: web-server/dispatchers/dispatch-filter)
+         (prefix-in lift: web-server/dispatchers/dispatch-lift))
 
 (provide web-server@)
 
@@ -79,7 +79,7 @@
      (let-values ([(clear-cache! url->servlet)
                    (servlets:make-cached-url->servlet
                     (fsmap:filter-url->path
-                     #rx"\\.(ss|scm)$"
+                     #rx"\\.(ss|scm|rkt)$"
                      (fsmap:make-url->valid-path
                       (fsmap:make-url->path (paths-servlet (host-paths host-info)))))
                     (make-default-path->servlet

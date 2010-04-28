@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 (require mzlib/contract
          net/url)
-(require "dispatch.ss"
-         "../private/util.ss"
+(require web-server/dispatchers/dispatch
+         web-server/private/util
          web-server/http
          web-server/http/response)
 (provide/contract

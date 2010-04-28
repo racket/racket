@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 (require mzlib/contract)
 
 ;; network-error: symbol string . values -> void

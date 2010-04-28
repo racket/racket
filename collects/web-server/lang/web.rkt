@@ -1,7 +1,7 @@
-#lang scheme
+#lang racket
 (require net/url
-         scheme/contract
-         scheme/serialize
+         racket/contract
+         racket/serialize
          web-server/http
          web-server/managers/manager
          web-server/private/define-closure

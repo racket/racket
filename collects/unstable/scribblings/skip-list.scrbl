@@ -1,35 +1,35 @@
 #lang scribble/manual
 @(require scribble/eval
-          "utils.ss"
+          "utils.rkt"
           (for-label unstable/skip-list
-                     scheme/contract
-                     scheme/dict
-                     scheme/base))
+                     racket/contract
+                     racket/dict
+                     racket/base))
 
 @title[#:tag "skip-list"]{Skip Lists}
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require unstable/skip-list))
-@(the-eval '(require scheme/dict))
+@(the-eval '(require racket/dict))
 
 @defmodule[unstable/skip-list]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 Skip lists are a simple, efficient data structure for mutable
 dictionaries with totally ordered keys. They were described in the
 paper ``Skip Lists: A Probabilistic Alternative to Balanced Trees'' by
 William Pugh in Communications of the ACM, June 1990, 33(6) pp668-676.
 
-A skip-list is a dictionary (@scheme[dict?] from
-@schememodname[scheme/dict]). It also supports extensions of the
+A skip-list is a dictionary (@racket[dict?] from
+@racketmodname[racket/dict]). It also supports extensions of the
 dictionary interface for iterator-based search and mutation.
 
 @defproc[(make-skip-list [=? (any/c any/c . -> . any/c)]
                          [<? (any/c any/c . -> . any/c)])
          skip-list?]{
 
-Makes a new empty skip-list. The skip-list uses @scheme[=?] and @scheme[<?] to order keys.
+Makes a new empty skip-list. The skip-list uses @racket[=?] and @racket[<?] to order keys.
 
 @examples[#:eval the-eval
 (define skip-list (make-skip-list = <))
@@ -45,7 +45,7 @@ Makes a new empty skip-list. The skip-list uses @scheme[=?] and @scheme[<?] to o
 @defproc[(skip-list? [v any/c])
          boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a skip-list, @scheme[#f]
+Returns @racket[#t] if @racket[v] is a skip-list, @racket[#f]
 otherwise.
 
 }
@@ -76,10 +76,10 @@ otherwise.
                                   [iter skip-list-iter?])
          any/c]]]{
 
-Implementations of @scheme[dict-ref], @scheme[dict-set!],
-@scheme[dict-remove!], @scheme[dict-count],
-@scheme[dict-iterate-first], @scheme[dict-iterate-next],
-@scheme[dict-iterate-key], and @scheme[dict-iterate-value],
+Implementations of @racket[dict-ref], @racket[dict-set!],
+@racket[dict-remove!], @racket[dict-count],
+@racket[dict-iterate-first], @racket[dict-iterate-next],
+@racket[dict-iterate-key], and @racket[dict-iterate-value],
 respectively.
 }
 
@@ -98,9 +98,9 @@ respectively.
          (or/c skip-list-iter? #f)]]]{
 
 Return the position of, respectively, the greatest key less than
-@scheme[key], the greatest key less than or equal to @scheme[key], the
-least key greater than @scheme[key], and the least key greater than or
-equal to @scheme[key].
+@racket[key], the greatest key less than or equal to @racket[key], the
+least key greater than @racket[key], and the least key greater than or
+equal to @racket[key].
 }
 
 @deftogether[[
@@ -113,8 +113,8 @@ equal to @scheme[key].
                                        [value any/c])
          void?]]]{
 
-Set the key and value, respectively, at the position @scheme[iter] in
-@scheme[skip-list].
+Set the key and value, respectively, at the position @racket[iter] in
+@racket[skip-list].
 
 @bold{Warning:} Changing a position's key to be less than its
 predecessor's key or greater than its successor's key results in an
@@ -125,6 +125,6 @@ behave incorrectly.
 @defproc[(skip-list-iter? [v any/c])
          boolean?]{
 
-Returns @scheme[#t] if @scheme[v] represents a position in a
-skip-list, @scheme[#f] otherwise.
+Returns @racket[#t] if @racket[v] represents a position in a
+skip-list, @racket[#f] otherwise.
 }

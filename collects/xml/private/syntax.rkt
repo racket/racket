@@ -1,7 +1,7 @@
-#lang scheme
-(require "structures.ss"
-         "reader.ss"
-         "xexpr.ss")
+#lang racket
+(require "structures.rkt"
+         "reader.rkt"
+         "xexpr.rkt")
 
 (provide/contract
  ; XXX these should both actually return syntax? that is also xexpr/c

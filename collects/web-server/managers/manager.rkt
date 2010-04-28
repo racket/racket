@@ -1,6 +1,6 @@
-#lang scheme/base
-(require mzlib/contract)
-(require "../servlet/servlet-structs.ss")
+#lang racket/base
+(require racket/contract)
+(require web-server/servlet/servlet-structs)
 
 (define-struct manager (create-instance 
                         adjust-timeout!

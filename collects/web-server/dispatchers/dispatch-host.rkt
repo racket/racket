@@ -1,10 +1,10 @@
-#lang scheme/base
-(require mzlib/contract
-         mzlib/plt-match
+#lang racket/base
+(require racket/contract
+         racket/match
          net/url
          web-server/http
-         "../private/util.ss"
-         "dispatch.ss")
+         web-server/private/util
+         web-server/dispatchers/dispatch)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make ((symbol? . -> . dispatcher/c) . -> . dispatcher/c)])

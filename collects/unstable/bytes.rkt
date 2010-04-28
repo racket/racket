@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/serialize)
+#lang racket
+(require racket/serialize)
 
 (provide/contract
  [read/bytes (bytes? . -> . serializable?)]

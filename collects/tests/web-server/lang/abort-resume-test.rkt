@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require schemeunit
          web-server/lang/abort-resume)
 (require/expose web-server/lang/abort-resume (web-prompt))

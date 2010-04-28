@@ -1,9 +1,9 @@
-#lang scheme/base
-(require mzlib/contract
+#lang racket/base
+(require racket/contract
          net/url)
-(require "dispatch.ss"
+(require web-server/dispatchers/dispatch
          web-server/http
-         "../private/util.ss")
+         web-server/private/util)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make (regexp? dispatcher/c . -> . dispatcher/c)])

@@ -1,12 +1,12 @@
-#lang scheme
+#lang racket
 ;; copyright by Paul Graunke June 2000 AD
 
-(require "html-structs.ss"
-         "html-spec.ss"
-         "sgml-reader.ss"
+(require "html-structs.rkt"
+         "html-spec.rkt"
+         "sgml-reader.rkt"
          xml)
 
-(provide (all-from-out "html-structs.ss")
+(provide (all-from-out "html-structs.rkt")
          read-html-comments)
 (provide/contract
  [use-html-spec (parameter/c boolean?)]

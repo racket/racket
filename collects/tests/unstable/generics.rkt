@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require unstable/generics
          tests/eli-tester)
 

@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require web-server/formlets/syntax
          web-server/formlets/input
          web-server/formlets/servlet

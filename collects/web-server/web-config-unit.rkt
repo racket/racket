@@ -1,13 +1,13 @@
-#lang scheme/base
+#lang racket/base
 (require mzlib/unit
-         scheme/contract)
-(require "private/util.ss"
-         "private/cache-table.ss"
-         "configuration/configuration-table-structs.ss"
-         "configuration/configuration-table.ss"
-         "configuration/namespace.ss"
-         "configuration/responders.ss"
-         "web-config-sig.ss")
+         racket/contract)
+(require web-server/private/util
+         web-server/private/cache-table
+         web-server/configuration/configuration-table-structs
+         web-server/configuration/configuration-table
+         web-server/configuration/namespace
+         web-server/configuration/responders
+         web-server/web-config-sig)
 (provide/contract
  [configuration-table->web-config@
   (->* (path-string?)

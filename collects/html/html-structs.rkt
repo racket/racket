@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require xml)
 
 (define-struct html-element (attributes))

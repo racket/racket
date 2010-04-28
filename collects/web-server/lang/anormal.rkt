@@ -1,10 +1,10 @@
-#lang scheme/base
-(require (for-template scheme/base)
+#lang racket/base
+(require (for-template racket/base)
          syntax/kerncase
-         mzlib/list
-         scheme/contract
-         mzlib/plt-match
-         "util.ss")
+         racket/list
+         racket/contract
+         racket/match
+         "util.rkt")
 (provide/contract
  [make-anormal-term ((syntax? . -> . syntax?) . -> . (syntax? . -> . syntax?))])
 

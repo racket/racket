@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 (require net/url
          (prefix-in srfi-date: srfi/19)
-         mzlib/date
-         mzlib/async-channel
-         mzlib/plt-match
-         scheme/contract)
-(require "dispatch.ss"
+         racket/date
+         racket/async-channel
+         racket/match
+         racket/contract)
+(require web-server/dispatchers/dispatch
          web-server/http)  
 (define format-req/c (request? . -> . string?))
 (define log-format/c (symbols 'parenthesized-default 'extended 'apache-default))
@@ -84,7 +84,7 @@
              [(list req)
               (loop
                (with-handlers ([exn:fail? (lambda (e)
-                                       ((error-display-handler) "dispatch-log.ss: Error writing log entry" e)
+                                       ((error-display-handler) "dispatch-log.rkt Error writing log entry" e)
                                        (with-handlers ([exn:fail? (lambda (e) #f)])
                                          (close-output-port log-p))
                                        #f)])

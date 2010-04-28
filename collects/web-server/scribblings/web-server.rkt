@@ -1,9 +1,9 @@
-#lang scheme
+#lang racket
 (require scribble/manual
          scribble/eval
-         (for-label scheme/base
-                    scheme/contract
-                    scheme/unit))
+         (for-label racket/base
+                    racket/contract
+                    racket/unit))
 
 (define web-server "Web Server")
 
@@ -25,15 +25,15 @@
           (begin
             (require (for-label lib-name))
             (defmodule lib-name
-                       "The " (schememodname lib-name) " module " lib-desc)
+                       "The " (racketmodname lib-name) " module " lib-desc)
             . rest)))
        (intro))]))
 
 (provide (all-from-out scribble/manual)
          (all-from-out scribble/eval)
-         (for-label (all-from-out scheme/base
-                                  scheme/contract
-                                  scheme/unit))
+         (for-label (all-from-out racket/base
+                                  racket/contract
+                                  racket/unit))
          a-dispatcher
          web-server
          warning

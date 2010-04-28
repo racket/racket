@@ -1,12 +1,12 @@
-#lang scheme
+#lang racket
 (require web-server/servlet
          web-server/servlet-env
-         (for-syntax scheme)
+         (for-syntax racket)
          (for-syntax syntax/kerncase))
 
 (provide 
  (all-from-out web-server/servlet)
- (except-out (all-from-out scheme) #%module-begin)
+ (except-out (all-from-out racket) #%module-begin)
  (rename-out [web-module-begin #%module-begin]))
 
 (define extra-files-path #f)
