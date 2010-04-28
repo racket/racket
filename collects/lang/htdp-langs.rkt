@@ -201,11 +201,11 @@
                       [(drscheme:language:simple-settings-insert-newlines settings)
                        (if (number? width)
                            (parameterize ([pretty-print-columns width])
-                             (pretty-print converted-value port))
-                           (pretty-print converted-value port))]
+                             (pretty-write converted-value port))
+                           (pretty-write converted-value port))]
                       [else
                        (parameterize ([pretty-print-columns 'infinity])
-                         (pretty-print converted-value port))
+                         (pretty-write converted-value port))
                        (newline port)])))))
              settings
              width))

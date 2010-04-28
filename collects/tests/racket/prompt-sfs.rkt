@@ -1,5 +1,5 @@
-#lang scheme
-(require scheme/system)
+#lang racket
+(require racket/system)
 
 #|
 
@@ -10,7 +10,7 @@ the `x' binding is part of the deeper meta-continuation when `ak'
 is captured, but it is delimited inside the binding, so `x'
 should not be reated in `ak'.
 
-The test is implemented using `dump-memory-stats' in another mzscheme
+The test is implemented using `dump-memory-stats' in another racket
 process.
 
 |#
@@ -19,7 +19,7 @@ process.
   (let ([f (find-executable-path (find-system-path 'exec-file) #f)])
     (let ([p (open-output-bytes)])
       (parameterize ([current-error-port p])
-        (system* f "-l" "tests/mzscheme/prompt-sfs" "sub"))
+        (system* f "-l" "tests/racket/prompt-sfs" "sub"))
       (unless (regexp-match? #rx"<will-executor>: +1 +" (get-output-bytes p))
         (error "wrong output")
         (exit 1))))

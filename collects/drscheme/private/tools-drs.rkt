@@ -80,8 +80,8 @@ This file sets up the right lexical environment to invoke the tools that want to
 
 ;; these two definitions are a hack. They give bindings for the drracket: based names that
 ;; appear in the source of language-object-contract.rkt.
-(define drracket:language:capability-registered? drscheme:language:capability-registered?)
-(define drracket:language:get-capability-contract drscheme:language:get-capability-contract)
+(define (drracket:language:capability-registered? . args) (apply drscheme:language:capability-registered? args))
+(define (drracket:language:get-capability-contract . args) (apply drscheme:language:get-capability-contract args))
 
 ;; invoke-drs-tool : unit/sig string -> (values (-> void) (-> void))
 ;; invokes the tools and returns the two phase thunks.

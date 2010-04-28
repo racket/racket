@@ -87,8 +87,9 @@ typedef struct Page_Range {
 
 #ifdef MZ_USE_PLACES
 typedef struct NewGCMasterInfo {
-  unsigned short next_GC_id;
-  unsigned char *have_collected;
+  unsigned long size;
+  unsigned long alive;
+  unsigned long ready;
   void **signal_fds;
   mzrt_rwlock *cangc;
   mzrt_sema *wait_sema;

@@ -1,6 +1,6 @@
 (require (lib "scheme-lexer.ss" "syntax-color") scheme/gui/base)
 
-(define path (build-path (collection-path "framework" "private") "frame.ss"))
+(define path (build-path (collection-path "framework" "private") "frame.rkt"))
 
 (define content 
   (with-input-from-file path
