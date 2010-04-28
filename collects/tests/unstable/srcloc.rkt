@@ -1,9 +1,9 @@
 
-(load-relative "../mzscheme/loadtest.ss")
+(load-relative "../racket/loadtest.rkt")
 
 (Section 'srcloc)
 (require unstable/srcloc)
-(require scheme/shared)
+(require racket/shared)
 
 (test #t source-location? #f)
 (test #f source-location? #t)
