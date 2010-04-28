@@ -13,4 +13,4 @@
                   (wrap-read-all 'scheme port (lambda (in) (read-syntax src in)) modpath src line col pos)
                   #f)
    'module-language
-   '#(tests/mzscheme/lang/getinfo get-info closure-data)))
+   '#(tests/racket/lang/getinfo get-info closure-data)))

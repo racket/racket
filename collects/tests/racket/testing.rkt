@@ -75,14 +75,14 @@ transcript.
 (define number-of-exn-tests 0)
 
 (define (load-in-sandbox file)
-  (define-syntax-rule (S id) (dynamic-require 'scheme/sandbox 'id))
+  (define-syntax-rule (S id) (dynamic-require 'racket/sandbox 'id))
   (let ([e ((S call-with-trusted-sandbox-configuration)
             (lambda ()
               (parameterize ([(S sandbox-input) current-input-port]
                              [(S sandbox-output) current-output-port]
                              [(S sandbox-error-output) current-error-port]
                              [(S sandbox-memory-limit) 100]) ; 100mb per box
-                ((S make-evaluator) '(begin) #:requires (list 'scheme)))))])
+                ((S make-evaluator) '(begin) #:requires (list 'racket)))))])
     (e `(load-relative "testing.rkt"))
     (e `(define real-output-port (quote ,real-output-port)))
     (e `(define real-error-port  (quote ,real-error-port)))
@@ -205,7 +205,7 @@ transcript.
     [(expr) (error-test expr exn:application:type?)]
     [(expr exn-type?) (thunk-error-test (lambda () (eval expr)) expr exn-type?)]))
 
-(require (only-in scheme [lambda err:mz:lambda])) ; so err/rt-test works with beginner.rkt
+(require (only-in racket [lambda err:mz:lambda])) ; so err/rt-test works with beginner.rkt
 (define-syntax err/rt-test
   (lambda (stx)
     (syntax-case stx ()

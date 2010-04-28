@@ -1,14 +1,14 @@
 #!/bin/sh
 #|
-exec mzscheme -qu "$0" ${1+"$@"}
+exec racket -qu "$0" ${1+"$@"}
 |#
 
-;; See "tabulate.ss" for information on the output format
+;; See "tabulate.rkt" for information on the output format
 
 (module auto scheme/base
   (require (for-syntax scheme/base)
            mzlib/process
-           "cmdline.ss"
+           "cmdline.rkt"
            mzlib/list
            mzlib/compile
            mzlib/inflate
@@ -37,14 +37,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define (clean-up-o1 bm)
     (delete-file (format "~a.o1" bm)))
 
-  (define (mk-mzscheme bm) (void))
+  (define (mk-racket bm) (void))
   #;
-  (define (mk-mzscheme bm)
+  (define (mk-racket bm)
     (unless (directory-exists? "compiled")
       (make-directory "compiled"))
     (parameterize ([current-namespace (make-base-namespace)]
                    [read-accept-reader #t])
-      (let ([name (format "~a.ss" bm)])
+      (let ([name (format "~a.rkt" bm)])
         (compile-file name
                       (build-path "compiled" (path-add-suffix name #".zo"))))))
 
@@ -59,7 +59,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (with-output-to-file (format "~a.scm" bm)
       #:exists 'replace
       (lambda ()
-        (printf "(load \"r5rs-wrap.ss\")\n(load \"~a.sch\")\n" bm)))
+        (printf "(load \"r5rs-wrap.rkt\")\n(load \"~a.sch\")\n" bm)))
     ;; To get compilation time:
     (parameterize ([current-namespace (make-base-empty-namespace)])
       (namespace-require 'r5rs)
@@ -77,7 +77,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (when (file-exists? f)
         (delete-file f))))
 
-  (define (mk-mzscheme-tl bm)
+  (define (mk-racket-tl bm)
     ;; To get compilation time:
     (parameterize ([current-namespace (make-base-namespace)])
       (namespace-require 'scheme/base)
@@ -105,7 +105,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define (mk-mzc bm)
     (parameterize ([current-output-port (open-output-bytes)])
-      (system (format "mzc ~a.ss" bm))))
+      (system (format "mzc ~a.rkt" bm))))
 
   (define (clean-up-extension bm)
     (delete-file (append-extension-suffix (symbol->string bm))))
@@ -258,7 +258,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                  (cadr m)
                  (or (cadddr m) #"0")))))
 
-  (define (extract-mzscheme-times bm str)
+  (define (extract-racket-times bm str)
     (let ([m (regexp-match #rx#"cpu time: ([0-9]+) real time: ([0-9]+) gc time: ([0-9]+)" str)])
       (map bytes->number (cdr m))))
 
@@ -321,36 +321,36 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define impls
     (list
-     (make-impl 'mzscheme
+     (make-impl 'racket
                 void
-                mk-mzscheme
+                mk-racket
                 (lambda (bm)
-                  (system (format "mzscheme -u ~a.ss" bm)))
-                extract-mzscheme-times
+                  (system (format "racket -u ~a.rkt" bm)))
+                extract-racket-times
                 clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mz-old
                 void
-                mk-mzscheme
+                mk-racket
                 (lambda (bm)
-                  (system (format "mz-old -u ~a.ss" bm)))
-                extract-mzscheme-times
+                  (system (format "mz-old -u ~a.rkt" bm)))
+                extract-racket-times
                 clean-up-zo
                 mutable-pair-progs)
-     (make-impl 'mzschemecgc
+     (make-impl 'racketcgc
                 void
-                mk-mzscheme
+                mk-racket
                 (lambda (bm)
-                  (system (format "mzschemecgc -u ~a.ss" bm)))
-                extract-mzscheme-times
+                  (system (format "racketcgc -u ~a.rkt" bm)))
+                extract-racket-times
                 clean-up-zo
                 mutable-pair-progs)
-     (make-impl 'mzscheme3m
+     (make-impl 'racket3m
                 void
-                mk-mzscheme
+                mk-racket
                 (lambda (bm)
-                  (system (format "mzscheme3m -u ~a.ss" bm)))
-                extract-mzscheme-times
+                  (system (format "racket3m -u ~a.rkt" bm)))
+                extract-racket-times
                 clean-up-zo
                 mutable-pair-progs)
      (make-impl 'plt-r5rs
@@ -358,62 +358,62 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 mk-plt-r5rs
                 (lambda (bm)
                   (system (format "plt-r5rs ~a.scm" bm)))
-                extract-mzscheme-times
+                extract-racket-times
                 clean-up-plt-r5rs
                 null)
      (make-impl 'mzc
                 void
                 mk-mzc
                 (lambda (bm)
-                  (system (format "mzscheme -mvqee '(load-extension \"~a\")' '(require ~a)'" 
+                  (system (format "racket -mvqee '(load-extension \"~a\")' '(require ~a)'" 
                                   (append-extension-suffix (symbol->string bm))
                                   bm)))
-                extract-mzscheme-times
+                extract-racket-times
                 clean-up-extension
                 (append '(takr takr2)
                         mutable-pair-progs))
-     (make-impl 'mzscheme-j
+     (make-impl 'racket-j
                 void
-                mk-mzscheme
+                mk-racket
                 (lambda (bm)
-                  (system (format "mzscheme -jqu ~a.ss" bm)))
-                extract-mzscheme-times
+                  (system (format "racket -jqu ~a.rkt" bm)))
+                extract-racket-times
                 clean-up-zo
                 mutable-pair-progs)
-     (make-impl 'mzschemecgc-j
+     (make-impl 'racketcgc-j
                 void
-                mk-mzscheme
+                mk-racket
                 (lambda (bm)
-                  (system (format "mzschemecgc -jqu ~a.ss" bm)))
-                extract-mzscheme-times
+                  (system (format "racketcgc -jqu ~a.rkt" bm)))
+                extract-racket-times
                 clean-up-zo
                 mutable-pair-progs)
-     (make-impl 'mzschemecgc-tl
+     (make-impl 'racketcgc-tl
                 void
-                mk-mzscheme-tl
+                mk-racket-tl
                 (lambda (bm)
-                  (system (format "mzschemecgc -qr compiled/~a.zo" bm)))
-                extract-mzscheme-times
+                  (system (format "racketcgc -qr compiled/~a.zo" bm)))
+                extract-racket-times
                 clean-up-zo
                 (append '(nucleic2)
                         mutable-pair-progs))
      (make-impl 'chicken
                 void
-                (run-mk "mk-chicken.ss")
+                (run-mk "mk-chicken.rkt")
                 run-exe
                 extract-chicken-times
                 clean-up-bin
                 '(scheme2 takr2))
      (make-impl 'bigloo
                 void
-                (run-mk "mk-bigloo.ss")
+                (run-mk "mk-bigloo.rkt")
                 run-exe
                 extract-bigloo-times
                 clean-up-bin
                 '(cpstack takr2))
      (make-impl 'gambit
                 void
-                (run-mk "mk-gambit.ss")
+                (run-mk "mk-gambit.rkt")
                 run-gambit-exe
                 extract-gambit-times
                 clean-up-o1
@@ -462,7 +462,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 '(ctak))
 ))
 
-  (define obsolte-impls '(mzscheme3m mzschemecgc mzscheme-j mzschemecgc-j mzschemecgc-tl mzc mz-old))
+  (define obsolte-impls '(racket3m racketcgc racket-j racketcgc-j racketcgc-tl mzc mz-old))
 
   (define benchmarks
     '(conform

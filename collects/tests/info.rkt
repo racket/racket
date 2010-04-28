@@ -15,7 +15,7 @@
     "mred"
     "mysterx"
     "mzcom"
-    "mzscheme"
+    "racket"
     "plai"
     "planet"
     "plot"

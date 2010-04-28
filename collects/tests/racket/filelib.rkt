@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.rkt")
 
-(Section 'file)
+(Section 'filelib)
 
 (require scheme/file
 	 mzlib/process
@@ -64,9 +64,9 @@
     (test #f null? (member "filelib.rkt" rel))
     (test #f null? (member (build-path (current-directory) "filelib.rkt") abs))
 
-    (test (list (string->path "filelib.rkt")) find-files (lambda (f) (regexp-match "^filelib[.]ss$" (path->string f))))
+    (test (list (string->path "filelib.rkt")) find-files (lambda (f) (regexp-match "^filelib[.]rkt$" (path->string f))))
     (test (list (build-path (current-directory) "filelib.rkt"))
-	  find-files (lambda (f) (regexp-match "filelib[.]ss$" (path->string f)))
+	  find-files (lambda (f) (regexp-match "filelib[.]rkt$" (path->string f)))
 	  (current-directory))
 
     (let ([rel2 (fold-files (lambda (name kind accum)

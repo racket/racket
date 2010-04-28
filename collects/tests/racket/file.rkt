@@ -1106,7 +1106,7 @@
   (test "~" format "~~")
   (test "hello---~---there" format "~a---~~---~a" "hello" 'there)
   (test "\"hello\"---~---there" format "~s---~~---~s" "hello" 'there)
-  (test "\"hello\"---~---there" format "~v---~~---~v" "hello" 'there)
+  (test "\"hello\"---~---'there" format "~v---~~---~v" "hello" 'there)
   (test (string #\a #\newline #\b #\newline #\c) format "a~nb~%c")
   (let ([try-newline-stuff
 	 (lambda (newlines)
