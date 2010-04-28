@@ -899,14 +899,14 @@
 
   (when (make-zo) (make-zo-step))
   (when (make-info-domain) (make-info-domain-step))
+
+  (when (make-launchers) (make-launchers-step))
+
   (when (make-docs)
     ;; Double-check that "setup/scribble" is present.
     (when (file-exists? (build-path (collection-path "setup") "scribble.rkt"))
       (make-docs-step)))
-
   (when (doc-pdf-dest) (doc-pdf-dest-step))
-  (when (make-launchers) (make-launchers-step))
-
 
   (do-install-part 'general)
   (do-install-part 'post)

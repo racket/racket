@@ -445,18 +445,18 @@
       (eval mk ns)
       (eval (mk '#(scheme x "whatever")))
       (test '#(scheme x "whatever") module->language-info ''m)
-      (let ([path (build-path (collection-path "tests" "mzscheme")
+      (let ([path (build-path (collection-path "tests" "racket")
                               "langm.rkt")])
         (parameterize ([read-accept-reader #t]
                        [current-module-declare-name (module-path-index-resolve
                                                      (module-path-index-join path #f))])
           (eval
            (read-syntax path
-                        (open-input-string "#lang tests/mzscheme (provide x) (define x 1)"
+                        (open-input-string "#lang tests/racket (provide x) (define x 1)"
                                            path)))
           ((current-module-name-resolver) (current-module-declare-name))))
-      (test '#(tests/mzscheme/lang/getinfo get-info closure-data)
-            module->language-info 'tests/mzscheme/langm))))
+      (test '#(tests/racket/lang/getinfo get-info closure-data)
+            module->language-info 'tests/racket/langm))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check shadowing of initial imports:

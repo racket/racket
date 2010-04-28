@@ -1103,7 +1103,7 @@
   (test 3 'non-top
         (parameterize ([current-namespace ns])
           (eval '(+ 1 2))))
-  (test '(+ 1 2) 'repl-top
+  (test '`(+ 1 2) 'repl-top
         (let ([s (open-output-bytes)])
           (parameterize ([current-input-port (open-input-string "(+ 1 2)")]
                          [current-namespace ns]

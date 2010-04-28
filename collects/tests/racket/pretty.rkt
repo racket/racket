@@ -1,7 +1,7 @@
 
 ; Test pretty-print.
 
-;; Regression test results in pp-regression.rkt. When things
+;; Regression test results in pp-regression.rktd. When things
 ;;  have to change, re-run with `record-for-regression?' to #t.
 (define record-for-regression? #f)
 ;; Disable `use-regression?' when inspecting results after a
@@ -13,6 +13,8 @@
 (Section 'pretty)
 
 (require mzlib/pretty)
+
+(print-as-quasiquote #f)
 
 (define (pprec-print pprec port write?)
   (define (print-one n port)
@@ -281,7 +283,7 @@
 
 (define regression-path
   (build-path (current-load-relative-directory)
-	      "pp-regression.rkt"))
+	      "pp-regression.rktd"))
 
 (define recorded (if record-for-regression?
 		     null
@@ -322,5 +324,7 @@
     (lambda () (write recorded))))
 
 (test #t 'use-regression? use-regression?)
+
+(print-as-quasiquote #t)
 
 (report-errs)

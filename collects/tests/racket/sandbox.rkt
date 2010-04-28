@@ -3,7 +3,7 @@
 
 (Section 'sandbox)
 
-(require scheme/sandbox)
+(require racket/sandbox)
 
 ;; test call-in-nested-thread*
 (let ()
@@ -39,9 +39,9 @@
   (define (make-evaluator! . args)
     (set! ev (apply make-evaluator args)))
   (define (make-base-evaluator! . args)
-    (set! ev (apply make-evaluator 'scheme/base args)))
+    (set! ev (apply make-evaluator 'racket/base args)))
   (define (make-base-evaluator/reqs! reqs . args)
-    (set! ev (apply make-evaluator 'scheme/base #:requires reqs args)))
+    (set! ev (apply make-evaluator 'racket/base #:requires reqs args)))
   (define (make-module-evaluator! . args)
     (set! ev (apply make-module-evaluator args)))
   (define (run thunk)
@@ -272,11 +272,11 @@
 
    ;; whole program argument
    --top--
-   (make-module-evaluator! '(module foo scheme/base (define x 1)))
+   (make-module-evaluator! '(module foo racket/base (define x 1)))
    --eval--
    x => 1
    --top--
-   (make-module-evaluator! '(module foo scheme/base (provide x) (define x 1)))
+   (make-module-evaluator! '(module foo racket/base (provide x) (define x 1)))
    --eval--
    x => 1
    (define x 2) =err> "cannot re-define a constant"
@@ -289,9 +289,9 @@
           [list-lib  (strpath racketlib "list.rkt")]
           [list-zo   (strpath racketlib "compiled" "list_rkt.zo")]
           [test-lib  (strpath tmp "sandbox-test.rkt")]
-          [test-zo   (strpath tmp "compiled" "sandbox-test_ss.zo")]
+          [test-zo   (strpath tmp "compiled" "sandbox-test_rkt.zo")]
           [test2-lib (strpath tmp "sandbox-test2.rkt")]
-          [test2-zo  (strpath tmp "compiled" "sandbox-test2_ss.zo")])
+          [test2-zo  (strpath tmp "compiled" "sandbox-test2_rkt.zo")])
      (t --top--
         (make-base-evaluator!)
         --eval--

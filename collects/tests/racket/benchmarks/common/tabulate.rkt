@@ -1,6 +1,6 @@
 #!/bin/sh
 #|
-exec mzscheme -qu "$0" ${1+"$@"}
+exec racket -qu "$0" ${1+"$@"}
 |#
 
 ;; Input format is a sequence of S-expression forms:
