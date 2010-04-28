@@ -5,8 +5,7 @@
 
 (require 2htdp/image
          lang/posn
-         scheme/runtime-path
-         (only-in 2htdp/private/image-more save-image))
+         scheme/runtime-path)
 
 (define-runtime-path image.scrbl "image.scrbl")
 (define-runtime-path img "img")

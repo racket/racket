@@ -1,4 +1,4 @@
-(load-relative "../mzscheme/loadtest.ss")
+(load-relative "../racket/loadtest.rkt")
 (require mzlib/class
          syntax-color/paren-tree)
 

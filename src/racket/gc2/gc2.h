@@ -413,6 +413,11 @@ GC2_EXTERN void GC_construct_child_gc();
    Creates a new place specific GC and links to the master GC.
 */
 
+GC2_EXTERN void GC_destruct_child_gc();
+/*
+   Destroys a place specific GC once the place has finished.
+*/
+
 GC2_EXTERN void *GC_switch_to_master_gc();
 /*
    Switches to the master GC

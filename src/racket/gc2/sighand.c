@@ -50,8 +50,16 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
     if (c == SEGV_MAPERR) {
       printf("SIGSEGV MAPERR si_code %i fault on addr %p\n", c, p);
     }
-    else {
-      printf("SIGSEGV ?????? SI_CODE %i fault on addr %p\n", c, p);
+    if (c == 0 ) {
+      /* I have now idea why this happens on linux */
+      /* supposedly its coming from the user via kill */
+      /* so just ignore it. */
+      printf("SIGSEGV SI_USER SI_CODE %i fault on addr %p\n", c, p);
+      printf("pid %i uid %i\n", si->si_pid, si->si_uid);
+      return;
+    }
+    if (c == 128 ) {
+      printf("SIGSEGV SI_KERNEL SI_CODE %i fault on addr %p sent by kernel\n", c, p);
     }
 #if WAIT_FOR_GDB
     launchgdb();
@@ -67,10 +75,10 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
         printf("ADDR %p OWNED BY MASTER %i\n", p, m);
       }
 #endif
-      printf("mprotect fault on %p\n", p);
+      printf("SIGSEGV SEGV_ACCERR SI_CODE %i fault on %p\n", c, p);
     }
     else {
-      printf("?? %i fault on %p\n", si->si_code, p);
+      printf("SIGSEGV ???? SI_CODE %i fault on %p\n", c, p);
     }
     abort();
   }
