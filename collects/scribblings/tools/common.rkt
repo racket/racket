@@ -35,7 +35,7 @@
     [(_ name)
      (string? (syntax-e #'name))
      (let ([name (syntax-e #'name)])
-       (with-syntax ([rx (regexp (regexp-quote (format "^drracket:~a:" name)))])
+       (with-syntax ([rx (regexp (format "^~a" (regexp-quote (format "drracket:~a:" name))))])
          #'(include-previously-extracted scribblings/tools/tool-lib-extracts rx)))]))
 
 (provide docs-get/extend)
