@@ -3,9 +3,9 @@
 ;;  both in setup.ss (pre-zo, pre-cm) and setup-go.ss (use zos and cm).
 ;; This means that command lines will be parsed twice.
 
-#lang scheme/base
+#lang racket/base
 
-(require scheme/cmdline
+(require racket/cmdline
          raco/command-name)
 
 (provide parse-cmdline)

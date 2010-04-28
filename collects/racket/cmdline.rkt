@@ -1,6 +1,9 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base))
+;; Minimize imports here, because `raco setup' has to load this file
+;; and its dependencies from source
+
+(require (for-syntax racket/base))
 
 (provide command-line parse-command-line)
 

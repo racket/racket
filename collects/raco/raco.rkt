@@ -2,8 +2,6 @@
 (require "command-name.ss"
          "all-tools.ss")
 
-(define cmdline (vector->list (current-command-line-arguments)))
-
 (define (find-by-prefix hash str)
   (let ([trie (make-hash)])
     (for ([key (in-hash-keys hash)])
@@ -23,56 +21,69 @@
                  (hash-ref hash s)
                  'ambiguous))))))
 
-(let* ([tools (all-tools)]
+(let* ([cmdline (vector->list (current-command-line-arguments))]
+       [cmdline (if (and (pair? cmdline)
+                         (equal? "help" (car cmdline))
+                         (pair? (cdr cmdline))
+                         (not (regexp-match? #rx"^-" (cadr cmdline))))
+                    (list* (cadr cmdline) "--help" (cddr cmdline))
+                    cmdline)]
+       [tools (all-tools)]
        [show-all?
-       (cond
-        [(null? cmdline) #f]
-        [(or (equal? (car cmdline) "--help")
-             (equal? (car cmdline) "-h"))
-         #t]
-        [(regexp-match? #rx"^-" (car cmdline))
-         (fprintf (current-error-port) "~a: A flag must follow a command: ~a\n\n"
-                  (find-system-path 'run-file)
-                  (car cmdline))
-           #f]
-        [(or (hash-ref tools (car cmdline) #f)
-             (find-by-prefix tools (car cmdline)))
-         => (lambda (tool)
-              (if (eq? 'ambiguous tool)
-                  (begin
-                    (fprintf (current-error-port) "~a: Ambiguous command prefix: ~a\n\n"
-                             (find-system-path 'run-file)
-                             (car cmdline))
-                      #f)
-                    (parameterize ([current-command-line-arguments
-                                    (list->vector (cdr cmdline))]
-                                   [current-command-name (car tool)])
-                                  (dynamic-require (cadr tool) #f)
-                                  (exit))))]
-        [else
-         (fprintf (current-error-port) "~a: Unrecognized command: ~a\n\n"
-                  (find-system-path 'run-file)
-                  (car cmdline))
-         #f])])
-  (fprintf (current-error-port) "Usage: raco <command> <option> ... <arg> ...\n\n")
-  (fprintf (current-error-port) "~a commands:\n" (if show-all? 
-                                                     "Available"
-                                                     "Frequently used"))
-  (let ([l (sort (hash-map tools (lambda (k v) v))
-                 (if show-all?
-                     (lambda (a b) (string<? (car a) (car b)))
-                     (lambda (a b) (> (or (list-ref a 3) -inf.0) (or (list-ref b 3) -inf.0)))))])
-    (let ([largest (apply max 0 (map (lambda (v) (string-length (car v))) l))])
-        (for ([i (in-list l)])
-          (when (or show-all? (cadddr i))
-            (fprintf (current-error-port)
-                     "  ~a~a~a\n"
-                     (car i)
-                     (make-string (- largest -3 (string-length (car i))) #\space)
-                     (caddr i))))))
-    (printf "\nA command can be specified by an unambigous prefix.")
-    (unless show-all?
-      (printf "\nSee `raco --help' for a complete list of commands."))
-    (printf "\nSee `raco <command> --help' for help on a command.")
-    (newline)
-    (exit (if show-all? 0 1)))
+        (cond
+         [(null? cmdline) #f]
+         [(or (equal? (car cmdline) "--help")
+              (equal? (car cmdline) "-h"))
+          #t]
+         [(regexp-match? #rx"^-" (car cmdline))
+          (fprintf (current-error-port) "~a: A flag must follow a command: ~a\n\n"
+                   (find-system-path 'run-file)
+                   (car cmdline))
+          #f]
+         [(or (hash-ref tools (car cmdline) #f)
+              (find-by-prefix tools (car cmdline)))
+          => (lambda (tool)
+               (if (eq? 'ambiguous tool)
+                   (begin
+                     (fprintf (current-error-port) "~a: Ambiguous command prefix: ~a\n\n"
+                              (find-system-path 'run-file)
+                              (car cmdline))
+                     #f)
+                   (parameterize ([current-command-line-arguments
+                                   (list->vector (cdr cmdline))]
+                                  [current-command-name (car tool)])
+                     (dynamic-require (cadr tool) #f)
+                     (exit))))]
+         [(equal? (car cmdline) "help") #t]
+         [else
+          (fprintf (current-error-port) "~a: Unrecognized command: ~a\n\n"
+                   (find-system-path 'run-file)
+                   (car cmdline))
+          #f])])
+  (fprintf (current-error-port) "Usage: raco <command> <option> ... <arg> ...\n")
+  (for-each
+   (lambda (show-all?)
+     (fprintf (current-error-port) "\n~a commands:\n" (if show-all? 
+                                                          "All available"
+                                                          "Frequently used"))
+     (let ([l (sort (hash-map tools (lambda (k v) v))
+                    (if show-all?
+                        (lambda (a b) (string<? (car a) (car b)))
+                        (lambda (a b) (> (or (list-ref a 3) -inf.0) (or (list-ref b 3) -inf.0)))))])
+       (let ([largest (apply max 0 (map (lambda (v) (string-length (car v))) l))])
+         (for ([i (in-list l)])
+           (when (or show-all? (cadddr i))
+             (fprintf (current-error-port)
+                      "  ~a~a~a\n"
+                      (car i)
+                      (make-string (- largest -3 (string-length (car i))) #\space)
+                      (caddr i)))))))
+   (if show-all?
+       (list #f #t)
+       (list #f)))
+  (printf "\nA command can be specified by an unambigous prefix.")
+  (unless show-all?
+    (printf "\nSee `raco help' for a complete list of commands."))
+  (printf "\nSee `raco help <command>' for help on a command.")
+  (newline)
+  (exit (if show-all? 0 1)))
