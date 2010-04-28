@@ -724,7 +724,7 @@
                                      (archive-implies-reindex)))))
 
   (define (doc-pdf-dest-step)
-    (setup-printf #f "building PDF documentation (via pdflatex)")
+    (setup-printf #f "--- building PDF documentation (via pdflatex) ---")
     (let ([dest-dir (path->complete-path (doc-pdf-dest))])
       (unless (directory-exists? dest-dir)
         (make-directory dest-dir))
