@@ -1,10 +1,10 @@
-#lang scheme
+#lang racket
 
 ;; See "<<<" for two small changes, then jump down
 ;; to `send/suspend'.
 
 (require xml net/url
-         scheme/control) ;; <<< new import
+         racket/control) ;; <<< new import
 
 (define (serve port-no)
   (define main-cust (make-custodian))

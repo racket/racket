@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ;; The `serve' function is revised to run the loop
 ;; in a thread, and it returns a function to shut down

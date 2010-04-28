@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ;; Only `accept-and-handle' changes, moving the
 ;; handle work into a thread.
