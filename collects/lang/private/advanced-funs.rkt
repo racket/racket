@@ -8,6 +8,11 @@
 	   scheme/port
            "../posn.ss"
            (for-syntax scheme/base))
+
+  (define pp
+    (let ([pretty-print (lambda (v)
+                          (pretty-write v))])
+      pretty-print))
   
   (provide-and-document
    procedures
@@ -35,7 +40,7 @@
              "to print the argument to stdout (without quotes on symbols and strings, etc.)")
     (write (any -> void)
            "to print the argument to stdout (in a traditional style that is somewhere between print and display)")
-    (pretty-print (any -> void)
+    ((pp pretty-print) (any -> void)
                   "like write, but with standard newlines and indentation")
     (printf (string any ... -> void)
             "to format the rest of the arguments according to the first argument and print it to stdout")
