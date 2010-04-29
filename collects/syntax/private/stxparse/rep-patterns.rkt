@@ -17,7 +17,7 @@ A Base is (listof IAttr)
 A SinglePattern is one of
   (make-pat:any Base)
   (make-pat:var Base id id (listof stx) (listof IAttr) bool)
-  (make-pat:literal Base identifier)
+  (make-pat:literal Base identifier ct-phase)
   (make-pat:datum Base datum)
   (make-pat:ghost Base GhostPattern SinglePattern)
   (make-pat:head Base HeadPattern SinglePattern)
@@ -38,7 +38,7 @@ A ListPattern is a subtype of SinglePattern; one of
 
 (define-struct pat:any (attrs) #:prefab)
 (define-struct pat:var (attrs name parser args nested-attrs commit?) #:prefab)
-(define-struct pat:literal (attrs id) #:prefab)
+(define-struct pat:literal (attrs id phase) #:prefab)
 (define-struct pat:datum (attrs datum) #:prefab)
 (define-struct pat:ghost (attrs ghost inner) #:prefab)
 (define-struct pat:head (attrs head tail) #:prefab)
@@ -186,8 +186,8 @@ A Kind is one of
 (define (create-pat:datum datum)
   (make pat:datum null datum))
 
-(define (create-pat:literal literal)
-  (make pat:literal null literal))
+(define (create-pat:literal literal phase)
+  (make pat:literal null literal phase))
 
 (define (create-pat:ghost g sp)
   (cond [(ghost:and? g)

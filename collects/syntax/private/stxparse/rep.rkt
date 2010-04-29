@@ -9,6 +9,7 @@
          syntax/keyword
          unstable/syntax
          unstable/struct
+         "../util/txlift.ss"
          "rep-data.ss"
          "codegen-data.ss")
 
@@ -42,12 +43,14 @@
   (-> DeclEntry/c
       (values DeclEntry/c (listof syntax?)))]
  [check-literals-list
+  ;; NEEDS txlift context
   (-> syntax? syntax?
-      (listof (list/c identifier? identifier?)))]
+      (listof (list/c identifier? identifier? ct-phase/c)))]
  #|
  [check-literal-sets-list
+  ;; NEEDS txlift context
   (-> syntax? syntax?
-      (listof (listof (list/c identifier? identifier?))))]
+      (listof (listof (list/c identifier? identifier? ct-phase/c))))]
  |#
  [check-conventions-rules
   (-> syntax? syntax?
@@ -124,22 +127,26 @@
 ;; literals must be bound. Set to #f for pass1 (attr collection);
 ;; parser requires stxclasses to be bound.
 (define (parse-rhs stx expected-attrs splicing? #:context ctx)
-  (parameterize ((current-syntax-context ctx))
-    (define-values (rest description transp? attributes auto-nested?
-                    decls defs commit?)
-      (parse-rhs/part1 stx splicing? (and expected-attrs #t)))
-    (define patterns
-      (parameterize ((stxclass-lookup-config
-                      (cond [expected-attrs 'yes]
-                            [auto-nested? 'try]
-                            [else 'no])))
-        (parse-variants rest decls splicing? expected-attrs)))
-    (when (null? patterns)
-      (wrong-syntax #f "expected at least one variant"))
-    (let ([sattrs
-           (or attributes
-               (intersect-sattrss (map variant-attrs patterns)))])
-      (make rhs stx sattrs transp? description patterns defs commit?))))
+  (call/txlifts
+   (lambda ()
+     (parameterize ((current-syntax-context ctx))
+       (define-values (rest description transp? attributes auto-nested?
+                            decls defs commit?)
+         (parse-rhs/part1 stx splicing? (and expected-attrs #t)))
+       (define patterns
+         (parameterize ((stxclass-lookup-config
+                         (cond [expected-attrs 'yes]
+                              [auto-nested? 'try]
+                              [else 'no])))
+           (parse-variants rest decls splicing? expected-attrs)))
+       (when (null? patterns)
+         (wrong-syntax #f "expected at least one variant"))
+       (let ([sattrs
+              (or attributes
+                  (intersect-sattrss (map variant-attrs patterns)))])
+         (make rhs stx sattrs transp? description patterns 
+               (append (get-txlifts-as-definitions) defs)
+               commit?))))))
 
 (define (parse-rhs/part1 stx splicing? strict?)
   (define-values (chunks rest)
@@ -232,7 +239,7 @@
 ;; create-aux-def : DeclEntry -> (values DeclEntry (listof stx))
 (define (create-aux-def entry)
   (match entry
-    [(struct den:lit (_i _e))
+    [(struct den:lit (_i _e _p))
      (values entry null)]
     [(struct den:class (name class args))
      (cond [(identifier? name)
@@ -476,8 +483,8 @@
 (define (parse-pat:id id decls allow-head?)
   (define entry (declenv-lookup decls id))
   (match entry
-    [(struct den:lit (internal literal))
-     (create-pat:literal literal)]
+    [(struct den:lit (internal literal phase))
+     (create-pat:literal literal phase)]
     [(struct den:class (_n _c _a))
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
@@ -604,9 +611,10 @@
 (define (parse-pat:literal stx decls)
   (syntax-case stx (~literal)
     [(~literal lit)
+     ;; FIXME: support #:phase option here
      (unless (identifier? #'lit)
        (wrong-syntax #'lit "expected identifier"))
-     (create-pat:literal #'lit)]
+     (create-pat:literal #'lit #f)]
     [_
      (wrong-syntax stx "bad ~~literal pattern")]))
 
@@ -969,7 +977,7 @@
     [_
      (raise-syntax-error #f "expected attribute name with optional depth declaration" ctx stx)]))
 
-;; check-literals-list : stx stx -> (listof (list id id))
+;; check-literals-list : stx stx -> (listof (list id id ct-phase))
 (define (check-literals-list stx ctx)
   (unless (stx-list? stx)
     (raise-syntax-error #f "expected literals list" ctx stx))
@@ -978,15 +986,18 @@
       (when dup (raise-syntax-error #f "duplicate literal identifier" ctx dup)))
     lits))
 
-;; check-literal-entry : stx stx -> (list id id)
+;; check-literal-entry : stx stx -> (list id id ct-phase)
 (define (check-literal-entry stx ctx)
   (syntax-case stx ()
+    [(internal external #:phase phase)
+     (and (identifier? #'internal) (identifier? #'external))
+     (list #'internal #'external (txlift #'phase))]
     [(internal external)
      (and (identifier? #'internal) (identifier? #'external))
-     (list #'internal #'external)]
+     (list #'internal #'external #f)]
     [id
      (identifier? #'id)
-     (list #'id #'id)]
+     (list #'id #'id #f)]
     [_
      (raise-syntax-error #f "expected literal (identifier or pair of identifiers)"
                          ctx stx)]))
@@ -997,27 +1008,38 @@
   (for/list ([x (stx->list stx)])
     (check-literal-set-entry x ctx)))
 
+;; check-literal-set-entry : stx stx -> (listof (list id id ct-phase))
 (define (check-literal-set-entry stx ctx)
-  (define (elaborate litset-id lctx)
+  (define (elaborate litset-id lctx phase)
+    ;; phase is #f (not specified, means 0) or syntax (expr)
     (let ([litset (syntax-local-value/catch litset-id literalset?)])
       (unless litset
         (raise-syntax-error #f "expected identifier defined as a literal-set"
                             ctx litset-id))
-      (elaborate-litset litset lctx stx)))
+      (elaborate-litset litset lctx phase stx)))
   (syntax-case stx ()
-    [(litset #:at lctx)
-     (and (identifier? #'litset) (identifier? #'lctx))
-     (elaborate #'litset #'lctx)]
+    [(litset . more)
+     (and (identifier? #'litset))
+     (let* ([chunks (parse-keyword-options/eol #'more litset-directive-table
+                                               #:no-duplicates? #t
+                                               #:context ctx)]
+            [lctx (options-select-value chunks '#:at #:default #'litset)]
+            [phase (options-select-value chunks '#:phase #:default #f)])
+       (elaborate #'litset lctx (and phase (txlift phase))))]
     [litset
      (identifier? #'litset)
-     (elaborate #'litset #'litset)]
+     (elaborate #'litset #'litset #f)]
     [_
      (raise-syntax-error #f "expected literal-set entry" ctx stx)]))
 
-(define (elaborate-litset litset lctx srcctx)
+(define (elaborate-litset litset lctx phase srcctx)
+  ;; phase is #f (not specified, means 0) or syntax (expr)
   (for/list ([entry (literalset-literals litset)])
     (list (datum->syntax lctx (car entry) srcctx)
-          (cadr entry))))
+          (cadr entry)
+          (cond [(not (caddr entry)) phase]
+                [(not phase) (caddr entry)]
+                [else #`(phase+ #,(caddr entry) #,phase)]))))
 
 ;; returns (listof (cons Conventions (listof syntax)))
 (define (check-conventions-list stx ctx)
@@ -1140,3 +1162,12 @@
 ;; h-optional-directive-table
 (define h-optional-directive-table
   (list (list '#:defaults check-bind-clause-list)))
+
+;; phase-directive-table
+(define phase-directive-table
+  (list (list '#:phase check-expression)))
+
+;; litset-directive-table
+(define litset-directive-table
+  (cons (list '#:at check-identifier)
+        phase-directive-table))

@@ -356,6 +356,8 @@ A Dynamic Frontier Context (DFC) is one of
 
 ;; == Expectations
 
+;; FIXME: add phase to expect:literal
+
 #|
 An Expectation is one of
   'ineffable
@@ -599,3 +601,10 @@ An Expectation is one of
                           #'(k))])
          #'(values (lambda (x extra ...) (parser x extra ... arg ...))
                    (lambda () (get-description arg ...)))))]))
+
+;; 
+
+(provide phase+)
+
+(define (phase+ a b)
+  (and (number? a) (number? b) (+ a b)))

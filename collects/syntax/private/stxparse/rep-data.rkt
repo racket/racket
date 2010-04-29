@@ -92,7 +92,7 @@ A ConventionRule is (list regexp DeclEntry)
 
 #|
 A LiteralSet is
-  (make-literalset (listof (list symbol id)))
+  (make-literalset (listof (list symbol id ct-phase)))
 |#
 (define-struct literalset (literals) #:transparent)
 
@@ -110,14 +110,14 @@ DeclEnv =
                 (listof ConventionRule))
 
 DeclEntry =
-  (make-den:lit id id)
+  (make-den:lit id id ct-phase)
   (make-den:class id id (listof syntax) bool)
   (make-den:parser id id (listof SAttr) bool bool)
   (make-den:delayed id id id)
 |#
 (define-struct declenv (table conventions))
 
-(define-struct den:lit (internal external))
+(define-struct den:lit (internal external phase))
 (define-struct den:class (name class args))
 (define-struct den:parser (parser description attrs splicing? commit?))
 (define-struct den:delayed (parser description class))
@@ -127,7 +127,7 @@ DeclEntry =
    (for/fold ([table (make-immutable-bound-id-table)])
        ([literal literals])
      (bound-id-table-set table (car literal)
-                         (make den:lit (car literal) (cadr literal))))
+                         (make den:lit (car literal) (cadr literal) (caddr literal))))
    conventions))
 
 (define (declenv-lookup env id #:use-conventions? [use-conventions? #t])
@@ -141,7 +141,7 @@ DeclEntry =
   ;; So blame-declare? only applies to stxclass declares
   (let ([val (declenv-lookup env id #:use-conventions? #f)])
     (match val
-      [(struct den:lit (_i _e))
+      [(struct den:lit (_i _e _p))
        (wrong-syntax id "identifier previously declared as literal")]
       [(struct den:class (name _c _a))
        (if (and blame-declare? stxclass-name)
@@ -205,6 +205,11 @@ DeclEntry =
 (define SideClause/c
   (or/c clause:fail? clause:with? clause:attr?))
 
+;; ct-phase
+;;   #f means not specified, ie default, ie 0
+;;   syntax means computed by given expr
+(define ct-phase/c (or/c syntax? #f))
+
 (provide (struct-out den:lit)
          (struct-out den:class)
          (struct-out den:parser)
@@ -214,12 +219,13 @@ DeclEntry =
  [DeclEnv/c contract?]
  [DeclEntry/c contract?]
  [SideClause/c contract?]
+ [ct-phase/c contract?]
 
  [make-dummy-stxclass (-> identifier? stxclass?)]
  [stxclass-lookup-config (parameter/c (symbols 'no 'try 'yes))]
 
  [new-declenv
-  (->* [(listof (list/c identifier? identifier?))]
+  (->* [(listof (list/c identifier? identifier? ct-phase/c))]
        [#:conventions list?]
        DeclEnv/c)]
  [declenv-lookup

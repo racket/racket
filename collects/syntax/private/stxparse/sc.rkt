@@ -4,6 +4,7 @@
                      unstable/syntax
                      unstable/struct
                      "minimatch.ss"
+                     "../util/txlift.ss"
                      "rep-data.ss"
                      "rep.ss")
          racket/list
@@ -146,11 +147,18 @@
      (begin
        (unless (identifier? #'name)
          (raise-syntax-error #f "expected identifier" stx #'name))
-       (let ([lits (check-literals-list #'(lit ...) stx)])
-         (with-syntax ([((internal external) ...) lits])
-           #'(define-syntax name
-               (make-literalset
-                (list (list 'internal (quote-syntax external)) ...))))))]))
+       (with-txlifts/defs
+        (lambda ()
+          (let ([lits (check-literals-list #'(lit ...) stx)])
+            (with-syntax ([((internal external _) ...) lits]
+                          [(phase ...)
+                           (for/list ([lit lits])
+                             (if (caddr lit)
+                                 #`(quote-syntax #,(caddr lit))
+                                 #'(quote #f)))])
+              #'(define-syntax name
+                  (make-literalset
+                   (list (list 'internal (quote-syntax external) phase) ...))))))))]))
 
 ;; ----
 

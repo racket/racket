@@ -8,6 +8,7 @@
                      "rep-data.ss"
                      "rep.ss"
                      "codegen-data.ss"
+                     "../util/txlift.ss"
                      "../util.ss")
          scheme/stxparam
          scheme/list
@@ -158,7 +159,8 @@
   (syntax-case stx ()
     [(parse:clauses x clauses ctx)
      (with-disappeared-uses
-      (let ()
+      (with-txlifts
+       (lambda ()
         (define-values (chunks clauses-stx)
           (parse-keyword-options #'clauses parse-directive-table
                                  #:context #'ctx
@@ -191,19 +193,13 @@
                                              (clause-success () (let () . rest)))))))]))
         (unless (and (stx-list? clauses-stx) (stx-pair? clauses-stx))
           (raise-syntax-error #f "expected non-empty sequence of clauses" #'ctx))
-        (with-syntax ([(def ...) defs]
+        (with-syntax ([(def ...) (append (get-txlifts-as-definitions) defs)]
                       [(alternative ...)
                        (map for-clause (stx->list clauses-stx))])
           #`(let ([fail (syntax-patterns-fail #,context)])
               def ...
               (with-enclosing-fail* fail
-                (try alternative ...))))))]))
-
-(define-for-syntax (wash-literal stx)
-  (syntax-case stx ()
-    [(a b) (list #'a #'b)]))
-(define-for-syntax (wash-literals stx)
-  (wash-list wash-literal stx))
+                (try alternative ...)))))))]))
 
 ;; (clause-success (IAttr ...) expr) : expr
 (define-syntax (clause-success stx)
@@ -262,8 +258,16 @@
                 (fail x
                       #:expect (expectation pattern0)
                       #:fce fc)))]
-       [#s(pat:literal attrs literal)
+       [#s(pat:literal attrs literal #f)
         #`(if (and (identifier? x) (free-identifier=? x (quote-syntax literal)))
+              k
+              (fail x
+                    #:expect (expectation pattern0)
+                    #:fce fc))]
+       [#s(pat:literal attrs literal phase)
+        #`(if (and (identifier? x)
+                   (free-identifier=? x (quote-syntax literal)
+                                      (phase+ (syntax-local-phase-level) phase)))
               k
               (fail x
                     #:expect (expectation pattern0)
@@ -625,7 +629,7 @@
     [(_ #s(pat:datum attrs d))
      #'(begin (collect-error '(datum d))
               (make-expect:atom 'd))]
-    [(_ #s(pat:literal attrs lit))
+    [(_ #s(pat:literal attrs lit phase))
      #'(begin (collect-error '(literal lit))
               (make-expect:literal (quote-syntax lit)))]
     ;; 2 pat:compound patterns
