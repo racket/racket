@@ -27,21 +27,21 @@ improve method arity mismatch contract violation error messages?
   (syntax-case stx ()
     [(_ c v pos neg name loc)
      (syntax/loc stx
-       (apply-contract c v pos neg name loc))]
+       (apply-contract c v pos neg name loc (current-contract-region)))]
     [(_ c v pos neg)
      (syntax/loc stx
-       (apply-contract c v pos neg #f (build-source-location #f)))]
+       (apply-contract c v pos neg #f (build-source-location #f) (current-contract-region)))]
     [(_ c v pos neg src)
      (raise-syntax-error 'contract
        (string-append
         "please update contract application to new protocol "
         "(either 4 or 6 arguments)"))]))
 
-(define (apply-contract c v pos neg name loc)
+(define (apply-contract c v pos neg name loc usr)
   (let* ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
     (((contract-projection c)
-      (make-blame loc name (contract-name c) pos neg #t))
+      (make-blame loc name (contract-name c) pos neg usr #t))
      v)))
 
 (define-syntax (recursive-contract stx)
