@@ -1060,6 +1060,12 @@ please adhere to these guidelines:
  (module-language-one-line-summary "Reads the #lang line to specify the actual language")
   (module-language-auto-text "Automatic #lang line") ;; shows up in the details section of the module language
    
+  ;; for the upper portion of the language dialog
+  (use-language-in-source "Use the language declared in the source")
+  (choose-a-language "Choose a language")
+  (lang-in-source-discussion
+   "The #lang line at the start of a program declares its language. This is the default and preferred mode for DrRacket.")
+  
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrRacket cannot process programs until you choose a programming language.")
   
@@ -1072,7 +1078,7 @@ please adhere to these guidelines:
   (start-with-after "")
   
   (seasoned-plt-schemer? "Seasoned PLT Schemer?")
-  (racketeer-or-r6? "Racketeer or want to use R6RS?")
+  (racketeer? "Are you a Racketeer?")
   (looking-for-standard-scheme? "Looking for standard Scheme?")
 
   ; the three string constants are concatenated together and the middle

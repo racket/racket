@@ -16,10 +16,9 @@
   (define original-output (current-output-port))
   (define (printfo . args) (apply fprintf original-output args))
   
-  (define sc-use-language-in-source "Use the language declared in the source")
-  (define sc-choose-a-language "Choose a language")
-  (define sc-lang-in-source-discussion
-    "The #lang line at the start of a program declares its language. This is the default and preferred mode for DrRacket.")
+  (define sc-use-language-in-source (string-constant use-language-in-source))
+  (define sc-choose-a-language (string-constant choose-a-language))
+  (define sc-lang-in-source-discussion (string-constant lang-in-source-discussion))
 
   (provide language-configuration@)
   
@@ -1673,7 +1672,9 @@
       (define dialog (new dialog%
                           (parent drs-frame)
                           (label (string-constant drscheme))))
-      (define qa-panel (new vertical-pane% (parent dialog)))
+      (define top-hp (new horizontal-pane% [parent dialog]))
+      (define qa-panel (new vertical-panel% [style '(border)] (parent top-hp) (stretchable-width #f)))
+      (define racketeer-panel (new vertical-panel% [style '(border)] [parent top-hp] [alignment '(center center)] [stretchable-width #f]))
       (define button-panel (new horizontal-pane% 
                                 (parent dialog) 
                                 (stretchable-height #f)
@@ -1688,8 +1689,7 @@
       
       (define (main)
         (insert-text-pls)
-        (display-plt-schemer)
-        (display-standard-schemer)
+        (display-racketeer)
         (space-em-out)
         (fix-msg-sizes)
         (send dialog show #t))
@@ -1733,31 +1733,33 @@
               [else
                (string<=? (cadr x) (cadr y))])))))
       
-      (define (display-plt-schemer)
-        (question/answer (lambda (parent)
-                           (new canvas-message% 
-                                (parent parent)
-                                (label (string-constant racketeer-or-r6?))))
-                         (λ (panel2)
-                           (new canvas-message%
-                                (parent panel2) 
-                                (label "Use the language declared in the source code")
-                                (color (send the-color-database find-color "blue"))
-                                (callback (λ () (change-current-lang-to (λ (x) (is-a? x drracket:module-language:module-language<%>)))))
-                                (font (get-font #:underlined #t))))
-                         (list "PLT-206-small.png" 
-                               "icons")))
-      
-      (define (display-standard-schemer)
-        (question/answer (lambda (parent)
-                           (new canvas-message% 
-                                (parent parent)
-                                (label (string-constant looking-for-standard-scheme?))))
-                         (default-line2
-                           (string-constant pretty-big-scheme)
-                           (list (string-constant legacy-languages)
-                                 (string-constant pretty-big-scheme)))
-                         (list "r5rs.png" "icons")))
+      (define plt-logo-shiny
+        (make-object bitmap% (build-path (collection-path "icons") 
+                                         "plt-logo-red-shiny.png")
+          'png/mask))
+
+      (define (display-racketeer)
+        (new canvas-message% 
+             (parent racketeer-panel)
+             (label (string-constant racketeer?)))
+        (new canvas% 
+             [parent racketeer-panel]
+             [stretchable-width #f]
+             [paint-callback
+              (λ (c dc)
+                (send dc set-scale 1/2 1/2)
+                (send dc draw-bitmap plt-logo-shiny 0 0
+                      'solid (send the-color-database find-color "black")
+                      (send plt-logo-shiny get-loaded-mask)))]
+             [style '(transparent)]
+             [min-width (floor (/ (send plt-logo-shiny get-width) 2))]
+             [min-height (floor (/ (send plt-logo-shiny get-height) 2))])
+        (new canvas-message%
+             (parent racketeer-panel) 
+             (label sc-use-language-in-source)
+             (color (send the-color-database find-color "blue"))
+             (callback (λ () (change-current-lang-to (λ (x) (is-a? x drracket:module-language:module-language<%>)))))
+             (font (get-font #:underlined #t))))
       
       (define (display-text-pl lst)
         (let ([icon-lst (car lst)]
