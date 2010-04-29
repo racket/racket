@@ -85,7 +85,7 @@
              #t
              'none
              #f 
-             (preferences:get 'drscheme:htdp:last-set-teachpacks)))
+             (preferences:get 'drracket:htdp:last-set-teachpacks)))
           
           (define/override (default-settings? s)
             (and (super default-settings? s)
@@ -559,7 +559,7 @@
                              settings)
                            
                            (let ([new-tps (append old-tps (list teachpack))])
-                             (preferences:set 'drscheme:htdp:last-set-teachpacks new-tps)
+                             (preferences:set 'drracket:htdp:last-set-teachpacks new-tps)
                              (make-htdp-lang-settings
                               (drscheme:language:simple-settings-case-sensitive settings)
                               (drscheme:language:simple-settings-printing-style settings)
@@ -573,7 +573,7 @@
              (λ (settings name) 
                (let ([new-tps (filter (λ (x) (not (equal? (cadr x) name)))
                                       (htdp-lang-settings-teachpacks settings))])
-                 (preferences:set 'drscheme:htdp:last-set-teachpacks new-tps)
+                 (preferences:set 'drracket:htdp:last-set-teachpacks new-tps)
                  (make-htdp-lang-settings
                   (drscheme:language:simple-settings-case-sensitive settings)
                   (drscheme:language:simple-settings-printing-style settings)
@@ -584,7 +584,7 @@
                   (htdp-lang-settings-tracing? settings)
                   new-tps)))
              (λ (settings) 
-               (preferences:set 'drscheme:htdp:last-set-teachpacks '())
+               (preferences:set 'drracket:htdp:last-set-teachpacks '())
                (make-htdp-lang-settings
                 (drscheme:language:simple-settings-case-sensitive settings)
                 (drscheme:language:simple-settings-printing-style settings)
