@@ -1037,7 +1037,7 @@ If the namespace does not, they are colored the unbound color.
         (define/public (update-button-visibility/settings settings)
           (let* ([lang (drracket:language-configuration:language-settings-language settings)]
                  [visible? (and (not (is-a? lang drracket:module-language:module-language<%>))
-                                (send lang capability-value 'drracket:check-syntax-button))])
+                                (send lang capability-value 'drscheme:check-syntax-button))])
             (send check-syntax-button-parent-panel change-children
                   (λ (l)
                     (if visible?
@@ -2889,7 +2889,7 @@ If the namespace does not, they are colored the unbound color.
     (add-check-syntax-key-bindings (drracket:rep:get-drs-bindings-keymap))
     (fw:color-prefs:add-to-preferences-panel (string-constant check-syntax)
                                              syncheck-add-to-preferences-panel)
-    (drracket:language:register-capability 'drracket:check-syntax-button (flat-contract boolean?) #t)
+    (drracket:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)
     (drracket:get/extend:extend-definitions-text make-syncheck-text%)
     (drracket:get/extend:extend-unit-frame unit-frame-mixin #f)
     (drracket:get/extend:extend-tab tab-mixin)))
