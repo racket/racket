@@ -1,12 +1,12 @@
 #lang racket
 
-(require (except-in logic %member))
+(require (except-in raclog %member))
 
 ;map coloring, example from Sterling & Shapiro, p. 212
 
 ;(%member x y) holds if x is in y
 
-;; is this different from the %member provided by logic? fencing that one out.
+;; is this different from the %member provided by raclog? fencing that one out.
 
 (define %member
   (%rel (X Xs Y Ys)

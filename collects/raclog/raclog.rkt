@@ -1,104 +1,15 @@
 #lang racket
-(require scheme/stxparam)
+(require scheme/stxparam
+         "unify.rkt")
 
 ;Dorai Sitaram
 ;1989, revised Feb. 1993, Mar. 1997
-
-(define-struct logic-var (val) #:mutable)
-
-(define *unbound* '_)
-
-;;unbound refs point to themselves
-(define (make-ref [val *unbound*])
-  (make-logic-var val))
-
-(define _ make-ref)
-(define (unbound-logic-var? r)
-  (and (logic-var? r) (eq? (logic-var-val r) *unbound*)))
-(define (unbind-ref! r)
-  (set-logic-var-val! r *unbound*))
-
-(define-struct frozen (val))
-(define (freeze-ref r)
-  (make-ref (make-frozen r)))
-(define (thaw-frozen-ref r)
-  (frozen-val (logic-var-val r)))
-(define (frozen-logic-var? r)
-  (frozen? (logic-var-val r)))
-
-(define (logic-var-val* s)
-  (cond ((logic-var? s)
-         (if (frozen-logic-var? s) s
-             (logic-var-val* (logic-var-val s))))
-        ((pair? s) (cons (logic-var-val* (car s))
-                         (logic-var-val* (cdr s))))
-        ((vector? s)
-         (vector-map logic-var-val* s))
-        (else s)))
 
 (define-syntax %let
   (syntax-rules ()
     ((%let (x ...) . e)
      (let ((x (_)) ...)
        . e))))
-
-(define use-occurs-check? (make-parameter #f))
-
-(define (occurs-in? var term)
-  (and (use-occurs-check?)
-       (let loop ((term term))
-         (cond ((eqv? var term) #t)
-               ((logic-var? term)
-                (cond ((unbound-logic-var? term) #f)
-                      ((frozen-logic-var? term) #f)
-                      (else (loop (logic-var-val term)))))
-               ((pair? term)
-                (or (loop (car term)) (loop (cdr term))))
-               ((vector? term)
-                (loop (vector->list term)))
-               (else #f)))))
-
-(define (unify t1 t2)
-  (lambda (fk)
-    (define (cleanup-n-fail s)
-      (for-each unbind-ref! s)
-      (fk 'fail))
-    (define (unify1 t1 t2 s)
-      (cond ((eqv? t1 t2) s)
-            ((logic-var? t1)
-             (cond ((unbound-logic-var? t1)
-                    (cond ((occurs-in? t1 t2)
-                           (cleanup-n-fail s))
-                          (else 
-                           (set-logic-var-val! t1 t2)
-                           (cons t1 s))))
-                   ((frozen-logic-var? t1)
-                    (cond ((logic-var? t2)
-                           (cond ((unbound-logic-var? t2)
-                                  (unify1 t2 t1 s))
-                                 ((frozen-logic-var? t2)
-                                  (cleanup-n-fail s))
-                                 (else
-                                  (unify1 t1 (logic-var-val t2) s))))
-                          (else (cleanup-n-fail s))))
-                   (else 
-                    (unify1 (logic-var-val t1) t2 s))))
-            ((logic-var? t2) (unify1 t2 t1 s))
-            ((and (pair? t1) (pair? t2))
-             (unify1 (cdr t1) (cdr t2)
-                     (unify1 (car t1) (car t2) s)))
-            ((and (string? t1) (string? t2))
-             (if (string=? t1 t2) s
-                 (cleanup-n-fail s)))
-            ((and (vector? t1) (vector? t2))
-             (unify1 (vector->list t1)
-                     (vector->list t2) s))
-            (else
-             (for-each unbind-ref! s)
-             (fk 'fail))))
-    (define s (unify1 t1 t2 '()))
-    (lambda (d)
-      (cleanup-n-fail s))))
 
 (define %= unify)
 
@@ -182,40 +93,13 @@
 (define %<= (make-binary-arithmetic-relation <=))
 (define %=/= (make-binary-arithmetic-relation (compose not =)))
 
-(define (constant? x)
-  (cond ((logic-var? x)
-         (cond ((unbound-logic-var? x) #f)
-               ((frozen-logic-var? x) #t)
-               (else (constant? (logic-var-val x)))))
-        ((pair? x) #f)
-        ((vector? x) #f)
-        (else #t)))
-
-(define (compound? x)
-  (cond ((logic-var? x)
-         (cond ((unbound-logic-var? x) #f)
-               ((frozen-logic-var? x) #f)
-               (else (compound? (logic-var-val x)))))
-        ((pair? x) #t)
-        ((vector? x) #t)
-        (else #f)))
-
 (define (%constant x)
   (lambda (fk)
     (if (constant? x) fk (fk 'fail))))
 
 (define (%compound x)
   (lambda (fk)
-    (if (compound? x) fk (fk 'fail))))
-
-(define (var? x)
-  (cond ((logic-var? x)
-         (cond ((unbound-logic-var? x) #t)
-               ((frozen-logic-var? x) #f)
-               (else (var? (logic-var-val x)))))
-        ((pair? x) (or (var? (car x)) (var? (cdr x))))
-        ((vector? x) (var? (vector->list x)))
-        (else #f)))
+    (if (is-compound? x) fk (fk 'fail))))
 
 (define (%var x)
   (lambda (fk) (if (var? x) fk (fk 'fail))))
@@ -234,100 +118,11 @@
 (define %/=
   (make-negation %=))
 
-(define (ident? x y)
-  (cond ((logic-var? x)
-         (cond ((unbound-logic-var? x)
-                (cond ((logic-var? y)
-                       (cond ((unbound-logic-var? y) (eq? x y))
-                             ((frozen-logic-var? y) #f)
-                             (else (ident? x (logic-var-val y)))))
-                      (else #f)))
-               ((frozen-logic-var? x)
-                (cond ((logic-var? y)
-                       (cond ((unbound-logic-var? y) #f)
-                             ((frozen-logic-var? y) (eq? x y))
-                             (else (ident? x (logic-var-val y)))))
-                      (else #f)))
-               (else (ident? (logic-var-val x) y))))
-        ((pair? x)
-         (cond ((logic-var? y)
-                (cond ((unbound-logic-var? y) #f)
-                      ((frozen-logic-var? y) #f)
-                      (else (ident? x (logic-var-val y)))))
-               ((pair? y)
-                (and (ident? (car x) (car y))
-                     (ident? (cdr x) (cdr y))))
-               (else #f)))
-        ((vector? x)
-         (cond ((logic-var? y)
-                (cond ((unbound-logic-var? y) #f)
-                      ((frozen-logic-var? y) #f)
-                      (else (ident? x (logic-var-val y)))))
-               ((vector? y)
-                (ident? (vector->list x)
-                        (vector->list y)))
-               (else #f)))
-        (else
-         (cond ((logic-var? y)
-                (cond ((unbound-logic-var? y) #f)
-                      ((frozen-logic-var? y) #f)
-                      (else (ident? x (logic-var-val y)))))
-               ((pair? y) #f)
-               ((vector? y) #f)
-               (else (eqv? x y))))))
-
 (define (%== x y)
   (lambda (fk) (if (ident? x y) fk (fk 'fail))))
 
 (define (%/== x y)
   (lambda (fk) (if (ident? x y) (fk 'fail) fk)))
-
-(define (freeze s)
-  (let ((dict '()))
-    (let loop ((s s))
-      (cond ((logic-var? s)
-             (cond ((or (unbound-logic-var? s) (frozen-logic-var? s))
-                    (let ((x (assq s dict)))
-                      (if x (cdr x)
-                          (let ((y (freeze-ref s)))
-                            (set! dict (cons (cons s y) dict))
-                            y))))
-                   (else (loop (logic-var-val s)))))
-            ((pair? s) (cons (loop (car s)) (loop (cdr s))))
-            ((vector? s)
-             (list->vector (map loop (vector->list s))))
-            (else s)))))
-
-(define (melt f)
-  (cond ((logic-var? f)
-         (cond ((unbound-logic-var? f) f)
-               ((frozen-logic-var? f) (thaw-frozen-ref f))
-               (else (melt (logic-var-val f)))))
-        ((pair? f)
-         (cons (melt (car f)) (melt (cdr f))))
-        ((vector? f)
-         (list->vector (map melt (vector->list f))))
-        (else f)))
-
-(define (melt-new f)
-  (let ((dict '()))
-    (let loop ((f f))
-      (cond ((logic-var? f)
-             (cond ((unbound-logic-var? f) f)
-                   ((frozen-logic-var? f)
-                    (let ((x (assq f dict)))
-                      (if x (cdr x)
-                          (let ((y (_)))
-                            (set! dict (cons (cons f y) dict))
-                            y))))
-                   (else (loop (logic-var-val f)))))
-            ((pair? f) (cons (loop (car f)) (loop (cdr f))))
-            ((vector? f)
-             (list->vector (map loop (vector->list f))))
-            (else f)))))
-
-(define (copy s)
-  (melt-new (freeze s)))
 
 (define (%freeze s f)
   (lambda (fk)
@@ -484,26 +279,6 @@
         (())
         (() (%repeat))))
 
-(define (atom? x)
-  (or (number? x) (symbol? x) (string? x) (empty? x)))
-(define answer-value?
-  (match-lambda
-    [(? atom?) #t]
-    [(cons (? answer-value?) (? answer-value?)) #t]
-    [(vector (? answer-value?) ...) #t]
-    [x #f]))
-(define answer?
-  (match-lambda
-    [#f #t]
-    [(list (cons (? symbol?) (? answer-value?)) ...) #t]
-    [_ #f]))
-(define unifiable?
-  (match-lambda
-    [(? atom?) #t]
-    [(cons (? unifiable?) (? unifiable?)) #t]
-    [(vector (? unifiable?) ...) #t]
-    [(? logic-var?) #t]
-    [x #f]))
 (define fk? (symbol? . -> . any))
 (define goal/c 
   (or/c goal-with-free-vars?
@@ -518,6 +293,9 @@
  [goal/c contract?]
  [logic-var? (any/c . -> . boolean?)]
  [atom? (any/c . -> . boolean?)]
+ [atomic-struct? (any/c . -> . boolean?)]
+ [compound-struct? (any/c . -> . boolean?)]
+ [compound? (any/c . -> . boolean?)]
  [unifiable? (any/c . -> . boolean?)]
  [answer-value? (any/c . -> . boolean?)]
  [answer? (any/c . -> . boolean?)]

@@ -1,6 +1,6 @@
 #lang racket
 
-(require logic)
+(require raclog)
 
 ;Exercise 14.1 (iv) from Sterling & Shapiro, p. 217-8  
 

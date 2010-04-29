@@ -1,5 +1,5 @@
 #lang racket
-(require logic tests/eli-tester)
+(require raclog tests/eli-tester)
 
 (define %factorial
   (%rel (x y x1 y1)

@@ -1,9 +1,9 @@
 #lang racket
 
-(require (except-in logic %append))
+(require (except-in raclog %append))
 
 ;A list of trivial programs in Prolog, just so you can get used
-;to logic syntax.
+;to raclog syntax.
 
 ;(%length l n) holds if length(l) = n
 

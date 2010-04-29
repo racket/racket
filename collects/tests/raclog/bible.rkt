@@ -1,6 +1,6 @@
 #lang racket
 
-(require logic
+(require raclog
          schemeunit)
 
 ;The following is the "Biblical" database from "The Art of

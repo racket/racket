@@ -1,6 +1,6 @@
 #lang racket
 
-(require logic)
+(require raclog)
 
 (provide (all-defined-out))
 

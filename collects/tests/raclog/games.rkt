@@ -1,6 +1,6 @@
 #lang racket
 
-(require logic
+(require raclog
          "./puzzle.rkt"
          schemeunit)
 

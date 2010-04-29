@@ -1,6 +1,6 @@
 #lang racket
 
-(require logic
+(require raclog
          tests/eli-tester)
 
 ;This is a very trivial program.  In Prolog, it would be:

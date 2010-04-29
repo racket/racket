@@ -1,6 +1,6 @@
 #lang racket
 
-(require logic
+(require raclog
          schemeunit)
 
 ;The following is a simple database about a certain family in England.
