@@ -10,7 +10,8 @@
 # a common convenient place to set the PLTADDON directory to
 /add-on/
 
-# common backups, autosaves, and lock files
+# common backups, autosaves, lock files, OS meta-files
 *~
 \#*
 .#*
+.DS_Store
