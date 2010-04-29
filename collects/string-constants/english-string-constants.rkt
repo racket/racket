@@ -1072,6 +1072,7 @@ please adhere to these guidelines:
   (start-with-after "")
   
   (seasoned-plt-schemer? "Seasoned PLT Schemer?")
+  (racketeer-or-r6? "Racketeer or want to use R6RS?")
   (looking-for-standard-scheme? "Looking for standard Scheme?")
 
   ; the three string constants are concatenated together and the middle

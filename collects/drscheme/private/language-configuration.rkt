@@ -1343,9 +1343,9 @@
         (super-new)
         (define/augment (capability-value key)
           (cond
-           [(eq? key 'macro-stepper:enabled) #t]
-           [else (inner (drracket:language:get-capability-default key)
-                        capability-value key)]))))
+            [(eq? key 'macro-stepper:enabled) #t]
+            [else (inner (drracket:language:get-capability-default key)
+                         capability-value key)]))))
 
     (define (assume-mixin %)
       (class %
@@ -1517,7 +1517,7 @@
                       (lambda (%) (r5rs-mixin (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %)))))))
         
         (add-language
-         (make-simple 'mzscheme
+         (make-simple 'racket/base
                       "plt:no-language-chosen"
                       (list (string-constant initial-language-category)
                             (string-constant no-language-chosen))
@@ -1543,6 +1543,9 @@
         
         (define/augment (capability-value v)
           (case v
+            [(drscheme:define-popup) #f]
+            [(gui-debugger:debug-button) #f]
+            [(macro-stepper:enabled) #f]
             [(drscheme:check-syntax-button) #f]
             [else (inner (drracket:language:get-capability-default v)
                          capability-value v)]))
@@ -1724,8 +1727,14 @@
         (question/answer (lambda (parent)
                            (new canvas-message% 
                                 (parent parent)
-                                (label (string-constant seasoned-plt-schemer?))))
-                         (list "Module")
+                                (label (string-constant racketeer-or-r6?))))
+                         (λ (panel2)
+                           (new canvas-message%
+                                (parent panel2) 
+                                (label "Use the language declared in the source code")
+                                (color (send the-color-database find-color "blue"))
+                                (callback (λ () (change-current-lang-to (λ (x) (is-a? x drracket:module-language:module-language<%>)))))
+                                (font (get-font #:underlined #t))))
                          (list "PLT-206-small.png" 
                                "icons")))
       
@@ -1734,8 +1743,10 @@
                            (new canvas-message% 
                                 (parent parent)
                                 (label (string-constant looking-for-standard-scheme?))))
-                         (list (string-constant legacy-languages)
-                               (string-constant pretty-big-scheme))
+                         (default-line2
+                           (string-constant pretty-big-scheme)
+                           (list (string-constant legacy-languages)
+                                 (string-constant pretty-big-scheme)))
                          (list "r5rs.png" "icons")))
       
       (define (display-text-pl lst)
@@ -1755,7 +1766,7 @@
                              (new canvas-message%
                                   (parent parent)
                                   (label using-after)))
-                           lang
+                           (default-line2 (last lang) lang)
                            icon-lst)))
       
       (define default-font (send the-font-list find-or-create-font
@@ -1811,20 +1822,22 @@
             (min-width (inexact->exact (floor w)))
             (min-height (inexact->exact (floor h))))))
       
-      (define (question/answer line1 lang icon-lst)
+      (define (question/answer line1 line2 icon-lst)
         (display-two-line-choice 
          icon-lst
-         lang
          (λ (panel1 panel2)
            (line1 panel1)
-           (new canvas-message% (parent panel2) (label (string-constant start-with-before)))
-           (new canvas-message%
-                (parent panel2) 
-                (label (last lang))
-                (color (send the-color-database find-color "blue"))
-                (callback (λ () (change-current-lang-to lang)))
-                (font (get-font #:underlined #t)))
-           (new canvas-message% (parent panel2) (label (string-constant start-with-after))))))
+           (line2 panel2))))
+      
+      (define ((default-line2 lang-name lang) panel2)
+        (new canvas-message% (parent panel2) (label (string-constant start-with-before)))
+        (new canvas-message%
+             (parent panel2) 
+             (label lang-name)
+             (color (send the-color-database find-color "blue"))
+             (callback (λ () (change-current-lang-to lang)))
+             (font (get-font #:underlined #t)))
+        (new canvas-message% (parent panel2) (label (string-constant start-with-after))))
       
       ;; get-text-pls : path -> (listof (list* string string (listof string))
       ;; gets the questions from an info.rkt file.
@@ -1859,7 +1872,7 @@
           (for-each (λ (b) (send b min-width w))
                     msgs)))
       
-      (define (display-two-line-choice icon-lst lang proc)
+      (define (display-two-line-choice icon-lst proc)
         (let* ([hp (new horizontal-pane% 
                         (parent qa-panel)
                         (alignment '(center top))
@@ -1878,17 +1891,17 @@
           (proc (new horizontal-pane% (parent vp))
                 (new horizontal-pane% (parent vp)))))
       
-      ;; change-current-lang-to : (listof string) -> void
+      ;; change-current-lang-to : (or/c (-> any/c boolean?) (listof string)) -> void
       ;; closed the guidance dialog and opens the language dialog
-      (define (change-current-lang-to lang-strings)
+      (define (change-current-lang-to lang-strings/predicate)
         (send dialog show #f)
-        (let ([lang (ormap
-                     (λ (x)
-                       (and (equal? lang-strings (send x get-language-position))
-                            x))
-                     (get-languages))])
+        (let* ([predicate (if (procedure? lang-strings/predicate)
+                              lang-strings/predicate
+                              (λ (x) (equal? lang-strings/predicate (send x get-language-position))))]
+               [lang (ormap (λ (x) (and (predicate x) x))
+                            (get-languages))])
           (unless lang
-            (error 'change-current-lang-to "unknown language! ~s" lang-strings))
+            (error 'change-current-lang-to "unknown language! ~s" lang-strings/predicate))
           
           (let ([new-lang
                  (language-dialog #f
