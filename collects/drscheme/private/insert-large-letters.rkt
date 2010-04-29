@@ -24,14 +24,6 @@
       (render-large-letters comment-prefix comment-character (get-chosen-font) str edit)
       (void))))
 
-(preferences:set-default 'drscheme:large-letters-font #f (λ: ([x : Any])
-                                                             (or (and (pair? x)
-                                                                      (string? (car x))
-                                                                      (let ([i (cdr x)])
-                                                                        (and (integer? i)
-                                                                             (<= 1 i 255))))
-                                                                 (not x))))
-
 (: get-default-font (-> (Instance Font%)))
 (define (get-default-font)
   (send (send (editor:get-standard-style-list)
@@ -41,7 +33,7 @@
 
 (: get-chosen-font (-> (Instance Font%)))
 (define (get-chosen-font)
-  (let ([pref-val (preferences:get 'drscheme:large-letters-font)])
+  (let ([pref-val (preferences:get 'drracket:large-letters-font)])
     (cond
       [pref-val
        (let ([candidate (send the-font-list find-or-create-font (cdr pref-val) (car pref-val) 'default 'normal 'normal)])
@@ -78,10 +70,10 @@
                          (get-face-list))]
            [callback
             (λ: ([x : Any] [y : Any])
-                (let ([old (preferences:get 'drscheme:large-letters-font)]
+                (let ([old (preferences:get 'drracket:large-letters-font)]
                       [choice (send font-choice get-selection)])
                   (when choice
-                    (preferences:set 'drscheme:large-letters-font
+                    (preferences:set 'drracket:large-letters-font
                                      (cons (list-ref (get-face-list)
                                                      choice)
                                            (if old

@@ -574,10 +574,10 @@ profile todo:
           (make-object backtrace-frame%
             (string-constant backtrace-window-title)
             #f
-            (preferences:get 'drscheme:backtrace-window-width)
-            (preferences:get 'drscheme:backtrace-window-height)
-            (preferences:get 'drscheme:backtrace-window-x)
-            (preferences:get 'drscheme:backtrace-window-y))))
+            (preferences:get 'drracket:backtrace-window-width)
+            (preferences:get 'drracket:backtrace-window-height)
+            (preferences:get 'drracket:backtrace-window-x)
+            (preferences:get 'drracket:backtrace-window-y))))
   
   ;; hide-backtrace-window : -> void
   (define (hide-backtrace-window)
@@ -589,12 +589,12 @@ profile todo:
   (define backtrace-frame%
     (class (drracket:frame:basics-mixin (frame:standard-menus-mixin frame:basic%))
       (define/override (on-size x y)
-        (preferences:set 'drscheme:backtrace-window-width x)
-        (preferences:set 'drscheme:backtrace-window-height y)
+        (preferences:set 'drracket:backtrace-window-width x)
+        (preferences:set 'drracket:backtrace-window-height y)
         (super on-size x y))
       (define/override (on-move x y)
-        (preferences:set 'drscheme:backtrace-window-x x)
-        (preferences:set 'drscheme:backtrace-window-y y)
+        (preferences:set 'drracket:backtrace-window-x x)
+        (preferences:set 'drracket:backtrace-window-y y)
         (super on-move x y))
       (define/override (edit-menu:between-find-and-preferences edit-menu) (void))
       (define/override (edit-menu:between-select-all-and-find edit-menu) (void))
@@ -991,7 +991,7 @@ profile todo:
       (inherit get-canvas get-tab)
       
       (define/private (clear-test-coverage?)
-        (if (preferences:get 'drscheme:test-coverage-ask-about-clearing?)
+        (if (preferences:get 'drracket:test-coverage-ask-about-clearing?)
             (let ([msg-box-result
                    (message-box/custom
                     (string-constant drscheme)
@@ -1006,7 +1006,7 @@ profile todo:
                 [(1) #t]
                 [(2) #f]
                 [(3)
-                 (preferences:set 'drscheme:test-coverage-ask-about-clearing? #f)
+                 (preferences:set 'drracket:test-coverage-ask-about-clearing? #f)
                  #t]))
             #t))
       
@@ -1364,15 +1364,15 @@ profile todo:
   (define (get-color-value val max-val)
     (get-color-value/pref val 
                           max-val
-                          (preferences:get 'drscheme:profile:low-color)
-                          (preferences:get 'drscheme:profile:high-color)
-                          (preferences:get 'drscheme:profile:scale)))
+                          (preferences:get 'drracket:profile:low-color)
+                          (preferences:get 'drracket:profile:high-color)
+                          (preferences:get 'drracket:profile:scale)))
   
   ;; extract-maximum : (listof prof-info) -> number
   ;; gets the maximum value of the currently preferred profiling info.
   (define (extract-maximum infos)
     (let ([max-value 0]
-          [sel (if (eq? (preferences:get 'drscheme:profile-how-to-count) 'time)
+          [sel (if (eq? (preferences:get 'drracket:profile-how-to-count) 'time)
                    prof-info-time
                    prof-info-num)])
       (for-each
@@ -1449,7 +1449,7 @@ profile todo:
       (define profile-info-visible? #f)
       (define/public (get-profile-info-visible?) profile-info-visible?)
       
-      (define sort-mode (preferences:get 'drscheme:profile-how-to-count))
+      (define sort-mode (preferences:get 'drracket:profile-how-to-count))
       (define/public (get-sort-mode) sort-mode)
       (define/public (set-sort-mode mode) (set! sort-mode mode))
       
@@ -1626,14 +1626,14 @@ profile todo:
                                      (callback
                                       (λ (x y)
                                         (let ([mode (profile-selection->mode (send profile-choice get-selection))])
-                                          (preferences:set 'drscheme:profile-how-to-count mode)
+                                          (preferences:set 'drracket:profile-how-to-count mode)
                                           (send (get-current-tab) set-sort-mode mode)
                                           (send (get-current-tab) refresh-profile))))
                                      (choices (list (string-constant profiling-time)
                                                     (string-constant profiling-number))))))
             (define _1
               (send profile-choice set-selection
-                    (case (preferences:get 'drscheme:profile-how-to-count)
+                    (case (preferences:get 'drracket:profile-how-to-count)
                       [(time) 0]
                       [(count) 1])))
             (define update-profile-button
@@ -1651,7 +1651,7 @@ profile todo:
                  (λ (x y)
                    (send (get-current-tab) hide-profile)))))
             (send profile-choice set-selection 
-                  (profile-mode->selection (preferences:get 'drscheme:profile-how-to-count)))
+                  (profile-mode->selection (preferences:get 'drracket:profile-how-to-count)))
             
             (send profile-left-side stretchable-width #f)
             
@@ -1757,7 +1757,7 @@ profile todo:
                         (hash-set! in-edit-sequence src #t)
                         (send src begin-edit-sequence))
                       (let* ([color (get-color-value 
-                                     (if (eq? (preferences:get 'drscheme:profile-how-to-count) 'time)
+                                     (if (eq? (preferences:get 'drracket:profile-how-to-count) 'time)
                                          (prof-info-time info)
                                          (prof-info-num info))
                                      max-value)]
@@ -1819,7 +1819,7 @@ profile todo:
                
                [bigger-value?
                 (λ (x y)
-                  (let ([sel (if (eq? 'count (preferences:get 'drscheme:profile-how-to-count))
+                  (let ([sel (if (eq? 'count (preferences:get 'drracket:profile-how-to-count))
                                  prof-info-num
                                  prof-info-time)])
                     (> (sel x) (sel y))))]
@@ -2037,22 +2037,22 @@ profile todo:
                                  #f
                                  (preferences:get
                                   (if low?
-                                      'drscheme:profile:low-color
-                                      'drscheme:profile:high-color)))])
+                                      'drracket:profile:low-color
+                                      'drracket:profile:high-color)))])
                      (when color
                        (preferences:set 
-                        (if low? 'drscheme:profile:low-color 'drscheme:profile:high-color)
+                        (if low? 'drracket:profile:low-color 'drracket:profile:high-color)
                         color))))]
                 [scale-callback
                  (λ ()
                    (preferences:set 
-                    'drscheme:profile:scale
+                    'drracket:profile:scale
                     (case (send scale get-selection)
                       [(0) 'sqrt]
                       [(1) 'linear]
                       [(2) 'square])))])
          (preferences:add-callback
-          'drscheme:profile:scale
+          'drracket:profile:scale
           (λ (p v)
             (send scale set-selection
                   (case v
@@ -2072,9 +2072,9 @@ profile todo:
         (set! in-on-paint? #t)
         (let* ([dc (get-dc)]
                [dummy-pen (send dc get-pen)]
-               [drracket:profile:low-color (preferences:get 'drscheme:profile:low-color)]
-               [drracket:profile:high-color (preferences:get 'drscheme:profile:high-color)]
-               [drracket:profile:scale (preferences:get 'drscheme:profile:scale)])
+               [drracket:profile:low-color (preferences:get 'drracket:profile:low-color)]
+               [drracket:profile:high-color (preferences:get 'drracket:profile:high-color)]
+               [drracket:profile:scale (preferences:get 'drracket:profile:scale)])
           (let-values ([(w h) (get-client-size)])
             (let loop ([n 0])
               (when (n . <= . w)
@@ -2096,21 +2096,21 @@ profile todo:
       ;; values are actually set by the time on-paint
       ;; is called.
       (preferences:add-callback
-       'drscheme:profile:scale
+       'drracket:profile:scale
        (λ (p v)
          (unless in-on-paint?
            (queue-callback
             (λ ()
               (on-paint))))))
       (preferences:add-callback
-       'drscheme:profile:low-color
+       'drracket:profile:low-color
        (λ (p v)
          (unless in-on-paint?
            (queue-callback
             (λ ()
               (on-paint))))))
       (preferences:add-callback
-       'drscheme:profile:high-color
+       'drracket:profile:high-color
        (λ (p v)
          (unless in-on-paint?
            (queue-callback

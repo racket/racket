@@ -36,7 +36,7 @@
     
     ;; settings-preferences-symbol : symbol
     ;; this pref used to depend on `version', but no longer does.
-    (define settings-preferences-symbol 'drscheme:language-settings)
+    (define settings-preferences-symbol 'drracket:language-settings)
     
     ;; get-settings-preferences-symbol : -> symbol
     (define (get-settings-preferences-symbol) settings-preferences-symbol)
@@ -58,7 +58,7 @@
     (define add-language
       (λ (language [front? #f])
         
-        (drracket:tools:only-in-phase 'drscheme:language:add-language 'phase2)
+        (drracket:tools:only-in-phase 'drracket:language:add-language 'phase2)
         (for-each
          (λ (i<%>)
            (unless (is-a? language i<%>)

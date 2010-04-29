@@ -50,54 +50,6 @@
   ;; search-entry = (make-search-entry string number number number)
   (define-struct search-entry (filename line-string line-number col-number match-length))
   
-  ;; preferences initialization
-  (preferences:set-default 'drscheme:multi-file-search:recur? #t boolean?)
-  (preferences:set-default 'drscheme:multi-file-search:filter? #t boolean?)
-  (preferences:set-default 'drscheme:multi-file-search:filter-string "\\.(ss|scm)$" string?)
-  (preferences:set-default 'drscheme:multi-file-search:search-string "" string?)
-  (preferences:set-default 'drscheme:multi-file-search:search-type
-                           1
-                           (λ (x) 
-                             (and (number? x)
-                                  (exact? x)
-                                  (integer? x)
-                                  (<= 0 x)
-                                  (< x (length search-types)))))
-  
-  ;; drscheme:mult-file-search:search-check-boxes : (listof (listof boolean))
-  (preferences:set-default 'drscheme:multi-file-search:search-check-boxes 
-                           (map (λ (x) (map cdr (search-type-params x)))
-                                search-types)
-                           (λ (x) 
-                             (and (list? x)
-                                  (andmap (λ (x)
-                                            (and (list? x)
-                                                 (andmap boolean? x)))
-                                          x))))
-  
-  (preferences:set-default 'drscheme:multi-file-search:percentages
-                           '(1/3 2/3)
-                           (λ (x) (and (list? x)
-                                       (= 2 (length x))
-                                       (= 1 (apply + x)))))
-  
-  (preferences:set-default 'drscheme:multi-file-search:frame-size '(300 . 400) 
-                           (λ (x) (and (pair? x)
-                                       (number? (car x))
-                                       (number? (cdr x)))))
-  (preferences:set-default 'drscheme:multi-file-search:directory 
-                           ;; The default is #f because
-                           ;; filesystem-root-list is expensive under Windows
-                           #f 
-                           (lambda (x) (or (not x) (path? x))))
-  (preferences:set-un/marshall 
-   'drscheme:multi-file-search:directory
-   (λ (v) (and v (path->string v)))
-   (λ (p) (if (path-string? p)
-              (string->path p)
-              #f)))
-  
-  
   ;; open-search-window : search-info -> void
   ;; thread: eventspace main thread
   ;; opens a window and creates the thread that does the search
@@ -142,7 +94,7 @@
     (send frame set-text-to-search results-text) ;; just to initialize it to something.
     (send results-text lock #t)
     (send frame reflow-container)
-    (send panel set-percentages (preferences:get 'drscheme:multi-file-search:percentages))
+    (send panel set-percentages (preferences:get 'drracket:multi-file-search:percentages))
     (send button-panel set-alignment 'right 'center)
     (send button-panel stretchable-height #f)
     (send frame show #t)
@@ -356,9 +308,9 @@
              frame:standard-menus%))
       (init-field name)
       (define/override (on-size w h)
-        (preferences:set 'drscheme:multi-file-search:frame-size (cons w h))
+        (preferences:set 'drracket:multi-file-search:frame-size (cons w h))
         (super on-size w h))
-      (let ([size (preferences:get 'drscheme:multi-file-search:frame-size)])
+      (let ([size (preferences:get 'drracket:multi-file-search:frame-size)])
         (super-instantiate ()
           (label name)
           (width (car size))
@@ -374,7 +326,7 @@
       (define/augment (after-percentage-change)
         (let ([ps (get-percentages)])
           (when (= (length ps) 2)
-            (preferences:set 'drscheme:multi-file-search:percentages ps)))
+            (preferences:set 'drracket:multi-file-search:percentages ps)))
         (inner (void) after-percentage-change))
       (super-instantiate ())))
   
@@ -417,7 +369,7 @@
                                 (λ (x y) (search-text-field-callback))))
     (define active-method-panel (make-object panel:single% method-panel))
     (define methods-check-boxess
-      (let ([pref (preferences:get 'drscheme:multi-file-search:search-check-boxes)])
+      (let ([pref (preferences:get 'drracket:multi-file-search:search-check-boxes)])
         (map
          (λ (search-type prefs-settings)
            (let ([p (make-object vertical-panel% active-method-panel)]
@@ -489,7 +441,7 @@
     
     (define (method-callback chk)
       (preferences:set
-       'drscheme:multi-file-search:search-check-boxes
+       'drracket:multi-file-search:search-check-boxes
        (let loop ([methods-check-boxess methods-check-boxess])
          (cond
            [(null? methods-check-boxess) null]
@@ -504,28 +456,28 @@
     (define (dir-field-callback)
       (let ([df (send dir-field get-value)])
         (when (path-string? df)
-          (preferences:set 'drscheme:multi-file-search:directory (string->path df)))))
+          (preferences:set 'drracket:multi-file-search:directory (string->path df)))))
     
     (define (filter-check-box-callback) 
-      (preferences:set 'drscheme:multi-file-search:filter? (send filter-check-box get-value))
+      (preferences:set 'drracket:multi-file-search:filter? (send filter-check-box get-value))
       (send filter-text-field enable (send filter-check-box get-value)))
     (define (filter-text-field-callback)
-      (preferences:set 'drscheme:multi-file-search:filter-string (send filter-text-field get-value)))
+      (preferences:set 'drracket:multi-file-search:filter-string (send filter-text-field get-value)))
     
     (define (recur-check-box-callback)
-      (preferences:set 'drscheme:multi-file-search:recur? (send recur-check-box get-value)))
+      (preferences:set 'drracket:multi-file-search:recur? (send recur-check-box get-value)))
     (define (methods-choice-callback)
-      (preferences:set 'drscheme:multi-file-search:search-type (send methods-choice get-selection)) 
+      (preferences:set 'drracket:multi-file-search:search-type (send methods-choice get-selection)) 
       (send active-method-panel active-child
             (list-ref (send active-method-panel get-children)
                       (send methods-choice get-selection))))
     (define (search-text-field-callback)
-      (preferences:set 'drscheme:multi-file-search:search-string (send search-text-field get-value)))
+      (preferences:set 'drracket:multi-file-search:search-string (send search-text-field get-value)))
     (define (dir-button-callback) 
       (let ([d (get-directory)])
         (when (and d
                    (directory-exists? d))
-          (preferences:set 'drscheme:multi-file-search:directory d)
+          (preferences:set 'drracket:multi-file-search:directory d)
           (send dir-field set-value (path->string d)))))
     
     (define (get-files)
@@ -545,15 +497,15 @@
     (send files-inset-panel stretchable-width #f)
     (send files-panel set-alignment 'left 'center)
     
-    (send recur-check-box set-value (preferences:get 'drscheme:multi-file-search:recur?))
-    (send filter-check-box set-value (preferences:get 'drscheme:multi-file-search:filter?))
-    (send search-text-field set-value (preferences:get 'drscheme:multi-file-search:search-string))
-    (send filter-text-field set-value (preferences:get 'drscheme:multi-file-search:filter-string))
+    (send recur-check-box set-value (preferences:get 'drracket:multi-file-search:recur?))
+    (send filter-check-box set-value (preferences:get 'drracket:multi-file-search:filter?))
+    (send search-text-field set-value (preferences:get 'drracket:multi-file-search:search-string))
+    (send filter-text-field set-value (preferences:get 'drracket:multi-file-search:filter-string))
     (send dir-field set-value (path->string 
-                               (let ([p (preferences:get 'drscheme:multi-file-search:directory)])
+                               (let ([p (preferences:get 'drracket:multi-file-search:directory)])
                                  (if (not p)
                                      (let ([p (car (filesystem-root-list))])
-                                       (preferences:set 'drscheme:multi-file-search:directory p)
+                                       (preferences:set 'drracket:multi-file-search:directory p)
                                        p)
                                      p))))
     

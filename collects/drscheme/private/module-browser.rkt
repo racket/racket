@@ -36,14 +36,6 @@
   (define open-file-format (string-constant module-browser-open-file-format))
   (define lib-paths-checkbox-constant (string-constant module-browser-show-lib-paths))
   
-  (preferences:set-default 'drscheme:module-overview:label-font-size 12 number?)
-  (preferences:set-default 'drscheme:module-overview:window-height 500 number?)
-  (preferences:set-default 'drscheme:module-overview:window-width 500 number?)
-  (preferences:set-default 'drscheme:module-browser:hide-paths '(lib)
-                           (λ (x)
-                             (and (list? x)
-                                  (andmap symbol? x))))
-  
   (define (set-box/f b v) (when (box? b) (set-box! b v)))
   
   (define (module-overview parent)
@@ -83,7 +75,7 @@
     
     ;; snip-table : hash-table[sym -o> snip]
     (define snip-table (make-hash))
-    (define label-font (find-label-font (preferences:get 'drscheme:module-overview:label-font-size)))
+    (define label-font (find-label-font (preferences:get 'drracket:module-overview:label-font-size)))
     (define text-color (make-object color% "blue"))
     
     (define dark-syntax-pen (send the-pen-list find-or-create-pen "darkorchid" 1 'solid))
@@ -134,7 +126,7 @@
         ;; snip themselves.
         (define dont-move-snips #f)
         
-        (field (label-font-size (preferences:get 'drscheme:module-overview:label-font-size)))
+        (field (label-font-size (preferences:get 'drracket:module-overview:label-font-size)))
         (define/public (get-label-font-size) label-font-size)
         (define/private (get-snip-hspace) (if vertical?
                                               2
@@ -153,7 +145,7 @@
             (queue-callback
              (λ ()
                (set! label-font-size new-font-size)
-               (preferences:set 'drscheme:module-overview:label-font-size 
+               (preferences:set 'drracket:module-overview:label-font-size 
                                 new-font-size)
                (set! label-font (find-label-font label-font-size))
                (begin-edit-sequence)
@@ -314,7 +306,7 @@
             (- (unbox bb)
                (unbox tb))))
         
-        (field [hidden-paths (preferences:get 'drscheme:module-browser:hide-paths)])
+        (field [hidden-paths (preferences:get 'drracket:module-browser:hide-paths)])
         (define/public (remove-visible-paths symbol)
           (unless (memq symbol hidden-paths)
             (set! hidden-paths (cons symbol hidden-paths))
@@ -696,8 +688,8 @@
         (let ()
           (define frame (instantiate overview-frame% ()
                           (label (string-constant module-browser))
-                          (width (preferences:get 'drscheme:module-overview:window-width))
-                          (height (preferences:get 'drscheme:module-overview:window-height))
+                          (width (preferences:get 'drracket:module-overview:window-width))
+                          (height (preferences:get 'drracket:module-overview:window-height))
                           (alignment '(left center))))
           (define vp (instantiate vertical-panel% ()
                        (parent (send frame get-area-container))
@@ -720,7 +712,7 @@
               (label font-size-gauge-label)
               (min-value 1)
               (max-value 72)
-              (init-value (preferences:get 'drscheme:module-overview:label-font-size))
+              (init-value (preferences:get 'drracket:module-overview:label-font-size))
               (parent font/label-panel)
               (callback
                (λ (x y)
@@ -731,7 +723,7 @@
                  (label (string-constant module-browser-name-length))
                  (choices (list (string-constant module-browser-name-long)
                                 (string-constant module-browser-name-very-long)))
-                 (selection (case (preferences:get 'drscheme:module-browser:name-length)
+                 (selection (case (preferences:get 'drracket:module-browser:name-length)
                               [(0) 0]
                               [(1) 0]
                               [(2) 0]
@@ -741,7 +733,7 @@
                     ;; note: the preference drracket:module-browser:name-length is also used for the View|Show Module Browser version of the module browser
                     ;; here we just treat any pref value except '3' as if it were for the long names.
                     (let ([selection (send module-browser-name-length-choice get-selection)])
-                      (preferences:set 'drscheme:module-browser:name-length (+ 2 selection))
+                      (preferences:set 'drracket:module-browser:name-length (+ 2 selection))
                       (send pasteboard set-name-length 
                             (case selection
                               [(0) 'long]
@@ -759,7 +751,7 @@
           
           (define ec (make-object canvas:basic% vp pasteboard))
           
-          (send lib-paths-checkbox set-value (not (memq 'lib (preferences:get 'drscheme:module-browser:hide-paths))))
+          (send lib-paths-checkbox set-value (not (memq 'lib (preferences:get 'drracket:module-browser:hide-paths))))
           (set! update-label
                 (λ (s)
                   (if (and s (not (null? s)))
@@ -772,7 +764,7 @@
                       (send label-message set-label ""))))
           
           (send pasteboard set-name-length 
-                (case (preferences:get 'drscheme:module-browser:name-length)
+                (case (preferences:get 'drracket:module-browser:name-length)
                   [(0) 'long]
                   [(1) 'long]
                   [(2) 'long]
@@ -916,8 +908,8 @@
       (define/override (edit-menu:create-select-all?) #f)
       
       (define/override (on-size w h)
-        (preferences:set 'drscheme:module-overview:window-width w)
-        (preferences:set 'drscheme:module-overview:window-height h)
+        (preferences:set 'drracket:module-overview:window-width w)
+        (preferences:set 'drracket:module-overview:window-height h)
         (super on-size w h))
       (super-instantiate ()))))
 

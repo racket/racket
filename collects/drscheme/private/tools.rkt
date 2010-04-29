@@ -176,12 +176,12 @@ string-constants)
 
 ;; default-tool-configuration : installed-tool -> (union 'load 'skip)
 (define (default-tool-configuration it)
-  (preferences:get 'drscheme:default-tools-configuration))
+  (preferences:get 'drracket:default-tools-configuration))
 
 (define toolspref
   (case-lambda
-    [() (preferences:get 'drscheme:tools-configuration)]
-    [(v) (preferences:set 'drscheme:tools-configuration v)]))
+    [() (preferences:get 'drracket:tools-configuration)]
+    [(v) (preferences:set 'drracket:tools-configuration v)]))
 
 (define (installed-tool->key it)
   (list (directory-record-spec (installed-tool-dir it))

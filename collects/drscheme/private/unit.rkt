@@ -385,11 +385,11 @@ module browser threading seems wrong.
                 (apply super-make-object args))]
              [get-program-editor-mixin
               (λ ()
-                (drracket:tools:only-in-phase 'drscheme:unit:get-program-editor-mixin 'phase2 'init-complete)
+                (drracket:tools:only-in-phase 'drracket:unit:get-program-editor-mixin 'phase2 'init-complete)
                 program-editor-mixin)]
              [add-to-program-editor-mixin
               (λ (mixin)
-                (drracket:tools:only-in-phase 'drscheme:unit:add-to-program-editor-mixin 'phase1)
+                (drracket:tools:only-in-phase 'drracket:unit:add-to-program-editor-mixin 'phase1)
                 (let ([old program-editor-mixin])
                   (set! program-editor-mixin (λ (x) (mixin (old x))))))])
         (values get-program-editor-mixin
@@ -641,12 +641,12 @@ module browser threading seems wrong.
             (let ([lang (drracket:language-configuration:language-settings-language next-settings)]
                   [sets (drracket:language-configuration:language-settings-settings next-settings)])
               (preferences:set
-               'drscheme:recent-language-names
+               'drracket:recent-language-names
                (limit-length
                 (remove-duplicate-languages
                  (cons (cons (send lang get-language-name)
                              (send lang marshall-settings sets))
-                       (preferences:get 'drscheme:recent-language-names)))
+                       (preferences:get 'drracket:recent-language-names)))
                 10)))
             
             (when update-prefs?
@@ -700,7 +700,7 @@ module browser threading seems wrong.
             (inner (void) after-delete x y))
           
           (define/override (is-special-first-line? l) 
-            (and (preferences:get 'drscheme:module-language-first-line-special?)
+            (and (preferences:get 'drracket:module-language-first-line-special?)
                  (is-lang-line? l)))
           
           (inherit get-filename)
@@ -849,7 +849,7 @@ module browser threading seems wrong.
     
     (define (get-module-language/settings)
       (let* ([module-language
-              (and (preferences:get 'drscheme:switch-to-module-language-automatically?)
+              (and (preferences:get 'drracket:switch-to-module-language-automatically?)
                    (ormap 
                     (λ (lang)
                       (and (is-a? lang drracket:module-language:module-language<%>)
@@ -953,13 +953,13 @@ module browser threading seems wrong.
         (unless (is-a? frame -frame<%>)
           (error 'func-defs-canvas "frame is not a drracket:unit:frame<%>"))
         
-        (define sort-by-name? (preferences:get 'drscheme:defns-popup-sort-by-name?))
+        (define sort-by-name? (preferences:get 'drracket:defns-popup-sort-by-name?))
         (define sorting-name (if sort-by-name?
                                  (string-constant sort-by-position) 
                                  (string-constant sort-by-name)))
         (define/private (change-sorting-order)
           (set! sort-by-name? (not sort-by-name?))
-          (preferences:set 'drscheme:defns-popup-sort-by-name? sort-by-name?)
+          (preferences:set 'drracket:defns-popup-sort-by-name? sort-by-name?)
           (set! sorting-name (if sort-by-name?
                                  (string-constant sort-by-position) 
                                  (string-constant sort-by-name))))
@@ -1178,7 +1178,7 @@ module browser threading seems wrong.
                           (length (send unit-frame get-definitions-canvases))
                           (length (send unit-frame get-interactions-canvases)))
                        (= 2 (length percentages)))
-              (preferences:set 'drscheme:unit-window-size-percentage (car percentages))))
+              (preferences:set 'drracket:unit-window-size-percentage (car percentages))))
           (inner (void) after-percentage-change))
         (super-new)))
     
@@ -1494,7 +1494,7 @@ module browser threading seems wrong.
         (define logger-menu-item #f)
 
         (define/public-final (show/hide-log show?)
-          (let ([p (preferences:get 'drscheme:logging-size-percentage)])
+          (let ([p (preferences:get 'drracket:logging-size-percentage)])
             (begin-container-sequence)
             (cond
               [logger-gui-tab-panel
@@ -1528,9 +1528,9 @@ module browser threading seems wrong.
                             [parent logger-panel]
                             [callback
                              (λ (tp evt)
-                               (preferences:set 'drscheme:logger-gui-tab-panel-level (send logger-gui-tab-panel get-selection))
+                               (preferences:set 'drracket:logger-gui-tab-panel-level (send logger-gui-tab-panel get-selection))
                                (update-logger-window #f))]))
-                 (send logger-gui-tab-panel set-selection (preferences:get 'drscheme:logger-gui-tab-panel-level))
+                 (send logger-gui-tab-panel set-selection (preferences:get 'drracket:logger-gui-tab-panel-level))
                  (new-logger-text)
                  (set! logger-gui-canvas 
                        (new editor-canvas% [parent logger-gui-tab-panel] [editor logger-gui-text]))
@@ -1778,12 +1778,12 @@ module browser threading seems wrong.
                        #t)])))))
         
         (define/override (make-root-area-container cls parent)
-          (let* ([saved-p (preferences:get 'drscheme:module-browser-size-percentage)]
-                 [saved-p2 (preferences:get 'drscheme:logging-size-percentage)]
+          (let* ([saved-p (preferences:get 'drracket:module-browser-size-percentage)]
+                 [saved-p2 (preferences:get 'drracket:logging-size-percentage)]
                  [_module-browser-parent-panel
                   (super make-root-area-container 
                          (make-two-way-prefs-dragable-panel% panel:horizontal-dragable%
-                                                             'drscheme:module-browser-size-percentage)
+                                                             'drracket:module-browser-size-percentage)
                          parent)]
                  [_module-browser-panel (new vertical-panel%
                                              (parent _module-browser-parent-panel)
@@ -1792,7 +1792,7 @@ module browser threading seems wrong.
                  [planet-status-outer-panel (new vertical-panel% [parent _module-browser-parent-panel])]
                  [execute-warning-outer-panel (new vertical-panel% [parent planet-status-outer-panel])]
                  [logger-outer-panel (new (make-two-way-prefs-dragable-panel% panel:vertical-dragable%
-                                                                              'drscheme:logging-size-percentage)
+                                                                              'drracket:logging-size-percentage)
                                           [parent execute-warning-outer-panel])]
                  [trans-outer-panel (new vertical-panel% [parent logger-outer-panel])]
                  [root (make-object cls trans-outer-panel)])
@@ -1821,13 +1821,13 @@ module browser threading seems wrong.
             (send planet-status-parent-panel change-children (λ (l) (remq planet-status-panel l)))
             (unless (toolbar-shown?)
               (send transcript-parent-panel change-children (λ (l) '())))
-            (preferences:set 'drscheme:module-browser-size-percentage saved-p)
-            (preferences:set 'drscheme:logging-size-percentage saved-p2)
+            (preferences:set 'drracket:module-browser-size-percentage saved-p)
+            (preferences:set 'drracket:logging-size-percentage saved-p2)
             
             root))
         
         (inherit show-info hide-info is-info-hidden?)
-        (field [toolbar-state (preferences:get 'drscheme:toolbar-state)]
+        (field [toolbar-state (preferences:get 'drracket:toolbar-state)]
                [toolbar-top-menu-item #f]
                [toolbar-left-menu-item #f]
                [toolbar-right-menu-item #f]
@@ -1839,7 +1839,7 @@ module browser threading seems wrong.
         
         (define/private (change-toolbar-state new-state)
           (set! toolbar-state new-state)
-          (preferences:set 'drscheme:toolbar-state new-state)
+          (preferences:set 'drracket:toolbar-state new-state)
           (update-toolbar-visibility))
         
         (define/override (on-toolbar-button-click) (change-toolbar-state (cons (not (car toolbar-state)) (cdr toolbar-state))))
@@ -1870,18 +1870,18 @@ module browser threading seems wrong.
           (update-defs/ints-resize-corner))
         
         (define/private (toolbar-is-hidden?)
-          (car (preferences:get 'drscheme:toolbar-state)))
+          (car (preferences:get 'drracket:toolbar-state)))
         (define/private (toolbar-is-top?)
           (and (not (toolbar-is-hidden?))
-               (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+               (eq? (cdr (preferences:get 'drracket:toolbar-state))
                     'top)))
         (define/private (toolbar-is-right?)
           (and (not (toolbar-is-hidden?))
-               (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+               (eq? (cdr (preferences:get 'drracket:toolbar-state))
                     'right)))
         (define/private (toolbar-is-left?)
           (and (not (toolbar-is-hidden?))
-               (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+               (eq? (cdr (preferences:get 'drracket:toolbar-state))
                     'left)))
 
         (define/private (orient/show bar-at-beginning?)
@@ -2587,7 +2587,7 @@ module browser threading seems wrong.
                   (list interactions-canvases
                         definitions-canvases))]
                 [old-children (send resizable-panel get-children)]
-                [p (preferences:get 'drscheme:unit-window-size-percentage)])
+                [p (preferences:get 'drracket:unit-window-size-percentage)])
             (update-defs/ints-resize-corner)
             (send definitions-item set-label 
                   (if definitions-shown?
@@ -2602,7 +2602,7 @@ module browser threading seems wrong.
             ;; this might change the unit-window-size-percentage, so save/restore it
             (send resizable-panel change-children (λ (l) new-children))
             
-            (preferences:set 'drscheme:unit-window-size-percentage p)
+            (preferences:set 'drracket:unit-window-size-percentage p)
             ;; restore preferred interactions/definitions sizes
             (when (and (= 1 (length definitions-canvases))
                        (= 1 (length interactions-canvases))
@@ -2696,7 +2696,7 @@ module browser threading seems wrong.
                              module-language-settings)))))))
             
             (check-if-save-file-up-to-date)
-            (when (preferences:get 'drscheme:show-interactions-on-execute)
+            (when (preferences:get 'drracket:show-interactions-on-execute)
               (ensure-rep-shown interactions-text))
             (when transcript
               (record-definitions)
@@ -2747,9 +2747,9 @@ module browser threading seems wrong.
         (inherit is-maximized?)
         (define/override (on-size w h)
           (unless (is-maximized?)
-            (preferences:set 'drscheme:unit-window-width w)
-            (preferences:set 'drscheme:unit-window-height h))
-          (preferences:set 'drscheme:unit-window-max? (is-maximized?))
+            (preferences:set 'drracket:unit-window-width w)
+            (preferences:set 'drracket:unit-window-height h))
+          (preferences:set 'drracket:unit-window-max? (is-maximized?))
           (super on-size w h))
         
         (define on-move-timer-args #f)
@@ -2766,7 +2766,7 @@ module browser threading seems wrong.
                          (λ () 
                            (set! on-move-timer #f)
                            (set! on-move-timer-args #f)
-                           (preferences:set 'drscheme:frame:initial-position on-move-timer-args))]
+                           (preferences:set 'drracket:frame:initial-position on-move-timer-args))]
                         [interval 1000]
                         [just-once? #t]))]))
         
@@ -3272,13 +3272,13 @@ module browser threading seems wrong.
                       (if (send cb get-value)
                           (send module-browser-pb show-visible-paths key)
                           (send module-browser-pb remove-visible-paths key))
-                      (preferences:set 'drscheme:module-browser:hide-paths (send module-browser-pb get-hidden-paths)))]
+                      (preferences:set 'drracket:module-browser:hide-paths (send module-browser-pb get-hidden-paths)))]
                    [mk-checkbox
                     (λ (key label)
                       (new check-box%
                            (parent module-browser-panel)
                            (label label)
-                           (value (not (memq key (preferences:get 'drscheme:module-browser:hide-paths))))
+                           (value (not (memq key (preferences:get 'drracket:module-browser:hide-paths))))
                            (callback 
                             (λ (cb _) 
                               (show-callback cb key)))))])
@@ -3293,14 +3293,14 @@ module browser threading seems wrong.
                                       (string-constant module-browser-name-medium)
                                       (string-constant module-browser-name-long)
                                       (string-constant module-browser-name-very-long)))
-                       (selection (preferences:get 'drscheme:module-browser:name-length))
+                       (selection (preferences:get 'drracket:module-browser:name-length))
                        (callback
                         (λ (x y)
                           (let ([selection (send module-browser-name-length-choice get-selection)])
-                            (preferences:set 'drscheme:module-browser:name-length selection)
+                            (preferences:set 'drracket:module-browser:name-length selection)
                             (update-module-browser-name-length selection))))))
             (update-module-browser-name-length 
-             (preferences:get 'drscheme:module-browser:name-length))
+             (preferences:get 'drracket:module-browser:name-length))
             
             (set! module-browser-button 
                   (new button%
@@ -3309,7 +3309,7 @@ module browser threading seems wrong.
                        (callback (λ (x y) (update-module-browser-pane)))
                        (stretchable-width #t))))
           
-          (let ([p (preferences:get 'drscheme:module-browser-size-percentage)])
+          (let ([p (preferences:get 'drracket:module-browser-size-percentage)])
             (send module-browser-parent-panel change-children
                   (λ (l)
                     (cons module-browser-panel
@@ -3712,10 +3712,10 @@ module browser threading seems wrong.
                         (when num
                           (cond
                             [(eq? num #t)
-                             (preferences:set 'drscheme:child-only-memory-limit #f)
+                             (preferences:set 'drracket:child-only-memory-limit #f)
                              (send interactions-text set-custodian-limit #f)]
                             [else
-                             (preferences:set 'drscheme:child-only-memory-limit 
+                             (preferences:set 'drracket:child-only-memory-limit 
                                               (* 1024 1024 num))
                              (send interactions-text set-custodian-limit
                                    (* 1024 1024 num))]))))]))
@@ -3936,10 +3936,10 @@ module browser threading seems wrong.
         (super-new
          (filename filename)
          (style '(toolbar-button))
-         (width (preferences:get 'drscheme:unit-window-width))
-         (height (preferences:get 'drscheme:unit-window-height)))
+         (width (preferences:get 'drracket:unit-window-width))
+         (height (preferences:get 'drracket:unit-window-height)))
         (inherit maximize)
-        (when (preferences:get 'drscheme:unit-window-max?)
+        (when (preferences:get 'drracket:unit-window-max?)
           (maximize #t))
         
         (initialize-menus)
@@ -3989,7 +3989,7 @@ module browser threading seems wrong.
                                             (let ([sel (send tabs-panel get-selection)])
                                               (when sel
                                                 (change-to-nth-tab sel)))))))
-        [define resizable-panel (new (if (preferences:get 'drscheme:defs/ints-horizontal)
+        [define resizable-panel (new (if (preferences:get 'drracket:defs/ints-horizontal)
                                          horizontal-dragable/def-int%
                                          vertical-dragable/def-int%)
                                      (unit-frame this)
@@ -4062,10 +4062,10 @@ module browser threading seems wrong.
           (if (null? v)
               (send bug-icon show #f)
               (send bug-icon show #t)))
-        (set-bug-label (preferences:get 'drscheme:saved-bug-reports))
+        (set-bug-label (preferences:get 'drracket:saved-bug-reports))
         (define remove-bug-icon-callback
           (preferences:add-callback
-           'drscheme:saved-bug-reports
+           'drracket:saved-bug-reports
            (λ (p v)
              (set-bug-label v))))
         
@@ -4133,7 +4133,7 @@ module browser threading seems wrong.
         
         (when (= 2 (length (send resizable-panel get-children)))
           (send resizable-panel set-percentages
-                (let ([p (preferences:get 'drscheme:unit-window-size-percentage)])
+                (let ([p (preferences:get 'drracket:unit-window-size-percentage)])
                   (list p (- 1 p)))))
         
         (set-label-prefix (string-constant drscheme))
@@ -4442,7 +4442,7 @@ module browser threading seems wrong.
                                      (drracket:language-configuration:make-language-settings
                                       lang
                                       settings)))]))))))
-             (preferences:get 'drscheme:recent-language-names))
+             (preferences:get 'drracket:recent-language-names))
             (unless added-one?
               (send (new menu-item% 
                          [label (string-append
@@ -4493,9 +4493,9 @@ module browser threading seems wrong.
     ;; record-saved-bug-report : (listof (cons symbol string)) -> void
     ;; =Kernel= =Handler=
     (define (record-saved-bug-report table)
-      (let ([recorded (preferences:get 'drscheme:saved-bug-reports)])
+      (let ([recorded (preferences:get 'drracket:saved-bug-reports)])
         (unless (member table recorded)
-          (preferences:set 'drscheme:saved-bug-reports (shorten-to (cons table recorded) 15)))))
+          (preferences:set 'drracket:saved-bug-reports (shorten-to (cons table recorded) 15)))))
     
     ;; shorten-to : (listof X) number -> (listof X)
     ;; drops items from the end of the list to bring it back down to `n' items
@@ -4528,12 +4528,12 @@ module browser threading seems wrong.
                                   [callback 
                                    (λ (_1 _2)
                                      (send saved-bug-reports-window show #f)
-                                     (preferences:set 'drscheme:saved-bug-reports '()))]
+                                     (preferences:set 'drracket:saved-bug-reports '()))]
                                   [parent hp]))
           (void))))
     
     (preferences:add-callback
-     'drscheme:saved-bug-reports
+     'drracket:saved-bug-reports
      (λ (p v)
        (when saved-bug-reports-window
          (when (send saved-bug-reports-window is-shown?)
@@ -4600,12 +4600,12 @@ module browser threading seems wrong.
       (send saved-bug-reports-window end-container-sequence))
     
     (define (forget-saved-bug-report item)
-      (preferences:set 'drscheme:saved-bug-reports (remove item (preferences:get 'drscheme:saved-bug-reports))))
+      (preferences:set 'drracket:saved-bug-reports (remove item (preferences:get 'drracket:saved-bug-reports))))
     
     (define (show-saved-bug-reports-window)
       (init-saved-bug-reports-window)
       (unless (send saved-bug-reports-window is-shown?)
-        (refresh-saved-bug-reports-window (preferences:get 'drscheme:saved-bug-reports)))
+        (refresh-saved-bug-reports-window (preferences:get 'drracket:saved-bug-reports)))
       (send saved-bug-reports-window show #t))
     
     
@@ -4686,7 +4686,7 @@ module browser threading seems wrong.
             (begin0 newest-frame
                     (set! newest-frame #f))]
            [(and name ;; only open a tab if we have a filename
-                 (preferences:get 'drscheme:open-in-tabs))
+                 (preferences:get 'drracket:open-in-tabs))
             (let ([fr (let loop ([frs (cons (send (group:get-the-frame-group) get-active-frame)
                                             (send (group:get-the-frame-group) get-frames))])
                         (cond
@@ -4709,7 +4709,7 @@ module browser threading seems wrong.
              [frame (new drs-frame% (filename filename))])
         (send (send frame get-interactions-text) initialize-console)
         (when first-frame?
-          (let ([pos (preferences:get 'drscheme:frame:initial-position)])
+          (let ([pos (preferences:get 'drracket:frame:initial-position)])
             (when pos
               (send frame move (car pos) (cdr pos)))))
         (send frame update-toolbar-visibility)

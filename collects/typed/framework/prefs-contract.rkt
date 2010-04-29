@@ -4,10 +4,10 @@
          framework/framework)
 
 (provide (rename-out [-preferences:get preferences:get])
-         preferences:get-drscheme:large-letters-font)
+         preferences:get-drracket:large-letters-font)
 
-(define (preferences:get-drscheme:large-letters-font)
-  (preferences:get 'drscheme:large-letters-font))
+(define (preferences:get-drracket:large-letters-font)
+  (preferences:get 'drracket:large-letters-font))
 
 (define-syntax (-preferences:get stx)
   (syntax-case stx (quote)

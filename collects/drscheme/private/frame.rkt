@@ -236,7 +236,7 @@
                               (message-box (string-constant drscheme)
                                            (format (string-constant keybindings-planet-malformed-spec)
                                                    planet-spec))]))))))
-               (let ([ud (preferences:get 'drscheme:user-defined-keybindings)])
+               (let ([ud (preferences:get 'drracket:user-defined-keybindings)])
                  (unless (null? ud)
                    (new separator-menu-item% (parent keybindings-menu))
                    (for-each (λ (item)
@@ -256,9 +256,9 @@
   
   (define (add-keybindings-item/update-prefs item)
     (when (add-keybindings-item item)
-      (preferences:set 'drscheme:user-defined-keybindings
+      (preferences:set 'drracket:user-defined-keybindings
                        (cons item
-                             (preferences:get 'drscheme:user-defined-keybindings)))))
+                             (preferences:get 'drracket:user-defined-keybindings)))))
   
   (define (planet-string-spec? p)
     (let ([sexp
@@ -291,15 +291,15 @@
   (define (remove-keybindings-item item)
     (keymap:remove-user-keybindings-file item)
     (preferences:set
-     'drscheme:user-defined-keybindings
+     'drracket:user-defined-keybindings
      (remove item
-             (preferences:get 'drscheme:user-defined-keybindings))))
+             (preferences:get 'drracket:user-defined-keybindings))))
   
   ;; install-plt-file : (union #f dialog% frame%) -> void
   ;; asks the user for a .plt file, either from the web or from
   ;; a file on the disk and installs it.
   (define (install-plt-file parent)
-    (define pref (preferences:get 'drscheme:install-plt-dialog))
+    (define pref (preferences:get 'drracket:install-plt-dialog))
     (define dialog
       (new dialog% [parent parent]
            [label (string-constant install-plt-file-dialog-title)]
@@ -370,7 +370,7 @@
     (send tab-panel set-selection (if (car pref) 0 1))
     (update-panels)
     (send dialog show #t)
-    (preferences:set 'drscheme:install-plt-dialog
+    (preferences:set 'drracket:install-plt-dialog
                      (list (from-web?)
                            (send url-text-field get-value)
                            (send file-text-field get-value)))
@@ -464,7 +464,7 @@
       (override on-size)
       [define on-size
         (lambda (w h)
-          (preferences:set 'drscheme:keybindings-window-size (cons w h))
+          (preferences:set 'drracket:keybindings-window-size (cons w h))
           (super on-size w h))]
       (super-instantiate ())))
   
@@ -472,8 +472,8 @@
     (letrec ([f (instantiate keybindings-dialog% ()
                   (label (string-constant keybindings-frame-title))
                   (parent frame)
-                  (width (car (preferences:get 'drscheme:keybindings-window-size)))
-                  (height (cdr (preferences:get 'drscheme:keybindings-window-size)))
+                  (width (car (preferences:get 'drracket:keybindings-window-size)))
+                  (height (cdr (preferences:get 'drracket:keybindings-window-size)))
                   (style '(resize-border)))]
              [bp (make-object horizontal-panel% f)]
              [search-field (new text-field% 

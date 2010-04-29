@@ -35,7 +35,7 @@
   ((Instance Horizontal-Panel%) ((Instance Button%) (Instance Event%) -> Void) ((Instance Button%) (Instance Event%) -> Void) -> (values Any Any))])
 
 (require/typed/provide "prefs-contract.ss"
-                       [preferences:get-drscheme:large-letters-font (-> (U #f (Pair String Integer)))])
+                       [preferences:get-drracket:large-letters-font (-> (U #f (Pair String Integer)))])
 
 (require (only-in "prefs-contract.ss" preferences:get))
 (provide preferences:get)

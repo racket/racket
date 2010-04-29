@@ -449,7 +449,7 @@ TODO
          [list-of-snip/strings? (list-of? snip/string?)]
          [list-of-lists-of-snip/strings? (list-of? list-of-snip/strings?)])
     (preferences:set-default
-     'drscheme:console-previous-exprs
+     'drracket:console-previous-exprs
      null
      list-of-lists-of-snip/strings?))
   (let ([marshall 
@@ -469,7 +469,7 @@ TODO
                 lls))]
         [unmarshall (λ (x) x)])
     (preferences:set-un/marshall
-     'drscheme:console-previous-exprs
+     'drracket:console-previous-exprs
      marshall unmarshall))
   
   (define color? ((get-display-depth) . > . 8))
@@ -856,7 +856,7 @@ TODO
           (let* ([start (get-repl-header-end)]
                  [end (get-insertion-point)]
                  [space (- end start)]
-                 [pref (preferences:get 'drscheme:repl-buffer-size)])
+                 [pref (preferences:get 'drracket:repl-buffer-size)])
             (when (car pref)
               (let ([max-space (* 1000 (cdr pref))])
                 (when (space . > . max-space)
@@ -891,7 +891,7 @@ TODO
              (memory-killed-cust-box #f)
              (user-custodian #f)
              (custodian-limit (and (custodian-memory-accounting-available?)
-                                   (preferences:get 'drscheme:child-only-memory-limit)))
+                                   (preferences:get 'drracket:child-only-memory-limit)))
              (user-eventspace-box (make-weak-box #f))
              (user-namespace-box (make-weak-box #f))
              (user-eventspace-main-thread #f)
@@ -975,7 +975,7 @@ TODO
                      )])
           (when (equal? ans 3)
             (set-custodian-limit new-limit)
-            (preferences:set 'drscheme:child-only-memory-limit new-limit))
+            (preferences:set 'drracket:child-only-memory-limit new-limit))
           (set-insertion-point (last-position))
           (insert-warning "\nInteractions disabled")))
       
@@ -1437,10 +1437,10 @@ TODO
       
       (define/augment (on-close)
         (shutdown)
-        (preferences:set 'drscheme:console-previous-exprs 
+        (preferences:set 'drracket:console-previous-exprs 
                          (trim-previous-exprs
                           (append 
-                           (preferences:get 'drscheme:console-previous-exprs)
+                           (preferences:get 'drracket:console-previous-exprs)
                            local-previous-exprs)))
         (inner (void) on-close))
       
@@ -1739,7 +1739,7 @@ TODO
             (copy-previous-expr))))
       
       ;; private fields
-      (define global-previous-exprs (preferences:get 'drscheme:console-previous-exprs))
+      (define global-previous-exprs (preferences:get 'drracket:console-previous-exprs))
       (define local-previous-exprs null)
       (define/private (get-previous-exprs)
         (append global-previous-exprs local-previous-exprs))

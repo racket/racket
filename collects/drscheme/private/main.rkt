@@ -22,10 +22,14 @@
         [prefix drracket:frame: drracket:frame^]
         [prefix drracket:font: drracket:font^]
         [prefix drracket:modes: drracket:modes^]
-        [prefix drracket:help-desk: drracket:help-desk^])
+        [prefix drracket:help-desk: drracket:help-desk^]
+        [prefix drracket:multi-file-search: drracket:multi-file-search^])
 (export)
 
-
+(define (drr:set-default name val predicate)
+  (preferences:set-default 
+   name val predicate 
+   #:aliases (list (string->symbol (regexp-replace #rx"^drracket:" (symbol->string name) "drscheme:")))))
 
 (when (eq? (system-type) 'unix)
   (let ()
@@ -90,9 +94,9 @@
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
-(preferences:set-default 'drscheme:logger-gui-tab-panel-level 0 (λ (x) (and (exact-integer? x) (<= 0 x 5)))) 
+(drr:set-default 'drracket:logger-gui-tab-panel-level 0 (λ (x) (and (exact-integer? x) (<= 0 x 5)))) 
 
-(preferences:set-default 'drscheme:saved-bug-reports 
+(drr:set-default 'drracket:saved-bug-reports 
                          '() 
                          (λ (ll) 
                            (and (list? ll)
@@ -105,17 +109,17 @@
                                                 l)))
                                  ll))))
 
-(preferences:set-default 'drscheme:module-language-first-line-special? #t boolean?)
+(drr:set-default 'drracket:module-language-first-line-special? #t boolean?)
 
-(preferences:set-default 'drscheme:defns-popup-sort-by-name? #f boolean?)
+(drr:set-default 'drracket:defns-popup-sort-by-name? #f boolean?)
 
-(preferences:set-default 'drscheme:toolbar-state 
+(drr:set-default 'drracket:toolbar-state 
                          '(#f . top)
                          (λ (x) (and (pair? x)
                                      (boolean? (car x))
                                      (memq (cdr x) '(left top right)))))
 
-(preferences:set-default 'drscheme:htdp:last-set-teachpacks
+(drr:set-default 'drracket:htdp:last-set-teachpacks
                          '() 
                          (λ (x)
                            (and (list? x)
@@ -125,20 +129,20 @@
                                                (eq? (car x) 'lib)
                                                (andmap string? (cdr x))))
                                         x))))
-(preferences:set-default 'drscheme:defs/ints-horizontal #f boolean?)
-(preferences:set-default 'drscheme:unit-window-max? #f boolean?)
-(preferences:set-default 'drscheme:frame:initial-position #f 
+(drr:set-default 'drracket:defs/ints-horizontal #f boolean?)
+(drr:set-default 'drracket:unit-window-max? #f boolean?)
+(drr:set-default 'drracket:frame:initial-position #f 
                          (λ (x) (or (not x)
                                     (and (pair? x)
                                          (number? (car x))
                                          (number? (cdr x))))))
 
-(preferences:set-default 'drscheme:child-only-memory-limit (* 1024 1024 128)
+(drr:set-default 'drracket:child-only-memory-limit (* 1024 1024 128)
                          (λ (x) (or (boolean? x)
                                     (integer? x)
                                     (x . >= . (* 1024 1024 1)))))
 
-(preferences:set-default 'drscheme:recent-language-names 
+(drr:set-default 'drracket:recent-language-names 
                          null 
                          (λ (x) 
                            (and (list? x) 
@@ -147,22 +151,22 @@
                                    (and (pair? x)
                                         (string? (car x))))
                                  x))))
-(preferences:set-default 'drscheme:show-interactions-on-execute #t boolean?)
-(preferences:set-default 'drscheme:open-in-tabs #f boolean?)
-(preferences:set-default 'drscheme:toolbar-shown #t boolean?)
-(preferences:set-default 'drscheme:user-defined-keybindings
+(drr:set-default 'drracket:show-interactions-on-execute #t boolean?)
+(drr:set-default 'drracket:open-in-tabs #f boolean?)
+(drr:set-default 'drracket:toolbar-shown #t boolean?)
+(drr:set-default 'drracket:user-defined-keybindings
                          '()
                          (λ (x) (and (list? x) 
                                      (andmap (λ (x) (or (path? x) (drracket:frame:planet-spec? x)))
                                              x))))
-(preferences:set-default 'drscheme:install-plt-dialog
+(drr:set-default 'drracket:install-plt-dialog
                          '(#t "" "") ; url-selected?, url string, file string
                          (λ (x) (and (list? x) (= 3 (length x))
                                      (boolean? (car x))
                                      (andmap string? (cdr x)))))
 
 (preferences:set-un/marshall 
- 'drscheme:user-defined-keybindings
+ 'drracket:user-defined-keybindings
  (λ (in) (map (λ (x) (if (path? x) (path->bytes x) x))
               in))
  (λ (ex) (if (list? ex)
@@ -171,17 +175,17 @@
 
 (let ([number-between-zero-and-one?
        (λ (x) (and (number? x) (<= 0 x 1)))])
-  (preferences:set-default 'drscheme:unit-window-size-percentage 
+  (drr:set-default 'drracket:unit-window-size-percentage 
                            1/2 
                            number-between-zero-and-one?)
-  (preferences:set-default 'drscheme:module-browser-size-percentage
+  (drr:set-default 'drracket:module-browser-size-percentage
                            1/5
                            number-between-zero-and-one?)
-  (preferences:set-default 'drscheme:logging-size-percentage
+  (drr:set-default 'drracket:logging-size-percentage
                            3/4
                            number-between-zero-and-one?))
 
-(preferences:set-default 'drscheme:module-browser:name-length 1 
+(drr:set-default 'drracket:module-browser:name-length 1 
                          (λ (x) (memq x '(0 1 2 3))))
 
 (let ([frame-width 600]
@@ -191,31 +195,31 @@
   (let-values ([(w h) (get-display-size)])
     (set! frame-width (min frame-width (- w window-trimming-upper-bound-width)))
     (set! frame-height (min frame-height (- h window-trimming-upper-bound-height))))
-  (preferences:set-default 'drscheme:unit-window-width frame-width number?)
-  (preferences:set-default 'drscheme:unit-window-height frame-height number?))
+  (drr:set-default 'drracket:unit-window-width frame-width number?)
+  (drr:set-default 'drracket:unit-window-height frame-height number?))
 
-(preferences:set-default 'drscheme:backtrace-window-width 400 number?)
-(preferences:set-default 'drscheme:backtrace-window-height 300 number?)
-(preferences:set-default 'drscheme:backtrace-window-x 0 number?)
-(preferences:set-default 'drscheme:backtrace-window-y 0 number?)
+(drr:set-default 'drracket:backtrace-window-width 400 number?)
+(drr:set-default 'drracket:backtrace-window-height 300 number?)
+(drr:set-default 'drracket:backtrace-window-x 0 number?)
+(drr:set-default 'drracket:backtrace-window-y 0 number?)
 
-(preferences:set-default 'drscheme:profile-how-to-count 'time
+(drr:set-default 'drracket:profile-how-to-count 'time
                          (λ (x)
                            (memq x '(time count))))
-(preferences:set-default 'drscheme:profile:low-color
+(drr:set-default 'drracket:profile:low-color
                          (make-object color% 150 255 150)
                          (λ (x) (is-a? x color%)))
-(preferences:set-default 'drscheme:profile:high-color
+(drr:set-default 'drracket:profile:high-color
                          (make-object color% 255 150 150)
                          (λ (x) (is-a? x color%)))
-(preferences:set-default 'drscheme:profile:scale
+(drr:set-default 'drracket:profile:scale
                          'linear
                          (λ (x) (memq x '(sqrt linear square))))
 
-(preferences:set-default 'drscheme:test-coverage-ask-about-clearing? #t boolean?)
+(drr:set-default 'drracket:test-coverage-ask-about-clearing? #t boolean?)
 
 ;; size is in editor positions
-(preferences:set-default 'drscheme:repl-buffer-size 
+(drr:set-default 'drracket:repl-buffer-size 
                          '(#t . 1000)
                          (λ (x)
                            (and (pair? x)
@@ -235,41 +239,49 @@
              (make-object color% (car l) (cadr l) (caddr l))
              (make-object color% 0 0 0)))])
   (preferences:set-un/marshall 
-   'drscheme:profile:low-color
+   'drracket:profile:low-color
    marshall-color
    unmarshall-color)
   (preferences:set-un/marshall 
-   'drscheme:profile:high-color
+   'drracket:profile:high-color
    marshall-color
    unmarshall-color))
 
-(preferences:set-default 
- 'drscheme:keybindings-window-size
+(drr:set-default 
+ 'drracket:keybindings-window-size
  (cons 400 600)
  (λ (x) (and (pair? x)
              (number? (car x))
              (number? (cdr x)))))
 
-(preferences:set-default
- 'drscheme:execute-warning-once
+(drr:set-default
+ 'drracket:execute-warning-once
  #f
  (λ (x)
    (or (eq? x #t)
        (not x))))
 
-(preferences:set-default 'drscheme:switch-to-module-language-automatically? #t boolean?)
+(drr:set-default 'drracket:switch-to-module-language-automatically? #t boolean?)
 
-(preferences:set-default
- 'drscheme:default-tools-configuration
+(drr:set-default
+ 'drracket:default-tools-configuration
  'load
  (lambda (p)
    (memq p '(load skip))))
 
-(preferences:set-default
- 'drscheme:tools-configuration
+(drr:set-default
+ 'drracket:tools-configuration
  null
  list?)
 
+  (drr:set-default 'drracket:module-overview:label-font-size 12 number?)
+  (drr:set-default 'drracket:module-overview:window-height 500 number?)
+  (drr:set-default 'drracket:module-overview:window-width 500 number?)
+  (drr:set-default 'drracket:module-browser:hide-paths '(lib)
+                           (λ (x)
+                             (and (list? x)
+                                  (andmap symbol? x))))
+  
 
 (drracket:font:setup-preferences)
 (color-prefs:add-background-preferences-panel)
@@ -293,22 +305,22 @@
            (send q set-value (preferences:get pref-sym))))])
   (preferences:add-to-general-checkbox-panel
    (λ (editor-panel)
-     (make-check-box 'drscheme:open-in-tabs 
+     (make-check-box 'drracket:open-in-tabs 
                      (string-constant open-files-in-tabs)
                      editor-panel)
-     (make-check-box 'drscheme:show-interactions-on-execute 
+     (make-check-box 'drracket:show-interactions-on-execute 
                      (string-constant show-interactions-on-execute)
                      editor-panel)
      
-     (make-check-box 'drscheme:switch-to-module-language-automatically?
+     (make-check-box 'drracket:switch-to-module-language-automatically?
                      (string-constant switch-to-module-language-automatically)
                      editor-panel)
      
-     (make-check-box 'drscheme:defs/ints-horizontal
+     (make-check-box 'drracket:defs/ints-horizontal
                      (string-constant interactions-beside-definitions)
                      editor-panel)
      
-     (make-check-box 'drscheme:module-language-first-line-special?
+     (make-check-box 'drracket:module-language-first-line-special?
                      (string-constant ml-always-show-#lang-line)
                      editor-panel)))
   
@@ -335,13 +347,13 @@
                         (λ (sl _) (sl-callback))))]
               [cb-callback
                (λ ()
-                 (preferences:set 'drscheme:repl-buffer-size
+                 (preferences:set 'drracket:repl-buffer-size
                                   (cons (send cb get-value)
-                                        (cdr (preferences:get 'drscheme:repl-buffer-size)))))]
+                                        (cdr (preferences:get 'drracket:repl-buffer-size)))))]
               [sl-callback
                (λ ()
-                 (preferences:set 'drscheme:repl-buffer-size
-                                  (cons (car (preferences:get 'drscheme:repl-buffer-size))
+                 (preferences:set 'drracket:repl-buffer-size
+                                  (cons (car (preferences:get 'drracket:repl-buffer-size))
                                         (send sl get-value))))]
               [update-controls
                (λ (v)
@@ -349,15 +361,15 @@
                    (send sl enable on?)
                    (send cb set-value on?)
                    (send sl set-value (cdr v))))])
-       (preferences:add-callback 'drscheme:repl-buffer-size (λ (p v) (update-controls v)))
-       (update-controls (preferences:get 'drscheme:repl-buffer-size)))))
+       (preferences:add-callback 'drracket:repl-buffer-size (λ (p v) (update-controls v)))
+       (update-controls (preferences:get 'drracket:repl-buffer-size)))))
   
   (preferences:add-to-warnings-checkbox-panel
    (λ (warnings-panel)
-     (make-check-box 'drscheme:execute-warning-once 
+     (make-check-box 'drracket:execute-warning-once 
                      (string-constant only-warn-once)
                      warnings-panel)
-     (make-check-box 'drscheme:test-coverage-ask-about-clearing?
+     (make-check-box 'drracket:test-coverage-ask-about-clearing?
                      (string-constant test-coverage-ask?)
                      warnings-panel))))
 (drracket:debug:add-prefs-panel)
@@ -438,7 +450,7 @@
 
 ;; this default can only be set *after* the
 ;; languages have all be registered by tools
-(preferences:set-default
+(drr:set-default
  drracket:language-configuration:settings-preferences-symbol
  (drracket:language-configuration:get-default-language-settings)
  drracket:language-configuration:language-settings?)
@@ -476,6 +488,61 @@
                   lang
                   (or settings (send lang default-settings)))))))))
 
+  ;; preferences initialization
+  (drr:set-default 'drracket:multi-file-search:recur? #t boolean?)
+  (drr:set-default 'drracket:multi-file-search:filter? #t boolean?)
+  (drr:set-default 'drracket:multi-file-search:filter-string "\\.(ss|scm)$" string?)
+  (drr:set-default 'drracket:multi-file-search:search-string "" string?)
+  (drr:set-default 'drracket:multi-file-search:search-type
+                           1
+                           (λ (x) 
+                             (and (number? x)
+                                  (exact? x)
+                                  (integer? x)
+                                  (<= 0 x)
+                                  (< x (length drracket:multi-file-search:search-types)))))
+  
+  ;; drracket:mult-file-search:search-check-boxes : (listof (listof boolean))
+  (drr:set-default 'drracket:multi-file-search:search-check-boxes 
+                           (map (λ (x) (map cdr (drracket:multi-file-search:search-type-params x)))
+                                drracket:multi-file-search:search-types)
+                           (λ (x) 
+                             (and (list? x)
+                                  (andmap (λ (x)
+                                            (and (list? x)
+                                                 (andmap boolean? x)))
+                                          x))))
+  
+  (drr:set-default 'drracket:multi-file-search:percentages
+                           '(1/3 2/3)
+                           (λ (x) (and (list? x)
+                                       (= 2 (length x))
+                                       (= 1 (apply + x)))))
+  
+  (drr:set-default 'drracket:multi-file-search:frame-size '(300 . 400) 
+                           (λ (x) (and (pair? x)
+                                       (number? (car x))
+                                       (number? (cdr x)))))
+  (drr:set-default 'drracket:multi-file-search:directory 
+                           ;; The default is #f because
+                           ;; filesystem-root-list is expensive under Windows
+                           #f 
+                           (lambda (x) (or (not x) (path? x))))
+  (preferences:set-un/marshall 
+   'drracket:multi-file-search:directory
+   (λ (v) (and v (path->string v)))
+   (λ (p) (if (path-string? p)
+              (string->path p)
+              #f)))
+  
+  (drr:set-default 'drracket:large-letters-font #f (λ (x)
+                                                       (or (and (pair? x)
+                                                                (string? (car x))
+                                                                (let ([i (cdr x)])
+                                                                  (and (integer? i)
+                                                                       (<= 1 i 255))))
+                                                           (not x))))
+
 (let ([drs-handler-recent-items-super%
        (class (drracket:frame:basics-mixin
                (frame:standard-menus-mixin
@@ -504,9 +571,9 @@
               sd)))  
 
 
-(define repl-error-pref 'drscheme:read-eval-print-loop:error-color)
-(define repl-out-pref 'drscheme:read-eval-print-loop:out-color)
-(define repl-value-pref 'drscheme:read-eval-print-loop:value-color)
+(define repl-error-pref 'drracket:read-eval-print-loop:error-color)
+(define repl-out-pref 'drracket:read-eval-print-loop:out-color)
+(define repl-value-pref 'drracket:read-eval-print-loop:value-color)
 (color-prefs:register-color-preference repl-value-pref
                                        "text:ports value"
                                        (make-object color% 0 0 175)
@@ -535,6 +602,7 @@
                                             repl-out-pref
                                             "text:ports out"
                                             (string-constant repl-out-color))))
+
 
 (let* ([find-frame
         (λ (item)
@@ -591,7 +659,7 @@
 
 ;; install user's keybindings
 (for-each drracket:frame:add-keybindings-item 
-          (preferences:get 'drscheme:user-defined-keybindings))
+          (preferences:get 'drracket:user-defined-keybindings))
 
 ;; the initial window doesn't set the 
 ;; unit object's state correctly, yet.
@@ -616,7 +684,7 @@
 ;; NOTE: drscheme-normal.rkt sets current-command-line-arguments to
 ;; the list of files to open, after parsing out flags like -h
 (let* ([files-to-open 
-        (if (preferences:get 'drscheme:open-in-tabs)
+        (if (preferences:get 'drracket:open-in-tabs)
             (vector->list (current-command-line-arguments))
             (reverse (vector->list (current-command-line-arguments))))]
        [normalized/filtered
@@ -639,6 +707,6 @@
              no-dups)])
   (when (null? (filter (λ (x) x) frames))
     (make-basic))
-  (when (and (preferences:get 'drscheme:open-in-tabs)
+  (when (and (preferences:get 'drracket:open-in-tabs)
              (not (null? no-dups)))
     (handler:edit-file (car no-dups))))
