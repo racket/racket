@@ -19,7 +19,7 @@
           [prefix drracket:language-configuration: drracket:language-configuration^])
   (export drracket:module-language-tools^)
 
-  (define-local-member-name initialized? move-to-new-language)
+  (define-local-member-name initialized? move-to-new-language get-in-module-language?)
 
   (define-struct opt-out-toolbar-button (make-button id) #:transparent)
   (define opt-out-toolbar-buttons '())
@@ -68,7 +68,9 @@
       ;; move button panel to the front of the list
       (send (get-button-panel) change-children 
             (λ (l) (cons toolbar-button-panel (remq toolbar-button-panel l))))
-      (send (get-definitions-text) move-to-new-language)))
+      (let ([defs (get-definitions-text)])
+        (when (send defs get-in-module-language?)
+          (send defs move-to-new-language)))))
   
   (define definitions-text<%> (interface ()))
   (define definitions-text-mixin
@@ -77,6 +79,7 @@
       (define in-module-language? #f)      ;; true when we are in the module language
       (define hash-lang-last-location #f)  ;; non-false when we know where the hash-lang line ended
       (define hash-lang-language #f)       ;; non-false is the string that was parsed for the language
+      (define/public (get-in-module-language?) in-module-language?)
       (define/augment (after-insert start len)
         (inner (void) after-insert start len)
         (modification-at start))
