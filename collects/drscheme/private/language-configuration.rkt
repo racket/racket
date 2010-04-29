@@ -468,6 +468,15 @@
                                                  module-language*get-language-details-panel
                                                  module-language*get/set-settings))
         
+        ;; no-language-selected : -> void
+        ;; updates the GUI for the situation where no language at all selected, and
+        ;; and thus neither of the radio buttons should be selected. 
+        ;; this generally happens when there is no preference setting for the language
+        ;; (ie the user has just started drracket for the first time)
+        (define (no-language-selected)
+          (non-language-selected)
+          (send use-chosen-language-rb set-selection #f))
+        
         (define module-language*language 'module-language*-not-yet-set)
         (define module-language*get-language-details-panel 'module-language*-not-yet-set)
         (define module-language*get/set-settings 'module-language*-not-yet-set)
@@ -739,39 +748,40 @@
         ;; opens the tabs that lead to the current language
         ;; and selects the current language
         (define (open-current-language)
-          (when (and language-to-show settings-to-show)
-            (cond
-              [(is-a? language-to-show drracket:module-language:module-language<%>)
-               (module-language-selected)]
-              [else
-               (send languages-hier-list focus) ;; only focus when the module language isn't selected
-               (send use-chosen-language-rb set-selection 0)
-               (send use-language-in-source-rb set-selection #f)
-               (let ([language-position (send language-to-show get-language-position)])
-                 (cond
-                   [(null? (cdr language-position))
-                    ;; nothing to open here
-                    (send (car (send languages-hier-list get-items)) select #t)
-                    (void)]
-                   [else
-                    (let loop ([hi languages-hier-list]
-                               
-                               ;; skip the first position, since it is flattened into the dialog
-                               [first-pos (cadr language-position)]
-                               [position (cddr language-position)])
-                      (let ([child
-                             ;; know that this `car' is okay by construction of the dialog
-                             (car 
-                              (filter (λ (x)
-                                        (equal? (send (send x get-editor) get-text)
-                                                first-pos))
-                                      (send hi get-items)))])
-                        (cond
-                          [(null? position)
-                           (send child select #t)]
-                          [else
-                           (send child open)
-                           (loop child (car position) (cdr position))])))]))])))
+          (cond
+            [(not (and language-to-show settings-to-show))
+             (no-language-selected)]
+            [(is-a? language-to-show drracket:module-language:module-language<%>)
+             (module-language-selected)]
+            [else
+             (send languages-hier-list focus) ;; only focus when the module language isn't selected
+             (send use-chosen-language-rb set-selection 0)
+             (send use-language-in-source-rb set-selection #f)
+             (let ([language-position (send language-to-show get-language-position)])
+               (cond
+                 [(null? (cdr language-position))
+                  ;; nothing to open here
+                  (send (car (send languages-hier-list get-items)) select #t)
+                  (void)]
+                 [else
+                  (let loop ([hi languages-hier-list]
+                             
+                             ;; skip the first position, since it is flattened into the dialog
+                             [first-pos (cadr language-position)]
+                             [position (cddr language-position)])
+                    (let ([child
+                           ;; know that this `car' is okay by construction of the dialog
+                           (car 
+                            (filter (λ (x)
+                                      (equal? (send (send x get-editor) get-text)
+                                              first-pos))
+                                    (send hi get-items)))])
+                      (cond
+                        [(null? position)
+                         (send child select #t)]
+                        [else
+                         (send child open)
+                         (loop child (car position) (cdr position))])))]))]))
         
         ;; docs-callback : -> void
         (define (docs-callback)
