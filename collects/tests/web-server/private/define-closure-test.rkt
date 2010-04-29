@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          mzlib/serialize
          mzlib/match
          web-server/private/define-closure)

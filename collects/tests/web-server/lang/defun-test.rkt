@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          web-server/lang/defun
          web-server/lang/util)
 (provide defun-tests)

@@ -34,7 +34,7 @@
 
 (module fold-test
   mzscheme
-  (require schemeunit)
+  (require rktunit)
   (require (all-except srfi/1/fold map for-each)
    (rename srfi/1/fold s:map map)
    (rename srfi/1/fold s:for-each for-each))

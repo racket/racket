@@ -1,5 +1,5 @@
-(require schemeunit)
-(require schemeunit/text-ui)
+(require rktunit)
+(require rktunit/text-ui)
 (require "all-srfi-43-tests.ss")
 
 (run-tests all-srfi-43-tests)

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require schemeunit
+(require rktunit
          syntax/parse
          (for-syntax scheme/base syntax/parse))
 

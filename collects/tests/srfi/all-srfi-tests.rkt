@@ -1,6 +1,6 @@
 (module all-srfi-tests mzscheme
   
-  (require schemeunit)
+  (require rktunit)
   (require "1/all-1-tests.ss"
            "2/and-let-test.ss"
            "4/srfi-4-test.ss"

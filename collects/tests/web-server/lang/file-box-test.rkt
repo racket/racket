@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          web-server/lang/file-box
          (only-in mzlib/file make-temporary-file))
 (provide file-box-tests)

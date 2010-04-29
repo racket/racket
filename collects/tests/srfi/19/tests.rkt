@@ -10,8 +10,8 @@
 (require scheme/serialize
          srfi/19/time)
 
-(require schemeunit
-         schemeunit/text-ui)
+(require rktunit
+         rktunit/text-ui)
 
 (define-check (check-comparisons comparison times expected)
   (for ([time0    (in-list times)]

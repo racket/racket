@@ -2,7 +2,7 @@
 
 (provide all-image-tests)
 
-(require schemeunit
+(require rktunit
 	 deinprogramm/image
          (only-in lang/private/imageeq image=?)
 	 mred

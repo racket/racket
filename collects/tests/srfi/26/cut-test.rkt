@@ -23,7 +23,7 @@
 ; $Id: cut-test.ss,v 1.1 2002/06/20 15:40:52 noel Exp $
 
 (module cut-test mzscheme
-  (require schemeunit)
+  (require rktunit)
   (require srfi/26/cut)
 
   (provide cut-tests)

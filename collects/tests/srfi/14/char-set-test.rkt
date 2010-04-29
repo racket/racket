@@ -27,7 +27,7 @@
 
 (module char-set-test mzscheme
 
-  (require schemeunit)
+  (require rktunit)
   (require srfi/14/char-set)
   (provide char-set-tests)
 

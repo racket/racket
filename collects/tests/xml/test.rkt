@@ -1,6 +1,6 @@
 #lang racket
-(require schemeunit
-         schemeunit/text-ui
+(require rktunit
+         rktunit/text-ui
          xml
          xml/plist
          mzlib/etc

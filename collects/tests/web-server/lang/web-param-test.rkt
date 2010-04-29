@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          "../util.rkt")
 (provide web-param-tests)
 

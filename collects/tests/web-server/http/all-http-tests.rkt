@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          "cookies-test.rkt"
          "digest-auth-test.rkt")
 (provide all-http-tests)

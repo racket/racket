@@ -33,7 +33,7 @@
 ;; stone@math.grin.edu
 
 (module alist-test mzscheme
-  (require schemeunit)
+  (require rktunit)
   (require (all-except srfi/1/alist assoc)
            (rename srfi/1/alist s:assoc assoc))
 

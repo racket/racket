@@ -2,7 +2,7 @@
 (require syntax/parse
          syntax/private/stxparse/rep-attrs
          syntax/private/stxparse/runtime)
-(require schemeunit)
+(require rktunit)
 
 ;; tok = test pattern ok
 (define-syntax tok

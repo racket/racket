@@ -1,6 +1,6 @@
 #lang scheme/base
-(require schemeunit
-         schemeunit/gui)
+(require rktunit
+         rktunit/gui)
 (require macro-debugger/model/debug
          scheme/path
          scheme/gui)
