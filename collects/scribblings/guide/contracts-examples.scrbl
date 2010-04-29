@@ -6,7 +6,7 @@
           (for-label racket/contract)
           (for-label racket/gui))
 
-@title[#:tag "contracts-examples"]{Examples}
+@title[#:tag "contracts-examples"]{Additional Examples}
 
  This section illustrates the current state of Racket's contract
  implementation with a series of examples from @italic{Design by
@@ -59,7 +59,7 @@ Note: To mimic Mitchell and McKim's informal notion of parametericity
  places, this use of first-class contracts improves on Mitchell and McKim's
  design (see comments in interfaces).
 
-@section{A Customer Manager Component for Managing Customer Relationships}
+@section{A Customer-Manager Component}
 
 This first module contains some struct definitions in a
 separate module in order to better track bugs.

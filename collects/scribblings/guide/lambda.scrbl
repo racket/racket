@@ -28,7 +28,7 @@ A @racket[lambda] form with @math{n} @racket[_arg-id]s accepts
 ]
 
 @;------------------------------------------------------------------------
-@section{Declaring a Rest Argument}
+@section[#:tag "rest-args"]{Declaring a Rest Argument}
 
 A @racket[lambda] expression can also have the form
 
@@ -207,7 +207,7 @@ remaining by-position arguments.
 @refdetails["lambda"]{function expressions}
 
 @;------------------------------------------------------------------------
-@section{Arity-Sensitive Functions: @racket[case-lambda]}
+@section[#:tag "case-lambda"]{Arity-Sensitive Functions: @racket[case-lambda]}
 
 The @racket[case-lambda] form creates a function that can have
 completely different behaviors depending on the number of arguments

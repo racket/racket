@@ -28,9 +28,9 @@ evaluator is created using @scheme[make-base-eval]. See also
 Uses of @scheme[code:comment] and @schemeidfont{code:blank} are
 stipped from each @scheme[datum] before evaluation.
 
-If a @scheme[datum] has the form @scheme[(eval:alts #,(svar
-show-datum) #,(svar eval-datum))], then @svar[show-datum] is typeset,
-while @svar[eval-datum] is evaluated.}
+If a @scheme[datum] has the form @scheme[(@#,indexed-scheme[eval:alts]
+#,(svar show-datum) #,(svar eval-datum))], then @svar[show-datum] is
+typeset, while @svar[eval-datum] is evaluated.}
 
 
 @defform*[[(interaction-eval datum)

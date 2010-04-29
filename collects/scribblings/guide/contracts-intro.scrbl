@@ -3,7 +3,7 @@
           scribble/eval
           "guide-utils.ss"
           "contracts-utils.ss"
-          (for-label scheme/contract))
+          (for-label racket/contract))
 
 @title[#:tag "contract-boundaries"]{Contracts and Boundaries}
 
@@ -16,72 +16,73 @@ A contract thus establishes a boundary between the two parties. Whenever a
 value crosses this boundary, the contract monitoring system performs contract
 checks, making sure the partners abide by the established contract.
 
-In this spirit, PLT Scheme supports contracts only at module
+In this spirit, Racket encourages contracts mainly at module
 boundaries. Specifically, programmers may attach contracts to
-@scheme[provide] clauses and thus impose constraints and promises on the use
+@racket[provide] clauses and thus impose constraints and promises on the use
 of exported values. For example, the export specification 
-@schememod[
-scheme
+@racketmod[
+racket
 
 (provide/contract 
   [amount positive?])
 (define amount ...)
 ]
 
-promises to all clients of the above module that amount will
+promises to all clients of the above module that the value of @racket[amount] will
 always be a positive number. The contract system monitors
 the module's obligation carefully. Every time a client
-refers to @scheme[amount], the monitor checks that the value
-of @scheme[amount] is indeed a positive number.
+refers to @racket[amount], the monitor checks that the value
+of @racket[amount] is indeed a positive number.
 
-The contracts library is built into the Scheme language, but
-if you wish to use @scheme[scheme/base], you can explicitly
+The contracts library is built into the Racket language, but
+if you wish to use @racket[racket/base], you can explicitly
 require the contracts library like this:
 
-@schememod[
-scheme/base
-(require scheme/contract) (code:comment "now we can write contracts")
+@racketmod[
+racket/base
+(require racket/contract) (code:comment "now we can write contracts")
 
 (provide/contract 
   [amount positive?])
 (define amount ...)
 ]
 
-@ctc-section[#:tag "amount0"]{A First Contract Violation}
+@ctc-section[#:tag "amount0"]{Contract Violations}
 
-Suppose the creator of the module had written 
-@schememod[
-scheme
+If we bind @scheme[amount] to a number that is not positive,
+
+@racketmod[
+racket
 
 (provide/contract 
-  [amount positive?])
-  
+  [amount positive?])  
 (define amount 0)]
 
-When this module is required, the monitoring
+then, when the module is required, the monitoring
 system signals a violation of the contract and
 blames the module for breaking its promises.
 
-@ctc-section[#:tag "qamount"]{A Subtle Contract Violation}
+@; @ctc-section[#:tag "qamount"]{A Subtle Contract Violation}
 
-Suppose we write this module
-@schememod[
-scheme
+An even bigger mistake would be to bind @racket[amount]
+to a non-number value:
+
+@racketmod[
+racket
 
 (provide/contract 
-  [amount positive?])
-  
+  [amount positive?])  
 (define amount 'amount)
 ]
 
-In that case, the monitoring system applies
-@scheme[positive?] to a symbol, but @scheme[positive?]
+In this case, the monitoring system will apply
+@racket[positive?] to a symbol, but @racket[positive?]
 reports an error, because its domain is only numbers. To
-make the contract capture our intentions for all Scheme
+make the contract capture our intentions for all Racket
 values, we can ensure that the value is both a number and is
-positive, combining the two contracts with @scheme[and/c]:
+positive, combining the two contracts with @racket[and/c]:
 
-@schemeblock[
+@racketblock[
 (provide/contract 
   [amount (and/c number? positive?)])
 ]
@@ -95,13 +96,13 @@ provide/contract'd. This is currently buggy so this
 discussion is elided. Here's the expansion of
 the requiring module, just to give an idea:
 
-(module m mzscheme 
+(module m racket 
   (require mzlib/contract)
    (provide/contract [x x-ctc]))
 
-(module n mzscheme (require m) (define (f) ... x ...))
+(module n racket (require m) (define (f) ... x ...))
 ==>
-(module n mzscheme 
+(module n racket 
    (require (rename m x x-real))
    (define x (apply-contract x-real x-ctc ...))
    (define (f) ... x ...))
@@ -122,9 +123,9 @@ Of course, this breaks assignment to the provided variable.
 
 <table src="simple.ss">
 <tr><td bgcolor="e0e0fa">
-<scheme>
+<racket>
 ;; Language: Pretty Big
-(module a mzscheme 
+(module a racket 
   (require mzlib/contract)
 
   (provide/contract 
@@ -139,7 +140,7 @@ Of course, this breaks assignment to the provided variable.
   
   (define (do-it) <font color="red">(set! amount -4)</font>))
 
-(module b mzscheme 
+(module b racket 
   (require a)
   
   (printf "~s~n" amount)
@@ -147,17 +148,17 @@ Of course, this breaks assignment to the provided variable.
   (printf "~s~n" amount))
 
 (require b)
-</scheme>
+</racket>
 <td bgcolor="beige" valign="top">
 <pre>
 
 the "server" module 
 this allows us to write contracts 
 
-export @scheme[amount] with a contract 
+export @racket[amount] with a contract 
 
 
-export @scheme[do-it] without contract 
+export @racket[do-it] without contract 
 
 
 
@@ -168,21 +169,23 @@ set amount to 4,
 the "client" module 
 requires functionality from a
 
-first reference to @scheme[amount] (okay)
-a call to @scheme[do-it], 
-second reference to @scheme[amount] (fail)
+first reference to @racket[amount] (okay)
+a call to @racket[do-it], 
+second reference to @racket[amount] (fail)
 
 </pre> </table>
 
 <p><strong>Note:</strong> The above example is mostly self-explanatory. Take a
-look at the lines in red, however. Even though the call to @scheme[do-it]
-sets @scheme[amount] to -4, this action is <strong>not</strong> a contract
+look at the lines in red, however. Even though the call to @racket[do-it]
+sets @racket[amount] to -4, this action is <strong>not</strong> a contract
 violation. The contract violation takes place only when the client module
-(@scheme[b]) refers to @scheme[amount] again and the value flows across
+(@racket[b]) refers to @racket[amount] again and the value flows across
 the module boundary for a second time. 
 
 </question>
 }
+
+@;{
 
 @ctc-section[#:tag "obligations"]{Imposing Obligations on a Module's Clients}
 
@@ -190,43 +193,47 @@ On occasion, a module may want to enter a contract with
 another module only if the other module abides by certain
 rules. In other words, the module isn't just promising some
 services, it also demands the client to deliver
-something. This kind of thing happens when a module exports
-a function, an object, a class or other values that enable
+something. That situation may happen when a module exports
+a function, an object, a class, or some other construct that enables
 values to flow in both directions.
 
-@ctc-section{Experimenting with Examples}
+}
+
+@ctc-section{Experimenting with Contracts and Modules}
 
 All of the contracts and module in this chapter (excluding those just
 following) are written using the standard @tt{#lang} syntax for
-describing modules. Thus, if you extract examples from this chapter in
-order to experiment with the behavior of the contract system, you
-would have to make multiple files. 
+describing modules. Since modules serve as the boundary between
+parties in a contract, examples involve multiple modules.
 
-To rectify this, PLT Scheme provides a special language, called
-@schememodname[scheme/load]. The contents of such a module is other modules (and
-@scheme[require] statements), using the parenthesized syntax for a
-module. For example, to try the example earlier in this section, you
-would write:
-@schememod[
-scheme/load
+To experiment with multiple modules within a single module or within
+DrRacket's @tech{definitions area}, use the
+@racketmodname[racket/load] language. The contents of such a module
+can be other modules (and @racket[require] statements), using the
+longhand parenthesized syntax for a module (see
+@secref["module-syntax"]). For example, try the example earlier in
+this section as follows:
 
-(module m scheme
-  (define amount 150)
-  (provide/contract [amount (and/c number? positive?)]))
+@racketmod[
+racket/load
 
-(module n scheme
+(module m racket
+  (provide/contract [amount (and/c number? positive?)])
+  (define amount 150))
+
+(module n racket
   (require 'm)
   (+ amount 10))
 
 (require 'n)]
 
 Each of the modules and their contracts are wrapped in parentheses
-with the @scheme[module] keyword at the front. The first argument to
-@scheme[module] should be the name of the module, so it can be used in
-a subsequent @scheme[require] statement (note that in the
-@scheme[require], the name of the module must be prefixed with a
-quote). The second argument to @scheme[module] is the language (what
-would have come after @tt{#lang} in the usual notation), and the
-remaining arguments are the body of the module. After all of the
-modules, there must a @scheme[require] to kick things off.
+with the @racket[module] keyword at the front. The first form after
+@racket[module] is the name of the module to be used in a subsequent
+@racket[require] statement (where each reference through a
+@racket[require] prefixes the name with a quote). The second form
+after @racket[module] is the language, and the remaining forms are the
+body of the module. After all of the modules, a @racket[require]
+starts one of the modules plus anything that is @racket[require]s.
+
 
