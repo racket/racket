@@ -639,6 +639,7 @@ static void make_kernel_env(void)
   MZTIMEIT(regexp, scheme_regexp_initialize(env));
 #endif
   MZTIMEIT(params, scheme_init_parameterization());
+  MZTIMEIT(futures, scheme_init_futures_once());
   MZTIMEIT(places, scheme_init_places_once());
 
   MARK_START_TIME();
