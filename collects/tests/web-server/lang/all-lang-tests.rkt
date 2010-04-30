@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          "abort-resume-test.rkt"
          "anormal-test.rkt"
          "defun-test.rkt"

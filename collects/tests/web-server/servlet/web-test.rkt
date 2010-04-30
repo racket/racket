@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          net/url
          web-server/servlet/web)
 (require/expose web-server/servlet/web

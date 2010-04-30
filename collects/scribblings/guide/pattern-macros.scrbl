@@ -11,52 +11,52 @@ match parts of the pattern.
 
 @; ----------------------------------------
 
-@section{@scheme[define-syntax-rule]}
+@section{@racket[define-syntax-rule]}
 
 The simplest way to create a macro is to use
-@scheme[define-syntax-rule]:
+@racket[define-syntax-rule]:
 
 @specform[(define-syntax-rule pattern template)]
 
-As a running example, consider the @scheme[swap] macro, which swaps
+As a running example, consider the @racket[swap] macro, which swaps
 the values stored in two variables. It can be implemented using
-@scheme[define-syntax-rule] as follows:
+@racket[define-syntax-rule] as follows:
 
-@margin-note{The macro is ``un-Schemely'' in the sense that it
+@margin-note{The macro is ``un-Rackety'' in the sense that it
 involves side effects on variables---but the point of macros is to let
 you add syntactic forms that some other language designer might not
 approve.}
 
-@schemeblock[
+@racketblock[
 (define-syntax-rule (swap x y)
   (let ([tmp x])
     (set! x y)
     (set! y tmp)))
 ]
 
-The @scheme[define-syntax-rule] form binds a macro that matches a
+The @racket[define-syntax-rule] form binds a macro that matches a
 single pattern. The pattern must always start with an open parenthesis
-followed by an identifier, which is @scheme[swap] in this case. After
+followed by an identifier, which is @racket[swap] in this case. After
 the initial identifier, other identifiers are @deftech{macro pattern
 variables} that can match anything in a use of the macro. Thus, this
-macro matches the for @scheme[(swap _form_1 _form_2)] for any
-@scheme[_form_1] and @scheme[_form_2].
+macro matches the form @racket[(swap _form1 _form2)] for any
+@racket[_form_1] and @racket[_form_2].
 
 @margin-note{Macro pattern variables similar to pattern variables for
- @scheme[match]. See @secref["match"].}
+ @racket[match]. See @secref["match"].}
 
-After the pattern in @scheme[define-syntax-rule] is the
+After the pattern in @racket[define-syntax-rule] is the
 @deftech{template}. The template is used in place of a form that
 matches the pattern, except that each instance of a pattern variable
 in the template is replaced with the part of the macro use the pattern
 variable matched. For example, in
 
-@schemeblock[(swap first last)]
+@racketblock[(swap first last)]
 
-the pattern variable @scheme[x] matches @scheme[first] and @scheme[y]
-matches @scheme[last], so that the expansion is
+the pattern variable @racket[x] matches @racket[first] and @racket[y]
+matches @racket[last], so that the expansion is
 
-@schemeblock[
+@racketblock[
   (let ([tmp first])
     (set! first last)
     (set! last tmp))
@@ -66,20 +66,20 @@ matches @scheme[last], so that the expansion is
 
 @section{Lexical Scope}
 
-Suppose that we use the @scheme[swap] macro to swap variables named
-@scheme[tmp] and @scheme[other]:
+Suppose that we use the @racket[swap] macro to swap variables named
+@racket[tmp] and @racket[other]:
 
-@schemeblock[
+@racketblock[
 (let ([tmp 5]
       [other 6])
   (swap tmp other)
   (list tmp other))
 ]
 
-The result of the above expression should be @schemeresult[(6 5)]. The
-naive expansion of this use of @scheme[swap], however, is
+The result of the above expression should be @racketresult[(6 5)]. The
+naive expansion of this use of @racket[swap], however, is
 
-@schemeblock[
+@racketblock[
 (let ([tmp 5]
       [other 6])
   (let ([tmp tmp])
@@ -88,14 +88,14 @@ naive expansion of this use of @scheme[swap], however, is
   (list tmp other))
 ]
 
-whose result is @schemeresult[(5 6)]. The problem is that the naive
-expansion confuses the @scheme[tmp] in the context where @scheme[swap]
-is used with the @scheme[tmp] that is in the macro template.
+whose result is @racketresult[(5 6)]. The problem is that the naive
+expansion confuses the @racket[tmp] in the context where @racket[swap]
+is used with the @racket[tmp] that is in the macro template.
 
-Scheme doesn't produce the naive expansion for the above use of
-@scheme[swap]. Instead, it produces
+Racket doesn't produce the naive expansion for the above use of
+@racket[swap]. Instead, it produces
 
-@schemeblock[
+@racketblock[
 (let ([tmp 5]
       [other 6])
   (let ([tmp_1 tmp])
@@ -104,10 +104,10 @@ Scheme doesn't produce the naive expansion for the above use of
   (list tmp other))
 ]
 
-with the correct result in @schemeresult[(6 5)]. Similarly, in the
+with the correct result in @racketresult[(6 5)]. Similarly, in the
 example
 
-@schemeblock[
+@racketblock[
 (let ([set! 5]
       [other 6])
   (swap set! other)
@@ -116,7 +116,7 @@ example
 
 the expansion is 
 
-@schemeblock[
+@racketblock[
 (let ([set!_1 5]
       [other 6])
   (let ([tmp_1 tmp])
@@ -125,23 +125,23 @@ the expansion is
   (list set!_1 other))
 ]
 
-so that the local @scheme[set!] binding doesn't interfere with the
+so that the local @racket[set!] binding doesn't interfere with the
 assignments introduced by the macro template.
 
-In other words, Scheme's pattern-based macros automatically maintain
+In other words, Racket's pattern-based macros automatically maintain
 lexical scope, so macro implementors can reason about variable
 reference in macros and macro uses in the same way as for functions
 and function calls.
 
 @; ----------------------------------------
 
-@section{@scheme[define-syntax] and @scheme[syntax-rules]}
+@section{@racket[define-syntax] and @racket[syntax-rules]}
 
-The @scheme[define-syntax-rule] form binds a macro that matches a
-single pattern, but Scheme's macro system supports transformers that
+The @racket[define-syntax-rule] form binds a macro that matches a
+single pattern, but Racket's macro system supports transformers that
 match multiple patterns starting with the same identifier. To write
 such macros, the programmer much use the more general
-@scheme[define-syntax] form along with the @scheme[syntax-rules]
+@racket[define-syntax] form along with the @racket[syntax-rules]
 transformer form:
 
 @specform[#:literals (syntax-rules)
@@ -150,25 +150,25 @@ transformer form:
               [pattern template]
               ...))]
 
-@margin-note{The @scheme[define-syntax-rule] form is itself a macro
- that expands into @scheme[define-syntax] with a @scheme[syntax-rules]
+@margin-note{The @racket[define-syntax-rule] form is itself a macro
+ that expands into @racket[define-syntax] with a @racket[syntax-rules]
  form that contains only one pattern and template.}
 
-For example, suppose we would like a @scheme[rotate] macro that
-generalizes @scheme[swap] to work on either two or three identifiers,
+For example, suppose we would like a @racket[rotate] macro that
+generalizes @racket[swap] to work on either two or three identifiers,
 so that
 
-@schemeblock[
+@racketblock[
 (let ([red 1] [green 2] [blue 3])
   (rotate red green)      (code:comment @#,t{swaps})
   (rotate red green blue) (code:comment @#,t{rotates left})
   (list red green blue))
 ]
 
-produces @schemeresult[(1 3 2)]. We can implement @scheme[rotate]
-using @scheme[syntax-rules]:
+produces @racketresult[(1 3 2)]. We can implement @racket[rotate]
+using @racket[syntax-rules]:
 
-@schemeblock[
+@racketblock[
 (define-syntax rotate
   (syntax-rules ()
     [(rotate a b) (swap a b)]
@@ -177,27 +177,27 @@ using @scheme[syntax-rules]:
                      (swap b c))]))
 ]
 
-The expression @scheme[(rotate red green)] matches the first pattern
-in the @scheme[syntax-rules] form, so it expands to @scheme[(swap red
-green)]. The expression @scheme[(rotate a b c)] matches the second
-pattern, so it expands to @scheme[(begin (swap red green) (swap green
+The expression @racket[(rotate red green)] matches the first pattern
+in the @racket[syntax-rules] form, so it expands to @racket[(swap red
+green)]. The expression @racket[(rotate a b c)] matches the second
+pattern, so it expands to @racket[(begin (swap red green) (swap green
 blue))].
 
 @; ----------------------------------------
 
 @section{Matching Sequences}
 
-A better @scheme[rotate] macro would allow any number of identifiers,
-instead of just two or three. To match a use of @scheme[rotate] with
+A better @racket[rotate] macro would allow any number of identifiers,
+instead of just two or three. To match a use of @racket[rotate] with
 any number of identifiers, we need a pattern form that has something
-like a Kleene star. In a Scheme macro pattern, a star is written as
-@scheme[...].
+like a Kleene star. In a Racket macro pattern, a star is written as
+@racket[...].
 
-To implement @scheme[rotate] with @scheme[...], we need a base case to
+To implement @racket[rotate] with @racket[...], we need a base case to
 handle a single identifier, and an inductive case to handle more than
 one identifier:
 
-@schemeblock[
+@racketblock[
 (define-syntax rotate
   (syntax-rules ()
     [(rotate a) (void)]
@@ -206,19 +206,19 @@ one identifier:
                           (rotate b c ...))]))
 ]
 
-When a pattern variable like @scheme[c] is followed by @scheme[...] in
-a pattern, then it must be followed by @scheme[...] in a template,
+When a pattern variable like @racket[c] is followed by @racket[...] in
+a pattern, then it must be followed by @racket[...] in a template,
 too. The pattern variable effectively matches a sequence of zero or
 more forms, and it is replaced in the template by the same sequence.
 
-Both versions of @scheme[rotate] so far are a bit inefficient, since
+Both versions of @racket[rotate] so far are a bit inefficient, since
 pairwise swapping keeps moving the value from the first variable into
 every variable in the sequence until it arrives at the last one. A
-more efficient @scheme[rotate] would move the first value directly to
-the last variable. We can use @scheme[...] patterns to implement the
+more efficient @racket[rotate] would move the first value directly to
+the last variable. We can use @racket[...] patterns to implement the
 more efficient variant using a helper macro:
 
-@schemeblock[
+@racketblock[
 (define-syntax rotate
   (syntax-rules ()
     [(rotate a c ...)
@@ -232,18 +232,18 @@ more efficient variant using a helper macro:
        (set! to0 tmp))]))
 ]
 
-In the @scheme[shift-to] macro, @scheme[...] in the template follows
-@scheme[(set! to from)], which causes the @scheme[(set! to from)]
+In the @racket[shift-to] macro, @racket[...] in the template follows
+@racket[(set! to from)], which causes the @racket[(set! to from)]
 expression to be duplicated as many times as necessary to use each
-identifier matched in the @scheme[to] and @scheme[from]
-sequences. (The number of @scheme[to] and @scheme[from] matches must
+identifier matched in the @racket[to] and @racket[from]
+sequences. (The number of @racket[to] and @racket[from] matches must
 be the same, otherwise the macro expansion fails with an error.)
 
 @; ----------------------------------------
 
 @section{Identifier Macros}
 
-Given our macro definitions, the @scheme[swap] or @scheme[rotate]
+Given our macro definitions, the @racket[swap] or @racket[rotate]
 identifiers must be used after an open parenthesis, otherwise a syntax
 error is reported:
 
@@ -252,13 +252,13 @@ error is reported:
 @interaction[(+ swap 3)]
 
 An @deftech{identifier macro} works in any expression. For example, we
-can define @scheme[clock] as an identifier macro that expands to
-@scheme[(get-clock)], so @scheme[(+ clock 3)] would expand to
-@scheme[(+ (get-clock) 3)]. An identifier macro also cooperates with
-@scheme[set!], and we can define @scheme[clock] so that @scheme[(set!
-clock 3)] expands to @scheme[(put-clock! 3)].
+can define @racket[clock] as an identifier macro that expands to
+@racket[(get-clock)], so @racket[(+ clock 3)] would expand to
+@racket[(+ (get-clock) 3)]. An identifier macro also cooperates with
+@racket[set!], and we can define @racket[clock] so that @racket[(set!
+clock 3)] expands to @racket[(put-clock! 3)].
 
-The @scheme[syntax-id-rules] form is like @scheme[syntax-rules], but
+The @racket[syntax-id-rules] form is like @racket[syntax-rules], but
 it creates a transformer that acts as an identifier macro:
 
 @specform[#:literals (syntax-id-rules)
@@ -267,12 +267,12 @@ it creates a transformer that acts as an identifier macro:
               [pattern template]
               ...))]
 
-Unlike a @scheme[syntax-rules] form, the @scheme[_pattern]s are not
-required to start with an open parenthesis. Also, @scheme[set!] is
-typically used as a literal to match a use of @scheme[set!] in the
+Unlike a @racket[syntax-rules] form, the @racket[_pattern]s are not
+required to start with an open parenthesis. Also, @racket[set!] is
+typically used as a literal to match a use of @racket[set!] in the
 pattern (as opposed to being a pattern variable.
 
-@schemeblock[
+@racketblock[
 (define-syntax clock
   (syntax-id-rules (set!)
     [(set! clock e) (put-clock! e)]
@@ -280,29 +280,29 @@ pattern (as opposed to being a pattern variable.
     [clock (get-clock)]))
 ]
 
-The @scheme[(clock a ...)] pattern is needed because, when an
+The @racket[(clock a ...)] pattern is needed because, when an
 identifier macro is used after an open parenthesis, the macro
 transformer is given the whole form, like with a non-identifier macro.
-Put another way, the @scheme[syntax-rules] form is essentially a
-special case of the @scheme[syntax-id-rules] form with errors in the
-@scheme[set!] and lone-identifier cases.
+Put another way, the @racket[syntax-rules] form is essentially a
+special case of the @racket[syntax-id-rules] form with errors in the
+@racket[set!] and lone-identifier cases.
 
 @; ----------------------------------------
 
 @section{Macro-Generating Macros}
 
-Suppose that we have many identifier like @scheme[clock] that we'd
+Suppose that we have many identifier like @racket[clock] that we'd
 like to redirect to accessor and mutator functions like
-@scheme[get-clock] and @scheme[put-clock!]. We'd like to be able to
+@racket[get-clock] and @racket[put-clock!]. We'd like to be able to
 just write
 
-@schemeblock[
+@racketblock[
 (define-get/put-id clock get-clock put-clock!)
 ]
 
-Naturally, we can implement @scheme[define-get/put-id] as a macro:
+Naturally, we can implement @racket[define-get/put-id] as a macro:
 
-@schemeblock[
+@racketblock[
 (define-syntax-rule (define-get/put-id id get put!)
   (define-syntax id
     (syntax-id-rules (set!)
@@ -311,25 +311,25 @@ Naturally, we can implement @scheme[define-get/put-id] as a macro:
       [id (get)])))
 ]
 
-The @scheme[define-get/put-id] macro is a @deftech{macro-generating
+The @racket[define-get/put-id] macro is a @deftech{macro-generating
 macro}.  The only non-obvious part of its definition is the
-@scheme[(... ...)], which ``quotes'' @scheme[...] so that it takes its
+@racket[(... ...)], which ``quotes'' @racket[...] so that it takes its
 usual role in the generated macro, instead of the generating macro.
 
 @; ----------------------------------------
 
 @section[#:tag "pattern-macro-example"]{Extended Example: Call-by-Reference Functions}
 
-We can use pattern-matching macros to add a form to Scheme
+We can use pattern-matching macros to add a form to Racket
 for defining first-order @deftech{call-by-reference} functions. When a
 call-by-reference function body mutates its formal argument, the
 mutation applies to variables that are supplied as actual arguments in
 a call to the function.
 
-For example, if @scheme[define-cbr] is like @scheme[define] except
+For example, if @racket[define-cbr] is like @racket[define] except
 that it defines a call-by-reference function, then
 
-@schemeblock[
+@racketblock[
 (define-cbr (f a b)
   (swap a b))
 
@@ -338,35 +338,35 @@ that it defines a call-by-reference function, then
   (list x y))
 ]
 
-produces @schemeresult[(2 1)]. 
+produces @racketresult[(2 1)]. 
 
 We will implement call-by-reference functions by having function calls
 supply accessor and mutators for the arguments, instead of supplying
-argument values directly. In particular, for the function @scheme[f]
+argument values directly. In particular, for the function @racket[f]
 above, we'll generate
 
-@schemeblock[
+@racketblock[
 (define (do-f get-a get-b put-a! put-b!)
   (define-get/put-id a get-a put-a!)
   (define-get/put-id b get-b put-b!)
   (swap a b))
 ]
 
-and redirect a function call @scheme[(f x y)] to
+and redirect a function call @racket[(f x y)] to
 
-@schemeblock[
+@racketblock[
 (do-f (lambda () x) 
       (lambda () y)
       (lambda (v) (set! x v)) 
       (lambda (v) (set! y v)))
 ]
 
-Clearly, then @scheme[define-cbr] is a macro-generating macro, which
-binds @scheme[f] to a macro that expands to a call of @scheme[do-f].
-That is, @scheme[(define-cbr (f a b) (swap ab))] needs to generate the
+Clearly, then @racket[define-cbr] is a macro-generating macro, which
+binds @racket[f] to a macro that expands to a call of @racket[do-f].
+That is, @racket[(define-cbr (f a b) (swap ab))] needs to generate the
 definition
 
-@schemeblock[
+@racketblock[
 (define-syntax f
   (syntax-rules ()
     [(id actual ...)
@@ -377,13 +377,13 @@ definition
            ...)]))
 ]
 
-At the same time, @scheme[define-cbr] needs to define @scheme[do-f]
-using the body of @scheme[f], this second part is slightly more
-complex, so we defer most it to a @scheme[define-for-cbr] helper
-module, which lets us write @scheme[define-cbr] easily enough:
+At the same time, @racket[define-cbr] needs to define @racket[do-f]
+using the body of @racket[f], this second part is slightly more
+complex, so we defer most it to a @racket[define-for-cbr] helper
+module, which lets us write @racket[define-cbr] easily enough:
 
 
-@schemeblock[
+@racketblock[
 (define-syntax-rule (define-cbr (id arg ...) body)
   (begin
     (define-syntax id
@@ -399,34 +399,34 @@ module, which lets us write @scheme[define-cbr] easily enough:
       body)))
 ]
 
-Our remaining task is to define @scheme[define-for-cbr] so that it
+Our remaining task is to define @racket[define-for-cbr] so that it
 converts
 
-@schemeblock[
+@racketblock[
 (define-for-cbr do-f (a b) () (swap a b))
 ]
 
-to the function definition @scheme[do-f] above. Most of the work is
-generating a @scheme[define-get/put-id] declaration for each argument,
-@scheme[a] ad @scheme[b], and putting them before the body. Normally,
-that's an easy task for @scheme[...] in a pattern and template, but
+to the function definition @racket[do-f] above. Most of the work is
+generating a @racket[define-get/put-id] declaration for each argument,
+@racket[a] ad @racket[b], and putting them before the body. Normally,
+that's an easy task for @racket[...] in a pattern and template, but
 this time there's a catch: we need to generate the names
-@scheme[get-a] and @scheme[put-a!] as well as @scheme[get-b] and
-@scheme[put-b!], and the pattern language provides no way to
+@racket[get-a] and @racket[put-a!] as well as @racket[get-b] and
+@racket[put-b!], and the pattern language provides no way to
 synthesize identifiers based on existing identifiers.
 
 As it turns out, lexical scope gives us a way around this problem. The
-trick is to iterate expansions of @scheme[define-for-cbr] once for
-each argument in the function, and that's why @scheme[define-cbr]
-starts with an apparently useless @scheme[()] after the argument
+trick is to iterate expansions of @racket[define-for-cbr] once for
+each argument in the function, and that's why @racket[define-cbr]
+starts with an apparently useless @racket[()] after the argument
 list. We need to keep track of all the arguments seen so far and the
-@scheme[get] and @scheme[put] names generated for each, in addition to
+@racket[get] and @racket[put] names generated for each, in addition to
 the arguments left to process. After we've processed all the
 identifiers, then we have all the names we need.
 
-Here is the definition of @scheme[define-for-cbr]:
+Here is the definition of @racket[define-for-cbr]:
 
-@schemeblock[
+@racketblock[
 (define-syntax define-for-cbr
   (syntax-rules ()
     [(define-for-cbr do-f (id0 id ...)
@@ -442,7 +442,7 @@ Here is the definition of @scheme[define-for-cbr]:
 
 Step-by-step, expansion proceeds as follows:
 
-@schemeblock[
+@racketblock[
 (define-for-cbr do-f (a b)
   () (swap a b))
 => (define-for-cbr do-f (b)
@@ -455,11 +455,11 @@ Step-by-step, expansion proceeds as follows:
      (swap a b))
 ]
 
-The ``subscripts'' on @scheme[get_1], @scheme[get_2],
-@scheme[put_1], and @scheme[put_2] are inserted by the macro
-expander to preserve lexical scope, since the @scheme[get]
-generated by each iteration of @scheme[define-for-cbr] should not
-bind the @scheme[get] generated by a different iteration. In
+The ``subscripts'' on @racket[get_1], @racket[get_2],
+@racket[put_1], and @racket[put_2] are inserted by the macro
+expander to preserve lexical scope, since the @racket[get]
+generated by each iteration of @racket[define-for-cbr] should not
+bind the @racket[get] generated by a different iteration. In
 other words, we are essentially tricking the macro expander into
 generating fresh names for us, but the technique illustrates some
 of the surprising power of pattern-based macros with automatic
@@ -467,17 +467,17 @@ lexical scope.
 
 The last expression eventually expands to just
 
-@schemeblock[
+@racketblock[
 (define (do-f get_1 get_2 put_1 put_2)
   (let ([tmp (get_1)])
     (put_1 (get_2))
     (put_2 tmp)))
 ]
 
-which implements the call-by-name function @scheme[f].
+which implements the call-by-name function @racket[f].
 
 To summarize, then, we can add call-by-reference functions to
-Scheme with just three small pattern-based macros:
-@scheme[define-cbr], @scheme[define-for-cbr], and
-@scheme[define-get/put-id].
+Racket with just three small pattern-based macros:
+@racket[define-cbr], @racket[define-for-cbr], and
+@racket[define-get/put-id].
 

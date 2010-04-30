@@ -2,7 +2,7 @@
 
 (provide go go/text)
 
-(require rktunit rktunit/text-ui
+(require racunit racunit/text-ui
          mzlib/etc scheme/port
          compiler/compiler
          scheme/match

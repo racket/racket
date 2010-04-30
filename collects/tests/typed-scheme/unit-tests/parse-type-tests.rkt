@@ -8,7 +8,7 @@
          (private base-types-new base-types-extra colon)
          (for-template (private base-types-new base-types-extra base-env colon))
          (private parse-type)
-         rktunit)
+         racunit)
 
 (provide parse-type-tests)
 

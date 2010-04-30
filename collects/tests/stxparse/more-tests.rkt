@@ -1,6 +1,6 @@
 #lang scheme
 (require syntax/parse
-         rktunit)
+         racunit)
 (require (for-syntax syntax/parse))
 
 (define-syntax (convert-syntax-error stx)

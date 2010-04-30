@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          mzlib/etc
          mzlib/list
          mzlib/pretty

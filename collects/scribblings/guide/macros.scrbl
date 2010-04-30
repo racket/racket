@@ -8,14 +8,14 @@
 A @deftech{macro} is a syntactic form with an associated
 @deftech{transformer} that @deftech{expands} the original form
 into existing forms. To put it another way, a macro is an
-extension to the Scheme compiler. Most of the syntactic forms of
-@schememodname[scheme/base] and @schememodname[scheme] are
+extension to the Racket compiler. Most of the syntactic forms of
+@racketmodname[racket/base] and @racketmodname[racket] are
 actually macros that expand into a small set of core constructs.
 
-Like many languages, Scheme provides pattern-based macros that
+Like many languages, Racket provides pattern-based macros that
 make simple transformations easy to implement and reliable to
-use. Scheme also supports arbitrary macro transformers that are
-implemented in Scheme---or in a macro-extended variant of Scheme.
+use. Racket also supports arbitrary macro transformers that are
+implemented in Racket---or in a macro-extended variant of Racket.
 
 @local-table-of-contents[]
 

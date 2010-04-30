@@ -45,7 +45,7 @@
          scheme/math
          scheme/class
          scheme/gui/base
-         rktunit
+         racunit
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?))
 

@@ -12,7 +12,7 @@
  "subst-tests.ss" ;; pass
  "infer-tests.ss" ;; pass
  "contract-tests.ss"
- (r:infer infer infer-dummy) rktunit)
+ (r:infer infer infer-dummy) racunit)
 
 (provide unit-tests)
 

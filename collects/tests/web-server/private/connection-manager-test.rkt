@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          web-server/private/connection-manager)
 (provide connection-manager-tests)
 

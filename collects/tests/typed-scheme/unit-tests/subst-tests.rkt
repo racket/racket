@@ -3,7 +3,7 @@
 (require "test-utils.ss" (for-syntax scheme/base)
          (rep type-rep)
 	 (types utils abbrev)
-         rktunit)
+         racunit)
 
 (define-syntax-rule (s img var tgt result)
   (test-eq? "test" (substitute img 'var tgt) result))

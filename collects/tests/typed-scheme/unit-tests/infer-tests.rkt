@@ -3,7 +3,7 @@
 (require (rep type-rep)
 	 (r:infer infer)
 	 (types convenience union utils abbrev)
-         rktunit)
+         racunit)
 
 
 

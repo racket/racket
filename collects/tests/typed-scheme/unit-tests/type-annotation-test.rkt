@@ -6,7 +6,7 @@
 	 (env type-environments type-name-env init-envs)
 	 (utils tc-utils)
 	 (rep type-rep)
-         rktunit)
+         racunit)
 
 (provide type-annotation-tests)
 

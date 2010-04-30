@@ -12,7 +12,7 @@ A @deftech{regexp} value encapsulates a pattern that is described by a
 string or @tech{byte string}.  The regexp matcher tries to match this
 pattern against (a portion of) another string or byte string, which we
 will call the @deftech{text string}, when you call functions like
-@scheme[regexp-match].  The text string is treated as raw text, and
+@racket[regexp-match].  The text string is treated as raw text, and
 not as a pattern.
 
 @local-table-of-contents[]
@@ -25,30 +25,30 @@ not as a pattern.
 
 A string or @tech{byte string} can be used directly as a @tech{regexp}
 pattern, or it can be prefixed with @litchar{#rx} to form a literal
-@tech{regexp} value. For example, @scheme[#rx"abc"] is a string-based
-@tech{regexp} value, and @scheme[#rx#"abc"] is a @tech{byte
+@tech{regexp} value. For example, @racket[#rx"abc"] is a string-based
+@tech{regexp} value, and @racket[#rx#"abc"] is a @tech{byte
 string}-based @tech{regexp} value. Alternately, a string or byte
-string can be prefixed with @litchar{#px}, as in @scheme[#px"abc"],
+string can be prefixed with @litchar{#px}, as in @racket[#px"abc"],
 for a slightly extended syntax of patterns within the string.
 
 Most of the characters in a @tech{regexp} pattern are meant to match
 occurrences of themselves in the @tech{text string}.  Thus, the pattern
-@scheme[#rx"abc"] matches a string that contains the characters
+@racket[#rx"abc"] matches a string that contains the characters
 @litchar{a}, @litchar{b}, and @litchar{c} in succession. Other
 characters act as @deftech{metacharacters}, and some character
 sequences act as @deftech{metasequences}.  That is, they specify
 something other than their literal selves.  For example, in the
-pattern @scheme[#rx"a.c"], the characters @litchar{a} and @litchar{c}
+pattern @racket[#rx"a.c"], the characters @litchar{a} and @litchar{c}
 stand for themselves, but the @tech{metacharacter} @litchar{.} can
-match @emph{any} character.  Therefore, the pattern @scheme[#rx"a.c"]
+match @emph{any} character.  Therefore, the pattern @racket[#rx"a.c"]
 matches an @litchar{a}, any character, and @litchar{c} in succession.
 
-@margin-note{When we want a literal @litchar{\} inside a Scheme string
+@margin-note{When we want a literal @litchar{\} inside a Racket string
 or regexp literal, we must escape it so that it shows up in the string
-at all. Scheme strings use @litchar{\} as the escape character, so we
-end up with two @litchar{\}s: one Scheme-string @litchar{\} to escape
+at all. Racket strings use @litchar{\} as the escape character, so we
+end up with two @litchar{\}s: one Racket-string @litchar{\} to escape
 the regexp @litchar{\}, which then escapes the @litchar{.}.  Another
-character that would need escaping inside a Scheme string is
+character that would need escaping inside a Racket string is
 @litchar{"}.}
 
 If we needed to match the character @litchar{.} itself, we can escape
@@ -56,19 +56,19 @@ it by precede it with a @litchar{\}.  The character sequence
 @litchar{\.} is thus a @tech{metasequence}, since it doesn't match
 itself but rather just @litchar{.}.  So, to match @litchar{a},
 @litchar{.}, and @litchar{c} in succession, we use the regexp pattern
-@scheme[#rx"a\\.c"]; the double @litchar{\} is an artifact of Scheme
+@racket[#rx"a\\.c"]; the double @litchar{\} is an artifact of Racket
 strings, not the @tech{regexp} pattern itself.
 
-The @scheme[regexp] function takes a string or byte string and
-produces a @tech{regexp} value. Use @scheme[regexp] when you construct
+The @racket[regexp] function takes a string or byte string and
+produces a @tech{regexp} value. Use @racket[regexp] when you construct
 a pattern to be matched against multiple strings, since a pattern is
 compiled to a @tech{regexp} value before it can be used in a match.
-The @scheme[pregexp] function is like @scheme[regexp], but using the
+The @racket[pregexp] function is like @racket[regexp], but using the
 extended syntax. Regexp values as literals with @litchar{#rx} or
 @litchar{#px} are compiled once and for all when they are read.
 
 
-The @scheme[regexp-quote] function takes an arbitrary string and
+The @racket[regexp-quote] function takes an arbitrary string and
 returns a string for a pattern that matches exactly the original
 string. In particular, characters in the input string that could serve
 as regexp metacharacters are escaped with a backslash, so that they
@@ -79,7 +79,7 @@ safely match only themselves.
 (regexp-quote "list?")
 ]
 
-The @scheme[regexp-quote] function is useful when building a composite
+The @racket[regexp-quote] function is useful when building a composite
 @tech{regexp} from a mix of @tech{regexp} strings and verbatim strings.
 
 
@@ -87,9 +87,9 @@ The @scheme[regexp-quote] function is useful when building a composite
 
 @section[#:tag "regexp-match"]{Matching Regexp Patterns}
 
-The @scheme[regexp-match-positions] function takes a @tech{regexp}
+The @racket[regexp-match-positions] function takes a @tech{regexp}
 pattern and a @tech{text string}, and it returns a match if the regexp
-matches (some part of) the @tech{text string}, or @scheme[#f] if the regexp
+matches (some part of) the @tech{text string}, or @racket[#f] if the regexp
 did not match the string. A successful match produces a list of
 @deftech{index pairs}.
 
@@ -98,22 +98,22 @@ did not match the string. A successful match produces a list of
 (regexp-match-positions #rx"needle" "hay needle stack")
 ]
 
-In the second example, the integers @scheme[4] and @scheme[10]
-identify the substring that was matched. The @scheme[4] is the
-starting (inclusive) index, and @scheme[10] the ending (exclusive)
+In the second example, the integers @racket[4] and @racket[10]
+identify the substring that was matched. The @racket[4] is the
+starting (inclusive) index, and @racket[10] the ending (exclusive)
 index of the matching substring:
 
 @interaction[
 (substring "hay needle stack" 4 10)
 ]
 
-In this first example, @scheme[regexp-match-positions]'s return list
+In this first example, @racket[regexp-match-positions]'s return list
 contains only one index pair, and that pair represents the entire
 substring matched by the regexp.  When we discuss @tech{subpatterns}
 later, we will see how a single match operation can yield a list of
 @tech{submatch}es.
 
-The @scheme[regexp-match-positions] function takes optional third and
+The @racket[regexp-match-positions] function takes optional third and
 fourth arguments that specify the indices of the @tech{text string} within
 which the matching should take place.
 
@@ -127,8 +127,8 @@ which the matching should take place.
 Note that the returned indices are still reckoned relative to the full
 @tech{text string}.
 
-The @scheme[regexp-match] function is like
-@scheme[regexp-match-positions], but instead of returning index pairs,
+The @racket[regexp-match] function is like
+@racket[regexp-match-positions], but instead of returning index pairs,
 it returns the matching substrings:
 
 @interaction[
@@ -136,7 +136,7 @@ it returns the matching substrings:
 (regexp-match #rx"needle" "hay needle stack")
 ]
 
-When @scheme[regexp-match] is used with byte-string regexp, the result
+When @racket[regexp-match] is used with byte-string regexp, the result
 is a matching byte substring:
 
 @interaction[
@@ -153,7 +153,7 @@ is a matching byte substring:
              avoids UTF-8 encodings.}
 
 If you have data that is in a port, there's no need to first read it
-into a string. Functions like @scheme[regexp-match] can match on the
+into a string. Functions like @racket[regexp-match] can match on the
 port directly:
 
 @interaction[
@@ -163,8 +163,8 @@ port directly:
 (regexp-match #rx#"needle" i)
 ]
 
-The @scheme[regexp-match?] function is like
-@scheme[regexp-match-positions], but simply returns a boolean
+The @racket[regexp-match?] function is like
+@racket[regexp-match-positions], but simply returns a boolean
 indicating whether the match succeeded:
 
 @interaction[
@@ -172,7 +172,7 @@ indicating whether the match succeeded:
 (regexp-match? #rx"needle" "hay needle stack")
 ]
 
-The @scheme[regexp-split] function takes two arguments, a
+The @racket[regexp-split] function takes two arguments, a
 @tech{regexp} pattern and a text string, and it returns a list of
 substrings of the text string; the pattern identifies the delimiter
 separating the substrings.
@@ -190,32 +190,32 @@ single-character substrings is returned.
 ]
 
 Thus, to identify one-or-more spaces as the delimiter, take care to
-use the regexp @scheme[#rx"\u20+"], not @scheme[#rx"\u20*"].
+use the regexp @racket[#rx"\u20+"], not @racket[#rx"\u20*"].
 
 @interaction[
 (regexp-split #rx" +" "split pea     soup")
 (regexp-split #rx" *" "split pea     soup")
 ]
 
-The @scheme[regexp-replace] function replaces the matched portion of
+The @racket[regexp-replace] function replaces the matched portion of
 the text string by another string.  The first argument is the pattern,
 the second the text string, and the third is either the string to be
 inserted or a procedure to convert matches to the insert string.
 
 @interaction[
 (regexp-replace #rx"te" "liberte" "ty") 
-(regexp-replace #rx"." "scheme" string-upcase)
+(regexp-replace #rx"." "racket" string-upcase)
 ]
 
 If the pattern doesn't occur in the text string, the returned string
 is identical to the text string.
 
-The @scheme[regexp-replace*] function replaces @emph{all} matches in
+The @racket[regexp-replace*] function replaces @emph{all} matches in
 the text string by the insert string:
 
 @interaction[
 (regexp-replace* #rx"te" "liberte egalite fraternite" "ty")
-(regexp-replace* #rx"[ds]" "drscheme" string-upcase)
+(regexp-replace* #rx"[ds]" "drracket" string-upcase)
 ]
 
 @; ----------------------------------------
@@ -285,20 +285,20 @@ A @deftech{character class} matches any one character from a set of
 characters.  A typical format for this is the @deftech{bracketed
 character class} @litchar{[}...@litchar{]}, which matches any one
 character from the non-empty sequence of characters enclosed within
-the brackets.  Thus, @scheme[#rx"p[aeiou]t"] matches @litchar{pat},
+the brackets.  Thus, @racket[#rx"p[aeiou]t"] matches @litchar{pat},
 @litchar{pet}, @litchar{pit}, @litchar{pot}, @litchar{put}, and
 nothing else.
 
 Inside the brackets, a @litchar{-} between two characters specifies
 the Unicode range between the characters.  For example,
-@scheme[#rx"ta[b-dgn-p]"] matches @litchar{tab}, @litchar{tac},
+@racket[#rx"ta[b-dgn-p]"] matches @litchar{tab}, @litchar{tac},
 @litchar{tad}, @litchar{tag}, @litchar{tan}, @litchar{tao}, and
 @litchar{tap}.
 
 An initial @litchar{^} after the left bracket inverts the set
 specified by the rest of the contents; i.e., it specifies the set of
 characters @emph{other than} those identified in the brackets. For
-example, @scheme[#rx"do[^g]"] matches all three-character sequences
+example, @racket[#rx"do[^g]"] matches all three-character sequences
 starting with @litchar{do} except @litchar{dog}.
 
 Note that the @tech{metacharacter} @litchar{^} inside brackets means
@@ -314,12 +314,12 @@ Bracketed character classes cannot contain other bracketed character
 classes (although they contain certain other types of character
 classes; see below).  Thus, a @litchar{[} inside a bracketed character
 class doesn't have to be a metacharacter; it can stand for itself.
-For example, @scheme[#rx"[a[b]"] matches @litchar{a}, @litchar{[}, and
+For example, @racket[#rx"[a[b]"] matches @litchar{a}, @litchar{[}, and
 @litchar{b}.
 
 Furthermore, since empty bracketed character classes are disallowed, a
 @litchar{]} immediately occurring after the opening left bracket also
-doesn't need to be a metacharacter.  For example, @scheme[#rx"[]ab]"]
+doesn't need to be a metacharacter.  For example, @racket[#rx"[]ab]"]
 matches @litchar{]}, @litchar{a}, and @litchar{b}.
 
 @subsection{Some Frequently Used Character Classes}
@@ -333,7 +333,7 @@ bracketed expressions:  @litchar{\d} matches a digit
 
 @margin-note{Following regexp custom, we identify ``word'' characters
 as @litchar{[A-Za-z0-9_]}, although these are too restrictive for what
-a Schemer might consider a ``word.''}
+a Racketr might consider a ``word.''}
 
 The upper-case versions of these metasequences stand for the
 inversions of the corresponding character classes: @litchar{\D}
@@ -341,7 +341,7 @@ matches a non-digit, @litchar{\S} a non-whitespace character, and
 @litchar{\W} a non-``word'' character.
 
 Remember to include a double backslash when putting these
-metasequences in a Scheme string:
+metasequences in a Racket string:
 
 @interaction[
 (regexp-match #px"\\d\\d" 
@@ -349,7 +349,7 @@ metasequences in a Scheme string:
 ]
 
 These character classes can be used inside a bracketed expression. For
-example, @scheme[#px"[a-z\\d]"] matches a lower-case letter or a
+example, @racket[#px"[a-z\\d]"] matches a lower-case letter or a
 digit.
 
 @subsection{POSIX character classes}
@@ -389,7 +389,7 @@ supported are
 
 ]
 
-For example, the @scheme[#px"[[:alpha:]_]"] matches a letter or
+For example, the @racket[#px"[[:alpha:]_]"] matches a letter or
 underscore.
 
 @interaction[
@@ -516,7 +516,7 @@ it is the last submatch that is returned.
 
 It is also possible for a quantified subpattern to fail to match, even
 if the overall pattern matches.  In such cases, the failing submatch
-is represented by @scheme[#f]
+is represented by @racket[#f]
 
 @interaction[
 (define date-re
@@ -531,7 +531,7 @@ is represented by @scheme[#f]
 @subsection{Backreferences}
 
 @tech{Submatch}es can be used in the insert string argument of the
-procedures @scheme[regexp-replace] and @scheme[regexp-replace*].  The
+procedures @racket[regexp-replace] and @racket[regexp-replace*].  The
 insert string can use @litchar{\}@math{n} as a @deftech{backreference}
 to refer back to the @math{n}th submatch, which is the substring
 that matched the @math{n}th subpattern.  A @litchar{\0} refers to the
@@ -612,11 +612,11 @@ In the following example, a non-capturing cluster eliminates the
 cluster identifies the basename.
 
 @margin-note{But don't parse paths with regexps. Use functions like
- @scheme[split-path], instead.}
+ @racket[split-path], instead.}
 
 @interaction[
 (regexp-match #rx"^(?:[a-z]*/)*([a-z]+)$" 
-              "/usr/local/bin/mzscheme")
+              "/usr/local/bin/racket")
 ]
 
 @subsection[#:tag "regexp-cloister"]{Cloisters}
@@ -734,7 +734,7 @@ Consider
 
 The regexp consists of two subregexps: @litchar{a*} followed by
 @litchar{a}.  The subregexp @litchar{a*} cannot be allowed to match
-all four @litchar{a}'s in the text string @scheme[aaaa], even though
+all four @litchar{a}'s in the text string @racket[aaaa], even though
 @litchar{*} is a greedy quantifier.  It may match only the first
 three, leaving the last one for the second subregexp.  This ensures
 that the full regexp matches successfully.
@@ -800,7 +800,7 @@ its subpattern @emph{could} match.
   "i left my grey socks at the greyhound") 
 ]
 
-The regexp @scheme[#rx"grey(?=hound)"] matches @litchar{grey}, but
+The regexp @racket[#rx"grey(?=hound)"] matches @litchar{grey}, but
 @emph{only} if it is followed by @litchar{hound}.  Thus, the first
 @litchar{grey} in the text string is not matched.
 
@@ -812,7 +812,7 @@ subpattern @emph{could not} possibly match.
   "the gray greyhound ate the grey socks") 
 ]
 
-The regexp @scheme[#rx"grey(?!hound)"] matches @litchar{grey}, but
+The regexp @racket[#rx"grey(?!hound)"] matches @litchar{grey}, but
 only if it is @emph{not} followed by @litchar{hound}.  Thus the
 @litchar{grey} just before @litchar{socks} is matched.
 
@@ -827,7 +827,7 @@ the text string.
   "the hound in the picture is not a greyhound") 
 ]
 
-The regexp @scheme[#rx"(?<=grey)hound"] matches @litchar{hound}, but
+The regexp @racket[#rx"(?<=grey)hound"] matches @litchar{hound}, but
 only if it is preceded by @litchar{grey}.
 
 Negative lookbehind with @litchar{?<!} checks that its subpattern
@@ -838,7 +838,7 @@ could not possibly match immediately to the left.
   "the greyhound in the picture is not a hound")
 ]
 
-The regexp @scheme[#rx"(?<!grey)hound"] matches @litchar{hound}, but
+The regexp @racket[#rx"(?<!grey)hound"] matches @litchar{hound}, but
 only if it is @emph{not} preceded by @litchar{grey}.
 
 Lookaheads and lookbehinds can be convenient when they
@@ -856,7 +856,7 @@ this chapter.  The problem is to fashion a regexp that will match any
 and only IP addresses or @emph{dotted quads}: four numbers separated
 by three dots, with each number between 0 and 255.
 
-First, we define a subregexp @scheme[n0-255] that matches 0 through
+First, we define a subregexp @racket[n0-255] that matches 0 through
 255:
 
 @interaction[
@@ -872,7 +872,7 @@ First, we define a subregexp @scheme[n0-255] that matches 0 through
    ")"))
 ]
 
-@margin-note{Note that @scheme[n0-255] lists prefixes as preferred
+@margin-note{Note that @racket[n0-255] lists prefixes as preferred
 alternates, which is something we cautioned against in
 @secref["regexp-alternation"].  However, since we intend to anchor
 this subregexp explicitly to force an overall match, the order of the
@@ -886,7 +886,7 @@ must be excluded.  So we fashion alternates to get 000
 through 199, then 200 through 249, and finally 250
 through 255.
 
-An IP-address is a string that consists of four @scheme[n0-255]s with
+An IP-address is a string that consists of four @racket[n0-255]s with
 three dots separating them.
 
 @interaction[
@@ -894,10 +894,10 @@ three dots separating them.
 (define ip-re1
   (string-append
     "^"        (code:comment @#,t{nothing before})
-    n0-255     (code:comment @#,t{the first @scheme[n0-255],})
+    n0-255     (code:comment @#,t{the first @racket[n0-255],})
     "(?:"      (code:comment @#,t{then the subpattern of})
     "\\."      (code:comment @#,t{a dot followed by})
-    n0-255     (code:comment @#,t{an @scheme[n0-255],})
+    n0-255     (code:comment @#,t{an @racket[n0-255],})
     ")"        (code:comment @#,t{which is})
     "{3}"      (code:comment @#,t{repeated exactly 3 times})
     "$"        (code:comment @#,t{with nothing following})
@@ -920,7 +920,7 @@ which is fine, except that we also have
 ]
 
 All-zero sequences are not valid IP addresses!  Lookahead to the
-rescue.  Before starting to match @scheme[ip-re1], we look ahead to
+rescue.  Before starting to match @racket[ip-re1], we look ahead to
 ensure we don't have all zeros.  We could use positive lookahead to
 ensure there @emph{is} a digit other than zero.
 
@@ -946,7 +946,7 @@ composed of @emph{only} zeros and dots.
      ip-re1)))
 ]
 
-The regexp @scheme[ip-re] will match all and only valid IP addresses.
+The regexp @racket[ip-re] will match all and only valid IP addresses.
 
 @interaction[
 #:eval ex-eval

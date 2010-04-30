@@ -1,6 +1,6 @@
 #lang racket
-(require rktunit
-         rktunit/text-ui
+(require racunit
+         racunit/text-ui
          net/url
          (prefix-in h: html)
          (prefix-in x: xml))

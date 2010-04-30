@@ -1,6 +1,6 @@
 (module constructor-tests mzscheme
 
-  (require rktunit)
+  (require racunit)
   (require srfi/43/vector-lib)
 
   (provide constructor-tests)

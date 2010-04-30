@@ -5,13 +5,15 @@
                        racket/struct-info))
 
   (provide (all-from-out "private/serialize.ss")
+           serializable-struct
+           serializable-struct/versions
            define-serializable-struct
            define-serializable-struct/versions)
 
   (define-syntax (define-serializable-struct/versions/derived stx)
     (syntax-case stx ()
       ;; First check `id/sup':
-      [(_ orig-stx id/sup . _)
+      [(_ orig-stx make-prefix? id/sup . _)
        (not (or (identifier? #'id/sup)
                 (syntax-case #'id/sup ()
                   [(id sup) (and (identifier? #'id) 
@@ -22,11 +24,11 @@
        ;; Not valid, so let `define-struct/derived' complain:
        #'(define-struct/derived orig-stx id/sup ())]
       ;; Check version:
-      [(_ orig-stx id/sup vers . _)
+      [(_ orig-stx make-prefix? id/sup vers . _)
        (not (exact-nonnegative-integer? (syntax-e #'vers)))
        (raise-syntax-error #f "expected a nonnegative exact integer for a version" #'orig-stx #'vers)]
       ;; Main case:
-      [(_ orig-stx id/sup vers (field ...) ([other-vers make-proc-expr cycle-make-proc-expr] ...) 
+      [(_ orig-stx make-prefix? id/sup vers (field ...) ([other-vers make-proc-expr cycle-make-proc-expr] ...) 
           prop ...)
        (let* ([id (if (identifier? #'id/sup)
                       #'id/sup
@@ -35,10 +37,22 @@
                               #f
                               (extract-struct-info (syntax-local-value (cadr (syntax->list #'id/sup)))))]
               [fields (syntax->list #'(field ...))]
-              [maker (datum->syntax id
-                                    (string->symbol
-                                     (format "make-~a" (syntax-e id)))
-                                    id)]
+              [given-maker (let loop ([props (syntax->list #'(prop ...))])
+                             (cond
+                              [(null? props) #f]
+                              [(null? (cdr props)) #f]
+                              [(or (eq? (syntax-e (car props)) '#:constructor-name)
+                                   (eq? (syntax-e (car props)) '#:extra-constructor-name))
+                               (and (identifier? (cadr props))
+                                    (cadr props))]
+                              [else (loop (cdr props))]))]
+              [maker (or given-maker
+                         (if (syntax-e #'make-prefix?)
+                             (datum->syntax id
+                                            (string->symbol
+                                             (format "make-~a" (syntax-e id)))
+                                            id)
+                             id))]
               [getters (map (lambda (field)
                               (datum->syntax
                                id
@@ -103,6 +117,10 @@
                id/sup
                (field ...)
                prop ...
+               #,@(if (or given-maker
+                          (syntax-e #'make-prefix?))
+                      null
+                      (list #'#:constructor-name id))
                #:property prop:serializable
                (make-serialize-info
                 ;; The struct-to-vector function: --------------------
@@ -203,14 +221,38 @@
   (define-syntax (define-serializable-struct/versions stx)
     (syntax-case stx ()
       [(_ . rest)
-       #`(define-serializable-struct/versions/derived #,stx . rest)]))
+       #`(define-serializable-struct/versions/derived #,stx #t . rest)]))
+
+  (define-syntax (serializable-struct/versions stx)
+    (syntax-case stx ()
+      [(_ id super-id . rest)
+       (and (identifier? #'id)
+            (identifier? #'super-id))
+       #`(define-serializable-struct/versions/derived #,stx #f (id super-id) . rest)]
+      [(_ id vers (field ...) . rest)
+       (and (identifier? #'id)
+            (number? (syntax-e #'vers)))
+       #`(define-serializable-struct/versions/derived #,stx #f id vers (field ...) . rest)]))
   
   (define-syntax (define-serializable-struct stx)
     (syntax-case stx ()
       [(_ id/sup (field ...) prop ...)
-       #`(define-serializable-struct/versions/derived #,stx
+       #`(define-serializable-struct/versions/derived #,stx #t
            id/sup 0 (field ...) () prop ...)]
       [(_ . rest)
        #`(define-struct/derived #,stx . rest)]))
+
+  (define-syntax (serializable-struct stx)
+    (syntax-case stx ()
+      [(_ id super-id (field ...) prop ...)
+       (and (identifier? #'id)
+            (identifier? #'super-id))
+       #`(define-serializable-struct/versions/derived #,stx #f
+           (id super-id) 0 (field ...) () prop ...)]
+      [(_ id (field ...) prop ...)
+       (and (identifier? #'id)
+            (identifier? #'super-id))
+       #`(define-serializable-struct/versions/derived #,stx #f
+           id 0 (field ...) () prop ...)]))
 
 )

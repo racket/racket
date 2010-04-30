@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          "dispatch-passwords-test.rkt"
          "dispatch-files-test.rkt"        
          "dispatch-servlets-test.rkt"

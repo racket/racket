@@ -3,7 +3,7 @@
          (rep type-rep)
 	 (r:infer infer infer-dummy)
          (types convenience subtype union remove-intersect)
-         rktunit)
+         racunit)
 
 (define-syntax (over-tests stx)    
   (syntax-case stx ()
