@@ -1,5 +1,5 @@
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 (load-in-sandbox "beginner.ss")
 (load-in-sandbox "beginner-abbr.ss")

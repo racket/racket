@@ -6,7 +6,7 @@
 	     read))
 (define mailbox-name "INBOX.tmp") ;; !!! ALL CONTENT WILL BE DELETED !!!
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 (Section 'imap)
 

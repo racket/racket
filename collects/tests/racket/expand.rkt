@@ -1,7 +1,7 @@
 
 (require syntax/toplevel)
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 ;; test that expansion preserves source location information
 ;; for fully expanded terms

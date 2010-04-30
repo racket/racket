@@ -10,7 +10,7 @@
 ;; Don't try to run other tests from the test suite after loading this
 ;; one into a particular namespace.
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 ;; Don't need these:
 (define no-extra-if-tests? #t)

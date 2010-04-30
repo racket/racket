@@ -1,5 +1,5 @@
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 (Section 'char-set/srfi-14)
 

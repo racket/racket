@@ -1,7 +1,7 @@
 ;; Works for Linux, Mac OS X.
 ;; Assumes 3m
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 (Section 'embed-in-c)
 

@@ -2,7 +2,7 @@
 ;; Basic checks for the advanced language. See also
 ;;  beginner.ss
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 ;; Don't need these:
 (define no-extra-if-tests? #t)

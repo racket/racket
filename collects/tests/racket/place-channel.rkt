@@ -1,4 +1,4 @@
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 (Section 'place-channel)
 
 (define (splat txt fn)

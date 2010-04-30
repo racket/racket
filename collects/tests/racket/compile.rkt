@@ -2,7 +2,7 @@
 ; Tests compilation and writing/reading compiled code
 ;  by setting the eval handler and running all tests
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 (namespace-variable-value 
  'compile-load

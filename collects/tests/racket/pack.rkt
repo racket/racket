@@ -2,7 +2,7 @@
 ;; WARNING: this test writes a "packed" collection to the main and user
 ;; collection directories.
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 (Section 'pack)
 

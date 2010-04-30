@@ -1,5 +1,5 @@
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 (require mzlib/class
          mzlib/trait)

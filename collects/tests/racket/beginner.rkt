@@ -49,7 +49,7 @@
 ;;     removes the last <n> added expressions
 ;;
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 ;; Check that expansion doesn't introduce non-equal ids that
 ;;  claim to be "original" at the same place

@@ -1,6 +1,6 @@
 ;; SRFI Tests
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 ;; Test that all SRFIs load.  Run this in both DrScheme and
 ;; MzScheme for maximum coverage.

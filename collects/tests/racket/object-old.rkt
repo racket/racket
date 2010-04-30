@@ -1,7 +1,7 @@
 
 ; Test MzScheme's object system
 
-(load-relative "loadtest.ss")
+(load-relative "loadtest.rkt")
 
 (require mzlib/class)
 
