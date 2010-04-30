@@ -2,8 +2,8 @@
 
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
- "extra-procs.ss"
- "../utils/utils.ss"
+ "extra-procs.rkt"
+ "../utils/utils.rkt"
  (only-in scheme/list cons? take drop add-between last filter-map)
  (only-in rnrs/lists-6 fold-left)
  '#%paramz

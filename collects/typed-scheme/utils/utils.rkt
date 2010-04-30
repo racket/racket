@@ -46,7 +46,7 @@ at least theoretically.
 					  (string-join
 					   (list "typed-scheme" 
 						 (symbol->string (syntax-e #'nm))
-						 (string-append (symbol->string (syntax-e id)) ".ss"))
+						 (string-append (symbol->string (syntax-e id)) ".rkt"))
 					   "/")
 					  id id))
                                       id id))
@@ -67,7 +67,7 @@ at least theoretically.
 					  (string-join
 					   (list "typed-scheme" 
 						 (symbol->string (syntax-e #'nm))
-						 (string-append (symbol->string (syntax-e id)) ".ss"))
+						 (string-append (symbol->string (syntax-e id)) ".rkt"))
 					   "/")
 					  id id))))
                                    (syntax->list #'(id ...)))])

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse "colon.ss" (for-template "colon.ss") "parse-type.ss")
+(require syntax/parse "colon.rkt" (for-template "colon.rkt") "parse-type.rkt")
 (provide (all-defined-out))
 
 (define-splicing-syntax-class annotated-name

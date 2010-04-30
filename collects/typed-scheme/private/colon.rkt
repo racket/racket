@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base syntax/parse "internal.ss")
-         "../typecheck/internal-forms.ss"
-         (prefix-in t: "base-types-extra.ss")
-         (for-template (prefix-in t: "base-types-extra.ss"))
-         (for-syntax (prefix-in t: "base-types-extra.ss")))
+(require (for-syntax scheme/base syntax/parse "internal.rkt")
+         "../typecheck/internal-forms.rkt"
+         (prefix-in t: "base-types-extra.rkt")
+         (for-template (prefix-in t: "base-types-extra.rkt"))
+         (for-syntax (prefix-in t: "base-types-extra.rkt")))
 
 (provide :)
 

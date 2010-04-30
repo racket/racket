@@ -1,25 +1,25 @@
 #lang scheme/unit
 
 
-(require (rename-in "../utils/utils.ss" [infer r:infer]))
+(require (rename-in "../utils/utils.rkt" [infer r:infer]))
 (require syntax/kerncase
 	 unstable/list unstable/syntax syntax/parse
          mzlib/etc
          scheme/match
-         "signatures.ss"
-         "tc-structs.ss"
+         "signatures.rkt"
+         "tc-structs.rkt"
          ;; to appease syntax-parse
-         "internal-forms.ss"
+         "internal-forms.rkt"
          (rep type-rep)
          (types utils convenience)
          (private parse-type type-annotation type-contract)
          (env type-env init-envs type-name-env type-alias-env lexical-env)
 	 unstable/mutated-vars
          (utils tc-utils)
-         "provide-handling.ss"
-         "def-binding.ss"
+         "provide-handling.rkt"
+         "def-binding.rkt"
          (for-template
-          "internal-forms.ss"
+          "internal-forms.rkt"
           unstable/location
           mzlib/contract
           scheme/base))

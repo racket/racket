@@ -1,11 +1,11 @@
 #lang scheme/unit
 
-(require "../utils/utils.ss"
+(require "../utils/utils.rkt"
 	 (types convenience utils union subtype)
 	 (rep type-rep)
 	 (utils tc-utils)
 	 unstable/sequence unstable/hash
-         "signatures.ss" "constraint-structs.ss"
+         "signatures.rkt" "constraint-structs.rkt"
          scheme/match)
 
 (import restrict^ dmap^)

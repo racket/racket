@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../utils/utils.ss"
+(require "../utils/utils.rkt"
 	 (for-syntax scheme/base)
          (utils tc-utils) scheme/list
          mzlib/etc scheme/contract)
@@ -9,7 +9,7 @@
          fix-bound make-invariant variance?)
 
 ;; this file contains support for calculating the free variables/indexes of types
-;; actual computation is done in rep-utils.ss  and type-rep.ss
+;; actual computation is done in rep-utils.rkt  and type-rep.rkt
 (define-values (Covariant Contravariant Invariant Constant Dotted)
   (let ()
     (define-struct Variance () #:inspector #f)

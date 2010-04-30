@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss"
+(require "../utils/utils.rkt"
 	 syntax/boundmap
          (utils tc-utils)
          mzlib/trace

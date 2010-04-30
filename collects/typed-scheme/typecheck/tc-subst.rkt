@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 (require (rename-in (types subtype convenience remove-intersect union utils filter-ops)                   
                     [-> -->]
                     [->* -->*]
@@ -8,7 +8,7 @@
          (rep type-rep filter-rep rep-utils) scheme/list
          scheme/contract scheme/match unstable/match unstable/debug
          (for-syntax scheme/base)
-         "tc-metafunctions.ss")
+         "tc-metafunctions.rkt")
 
 ;(provide (all-defined-out))
 

@@ -1,4 +1,4 @@
-#lang s-exp "env-lang.ss"
+#lang s-exp "env-lang.rkt"
 
 (require
  scheme/tcp
@@ -7,7 +7,7 @@
  scheme/fixnum
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
- "extra-procs.ss"
+ "extra-procs.rkt"
  (only-in '#%kernel [apply kernel:apply])
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
@@ -605,7 +605,7 @@
 [symbol=? (Sym Sym . -> . B)]
 [false? (make-pred-ty (-val #f))]
 
-;; with-stx.ss
+;; with-stx.rkt
 [generate-temporaries ((Un (-Syntax Univ) (-lst Univ)) . -> . (-lst (-Syntax Sym)))]
 [check-duplicate-identifier ((-lst (-Syntax Sym)) . -> . (-opt (-Syntax Sym)))]
 

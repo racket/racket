@@ -1,8 +1,8 @@
 #lang scheme/base
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 
 (require (utils tc-utils) 
-	 "rep-utils.ss" "object-rep.ss" "filter-rep.ss" "free-variance.ss"
+	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
          mzlib/trace scheme/match
          scheme/contract unstable/debug
          (for-syntax scheme/base syntax/parse))
@@ -23,7 +23,7 @@
 
 ;; Name = Symbol
 
-;; Type is defined in rep-utils.ss
+;; Type is defined in rep-utils.rkt
 
 ;; t must be a Type
 (dt Scope ([t (or/c Type/c Scope?)]) [#:key (Type-key t)])

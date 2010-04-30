@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/parse (for-template scheme/base scheme/unsafe/ops)
-         "../utils/utils.ss" unstable/match scheme/match unstable/syntax
+         "../utils/utils.rkt" unstable/match scheme/match unstable/syntax
          (rep type-rep)
          (types abbrev type-table utils))
 (provide optimize)

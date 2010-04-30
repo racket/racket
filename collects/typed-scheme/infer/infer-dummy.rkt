@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 
 (require (rep type-rep) (utils tc-utils) mzlib/trace)
 

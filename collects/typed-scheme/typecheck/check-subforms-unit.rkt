@@ -1,10 +1,10 @@
 #lang scheme/unit
 
-(require "../utils/utils.ss"
+(require "../utils/utils.rkt"
 	 syntax/kerncase
 	 syntax/parse
          scheme/match unstable/debug
-         "signatures.ss" "tc-metafunctions.ss"
+         "signatures.rkt" "tc-metafunctions.rkt"
          (types utils convenience union subtype)
 	 (utils tc-utils)
 	 (rep type-rep))

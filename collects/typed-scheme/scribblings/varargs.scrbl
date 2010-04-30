@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@begin[(require "utils.ss" (for-label typed/scheme/base))]
+@begin[(require "utils.rkt" (for-label typed/scheme/base))]
 
 @title[#:tag "varargs"]{Variable-Arity Functions: Programming with Rest Arguments}
 

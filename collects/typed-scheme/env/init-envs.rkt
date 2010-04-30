@@ -1,9 +1,9 @@
 #lang scheme/base
 (provide (all-defined-out))
-(require "../utils/utils.ss"
-         "type-env.ss" 
-	 "type-name-env.ss"
-	 "type-alias-env.ss"
+(require "../utils/utils.rkt"
+         "type-env.rkt" 
+	 "type-name-env.rkt"
+	 "type-alias-env.rkt"
          unstable/struct
          (rep type-rep object-rep filter-rep rep-utils)
 	 (for-template (rep type-rep object-rep filter-rep) 

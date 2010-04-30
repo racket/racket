@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require unstable/debug "../utils/utils.ss" (rep type-rep) (only-in (types abbrev utils) tc-results?) scheme/contract)
+(require unstable/debug "../utils/utils.rkt" (rep type-rep) (only-in (types abbrev utils) tc-results?) scheme/contract)
 
 (define table (make-hasheq))
 

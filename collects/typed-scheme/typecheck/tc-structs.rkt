@@ -1,12 +1,12 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" 
+(require "../utils/utils.rkt" 
 	 (rep type-rep)
          (private parse-type)
 	 (types convenience utils union resolve abbrev)
 	 (env type-env type-environments type-name-env)
 	 (utils tc-utils)
-         "def-binding.ss"
+         "def-binding.rkt"
          syntax/kerncase
          syntax/struct
          mzlib/trace         
@@ -15,7 +15,7 @@
 
 
 (require (for-template scheme/base
-                       "internal-forms.ss"))
+                       "internal-forms.rkt"))
 
 (provide tc/struct tc/poly-struct names-of-struct tc/builtin-struct d-s)
 

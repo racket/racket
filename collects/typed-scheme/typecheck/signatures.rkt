@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/unit scheme/contract
-         "../utils/utils.ss"
+         "../utils/utils.rkt"
          (rep type-rep)
          (utils unit-utils)
          (types utils))

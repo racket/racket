@@ -3,15 +3,15 @@
 (require scheme/require
          (except-in 
           (path-up
-           "utils/utils.ss" "utils/tc-utils.ss"
-           "rep/free-variance.ss" "rep/type-rep.ss" "rep/filter-rep.ss" "rep/rep-utils.ss"
-           "types/convenience.ss" "types/union.ss" "types/subtype.ss" "types/remove-intersect.ss" "types/resolve.ss"
-           "env/type-name-env.ss")
+           "utils/utils.rkt" "utils/tc-utils.rkt"
+           "rep/free-variance.rkt" "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/rep-utils.rkt"
+           "types/convenience.rkt" "types/union.rkt" "types/subtype.rkt" "types/remove-intersect.rkt" "types/resolve.rkt"
+           "env/type-name-env.rkt")
           make-env)
-         (except-in (path-up "types/utils.ss") Dotted)
-         (only-in (path-up "env/type-environments.ss") lookup current-tvars)
-         "constraint-structs.ss"
-	 "signatures.ss"                  
+         (except-in (path-up "types/utils.rkt") Dotted)
+         (only-in (path-up "env/type-environments.rkt") lookup current-tvars)
+         "constraint-structs.rkt"
+	 "signatures.rkt"                  
          scheme/match
          mzlib/etc
          mzlib/trace

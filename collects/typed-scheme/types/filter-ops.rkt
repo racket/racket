@@ -1,9 +1,9 @@
 #lang scheme/base
 
-(require "../utils/utils.ss"
+(require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils) (only-in (infer infer) restrict)
-         "abbrev.ss" (only-in scheme/contract current-blame-format [-> -->] listof)
+         "abbrev.rkt" (only-in scheme/contract current-blame-format [-> -->] listof)
 	 (types comparison printer union subtype utils remove-intersect)
          scheme/list scheme/match scheme/promise
          (for-syntax syntax/parse scheme/base)

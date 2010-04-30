@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" syntax/parse
+(require "../utils/utils.rkt" syntax/parse
          scheme/contract
          (rep type-rep)
          (env lexical-env)

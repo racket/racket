@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (rename-in "utils/utils.ss" [infer r:infer]))
+(require (rename-in "utils/utils.rkt" [infer r:infer]))
 
 (require (private base-types with-types)
          (for-syntax 

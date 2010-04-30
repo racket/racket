@@ -1,4 +1,4 @@
-#lang s-exp "env-lang.ss"
+#lang s-exp "env-lang.rkt"
 
 (begin
   (require
@@ -7,7 +7,7 @@
    scheme/unsafe/ops
    (only-in rnrs/lists-6 fold-left)
    '#%paramz
-   "extra-procs.ss"
+   "extra-procs.rkt"
    (only-in '#%kernel [apply kernel:apply])
    scheme/promise scheme/system
    (only-in string-constants/private/only-once maybe-print-message)

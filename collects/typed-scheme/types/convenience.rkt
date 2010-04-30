@@ -1,8 +1,8 @@
 #lang scheme/base  
-(require "../utils/utils.ss"
+(require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-         "abbrev.ss" (only-in scheme/contract current-blame-format)
+         "abbrev.rkt" (only-in scheme/contract current-blame-format)
 	 (types comparison printer union subtype utils)
          scheme/list scheme/match scheme/promise
          (for-syntax syntax/parse scheme/base)
@@ -11,7 +11,7 @@
          (for-template scheme/base))
 
 (provide (all-defined-out)
-         (all-from-out "abbrev.ss")
+         (all-from-out "abbrev.rkt")
          ;; these should all eventually go away
          make-Name make-ValuesDots make-Function
          (rep-out filter-rep object-rep))

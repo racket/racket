@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require "../utils/utils.ss"
-	 "type-environments.ss" 
-	 "type-env.ss"
+(require "../utils/utils.rkt"
+	 "type-environments.rkt" 
+	 "type-env.rkt"
 	 unstable/mutated-vars
          (only-in scheme/contract ->* -> or/c any/c listof cons/c)
          (utils tc-utils)

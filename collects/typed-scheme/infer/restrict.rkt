@@ -1,9 +1,9 @@
 #lang scheme/unit
 
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 (require (rep type-rep)
 	 (types utils union subtype remove-intersect resolve)
-         "signatures.ss"
+         "signatures.rkt"
          scheme/match mzlib/trace)
 
 (import infer^)

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/contract "../utils/utils.ss" scheme/struct-info)
+(require scheme/contract "../utils/utils.rkt" scheme/struct-info)
 
 (define-struct binding (name) #:transparent)
 (define-struct (def-binding binding) (ty) #:transparent)

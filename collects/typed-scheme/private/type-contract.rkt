@@ -3,7 +3,7 @@
 (provide type->contract define/fixup-contract? change-contract-fixups)
 
 (require
- "../utils/utils.ss"
+ "../utils/utils.rkt"
  syntax/parse
  (rep type-rep filter-rep object-rep)
  (typecheck internal-forms)

@@ -25,30 +25,30 @@ This file defines two sorts of primitives. All of them are provided into any mod
                      [lambda: λ:]
                      [define-typed-struct/exec define-struct/exec:]))
 
-(require "../utils/utils.ss"
+(require "../utils/utils.rkt"
 	 (for-syntax 
           syntax/parse
 	  syntax/private/util
           scheme/base
           (rep type-rep)
           mzlib/match
-          "parse-type.ss" "annotate-classes.ss"
+          "parse-type.rkt" "annotate-classes.rkt"
           syntax/struct
           syntax/stx
           scheme/struct-info
           (private internal)
 	  (except-in (utils utils tc-utils))
           (env type-name-env)
-          "type-contract.ss"))
+          "type-contract.rkt"))
 
 (require (utils require-contract)
-         "colon.ss"
+         "colon.rkt"
          (typecheck internal-forms)
          (except-in mzlib/contract ->)
          (only-in mzlib/contract [-> c->])
          mzlib/struct
-         "base-types.ss"
-         "base-types-extra.ss")
+         "base-types.rkt"
+         "base-types-extra.rkt")
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
 

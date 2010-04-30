@@ -1,10 +1,10 @@
 #lang scheme/unit
 
 
-(require (rename-in "../utils/utils.ss" [private private-in]))
+(require (rename-in "../utils/utils.rkt" [private private-in]))
 (require syntax/kerncase mzlib/trace
          scheme/match (prefix-in - scheme/contract)
-         "signatures.ss" "tc-envops.ss" "tc-metafunctions.ss" "tc-subst.ss"
+         "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          (types utils convenience union subtype remove-intersect type-table)
          (private-in parse-type type-annotation)
          (rep type-rep)

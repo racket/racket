@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@begin[(require "utils.ss" (for-label (only-meta-in 0 typed/scheme)))]
+@begin[(require "utils.rkt" (for-label (only-meta-in 0 typed/scheme)))]
 
 @title[#:tag "top"]{@bold{Typed Scheme}: Scheme with Static Types}
 

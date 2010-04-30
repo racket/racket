@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" 
+(require "../utils/utils.rkt" 
 	 syntax/id-table
          (utils tc-utils)
          (types utils))

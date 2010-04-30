@@ -1,5 +1,5 @@
 #lang scheme/base
-(require scheme/unit scheme/contract "constraint-structs.ss" "../utils/utils.ss")
+(require scheme/unit scheme/contract "constraint-structs.rkt" "../utils/utils.rkt")
 (require (rep type-rep) (utils unit-utils))
 (provide (all-defined-out))
 

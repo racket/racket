@@ -1,7 +1,7 @@
 #lang scheme/base  
 
 (require scheme/contract
-         (prefix-in r: "../utils/utils.ss")
+         (prefix-in r: "../utils/utils.rkt")
          scheme/match (r:rep filter-rep rep-utils type-rep) unstable/struct
          (except-in (r:utils tc-utils) make-env)
          #;(r:typecheck tc-metafunctions))

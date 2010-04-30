@@ -1,12 +1,12 @@
 #lang scheme/base
 
 (require 
- (except-in "private/prims.ss"
+ (except-in "private/prims.rkt"
             require/typed require/opaque-type require-typed-struct)
  (for-syntax scheme/base syntax/parse syntax/struct))
 (provide (all-from-out scheme/base)
 	 (all-defined-out)
-	 (all-from-out "private/prims.ss"))
+	 (all-from-out "private/prims.rkt"))
 
 
 (define-syntax (require/typed stx)

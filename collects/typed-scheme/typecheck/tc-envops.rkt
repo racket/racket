@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (rename-in "../utils/utils.ss" [infer infer-in]))
+(require (rename-in "../utils/utils.rkt" [infer infer-in]))
 (require (rename-in (types subtype convenience remove-intersect union)                   
                     [-> -->]
                     [->* -->*]

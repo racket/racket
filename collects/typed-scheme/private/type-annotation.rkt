@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" 
+(require "../utils/utils.rkt" 
 	 (rep type-rep)
 	 (utils tc-utils)
 	 (env type-env)

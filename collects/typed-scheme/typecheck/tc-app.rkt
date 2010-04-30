@@ -1,9 +1,9 @@
 #lang scheme/unit
 
-(require (rename-in "../utils/utils.ss" [infer r:infer])
-         "signatures.ss" "tc-metafunctions.ss"
-         "tc-app-helper.ss" "find-annotation.ss"
-         "tc-subst.ss"
+(require (rename-in "../utils/utils.rkt" [infer r:infer])
+         "signatures.rkt" "tc-metafunctions.rkt"
+         "tc-app-helper.rkt" "find-annotation.rkt"
+         "tc-subst.rkt"
          syntax/parse scheme/match mzlib/trace scheme/list 
 	 unstable/sequence
          ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
@@ -21,7 +21,7 @@
          (r:infer infer)
          (for-template 
           (only-in '#%kernel [apply k:apply])
-          "internal-forms.ss" scheme/base scheme/bool
+          "internal-forms.rkt" scheme/base scheme/bool
           (only-in racket/private/class-internal make-object do-make-object)))
 
 (import tc-expr^ tc-lambda^ tc-dots^ tc-let^)

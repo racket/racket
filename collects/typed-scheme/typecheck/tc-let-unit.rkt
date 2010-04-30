@@ -1,7 +1,7 @@
 #lang scheme/unit
 
-(require (rename-in "../utils/utils.ss" [infer r:infer]))
-(require "signatures.ss" "tc-metafunctions.ss" "tc-subst.ss"
+(require (rename-in "../utils/utils.rkt" [infer r:infer]))
+(require "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          (types utils convenience)
          (private type-annotation parse-type)
 	 (env lexical-env type-alias-env type-env type-environments)
@@ -13,7 +13,7 @@
          syntax/kerncase syntax/parse
          (for-template 
           scheme/base
-          "internal-forms.ss"))
+          "internal-forms.rkt"))
 
 (require (only-in srfi/1/list s:member))
 

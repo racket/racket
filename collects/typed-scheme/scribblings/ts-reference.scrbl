@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@begin[(require "utils.ss" scribble/eval
+@begin[(require "utils.rkt" scribble/eval
                 scheme/sandbox)
        (require (for-label (only-meta-in 0 typed/scheme)
                            scheme/list srfi/14

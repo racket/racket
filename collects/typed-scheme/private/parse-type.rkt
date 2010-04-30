@@ -1,16 +1,16 @@
 #lang scheme/base
 
-(require "../utils/utils.ss"
+(require "../utils/utils.rkt"
 	 (except-in (rep type-rep) make-arr)
          (rename-in (types convenience union utils) [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: scheme/contract)
          syntax/parse
          (env type-environments type-name-env type-alias-env lexical-env)
-         (prefix-in t: (combine-in "base-types-extra.ss" "base-types.ss")) (only-in "colon.ss" :)
+         (prefix-in t: (combine-in "base-types-extra.rkt" "base-types.rkt")) (only-in "colon.rkt" :)
          scheme/match 
-         (for-template scheme/base "base-types-extra.ss" "colon.ss")
-         (for-template (prefix-in t: "base-types-extra.ss")))
+         (for-template scheme/base "base-types-extra.rkt" "colon.rkt")
+         (for-template (prefix-in t: "base-types-extra.rkt")))
 
 (define-struct poly (name vars) #:prefab)
 

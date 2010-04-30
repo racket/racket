@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 
 (require (for-syntax (env init-envs)
                      scheme/base

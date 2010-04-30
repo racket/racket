@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require scheme/match scheme/contract)
-(require "rep-utils.ss" "free-variance.ss")
+(require "rep-utils.rkt" "free-variance.rkt")
 
 (define Filter/c
   (flat-named-contract

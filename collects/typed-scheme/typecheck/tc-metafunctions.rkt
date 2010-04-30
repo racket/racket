@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 (require (rename-in (types subtype convenience remove-intersect union utils filter-ops)                   
                     [-> -->]
                     [->* -->*]

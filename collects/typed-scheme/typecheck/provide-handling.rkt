@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" 
+(require "../utils/utils.rkt" 
 	 (only-in srfi/1/list s:member)
          syntax/kerncase syntax/boundmap
          (env type-name-env type-alias-env)
@@ -12,7 +12,7 @@
          racket/contract/private/provide unstable/list
          unstable/debug
          unstable/syntax scheme/struct-info scheme/match
-         "def-binding.ss" syntax/parse)
+         "def-binding.rkt" syntax/parse)
 
 (require (for-template scheme/base
                        scheme/contract))

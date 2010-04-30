@@ -1,9 +1,9 @@
 #lang scheme/unit
 
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 (require (rep type-rep rep-utils)
 	 (types convenience union utils)
-         "signatures.ss"
+         "signatures.rkt"
          scheme/list scheme/match)
 
 (import)

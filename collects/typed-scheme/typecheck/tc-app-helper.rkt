@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" scheme/match unstable/list
+(require "../utils/utils.rkt" scheme/match unstable/list
          (utils tc-utils) (rep type-rep) (types utils union))
 
 (provide (all-defined-out))

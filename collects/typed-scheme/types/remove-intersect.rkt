@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" 
+(require "../utils/utils.rkt" 
 	 (rep type-rep rep-utils)
 	 (types union subtype resolve convenience utils)
          scheme/match mzlib/trace unstable/debug)

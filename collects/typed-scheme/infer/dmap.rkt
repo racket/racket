@@ -1,7 +1,7 @@
 #lang scheme/unit
 
-(require "../utils/utils.ss" 
-	 "signatures.ss" "constraint-structs.ss"
+(require "../utils/utils.rkt" 
+	 "signatures.rkt" "constraint-structs.rkt"
 	 (utils tc-utils)
 	 unstable/sequence unstable/hash scheme/match)
 

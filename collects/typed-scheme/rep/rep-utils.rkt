@@ -1,11 +1,11 @@
 #lang scheme/base
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 
 (require mzlib/struct 
          scheme/match
          syntax/boundmap
-         "free-variance.ss"
-         "interning.ss"
+         "free-variance.rkt"
+         "interning.rkt"
 	 unstable/syntax unstable/match
          mzlib/etc
          scheme/contract         

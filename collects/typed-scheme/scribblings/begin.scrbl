@@ -1,7 +1,7 @@
 #lang scribble/manual
 
 @begin[(require (for-label (only-meta-in 0 typed/scheme)) scribble/eval
-		"utils.ss" (only-in "quick.scrbl" typed-mod))]
+		"utils.rkt" (only-in "quick.scrbl" typed-mod))]
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require typed/scheme))

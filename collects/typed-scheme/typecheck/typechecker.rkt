@@ -1,15 +1,15 @@
 #lang scheme/base
 
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 (require (utils unit-utils)
          mzlib/trace
          (only-in scheme/unit
                   provide-signature-elements
                   define-values/invoke-unit/infer link)
-         "signatures.ss" "tc-toplevel.ss"
-         "tc-if.ss" "tc-lambda-unit.ss" "tc-app.ss"
-         "tc-let-unit.ss" "tc-dots-unit.ss"
-         "tc-expr-unit.ss" "check-subforms-unit.ss")
+         "signatures.rkt" "tc-toplevel.rkt"
+         "tc-if.rkt" "tc-lambda-unit.rkt" "tc-app.rkt"
+         "tc-let-unit.rkt" "tc-dots-unit.rkt"
+         "tc-expr-unit.rkt" "check-subforms-unit.rkt")
 
 (provide-signature-elements typechecker^ tc-expr^)
 

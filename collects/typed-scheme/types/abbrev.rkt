@@ -1,9 +1,9 @@
 #lang scheme
 
-(require "../utils/utils.ss")
+(require "../utils/utils.rkt")
 
 (require (rep type-rep object-rep filter-rep rep-utils)
-	 "printer.ss" "utils.ss"
+	 "printer.rkt" "utils.rkt"
          (utils tc-utils)
          scheme/list
          scheme/match         

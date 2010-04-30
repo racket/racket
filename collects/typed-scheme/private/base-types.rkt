@@ -1,4 +1,4 @@
-#lang s-exp "type-env-lang.ss"
+#lang s-exp "type-env-lang.rkt"
 
 [Number -Real]
 [Real -Real]

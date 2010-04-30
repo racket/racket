@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" infer))
-(require "infer-unit.ss" "constraints.ss" "dmap.ss" "signatures.ss"
-         "restrict.ss" "promote-demote.ss"
+(require (except-in "../utils/utils.rkt" infer))
+(require "infer-unit.rkt" "constraints.rkt" "dmap.rkt" "signatures.rkt"
+         "restrict.rkt" "promote-demote.rkt"
          mzlib/trace
          (only-in scheme/unit provide-signature-elements
                   define-values/invoke-unit/infer link)

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (rename-in "../utils/utils.ss" [infer r:infer]))
+(require (rename-in "../utils/utils.rkt" [infer r:infer]))
 
 (require (for-syntax (utils tc-utils)
                      (env init-envs)

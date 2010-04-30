@@ -1,7 +1,7 @@
 #lang scheme/unit
 
-(require "../utils/utils.ss" 
-	 "signatures.ss"
+(require "../utils/utils.rkt" 
+	 "signatures.rkt"
          (utils tc-utils)
          (env type-environments)
          (types utils)

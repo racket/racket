@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" (rep type-rep) scheme/contract scheme/match (for-syntax scheme/base syntax/parse))
+(require "../utils/utils.rkt" (rep type-rep) scheme/contract scheme/match (for-syntax scheme/base syntax/parse))
 
 ;; S, T types
 ;; X a var
@@ -23,7 +23,7 @@
 
 ;; maps is a list of pairs of
 ;;    - functional maps from vars to c's
-;;    - dmaps (see dmap.ss)
+;;    - dmaps (see dmap.rkt)
 ;; we need a bunch of mappings for each cset to handle case-lambda
 ;; because case-lambda can generate multiple possible solutions, and we
 ;; don't want to rule them out too early

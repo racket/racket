@@ -1,12 +1,12 @@
 #lang scheme
 
 (require
- "../utils/utils.ss"
+ "../utils/utils.rkt"
  scheme/tcp 
  scheme/unsafe/ops
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
- "extra-procs.ss"
+ "extra-procs.rkt"
  (utils tc-utils )
  (types  union convenience)
  (only-in '#%kernel [apply kernel:apply])
@@ -112,7 +112,7 @@
    [peek-byte
     (cl->* [->opt [-Input-Port -Nat] (Un -Byte (-val eof))])]
    
-   ;; string.ss
+   ;; string.rkt
    [real->decimal-string (N [-Nat] . ->opt .  -String)]
    
    [random (cl-> [(-Nat) -Nat*] [() -Real])]

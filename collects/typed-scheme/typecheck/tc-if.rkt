@@ -1,8 +1,8 @@
 #lang scheme/unit
 
 
-(require (rename-in "../utils/utils.ss" [infer r:infer]))
-(require "signatures.ss"
+(require (rename-in "../utils/utils.rkt" [infer r:infer]))
+(require "signatures.rkt"
          (rep type-rep filter-rep object-rep)
          (rename-in (types convenience subtype union utils comparison remove-intersect abbrev filter-ops)
                     [remove *remove])

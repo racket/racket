@@ -6,8 +6,8 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out))
-(require "syntax-traversal.ss"
-	 "utils.ss"
+(require "syntax-traversal.rkt"
+	 "utils.rkt"
 	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match unstable/debug
          (for-syntax unstable/syntax))
 

@@ -1,9 +1,9 @@
 #lang scheme/unit
 
-(require (rename-in "../utils/utils.ss" [infer r:infer])
-         "signatures.ss"
-         "tc-metafunctions.ss"
-         "tc-subst.ss"
+(require (rename-in "../utils/utils.rkt" [infer r:infer])
+         "signatures.rkt"
+         "tc-metafunctions.rkt"
+         "tc-subst.rkt"
          mzlib/trace
          scheme/list
          syntax/private/util syntax/stx
@@ -17,7 +17,7 @@
 	 (utils tc-utils)
          unstable/debug
          scheme/match)
-(require (for-template scheme/base "internal-forms.ss"))
+(require (for-template scheme/base "internal-forms.rkt"))
 
 (import tc-expr^)
 (export tc-lambda^)
