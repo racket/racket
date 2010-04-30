@@ -23,14 +23,6 @@
                (not (equal? str "")))
       (render-large-letters comment-prefix comment-character (get-chosen-font) str edit)
       (void))))
-#;
-(preferences:set-default 'drracket:large-letters-font #f (λ: ([x : Any])
-                                                             (or (and (pair? x)
-                                                                      (string? (car x))
-                                                                      (let ([i (cdr x)])
-                                                                        (and (integer? i)
-                                                                             (<= 1 i 255))))
-                                                                 (not x))))
 
 (: get-default-font (-> (Instance Font%)))
 (define (get-default-font)
