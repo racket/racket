@@ -82,12 +82,13 @@ would create only @filepath{compiled/b_scm.zo} and
 
 In addition to a bytecode file, @|mzc| creates a file
 @filepath{compiled/@nonterm{name}_@nonterm{ext}.dep} that records
-dependencies of the compiled module on other module files.  Using this
-dependency information, a re-compilation request via @|mzc| can
-consult both the source file's timestamp and the timestamps for the
-sources and bytecode of imported modules.  Furthermore, imported
-modules are themselves compiled as necessary, including updating the
-bytecode and dependency files for the imported modules, transitively.
+dependencies of the compiled module on other module files and the
+source file's SHA-1 hash.  Using this dependency information, a
+re-compilation request via @|mzc| can consult both the source file's
+timestamp/hash and the timestamps/hashes for the bytecode of imported
+modules.  Furthermore, imported modules are themselves compiled as
+necessary, including updating the bytecode and dependency files for
+the imported modules, transitively.
 
 Continuing the @exec{mzc a.scm} example from the previous section, the
 @|mzc| creates @filepath{compiled/a_scm.dep},
@@ -96,7 +97,7 @@ the same time as the @filepath{.zo} files. The
 @filepath{compiled/a_scm.dep} file records the dependency of
 @filepath{a.scm} on @filepath{b.scm}, @filepath{c.scm} and the
 @schememodname[scheme] library. If the @filepath{b.scm} file is
-modified (so that its timestamp changes), then running
+modified (so that its timestamp and SHA-1 hash changes), then running
 
 @commandline{mzc a.scm}
 
@@ -153,7 +154,9 @@ file if
         first sub-directory listed in @scheme[use-compiled-file-paths]
         (at the time that
         @scheme[make-compilation-manager-load/use-compiled-handler]
-        was called)}
+        was called), and either no @filepath{.dep} file exists or it
+        records a source-file SHA-1 hash that differs from the current
+        version and source-file SHA-1 hash;}
 
   @item{no @filepath{.dep} file exists next to the @filepath{.zo}
         file;}
@@ -162,19 +165,28 @@ file if
         match the result of @scheme[(version)];}
 
   @item{one of the files listed in the @filepath{.dep} file has a
-        @filepath{.zo} timestamp newer than the one recorded in the
-        @filepath{.dep} file.}
+        @filepath{.zo} timestamp newer than the target @filepath{.zo},
+        and the combined hashes of the dependencies recorded in the
+        @filepath{.dep} file does not match the combined hash recorded
+        in the @filepath{.dep} file.}
 
   ]}
 
 ]
 
+If SHA-1 hashes override a timestamp-based decision to recompile the
+file, then the target @filepath{.zo} file's timestamp is updated to
+the current time.
+
 After the handler procedure compiles a @filepath{.zo} file, it creates
-a corresponding @filepath{.dep} file that lists the current version,
-plus the @filepath{.zo} timestamp for every file that is
+a corresponding @filepath{.dep} file that lists the current version
+and the identification of every file that is directly
 @scheme[require]d by the module in the compiled file. Additional
 dependencies can be installed during compilation via
-@schememodname[compiler/cm-accomplice].
+@schememodname[compiler/cm-accomplice]. The @filepath{.dep} file also
+records the SHA-1 hash of the module's source, and it records a
+combined SHA-1 hash of all of the dependencies that includes their
+recursive dependencies.
 
 The handler caches timestamps when it checks @filepath{.dep} files,
 and the cache is maintained across calls to the same handler. The
@@ -265,6 +277,21 @@ Returns the file-modification date and @scheme[delay]ed hash of
  etc.). Otherwise, the result is @scheme[#f].
 
  This function is intended for use with @scheme[manager-skip-file-handler].}
+
+
+@defproc[(get-file-sha1 [p path?]) (or/c string? #f)]{
+
+Computes a SHA-1 hash for the file @racket[p]; the result is
+@racket[#f] if @racket[p] cannot be opened.}
+
+
+@defproc[(get-compiled-file-sha1 [p path?]) (or/c string? #f)]{
+
+Computes a SHA-1 hash for the bytecode file @racket[p], appending any
+dependency-describing hash available from a @filepath{.dep} file when
+available (i.e., the suffix on @racket[p] is replaced by
+@filepath{.dep} to locate dependency information). The result is
+@racket[#f] if @racket[p] cannot be opened.}
 
 @; ----------------------------------------------------------------------
 

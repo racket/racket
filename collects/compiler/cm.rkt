@@ -17,7 +17,9 @@
          manager-skip-file-handler
          file-stamp-in-collection
          file-stamp-in-paths
-         (rename-out [trace manager-trace-handler]))
+         (rename-out [trace manager-trace-handler])
+         get-file-sha1
+         get-compiled-file-sha1)
 
 (define manager-compile-notify-handler (make-parameter void))
 (define trace (make-parameter void))
@@ -79,7 +81,7 @@
                          (or (not date)
                              (zo-date . > . date)))
                     (cons zo-date
-                          (delay (get-compiled-sha1 mode (get-zo-path))))]
+                          (delay (get-compiled-file-sha1 (get-zo-path) mode)))]
                    [date
                     (cons date
                           (delay (get-source-sha1 (get-path))))]
@@ -574,3 +576,11 @@
                             "empty use-compiled-file-paths list: "
                             modes))
     compilation-manager-load-handler))
+
+
+;; Exported:
+(define (get-compiled-file-sha1 path)
+  (try-file-sha1 path (path-replace-suffix path #".dep")))
+
+(define (get-file-sha1 path)
+  (get-source-sha1 path))

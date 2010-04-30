@@ -2,7 +2,7 @@
 @(require scribble/bnf
           "utils.ss")
 
-@title{@bold{Scribble}: PLT Documentation Tool}
+@title{@bold{Scribble}: Racket Documentation Tool}
 
 @author["Matthew Flatt" "Eli Barzilay"]
 
