@@ -195,7 +195,7 @@
 
   (define (compile-collection-zos collection 
                                   #:skip-path [skip-path #f]
-                                  #:skip-doc-sources? [skip-docs? #f] 
+                                  #:skip-doc-sources? [skip-docs? #f]
                                   . cp)
     (compile-directory (apply collection-path collection cp)
                        (c-get-info (cons collection cp))
