@@ -17,7 +17,7 @@
          (utils tc-utils utils)
          unstable/mutated-vars
          (env type-name-env type-environments init-envs)
-         rktunit
+         racunit
          syntax/parse
          (for-syntax (utils tc-utils)
                      (typecheck typechecker)

@@ -1,5 +1,5 @@
 #lang racket
-(require rktunit
+(require racunit
          mzlib/list
          net/url
          web-server/http

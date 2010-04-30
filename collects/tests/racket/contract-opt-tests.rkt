@@ -1,7 +1,7 @@
 (module contract-opt-tests mzscheme
   (require mzlib/contract
-           rktunit
-           rktunit/text-ui)
+           racunit
+           racunit/text-ui)
     
   (define (exn:fail:contract-violation? exn)
     (if (regexp-match #rx"broke" (exn-message exn)) #t #f))

@@ -1,5 +1,5 @@
 #lang racket
-(require rktunit
+(require racunit
          web-server/http
          net/url)
 (provide basic-auth-tests)

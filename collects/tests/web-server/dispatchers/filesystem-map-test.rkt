@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          net/url
          web-server/private/util
          web-server/dispatchers/filesystem-map)

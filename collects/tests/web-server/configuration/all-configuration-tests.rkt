@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          "configuration-table-test.rkt")
 (provide all-configuration-tests)
 

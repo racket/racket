@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require scheme/future
-         rktunit)
+         racunit)
 
 #|Need to add expressions which raise exceptions inside a 
 future thunk which can be caught at the touch site 

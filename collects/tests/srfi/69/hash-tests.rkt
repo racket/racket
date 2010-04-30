@@ -1,6 +1,6 @@
 (module hash-tests mzscheme
 
-  (require rktunit)
+  (require racunit)
 
   (require srfi/1/list
            (prefix h: srfi/69))

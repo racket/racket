@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          "bindings-test.rkt"
          "basic-auth-test.rkt"
          "helpers-test.rkt"

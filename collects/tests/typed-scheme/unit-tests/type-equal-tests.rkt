@@ -3,7 +3,7 @@
 (require "test-utils.ss" (for-syntax scheme/base)
          (rep type-rep)
 	 (types comparison abbrev union)
-         rktunit)
+         racunit)
 
 (provide type-equal-tests)
 

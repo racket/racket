@@ -1,3 +1,3 @@
 #lang racket
-(require rktunit)
-(provide (all-from-out rktunit))
+(require racunit)
+(provide (all-from-out racunit))

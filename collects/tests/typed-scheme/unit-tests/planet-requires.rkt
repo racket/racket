@@ -30,12 +30,12 @@
           (splice-requires (map mk (syntax->list #'(files ...)))))]))))
 
 
-(provide rktunit)
+(provide racunit)
 ;; why is this neccessary?
 (provide planet/multiple)
 
-(define-module rktunit
-  (planet/multiple ("schematics" "rktunit.plt" 2 11)
+(define-module racunit
+  (planet/multiple ("schematics" "racunit.plt" 2 11)
                    "test.ss"
                    ;"graphical-ui.ss"
                    "text-ui.ss"
@@ -44,4 +44,4 @@
   #;
   (planet/multiple ("cce" "fasttest.plt" 1 2)
                    "random.ss"
-                   "rktunit.ss"))
+                   "racunit.ss"))

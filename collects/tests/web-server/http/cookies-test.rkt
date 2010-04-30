@@ -1,5 +1,5 @@
 #lang racket
-(require rktunit
+(require racunit
          net/url
          web-server/http/request-structs
          web-server/http/response-structs
@@ -141,5 +141,5 @@
     
     )))
 
-#;(require rktunit/text-ui)
+#;(require racunit/text-ui)
 #;(run-tests cookies-tests)

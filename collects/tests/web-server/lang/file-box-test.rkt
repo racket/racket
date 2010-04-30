@@ -1,5 +1,5 @@
 #lang racket/base
-(require rktunit
+(require racunit
          web-server/lang/file-box
          (only-in mzlib/file make-temporary-file))
 (provide file-box-tests)

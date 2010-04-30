@@ -34,7 +34,7 @@
 
 (module misc-test
   mzscheme
-  (require rktunit)
+  (require racunit)
   (require (all-except srfi/1/misc append! reverse!)
    (rename srfi/1/misc s:append! append!)
    (rename srfi/1/misc s:reverse! reverse!))

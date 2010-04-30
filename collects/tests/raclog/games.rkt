@@ -2,7 +2,7 @@
 
 (require raclog
          "./puzzle.rkt"
-         rktunit)
+         racunit)
 
 ;;This example is from Sterling & Shapiro, p. 214.
 ;;

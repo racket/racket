@@ -1,5 +1,5 @@
 #lang scheme
-(require rktunit
+(require racunit
          syntax/parse)
 (require (for-syntax syntax/parse))
 (provide (all-defined-out))
