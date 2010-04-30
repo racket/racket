@@ -23,7 +23,7 @@
 
 (define (test-big-file)
   (define big-file
-    (build-path (collection-path "drscheme/private") "unit.ss"))
+    (build-path (collection-path "drscheme/private") "unit.rkt"))
   ;; should be around 6 times smaller
   (id* (file->bytes big-file) 4))
 

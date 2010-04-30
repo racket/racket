@@ -644,6 +644,7 @@ path/s is either such a string or a list of them.
 "collects/ffi/examples/use-xmmsctrl.rkt" drdr:command-line ""
 "collects/ffi/examples/use-xosd.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/magick.rkt" drdr:command-line "mzc ~s"
+"collects/ffi/objc.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/unsafe/objc.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/private/objc-doc-unsafe.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/sndfile.rkt" drdr:command-line "mzc ~s"
