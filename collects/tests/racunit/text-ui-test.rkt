@@ -120,8 +120,8 @@
       (check string-contains
              op
              "`((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
- (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
- (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14))")))
+  (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+  (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14))")))
    
    (test-case
     "Non-binary check output is pretty printed"
@@ -130,8 +130,8 @@
       (check string-contains
              op
              "`((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
- (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
- (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14))")))
+  (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+  (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14))")))
    
    (test-case
     "Location trimmed when file is under current directory"
