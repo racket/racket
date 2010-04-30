@@ -877,12 +877,16 @@
 			   (expr-found pport graph-ref))
 			 (pre-print pport obj)
 			 (cond
-			  [(pair? obj) (pp-pair obj extra depth 
-                                                pair? car cdr pair-open pair-close
-                                                qd)]
-                          [(mpair? obj) (pp-pair obj extra depth 
-                                                 mpair? mcar mcdr mpair-open mpair-close
-                                                 qd)]
+			  [(pair? obj) 
+                           (let ([qd (to-quoted out qd "`")])
+                             (pp-pair obj extra depth 
+                                      pair? car cdr pair-open pair-close
+                                      qd))]
+                          [(mpair? obj)
+                           (let ([qd (to-quoted out qd "`")])
+                             (pp-pair obj extra depth 
+                                      mpair? mcar mcdr mpair-open mpair-close
+                                      qd))]
 			  [(vector? obj)
                            (let ([qd (to-quoted out qd "`")])
                              (out "#")
