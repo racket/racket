@@ -93,6 +93,7 @@ Keep documentation and tests up to date.
 @include-section["skip-list.scrbl"]
 @include-section["interval-map.scrbl"]
 @include-section["generics.scrbl"]
+@include-section["markparam.scrbl"]
 
 @;{--------}
 
