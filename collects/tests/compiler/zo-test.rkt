@@ -185,7 +185,7 @@
   (hash-update! errors (common-message exn) add1 0)
   (unless (and (not (care-about-nonserious?)) (not serious?))
     (when (or (verbose-mode) (stop-on-first-error))
-      (printf "~a -- ~a: ~a~n" file phase (exn-message exn)))
+      (fprintf (current-error-port) "~a -- ~a: ~a~n" file phase (exn-message exn)))
     (when (stop-on-first-error)
       exn)))
 
