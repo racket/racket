@@ -10,20 +10,20 @@
          (for-syntax scheme/base)
          "tc-metafunctions.rkt")
 
-;(provide (all-defined-out))
+(provide (all-defined-out))
 
-(d/c/p (open-Result r objs ts)
-       (-> Result? (listof Object?) (listof Type/c) (values Type/c FilterSet? Object?))
+(d/c (open-Result r objs [ts #f])
+     (->* (Result? (listof Object?)) ((listof Type/c)) (values Type/c FilterSet? Object?))
        (match r
          [(Result: t fs old-obj)
           (for/fold ([t t] [fs fs] [old-obj old-obj])
             ([(o k) (in-indexed (in-list objs))]
-             [arg-ty (in-list ts)])
+             [arg-ty (if ts (in-list ts) (in-cycle (in-value #f)))])
             (values (subst-type t k o #t)
                     (subst-filter-set fs k o #t arg-ty)
                     (subst-object old-obj k o #t)))]))
 
-(d/c/p (subst-filter-set fs k o polarity [t #f])
+(d/c (subst-filter-set fs k o polarity [t #f])
        (->* (FilterSet? name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
        (define extra-filter (if t (make-TypeFilter t null k) -top))
   (match fs
@@ -31,7 +31,7 @@
      (combine (subst-filter (-and extra-filter f+) k o polarity)
 	      (subst-filter (-and extra-filter f-) k o polarity))]))
 
-(d/c/p (subst-type t k o polarity)
+(d/c (subst-type t k o polarity)
      (-> Type/c name-ref/c Object? boolean? Type/c)
   (define (st t) (subst-type t k o polarity))
   (d/c (sf fs) (FilterSet? . -> . FilterSet?) (subst-filter-set fs k o polarity))
@@ -51,7 +51,7 @@
                                  (and drest (cons (st (car drest)) (cdr drest)))
                                  (map st kws)))]))
 
-(d/c/p (subst-object t k o polarity)
+(d/c (subst-object t k o polarity)
      (-> Object? name-ref/c Object? boolean? Object?)
   (match t
     [(NoObject:) t]
@@ -66,7 +66,7 @@
 	 t)]))
 
 ;; this is the substitution metafunction 
-(d/c/p (subst-filter f k o polarity)
+(d/c (subst-filter f k o polarity)
   (-> Filter/c name-ref/c Object? boolean? Filter/c)
   (define (ap f) (subst-filter f k o polarity))
   (define (tf-matcher t p i k o polarity maker)
@@ -136,11 +136,13 @@
     #f))
 
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
-(d/c/p (values->tc-results tc formals)
+(d/c (values->tc-results tc formals)
   ((or/c Values? ValuesDots?) (listof identifier?) . -> . tc-results?)
   (match tc
     [(ValuesDots: (list rs ...) dty dbound)
-     (let-values ([(ts fs os) (for/lists (ts fs os) ([r (in-list rs)]) (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
+     (let-values ([(ts fs os) 
+                   (for/lists (ts fs os) ([r (in-list rs)]) 
+                              (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
        (ret ts fs os
             (for/fold ([dty dty]) ([(o k) (in-indexed (in-list formals))])
               (subst-type dty k (make-Path null o) #t))

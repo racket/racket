@@ -14,7 +14,7 @@
          (for-syntax scheme/base syntax/parse)
 	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp scheme/flonum))
 
-(provide (except-out (all-defined-out) -FS)
+(provide (all-defined-out)
          (rename-out [make-Listof -lst]))
 
 ;; convenient constructors
@@ -120,9 +120,9 @@
 (define -no-obj (make-Empty))
 
 
-(d/c/p (-FS + -)
-     (c:-> Filter/c Filter/c FilterSet?)
-     (match* (+ -)
+(d/c (-FS + -)
+      (c:-> Filter/c Filter/c FilterSet?)
+      (match* (+ -)
              [((Bot:) _) (make-FilterSet -bot -top)]
              [(_ (Bot:)) (make-FilterSet -top -bot)]
              [(+ -) (make-FilterSet + -)]))

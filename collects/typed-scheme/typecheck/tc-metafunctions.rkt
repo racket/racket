@@ -18,10 +18,10 @@
           [((Bot:) _) (-FS -bot -top)]
           [(_ _) (-FS l1 l2)]))
 
-(provide combine)
+(provide combine abstract-results)
 
 
-(d/c/p (abstract-results results arg-names)
+(d/c (abstract-results results arg-names)
      (tc-results? (listof identifier?) . -> . (or/c Values? ValuesDots?))
      (define keys (for/list ([(nm k) (in-indexed arg-names)]) k))
      (match results
