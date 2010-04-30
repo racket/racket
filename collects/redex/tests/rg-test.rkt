@@ -339,7 +339,7 @@
   (test (generate-term lang b 5) 43)
   (test (generate-term lang (side-condition a (odd? (term a))) 5) 43)
   (test (raised-exn-msg exn:fail:redex:generation-failure? (generate-term lang c 5))
-        #px"unable to generate pattern \\(side-condition a\\_1 #<syntax:.*\\/rg-test\\.ss:\\d+:\\d+>\\)")
+        #px"unable to generate pattern \\(side-condition a\\_1 #<syntax:.*\\/rg-test\\.(?:.+):\\d+:\\d+>\\)")
   (test (let/ec k
           (generate-term lang (number_1 (side-condition 7 (k (term number_1)))) 5))
         'number_1)
