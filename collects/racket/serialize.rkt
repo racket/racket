@@ -229,9 +229,10 @@
        (and (identifier? #'id)
             (identifier? #'super-id))
        #`(define-serializable-struct/versions/derived #,stx #f (id super-id) . rest)]
-      [(_ id (field ...) . rest)
-       (identifier? #'id)
-       #`(define-serializable-struct/versions/derived #,stx #f id (field ...) . rest)]))
+      [(_ id vers (field ...) . rest)
+       (and (identifier? #'id)
+            (number? (syntax-e #'vers)))
+       #`(define-serializable-struct/versions/derived #,stx #f id vers (field ...) . rest)]))
   
   (define-syntax (define-serializable-struct stx)
     (syntax-case stx ()

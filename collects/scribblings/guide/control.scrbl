@@ -7,7 +7,7 @@
 
 @title[#:tag "control" #:style 'toc]{Exceptions and Control}
 
-Scheme provides an especially rich set of control operations---not
+Racket provides an especially rich set of control operations---not
 only operations for raising and catching exceptions, but also
 operations for grabbing and restoring portions of a computation.
 
@@ -27,22 +27,22 @@ computation.
 (car 17)
 ]
 
-To catch an exception, use the @scheme[with-handlers] form:
+To catch an exception, use the @racket[with-handlers] form:
 
 @specform[
 (with-handlers ([predicate-expr handler-expr] ...)
   body ...+)
 ]{}
 
-Each @scheme[_predicate-expr] in a handler determines a kind of
-exception that is caught by the @scheme[with-handlers] form, and the
+Each @racket[_predicate-expr] in a handler determines a kind of
+exception that is caught by the @racket[with-handlers] form, and the
 value representing the exception is passed to the handler procedure
-produced by @scheme[_handler-expr].  The result of the
-@scheme[_handler-expr] is the result of the @scheme[with-handlers]
+produced by @racket[_handler-expr].  The result of the
+@racket[_handler-expr] is the result of the @racket[with-handlers]
 expression.
 
 For example, a divide-by-zero error raises an instance of the
-@scheme[exn:fail:contract:divide-by-zero] structure type:
+@racket[exn:fail:contract:divide-by-zero] structure type:
 
 @interaction[
 (with-handlers ([exn:fail:contract:divide-by-zero?
@@ -53,9 +53,9 @@ For example, a divide-by-zero error raises an instance of the
   (car 17))
 ]
 
-The @scheme[error] function is one way to raise your own exception. It
+The @racket[error] function is one way to raise your own exception. It
 packages an error message and other information into an
-@scheme[exn:fail] structure:
+@racket[exn:fail] structure:
 
 @interaction[
 (error "crash!")
@@ -63,11 +63,11 @@ packages an error message and other information into an
   (error "crash!"))
 ]
 
-The @scheme[exn:fail:contract:divide-by-zero] and @scheme[exn:fail]
-structure types are sub-types of the @scheme[exn] structure
+The @racket[exn:fail:contract:divide-by-zero] and @racket[exn:fail]
+structure types are sub-types of the @racket[exn] structure
 type. Exceptions raised by core forms and functions always raise an
-instance of @scheme[exn] or one of its sub-types, but an exception
-does not have to be represented by a structure. The @scheme[raise]
+instance of @racket[exn] or one of its sub-types, but an exception
+does not have to be represented by a structure. The @racket[raise]
 function lets you raise any value as an exception:
 
 @interaction[
@@ -78,7 +78,7 @@ function lets you raise any value as an exception:
   (/ 1 0))
 ]
 
-Multiple @scheme[_predicate-expr]s in a @scheme[with-handlers] form
+Multiple @racket[_predicate-expr]s in a @racket[with-handlers] form
 let you handle different kinds of exceptions in different ways. The
 predicates are tried in order, and if none of them match, then the
 exception is propagated to enclosing contexts.
@@ -95,7 +95,7 @@ exception is propagated to enclosing contexts.
  (always-fail -3))
 ]
 
-Using @scheme[(lambda (v) #t)] as a predicate captures all exceptions, of course:
+Using @racket[(lambda (v) #t)] as a predicate captures all exceptions, of course:
 
 @interaction[
 (with-handlers ([(lambda (v) #t) (lambda (v) 'oops)])
@@ -104,9 +104,9 @@ Using @scheme[(lambda (v) #t)] as a predicate captures all exceptions, of course
 
 Capturing all exceptions is usually a bad idea, however. If the user
 types Ctl-C in a terminal window or clicks the @onscreen{Stop} button
-in DrScheme to interrupt a computation, then normally the
-@scheme[exn:break] exception should not be caught. To catch only
-exceptions that represent errors, use @scheme[exn:fail?] as the
+in DrRacket to interrupt a computation, then normally the
+@racket[exn:break] exception should not be caught. To catch only
+exceptions that represent errors, use @racket[exn:fail?] as the
 predicate:
 
 @interaction[
@@ -134,7 +134,7 @@ the way out if the expression is never caught:
 But if control escapes ``all the way out,'' why does the @tech{REPL}
 keep going after an error is printed? You might think that it's
 because the @tech{REPL} wraps every interaction in a
-@scheme[with-handlers] form that catches all exceptions, but that's
+@racket[with-handlers] form that catches all exceptions, but that's
 not quite the reason.
 
 The actual reason is that the @tech{REPL} wraps the interaction with a
@@ -145,11 +145,11 @@ nearest enclosing prompt. More precisely, each prompt has a
 @deftech{prompt tag}, and there is a designated @deftech{default
 prompt tag} that the uncaught-exception handler uses to @tech{abort}.
 
-The @scheme[call-with-continuation-prompt] function installs a prompt
+The @racket[call-with-continuation-prompt] function installs a prompt
 with a given @tech{prompt tag}, and then it evaluates a given thunk
-under the prompt. The @scheme[default-continuation-prompt-tag]
+under the prompt. The @racket[default-continuation-prompt-tag]
 function returns the @tech{default prompt tag}. The
-@scheme[abort-current-continuation] function escapes to the nearest
+@racket[abort-current-continuation] function escapes to the nearest
 enclosing prompt that has a given @tech{prompt tag}.
 
 @interaction[
@@ -165,13 +165,13 @@ enclosing prompt that has a given @tech{prompt tag}.
     (default-continuation-prompt-tag)))
 ]
 
-In @scheme[escape] above, the value @scheme[v] is wrapped in a
+In @racket[escape] above, the value @racket[v] is wrapped in a
 procedure that is called after escaping to the enclosing prompt.
 
 @tech{Prompts} and @tech{aborts} look very much like exception
 handling and raising. Indeed, prompts and aborts are essentially a
-more primitive form of exceptions, and @scheme[with-handlers] and
-@scheme[raise] are implemented in terms of prompts and aborts. The
+more primitive form of exceptions, and @racket[with-handlers] and
+@racket[raise] are implemented in terms of prompts and aborts. The
 power of the more primitive forms is related to the word
 ``continuation'' in the operator names, as we discuss in the next
 section.
@@ -182,7 +182,7 @@ section.
 
 
 A @deftech{continuation} is a value that encapsulates a piece of an
-expression context. The @scheme[call-with-composable-continuation]
+expression context. The @racket[call-with-composable-continuation]
 function captures the @deftech{current continuation} starting outside
 the current function call and running up to the nearest enclosing
 prompt. (Keep in mind that each @tech{REPL} interaction is implicitly
@@ -190,31 +190,31 @@ wrapped in a prompt.)
 
 For example, in
 
-@schemeblock[
+@racketblock[
 (+ 1 (+ 1 (+ 1 0)))
 ]
 
-at the point where @scheme[0] is evaluated, the expression context
+at the point where @racket[0] is evaluated, the expression context
 includes three nested addition expressions. We can grab that context by
-changing @scheme[0] to grab the continuation before returning 0:
+changing @racket[0] to grab the continuation before returning 0:
 
 @interaction[
 #:eval cc-eval
 (define saved-k #f)
 (define (save-it!)
   (call-with-composable-continuation
-   (lambda (k) (code:comment @#,t{@scheme[k] is the captured continuation})
+   (lambda (k) (code:comment @#,t{@racket[k] is the captured continuation})
      (set! saved-k k) 
      0)))
 (+ 1 (+ 1 (+ 1 (save-it!))))
 ]
 
-The @tech{continuation} saved in @scheme[save-k] encapsulates the
-program context @scheme[(+ 1 (+ 1 (+ 1 _?)))], where @scheme[_?]
+The @tech{continuation} saved in @racket[save-k] encapsulates the
+program context @racket[(+ 1 (+ 1 (+ 1 _?)))], where @racket[_?]
 represents a place to plug in a result value---because that was the
-expression context when @scheme[save-it!] was called. The
+expression context when @racket[save-it!] was called. The
 @tech{continuation} is encapsulated so that it behaves like the
-function @scheme[(lambda (v) (+ 1 (+ 1 (+ 1 v))))]:
+function @racket[(lambda (v) (+ 1 (+ 1 (+ 1 v))))]:
 
 @interaction[
 #:eval cc-eval
@@ -224,7 +224,7 @@ function @scheme[(lambda (v) (+ 1 (+ 1 (+ 1 v))))]:
 ]
 
 The continuation captured by
-@scheme[call-with-composable-continuation] is determined dynamically,
+@racket[call-with-composable-continuation] is determined dynamically,
 not syntactically. For example, with
 
 @interaction[
@@ -236,7 +236,7 @@ not syntactically. For example, with
 (sum 5)
 ]
 
-the continuation in @scheme[saved-k] becomes @scheme[(lambda (x) (+ 5
+the continuation in @racket[saved-k] becomes @racket[(lambda (x) (+ 5
 (+ 4 (+ 3 (+ 2 (+ 1 x))))))]:
 
 @interaction[
@@ -245,25 +245,25 @@ the continuation in @scheme[saved-k] becomes @scheme[(lambda (x) (+ 5
 (saved-k 10)
 ]
 
-A more traditional continuation operator in Scheme is
-@scheme[call-with-current-continuation], which is often abbreviated
-@scheme[call/cc]. It is like
-@scheme[call-with-composable-continuation], but applying the captured
+A more traditional continuation operator in Racket is
+@racket[call-with-current-continuation], which is often abbreviated
+@racket[call/cc]. It is like
+@racket[call-with-composable-continuation], but applying the captured
 continuation first @tech{aborts} (to the current @tech{prompt}) before
-restoring the saved continuation. In addition, Scheme systems
+restoring the saved continuation. In addition, Racket systems
 traditionally support a single prompt at the program start, instead of
 allowing new prompts via
-@scheme[call-with-continuation-prompt]. Continuations as in PLT Scheme
+@racket[call-with-continuation-prompt]. Continuations as in Racket
 are sometimes called @deftech{delimited continuations}, since a
 program can introduce new delimiting prompts, and continuations as
-captured by @scheme[call-with-composable-continuation] are sometimes
+captured by @racket[call-with-composable-continuation] are sometimes
 called @deftech{composable continuations}, because they do not have a
 built-in @tech{abort}.
 
 For an example of how @tech{continuations} are useful, see
 @other-manual['(lib "scribblings/more/more.scrbl")]. For specific
 control operators that have more convenient names than the primitives
-described here, see @schememodname[scheme/control].
+described here, see @racketmodname[racket/control].
 
 @; ----------------------------------------------------------------------
 

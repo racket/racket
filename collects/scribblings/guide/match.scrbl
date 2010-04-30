@@ -2,16 +2,16 @@
 @(require scribble/manual
           scribble/eval
           "guide-utils.ss"
-          (for-label scheme/match))
+          (for-label racket/match))
 
 @(begin
   (define match-eval (make-base-eval))
-  (interaction-eval #:eval match-eval (require scheme/match)))
+  (interaction-eval #:eval match-eval (require racket/match)))
 
 @title[#:tag "match"]{Pattern Matching}
 
-The @scheme[match] form supports pattern matching on arbitrary Scheme
-values, as opposed to functions like @scheme[regexp-match] that
+The @racket[match] form supports pattern matching on arbitrary Racket
+values, as opposed to functions like @racket[regexp-match] that
 compare regular expressions to byte and character sequences (see
 @secref["regexp"]).
 
@@ -20,15 +20,15 @@ compare regular expressions to byte and character sequences (see
   [pattern expr ...+] ...)
 ]
 
-The @scheme[match] form takes the result of @scheme[target-expr] and
-tries to match each @scheme[_pattern] in order. As soon as it finds a
-match, it evaluates the corresponding @scheme[_expr] sequence to
-obtain the result for the @scheme[match] form. If @scheme[_pattern]
+The @racket[match] form takes the result of @racket[target-expr] and
+tries to match each @racket[_pattern] in order. As soon as it finds a
+match, it evaluates the corresponding @racket[_expr] sequence to
+obtain the result for the @racket[match] form. If @racket[_pattern]
 includes @deftech{pattern variables}, they are treated like wildcards,
-and each variable is bound in the @scheme[_expr] to the input
+and each variable is bound in the @racket[_expr] to the input
 fragments that it matched.
 
-Most Scheme literal expressions can be used as patterns:
+Most Racket literal expressions can be used as patterns:
 
 @interaction[
 #:eval match-eval
@@ -45,7 +45,7 @@ Most Scheme literal expressions can be used as patterns:
   [#f 'boolean])
 ]
 
-Constructors like @scheme[cons], @scheme[list], and @scheme[vector]
+Constructors like @racket[cons], @racket[list], and @racket[vector]
 can be used to create patterns that match pairs, lists, and vectors:
 
 @interaction[
@@ -61,16 +61,16 @@ can be used to create patterns that match pairs, lists, and vectors:
   [(vector 1 2) 'vector])
 ]
 
-The @scheme[struct] construct matches an instance of a particular
-structure type:
+A constructor bound with @scheme[struct] also can be used as a pattern
+constructor:
 
 @interaction[
 #:eval match-eval
-(define-struct shoe (size color))
-(define-struct hat (size style))
-(match (make-hat 23 'bowler)
- [(struct shoe (10 'white)) "bottom"]
- [(struct hat (23 'bowler)) "top"])
+(struct shoe (size color))
+(struct hat (size style))
+(match (hat 23 'bowler)
+ [(shoe 10 'white) "bottom"]
+ [(hat 23 'bowler) "top"])
 ]
 
 Unquoted, non-constructor identifiers in a pattern are @tech{pattern
@@ -106,8 +106,8 @@ result expression to a list of matches:
   [else 'other])
 (match '(1 2 3 4)
   [(list 1 x ... 4) x])
-(match (list (make-hat 23 'bowler) (make-hat 22 'pork-pie))
-  [(list (struct hat (sz styl)) ...) (apply + sz)])
+(match (list (hat 23 'bowler) (hat 22 'pork-pie))
+  [(list (hat sz styl) ...) (apply + sz)])
 ]
 
 Ellipses can be nested to match nested repetitions, and in that case,
@@ -119,11 +119,11 @@ pattern variables can be bound to lists of lists of matches:
   [(list (list '! x ...) ...) x])
 ]
 
-For information on many more pattern forms, see @schememodname[scheme/match].
+For information on many more pattern forms, see @racketmodname[racket/match].
 
-Forms like @scheme[match-let] and @scheme[match-lambda] support
+Forms like @racket[match-let] and @racket[match-lambda] support
 patterns in positions that otherwise must be identifiers. For example,
-@scheme[match-let] generalizes @scheme[let] to a @as-index{destructing
+@racket[match-let] generalizes @racket[let] to a @as-index{destructing
 bind}:
 
 @interaction[
@@ -132,7 +132,7 @@ bind}:
   (list z y x))
 ]
 
-For information on these additional forms, see @schememodname[scheme/match].
+For information on these additional forms, see @racketmodname[racket/match].
 
 @refdetails["match"]{pattern matching}
 
