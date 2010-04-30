@@ -16,7 +16,7 @@
   (match (get-prop a-path 'drdr:command-line #f)
     [#f
      (if (testable-file? a-path)
-         (list "mzscheme" "-qt" (path->string* a-path))
+         (list "racket" "-qt" (path->string* a-path))
          #f)]
     [""
      #f]
