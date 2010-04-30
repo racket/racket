@@ -264,9 +264,9 @@
               (eq? '#:extra-constructor-name (syntax-e (car p))))
           (check-exprs 1 p "identifier")
           (when (lookup config '#:constructor-name)
-            (bad "multiple #:constructor-name or #:extra-constructor-name keys" (car p)))
+            (bad "multiple" "#:constructor-name or #:extra-constructor-name keys" (car p)))
           (unless (identifier? (cadr p))
-            (bad "need an identifier after #:constructor-name" (cadr p)))
+            (bad "need an identifier after" (car p) (cadr p)))
           (loop (cddr p)
                 (extend-config (extend-config config '#:constructor-name (cadr p))
                                '#:only-constructor?

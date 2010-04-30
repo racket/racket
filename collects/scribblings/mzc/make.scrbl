@@ -241,26 +241,28 @@ A parameter for a procedure of one argument that is called to report
  compilation-manager actions, such as checking a file. The argument to
  the procedure is a string.}
 
-@defparam[manager-skip-file-handler proc (-> path? (or/c number? #f))]{
+@defparam[manager-skip-file-handler proc (-> path? (or/c (cons/c number? promise?) #f))]{
 
 A parameter whose value is called for each file that is loaded and
- needs recompilation. If the procedure returns a number, then the file
- is skipped (i.e., not compiled), and the number is used as the
- timestamp for the file's bytecode. If the procedure returns
+ needs recompilation. If the procedure returns a pair, then the file
+ is skipped (i.e., not compiled); the number in the pair is used as
+ the timestamp for the file's bytecode, and the promise may be
+ @scheme[force]d to obtain a string that is used as hash of the
+ compiled file plus its dependencies. If the procedure returns
  @scheme[#f], then the file is compiled as usual. The default is
  @scheme[(lambda (x) #f)].}
 
-@defproc[(file-date-in-collection [p path?]) (or/c number? #f)]{
-  Calls @scheme[file-date-in-paths] with @scheme[p] and
+@defproc[(file-stamp-in-collection [p path?]) (or/c (cons/c number? promise?) #f)]{
+  Calls @scheme[file-stamp-in-paths] with @scheme[p] and
   @scheme[(current-library-collection-paths)].}
 
-@defproc[(file-date-in-paths [p path?] [paths (listof path?)]) (or/c number? #f)]{
+@defproc[(file-stamp-in-paths [p path?] [paths (listof path?)]) (or/c (cons/c number? promise?) #f)]{
 
-Returns the file-modification date of @scheme[p] or its bytecode form
- (i.e., @filepath{.zo} file), whichever exists and is newer, if
- @scheme[p] is an extension of any path in @scheme[paths] (i.e.,
- exists in the directory, a subdirectory, etc.). Otherwise, the result
- is @scheme[#f].
+Returns the file-modification date and @scheme[delay]ed hash of
+ @scheme[p]or its bytecode form (i.e., @filepath{.zo} file), whichever
+ exists and is newer, if @scheme[p] is an extension of any path in
+ @scheme[paths] (i.e., exists in the directory, a subdirectory,
+ etc.). Otherwise, the result is @scheme[#f].
 
  This function is intended for use with @scheme[manager-skip-file-handler].}
 
