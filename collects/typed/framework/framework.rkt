@@ -34,9 +34,9 @@
  [gui-utils:ok/cancel-buttons 
   ((Instance Horizontal-Panel%) ((Instance Button%) (Instance Event%) -> Void) ((Instance Button%) (Instance Event%) -> Void) -> (values Any Any))])
 
-(require/typed/provide "prefs-contract.ss"
+(require/typed/provide "prefs-contract.rkt"
                        [preferences:get-drracket:large-letters-font (-> (U #f (Pair String Integer)))])
 
-(require (only-in "prefs-contract.ss" preferences:get))
+(require (only-in "prefs-contract.rkt" preferences:get))
 (provide preferences:get)
 

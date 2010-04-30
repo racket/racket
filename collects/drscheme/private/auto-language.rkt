@@ -80,4 +80,4 @@
                ;; If tp contains a snip, read-line fails.
                (read-line tp))])
     (and (string? l1)
-         (regexp-match? #rx"#lang .*$" l1))))
+         (regexp-match? #rx"#lang .*$" (assert l1 string?)))))
