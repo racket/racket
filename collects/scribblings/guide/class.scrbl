@@ -1,16 +1,16 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
-          scheme/class
+          racket/class
           "guide-utils.ss"
 
-          (for-label scheme/class
-                     scheme/trait
-                     scheme/contract))
+          (for-label racket/class
+                     racket/trait
+                     racket/contract))
 
 @(define class-eval
    (let ([e (make-base-eval)])
-     (e '(require scheme/class))
+     (e '(require racket/class))
      e))
 
 @; FIXME: at some point, discuss classes vs. units vs. modules
@@ -20,24 +20,24 @@
 
 @margin-note{This chapter is based on a paper @cite["Flatt06"].}
 
-A @scheme[class] expression denotes a first-class value,
-just like a @scheme[lambda] expression:
+A @racket[class] expression denotes a first-class value,
+just like a @racket[lambda] expression:
 
 @specform[(class superclass-expr decl-or-expr ...)]
 
-The @scheme[_superclass-expr] determines the superclass for the new
-class. Each @scheme[_decl-or-expr] is either a declaration related to
+The @racket[_superclass-expr] determines the superclass for the new
+class. Each @racket[_decl-or-expr] is either a declaration related to
 methods, fields, and initialization arguments, or it is an expression
 that is evaluated each time that the class is instantiated. In other
 words, instead of a method-like constructor, a class has
 initialization expressions interleaved with field and method
 declarations.
 
-By convention, class names end with @schemeidfont{%}. The built-in root class is
-@scheme[object%]. The following expression creates a class with
-public methods @scheme[get-size], @scheme[grow], and @scheme[eat]:
+By convention, class names end with @racketidfont{%}. The built-in root class is
+@racket[object%]. The following expression creates a class with
+public methods @racket[get-size], @racket[grow], and @racket[eat]:
 
-@schemeblock[
+@racketblock[
 (class object%
   (init size)                (code:comment #,(t "initialization argument"))
 
@@ -69,16 +69,16 @@ public methods @scheme[get-size], @scheme[grow], and @scheme[eat]:
     (define/public (eat other-fish)
       (grow (send other-fish get-size))))))
 
-The @scheme[size] initialization argument must be supplied via a named
- argument when instantiating the class through the @scheme[new] form:
+The @racket[size] initialization argument must be supplied via a named
+ argument when instantiating the class through the @racket[new] form:
 
-@schemeblock[
+@racketblock[
 (new (class object% (init size) ....) [size 10])
 ]
 
 Of course, we can also name the class and its instance:
 
-@schemeblock[
+@racketblock[
 (define fish% (class object% (init size) ....))
 (define charlie (new fish% [size 10]))
 ]
@@ -87,26 +87,26 @@ Of course, we can also name the class and its instance:
 #:eval class-eval
 (define charlie (new fish% [size 10])))
 
-In the definition of @scheme[fish%], @scheme[current-size] is a
-private field that starts out with the value of the @scheme[size]
-initialization argument. Initialization arguments like @scheme[size]
+In the definition of @racket[fish%], @racket[current-size] is a
+private field that starts out with the value of the @racket[size]
+initialization argument. Initialization arguments like @racket[size]
 are available only during class instantiation, so they cannot be
-referenced directly from a method. The @scheme[current-size] field, in
+referenced directly from a method. The @racket[current-size] field, in
 contrast, is available to methods.
 
-The @scheme[(super-new)] expression in @scheme[fish%] invokes the
+The @racket[(super-new)] expression in @racket[fish%] invokes the
 initialization of the superclass. In this case, the superclass is
-@scheme[object%], which takes no initialization arguments and performs
-no work; @scheme[super-new] must be used, anyway, because a class must
+@racket[object%], which takes no initialization arguments and performs
+no work; @racket[super-new] must be used, anyway, because a class must
 always invoke its superclass's initialization.
 
 Initialization arguments, field declarations, and expressions such as
-@scheme[(super-new)] can appear in any order within a @scheme[class],
+@racket[(super-new)] can appear in any order within a @racket[class],
 and they can be interleaved with method declarations. The relative
 order of expressions in the class determines the order of evaluation
 during instantiation. For example, if a field's initial value requires
 calling a method that works only after superclass initialization, then
-the field declaration must be placed after the @scheme[super-new]
+the field declaration must be placed after the @racket[super-new]
 call. Ordering field and initialization declarations in this way helps
 avoid imperative assignment. The relative order of method declarations
 makes no difference for evaluation, because methods are fully defined
@@ -114,11 +114,11 @@ before a class is instantiated.
 
 @section[#:tag "methods"]{Methods}
 
-Each of the three @scheme[define/public] declarations in
-@scheme[fish%] introduces a new method. The declaration uses the same
-syntax as a Scheme function, but a method is not accessible as an
-independent function.  A call to the @scheme[grow] method of a
-@scheme[fish%] object requires the @scheme[send] form:
+Each of the three @racket[define/public] declarations in
+@racket[fish%] introduces a new method. The declaration uses the same
+syntax as a Racket function, but a method is not accessible as an
+independent function.  A call to the @racket[grow] method of a
+@racket[fish%] object requires the @racket[send] form:
 
 @interaction[
 #:eval class-eval
@@ -126,15 +126,15 @@ independent function.  A call to the @scheme[grow] method of a
 (send charlie get-size)
 ]
 
-Within @scheme[fish%], self methods can be called like functions,
-because the method names are in scope.  For example, the @scheme[eat]
-method within @scheme[fish%] directly invokes the @scheme[grow]
+Within @racket[fish%], self methods can be called like functions,
+because the method names are in scope.  For example, the @racket[eat]
+method within @racket[fish%] directly invokes the @racket[grow]
 method.  Within a class, attempting to use a method name in any way
 other than a method call results in a syntax error.
 
 In some cases, a class must call methods that are supplied by the superclass
-but not overridden. In that case, the class can use @scheme[send]
-with @scheme[this] to access the method:
+but not overridden. In that case, the class can use @racket[send]
+with @racket[this] to access the method:
 
 @def+int[
 #:eval class-eval
@@ -144,7 +144,7 @@ with @scheme[this] to access the method:
                          (send this eat fish2))))
 ]
 
-Alternately, the class can declare the existence of a method using @scheme[inherit],
+Alternately, the class can declare the existence of a method using @racket[inherit],
 which brings the method name into scope for a direct call:
 
 @def+int[
@@ -155,26 +155,26 @@ which brings the method name into scope for a direct call:
                          (eat fish1) (eat fish2))))
 ]
 
-With the @scheme[inherit] declaration, if @scheme[fish%] had not
-provided an @scheme[eat] method, an error would be signaled in the
-evaluation of the @scheme[class] form for @scheme[hungry-fish%]. In
-contrast, with @scheme[(send this ....)], an error would not be
-signaled until the @scheme[eat-more] method is called and the
-@scheme[send] form is evaluated. For this reason, @scheme[inherit] is
+With the @racket[inherit] declaration, if @racket[fish%] had not
+provided an @racket[eat] method, an error would be signaled in the
+evaluation of the @racket[class] form for @racket[hungry-fish%]. In
+contrast, with @racket[(send this ....)], an error would not be
+signaled until the @racket[eat-more] method is called and the
+@racket[send] form is evaluated. For this reason, @racket[inherit] is
 preferred.
 
-Another drawback of @scheme[send] is that it is less efficient than
-@scheme[inherit]. Invocation of a method via @scheme[send] involves
+Another drawback of @racket[send] is that it is less efficient than
+@racket[inherit]. Invocation of a method via @racket[send] involves
 finding a method in the target object's class at run time, making
-@scheme[send] comparable to an interface-based method call in Java. In
-contrast, @scheme[inherit]-based method invocations use an offset
+@racket[send] comparable to an interface-based method call in Java. In
+contrast, @racket[inherit]-based method invocations use an offset
 within the class's method table that is computed when the class is
 created.
 
-To achieve performance similar to @scheme[inherit]-based method calls when
+To achieve performance similar to @racket[inherit]-based method calls when
 invoking a method from outside the method's class, the programmer must use the
-@scheme[generic] form, which produces a class- and method-specific
-@defterm{generic method} to be invoked with @scheme[send-generic]:
+@racket[generic] form, which produces a class- and method-specific
+@defterm{generic method} to be invoked with @racket[send-generic]:
 
 @def+int[
 #:eval class-eval
@@ -189,9 +189,9 @@ method name to a location in the class's method table. As illustrated
 by the last example, sending through a generic method checks that its
 argument is an instance of the generic's class.
 
-Whether a method is called directly within a @scheme[class],
+Whether a method is called directly within a @racket[class],
 through a generic method,
-or through @scheme[send], method overriding works in the usual way:
+or through @racket[send], method overriding works in the usual way:
 
 @defs+int[
 #:eval class-eval
@@ -206,27 +206,27 @@ or through @scheme[send], method overriding works in the usual way:
 (send daisy get-size)
 ]
 
-The @scheme[grow] method in @scheme[picky-fish%] is declared with
-@scheme[define/override] instead of @scheme[define/public], because
-@scheme[grow] is meant as an overriding declaration. If @scheme[grow]
-had been declared with @scheme[define/public], an error would have
-been signaled when evaluating the @scheme[class] expression, because
-@scheme[fish%] already supplies @scheme[grow].
+The @racket[grow] method in @racket[picky-fish%] is declared with
+@racket[define/override] instead of @racket[define/public], because
+@racket[grow] is meant as an overriding declaration. If @racket[grow]
+had been declared with @racket[define/public], an error would have
+been signaled when evaluating the @racket[class] expression, because
+@racket[fish%] already supplies @racket[grow].
 
-Using @scheme[define/override] also allows the invocation of the
-overridden method via a @scheme[super] call. For example, the
-@scheme[grow] implementation in @scheme[picky-fish%] uses
-@scheme[super] to delegate to the superclass implementation.
+Using @racket[define/override] also allows the invocation of the
+overridden method via a @racket[super] call. For example, the
+@racket[grow] implementation in @racket[picky-fish%] uses
+@racket[super] to delegate to the superclass implementation.
 
 @section[#:tag "initargs"]{Initialization Arguments}
 
-Since @scheme[picky-fish%] declares no initialization arguments, any
-initialization values supplied in @scheme[(new picky-fish% ....)]  are
-propagated to the superclass initialization, i.e., to @scheme[fish%].
+Since @racket[picky-fish%] declares no initialization arguments, any
+initialization values supplied in @racket[(new picky-fish% ....)]  are
+propagated to the superclass initialization, i.e., to @racket[fish%].
 A subclass can supply additional initialization arguments for its
-superclass in a @scheme[super-new] call, and such initialization
-arguments take precedence over arguments supplied to @scheme[new]. For
-example, the following @scheme[size-10-fish%] class always generates
+superclass in a @racket[super-new] call, and such initialization
+arguments take precedence over arguments supplied to @racket[new]. For
+example, the following @racket[size-10-fish%] class always generates
 fish of size 10:
 
 @def+int[
@@ -235,15 +235,15 @@ fish of size 10:
 (send (new size-10-fish%) get-size)
 ]
 
-In the case of @scheme[size-10-fish%], supplying a @scheme[size]
-initialization argument with @scheme[new] would result in an
-initialization error; because the @scheme[size] in @scheme[super-new]
-takes precedence, a @scheme[size] supplied to @scheme[new] would have
+In the case of @racket[size-10-fish%], supplying a @racket[size]
+initialization argument with @racket[new] would result in an
+initialization error; because the @racket[size] in @racket[super-new]
+takes precedence, a @racket[size] supplied to @racket[new] would have
 no target declaration.
 
-An initialization argument is optional if the @scheme[class] form
-declares a default value. For example, the following @scheme[default-10-fish%]
-class accepts a @scheme[size] initialization argument, but its value defaults to
+An initialization argument is optional if the @racket[class] form
+declares a default value. For example, the following @racket[default-10-fish%]
+class accepts a @racket[size] initialization argument, but its value defaults to
 10 if no value is supplied on instantiation:
 
 @def+int[
@@ -255,24 +255,24 @@ class accepts a @scheme[size] initialization argument, but its value defaults to
 (new default-10-fish% [size 20])
 ]
 
-In this example, the @scheme[super-new] call propagates its own
-@scheme[size] value as the @scheme[size] initialization argument to
+In this example, the @racket[super-new] call propagates its own
+@racket[size] value as the @racket[size] initialization argument to
 the superclass.
 
 @section[#:tag "intnames"]{Internal and External Names}
 
-The two uses of @scheme[size] in @scheme[default-10-fish%] expose the
-double life of class-member identifiers. When @scheme[size] is the
-first identifier of a bracketed pair in @scheme[new] or
-@scheme[super-new], @scheme[size] is an @defterm{external name} that
+The two uses of @racket[size] in @racket[default-10-fish%] expose the
+double life of class-member identifiers. When @racket[size] is the
+first identifier of a bracketed pair in @racket[new] or
+@racket[super-new], @racket[size] is an @defterm{external name} that
 is symbolically matched to an initialization argument in a class. When
-@scheme[size] appears as an expression within
-@scheme[default-10-fish%], @scheme[size] is an @defterm{internal name}
+@racket[size] appears as an expression within
+@racket[default-10-fish%], @racket[size] is an @defterm{internal name}
 that is lexically scoped. Similarly, a call to an inherited
-@scheme[eat] method uses @scheme[eat] as an internal name, whereas a
-@scheme[send] of @scheme[eat] uses @scheme[eat] as an external name.
+@racket[eat] method uses @racket[eat] as an internal name, whereas a
+@racket[send] of @racket[eat] uses @racket[eat] as an external name.
 
-The full syntax of the @scheme[class] form allows a programmer to
+The full syntax of the @racket[class] form allows a programmer to
 specify distinct internal and external names for a class member. Since
 internal names are local, they can be renamed to avoid shadowing or
 conflicts. Such renaming is not frequently necessary, but workarounds
@@ -285,7 +285,7 @@ implements a set of methods with a particular (implied) behavior.
 This use of interfaces is helpful even without a static type system
 (which is the main reason that Java has interfaces).
 
-An interface in PLT Scheme is created using the @scheme[interface]
+An interface in Racket is created using the @racket[interface]
 form, which merely declares the method names required to implement the
 interface. An interface can extend other interfaces, which means that
 implementations of the interface automatically implement the extended
@@ -294,56 +294,56 @@ interfaces.
 @specform[(interface (superinterface-expr ...) id ...)]
 
 To declare that a class implements an interface, the
-@scheme[class*] form must be used instead of @scheme[class]:
+@racket[class*] form must be used instead of @racket[class]:
 
 @specform[(class* superclass-expr (interface-expr ...) decl-or-expr ...)]
 
 For example, instead of forcing all fish classes to be derived from
-@scheme[fish%], we can define @scheme[fish-interface] and change the
-@scheme[fish%] class to declare that it implements
-@scheme[fish-interface]:
+@racket[fish%], we can define @racket[fish-interface] and change the
+@racket[fish%] class to declare that it implements
+@racket[fish-interface]:
 
-@schemeblock[
+@racketblock[
 (define fish-interface (interface () get-size grow eat))
 (define fish% (class* object% (fish-interface) ....))
 ]
 
-If the definition of @scheme[fish%] does not include
-@scheme[get-size], @scheme[grow], and @scheme[eat] methods, then an
-error is signaled in the evaluation of the @scheme[class*] form,
-because implementing the @scheme[fish-interface] interface requires
+If the definition of @racket[fish%] does not include
+@racket[get-size], @racket[grow], and @racket[eat] methods, then an
+error is signaled in the evaluation of the @racket[class*] form,
+because implementing the @racket[fish-interface] interface requires
 those methods.
 
-The @scheme[is-a?] predicate accepts either a class or interface as
+The @racket[is-a?] predicate accepts either a class or interface as
 its first argument and an object as its second argument. When given a
-class, @scheme[is-a?] checks whether the object is an instance of that
-class or a derived class.  When given an interface, @scheme[is-a?]
+class, @racket[is-a?] checks whether the object is an instance of that
+class or a derived class.  When given an interface, @racket[is-a?]
 checks whether the object's class implements the interface. In
-addition, the @scheme[implementation?]  predicate checks whether a
+addition, the @racket[implementation?]  predicate checks whether a
 given class implements a given interface.
 
 @section[#:tag "inner"]{Final, Augment, and Inner}
 
-As in Java, a method in a @scheme[class] form can be specified as
+As in Java, a method in a @racket[class] form can be specified as
 @defterm{final}, which means that a subclass cannot override the
-method.  A final method is declared using @scheme[public-final] or
-@scheme[override-final], depending on whether the declaration is for a
+method.  A final method is declared using @racket[public-final] or
+@racket[override-final], depending on whether the declaration is for a
 new method or an overriding implementation.
 
 Between the extremes of allowing arbitrary overriding and disallowing
 overriding entirely, the class system also supports Beta-style
 @defterm{augmentable} methods @cite["Goldberg04"]. A method
-declared with @scheme[pubment] is like @scheme[public], but the method
+declared with @racket[pubment] is like @racket[public], but the method
 cannot be overridden in subclasses; it can be augmented only. A
-@scheme[pubment] method must explicitly invoke an augmentation (if any)
-using @scheme[inner]; a subclass augments the method using
-@scheme[augment], instead of @scheme[override].
+@racket[pubment] method must explicitly invoke an augmentation (if any)
+using @racket[inner]; a subclass augments the method using
+@racket[augment], instead of @racket[override].
 
 In general, a method can switch between augment and override modes in
-a class derivation. The @scheme[augride] method specification
+a class derivation. The @racket[augride] method specification
 indicates an augmentation to a method where the augmentation is itself
 overrideable in subclasses (though the superclass's implementation
-cannot be overridden). Similarly, @scheme[overment] overrides a method
+cannot be overridden). Similarly, @racket[overment] overrides a method
 and makes the overriding implementation augmentable.
 
 @section[#:tag "extnames"]{Controlling the Scope of External Names}
@@ -357,39 +357,39 @@ definition refers to an existing binding for an external name, where
 the member name is bound to a @defterm{member key}; a class ultimately
 maps member keys to methods, fields, and initialization arguments.
 
-Recall the @scheme[hungry-fish%] @scheme[class] expression:
+Recall the @racket[hungry-fish%] @racket[class] expression:
 
-@schemeblock[
+@racketblock[
 (define hungry-fish% (class fish% ....
                        (inherit eat)
                        (define/public (eat-more fish1 fish2)
                          (eat fish1) (eat fish2))))
 ]
 
-During its evaluation, the @scheme[hungry-fish%] and @scheme[fish%]
-classes refer to the same global binding of @scheme[eat].  At run
-time, calls to @scheme[eat] in @scheme[hungry-fish%] are matched with
-the @scheme[eat] method in @scheme[fish%] through the shared method
-key that is bound to @scheme[eat].
+During its evaluation, the @racket[hungry-fish%] and @racket[fish%]
+classes refer to the same global binding of @racket[eat].  At run
+time, calls to @racket[eat] in @racket[hungry-fish%] are matched with
+the @racket[eat] method in @racket[fish%] through the shared method
+key that is bound to @racket[eat].
 
 The default binding for an external name is global, but a
 programmer can introduce an external-name binding with the
-@scheme[define-member-name] form.
+@racket[define-member-name] form.
 
 @specform[(define-member-name id member-key-expr)]
 
-In particular, by using @scheme[(generate-member-key)] as the
-@scheme[member-key-expr], an external name can be localized for a
+In particular, by using @racket[(generate-member-key)] as the
+@racket[member-key-expr], an external name can be localized for a
 particular scope, because the generated member key is inaccessible
-outside the scope. In other words, @scheme[define-member-name] gives
+outside the scope. In other words, @racket[define-member-name] gives
 an external name a kind of package-private scope, but generalized from
-packages to arbitrary binding scopes in Scheme.
+packages to arbitrary binding scopes in Racket.
 
-For example, the following @scheme[fish%] and @scheme[pond%] classes cooperate
-via a @scheme[get-depth] method that is only accessible to the
+For example, the following @racket[fish%] and @racket[pond%] classes cooperate
+via a @racket[get-depth] method that is only accessible to the
 cooperating classes:
 
-@schemeblock[
+@racketblock[
 (define-values (fish% pond%) (code:comment #,(t "two mutually recursive classes"))
   (let () ; create a local definition scope
     (define-member-name get-depth (generate-member-key))
@@ -408,18 +408,18 @@ cooperating classes:
     (values fish% pond%)))
 ]
 
-External names are in a namespace that separates them from other Scheme
+External names are in a namespace that separates them from other Racket
 names. This separate namespace is implicitly used for the method name in
-@scheme[send], for initialization-argument names in @scheme[new], or for
+@racket[send], for initialization-argument names in @racket[new], or for
 the external name in a member definition.  The special form
-@scheme[member-name-key] provides access to the binding of an external name
-in an arbitrary expression position: @scheme[(member-name-key id)]
-produces the member-key binding of @scheme[id] in the current scope.
+@racket[member-name-key] provides access to the binding of an external name
+in an arbitrary expression position: @racket[(member-name-key id)]
+produces the member-key binding of @racket[id] in the current scope.
 
 A member-key value is primarily used with a
-@scheme[define-member-name] form. Normally, then,
-@scheme[(member-name-key id)] captures the method key of @scheme[id]
-so that it can be communicated to a use of @scheme[define-member-name]
+@racket[define-member-name] form. Normally, then,
+@racket[(member-name-key id)] captures the method key of @racket[id]
+so that it can be communicated to a use of @racket[define-member-name]
 in a different scope. This capability turns out to be useful for
 generalizing mixins, as discussed next.
 
@@ -427,34 +427,34 @@ generalizing mixins, as discussed next.
 
 @section{Mixins}
 
-Since @scheme[class] is an expression form instead of a top-level
-declaration as in Smalltalk and Java, a @scheme[class] form can be
-nested inside any lexical scope, including @scheme[lambda]. The result
+Since @racket[class] is an expression form instead of a top-level
+declaration as in Smalltalk and Java, a @racket[class] form can be
+nested inside any lexical scope, including @racket[lambda]. The result
 is a @deftech{mixin}, i.e., a class extension that is parameterized
 with respect to its superclass.
 
-For example, we can parameterize the @scheme[picky-fish%] class over
-its superclass to define @scheme[picky-mixin]:
+For example, we can parameterize the @racket[picky-fish%] class over
+its superclass to define @racket[picky-mixin]:
 
-@schemeblock[
+@racketblock[
 (define (picky-mixin %)
   (class % (super-new)
     (define/override (grow amt) (super grow (* 3/4 amt)))))
 (define picky-fish% (picky-mixin fish%))
 ]
 
-Many small differences between Smalltalk-style classes and Scheme
+Many small differences between Smalltalk-style classes and Racket
 classes contribute to the effective use of mixins. In particular, the
-use of @scheme[define/override] makes explicit that
-@scheme[picky-mixin] expects a class with a @scheme[grow] method. If
-@scheme[picky-mixin] is applied to a class without a @scheme[grow]
-method, an error is signaled as soon as @scheme[picky-mixin] is
+use of @racket[define/override] makes explicit that
+@racket[picky-mixin] expects a class with a @racket[grow] method. If
+@racket[picky-mixin] is applied to a class without a @racket[grow]
+method, an error is signaled as soon as @racket[picky-mixin] is
 applied.
 
-Similarly, a use of @scheme[inherit] enforces a ``method existence''
+Similarly, a use of @racket[inherit] enforces a ``method existence''
 requirement when the mixin is applied:
 
-@schemeblock[
+@racketblock[
 (define (hungry-mixin %)
   (class % (super-new)
     (inherit eat)
@@ -466,22 +466,22 @@ requirement when the mixin is applied:
 The advantage of mixins is that we can easily combine them to create
 new classes whose implementation sharing does not fit into a
 single-inheritance hierarchy---without the ambiguities associated with
-multiple inheritance. Equipped with @scheme[picky-mixin] and
-@scheme[hungry-mixin], creating a class for a hungry, yet picky fish
+multiple inheritance. Equipped with @racket[picky-mixin] and
+@racket[hungry-mixin], creating a class for a hungry, yet picky fish
 is straightforward:
 
-@schemeblock[
+@racketblock[
 (define picky-hungry-fish% 
   (hungry-mixin (picky-mixin fish%)))
 ]
 
 The use of keyword initialization arguments is critical for the easy
-use of mixins. For example, @scheme[picky-mixin] and
-@scheme[hungry-mixin] can augment any class with suitable @scheme[eat]
-and @scheme[grow] methods, because they do not specify initialization
-arguments and add none in their @scheme[super-new] expressions:
+use of mixins. For example, @racket[picky-mixin] and
+@racket[hungry-mixin] can augment any class with suitable @racket[eat]
+and @racket[grow] methods, because they do not specify initialization
+arguments and add none in their @racket[super-new] expressions:
 
-@schemeblock[
+@racketblock[
 (define person% 
   (class object%
     (init name age)
@@ -494,21 +494,21 @@ arguments and add none in their @scheme[super-new] expressions:
 
 Finally, the use of external names for class members (instead of
 lexically scoped identifiers) makes mixin use convenient. Applying
-@scheme[picky-mixin] to @scheme[person%] works because the names
-@scheme[eat] and @scheme[grow] match, without any a priori declaration
-that @scheme[eat] and @scheme[grow] should be the same method in
-@scheme[fish%] and @scheme[person%]. This feature is a potential
+@racket[picky-mixin] to @racket[person%] works because the names
+@racket[eat] and @racket[grow] match, without any a priori declaration
+that @racket[eat] and @racket[grow] should be the same method in
+@racket[fish%] and @racket[person%]. This feature is a potential
 drawback when member names collide accidentally; some accidental
 collisions can be corrected by limiting the scope external names, as
 discussed in @secref["extnames"].
 
 @subsection{Mixins and Interfaces}
 
-Using @scheme[implementation?], @scheme[picky-mixin] could require
-that its base class implements @scheme[grower-interface], which could
-be implemented by both @scheme[fish%] and @scheme[person%]:
+Using @racket[implementation?], @racket[picky-mixin] could require
+that its base class implements @racket[grower-interface], which could
+be implemented by both @racket[fish%] and @racket[person%]:
 
-@schemeblock[
+@racketblock[
 (define grower-interface (interface () grow))
 (define (picky-mixin %)
   (unless (implementation? % grower-interface)
@@ -518,14 +518,14 @@ be implemented by both @scheme[fish%] and @scheme[person%]:
 
 Another use of interfaces with a mixin is to tag classes generated by
 the mixin, so that instances of the mixin can be recognized. In other
-words, @scheme[is-a?] cannot work on a mixin represented as a
+words, @racket[is-a?] cannot work on a mixin represented as a
 function, but it can recognize an interface (somewhat like a
 @defterm{specialization interface}) that is consistently implemented
-by the mixin.  For example, classes generated by @scheme[picky-mixin]
-could be tagged with @scheme[picky-interface], enabling the
-@scheme[is-picky?] predicate:
+by the mixin.  For example, classes generated by @racket[picky-mixin]
+could be tagged with @racket[picky-interface], enabling the
+@racket[is-picky?] predicate:
 
-@schemeblock[
+@racketblock[
 (define picky-interface (interface ()))
 (define (picky-mixin %)
   (unless (implementation? % grower-interface)
@@ -535,11 +535,11 @@ could be tagged with @scheme[picky-interface], enabling the
   (is-a? o picky-interface))
 ]
 
-@subsection{The @scheme[mixin] Form}
+@subsection{The @racket[mixin] Form}
 
-To codify the @scheme[lambda]-plus-@scheme[class] pattern for
+To codify the @racket[lambda]-plus-@racket[class] pattern for
 implementing mixins, including the use of interfaces for the domain
-and range of the mixin, the class system provides a @scheme[mixin]
+and range of the mixin, the class system provides a @racket[mixin]
 macro:
 
 @specform[
@@ -547,14 +547,14 @@ macro:
   decl-or-expr ...)
 ]
 
-The first set of @scheme[interface-expr]s determines the domain of the
+The first set of @racket[interface-expr]s determines the domain of the
 mixin, and the second set determines the range. That is, the expansion
 is a function that tests whether a given base class implements the
-first sequence of @scheme[interface-expr]s and produces a class that
-implements the second sequence of @scheme[interface-expr]s. Other
-requirements, such as the presence of @scheme[inherit]ed methods in
-the superclass, are then checked for the @scheme[class] expansion of
-the @scheme[mixin] form.
+first sequence of @racket[interface-expr]s and produces a class that
+implements the second sequence of @racket[interface-expr]s. Other
+requirements, such as the presence of @racket[inherit]ed methods in
+the superclass, are then checked for the @racket[class] expansion of
+the @racket[mixin] form.
 
 Mixins not only override methods and introduce public methods, they
 can also augment methods, introduce augment-only methods, add an
@@ -565,12 +565,12 @@ the things that a class can do (see @secref["inner"]).
 @subsection[#:tag "parammixins"]{Parameterized Mixins}
 
 As noted in @secref["extnames"], external names can be bound with
-@scheme[define-member-name]. This facility allows a mixin to be
+@racket[define-member-name]. This facility allows a mixin to be
 generalized with respect to the methods that it defines and uses.  For
-example, we can parameterize @scheme[hungry-mixin] with respect to the
-external member key for @scheme[eat]:
+example, we can parameterize @racket[hungry-mixin] with respect to the
+external member key for @racket[eat]:
 
-@schemeblock[
+@racketblock[
 (define (make-hungry-mixin eat-method-key)
   (define-member-name eat eat-method-key)
   (mixin () () (super-new)
@@ -580,18 +580,18 @@ external member key for @scheme[eat]:
 
 To obtain a particular hungry-mixin, we must apply this function to a
 member key that refers to a suitable
-@scheme[eat] method, which we can obtain using @scheme[member-name-key]: 
+@racket[eat] method, which we can obtain using @racket[member-name-key]: 
 
-@schemeblock[
+@racketblock[
 ((make-hungry-mixin (member-name-key eat))
  (class object% .... (define/public (eat x) 'yum)))
 ]
 
-Above, we apply @scheme[hungry-mixin] to an anonymous class that provides
-@scheme[eat], but we can also combine it with a class that provides 
-@scheme[chomp], instead:
+Above, we apply @racket[hungry-mixin] to an anonymous class that provides
+@racket[eat], but we can also combine it with a class that provides 
+@racket[chomp], instead:
 
-@schemeblock[
+@racketblock[
 ((make-hungry-mixin (member-name-key chomp))
  (class object% .... (define/public (chomp x) 'yum)))
 ]
@@ -603,8 +603,8 @@ Above, we apply @scheme[hungry-mixin] to an anonymous class that provides
 A @defterm{trait} is similar to a mixin, in that it encapsulates a set
 of methods to be added to a class. A trait is different from a mixin
 in that its individual methods can be manipulated with trait operators
-such as @scheme[trait-sum] (merge the methods of two traits), @scheme[trait-exclude]
-(remove a method from a trait), and @scheme[trait-alias] (add a copy of a
+such as @racket[trait-sum] (merge the methods of two traits), @racket[trait-exclude]
+(remove a method from a trait), and @racket[trait-alias] (add a copy of a
 method with a new name; do not redirect any calls to the old name).
 
 The practical difference between mixins and traits is that two traits
@@ -614,28 +614,28 @@ programmer must explicitly resolve the collision, usually by aliasing
 methods, excluding methods, and merging a new trait that uses the
 aliases.
 
-Suppose our @scheme[fish%] programmer wants to define two class
-extensions, @scheme[spots] and @scheme[stripes], each of which
-includes a @scheme[get-color] method. The fish's spot color should not
+Suppose our @racket[fish%] programmer wants to define two class
+extensions, @racket[spots] and @racket[stripes], each of which
+includes a @racket[get-color] method. The fish's spot color should not
 override the stripe color nor vice-versa; instead, a
-@scheme[spots+stripes-fish%] should combine the two colors, which is
-not possible if @scheme[spots] and @scheme[stripes] are implemented as
-plain mixins. If, however, @scheme[spots] and @scheme[stripes] are
+@racket[spots+stripes-fish%] should combine the two colors, which is
+not possible if @racket[spots] and @racket[stripes] are implemented as
+plain mixins. If, however, @racket[spots] and @racket[stripes] are
 implemented as traits, they can be combined. First, we alias
-@scheme[get-color] in each trait to a non-conflicting name. Second,
-the @scheme[get-color] methods are removed from both and the traits
+@racket[get-color] in each trait to a non-conflicting name. Second,
+the @racket[get-color] methods are removed from both and the traits
 with only aliases are merged. Finally, the new trait is used to create
-a class that introduces its own @scheme[get-color] method based on the
-two aliases, producing the desired @scheme[spots+stripes] extension.
+a class that introduces its own @racket[get-color] method based on the
+two aliases, producing the desired @racket[spots+stripes] extension.
 
 @subsection{Traits as Sets of Mixins}
 
-One natural approach to implementing traits in PLT Scheme is as a set
+One natural approach to implementing traits in Racket is as a set
 of mixins, with one mixin per trait method.  For example, we might
 attempt to define the spots and stripes traits as follows, using
 association lists to represent sets:
 
-@schemeblock[
+@racketblock[
 (define spots-trait
   (list (cons 'get-color 
                (lambda (%) (class % (super-new)
@@ -648,19 +648,19 @@ association lists to represent sets:
                               'red))))))
 ]
 
-A set representation, such as the above, allows @scheme[trait-sum] and
-@scheme[trait-exclude] as simple manipulations; unfortunately, it does
-not support the @scheme[trait-alias] operator. Although a mixin can be
+A set representation, such as the above, allows @racket[trait-sum] and
+@racket[trait-exclude] as simple manipulations; unfortunately, it does
+not support the @racket[trait-alias] operator. Although a mixin can be
 duplicated in the association list, the mixin has a fixed method name,
-e.g., @scheme[get-color], and mixins do not support a method-rename
-operation. To support @scheme[trait-alias], we must parameterize the
-mixins over the external method name in the same way that @scheme[eat]
+e.g., @racket[get-color], and mixins do not support a method-rename
+operation. To support @racket[trait-alias], we must parameterize the
+mixins over the external method name in the same way that @racket[eat]
 was parameterized in @secref["parammixins"].
 
-To support the @scheme[trait-alias] operation, @scheme[spots-trait]
+To support the @racket[trait-alias] operation, @racket[spots-trait]
 should be represented as:
 
-@schemeblock[
+@racketblock[
 (define spots-trait
   (list (cons (member-name-key get-color)
               (lambda (get-color-key %) 
@@ -669,11 +669,11 @@ should be represented as:
                   (define/public (get-color) 'black))))))
 ]
 
-When the @scheme[get-color] method in @scheme[spots-trait] is aliased
-to @scheme[get-trait-color] and the @scheme[get-color] method is
+When the @racket[get-color] method in @racket[spots-trait] is aliased
+to @racket[get-trait-color] and the @racket[get-color] method is
 removed, the resulting trait is the same as
 
-@schemeblock[
+@racketblock[
 (list (cons (member-name-key get-trait-color)
             (lambda (get-color-key %)
               (define-member-name get-color get-color-key)
@@ -681,28 +681,28 @@ removed, the resulting trait is the same as
                 (define/public (get-color) 'black)))))
 ]
 
-To apply a trait @scheme[_T] to a class @scheme[_C] and obtain a derived
-class, we use @scheme[((trait->mixin _T) _C)]. The @scheme[trait->mixin]
-function supplies each mixin of @scheme[_T] with the key for the mixin's
-method and a partial extension of @scheme[_C]:
+To apply a trait @racket[_T] to a class @racket[_C] and obtain a derived
+class, we use @racket[((trait->mixin _T) _C)]. The @racket[trait->mixin]
+function supplies each mixin of @racket[_T] with the key for the mixin's
+method and a partial extension of @racket[_C]:
 
-@schemeblock[
+@racketblock[
 (define ((trait->mixin T) C)
   (foldr (lambda (m %) ((cdr m) (car m) %)) C T))
 ]
 
 Thus, when the trait above is combined with other traits and then
-applied to a class, the use of @scheme[get-color] becomes a reference
-to the external name @scheme[get-trait-color].
+applied to a class, the use of @racket[get-color] becomes a reference
+to the external name @racket[get-trait-color].
 
 @subsection{Inherit and Super in Traits}
 
-This first implementation of traits supports @scheme[trait-alias], and it
+This first implementation of traits supports @racket[trait-alias], and it
  supports a trait method that calls itself, but it does not support
  trait methods that call each other. In particular, suppose that a spot-fish's
  market value depends on the color of its spots:
 
-@schemeblock[
+@racketblock[
 (define spots-trait
   (list (cons (member-name-key get-color) ....)
         (cons (member-name-key get-price)
@@ -712,19 +712,19 @@ This first implementation of traits supports @scheme[trait-alias], and it
                     .... (get-color) ....))))))
 ]
 
-In this case, the definition of @scheme[spots-trait] fails, because
-@scheme[get-color] is not in scope for the @scheme[get-price]
+In this case, the definition of @racket[spots-trait] fails, because
+@racket[get-color] is not in scope for the @racket[get-price]
 mixin. Indeed, depending on the order of mixin application when the
-trait is applied to a class, the @scheme[get-color] method may not be
-available when @scheme[get-price] mixin is applied to the class.
-Therefore adding an @scheme[(inherit get-color)] declaration to the
-@scheme[get-price] mixin does not solve the problem.
+trait is applied to a class, the @racket[get-color] method may not be
+available when @racket[get-price] mixin is applied to the class.
+Therefore adding an @racket[(inherit get-color)] declaration to the
+@racket[get-price] mixin does not solve the problem.
 
-One solution is to require the use of @scheme[(send this get-color)] in
-methods such as @scheme[get-price]. This change works because
-@scheme[send] always delays the method lookup until the method call is
+One solution is to require the use of @racket[(send this get-color)] in
+methods such as @racket[get-price]. This change works because
+@racket[send] always delays the method lookup until the method call is
 evaluated. The delayed lookup is more expensive than a direct call,
-however. Worse, it also delays checking whether a @scheme[get-color] method
+however. Worse, it also delays checking whether a @racket[get-color] method
 even exists.
 
 A second, effective, and efficient solution is to change the encoding
@@ -732,9 +732,9 @@ of traits. Specifically, we represent each method as a pair of mixins:
 one that introduces the method and one that implements it. When a
 trait is applied to a class, all of the method-introducing mixins are
 applied first. Then the method-implementing mixins can use
-@scheme[inherit] to directly access any introduced method.
+@racket[inherit] to directly access any introduced method.
 
-@schemeblock[
+@racketblock[
 (define spots-trait
   (list (list (local-member-name-key get-color)
               (lambda (get-color get-price %) ....
@@ -754,30 +754,30 @@ applied first. Then the method-implementing mixins can use
 		    .... (get-color) ....))))))
 ]
 
-With this trait encoding, @scheme[trait-alias] adds a new method with
+With this trait encoding, @racket[trait-alias] adds a new method with
 a new name, but it does not change any references to the old method.
 
-@subsection{The @scheme[trait] Form}
+@subsection{The @racket[trait] Form}
 
 The general-purpose trait pattern is clearly too complex for a
 programmer to use directly, but it is easily codified in a
-@scheme[trait] macro:
+@racket[trait] macro:
 
 @specform[
 (trait trait-clause ...)
 ]
 
-The @scheme[id]s in the optional @scheme[inherit] clause are available for direct
-reference in the method @scheme[expr]s, and they must be supplied
+The @racket[id]s in the optional @racket[inherit] clause are available for direct
+reference in the method @racket[expr]s, and they must be supplied
 either by other traits or the base class to which
 the trait is ultimately applied.
 
 Using this form in conjunction with trait operators such as
-@scheme[trait-sum], @scheme[trait-exclude], @scheme[trait-alias], and
-@scheme[trait->mixin], we can implement @scheme[spots-trait] and
-@scheme[stripes-trait] as desired.
+@racket[trait-sum], @racket[trait-exclude], @racket[trait-alias], and
+@racket[trait->mixin], we can implement @racket[spots-trait] and
+@racket[stripes-trait] as desired.
 
-@schemeblock[
+@racketblock[
 (define spots-trait
   (trait
     (define/public (get-color) 'black)
@@ -804,26 +804,26 @@ Using this form in conjunction with trait operators such as
 @; ----------------------------------------------------------------------
 
 @; Set up uses of contract forms below
-@(class-eval '(require scheme/contract))
+@(class-eval '(require racket/contract))
 
 @section{Class Contracts}
 
 As classes are values, they can flow across contract boundaries, and we
 may wish to protect parts of a given class with contracts.  For this,
-the @scheme[class/c] form is used.  The @scheme[class/c] form has many
+the @racket[class/c] form is used.  The @racket[class/c] form has many
 subforms, which describe two types of contracts on fields and methods:
 those that affect uses via instantiated objects and those that affect
 subclasses.
 
 @subsection{External Class Contracts}
 
-In its simplest form, @scheme[class/c] protects the public fields and methods
+In its simplest form, @racket[class/c] protects the public fields and methods
 of objects instantiated from the contracted class.  There is also an
-@scheme[object/c] form that can be used to similarly protect the public fields
+@racket[object/c] form that can be used to similarly protect the public fields
 and methods of a particular object. Take the following definition of
-@scheme[animal%], which uses a public field for its @scheme[size] attribute:
+@racket[animal%], which uses a public field for its @racket[size] attribute:
 
-@schemeblock[
+@racketblock[
 (define animal%
   (class object% 
     (super-new)
@@ -831,14 +831,14 @@ and methods of a particular object. Take the following definition of
     (define/public (eat food)
       (set! size (+ size (get-field size food))))))]
 
-For any instantiated @scheme[animal%], accessing the @scheme[size] field
-should return a positive number.  Also, if the @scheme[size] field is set,
-it should be assigned a positive number.  Finally, the @scheme[eat] method
-should receive an argument which is an object with a @scheme[size] field
+For any instantiated @racket[animal%], accessing the @racket[size] field
+should return a positive number.  Also, if the @racket[size] field is set,
+it should be assigned a positive number.  Finally, the @racket[eat] method
+should receive an argument which is an object with a @racket[size] field
 that contains a positive number. To ensure these conditions, we will define
-the @scheme[animal%] class with an appropriate contract:
+the @racket[animal%] class with an appropriate contract:
 
-@schemeblock[
+@racketblock[
 (define positive/c (and/c number? positive?))
 (define edible/c (object/c (field [size positive/c])))
 (define/contract animal%
@@ -865,10 +865,10 @@ the @scheme[animal%] class with an appropriate contract:
       (define/public (eat food)
         (set! size (+ size (get-field size food)))))))]
 
-Here we use @scheme[->m] to describe the behavior of @scheme[eat] since we
-do not need to describe any requirements for the @scheme[this] parameter.
+Here we use @racket[->m] to describe the behavior of @racket[eat] since we
+do not need to describe any requirements for the @racket[this] parameter.
 Now that we have our contracted class, we can see that the contracts
-on both @scheme[size] and @scheme[eat] are enforced:
+on both @racket[size] and @racket[eat] are enforced:
 
 @interaction[
 #:eval class-eval
@@ -894,10 +894,10 @@ crosses the contract boundary.  Unlike external method contracts, external
 field contracts are always enforced for clients of subclasses, since fields
 cannot be overridden or shadowed.
 
-Second, these contracts do not restrict subclasses of @scheme[animal%]
+Second, these contracts do not restrict subclasses of @racket[animal%]
 in any way.  Fields and methods that are inherited and used by subclasses
 are not checked by these contracts, and uses of the superclass's methods
-via @scheme[super] are also unchecked.  The following example illustrates
+via @racket[super] are also unchecked.  The following example illustrates
 both caveats:
 
 @def+int[
@@ -915,9 +915,9 @@ both caveats:
 
 @subsection{Internal Class Contracts}
 
-Notice that retrieving the @scheme[size] field from the object
-@scheme[elephant] blames @scheme[animal%] for the contract violation.
-This blame is correct, but unfair to the @scheme[animal%] class,
+Notice that retrieving the @racket[size] field from the object
+@racket[elephant] blames @racket[animal%] for the contract violation.
+This blame is correct, but unfair to the @racket[animal%] class,
 as we have not yet provided it with a method for protecting itself from
 subclasses.  To this end we add internal class contracts, which
 provide directives to subclasses for how they may access and override
@@ -927,10 +927,10 @@ invariants may be broken internally by subclasses but should be enforced
 for external uses via instantiated objects.
 
 As a simple example of what kinds of protection are available, we provide
-an example aimed at the @scheme[animal%] class that uses all the applicable
+an example aimed at the @racket[animal%] class that uses all the applicable
 forms:
 
-@schemeblock[
+@racketblock[
 (class/c (field [size positive/c])
          (inherit-field [size positive/c])
          [eat (->m edible/c void?)]
@@ -938,23 +938,23 @@ forms:
          (super [eat (->m edible/c void?)])
          (override [eat (->m edible/c void?)]))]
 
-This class contract not only ensures that objects of class @scheme[animal%]
-are protected as before, but also ensure that subclasses of @scheme[animal%]
-only store appropriate values within the @scheme[size] field and use
-the implementation of @scheme[size] from @scheme[animal%] appropriately.
+This class contract not only ensures that objects of class @racket[animal%]
+are protected as before, but also ensure that subclasses of @racket[animal%]
+only store appropriate values within the @racket[size] field and use
+the implementation of @racket[size] from @racket[animal%] appropriately.
 These contract forms only affect uses within the class hierarchy, and only
 for method calls that cross the contract boundary.
 
-That means that @scheme[inherit] will only affect subclass uses of a method
-until a subclass overrides that method, and that @scheme[override] only
+That means that @racket[inherit] will only affect subclass uses of a method
+until a subclass overrides that method, and that @racket[override] only
 affects calls from the superclass into a subclass's overriding implementation
-of that method.  Since these only affect internal uses, the @scheme[override]
+of that method.  Since these only affect internal uses, the @racket[override]
 form does not automatically enter subclasses into obligations when objects of
-those classes are used.  Also, use of @scheme[override] only makes sense, and
+those classes are used.  Also, use of @racket[override] only makes sense, and
 thus can only be used, for methods where no Beta-style augmentation has taken
 place. The following example shows this difference:
 
-@schemeblock[
+@racketblock[
 (define/contract sloppy-eater%
   (class/c [eat (->m edible/c edible/c)])
   (begin
@@ -1008,24 +1008,24 @@ place. The following example shows this difference:
 (send pig gulp (list slop1 slop2 slop3))]
 
 In addition to the internal class contract forms shown here, there are
-similar forms for Beta-style augmentable methods.  The @scheme[inner]
+similar forms for Beta-style augmentable methods.  The @racket[inner]
 form describes to the subclass what is expected from augmentations of
-a given method.  Both @scheme[augment] and @scheme[augride] tell the
+a given method.  Both @racket[augment] and @racket[augride] tell the
 subclass that the given method is a method which has been augmented and
 that any calls to the method in the subclass will dynamically
 dispatch to the appropriate implementation in the superclass.  Such
 calls will be checked according to the given contract.  The two forms
-differ in that  use of @scheme[augment] signifies that subclasses can
-augment the given method, whereas use of @scheme[augride] signifies that
+differ in that  use of @racket[augment] signifies that subclasses can
+augment the given method, whereas use of @racket[augride] signifies that
 subclasses must override the current augmentation instead.
 
 This means that not all forms can be used at the same time.  Only one of the
-@scheme[override], @scheme[augment], and @scheme[augride] forms can be used
+@racket[override], @racket[augment], and @racket[augride] forms can be used
 for a given method, and none of these forms can be used if the given method
-has been finalized.  In addition, @scheme[super] can be specified for a given
-method only if @scheme[augride] or @scheme[override] can be specified.
-Similarly, @scheme[inner] can be specified only if @scheme[augment] or
-@scheme[augride] can be specified.
+has been finalized.  In addition, @racket[super] can be specified for a given
+method only if @racket[augride] or @racket[override] can be specified.
+Similarly, @racket[inner] can be specified only if @racket[augment] or
+@racket[augride] can be specified.
 
 @; ----------------------------------------------------------------------
 

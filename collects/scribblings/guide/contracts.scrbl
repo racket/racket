@@ -5,7 +5,7 @@
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
 
-This chapter provides a gentle introduction to PLT Scheme's
+This chapter provides a gentle introduction to Racket's
 contract system.
 
 @refdetails["contracts"]{contracts}

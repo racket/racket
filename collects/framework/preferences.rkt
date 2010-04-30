@@ -70,8 +70,8 @@ the state transitions / contracts are:
 ;; type pref = (make-pref any)
 (define-struct pref (value))
 
-;; type default  = (make-default any (any -> bool))
-(define-struct default (value checker))
+;; type default  = (make-default any (-> any bool) (listof symbol) (listof (-> any any)))
+(define-struct default (value checker aliases rewrite-aliases))
 
 ;; pref-callback : (make-pref-callback (union (weak-box (sym tst -> void)) (sym tst -> void)))
 ;; this is used as a wrapped to deal with the problem that different procedures might be eq?.
@@ -93,8 +93,7 @@ the state transitions / contracts are:
     ;; it's not there, use the default
     [(pref-default-set? p)
      (let* (;; try to read the preferece from the preferences file
-            [v ((preferences:low-level-get-preference)
-                (add-pref-prefix p) (λ () none))]
+            [v (read-pref-from-file p)]
             [v (if (eq? v none)
                  ;; no value read, take the default value
                  (default-value (hash-ref defaults p))
@@ -108,6 +107,22 @@ the state transitions / contracts are:
       'preferences:get
       "tried to get a preference but no default set for ~e"
       p)]))
+
+;; read-pref-from-file : symbol -> (or/c any none)
+;; reads the preference saved in the low-level preferences
+;; file, first checking 'p' and then checking the aliases (in order)
+(define (read-pref-from-file p)
+  (let ([defaults (hash-ref defaults p)])
+    (let loop ([syms (cons p (default-aliases defaults))]
+               [rewriters (cons values (default-rewrite-aliases defaults))])
+      (cond
+        [(null? syms) none]
+        [else
+         (let/ec k
+           ((car rewriters)
+            ((preferences:low-level-get-preference)
+             (add-pref-prefix (car syms))
+             (lambda () (k (loop (cdr syms) (cdr rewriters)))))))]))))
 
 ;; set : symbol any -> void
 ;; updates the preference
@@ -221,15 +236,22 @@ the state transitions / contracts are:
    (λ (p def) (preferences:set p (default-value def)))))
 
 ;; set-default : (sym TST (TST -> boolean) -> void
-(define (preferences:set-default p default-value checker)
+(define (preferences:set-default p default-value checker 
+                                 #:aliases [aliases '()]
+                                 #:rewrite-aliases [rewrite-aliases (map (lambda (x) values) aliases)])
   (cond
     [(and (not (pref-default-set? p))
           (pref-can-init? p))
      (let ([default-okay? (checker default-value)])
        (unless default-okay?
          (error 'set-default "~s: checker (~s) returns ~s for ~s, expected #t~n"
-                p checker default-okay? default-value))
-       (hash-set! defaults p (make-default default-value checker)))]
+                p checker default-okay? default-value)))
+
+     (unless (= (length aliases) (length rewrite-aliases))
+       (error 'preferences:set-default 
+	      "expected equal length lists for the #:aliases and #:rewrite-aliases arguments, got ~e and ~e"
+	      aliases rewrite-aliases))
+     (hash-set! defaults p (make-default default-value checker aliases rewrite-aliases))]
     [(not (pref-can-init? p))
      (error 'preferences:set-default
             "tried to call set-default for preference ~e but it cannot be configured any more"
@@ -351,8 +373,12 @@ the state transitions / contracts are:
     if the preference has not been set.})
  (proc-doc/names
   preferences:set-default
-  (symbol? any/c (any/c . -> . any) . -> . void?)
-  (symbol value test)
+  (->* (symbol? any/c (any/c . -> . any))
+       (#:aliases (listof symbol?)
+        #:rewrite-aliases (listof (-> any/c any)))
+      void?)
+  ((symbol value test)
+   ((aliases '()) (rewrite-aliases (map (lambda (x) (values)) aliases))))
   @{This function must be called every time your application starts up, before
     any call to @scheme[preferences:get] or @scheme[preferences:set]
     (for any given preference).
@@ -364,11 +390,19 @@ the state transitions / contracts are:
     @scheme[value]. If the user has chosen a different setting,
     the user's setting will take precedence over the default value.
     
-    The last argument, @scheme[test] is used as a safeguard. That function is
+    The @scheme[test] argument is used as a safeguard. That function is
     called to determine if a preference read in from a file is a valid
     preference. If @scheme[test] returns @scheme[#t], then the preference is
     treated as valid. If @scheme[test] returns @scheme[#f] then the default is
-    used.})
+    used.
+
+    The @scheme[aliases] and @scheme[rewrite-aliases] arguments aids
+    in renaming preferences. If @scheme[aliases] is present, it is 
+    expected to be a list of symbols that correspond to old versions
+    of the preferences. It defaults to @scheme['()]. If @scheme[rewrite-aliases]
+    is present, it is used to adjust the old values of the preferences
+    when they are present in the saved file.})
+
  (proc-doc/names
   preferences:set-un/marshall
   (symbol? (any/c . -> . printable/c) (printable/c . -> . any/c) . -> . void?)

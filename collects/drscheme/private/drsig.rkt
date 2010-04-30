@@ -305,7 +305,9 @@
 (define-signature drracket:multi-file-search-cm^
   ())
 (define-signature drracket:multi-file-search^ extends drracket:multi-file-search-cm^
-  (multi-file-search))
+  (multi-file-search
+   search-type-params
+   search-types))
 
 (define-signature drracket:module-overview-cm^
   ())

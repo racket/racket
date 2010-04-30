@@ -4,57 +4,43 @@
 
 @title[#:tag "compile"]{Compilation and Configuration}
 
-So far, we have talked about three main PLT Scheme executables:
+So far in this guide, we have mainly discussed DrRacket and
+@exec{racket} (and @exec{gracket}). The main additional executable is
+@exec{raco}, which is short for ``@bold{Ra}cket @bold{co}mmand.'' The
+@exec{raco} program provides a command-line interface to many
+additional tools for compiling Racket programs and maintaining a
+Racket installation.
 
 @itemize[
 
- @item{DrScheme, which is the development environment.}
+ @item{@exec{raco make} compiles Racket source to bytecode.
 
- @item{@exec{mzscheme}, which is the console-based virtual machine for
-       running PLT Scheme programs (and that can be used as a
-       development environment in interactive mode);}
-
- @item{@exec{mred}, which is like @exec{mzscheme}, but for GUI
-       applications.}
-
-]
-
-Three more executables help in compiling PLT Scheme programs and in
-maintaining a PLT Scheme installation:
-
-@itemize[
-
- @item{@exec{mzc} is a command-line tool for miscellaneous tasks, such
- as compiling Scheme source to bytecode, generating executables, and
- building distribution packages, and compiling C-implemented
- extensions to work with the run-time system. The @exec{mzc} is
- described in @other-manual['(lib
- "scribblings/mzc/mzc.scrbl")].
-
- For example, if you have a program @filepath{take-over-world.ss} and
+ For example, if you have a program @filepath{take-over-world.rkt} and
  you'd like to compile it to bytecode, along with all of its
  dependencies, so that it loads more quickly, then run
 
-   @commandline{mzc take-over-the-world.ss}}
+   @commandline{raco make take-over-the-world.rkt}}
 
- @item{@exec{setup-plt} is a command-line tool for managing a PLT
- Scheme installation, including manually installed packages. The
- @exec{setup-plt} tool is described in @other-manual['(lib
- "scribblings/setup-plt/setup-plt.scrbl")].
+
+ @item{@exec{raco setup} manages a Racket installation, including
+ manually installed packages.
 
  For example, if you create your own library @techlink{collection}
  called @filepath{take-over}, and you'd like to build all bytecode and
  documentation for the collection, then run
 
-   @commandline{setup-plt -l take-over}}
+   @commandline{raco setup -l take-over}}
 
- @item{@exec{planet} is a command-line tool for managing packages that
- are normally downloaded automatically, on demand. The @exec{planet}
- tool is described in @other-manual['(lib "planet/planet.scrbl")].
+
+ @item{@exec{raco planet} manages packages that are normally
+ downloaded automatically, on demand.
 
  For example, if you'd like to see a list of @|PLaneT| packages that
  are currently installed, then run
 
-    @commandline{planet show}}
+    @commandline{raco planet show}}
 
 ]
+
+For more information on @exec{raco}, see @other-manual['(lib
+"scribblings/mzc/mzc.scrbl")].

@@ -99,7 +99,7 @@ If the namespace does not, they are colored the unbound color.
               (bitmap syncheck-bitmap)
               (parent parent)
               (callback (λ (button) (send frame syncheck:button-callback)))))
-       'drscheme:syncheck)
+       'drracket:syncheck)
       (drracket:unit:add-to-program-editor-mixin clearing-text-mixin))
     (define (phase2) (void))
     
@@ -382,7 +382,7 @@ If the namespace does not, they are colored the unbound color.
               (set! cleanup-texts '())
               (let ([f (get-top-level-window)])
                 (when f
-                  (send f open-status-line 'drscheme:check-syntax:mouse-over))))
+                  (send f open-status-line 'drracket:check-syntax:mouse-over))))
             
             ;; syncheck:clear-arrows : -> void
             (define/public (syncheck:clear-arrows)
@@ -409,7 +409,7 @@ If the namespace does not, they are colored the unbound color.
                   (update-docs-background #f)
                   (let ([f (get-top-level-window)])
                     (when f
-                      (send f close-status-line 'drscheme:check-syntax:mouse-over))))))
+                      (send f close-status-line 'drracket:check-syntax:mouse-over))))))
             
             ;; syncheck:add-to-cleanup-texts : (is-a?/c text%) -> void
             (define/public (syncheck:add-to-cleanup-texts txt)
@@ -659,7 +659,7 @@ If the namespace does not, they are colored the unbound color.
                        (set! cursor-eles #f)
                        (let ([f (get-top-level-window)])
                          (when f
-                           (send f update-status-line 'drscheme:check-syntax:mouse-over #f)))
+                           (send f update-status-line 'drracket:check-syntax:mouse-over #f)))
                        (invalidate-bitmap-cache))
                      (super on-event event)]
                     [(or (send event moving?)
@@ -690,7 +690,7 @@ If the namespace does not, they are colored the unbound color.
                           (update-docs-background #f)
                           (let ([f (get-top-level-window)])
                             (when f
-                              (send f update-status-line 'drscheme:check-syntax:mouse-over #f)))
+                              (send f update-status-line 'drracket:check-syntax:mouse-over #f)))
                           (when (or cursor-location cursor-text)
                             (set! cursor-location #f)
                             (set! cursor-text #f)
@@ -785,13 +785,13 @@ If the namespace does not, they are colored the unbound color.
                                (let ([f (get-top-level-window)])
                                  (when f
                                    (send f update-status-line 
-                                         'drscheme:check-syntax:mouse-over 
+                                         'drracket:check-syntax:mouse-over 
                                          ele)))]))
                           eles)
                 (unless has-txt?
                   (let ([f (get-top-level-window)])
                     (when f
-                      (send f update-status-line 'drscheme:check-syntax:mouse-over #f))))))
+                      (send f update-status-line 'drracket:check-syntax:mouse-over #f))))))
             
             (define current-colored-region #f)
             ;; update-docs-background : (or/c false/c (listof any)) -> void
@@ -1118,8 +1118,8 @@ If the namespace does not, they are colored the unbound color.
             [() (syncheck:button-callback #f)]
             [(jump-to-id)
              (when (send check-syntax-button is-enabled?)
-               (open-status-line 'drscheme:check-syntax)
-               (update-status-line 'drscheme:check-syntax status-init)
+               (open-status-line 'drracket:check-syntax)
+               (update-status-line 'drracket:check-syntax status-init)
                (ensure-rep-hidden)
                (let-values ([(expanded-expression expansion-completed) (make-traversal)])
                  (let* ([definitions-text (get-definitions-text)]
@@ -1143,7 +1143,7 @@ If the namespace does not, they are colored the unbound color.
                                (send the-tab set-breakables old-break-thread old-custodian)
                                (send the-tab enable-evaluation)
                                (send definitions-text end-edit-sequence)
-                               (close-status-line 'drscheme:check-syntax)
+                               (close-status-line 'drracket:check-syntax)
                                
                                ;; do this with some lag ... not great, but should be okay.
                                (thread
@@ -1186,7 +1186,7 @@ If the namespace does not, they are colored the unbound color.
                                      (λ () ;; =drs=
                                        
                                        ;; a call like this one also happens in 
-                                       ;; drscheme:debug:error-display-handler/stacktrace
+                                       ;; drracket:debug:error-display-handler/stacktrace
                                        ;; but that call won't happen here, because
                                        ;; the rep is not in the current-rep parameter
                                        (send interactions-text highlight-errors/exn exn)
@@ -1207,7 +1207,7 @@ If the namespace does not, they are colored the unbound color.
                                   (λ (exn)
                                     (uncaught-exception-raised)
                                     (oh exn))))
-                               (update-status-line 'drscheme:check-syntax status-expanding-expression)
+                               (update-status-line 'drracket:check-syntax status-expanding-expression)
                                (set! user-custodian (current-custodian))
                                (set! user-directory (current-directory)) ;; set by set-directory above
                                (set! user-namespace (current-namespace)))])
@@ -1242,7 +1242,7 @@ If the namespace does not, they are colored the unbound color.
                                      (cleanup)
                                      (custodian-shutdown-all user-custodian))))]
                                [else
-                                (update-status-line 'drscheme:check-syntax status-eval-compile-time)
+                                (update-status-line 'drracket:check-syntax status-eval-compile-time)
                                 (eval-compile-time-part-of-top-level sexp)
                                 (parameterize ([current-eventspace drs-eventspace])
                                   (queue-callback
@@ -1250,12 +1250,12 @@ If the namespace does not, they are colored the unbound color.
                                      (with-lock/edit-sequence
                                       definitions-text
                                       (λ ()
-                                        (open-status-line 'drscheme:check-syntax)
-                                        (update-status-line 'drscheme:check-syntax status-coloring-program)
+                                        (open-status-line 'drracket:check-syntax)
+                                        (update-status-line 'drracket:check-syntax status-coloring-program)
                                         (parameterize ([currently-processing-definitions-text definitions-text])
                                           (expanded-expression user-namespace user-directory sexp jump-to-id))
-                                        (close-status-line 'drscheme:check-syntax))))))
-                                (update-status-line 'drscheme:check-syntax status-expanding-expression)
+                                        (close-status-line 'drracket:check-syntax))))))
+                                (update-status-line 'drracket:check-syntax status-expanding-expression)
                                 (loop)]))))))))))]))
         
         ;; set-directory : text -> void
@@ -1344,9 +1344,9 @@ If the namespace does not, they are colored the unbound color.
       (send keymap map-function "c:x;n" "jump to next bound occurrence")
       (send keymap map-function "c:x;d" "jump to definition (in other file)"))
     
-    (define lexically-bound-variable-style-pref 'drscheme:check-syntax:lexically-bound)
-    (define imported-variable-style-pref 'drscheme:check-syntax:imported)
-    (define set!d-variable-style-pref 'drscheme:check-syntax:set!d)
+    (define lexically-bound-variable-style-pref 'drracket:check-syntax:lexically-bound)
+    (define imported-variable-style-pref 'drracket:check-syntax:imported)
+    (define set!d-variable-style-pref 'drracket:check-syntax:set!d)
     
     (define lexically-bound-variable-style-name (symbol->string lexically-bound-variable-style-pref))
     (define imported-variable-style-name (symbol->string imported-variable-style-pref))

@@ -1,4 +1,5 @@
 #lang setup/infotab
+(require string-constants)
 
 (define name "DeinProgramm")
 
@@ -12,3 +13,10 @@
   '("define-record-procedures.scm"
     "convert-explicit.scm"
     "line3d.scm"))
+
+(define textbook-pls
+  (list (list '("logo-small.png" "deinprogramm")
+              "DeinProgramm"
+              (string-constant teaching-languages)
+              "DeinProgramm"
+              "Die Macht der Abstraktion - Anfänger")))
