@@ -34,7 +34,7 @@
 
 (module filter-test
   mzscheme
-  (require schemeunit)
+  (require rktunit)
   (require (all-except srfi/1/filter member))
 
   (provide filter-tests)

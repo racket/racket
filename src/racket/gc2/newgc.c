@@ -610,6 +610,12 @@ void GC_check_master_gc_request() {
 #endif
 }
 
+#ifdef MZ_USE_PLACES 
+static int check_master_wants_to_collect() {
+  return (MASTERGC && MASTERGC->major_places_gc);
+}
+#endif
+
 static inline void gc_if_needed_account_alloc_size(NewGC *gc, size_t allocate_size) {
   if((gc->gen0.current_size + allocate_size) >= gc->gen0.max_size) {
 #ifdef MZ_USE_PLACES 
@@ -1171,7 +1177,7 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
 #ifdef MZ_USE_PLACES
 inline static void master_set_max_size(NewGC *gc)
 {
-  gc->gen0.max_size = GEN0_INITIAL_SIZE;
+  gc->gen0.max_size = GEN0_INITIAL_SIZE * 10;
   gc->gen0.current_size = 0;
 }
 #endif
@@ -1970,7 +1976,7 @@ static void wait_if_master_in_progress(NewGC *gc) {
       MASTERGCINFO->ready++;
 #if defined(DEBUG_GC_PAGES)
       printf("%i READY\n", gc->place_id);
-      GCVERBOSEprintf("%i READY\n", i);
+      GCVERBOSEprintf("%i READY\n", gc->place_id);
 #endif
       /* don't count MASTERGC*/
       if ((MASTERGCINFO->alive -1) == MASTERGCINFO->ready) {
@@ -3594,6 +3600,9 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
   unsigned long old_gen0;
 
   int next_gc_full;
+#ifdef MZ_USE_PLACES
+  int master_wants_to_collect = check_master_wants_to_collect();
+#endif
 
   old_mem_use = gc->memory_in_use;
   old_gen0    = gc->gen0.current_size;
@@ -3848,7 +3857,7 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {
-    if (gc->gc_full) { 
+    if (gc->gc_full && master_wants_to_collect) { 
        wait_if_master_in_progress(gc);
     }
   }

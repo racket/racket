@@ -1,5 +1,5 @@
 #lang scheme
-(require schemeunit schemeunit/text-ui "5.ss")
+(require rktunit rktunit/text-ui "5.ss")
 
 (define s (put (put (initialize (flat-contract integer?) =) 2) 1))
 

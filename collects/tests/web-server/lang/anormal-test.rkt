@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          web-server/lang/anormal
          web-server/lang/util)
 (provide anormal-tests)

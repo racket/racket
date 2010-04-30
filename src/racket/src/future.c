@@ -146,6 +146,10 @@ void scheme_init_futures(Scheme_Env *env)
 #endif
 }
 
+void scheme_init_futures_once()
+{
+}
+
 #else
 
 #include "future.h"
@@ -256,6 +260,8 @@ static future_t *enqueue_future(Scheme_Future_State *fs, future_t *ft);;
 static future_t *get_pending_future(Scheme_Future_State *fs);
 static void receive_special_result(future_t *f, Scheme_Object *retval, int clear);
 static void send_special_result(future_t *f, Scheme_Object *retval);
+READ_ONLY static int cpucount;
+static void init_cpucount(void);
 
 #ifdef MZ_PRECISE_GC
 # define scheme_future_setjmp(newbuf) scheme_jit_setjmp((newbuf).jb)
@@ -337,6 +343,11 @@ void scheme_init_futures(Scheme_Env *env)
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
+}
+
+void scheme_init_futures_once()
+{
+  init_cpucount();
 }
 
 void futures_init(void)
@@ -480,6 +491,7 @@ void scheme_future_block_until_gc()
   int i;
 
   if (!fs) return;
+  if (!fs->future_threads_created) return;
 
   mzrt_mutex_lock(fs->future_mutex);
   fs->wait_for_gc = 1;
@@ -492,13 +504,19 @@ void scheme_future_block_until_gc()
       *(fs->pool_threads[i]->stack_boundary_pointer) += INITIAL_C_STACK_SIZE;
     }
   }
+
+  if (cpucount > 1) {
+    /* `cpucount' is not actually a complete test for whether mfence
+       should work, but the probability of someone using futures
+       on a multiprocessor system without SSE2 seems very low. */
 #ifdef _MSC_VER
-  __asm { 
-    mfence 
-  }
+    __asm { 
+      mfence 
+        }
 #else
-  asm("mfence");
+    asm("mfence");
 #endif
+  }
 
   mzrt_mutex_lock(fs->future_mutex);
   while (fs->gc_not_ok) {
@@ -734,11 +752,9 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 #include <windows.h>
 #endif 
 
-Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
+static void init_cpucount(void)
 /* Called in runtime thread */
 {
-  int cpucount = 0;
-
 #ifdef linux 
   cpucount = sysconf(_SC_NPROCESSORS_ONLN);
 #elif OS_X 
@@ -755,7 +771,11 @@ Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 #else
   cpucount = THREAD_POOL_SIZE;
 #endif
+}
 
+Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
+/* Called in runtime thread */
+{
   return scheme_make_integer(cpucount);
 }
 

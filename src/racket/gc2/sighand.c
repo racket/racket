@@ -55,7 +55,7 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
       /* supposedly its coming from the user via kill */
       /* so just ignore it. */
       printf("SIGSEGV SI_USER SI_CODE %i fault on addr %p\n", c, p);
-      printf("pid %i uid %i\n", si->si_pid, si->si_uid);
+      printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_thread_self());
       return;
     }
     if (c == 128 ) {

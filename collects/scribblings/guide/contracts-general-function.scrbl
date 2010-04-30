@@ -9,66 +9,15 @@
 
 @title[#:tag "contracts-general-functions"]{Contracts on Functions in General}
 
-@ctc-section[#:tag "flat-named-contracts"]{Contract Error Messages that Contain ``???''}
-
-You wrote your module. You added contracts. You put them into the interface
-so that client programmers have all the information from interfaces. It's a
-piece of art: 
-@racketmod[
-racket
-
-(provide/contract
- [deposit (-> (lambda (x)
-                (and (number? x) (integer? x) (>= x 0)))
-              any)])
-  
-(define this 0)
-(define (deposit a) ...)
-]
-
-Several clients used your module. Others used their
-modules in turn. And all of a sudden one of them sees this error
-message:
-
-@inset-flow{@racketerror{bank-client broke the contract (-> ??? any)
-it had with myaccount on deposit; expected <???>, given: -10}}
-
-Clearly, @racket[bank-client] is a module that uses @racket[myaccount]
-but what is the @racketerror{???} doing there?  Wouldn't it be nice if
-we had a name for this class of data much like we have string, number,
-and so on?
-
-For this situation, Racket provides @deftech{flat named
-contracts}. The use of ``contract'' in this term shows that contracts
-are first-class values. The ``flat'' means that the collection of data
-is a subset of the built-in atomic classes of data; they are described
-by a predicate that consumes all Racket values and produces a
-boolean. The ``named'' part says what we want to do, which is to name
-the contract so that error messages become intelligible:
-
-@racketmod[
-racket
-
-(define (amount? x) (and (number? x) (integer? x) (>= x 0)))
-(define amount (flat-named-contract 'amount amount?))
-  
-(provide/contract
- [deposit (amount . -> . any)])
-  
-(define this 0)
-(define (deposit a) ...)
-]
-
-With this little change, the error message becomes all of the
-sudden quite readable:
-
-@inset-flow{@racketerror{bank-client broke the contract (-> amount
-any) it had with myaccount on deposit; expected <amount>, given: -10}}
+The @racket[->] contract constructor works for functions that take a
+fixed number of arguments and where the result contract is independent
+of the input arguments. To support other kinds of functions, Racket
+supplies additional contract constructors, notable @racket[->].
 
 @ctc-section[#:tag "optional"]{Optional Arguments}
 
 Take a look at this excerpt from a string-processing module, inspired by the
-@link["http://racketcookbook.org"]{Racket cookbook}: 
+@link["http://schemecookbook.org"]{Scheme cookbook}: 
 
 @racketmod[
 racket
@@ -104,6 +53,7 @@ point here is the formulation of the contract for the
 
 
 The contract combinator @racket[->*], demands several groups of contracts: 
+
 @itemize[
 @item{The first one is a parenthesized group of contracts for all required
 arguments. In this example, we see two: @racket[string?] and
@@ -115,64 +65,57 @@ arguments: @racket[char?]. }
 @item{The last one is a single contract: the result of the function.}
 ]
 
- Note if a default value does not satisfy a contract, you
- won't get a contract error for this interface. In contrast
- to type systems, we do trust you; if you can't trust
- yourself, you need to communicate across boundaries for
- everything you write.
+ Note if a default value does not satisfy a contract, you won't get a
+ contract error for this interface. If you can't trust yourself to get
+ the initial value right, you need to communicate the initial value
+ across a boundary.
 
 @ctc-section[#:tag "rest-args"]{Rest Arguments}
 
-We all know that @racket[+] in Beginner Racket is a function
-  that consumes at least two numbers but, in principle,
-  arbitrarily many more. Defining the function is easy:
-@racketblock[
-(define (plus fst snd . rst)
-  (foldr + (+ fst snd) rst))
-]
-Describing this function via a contract is difficult because of the rest
-argument (@racket[rst]). 
+The @racket[max] operator consumes at least one real number, but it
+ accepts any number of additional arguments. You can write other such
+ functions using a ``rest'' argument, such as in @racket[max-abs]:
 
-Here is the contract:
+@margin-note{See @secref["rest-args"] for an introduction to rest
+arguments.}
+
+@racketblock[
+(define (max-abs n . rst)
+  (foldr (lambda (n m) (max (abs n) m)) (abs n) rst))
+]
+
+Describing this function through a contract requires a further
+extension of @racket[->*]: a @racket[#:rest] keyword specifies a
+contract on a list of arguments after the required and optional
+arguments:
+
 @racketblock[
 (provide/contract 
- [plus (->* (number? number?) () #:rest (listof number?) number?)])
-]
-The @racket[->*] contract combinator empowers you to specify
-  functions that consume a variable number of arguments or functions like
-  @racket[plus], which consume ``at least this number'' of arguments but
-  an arbitrary number of additional arguments. 
-
-The contracts for the required arguments are enclosed in the first
-pair of parentheses: 
-@racketblock[
-(number? number?)
+ [max-abs (->* (real?) () #:rest (listof real?) real?)])
 ]
 
-For @racket[plus] they demand two numbers. The empty pair of
-parenthesis indicates that there are no optional arguments
-(not counting the rest arguments) and the contract for the
-rest argument follows @racket[#:rest]
-@racketblock[
-(listof number?)
-]
-  Since the remainder of the actual arguments are collected
-  in a list for a rest parameter such as @racket[rst], the
-  contract demands a list of values; in this specific
-  examples, these values must be numbers.
+As always for @racket[->*], the contracts for the required arguments
+are enclosed in the first pair of parentheses, which in this case is a
+single real number. The empty pair of parenthesis indicates that there
+are no optional arguments (not counting the rest arguments). The
+contract for the rest argument follows @racket[#:rest]; since all
+additional arguments must be real numbers, the list of rest arguments
+must satisfy the contract @racket[(listof real?)].
+
 
 @ctc-section[#:tag "keywords"]{Keyword Arguments}
 
-Sometimes, a function accepts many arguments and remembering
-their order can be a nightmare. To help with such functions,
-Racket has @seclink["lambda-keywords"]{keyword} arguments. 
+It turns out that the @racket[->] contract constructor also contains
+support for keyword arguments. For example, consider this function,
+which creates a simple GUI and asks the user a yes-or-no question:
 
-For example, consider this function that creates a simple
-GUI and asks the user a yes-or-no question:
+@margin-note{See @secref["lambda-keywords"] for an introduction to
+keyword arguments.}
+
 @racketmod[
 racket/gui
 
-(define (ask-yes-or-no-question #:question question 
+(define (ask-yes-or-no-question question 
                                 #:default answer
                                 #:title title
                                 #:width w
@@ -194,41 +137,43 @@ racket/gui
 
 (provide/contract
  [ask-yes-or-no-question
-  (-> #:question string?
+  (-> string?
       #:default boolean?
       #:title string?
       #:width exact-integer?
       #:height exact-integer?
       boolean?)])
 ]
-@margin-note{Note that if you really want to ask a yes-or-no
-question via a GUI, you should use
-@racket[message-box/custom] (and generally speaking,
-avoiding the responses ``yes'' and ``no'' in your dialog is a
-good idea, too ...).}
 
-The contract for @racket[ask-yes-or-no-question] uses our
-old friend the @racket[->] contract combinator. Just like
-@racket[lambda] (or @racket[define]-based functions) use
-keywords for specifying keyword arguments, it uses keywords
-for specifying contracts on keyword arguments. In this case,
-it says that @racket[ask-yes-or-no-question] must receive
-five keyword arguments, one for each of the keywords
-@racket[#:question],
+@margin-note{If you really want to ask a yes-or-no question
+via a GUI, you should use @racket[message-box/custom]. For that
+matter, it's usually better to provide buttons with more specific
+answers than ``yes'' and ``no.''}
+
+The contract for @racket[ask-yes-or-no-question] uses @racket[->], and
+in the same way that @racket[lambda] (or @racket[define]-based
+functions) allows a keyword to precede a functions formal argument,
+@racket[->] allows a keyword to precede a function contract's argument
+contract. In this case,
+the contract says that @racket[ask-yes-or-no-question] must receive four keyword
+arguments, one for each of the keywords
 @racket[#:default],
 @racket[#:title],
 @racket[#:width], and
 @racket[#:height]. 
-Also, just like in a function definition, the keywords in
-the @racket[->] may appear in any order.
+As in a function definition, the order of the keywords in @racket[->]
+relative to each other does not matter for clients of the function;
+only the relative order of argument contracts without keywords
+matters.
 
 @ctc-section[#:tag "optional-keywords"]{Optional Keyword Arguments}
 
 Of course, many of the parameters in
 @racket[ask-yes-or-no-question] (from the previous question)
-have reasonable defaults, and should be made optional:
+have reasonable defaults and should be made optional:
+
 @racketblock[
-(define (ask-yes-or-no-question #:question question 
+(define (ask-yes-or-no-question question 
                                 #:default answer
                                 #:title [title "Yes or No?"]
                                 #:width [w 400]
@@ -237,17 +182,18 @@ have reasonable defaults, and should be made optional:
 ]
 
 To specify this function's contract, we need to use
-@racket[->*]. It too supports keywords just as you might
-expect, in both the optional and mandatory argument
-sections. In this case, we have mandatory keywords
-@racket[#:question] and @racket[#:default], and optional keywords 
+@racket[->*] again. It supports keywords just as you might
+expect in both the optional and mandatory argument
+sections. In this case, we have the mandatory keyword
+@racket[#:default] and optional keywords
 @racket[#:title],
 @racket[#:width], and
 @racket[#:height]. So, we write the contract like this:
+
 @racketblock[
 (provide/contract
  [ask-yes-or-no-question
-  (->* (#:question string?
+  (->* (string?
         #:default boolean?)
 
        (#:title string?
@@ -256,71 +202,182 @@ sections. In this case, we have mandatory keywords
 
        boolean?)])
 ]
-putting the mandatory keywords in the first section and the
-optional ones in the second section.
 
-@ctc-section[#:tag "arrow-d"]{When a Function's Result Depends on its Arguments}
+That is, we put the mandatory keywords in the first section, and we
+put the optional ones in the second section.
 
-Here is an excerpt from an imaginary (pardon the pun) numerics module:
 
-@racketmod[
-racket
-(provide/contract 
- [sqrt.v1 (->d ([argument (>=/c 1)])
-               ()
-               [result (<=/c argument)])])
-...
+@ctc-section[#:tag "case-lambda"]{Contracts for @racket[case-lambda]}
+
+A function defined with @racket[case-lambda] might impose different
+constraints on its arguments depending on how many are provided. For
+example, a @racket[report-cost] function might convert either a pair
+or numbers or a string into a new string:
+
+@margin-note{See @secref["case-lambda"] for an introduction to
+@racket[case-lambda].}
+
+@def+int[
+(define report-cost
+  (case-lambda
+    [(lo hi) (format "between $~a and $~a" lo hi)]
+    [(desc) (format "~a of dollars" desc)]))
+(report-cost 5 8)
+(report-cost "millions")
 ]
 
-The contract for the exported function @racket[sqrt.v1] uses the
-@racket[->d] rather than @racket[->] function contract. The ``d''
-stands for @italic{dependent} contract, meaning the contract for the
-function range depends on the value of the argument. 
+The contract for such a function is formed with the @racket[case->]
+ combinator, which combines as many functional contracts as needed: 
+@racketblock[
+(provide/contract 
+  [report-cost
+   (case->
+    (integer? integer? . -> . string?)
+    (string? . -> . string?))])
+]
+ As you can see, the contract for @racket[report-cost] combines two
+ function contracts, which is just as many clauses as the explanation
+ of its functionality required.
 
-In this particular case, the argument of @racket[sqrt.v1] is greater
-or equal to 1. Hence a very basic correctness check is that the result is
-smaller than the argument. (Naturally, if this function is critical, one
-could strengthen this check with additional clauses.)
+@;{
+This isn't supported anymore (yet...?). -robby
+
+In the case of @racket[substring1], we also know that the indices
+  that it consumes ought to be natural numbers less than the length of the
+  given string. Since @racket[case->] just combines arrow contracts,
+  adding such constraints is just a matter of strengthening the individual
+  contracts: 
+<racket>
+(provide/contract 
+  [substring1 (case->
+               (string? . -> . string?)
+               (->r ([s string?]
+                     [_ (and/c natural-number/c (</c (string-length s)))])
+                 string?)
+               (->r ([s string?]
+                     [a (and/c natural-number/c (</c (string-length s)))]
+                     [o (and/c natural-number/c
+                               (>=/c a)
+                               (</c (string-length s)))])
+                  string?))])
+</racket>
+  Here we used @racket[->r] to name the parameters and express the
+  numeric constraints on them. 
+}
+
+@ctc-section[#:tag "arrow-d"]{Argument and Result Dependencies}
+
+The following is an excerpt from an imaginary numerics module:
+
+@racketblock[
+(provide/contract 
+ [real-sqrt (->d ([argument (>=/c 1)])
+                 ()
+                 [result (<=/c argument)])])
+]
+
+The contract for the exported function @racket[real-sqrt] uses the
+@racket[->d] rather than @racket[->*] function contract. The ``d''
+stands for a @italic{dependent} contract, meaning the contract for the
+function range depends on the value of the argument. In this
+particular case, the argument of @racket[real-sqrt] is greater or
+equal to 1, so a very basic correctness check is that the result is
+smaller than the argument.
 
 In general, a dependent function contract looks just like
 the more general @racket[->*] contract, but with names added
 that can be used elsewhere in the contract.
 
+@;{
 Yes, there are many other contract combinators such as @racket[<=/c]
 and @racket[>=/c], and it pays off to look them up in the contract
 section of the reference manual. They simplify contracts tremendously
 and make them more accessible to potential clients. 
+}
 
-@ctc-section[#:tag "arrow-d-args"]{When Contract Arguments Depend on Each Other}
+Going back to the back-account example, suppose that we generalize the
+module to support multiple accounts and that we also include a
+withdrawal operation. The improved bank-account module includes a
+@racket[account] structure type and the following functions:
 
-Eventually bank customers want their money back. Hence, a module that
-implements a bank account must include a method for withdrawing money. Of
-course, ordinary accounts don't let customers withdraw an arbitrary amount of
-money but only as much as they have in the account. 
-
-Suppose the account module provides the following two functions:
 @racketblock[
-balance : (-> account amount)
-withdraw : (-> account amount account)
+(provide/contract
+ [balance (-> account? amount/c)]
+ [withdraw (-> account? amount/c account?)]
+ [deposit (-> account? amount/c account?)])
 ]
-Then, informally, the proper precondition for @racket[withdraw] is that 
-``the balance of the given account is greater than or equal to the given (withdrawal) amount.''
-The postcondition is similar to the one for
-@ctc-link["flat-named-contracts"]{@racket[deposit]}:
-``the balance of the resulting account is larger than (or equal to) the one of the
-given account.''
-You could of course also formulate a full-fledged correctness condition, namely,
-that the balance of the resulting account is equal to the balance of the given
-one, plus the given amount.
 
-The following module implements accounts imperatively and specifies the
-conditions we just discussed:
+Besides requiring that a client provide a valid amount for a
+withdrawal, however, the amount should be less than the specified
+account's balance, and the resulting account will have less money than
+it started with. Similarly, the module might promise that a deposit
+produces an account with money added to the account. The following
+implementation enforces those constraints and guarantees through
+contracts:
+
 @racketmod[
 racket
 
 (code:comment "section 1: the contract definitions")
-(define-struct account (balance) #:mutable)
-(define amount natural-number/c)
+(struct account (balance))
+(define amount/c natural-number/c)
+
+(code:comment "section 2: the exports")
+(provide/contract
+ [create   (amount/c . -> . account?)]
+ [balance  (account? . -> . amount/c)]
+ [withdraw (->d ([acc account?]
+                 [amt (and/c amount/c (<=/c (balance acc)))])
+                ()
+                [result (and/c account? 
+                               (lambda (res)
+                                 (>= (balance res) 
+                                     (- (balance acc) amt))))])]
+ [deposit  (->d ([acc account?]
+                 [amt amount/c])
+                ()
+                [result (and/c account? 
+                               (lambda (res)
+                                 (>= (balance res) 
+                                     (+ (balance acc) amt))))])])
+
+(code:comment "section 3: the function definitions")
+(define balance account-balance)
+
+(define (create amt) (account amt))
+
+(define (withdraw a amt)
+  (account (- (account-balance a) amt)))
+
+(define (deposit a amt)
+  (account (+ (account-balance a) amt)))
+]
+
+The contracts in section 2 provide typical type-like guarantees for
+@racket[create] and @racket[balance]. For @racket[withdraw] and
+@racket[deposit], however, the contracts check and guarantee the more
+complicated constraints on @racket[balance] and @racket[deposit].  The
+contract on the second argument to @racket[withdraw] uses
+@racket[(balance acc)] to check whether the supplied withdrawal amount
+is small enough, where @racket[acc] is the name given within
+@racket[->d] to the function's first argument. The contract on the
+result of @racket[withdraw] uses both @racket[acc] and @racket[amt] to
+guarantee that no more than that requested amount was withdrawn. The
+contract on @racket[deposit] similarly uses @racket[acc] and
+@racket[amount] in the result contract to guarantee that at least as
+much money as provided was deposited into the account.
+
+As written above, when a contract check fails, the error message is
+not great. The following revision uses @racket[flat-named-contract]
+within a helper function @racket[mk-account-contract] to provide
+better error messages.
+
+@racketmod[
+racket
+
+(code:comment "section 1: the contract definitions")
+(struct account (balance))
+(define amount/c natural-number/c)
 
 (define msg> "account a with balance larger than ~a expected")
 (define msg< "account a with balance less than ~a expected")
@@ -333,70 +390,30 @@ racket
 
 (code:comment "section 2: the exports")
 (provide/contract
- [create   (amount . -> . account?)]
- [balance  (account? . -> . amount)]
+ [create   (amount/c . -> . account?)]
+ [balance  (account? . -> . amount/c)]
  [withdraw (->d ([acc account?]
-                 [amt (and/c amount (<=/c (balance acc)))])
+                 [amt (and/c amount/c (<=/c (balance acc)))])
                 ()
                 [result (mk-account-contract acc amt >= msg>)])]
  [deposit  (->d ([acc account?]
-                 [amt amount])
+                 [amt amount/c])
                 ()
                 [result (mk-account-contract acc amt <= msg<)])])
 
 (code:comment "section 3: the function definitions")
 (define balance account-balance)
 
-(define (create amt) (make-account amt))
+(define (create amt) (account amt))
 
-(define (withdraw acc amt)
-  (set-account-balance! acc (- (balance acc) amt))
-  acc)
+(define (withdraw a amt)
+  (account (- (account-balance a) amt)))
 
-(define (deposit acc amt)
-  (set-account-balance! acc (+ (balance acc) amt))
-  acc)
+(define (deposit a amt)
+  (account (+ (account-balance a) amt)))
 ]
 
-The second section is the export interface: @itemize[
-@item{@racket[create] consumes an initial deposit and
-produces an account. This kind of contract is just like a
-type in a statically typed language, except that statically
-typed languages usually don't support the type ``natural
-numbers'' (as a full-fledged subtype of numbers). }
-
-@item{@racket[balance] consumes an account and computes its current balance.}
-
-@item{@racket[withdraw] consumes an account, named @racket[acc], and an
-amount, @racket[amt]. In addition to being an @racket[amount], the
-latter must also be less than @racket[(balance acc)], i.e., the balance of
-the given account. That is, the contract for @racket[amt] depends on the
-value of @racket[acc], which is what the @racket[->d] 
-contract combinator expresses.
-
-The result contract is formed on the fly: 
-@racket[(mk-account-contract acc amt > msg>)]. 
-It is an application of a contract-producing function that
-consumes an account, an amount, a comparison operator, and an error message (a
-format string). The result is a contract. 
-}
-
-@item{@racket[deposit]'s contract has been reformulated using the
-@racket[->d] combinator. }
-]
-
-The code in the first section defines all those pieces that
-are needed for the formulation of the export contracts:
-@racket[account?], @racket[amount], error messages (format
-strings), and @racket[mk-account-contract]. The latter is a
-function that extracts the current balance from the given
-account and then returns a named contract, whose error
-message (contract name) is a string that refers to this
-balance. The resulting contract checks whether an account
-has a balance that is larger or smaller, depending on the
-given comparison operator, than the original balance.
-
-@ctc-section[#:tag "arrow-d-eval-order"]{Ensuring that a Function Properly Modifies State}
+@ctc-section[#:tag "arrow-d-eval-order"]{Checking State Changes}
 
 The @racket[->d] contract combinator can also ensure that a
 function only modifies state according to certain
@@ -451,70 +468,6 @@ contrast, if the contract for @racket[f] were
 (only changing the underscore to @racket[res]), then
 the result of @racket[get-x] would be @racket['(ctc f)].
 
-@ctc-section[#:tag "case-lambda"]{Contracts for @racket[case-lambda]}
-
-Dybvig, in Chapter 5 of the
- @link["http://www.racket.com/csug/"]{Chez Racket User's Guide},
-explains the meaning and pragmatics of
-@racket[case-lambda] with the following example (among
-others):
-
-@racketblock[
-(define substring1
-  (case-lambda
-    [(s) (substring1 s 0 (string-length s))]
-    [(s start) (substring1 s start (string-length s))]
-    [(s start end) (substring s start end)]))
-]
- This version of @racket[substring] has one of the following signature:
-@itemize[
-@item{just a string, in which case it copies the string;}
-@item{a string and an index into the string, in which case it extracts the
- suffix of the string starting at the index; or }
-@item{a string a start index and an end index, in which case it extracts the
- fragment of the string between the two indices. }
-]
-
-The contract for such a function is formed with the @racket[case->]
- combinator, which combines as many functional contracts as needed: 
-@racketblock[
-(provide/contract 
-  [substring1 
-   (case->
-    (string? . -> . string?)
-    (string? natural-number/c . -> . string?)
-    (string? natural-number/c natural-number/c . -> . string?))])
-]
- As you can see, the contract for @racket[substring1] combines three
- function contracts, just as many clauses as the explanation of its
- functionality required.
-
-@;{
-This isn't supported anymore (yet...?). -robby
-
-In the case of @racket[substring1], we also know that the indices
-  that it consumes ought to be natural numbers less than the length of the
-  given string. Since @racket[case->] just combines arrow contracts,
-  adding such constraints is just a matter of strengthening the individual
-  contracts: 
-<racket>
-(provide/contract 
-  [substring1 (case->
-               (string? . -> . string?)
-               (->r ([s string?]
-                     [_ (and/c natural-number/c (</c (string-length s)))])
-                 string?)
-               (->r ([s string?]
-                     [a (and/c natural-number/c (</c (string-length s)))]
-                     [o (and/c natural-number/c
-                               (>=/c a)
-                               (</c (string-length s)))])
-                  string?))])
-</racket>
-  Here we used @racket[->r] to name the parameters and express the
-  numeric constraints on them. 
-}
-
 @ctc-section[#:tag "multiple"]{Multiple Result Values}
 
 The function @racket[split] consumes a list of @racket[char]s
@@ -534,8 +487,8 @@ The function @racket[split] consumes a list of @racket[char]s
   traversing a single list.
 
 The contract for such a function can use the ordinary
-function arrow @racket[->], since it
-treats @racket[values] specially, when it appears as the
+function arrow @racket[->], since @racket[->]
+treats @racket[values] specially when it appears as the
 last result:
 @racketblock[
 (provide/contract 
@@ -544,21 +497,21 @@ last result:
 ]
 
 The contract for such a function can also be written
-using @racket[->*], just like @racket[plus]: 
+using @racket[->*]:
 @racketblock[
 (provide/contract 
  [split (->* ((listof char?))
              ()
              (values string? (listof char?)))])
 ]
- As before the contract for the argument is wrapped in an
+ As before, the contract for the argument with @racket[->*] is wrapped in an
  extra pair of parentheses (and must always be wrapped like
  that) and the empty pair of parentheses indicates that
- there are no optoinal arguments. The contracts for the
+ there are no optional arguments. The contracts for the
  results are inside @racket[values]: a string and a list of
  characters.
 
-Now suppose we also want to ensure that the first result of
+Now, suppose that we also want to ensure that the first result of
  @racket[split] is a prefix of the given word in list format. In that
  case, we need to use the @racket[->d] contract combinator:
 @racketblock[
@@ -584,7 +537,7 @@ Now suppose we also want to ensure that the first result of
  first contract strengthens the old one so that the result is a prefix of
  the given word. 
 
-This contract is expensive to check of course. Here is a slightly
+This contract is expensive to check, of course. Here is a slightly
   cheaper version: 
 @racketblock[
 (provide/contract 
@@ -593,9 +546,9 @@ This contract is expensive to check of course. Here is a slightly
              (values [s (string-len/c (length fl))]
                      [c (listof char?)]))])
 ]
-  Click on @racket[string-len/c] to see what it does.
 
-@ctc-section[#:tag "no-domain"]{Procedures of Some Fixed, but Statically Unknown Arity}
+
+@ctc-section[#:tag "no-domain"]{Fixed but Statically Unknown Arities}
 
 Imagine yourself writing a contract for a function that accepts some other
 function and a list of numbers that eventually applies the former to the

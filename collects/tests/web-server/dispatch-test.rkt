@@ -1,5 +1,5 @@
 #lang racket
-(require schemeunit
+(require rktunit
          web-server/http
          web-server/dispatchers/dispatch
          net/url
@@ -458,5 +458,5 @@
 
 #;(test-serve/dispatch)
 
-(require schemeunit/text-ui)
+(require rktunit/text-ui)
 (run-tests all-dispatch-tests)

@@ -7,7 +7,7 @@
 	 typed-scheme/utils/utils
          (for-syntax scheme/base)
          (types comparison utils) 
-         schemeunit schemeunit/text-ui)
+         rktunit rktunit/text-ui)
 
 (provide private typecheck (rename-out [infer r:infer]) utils env rep types)
 
@@ -20,7 +20,7 @@
   (run-tests (mk-suite ts)))
 
 (define (test/gui suite) 
-  (((dynamic-require 'schemeunit/private/gui/gui 'make-gui-runner))
+  (((dynamic-require 'rktunit/private/gui/gui 'make-gui-runner))
    suite))
 
 (define (run/gui . ts)

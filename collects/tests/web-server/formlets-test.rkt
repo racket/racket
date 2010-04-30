@@ -1,5 +1,5 @@
 #lang racket
-(require schemeunit
+(require rktunit
          net/url
          web-server/http
          web-server/formlets
@@ -370,5 +370,5 @@
    
    ))
 
-(require schemeunit/text-ui)
+(require rktunit/text-ui)
 (run-tests all-formlets-tests)

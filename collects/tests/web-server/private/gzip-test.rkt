@@ -1,5 +1,5 @@
 #lang racket
-(require schemeunit
+(require rktunit
          web-server/private/gzip)
 (provide gzip-tests)
 

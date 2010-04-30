@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          xml/xml
          (only-in mzlib/file
                   make-temporary-file)

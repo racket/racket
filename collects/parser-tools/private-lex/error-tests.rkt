@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
          "../lex.ss"
-         schemeunit)
+         rktunit)
 
 (define-syntax (catch-syn-error stx)
   (syntax-case stx ()

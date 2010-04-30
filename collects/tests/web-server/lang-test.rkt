@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          "util.rkt")
 (provide lang-tests)
 
@@ -212,14 +212,14 @@
                (provide store-k
                         lookup-k)
                
-               (define the-table (hash))
+               (define the-table (make-hash))
                
                (define (store-k k)
                  (let ([key (string->symbol (symbol->string (gensym 'key)))])
-                   (hash-table-put! the-table key k)
+                   (hash-set! the-table key k)
                    key))
                (define (lookup-k key-pair)
-                 (hash-table-get the-table (car key-pair) (lambda () #f)))))])         
+                 (hash-ref the-table (car key-pair) (lambda () #f)))))])         
        (table-01-eval
         '(module m06 (lib "lang.rkt" "web-server")
            (require 'table01)

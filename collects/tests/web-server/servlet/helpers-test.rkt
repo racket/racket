@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          web-server/servlet)
 (provide helpers-tests)
 
@@ -53,5 +53,5 @@
     (test-case "temporarily" (check-true (redirection-status? temporarily)))
     (test-case "see-other" (check-true (redirection-status? see-other))))))
 
-;(require (planet schematics/schemeunit:3/text-ui))
+;(require (planet schematics/rktunit:3/text-ui))
 ;(run-tests helpers-tests)

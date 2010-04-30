@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          net/url
          xml/xml
          mzlib/contract

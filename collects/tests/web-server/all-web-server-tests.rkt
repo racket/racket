@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          "configuration/all-configuration-tests.rkt"
          "dispatchers/all-dispatchers-tests.rkt"           
          "lang/all-lang-tests.rkt"
