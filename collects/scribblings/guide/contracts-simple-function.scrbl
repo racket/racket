@@ -3,136 +3,161 @@
           scribble/eval
           "guide-utils.ss"
           "contracts-utils.ss"
-          (for-label scheme/contract))
+          (for-label racket/contract))
 
 @title[#:tag "contract-func"]{Simple Contracts on Functions}
 
-When a module exports a function, it establishes two
-channels of communication between itself and the client
-module that imports the function. If the client module calls
-the function, it sends a value into the ``server''
-module. Conversely, if such a function call ends and the
-function returns a value, the ``server'' module sends a
-value back to the ``client'' module.
+A mathematical function has a @deftech{domain} and a
+@deftech{range}. The domain indicates the kind of values that the
+function can accept as arguments, and the range indicates the kind of
+values that it produces. The conventional notation for a describing a
+function with its domain and range is
 
-It is important to keep this picture in mind when you read the explanations
-of the various ways of imposing contracts on functions. 
-
-@ctc-section[#:tag "argcontract"]{Restricting the Arguments of a Function}
-
-Functions usually don't work on all possible Scheme values but only on a
-select subset such as numbers, booleans, etc. Here is a module that may
-represent a bank account: 
-
-@schememod[
-scheme
-
-(provide/contract 
-  [create  (-> string? number? any)]
-  [deposit (-> number? any)])
-
-(define amount 0)
-(define (create name initial-deposit) ...)
-(define (deposit a) (set! amount (+ amount a)))
-]
-
-It exports two functions: 
-@itemize[
-
-@item{@scheme[create]: The function's contract says that it consumes two
-arguments, a string and a number, and it promises nothing about the return value. }
-
-@item{@scheme[deposit]: The function's contract demands from the client modules
-that they apply it to numbers.  It promises nothing about the return value. }]
-
-If a ``client'' module were to apply @scheme[deposit] to
-@scheme['silly], it would violate the contract.  The
-contract monitoring system would catch this violation and
-blame ``client'' for breaking the contract with the above
-module.
-
-@bold{Note:} Instead of @scheme[any] you could also use the
-more specific contract @scheme[void?], which says that the function will
-always return the @scheme[(void)] value. This contract, however, would require
-the contract monitoring system to check the return value every time the function
-is called, even though the ``client'' module can't do much with this value
-anyway. In contrast, @scheme[any] tells the monitoring system @italic{not}
-to check the return value. Additionally, it tells a potential client that the
-``server'' module @italic{makes no promises at all} about the function's return
-value.
-
-@ctc-section[#:tag "arrow"]{Arrows}
-
-It is natural to use an arrow to say that an exported value is a
-function. In decent high schools, you learn that a function has a domain
-and a range, and that you write this fact down like this: 
-@schemeblock[
+@racketblock[
 f : A -> B
 ]
-Here the @scheme[A] and @scheme[B] are sets; @scheme[A] is the
-domain and @scheme[B] is the range. 
 
-Functions in a programming language have domains and ranges, too. In
-statically typed languages, you write down the names of types for each
-argument and for the result. When all you have, however, is a Scheme name,
-such as @scheme[create] or @scheme[deposit], you want to tell the
-reader what the name represents (a function) and, if it is a function (or
-some other complex value) what the pieces are supposed to be. This is why
-we use a @scheme[->] to say ``hey, expect this to be a function.''
+where @racket[A] is the domain of the function and @racket[B] is the
+range.
 
-So @scheme[->] says ``this is a contract for a function.'' What follows
-in a function contracts are contracts (sub-contracts if you wish) that tell
-the reader what kind of arguments to expect and what kind of a result the
-function produces. For example, 
-@schemeblock[
+Functions in a programming language have domains and ranges, too, and
+a contract can ensure that a function receives only values in its
+range and produces only values in its domain. A @racket[->] creates
+such a contract for a function. The forms after a @racket[->] specify
+contracts for the domains and finally a contract for the range.
+
+Here is a module that might represent a bank account:
+
+@racketmod[
+racket
+
+(provide/contract 
+  [deposit (-> number? any)]
+  [balance (-> number?)])
+
+(define amount 0)
+(define (deposit a) (set! amount (+ amount a)))
+(define (balance) amount)
+]
+
+The module exports two functions: 
+
+@itemize[
+
+@item{@racket[deposit], which accepts a number and returns some value
+      that is not specified in the contract, and}
+
+@item{@racket[balance], which returns a number indicating the current
+      balance of the account.}
+
+]
+
+When a module exports a function, it establishes two channels of
+communication between itself as a ``server'' and the ``client'' module
+that imports the function. If the client module calls the function, it
+sends a value into the server module. Conversely, if such a function
+call ends and the function returns a value, the server module sends a
+value back to the client module. This client--server distinction is
+important, because when something goes wrong, one or the other of the
+parties is to blame.
+
+If a client module were to apply @racket[deposit] to @racket['millions],
+it would violate the contract.  The contract-monitoring system would
+catch this violation and blame client for breaking the contract with
+the above module. In contrast, if the @racket[balance] function were
+to return @racket['broke], the contract-monitoring system
+would blame the server module.
+
+A @racket[->] by itself is not a contract; it is a @deftech{contract
+combinator}, which combines other contracts to form a contract.
+
+@; ------------------------------------------------------------------------
+
+@section{Styles of @racket[->]}
+
+If you are used to mathematical function, you may prefer a contract
+  arrow to appear between the domain and the range of a function, not
+  at the beginning. If you have read @|HtDP|, you have seen this many
+  times. Indeed, you may have seen contracts such as these in other
+  people's code:
+
+@racketblock[
 (provide/contract
- [create (-> string? number? boolean? account?)])
-]
-says that @scheme[create] is a function of three arguments: a string, a
-number, and a boolean. Its result is an account. 
-
-In short, the arrow @scheme[->] is a @italic{contract
-combinator}. Its purpose is to combine other contracts into a contract
-that says ``this is a function @italic{and} its arguments and its result
-are like that.''
-
-@ctc-section[#:tag "dots"]{Infix Contract Notation}
-
-If you are used to mathematics, you like the arrow in between the
-  domain and the range of a function, not at the beginning. If you
-  have read @|HtDP|, you have seen this many times. Indeed, you may
-  have seen contracts such as these in other people's code:
-
-@schemeblock[
-(provide/contract
-  [create (string? number? boolean? . -> . account?)])
+  [deposit (number? . -> . any)])
 ]
 
-If a PLT Scheme S-expression contains two dots with a symbol in the middle,
-the reader re-arranges the S-expression and place the symbol at the front. Thus, 
-@schemeblock[
-(string? number? boolean? . -> . account?)
+If a Racket S-expression contains two dots with a symbol in the middle,
+the reader re-arranges the S-expression and place the symbol at the front, 
+as described in @secref["lists-and-syntax"].  Thus, 
+
+@racketblock[
+(number? . -> . any)
 ]
-is really just a short-hand for 
-@schemeblock[
-(-> string? number? boolean? account?)
+
+is just another way of writing
+
+@racketblock[
+(-> number? any)
 ]
-Of course, placing the arrow to the left of the range follows not only
-mathematical tradition but also that of typed functional languages. 
 
-@ctc-section[#:tag "own"]{Rolling Your Own Contracts for Function Arguments}
+@; ----------------------------------------------------------------------
+@section{@racket[any] and @racket[any/c]}
 
-The @scheme[deposit] function adds the given number to the value of
-@scheme[amount]. While the function's contract prevents clients from
-applying it to non-numbers, the contract still allows them to apply the function
-to complex numbers, negative numbers, or inexact numbers, all of which do not
-represent amounts of money. 
+The @racket[any] contract used for @racket[deposit] matches any kind
+of result, and it can only be used in the range position of a function
+contract.  Instead of @racket[any] above, we could use the more
+specific contract @racket[void?], which says that the function will
+always return the @racket[(void)] value. The @racket[void?] contract,
+however, would require the contract monitoring system to check the
+return value every time the function is called, even though the
+``client'' module can't do much with the value. In contrast,
+@racket[any] tells the monitoring system @italic{not} to check the
+return value, it tells a potential client that the ``server'' module
+@italic{makes no promises at all} about the function's return value,
+even whether it is a single value or multiple values.
 
-To this end, the contract system allows programmers to define their own
-contracts: 
+The @racket[any/c] contract is similar to @racket[any], in that it
+makes no demands on a value. Unlike @scheme[any], @racket[any/c]
+indicates a single value, and it is suitable for use as an argument
+contract. Using @racket[any/c] as a range contract imposes a check
+that the function produces a single value. That is,
 
-@schememod[
-scheme
+@racketblock[(-> integer? any)]
+
+describes a function that accepts and integer and returns any number of
+values, while
+
+@racketblock[(-> integer? any/c)]
+
+describes a function that accepts an integer and produces a single
+result (but does not say anything more about the result). The function
+
+@racketblock[
+(define (f x) (values (+ x 1) (- x 1)))
+]
+
+matches @racket[(-> integer? any)], but not @racket[(-> integer? any/c)].
+
+Use @racket[any/c] as a result contract when it is particularly
+important to promise a single result from a function. Use @racket[any]
+when you want to promise as little as possible (and incur as little
+checking as possible) for a function's result.
+
+@; ------------------------------------------------------------------------
+
+@ctc-section[#:tag "own"]{Rolling Your Own Contracts}
+
+The @racket[deposit] function adds the given number to the value of
+@racket[amount]. While the function's contract prevents clients from
+applying it to non-numbers, the contract still allows them to apply
+the function to complex numbers, negative numbers, or inexact numbers,
+none of which sensibly represent amounts of money.
+
+The contract system allows programmers to define their own contracts
+as functions:
+
+@racketmod[
+racket
   
 (define (amount? a)
   (and (number? a) (integer? a) (exact? a) (>= a 0)))
@@ -141,80 +166,66 @@ scheme
   (code:comment "an amount is a natural number of cents")
   (code:comment "is the given number an amount?")
   [deposit (-> amount? any)]
-  [amount? (-> any/c boolean?)])
+  [amount? (-> any/c boolean?)]
+  [balance (-> amount?)])
   
-(define this 0)
-(define (deposit a) (set! this (+ this a)))
+(define amount 0)
+(define (deposit a) (set! amount (+ amount a)))
+(define (balance) amount)
 ]
 
-The module introduces a
-predicate, @scheme[amount?]. The @scheme[provide]
-clause refers to this predicate, as a contract, for its
-specification of the contract of
-@scheme[deposit].
+This module define an @racket[amount?] function as uses it as a
+contract within @racket[->] contracts. When a client calls the
+@racket[deposit] function as exported with the contract @racket[(->
+amount? any)], it must supply an exact, nonnegative integer, otherwise
+the @racket[amount?] function applied to the argument will return
+@racket[#f], which will cause the contract-monitoring system to blame
+the client. Similarly, the server module must provide an exact,
+nonnegative integer as the result of @racket[balance] to remain
+blameless.
 
-Of course it makes no sense to restrict a channel of
-communication to values that the client doesn't
-understand. Therefore the module also exports
-the @scheme[amount?] predicate itself, with a contract
-saying that it accepts an arbitrary value and returns a
-boolean.
+Of course, it makes no sense to restrict a channel of communication to
+values that the client doesn't understand. Therefore the module also
+exports the @racket[amount?] predicate itself, with a contract saying
+that it accepts an arbitrary value and returns a boolean.
 
-In this case, we could also have used @scheme[natural-number/c], which
-is a contract defined in @schememodname[scheme/contract] that is
-equivalent to @scheme[amount] (modulo the name):
+In this case, we could also have used @racket[natural-number/c] in
+place of @racket[amount?], since it implies exactly the same check:
 
-@schememod[
-scheme
-
+@racketblock[
 (provide/contract
-  (code:comment "an amount is a natural number of cents")
-  [deposit (-> natural-number/c any)])
-  
-(define this 0)
-(define (deposit a) (set! this (+ this a)))
+  [deposit (-> natural-number/c any)]
+  [balance (-> natural-number/c)])
 ]
 
-Lesson: learn about the built-in contracts in @schememodname[scheme/contract]. 
+Every function that accepts one argument can be treated as a predicate
+and thus used as a contract. For combining existing checks into a new
+one, however, contract combinators such as @racket[and/c] and
+@racket[or/c] are often useful. For example, here is yet another way
+to write the contracts above:
 
-@ctc-section[#:tag "and-or"]{The @scheme[and/c], @scheme[or/c], and @scheme[listof] Contract Combinators}
-
-Both @scheme[and/c] and @scheme[or/c] combine contracts and
-they do what you expect them to do.
-
-For example, if we didn't have @scheme[natural-number/c], the
-@scheme[amount?] contract is a bit opaque. Instead, we would define it
-as follows: 
-
-@schememod[
-scheme
-
-(define amount 
+@racketblock[
+(define amount/c 
   (and/c number? integer? exact? (or/c positive? zero?)))
 
 (provide/contract
-  (code:comment "an amount is a natural number of cents")
-  (code:comment "is the given number an amount?")
-  [deposit (-> amount any)])
-  
-(define this 0)
-(define (deposit a) (set! this (+ this a)))
+  [deposit (-> amount/c any)]
+  [balance (-> amount/c)])
 ]
 
-That is, amount is a contract that enforces the following conditions: the
-value satisfies @scheme[number?] and @scheme[integer?] and
-@scheme[exact?] and is either @scheme[positive?] or
-@scheme[zero?].
+Other values also serve double duty as contracts.  For example, if a
+function accepts a number or @racket[#f], @racket[(or/c number?  #f)]
+suffices. Similarly, the @racket[amount/c] contract could have been
+written with a @racket[0] in place of @racket[zero?]. If you use a
+regular expression as a contract, the contract accepts strings and
+byte strings that match the regular expression.
 
-Oh, we almost forgot. What do you think @scheme[(listof char?)]
-means? Hint: it is a contract!
+Naturally, you can mix your own contract-implementing functions with
+combinators like @racket[and/c]. Here is a module for creating strings
+from banking records:
 
-@ctc-section[#:tag "range"]{Restricting the Range of a Function}
-
-Consider a utility module for creating strings from banking records: 
-
-@schememod[
-scheme
+@racketmod[
+racket
 
 (define (has-decimal? str)
   (define L (string-length str))
@@ -230,22 +241,19 @@ scheme
   [format-nat (-> natural-number/c
                   (and/c string? has-decimal?))])
 ]
-The contract of the exported function @scheme[format-number] specifies that
-the function consumes a number and produces a string.
-
-The contract of the exported function @scheme[format-nat] is more
-interesting than the one of @scheme[format-number].  It consumes only
+The contract of the exported function @racket[format-number] specifies
+that the function consumes a number and produces a string. The
+contract of the exported function @racket[format-nat] is more
+interesting than the one of @racket[format-number].  It consumes only
 natural numbers. Its range contract promises a string that has a
 @litchar{.} in the third position from the right.
 
-@(exercise) Strengthen the promise of the range contract for
-@scheme[format-nat] so that it admits only strings with digits and a single
-dot. 
+If we want to strengthen the promise of the range contract for
+@racket[format-nat] so that it admits only strings with digits and a single
+dot, we could write it like this:
 
-@(solution)
-
-@schememod[
-scheme
+@racketmod[
+racket
 
 (define (digit-char? x) 
   (member x '(#\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\0)))
@@ -263,11 +271,10 @@ scheme
        (andmap digit-char?
                (string->list (substring str (- L 2) L)))))
 
+....
+
 (provide/contract
-  ...
-  (code:comment "convert a number to a string")
-  [format-number (-> number? string?)]
-  
+  ....
   (code:comment "convert an  amount (natural number) of cents")
   (code:comment "into a dollar based string")
   [format-nat (-> natural-number/c 
@@ -275,23 +282,22 @@ scheme
                          is-decimal-string?))])
 ]
 
+Alternately, in this case, we could use a regular expression as a
+contract:
 
-@ctc-section[#:tag "coercion"]{Contracts Coerced from Other Values}
+@racketmod[
+racket
 
-The contract library treats a number of Scheme values as if they are
-contracts directly. We've already seen one main use of that: predicates. Every
-function that accepts one argument can be treated as a predicate
-and thus used as a contract.
+(provide/contract
+  ....
+  (code:comment "convert an  amount (natural number) of cents")
+  (code:comment "into a dollar based string")
+  [format-nat (-> natural-number/c 
+                  (and/c string? 
+                         #rx"[0-9]*\\.[0-9][0-9][0-9]"))])
+]
 
-But many other values also play double duty as contracts.
-For example, if your function accepts a number or @scheme[#f],
-@scheme[(or/c number? #f)] suffices. Similarly, the @scheme[result/c] contract
-could have been written with a @scheme[0] in place of @scheme[zero?].
-
-Even better, if you use a regular expression as a contract, the contract
-accepts strings that match the regular expression. For example, 
-the @scheme[is-decimal-string?] predicate could have been written
-@scheme[#rx"[0-9]*\\.[0-9][0-9][0-9]"].
+@; ------------------------------------------------------------------------
 
 @ctc-section{Contracts on Higher-order Functions}
 
@@ -302,35 +308,84 @@ themselves, can be used as contracts on the arguments and
 results of a function.
 
 For example, 
-@schemeblock[(-> integer? (-> integer? integer?))]
-is a contract that describes a curried function. It matches
-functions that accept one argument and then return another
-function accepting a second argument before finally
-returning an integer.
 
-This contract
-@schemeblock[(-> (-> integer? integer?) integer?)]
-describes functions that accept other functions as inputs.
+@racketblock[(-> integer? (-> integer? integer?))]
 
-@ctc-section{The Difference Between @scheme[any] and @scheme[any/c]}
+is a contract that describes a curried function. It matches functions
+that accept one argument and then return another function accepting a
+second argument before finally returning an integer. If a server
+exports a function @racket[make-adder] with this contract, and if
+@racket[make-adder] returns a value other than a function, then the
+server is to blame. If @racket[make-adder] does return a function, but
+the resulting function is applied to a value other than an integer,
+then the client is to blame.
 
-The contract @scheme[any/c] accepts any value, and
-@scheme[any] is a keyword that can appear in the range of
-the function contracts (@scheme[->], @scheme[->*], and
-@scheme[->d]), so it is natural to wonder what the
-difference between these two contracts is:
-@schemeblock[
-(-> integer? any)
-(-> integer? any/c)
+Similarly, the contract
+
+@racketblock[(-> (-> integer? integer?) integer?)]
+
+describes functions that accept other functions as its input. If a
+server exports a function @racket[twice] with this contract and the
+@racket[twice] is applied to a value other than a function of one
+argument, then the client is to blame. If @racket[twice] is applied to
+a function of one argument and @racket[twice] calls the give function
+on a value other than an integer, then the server is to blame.
+
+@; ----------------------------------------------------------------------
+
+@ctc-section[#:tag "flat-named-contracts"]{Contract Messages with ``???''}
+
+You wrote your module. You added contracts. You put them into the interface
+so that client programmers have all the information from interfaces. It's a
+piece of art: 
+@racketmod[
+racket
+
+(provide/contract
+ [deposit (-> (lambda (x)
+                (and (number? x) (integer? x) (>= x 0)))
+              any)])
+  
+(define this 0)
+(define (deposit a) ...)
 ]
 
-Both allow any result, right? There is one important difference:
-in the first case, the function may return anything at
-all, including multiple values. In the second case, the
-function may return any value, but not more than one. For
-example, this function:
-@schemeblock[
-(define (f x) (values (+ x 1) (- x 1)))
+Several clients used your module. Others used their
+modules in turn. And all of a sudden one of them sees this error
+message:
+
+@inset-flow{@racketerror{bank-client broke the contract (-> ??? any)
+it had with myaccount on deposit; expected <???>, given: -10}}
+
+Clearly, @racket[bank-client] is a module that uses @racket[myaccount]
+but what is the @racketerror{???} doing there?  Wouldn't it be nice if
+we had a name for this class of data much like we have string, number,
+and so on?
+
+For this situation, Racket provides @deftech{flat named
+contracts}. The use of ``contract'' in this term shows that contracts
+are first-class values. The ``flat'' means that the collection of data
+is a subset of the built-in atomic classes of data; they are described
+by a predicate that consumes all Racket values and produces a
+boolean. The ``named'' part says what we want to do, which is to name
+the contract so that error messages become intelligible:
+
+@racketmod[
+racket
+
+(define (amount? x) (and (number? x) (integer? x) (>= x 0)))
+(define amount (flat-named-contract 'amount amount?))
+  
+(provide/contract
+ [deposit (amount . -> . any)])
+  
+(define this 0)
+(define (deposit a) ...)
 ]
-meets the first contract, but not the second one.}
+
+With this little change, the error message becomes all of the
+sudden quite readable:
+
+@inset-flow{@racketerror{bank-client broke the contract (-> amount
+any) it had with myaccount on deposit; expected <amount>, given: -10}}
 

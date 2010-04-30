@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "web-server.ss"
+@(require "web-server.rkt"
           (for-label web-server/lang/soft
                      web-server/lang/web))
 
@@ -12,25 +12,25 @@ and increasing the size of the serialization. This module provides support for t
 
 @defproc[(soft-state? [v any/c])
          boolean?]{
- Determines if @scheme[v] is a soft state record.
+ Determines if @racket[v] is a soft state record.
 }
                   
 @defproc[(make-soft-state [thnk (-> any/c)])
          soft-state?]{
- Creates a piece of soft state that is computed by @scheme[thnk]. This value is serializable.
+ Creates a piece of soft state that is computed by @racket[thnk]. This value is serializable.
 }
                      
 @defproc[(soft-state-ref [ss soft-state?])
          any/c]{
- Extracts the value associated with @scheme[ss]. If the value is not available (perhaps because of garbage collection, deserialization in an uninitialized process, etc), then the thunk associated with @scheme[ss] is invoked and the value is cached.
+ Extracts the value associated with @racket[ss]. If the value is not available (perhaps because of garbage collection, deserialization in an uninitialized process, etc), then the thunk associated with @racket[ss] is invoked and the value is cached.
 }
                
 @defform[(soft-state expr ...)]{
- Equivalent to @scheme[(make-soft-state (lambda () expr ...))].
+ Equivalent to @racket[(make-soft-state (lambda () expr ...))].
 }
 
 Here's an example servlet that uses soft state:
-@schememod[
+@racketmod[
  web-server
  
  (provide interface-version start) 

@@ -90,7 +90,7 @@ sub ReadFile {
     $marks{'M'} = 'M';
     $ifzero = 0;
 
-    open(SOUT, ">${file}.ss");
+    open(SOUT, ">${file}.rkt");
 
     while(!$stop)
     {

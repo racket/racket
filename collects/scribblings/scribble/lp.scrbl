@@ -26,7 +26,7 @@ program, and the rest of the module is discarded. When using
 and are treated like an ordinary Scribble document, where
 @scheme[chunk]s are typeset in a manner similar to @scheme[codeblock].
 
-@(define-runtime-path lp-ex "lp-ex.ss")
+@(define-runtime-path lp-ex "lp-ex.rkt")
 
 For example, consider this program:
 

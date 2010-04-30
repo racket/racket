@@ -3,41 +3,43 @@
           scribble/eval
           "guide-utils.ss")
 
-@(define qq (scheme quasiquote))
-@(define uq (scheme unquote))
+@(define qq (racket quasiquote))
+@(define uq (racket unquote))
 
-@title{Quasiquoting: @scheme[quasiquote] and @schemevalfont{`}}
+@title[#:tag "qq"]{Quasiquoting: @racket[quasiquote] and @racketvalfont{`}}
 
-The @scheme[quasiquote] form is similar to @scheme[quote]:
+@refalso["quasiquote"]{@racket[quasiquote]}
+
+The @racket[quasiquote] form is similar to @racket[quote]:
 
 @specform[(#,qq datum)]
 
-However, for each @scheme[(#,uq _expr)]
-that appears within the @scheme[_datum], the @scheme[_expr] is
+However, for each @racket[(#,uq _expr)]
+that appears within the @racket[_datum], the @racket[_expr] is
 evaluated to produce a value that takes the place of the
-@scheme[unquote] sub-form.
+@racket[unquote] sub-form.
 
 @examples[
 (eval:alts (#,qq (1 2 (#,uq (+ 1 2)) (#,uq (- 5 1))))
            `(1 2 ,(+ 1 2), (- 5 1)))
 ]
 
-The @scheme[unquote-splicing] form is similar to @scheme[unquote], but
-its @scheme[_expr] must produce a list, and the
-@scheme[unquote-splicing] form must appear in a context that produces
+The @racket[unquote-splicing] form is similar to @racket[unquote], but
+its @racket[_expr] must produce a list, and the
+@racket[unquote-splicing] form must appear in a context that produces
 either a list or a vector. As the name suggests, the resulting list
 is spliced into the context of its use.
 
 @examples[
-(eval:alts (#,qq (1 2 (#,(scheme unquote-splicing) (list (+ 1 2) (- 5 1))) 5))
+(eval:alts (#,qq (1 2 (#,(racket unquote-splicing) (list (+ 1 2) (- 5 1))) 5))
            `(1 2 ,@(list (+ 1 2) (- 5 1)) 5))
 ]
 
-If a @scheme[quasiquote] form appears within an enclosing
-@scheme[quasiquote] form, then the inner @scheme[quasiquote]
-effectively cancels one layer of @scheme[unquote] and
-@scheme[unquote-splicing] forms, so that a second @scheme[unquote]
-or @scheme[unquote-splicing] is needed.
+If a @racket[quasiquote] form appears within an enclosing
+@racket[quasiquote] form, then the inner @racket[quasiquote]
+effectively cancels one layer of @racket[unquote] and
+@racket[unquote-splicing] forms, so that a second @racket[unquote]
+or @racket[unquote-splicing] is needed.
 
 @examples[
 (eval:alts (#,qq (1 2 (#,qq (#,uq (+ 1 2) 
@@ -48,7 +50,7 @@ or @scheme[unquote-splicing] is needed.
 ]
 
 The evaluation above will not actually print as shown. Instead, the
-shorthand form of @scheme[quasiquote] and @scheme[unquote] will be
+shorthand form of @racket[quasiquote] and @racket[unquote] will be
 used: @litchar{`} (i.e., a backquote) and @litchar{,} (i.e., a comma).
 The same shorthands can be used in expressions:
 
@@ -56,7 +58,7 @@ The same shorthands can be used in expressions:
 `(1 2 `(,(+ 1 2) ,,(- 5 1)))
 ]
 
-The shorthand for of @scheme[unquote-splicing] is @litchar[",@"]:
+The shorthand for of @racket[unquote-splicing] is @litchar[",@"]:
 
 @examples[
 `(1 2 ,@(list (+ 1 2) (- 5 1)))

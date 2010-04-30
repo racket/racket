@@ -10,7 +10,7 @@
 
 A program module is written as
 
-@schemeblock[
+@racketblock[
 @#,BNF-seq[@litchar{#lang} @nonterm{langname} @kleenestar{@nonterm{topform}}]
 ]
 
@@ -67,11 +67,11 @@ A definition of the form
 
 @moreguide["define"]{definitions}
 
-@schemeblock[@#,val-defn-stx]
+@racketblock[@#,val-defn-stx]
 
 binds @nonterm{id} to the result of @nonterm{expr}, while
 
-@schemeblock[@#,fun-defn-stx]
+@racketblock[@#,fun-defn-stx]
 
 binds the first @nonterm{id} to a function (also called a
 @defterm{procedure}) that takes arguments as named by the remaining
@@ -81,8 +81,8 @@ the last @nonterm{expr}.
 
 @defexamples[
 #:eval ex-eval
-(code:line (define pie 3)             (code:comment @#,t{defines @scheme[pie] to be @scheme[3]}))
-(code:line (define (piece str)        (code:comment @#,t{defines @scheme[piece] as a function})
+(code:line (define pie 3)             (code:comment @#,t{defines @racket[pie] to be @racket[3]}))
+(code:line (define (piece str)        (code:comment @#,t{defines @racket[piece] as a function})
              (substring str 0 pie))   (code:comment @#,t{ of one argument}))
 pie
 (piece "key lime")
@@ -113,11 +113,11 @@ evaluated only for some side-effect, such as printing.
 (bake "apple")
 ]
 
-Scheme programmers prefer to avoid side-effects, so a definition usually
+Racket programmers prefer to avoid side-effects, so a definition usually
 has just one expression in its body. It's
 important, though, to understand that multiple expressions are allowed
 in a definition body, because it explains why the following
-@scheme[nobake] function simply returns its argument:
+@racket[nobake] function simply returns its argument:
 
 @def+int[
 #:eval ex-eval
@@ -126,53 +126,53 @@ in a definition body, because it explains why the following
 (nobake "green")
 ]
 
-Within @scheme[nobake], there are no parentheses around
-@scheme[string-append flavor "jello"], so they are three separate
+Within @racket[nobake], there are no parentheses around
+@racket[string-append flavor "jello"], so they are three separate
 expressions instead of one function-call expression. The expressions
-@scheme[string-append] and @scheme[flavor] are evaluated, but the
+@racket[string-append] and @racket[flavor] are evaluated, but the
 results are never used. Instead, the result of the function is just
-the result of the final expression, @scheme["jello"].
+the result of the final expression, @racket["jello"].
 
 @; ----------------------------------------------------------------------
 @section[#:tag "indentation"]{An Aside on Indenting Code}
 
-Line breaks and indentation are not significant for parsing Scheme
-programs, but most Scheme programmers use a standard set of conventions
+Line breaks and indentation are not significant for parsing Racket
+programs, but most Racket programmers use a standard set of conventions
 to make code more readable. For example, the body of a definition is
 typically indented under the first line of the definition. Identifiers
 are written immediately after an open parenthesis with no extra space,
 and closing parentheses never go on their own line.
 
-DrScheme automatically indents according to the standard style when
+DrRacket automatically indents according to the standard style when
 you type Enter in a program or @tech{REPL} expression. For example, if you
-hit Enter after typing @litchar{(define (greet name)}, then DrScheme
+hit Enter after typing @litchar{(define (greet name)}, then DrRacket
 automatically inserts two spaces for the next line.  If you change a
-region of code, you can select it in DrScheme and hit Tab, and
-DrScheme will re-indent the code (without inserting any line breaks).
-Editors like Emacs offer a Scheme mode with similar indentation
+region of code, you can select it in DrRacket and hit Tab, and
+DrRacket will re-indent the code (without inserting any line breaks).
+Editors like Emacs offer a Racket or Scheme mode with similar indentation
 support.
 
 Re-indenting not only makes the code easier to read, it gives you
-extra feedback that your parentheses are matched in the way that you
+extra feedback that your parentheses match in the way that you
 intended. For example, if you leave out a closing parenthesis after
 the last argument to a function, automatic indentation starts the
 next line under the first argument, instead of under the
-@scheme[define] keyword:
+@racket[define] keyword:
 
-@schemeblock[
+@racketblock[
 (define (halfbake flavor
                   (string-append flavor " creme brulee")))
 ]
 
 In this case, indentation helps highlight the mistake. In other cases,
 where the indentation may be normal while an open parenthesis has no
-matching close parenthesis, both @exec{mzscheme} and DrScheme use the
+matching close parenthesis, both @exec{racket} and DrRacket use the
 source's indentation to suggest where a parenthesis might be missing.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Identifiers}
 
-Scheme's syntax for identifiers is especially liberal. Excluding the
+Racket's syntax for identifiers is especially liberal. Excluding the
 special characters
 
 @moreguide["binding"]{identifiers}
@@ -186,41 +186,41 @@ special characters
 
 and except for the sequences of characters that make number constants,
 almost any sequence of non-whitespace characters forms an
-@nonterm{id}. For example @schemeid[substring] is an
-identifier. Also, @schemeid[string-append] and @schemeid[a+b] are
+@nonterm{id}. For example @racketid[substring] is an
+identifier. Also, @racketid[string-append] and @racketid[a+b] are
 identifiers, as opposed to arithmetic expressions. Here are several
 more examples:
 
-@schemeblock[
-@#,schemeid[+]
-@#,schemeid[Hfuhruhurr]
-@#,schemeid[integer?]
-@#,schemeid[pass/fail]
-@#,schemeid[john-jacob-jingleheimer-schmidt]
-@#,schemeid[a-b-c+1-2-3]
+@racketblock[
+@#,racketid[+]
+@#,racketid[Hfuhruhurr]
+@#,racketid[integer?]
+@#,racketid[pass/fail]
+@#,racketid[john-jacob-jingleheimer-schmidt]
+@#,racketid[a-b-c+1-2-3]
 ]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Function Calls@aux-elem{ (Procedure Applications)}}
 
 We have already seen many function calls, which are called
-@defterm{procedure applications} in more traditional Scheme
+@defterm{procedure applications} in more traditional
 terminology. The syntax of a function call is
 
 @moreguide["application"]{function calls}
 
-@schemeblock[
+@racketblock[
 #,app-expr-stx
 ]
 
 where the number of @nonterm{expr}s determines the number of
 arguments supplied to the function named by @nonterm{id}.
 
-The @schememodname[scheme] language pre-defines many function
-identifiers, such as @scheme[substring] and
-@scheme[string-append]. More examples are below.
+The @racketmodname[racket] language pre-defines many function
+identifiers, such as @racket[substring] and
+@racket[string-append]. More examples are below.
 
-In example Scheme code throughout the documentation, uses of
+In example Racket code throughout the documentation, uses of
 pre-defined names are hyperlinked to the reference manual. So, you can
 click on an identifier to get full details about its use.
 
@@ -244,19 +244,19 @@ click on an identifier to get full details about its use.
 ]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section{Conditionals with @scheme[if], @scheme[and], @scheme[or], and @scheme[cond]}
+@section{Conditionals with @racket[if], @racket[and], @racket[or], and @racket[cond]}
 
-The next simplest kind of expression is an @scheme[if] conditional:
+The next simplest kind of expression is an @racket[if] conditional:
 
-@schemeblock[
+@racketblock[
 #,if-expr-stx
 ]
 
 @moreguide["conditionals"]{conditionals}
 
 The first @nonterm{expr} is always evaluated. If it produces a
-non-@scheme[#f] value, then the second @nonterm{expr} is
-evaluated for the result of the whole @scheme[if] expression, otherwise
+non-@racket[#f] value, then the second @nonterm{expr} is
+evaluated for the result of the whole @racket[if] expression, otherwise
 the third @nonterm{expr} is evaluated for the result.
 
 @examples[
@@ -270,15 +270,15 @@ the third @nonterm{expr} is evaluated for the result.
   (if (equal? "hello" (substring s 0 5))
       "hi!"
       "huh?"))
-(reply "hello scheme")
+(reply "hello racket")
 (reply "\u03BBx:(\u03BC\u03B1.\u03B1\u2192\u03B1).xx")
 ]
 
-Complex conditionals can be formed by nesting @scheme[if]
-expressions. For example, you could make the @scheme[reply] function
+Complex conditionals can be formed by nesting @racket[if]
+expressions. For example, you could make the @racket[reply] function
 work when given non-strings:
 
-@schemeblock[
+@racketblock[
 (define (reply s)
   (if (string? s)
       (if (equal? "hello" (substring s 0 5))
@@ -287,10 +287,10 @@ work when given non-strings:
       "huh?"))
 ]
 
-Instead of duplicating the @scheme["huh?"] case, this function is
+Instead of duplicating the @racket["huh?"] case, this function is
 better written as
 
-@schemeblock[
+@racketblock[
 (define (reply s)
   (if (if (string? s)
           (equal? "hello" (substring s 0 5))
@@ -299,20 +299,20 @@ better written as
       "huh?"))
 ]
 
-but these kinds of nested @scheme[if]s are difficult to read.  Scheme
-provides more readable shortcuts through the @scheme[and] and
-@scheme[or] forms, which work with any number of expressions:
+but these kinds of nested @racket[if]s are difficult to read.  Racket
+provides more readable shortcuts through the @racket[and] and
+@racket[or] forms, which work with any number of expressions:
 
-@moreguide["and+or"]{@scheme[and] and @scheme[or]}
+@moreguide["and+or"]{@racket[and] and @racket[or]}
 
-@schemeblock[
+@racketblock[
 #,and-expr-stx
 #,or-expr-stx
 ]
 
-The @scheme[and] form short-circuits: it stops and returns @scheme[#f]
-when an expression produces @scheme[#f], otherwise it keeps
-going. The @scheme[or] form similarly short-circuits when it
+The @racket[and] form short-circuits: it stops and returns @racket[#f]
+when an expression produces @racket[#f], otherwise it keeps
+going. The @racket[or] form similarly short-circuits when it
 encounters a true result.
 
 @defexamples[
@@ -322,14 +322,14 @@ encounters a true result.
            (equal? "hello" (substring s 0 5)))
       "hi!"
       "huh?"))
-(reply "hello scheme")
+(reply "hello racket")
 (reply 17)
 ]
 
-Another common pattern of nested @scheme[if]s involves a sequence of
+Another common pattern of nested @racket[if]s involves a sequence of
 tests, each with its own result:
 
-@schemeblock[
+@racketblock[
 (define (reply-more s)
   (if (equal? "hello" (substring s 0 5))
       "hi!"
@@ -340,25 +340,25 @@ tests, each with its own result:
               "huh?"))))
 ]
 
-The shorthand for a sequence of tests is the @scheme[cond] form:
+The shorthand for a sequence of tests is the @racket[cond] form:
 
-@moreguide["cond"]{@scheme[cond]}
+@moreguide["cond"]{@racket[cond]}
 
-@schemeblock[
+@racketblock[
 #,cond-expr-stx
 ]
 
-A @scheme[cond] form contains a sequence of clauses between square
+A @racket[cond] form contains a sequence of clauses between square
 brackets. In each clause, the first @nonterm{expr} is a test
 expression. If it produces true, then the clause's remaining
 @nonterm{expr}s are evaluated, and the last one in the clause provides
-the answer for the entire @scheme[cond] expression; the rest of the
-clauses are ignored. If the test @nonterm{expr} produces @scheme[#f],
+the answer for the entire @racket[cond] expression; the rest of the
+clauses are ignored. If the test @nonterm{expr} produces @racket[#f],
 then the clause's remaining @nonterm{expr}s are ignored, and
 evaluation continues with the next clause. The last clause can use
-@scheme[else] as a synonym for a @scheme[#t] test expression.
+@racket[else] as a synonym for a @racket[#t] test expression.
 
-Using @scheme[cond], the @scheme[reply-more] function can be more
+Using @racket[cond], the @racket[reply-more] function can be more
 clearly written as follows:
 
 @def+int[
@@ -371,17 +371,17 @@ clearly written as follows:
    [(equal? "?" (substring s (- (string-length s) 1)))
     "I don't know"]
    [else "huh?"]))
-(reply-more "hello scheme")
+(reply-more "hello racket")
 (reply-more "goodbye cruel world")
 (reply-more "what is your favorite color?")
 (reply-more "mine is lime green")
 ]
 
-The use of square brackets for @scheme[cond] clauses is a
-convention. In Scheme, parentheses and square brackets are actually
+The use of square brackets for @racket[cond] clauses is a
+convention. In Racket, parentheses and square brackets are actually
 interchangable, as long as @litchar{(} is matched with @litchar{)} and
 @litchar{[} is matched with @litchar{]}. Using square brackets in a
-few key places makes Scheme code even more readable.
+few key places makes Racket code even more readable.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Function Calls, Again}
@@ -392,12 +392,12 @@ expression for the function, instead of just an @nonterm{id}:
 
 @moreguide["application"]{function calls}
 
-@schemeblock[
+@racketblock[
 #,app2-expr-stx
 ]
 
 The first @nonterm{expr} is often an @nonterm{id}, such
-as @scheme[string-append] or @scheme[+], but it can be anything that
+as @racket[string-append] or @racket[+], but it can be anything that
 evaluates to a function. For example, it can be a conditional
 expression:
 
@@ -419,12 +419,12 @@ parentheses around an expression, you'll most often get an ``expected
 a procedure'' error like this one.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@section{Anonymous Functions with @scheme[lambda]}
+@section{Anonymous Functions with @racket[lambda]}
 
-Programming in Scheme would be tedious if you had to name all of your
-numbers. Instead of writing @scheme[(+ 1 2)], you'd have to write
+Programming in Racket would be tedious if you had to name all of your
+numbers. Instead of writing @racket[(+ 1 2)], you'd have to write
 
-@moreguide["lambda"]{@scheme[lambda]}
+@moreguide["lambda"]{@racket[lambda]}
 
 @interaction[
 (define a 1)
@@ -433,9 +433,9 @@ numbers. Instead of writing @scheme[(+ 1 2)], you'd have to write
 ]
 
 It turns out that having to name all your functions can be tedious,
-too. For example, you might have a function @scheme[twice] that takes
-a function and an argument. Using @scheme[twice] is convenient if you
-already have a name for the function, such as @scheme[sqrt]:
+too. For example, you might have a function @racket[twice] that takes
+a function and an argument. Using @racket[twice] is convenient if you
+already have a name for the function, such as @racket[sqrt]:
 
 @def+int[
 #:eval ex-eval
@@ -445,7 +445,7 @@ already have a name for the function, such as @scheme[sqrt]:
 ]
 
 If you want to call a function that is not yet defined, you could
-define it, and then pass it to @scheme[twice]:
+define it, and then pass it to @racket[twice]:
 
 @def+int[
 #:eval ex-eval
@@ -454,22 +454,22 @@ define it, and then pass it to @scheme[twice]:
 (twice louder "hello")
 ]
 
-But if the call to @scheme[twice] is the only place where
-@scheme[louder] is used, it's a shame to have to write a whole
-definition. In Scheme, you can use a @scheme[lambda] expression to
-produce a function directly. The @scheme[lambda] form is followed by
+But if the call to @racket[twice] is the only place where
+@racket[louder] is used, it's a shame to have to write a whole
+definition. In Racket, you can use a @racket[lambda] expression to
+produce a function directly. The @racket[lambda] form is followed by
 identifiers for the function's arguments, and then the function's
 body expressions:
 
-@schemeblock[
+@racketblock[
 #,lambda-expr-stx
 ]
 
-Evaluating a @scheme[lambda] form by itself produces a function:
+Evaluating a @racket[lambda] form by itself produces a function:
 
 @interaction[(lambda (s) (string-append s "!"))]
 
-Using @scheme[lambda], the above call to @scheme[twice] can be
+Using @racket[lambda], the above call to @racket[twice] can be
 re-written as
 
 @interaction[
@@ -480,7 +480,7 @@ re-written as
        "hello")
 ]
 
-Another use of @scheme[lambda] is as a result for a function that
+Another use of @racket[lambda] is as a result for a function that
 generates functions:
 
 @def+int[
@@ -492,11 +492,11 @@ generates functions:
 (twice (make-add-suffix "...") "hello")
 ]
 
-Scheme is a @defterm{lexically scoped} language, which means that
-@scheme[s2] in the function returned by @scheme[make-add-suffix]
+Racket is a @defterm{lexically scoped} language, which means that
+@racket[s2] in the function returned by @racket[make-add-suffix]
 always refers to the argument for the call that created the
-function. In other words, the @scheme[lambda]-generated function
-``remembers'' the right @scheme[s2]:
+function. In other words, the @racket[lambda]-generated function
+``remembers'' the right @racket[s2]:
 
 @interaction[
 #:eval ex-eval
@@ -506,12 +506,12 @@ function. In other words, the @scheme[lambda]-generated function
 (twice louder "really")
 ]
 
-We have so far referred to definitions of the form @scheme[(define
+We have so far referred to definitions of the form @racket[(define
 @#,nonterm{id} @#,nonterm{expr})] as ``non-function
 definitions.'' This characterization is misleading, because the
-@nonterm{expr} could be a @scheme[lambda] form, in which case
+@nonterm{expr} could be a @racket[lambda] form, in which case
 the definition is equivalent to using the ``function'' definition
-form. For example, the following two definitions of @scheme[louder]
+form. For example, the following two definitions of @racket[louder]
 are equivalent:
 
 @defs+int[
@@ -525,22 +525,22 @@ are equivalent:
 louder
 ]
 
-Note that the expression for @scheme[louder] in the second case is an
-``anonymous'' function written with @scheme[lambda], but, if
+Note that the expression for @racket[louder] in the second case is an
+``anonymous'' function written with @racket[lambda], but, if
 possible, the compiler infers a name, anyway, to make printing and
 error reporting as informative as possible.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section[#:tag "local-binding-intro"]{Local Binding with
-         @scheme[define], @scheme[let], and @scheme[let*]}
+         @racket[define], @racket[let], and @racket[let*]}
 
 It's time to retract another simplification in our grammar of
-Scheme. In the body of a function, definitions can appear before the
+Racket. In the body of a function, definitions can appear before the
 body expressions:
 
 @moreguide["intdefs"]{local (internal) definitions}
 
-@schemeblock[
+@racketblock[
 #,fun-defn2-stx
 #,lambda2-expr-stx
 ]
@@ -550,8 +550,8 @@ function body.
 
 @defexamples[
 (define (converse s)
-  (define (starts? s2) (code:comment @#,t{local to @scheme[converse]})
-    (define len2 (string-length s2))  (code:comment @#,t{local to @scheme[starts?]})
+  (define (starts? s2) (code:comment @#,t{local to @racket[converse]})
+    (define len2 (string-length s2))  (code:comment @#,t{local to @racket[starts?]})
     (and (>= (string-length s) len2)
          (equal? s2 (substring s 0 len2))))
   (cond
@@ -560,24 +560,24 @@ function body.
    [else "huh?"]))
 (converse "hello!")
 (converse "urp")
-(eval:alts (code:line starts? (code:comment @#,t{outside of @scheme[converse], so...}))
+(eval:alts (code:line starts? (code:comment @#,t{outside of @racket[converse], so...}))
            (parameterize ([current-namespace (make-base-namespace)]) (eval 'starts?)))
 ]
 
-Another way to create local bindings is the @scheme[let] form. An
-advantage of @scheme[let] is that it can be used in any expression
-position. Also, @scheme[let] binds many identifiers at once, instead
-of requiring a separate @scheme[define] for each identifier.
+Another way to create local bindings is the @racket[let] form. An
+advantage of @racket[let] is that it can be used in any expression
+position. Also, @racket[let] binds many identifiers at once, instead
+of requiring a separate @racket[define] for each identifier.
 
-@moreguide["intdefs"]{@scheme[let] and @scheme[let*]}
+@moreguide["intdefs"]{@racket[let] and @racket[let*]}
 
-@schemeblock[
+@racketblock[
 #,let-expr-stx
 ]
 
 Each binding clause is an @nonterm{id} and a
 @nonterm{expr} surrounded by square brackets, and the
-expressions after the clauses are the body of the @scheme[let]. In
+expressions after the clauses are the body of the @racket[let]. In
 each clause, the @nonterm{id} is bound to the result of the
 @nonterm{expr} for use in the body.
 
@@ -590,9 +590,9 @@ each clause, the @nonterm{id} is bound to the result of the
    [else "cat's game"]))
 ]
 
-The bindings of a @scheme[let] form are available only in the body of
-the @scheme[let], so the binding clauses cannot refer to each
-other. The @scheme[let*] form, in contrast, allows later clauses to
+The bindings of a @racket[let] form are available only in the body of
+the @racket[let], so the binding clauses cannot refer to each
+other. The @racket[let*] form, in contrast, allows later clauses to
 use earlier bindings:
 
 @interaction[

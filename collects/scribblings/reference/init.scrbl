@@ -5,14 +5,14 @@
 
 @title{Init Libraries}
 
-@defmodule*/no-declare[(racket/init)]{The @schememodname[racket/init]
-library is the default start-up library for MzScheme. It re-exports
-the @schememodname[scheme], @schememodname[racket/enter] and
-@schememodname[racket/help] libraries, and it sets
-@scheme[current-print] to use @scheme[pretty-print].}
+@defmodule*/no-declare[(racket/init)]{The @racketmodname[racket/init]
+library is the default start-up library for Racket. It re-exports
+the @racketmodname[racket], @racketmodname[racket/enter] and
+@racketmodname[racket/help] libraries, and it sets
+@racket[current-print] to use @racket[pretty-print].}
 
 @defmodule*/no-declare[(racket/gui/init)]{The
-@schememodname[racket/gui/init] library is the default start-up
-library for MrEd. It re-exports the @schememodname[racket/init] and
-@schememodname[racket/gui/base] libraries, and it sets
-@scheme[current-load] to use @scheme[text-editor-load-handler].}
+@racketmodname[racket/gui/init] library is the default start-up
+library for GRacket. It re-exports the @racketmodname[racket/init] and
+@racketmodname[racket/gui/base] libraries, and it sets
+@racket[current-load] to use @racket[text-editor-load-handler].}

@@ -5,17 +5,17 @@
 
 @(define greet-eval (make-base-eval))
 
-@title[#:tag "lambda"]{Functions@aux-elem{ (Procedures)}: @scheme[lambda]}
+@title[#:tag "lambda"]{Functions@aux-elem{ (Procedures)}: @racket[lambda]}
 
-A @scheme[lambda] expression creates a function. In the simplest
-case, a @scheme[lambda] expression has the form
+A @racket[lambda] expression creates a function. In the simplest
+case, a @racket[lambda] expression has the form
 
 @specform[
 (lambda (arg-id ...)
   body ...+)
 ]
 
-A @scheme[lambda] form with @math{n} @scheme[_arg-id]s accepts
+A @racket[lambda] form with @math{n} @racket[_arg-id]s accepts
 @math{n} arguments:
 
 @interaction[
@@ -28,19 +28,19 @@ A @scheme[lambda] form with @math{n} @scheme[_arg-id]s accepts
 ]
 
 @;------------------------------------------------------------------------
-@section{Declaring a Rest Argument}
+@section[#:tag "rest-args"]{Declaring a Rest Argument}
 
-A @scheme[lambda] expression can also have the form
+A @racket[lambda] expression can also have the form
 
 @specform[
 (lambda rest-id
   body ...+)
 ]
 
-That is, a @scheme[lambda] expression can have a single
-@scheme[_rest-id] that is not surrounded by parentheses. The resulting
+That is, a @racket[lambda] expression can have a single
+@racket[_rest-id] that is not surrounded by parentheses. The resulting
 function accepts any number of arguments, and the arguments are put
-into a list bound to @scheme[_rest-id].
+into a list bound to @racket[_rest-id].
 
 @examples[
 ((lambda x x)
@@ -50,10 +50,10 @@ into a list bound to @scheme[_rest-id].
  1 2 3)
 ]
 
-Functions with a @scheme[_rest-id] often use @scheme[apply] to call
+Functions with a @racket[_rest-id] often use @racket[apply] to call
 another function that accepts any number of arguments.
 
-@guideother{@secref["apply"] describes @scheme[apply].}
+@guideother{@secref["apply"] describes @racket[apply].}
 
 @defexamples[
 (define max-mag
@@ -64,8 +64,8 @@ another function that accepts any number of arguments.
 (max-mag 1 -2 0)
 ]
 
-The @scheme[lambda] form also supports required arguments combined
-with a @scheme[_rest-id]:
+The @racket[lambda] form also supports required arguments combined
+with a @racket[_rest-id]:
 
 @specform[
 (lambda (arg-id ...+ . rest-id)
@@ -73,7 +73,7 @@ with a @scheme[_rest-id]:
 ]
 
 The result of this form is a function that requires at least as many
-arguments as @scheme[_arg-id]s, and also accepts any number of
+arguments as @racket[_arg-id]s, and also accepts any number of
 additional arguments.
 
 @defexamples[
@@ -85,14 +85,14 @@ additional arguments.
 (max-mag)
 ]
 
-A @scheme[_rest-id] variable is sometimes called a @defterm{rest
+A @racket[_rest-id] variable is sometimes called a @defterm{rest
 argument}, because it accepts the ``rest'' of the function arguments.
 
 @;------------------------------------------------------------------------
 @section{Declaring Optional Arguments}
 
 Instead of just an identifier, an argument (other than a rest
-argument) in a @scheme[lambda] form can be specified with an
+argument) in a @racket[lambda] form can be specified with an
 identifier and a default value:
 
 @specform/subs[
@@ -105,11 +105,11 @@ identifier and a default value:
       [arg-id default-expr]])
 ]{}
 
-A argument of the form @scheme[[arg-id default-expr]] is
+A argument of the form @racket[[arg-id default-expr]] is
 optional. When the argument is not supplied in an application,
-@scheme[_default-expr] produces the default value. The
-@scheme[_default-expr] can refer to any preceding @scheme[_arg-id],
-and every following @scheme[_arg-id] must have a default as well.
+@racket[_default-expr] produces the default value. The
+@racket[_default-expr] can refer to any preceding @racket[_arg-id],
+and every following @racket[_arg-id] must have a default as well.
 
 @defexamples[
 (define greet
@@ -133,7 +133,7 @@ and every following @scheme[_arg-id] must have a default as well.
 
 @section[#:tag "lambda-keywords"]{Declaring Keyword Arguments}
 
-A @scheme[lambda] form can declare an argument to be passed by
+A @racket[lambda] form can declare an argument to be passed by
 keyword, instead of position. Keyword arguments can be mixed with
 by-position arguments, and default-value expressions can be supplied
 for either kind of argument:
@@ -153,8 +153,8 @@ calls with keywords.}
       (code:line arg-keyword [arg-id default-expr])])
 ]{}
 
-An argument specified as @scheme[(code:line _arg-keyword _arg-id)] is
-supplied by an application using the same @scheme[_arg-keyword].  The
+An argument specified as @racket[(code:line _arg-keyword _arg-id)] is
+supplied by an application using the same @racket[_arg-keyword].  The
 position of the keyword--identifier pair in the argument list does not
 matter for matching with arguments in an application, because it will
 be matched to an argument value by keyword instead of by position.
@@ -168,7 +168,7 @@ be matched to an argument value by keyword instead of by position.
 (greet #:last "Doe" "John")
 ]
 
-An @scheme[(code:line _arg-keyword [_arg-id _default-expr])] argument
+An @racket[(code:line _arg-keyword [_arg-id _default-expr])] argument
 specifies a keyword-based argument with a default value.
 
 @defexamples[
@@ -183,16 +183,16 @@ specifies a keyword-based argument with a default value.
 (greet "Karl" #:last "Marx" #:hi "Guten Tag")
 ]
 
-The @scheme[lambda] form does not directly support the creation
+The @racket[lambda] form does not directly support the creation
 of a function that accepts ``rest'' keywords. To construct a
 function that accepts all keyword arguments, use
-@scheme[make-keyword-procedure]. The function supplied to
-@scheme[make-keyword-procedure] receives keyword arguments
+@racket[make-keyword-procedure]. The function supplied to
+@racket[make-keyword-procedure] receives keyword arguments
 through parallel lists in the first two (by-position) arguments,
 and then all by-position arguments from an application as the
 remaining by-position arguments.
 
-@guideother{@secref["apply"] introduces @scheme[keyword-apply].}
+@guideother{@secref["apply"] introduces @racket[keyword-apply].}
 
 @defexamples[
 #:eval greet-eval
@@ -207,9 +207,9 @@ remaining by-position arguments.
 @refdetails["lambda"]{function expressions}
 
 @;------------------------------------------------------------------------
-@section{Arity-Sensitive Functions: @scheme[case-lambda]}
+@section[#:tag "case-lambda"]{Arity-Sensitive Functions: @racket[case-lambda]}
 
-The @scheme[case-lambda] form creates a function that can have
+The @racket[case-lambda] form creates a function that can have
 completely different behaviors depending on the number of arguments
 that are supplied. A case-lambda expression has the form
 
@@ -222,9 +222,9 @@ that are supplied. A case-lambda expression has the form
           (arg-id ...+ . rest-id)])
 ]
 
-where each @scheme[[_formals _body ...+]] is analogous to @scheme[(lambda
+where each @racket[[_formals _body ...+]] is analogous to @racket[(lambda
 _formals _body ...+)]. Applying a function produced by
-@scheme[case-lambda] is like applying a @scheme[lambda] for the first
+@racket[case-lambda] is like applying a @racket[lambda] for the first
 case that matches the number of given arguments.
 
 @defexamples[
@@ -238,7 +238,7 @@ case that matches the number of given arguments.
 (greet)
 ]
 
-A @scheme[case-lambda] function cannot directly support optional or
+A @racket[case-lambda] function cannot directly support optional or
 keyword arguments.
 
 @; ----------------------------------------------------------------------

@@ -410,7 +410,7 @@ All @tech{MouseEvent}s are represented via strings:
 }
 
 For compatibility reasons, the teachpack also supports the keyword
-@tt{on-draw} in lieu of @scheme[to-draw] but the latter is preferred
+@defidform/inline[on-draw] in lieu of @scheme[to-draw] but the latter is preferred
 now. 
 }
 

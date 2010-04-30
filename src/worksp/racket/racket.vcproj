@@ -95,7 +95,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;mkmzdynd.bat&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;mkmzdynd.bat&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -184,7 +184,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.ss &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;mkmzdyn.bat&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="&#x0D;&#x0A;if exist &quot;$(TargetPath)&quot; goto :MzOK&#x0D;&#x0A;echo Error: did not find $(TargetPath)&#x0D;&#x0A;exit 1&#x0D;&#x0A;:MzOK&#x0D;&#x0A;&quot;$(TargetPath)&quot; -cu ..\..\racket\mkincludes.rkt &quot;$(TargetDir)/include/&quot; ..\..\racket ..&#x0D;&#x0A;if errorlevel 1 exit 1&#x0D;&#x0A;cd ..\..\racket\dynsrc&#x0D;&#x0A;mkmzdyn.bat&#x0D;&#x0A;cd ..\..\worksp\racket&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>

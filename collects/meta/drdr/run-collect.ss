@@ -123,8 +123,8 @@
      (define cwd (path->string (current-directory)))
      (define (rewrite s)
        (regexp-replace** ([rev "<current-rev>"]
-                          [home "<home>"]
                           [tmp "<tmp>"]
+                          [home "<home>"]
                           [cwd "<cwd>"])
                          s))
      

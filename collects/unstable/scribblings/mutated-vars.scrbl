@@ -1,9 +1,9 @@
 #lang scribble/manual
 @(require scribble/eval
-          "utils.ss"
+          "utils.rkt"
           (for-label unstable/mutated-vars
-                     scheme/contract
-                     scheme/base))
+                     racket/contract
+                     racket/base))
 
 @title[#:tag "mutated-vars"]{Finding Mutated Variables}
 
@@ -16,15 +16,15 @@
 
 
 @defproc[(find-mutated-vars [stx syntax?]) void?]{ Traverses
-@scheme[stx], which should be @scheme[module-level-form] in the sense
+@racket[stx], which should be @racket[module-level-form] in the sense
 of the grammar for 
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{fully-expanded} forms,
 and records all of the variables that are mutated.}
 
 @defproc[(is-var-mutated? [id identifier?]) boolean?]{
-Produces @scheme[#t] if @scheme[id] is mutated by an expression
-	 previously passed to @scheme[find-mutated-vars], otherwise
-	 produces @scheme[#f].
+Produces @racket[#t] if @racket[id] is mutated by an expression
+	 previously passed to @racket[find-mutated-vars], otherwise
+	 produces @racket[#f].
 
 
 @examples[#:eval the-eval

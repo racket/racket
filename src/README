@@ -211,7 +211,7 @@ Detailed instructions:
     into the "bin" directory for an in-place build, or into the
     executable directory for a --prefix build.
 
-    For a --prefix build, this step also creates a "config.ss" module
+    For a --prefix build, this step also creates a "config.rkt" module
     in a "config" collection, so that various PLT tools and libraries
     can find the installation directories. At this stage, in case you
     are packaging an installation instead of installing directly, you
@@ -326,7 +326,7 @@ Under Windows, executables also embed a path to DLLs. For more
 information, see worksp\README.
 
 Paths to all other installation directories are found through the
-"config.ss" library of the "config" collection. Search the
+"config.rkt" library of the "config" collection. Search the
 documentation for "config search paths" for more information.
 
 ========================================================================

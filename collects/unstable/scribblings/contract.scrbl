@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
-          "utils.ss"
+          "utils.rkt"
           (for-label unstable/contract
-                     scheme/contract
-                     scheme/base))
+                     racket/contract
+                     racket/base))
 
 @title[#:tag "contract"]{Contracts}
 
@@ -17,11 +17,11 @@ Contract for non-empty strings.
 }
 
 @defthing[port-number? contract?]{
-Equivalent to @scheme[(between/c 1 65535)].
+Equivalent to @racket[(between/c 1 65535)].
 }
 
 @defthing[path-element? contract?]{
-Equivalent to @scheme[(or/c path-string? (symbols 'up 'same))].
+Equivalent to @racket[(or/c path-string? (symbols 'up 'same))].
 }
 
 @addition{Ryan Culpepper}
@@ -32,29 +32,29 @@ Equivalent to @scheme[(or/c path-string? (symbols 'up 'same))].
          contract?]{
 
 Produces a contract that, when applied to a value, first tests the
-value with @scheme[predicate]; if @scheme[predicate] returns true, the
-@scheme[then-contract] is applied; otherwise, the
-@scheme[else-contract] is applied. The resulting contract is a flat
-contract if both @scheme[then-contract] and @scheme[else-contract] are
+value with @racket[predicate]; if @racket[predicate] returns true, the
+@racket[then-contract] is applied; otherwise, the
+@racket[else-contract] is applied. The resulting contract is a flat
+contract if both @racket[then-contract] and @racket[else-contract] are
 flat contracts.
 
 For example, the following contract enforces that if a value is a
 procedure, it is a thunk; otherwise it can be any (non-procedure)
 value:
-  @schemeblock[(if/c procedure? (-> any) any/c)]
+  @racketblock[(if/c procedure? (-> any) any/c)]
 Note that the following contract is @bold{not} equivalent:
-  @schemeblock[(or/c (-> any) any/c) (code:comment "wrong!")]
-The last contract is the same as @scheme[any/c] because
-@scheme[or/c] tries flat contracts before higher-order contracts.
+  @racketblock[(or/c (-> any) any/c) (code:comment "wrong!")]
+The last contract is the same as @racket[any/c] because
+@racket[or/c] tries flat contracts before higher-order contracts.
 }
 
 @defproc[(rename-contract [contract contract?]
                           [name any/c])
          contract?]{
 
-Produces a contract that acts like @scheme[contract] but with the name
-@scheme[name].
+Produces a contract that acts like @racket[contract] but with the name
+@racket[name].
 
-The resulting contract is a flat contract if @scheme[contract] is a
+The resulting contract is a flat contract if @racket[contract] is a
 flat contract.
 }

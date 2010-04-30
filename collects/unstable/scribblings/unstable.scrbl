@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
-          (for-syntax scheme/base scheme/path)
+          (for-syntax racket/base racket/path)
           (for-label scribble/base))
 
 @title[#:tag "unstable"]{Unstable}
@@ -9,9 +9,9 @@
 @defmodule[unstable]
 
 This manual documents some of the libraries available in the
-@schememodname[unstable] collection.
+@racketmodname[unstable] collection.
 
-The name @schememodname[unstable] is intended as a warning that the @bold{interfaces} in particular are unstable. Developers of planet packages and external projects should avoid using modules in the unstable collection. Contracts may change, names may change or disappear, even entire modules may move or disappear without warning to the outside world.
+The name @racketmodname[unstable] is intended as a warning that the @bold{interfaces} in particular are unstable. Developers of planet packages and external projects should avoid using modules in the unstable collection. Contracts may change, names may change or disappear, even entire modules may move or disappear without warning to the outside world.
 
 Developers of unstable libraries must follow the guidelines in
 @secref{guidelines}.
@@ -20,10 +20,10 @@ Developers of unstable libraries must follow the guidelines in
 
 @;{--------}
 
-@section[#:tag "guidelines"]{Guidelines for developing @schememodname[unstable] libraries}
+@section[#:tag "guidelines"]{Guidelines for developing @racketmodname[unstable] libraries}
 
 Any collection developer may add modules to the
-@schememodname[unstable] collection.
+@racketmodname[unstable] collection.
 
 Every module needs an owner to be responsible for it.
 
@@ -42,22 +42,22 @@ collections tree and update them if necessary. Notify users of major
 changes.
 
 Place new modules according to the following rules. (These rules are
-necessary for maintaining PLT's separate text, gui, and drscheme
+necessary for maintaining PLT's separate text, gui, and drracket
 distributions.)
 
 @itemize[
 
 @item{Non-GUI modules go under @tt{unstable} (or subcollections
 thereof). Put the documentation in @tt{unstable/scribblings} and
-include with @scheme[include-section] from
+include with @racket[include-section] from
 @tt{unstable/scribblings/unstable.scrbl}.}
 
 @item{GUI modules go under @tt{unstable/gui}. Put the documentation
 in @tt{unstable/scribblings/gui} and include them with
-@scheme[include-section] from @tt{unstable/scribblings/gui.scrbl}.}
+@racket[include-section] from @tt{unstable/scribblings/gui.scrbl}.}
 
-@item{Do not add modules depending on DrScheme to the
-@schememodname[unstable] collection.}
+@item{Do not add modules depending on DrRacket to the
+@racketmodname[unstable] collection.}
 
 @item{Put tests in @tt{tests/unstable}.}
 ]

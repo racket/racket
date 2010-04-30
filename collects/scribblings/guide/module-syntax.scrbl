@@ -8,14 +8,14 @@
 @title{Module Syntax}
 
 The @litchar{#lang} at the start of a module file begins a shorthand
-for a @scheme[module] form, much like @litchar{'} is a shorthand for a
-@scheme[quote] form. Unlike @litchar{'}, the @litchar{#lang}
+for a @racket[module] form, much like @litchar{'} is a shorthand for a
+@racket[quote] form. Unlike @litchar{'}, the @litchar{#lang}
 shorthand does not work well in a @tech{REPL}, in part because it must be
 terminated by an end-of-file, but also because the longhand expansion
 of @litchar{#lang} depends on the name of the enclosing file.
 
 @;------------------------------------------------------------------------
-@section[#:tag "module-syntax"]{The @scheme[module] Form}
+@section[#:tag "module-syntax"]{The @racket[module] Form}
 
 The longhand form of a module declaration, which works in a
 @tech{REPL} as well as a file, is
@@ -25,29 +25,29 @@ The longhand form of a module declaration, which works in a
   decl ...)
 ]
 
-where the @scheme[_name-id] is a name for the module,
-@scheme[_initial-module-path] is an initial import, and each
-@scheme[_decl] is an import, export, definition, or expression.  In
-the case of a file, @scheme[_name-id] must match the name of the
+where the @racket[_name-id] is a name for the module,
+@racket[_initial-module-path] is an initial import, and each
+@racket[_decl] is an import, export, definition, or expression.  In
+the case of a file, @racket[_name-id] must match the name of the
 containing file, minus its directory path or file extension.
 
-The @scheme[_initial-module-path] is needed because even the
-@scheme[require] form must be imported for further use in the module
-body. In other words, the @scheme[_initial-module-path] import
+The @racket[_initial-module-path] is needed because even the
+@racket[require] form must be imported for further use in the module
+body. In other words, the @racket[_initial-module-path] import
 bootstraps the syntax available in the body. The most commonly used
-@scheme[_initial-module-path] is @scheme[scheme], which supplies most
-of the bindings described in this guide, including @scheme[require],
-@scheme[define], and @scheme[provide]. Another commonly used
-@scheme[_initial-module-path] is @scheme[scheme/base], which provides
+@racket[_initial-module-path] is @racketmodname[racket], which supplies most
+of the bindings described in this guide, including @racket[require],
+@racket[define], and @racket[provide]. Another commonly used
+@racket[_initial-module-path] is @racketmodname[racket/base], which provides
 less functionality, but still much of the most commonly needed
 functions and syntax.
 
-For example, the @filepath{cake.ss} example of the
+For example, the @filepath{cake.rkt} example of the
 @seclink["module-basics"]{previous section} could be written as
 
-@schemeblock+eval[
+@racketblock+eval[
 #:eval cake-eval
-(module cake scheme
+(module cake racket
   (provide print-cake)
 
   (define (print-cake n)
@@ -57,8 +57,8 @@ For example, the @filepath{cake.ss} example of the
     (printf "---~a---\n" (make-string n #\-))))
 ]
 
-Furthermore, this @scheme[module] form can be evaluated in a
-@tech{REPL} to declare a @scheme[cake] module that is not associated
+Furthermore, this @racket[module] form can be evaluated in a
+@tech{REPL} to declare a @racket[cake] module that is not associated
 with any file. To refer to such an unassociated module, quote the
 module name:
 
@@ -70,53 +70,53 @@ module name:
 
 Declaring a module does not immediately evaluate the body definitions
 and expressions of the module. The module must be explicitly
-@scheme[require]d at the top level to trigger evaluation. After
-evaluation is triggered once, later @scheme[require]s do not
+@racket[require]d at the top level to trigger evaluation. After
+evaluation is triggered once, later @racket[require]s do not
 re-evaluate the module body.
 
 @examples[
-(module hi scheme
+(module hi racket
   (printf "Hello\n"))
 (require 'hi)
 (require 'hi)
 ]
 
 @;------------------------------------------------------------------------
-@section[#:tag "hash-lang"]{The @schememodfont{#lang} Shorthand}
+@section[#:tag "hash-lang"]{The @racketmodfont{#lang} Shorthand}
 
-The body of a @schememodfont{#lang} shorthand has no specific syntax,
+The body of a @racketmodfont{#lang} shorthand has no specific syntax,
 because the syntax is determined by the language name that follows
-@schememodfont{#lang}.
+@racketmodfont{#lang}.
 
-In the case of @schememodfont{#lang} @schememodname[scheme], the syntax
+In the case of @racketmodfont{#lang} @racketmodname[racket], the syntax
 is
 
-@schememod[
-scheme
+@racketmod[
+racket
 _decl ...]
 
 which reads the same as
 
-@schemeblock[
-(module _name scheme
+@racketblock[
+(module _name racket
   _decl ...)
 ]
 
-where @scheme[_name] is derived from the name of the file that
-contains the @schememodfont{#lang} form.
+where @racket[_name] is derived from the name of the file that
+contains the @racketmodfont{#lang} form.
 
-The @schememodfont{#lang} @scheme[scheme/base] form has the same
-syntax as @schememodfont{#lang} @schememodname[scheme], except that
-the longhand expansion uses @scheme[scheme/base] instead of
-@scheme[scheme]. The @schememodfont{#lang} @scheme[honu] form, in
+The @racketmodfont{#lang} @racketmodname[racket/base] form has the same
+syntax as @racketmodfont{#lang} @racketmodname[racket], except that
+the longhand expansion uses @racketmodname[racket/base] instead of
+@racketmodname[racket]. The @racketmodfont{#lang} @racket[honu] form, in
 contrast, has a completely different syntax that doesn't even look
-like Scheme, and which we do not attempt to describe in this guide.
+like Racket, and which we do not attempt to describe in this guide.
 
 Unless otherwise specified, a module that is documented as a
-``language'' using the @schememodfont{#lang} notation will expand to
-@scheme[module] in the same way as @schememodfont{#lang}
-@schememodname[scheme]. The documented language name can be used
-directly with @scheme[module] or @scheme[require], too.
+``language'' using the @racketmodfont{#lang} notation will expand to
+@racket[module] in the same way as @racketmodfont{#lang}
+@racketmodname[racket]. The documented language name can be used
+directly with @racket[module] or @racket[require], too.
 
 @; ----------------------------------------------------------------------
 

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
 @title[#:tag "private" #:style 'toc]{Internal APIs}
 

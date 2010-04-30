@@ -1,28 +1,28 @@
 #lang scribble/manual
 @(require scribble/eval
-          "utils.ss"
+          "utils.rkt"
           (for-label unstable/class-iop
-                     scheme/class
-                     scheme/contract
-                     scheme/base))
+                     racket/class
+                     racket/contract
+                     racket/base))
 
 @title[#:tag "class-iop"]{Interface-Oriented Programming for Classes}
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require scheme/class unstable/class-iop))
+@(the-eval '(require racket/class unstable/class-iop))
 
 @defmodule[unstable/class-iop]
 
-@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
+@unstable[@author+email["Ryan Culpepper" "ryanc@racket-lang.org"]]
 
 @defform[(define-interface name-id (super-ifc-id ...) (method-id ...))]{
 
-Defines @scheme[name-id] as a static interface extending the
-interfaces named by the @scheme[super-ifc-id]s and containing the
-methods specified by the @scheme[method-id]s.
+Defines @racket[name-id] as a static interface extending the
+interfaces named by the @racket[super-ifc-id]s and containing the
+methods specified by the @racket[method-id]s.
 
 A static interface name is used by the checked method call variants
-(@scheme[send/i], @scheme[send*/i], and @scheme[send/apply/i]). When
+(@racket[send/i], @racket[send*/i], and @racket[send/apply/i]). When
 used as an expression, a static interface name evaluates to an
 interface value.
 
@@ -41,14 +41,14 @@ stack<%>
 
 @defform[(define-interface/dynamic name-id ifc-expr (method-id ...))]{
 
-Defines @scheme[name-id] as a static interface with dynamic
-counterpart @scheme[ifc-expr], which must evaluate to an interface
+Defines @racket[name-id] as a static interface with dynamic
+counterpart @racket[ifc-expr], which must evaluate to an interface
 value. The static interface contains the methods named by the
-@scheme[method-id]s. A run-time error is raised if any
-@scheme[method-id] is not a member of the dynamic interface
-@scheme[ifc-expr].
+@racket[method-id]s. A run-time error is raised if any
+@racket[method-id] is not a member of the dynamic interface
+@racket[ifc-expr].
 
-Use @scheme[define-interface/dynamic] to wrap interfaces from other
+Use @racket[define-interface/dynamic] to wrap interfaces from other
 sources.
 
 @examples[#:eval the-eval
@@ -59,15 +59,15 @@ object<%>
 
 @defform[(send/i obj-exp static-ifc-id method-id arg-expr ...)]{
 
-Checked variant of @scheme[send]. 
+Checked variant of @racket[send]. 
 
-The argument @scheme[static-ifc-id] must be defined as a static
-interface. The method @scheme[method-id] must be a member of the
-static interface @scheme[static-ifc-id]; otherwise a compile-time
+The argument @racket[static-ifc-id] must be defined as a static
+interface. The method @racket[method-id] must be a member of the
+static interface @racket[static-ifc-id]; otherwise a compile-time
 error is raised.
 
-The value of @scheme[obj-expr] must be an instance of the interface
-@scheme[static-ifc-id]; otherwise, a run-time error is raised.
+The value of @racket[obj-expr] must be an instance of the interface
+@racket[static-ifc-id]; otherwise, a run-time error is raised.
 
 @examples[#:eval the-eval
 (define s (new stack%))
@@ -79,7 +79,7 @@ The value of @scheme[obj-expr] must be an instance of the interface
 
 @defform[(send*/i obj-expr static-ifc-id (method-id arg-expr ...) ...)]{
 
-Checked variant of @scheme[send*].
+Checked variant of @racket[send*].
 
 @examples[#:eval the-eval
 (send*/i s stack<%>
@@ -90,7 +90,7 @@ Checked variant of @scheme[send*].
 
 @defform[(send/apply/i obj-expr static-ifc-id method-id arg-expr ... list-arg-expr)]{
 
-Checked variant of @scheme[send/apply].
+Checked variant of @racket[send/apply].
 
 @examples[#:eval the-eval
 (send/apply/i s stack<%> push (list 5))
@@ -99,13 +99,13 @@ Checked variant of @scheme[send/apply].
 
 @defform[(define/i id static-ifc-id expr)]{
 
-Checks that @scheme[expr] evaluates to an instance of
-@scheme[static-ifc-id] before binding it to @scheme[id]. If
-@scheme[id] is subsequently changed (with @scheme[set!]), the check is
+Checks that @racket[expr] evaluates to an instance of
+@racket[static-ifc-id] before binding it to @racket[id]. If
+@racket[id] is subsequently changed (with @racket[set!]), the check is
 performed again.
 
 No dynamic object check is performed when calling a method (using
-@scheme[send/i], etc) on a name defined via @scheme[define/i].
+@racket[send/i], etc) on a name defined via @racket[define/i].
 
 }
 
@@ -116,12 +116,12 @@ No dynamic object check is performed when calling a method (using
               ([maybe-default-expr (code:blank)
                                    default-expr])]]]{
 
-Checked versions of @scheme[init] and @scheme[init-field]. The value
-attached to each @scheme[id] is checked against the given interface.
+Checked versions of @racket[init] and @racket[init-field]. The value
+attached to each @racket[id] is checked against the given interface.
 
 No dynamic object check is performed when calling a method (using
-@scheme[send/i], etc) on a name bound via one of these forms.  Note
-that in the case of @scheme[init-field/i] this check omission is
+@racket[send/i], etc) on a name bound via one of these forms.  Note
+that in the case of @racket[init-field/i] this check omission is
 unsound in the presence of mutation from outside the class. This
 should be fixed.
 

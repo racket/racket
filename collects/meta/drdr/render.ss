@@ -124,11 +124,13 @@
              ,@(append-map
                 (match-lambda
                   [(struct git-merge (hash author date msg from to))
-                   `((tr ([class "hash"]) (td "Commit:") (td (a ([href ,(format "http://github.com/plt/racket/commit/~a" hash)]) ,hash)))
+                   #;`((tr ([class "hash"]) (td "Commit:") (td (a ([href ,(format "http://github.com/plt/racket/commit/~a" hash)]) ,hash)))
                      (tr ([class "date"]) (td "Date:") (td ,(git-date->nice-date date)))
                      (tr ([class "author"]) (td "Author:") (td ,author))
                      (tr ([class "msg"]) (td "Log:") (td (pre ,@msg)))
-                     (tr ([class "merge"]) (td "Merge:") (td "From " ,from " to " ,to)))]
+                     (tr ([class "merge"]) (td "Merge:") (td "From " ,from " to " ,to)))
+                   ; Don't display these "meaningless" commits
+                   empty]
                   [(struct git-diff (hash author date msg mfiles))
                    (define cg-id (symbol->string (gensym 'changes)))
                    (define ccss-id (symbol->string (gensym 'changes)))
@@ -544,7 +546,7 @@
 (define log->committer+title 
   (match-lambda
     [(struct git-push (num author commits))
-     (define lines (append-map git-commit-msg commits))
+     (define lines (append-map (λ (c) (if (git-merge? c) empty (git-commit-msg c))) commits))
      (define title
        (if (empty? lines)
            ""

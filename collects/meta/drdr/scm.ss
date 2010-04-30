@@ -108,7 +108,7 @@
     (system/output-port 
      #:k (curry parse-push rev who)
      (git-path)
-     "--no-pager" "log" "--date=iso" "--name-only"
+     "--no-pager" "log" "--date=iso" "--name-only" "--no-merges"
      (format "~a..~a" start-commit end-commit))))
 (provide/contract
  [struct git-push 

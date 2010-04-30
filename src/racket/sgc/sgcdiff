@@ -13,9 +13,9 @@ string=? ; exec $PLTHOME/bin/mzscheme -agrq $0 "$@"
 ;;
 ;; Written by Robby Findler, Rice PLT
 
-(require-library "macro.ss")
-(require-library "functio.ss")
-(require-library "pretty.ss")
+(require-library "macro.rkt")
+(require-library "functio.rkt")
+(require-library "pretty.rkt")
 
 (define skip-count 0)
 

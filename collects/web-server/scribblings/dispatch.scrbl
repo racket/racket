@@ -1,12 +1,12 @@
 #lang scribble/doc
-@(require "web-server.ss"
-          scheme/sandbox)
+@(require "web-server.rkt"
+          racket/sandbox)
 @(require (for-label web-server/servlet
                      web-server/dispatchers/dispatch
                      web-server/servlet-env
                      web-server/dispatch/extend
-                     scheme/match
-                     scheme/list
+                     racket/match
+                     racket/list
                      net/url
                      xml))
 
@@ -14,8 +14,8 @@
    (let ([the-eval (make-base-eval)])
      (the-eval '(require web-server/http
                          net/url
-                         scheme/list 
-                         scheme/promise
+                         racket/list 
+                         racket/promise
                          web-server/dispatch
                          web-server/dispatch/extend))
      the-eval))
@@ -26,9 +26,9 @@
 
 The library allows the creation of two-way mappings between permanent URLs and request-handling procedures.
 
-@margin-note{This library was inspired by the @schememodname[(planet untyped/dispatch)] package.}
+@margin-note{This library was inspired by the @racketmodname[(planet untyped/dispatch)] package.}
 
-@section{Using @schememodname[web-server/dispatch]}
+@section{Using @racketmodname[web-server/dispatch]}
 
 Suppose you are writing a blog application and want pretty URLs for different views of the site.
 You would define some URL dispatching rules as follows:
@@ -107,16 +107,16 @@ After mastering the world of blogging software, you decide to put the ubiquitous
          #:contracts
          ([else-fun (request? . -> . response/c)]
           [dispatch-fun (request? any/c ... . -> . response/c)])]{
- Returns two values: the first is a dispatching function with the contract @scheme[(request? . -> . response/c)]
- that calls the appropriate @scheme[dispatch-fun] based on the first @scheme[dispatch-pattern] that matches the
- request's URL; the second is a URL-generating function with the contract @scheme[(procedure? any/c ... . -> . string?)]
- that generates a URL using @scheme[dispatch-pattern] for the @scheme[dispatch-fun] given as its first argument.
+ Returns two values: the first is a dispatching function with the contract @racket[(request? . -> . response/c)]
+ that calls the appropriate @racket[dispatch-fun] based on the first @racket[dispatch-pattern] that matches the
+ request's URL; the second is a URL-generating function with the contract @racket[(procedure? any/c ... . -> . string?)]
+ that generates a URL using @racket[dispatch-pattern] for the @racket[dispatch-fun] given as its first argument.
  
- If @scheme[else-fun] is left out, one is provided that calls @scheme[(next-dispatcher)] to signal to the Web Server that this
+ If @racket[else-fun] is left out, one is provided that calls @racket[(next-dispatcher)] to signal to the Web Server that this
  dispatcher does not apply.
 }
  
-@schemegrammar[dispatch-pattern
+@racketgrammar[dispatch-pattern
                ()
                (string . dispatch-pattern)
                (bidi-match-expander ... . dispatch-pattern)
@@ -133,8 +133,8 @@ After mastering the world of blogging software, you decide to put the ubiquitous
          #:contracts
          ([else-fun (request? . -> . response/c)]
           [dispatch-fun (request? any/c ... . -> . response/c)])]{
- Like @scheme[dispatch-rules], except returns a third value with the contract @scheme[(request? . -> . boolean?)] that returns
-      @scheme[#t] if the dispatching rules apply to the request and @scheme[#f] otherwise.
+ Like @racket[dispatch-rules], except returns a third value with the contract @racket[(request? . -> . boolean?)] that returns
+      @racket[#t] if the dispatching rules apply to the request and @racket[#f] otherwise.
       }
 
 @defform*[#:literals (else)
@@ -148,7 +148,7 @@ After mastering the world of blogging software, you decide to put the ubiquitous
          #:contracts
          ([else-fun (request? . -> . response/c)]
           [dispatch-fun (request? any/c ... . -> . response/c)])]{
- Returns a dispatching function as described by @scheme[dispatch-rules].
+ Returns a dispatching function as described by @racket[dispatch-rules].
 }
 
 @defform[#:literals (else)
@@ -157,52 +157,52 @@ After mastering the world of blogging software, you decide to put the ubiquitous
           ...)
          #:contracts
          ([dispatch-fun (request? any/c ... . -> . response/c)])]{
- Returns a URL-generating function as described by @scheme[dispatch-rules].
+ Returns a URL-generating function as described by @racket[dispatch-rules].
 }
 
 @defproc[(serve/dispatch [dispatch (request? . -> . response/c)])
          void]{
- Calls @scheme[serve/servlet] with appropriate arguments so that every request is handled by @scheme[dispatch].
+ Calls @racket[serve/servlet] with appropriate arguments so that every request is handled by @racket[dispatch].
 }
               
 @section{Built-in URL patterns}
 
-@schememodname[web-server/dispatch] builds in a few useful URL component patterns.
+@racketmodname[web-server/dispatch] builds in a few useful URL component patterns.
 
 @defform[(number-arg)]{
- A @tech{bi-directional match expander} that parses a @scheme[number?] from the URL and generates a URL with a number's encoding as a string.
+ A @tech{bi-directional match expander} that parses a @racket[number?] from the URL and generates a URL with a number's encoding as a string.
 }
 
 @defform[(integer-arg)]{
- A @tech{bi-directional match expander} that parses a @scheme[integer?] from the URL and generates a URL with a integer's encoding as a string.
+ A @tech{bi-directional match expander} that parses a @racket[integer?] from the URL and generates a URL with a integer's encoding as a string.
 }
 
 @defform[(real-arg)]{
- A @tech{bi-directional match expander} that parses a @scheme[real?] from the URL and generates a URL with a real's encoding as a string.
+ A @tech{bi-directional match expander} that parses a @racket[real?] from the URL and generates a URL with a real's encoding as a string.
 }
 
 @defform[(string-arg)]{
- A @tech{bi-directional match expander} that parses a @scheme[string?] from the URL and generates a URL containing the string.
+ A @tech{bi-directional match expander} that parses a @racket[string?] from the URL and generates a URL containing the string.
 }
 
 @defform[(symbol-arg)]{
- A @tech{bi-directional match expander} that parses a @scheme[symbol?] from the URL and generates a URL with a symbol's encoding as a string.
+ A @tech{bi-directional match expander} that parses a @racket[symbol?] from the URL and generates a URL with a symbol's encoding as a string.
 }
 
-@section{Extending @schememodname[web-server/dispatch]}
+@section{Extending @racketmodname[web-server/dispatch]}
 
 @defmodule[web-server/dispatch/extend]
 
 You can create new URL component patterns by defining @tech{bi-directional match expanders}.
 
 @defform[(define-bidi-match-expander id in-xform out-xform)]{
- Binds @scheme[id] to a @deftech{bi-directional match expander}
- where @scheme[in-xform] is a match expander (defined by @scheme[define-match-expander]) that is used when parsing URLs
- and @scheme[out-xform] is one used when generating URLs.
+ Binds @racket[id] to a @deftech{bi-directional match expander}
+ where @racket[in-xform] is a match expander (defined by @racket[define-match-expander]) that is used when parsing URLs
+ and @racket[out-xform] is one used when generating URLs.
  
- Both @scheme[in-xform] and @scheme[out-xform] should use the syntax @scheme[(_xform arg ... _id)] where the @scheme[arg]s are 
- specific to @scheme[id] and compatible with both @scheme[in-xform] and @scheme[out-xform]. @scheme[_id] will typically be provided
- automatically by @scheme[dispatch-rules].
+ Both @racket[in-xform] and @racket[out-xform] should use the syntax @racket[(_xform arg ... _id)] where the @racket[arg]s are 
+ specific to @racket[id] and compatible with both @racket[in-xform] and @racket[out-xform]. @racket[_id] will typically be provided
+ automatically by @racket[dispatch-rules].
 }
 
 @defidform[bidi-match-going-in?]{
@@ -212,13 +212,13 @@ You can create new URL component patterns by defining @tech{bi-directional match
 When defining new patterns, you may find it useful to use these helper functions:
 
 @defform[(define-coercion-match-expander id test? coerce)]{
- Binds @scheme[id] to a match expander that expands @scheme[(id _x)] to
- @scheme[(? test? (app coerce _x))] (i.e., uses @scheme[test?] to determine if the pattern matches and @scheme[coerce] to transform the binding.)
+ Binds @racket[id] to a match expander that expands @racket[(id _x)] to
+ @racket[(? test? (app coerce _x))] (i.e., uses @racket[test?] to determine if the pattern matches and @racket[coerce] to transform the binding.)
 }
  
 @defproc[(make-coerce-safe? [coerce (any/c . -> . any/c)])
          (any/c . -> . boolean?)]{
- Returns a function that returns @scheme[#t] if @scheme[coerce] would not throw an exception or return @scheme[#f] on its input.
+ Returns a function that returns @racket[#t] if @racket[coerce] would not throw an exception or return @racket[#f] on its input.
          
  @examples[#:eval dispatch-eval
   (define string->number? (make-coerce-safe? string->number))

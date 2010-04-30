@@ -2,25 +2,25 @@
 @(require scribble/manual
           scribble/eval
           "guide-utils.ss"
-          (for-label scheme/match))
+          (for-label racket/match))
 
-@title[#:tag "case"]{Simple Dispatch: @scheme[case]}
+@title[#:tag "case"]{Simple Dispatch: @racket[case]}
 
-The @scheme[case] form dispatches to a clause by matching the result
+The @racket[case] form dispatches to a clause by matching the result
 of an expression to the values for the clause:
 
 @specform[(case expr
             [(datum ...+) expr ...+]
             ...)]
 
-Each @scheme[_datum] will be compared to the result of the first
-@scheme[_expr] using @scheme[eqv?]. Since @scheme[eqv?] doesn't work on
-many kinds of values, notably strings and lists, each @scheme[_datum]
+Each @racket[_datum] will be compared to the result of the first
+@racket[_expr] using @racket[eqv?]. Since @racket[eqv?] doesn't work on
+many kinds of values, notably strings and lists, each @racket[_datum]
 is typically a number, symbol, or boolean.
 
-Multiple @scheme[_datum]s can be supplied for each clause, and the
-corresponding @scheme[_expr] is evaluated of any of the
-@scheme[_datum]s match.
+Multiple @racket[_datum]s can be supplied for each clause, and the
+corresponding @racket[_expr] is evaluated of any of the
+@racket[_datum]s match.
 
 @examples[
 (let ([v (random 6)])
@@ -32,8 +32,8 @@ corresponding @scheme[_expr] is evaluated of any of the
     [(3 4 5) 'many]))
 ]
 
-The last clause of a @scheme[case] form can use @scheme[else], just
-like @scheme[cond]:
+The last clause of a @racket[case] form can use @racket[else], just
+like @racket[cond]:
 
 @examples[
 (case (random 6)
@@ -43,5 +43,5 @@ like @scheme[cond]:
   [else 'many])
 ]
 
-For more general pattern matching, use @scheme[match], which is
+For more general pattern matching, use @racket[match], which is
 introduced in @secref["match"].

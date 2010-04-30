@@ -7,7 +7,7 @@
   (define suffix (filename-extension pth))
   (and suffix
        (ormap (lambda (bs) (bytes=? suffix bs))
-              (list #"ss" #"scm" #"scrbl" #"rkt"))))
+              (list #"ss" #"scm" #"scrbl" #"rkt" #"sls"))))
 
 (define PROP:command-line "drdr:command-line")
 (define PROP:timeout "drdr:timeout")

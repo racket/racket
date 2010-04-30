@@ -3,7 +3,7 @@
           scribble/manual
           scribble/eval
 	  scribblings/reference/mz
-	  "utils.ss"
+	  "utils.rkt"
          (for-label unstable/sequence
                     racket/contract
                     racket/base))

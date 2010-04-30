@@ -2,7 +2,7 @@
 @(require "common.ss")
 @(tools-title "unit")
 
-@definterface[drscheme:unit:tab<%> (drscheme:rep:context<%>)]{
+@definterface[drracket:unit:tab<%> (drracket:rep:context<%>)]{
 @defmethod[(break-callback) void?]{
 @methspec{
 This method is called when the break button is clicked and
@@ -43,13 +43,13 @@ Enables the Run button, and the Run menu item and unlocks
            (values (or/c thread? false/c) (or/c custodian? false/c))]{}
 
 @defmethod[(get-defs)
-           (is-a?/c drscheme:unit:definitions-text<%>)]{
+           (is-a?/c drracket:unit:definitions-text<%>)]{
 This text is initially the top half of the drscheme window and
 contains the users program.
 
 This text defaults to a @scheme[text%]
 object, but if you change
-@scheme[drscheme:get/extend:extend-definitions-text] procedure, it will use the extended class to create the text.
+@scheme[drracket:get/extend:extend-definitions-text] procedure, it will use the extended class to create the text.
 
 }
 
@@ -73,19 +73,19 @@ is already running (in another thread).
 }
 
 @defmethod[(get-frame)
-           (is-a?/c drscheme:unit:frame%)]{
+           (is-a?/c drracket:unit:frame%)]{
 Returns the frame that this tab is inside.
 
 }
 
 @defmethod[(get-ints)
-           (is-a?/c drscheme:rep:text%)]{
+           (is-a?/c drracket:rep:text%)]{
 This text is initially the bottom half of the drscheme window and
 contains the users interactions with the REPL.
 
-This text defaults to a @scheme[drscheme:rep:text%]
+This text defaults to a @scheme[drracket:rep:text%]
 object, but if you use the
-@scheme[drscheme:get/extend:extend-interactions-text] procedure,
+@scheme[drracket:get/extend:extend-interactions-text] procedure,
 it will use the extended class to create the text.
 
 }
@@ -120,7 +120,7 @@ This method is called when the tab is closed.
 
 Calls the definitions text's
 @method[editor:basic<%> on-close] and interactions text's
-@method[drscheme:rep:text% on-close] methods.
+@method[drracket:rep:text% on-close] methods.
 
 
 }}
@@ -135,7 +135,7 @@ Calls the definitions text's
            void?]{}}
 
 
-@defclass[drscheme:unit:tab% object% (drscheme:unit:tab<%>)]{
+@defclass[drracket:unit:tab% object% (drracket:unit:tab<%>)]{
 
 The base class that implements the tab's functionality.
 
@@ -155,7 +155,7 @@ Clears any error highlighting.
 }}
 
 
-@defmixin[drscheme:unit:program-editor-mixin (text% editor:basic<%>) ()]{
+@defmixin[drracket:unit:program-editor-mixin (text% editor:basic<%>) ()]{
 
 This mixes in the ability to reset the highlighting for
 error message when the user modifies the buffer. Use it for
@@ -189,7 +189,7 @@ Resets an error highlighting.
 }}
 
 
-@defclass[drscheme:unit:interactions-canvas% canvas:wide-snip% ()]{
+@defclass[drracket:unit:interactions-canvas% canvas:wide-snip% ()]{
 
 
 
@@ -200,7 +200,7 @@ Passes all arguments to @scheme[super-init].
 }}
 
 
-@defclass[drscheme:unit:frame% (drscheme:frame:basics-mixin (drscheme:frame:mixin frame:searchable%)) (drscheme:unit:frame<%>)]{
+@defclass[drracket:unit:frame% (drracket:frame:basics-mixin (drracket:frame:mixin frame:searchable%)) (drracket:unit:frame<%>)]{
 
 This frame inserts the Scheme and Language menus into the menu bar as it is initialized.
 
@@ -274,9 +274,9 @@ button or chooses the Run menu item.
 @methimpl{
 
 It calls 
-@method[drscheme:rep:context<%> ensure-rep-shown] and then it calls
-@method[drscheme:rep:text% do-many-text-evals] passing in the result of
-@method[drscheme:unit:frame<%> get-interactions-text] and its entire range, unless the first two characters are 
+@method[drracket:rep:context<%> ensure-rep-shown] and then it calls
+@method[drracket:rep:text% do-many-text-evals] passing in the result of
+@method[drracket:unit:frame<%> get-interactions-text] and its entire range, unless the first two characters are 
 @litchar{#!} in which case, it skips the first line.
 
 
@@ -368,7 +368,7 @@ See also mrlib's @scheme[switchable-button%].
            (is-a?/c editor-canvas%)]{
 
 Returns the result of
-@method[drscheme:unit:frame<%> get-definitions-canvas].
+@method[drracket:unit:frame<%> get-definitions-canvas].
 
 
 }
@@ -378,7 +378,7 @@ Returns the result of
            (is-a?/c canvas%)]{
 
 Returns the result of
-@scheme[drscheme:get/extend:get-definitions-canvas].
+@scheme[drracket:get/extend:get-definitions-canvas].
 
 
 }
@@ -416,7 +416,7 @@ Second case:
            (is-a?/c editor<%>)]{
 
 Returns the result of
-@method[drscheme:unit:frame<%> get-definitions-text].
+@method[drracket:unit:frame<%> get-definitions-text].
 
 
 
@@ -427,7 +427,7 @@ Returns the result of
            (is-a?/c editor<%>)]{
 
 Returns the result of
-@scheme[drscheme:get/extend:get-definitions-text].
+@scheme[drracket:get/extend:get-definitions-text].
 
 
 }
@@ -443,15 +443,15 @@ Returns the Run button. Mostly used for test suites.
            (is-a?/c text:searching%)]{
 
 returns the text that is active in the last canvas passed to
-@method[drscheme:unit:frame% make-searchable] 
+@method[drracket:unit:frame% make-searchable] 
 
 }
 
-@defmethod[(make-searchable [canvas (is-a?/c drscheme:unit:interactions-canvas%)])
+@defmethod[(make-searchable [canvas (is-a?/c drracket:unit:interactions-canvas%)])
            void?]{
 
 stores the canvas, until 
-@method[drscheme:unit:frame% get-text-to-search] is called.
+@method[drracket:unit:frame% get-text-to-search] is called.
 
 
 }
@@ -461,9 +461,9 @@ stores the canvas, until
            void?]{
 
 Sends the result of
-@method[drscheme:unit:frame<%> get-interactions-text] the
-@method[drscheme:rep:text% shutdown] and 
-@method[drscheme:rep:text% on-close] methods.
+@method[drracket:unit:frame<%> get-interactions-text] the
+@method[drracket:rep:text% shutdown] and 
+@method[drracket:rep:text% on-close] methods.
 
 Calls the super method.
 
@@ -487,7 +487,7 @@ width and height.
 
 determines if the definitions window has not been
 modified. Used in conjunction with
-@method[drscheme:unit:frame% change-to-file].
+@method[drracket:unit:frame% change-to-file].
 
 }
 
@@ -510,7 +510,7 @@ the @scheme[modified?] argument as an initial visibility for
 the save button.
 
 This method is called by the
-@method[drscheme:unit:definitions-text% set-modified] method.
+@method[drracket:unit:definitions-text% set-modified] method.
 
 
 }
@@ -520,7 +520,7 @@ This method is called by the
 
 Updates the save message on the drscheme frame. This method is called by
 the 
-@method[drscheme:unit:definitions-text% set-filename] method.
+@method[drracket:unit:definitions-text% set-filename] method.
 
 
 }
@@ -536,13 +536,13 @@ items based on the contents of the windows.
 }}
 
 
-@definterface[drscheme:unit:frame<%> ()]{
+@definterface[drracket:unit:frame<%> ()]{
 
 @defmethod[(get-language-menu) (is-a?/c menu%)]{ Returns the
   language-specific menu. This menu is called the
   @onscreen{Scheme} menu in the Scheme language but is, in general,
   controlled by the @scheme['drscheme:language-menu-title] 
-  capability (see @scheme[drscheme:language:register-capability]
+  capability (see @scheme[drracket:language:register-capability]
   for details on capabilities).
  }
 
@@ -570,12 +570,12 @@ Shows the interactions window
 }
 
 @defmethod[(get-current-tab)
-           (is-a?/c drscheme:unit:tab<%>)]{
+           (is-a?/c drracket:unit:tab<%>)]{
 Returns the currently active tab.
 
 }
 
-@defmethod[(get-tab-filename [i (<=/c 0 (#,(method drscheme:unit:frame<%> get-tab-count)))]) string?]{
+@defmethod[(get-tab-filename [i (<=/c 0 (#,(method drracket:unit:frame<%> get-tab-count)))]) string?]{
   Returns a string naming the file in the @scheme[i]th tab or, if
   the file is not saved, something like ``Untitled''.
 }
@@ -595,24 +595,24 @@ Returns the currently active tab.
 }
 
 @defmethod[(get-definitions-canvas)
-           (is-a?/c drscheme:unit:definitions-canvas%)]{
+           (is-a?/c drracket:unit:definitions-canvas%)]{
 
 This canvas is the canvas containing the 
-@method[drscheme:unit:frame<%> get-definitions-text]. It is initially the top half of the drscheme window.
+@method[drracket:unit:frame<%> get-definitions-text]. It is initially the top half of the drscheme window.
 
-This canvas defaults to a @scheme[drscheme:unit:definitions-canvas%]
+This canvas defaults to a @scheme[drracket:unit:definitions-canvas%]
 object, but if you change the
-@scheme[drscheme:get/extend:extend-definitions-canvas] procedure, it will use the class in the parameter to create the canvas.
+@scheme[drracket:get/extend:extend-definitions-canvas] procedure, it will use the class in the parameter to create the canvas.
 
 
 }
 
 @defmethod[(get-definitions-text)
-           (is-a?/c drscheme:unit:definitions-text%)]{
+           (is-a?/c drracket:unit:definitions-text%)]{
 
 Calls result of
-@method[drscheme:unit:frame<%> get-current-tab]'s 
-@method[drscheme:unit:tab<%> get-defs] method.
+@method[drracket:unit:frame<%> get-current-tab]'s 
+@method[drracket:unit:tab<%> get-defs] method.
 
 
 }
@@ -626,38 +626,38 @@ Returns the Insert menu.
 }}
 
 @defmethod[(get-interactions-canvas)
-           (instanceof (derivedfrom drscheme:unit:interactions-canvas%))]{
+           (instanceof (derivedfrom drracket:unit:interactions-canvas%))]{
 
 This canvas is the canvas containing the 
-@method[drscheme:unit:frame<%> get-interactions-text]. It is initially the bottom half of the drscheme window.
+@method[drracket:unit:frame<%> get-interactions-text]. It is initially the bottom half of the drscheme window.
 
-This canvas defaults to a @scheme[drscheme:unit:interactions-canvas%]
+This canvas defaults to a @scheme[drracket:unit:interactions-canvas%]
 object, but if you use the
-@scheme[drscheme:get/extend:extend-interactions-canvas] procedure,
+@scheme[drracket:get/extend:extend-interactions-canvas] procedure,
 it will use the extended class to create the canvas.
 
 
 }
 
 @defmethod[(get-interactions-text)
-           (instanceof (derivedfrom drscheme:rep:text%))]{
+           (is-a?/c drracket:rep:text%)]{
 
 Calls result of
-@method[drscheme:unit:frame<%> get-current-tab]'s 
-@method[drscheme:unit:tab<%> get-ints] method.
+@method[drracket:unit:frame<%> get-current-tab]'s 
+@method[drracket:unit:tab<%> get-ints] method.
 
 
 }
 
 @defmethod[(get-tabs)
-           (listof drscheme:unit:tab<%>)]{
+           (listof (is-a?/c drracket:unit:tab<%>))]{
 Returns the list of tabs in this frame.
 
 }
 
 @defmethod[#:mode pubment 
-           (on-tab-change [from-tab (is-a?/c drscheme:unit:tab<%>)]
-                          [to-tab (is-a?/c drscheme:unit:tab<%>)])
+           (on-tab-change [from-tab (is-a?/c drracket:unit:tab<%>)]
+                          [to-tab (is-a?/c drracket:unit:tab<%>)])
            void?]{
 @methspec{
 
@@ -688,7 +688,7 @@ around, except by the this capability. If they are, things
 can go funny (i.e., no good checks are in place).
 
 Note that the capability must be registered separately, via
-@scheme[drscheme:language:register-capability].
+@scheme[drracket:language:register-capability].
 
 
 }
@@ -713,7 +713,7 @@ that the button is not referenced by this frame and thus can be gc'd.
 }
 
 
-@defclass[drscheme:unit:definitions-text% (drscheme:rep:drs-bindings-keymap-mixin (drscheme:unit:program-editor-mixin (scheme:text-mixin text:info%))) (drscheme:unit:definitions-text<%>)]{
+@defclass[drracket:unit:definitions-text% (drracket:rep:drs-bindings-keymap-mixin (drracket:unit:program-editor-mixin (scheme:text-mixin text:info%))) (drracket:unit:definitions-text<%>)]{
 
 @defconstructor[()]{
 Passes all arguments to @scheme[super-init].
@@ -724,7 +724,7 @@ Passes all arguments to @scheme[super-init].
            void?]{
 
 Calls
-@method[drscheme:unit:frame% update-save-message].
+@method[drracket:unit:frame% update-save-message].
 }
 
 @defmethod[#:mode override 
@@ -732,11 +732,11 @@ Calls
            void?]{
 
 Calls
-@method[drscheme:unit:frame% update-save-button].
+@method[drracket:unit:frame% update-save-button].
 }}
 
 
-@definterface[drscheme:unit:definitions-text<%> ()]{
+@definterface[drracket:unit:definitions-text<%> ()]{
 
 This interface is implemented by the definitions text. 
 
@@ -748,7 +748,7 @@ This interface is implemented by the definitions text.
 @methspec{
 
 Called when the next settings changes. See also
-@method[drscheme:unit:definitions-text<%> get-next-settings].
+@method[drracket:unit:definitions-text<%> get-next-settings].
 
 }
 
@@ -766,7 +766,7 @@ the buffer to insert metadata. The metadata is only inserted
 during saving, so tools that track changes to DrScheme will
 need to ignore changes that occur after this method is
 called, and before
-@method[drscheme:unit:definitions-text<%> end-metadata-changes] is called.
+@method[drracket:unit:definitions-text<%> end-metadata-changes] is called.
 
 A call to @scheme[begin-metadata-changes] will always be
 followed with a call to @scheme[end-metadata-changes] (ie,
@@ -778,7 +778,7 @@ the calls cannot be nested).
            void?]{
 Called when the changes to insert metadata are done, and the
 editor is back to its state at the time of the call to
-@method[drscheme:unit:definitions-text<%> begin-metadata-changes].
+@method[drracket:unit:definitions-text<%> begin-metadata-changes].
 
 A call to @scheme[begin-metadata-changes] will always be
 followed with a call to @scheme[end-metadata-changes] (ie,
@@ -804,7 +804,7 @@ the editor should be used.)
 }
 
 @defmethod[(get-tab)
-           (instanceof drscheme:unit:tab%)]{
+           (is-a?/c drracket:unit:tab%)]{
 Returns the editor's enclosing tab.
 
 }
@@ -846,14 +846,14 @@ Changes the language settings for this window. If
 changed, which affects newly created windows.
 
 See also
-@method[drscheme:unit:definitions-text<%> after-set-next-settings] and
-@method[drscheme:unit:definitions-text<%> get-next-settings].
+@method[drracket:unit:definitions-text<%> after-set-next-settings] and
+@method[drracket:unit:definitions-text<%> get-next-settings].
 
 
 }}
 
 
-@defclass[drscheme:unit:definitions-canvas% editor-canvas% ()]{
+@defclass[drracket:unit:definitions-canvas% editor-canvas% ()]{
 
 Initializes the visibility of the save button.
 

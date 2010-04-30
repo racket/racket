@@ -1,15 +1,15 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
 @; ------------------------------------------------------------
-@title[#:tag "lang/web-cells.ss"]{Stateless Web Cells}
+@title[#:tag "lang/web-cells"]{Stateless Web Cells}
 @(require (for-label web-server/lang/web-cells))
 
 @defmodule[web-server/lang/web-cells]{The
-@schememodname[web-server/lang/web-cells] library provides the same
-API as @schememodname[web-server/servlet/web-cells], but in a way
+@racketmodname[web-server/lang/web-cells] library provides the same
+API as @racketmodname[web-server/servlet/web-cells], but in a way
 compatible with the Web Language. The one difference is that
-@scheme[make-web-cell] is syntax, rather than a function.
+@racket[make-web-cell] is syntax, rather than a function.
 
 @deftogether[(
 @defproc[(web-cell? [v any/c])
@@ -22,6 +22,6 @@ compatible with the Web Language. The one difference is that
          void]
 )]{
 
-See @schememodname[web-server/servlet/web-cells].}
+See @racketmodname[web-server/servlet/web-cells].}
   
 }

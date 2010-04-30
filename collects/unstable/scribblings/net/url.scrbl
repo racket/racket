@@ -1,11 +1,11 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
-          "../utils.ss"
+          "../utils.rkt"
           (for-label unstable/net/url
                      net/url
-                     scheme/contract
-                     scheme/base))
+                     racket/contract
+                     racket/base))
 
 @title[#:tag "url"]{URLs}
 
@@ -16,11 +16,11 @@
 @defproc[(url-replace-path [proc ((listof path/param?) . -> . (listof path/param?))]
                            [u url?])
          url?]{
- Replaces the URL path of @scheme[u] with @scheme[proc] of the former path.
+ Replaces the URL path of @racket[u] with @racket[proc] of the former path.
 }
 
 @defproc[(url-path->string [url-path (listof path/param?)])
          string?]{
- Formats @scheme[url-path] as a string with @scheme["/"] as a delimiter
+ Formats @racket[url-path] as a string with @racket["/"] as a delimiter
  and no params.
 }

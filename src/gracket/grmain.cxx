@@ -101,12 +101,12 @@ extern "C" Scheme_Object *scheme_initialize(Scheme_Env *env);
 # define INIT_FILENAME "~/.gracketrc"
 #else
 # ifdef wx_msw
-#  define INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.ss"
+#  define INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rkts"
 # else
 #  ifdef OS_X
 #   define INIT_FILENAME "~/.gracketrc"
 #  else
-#   define INIT_FILENAME "PREFERENCES:gracketrc.ss"
+#   define INIT_FILENAME "PREFERENCES:gracketrc.rkts"
 #  endif
 # endif
 #endif

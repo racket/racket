@@ -13,7 +13,7 @@
 @section-index["poll"]
 
 A @deftech{synchronizable event} (or just @defterm{event} for short)
-works with the @scheme[sync] procedure to coordinate synchronization
+works with the @racket[sync] procedure to coordinate synchronization
 among threads. Certain kinds of objects double as events, including
 ports and threads. Other kinds of objects exist only for their use as
 events.
@@ -27,156 +27,156 @@ when it is ready, then the event produces a particular
 
 Synchronizing an event may affect the state of the event. For example,
 when synchronizing a semaphore, then the semaphore's internal count is
-decremented, just as with @scheme[semaphore-wait]. For most kinds of
+decremented, just as with @racket[semaphore-wait]. For most kinds of
 events, however (such as a port), synchronizing does not modify the
 event's state.
 
-The following act as events in stand-alone MzScheme.  An extension or
-embedding application can extend the set of primitive events --- in
-particular, an eventspace in MrEd is an event --- and new structure
-types can generate events (see @scheme[prop:evt]).
+The following act as events in Racket.  An extension or embedding
+application can extend the set of primitive events --- in particular,
+an eventspace in GRacket is an event --- and new structure types can
+generate events (see @racket[prop:evt]).
 
 @itemize[
 
- @item{@scheme[_semaphore] --- a semaphore is ready when
- @scheme[semaphore-wait] would not block.  @ResultItself{semaphore}.}
+ @item{@racket[_semaphore] --- a semaphore is ready when
+ @racket[semaphore-wait] would not block.  @ResultItself{semaphore}.}
 
- @item{@scheme[_semaphore-peek] --- a semaphore-peek event returned by
- @scheme[semaphore-peek-evt] applied to @scheme[_semaphore] is ready
- exactly when @scheme[_semaphore] is
+ @item{@racket[_semaphore-peek] --- a semaphore-peek event returned by
+ @racket[semaphore-peek-evt] applied to @racket[_semaphore] is ready
+ exactly when @racket[_semaphore] is
  ready. @ResultItself{semaphore-peek}.}
 
- @item{@scheme[_channel] --- a channel returned by
- @scheme[make-channel] is ready when @scheme[channel-get] would not
+ @item{@racket[_channel] --- a channel returned by
+ @racket[make-channel] is ready when @racket[channel-get] would not
  block. The channel's result as an event is the same as the
- @scheme[channel-get] result.}
+ @racket[channel-get] result.}
 
- @item{@scheme[_channel-put] --- an event returned by
- @scheme[channel-put-evt] applied to @scheme[_channel] is ready when
- @scheme[channel-put] would not block on
- @scheme[_channel]. @ResultItself{channel-put}.}
+ @item{@racket[_channel-put] --- an event returned by
+ @racket[channel-put-evt] applied to @racket[_channel] is ready when
+ @racket[channel-put] would not block on
+ @racket[_channel]. @ResultItself{channel-put}.}
 
- @item{@scheme[_input-port] --- an input port is ready as an event when
- @scheme[read-byte] would not block. @ResultItself{input-port}.}
+ @item{@racket[_input-port] --- an input port is ready as an event when
+ @racket[read-byte] would not block. @ResultItself{input-port}.}
 
- @item{@scheme[_output-port] --- an output port is ready when
- @scheme[write-bytes-avail] would not block or
+ @item{@racket[_output-port] --- an output port is ready when
+ @racket[write-bytes-avail] would not block or
  when the port contains buffered characters and
- @scheme[write-bytes-avail*] can flush part of the buffer (although
- @scheme[write-bytes-avail] might block). @ResultItself{output-port}.}
+ @racket[write-bytes-avail*] can flush part of the buffer (although
+ @racket[write-bytes-avail] might block). @ResultItself{output-port}.}
 
- @item{@scheme[_progress] --- an event produced by
- @scheme[port-progress-evt] applied to @scheme[_input-port] is ready after
- any subsequent read from @scheme[_input-port]. @ResultItself{progress}.}
+ @item{@racket[_progress] --- an event produced by
+ @racket[port-progress-evt] applied to @racket[_input-port] is ready after
+ any subsequent read from @racket[_input-port]. @ResultItself{progress}.}
 
- @item{@scheme[_tcp-listener] --- a TCP listener is ready when
- @scheme[tcp-accept] would not block.  @ResultItself{listener}.}
+ @item{@racket[_tcp-listener] --- a TCP listener is ready when
+ @racket[tcp-accept] would not block.  @ResultItself{listener}.}
 
- @item{@scheme[_thd] --- a thread is ready when @scheme[thread-wait]
+ @item{@racket[_thd] --- a thread is ready when @racket[thread-wait]
  would not block. @ResultItself{thread}.}
 
- @item{@scheme[_thread-dead] --- an event returned by
- @scheme[thread-dead-evt] applied to @scheme[thd] is ready when
- @scheme[thd] has terminated.  @ResultItself{thread-dead}.}
+ @item{@racket[_thread-dead] --- an event returned by
+ @racket[thread-dead-evt] applied to @racket[thd] is ready when
+ @racket[thd] has terminated.  @ResultItself{thread-dead}.}
 
- @item{@scheme[_thread-resume] --- an event returned by
- @scheme[thread-resume-evt] applied to @scheme[thd] is ready when
- @scheme[thd] subsequently resumes execution (if it was not already
- running). The event's result is @scheme[thd].}
+ @item{@racket[_thread-resume] --- an event returned by
+ @racket[thread-resume-evt] applied to @racket[thd] is ready when
+ @racket[thd] subsequently resumes execution (if it was not already
+ running). The event's result is @racket[thd].}
 
- @item{@scheme[_thread-suspend] --- an event returned by
- @scheme[thread-suspend-evt] applied to @scheme[thd] is ready when
- @scheme[thd] subsequently suspends execution (if it was not already
- suspended).  The event's result is @scheme[thd].}
+ @item{@racket[_thread-suspend] --- an event returned by
+ @racket[thread-suspend-evt] applied to @racket[thd] is ready when
+ @racket[thd] subsequently suspends execution (if it was not already
+ suspended).  The event's result is @racket[thd].}
 
- @item{@scheme[_alarm] --- an event returned by @scheme[alarm-evt] is
+ @item{@racket[_alarm] --- an event returned by @racket[alarm-evt] is
  ready after a particular date and time.  @ResultItself{alarm}.}
 
- @item{@scheme[_subprocess] --- a subprocess is ready when
- @scheme[subprocess-wait] would not block.
+ @item{@racket[_subprocess] --- a subprocess is ready when
+ @racket[subprocess-wait] would not block.
  @ResultItself{subprocess}.}
 
- @item{@scheme[_will-executor] --- a will executor is ready when
- @scheme[will-execute] would not block.
+ @item{@racket[_will-executor] --- a will executor is ready when
+ @racket[will-execute] would not block.
  @ResultItself{will-executor}.}
 
- @item{@scheme[_udp] --- an event returned by @scheme[udp-send-evt] or
- @scheme[udp-receive!-evt] is ready when a send or receive on the
+ @item{@racket[_udp] --- an event returned by @racket[udp-send-evt] or
+ @racket[udp-receive!-evt] is ready when a send or receive on the
  original socket would block, respectively. @ResultItself{udp}.}
 
- @item{@scheme[_log-receiver] --- a @tech{log receiver} as produced by
- @scheme[make-log-receiver] is ready when a logged message is
+ @item{@racket[_log-receiver] --- a @tech{log receiver} as produced by
+ @racket[make-log-receiver] is ready when a logged message is
  available. The event's result is a vector, as described with
- @scheme[make-log-receiver].}
+ @racket[make-log-receiver].}
 
- @item{@scheme[_choice] --- an event returned by @scheme[choice-evt] is
- ready when one or more of the @scheme[_evt]s supplied to
- @scheme[choice-evt] are ready. If the choice event is chosen, one of
- its ready @scheme[_evt]s is chosen pseudo-randomly, and the result is
- the chosen @scheme[_evt]'s result.}
+ @item{@racket[_choice] --- an event returned by @racket[choice-evt] is
+ ready when one or more of the @racket[_evt]s supplied to
+ @racket[choice-evt] are ready. If the choice event is chosen, one of
+ its ready @racket[_evt]s is chosen pseudo-randomly, and the result is
+ the chosen @racket[_evt]'s result.}
 
- @item{@scheme[_wrap] --- an event returned by @scheme[wrap-evt]
- applied to @scheme[_evt] and @scheme[_proc] is ready when @scheme[_evt] is
- ready. The event's result is obtained by a call to @scheme[_proc] (with
- breaks disabled) on the result of @scheme[evt].}
+ @item{@racket[_wrap] --- an event returned by @racket[wrap-evt]
+ applied to @racket[_evt] and @racket[_proc] is ready when @racket[_evt] is
+ ready. The event's result is obtained by a call to @racket[_proc] (with
+ breaks disabled) on the result of @racket[evt].}
 
- @item{@scheme[_handle] --- an event returned by @scheme[handle-evt]
- applied to @scheme[_evt] and @scheme[_proc] is ready when @scheme[_evt] is
- ready. The event's result is obtained by a tail call to @scheme[_proc] on
- the result of @scheme[_evt].}
+ @item{@racket[_handle] --- an event returned by @racket[handle-evt]
+ applied to @racket[_evt] and @racket[_proc] is ready when @racket[_evt] is
+ ready. The event's result is obtained by a tail call to @racket[_proc] on
+ the result of @racket[_evt].}
 
- @item{@elemtag["guard-evt"]{@scheme[_guard]} --- an event returned by @scheme[guard-evt] applied
- to @scheme[_thunk] generates a new event every time that @scheme[_guard] is
- used with @scheme[sync] (or whenever it is part of a choice event
- used with @scheme[sync], etc.); the generated event is the result of
- calling @scheme[_thunk] when the synchronization begins; if @scheme[_thunk]
- returns a non-event, then @scheme[_thunk]'s result is replaced with an
- event that is ready and whose result is @scheme[_guard].}
+ @item{@elemtag["guard-evt"]{@racket[_guard]} --- an event returned by @racket[guard-evt] applied
+ to @racket[_thunk] generates a new event every time that @racket[_guard] is
+ used with @racket[sync] (or whenever it is part of a choice event
+ used with @racket[sync], etc.); the generated event is the result of
+ calling @racket[_thunk] when the synchronization begins; if @racket[_thunk]
+ returns a non-event, then @racket[_thunk]'s result is replaced with an
+ event that is ready and whose result is @racket[_guard].}
 
- @item{@elemtag["nack-guard-evt"]{@scheme[_nack-guard]} --- an event
- returned by @scheme[nack-guard-evt] applied to @scheme[_proc]
- generates a new event every time that @scheme[_nack-guard] is used
- with @scheme[sync] (or whenever it is part of a choice event used
- with @scheme[sync], etc.); the generated event is the result of
- calling @scheme[_proc] with a NACK (``negative acknowledgment'') event
- when the synchronization begins; if @scheme[_proc] returns a
- non-event, then @scheme[_proc]'s result is replaced with an event that
- is ready and whose result is @scheme[_nack-guard].
+ @item{@elemtag["nack-guard-evt"]{@racket[_nack-guard]} --- an event
+ returned by @racket[nack-guard-evt] applied to @racket[_proc]
+ generates a new event every time that @racket[_nack-guard] is used
+ with @racket[sync] (or whenever it is part of a choice event used
+ with @racket[sync], etc.); the generated event is the result of
+ calling @racket[_proc] with a NACK (``negative acknowledgment'') event
+ when the synchronization begins; if @racket[_proc] returns a
+ non-event, then @racket[_proc]'s result is replaced with an event that
+ is ready and whose result is @racket[_nack-guard].
 
- If the event from @scheme[_proc] is not ultimately chosen as the
- unblocked event, then the NACK event supplied to @scheme[_proc]
+ If the event from @racket[_proc] is not ultimately chosen as the
+ unblocked event, then the NACK event supplied to @racket[_proc]
  becomes ready with a @|void-const| value.  This NACK event becomes ready
  when the event is abandoned because some other event is chosen,
  because the synchronizing thread is dead, or because control escaped
- from the call to @scheme[sync] (even if @scheme[_nack-guard]'s @scheme[_proc]
- has not yet returned a value). If the event returned by @scheme[_proc] is
+ from the call to @racket[sync] (even if @racket[_nack-guard]'s @racket[_proc]
+ has not yet returned a value). If the event returned by @racket[_proc] is
  chosen, then the NACK event never becomes ready.}
 
- @item{@elemtag["poll-guard-evt"]{@scheme[_poll-guard]} --- an event
- returned by @scheme[poll-guard-evt] applied to @scheme[_proc]
- generates a new event every time that @scheme[poll-guard] is used
- with @scheme[sync] (or whenever it is part of a choice event used
- with @scheme[sync], etc.); the generated event is the result of
- calling @scheme[_proc] with a boolean: @scheme[#t] if the event will
- be used for a poll, @scheme[#f] for a blocking synchronization.
+ @item{@elemtag["poll-guard-evt"]{@racket[_poll-guard]} --- an event
+ returned by @racket[poll-guard-evt] applied to @racket[_proc]
+ generates a new event every time that @racket[poll-guard] is used
+ with @racket[sync] (or whenever it is part of a choice event used
+ with @racket[sync], etc.); the generated event is the result of
+ calling @racket[_proc] with a boolean: @racket[#t] if the event will
+ be used for a poll, @racket[#f] for a blocking synchronization.
 
- If @scheme[#t] is supplied to @scheme[_proc], if breaks are disabled, if
+ If @racket[#t] is supplied to @racket[_proc], if breaks are disabled, if
  the polling thread is not terminated, and if polling the resulting
  event produces a result, the event will certainly be chosen for its
  result.}
 
- @item{@scheme[_struct] --- a structure whose type has the
- @scheme[prop:evt] property identifies/generates an event through the
+ @item{@racket[_struct] --- a structure whose type has the
+ @racket[prop:evt] property identifies/generates an event through the
  property.}
 
- @item{@scheme[always-evt] --- a constant event that is always
- ready. @ResultItself{@scheme[always-evt]}.}
+ @item{@racket[always-evt] --- a constant event that is always
+ ready. @ResultItself{@racket[always-evt]}.}
 
- @item{@scheme[never-evt] --- a constant event that is never ready.}
+ @item{@racket[never-evt] --- a constant event that is never ready.}
 
- @item{@elemtag["system-idle-evt"]{@scheme[_idle]} --- an event
-   produced by @scheme[system-idle-evt] is ready when, if this event
-   were replaced by @scheme[never-evt], no thread in the system would
+ @item{@elemtag["system-idle-evt"]{@racket[_idle]} --- an event
+   produced by @racket[system-idle-evt] is ready when, if this event
+   were replaced by @racket[never-evt], no thread in the system would
    be available to run.  In other words, all threads must be suspended
    or blocked on events with timeouts that have not yet expired. The
    event's result is @|void-const|.}
@@ -187,20 +187,20 @@ types can generate events (see @scheme[prop:evt]).
 
 @defproc[(evt? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @tech{synchronizable event},
-@scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a @tech{synchronizable event},
+@racket[#f] otherwise.}
 
 
 @defproc[(sync [evt evt?] ...+) any]{
 
 Blocks as long as none of the @tech{synchronizable events}
-@scheme[evt]s are ready, as defined above.
+@racket[evt]s are ready, as defined above.
 
-When at least one @scheme[evt] is ready, its @tech{synchronization
-result} (often @scheme[evt] itself) is returned.  If multiple
-@scheme[evt]s are ready, one of the @scheme[evt]s is chosen
+When at least one @racket[evt] is ready, its @tech{synchronization
+result} (often @racket[evt] itself) is returned.  If multiple
+@racket[evt]s are ready, one of the @racket[evt]s is chosen
 pseudo-randomly for the result; the
-@scheme[current-evt-pseudo-random-generator] parameter sets the
+@racket[current-evt-pseudo-random-generator] parameter sets the
 random-number generator that controls this choice.}
 
 
@@ -208,23 +208,23 @@ random-number generator that controls this choice.}
                        [evt evt?] ...+) 
           any]{
 
-Like @scheme[sync], but returns @scheme[#f] if @scheme[timeout-secs]
-is not @scheme[#f] and if @scheme[timeout-secs] seconds pass without a
+Like @racket[sync], but returns @racket[#f] if @racket[timeout-secs]
+is not @racket[#f] and if @racket[timeout-secs] seconds pass without a
 successful synchronization.
 
-If @scheme[timeout-secs] is @scheme[0], each @scheme[evt] is checked
-at least once, so a @scheme[timeout-secs] value of @scheme[0] can be
+If @racket[timeout-secs] is @racket[0], each @racket[evt] is checked
+at least once, so a @racket[timeout-secs] value of @racket[0] can be
 used for polling.
 
-See also @scheme[alarm-evt] for an alternative timeout mechanism.}
+See also @racket[alarm-evt] for an alternative timeout mechanism.}
 
 
 @defproc[(sync/enable-break [evt evt?] ...+) any]{
 
-Like @scheme[sync], but breaking is enabled (see
-@secref["breakhandler"]) while waiting on the @scheme[evt]s. If
-breaking is disabled when @scheme[sync/enable-break] is called, then
-either all @scheme[evt]s remain unchosen or the @scheme[exn:break]
+Like @racket[sync], but breaking is enabled (see
+@secref["breakhandler"]) while waiting on the @racket[evt]s. If
+breaking is disabled when @racket[sync/enable-break] is called, then
+either all @racket[evt]s remain unchosen or the @racket[exn:break]
 exception is raised, but not both.}
 
 
@@ -232,34 +232,34 @@ exception is raised, but not both.}
                                     [evt evt?] ...+) 
          any]{
 
-Like @scheme[sync/enable-break], but with a timeout in seconds (or
-@scheme[#f]), as for @scheme[sync/timeout].}
+Like @racket[sync/enable-break], but with a timeout in seconds (or
+@racket[#f]), as for @racket[sync/timeout].}
 
 
 @defproc[(choice-evt [evt evt?] ...) evt?]{
 
 Creates and returns a single event that combines the
-@scheme[evt]s. Supplying the result to @scheme[sync] is the same as
-supplying each @scheme[evt] to the same call.}
+@racket[evt]s. Supplying the result to @racket[sync] is the same as
+supplying each @racket[evt] to the same call.}
 
 
 @defproc[(wrap-evt [evt (and/c evt? (not/c handle-evt?))]
                    [wrap (any/c . -> . any)]) 
          evt?]{
 
-Creates an event that is in a ready when @scheme[evt] is ready, but
-whose result is determined by applying @scheme[wrap] to the result of
-@scheme[evt]. The call to @scheme[wrap] is
-@scheme[parameterize-break]ed to disable breaks initially. The
-@scheme[evt] cannot be an event created by @scheme[handle-evt] or any
-combination of @scheme[choice-evt] involving an event from
-@scheme[handle-evt].}
+Creates an event that is in a ready when @racket[evt] is ready, but
+whose result is determined by applying @racket[wrap] to the result of
+@racket[evt]. The call to @racket[wrap] is
+@racket[parameterize-break]ed to disable breaks initially. The
+@racket[evt] cannot be an event created by @racket[handle-evt] or any
+combination of @racket[choice-evt] involving an event from
+@racket[handle-evt].}
 
 @defproc[(handle-evt [evt (and/c evt? (not/c handle-evt?))]
                      [handle (any/c . -> . any)]) 
          evt?]{
 
-Like @scheme[wrap], except that @scheme[handle] is called in tail
+Like @racket[wrap], except that @racket[handle] is called in tail
 position with respect to the synchronization request, and without
 breaks explicitly disabled.}
 
@@ -293,27 +293,27 @@ itself as its result.}
 @defproc[(system-idle-evt) evt?]{Returns an event that is ready when
 the system is otherwise idle; see @elemref["system-idle-evt"]{the
 overview} for more information. The result of the
-@scheme[system-idle-evt] procedure is always the same event.}
+@racket[system-idle-evt] procedure is always the same event.}
 
 
 @defproc[(alarm-evt [msecs nonnegative-number?]) evt]{
 
 Returns a synchronizable event that is not ready when
-@scheme[(current-inexact-milliseconds)] would return a value that is
-less than @scheme[msecs], and it is ready when
-@scheme[(current-inexact-milliseconds)] would return a value that is
-more than @scheme[msecs].}
+@racket[(current-inexact-milliseconds)] would return a value that is
+less than @racket[msecs], and it is ready when
+@racket[(current-inexact-milliseconds)] would return a value that is
+more than @racket[msecs].}
 
 
 @defproc[(handle-evt? [evt evt?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[evt] was created by @scheme[handle-evt]
-or by @scheme[choice-evt] applied to another event for which
-@scheme[handle-evt?] produces @scheme[#t]. Such events are illegal as
-an argument to @scheme[handle-evt] or @scheme[wrap-evt], because they
-cannot be wrapped further. For any other event, @scheme[handle-evt?]
-produces @scheme[#f], and the event is a legal argument to
-@scheme[handle-evt] or @scheme[wrap-evt] for further wrapping.}
+Returns @racket[#t] if @racket[evt] was created by @racket[handle-evt]
+or by @racket[choice-evt] applied to another event for which
+@racket[handle-evt?] produces @racket[#t]. Such events are illegal as
+an argument to @racket[handle-evt] or @racket[wrap-evt], because they
+cannot be wrapped further. For any other event, @racket[handle-evt?]
+produces @racket[#f], and the event is a legal argument to
+@racket[handle-evt] or @racket[wrap-evt] for further wrapping.}
 
 @;------------------------------------------------------------------------
 @defthing[prop:evt struct-type-property?]{
@@ -324,16 +324,16 @@ A @tech{structure type property} that identifies structure types whose
 
 @itemize[
  
- @item{An event @scheme[_evt]: In this case, using the structure as an
- event is equivalent to using @scheme[_evt].}
+ @item{An event @racket[_evt]: In this case, using the structure as an
+ event is equivalent to using @racket[_evt].}
 
- @item{A procedure @scheme[_proc] of one argument: In this case, the
+ @item{A procedure @racket[_proc] of one argument: In this case, the
  structure is similar to an event generated
- by @scheme[guard-evt], except that the would-be guard
- procedure @scheme[_proc] receives the structure as an argument, instead
+ by @racket[guard-evt], except that the would-be guard
+ procedure @racket[_proc] receives the structure as an argument, instead
  of no arguments.}
 
- @item{An exact, non-negative integer between @scheme[0] (inclusive)
+ @item{An exact, non-negative integer between @racket[0] (inclusive)
  and the number of non-automatic fields in the structure type
  (exclusive, not counting supertype fields): The integer identifies a
  field in the structure, and the field must be designated as
@@ -344,14 +344,14 @@ A @tech{structure type property} that identifies structure types whose
 
 ]
 
-Instances of a structure type with the @scheme[prop:input-port] or
-@scheme[prop:output-port] property are also synchronizable by virtue
+Instances of a structure type with the @racket[prop:input-port] or
+@racket[prop:output-port] property are also synchronizable by virtue
 of being a port. If the structure type has more than one of
-@scheme[prop:evt], @scheme[prop:input-port], and
-@scheme[prop:output-port], then the @scheme[prop:evt] value (if any)
+@racket[prop:evt], @racket[prop:input-port], and
+@racket[prop:output-port], then the @racket[prop:evt] value (if any)
 takes precedence for determing the instance's behavior as an event,
-and the @scheme[prop:input-port] property takes precedence over
-@scheme[prop:output-port] for synchronization.
+and the @racket[prop:input-port] property takes precedence over
+@racket[prop:output-port] for synchronization.
 
 @examples[
 (define-struct wt (base val)
@@ -376,4 +376,4 @@ and the @scheme[prop:input-port] property takes precedence over
 @defparam[current-evt-pseudo-random-generator generator pseudo-random-generator?]{
 
 A parameter that determines the pseudo-random number generator used by
-@scheme[sync] for events created by @scheme[choice-evt].}
+@racket[sync] for events created by @racket[choice-evt].}

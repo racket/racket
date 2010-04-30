@@ -2,19 +2,18 @@
 @(require scribble/eval
           "guide-utils.ss")
 
-@title{@bold{Guide}: PLT Scheme}
+@title{@bold{Guide}: Racket}
 
 @author["Matthew Flatt" "Robert Bruce Findler" "PLT"]
 
-This guide is intended for programmers who are new to Scheme, new to PLT
-Scheme, or new to some part of PLT Scheme. It assumes
-programming experience, so if you are new to programming, consider
-instead reading @|HtDP|. If you want a brief introduction to PLT
-Scheme, start with @|Quick|.
+This guide is intended for programmers who are new to Racket or new to
+some part of Racket. It assumes programming experience, so if you are
+new to programming, consider instead reading @|HtDP|. If you want an
+especially quick introduction to Racket, start with @|Quick|.
 
 @seclink["to-scheme"]{Chapter 2} provides a brief introduction to
-Scheme. From @seclink["datatypes"]{Chapter 3} on, this guide dives
-into details---covering much of the PLT Scheme toolbox, but leaving
+Racket. From @seclink["datatypes"]{Chapter 3} on, this guide dives
+into details---covering much of the Racket toolbox, but leaving
 precise details to @|MzScheme| and other reference manuals.
 
 @table-of-contents[]

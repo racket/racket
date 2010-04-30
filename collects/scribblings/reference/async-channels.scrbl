@@ -90,9 +90,10 @@ the event itself. See also @scheme[sync].}
 (async-channel-put to-server 'add)
 (async-channel-put to-server 4)
 (printf "Result is ~a\n" (async-channel-get from-server))
-(printf "Ask server to do a long computation that might take a while\n")
+(printf "Ask server to do a long computation\n")
 (async-channel-put to-server 'long)
 (printf "I can do other stuff\n")
-(printf "Ok, computation from server is ~a\n" (async-channel-get from-server))
+(printf "Ok, computation from server is ~a\n" 
+        (async-channel-get from-server))
 (async-channel-put to-server 'quit)
 ]

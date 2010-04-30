@@ -2,7 +2,8 @@
 @(require scribble/manual
           scribble/eval
           scribble/bnf
-          "guide-utils.ss")
+          "guide-utils.ss"
+          (for-label racket/serialize))
 
 @(define posn-eval (make-base-eval))
 
@@ -10,55 +11,46 @@
 
 @refalso["structures"]{structure types}
 
-New datatypes are normally created with the @scheme[define-struct]
+New datatypes are normally created with the @scheme[struct]
 form, which is the topic of this chapter. The class-based object
 system, which we defer to @secref["classes"], offers an alternate
 mechanism for creating new datatypes, but even classes and objects are
 implemented in terms of structure types.
 
 @; ------------------------------------------------------------
-@section{Simple Structure Types: @scheme[define-struct]}
+@section{Simple Structure Types: @scheme[struct]}
 
-@refalso["define-struct"]{@scheme[define-struct]}
+@refalso["define-struct"]{@scheme[struct]}
 
-To a first approximation, the syntax of @scheme[define-struct] is
+To a first approximation, the syntax of @scheme[struct] is
 
 @specform[
-(define-struct struct-id (field-id ...))
+(struct struct-id (field-id ...))
 ]{}
 
-A @scheme[define-struct] declaration binds @scheme[_struct-id], but
-only to static information about the structure type that cannot be
-used directly:
-
-@def+int[
+@as-examples[@schemeblock+eval[
 #:eval posn-eval
-(define-struct posn (x y))
-posn
-]
+(struct posn (x y))
+]]
 
-We show two uses of the @scheme[_struct-id] binding below in
-@secref["struct-copy"] and @secref["struct-subtypes"].
-
-Meanwhile, in addition to defining @scheme[_struct-id],
-@scheme[define-struct] also defines a number of identifiers that are
-built from @scheme[_struct-id] and the @scheme[_field-id]s:
+The @scheme[struct] form binds @scheme[_struct-id] and a number of
+identifiers that are built from @scheme[_struct-id] and the
+@scheme[_field-id]s:
 
 @itemize[
 
- @item{@schemeidfont{make-}@scheme[_struct-id] : a
-       @deftech{constructor} function that takes as many arguments as
-       the number of @scheme[_field-id]s, and returns an instance of
-       the structure type.
+ @item{@scheme[_struct-id] : a @deftech{constructor} function that
+       takes as many arguments as the number of @scheme[_field-id]s,
+       and returns an instance of the structure type.
 
-       @examples[#:eval posn-eval (make-posn 1 2)]}
+       @examples[#:eval posn-eval (posn 1 2)]}
 
  @item{@scheme[_struct-id]@schemeidfont{?} : a @deftech{predicate}
        function that takes a single argument and returns @scheme[#t]
        if it is an instance of the structure type, @scheme[#f]
        otherwise.
 
-       @examples[#:eval posn-eval (posn? 3) (posn? (make-posn 1 2))]}
+       @examples[#:eval posn-eval (posn? 3) (posn? (posn 1 2))]}
 
  @item{@scheme[_struct-id]@schemeidfont{-}@scheme[_field-id] : for
        each @scheme[_field-id], an @deftech{accessor} that extracts
@@ -66,7 +58,7 @@ built from @scheme[_struct-id] and the @scheme[_field-id]s:
        structure type.
 
        @examples[#:eval posn-eval 
-                 (posn-x (make-posn 1 2)) (posn-y (make-posn 1 2))]}
+                 (posn-x (posn 1 2)) (posn-y (posn 1 2))]}
 
  @item{@schemeidfont{struct:}@scheme[_struct-id] : a
        @deftech{structure type descriptor}, which is a value that
@@ -76,9 +68,9 @@ built from @scheme[_struct-id] and the @scheme[_field-id]s:
 
 ]
 
-A @scheme[define-struct] form places no constraints on the kinds of
+A @scheme[struct] form places no constraints on the kinds of
 values that can appear for fields in an instance of the structure
-type. For example, @scheme[(make-posn "apple" #f)] produces an
+type. For example, @scheme[(posn "apple" #f)] produces an
 instance of @scheme[posn], even though @scheme["apple"] and
 @scheme[#f] are not valid coordinates for the obvious uses of
 @scheme[posn] instances. Enforcing constraints on field values, such
@@ -99,7 +91,7 @@ modified.
 ]
 
 The @scheme[_struct-id] that appears after @scheme[struct-copy] must
-be a structure type name bound by @scheme[define-struct] (i.e., the
+be a structure type name bound by @scheme[struct] (i.e., the
 name that cannot be used directly as an expression). The
 @scheme[_struct-expr] must produce an instance of the structure type.
 The result is a new instance of the structure tpe that is like the old
@@ -108,7 +100,7 @@ the value of the corresponding @scheme[_expr].
 
 @examples[
 #:eval posn-eval 
-(define p1 (make-posn 1 2))
+(define p1 (posn 1 2))
 (define p2 (struct-copy posn p1 [x 3]))
 (list (posn-x p2) (posn-y p2))
 (list (posn-x p1) (posn-x p2))
@@ -118,22 +110,22 @@ the value of the corresponding @scheme[_expr].
 @; ------------------------------------------------------------
 @section[#:tag "struct-subtypes"]{Structure Subtypes}
 
-An extended form of @scheme[define-struct] can be used to define a
+An extended form of @scheme[struct] can be used to define a
 @defterm{structure subtype}, which is a structure type that extends an
 existing structure type:
 
 @specform[
-(define-struct (struct-id super-id) (field-id ...))
+(struct struct-id super-id (field-id ...))
 ]
 
 The @scheme[_super-id] must be a structure type name bound by
-@scheme[define-struct] (i.e., the name that cannot be used directly as
+@scheme[struct] (i.e., the name that cannot be used directly as
 an expression).
 
 @as-examples[@schemeblock+eval[
 #:eval posn-eval 
-(define-struct posn (x y))
-(define-struct (3d-posn posn) (z))
+(struct posn (x y))
+(struct 3d-posn posn (z))
 ]]
 
 A structure subtype inherits the fields of its supertype, and the
@@ -144,7 +136,7 @@ supertype.
 
 @examples[
 #:eval posn-eval 
-(define p (make-3d-posn 1 2 3))
+(define p (3d-posn 1 2 3))
 p
 (posn? p)
 (posn-x p)
@@ -157,7 +149,7 @@ p
 With a structure type definition like
 
 @schemeblock[
-(define-struct posn (x y))
+(struct posn (x y))
 ]
 
 an instance of the structure type prints in a way that does not show
@@ -171,14 +163,14 @@ To make a structure type @deftech{transparent}, use the
 
 @def+int[
 #:eval posn-eval
-(define-struct posn (x y)
-               #:transparent)
-(make-posn 1 2)
+(struct posn (x y)
+        #:transparent)
+(posn 1 2)
 ]
 
-An instance of a transparent structure type prints like a vector, and
-it shows the content of the structure's fields. A transparent
-structure type also allows reflective operations, such as
+An instance of a transparent structure type prints like a call to the
+constructor, so that it shows the structures field values. A
+transparent structure type also allows reflective operations, such as
 @scheme[struct?] and @scheme[struct-info], to be used on its instances
 (see @secref["reflection"]).
 
@@ -197,15 +189,15 @@ to mere instance identity for opaque structure types:
 
 @def+int[
 #:eval posn-eval
-(define-struct glass (width height) #:transparent)
-(equal? (make-glass 1 2) (make-glass 1 2))
+(struct glass (width height) #:transparent)
+(equal? (glass 1 2) (glass 1 2))
 ]
 @def+int[
 #:eval posn-eval
-(define-struct lead (width height))
-(define slab (make-lead 1 2))
+(struct lead (width height))
+(define slab (lead 1 2))
 (equal? slab slab)
-(equal? slab (make-lead 1 2))
+(equal? slab (lead 1 2))
 ]
 
 To support instances comparisons via @scheme[equal?] without making
@@ -214,7 +206,7 @@ keyword, @scheme[prop:equal+hash], and then a list of three functions:
 
 @def+int[
 #:eval posn-eval
-(define-struct lead (width height)
+(struct lead (width height)
   #:property
   prop:equal+hash
   (list (lambda (a b equal?-recur) 
@@ -229,7 +221,7 @@ keyword, @scheme[prop:equal+hash], and then a list of three functions:
           (code:comment @#,t{compute secondary hash code of @scheme[a]})
           (+ (hash2-recur (lead-width a))
              (hash2-recur (lead-height a))))))
-(equal? (make-lead 1 2) (make-lead 1 2))
+(equal? (lead 1 2) (lead 1 2))
 ]
 
 The first function in the list implements the @scheme[equal?] test on
@@ -241,9 +233,9 @@ secondary hash codes for use with @tech{hash tables}:
 @interaction[
 #:eval posn-eval
 (define h (make-hash))
-(hash-set! h (make-lead 1 2) 3)
-(hash-ref h (make-lead 1 2))
-(hash-ref h (make-lead 2 1))
+(hash-set! h (lead 1 2) 3)
+(hash-ref h (lead 1 2))
+(hash-ref h (lead 2 1))
 ]
 
 The first function provided with @scheme[prop:equal+hash] is not
@@ -257,33 +249,33 @@ types that are supposed to be equivalent.
 @; ------------------------------------------------------------
 @section{Structure Type Generativity}
 
-Each time that a @scheme[define-struct] form is evaluated, it
+Each time that a @scheme[struct] form is evaluated, it
 generates a structure type that is distinct from all existing
 structure types, even if some other structure type has the same name
 and fields.
 
 This generativity is useful for enforcing abstractions and
 implementing programs such as interpreters, but beware of placing a
-@scheme[define-struct] form in positions that are evaluated multiple
+@scheme[struct] form in positions that are evaluated multiple
 times.
 
 @defexamples[
 (define (add-bigger-fish lst)
-  (define-struct fish (size) #:transparent) (code:comment #,(t "new every time"))
+  (struct fish (size) #:transparent) (code:comment #,(t "new every time"))
   (cond
-   [(null? lst) (list (make-fish 1))]
-   [else (cons (make-fish (* 2 (fish-size (car lst))))
+   [(null? lst) (list (fish 1))]
+   [else (cons (fish (* 2 (fish-size (car lst))))
                lst)]))
 
 (add-bigger-fish null)
 (add-bigger-fish (add-bigger-fish null))
 ]
 @defs+int[
-[(define-struct fish (size) #:transparent)
+[(struct fish (size) #:transparent)
  (define (add-bigger-fish lst)
    (cond
-    [(null? lst) (list (make-fish 1))]
-    [else (cons (make-fish (* 2 (fish-size (car lst))))
+    [(null? lst) (list (fish 1))]
+    [else (cons (fish (* 2 (fish-size (car lst))))
                 lst)]))]
 (add-bigger-fish (add-bigger-fish null))
 ]
@@ -322,16 +314,16 @@ the quotes above are optional:
 ]
 
 When you use the @scheme[#:prefab] keyword with
-@scheme[define-struct], instead of generating a new structure type,
+@scheme[struct], instead of generating a new structure type,
 you obtain bindings that work with the existing prefab structure type:
 
 @interaction[
 #:eval posn-eval
 (define lunch '#s(sprout bean))
-(define-struct sprout (kind) #:prefab)
+(struct sprout (kind) #:prefab)
 (sprout? lunch)
 (sprout-kind lunch)
-(make-sprout 'garlic)
+(sprout 'garlic)
 ]
 
 The field name @schemeidfont{kind} above does not matter for finding
@@ -343,7 +335,7 @@ than the one with a single field:
 @interaction[
 #:eval posn-eval
 (sprout? #s(sprout bean #f 17))
-(code:line (define-struct sprout (kind yummy? count) #:prefab) (code:comment @#,t{redefine}))
+(code:line (struct sprout (kind yummy? count) #:prefab) (code:comment @#,t{redefine}))
 (sprout? #s(sprout bean #f 17))
 (sprout? lunch)
 ]
@@ -355,10 +347,10 @@ prefab structure types, and the printed form of the structure type's
 name encodes all of the relevant details.
 
 @interaction[
-(define-struct building (rooms [location #:mutable]) #:prefab)
-(define-struct (house building) ([occupied #:auto]) #:prefab
+(struct building (rooms [location #:mutable]) #:prefab)
+(struct house building ([occupied #:auto]) #:prefab
   #:auto-value 'no)
-(make-house 5 'factory)
+(house 5 'factory)
 ]
 
 Every @tech{prefab} structure type is @tech{transparent}---but even
@@ -406,13 +398,13 @@ be serialized, however, if they are defined with
 @; ------------------------------------------------------------
 @section[#:tag "struct-options"]{More Structure Type Options}
 
-The full syntax of @scheme[define-struct] supports many options, both
+The full syntax of @scheme[struct] supports many options, both
 at the structure-type level and at the level of individual fields:
 
-@specform/subs[(define-struct id-maybe-super (field ...)
-                              struct-option ...)
-               ([id-maybe-super struct-id
-                                (struct-id super-id)]
+@specform/subs[(struct struct-id maybe-super (field ...)
+                       struct-option ...)
+               ([maybe-super code:blank
+                             super-id]
                 [field field-id
                        [field-id field-option ...]])]
 
@@ -426,8 +418,8 @@ A @scheme[_struct-option] always starts with a keyword:
     that sets the value of the corresponding field in an instance of
     the structure type.
 
-     @defexamples[(define-struct dot (x y) #:mutable)
-                  (define d (make-dot 1 2))
+     @defexamples[(struct dot (x y) #:mutable)
+                  (define d (dot 1 2))
                   (dot-x d)
                   (set-dot-x! d 10)
                   (dot-x d)]
@@ -437,8 +429,8 @@ A @scheme[_struct-option] always starts with a keyword:
    mutable.
        
    @defexamples[
-   (define-struct person (name [age #:mutable]))
-   (define friend (make-person "Barney" 5))
+   (struct person (name [age #:mutable]))
+   (define friend (person "Barney" 5))
    (set-person-age! friend 6)
    (set-person-name! friend "Mary")]}
 
@@ -464,10 +456,10 @@ A @scheme[_struct-option] always starts with a keyword:
   functions are bound only if @scheme[#:mutator] is also specified.
 
   @defexamples[
-    (define-struct posn (x y [z #:auto])
-                   #:transparent
-                   #:auto-value 0)
-    (make-posn 1 2)
+    (struct posn (x y [z #:auto])
+                 #:transparent
+                 #:auto-value 0)
+    (posn 1 2)
   ]}
 
 @;-- FIXME:
@@ -486,18 +478,18 @@ A @scheme[_struct-option] always starts with a keyword:
 
  @defexamples[
    #:eval posn-eval
-   (define-struct thing (name)
-                  #:transparent
-                  #:guard (lambda (name type-name)
-                            (cond
-                              [(string? name) name]
-                              [(symbol? name) (symbol->string name)]
-                              [else (error type-name 
-                                           "bad name: ~e" 
-                                           name)])))
-   (make-thing "apple")
-   (make-thing 'apple)
-   (make-thing 1/2)
+   (struct thing (name)
+           #:transparent
+           #:guard (lambda (name type-name)
+                     (cond
+                       [(string? name) name]
+                       [(symbol? name) (symbol->string name)]
+                       [else (error type-name 
+                                    "bad name: ~e" 
+                                    name)])))
+   (thing "apple")
+   (thing 'apple)
+   (thing 1/2)
   ]
 
   The guard is called even when subtype instances are created. In that
@@ -507,15 +499,15 @@ A @scheme[_struct-option] always starts with a keyword:
 
  @defexamples[
   #:eval posn-eval
-  (define-struct (person thing) (age)
-                 #:transparent
-                 #:guard (lambda (name age type-name)
-                           (if (negative? age)
-                               (error type-name "bad age: ~e" age)
-                               (values name age))))
-  (make-person "John" 10)
-  (make-person "Mary" -1)
-  (make-person 10 10)]}
+  (struct person thing (age)
+          #:transparent
+          #:guard (lambda (name age type-name)
+                    (if (negative? age)
+                        (error type-name "bad age: ~e" age)
+                        (values name age))))
+  (person "John" 10)
+  (person "Mary" -1)
+  (person 10 10)]}
 
  @specspecsubform[(code:line #:property prop-expr val-expr)]{
    Associates a @deftech{property} and value with the structure type.
@@ -525,13 +517,13 @@ A @scheme[_struct-option] always starts with a keyword:
    function.
 
  @defexamples[
-   (define-struct greeter (name)
-                  #:property prop:procedure
-                             (lambda (self other)
-                               (string-append
-                                "Hi " other
-                                ", I'm " (greeter-name self))))
-   (define joe-greet (make-greeter "Joe"))
+   (struct greeter (name)
+           #:property prop:procedure
+                      (lambda (self other)
+                        (string-append
+                         "Hi " other
+                         ", I'm " (greeter-name self))))
+   (define joe-greet (greeter "Joe"))
    (greeter-name joe-greet)
    (joe-greet "Mary")
    (joe-greet "John")]}
@@ -547,16 +539,16 @@ A @scheme[_struct-option] always starts with a keyword:
 
   @defexamples[
     #:eval posn-eval
-    (define (make-raven-constructor super-type)
-      (define-struct raven ()
-                     #:super super-type
-                     #:transparent
-                     #:property prop:procedure (lambda (self)
-                                                 'nevermore))
-      make-raven)
-    (let ([r ((make-raven-constructor struct:posn) 1 2)])
+    (define (raven-constructor super-type)
+      (struct raven ()
+              #:super super-type
+              #:transparent
+              #:property prop:procedure (lambda (self)
+                                          'nevermore))
+      raven)
+    (let ([r ((raven-constructor struct:posn) 1 2)])
       (list r (r)))
-    (let ([r ((make-raven-constructor struct:thing) "apple")])
+    (let ([r ((raven-constructor struct:thing) "apple")])
       (list r (r)))]}
 
 @; ----------------------------------------

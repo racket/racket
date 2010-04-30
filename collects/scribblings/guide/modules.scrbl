@@ -6,7 +6,7 @@
 @title[#:tag "modules" #:style 'toc]{Modules}
 
 
-Modules let you organize Scheme code into multiple files and reusable
+Modules let you organize Racket code into multiple files and reusable
 libraries.
 
 @local-table-of-contents[]

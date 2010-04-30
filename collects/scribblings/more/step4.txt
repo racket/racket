@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ;; Both `server' and `accept-and-handle' change
 ;; to use a custodian.

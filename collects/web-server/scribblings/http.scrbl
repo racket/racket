@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
 @title[#:tag "http"]{HTTP: Hypertext Transfer Protocol}
 
@@ -8,49 +8,49 @@
 The @web-server implements many HTTP RFCs that are provided by this module.
 
 @; ------------------------------------------------------------
-@section[#:tag "request-structs.ss"]{Requests}
+@section[#:tag "request-structs"]{Requests}
 @(require (for-label web-server/http/request-structs
                      xml
-                     scheme/match))
+                     racket/match))
 
 @defmodule[web-server/http/request-structs]{
 
 @defstruct[header ([field bytes?]
                    [value bytes?])]{
- Represents a header of @scheme[field] to @scheme[value].
+ Represents a header of @racket[field] to @racket[value].
 }
 
 @defproc[(headers-assq [id bytes?] [heads (listof header?)])
          (or/c false/c header?)]{
- Returns the header with a field equal to @scheme[id] from @scheme[heads] or @scheme[#f].
+ Returns the header with a field equal to @racket[id] from @racket[heads] or @racket[#f].
 }
 
 @defproc[(headers-assq* [id bytes?] [heads (listof header?)])
          (or/c false/c header?)]{
- Returns the header with a field case-insensitively equal to @scheme[id] from @scheme[heads] or @scheme[#f].
+ Returns the header with a field case-insensitively equal to @racket[id] from @racket[heads] or @racket[#f].
          
- You almost @bold{always} want to use this, rather than @scheme[headers-assq] because Web browsers may send headers with arbitrary casing.
+ You almost @bold{always} want to use this, rather than @racket[headers-assq] because Web browsers may send headers with arbitrary casing.
 }
 
-@defstruct[binding ([id bytes?])]{Represents a binding of @scheme[id].}
+@defstruct[binding ([id bytes?])]{Represents a binding of @racket[id].}
 
 @defstruct[(binding:form binding) ([value bytes?])]{
- Represents a form binding of @scheme[id] to @scheme[value].
+ Represents a form binding of @racket[id] to @racket[value].
 }
 
 @defstruct[(binding:file binding) ([filename bytes?]
                                    [headers (listof header?)]
                                    [content bytes?])]{
- Represents the uploading of the file @scheme[filename] with the id @scheme[id]
- and the content @scheme[content], where @scheme[headers] are the additional headers from
- the MIME envelope the file was in. (For example, the @scheme[#"Content-Type"] header may
+ Represents the uploading of the file @racket[filename] with the id @racket[id]
+ and the content @racket[content], where @racket[headers] are the additional headers from
+ the MIME envelope the file was in. (For example, the @racket[#"Content-Type"] header may
  be included by some browsers.)
 }
 
 @defproc[(bindings-assq [id bytes?]
                         [binds (listof binding?)])
          (or/c false/c binding?)]{
- Returns the binding with an id equal to @scheme[id] from @scheme[binds] or @scheme[#f].
+ Returns the binding with an id equal to @racket[id] from @racket[binds] or @racket[#f].
 }
 
 @defstruct[request ([method bytes?]
@@ -61,9 +61,9 @@ The @web-server implements many HTTP RFCs that are provided by this module.
                     [host-ip string?]
                     [host-port number?]
                     [client-ip string?])]{
- An HTTP @scheme[method] request to @scheme[uri] from @scheme[client-ip]
- to the server at @scheme[host-ip]:@scheme[host-port] with @scheme[headers/raw]
- headers, @scheme[bindings/raw] GET and POST queries and @scheme[post-data/raw]
+ An HTTP @racket[method] request to @racket[uri] from @racket[client-ip]
+ to the server at @racket[host-ip]:@racket[host-port] with @racket[headers/raw]
+ headers, @racket[bindings/raw] GET and POST queries and @racket[post-data/raw]
  POST data.
  
  You are @bold{unlikely to need to construct} a request struct.
@@ -71,11 +71,11 @@ The @web-server implements many HTTP RFCs that are provided by this module.
                                          
 @defproc[(request-bindings/raw [r request?])
          (listof binding?)]{
- Forces @scheme[(request-bindings/raw-promise r)].
+ Forces @racket[(request-bindings/raw-promise r)].
 }
                                          
 Here is an example typical of what you will find in many applications:
-@schemeblock[
+@racketblock[
 (define (get-number req)
   (match
     (bindings-assq 
@@ -92,7 +92,7 @@ Here is an example typical of what you will find in many applications:
 }
 
 @; ------------------------------------------------------------
-@section[#:tag "bindings.ss"]{Bindings}
+@section[#:tag "bindings"]{Bindings}
 @(require (for-label web-server/http/bindings))
 
 @defmodule[web-server/http/bindings]{
@@ -101,49 +101,49 @@ These functions, while convenient, could introduce subtle bugs into your
 application. Examples: that they are case-insensitive could introduce
 a bug; if the data submitted is not in UTF-8 format, then the conversion
 to a string will fail; if an attacker submits a form field as if it were
-a file, when it is not, then the @scheme[request-bindings] will hold a
-@scheme[bytes?] object and your program will error; and, for file uploads
+a file, when it is not, then the @racket[request-bindings] will hold a
+@racket[bytes?] object and your program will error; and, for file uploads
 you lose the filename. @bold{Therefore, we recommend against their use, but
 they are provided for compatibility with old code.}
 
 @defproc[(request-bindings [req request?])
          (listof (or/c (cons/c symbol? string?)
                        (cons/c symbol? bytes?)))]{
- Translates the @scheme[request-bindings/raw] of @scheme[req] by
- interpreting @scheme[bytes?] as @scheme[string?]s, except in the case
- of @scheme[binding:file] bindings, which are left as is. Ids are then
+ Translates the @racket[request-bindings/raw] of @racket[req] by
+ interpreting @racket[bytes?] as @racket[string?]s, except in the case
+ of @racket[binding:file] bindings, which are left as is. Ids are then
  translated into lowercase symbols.
 }
 
 @defproc[(request-headers [req request?])
          (listof (cons/c symbol? string?))]{
- Translates the @scheme[request-headers/raw] of @scheme[req] by
- interpreting @scheme[bytes?] as @scheme[string?]s. Ids are then
+ Translates the @racket[request-headers/raw] of @racket[req] by
+ interpreting @racket[bytes?] as @racket[string?]s. Ids are then
  translated into lowercase symbols.
 }
 
 @defproc[(extract-binding/single [id symbol?]
                                  [binds (listof (cons/c symbol? string?))])
          string?]{
- Returns the single binding associated with @scheme[id] in the a-list @scheme[binds]
- if there is exactly one binding. Otherwise raises @scheme[exn:fail].
+ Returns the single binding associated with @racket[id] in the a-list @racket[binds]
+ if there is exactly one binding. Otherwise raises @racket[exn:fail].
 }
 
 @defproc[(extract-bindings [id symbol?]
                            [binds (listof (cons/c symbol? string?))])
          (listof string?)]{
- Returns a list of all the bindings of @scheme[id] in the a-list @scheme[binds].
+ Returns a list of all the bindings of @racket[id] in the a-list @racket[binds].
 }
 
 @defproc[(exists-binding? [id symbol?]
                           [binds (listof (cons/c symbol? string))])
          boolean?]{
- Returns @scheme[#t] if @scheme[binds] contains a binding for @scheme[id].
- Otherwise, @scheme[#f].
+ Returns @racket[#t] if @racket[binds] contains a binding for @racket[id].
+ Otherwise, @racket[#f].
 }
                   
 Here is an example typical of what you will find in many applications:
-@schemeblock[
+@racketblock[
 (define (get-number req)
   (string->number
    (extract-binding/single
@@ -154,7 +154,7 @@ Here is an example typical of what you will find in many applications:
 }
 
 @; ------------------------------------------------------------
-@section[#:tag "response-structs.ss"]{Responses}
+@section[#:tag "response-structs"]{Responses}
 @(require (for-label web-server/http/response-structs))
 
 @defmodule[web-server/http/response-structs]{
@@ -165,36 +165,36 @@ Here is an example typical of what you will find in many applications:
             [seconds number?]
             [mime bytes?]
             [headers (listof header?)])]{
- A basic HTTP response containing no body. @scheme[code] is the response code,
- @scheme[message] the message, @scheme[seconds] the generation time, @scheme[mime]
- the MIME type of the file, and @scheme[extras] are the extra headers, in addition
+ A basic HTTP response containing no body. @racket[code] is the response code,
+ @racket[message] the message, @racket[seconds] the generation time, @racket[mime]
+ the MIME type of the file, and @racket[extras] are the extra headers, in addition
  to those produced by the server.
  
  Example:
- @schemeblock[
+ @racketblock[
   (make-response/basic
    301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
-                      #"http://www.plt-scheme.org/downloads")))
+                      #"http://www.racket-lang.org/downloads")))
  ]
 }
 
 @defstruct[(response/full response/basic)
            ([body (listof bytes?)])]{
- As with @scheme[response/basic], except with @scheme[body] as the response
+ As with @racket[response/basic], except with @racket[body] as the response
  body.
 
  Example:
- @schemeblock[
+ @racketblock[
   (make-response/full
    301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
-                      #"http://www.plt-scheme.org/downloads"))
+                      #"http://www.racket-lang.org/downloads"))
    (list #"<html><body><p>"
          #"Please go to <a href=\""
-         #"http://www.plt-scheme.org/downloads"
+         #"http://www.racket-lang.org/downloads"
          #"\">here</a> instead."
          #"</p></body></html>"))
  ]
@@ -202,14 +202,14 @@ Here is an example typical of what you will find in many applications:
 
 @defstruct[(response/incremental response/basic)
            ([generator ((() () #:rest (listof bytes?) . ->* . any) . -> . any)])]{
- As with @scheme[response/basic], except with @scheme[generator] as a function that is
- called to generate the response body, by being given an @scheme[output-response] function
- that outputs the content it is called with. If the @scheme[output-response] function is called
+ As with @racket[response/basic], except with @racket[generator] as a function that is
+ called to generate the response body, by being given an @racket[output-response] function
+ that outputs the content it is called with. If the @racket[output-response] function is called
  with arguments of zero length (when concatenated), then the output port is flushed with
- @scheme[flush-output].
+ @racket[flush-output].
  
  Here is a short example:
- @schemeblock[
+ @racketblock[
   (make-response/incremental
     200 #"OK" (current-seconds)
     #"application/octet-stream"
@@ -225,7 +225,7 @@ Here is an example typical of what you will find in many applications:
 
 @defthing[response/c contract?]{
  Equivalent to 
- @schemeblock[
+ @racketblock[
  (or/c response/basic?
        (cons/c bytes? (listof (or/c string? bytes?)))
        xexpr/c)
@@ -240,7 +240,7 @@ Here is an example typical of what you will find in many applications:
                               [#:headers headers (listof header?) empty])
          response/full?]{
  Equivalent to
- @schemeblock[
+ @racketblock[
  (make-response/full 
   code message seconds mime-type headers
   (list (string->bytes/utf-8 (xexpr->string xexpr))))
@@ -248,10 +248,10 @@ Here is an example typical of what you will find in many applications:
                          
 @defproc[(normalize-response [close? boolean?] [response response/c])
          (or/c response/full? response/incremental?)]{
- Coerces @scheme[response] into a full response, filling in additional details where appropriate.
+ Coerces @racket[response] into a full response, filling in additional details where appropriate.
 }
 
-@defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}
+@defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @racket[#"text/html; charset=utf-8"].}
 
 @warning{If you include a Content-Length header in a response that is inaccurate, there @bold{will be an error} in
 transmission that the server @bold{will not catch}.}
@@ -288,11 +288,11 @@ transmission that the server @bold{will not catch}.}
  @defproc[(xexpr-response/cookies [cookies (listof cookie?)]
                                   [xexpr xexpr/c])
           response/full?]{
-  Constructs a response using @scheme[xexpr] that sets all the cookies in @scheme[cookies].
+  Constructs a response using @racket[xexpr] that sets all the cookies in @racket[cookies].
  }
                          
  Examples:
- @schemeblock[
+ @racketblock[
   (define time-cookie 
     (make-cookie "time" (number->string (current-seconds))))
   (define id-cookie
@@ -323,7 +323,7 @@ transmission that the server @bold{will not catch}.}
 @(require (for-label web-server/http/cookie-parse
                      net/cookie
                      net/url
-                     scheme/list))
+                     racket/list))
 @defmodule[web-server/http/cookie-parse]{
  @defstruct[client-cookie 
             ([name string?]
@@ -331,17 +331,17 @@ transmission that the server @bold{will not catch}.}
              [domain (or/c false/c valid-domain?)]
              [path (or/c false/c string?)])]{
                               
-  While server cookies are represented with @scheme[cookie?]s, cookies that come from the client are represented
-  with a @scheme[client-cookie] structure.                              
+  While server cookies are represented with @racket[cookie?]s, cookies that come from the client are represented
+  with a @racket[client-cookie] structure.                              
  }
  
  @defproc[(request-cookies [req request?])
           (listof client-cookie?)]{
-  Extracts the cookies from @scheme[req]'s headers.
+  Extracts the cookies from @racket[req]'s headers.
  }
 
  Examples:
- @schemeblock[
+ @racketblock[
   (define (start req)
     (define cookies (request-cookies req))
     (define id-cookie 
@@ -366,7 +366,7 @@ transmission that the server @bold{will not catch}.}
 }
 
 @; ------------------------------------------------------------
-@section[#:tag "redirect.ss"]{Redirect}
+@section[#:tag "redirect"]{Redirect}
 @(require (for-label web-server/http/redirect
                      web-server/private/util))
 
@@ -376,28 +376,28 @@ transmission that the server @bold{will not catch}.}
                       [perm/temp redirection-status? temporarily]
                       [#:headers headers (listof header?) (list)])
          response/c]{
- Generates an HTTP response that redirects the browser to @scheme[uri],
- while including the @scheme[headers] in the response.
+ Generates an HTTP response that redirects the browser to @racket[uri],
+ while including the @racket[headers] in the response.
  
  Example:
- @scheme[(redirect-to "http://www.add-three-numbers.com" permanently)]
+ @racket[(redirect-to "http://www.add-three-numbers.com" permanently)]
 }
 
 @defproc[(redirection-status? [v any/c])
          boolean?]{
- Determines if @scheme[v] is one of the following values.
+ Determines if @racket[v] is one of the following values.
 }
 
-@defthing[permanently redirection-status?]{A @scheme[redirection-status?] for permanent redirections.}
+@defthing[permanently redirection-status?]{A @racket[redirection-status?] for permanent redirections.}
 
-@defthing[temporarily redirection-status?]{A @scheme[redirection-status?] for temporary redirections.}
+@defthing[temporarily redirection-status?]{A @racket[redirection-status?] for temporary redirections.}
 
-@defthing[see-other redirection-status?]{A @scheme[redirection-status?] for "see-other" redirections.}
+@defthing[see-other redirection-status?]{A @racket[redirection-status?] for "see-other" redirections.}
 
 }
 
 @; ------------------------------------------------------------
-@section[#:tag "basic-auth.ss"]{Basic Authentication}
+@section[#:tag "basic-auth"]{Basic Authentication}
 @(require (for-label web-server/http/basic-auth))
 
 @defmodule[web-server/http/basic-auth]{
@@ -407,17 +407,17 @@ An implementation of HTTP Basic Authentication.
 @defproc[(make-basic-auth-header [realm string?])
          header?]{
  Returns a header that instructs the Web browser to request a username and password from the client using
- Basic authentication with @scheme[realm] as the realm.
+ Basic authentication with @racket[realm] as the realm.
 }
                  
 @defproc[(request->basic-credentials [req request?])
          (or/c false/c (cons/c bytes? bytes?))]{
  Returns a pair of the username and password from the authentication
- header in @scheme[req] if they are present, or @scheme[#f]. 
+ header in @racket[req] if they are present, or @racket[#f]. 
 }
                                                
 Example:
-@schememod[
+@racketmod[
 web-server/insta
  
 (define (start req)
@@ -436,9 +436,9 @@ web-server/insta
 }
 
 @; ------------------------------------------------------------
-@section[#:tag "digest-auth.ss"]{Digest Authentication}
+@section[#:tag "digest-auth"]{Digest Authentication}
 @(require (for-label web-server/http/digest-auth
-                     scheme/pretty))
+                     racket/pretty))
 
 @defmodule[web-server/http/digest-auth]{
 
@@ -447,44 +447,44 @@ An implementation of HTTP Digest Authentication.
 @defproc[(make-digest-auth-header [realm string?] [private-key string?] [opaque string?])
          header?]{
  Returns a header that instructs the Web browser to request a username and password from the client
- using Digest authentication with @scheme[realm] as the realm, @scheme[private-key] as the server's
- contribution to the nonce, and @scheme[opaque] as the opaque data passed through the client.
+ using Digest authentication with @racket[realm] as the realm, @racket[private-key] as the server's
+ contribution to the nonce, and @racket[opaque] as the opaque data passed through the client.
 }
                  
 @defproc[(request->digest-credentials [req request?])
          (or/c false/c (listof (cons/c symbol? string?)))]{
- Returns the Digest credentials from @scheme[req] (if they appear) as an association list.
+ Returns the Digest credentials from @racket[req] (if they appear) as an association list.
 }         
                                                           
 @defthing[username*realm->password/c contract?]{
  Used to look up the password for a user is a realm.                                                
                                                 
- Equivalent to @scheme[(string? string? . -> . string?)].                                                
+ Equivalent to @racket[(string? string? . -> . string?)].                                                
 }
 
 @defthing[username*realm->digest-HA1/c contract?]{
  Used to compute the user's secret hash.
       
- Equivalent to @scheme[(string? string? . -> . bytes?)].
+ Equivalent to @racket[(string? string? . -> . bytes?)].
 } 
        
 @defproc[(password->digest-HA1 [lookup-password username*realm->password/c])
          username*realm->digest-HA1/c]{
- Uses @scheme[lookup-password] to find the password, then computes the secret hash of it.
+ Uses @racket[lookup-password] to find the password, then computes the secret hash of it.
 }      
                                        
 @defproc[(make-check-digest-credentials [lookup-HA1 username*realm->digest-HA1/c])
          (string? (listof (cons/c symbol? string?)) . -> . boolean?)]{
  Constructs a function that checks whether particular Digest credentials (the second argument of the returned function)
- are correct given the HTTP method provided as the first argument and the secret hash computed by @scheme[lookup-HA1].
+ are correct given the HTTP method provided as the first argument and the secret hash computed by @racket[lookup-HA1].
  
  This is will result in an exception if the Digest credentials are missing portions.
 } 
                                                                      
 Example:
-@schememod[
+@racketmod[
 web-server/insta
-(require scheme/pretty)
+(require racket/pretty)
 
 (define private-key "private-key")
 (define opaque "opaque")

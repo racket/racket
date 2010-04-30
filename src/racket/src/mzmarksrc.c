@@ -1379,6 +1379,7 @@ place_async_channel_val {
  mark:
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   int i;
+  gcMARK2(pac->msgs, gc);
   for (i = pac->size; i--; )
     gcMARK2(pac->msgs[i], gc);
 

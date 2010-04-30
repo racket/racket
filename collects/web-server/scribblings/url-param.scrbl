@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "url-param.ss"]{URL Param}
+@title[#:tag "url-param"]{URL Param}
 @(require (for-label web-server/private/url-param
                      net/url))
 
@@ -17,15 +17,15 @@ with this process.
                        [k string?]
                        [v string?])
          url?]{
- Associates @scheme[k] with @scheme[v] in the final URL param of @scheme[u],
- overwritting any current binding for @scheme[k].
+ Associates @racket[k] with @racket[v] in the final URL param of @racket[u],
+ overwritting any current binding for @racket[k].
 }
 
 @defproc[(extract-param [u url?]
                         [k string?])
          (or/c string? false/c)]{
- Extracts the string associated with @scheme[k] in the final URL param of
- @scheme[u], if there is one, returning @scheme[#f] otherwise.
+ Extracts the string associated with @racket[k] in the final URL param of
+ @racket[u], if there is one, returning @racket[#f] otherwise.
 }
 
 }

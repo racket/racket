@@ -1,11 +1,11 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "web-server-ref-internal"]{@bold{Web Server}: PLT HTTP Server}
+@title[#:tag "web-server-ref-internal"]{@bold{Web Server}: Racket HTTP Server}
 
 @author{Jay McCarthy}
 
-This manual describes the internals of the PLT Web Server.
+This manual describes the internals of the Racket Web Server.
 
 @local-table-of-contents[]
 

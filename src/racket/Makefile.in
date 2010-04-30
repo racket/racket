@@ -191,7 +191,7 @@ starter: mzstart.exe
 
 exn:
 	$(MAKE) $(srcdir)/src/schexn.h
-	$(MAKE) $(collectsdir)/scheme/private/kernstruct.ss
+	$(MAKE) $(collectsdir)/scheme/private/kernstruct.rkt
                                        
 CSTARTUPDEST = cstartup.inc
 
@@ -212,18 +212,18 @@ mark:
 	$(MAKE) $(srcdir)/src/mzmark.c
 
 headers:
-	./racket@CGC@ -cqu $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
+	./racket@CGC@ -cqu $(srcdir)/mkincludes.rkt "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
 	./racket@CGC@ -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
-$(collectsdir)/scheme/private/kernstruct.ss: $(srcdir)/src/makeexn
-	./racket@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.ss
+$(collectsdir)/scheme/private/kernstruct.rkt: $(srcdir)/src/makeexn
+	./racket@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.rkt
 
 
-$(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.ss $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	./racket@CGC@ -cqu $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.ss 
-$(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.ss
-	racket -cu $(srcdir)/src/mkmark.ss < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
+$(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.rkt $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
+	./racket@CGC@ -cqu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rkt 
+$(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.rkt
+	racket -cu $(srcdir)/src/mkmark.rkt < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
 
 cstartup.zo:
 	$(MAKE) startup CSTARTUPEXTRA='zo' CSTARTUPDEST="../cstartup.zo"
@@ -293,7 +293,7 @@ unix-install-cgc:
 	cd ..; $(ICP) racket/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@"
 	cd ..; cp racket/mzdyn.o "$(DESTDIR)$(libpltdir)/mzdyn.o"
-	./racket@CGC@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	./racket@CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-cgc-final:
 	$(NOOP)
@@ -302,7 +302,7 @@ unix-install-3m:
 	cd ..; $(ICP) racket/racket@MMM@ "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	cd ..; $(ICP) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 	cd ..; $(ICP) racket/mzdyn3m.o "$(DESTDIR)$(libpltdir)/mzdyn3m.o"
-	./racket@MMM@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
+	./racket@MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-3m-final:
 	$(NOOP)
@@ -366,5 +366,5 @@ unix-cygwin-install-3m-final:
 
 # Generate plt-gdbinit ----------------------------------------
 
-mz-gdbinit: $(srcdir)/mk-gdbinit.ss $(srcdir)/src/stypes.h
-	racket $(srcdir)/mk-gdbinit.ss
+mz-gdbinit: $(srcdir)/mk-gdbinit.rkt $(srcdir)/src/stypes.h
+	racket $(srcdir)/mk-gdbinit.rkt

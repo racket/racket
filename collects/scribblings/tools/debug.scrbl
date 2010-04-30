@@ -2,18 +2,18 @@
 @(require "common.ss")
 @(tools-title "debug")
 
-@defmixin[drscheme:debug:profile-unit-frame-mixin
-          (drscheme:frame:<%> drscheme:unit:frame<%>)
+@defmixin[drracket:debug:profile-unit-frame-mixin
+          (drracket:frame:<%> drracket:unit:frame<%>)
           ()]{
 }
 
-@defmixin[drscheme:debug:profile-interactions-text-mixin
-          (drscheme:rep:text<%>)
+@defmixin[drracket:debug:profile-interactions-text-mixin
+          (drracket:rep:text<%>)
           ()]{
 }
 
-@defmixin[drscheme:debug:profile-definitions-text-mixin
-          (drscheme:unit:definitions-text<%> text%)
+@defmixin[drracket:debug:profile-definitions-text-mixin
+          (drracket:unit:definitions-text<%> text%)
           ()]{
 }
 

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 @(require (for-label web-server/servlet
                      xml))
 
@@ -19,7 +19,7 @@ their paper @link["http://groups.inf.ed.ac.uk/links/formlets/"]{The Essence of F
 Suppose we want to create an abstraction of entering a date in an HTML form. The following
 @tech{formlet} captures this idea:
 
-@schemeblock[
+@racketblock[
 (define date-formlet
   (formlet
    (div
@@ -28,35 +28,35 @@ Suppose we want to create an abstraction of entering a date in an HTML form. The
    (list month day)))
 ]
 
-The first part of the @scheme[formlet] syntax is the template of an @xexpr that is the rendering
-of the formlet. It can contain elements like @scheme[,(_formlet . => . _name)] where @scheme[_formlet]
-is a formlet expression and @scheme[_name] is an identifier bound in the second part of the @scheme[formlet]
+The first part of the @racket[formlet] syntax is the template of an @xexpr that is the rendering
+of the formlet. It can contain elements like @racket[,(_formlet . => . _name)] where @racket[_formlet]
+is a formlet expression and @racket[_name] is an identifier bound in the second part of the @racket[formlet]
 syntax.
 
-This formlet is displayed (with @scheme[formlet-display]) as the following @xexpr forest (list):
+This formlet is displayed (with @racket[formlet-display]) as the following @xexpr forest (list):
 
-@schemeblock[
+@racketblock[
 (list 
  '(div "Month:" (input ([name "input_0"]))
        "Day:" (input ([name "input_1"]))))
 ]
 
-@scheme[date-formlet] not only captures the rendering of the form, but also the request processing
-logic. If we send it an HTTP request with bindings for @scheme["input_0"] to @scheme["10"] and
-@scheme["input_1"] to @scheme["3"], with @scheme[formlet-process], then it returns:
+@racket[date-formlet] not only captures the rendering of the form, but also the request processing
+logic. If we send it an HTTP request with bindings for @racket["input_0"] to @racket["10"] and
+@racket["input_1"] to @racket["3"], with @racket[formlet-process], then it returns:
 
-@schemeblock[
+@racketblock[
 (list 10 3)
 ]
 
-which is the second part of the @scheme[formlet] syntax, where @scheme[month] has been replaced with the
-integer represented by the @scheme["input_0"] and @scheme[day] has been replaced with the
-integer represented by the @scheme["input_1"].
+which is the second part of the @racket[formlet] syntax, where @racket[month] has been replaced with the
+integer represented by the @racket["input_0"] and @racket[day] has been replaced with the
+integer represented by the @racket["input_1"].
 
 The real power of formlet is that they can be embedded within one another. For instance, suppose we want to
 combine two date forms to capture a travel itinerary. The following formlet does the job:
 
-@schemeblock[
+@racketblock[
 (define travel-formlet
   (formlet
    (div
@@ -67,9 +67,9 @@ combine two date forms to capture a travel itinerary. The following formlet does
    (list name arrive depart))))
 ]
 
-(Notice that @scheme[date-formlet] is embedded twice.) This is rendered as:
+(Notice that @racket[date-formlet] is embedded twice.) This is rendered as:
 
-@schemeblock[
+@racketblock[
 (list 
  '(div
    "Name:"
@@ -83,10 +83,10 @@ combine two date forms to capture a travel itinerary. The following formlet does
          "Day:" (input ([name "input_4"]))))))
 ]
 
-Observe that @scheme[formlet-display] has automatically generated unique names for each input element. When we pass
-bindings for these names to @scheme[formlet-process], the following list is returned:
+Observe that @racket[formlet-display] has automatically generated unique names for each input element. When we pass
+bindings for these names to @racket[formlet-process], the following list is returned:
 
-@schemeblock[
+@racketblock[
 (list "Jay"
       (list 10 3)
       (list 10 6))
@@ -102,16 +102,22 @@ The rest of the manual gives the details of @tech{formlet} usage and extension.
 Most users will want to use the syntactic shorthand for creating @tech{formlet}s.
 
 @defform[(formlet rendering yields-expr)]{
- Constructs a @tech{formlet} with the specified @scheme[rendering] and the processing
- resulting in the @scheme[yields-expr] expression. The @scheme[rendering] form is a quasiquoted
+ Constructs a @tech{formlet} with the specified @racket[rendering] and the processing
+ resulting in the @racket[yields-expr] expression. The @racket[rendering] form is a quasiquoted
  @xexpr, with two special caveats:
  
- @scheme[,{_formlet-expr . => . _name}] embeds the
- @tech{formlet} given by @scheme[_formlet-expr]; the result of this processing this formlet is
- available in the @scheme[yields-expr] as @scheme[_name]. 
+ @racket[,{_formlet-expr . => . _name}] embeds the
+ @tech{formlet} given by @racket[_formlet-expr]; the result of this processing this formlet is
+ available in the @racket[yields-expr] as @racket[_name]. 
  
- @scheme[(#%# _xexpr ...)] renders an @xexpr forest.
+ @racket[,{_formlet-expr . => . (values _name ...)}] embeds the
+ @tech{formlet} given by @racket[_formlet-expr]; the results of this processing this formlet is
+ available in the @racket[yields-expr] as @racket[_name ...]. 
+ 
+ @racket[(#%# _xexpr ...)] renders an @xexpr forest.
 }
+
+@defidform[#%#]{Only allowed inside @racket[formlet].}
 
 }
 
@@ -125,13 +131,13 @@ These combinators may be used directly to construct low-level formlets, such as 
 types. Refer to @secref["input-formlets"] for example low-level formlets using these combinators.
 
 @defthing[xexpr-forest/c contract?]{
- Equivalent to @scheme[(listof xexpr/c)]
+ Equivalent to @racket[(listof xexpr/c)]
 }
 
-@defproc[(formlet/c [content any/c]) contract?]{
- Equivalent to @scheme[(integer? . -> . 
+@defproc[(formlet/c [content any/c] ...) contract?]{
+ Equivalent to @racket[(integer? . -> . 
             (values xexpr-forest/c
-                    ((listof binding?) . -> . (coerce-contract 'formlet/c content))
+                    ((listof binding?) . -> . (values (coerce-contract 'formlet/c content) ...))
                     integer?))].
                                
  A @tech{formlet}'s internal representation is a function from an initial input number
@@ -139,56 +145,60 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
  input number.
 }
 
+@defthing[formlet*/c contract?]{
+  Equivalent to @racket[(formlet/c any/c ...)].
+}
+
 @defproc[(pure [value any/c]) (formlet/c any/c)]{
- Constructs a @tech{formlet} that has no rendering and always returns @scheme[value] in
+ Constructs a @tech{formlet} that has no rendering and always returns @racket[value] in
  the processing stage.
 }
 
-@defproc[(cross [f (formlet/c (any/c . -> . any/c))]
-                [g (formlet/c any/c)])
-         (formlet/c any/c)]{
- Constructs a @tech{formlet} with a rendering equal to the concatenation of the renderings of @tech{formlet}s @scheme[f] and @scheme[g];
- a processing stage that applies @scheme[g]'s processing result to @scheme[f]'s processing result.
+@defproc[(cross [f (formlet/c procedure?)]
+                [g (formlet/c any/c ...)])
+         (formlet/c any/c ...)]{
+ Constructs a @tech{formlet} with a rendering equal to the concatenation of the renderings of @tech{formlet}s @racket[f] and @racket[g];
+ a processing stage that applies @racket[g]'s processing results to @racket[f]'s processing result.
 }
 
 @defproc[(cross* [f (formlet/c (() () #:rest (listof any/c) . ->* . any/c))]
                  [g (formlet/c any/c)] ...)
          (formlet/c any/c)]{
- Equivalent to @scheme[cross] lifted to many arguments.
+ Equivalent to @racket[cross] lifted to many arguments.
 }
 
 @defproc[(xml-forest [r xexpr-forest/c])
          (formlet/c procedure?)]{
- Constructs a @tech{formlet} with the rendering @scheme[r] and the identity procedure as the processing step.
+ Constructs a @tech{formlet} with the rendering @racket[r] and the identity procedure as the processing step.
 }
 
 @defproc[(xml [r xexpr/c])
          (formlet/c procedure?)]{
- Equivalent to @scheme[(xml-forest (list r))].
+ Equivalent to @racket[(xml-forest (list r))].
 }
                                 
 @defproc[(text [r string?])
          (formlet/c procedure?)]{
- Equivalent to @scheme[(xml r)].
+ Equivalent to @racket[(xml r)].
 }
                                 
 @defproc[(tag-xexpr [tag symbol?]
                     [attrs (listof (list/c symbol? string?))]
                     [inner (formlet/c any/c)])
          (formlet/c any/c)]{
- Constructs a @tech{formlet} with the rendering @scheme[(list (list* tag attrs inner-rendering))] where @scheme[inner-rendering] is
- the rendering of @scheme[inner] and the processing stage identical to @scheme[inner].
+ Constructs a @tech{formlet} with the rendering @racket[(list (list* tag attrs inner-rendering))] where @racket[inner-rendering] is
+ the rendering of @racket[inner] and the processing stage identical to @racket[inner].
 }
 
 @defproc[(formlet-display [f (formlet/c any/c)])
          xexpr-forest/c]{
- Renders @scheme[f].
+ Renders @racket[f].
 }
                         
-@defproc[(formlet-process [f (formlet/c any/c)]
+@defproc[(formlet-process [f (formlet/c any/c ...)]
                           [r request?])
-         any/c]{
- Runs the processing stage of @scheme[f] on the bindings in @scheme[r].
+         (values any/c ...)]{
+ Runs the processing stage of @racket[f] on the bindings in @racket[r].
 }
                
 }
@@ -202,14 +212,14 @@ These @tech{formlet}s are the main combinators for form input.
       
 @defproc[(make-input [render (string? . -> . xexpr/c)])
          (formlet/c (or/c false/c binding?))]{
- This @tech{formlet} is rendered with @scheme[render], which is passed the input name, and results in the
- extracted @scheme[binding].
+ This @tech{formlet} is rendered with @racket[render], which is passed the input name, and results in the
+ extracted @racket[binding].
 }
                                              
 @defproc[(make-input* [render (string? . -> . xexpr/c)])
          (formlet/c (listof binding?))]{
- This @tech{formlet} is rendered with @scheme[render], which is passed the input name, and results in all the
- @scheme[binding]s that use the name.
+ This @tech{formlet} is rendered with @racket[render], which is passed the input name, and results in all the
+ @racket[binding]s that use the name.
 }
                                              
 @defproc[(text-input [#:value value (or/c false/c bytes?) #f]
@@ -247,58 +257,58 @@ These @tech{formlet}s are the main combinators for form input.
                             [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]
                             [#:display display (any/c . -> . xexpr/c) (λ (x) x)])
         (formlet/c list?)]{
- This @tech{formlet} renders using an SELECT element with an OPTION for each element of the sequence. If @scheme[multiple?] is @scheme[#t], then multiple options may be selected. An element is selected if @scheme[selected?] returns @scheme[#t]. Elements are displayed with @scheme[display].
+ This @tech{formlet} renders using an SELECT element with an OPTION for each element of the sequence. If @racket[multiple?] is @racket[#t], then multiple options may be selected. An element is selected if @racket[selected?] returns @racket[#t]. Elements are displayed with @racket[display].
 }
 
 @defproc[(select-input [l sequence?]
                        [#:selected? selected? (any/c . -> . boolean?) (λ (x) #f)]
                        [#:display display (any/c . -> . xexpr/c) (λ (x) x)])
         (formlet/c any/c)]{
- This @tech{formlet} renders using an SELECT element with an OPTION for each element of the sequence. An element is selected if @scheme[selected?] returns @scheme[#t]. Elements are displayed with @scheme[display].
+ This @tech{formlet} renders using an SELECT element with an OPTION for each element of the sequence. An element is selected if @racket[selected?] returns @racket[#t]. Elements are displayed with @racket[display].
 }
                           
 @defproc[(required [f (formlet/c (or/c false/c binding?))])
          (formlet/c bytes?)]{
- Constructs a @tech{formlet} that extracts the @scheme[binding:form-value] from the binding produced by @scheme[f], or errors.
+ Constructs a @tech{formlet} that extracts the @racket[binding:form-value] from the binding produced by @racket[f], or errors.
 }
 
 @defproc[(default 
            [def bytes?]
            [f (formlet/c (or/c false/c binding?))])
          (formlet/c bytes?)]{
- Constructs a @tech{formlet} that extracts the @scheme[binding:form-value] from the binding produced by @scheme[f], or returns @scheme[def].
+ Constructs a @tech{formlet} that extracts the @racket[binding:form-value] from the binding produced by @racket[f], or returns @racket[def].
 }
  
 @defproc[(to-string [f (formlet/c bytes?)])
          (formlet/c string?)]{
- Converts @scheme[f]'s output to a string. Equivalent to @scheme[(cross (pure bytes->string/utf-8) f)].
+ Converts @racket[f]'s output to a string. Equivalent to @racket[(cross (pure bytes->string/utf-8) f)].
 }          
  
 @defproc[(to-number [f (formlet/c string?)])
          (formlet/c number?)]{
- Converts @scheme[f]'s output to a number. Equivalent to @scheme[(cross (pure string->number) f)].
+ Converts @racket[f]'s output to a number. Equivalent to @racket[(cross (pure string->number) f)].
 }                             
 
 @defproc[(to-symbol [f (formlet/c string?)])
          (formlet/c symbol?)]{
- Converts @scheme[f]'s output to a symbol. Equivalent to @scheme[(cross (pure string->symbol) f)].
+ Converts @racket[f]'s output to a symbol. Equivalent to @racket[(cross (pure string->symbol) f)].
 }                             
 
 @defproc[(to-boolean [f (formlet/c bytes?)])
          (formlet/c boolean?)]{
- Converts @scheme[f]'s output to a boolean, if it is equal to @scheme[#"on"].
+ Converts @racket[f]'s output to a boolean, if it is equal to @racket[#"on"].
 }
                              
 @defthing[input-string (formlet/c string?)]{
- Equivalent to @scheme[(to-string (required (text-input)))].
+ Equivalent to @racket[(to-string (required (text-input)))].
 }
 
 @defthing[input-int (formlet/c integer?)]{
- Equivalent to @scheme[(to-number input-string)].
+ Equivalent to @racket[(to-number input-string)].
 }
 
 @defthing[input-symbol (formlet/c symbol?)]{
- Equivalent to @scheme[(to-symbol input-string)].
+ Equivalent to @racket[(to-symbol input-string)].
 }
 
 }
@@ -310,23 +320,23 @@ These @tech{formlet}s are the main combinators for form input.
 
 A few utilities are provided for using @tech{formlet}s in Web applications.
 
-@defproc[(send/formlet [f (formlet/c any/c)]
+@defproc[(send/formlet [f (formlet/c any/c ...)]
                        [#:wrap wrapper
                                (xexpr/c . -> . response/c)
                                (lambda (form-xexpr)
                                  `(html (head (title "Form Entry"))
                                         (body ,form-xexpr)))])
-         any/c]{
- Uses @scheme[send/suspend] to send @scheme[f]'s rendering (wrapped in a FORM tag whose action is
- the continuation URL (wrapped again by @scheme[wrapper])) to the client.
+         (values any/c ...)]{
+ Uses @racket[send/suspend] to send @racket[f]'s rendering (wrapped in a FORM tag whose action is
+ the continuation URL (wrapped again by @racket[wrapper])) to the client.
  When the form is submitted, the request is passed to the
- processing stage of @scheme[f].
+ processing stage of @racket[f].
 }
                
 @defproc[(embed-formlet [embed/url embed/url/c]
-                        [f (formlet/c any/c)])
+                        [f (formlet/c any/c ...)])
          xexpr/c]{
- Like @scheme[send/formlet], but for use with @scheme[send/suspend/dispatch].
+ Like @racket[send/formlet], but for use with @racket[send/suspend/dispatch].
 }
 
 }

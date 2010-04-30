@@ -19,8 +19,8 @@ represent symbols and lists.
 @refdetails/gory["parse-vector"]{the syntax of vectors}
 
 @examples[
-(eval:alts @#,schemevalfont{#("a" "b" "c")} #("a" "b" "c"))
-(eval:alts @#,schemevalfont{#(name (that tune))} #(name (that tune)))
+(eval:alts @#,racketvalfont{#("a" "b" "c")} #("a" "b" "c"))
+(eval:alts @#,racketvalfont{#(name (that tune))} #(name (that tune)))
 (vector-ref #("a" "b" "c") 1)
 (vector-ref #(name (that tune)) 1)
 ]
@@ -29,10 +29,10 @@ Like strings, a vector is either mutable or immutable, and vectors
 written directly as expressions are immutable.
 
 Vector can be converted to lists and vice-versa via
-@scheme[list->vector] and @scheme[vector->list]; such conversions are
+@racket[list->vector] and @racket[vector->list]; such conversions are
 particularly useful in combination with predefined procedures on
 lists. When allocating extra lists seems too expensive, consider
-using looping forms like @scheme[fold-for], which recognize vectors as
+using looping forms like @racket[fold-for], which recognize vectors as
 well as lists.
 
 @examples[

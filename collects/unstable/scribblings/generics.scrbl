@@ -1,12 +1,12 @@
 #lang scribble/manual
-@(require "utils.ss" (for-label scheme/base unstable/generics))
+@(require "utils.rkt" (for-label racket/base unstable/generics))
 
 @title{Generics}
 
 @defmodule[unstable/generics]
 
 @unstable["Eli Barzilay"
-          @author+email["Jay McCarthy" "jay@plt-scheme.org"]]
+          @author+email["Jay McCarthy" "jay@racket-lang.org"]]
 
 @defform/subs[(define-generics (name prop:name name?)
                 [method . kw-formals*]
@@ -24,18 +24,18 @@
                [name? identifier?]
                [method identifier?])]{
                                       
-Defines @scheme[name] as a transformer binding for the static information about a new generic group.
+Defines @racket[name] as a transformer binding for the static information about a new generic group.
 
-Defines @scheme[prop:name] as a structure 
+Defines @racket[prop:name] as a structure 
 type property. Structure types implementing this generic group should have this property where the value is a vector
-with one element per @scheme[method] where each value is
-either @scheme[#f] or a procedure with the same arity as specified by @scheme[kw-formals*].
-(@scheme[kw-formals*] is similar to the @scheme[kw-formals] used by @scheme[lambda], except no expression is given for optional arguments.)
+with one element per @racket[method] where each value is
+either @racket[#f] or a procedure with the same arity as specified by @racket[kw-formals*].
+(@racket[kw-formals*] is similar to the @racket[kw-formals] used by @racket[lambda], except no expression is given for optional arguments.)
 The arity of each method is checked by the guard on the structure type property.
 
-Defines @scheme[name?] as a predicate identifying instances of structure types that implement this generic group.
+Defines @racket[name?] as a predicate identifying instances of structure types that implement this generic group.
 
-Defines each @scheme[method] as a generic procedure that calls the corresponding method on values where @scheme[name?] is true. Each method must have a required by-position argument that is @scheme[free-identifier=?] to @scheme[name]. This argument is used in the generic definition to locate the specialization.
+Defines each @racket[method] as a generic procedure that calls the corresponding method on values where @racket[name?] is true. Each method must have a required by-position argument that is @racket[free-identifier=?] to @racket[name]. This argument is used in the generic definition to locate the specialization.
 
 }
 
@@ -48,12 +48,12 @@ Defines each @scheme[method] as a generic procedure that calls the corresponding
 
 Expands to
 
-@schemeblock[(define-generics (name _prop:name _name?)
+@racketblock[(define-generics (name _prop:name _name?)
                [method . kw-formals*]
                ...)]
 
-where @scheme[_prop:name] and @scheme[_name?] are created with the lexical
-context of @scheme[name].
+where @racket[_prop:name] and @racket[_name?] are created with the lexical
+context of @racket[name].
 
 }
                                 
@@ -61,15 +61,15 @@ context of @scheme[name].
          #:contracts
          ([name identifier?])]{
 
-@scheme[name] must be a transformer binding for the static information about a new generic group.
+@racket[name] must be a transformer binding for the static information about a new generic group.
                                
-Expands to a value usable as the property value for the structure type property of the @scheme[name] generic group.
+Expands to a value usable as the property value for the structure type property of the @racket[name] generic group.
                                                                                        
-If the @scheme[definition]s define the methods of @scheme[name], then they are used in the property value.
+If the @racket[definition]s define the methods of @racket[name], then they are used in the property value.
 
-If any method of @scheme[name] is not defined, then @scheme[#f] is used to signify that the structure type does not implement the particular method.
+If any method of @racket[name] is not defined, then @racket[#f] is used to signify that the structure type does not implement the particular method.
 
-Allows @scheme[define/generic] to appear in @scheme[definition ...].
+Allows @racket[define/generic] to appear in @racket[definition ...].
 
 }
                               
@@ -78,9 +78,9 @@ Allows @scheme[define/generic] to appear in @scheme[definition ...].
          ([local-name identifier?]
           [method-name identifier?])]{
                                       
-When used inside @scheme[define-methods], binds @scheme[local-name] to the generic for @scheme[method-name]. This is useful for method specializations to use the generic methods on other values.
+When used inside @racket[define-methods], binds @racket[local-name] to the generic for @racket[method-name]. This is useful for method specializations to use the generic methods on other values.
                  
-Syntactically an error when used outside @scheme[define-methods].
+Syntactically an error when used outside @racket[define-methods].
 
 }
                                      
@@ -88,7 +88,7 @@ Syntactically an error when used outside @scheme[define-methods].
 @(require scribble/eval)               
 @(define (new-evaluator)
    (let* ([e (make-base-eval)])
-     (e '(require (for-syntax scheme/base)
+     (e '(require (for-syntax racket/base)
                   unstable/generics))
      e))
 

@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "servlet-structs.ss"]{Common Contracts}
+@title[#:tag "servlet-structs"]{Common Contracts}
 @(require (for-label web-server/servlet/servlet-structs
                      web-server/servlet))
 
@@ -11,14 +11,14 @@ This module provides a number of contracts
 for use in servlets.
 
 @defthing[k-url? contract?]{
-Equivalent to @scheme[string?]. 
+Equivalent to @racket[string?]. 
                                        
-Example: @scheme["http://localhost:8080/servlets;1*1*20131636/examples/add.ss"]}
+Example: @racket["http://localhost:8080/servlets;1*1*20131636/examples/add.rkt"]}
 
 @defthing[response-generator/c contract?]{
-Equivalent to @scheme[(k-url? . -> . response/c)].
+Equivalent to @racket[(k-url? . -> . response/c)].
            
-Example: @schemeblock[(lambda (k-url)
+Example: @racketblock[(lambda (k-url)
                         `(html 
                           (body 
                            (a ([href ,k-url])
@@ -26,9 +26,9 @@ Example: @schemeblock[(lambda (k-url)
 }
 
 @defthing[expiration-handler/c contract?]{
-Equivalent to @scheme[(or/c false/c (request? . -> . response/c))].
+Equivalent to @racket[(or/c false/c (request? . -> . response/c))].
            
-Example: @schemeblock[(lambda (req)
+Example: @racketblock[(lambda (req)
                         `(html (head (title "Expired"))
                                (body (h1 "Expired")
                                      (p "This URL has expired. "
@@ -36,9 +36,9 @@ Example: @schemeblock[(lambda (req)
 }
 
 @defthing[embed/url/c contract?]{
-Equivalent to @scheme[((request? . -> . any) . -> . string?)].
+Equivalent to @racket[((request? . -> . any) . -> . string?)].
 
-This is what @scheme[send/suspend/dispatch] gives to its function argument.
+This is what @racket[send/suspend/dispatch] gives to its function argument.
 }
 
 }

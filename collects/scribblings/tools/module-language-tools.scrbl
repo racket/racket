@@ -13,7 +13,7 @@ Specifically, DrScheme will pass @scheme['drscheme:toolbar-buttons]
 to the function and expect back a value matching this contract:
 @schemeblock[(listof (list/c string?
                              (is-a?/c bitmap%)
-                             (-> (is-a?/c drscheme:unit:frame<%>) any)))]
+                             (-> (is-a?/c drracket:unit:frame<%>) any)))]
 which is then used to create new toolbar buttons, one for each list in the
 first. The string is the label on the button; the bitmap is the icon (it should be 16x16),
 and the function is called when the button is clicked.

@@ -3,11 +3,11 @@
 @(tools-title "rep")
 
 
-@definterface[drscheme:rep:text<%> ()]{
+@definterface[drracket:rep:text<%> ()]{
 }
 
 
-@defclass[drscheme:rep:text% scheme:text% (drscheme:rep:text<%>)]{
+@defclass[drracket:rep:text% scheme:text% (drracket:rep:text<%>)]{
 
 This class implements a read-eval-print loop for DrScheme.  User
 submitted evaluations in DrScheme are evaluated asynchronously, in an
@@ -16,7 +16,7 @@ class affect the implementation that uses it.
 
 
 
-@defconstructor/make[([context (implements drscheme:rep:context<%>)])]{
+@defconstructor/make[([context (implements drracket:rep:context<%>)])]{
 }
 
 @defmethod[#:mode override 
@@ -82,11 +82,11 @@ This function evaluates all of the expressions in a text.
 
 It evaluates all of the expressions in @scheme[text] starting at
 @scheme[start] and ending at @scheme[end], calling
-@method[drscheme:rep:text% do-many-evals] to handle the evaluation.
+@method[drracket:rep:text% do-many-evals] to handle the evaluation.
 
 The @scheme[complete-program?] argument determines if the
-@method[drscheme:language:language<%> front-end/complete-program] method or the
-@method[drscheme:language:language<%> front-end/interaction] method is called.
+@method[drracket:language:language<%> front-end/complete-program] method or the
+@method[drracket:language:language<%> front-end/interaction] method is called.
 
 
 }}
@@ -97,9 +97,9 @@ The @scheme[complete-program?] argument determines if the
            any]{
   Evaluates the program in the @scheme[port] argument. If @scheme[complete-program?]
   is @scheme[#t], this method calls the
-  @method[drscheme:language:language<%> front-end/complete-program] to evaluate
+  @method[drracket:language:language<%> front-end/complete-program] to evaluate
   the program. If it is @scheme[#f], it calls 
-  @method[drscheme:language:language<%> front-end/interaction] method.
+  @method[drracket:language:language<%> front-end/interaction] method.
   When evaluation finishes, it calls @scheme[cleanup] on the user's main thread.
 
   This method must be called from the drscheme main thread.
@@ -107,17 +107,17 @@ The @scheme[complete-program?] argument determines if the
                  
 @defmethod[#:mode augment (after-many-evals) any]{
   Called from the drscheme main thread after
-  @method[drscheme:rep:text% evaluate-from-port] finishes (no matter
+  @method[drracket:rep:text% evaluate-from-port] finishes (no matter
   how it finishes).
 }
 
 @defmethod[#:mode augment (on-execute [run-on-user-thread (-> any)]) any]{
 
   Called from the drscheme thread after the language's
-  @method[drscheme:language:language<%> on-execute]
+  @method[drracket:language:language<%> on-execute]
   method has been invoked, and after the
   special values have been setup (the ones registered
-  via @scheme[drscheme:language:add-snip-value]).
+  via @scheme[drracket:language:add-snip-value]).
 
   Use @scheme[run-on-user-thread] to initialize the user's parameters, etc.
 
@@ -151,7 +151,7 @@ This is the custodian controlling the user's program.
 @defmethod[(get-user-eventspace)
            (or/c false/c eventspace?)]{
 This is the user's eventspace. The result of
-@method[drscheme:rep:text% get-user-thread] is the main thread of this eventspace.
+@method[drracket:rep:text% get-user-thread] is the main thread of this eventspace.
 
 }
 
@@ -159,7 +159,7 @@ This is the user's eventspace. The result of
            language-settings]{
 Returns the user's language-settings for the most recently
 run program. Consider using
-@method[drscheme:unit:definitions-text<%> get-next-settings] instead, since the user may have selected a new language
+@method[drracket:unit:definitions-text<%> get-next-settings] instead, since the user may have selected a new language
 since the program was last run.
 
 }
@@ -194,8 +194,8 @@ for more information about parameters.
            void?]{
 Call this method to highlight errors associated with this repl.
 See also
-@method[drscheme:rep:text% reset-highlighting], and
-@method[drscheme:rep:text% highlight-errors/exn].
+@method[drracket:rep:text% reset-highlighting], and
+@method[drracket:rep:text% highlight-errors/exn].
 
 This method highlights a series of dis-contiguous ranges in
 the editor.
@@ -212,7 +212,7 @@ and read errors -- does not extract any information from the
 continuation marks)
 
 See also 
-@method[drscheme:rep:text% highlight-errors].
+@method[drracket:rep:text% highlight-errors].
 
 
 }
@@ -222,12 +222,12 @@ See also
 
 This inserts the ``Welcome to DrScheme'' message into the interactions
 buffer, calls
-@method[drscheme:rep:text% reset-console],
-@method[drscheme:rep:text% insert-prompt], and 
+@method[drracket:rep:text% reset-console],
+@method[drracket:rep:text% insert-prompt], and 
 @method[editor<%> clear-undos].
 
 Once the console is initialized, this method calls
-@method[drscheme:language:language<%> first-opened]. Accordingly, this method should not be called to initialize
+@method[drracket:language:language<%> first-opened]. Accordingly, this method should not be called to initialize
 a REPL when the user's evaluation is imminent. That is,
 this method should be called when new tabs or new windows
 are created, but not when the Run button is clicked. 
@@ -252,7 +252,7 @@ This method is called when the user chooses the kill menu item.
            void?]{
 
 Calls 
-@method[drscheme:rep:text% shutdown].
+@method[drracket:rep:text% shutdown].
 
 Calls the super method.
 
@@ -279,8 +279,8 @@ parameterization for it.
 @defmethod[(reset-highlighting)
            void?]{
 This method resets the highlighting being displayed for this repl. See also:
-@method[drscheme:rep:text% highlight-errors], and
-@method[drscheme:rep:text% highlight-errors/exn].
+@method[drracket:rep:text% highlight-errors], and
+@method[drracket:rep:text% highlight-errors/exn].
 
 }
 
@@ -292,7 +292,7 @@ This function runs it's arguments in the user evaluation thread. This
 thread is the same as the user's eventspace main thread.
 
 See also  
-@method[drscheme:rep:text% do-many-evals].
+@method[drracket:rep:text% do-many-evals].
 
 }
 @methimpl{
@@ -331,7 +331,7 @@ in the user's eventspace
 }}
 
 
-@defmixin[drscheme:rep:drs-bindings-keymap-mixin (editor:keymap<%>) ()]{
+@defmixin[drracket:rep:drs-bindings-keymap-mixin (editor:keymap<%>) ()]{
 
 This mixin adds some drscheme-specific keybindings to the
 editor it is mixed onto.
@@ -357,10 +357,10 @@ interactions windows.}
 }}
 
 
-@definterface[drscheme:rep:context<%> ()]{
+@definterface[drracket:rep:context<%> ()]{
 
 Objects that match this interface provide all of the services that the 
-@scheme[drscheme:rep:text%] class needs to connect with it's context.
+@scheme[drracket:rep:text%] class needs to connect with it's context.
 
 
 
@@ -399,7 +399,7 @@ initiating evaluation in the frame.
 This method is also called when the user switches tabs.
 
 See also
-@method[drscheme:rep:context<%> enable-evaluation].
+@method[drracket:rep:context<%> enable-evaluation].
 
 }
 
@@ -413,11 +413,11 @@ at a time.
 It is also called when the user switches tabs.
 
 See also
-@method[drscheme:rep:context<%> disable-evaluation].
+@method[drracket:rep:context<%> disable-evaluation].
 
 }
 
-@defmethod[(ensure-rep-shown [rep (is-a?/c drscheme:rep:text<%>)])
+@defmethod[(ensure-rep-shown [rep (is-a?/c drracket:rep:text<%>)])
            void?]{
 
 This method is called to force the rep window to be visible when, for
@@ -430,7 +430,7 @@ that the appropriate tab is visible, if necessary.
 @defmethod[(get-breakables)
            (values (or/c thread? false/c) (or/c custodian? false/c))]{
 Returns the last values passed to
-@method[drscheme:rep:context<%> set-breakables].
+@method[drracket:rep:context<%> set-breakables].
 
 }
 
@@ -465,7 +465,7 @@ the next time the break button is clicked, it will either
 break the thread or shutdown the custodian.
 
 See also
-@method[drscheme:rep:context<%> get-breakables].
+@method[drracket:rep:context<%> get-breakables].
 
 }
 

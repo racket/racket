@@ -3,12 +3,12 @@
           scribble/eval
           "guide-utils.ss"
           "contracts-utils.ss"
-          (for-label scheme/contract)
-          (for-label scheme/gui))
+          (for-label racket/contract)
+          (for-label racket/gui))
 
-@title[#:tag "contracts-examples"]{Examples}
+@title[#:tag "contracts-examples"]{Additional Examples}
 
- This section illustrates the current state of PLT Scheme's contract
+ This section illustrates the current state of Racket's contract
  implementation with a series of examples from @italic{Design by
  Contract, by Example} @cite["Mitchell02"].
 
@@ -51,15 +51,15 @@ Each of the following sections corresponds to a chapter in
 
 Mitchell and McKim use Eiffel as the underlying programming language and
  employ a conventional imperative programming style. Our long-term goal is
- to transliterate their examples into applicative Scheme,
- structure-oriented imperative Scheme, and PLT Scheme's class system. 
+ to transliterate their examples into applicative Racket,
+ structure-oriented imperative Racket, and Racket's class system. 
 
 Note: To mimic Mitchell and McKim's informal notion of parametericity
  (parametric polymorphism), we use first-class contracts. At several
  places, this use of first-class contracts improves on Mitchell and McKim's
  design (see comments in interfaces).
 
-@section{A Customer Manager Component for Managing Customer Relationships}
+@section{A Customer-Manager Component}
 
 This first module contains some struct definitions in a
 separate module in order to better track bugs.

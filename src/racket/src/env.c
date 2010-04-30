@@ -567,6 +567,9 @@ void scheme_place_instance_destroy() {
 #if defined(MZ_USE_PLACES)
   scheme_kill_green_thread_timer();
 #endif
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  GC_destruct_child_gc();
+#endif
 }
 
 static void make_kernel_env(void)
@@ -636,6 +639,7 @@ static void make_kernel_env(void)
   MZTIMEIT(regexp, scheme_regexp_initialize(env));
 #endif
   MZTIMEIT(params, scheme_init_parameterization());
+  MZTIMEIT(futures, scheme_init_futures_once());
   MZTIMEIT(places, scheme_init_places_once());
 
   MARK_START_TIME();

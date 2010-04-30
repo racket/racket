@@ -81,8 +81,10 @@ with @schememodname[scheme/base] attached.}
 
 @; ----------------------------------------------------------------------
 
-@compat-except[scheme/foreign racket/unsafe/ffi]{, except that @scheme[unsafe!]
-must be used to import the unsafe bindings of @scheme[racket/unsafe/ffi]}
+@compat-except[scheme/foreign ffi/unsafe]{,
+@schememodname[ffi/unsafe/cvector], and @schememodname[ffi/vector],
+except that @scheme[unsafe!]  must be used to import the unsafe
+bindings of @schememodname[ffi/unsafe] and @schememodname[ffi/unsafe/cvector]}
 
 @defform[(unsafe!)]{
 

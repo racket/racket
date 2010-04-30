@@ -6,7 +6,7 @@
 @title[#:tag "datatypes" #:style 'toc]{Built-In Datatypes}
 
 The @seclink["to-scheme"]{previous chapter} introduced some of
-Scheme's built-in datatypes: numbers, booleans, strings, lists, and
+Racket's built-in datatypes: numbers, booleans, strings, lists, and
 procedures. This section provides a more complete coverage of the
 built-in datatypes for simple forms of data.
 

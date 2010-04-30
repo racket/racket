@@ -116,7 +116,7 @@ binaries:
 
  2. Change directories to plt\src\worksp\gc2 and run
 
-      ..\..\..\racketcgc.exe -cu make.ss
+      ..\..\..\racketcgc.exe -cu make.rkt
 
 The resulting Racket.exe and GRacket.exe will appear in the "plt"
 directory, along with DLLs libracket3mxxxxxxx.dll and
@@ -168,7 +168,7 @@ To replace the "xxxxxxx" with a specific version, run
 
 in a shell.
 
-The "winvers.ss" program will have to make a temporary copy of
+The "winvers.rkt" program will have to make a temporary copy of
 racket.exe and the "lib" sub-directory (into the temporary
 directory), and it will re-launch Racket a couple of times. Every
 ".exe", ".dll", ".lib", ".def", ".exp", and ".pdb" file within the
@@ -196,7 +196,7 @@ After building MzCOMCGC, you can build the 3m variant by
 
  1. Change directories to plt\src\worksp\mzcom and run
 
-      ..\..\..\racketcgc.exe -cu xform.ss
+      ..\..\..\racketcgc.exe -cu xform.rkt
 
  2. Switch to the "3m" configuration in the MzCOM solution
     (in Visual Studio).
@@ -219,7 +219,7 @@ After building MysterXCGC, you can build the 3m variant by
 
  1. Change directories to plt\src\worksp\libmysterx and run
 
-      ..\..\..\racketcgc.exe -cu xform.ss
+      ..\..\..\racketcgc.exe -cu xform.rkt
 
  2. Switch to the "3m" configuration in the libmysterx solution
     (in Visual Studio).

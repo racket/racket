@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "web-server.ss"]{Launching Servers}
+@title[#:tag "web-server"]{Launching Servers}
 
 @(require (for-label web-server/web-server
                      web-server/dispatchers/filesystem-map
@@ -25,16 +25,16 @@ This module provides functions for launching dispatching servers.
                 [#:max-waiting max-waiting integer? 40]
                 [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
- Constructs an appropriate @scheme[dispatch-server-config^], invokes the
- @scheme[dispatch-server@], and calls its @scheme[serve] function.
+ Constructs an appropriate @racket[dispatch-server-config^], invokes the
+ @racket[dispatch-server@], and calls its @racket[serve] function.
  
- The @scheme[#:tcp@] keyword is provided for building an SSL server. See @secref["faq:https"].
+ The @racket[#:tcp@] keyword is provided for building an SSL server. See @secref["faq:https"].
 }
 
 Here's an example of a simple web server that serves files
 from a given path:
 
-@schemeblock[
+@racketblock[
 (define (start-file-server base)
   (serve
    #:dispatch
@@ -53,7 +53,7 @@ from a given path:
                       [#:max-waiting max-waiting integer? 40]
                       [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
- Calls @scheme[serve] multiple times, once for each @scheme[port], and returns
+ Calls @racket[serve] multiple times, once for each @racket[port], and returns
  a function that shuts down all of the server instances.
 }
 
@@ -63,18 +63,18 @@ from a given path:
                           [#:max-waiting max-waiting integer? 40]
                           [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
- Calls @scheme[serve/ports] multiple times, once for each @scheme[ip], and returns
+ Calls @racket[serve/ports] multiple times, once for each @racket[ip], and returns
  a function that shuts down all of the server instances.
 }
                   
 @defproc[(serve/web-config@ [config@ (unit/c (import) (export web-config^))]
                             [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@])
          (-> void)]{
- Starts the @web-server with the settings defined by the given @scheme[web-config^] unit.
+ Starts the @web-server with the settings defined by the given @racket[web-config^] unit.
         
- It is very useful to combine this with @scheme[configuration-table->web-config@] and @scheme[configuration-table-sexpr->web-config@]:
+ It is very useful to combine this with @racket[configuration-table->web-config@] and @racket[configuration-table-sexpr->web-config@]:
  
- @schemeblock[
+ @racketblock[
   (serve/web-config@
    (configuration-table->web-config@ 
     default-configuration-table-path))]

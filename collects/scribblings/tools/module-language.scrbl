@@ -2,7 +2,7 @@
 @(require "common.ss")
 @(tools-title "module-language")
 
-@definterface[drscheme:language:module-language<%> ()]{
+@definterface[drracket:language:module-language<%> ()]{
 
 The only language that implements this interface is DrScheme's ``Use the language declared in the source'' language,
 i.e., the ``Module'' language.

@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "web-server-unit.ss"]{Server Units}
+@title[#:tag "web-server-unit"]{Server Units}
 @(require (for-label web-server/web-server-sig
                      web-server/web-server-unit
                      net/tcp-sig
@@ -22,8 +22,8 @@
  @defproc[(serve-ports [ip input-port?]
                        [op output-port?])
           void]{
- Serves a single connection represented by the ports @scheme[ip] and
- @scheme[op].
+ Serves a single connection represented by the ports @racket[ip] and
+ @racket[op].
  }
 }
 
@@ -36,23 +36,23 @@
 @defthing[web-server@ (unit/c (web-config^ tcp^)
                               (web-server^))]{
 
-Uses the @scheme[web-config^] to construct a @scheme[dispatcher/c]
+Uses the @racket[web-config^] to construct a @racket[dispatcher/c]
 function that sets up one virtual host dispatcher, for each virtual
-host in the @scheme[web-config^], that sequences the following
+host in the @racket[web-config^], that sequences the following
 operations:
 
 @itemize[
  @item{Logs the incoming request with the given format to the given file}
  @item{Performs HTTP Basic Authentication with the given password file}
- @item{Allows the @scheme["/conf/refresh-passwords"] URL to refresh the password file.}
- @item{Allows the @scheme["/conf/collect-garbage"] URL to call the garbage collector.}
- @item{Allows the @scheme["/conf/refresh-servlets"] URL to refresh the servlets cache.}
+ @item{Allows the @racket["/conf/refresh-passwords"] URL to refresh the password file.}
+ @item{Allows the @racket["/conf/collect-garbage"] URL to call the garbage collector.}
+ @item{Allows the @racket["/conf/refresh-servlets"] URL to refresh the servlets cache.}
  @item{Execute servlets in the mapping URLs to the given servlet root directory under htdocs.}
- @item{Serves files under the @scheme["/"] URL in the given htdocs directory.}
+ @item{Serves files under the @racket["/"] URL in the given htdocs directory.}
 ]
 
-Using this @scheme[dispatcher/c], it loads a dispatching server that provides @scheme[serve]
-and @scheme[serve-ports] functions that operate as expected.
+Using this @racket[dispatcher/c], it loads a dispatching server that provides @racket[serve]
+and @racket[serve-ports] functions that operate as expected.
 }
 
 }

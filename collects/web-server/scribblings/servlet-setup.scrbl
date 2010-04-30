@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require "web-server.ss")
+@(require "web-server.rkt")
 
-@title[#:tag "setup.ss"]{Setting Up Servlets}
+@title[#:tag "setup"]{Setting Up Servlets}
 @(require (for-label web-server/servlet/setup
                      web-server/http
                      web-server/private/servlet
@@ -16,14 +16,14 @@ This module is used internally to build and load servlets. It may be useful to t
                           [timeout integer?]
                           [start (request? . -> . response/c)])
          servlet?]{
- Creates a version 1 servlet that uses @scheme[directory] as its current directory, a timeout manager with a @scheme[timeout] timeout, and @scheme[start] as the request handler.
+ Creates a version 1 servlet that uses @racket[directory] as its current directory, a timeout manager with a @racket[timeout] timeout, and @racket[start] as the request handler.
 }
 
 @defproc[(make-v2.servlet [directory path-string?]
                           [manager manager?]
                           [start (request? . -> . response/c)])
          servlet?]{
- Creates a version 2 servlet that uses @scheme[directory] as its current directory, a @scheme[manager] as the continuation manager, and @scheme[start] as the request handler.
+ Creates a version 2 servlet that uses @racket[directory] as its current directory, a @racket[manager] as the continuation manager, and @racket[start] as the request handler.
 }
  
 @defproc[(make-stateless.servlet [directory path-string?]
@@ -31,7 +31,7 @@ This module is used internally to build and load servlets. It may be useful to t
                                  [manager manager?]
                                  [start (request? . -> . response/c)])
          servlet?]{
- Creates a stateless @schememodname[web-server] servlet that uses @scheme[directory] as its current directory, @scheme[stuffer] as its stuffer, and @scheme[manager] as the continuation manager, and @scheme[start] as the request handler.
+ Creates a stateless @racketmodname[web-server] servlet that uses @racket[directory] as its current directory, @racket[stuffer] as its stuffer, and @racket[manager] as the continuation manager, and @racket[start] as the request handler.
 }
                   
 @defthing[default-module-specs (listof module-path?)]{
@@ -39,7 +39,7 @@ This module is used internally to build and load servlets. It may be useful to t
 }
 
 @defthing[path->servlet/c contract?]{
-Equivalent to @scheme[(path? . -> . servlet?)].
+Equivalent to @racket[(path? . -> . servlet?)].
 }
 
 @defproc[(make-default-path->servlet 
@@ -52,8 +52,8 @@ Equivalent to @scheme[(path? . -> . servlet?)].
            integer?
            30])
          path->servlet/c]{
- Constructs a procedure that loads a servlet from the path in a namespace created with @scheme[make-servlet-namespace],
- using a timeout manager with @scheme[timeouts-default-servlet] as the default timeout (if no manager is given.)
+ Constructs a procedure that loads a servlet from the path in a namespace created with @racket[make-servlet-namespace],
+ using a timeout manager with @racket[timeouts-default-servlet] as the default timeout (if no manager is given.)
 }
 
 }

@@ -5,7 +5,7 @@
 
 @title[#:tag "characters"]{Characters}
 
-A Scheme @deftech{character} corresponds to a Unicode @defterm{scalar
+A Racket @deftech{character} corresponds to a Unicode @defterm{scalar
 value}. Roughly, a scalar value is an unsigned integer whose
 representation fits into 21 bits, and that maps to some notion of a
 natural-language character or piece of a character. Technically, a
@@ -14,17 +14,17 @@ scalar value is a simpler notion than the concept called a
 works well for many purposes. For example, any accented Roman letter
 can be represented as a scalar value, as can any common Chinese character.
 
-Although each Scheme character corresponds to an integer, the
+Although each Racket character corresponds to an integer, the
 character datatype is separate from numbers. The
-@scheme[char->integer] and @scheme[integer->char] procedures convert
+@racket[char->integer] and @racket[integer->char] procedures convert
 between scalar-value numbers and the corresponding character.
 
 A printable character normally prints as @litchar{#\} followed
 by the represented character. An unprintable character normally prints
 as @litchar{#\u} followed by the scalar value as hexadecimal
 number. A few characters are printed specially; for example, the space
-and linefeed characters print as @scheme[#\space] and
-@scheme[#\newline], respectively.
+and linefeed characters print as @racket[#\space] and
+@racket[#\newline], respectively.
 
 @refdetails/gory["parse-character"]{the syntax of characters}
 
@@ -32,12 +32,12 @@ and linefeed characters print as @scheme[#\space] and
 (integer->char 65)
 (char->integer #\A)
 #\u03BB
-(eval:alts @#,schemevalfont["#\\u03BB"] #\u03BB)
+(eval:alts @#,racketvalfont["#\\u03BB"] #\u03BB)
 (integer->char 17)
 (char->integer #\space)
 ]
 
-The @scheme[display] procedure directly writes a character to the
+The @racket[display] procedure directly writes a character to the
 current output port (see @secref["i/o"]), in contrast to the
 character-constant syntax used to print a character result.
 
@@ -46,7 +46,7 @@ character-constant syntax used to print a character result.
 (display #\A)
 ]
 
-Scheme provides several classification and conversion procedures on
+Racket provides several classification and conversion procedures on
 characters. Beware, however, that conversions on some Unicode
 characters work as a human would expect only when they are in a string
 (e.g., upcasing ``@elem["\uDF"]'' or downcasing ``@elem["\u03A3"]'').
@@ -59,10 +59,10 @@ characters work as a human would expect only when they are in a string
 (char-upcase #\uDF)
 ]
 
-The @scheme[char=?] procedure compares two or more characters, and
-@scheme[char-ci=?] compares characters ignoring case. The
-@scheme[eqv?] and @scheme[equal?] procedures behave the same as
-@scheme[char=?] on characters; use @scheme[char=?] when you want to
+The @racket[char=?] procedure compares two or more characters, and
+@racket[char-ci=?] compares characters ignoring case. The
+@racket[eqv?] and @racket[equal?] procedures behave the same as
+@racket[char=?] on characters; use @racket[char=?] when you want to
 more specifically declare that the values being compared are
 characters.
 
