@@ -27,7 +27,7 @@
 
 (module string-test mzscheme
   ;; Noel's Test Framework: (get your copy @ schematics.sourceforge.net)
-  (require schemeunit)
+  (require rktunit)
   (require srfi/13/string
            srfi/14/char-set
 	   )

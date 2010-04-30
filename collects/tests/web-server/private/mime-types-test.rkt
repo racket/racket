@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          (only-in mzlib/file make-temporary-file)
          web-server/http
          web-server/private/mime-types)

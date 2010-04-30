@@ -909,11 +909,24 @@ static void* GC_master_malloc(size_t size) {
   return ptr;
 }
 
+static void* GC_master_malloc_tagged(size_t size) {
+  void *ptr;
+#ifdef MZ_PRECISE_GC
+  void *original_gc;
+  original_gc = GC_switch_to_master_gc();
+#endif
+  ptr = scheme_malloc_small_tagged(size);
+#ifdef MZ_PRECISE_GC
+  GC_switch_back_from_master(original_gc);
+#endif
+  return ptr;
+}
+
 Scheme_Object *scheme_place_async_channel_create() {
   Scheme_Object **msgs;
   Scheme_Place_Async_Channel *ch;
 
-  ch = GC_master_malloc(sizeof(Scheme_Place_Async_Channel));
+  ch = GC_master_malloc_tagged(sizeof(Scheme_Place_Async_Channel));
   msgs = GC_master_malloc(sizeof(Scheme_Object*) * 8);
 
   ch->so.type = scheme_place_async_channel_type;
@@ -931,7 +944,7 @@ Scheme_Object *scheme_place_bi_channel_create() {
   Scheme_Object *tmp;
   Scheme_Place_Bi_Channel *ch;
 
-  ch = GC_master_malloc(sizeof(Scheme_Place_Bi_Channel));
+  ch = GC_master_malloc_tagged(sizeof(Scheme_Place_Bi_Channel));
   ch->so.type = scheme_place_bi_channel_type;
 
   tmp = scheme_place_async_channel_create();
@@ -944,7 +957,7 @@ Scheme_Object *scheme_place_bi_channel_create() {
 Scheme_Object *scheme_place_bi_peer_channel_create(Scheme_Object *orig) {
   Scheme_Place_Bi_Channel *ch;
 
-  ch = GC_master_malloc(sizeof(Scheme_Place_Bi_Channel));
+  ch = GC_master_malloc_tagged(sizeof(Scheme_Place_Bi_Channel));
   ch->so.type = scheme_place_bi_channel_type;
 
   ch->sendch = ((Scheme_Place_Bi_Channel *)orig)->recvch;

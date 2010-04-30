@@ -1,6 +1,6 @@
 (module searching-tests mzscheme
   
-  (require schemeunit)
+  (require rktunit)
   (require srfi/43/vector-lib)
   
   (provide searching-tests)

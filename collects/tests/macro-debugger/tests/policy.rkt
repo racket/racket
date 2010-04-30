@@ -1,5 +1,5 @@
 #lang scheme/base
-(require schemeunit)
+(require rktunit)
 (require macro-debugger/model/debug
          "../test-setup.ss")
 (provide policy-tests)

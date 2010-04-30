@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          "request-test.rkt"
          "cache-table-test.rkt"
          "response-test.rkt"

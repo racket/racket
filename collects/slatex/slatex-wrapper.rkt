@@ -9,7 +9,7 @@
   (provide/contract
    [slatex (string? . -> . boolean?)]
    [pdf-slatex (string? . -> . boolean?)]
-   [slatex/no-latex (string? . -> . boolean?)]
+   [slatex/no-latex (string? . -> . void?)]
    [latex (string? . -> . boolean?)]
    [pdf-latex (string? . -> . boolean?)]
    [filename->latex-filename (string? . -> . string?)])

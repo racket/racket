@@ -646,13 +646,13 @@
       (parameterize ([current-output-port sp]
                      [current-traced-metafunctions 'all])
         (term (f 1)))
-      (test (get-output-string sp) ">(f 1)\n<0\n"))
+      (test (get-output-string sp) ">`(f 1)\n<0\n"))
     
     (let ([sp (open-output-string)])
       (parameterize ([current-output-port sp]
                      [current-traced-metafunctions '(f)])
         (term (f 1)))
-      (test (get-output-string sp) ">(f 1)\n<0\n")))
+      (test (get-output-string sp) ">`(f 1)\n<0\n")))
   
   (let ()
     (define-language var-lang [(x y z w) variable])
@@ -1753,7 +1753,7 @@
            [c (make-coverage T)])
       (parameterize ([relation-coverage (list c)])
         (apply-reduction-relation T (term q))
-        (test (and (regexp-match #px"tl-test.ss:\\d+:\\d+" (caar (covered-cases c))) #t)
+        (test (and (regexp-match #px"tl-test.(?:.+):\\d+:\\d+" (caar (covered-cases c))) #t)
               #t))))
   
   (let* ([R (reduction-relation
@@ -1772,7 +1772,7 @@
                               second
                               (curry regexp-match #px".*:(\\d+):\\d+"))])
                 (< (line-no (car c)) (line-no (car d)))))]
-         [src-ok? (curry regexp-match? #px"tl-test.ss:\\d+:\\d+")]
+         [src-ok? (curry regexp-match? #px"tl-test.(?:.+):\\d+:\\d+")]
          [sorted-counts (λ (cc) (map cdr (sort (covered-cases cc) <)))])
     (define-metafunction empty-language
       [(f 1) 1]
@@ -1851,7 +1851,7 @@
     (test (capture-output (test-->> red 1 2) (test-results))
           "One test passed.\n")
     (test (capture-output (test-->> red 2 3) (test-results))
-          #rx"FAILED tl-test.ss:[0-9.]+\nexpected: 3\n  actual: 2\n1 test failed \\(out of 1 total\\).\n"))
+          #rx"FAILED tl-test.(?:.+):[0-9.]+\nexpected: 3\n  actual: 2\n1 test failed \\(out of 1 total\\).\n"))
     
   (let ()
     (define red-share (reduction-relation 
@@ -1870,7 +1870,7 @@
     (test (capture-output (test-->> red-cycle #:cycles-ok (term a)) (test-results))
           "One test passed.\n")
     (test (capture-output (test-->> red-cycle (term a)) (test-results))
-          #rx"FAILED tl-test.ss:[0-9.]+\nfound a cycle in the reduction graph\n1 test failed \\(out of 1 total\\).\n"))
+          #rx"FAILED tl-test.(?:.+):[0-9.]+\nfound a cycle in the reduction graph\n1 test failed \\(out of 1 total\\).\n"))
   
   (let ()
     (define-metafunction empty-language [(f any) ((any))])
@@ -1913,7 +1913,7 @@
     (test (capture-output (test--> R #:equiv mod2=? 7 1 0) (test-results))
           "One test passed.\n")
     (test (capture-output (test--> R #:equiv mod2=? 7 1) (test-results))
-          #rx"FAILED tl-test.ss:[0-9.]+\nexpected: 1\n  actual: 8\n  actual: 7\n1 test failed \\(out of 1 total\\).\n"))
+          #rx"FAILED tl-test.(?:.+):[0-9.]+\nexpected: 1\n  actual: 8\n  actual: 7\n1 test failed \\(out of 1 total\\).\n"))
   
   (let-syntax ([test-bad-equiv-arg
                 (λ (stx)

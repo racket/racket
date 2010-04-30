@@ -26,7 +26,7 @@
 ;; Commentary:
 
 (module and-let-test mzscheme
-  (require schemeunit)
+  (require rktunit)
   (require srfi/2/and-let)
   (provide and-let*-tests)
 

@@ -1126,16 +1126,17 @@ path/s is either such a string or a list of them.
 "collects/scheme/gui.rkt" drdr:command-line "mred-text -t ~s"
 "collects/scheme/match" responsible (samth)
 "collects/scheme/match.rkt" responsible (samth)
-"collects/schemeunit" responsible (noel ryanc)
-"collects/schemeunit/gui.rkt" responsible (ryanc) drdr:command-line "mred-text -t ~s"
-"collects/schemeunit/private/gui" responsible (ryanc)
-"collects/schemeunit/private/gui/config.rkt" drdr:command-line "mred-text -t ~s"
-"collects/schemeunit/private/gui/controller.rkt" drdr:command-line "mred-text -t ~s"
-"collects/schemeunit/private/gui/gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/schemeunit/private/gui/model2rml.rkt" drdr:command-line "mred-text -t ~s"
-"collects/schemeunit/private/gui/rml.rkt" drdr:command-line "mred-text -t ~s"
-"collects/schemeunit/private/gui/view.rkt" drdr:command-line "mred-text -t ~s"
-"collects/schemeunit/tool.rkt" responsible (ryanc) drdr:command-line "mred-text -t ~s"
+"collects/rktunit" responsible (jay noel ryanc)
+"collects/schemeunit" responsible (jay)
+"collects/rktunit/gui.rkt" responsible (ryanc) drdr:command-line "mred-text -t ~s"
+"collects/rktunit/private/gui" responsible (ryanc)
+"collects/rktunit/private/gui/config.rkt" drdr:command-line "mred-text -t ~s"
+"collects/rktunit/private/gui/controller.rkt" drdr:command-line "mred-text -t ~s"
+"collects/rktunit/private/gui/gui.rkt" drdr:command-line "mred-text -t ~s"
+"collects/rktunit/private/gui/model2rml.rkt" drdr:command-line "mred-text -t ~s"
+"collects/rktunit/private/gui/rml.rkt" drdr:command-line "mred-text -t ~s"
+"collects/rktunit/private/gui/view.rkt" drdr:command-line "mred-text -t ~s"
+"collects/rktunit/tool.rkt" responsible (ryanc) drdr:command-line "mred-text -t ~s"
 "collects/scribble/run.rkt" drdr:command-line "mzc ~s"
 "collects/scribble/tools/drscheme-buttons.rkt" drdr:command-line "mred-text ~s"
 "collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line "mred-text ~s" drdr:timeout 240
@@ -1582,7 +1583,7 @@ path/s is either such a string or a list of them.
 "collects/tests/planet/examples/dummy-module.rkt" drdr:command-line ""
 "collects/tests/plot/run-tests.rkt" drdr:command-line "mred-text -t ~s"
 "collects/tests/run-automated-tests.rkt" drdr:command-line "mzc -k ~s" drdr:timeout 600
-"collects/tests/schemeunit" responsible (noel)
+"collects/tests/rktunit" responsible (jay noel)
 "collects/tests/srfi/1/run-tests.rkt" drdr:command-line "mzscheme -f ~s"
 "collects/tests/srfi/40/run-tests.rkt" drdr:command-line "mzscheme -f ~s"
 "collects/tests/srfi/43/run-tests.rkt" drdr:command-line "mzscheme -f ~s"
@@ -1772,8 +1773,8 @@ path/s is either such a string or a list of them.
 "collects/reader" responsible (mflatt)
 "collects/rnrs" responsible (mflatt)
 "collects/s-exp" responsible (mflatt eli)
-"collects/logic" responsible (jay)
-"collects/tests/logic" responsible (jay)
+"collects/raclog" responsible (jay)
+"collects/tests/raclog" responsible (jay)
 "collects/scheme" responsible (mflatt sstrickl samth robby eli)
 "collects/scribble" responsible (mflatt eli)
 "collects/scribblings" responsible (mflatt eli robby mathias)

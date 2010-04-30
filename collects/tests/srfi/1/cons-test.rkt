@@ -34,7 +34,7 @@
 
 (module cons-test
   mzscheme
-  (require schemeunit)
+  (require rktunit)
   (require srfi/1/cons)
 
   (provide cons-tests)

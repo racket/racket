@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          net/url
          web-server/private/url-param)
 (provide url-param-tests)

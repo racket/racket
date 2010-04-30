@@ -2,7 +2,7 @@
 
 (provide all-contract-tests)
 
-(require schemeunit
+(require rktunit
 	 deinprogramm/define-record-procedures
 	 deinprogramm/contract/contract
 	 deinprogramm/contract/contract-syntax)

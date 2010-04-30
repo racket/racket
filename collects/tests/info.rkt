@@ -21,7 +21,7 @@
     "plot"
     "profj"
     "r6rs"
-    "schemeunit"
+    "rktunit"
     "srfi"
     "srpersist"
     "stepper"

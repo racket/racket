@@ -1,5 +1,5 @@
 #lang racket/base
-(require schemeunit
+(require rktunit
          mzlib/etc
          mzlib/list
          web-server/http

@@ -6,7 +6,7 @@
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match)
          (only-in srfi/13 string-contains)
-         schemeunit)
+         rktunit)
 
 (define-syntax (comp stx)
   (syntax-case stx ()
