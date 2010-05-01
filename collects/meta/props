@@ -523,7 +523,7 @@ path/s is either such a string or a list of them.
 "collects/browser/tool.rkt" drdr:command-line "mred-text -t ~s"
 "collects/combinator-parser" responsible (kathyg)
 "collects/compiler" responsible (mflatt)
-"collects/compiler/commands/c-ext.rkt" drdr:command-line ""
+"collects/compiler/commands/ctool.rkt" drdr:command-line ""
 "collects/compiler/commands/exe-dir.rkt" drdr:command-line ""
 "collects/compiler/commands/exe.rkt" drdr:command-line ""
 "collects/compiler/commands/pack.rkt" drdr:command-line ""
