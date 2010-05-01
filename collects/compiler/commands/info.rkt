@@ -7,4 +7,4 @@
     ("decompile" compiler/commands/decompile "decompile bytecode" #f)
     ("expand" compiler/commands/expand "macro-expand source" #f)
     ("distribute" compiler/commands/exe-dir "prepare executable(s) in a directory for distribution" #f)
-    ("c-ext" compiler/commands/c-ext "compile and link C-based extensions" #f)))
+    ("ctool" compiler/commands/ctool "compile and link C-based extensions" #f)))
