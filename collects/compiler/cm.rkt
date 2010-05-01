@@ -471,9 +471,9 @@
                 (trace-printf "newer version...")
                 (maybe-compile-zo #f #f mode path orig-path read-src-syntax up-to-date))]
              [(> path-time path-zo-time)
-              (lambda ()
-                (trace-printf "newer src...")
-                (maybe-compile-zo #f deps mode path orig-path read-src-syntax up-to-date))]
+              (trace-printf "newer src...")
+              ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
+              (maybe-compile-zo sha1-only? deps mode path orig-path read-src-syntax up-to-date)]
              [(ormap
                (lambda (p)
                  ;; (cons 'ext rel-path) => a non-module file (check date)
