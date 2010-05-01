@@ -1,6 +1,6 @@
 
 ;; Basic checks for the intermediate language. See also
-;;  beginner.ss
+;;  beginner.rkt
 
 (load-relative "loadtest.rkt")
 
@@ -9,26 +9,26 @@
 
 ;; Check export names:
 (require syntax/docprovide)
-(let ([docs (lookup-documentation '(lib "htdp-intermediate-lambda.ss" "lang") 'procedures)])
+(let ([docs (lookup-documentation '(lib "htdp-intermediate-lambda.rkt" "lang") 'procedures)])
   (for-each
    (lambda (row)
      (for-each
       (lambda (doc)
-	(let ([v (dynamic-require '(lib "htdp-intermediate-lambda.ss" "lang") (car doc))])
+	(let ([v (dynamic-require '(lib "htdp-intermediate-lambda.rkt" "lang") (car doc))])
 	  (when (procedure? v)
 	    (test (car doc) object-name v))))
       (cdr row)))
    docs))
 
 (define current-htdp-lang 'lang/htdp-intermediate-lambda)
-(load-relative "htdp-test.ss")
+(load-relative "htdp-test.rkt")
 
-(require (lib "htdp-intermediate-lambda.ss" "lang"))
+(require (lib "htdp-intermediate-lambda.rkt" "lang"))
 
-(load-relative "beg-adv.ss")
-(load-relative "beg-intml.ss")
-(load-relative "bega-adv.ss")
-(load-relative "intm-intml.ss")
-(load-relative "intm-adv.ss")
+(load-relative "beg-adv.rkt")
+(load-relative "beg-intml.rkt")
+(load-relative "bega-adv.rkt")
+(load-relative "intm-intml.rkt")
+(load-relative "intm-adv.rkt")
 
 (report-errs)

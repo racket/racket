@@ -1,8 +1,8 @@
 
 (require mzlib/etc mzlib/compat)
-(load-relative "listlib.ss")
-(load-relative "veclib.ss")
-(load-relative "tic-func.ss")
+(load-relative "listlib.rkt")
+(load-relative "veclib.rkt")
+(load-relative "tic-func.rkt")
 
 (let loop ()
   (collect-garbage)

@@ -6,9 +6,9 @@
 ;; each stage of the game. But it is constructed so that it can
 ;; print how to get to a winning terminal state. 
 
-;; It relies on list-library.ss. 
+;; It relies on list-library.rkt. 
 
-(load-relative "listlib.ss")
+(load-relative "listlib.rkt")
 
 ;; representations of fields, states, and collections of states
 (define null '())

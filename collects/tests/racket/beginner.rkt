@@ -53,7 +53,7 @@
 
 ;; Check that expansion doesn't introduce non-equal ids that
 ;;  claim to be "original" at the same place
-(let loop ([x (expand #'(module m (lib "htdp-beginner.ss" "lang")
+(let loop ([x (expand #'(module m (lib "htdp-beginner.rkt" "lang")
 			  (define (f x) x)))])
   (let ([orig-ids (let loop ([x x])
 		    (cond
@@ -82,14 +82,14 @@
 (require (only-in mzscheme exn:fail? exn:fail:contract?))
 
 (define current-htdp-lang 'lang/htdp-beginner)
-(load-relative "htdp-test.ss")
+(load-relative "htdp-test.rkt")
 
-(require (lib "htdp-beginner.ss" "lang"))
+(require (lib "htdp-beginner.rkt" "lang"))
 
-(load-relative "beg-adv.ss")
-(load-relative "beg-intml.ss")
-(load-relative "beg-intm.ss")
-(load-relative "beg-bega.ss")
+(load-relative "beg-adv.rkt")
+(load-relative "beg-intml.rkt")
+(load-relative "beg-intm.rkt")
+(load-relative "beg-bega.rkt")
 
 (htdp-syntax-test #'quote)
 (htdp-syntax-test #''1)

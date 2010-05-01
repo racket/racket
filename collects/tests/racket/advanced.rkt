@@ -9,12 +9,12 @@
 
 ;; Check export names:
 (require syntax/docprovide)
-(let ([docs (lookup-documentation '(lib "htdp-advanced.ss" "lang") 'procedures)])
+(let ([docs (lookup-documentation '(lib "htdp-advanced.rkt" "lang") 'procedures)])
   (for-each
    (lambda (row)
      (for-each
       (lambda (doc)
-	(let ([v (dynamic-require '(lib "htdp-advanced.ss" "lang") (car doc))])
+	(let ([v (dynamic-require '(lib "htdp-advanced.rkt" "lang") (car doc))])
 	  (when (and (procedure? v)
 		     (not (eq? v call/cc)))
 	    (test (car doc) object-name v))))
@@ -22,13 +22,13 @@
    docs))
 
 (define current-htdp-lang 'lang/htdp-advanced)
-(load-relative "htdp-test.ss")
+(load-relative "htdp-test.rkt")
 
-(require (lib "htdp-advanced.ss" "lang"))
+(require (lib "htdp-advanced.rkt" "lang"))
 
-(load-relative "beg-adv.ss")
-(load-relative "bega-adv.ss")
-(load-relative "intm-adv.ss")
+(load-relative "beg-adv.rkt")
+(load-relative "bega-adv.rkt")
+(load-relative "intm-adv.rkt")
 
 (define (f6 a) (a))
 (test (void) f6 void)
@@ -190,7 +190,7 @@
 (htdp-test 13 'loop (recur f ([f 13]) f))
 (htdp-test 14 'loop (let ([f 14]) (recur f ([f f]) f)))
 
-(load (build-path (collection-path "tests" "mzscheme") "shared-tests.ss"))
+(load (build-path (collection-path "tests" "racket") "shared-tests.rkt"))
 
 (htdp-test #t 'equal? (equal? (vector (list 10) 'apple) (vector (list 10) 'apple)))
 (htdp-test #t 'equal? (equal?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10 x)]) x)))
@@ -209,7 +209,7 @@
 (htdp-test #f 'equal~? (equal~?  (shared ([x (cons 10 x)]) x) (shared ([x (cons 10.2 x)]) x) 0.1))
 
 ;; Simulate set! in the repl
-(module my-advanced-module (lib "htdp-advanced.ss" "lang")
+(module my-advanced-module (lib "htdp-advanced.rkt" "lang")
   (define x 10)
   (define (f y) f)
   (define-struct s (x y)))

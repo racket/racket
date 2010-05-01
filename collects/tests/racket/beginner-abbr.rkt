@@ -20,14 +20,14 @@
                   exn:fail:contract?))
 
 (define current-htdp-lang 'lang/htdp-beginner-abbr)
-(load-relative "htdp-test.ss")
+(load-relative "htdp-test.rkt")
 
-(require (lib "htdp-beginner-abbr.ss" "lang"))
+(require (lib "htdp-beginner-abbr.rkt" "lang"))
 
-(load-relative "beg-adv.ss")
-(load-relative "beg-intml.ss")
-(load-relative "beg-intm.ss")
-(load-relative "beg-bega.ss")
-(load-relative "bega-adv.ss")
+(load-relative "beg-adv.rkt")
+(load-relative "beg-intml.rkt")
+(load-relative "beg-intm.rkt")
+(load-relative "beg-bega.rkt")
+(load-relative "bega-adv.rkt")
 
 (report-errs)

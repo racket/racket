@@ -11,7 +11,7 @@
 
 ;; It relies on list-library.ss. 
 
-(load-relative "listlib.ss")
+(load-relative "listlib.rkt")
 
 ;; representations of fields, states, and collections of states
 (define BLANK 0)

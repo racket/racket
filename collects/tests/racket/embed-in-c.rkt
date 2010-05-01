@@ -1,5 +1,6 @@
-;; Works for Linux, Mac OS X.
-;; Assumes 3m
+;; Works for Linux.
+;; Almost works for Mac OS X.
+;; Assumes 3m.
 
 (load-relative "loadtest.rkt")
 
@@ -8,7 +9,7 @@
 (require scheme/system
          setup/dirs)
 
-(define dir (collection-path "tests" "mzscheme"))
+(define dir (collection-path "tests" "racket"))
 (define lib-dir (find-lib-dir))
 
 (parameterize ([current-directory dir])
@@ -19,9 +20,9 @@
   (test #t system (format "cc -o embed-in-c embed-in-c.o -lm -ldl -pthread ~a"
                           (case (system-type 'link)
                             [(framework)
-                             (format "-F\"~a\" -framework PLT_MzScheme" lib-dir)]
+                             (format "-F\"~a\" -framework Racket" lib-dir)]
                             [(static shared)
-                             (format "-L\"~a\" -lmzscheme3m" lib-dir)]
+                             (format "-L\"~a\" -lracket3m" lib-dir)]
                             [else
                              (error "unsupported")])))
   
