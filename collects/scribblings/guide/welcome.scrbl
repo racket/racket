@@ -206,16 +206,16 @@ tempted to put just
   (substring str 4 7))
 ]
 
-into @filepath{extract.scm} and run @exec{racket} with
+into @filepath{extract.rktl} and run @exec{racket} with
 
 @interaction[
 #:eval piece-eval
-(eval:alts (load "extract.scm") (void))
+(eval:alts (load "extract.rktl") (void))
 (extract "the dog out")
 ]
 
 That will work, because @exec{racket} is willing to imitate a
-traditional Scheme environment, but we strongly recommend against using
+traditional Lisp environment, but we strongly recommend against using
 @racket[load] or writing programs outside of a module.
 
 Writing definitions outside of a module leads to bad error messages,

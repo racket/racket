@@ -76,7 +76,7 @@ by @racket[kind], which must be one of the following:
 
   @item{@|AllUnix|: @indexed-file{.racketrc}}
 
-  @item{Windows: @indexed-file{racketrc.rkts}}
+  @item{Windows: @indexed-file{racketrc.rktl}}
 
   ]}
 

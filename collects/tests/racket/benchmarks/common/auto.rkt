@@ -59,7 +59,7 @@ exec racket -qu "$0" ${1+"$@"}
     (with-output-to-file (format "~a.scm" bm)
       #:exists 'replace
       (lambda ()
-        (printf "(load \"r5rs-wrap.rkt\")\n(load \"~a.sch\")\n" bm)))
+        (printf "(load \"r5rs-wrap.rktl\")\n(load \"~a.sch\")\n" bm)))
     ;; To get compilation time:
     (parameterize ([current-namespace (make-base-empty-namespace)])
       (namespace-require 'r5rs)
@@ -399,21 +399,21 @@ exec racket -qu "$0" ${1+"$@"}
                         mutable-pair-progs))
      (make-impl 'chicken
                 void
-                (run-mk "mk-chicken.rkt")
+                (run-mk "mk-chicken.rktl")
                 run-exe
                 extract-chicken-times
                 clean-up-bin
                 '(scheme2 takr2))
      (make-impl 'bigloo
                 void
-                (run-mk "mk-bigloo.rkt")
+                (run-mk "mk-bigloo.rktl")
                 run-exe
                 extract-bigloo-times
                 clean-up-bin
                 '(cpstack takr2))
      (make-impl 'gambit
                 void
-                (run-mk "mk-gambit.rkt")
+                (run-mk "mk-gambit.rktl")
                 run-gambit-exe
                 extract-gambit-times
                 clean-up-o1

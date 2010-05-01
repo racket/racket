@@ -220,8 +220,8 @@ $(collectsdir)/scheme/private/kernstruct.rkt: $(srcdir)/src/makeexn
 	./racket@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.rkt
 
 
-$(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.rkt $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	./racket@CGC@ -cqu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rkt 
+$(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
+	./racket@CGC@ -cqu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
 $(srcdir)/src/mzmark.c: $(srcdir)/src/mzmarksrc.c $(srcdir)/src/mkmark.rkt
 	racket -cu $(srcdir)/src/mkmark.rkt < $(srcdir)/src/mzmarksrc.c > $(srcdir)/src/mzmark.c
 
