@@ -94,7 +94,8 @@
                   (let-values ([(base name dir) (split-path x)])
                     (cond
                       [(equal? (path->string name) "b.rkt")
-                       (file-or-directory-modify-seconds x)]
+                       (cons (file-or-directory-modify-seconds x)
+                             "")]
                       [else #f])))])
   (try '(("a.rkt" "(module a scheme/base (require \"b.rkt\"))" #f)
          ("b.rkt" "(module b scheme/base)" #f))
@@ -102,23 +103,26 @@
 
 ;; ----------------------------------------
 
-;; test `file-date-in-paths'
+;; test `file-stamp-in-paths'
 (test (file-or-directory-modify-seconds (build-path (collection-path "file") 
                                                     "compiled"
                                                     "gif_rkt.zo"))
-      file-date-in-collection
-      (build-path (collection-path "file") "gif.rkt"))
+      car
+      (file-stamp-in-collection
+       (build-path (collection-path "file") "gif.rkt")))
 ;; gl-info.rkt doesn't have a .rkt source:
 (test (file-or-directory-modify-seconds (build-path (collection-path "sgl") 
                                                     "compiled"
                                                     "gl-info_rkt.zo"))
-      file-date-in-collection
-      (build-path (collection-path "sgl") "gl-info.rkt"))
+      car
+      (file-stamp-in-collection
+       (build-path (collection-path "sgl") "gl-info.rkt")))
 ;; setup/main doesn't have a .zo:
 (test (file-or-directory-modify-seconds (build-path (collection-path "setup") 
                                                     "main.rkt"))
-      file-date-in-collection
-      (build-path (collection-path "setup") "main.rkt"))
+      car
+      (file-stamp-in-collection
+       (build-path (collection-path "setup") "main.rkt")))
 
 ;; ----------------------------------------
 
