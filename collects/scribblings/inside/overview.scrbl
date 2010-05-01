@@ -3,21 +3,31 @@
 
 @title[#:tag "overview"]{Overview}
 
+@section{``Scheme'' versus ``Racket''}
+
+The old name for Racket was ``PLT Scheme,'' and the core compiler and
+run-time system used to be called ``MzScheme.'' The old names are
+entrenched in Racket internals, to the point that most C bindings
+defined in this manual start with @cpp{scheme_}. They all should be
+renamed to start @cpp{racket_}.
+
+@; ----------------------------------------------------------------------
+
 @section{CGC versus 3m}
 
-Before mixing any C code with MzScheme, first decide whether to use
-the @bold{3m} variant of PLT Scheme, the @bold{CGC} variant of PLT
-Scheme, or both:
+Before mixing any C code with Racket, first decide whether to use the
+@bold{3m} variant of Racket, the @bold{CGC} variant of Racket, or
+both:
 
 @itemize[
 
-@item{@bold{@as-index{3m}} : the main variant of PLT Scheme, which
+@item{@bold{@as-index{3m}} : the main variant of Racket, which
   uses @defterm{precise} garbage collection instead of conservative
   garbage collection, and it may move objects in memory during a
   collection.}
 
-@item{@bold{@as-index{CGC}} : the original variant of PLT Scheme,
-  where memory management depends on a @defterm{conservative} garbage
+@item{@bold{@as-index{CGC}} : the original variant of Racket, where
+  memory management depends on a @defterm{conservative} garbage
   collector. The conservative garbage collector can automatically find
   references to managed values from C local variables and (on some
   platforms) static variables.}
@@ -29,9 +39,9 @@ At the C level, working with CGC can be much easier than working with
 
 @; ----------------------------------------------------------------------
 
-@section{Writing MzScheme Extensions}
+@section{Writing Racket Extensions}
 
-@section-index["extending MzScheme"]
+@section-index["extending Racket"]
 
 The process of creating an extension for 3m or CGC is essentially the
 same, but the process for 3m is most easily understood as a variant of
@@ -40,41 +50,41 @@ the process for CGC.
 @subsection{CGC Extensions}
 
 
-To write a C/C++-based extension for PLT Scheme CGC, follow these
+To write a C/C++-based extension for Racket CGC, follow these
 steps:
 
 @itemize[
 
- @item{@index['("header files")]{For} each C/C++ file that uses PLT
- Scheme library functions, @cpp{#include} the file
+ @item{@index['("header files")]{For} each C/C++ file that uses
+ Racket library functions, @cpp{#include} the file
  @as-index{@filepath{escheme.h}}.
 
- This file is distributed with the PLT software in an
- @filepath{include} directory, but if @|mzc| is used to compile, this
- path is found automatically.}
+ This file is distributed with the Racket software in an
+ @filepath{include} directory, but if @|mzc| is used to
+ compile, this path is found automatically.}
 
 
  @item{Define the C function @cppi{scheme_initialize}, which takes a
  @cpp{Scheme_Env*} namespace (see @secref["im:env"]) and returns a
- @cpp{Scheme_Object*} Scheme value.
+ @cpp{Scheme_Object*} Racket value.
  
  This initialization function can install new global primitive
  procedures or other values into the namespace, or it can simply
- return a Scheme value. The initialization function is called when the
- extension is loaded with @scheme[load-extension] (the first time);
+ return a Racket value. The initialization function is called when the
+ extension is loaded with @racket[load-extension] (the first time);
  the return value from @cpp{scheme_initialize} is used as the return
- value for @scheme[load-extension]. The namespace provided to
+ value for @racket[load-extension]. The namespace provided to
  @cpp{scheme_initialize} is the current namespace when
- @scheme[load-extension] is called.}
+ @racket[load-extension] is called.}
 
 
  @item{Define the C function @cppi{scheme_reload}, which has the same
  arguments and return type as @cpp{scheme_initialize}.
 
- This function is called if @scheme[load-extension] is called a second
+ This function is called if @racket[load-extension] is called a second
  time (or more times) for an extension. Like @cpp{scheme_initialize},
  the return value from this function is the return value for
- @scheme[load-extension].}
+ @racket[load-extension].}
 
 
  @item{Define the C function @cppi{scheme_module_name}, which takes
@@ -84,7 +94,7 @@ steps:
  The function should return a symbol when the effect of calling
  @cpp{scheme_initialize} and @cpp{scheme_reload} is only to declare
  a module with the returned name. This function is called when the
- extension is loaded to satisfy a @scheme[require] declaration.
+ extension is loaded to satisfy a @racket[require] declaration.
 
  The @cpp{scheme_module_name} function may be called before
  @cpp{scheme_initialize} and @cpp{scheme_reload}, after those
@@ -95,7 +105,7 @@ steps:
  @item{Compile the extension C/C++ files to create platform-specific
  object files.
 
- The @as-index{@|mzc|} compiler, which is distributed with PLT Scheme,
+ The @as-index{@|mzc|} compiler, which is distributed with Racket,
  compiles plain C files when the @as-index{@DFlag{cc}} flag is
  specified. More precisely, @|mzc| does not compile the files itself,
  but it locates a C compiler on the system and launches it with the
@@ -104,7 +114,7 @@ steps:
  compiler or @exec{gcc} in the path, or a Mac OS X system with Apple's
  developer tools installed, then using @|mzc| is typically easier than
  working with the C compiler directly. Use the @as-index{@DFlag{cgc}}
- flag to indicate that the build is for use with PLT Scheme CGC.}
+ flag to indicate that the build is for use with Racket CGC.}
 
 
  @item{Link the extension C/C++ files with
@@ -115,50 +125,50 @@ steps:
 
  The @filepath{mzdyn} object file is distributed in the installation's
  @filepath{lib} directory. For Windows, the object file is in a
- compiler-specific sub-directory of @filepath{plt\lib}.
+ compiler-specific sub-directory of @filepath{racket\lib}.
 
  The @|mzc| compiler links object files into an extension when the
  @as-index{@DFlag{ld}} flag is specified, automatically locating
  @filepath{mzdyn}. Again, use the @DFlag{cgc} flag with @|mzc|.}
 
- @item{Load the shared object within Scheme using
- @scheme[(load-extension _path)], where @scheme[_path] is the name of
+ @item{Load the shared object within Racket using
+ @racket[(load-extension _path)], where @racket[_path] is the name of
  the extension file generated in the previous step.
 
  Alternately, if the extension defines a module (i.e.,
  @cpp{scheme_module_name} returns a symbol), then place the shared
  object in a special directory with a special name, so that it is
- detected by the module loader when @scheme[require] is used. The
+ detected by the module loader when @racket[require] is used. The
  special directory is a platform-specific path that can be obtained by
- evaluating @scheme[(build-path "compiled" "native"
- (system-library-subpath))]; see @scheme[load/use-compiled] for more
+ evaluating @racket[(build-path "compiled" "native"
+ (system-library-subpath))]; see @racket[load/use-compiled] for more
  information.  For example, if the shared object's name is
- @filepath{example_ss.dll}, then @scheme[(require "example.ss")] will
- be redirected to @filepath{example_ss.dll} if the latter is placed in
- the sub-directory @scheme[(build-path "compiled" "native"
- (system-library-subpath))] and if @filepath{example.ss} does not
+ @filepath{example_rkt.dll}, then @racket[(require "example.rkt")] will
+ be redirected to @filepath{example_rkt.dll} if the latter is placed in
+ the sub-directory @racket[(build-path "compiled" "native"
+ (system-library-subpath))] and if @filepath{example.rkt} does not
  exist or has an earlier timestamp.
 
- Note that @scheme[(load-extension _path)] within a @scheme[module]
+ Note that @racket[(load-extension _path)] within a @racket[module]
  does @italic{not} introduce the extension's definitions into the
- module, because @scheme[load-extension] is a run-time operation. To
+ module, because @racket[load-extension] is a run-time operation. To
  introduce an extension's bindings into a module, make sure that the
  extension defines a module, put the extension in the
  platform-specific location as described above, and use
- @scheme[require].}
+ @racket[require].}
 
 ]
 
-@index['("allocation")]{@bold{IMPORTANT:}} With PLT Scheme CGC, Scheme
+@index['("allocation")]{@bold{IMPORTANT:}} With Racket CGC, Racket
 values are garbage collected using a conservative garbage collector,
-so pointers to Scheme objects can be kept in registers, stack
+so pointers to Racket objects can be kept in registers, stack
 variables, or structures allocated with @cppi{scheme_malloc}. However,
 static variables that contain pointers to collectable memory must be
 registered using @cppi{scheme_register_extension_global} (see
 @secref["im:memoryalloc"]).
 
 As an example, the following C code defines an extension that returns
-@scheme["hello world"] when it is loaded:
+@racket["hello world"] when it is loaded:
 
 @verbatim[#:indent 2]{
  #include "escheme.h"
@@ -176,18 +186,18 @@ As an example, the following C code defines an extension that returns
 Assuming that this code is in the file @filepath{hw.c}, the extension
 is compiled under Unix with the following two commands:
 
-@commandline{mzc --cgc --cc hw.c}
-@commandline{mzc --cgc --ld hw.so hw.o}
+@commandline{raco ctool --cgc --cc hw.c}
+@commandline{raco ctool --cgc --ld hw.so hw.o}
 
 (Note that the @DFlag{cgc}, @DFlag{cc}, and @DFlag{ld} flags are each
 prefixed by two dashes, not one.)
 
-The @filepath{collects/mzscheme/examples} directory in the PLT
+The @filepath{collects/mzscheme/examples} directory in the Racket
 distribution contains additional examples.
 
 @subsection{3m Extensions}
 
-To build an extension to work with PLT Scheme 3m, the CGC instructions
+To build an extension to work with Racket 3m, the CGC instructions
 must be extended as follows:
 
 @itemize[
@@ -213,12 +223,12 @@ must be extended as follows:
 For a relatively simple extension @filepath{hw.c}, the extension is
 compiled under Unix for 3m with the following three commands:
 
-@commandline{mzc --xform hw.c}
-@commandline{mzc --3m --cc hw.3m.c}
-@commandline{mzc --3m --ld hw.so hw.o}
+@commandline{raco ctool --xform hw.c}
+@commandline{raco ctool --3m --cc hw.3m.c}
+@commandline{raco ctool --3m --ld hw.so hw.o}
 
 Some examples in @filepath{collects/mzscheme/examples} work with
-MzScheme3m in this way. A few examples are manually instrumented, in
+Racket 3m in this way. A few examples are manually instrumented, in
 which case the @DFlag{xform} step should be skipped.
 
 @subsection{Declaring a Module in an Extension}
@@ -228,7 +238,7 @@ To create an extension that behaves as a module, return a symbol from
 @cpp{scheme_rename} declare a module using @cpp{scheme_primitive_module}.
 
 For example, the following extension implements a module named
-@scheme[hello] that exports a binding @scheme[greeting]:
+@racket[hello] that exports a binding @racket[greeting]:
 
 @verbatim[#:indent 2]{
   #include "escheme.h"
@@ -253,96 +263,96 @@ For example, the following extension implements a module named
   }
 }
 
-This extension could be compiled for 3m on Mac OS X for i386, for
+This extension could be compiled for 3m on i386 Linux, for
 example, using the following sequence of @exec{mzc} commands:
 
-@commandline{mzc --xform hi.c}
-@commandline{mzc --3m --cc hi.3m.c}
-@commandline{mkdir -p compiled/native/i386-macosx/3m}
-@commandline{mzc --3m --ld compiled/native/i386-macosx/3m/hi_ss.dylib hi_3m.o}
+@commandline{raco ctool --xform hi.c}
+@commandline{raco ctool --3m --cc hi.3m.c}
+@commandline{mkdir -p compiled/native/i386-linux/3m}
+@commandline{raco ctool --3m --ld compiled/native/i386-linux/3m/hi_rkt.so hi_3m.o}
 
 The resulting module can be loaded with
 
-@schemeblock[(require "hi.ss")]
+@racketblock[(require "hi.rkt")]
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "embedding"]{Embedding MzScheme into a Program}
+@section[#:tag "embedding"]{Embedding Racket into a Program}
 
-@section-index["embedding MzScheme"]
+@section-index["embedding Racket"]
 
-Like creating extensions, the embedding process for PLT Scheme CGC or
-PLT Scheme 3m is essentially the same, but the process for PLT Scheme
+Like creating extensions, the embedding process for Racket CGC or
+Racket 3m is essentially the same, but the process for Racket
 3m is most easily understood as a variant of the process for
-PLT Scheme CGC.
+Racket CGC.
 
 @subsection{CGC Embedding}
 
-To embed PLT Scheme CGC in a program, follow these steps:
+To embed Racket CGC in a program, follow these steps:
 
 @itemize[
 
- @item{Locate or build the PLT Scheme CGC libraries. Since the
+ @item{Locate or build the Racket CGC libraries. Since the
   standard distribution provides 3m libraries, only, you will most
   likely have to build from source.
 
-  Under Unix, the libraries are @as-index{@filepath{libmzscheme.a}}
+  Under Unix, the libraries are @as-index{@filepath{libracket.a}}
   and @as-index{@filepath{libmzgc.a}} (or
-  @as-index{@filepath{libmzscheme.so}} and
+  @as-index{@filepath{libracket.so}} and
   @as-index{@filepath{libmzgc.so}} for a dynamic-library build, with
-  @as-index{@filepath{libmzscheme.la}} and
+  @as-index{@filepath{libracket.la}} and
   @as-index{@filepath{libmzgc.la}} files for use with
   @exec{libtool}). Building from source and installing places the
   libraries into the installation's @filepath{lib} directory. Be sure
   to build the CGC variant, since the default is 3m.
 
   Under Windows, stub libraries for use with Microsoft tools are
-  @filepath{libmzsch@italic{x}.lib} and
+  @filepath{libracket@italic{x}.lib} and
   @filepath{libmzgc@italic{x}.lib} (where @italic{x} represents the
   version number) are in a compiler-specific directory in
-  @filepath{plt\lib}. These libraries identify the bindings that are
-  provided by @filepath{libmzsch@italic{x}.dll} and
+  @filepath{racket\lib}. These libraries identify the bindings that are
+  provided by @filepath{libracket@italic{x}.dll} and
   @filepath{libmzgc@italic{x}.dll} --- which are typically installed
-  in @filepath{plt\lib}. When linking with Cygwin, link to
-  @filepath{libmzsch@italic{x}.dll} and
+  in @filepath{racket\lib}. When linking with Cygwin, link to
+  @filepath{libracket@italic{x}.dll} and
   @filepath{libmzgc@italic{x}.dll} directly.  At run time, either
-  @filepath{libmzsch@italic{x}.dll} and
+  @filepath{libracket@italic{x}.dll} and
   @filepath{libmzgc@italic{x}.dll} must be moved to a location in the
   standard DLL search path, or your embedding application must
   ``delayload'' link the DLLs and explicitly load them before
-  use. (@filepath{MzScheme.exe} and @filepath{MrEd.exe} use the latter
+  use. (@filepath{Racket.exe} and @filepath{MrEd.exe} use the latter
   strategy.)
 
   Under Mac OS X, dynamic libraries are provided by the
-  @filepath{PLT_MzScheme} framework, which is typically installed in
+  @filepath{Racket} framework, which is typically installed in
   @filepath{lib} sub-directory of the installation. Supply
-  @exec{-framework PLT_MzScheme} to @exec{gcc} when linking, along
+  @exec{-framework Racket} to @exec{gcc} when linking, along
   with @exec{-F} and a path to the @filepath{lib} directory. Beware
   that CGC and 3m libraries are installed as different versions within
   a single framework, and installation marks one version or the other
   as the default (by setting symbolic links); install only CGC to
   simplify accessing the CGC version within the framework.  At run
-  time, either @filepath{PLT_MzScheme.framework} must be moved to a
+  time, either @filepath{Racket.framework} must be moved to a
   location in the standard framework search path, or your embedding
   executable must provide a specific path to the framework (possibly
   an executable-relative path using the Mach-O @tt["@executable_path"]
   prefix).}
 
- @item{For each C/C++ file that uses MzScheme library functions,
+ @item{For each C/C++ file that uses Racket library functions,
   @cpp{#include} the file @as-index{@filepath{scheme.h}}.
 
   The C preprocessor symbol @cppi{SCHEME_DIRECT_EMBEDDED} is defined
   as @cpp{1} when @filepath{scheme.h} is @cpp{#include}d, or as
   @cpp{0} when @filepath{escheme.h} is @cpp{#include}d.
 
-  The @filepath{scheme.h} file is distributed with the PLT software in
+  The @filepath{scheme.h} file is distributed with the Racket software in
   the installation's @filepath{include} directory. Building and
   installing from source also places this file in the installation's
   @filepath{include} directory.}
 
  @item{Start your main program through the @cpp{scheme_main_setup} (or
   @cpp{scheme_main_stack_setup}) trampoline, and put all uses of
-  MzScheme functions inside the function passed to
+  Racket functions inside the function passed to
   @cpp{scheme_main_setup}. The @cpp{scheme_main_setup} function
   registers the current C stack location with the memory manager. It
   also creates the initial namespace @cpp{Scheme_Env*} by calling
@@ -353,11 +363,11 @@ To embed PLT Scheme CGC in a program, follow these steps:
 
  @item{Configure the namespace by adding module declarations. The
   initial namespace contains declarations only for a few primitive
-  modules, such as @scheme['#%kernel], and no bindings are imported
+  modules, such as @racket['#%kernel], and no bindings are imported
   into the top-level environment.
 
-  To embed a module like @schememodname[scheme/base] (along with all
-  its dependencies), use @exec{mzc --c-mods}, which generates a C file
+  To embed a module like @racketmodname[racket/base] (along with all
+  its dependencies), use @exec{raco ctool --c-mods}, which generates a C file
   that contains modules in bytecode form as encapsulated in a static
   array. The generated C file defines a @cppi{declare_modules}
   function that takes a @cpp{Scheme_Env*}, installs the modules into
@@ -368,7 +378,7 @@ To embed PLT Scheme CGC in a program, follow these steps:
   @cpp{scheme_init_collection_paths} to configure and install a path
   for finding modules at run time.}
 
- @item{Access Scheme through @cppi{scheme_dynamic_require},
+ @item{Access Racket through @cppi{scheme_dynamic_require},
   @cppi{scheme_load}, @cppi{scheme_eval}, and/or other functions
   described in this manual.
 
@@ -379,13 +389,13 @@ To embed PLT Scheme CGC in a program, follow these steps:
   certain privileged operations, such as installing a @|PLaneT|
   package.}
 
- @item{Compile the program and link it with the MzScheme libraries.}
+ @item{Compile the program and link it with the Racket libraries.}
 
 ]
 
-@index['("allocation")]{With} PLT Scheme CGC, Scheme values are
+@index['("allocation")]{With} Racket CGC, Racket values are
 garbage collected using a conservative garbage collector, so pointers
-to Scheme objects can be kept in registers, stack variables, or
+to Racket objects can be kept in registers, stack variables, or
 structures allocated with @cppi{scheme_malloc}. In an embedding
 application on some platforms, static variables are also automatically
 registered as roots for garbage collection (but see notes below
@@ -393,12 +403,12 @@ specific to Mac OS X and Windows).
 
 For example, the following is a simple embedding program which
 evaluates all expressions provided on the command line and displays
-the results, then runs a @scheme[read]-@scheme[eval]-@scheme[print]
+the results, then runs a @racket[read]-@racket[eval]-@racket[print]
 loop. Run
 
-@commandline{mzc --c-mods base.c ++lib scheme/base}
+@commandline{raco ctool --c-mods base.c ++lib racket/base}
 
-to generate @filepath{base.c}, which encapsulates @scheme[scheme/base]
+to generate @filepath{base.c}, which encapsulates @racket[racket/base]
 and all of its transitive imports (so that they need not be found
 separately a run time).
 
@@ -416,7 +426,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
   /* Declare embedded modules in "base.c": */
   declare_modules(e);
 
-  scheme_namespace_require(scheme_intern_symbol("scheme/base"));
+  scheme_namespace_require(scheme_intern_symbol("racket/base"));
 
   curout = scheme_get_param(scheme_current_config(), 
                             MZCONFIG_OUTPUT_PORT);
@@ -433,7 +443,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
       scheme_display(v, curout);
       scheme_display(scheme_make_char('\n'), curout);
       /* read-eval-print loop, uses initial Scheme_Env: */
-      a[0] = scheme_intern_symbol("scheme/base");
+      a[0] = scheme_intern_symbol("racket/base");
       a[1] = scheme_intern_symbol("read-eval-print-loop");
       scheme_apply(scheme_dynamic_require(2, a), 0, NULL);
       scheme_current_thread->error_buf = save;
@@ -448,7 +458,7 @@ int main(int argc, char *argv[])
 }
 }
 
-Under Mac OS X, or under Windows when MzScheme is compiled to a DLL
+Under Mac OS X, or under Windows when Racket is compiled to a DLL
 using Cygwin, the garbage collector cannot find static variables
 automatically. In that case, @cppi{scheme_main_setup} must be called with a
 non-zero first argument.
@@ -467,7 +477,7 @@ pointer. For example, if @cpp{curout} above is made @cpp{static}, then
 @cpp{MZ_REGISTER_STATIC(curout)} should be inserted before the call to
 @cpp{scheme_get_param}.
 
-When building an embedded MzSchemeCGC to use SenoraGC (SGC) instead of
+When building an embedded Racket CGC to use SenoraGC (SGC) instead of
 the default collector, @cpp{scheme_main_setup} must be called with a
 non-zero first argument.  See @secref["im:memoryalloc"] for more
 information.
@@ -475,7 +485,7 @@ information.
 
 @subsection{3m Embedding}
 
-MzScheme3m can be embedded mostly the same as MzScheme, as long as the
+Racket 3m can be embedded mostly the same as Racket, as long as the
 embedding program cooperates with the precise garbage collector as
 described in @secref["im:3m"].
 
@@ -489,31 +499,31 @@ In addition, some library details are different:
 @itemize[
 
  @item{Under Unix, the library is just
-  @as-index{@filepath{libmzscheme3m.a}} (or
-  @as-index{@filepath{libmzscheme3m.so}} for a dynamic-library build,
-  with @as-index{@filepath{libmzscheme3m.la}} for use with
+  @as-index{@filepath{libracket3m.a}} (or
+  @as-index{@filepath{libracket3m.so}} for a dynamic-library build,
+  with @as-index{@filepath{libracket3m.la}} for use with
   @exec{libtool}). There is no separate library for 3m analogous to
   CGC's @filepath{libmzgc.a}.}
 
  @item{Under Windows, the stub library for use with Microsoft tools is
-  @filepath{libmzsch3m@italic{x}.lib} (where @italic{x} represents the
+  @filepath{libracket3m@italic{x}.lib} (where @italic{x} represents the
   version number). This library identifies the bindings that are
-  provided by @filepath{libmzsch3m@italic{x}.dll}.  There is no
+  provided by @filepath{libracket3m@italic{x}.dll}.  There is no
   separate library for 3m analogous to CGC's
   @filepath{libmzgc@italic{x}.lib}.}
 
   @item{Under Mac OS X, 3m dynamic libraries are provided by the
-  @filepath{PLT_MzScheme} framework, just as for CGC, but as a version
+  @filepath{Racket} framework, just as for CGC, but as a version
   suffixed with @filepath{_3m}.}
 
 ]
 
-For MzScheme3m, an embedding application must call @cpp{scheme_main_setup}
+For Racket 3m, an embedding application must call @cpp{scheme_main_setup}
 with a non-zero first argument.
 
 The simple embedding program from the previous section can be
-processed by @exec{mzc --xform}, then compiled and linked with
-MzScheme3m.  Alternately, the source code can be extended to work with
+processed by @exec{raco ctool --xform}, then compiled and linked with
+Racket 3m.  Alternately, the source code can be extended to work with
 either CGC or 3m depending on whether @cpp{MZ_PRECISE_GC} is defined
 on the compiler's command line:
 
@@ -541,7 +551,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
 
   declare_modules(e);
 
-  v = scheme_intern_symbol("scheme/base");
+  v = scheme_intern_symbol("racket/base");
   scheme_namespace_require(v);
 
   config = scheme_current_config();
@@ -559,7 +569,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
       v = scheme_make_char('\n');
       scheme_display(v, curout);
       /* read-eval-print loop, uses initial Scheme_Env: */
-      a[0] = scheme_intern_symbol("scheme/base");
+      a[0] = scheme_intern_symbol("racket/base");
       a[1] = scheme_intern_symbol("read-eval-print-loop");
       v = scheme_dynamic_require(2, a);
       scheme_apply(v, 0, NULL);
@@ -586,22 +596,22 @@ and when all temporary values are put into variables.
 
 @; ----------------------------------------------------------------------
 
-@section{MzScheme and Threads}
+@section{Racket and Threads}
 
-MzScheme implements threads for Scheme programs without aid from the
-operating system, so that MzScheme threads are cooperative from the
-perspective of C code. Under Unix, stand-alone MzScheme uses a single
+Racket implements threads for Racket programs without aid from the
+operating system, so that Racket threads are cooperative from the
+perspective of C code. Under Unix, stand-alone Racket uses a single
 OS-implemented thread. Under Windows and Mac OS X, stand-alone
-MzScheme uses a few private OS-implemented threads for background
+Racket uses a few private OS-implemented threads for background
 tasks, but these OS-implemented threads are never exposed by the
-MzScheme API.
+Racket API.
 
-In an embedding application, MzScheme can co-exist with additional
+In an embedding application, Racket can co-exist with additional
 OS-implemented threads, but the additional OS threads must not call
 any @cpp{scheme_} function.  Only the OS thread that originally calls
 @cpp{scheme_basic_env} can call @cpp{scheme_} functions. (This
 restriction is stronger than saying all calls must be serialized
-across threads. MzScheme relies on properties of specific threads to
+across threads. Racket relies on properties of specific threads to
 avoid stack overflow and garbage collection.) When
 @cpp{scheme_basic_env} is called a second time to reset the
 interpreter, it can be called in an OS thread that is different from
@@ -609,19 +619,19 @@ the original call to @cpp{scheme_basic_env}. Thereafter, all calls to
 @cpp{scheme_} functions must originate from the new thread.
 
 See @secref["threads"] for more information about threads, including
-the possible effects of MzScheme's thread implementation on extension
+the possible effects of Racket's thread implementation on extension
 and embedding C code.
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "im:unicode"]{MzScheme, Unicode, Characters, and Strings}
+@section[#:tag "im:unicode"]{Racket, Unicode, Characters, and Strings}
 
-A character in MzScheme is a Unicode code point. In C, a character
+A character in Racket is a Unicode code point. In C, a character
 value has type @cppi{mzchar}, which is an alias for @cpp{unsigned} ---
-which is, in turn, 4 bytes for a properly compiled MzScheme. Thus, a
+which is, in turn, 4 bytes for a properly compiled Racket. Thus, a
 @cpp{mzchar*} string is effectively a UCS-4 string.
 
-Only a few MzScheme functions use @cpp{mzchar*}. Instead, most
+Only a few Racket functions use @cpp{mzchar*}. Instead, most
 functions accept @cpp{char*} strings. When such byte strings are to be
 used as a character strings, they are interpreted as UTF-8
 encodings. A plain ASCII string is always acceptable in such cases,
@@ -633,7 +643,7 @@ See also @secref["im:strings"] and @secref["im:encodings"].
 
 @section[#:tag "im:intsize"]{Integers}
 
-MzScheme expects to be compiled in a mode where @cppi{short} is a
+Racket expects to be compiled in a mode where @cppi{short} is a
 16-bit integer, @cppi{int} is a 32-bit integer, and @cppi{long} has
 the same number of bits as @cpp{void*}. The @cppi{mzlonglong} type has
 64 bits for compilers that support a 64-bit integer type, otherwise it

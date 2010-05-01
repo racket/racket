@@ -5,10 +5,10 @@
 @title[#:tag "threads"]{Threads}
 
 The initializer function @cppi{scheme_basic_env} creates the main
-Scheme thread; all other threads are created through calls to
+Racket thread; all other threads are created through calls to
 @cppi{scheme_thread}.
 
-Information about each internal Scheme thread is kept in a
+Information about each internal Racket thread is kept in a
 @cppi{Scheme_Thread} structure. A pointer to the current thread's
 structure is available as @cppi{scheme_current_thread}.  A
 @cpp{Scheme_Thread} structure includes the following fields:
@@ -43,7 +43,7 @@ The last thread in the list is always the main thread.
 
 @section{Integration with Threads}
 
-Scheme's threads can break external C code under two circumstances:
+Racket's threads can break external C code under two circumstances:
 
 @itemize[
 
@@ -53,18 +53,18 @@ Scheme's threads can break external C code under two circumstances:
  pointer in the global variable, it may point to data that is not
  currently on the stack.}
 
- @item{@italic{C functions that can invoke Scheme (and also be invoked
- by Scheme) depend on strict function-call nesting.} For example,
+ @item{@italic{C functions that can invoke Racket (and also be invoked
+ by Racket) depend on strict function-call nesting.} For example,
  suppose a function F uses an internal stack, pushing items on to the
  stack on entry and popping the same items on exit. Suppose also that
- F invokes Scheme to evaluate an expression.  If the evaluation of
+ F invokes Racket to evaluate an expression.  If the evaluation of
  this expression invokes F again in a new thread, but then returns to
  the first thread before completing the second F, then F's internal
  stack will be corrupted.}
 
 ]
 
-If either of these circumstances occurs, Scheme will probably crash.
+If either of these circumstances occurs, Racket will probably crash.
 
 
 @; ----------------------------------------------------------------------
@@ -72,8 +72,8 @@ If either of these circumstances occurs, Scheme will probably crash.
 @section[#:tag "usefuel"]{Allowing Thread Switches}
 
 C code that performs substantial or unbounded work should occasionally
-call @cppi{SCHEME_USE_FUEL}---actually a macro---which allows Scheme
-to swap in another Scheme thread to run, and to check for breaks on
+call @cppi{SCHEME_USE_FUEL}---actually a macro---which allows Racket
+to swap in another Racket thread to run, and to check for breaks on
 the current thread.  In particular, if breaks are enabled, then
 @cpp{SCHEME_USE_FUEL} may trigger an exception.
 
@@ -110,18 +110,18 @@ expression.
 @section[#:tag "threadblock"]{Blocking the Current Thread}
 
 Embedding or extension code sometimes needs to block, but blocking
-should allow other Scheme threads to execute. To allow other threads
+should allow other Racket threads to execute. To allow other threads
 to run, block using @cppi{scheme_block_until}.  This procedure takes
 two functions: a polling function that tests whether the blocking
 operation can be completed, and a prepare-to-sleep function that sets
-bits in @cpp{fd_set}s when Scheme decides to sleep (because all Scheme
+bits in @cpp{fd_set}s when Racket decides to sleep (because all Racket
 threads are blocked). Under Windows, an ``@cpp{fd_set}'' can also
 accommodate OS-level semaphores or other handles via
 @cpp{scheme_add_fd_handle}.
 
 Since the functions passed to @cppi{scheme_block_until} are called by
-the Scheme thread scheduler, they must never raise exceptions, call
-@cpp{scheme_apply}, or trigger the evaluation of Scheme code in any
+the Racket thread scheduler, they must never raise exceptions, call
+@cpp{scheme_apply}, or trigger the evaluation of Racket code in any
 way. The @cpp{scheme_block_until} function itself may call the current
 exception handler, however, in reaction to a break (if breaks are
 enabled).
@@ -133,8 +133,8 @@ polling and sleeping functions with @cppi{scheme_add_evt}, or register
 a semaphore accessor with @cppi{scheme_add_evt_through_sema}.
 
 The @cppi{scheme_signal_received} function can be called to wake up
-Scheme when it is sleeping. In particular, calling
-@cppi{scheme_signal_received} ensures that Scheme will poll all
+Racket when it is sleeping. In particular, calling
+@cppi{scheme_signal_received} ensures that Racket will poll all
 blocking synchronizations soon afterward. Furthermore,
 @cpp{scheme_signal_received} can be called from any OS-level thread.
 Thus, when no adequate prepare-to-sleep function can be implemented
@@ -144,17 +144,17 @@ changes will ensure that a poll is issued.
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "threadtime"]{Threads in Embedded Scheme with Event Loops}
+@section[#:tag "threadtime"]{Threads in Embedded Racket with Event Loops}
 
-When Scheme is embedded in an application with an event-based model
-(i.e., the execution of Scheme code in the main thread is repeatedly
+When Racket is embedded in an application with an event-based model
+(i.e., the execution of Racket code in the main thread is repeatedly
 triggered by external events until the application exits) special
 hooks must be set to ensure that non-main threads execute
 correctly. For example, during the execution in the main thread, a new
 thread may be created; the new thread may still be running when the
 main thread returns to the event loop, and it may be arbitrarily long
 before the main thread continues from the event loop. Under such
-circumstances, the embedding program must explicitly allow Scheme to
+circumstances, the embedding program must explicitly allow Racket to
 execute the non-main threads; this can be done by periodically calling
 the function @cppi{scheme_check_threads}.
 
@@ -167,11 +167,11 @@ when thread-checking becomes necessary, and then with 0 when thread
 checking is no longer necessary. An embedding program can use this
 information to prevent unnecessary @cpp{scheme_check_threads} polling.
 
-The below code illustrates how MrEd formerly set up
+The below code illustrates how GRacket formerly set up
 @cpp{scheme_check_threads} polling using the wxWindows @cpp{wxTimer}
 class. (Any regular event-loop-based callback is appropriate.) The
 @cpp{scheme_notify_multithread} pointer is set to
-@cpp{MrEdInstallThreadTimer}. (MrEd no longer work this way, however.)
+@cpp{MrEdInstallThreadTimer}. (GRacket no longer work this way, however.)
 
 @verbatim[#:indent 2]{
   class MrEdThreadTimer : public wxTimer
@@ -208,15 +208,15 @@ class. (Any regular event-loop-based callback is appropriate.) The
   }
 }
 
-An alternate architecture, which MrEd now uses, is to send the main
+An alternate architecture, which GRacket now uses, is to send the main
 thread into a loop, which blocks until an event is ready to handle.
-Scheme automatically takes care of running all threads, and it does so
+Racket automatically takes care of running all threads, and it does so
 efficiently because the main thread blocks on a file descriptor, as
 explained in @secref["threadblock"].
 
 @subsection[#:tag "blockednonmainel"]{Callbacks for Blocked Threads}
 
-Scheme threads are sometimes blocked on file descriptors, such as an
+Racket threads are sometimes blocked on file descriptors, such as an
 input file or the X event socket. Blocked non-main threads do not
 block the main thread, and therefore do not affect the event loop, so
 @cppi{scheme_check_threads} is sufficient to implement this case
@@ -237,7 +237,7 @@ sets up callbacks on the specified file descriptors.  When input is
 ready on any of those file descriptors, the callbacks are removed and
 @cpp{scheme_wake_up} is called.
 
-For example, the X Windows version of MrEd formerly set
+For example, the X Windows version of GRacket formerly set
 @cpp{scheme_wakeup_on_input} to this @cpp{MrEdNeedWakeup}:
 
 @verbatim[#:indent 2]{
@@ -319,15 +319,15 @@ For example, the X Windows version of MrEd formerly set
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "sleeping"]{Sleeping by Embedded Scheme}
+@section[#:tag "sleeping"]{Sleeping by Embedded Racket}
 
-When all Scheme threads are blocked, Scheme must ``sleep'' for a
+When all Racket threads are blocked, Racket must ``sleep'' for a
 certain number of seconds or until external input appears on some file
 descriptor. Generally, sleeping should block the main event loop of
 the entire application. However, the way in which sleeping is
 performed may depend on the embedding application. The global function
 pointer @cppi{scheme_sleep} can be set by an embedding application to
-implement a blocking sleep, although Scheme implements this function
+implement a blocking sleep, although Racket implements this function
 for you.
 
 A @cpp{scheme_sleep} function takes two arguments: a @cpp{float} and a
@@ -348,7 +348,7 @@ manipulate each ``@cpp{fd_set}'' with @cpp{MZ_FD_SET},
 
 The following function @cpp{mzsleep} is an appropriate
 @cpp{scheme_sleep} function for most any Unix or Windows application.
-(This is approximately the built-in sleep used by Scheme.)
+(This is approximately the built-in sleep used by Racket.)
 
 @verbatim[#:indent 2]{
   void mzsleep(float v, void *fds)
@@ -490,7 +490,7 @@ Blocks the current thread until @var{f} with @var{data} returns a true
  a @cpp{Scheme_Object*} value, because it is only used by @var{f}
  and @var{fdf}.)
 
-If Scheme decides to sleep, then the @var{fdf} function is called to
+If Racket decides to sleep, then the @var{fdf} function is called to
  sets bits in @var{fds}, conceptually an array of three
  @cpp{fd_set}s: one or reading, one for writing, and one for
  exceptions. Use @cpp{scheme_get_fdset} to get elements of this
@@ -501,7 +501,7 @@ If Scheme decides to sleep, then the @var{fdf} function is called to
 
 The @var{fdf} argument can be @cpp{NULL}, which implies that the thread
  becomes unblocked (i.e., @var{ready} changes its result to true) only
- through Scheme actions, and never through external processes (e.g.,
+ through Racket actions, and never through external processes (e.g.,
  through a socket or OS-level semaphore)---with the exception that
  @cpp{scheme_signal_received} may be called to indicate an external
  change.
@@ -548,8 +548,8 @@ Like @cpp{scheme_block_until_enable_break}, but the function
 
 Indicates that an external event may have caused the result of a
 synchronization poll to have a different result. Unlike most other
-Scheme functions, this one can be called from any OS-level thread, and
-it wakes up if the Scheme thread if it is sleeping.}
+Racket functions, this one can be called from any OS-level thread, and
+it wakes up if the Racket thread if it is sleeping.}
 
 @function[(void scheme_check_threads)]{
 
@@ -577,12 +577,12 @@ Extracts an ``@cpp{fd_set}'' from an array passed to
            [int repost])]{
 
 Adds an OS-level semaphore (Windows) or other waitable handle
- (Windows) to the ``@cpp{fd_set}'' @var{fds}. When Scheme performs
+ (Windows) to the ``@cpp{fd_set}'' @var{fds}. When Racket performs
  a ``@cpp{select}'' to sleep on @var{fds}, it also waits on the given
- semaphore or handle. This feature makes it possible for Scheme to
+ semaphore or handle. This feature makes it possible for Racket to
  sleep until it is awakened by an external process.
 
-Scheme does not attempt to deallocate the given semaphore or handle,
+Racket does not attempt to deallocate the given semaphore or handle,
  and the ``@cpp{select}'' call using @var{fds} may be unblocked due to
  some other file descriptor or handle in @var{fds}. If @var{repost} is
  a true value, then @var{h} must be an OS-level semaphore, and if the
@@ -603,9 +603,9 @@ Under Unix and Mac OS X, this function has no effect.}
            [int mask])]{
 
 Adds an OS-level event type (Windows) to the set of types in the
- ``@cpp{fd_set}'' @var{fds}. When Scheme performs a
+ ``@cpp{fd_set}'' @var{fds}. When Racket performs a
  ``@cpp{select}'' to sleep on @var{fds}, it also waits on events of
- them specified type. This feature makes it possible for Scheme to
+ them specified type. This feature makes it possible for Racket to
  sleep until it is awakened by an external process.
 
 The event mask is only used when some handle is installed with
@@ -711,28 +711,28 @@ Calls @var{prim} with the given @var{argc} and @var{argv} with breaks
            [Scheme_Thread_Cell_Table* cells]
            [Scheme_Object* v])]{
 
-Prevents Scheme thread swaps until @cpp{scheme_end_atomic} or
+Prevents Racket thread swaps until @cpp{scheme_end_atomic} or
  @cpp{scheme_end_atomic_no_swap} is called. Start-atomic and
  end-atomic pairs can be nested.}
 
 @function[(void scheme_end_atomic)]{
 
-Ends an atomic region with respect to Scheme threads. The current
+Ends an atomic region with respect to Racket threads. The current
  thread may be swapped out immediately (i.e., the call to
  @cpp{scheme_end_atomic} is assumed to be a safe point for thread
  swaps).}
 
 @function[(void scheme_end_atomic_no_swap)]{
 
-Ends an atomic region with respect to Scheme threads, and also
- prevents an immediate thread swap. (In other words, no Scheme
+Ends an atomic region with respect to Racket threads, and also
+ prevents an immediate thread swap. (In other words, no Racket
  thread swaps will occur until a future safe point.)}
 
 @function[(void scheme_add_swap_callback
                 [Scheme_Closure_Func f]
                 [Scheme_Object* data])]{
 
-Registers a callback to be invoked just after a Scheme thread is
+Registers a callback to be invoked just after a Racket thread is
 swapped in. The @var{data} is provided back to @var{f} when it is
 called, where @cpp{Closure_Func} is defined as follows:
 
@@ -745,4 +745,4 @@ called, where @cpp{Closure_Func} is defined as follows:
                 [Scheme_Object* data])]{
 
 Like @cpp{scheme_add_swap_callback}, but registers a callback to be
-invoked just before a Scheme thread is swapped out.}
+invoked just before a Racket thread is swapped out.}

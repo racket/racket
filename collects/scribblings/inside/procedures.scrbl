@@ -3,11 +3,11 @@
 
 @title{Procedures}
 
-A @defterm{primitive procedure} is a Scheme-callable procedure that is
-implemented in C.  Primitive procedures are created in Scheme with
+A @defterm{primitive procedure} is a Racket-callable procedure that is
+implemented in C.  Primitive procedures are created in Racket with
 the function @cppi{scheme_make_prim_w_arity}, which takes a C function
 pointer, the name of the primitive, and information about the number
-of Scheme arguments that it takes; it returns a Scheme procedure
+of Racket arguments that it takes; it returns a Racket procedure
 value.
 
 The C function implementing the procedure must take two arguments: an
@@ -15,7 +15,7 @@ integer that specifies the number of arguments passed to the
 procedure, and an array of @cpp{Scheme_Object*} arguments. The number
 of arguments passed to the function will be checked using the arity
 information.  (The arity information provided to
-@cpp{scheme_make_prim_w_arity} is also used for the Scheme
+@cpp{scheme_make_prim_w_arity} is also used for the Racket
 @scheme[arity] procedure.) The procedure implementation is not allowed
 to mutate the input array of arguments; as an exception, the procedure
 can mutate the array if it is the same a the result of
@@ -60,7 +60,7 @@ maximum number of arguments that can be supplied to the procedure, or
 -1 if the procedure can take arbitrarily many arguments. The
 @var{mina} and @var{maxa} values are used for automatically checking
 the argument count before the primitive is invoked, and also for the
-Scheme @indexed-scheme[arity] procedure. The @var{name} argument is
+Racket @indexed-scheme[arity] procedure. The @var{name} argument is
 used to report application arity errors at run-time.}
 
 @function[(Scheme_Object* scheme_make_folding_prim

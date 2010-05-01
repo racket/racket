@@ -3,7 +3,7 @@
 
 @title{Ports and the Filesystem}
 
-Ports are represented as Scheme values with the types
+Ports are represented as Racket values with the types
 @cppi{scheme_input_port_type} and @cppi{scheme_output_port_type}.  The
 function @cppi{scheme_read} takes an input port value and returns the
 next S-expression from the port.  The function @cppi{scheme_write}
@@ -23,7 +23,7 @@ The contents of a string output port are obtained with
 Custom ports, with arbitrary read/write handlers, are created with
 @cppi{scheme_make_input_port} and @cppi{scheme_make_output_port}.
 
-When opening a file for any reason using a name provided from Scheme,
+When opening a file for any reason using a name provided from Racket,
 use @cppi{scheme_expand_filename} to normalize the filename and
 resolve relative paths.
 
@@ -50,7 +50,7 @@ Like @cpp{scheme_write}, but the printing is truncated to @var{n} bytes.
            [Scheme_Object* obj]
            [Scheme_Object* port])]{
 
-@scheme[display]s the Scheme value @var{obj} to the given output
+@scheme[display]s the Racket value @var{obj} to the given output
 port.}
 
 @function[(void scheme_display_w_max
@@ -119,7 +119,7 @@ without the non-blocking option.}
            [Scheme_Object* obj]
            [long* len])]{
 
-Prints the Scheme value @var{obj} using @scheme[write] to a newly
+Prints the Racket value @var{obj} using @scheme[write] to a newly
 allocated string. If @var{len} is not @cpp{NULL}, @cpp{*@var{len}} is
 set to the length of the bytes string.}
 
@@ -136,7 +136,7 @@ Like @cpp{scheme_write_to_string}, but the string is truncated to
            [Scheme_Object* obj]
            [long* len])]{
 
-Prints the Scheme value @var{obj} using @scheme[display] to a newly
+Prints the Racket value @var{obj} using @scheme[display] to a newly
 allocated string. If @var{len} is not @cpp{NULL}, @cpp{*@var{len}} is
 set to the length of the string.}
 
@@ -154,7 +154,7 @@ Like @cpp{scheme_display_to_string}, but the string is truncated to
 @function[(void scheme_debug_print
            [Scheme_Object* obj])]{
 
-Prints the Scheme value @var{obj} using @scheme[write] to the main
+Prints the Racket value @var{obj} using @scheme[write] to the main
 thread's output port.}
 
 @function[(void scheme_flush_output
@@ -423,7 +423,7 @@ The functions are as follows.
     in @var{unless} becomes ready before bytes can be read. In
     particular, @var{get_bytes_fun} should check the event in
     @var{unless} before taking any action, and it should check the
-    event in @var{unless} after any operation that may allow Scheme
+    event in @var{unless} after any operation that may allow Racket
     thread swaps. If the read must block, then it should unblock if
     the event in @var{unless} becomes ready.
 
@@ -439,7 +439,7 @@ The functions are as follows.
     use @cpp{scheme_block_until_unless} instead of
     @cpp{scheme_block_until}.  Finally, in blocking mode,
     @var{get_bytes_fun} must return after immediately reading data,
-    without allowing a Scheme thread swap.}
+    without allowing a Racket thread swap.}
 
  @subfunction[(long peek_bytes_fun
                [Scheme_Input_Port* port]
@@ -652,7 +652,7 @@ Opens @var{filename} for reading. In an exception is raised, the
            [FILE* fp]
            [Scheme_Object* name])]{
 
-Creates a Scheme input file port from an ANSI C file pointer. The file
+Creates a Racket input file port from an ANSI C file pointer. The file
  must never block on reads. The @var{name} argument is used as the
  port's name.}
 
@@ -667,7 +667,7 @@ Opens @var{filename} for writing in @scheme['truncate/replace] mode. If
 @function[(Scheme_Object* scheme_make_file_output_port
            [FILE* fp])]{
 
-Creates a Scheme output file port from an ANSI C file pointer. The
+Creates a Racket output file port from an ANSI C file pointer. The
  file must never block on writes.}
 
 @function[(Scheme_Object* scheme_make_fd_input_port
@@ -676,7 +676,7 @@ Creates a Scheme output file port from an ANSI C file pointer. The
            [int regfile]
            [int win_textmode])]{
 
-Creates a Scheme input port for a file descriptor @var{fd}. Under
+Creates a Racket input port for a file descriptor @var{fd}. Under
  Windows, @var{fd} can be a @cpp{HANDLE} for a stream, and it should
  never be a file descriptor from the C library or a WinSock socket.
 
@@ -702,7 +702,7 @@ Instead of calling both @cpp{scheme_make_fd_input_port} and
            [int win_textmode]
            [int read_too])]{
 
-Creates a Scheme output port for a file descriptor @var{fd}. Under
+Creates a Racket output port for a file descriptor @var{fd}. Under
  Windows, @var{fd} can be a @cpp{HANDLE} for a stream, and it should
  never be a file descriptor from the C library or a WinSock socket.
 
@@ -729,7 +729,7 @@ If @var{read_too} is non-zero, the function produces multiple values
            [Scheme_Object** inp]
            [Scheme_Object** outp])]{
 
-Creates Scheme input and output ports for a TCP socket @var{s}. The
+Creates Racket input and output ports for a TCP socket @var{s}. The
  @var{name} argument supplies the name for the ports. If @var{close}
  is non-zero, then the ports assume responsibility for closing the
  socket. The resulting ports are written to @var{inp} and @var{outp}.}
@@ -737,13 +737,13 @@ Creates Scheme input and output ports for a TCP socket @var{s}. The
 @function[(Scheme_Object* scheme_make_byte_string_input_port
            [char* str])]{
 
-Creates a Scheme input port from a byte string; successive
+Creates a Racket input port from a byte string; successive
  @scheme[read-char]s on the port return successive bytes in the
  string.}
 
 @function[(Scheme_Object* scheme_make_byte_string_output_port)]{
 
-Creates a Scheme output port; all writes to the port are kept in a byte string,
+Creates a Racket output port; all writes to the port are kept in a byte string,
  which can be obtained with @cpp{scheme_get_byte_string_output}.}
 
 @function[(char* scheme_get_byte_string_output
@@ -843,12 +843,12 @@ character string or a path value.}
 @function[(Scheme_Object* scheme_char_string_to_path
            [Scheme_Object* s])]{
 
-Converts a Scheme character string into a Scheme path value.}
+Converts a Racket character string into a Racket path value.}
 
 @function[(Scheme_Object* scheme_path_to_char_string
            [Scheme_Object* s])]{
 
-Converts a Scheme path value into a Scheme character string.}
+Converts a Racket path value into a Racket character string.}
 
 @function[(Scheme_Object* scheme_make_path
            [char* bytes])]{
@@ -923,7 +923,7 @@ no 0, then an exception is raised if the operation fails.}
            [int noexn])]{
 
 Sets the current working directory according to the operating system. This
-is separate from MzScheme's current directory parameter.
+is separate from Racket's current directory parameter.
 
 If @var{noexn} is not 0, then an exception is raised if the operation
 fails.}
@@ -935,7 +935,7 @@ fails.}
            [Scheme_Object** argv]
            [long* rlen])]{
 
-Creates a string like MzScheme's @scheme[format] procedure, using the
+Creates a string like Racket's @scheme[format] procedure, using the
 format string @var{format} (of length @var{flen}) and the extra
 arguments specified in @var{argc} and @var{argv}. If @var{rlen} is not
 @cpp{NULL}, @cpp{*@var{rlen}} is filled with the length of the
@@ -947,7 +947,7 @@ resulting string.}
            [int argc]
            [Scheme_Object** argv])]{
 
-Writes to the current output port like MzScheme's @scheme[printf]
+Writes to the current output port like Racket's @scheme[printf]
 procedure, using the format string @var{format} (of length @var{flen})
 and the extra arguments specified in @var{argc} and @var{argv}.}
 

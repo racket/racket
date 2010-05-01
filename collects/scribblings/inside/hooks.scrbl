@@ -3,7 +3,7 @@
 
 @title{Flags and Hooks}
 
-The following flags and hooks are available when PLT Scheme is
+The following flags and hooks are available when Racket is
 embedded:
 
 @itemize[
@@ -14,7 +14,7 @@ embedded:
 
  @item{@cppdef{scheme_make_stdin}, @cppdef{scheme_make_stdout},
  @cppdef{scheme_make_stderr}, --- These pointers can be set to a
- function that takes no arguments and returns a Scheme port
+ function that takes no arguments and returns a Racket port
  @cpp{Scheme_Object *} to be used as the starting standard input,
  output, and/or error port. The defaults are @cpp{NULL}. Setting the
  initial error port is particularly important for seeing unexpected
@@ -22,7 +22,7 @@ embedded:
 
  @item{@cppdef{scheme_console_output} --- This pointer can be set to a
  function that takes a string and a @cpp{long} string length; the
- function will be called to display internal MzScheme warnings and
+ function will be called to display internal Racket warnings and
  messages that possibly contain non-terminating nuls. The default is
  @var{NULL}.}
 
@@ -36,7 +36,7 @@ embedded:
 
  @item{@cppdef{scheme_case_sensitive} --- If this flag is set to a
  non-zero value before @cppi{scheme_basic_env} is called, then
- MzScheme will not ignore capitalization for symbols and global
+ Racket will not ignore capitalization for symbols and global
  variable names.  The value of this flag should not change once it is
  set. The default is zero.}
 

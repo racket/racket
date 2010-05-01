@@ -3,7 +3,7 @@
 
 @title{Structures}
 
-A new Scheme structure type is created with
+A new Racket structure type is created with
 @cppi{scheme_make_struct_type}.  This creates the structure type, but
 does not generate the constructor, etc.  procedures. The
 @cppi{scheme_make_struct_values} function takes a structure type and
@@ -41,6 +41,10 @@ be restricted by passing any combination of these flags:
 
  @item{@cppi{SCHEME_STRUCT_GEN_SET} --- the field-independent
  mutator procedure value/name is returned.}
+
+ @item{@cppi{SCHEME_STRUCT_NO_MAKE_PREFIX} --- the constructor name
+ omits a @schemeidfont{make-} prefix, like @racket[struct] instead of
+ @racket[define-struct].}
 
 ]
 
@@ -87,7 +91,7 @@ Creates and returns an array of standard structure value name
 symbols. The @var{base_name} argument is used as the name of the
 structure type; it should be the same symbol passed to the associated
 call to @cpp{scheme_make_struct_type}. The @var{field_names} argument
-is a (Scheme) list of field name symbols. The @var{flags} argument
+is a (Racket) list of field name symbols. The @var{flags} argument
 specifies which names should be generated, and if @var{count_out} is
 not @cpp{NULL}, @var{count_out} is filled with the number of names
 returned in the array.}

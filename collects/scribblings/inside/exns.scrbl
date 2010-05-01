@@ -3,7 +3,7 @@
 
 @title[#:tag "exceptions"]{Exceptions and Escape Continuations}
 
-When Scheme encounters an error, it raises an exception. The default
+When Racket encounters an error, it raises an exception. The default
 exception handler invokes the error display handler and then the error
 escape handler. The default error escape handler escapes via a
 @defterm{primitive error escape}, which is implemented by calling
@@ -12,7 +12,7 @@ escape handler. The default error escape handler escapes via a
 An embedding program should install a fresh buffer into
 @cpp{scheme_current_thread->error_buf} and call
 @cpp{scheme_setjmp(*scheme_current_thread->error_buf)} before any
-top-level entry into Scheme evaluation to catch primitive error
+top-level entry into Racket evaluation to catch primitive error
 escapes. When the new buffer goes out of scope, restore the original
 in @cpp{scheme_current_thread->error_buf}. The macro
 @cppi{scheme_error_buf} is a shorthand for
@@ -47,12 +47,12 @@ New primitive procedures can raise a generic exception by calling
 function @cpp{printf}. A specific primitive exception can be raised by
 calling @cppi{scheme_raise_exn}.
 
-Full @as-index{continuations} are implemented in Scheme by copying
+Full @as-index{continuations} are implemented in Racket by copying
 the C stack and using @cppi{scheme_setjmp} and @cppi{scheme_longjmp}.
-As long a C/C++ application invokes Scheme evaluation through the
+As long a C/C++ application invokes Racket evaluation through the
 top-level evaluation functions (@cpp{scheme_eval}, @cpp{scheme_apply},
 etc., as opposed to @cpp{_scheme_apply}, @cpp{_scheme_eval_compiled},
-etc.), the code is protected against any unusual behavior from Scheme
+etc.), the code is protected against any unusual behavior from Racket
 evaluations (such as returning twice from a function) because
 continuation invocations are confined to jumps within a single
 top-level evaluation. However, escape continuation jumps are still
@@ -109,11 +109,11 @@ calls top-level evaluation functions (@cpp{scheme_eval},
 @cpp{_scheme_eval_compiled}, etc.).  Otherwise, use
 @cppi{scheme_dynamic_wind} to protect your code against full
 continuation jumps in the same way that @scheme[dynamic-wind] is used
-in Scheme.
+in Racket.
 
 The above solution simply traps the escape; it doesn't report the
 reason that the escape occurred. To catch exceptions and obtain
-information about the exception, the simplest route is to mix Scheme
+information about the exception, the simplest route is to mix Racket
 code with C-implemented thunks. The code below can be used to catch
 exceptions in a variety of situations. It implements the function
 @cpp{_apply_catch_exceptions}, which catches exceptions during the
@@ -148,7 +148,7 @@ application of a thunk. (This code is in
     }
   }
 
-  /* This function applies a thunk, returning the Scheme value if 
+  /* This function applies a thunk, returning the Racket value if 
      there's no exception, otherwise returning NULL and setting *exn 
      to the raised value (usually an exn structure). */
   Scheme_Object *_apply_thunk_catch_exceptions(Scheme_Object *f, 
@@ -184,9 +184,11 @@ In the following example, the above code is used to catch exceptions
 that occur during while evaluating source code from a string.
 
 @verbatim[#:indent 2]{
-  static Scheme_Object *do_eval(void *s, int noargc, Scheme_Object **noargv)
+  static Scheme_Object *do_eval(void *s, int noargc, 
+                                Scheme_Object **noargv)
   {
-    return scheme_eval_string((char *)s, scheme_get_env(scheme_config));
+    return scheme_eval_string((char *)s, 
+                              scheme_get_env(scheme_config));
   }
 
   static Scheme_Object *eval_string_or_get_exn_message(char *s)
@@ -213,12 +215,12 @@ that occur during while evaluating source code from a string.
 
 @section{Enabling and Disabling Breaks}
 
-When embedding PLT Scheme, asynchronous break exceptions are disabled by
+When embedding Racket, asynchronous break exceptions are disabled by
 default. Call @cpp{scheme_set_can_break} (which is the same as calling
-the Scheme funciton @scheme[break-enabled]) to enable or disable
+the Racket funciton @scheme[break-enabled]) to enable or disable
 breaks. To enable or disable breaks during the dynamic extent of
 another evaluation (where you would use
-@scheme[with-break-parameterization] in Scheme), use
+@scheme[with-break-parameterization] in Racket), use
 @cppi{scheme_push_break_enable} before and
 @cppi{scheme_pop_break_enable} after, instead.
 
@@ -245,7 +247,7 @@ for @cpp{printf}, but with the following format directives:
 
  @item{@FormatD{5} : a nul-terminated @cpp{mzchar} string}
 
- @item{@FormatD{S} : a Scheme symbol (a @cpp{Scheme_Object*})}
+ @item{@FormatD{S} : a Racket symbol (a @cpp{Scheme_Object*})}
 
  @item{@FormatD{t} : a @cpp{char} string with a @cpp{long} size (two
  arguments), possibly containing a non-terminating nul byte, and
@@ -255,16 +257,16 @@ for @cpp{printf}, but with the following format directives:
  arguments), possibly containing a non-terminating nul character, and
  possibly without a nul-terminator}
 
- @item{@FormatD{T} : a Scheme string (a @cpp{Scheme_Object*})}
+ @item{@FormatD{T} : a Racket string (a @cpp{Scheme_Object*})}
 
  @item{@FormatD{q} : a string, truncated to 253 characters, with ellipses
  printed if the string is truncated}
 
- @item{@FormatD{Q} : a Scheme string (a @cpp{Scheme_Object*}),
+ @item{@FormatD{Q} : a Racket string (a @cpp{Scheme_Object*}),
  truncated to 253 characters, with ellipses printed if the string is
  truncated}
 
- @item{@FormatD{V} : a Scheme value  (a @cpp{Scheme_Object*}),
+ @item{@FormatD{V} : a Racket value  (a @cpp{Scheme_Object*}),
  truncated according to the current error print width.}
 
  @item{@FormatD{e} : an @cpp{errno} value, to be printed as a text
@@ -282,7 +284,7 @@ for @cpp{printf}, but with the following format directives:
 ]
 
 The arguments following the format string must include no more than 25
-strings and Scheme values, 25 integers, and 25 floating-point
+strings and Racket values, 25 integers, and 25 floating-point
 numbers. (This restriction simplifies the implementation with precise
 garbage collection.)}
 
@@ -298,7 +300,7 @@ fields). The remaining arguments start with an error string and
 proceed roughly as for @cpp{printf}; see @cpp{scheme_signal_error}
 above for more details.
 
-Exception ids are @cpp{#define}d using the same names as in Scheme,
+Exception ids are @cpp{#define}d using the same names as in Racket,
 but prefixed with ``MZ'', all letters are capitalized, and all ``:'s',
 ``-''s, and ``/''s are replaced with underscores. For example,
 @cpp{MZEXN_FAIL_FILESYSTEM} is the exception id for a filesystem
@@ -370,8 +372,8 @@ variable.}
            [int count]
            [int* len])]{
 
-Converts a Scheme value into a string for the purposes of reporting an
-error message. The @var{count} argument specifies how many Scheme
+Converts a Racket value into a string for the purposes of reporting an
+error message. The @var{count} argument specifies how many Racket
 values total will appear in the error message (so the string for this
 value can be scaled appropriately). If @var{len} is not @cpp{NULL}, it
 is filled with the length of the returned string.}
@@ -384,7 +386,7 @@ is filled with the length of the returned string.}
            [Scheme_Object** argv]
            [long* len])]{
 
-Converts an array of Scheme values into a byte string, skipping the
+Converts an array of Racket values into a byte string, skipping the
 array element indicated by @var{which}. This function is used to
 specify the ``other'' arguments to a function when one argument is bad
 (thus giving the user more information about the state of the program
