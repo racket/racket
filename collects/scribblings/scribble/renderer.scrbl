@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           "utils.ss"
-          (for-label scheme/class))
+          (for-label racket/class))
 
 @(define-syntax-rule (defmodule/local lib . content)
    (begin

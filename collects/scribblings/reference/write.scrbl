@@ -44,7 +44,7 @@ proportional to the depth of the value being printed, due to the
 initial cycle check.}
 
 @defproc[(print [datum any/c][out output-port? (current-output-port)]
-                [exact-nonnegative-integer? qq-depth 0])
+                [qq-depth exact-nonnegative-integer? 0])
          void?]{
 
 Writes @racket[datum] to @racket[out], normally the same way as

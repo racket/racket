@@ -3,6 +3,7 @@
 
 (provide (except-out (all-from-out racket/base) 
                      struct
-                     hash hasheq hasheqv)
+                     hash hasheq hasheqv
+                     in-directory)
          make-base-empty-namespace
          make-base-namespace)
