@@ -64,9 +64,9 @@
     (test #f null? (member "filelib.rktl" rel))
     (test #f null? (member (build-path (current-directory) "filelib.rktl") abs))
 
-    (test (list (string->path "filelib.rktl")) find-files (lambda (f) (regexp-match "^filelib[.]rkt$" (path->string f))))
+    (test (list (string->path "filelib.rktl")) find-files (lambda (f) (regexp-match "^filelib[.]rktl$" (path->string f))))
     (test (list (build-path (current-directory) "filelib.rktl"))
-	  find-files (lambda (f) (regexp-match "filelib[.]rkt$" (path->string f)))
+	  find-files (lambda (f) (regexp-match "filelib[.]rktl$" (path->string f)))
 	  (current-directory))
 
     (let ([rel2 (fold-files (lambda (name kind accum)

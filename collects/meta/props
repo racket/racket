@@ -598,7 +598,7 @@ path/s is either such a string or a list of them.
 "collects/drscheme/private/tracing.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/private/unit.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/sprof.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drscheme/syncheck-drscheme-button.rkt" drdr:command-line "mred-text ~s"
+"collects/drscheme/syncheck-drracket-button.rkt" drdr:command-line "mred-text ~s"
 "collects/drscheme/syncheck.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/tool-lib.rkt" drdr:command-line "mzc ~s"
 "collects/dynext" responsible (mflatt)
@@ -1454,10 +1454,10 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/common/takl.rkt" drdr:command-line "mzc ~s"
 "collects/tests/racket/benchmarks/common/takr.rkt" drdr:command-line "mzc ~s"
 "collects/tests/racket/benchmarks/common/takr2.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/mz/expand-class.scm" drdr:command-line "racket -f ~s"
-"collects/tests/racket/benchmarks/mz/parsing.scm" drdr:command-line "mred -f ~s"
-"collects/tests/racket/benchmarks/mz/redsem.scm" drdr:command-line "racket -f ~s -- --skip-struct-test"
-"collects/tests/racket/benchmarks/mz/ssax.scm" drdr:command-line "racket -f ~s"
+"collects/tests/racket/benchmarks/mz/expand-class.rktl" drdr:command-line "racket -f ~s"
+"collects/tests/racket/benchmarks/mz/parsing.rktl" drdr:command-line "mred -f ~s"
+"collects/tests/racket/benchmarks/mz/redsem.rkt" drdr:command-line "racket -f ~s -- --skip-struct-test"
+"collects/tests/racket/benchmarks/mz/ssax.rktl" drdr:command-line "racket -f ~s"
 "collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line "racket -qt ~s -- racket simple" drdr:timeout 600
 "collects/tests/racket/benchmarks/rx/pcre.rkt" drdr:command-line "racket ~s \"mz\"\"scheme\""
 "collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line "racket -t ~s -- 10"

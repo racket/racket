@@ -1,7 +1,7 @@
 
-(let ([dir (build-path (collection-path "scheme")
+(let ([dir (build-path (collection-path "racket")
                        "private")])
-  (with-input-from-file (build-path dir "class-internal.ss")
+  (with-input-from-file (build-path dir "class-internal.rkt")
     (lambda ()
       (parameterize ([current-load-relative-directory dir]
 		     [read-accept-reader #t])
