@@ -36,7 +36,7 @@ to the renderers. For example, the @exec{scribble} command-line tool
 might, in the future, extract rendering mixins from a document module
 (in addition to the document proper).
 
-See the @filepath{base-render.ss} source for more information about
+See the @filepath{base-render.rkt} source for more information about
 the methods of the renderer. Documents built with higher layers, such
 as @racketmodname[scribble/manual], generally do not call the render
 object's methods directly.

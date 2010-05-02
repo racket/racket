@@ -29,7 +29,7 @@ same way that the module system keeps expansion-time code separate
 from run-time code.
 
 For an example use, see the @filepath{file} collection's
-@filepath{gif.ss} source file and the corresponding extraction in
+@filepath{gif.rkt} source file and the corresponding extraction in
 @filepath{scribblings/gif.scrbl}. As that example illustrates,
 prefixing the module declaration with
 

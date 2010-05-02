@@ -42,7 +42,7 @@ To document a collection or @|PLaneT| package:
         @racket[racket] for writing Racket documentation.}
 
   @item{Add the following entry to your collect or package's
-        @filepath{info.ss}:
+        @filepath{info.rkt}:
 
         @racketblock[
           (define scribblings '(("manual.scrbl" ())))
@@ -54,7 +54,7 @@ To document a collection or @|PLaneT| package:
         the whole right-hand side of the definition is already
         quoted).
 
-        If you do not already have an @filepath{info.ss} module,
+        If you do not already have an @filepath{info.rkt} module,
         here's a suitable complete module:
 
         @racketmod[
@@ -172,7 +172,7 @@ The following example illustrates section hyperlinks:
 }|
 
 Since the page is so short, the hyperlinks in the above example are
- more effective if you change the @filepath{info.ss} file to add the
+ more effective if you change the @filepath{info.rkt} file to add the
  @racket['multi-file] flag:
 
 @racketblock[
@@ -213,22 +213,22 @@ and they declare hyperlink targets for @racket[racket]-based
 hyperlinks.
 
 To document a @racket[my-helper] procedure that is exported by
-@filepath{helper.ss} in the @filepath{my-lib} collection that contains
+@filepath{helper.rkt} in the @filepath{my-lib} collection that contains
 @filepath{manual.scrbl}:
 
 @itemize[
 
- @item{Use @racket[(require (for-label "helper.ss"))] to import the
-       binding information about the bindings of @filepath{helper.ss}
+ @item{Use @racket[(require (for-label "helper.rkt"))] to import the
+       binding information about the bindings of @filepath{helper.rkt}
        for use when typesetting identifiers. A relative reference
-       @racket["helper.ss"] works since it is relative to the
+       @racket["helper.rkt"] works since it is relative to the
        documentation source.}
 
  @item{Add a @tt|{@defmodule[my-lib/helper]}| declaration, which
        specifies the library that is being documented within the
        section. The @racket[defmodule] form needs an absolute module
        name @racket[mylib/helper], instead of a relative reference
-       @racket["helper.ss"], since the module path given to
+       @racket["helper.rkt"], since the module path given to
        @racket[defmodule] appears verbatim in the generated
        documentation.}
 
@@ -244,7 +244,7 @@ following:
 @verbatim[#:indent 2]|{
   #lang scribble/manual
   @(require (for-label racket
-                       "helper.ss"))
+                       "helper.rkt"))
 
   @title{My Library}
 
@@ -290,7 +290,7 @@ generates:
 
  @item{If you use @racket[my-helper] in any documentation now, as long
        as that documentation source also has a @racket[(require
-       (for-label ....))] of @filepath{helper.ss}, then the
+       (for-label ....))] of @filepath{helper.rkt}, then the
        reference is hyperlinked to the definition above.}
 
 ]
@@ -309,15 +309,15 @@ To use @racket[examples], the procedures to document must be suitable
 for use at documentation time; in fact, @racket[examples] uses
 bindings introduced into the document source by
 @racket[require]. Thus, to generate examples using @racket[my-helper]
-from the previous section, @filepath{helper.ss} must be imported both
+from the previous section, @filepath{helper.rkt} must be imported both
 via @racket[require-for-label] and @racket[require]:
 
 @verbatim[#:indent 2]|{
   #lang scribble/manual
   @(require scribble/eval    ; <--- added
-            "helper.ss"      ; <--- added
+            "helper.rkt"     ; <--- added
             (for-label racket
-                       "helper.ss"))
+                       "helper.rkt"))
 
   @title{My Library}
 
@@ -365,7 +365,7 @@ Revising @filepath{cows.scrbl} from the previous section:
   See @secref["singing"].
 }|
 
-To run this example, remember to change @filepath{info.ss} to add the
+To run this example, remember to change @filepath{info.rkt} to add the
 @racket['multi-page] style. You may also want to add a call to
 @racket[table-of-contents] in @filepath{manual.scrbl}.
 

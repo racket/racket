@@ -3,7 +3,7 @@
 
 @(define paper-url "http://www.cs.utah.edu/plt/publications/jfp05-ff.pdf")
 
-@title{@bold{Slideshow}: PLT Figure and Presentation Tools}
+@title{@bold{Slideshow}: Racket Figure and Presentation Tools}
 
 @author["Matthew Flatt" "Robert Bruce Findler"]
 
@@ -19,7 +19,7 @@ To learn more about why Slideshow is cool, see also ``Slideshow:
 Functional Presentations'' @cite["Findler06"].
 
 @defmodulelang*/no-declare[(slideshow)]{Most of the bindings defined in
-the manual are provided by the @schememodname[slideshow] language.}
+the manual are provided by the @racketmodname[slideshow] language.}
 
 @table-of-contents[]
 

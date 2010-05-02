@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "ss.ss"
-          (for-label scheme/gui
+          (for-label racket/gui
                      slideshow/code
                      slideshow/flash
                      slideshow/face
@@ -11,12 +11,12 @@
 @declare-exporting[slideshow/pict slideshow]
 
 @defmodule*/no-declare[(slideshow/pict)]{ The
-@schememodname[slideshow/pict] layer provides core functions for
+@racketmodname[slideshow/pict] layer provides core functions for
 constructing pictures, and it is independent of the slide viewer. This
 layer can be used, for example, to generate a picture as encapsulated
 PostScript for inclusion into a larger document. The
-@schememodname[slideshow/pict] layer is re-provided by the
-@schememodname[slideshow] language.}
+@racketmodname[slideshow/pict] layer is re-provided by the
+@racketmodname[slideshow] language.}
 
 @local-table-of-contents[]
 
@@ -24,11 +24,11 @@ PostScript for inclusion into a larger document. The
 
 @section{Pict Datatype}
 
-A picture is a @scheme[pict] structure. Some functions, such as
-@scheme[hline], create new simple picts. Other functions, such as
-@scheme[ht-append], build new picts out of existing picts. In the
+A picture is a @racket[pict] structure. Some functions, such as
+@racket[hline], create new simple picts. Other functions, such as
+@racket[ht-append], build new picts out of existing picts. In the
 latter case, the embedded picts retain their identity, so that
-offset-finding functions, such as @scheme[lt-find], can find the
+offset-finding functions, such as @racket[lt-find], can find the
 offset of an embedded pict in a larger pict.
 
 In addition to its drawing part, a pict has the following
@@ -48,21 +48,21 @@ In addition to its drawing part, a pict has the following
 That is, the bounding box has a width @math{w} and a height
 @math{h}. For a single text line, @math{d} is descent below the
 baseline, and @math{a+d=h}. For multiple text lines (often created
-with a function like @scheme[vc-append]), @math{a} is the ascent of
+with a function like @racket[vc-append]), @math{a} is the ascent of
 the top line, and @math{d} is the descent of the bottom line, so
 @math{a+d<h}. Many picts have @math{d=0} and @math{a=h}.
 
 In addition, a pict can have a @defterm{last} sub-pict that
 corresponds to the last item on the last line of text, so that extra
 lines can be added to the last line. In particular, the @defterm{last}
-element is useful for adding closing parentheses to a block of Scheme
+element is useful for adding closing parentheses to a block of Racket
 code, where the last line of code not the longest line in the block.
 
 The size information for a pict is computed when the pict is
 created. This strategy supports programs that create new picts though
 arbitrarily complex computations on the size and shape of existing
-picts. The functions @scheme[pict-width], @scheme[pict-height],
-@scheme[pict-descent], and @scheme[pict-ascent] extract bounding-box
+picts. The functions @racket[pict-width], @racket[pict-height],
+@racket[pict-descent], and @racket[pict-ascent] extract bounding-box
 information from a pict.
 
 
@@ -75,26 +75,26 @@ information from a pict.
                  [panbox (or/c #f any/c)]
                  [last (or/c #f pict-path?)])]{
 
-A @scheme[pict] structure is normally not created directly with
-@scheme[make-pict]. Instead, functions like @scheme[text],
-@scheme[hline], and @scheme[dc] are used to construct a pict.
+A @racket[pict] structure is normally not created directly with
+@racket[make-pict]. Instead, functions like @racket[text],
+@racket[hline], and @racket[dc] are used to construct a pict.
 
-The @scheme[draw] field contains the pict's drawing information in an
+The @racket[draw] field contains the pict's drawing information in an
 internal format. Roughly, the drawing information is a procedure that
-takes a @scheme[dc<%>] drawing context and an offset for the pict's
+takes a @racket[dc<%>] drawing context and an offset for the pict's
 top-left corner (i.e., it's bounding box's top left corner relative to
-the @scheme[dc<%>] origin). The state of the @scheme[dc<%>] is
+the @racket[dc<%>] origin). The state of the @racket[dc<%>] is
 intended to affect the pict's drawing; for example, the pen and brush
 will be set for a suitable default drawing mode, and the
-@scheme[dc<%>] scale will be set to scale the resulting image. Use
-@scheme[draw-pict] (as opposed to @scheme[pict-draw]) to draw the
+@racket[dc<%>] scale will be set to scale the resulting image. Use
+@racket[draw-pict] (as opposed to @racket[pict-draw]) to draw the
 picture.
 
-The @scheme[panbox] field is internal and initialized to @scheme[#f].
+The @racket[panbox] field is internal and initialized to @racket[#f].
 
-The @scheme[last] field indicates a pict within the @scheme[children]
+The @racket[last] field indicates a pict within the @racket[children]
 list (transitively) that can be treated as the last element of the
-last line in the pict. A @scheme[#f] value means that the pict is its
+last line in the pict. A @racket[#f] value means that the pict is its
 own last sub-pict.}
 
 
@@ -107,9 +107,9 @@ own last sub-pict.}
 Records, for a pict constructed of other picts, the relative location
 and scale of one nested pict.
 
-A @scheme[child] structure is normally not created directly with
-@scheme[make-child]. Instead, functions like @scheme[hc-append] create
-@scheme[child] structures when combining picts to create a new one.}
+A @racket[child] structure is normally not created directly with
+@racket[make-child]. Instead, functions like @racket[hc-append] create
+@racket[child] structures when combining picts to create a new one.}
 
 @; ------------------------------------------------------------------------
 
@@ -154,47 +154,47 @@ adding the given ascent and descent.}
          pict?]{
 
 Creates a pict that draws text. For creating text picts within a slide
-presentation, see @scheme[t], instead. Otherwise, before calling this
+presentation, see @racket[t], instead. Otherwise, before calling this
 function, a drawing context must be installed with
-@scheme[dc-for-text-size].
+@racket[dc-for-text-size].
 
-The @scheme[style] argument must be one of the following:
+The @racket[style] argument must be one of the following:
 
 @itemize[
 
- @item{@scheme[null] --- the default, same as @scheme['default]}
+ @item{@racket[null] --- the default, same as @racket['default]}
 
- @item{a @scheme[font%] object}
+ @item{a @racket[font%] object}
 
- @item{a font family symbol, such a @scheme['roman] (see @scheme[font%])}
+ @item{a font family symbol, such a @racket['roman] (see @racket[font%])}
 
- @item{a font face string, such as @scheme["Helvetica"] (see @scheme[font%])}
+ @item{a font face string, such as @racket["Helvetica"] (see @racket[font%])}
 
- @item{@scheme[(cons _str _sym)] combining a face string and a font
-       family (in case the face is unavailable; see @scheme[font%])}
+ @item{@racket[(cons _str _sym)] combining a face string and a font
+       family (in case the face is unavailable; see @racket[font%])}
 
- @item{@scheme[(cons 'bold style)] for a valid @scheme[style]}
+ @item{@racket[(cons 'bold style)] for a valid @racket[style]}
 
- @item{@scheme[(cons 'italic style)]}
- @item{@scheme[(cons 'subscript style)]}
- @item{@scheme[(cons 'superscript style)]}
- @item{@scheme[(cons 'caps style)]}
+ @item{@racket[(cons 'italic style)]}
+ @item{@racket[(cons 'subscript style)]}
+ @item{@racket[(cons 'superscript style)]}
+ @item{@racket[(cons 'caps style)]}
 
- @item{@scheme[(cons 'combine style)] --- allows kerning and ligatures
-      (the default, unless the @scheme['modern] family is specified)}
+ @item{@racket[(cons 'combine style)] --- allows kerning and ligatures
+      (the default, unless the @racket['modern] family is specified)}
 
- @item{@scheme[(cons 'no-combine style)] --- renders characters individually}
+ @item{@racket[(cons 'no-combine style)] --- renders characters individually}
 ]
 
-If both @scheme['combine] and @scheme['no-combine] are specified, the
+If both @racket['combine] and @racket['no-combine] are specified, the
 first one takes precedence. If caps is specified, the angle must be
 zero.
 
-The given @scheme[size] is in pixels, but it is ignored if a
-@scheme[font%] object is provided in the text-style.
+The given @racket[size] is in pixels, but it is ignored if a
+@racket[font%] object is provided in the text-style.
 
-The @scheme[rotation] is in radians, and positive values rotate
-counter-clockwise. For a non-zero @scheme[rotation], the resulting
+The @racket[rotation] is in radians, and positive values rotate
+counter-clockwise. For a non-zero @racket[rotation], the resulting
 pict's bounding box covers the rotated text, and the descent is zero
 and the ascent is the height.}
 
@@ -230,7 +230,7 @@ Unfilled and filled ellipses.}
 
 Unfilled and filled rectangles.
 
-If @scheme[draw-border?] is @scheme[#f], then the pen is set to be transparent
+If @racket[draw-border?] is @racket[#f], then the pen is set to be transparent
 before drawing the rectangle.
 }
 
@@ -244,16 +244,16 @@ before drawing the rectangle.
             pict?])]{
 
 Unfilled and filled rectangles with rounded corners.  The
-@scheme[corner-radius] is used to determine how much
+@racket[corner-radius] is used to determine how much
 rounding occurs in the corners. If it is a positive number,
 then it determines the radius of a circle touching the edges
 in each corner, and the rounding of the rectangle follow the
 edge of those circles. If it is a negative number, then the
 radius of the circles in the corners is the absolute value of the
-@scheme[corner-radius] times the smaller of @scheme[width]
-and @scheme[height].
+@racket[corner-radius] times the smaller of @racket[width]
+and @racket[height].
 
-The @scheme[angle] determines how much the rectangle is
+The @racket[angle] determines how much the rectangle is
 rotated, in radians.
 }
 
@@ -261,18 +261,18 @@ rotated, in radians.
          pict]{
 
 A pict that display a bitmap. When a path is provided, the image is
-loaded with the @scheme['unknown/mask] flag, which means that a mask
+loaded with the @racket['unknown/mask] flag, which means that a mask
 bitmap is generated if the file contains a mask.
 
-If the bitmap cannot be loaded, if the given @scheme[bitmap%] object
-is not valid, or if the @scheme[bitmap-draft-mode] parameter is set to
-@scheme[#t], the result pict draws the word ``bitmap failed''.}
+If the bitmap cannot be loaded, if the given @racket[bitmap%] object
+is not valid, or if the @racket[bitmap-draft-mode] parameter is set to
+@racket[#t], the result pict draws the word ``bitmap failed''.}
 
 @defproc*[([(arrow [size real?] [radians real?]) pict?]
            [(arrowhead [size real?] [radians real?]) pict?])]{
 
 Creates an arrow or arrowhead in the specific direction within a
-@scheme[size] by @scheme[size] pict. Points on the arrow may extend
+@racket[size] by @racket[size] pict. Points on the arrow may extend
 slightly beyond the bounding box.}
 
 @defproc*[([(pip-line [dx real?] [dy real?] [size real?]) pict?]
@@ -280,11 +280,11 @@ slightly beyond the bounding box.}
            [(pip-arrows-line [dx real?] [dy real?] [size real?]) pict?])]{
 
 Creates a line (with some number of arrowheads) as a zero-sized pict
-suitable for use with @scheme[pin-over]. The 0-sized picture contains
+suitable for use with @racket[pin-over]. The 0-sized picture contains
 the starting point.
 
-The @scheme[size] is used for the arrowhead size. Even though
-@scheme[pip-line] creates no arrowheads, it accepts the @scheme[size]
+The @racket[size] is used for the arrowhead size. Even though
+@racket[pip-line] creates no arrowheads, it accepts the @racket[size]
 argument for consistency with the other functions.}
 
 @defproc*[([(pin-line [pict pict?]
@@ -331,32 +331,32 @@ argument for consistency with the other functions.}
 		      [#:hide-arrowhead? any/c #f])
             pict?])]{
 
-Adds a line or line-with-arrows onto @scheme[pict], using one of the
-pict-finding functions (e.g., @scheme[lt-find]) to extract the source
+Adds a line or line-with-arrows onto @racket[pict], using one of the
+pict-finding functions (e.g., @racket[lt-find]) to extract the source
 and destination of the line.
 
-If @scheme[under?] is true, then the line and arrows are added under
-the existing @scheme[pict] drawing, instead of on top. If
-@scheme[solid?] is false, then the arrowheads are hollow instead of
+If @racket[under?] is true, then the line and arrows are added under
+the existing @racket[pict] drawing, instead of on top. If
+@racket[solid?] is false, then the arrowheads are hollow instead of
 filled.
 
-The @scheme[start-angle], @scheme[end-angle], @scheme[start-pull], and
-@scheme[end-pull] arguments control the curve of the line:
+The @racket[start-angle], @racket[end-angle], @racket[start-pull], and
+@racket[end-pull] arguments control the curve of the line:
 
 @itemize[
 
- @item{The @scheme[start-angle] and @scheme[end-angle] arguments
+ @item{The @racket[start-angle] and @racket[end-angle] arguments
        specify the direction of curve at its start and end positions;
-       if either is @scheme[#f], it defaults to the angle of a
+       if either is @racket[#f], it defaults to the angle of a
        straight line from the start position to end position.}
 
- @item{The @scheme[start-pull] and @scheme[end-pull] arguments specify
+ @item{The @racket[start-pull] and @racket[end-pull] arguments specify
        a kind of momentum for the starting and ending angles; larger
        values preserve the angle longer.}
 
 ]
 
-When the @scheme[hide-arrowhead?] argument is a true value, then 
+When the @racket[hide-arrowhead?] argument is a true value, then 
 space for the arrowhead is left behind, but the arrowhead itself 
 is not drawn.
 
@@ -364,11 +364,11 @@ The defaults produce a straight line.}
 
 @defthing[text-style/c contract?]{
 
-A contract that matches the second argument of @scheme[text].}
+A contract that matches the second argument of @racket[text].}
 
 @defboolparam[bitmap-draft-mode on?]{
 
-A parameter that determines whether @scheme[bitmap] loads/uses a
+A parameter that determines whether @racket[bitmap] loads/uses a
 bitmap.}
 
 
@@ -385,22 +385,22 @@ bitmap.}
            [(hbl-append [d real? 0.0] [pict pict?] ...) pict?]
            [(hb-append [d real? 0.0] [pict pict?] ...) pict?])]{
 
-Creates a new pict as a column (for @scheme[v...-append]) or row (for
-@scheme[h...-append]) of other picts. The optional @scheme[d] argument
+Creates a new pict as a column (for @racket[v...-append]) or row (for
+@racket[h...-append]) of other picts. The optional @racket[d] argument
 specifies amount of space to insert between each pair of pictures in
 making the column or row.
 
 Different procedures align pictures in the orthogonal direction in
-different ways. For example, @scheme[vl-append] left-aligns all of the
+different ways. For example, @racket[vl-append] left-aligns all of the
 pictures.
 
 The descent of the result corresponds to baseline that is lowest in
 the result among all of the picts' descent-specified baselines;
 similarly, the ascent of the result corresponds to the highest
-ascent-specified baseline. If at least one @scheme[pict] is supplied,
-then the last element (as reported by @scheme[pict-last]) for the
-result is @scheme[(or (pict-last pict) pict)] for the using last
-supplied @scheme[pict].}
+ascent-specified baseline. If at least one @racket[pict] is supplied,
+then the last element (as reported by @racket[pict-last]) for the
+result is @racket[(or (pict-last pict) pict)] for the using last
+supplied @racket[pict].}
 
 @defproc*[([(lt-superimpose [pict pict?] ...) pict?]
            [(ltl-superimpose [pict pict?] ...) pict?]
@@ -426,8 +426,8 @@ The descent of the result corresponds to baseline that is lowest in
 the result among all of the picts' descent-specified baselines;
 similarly, the ascent of the result corresponds to the highest
 ascent-specified baseline. The last element (as reported by
-@scheme[pict-last]) for the result is the lowest, right-most among the
-last-element picts of the @scheme[pict] arguments, as determined by
+@racket[pict-last]) for the result is the lowest, right-most among the
+last-element picts of the @racket[pict] arguments, as determined by
 comparing the last-element bottom-right corners.}
 
 
@@ -440,12 +440,12 @@ comparing the last-element bottom-right corners.}
             pict?])]{
 
 Creates a pict with the same bounding box, ascent, and descent as
-@scheme[base], but with @scheme[pict] placed on top.  The @scheme[dx]
-and @scheme[dy] arguments specify how far right and down the second
+@racket[base], but with @racket[pict] placed on top.  The @racket[dx]
+and @racket[dy] arguments specify how far right and down the second
 pict's corner is from the first pict's corner.  Alternately, the
-@scheme[find-pict] and @scheme[find] arguments find a point in
-@scheme[base] for @scheme[find-pict]; the @scheme[find] procedure
-should be something like @scheme[lt-find].}
+@racket[find-pict] and @racket[find] arguments find a point in
+@racket[base] for @racket[find-pict]; the @racket[find] procedure
+should be something like @racket[lt-find].}
 
 
 @defproc*[([(pin-under [base pict?] [dx real?] [dy real?] [pict pict?])
@@ -456,8 +456,8 @@ should be something like @scheme[lt-find].}
                        [pict pict?])
             pict?])]{
 
-Like @scheme[pin-over], but @scheme[pict] is drawn before
-@scheme[base] in the resulting combination.}
+Like @racket[pin-over], but @racket[pict] is drawn before
+@racket[base] in the resulting combination.}
 
 
 @defproc[(table [ncols exact-positive-integer?]
@@ -468,21 +468,21 @@ Like @scheme[pin-over], but @scheme[pict] is drawn before
                 [row-seps (table-list-of real?)])
          pict?]{
 
-Creates a table given a list of picts. The @scheme[picts] list is a
-concatenation of the table's rows (which means that a Scheme
-@scheme[list] call can be formatted to reflect the shape of the output
+Creates a table given a list of picts. The @racket[picts] list is a
+concatenation of the table's rows (which means that a Racket
+@racket[list] call can be formatted to reflect the shape of the output
 table).
   
-The @scheme[col-aligns], @scheme[row-aligns], @scheme[col-seps], and
-@scheme[row-seps] arguments are ``lists'' specifying the row and
+The @racket[col-aligns], @racket[row-aligns], @racket[col-seps], and
+@racket[row-seps] arguments are ``lists'' specifying the row and
 columns alignments separation between rows and columns.  For @math{c}
 columns and @math{r} rows, the first two should have @math{c} and
 @math{r} superimpose procedures, and the last two should have
 @math{c-1} and @math{r-1} numbers, respectively. The lists can be
 ``improper'' (i.e., ending in a number instead of an empty list), in
 which case the non-pair cdr is used as the value for all remaining
-list items that were expected. The @scheme[col-aligns] and
-@scheme[row-aligns] procedures are used to superimpose all of the
+list items that were expected. The @racket[col-aligns] and
+@racket[row-aligns] procedures are used to superimpose all of the
 cells in a column or row; this superimposition determines the total
 width or height of the column or row, and also determines the
 horizontal or vertical placement of each cell in the column or row.}
@@ -495,8 +495,8 @@ horizontal or vertical placement of each cell in the column or row.}
            [(scale [pict pict?] [w-factor real?] [h-factor real?]) pict?])]{
 
 Scales a pict drawing, as well as its @tech{bounding-box}. The drawing
-is scaled by adjusting the destination @scheme[dc<%>]'s scale while
-drawing the original @scheme[pict].}
+is scaled by adjusting the destination @racket[dc<%>]'s scale while
+drawing the original @racket[pict].}
 
 @defproc[(ghost [pict pict?]) pict?]{
 
@@ -506,7 +506,7 @@ but uses the child's size.}
 @defproc[(linewidth [w real?] [pict pict?]) pict?]{
 
 Selects a specific pen width for drawing, which applies to pen drawing
-for @scheme[pict] that does not already use a specific pen width.}
+for @racket[pict] that does not already use a specific pen width.}
 
 @defproc[(colorize [pict pict?] [color (or/c string? 
                                              (is-a?/c color%)
@@ -516,15 +516,15 @@ for @scheme[pict] that does not already use a specific pen width.}
          pict?]{
 
 Selects a specific color drawing, which applies to drawing in
-@scheme[pict] that does not already use a specific color. The
-@scheme[black-and-white] parameter causes all non-white colors to be
+@racket[pict] that does not already use a specific color. The
+@racket[black-and-white] parameter causes all non-white colors to be
 converted to black.}
 
 @defproc[(cellophane [pict pict?] [opacity (real-in 0 1)])
          pict?]{
 
-Makes the given @scheme[pict] semi-transparent, where an opacity of
-@scheme[0] is fully transparent, and an opacity of @scheme[1] is fully
+Makes the given @racket[pict] semi-transparent, where an opacity of
+@racket[0] is fully transparent, and an opacity of @racket[1] is fully
 opaque.  See @method[dc<%> set-alpha] for information about the
 contexts and cases when semi-transparent drawing works.}
 
@@ -543,12 +543,12 @@ box}. Usually, the inset amounts are negative.}
 @defform*[[(scale/improve-new-text pict-expr scale-expr)
            (scale/improve-new-text pict-expr x-scale-expr y-scale-expr)]]{
 
-Like the @scheme[scale] procedure, but also sets
-@scheme[current-expected-text-scale] while evaluating @scheme[pict-expr].}
+Like the @racket[scale] procedure, but also sets
+@racket[current-expected-text-scale] while evaluating @racket[pict-expr].}
 
 @defboolparam[black-and-white on?]{
 
-A parameter that determines whether @scheme[colorize] uses color or
+A parameter that determines whether @racket[colorize] uses color or
 black-and-white colors.}
 
 @; ------------------------------------------------------------------------
@@ -560,58 +560,58 @@ black-and-white colors.}
            [(inset [pict pict?] [l-amt real?] [t-amt real?] 
                    [r-amt real?] [b-amt real?]) pict?])]{
 
-Extends @scheme[pict]'s @tech{bounding box} by adding the given amounts
+Extends @racket[pict]'s @tech{bounding box} by adding the given amounts
 to the corresponding sides; ascent and descent are extended, too.}
 
 
 @defproc[(clip-descent [pict pict?]) pict?]{
 
-Truncates @scheme[pict]'s @tech{bounding box} by removing the descent part.}
+Truncates @racket[pict]'s @tech{bounding box} by removing the descent part.}
 
 
 @defproc[(lift-above-baseline [pict pict?] [amt real?]) pict?]{
 
-Lifts @scheme[pict] relative to its baseline, extending the
+Lifts @racket[pict] relative to its baseline, extending the
 @tech{bounding-box} height if necessary.}
 
 @defproc[(drop-below-ascent [pict pict?] [amt real?]) pict?]{
 
-Drops @scheme[pict] relative to its ascent line, extending the
+Drops @racket[pict] relative to its ascent line, extending the
 @tech{bounding-box} height if necessary.}
 
 @defproc[(baseless [pict pict?]) pict?]{
 
-Makes the descent @scheme[0] and the ascent the same as the height.}
+Makes the descent @racket[0] and the ascent the same as the height.}
 
 @defproc[(refocus [pict pict?] [sub-pict pict?]) pict?]{
 
-Assuming that @scheme[sub-pict] can be found within @scheme[pict],
-shifts the overall bounding box to that of @scheme[sub-pict] (but
-preserving all the drawing of @scheme[pict]). The last element, as
-reported by @scheme[pict-last] is also set to @scheme[(or (pict-last
+Assuming that @racket[sub-pict] can be found within @racket[pict],
+shifts the overall bounding box to that of @racket[sub-pict] (but
+preserving all the drawing of @racket[pict]). The last element, as
+reported by @racket[pict-last] is also set to @racket[(or (pict-last
 sub-pict) sub-pict)].}
 
 @defproc[(panorama [pict pict?]) pict?]{
 
 Shifts the given pict's bounding box to enclose the bounding boxes of
-all sub-picts (even @scheme[launder]ed picts).}
+all sub-picts (even @racket[launder]ed picts).}
 
 @defproc[(use-last [pict pict?] [sub-pict pict-path?]) pict?]{
 
-Returns a pict like @scheme[pict], but with the last element (as
-reported by @scheme[pict-last]) set to @scheme[sub-pict]. The
-@scheme[sub-pict] must exist as a sub-pict (or path of sub-picts)
-within @scheme[pict].}
+Returns a pict like @racket[pict], but with the last element (as
+reported by @racket[pict-last]) set to @racket[sub-pict]. The
+@racket[sub-pict] must exist as a sub-pict (or path of sub-picts)
+within @racket[pict].}
 
 @defproc[(use-last* [pict pict?] [sub-pict pict-path?]) pict?]{
 
-Propagates the last element of @scheme[sub-pict] to @scheme[pict].
+Propagates the last element of @racket[sub-pict] to @racket[pict].
 
-That is, @scheme[use-last*] is like @scheme[use-last], but the last
-element of @scheme[sub-pict] is used as the new last element for
-@scheme[pict], instead of @scheme[sub-pict] itself---unless
-@scheme[(pict-last sub-pict)] is @scheme[#f], in which case
-@scheme[sub-pict] is used as the last element of @scheme[pict].}
+That is, @racket[use-last*] is like @racket[use-last], but the last
+element of @racket[sub-pict] is used as the new last element for
+@racket[pict], instead of @racket[sub-pict] itself---unless
+@racket[(pict-last sub-pict)] is @racket[#f], in which case
+@racket[sub-pict] is used as the last element of @racket[pict].}
 
 @; ------------------------------------------------------------------------
 
@@ -633,24 +633,24 @@ element of @scheme[sub-pict] is used as the new last element for
            [(rbl-find [pict pict?] [find pict-path?]) (values real? real?)]
            [(rb-find [pict pict?] [find pict-path?]) (values real? real?)])]{
 
-Locates a pict designated by @scheme[find] is within @scheme[pict]. If
-@scheme[find] is a pict, then the @scheme[pict] must have been created
-as some combination involving @scheme[find].
+Locates a pict designated by @racket[find] is within @racket[pict]. If
+@racket[find] is a pict, then the @racket[pict] must have been created
+as some combination involving @racket[find].
 
-If @scheme[find] is a list, then the first element of @scheme[find]
-must be within @scheme[pict], the second element of @scheme[find] must
+If @racket[find] is a list, then the first element of @racket[find]
+must be within @racket[pict], the second element of @racket[find] must
 be within the second element, and so on.}
 
 @defproc[(pict-path? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a @scheme[pict] or a non-empty
-list of @scheme[pict]s.}
+Returns @racket[#t] if @racket[v] is a @racket[pict] or a non-empty
+list of @racket[pict]s.}
 
 @defproc[(launder [pict pict?]) pict?]{
 
 Creates a pict that has the same drawing and bounding box of
-@scheme[pict], but which hides all of its sub-picts so that they
-cannot be found with functions like @scheme[lt-find]. If @scheme[pict]
+@racket[pict], but which hides all of its sub-picts so that they
+cannot be found with functions like @racket[lt-find]. If @racket[pict]
 has a last-line pict, then the laundered pict has a fresh last-line
 pict with the same shape and location.}
 
@@ -675,10 +675,10 @@ Creates a fluffy cloud.}
                     [shaded? any/c #f])
          pict?]{
 
-Creates a Mac-like file icon, optionally shaded. If @scheme[color] is
-not a string or @scheme[color%] object, it is treated as a boolean, in
-which case true means @scheme["gray"] and false means
-@scheme["white"].}
+Creates a Mac-like file icon, optionally shaded. If @racket[color] is
+not a string or @racket[color%] object, it is treated as a boolean, in
+which case true means @racket["gray"] and false means
+@racket["white"].}
 
 @defproc[(standard-fish [w real?]
                         [h real?] 
@@ -688,12 +688,12 @@ which case true means @scheme["gray"] and false means
                         [#:open-mouth open-mouth (or/c boolean? real?) #f])
          pict?]{
 
-Creates a fish swimming either @scheme['left] or @scheme['right].
-If @scheme[eye-color] is @scheme[#f], no eye is drawn.
+Creates a fish swimming either @racket['left] or @racket['right].
+If @racket[eye-color] is @racket[#f], no eye is drawn.
 
-The @scheme[open-mouth] argument can be either @scheme[#f] (mouth
-closed), @scheme[#t] (mouth fully open), or a number: @scheme[0.0] is
-closed, @scheme[1.0] is fully open, and numbers in between are
+The @racket[open-mouth] argument can be either @racket[#f] (mouth
+closed), @racket[#t] (mouth fully open), or a number: @racket[0.0] is
+closed, @racket[1.0] is fully open, and numbers in between are
 partially open.}
 
 @defproc[(jack-o-lantern [size real?]
@@ -702,7 +702,7 @@ partially open.}
          pict?]{
 
 Creates a jack-o-lantern; use the same pumpkin and face color to get a
-plain pumpkin. The @scheme[size] determines the width.}
+plain pumpkin. The @racket[size] determines the width.}
 
 @defproc[(angel-wing [w real?]
                      [h real?] 
@@ -716,7 +716,7 @@ width for drawing the wing outline is the current one.}
 
 @subsection{Balloon Annotations}
 
-@defmodule[slideshow/balloon]{The @schememodname[slideshow/balloon]
+@defmodule[slideshow/balloon]{The @racketmodname[slideshow/balloon]
 library provides functions for creating and placing cartoon-speech
 balloons.}
 
@@ -728,29 +728,29 @@ balloons.}
                        [corner-radius (and/c real? (not/c negative?)) 32])
          balloon?]{
 
-Superimposes @scheme[pict] on top of a balloon that wraps it.
+Superimposes @racket[pict] on top of a balloon that wraps it.
 
-The @scheme[spike] argument indicates the corner from which a spike
+The @racket[spike] argument indicates the corner from which a spike
 protrudes from the balloon (i.e., the spike that points to whatever
-the balloon is about). For example, @scheme['n] means ``north,'',
+the balloon is about). For example, @racket['n] means ``north,'',
 which is a spike in the top middle of the balloon.
 
-The @scheme[dx] and @scheme[dy] arguments specify how far the spike
-should protrude.  For a @scheme['w] spike, @scheme[dx] should be
+The @racket[dx] and @racket[dy] arguments specify how far the spike
+should protrude.  For a @racket['w] spike, @racket[dx] should be
 negative, etc.
 
-The @scheme[color] argument is the background color for the balloon.
+The @racket[color] argument is the background color for the balloon.
 
-The @scheme[corner-radius] argument determines the radius of the cicle
+The @racket[corner-radius] argument determines the radius of the cicle
 used to roun the balloon's corners. As usual, if it is less than
-@scheme[1], then it acts as a ratio of the balloon's width or height.
+@racket[1], then it acts as a ratio of the balloon's width or height.
 
-The result is a balloon, not a pict. The @scheme[balloon-pict]
+The result is a balloon, not a pict. The @racket[balloon-pict]
 function extracts a pict whose bounding box does not include the
 spike, but includes the rest of the image, and the
-@scheme[balloon-point-x] and @scheme[balloon-point-y] functions
+@racket[balloon-point-x] and @racket[balloon-point-y] functions
 extract the location of the spike point. More typically, the
-@scheme[pin-balloon] function is used to add a balloon to a pict.}
+@racket[pin-balloon] function is used to add a balloon to a pict.}
 
 @defproc[(pip-wrap-balloon [pict pict?]
                            [spike (or/c 'n 's 'e 'w 'ne 'se 'sw 'nw)]
@@ -760,8 +760,8 @@ extract the location of the spike point. More typically, the
                            [corner-radius (and/c real? (not/c negative?)) 32])
          pict?]{
 
-Like @scheme[wrap-balloon], but produces a zero-sized pict suitable
-for use with @scheme[pin-over].}
+Like @racket[wrap-balloon], but produces a zero-sized pict suitable
+for use with @racket[pin-over].}
 
 
 @defproc*[([(pin-balloon [balloon balloon?]
@@ -775,15 +775,15 @@ for use with @scheme[pin-over].}
                          [find (pict? pict-path? . -> . (values real? real?))])
             pict?])]{
 
-Superimposes the pict in @scheme[balloon] onto @scheme[base] to
+Superimposes the pict in @racket[balloon] onto @racket[base] to
 produce a new pict. The balloon is positioned so that its spike points
-to the location specified by either @scheme[x] and @scheme[y]
-(numbers) or at the position determined by combining @scheme[base] and
-@scheme[at-pict] with @scheme[find]. The @scheme[find] function uses
-its arguments like @scheme[lt-find].
+to the location specified by either @racket[x] and @racket[y]
+(numbers) or at the position determined by combining @racket[base] and
+@racket[at-pict] with @racket[find]. The @racket[find] function uses
+its arguments like @racket[lt-find].
 
 The resulting pict has the same bounding box, descent, and ascent as
-@scheme[base], even if the balloon extends beyond the bounding box.}
+@racket[base], even if the balloon extends beyond the bounding box.}
 
 
 @defproc[(balloon [w real?]
@@ -795,8 +795,8 @@ The resulting pict has the same bounding box, descent, and ascent as
                   [color (or/c string? (is-a?/c color%)) balloon-color])
          balloon?]{
 
-Creates a balloon, much like @scheme[wrap-balloon] except that the balloon's
-width is @scheme[w] and its height is @scheme[h].}
+Creates a balloon, much like @racket[wrap-balloon] except that the balloon's
+width is @racket[w] and its height is @racket[h].}
 
 @defproc*[([(balloon? [v any/c]) boolean?]
            [(make-balloon [pict pict?] [x real?] [y real?]) balloon?]
@@ -815,7 +815,7 @@ The default background color for a balloon.
 
 @subsection{Face}
 
-@defmodule[slideshow/face]{The @schememodname[slideshow/face] library
+@defmodule[slideshow/face]{The @racketmodname[slideshow/face] library
 provides functions for a kind of @as-index{Mr. Potatohead}-style face
 library.}
 
@@ -833,19 +833,19 @@ follows:
 
 @itemize[
 
-    @item{@scheme['unhappy] --- @scheme[(face* 'none 'plain #t default-face-color 6)]}
-    @item{@scheme['sortof-unhappy] --- @scheme[(face* 'worried 'grimace #t default-face-color 6)]}
-    @item{@scheme['sortof-happy] --- @scheme[(face* 'worried 'medium #f default-face-color 6)]}
-    @item{@scheme['happy] --- @scheme[(face* 'none 'plain #f default-face-color 6)]}
-    @item{@scheme['happier] --- @scheme[(face* 'none 'large #f default-face-color 3)]}
-    @item{@scheme['embarrassed] --- @scheme[(face* 'worried 'medium #f default-face-color 3)]}
-    @item{@scheme['badly-embarrassed] --- @scheme[(face* 'worried 'medium #t default-face-color 3)]}
-    @item{@scheme['unhappier] --- @scheme[(face* 'normal 'large #t default-face-color 3)]}
-    @item{@scheme['happiest] --- @scheme[(face* 'normal 'huge #f default-face-color 0 -3)]}
-    @item{@scheme['unhappiest] --- @scheme[(face* 'normal 'huge #t default-face-color 0 -3)]}
-    @item{@scheme['mad] --- @scheme[(face* 'angry 'grimace #t default-face-color 0)]}
-    @item{@scheme['mean] --- @scheme[(face* 'angry 'narrow #f default-face-color 0)]}
-    @item{@scheme['surprised] --- @scheme[(face* 'worried 'oh #t default-face-color -4 -3 2)]}
+    @item{@racket['unhappy] --- @racket[(face* 'none 'plain #t default-face-color 6)]}
+    @item{@racket['sortof-unhappy] --- @racket[(face* 'worried 'grimace #t default-face-color 6)]}
+    @item{@racket['sortof-happy] --- @racket[(face* 'worried 'medium #f default-face-color 6)]}
+    @item{@racket['happy] --- @racket[(face* 'none 'plain #f default-face-color 6)]}
+    @item{@racket['happier] --- @racket[(face* 'none 'large #f default-face-color 3)]}
+    @item{@racket['embarrassed] --- @racket[(face* 'worried 'medium #f default-face-color 3)]}
+    @item{@racket['badly-embarrassed] --- @racket[(face* 'worried 'medium #t default-face-color 3)]}
+    @item{@racket['unhappier] --- @racket[(face* 'normal 'large #t default-face-color 3)]}
+    @item{@racket['happiest] --- @racket[(face* 'normal 'huge #f default-face-color 0 -3)]}
+    @item{@racket['unhappiest] --- @racket[(face* 'normal 'huge #t default-face-color 0 -3)]}
+    @item{@racket['mad] --- @racket[(face* 'angry 'grimace #t default-face-color 0)]}
+    @item{@racket['mean] --- @racket[(face* 'angry 'narrow #f default-face-color 0)]}
+    @item{@racket['surprised] --- @racket[(face* 'worried 'oh #t default-face-color -4 -3 2)]}
 
 ]}
 
@@ -870,34 +870,34 @@ Returns a pict for a face:
 
 @itemize[
 
- @item{@scheme[eyebrow-kind] determines the eyebrow shape.}
+ @item{@racket[eyebrow-kind] determines the eyebrow shape.}
 
- @item{@scheme[mouth-kind] determines the mouth shape, combined with
-       @scheme[frown?].}
+ @item{@racket[mouth-kind] determines the mouth shape, combined with
+       @racket[frown?].}
 
- @item{@scheme[frown?] determines whether the mouth is up or down.}
+ @item{@racket[frown?] determines whether the mouth is up or down.}
 
- @item{@scheme[color] determines the face color.}
+ @item{@racket[color] determines the face color.}
 
- @item{@scheme[eye-inset] adjusts the eye size; recommend values are
+ @item{@racket[eye-inset] adjusts the eye size; recommend values are
        between 0 and 10.}
 
- @item{@scheme[eyebrow-dy] adjusts the eyebrows; recommend values:
+ @item{@racket[eyebrow-dy] adjusts the eyebrows; recommend values:
        between -5 and 5.}
 
- @item{@scheme[pupil-dx] adjusts the pupil; recommend values are
+ @item{@racket[pupil-dx] adjusts the pupil; recommend values are
        between -10 and 10.}
 
- @item{@scheme[pupil-dy] adjusts the pupil; recommend values are
+ @item{@racket[pupil-dy] adjusts the pupil; recommend values are
        between -15 and 15.}
 
 ]
 
-The @scheme[#:eyebrow-shading?] through
-@scheme[#:face-background-shading?] arguments control whether a
+The @racket[#:eyebrow-shading?] through
+@racket[#:face-background-shading?] arguments control whether a
 shading is used for on a particular feature in the face (shading tends
 to look worse than just anti-aliasing when the face is small). The
-@scheme[#:teeth?] argument controls the visibility of the teeth for
+@racket[#:teeth?] argument controls the visibility of the teeth for
 some mouth shapes.}
 
 @; ----------------------------------------
@@ -917,19 +917,19 @@ Returns a pict for a ``flash'': a spiky oval, like the yellow
 background that goes behind a ``new!'' logo on web pages or a box of
 cereal.
   
-The @scheme[height] and @scheme[width] arguments determine the size of
+The @racket[height] and @racket[width] arguments determine the size of
 the oval in which the flash is drawn, prior to rotation. The actual
-height and width may be smaller if @scheme[points] is not a multiple
+height and width may be smaller if @racket[points] is not a multiple
 of 4, and the actual height and width will be different if the flash
 is rotated.
 
-The @scheme[n-points] argument determines the number of points on the
+The @racket[n-points] argument determines the number of points on the
 flash.
 
-The @scheme[spike-fraction] argument determines how big the flash
+The @racket[spike-fraction] argument determines how big the flash
 spikes are compared to the bounding oval.
 
-The @scheme[rotation] argument specifies an angle in radians for
+The @racket[rotation] argument specifies an angle in radians for
 counter-clockwise rotation.
 
 The flash is drawn in the default color.}
@@ -941,7 +941,7 @@ The flash is drawn in the default color.}
                         [rotation real? 0])
          pict?]{
 
-Like @scheme[filled-flash], but drawing only the outline.}
+Like @racket[filled-flash], but drawing only the outline.}
 
 @; ------------------------------------------------------------------------
 
@@ -950,7 +950,7 @@ Like @scheme[filled-flash], but drawing only the outline.}
 @defproc[(hyperlinkize [pict pict?])
          pict?]{
 
-Adds an underline and blue color. The @scheme[pict]'s height and
+Adds an underline and blue color. The @racket[pict]'s height and
 descent are extended.}
 
 
@@ -973,15 +973,15 @@ dividing the gap between the RGB components and 255 by the factor.}
                        [set-brush? any/c])
           void?]{
 
-Calls a @scheme[proc] multiple times, gradually changing the pen
+Calls a @racket[proc] multiple times, gradually changing the pen
 and/or brush color for each call. For the first call, the current pen
-and/or brush color matches @scheme[start]; for the last call, it
-matches scheme[end]; and for intermediate calls, the color is an
+and/or brush color matches @racket[start]; for the last call, it
+matches racket[end]; and for intermediate calls, the color is an
 intermediate color.
 
-The @scheme[max-step] and @scheme[step-delta] arguments should be
+The @racket[max-step] and @racket[step-delta] arguments should be
 exact numbers; the procedure is called with each number from 0 to
-@scheme[max-step] inclusive using a @scheme[step-delta] increment.}
+@racket[max-step] inclusive using a @racket[step-delta] increment.}
 
 @; ------------------------------------------------------------------------
 
@@ -990,13 +990,13 @@ exact numbers; the procedure is called with each number from 0 to
 @defparam[dc-for-text-size dc (or/c #f (is-a?/c dc<%>))]{
 
 A parameter that is used to determine the @tech{bounding box} of picts
-created with @scheme[text].
+created with @racket[text].
 
 The drawing context installed in this parameter need not be the same
 as the ultimate drawing context, but it must measure text in the same
-way. In particular, use a @scheme[post-script-dc%] for preparing
-PostScript output, while a @scheme[bitmap-dc%] instance will work fine
-for either @scheme[bitmap-dc%] or @scheme[canvas%] output.}
+way. In particular, use a @racket[post-script-dc%] for preparing
+PostScript output, while a @racket[bitmap-dc%] instance will work fine
+for either @racket[bitmap-dc%] or @racket[canvas%] output.}
 
 
 @defproc[(draw-pict [pict pict?]
@@ -1005,16 +1005,16 @@ for either @scheme[bitmap-dc%] or @scheme[canvas%] output.}
                     [y real?])
          void?]{
 
-Draws @scheme[pict] to @scheme[dc], with its top-left corner at offset
- (@scheme[x], @scheme[y]).}
+Draws @racket[pict] to @racket[dc], with its top-left corner at offset
+ (@racket[x], @racket[y]).}
 
 
 @defproc[(make-pict-drawer [pict pict?])
          ((is-a?/c dc<%>) real? real? . -> . void?)]{
 
 Generates a pict-drawer procedure for multiple renderings of
-@scheme[pict]. Using the generated procedure can be faster than
-repeated calls to @scheme[draw-pict].}
+@racket[pict]. Using the generated procedure can be faster than
+repeated calls to @racket[draw-pict].}
 
 
 @defproc[(show-pict [pict pict?]
@@ -1022,13 +1022,13 @@ repeated calls to @scheme[draw-pict].}
                     [h (or/c #f exact-nonnegative-integer?) #f])
          void?]{
 
-Opens a frame that displays @scheme[pict].  The frame adds one method,
-@scheme[set-pict], which takes a pict to display. The optional
-@scheme[w] and @scheme[h] arguments specify a minimum size for the
+Opens a frame that displays @racket[pict].  The frame adds one method,
+@racket[set-pict], which takes a pict to display. The optional
+@racket[w] and @racket[h] arguments specify a minimum size for the
 frame's drawing area.}
 
 @defparam[current-expected-text-scale scales (list real? real?)]{
 
 A parameter used to refine text measurements to better match an
-expected scaling of the image. The @scheme[scale/improve-new-text]
+expected scaling of the image. The @racket[scale/improve-new-text]
 form sets this parameter while also scaling the resulting pict.}
