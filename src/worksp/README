@@ -30,9 +30,9 @@ Borland-built extensions, cd to racket\src\racket\dynsrc and run
 mkbordyn.bat (which requires bcc23.exe, of course).
 
 As always, please report bugs via one of the following:
-  - DrRacket's "submit bug report" menu  (preferred)
-  - http://bugs.rackt-lang.org/
-  - bugs@racket-lang.org                 (last resort)
+  - DrRacket's "submit bug report" menu          (preferred)
+  - http://bugs.racket-lang.org/
+  - the mailing list (racket@list.cs.brown.edu)  (last resort)
 
 -PLT
  racket@racket-lang.org

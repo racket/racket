@@ -3,7 +3,7 @@ This is the source code distribution for Racket. For license
 information, please see the file racket/notes/COPYING.LIB.
 
 Compiled binaries, documentation, and up-to-date information are
-available at http://racketlang.org/; pre-compiled nightly builds are
+available at http://racket-lang.org/; pre-compiled nightly builds are
 available at http://pre.racket-lang.org/installers/.
 
 The Racket and GRacket source code should compile and execute on
