@@ -27,10 +27,10 @@ Create a file @filepath{mouse.scrbl} with this content:
             glass of milk.
           }|
 
-The first line's @scheme[#, @hash-lang[] #,
-@schememodname[scribble/base]] indicates that the file implements a
+The first line's @racket[#, @hash-lang[] #,
+@racketmodname[scribble/base]] indicates that the file implements a
 Scribble document. The document starts in ``text mode,'' and the
-@litchar["@"] character escapes to operators like @scheme[title],
+@litchar["@"] character escapes to operators like @racket[title],
 where the curly braces return to text mode for the arguments to the
 operator. The rest is document content.
 
@@ -89,10 +89,10 @@ Add more text to @filepath{mouse.scrbl} so that it looks like this:
           }|
 
         Now, after the first paragraph of the paper, we have two
-        sub-sections, each created by calling @scheme[section] to
+        sub-sections, each created by calling @racket[section] to
         generate a sub-section declaration. The first sub-section has
         two paragraphs. The second section, as initiated by the result
-        of the second @scheme[section] call, has a single paragraph.
+        of the second @racket[section] call, has a single paragraph.
 
 Run the @exec{scribble} command(s) from @secref["first-example"]
 again. You may notice the curly double-quotes in the output; in PDF
@@ -104,7 +104,7 @@ for em-dashes in HTML.
 @section{Splitting the Document Source}
 
 As a document grows larger, it's better to split sections into
-separate source files. The @scheme[include-section] operation
+separate source files. The @racket[include-section] operation
 incorporates a document defined by a @filepath{.scrbl} file into a
 larger document.
 
@@ -145,8 +145,8 @@ and in @filepath{straw.scbl}, put
           }|
 
 Notice that the new files both start with @hash-lang[], like the
-original document, and the @scheme[section]s from the original
-document become @scheme[title]s in the new documents. Both
+original document, and the @racket[section]s from the original
+document become @racket[title]s in the new documents. Both
 @filepath{milk.scrbl} and @filepath{straw.scrbl} are documents in
 their own right with their own titles, and they can be individually
 rendered using @exec{scribble}. Running @exec{scribble} on
@@ -171,7 +171,7 @@ content look right by changing the first line to
             #lang scribble/sigplan
           }|
 
-If you're instead working toward PLT Scheme library documentation,
+If you're instead working toward Racket library documentation,
 try changing the first line to 
 
           @sample|{
@@ -184,11 +184,11 @@ top-level sections turned into chapters that each start on a new page.
 If you have split the document into multiple files, the first line of
 the main document file determines the output format.
 
-Using @schememodname[scribble/sigplan] or
-@schememodname[scribble/manual] does not change the rendered HTML for
-a document---aside from @schememodname[scribble/manual] adding a
+Using @racketmodname[scribble/sigplan] or
+@racketmodname[scribble/manual] does not change the rendered HTML for
+a document---aside from @racketmodname[scribble/manual] adding a
 version number---but it changes the set of bindings available in the
-document body. For example, with @schememodname[scribble/sigplan], the
+document body. For example, with @racketmodname[scribble/sigplan], the
 introductory text can be marked as an abstract:
 
           @sample|{
@@ -204,16 +204,16 @@ introductory text can be marked as an abstract:
             ....}|
 
 When rendered as HTML, the abstract shows up as an inset paragraph. If
-you try to use @scheme[abstract] with the
-@schememodname[scribble/base] or @schememodname[scribble/manual]
-language, then you get an error, because @scheme[abstract] is not
+you try to use @racket[abstract] with the
+@racketmodname[scribble/base] or @racketmodname[scribble/manual]
+language, then you get an error, because @racket[abstract] is not
 defined.
 
 When a document is implemented across multiple files, changing the
 language of the main document can set the style for all of the parts,
 but it does not introduce bindings into the other part files. For
 example, if you change the language of @filepath{mouse.scrbl} to
-@schememodname[scribble/sigplan], then @scheme[abstract] becomes
+@racketmodname[scribble/sigplan], then @racket[abstract] becomes
 available in @filepath{mouse.scrbl} but not in @filepath{milk.scrbl}
 or @filepath{straw.scrbl}. In other words, operator names are
 lexically scoped.
@@ -221,9 +221,9 @@ lexically scoped.
 @; ----------------------------------------
 @section{More Functions}
 
-The @schememodname[scribble/sigplan] and
-@schememodname[scribble/manual] languages are supersets of the
-@schememodname[scribble/base] language, which provides a collection of
+The @racketmodname[scribble/sigplan] and
+@racketmodname[scribble/manual] languages are supersets of the
+@racketmodname[scribble/base] language, which provides a collection of
 basic operations. Many of the operations are style variations that you
 can apply to text:
 
@@ -241,15 +241,15 @@ which renders as
             @italic{probably} ask you for a straw.
           }
 
-As you would expect, calls to functions like @scheme[smaller],
-@scheme[larger], and @scheme[bold] can be nested in other calls. They
-can also be nested within calls to @scheme[title] or @scheme[section]:
+As you would expect, calls to functions like @racket[smaller],
+@racket[larger], and @racket[bold] can be nested in other calls. They
+can also be nested within calls to @racket[title] or @racket[section]:
 
           @sample|{
             @section{@italic{Not} the Last Straw}
           }|
 
-The @scheme[centered] operation centers a flow of text:
+The @racket[centered] operation centers a flow of text:
 
          @sample|{
            If a mouse eats all your cookies, put up a sign that says
@@ -273,19 +273,19 @@ which renders as
            and see if anyone brings you more.
        }
 
-The @scheme[margin-note] operation is used in a similar way, but the
+The @racket[margin-note] operation is used in a similar way, but the
 rendered text is moved to the margins.
 
-@margin-note{If you use @scheme[margin-note], then the content shows
+@margin-note{If you use @racket[margin-note], then the content shows
              up over here.}
 
-The @scheme[itemlist] operation creates a sequence of bulleted text,
-where the @scheme[item] operation groups text to appear in a single
-bullet. The @scheme[itemlist] operation is different from the others
+The @racket[itemlist] operation creates a sequence of bulleted text,
+where the @racket[item] operation groups text to appear in a single
+bullet. The @racket[itemlist] operation is different from the others
 that we have seen before, because it only accepts values produced by
-@scheme[item] instead of arbitrary text. This difference is reflected
+@racket[item] instead of arbitrary text. This difference is reflected
 in the use of @litchar{[}...@litchar{]} for the arguments to
-@scheme[itemlist] instead of  @litchar["{"]...@litchar["}"]:
+@racket[itemlist] instead of  @litchar["{"]...@litchar["}"]:
 
          @sample|{
            @centered{@bold{Notice to Mice}}
@@ -306,21 +306,21 @@ which renders as
          }
 
 @; ----------------------------------------
-@section{Text Mode vs. Scheme Mode for Arguments}
+@section{Text Mode vs. Racket Mode for Arguments}
 
 When @litchar{[}...@litchar{]} surrounds the arguments of an
-operation, the argument expressions are in Scheme mode rather than
-text mode. Even in Scheme mode, @litchar["@"] can be used to apply
+operation, the argument expressions are in Racket mode rather than
+text mode. Even in Racket mode, @litchar["@"] can be used to apply
 operations; once the @"@" syntax is enabled through a
-language like @schememodname[scribble/base] (as opposed to
-@schememodname[scheme]), it behaves the same in both Scheme mode and
+language like @racketmodname[scribble/base] (as opposed to
+@racketmodname[racket]), it behaves the same in both Racket mode and
 text mode.
 
-One advantage of using Scheme mode for the arguments to
-@scheme[itemlist] is that we can pass a keyword-tagged optional
-argument to @scheme[itemlist]. In particular, if you want a list with
-numbers instead of bullets, supply the @scheme['ordered] style to
-@scheme[itemlist] using the @scheme[#:style] keyword:
+One advantage of using Racket mode for the arguments to
+@racket[itemlist] is that we can pass a keyword-tagged optional
+argument to @racket[itemlist]. In particular, if you want a list with
+numbers instead of bullets, supply the @racket['ordered] style to
+@racket[itemlist] using the @racket[#:style] keyword:
 
          @sample|{
            @itemlist[#:style 'ordered
@@ -347,15 +347,15 @@ is equivalent to
           @italic["Yummy!"]
       }|
 
-which is equivalent to the Scheme expression
+which is equivalent to the Racket expression
 
-      @schemeblock[
+      @racketblock[
           (italic "Yummy!")
       ]
 
 These equivalences explain why Scribble functions are documented in
-Scheme notation. If you're reading this in HTML format, you can click
-@scheme[italic] above to access its documentation. The documentation
+Racket notation. If you're reading this in HTML format, you can click
+@racket[italic] above to access its documentation. The documentation
 won't completely make sense, yet, but it will by the end of this
 chapter.
 
@@ -364,15 +364,15 @@ to supply other optional arguments? You can use both
 @litchar{[}...@litchar{]} and @litchar["{"]...@litchar["}"] for an
 operation, as long as the @litchar{[}...@litchar{]} is first, and as
 long as no character separate the closing @litchar{]} from the
-opening @litchar["{"]. For example, calling @scheme[italic] is the
-same as using @scheme[elem] with the @scheme['italic] style:
+opening @litchar["{"]. For example, calling @racket[italic] is the
+same as using @racket[elem] with the @racket['italic] style:
 
       @sample|{
         @elem[#:style 'italic]{Yummy!}
       }|
 
 You can also @emph{omit} both @litchar{[}...@litchar{]} and
-@litchar["{"]...@litchar["}"]. In that case, the Scheme expression
+@litchar["{"]...@litchar["}"]. In that case, the Racket expression
 after @litchar["@"] is used directly instead of applied as an
 operation. For example,
 
@@ -386,22 +386,22 @@ renders as
        1 plus 2 is @(number->string (+ 1 2)).
      }
 
-The call to @scheme[number->string] is needed because a naked number
+The call to @racket[number->string] is needed because a naked number
 is not valid as document content.
 
 @; ----------------------------------------
 @section[#:tag "how-to:reader"]{@"@" Syntax Basics}
 
 The @"@" notation provided by Scribble is just another way of
-writing Scheme expressions. Scribble documents could be constructed
-using normal Scheme notation, without using @"@" at all, but
+writing Racket expressions. Scribble documents could be constructed
+using normal Racket notation, without using @"@" at all, but
 that would be inconvenient for most purposes. The @"@"
 notation makes dealing with textual content much easier.
 
-Whether in text mode or Scheme mode, @litchar["@"] in a document
-provides an escape to Scheme mode. The basic syntax of @litchar["@"] is
+Whether in text mode or Racket mode, @litchar["@"] in a document
+provides an escape to Racket mode. The basic syntax of @litchar["@"] is
 
-@schemeblock[
+@racketblock[
  @#,BNF-seq[@litchar["@"]
              @nonterm{cmd}
              @litchar{[} @kleenestar{@nonterm{datum}} @litchar{]}
@@ -421,42 +421,42 @@ one must be present. No spaces are allowed between
 
 ]
 
-A @nonterm{cmd} or @nonterm{datum} is normal Scheme notation, while a
+A @nonterm{cmd} or @nonterm{datum} is normal Racket notation, while a
 @nonterm{text-body} is itself in text mode. A @nonterm{cmd} obviously
-must not start with @litchar{[} or @litchar["{"], even though Scheme
+must not start with @litchar{[} or @litchar["{"], even though Racket
 forms could otherwise start with those characters.
 
-The expansion of just @litchar["@"]@nonterm{cmd} into Scheme code is
+The expansion of just @litchar["@"]@nonterm{cmd} into Racket code is
 
-@schemeblock[
+@racketblock[
   @#,nonterm{cmd}
 ]
 
 When either @litchar{[} @litchar{]} or @litchar["{"] @litchar["}"]
 are used, the expansion is
 
-@schemeblock[
+@racketblock[
   (@#,nonterm{cmd} @#,kleenestar{@nonterm{datum}} @#,kleenestar{@nonterm{parsed-body}})
 ]
 
 where @kleenestar{@nonterm{parsed-body}} is the parse result of the
 @nonterm{text-body}. The @kleenestar{@nonterm{parsed-body}} part often
-turns out to be a sequence of Scheme strings.
+turns out to be a sequence of Racket strings.
 
-In practice, the @nonterm{cmd} is normally a Scheme identifier that is
+In practice, the @nonterm{cmd} is normally a Racket identifier that is
 bound to a procedure or syntactic form. If the procedure or form
 expects further text to typeset, then @litchar["{"]...@litchar["}"]
 supplies the text. If the form expects other data, typically
-@litchar{[}...@litchar{]} is used to surround Scheme arguments,
+@litchar{[}...@litchar{]} is used to surround Racket arguments,
 instead. Even if an operation's argument is a string, if the string is
 not used as content text (but instead used as, say, a hyperlink
 label), then the string is typically provided through
 @litchar{[}...@litchar{]} instead of @litchar["{"]...@litchar["}"].
 Sometimes, both @litchar{[}...@litchar{]} and
 @litchar["{"]...@litchar["}"] are used, where the former surround
-Scheme arguments that precede text to typeset. Finally, if a form is a
-purely Scheme-level form with not typeset result, such as a
-@scheme[require] to import more operations, then typically just
+Racket arguments that precede text to typeset. Finally, if a form is a
+purely Racket-level form with not typeset result, such as a
+@racket[require] to import more operations, then typically just
 @litchar["@"] is used.
 
 For example the text-mode stream
@@ -471,9 +471,9 @@ For example the text-mode stream
     @figure["straw" @elem{A straw}]{@image["straw.png"]}
   }|
 
-is equivalent to the Scheme-mode sequence
+is equivalent to the Racket-mode sequence
 
-@schemeblock[
+@racketblock[
     (require scriblib/figure) "\n"
     "\n"
     (section #:tag "poetry" "Of Mice and Cookies") "\n"
@@ -485,12 +485,12 @@ is equivalent to the Scheme-mode sequence
 
 Besides showing how different argument conventions are used for
 different operations, the above example illustrates how whitespace is
-preserved in the Scheme form of a text-mode stream---including
+preserved in the Racket form of a text-mode stream---including
 newlines preserved as their own strings. Notice how the second
-@scheme[section] gets two arguments for its content, since the
-argument content for @scheme[section] in the source stream includes
+@racket[section] gets two arguments for its content, since the
+argument content for @racket[section] in the source stream includes
 both the use of an operator and additional text. When an operation
-like @scheme[section] or @scheme[italic] accepts content to typeset,
+like @racket[section] or @racket[italic] accepts content to typeset,
 it normally accepts an arbitrary number of arguments that together
 form the content.
 
@@ -502,21 +502,21 @@ arguments while disabling @litchar["@"] between the brackets.
 @; ---------------------------------------- 
 @section{Decoding Sequences}
 
-In a document that starts @scheme[#, @hash-lang[] #,
-@schememodname[scribble/base]], the top level is a text-mode stream,
+In a document that starts @racket[#, @hash-lang[] #,
+@racketmodname[scribble/base]], the top level is a text-mode stream,
 just like the @nonterm{text-body} in a @litchar["@"] form. As
 illustrated in the previous section, such a top-level sequence
-corresponds to a mixture of Scheme-mode strings and operation
-applications. There's an implicit operation, @scheme[decode], that
+corresponds to a mixture of Racket-mode strings and operation
+applications. There's an implicit operation, @racket[decode], that
 wraps the whole document to consume this mixture of strings and other
 values and turn them into a document description.
 
-The @scheme[decode] operation implements @defterm{flow decoding},
+The @racket[decode] operation implements @defterm{flow decoding},
 which takes a document stream and breaks it up into sections and
 paragraphs. Blank lines delimit paragraphs, and the results of
-operations like @scheme[title] and @scheme[section] generate ``here's
+operations like @racket[title] and @racket[section] generate ``here's
 the title'' or ``a new section starts here'' declarations that are
-recognized by @scheme[decode].
+recognized by @racket[decode].
 
 A different but related @defterm{content decoding} takes place within
 a paragraph or section title. Content decoding is responsible for
@@ -524,16 +524,16 @@ converting @litchar{---} to an em-dash or for converting @litchar{"}
 and @litchar{'} to suitable curly quotes.
 
 The decoding process for document's stream is ultimately determined by
-the @hash-lang[] line that starts the document. The @schememodname[scribble/base],
-@schememodname[scribble/manual], and @schememodname[scribble/sigplan]
-languages all use the same @scheme[decode] operation.  The
-@schememodname[scribble/text] language, however, acts more like a
+the @hash-lang[] line that starts the document. The @racketmodname[scribble/base],
+@racketmodname[scribble/manual], and @racketmodname[scribble/sigplan]
+languages all use the same @racket[decode] operation.  The
+@racketmodname[scribble/text] language, however, acts more like a
 plain-text preprocessor and it does not perform any such decoding
-rules. (For more on @schememodname[scribble/text], see
+rules. (For more on @racketmodname[scribble/text], see
 @secref["preprocessor"].)
 
 @margin-note{More precisely, languages like
-             @schememodname[scribble/base] apply @scheme[decode] only after
+             @racketmodname[scribble/base] apply @racket[decode] only after
              lifting out all definitions and imports from the document
              stream.}
 
@@ -542,10 +542,10 @@ paragraphs, it applies content decoding to strings within the
 paragraph. When content is wrapped with an operation, however, content
 decoding does not apply automatically. An operation is responsible for
 calling a content or flow decoder as it sees fit. Most operations call
-the decoder; for example, @scheme[italic], @scheme[bold],
-@scheme[smaller], etc., all decode their arguments. Similarly,
-@scheme[title] and @scheme[section] decode the given content for the
-title or section name.  The @scheme[literal] and @scheme[verbatim]
+the decoder; for example, @racket[italic], @racket[bold],
+@racket[smaller], etc., all decode their arguments. Similarly,
+@racket[title] and @racket[section] decode the given content for the
+title or section name.  The @racket[literal] and @racket[verbatim]
 operators, however, do not decode the given strings. For example,
 
     @sample|{
@@ -577,9 +577,9 @@ because the source is equivalent to
       (verbatim (number->string (+ 1 2)))
     }|
 
-where @scheme[(number->string (+ 1 2))] is evaluated to produce the
-argument to @scheme[verbatim]. The @litchar["|{"]...@litchar["}|"]
-style of brackets is often used with @scheme[verbatim], because
+where @racket[(number->string (+ 1 2))] is evaluated to produce the
+argument to @racket[verbatim]. The @litchar["|{"]...@litchar["}|"]
+style of brackets is often used with @racket[verbatim], because
 @litchar["|{"]...@litchar["}|"] disables @"@" notation for
 arguments. For example,
 
@@ -596,12 +596,12 @@ renders as
 @; ----------------------------------------
 @section[#:tag "roadmap"]{Next Steps}
 
-If your immediate goal is to document a PLT Scheme library or write
+If your immediate goal is to document a Racket library or write
 literate programs, skip to @secref["how-to-doc"], and then go back to
 @secref["reader"] and other chapters.
 
-If you are more interested in producing documents unrelated to PLT
-Scheme, continue with @secref["reader"] and then
+If you are more interested in producing documents unrelated to
+Racket, continue with @secref["reader"] and then
 @secref["generic-prose"].  Move on to @secref["internals"] when you
 need more power.
 

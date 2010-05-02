@@ -15,7 +15,7 @@
 @title[#:tag "renderer"]{Renderer}
 
 A renderer is an object that provides two main methods:
-@scheme[collect] and @scheme[render]. The first method is called to
+@racket[collect] and @racket[render]. The first method is called to
 collect global information about the document, including information
 that spans multiple documents rendered together; the collection pass
 tends to be format-independent, and it usually implemented completely
@@ -25,11 +25,11 @@ which is naturally specific to a particular format.
 @section{Base Renderer}
 
 @defmodule[scribble/base-render]{The
-@schememodname[scribble/base-render] module provides @scheme[render%],
+@racketmodname[scribble/base-render] module provides @racket[render%],
 which implements the core of a renderer. This rendering class must be
-refined with a mixin from @schememodname[scribble/text-render],
-@schememodname[scribble/html-render], or
-@schememodname[scribble/latex-render].}
+refined with a mixin from @racketmodname[scribble/text-render],
+@racketmodname[scribble/html-render], or
+@racketmodname[scribble/latex-render].}
 
 The mixin structure is meant to support document-specific extensions
 to the renderers. For example, the @exec{scribble} command-line tool
@@ -38,7 +38,7 @@ might, in the future, extract rendering mixins from a document module
 
 See the @filepath{base-render.ss} source for more information about
 the methods of the renderer. Documents built with higher layers, such
-as @schememodname[scribble/manual], generally do not call the render
+as @racketmodname[scribble/manual], generally do not call the render
 object's methods directly.
 
 @defclass[render% object% ()]{
@@ -49,15 +49,15 @@ Represents a renderer.
                  [refer-to-existing-files any/c #f]
                  [root-path (or/c path-string? false/c) #f])]{
 
-Creates a renderer whose output will go to @scheme[dest-dir]. For
-example, @scheme[dest-dir] could name the directory containing the
+Creates a renderer whose output will go to @racket[dest-dir]. For
+example, @racket[dest-dir] could name the directory containing the
 output Latex file, the HTML file for a single-file output, or the
 output sub-directory for multi-file HTML output.
 
-If @scheme[root-path] is not @scheme[#f], it is normally the same as
-@scheme[dest-dir] or a parent of @scheme[dest-dir]. It causes
+If @racket[root-path] is not @racket[#f], it is normally the same as
+@racket[dest-dir] or a parent of @racket[dest-dir]. It causes
 cross-reference information to record destination files relative to
-@scheme[root-path]; when cross-reference information is serialized, it
+@racket[root-path]; when cross-reference information is serialized, it
 can be deserialized via @method[render% deserialize-info] with a
 different root path (indicating that the destination files have
 moved).}
@@ -68,7 +68,7 @@ moved).}
            collect-info?]{
 
 Performs the @techlink{collect pass}. See @method[render% render] for
-information on the @scheme[dests] argument.}
+information on the @racket[dests] argument.}
 
 @defmethod[(resolve [srcs (listof part?)]
                     [dests (listof path-string?)]
@@ -76,7 +76,7 @@ information on the @scheme[dests] argument.}
            resolve-info?]{
 
 Performs the @techlink{resolve pass}. See @method[render% render] for
-information on the @scheme[dests] argument.}
+information on the @racket[dests] argument.}
 
 @defmethod[(render [srcs (listof part?)]
                    [dests (listof path-string?)]
@@ -85,29 +85,29 @@ information on the @scheme[dests] argument.}
 
 Produces the final output.
 
-The @scheme[dests] provide names of files for Latex or single-file
+The @racket[dests] provide names of files for Latex or single-file
 HTML output, or names of sub-directories for multi-file HTML output.
-If the @scheme[dests] are relative, they're relative to the current
+If the @racket[dests] are relative, they're relative to the current
 directory; normally, they should indicates a path within the
-@scheme[_dest-dir] supplied on initialization of the @scheme[render%]
+@racket[_dest-dir] supplied on initialization of the @racket[render%]
 object.}
 
 @defmethod[(serialize-info [ri resolve-info?])
            any/c]{
 
-Serializes the collected info in @scheme[ri].}
+Serializes the collected info in @racket[ri].}
 
 @defmethod[(deserialize-info [v any/c]
                              [ci collect-info?]
                              [#:root root-path (or/c path-string? false/c) #f])
            void?]{
 
-Adds the deserialized form of @scheme[v] to @scheme[ci].
+Adds the deserialized form of @racket[v] to @racket[ci].
 
-If @scheme[root-path] is not @scheme[#f], then file paths that are
-recorded in @scheme[ci] as relative to an instantiation-supplied
-@scheme[root-path] are deserialized as relative instead to the given
-@scheme[root-path].}
+If @racket[root-path] is not @racket[#f], then file paths that are
+recorded in @racket[ci] as relative to an instantiation-supplied
+@racket[root-path] are deserialized as relative instead to the given
+@racket[root-path].}
 
 }
 
@@ -119,7 +119,7 @@ recorded in @scheme[ci] as relative to an instantiation-supplied
 
 @defmixin[render-mixin (render%) ()]{
 
-Specializes a @scheme[render%] class for generating plain text.}}
+Specializes a @racket[render%] class for generating plain text.}}
 
 @; ----------------------------------------
 
@@ -129,21 +129,21 @@ Specializes a @scheme[render%] class for generating plain text.}}
 
 @defmixin[render-mixin (render%) ()]{
 
-Specializes a @scheme[render%] class for generating HTML output.
+Specializes a @racket[render%] class for generating HTML output.
 
 @defmethod[(set-external-tag-path [url string?]) void?]{
 
 Configures the renderer to redirect links to external via
-@scheme[url], adding a @scheme[tag] query element to the end of the
-URL that contains the Base64-encoded, @scheme[print]ed, serialized
-original tag (in the sense of @scheme[link-element]) for the link.}
+@racket[url], adding a @racket[tag] query element to the end of the
+URL that contains the Base64-encoded, @racket[print]ed, serialized
+original tag (in the sense of @racket[link-element]) for the link.}
 
 }
 
 @defmixin[render-multi-mixin (render%) ()]{
 
 Further specializes a rendering class produced by
-@scheme[render-mixin] for generating multiple HTML
+@racket[render-mixin] for generating multiple HTML
 files.}
 
 }
@@ -156,4 +156,4 @@ files.}
 
 @defmixin[render-mixin (render%) ()]{
 
-Specializes a @scheme[render%] class for generating Latex input.}}
+Specializes a @racket[render%] class for generating Latex input.}}

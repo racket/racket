@@ -3,25 +3,25 @@
           "utils.ss"
           (for-label scribble/srcdoc
                      scribble/extract
-                     scheme/contract))
+                     racket/contract))
 
 @title[#:tag "srcdoc"]{In-Source Documentation}
 
-The @schememodname[scribble/srcdoc] and
-@schememodname[scribble/extract] libraries support writing
+The @racketmodname[scribble/srcdoc] and
+@racketmodname[scribble/extract] libraries support writing
 documentation withing the documentation code along with an export
 contract, similar to using @as-index{JavaDoc}. With this approach, a
 single contract specification is used both for the run-time contract
 and the documentation of an exported binding.
 
-The @schememodname[scribble/srcdoc] library provides forms for
+The @racketmodname[scribble/srcdoc] library provides forms for
 exporting a binding with associated documentation. The
-@scheme[scribble/extract] library is used to pull
-@scheme[scribble/srcdoc]-based documentation into a Scribble document
+@racket[scribble/extract] library is used to pull
+@racket[scribble/srcdoc]-based documentation into a Scribble document
 (perhaps for multiple libraries).
 
 Although documentation is written with a library's implementation when
-using @schememodname[scribble/srcdoc], the documentation creates no
+using @racketmodname[scribble/srcdoc], the documentation creates no
 run-time overhead for the library. Similarly, typesetting the
 documentation does not require running the library. The two phases
 (run time versus documentation time) are kept separate in much the
@@ -48,26 +48,26 @@ expressions.
 
 @defform[(provide/doc spec ...)]{
 
-Like @scheme[provide] or @scheme[provide/contract], but each
-@scheme[spec] uses a @deftech{documentation transformer} to describe
+Like @racket[provide] or @racket[provide/contract], but each
+@racket[spec] uses a @deftech{documentation transformer} to describe
 the exported identifier and its contract.
 
 The currently supported @tech{documentation transformers} are
-@scheme[proc-doc], @scheme[proc-doc/names], @scheme[parameter-doc],
-and @scheme[thing-doc].}
+@racket[proc-doc], @racket[proc-doc/names], @racket[parameter-doc],
+and @racket[thing-doc].}
 
 
 @defform[(require/doc require-spec ...)]{
 
-Like @scheme[require], but for bindings that are needed at
+Like @racket[require], but for bindings that are needed at
 documentation time (and documentation-expansion time, etc.) instead of
-run time (and expansion time, etc.). A @scheme[require-doc] form has
+run time (and expansion time, etc.). A @racket[require-doc] form has
 no effect on a normal use of the library; it affects only
 documentation extraction.
 
-Typically, a library that uses @schememodname[scribble/srcdoc]
-includes at least @scheme[(require/doc scribble/base scribble/manual)]
-to get core Scheme forms and basic Scribble functions to use in
+Typically, a library that uses @racketmodname[scribble/srcdoc]
+includes at least @racket[(require/doc scribble/base scribble/manual)]
+to get core Racket forms and basic Scribble functions to use in
 documentation expressions.}
 
 @defform*/subs[#:literals (-> ->* case->)
@@ -81,27 +81,27 @@ documentation expressions.}
                           (code:line keyword contract-expr)]
                 [case-contract (case-> (-> arg ... result) ...)])]{
                           
-When used in @scheme[provide/doc], exports @scheme[id] with the
-contract described by @scheme[contract] or @scheme[case-contract],
-just like using @scheme[provide/contract].
+When used in @racket[provide/doc], exports @racket[id] with the
+contract described by @racket[contract] or @racket[case-contract],
+just like using @racket[provide/contract].
 
-The @scheme[arg-id]s specify the names of arguments, which are not
+The @racket[arg-id]s specify the names of arguments, which are not
 normally written as part of a contract. They are combined with the
 contract expression to generate the description of the binding in the
-documentation via @scheme[defproc]. The @scheme[(arg-id default-expr)]
+documentation via @racket[defproc]. The @racket[(arg-id default-expr)]
 pairs specify the names and default values of the optional arguments.
 
-The @scheme[desc-expr] is a documentation-time expression that
+The @racket[desc-expr] is a documentation-time expression that
 produces prose to describe the exported binding---that is, the last
-part of the generated @scheme[defproc], so the description can refer
-to the @scheme[arg-id]s using @scheme[scheme].
+part of the generated @racket[defproc], so the description can refer
+to the @racket[arg-id]s using @racket[racket].
 
-The normal @scheme[require]s of the enclosing library are effectively
-converted into @scheme[for-label] @scheme[require]s when generating
-documentation, so that identifiers in the @scheme[contract]s are
+The normal @racket[require]s of the enclosing library are effectively
+converted into @racket[for-label] @racket[require]s when generating
+documentation, so that identifiers in the @racket[contract]s are
 linked to their corresponding documentation. Similarly, any binding
 that is available in the run-time phase of of the enclosing library
-can be referenced in documentation prose using the @scheme[scheme]
+can be referenced in documentation prose using the @racket[racket]
 form.}
 
 @defform/subs[#:literals (-> ->d values)
@@ -113,18 +113,18 @@ form.}
                          (->d (arg ...) () #:pre-cond expression [id result])
                          (->d (arg ...) () #:rest id rest [id result])])]{
 
-Like @scheme[proc-doc], but supporting contract forms that embed
-argument names. Only a subset of @scheme[->d] forms are currently
+Like @racket[proc-doc], but supporting contract forms that embed
+argument names. Only a subset of @racket[->d] forms are currently
 supported.}
                           
 @defform[(thing-doc id contract-expr dec-expr)]{
 
-Like @scheme[proc-doc], but for an export of an arbitrary value.}
+Like @racket[proc-doc], but for an export of an arbitrary value.}
 
 @defform[#:literals (parameter/c)
          (parameter-doc id (parameter/c contract-expr) arg-id desc-expr)]{
 
-Like @scheme[proc-doc], but for exporting a parameter.}
+Like @racket[proc-doc], but for exporting a parameter.}
 
 @; ----------------------------------------
 
@@ -135,26 +135,26 @@ Like @scheme[proc-doc], but for exporting a parameter.}
 @defform[(include-extracted module-path)]{
 
 Expands to a sequence of documentation forms extracted from
-@scheme[module-path], which is expected to be a module that uses
-@schememodname[scribble/srcdoc].}
+@racket[module-path], which is expected to be a module that uses
+@racketmodname[scribble/srcdoc].}
 
 @defform[(provide-extracted module-path)]{
 
-Similar to @scheme[include-extracted], but the documentation is
-packaged and exported as @scheme[exported], instead of left
+Similar to @racket[include-extracted], but the documentation is
+packaged and exported as @racket[exported], instead of left
 inline.
 
 Use this form in combination with
-@scheme[include-previously-extracted] when documentation from a single
+@racket[include-previously-extracted] when documentation from a single
 source is to be split and typeset among multiple documentation
-locations. The @scheme[provide-extracted] form extracts the
-documentation once, and then @scheme[include-previously-extracted]
+locations. The @racket[provide-extracted] form extracts the
+documentation once, and then @racket[include-previously-extracted]
 form extracts documentation for specific bindings as needed.}
 
 @defform[(include-previously-extracted module-path regexp)]{
 
-Similar to @scheme[include-extracted], but instead of referring to the
-source that contains its own documentation, @scheme[module-path]
-refers to a module that uses @scheme[provide-extracted]. The
-@scheme[include-previously-extracted] form expands to documentation
-forms for all identifiers whose string forms match @scheme[regexp].}
+Similar to @racket[include-extracted], but instead of referring to the
+source that contains its own documentation, @racket[module-path]
+refers to a module that uses @racket[provide-extracted]. The
+@racket[include-previously-extracted] form expands to documentation
+forms for all identifiers whose string forms match @racket[regexp].}
