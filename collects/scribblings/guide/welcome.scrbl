@@ -173,7 +173,7 @@ options:
  @item{From a command-line prompt, run @exec{raco exe
        @nonterm{src-filename}}, where @nonterm{src-filename} contains
        the program. See @secref[#:doc '(lib
-       "scribblings/mzc/mzc.scrbl") "exe"] for more information.}
+       "scribblings/raco/raco.scrbl") "exe"] for more information.}
 
  @item{With Unix or Mac OS X, you can turn the program file into an
        executable script by inserting the line

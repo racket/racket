@@ -152,7 +152,7 @@ As a general guideline, any operation that is inlined by the
 that are not inlined (including all operations if the JIT compiler is
 disabled) are considered unsafe. The @exec{mzc} decompiler tool
 annotates operations that can be inlined by the compiler (see
-@secref[#:doc '(lib "scribblings/mzc/mzc.scrbl") "decompile"]), so the
+@secref[#:doc '(lib "scribblings/raco/raco.scrbl") "decompile"]), so the
 decompiler can be used to help predict parallel performance.
 
 To more directly report what is happening in a program that uses

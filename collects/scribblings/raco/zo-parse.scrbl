@@ -1,13 +1,13 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label scheme/base
-                     scheme/contract
+          (for-label racket/base
+                     racket/contract
                      compiler/zo-parse))
 
 @(define-syntax-rule (defstruct+ id fields . rest)
    (defstruct id fields #:transparent . rest))
 
-@title{Scheme API for Parsing Bytecode}
+@title{API for Parsing Bytecode}
 
 @defmodule[compiler/zo-parse]
 
@@ -15,27 +15,27 @@
 
 Parses a port (typically the result of opening a @filepath{.zo} file)
 containing bytecode. Beware that the structure types used to represent the
-bytecode are subject to frequent changes across PLT Scheme versons.
+bytecode are subject to frequent changes across Racket versons.
 
-The parsed bytecode is returned in a @scheme[compilation-top]
-structure. For a compiled module, the @scheme[compilation-top]
-structure will contain a @scheme[mod] structure. For a top-level
-sequence, it will normally contain a @scheme[seq] or @scheme[splice]
+The parsed bytecode is returned in a @racket[compilation-top]
+structure. For a compiled module, the @racket[compilation-top]
+structure will contain a @racket[mod] structure. For a top-level
+sequence, it will normally contain a @racket[seq] or @racket[splice]
 structure with a list of top-level declarations and expressions.
 
 The bytecode representation of an expression is closer to an
 S-expression than a traditional, flat control string. For example, an
-@scheme[if] form is represented by a @scheme[branch] structure that
+@racket[if] form is represented by a @racket[branch] structure that
 has three fields: a test expression, a ``then'' expression, and an
 ``else'' expression.  Similarly, a function call is represented by an
-@scheme[application] structure that has a list of argument
+@racket[application] structure that has a list of argument
 expressions.
 
 Storage for local variables or intermediate values (such as the
 arguments for a function call) is explicitly specified in terms of a
-stack. For example, execution of an @scheme[application] structure
+stack. For example, execution of an @racket[application] structure
 reserves space on the stack for each argument result. Similarly, when
-a @scheme[let-one] structure (for a simple @scheme[let]) is executed,
+a @racket[let-one] structure (for a simple @racket[let]) is executed,
 the value obtained by evaluating the right-hand side expression is
 pushed onto the stack, and then the body is evaluated. Local variables
 are always accessed as offsets from the current stack position. When a
@@ -48,8 +48,8 @@ more compact layout than when they were captured).
 When a sub-expression produces a value, then the stack pointer is
 restored to its location from before evaluating the
 sub-expression. For example, evaluating the right-hand size for a
-@scheme[let-one] structure may temporarily push values onto the stack,
-but the stack is restored to its pre-@scheme[let-one] position before
+@racket[let-one] structure may temporarily push values onto the stack,
+but the stack is restored to its pre-@racket[let-one] position before
 pushing the resulting value and continuing with the body. In addition,
 a tail call resets the stack pointer to the position that follows the
 enclosing function's arguments, and then the tail call continues by
@@ -64,10 +64,10 @@ variable. Mutable local variables are boxed similarly to global
 variables, but individual boxes are referenced from the stack and
 closures.
 
-Quoted syntax (in the sense of @scheme[quote-syntax]) is treated like
+Quoted syntax (in the sense of @racket[quote-syntax]) is treated like
 a global variable, because it must be instantiated for an appropriate
-phase. A @scheme[prefix] structure within a @scheme[compilation-top]
-or @scheme[mod] structure indicates the list of global variables and
+phase. A @racket[prefix] structure within a @racket[compilation-top]
+or @racket[mod] structure indicates the list of global variables and
 quoted syntax that need to be instantiated (and put into an array on
 the stack) before evaluating expressions that might use them.}
 
@@ -78,12 +78,12 @@ the stack) before evaluating expressions that might use them.}
                              [prefix prefix?]
                              [code (or/c form? indirect? any/c)])]{
 
-Wraps compiled code. The @scheme[max-let-depth] field indicates the
-maximum stack depth that @scheme[code] creates (not counting the
-@scheme[prefix] array). The @scheme[prefix] field describes top-level
+Wraps compiled code. The @racket[max-let-depth] field indicates the
+maximum stack depth that @racket[code] creates (not counting the
+@racket[prefix] array). The @racket[prefix] field describes top-level
 variables, module-level variables, and quoted syntax-objects accessed
-by @scheme[code]. The @scheme[code] field contains executable code; it
-is normally a @scheme[form], but a literal value is represented as
+by @racket[code]. The @racket[code] field contains executable code; it
+is normally a @racket[form], but a literal value is represented as
 itself.}
 
 
@@ -93,36 +93,36 @@ itself.}
 
 Represents a ``prefix'' that is pushed onto the stack to initiate
 evaluation. The prefix is an array, where buckets holding the values
-for @scheme[toplevels] are first, then a bucket for another array if
-@scheme[stxs] is non-empty, then @scheme[num-lifts] extra buckets for
+for @racket[toplevels] are first, then a bucket for another array if
+@racket[stxs] is non-empty, then @racket[num-lifts] extra buckets for
 lifted local procedures.
 
-In @scheme[toplevels], each element is one of the following:
+In @racket[toplevels], each element is one of the following:
 
 @itemize[
 
- @item{a @scheme[#f], which indicates a dummy variable that is used to
+ @item{a @racket[#f], which indicates a dummy variable that is used to
        access the enclosing module/namespace at run time;}
 
  @item{a symbol, which is a reference to a variable defined in the
        enclosing module;}
 
- @item{a @scheme[global-bucket], which is a top-level variable
+ @item{a @racket[global-bucket], which is a top-level variable
        (appears only outside of modules); or}
 
- @item{a @scheme[module-variable], which indicates a variable imported
+ @item{a @racket[module-variable], which indicates a variable imported
        from another module.}
 
 ]
 
 The variable buckets and syntax objects that are recorded in a prefix
-are accessed by @scheme[toplevel] and @scheme[topsyntax] expression
+are accessed by @racket[toplevel] and @racket[topsyntax] expression
 forms.}
 
 
 @defstruct+[global-bucket ([name symbol?])]{
 
-Represents a top-level variable, and used only in a @scheme[prefix].}
+Represents a top-level variable, and used only in a @racket[prefix].}
 
 
 @defstruct+[module-variable ([modidx module-path-index?]
@@ -130,16 +130,16 @@ Represents a top-level variable, and used only in a @scheme[prefix].}
                              [pos exact-integer?]
                              [phase (or/c 0 1)])]{
 
-Represents a top-level variable, and used only in a @scheme[prefix].
-The @scheme[pos] may record the variable's offset within its module,
-or it can be @scheme[-1] if the variable is always located by name.
-The @scheme[phase] indicates the phase level of the definition within
+Represents a top-level variable, and used only in a @racket[prefix].
+The @racket[pos] may record the variable's offset within its module,
+or it can be @racket[-1] if the variable is always located by name.
+The @racket[phase] indicates the phase level of the definition within
 its module.}
 
 
 @defstruct+[stx ([encoded wrapped?])]{
 
-Wraps a syntax object in a @scheme[prefix].}
+Wraps a syntax object in a @racket[prefix].}
 
 
 @; --------------------------------------------------
@@ -148,18 +148,18 @@ Wraps a syntax object in a @scheme[prefix].}
 @defstruct+[form ()]{
 
 A supertype for all forms that can appear in compiled code (including
-@scheme[expr]s), except for literals that are represented as
-themselves and @scheme[indirect] structures to create cycles.}
+@racket[expr]s), except for literals that are represented as
+themselves and @racket[indirect] structures to create cycles.}
 
 @defstruct+[(def-values form) ([ids (listof toplevel?)]
                                [rhs (or/c expr? seq? indirect? any/c)])]{
 
-Represents a @scheme[define-values] form. Each element of @scheme[ids]
+Represents a @racket[define-values] form. Each element of @racket[ids]
 will reference via the prefix either a top-level variable or a local
 module variable.
 
-After @scheme[rhs] is evaluated, the stack is restored to its depth
-from before evaluating @scheme[rhs].}
+After @racket[rhs] is evaluated, the stack is restored to its depth
+from before evaluating @racket[rhs].}
 
 @deftogether[(
 @defstruct+[(def-syntaxes form) ([ids (listof toplevel?)]
@@ -172,40 +172,40 @@ from before evaluating @scheme[rhs].}
                                    [max-let-depth exact-nonnegative-integer?])]
 )]{
 
-Represents a @scheme[define-syntaxes] or
-@scheme[define-values-for-syntax] form. The @scheme[rhs] expression
-has its own @scheme[prefix], which is pushed before evaluating
-@scheme[rhs]; the stack is restored after obtaining the result
-values. The @scheme[max-let-depth] field indicates the maximum size of
-the stack that will be created by @scheme[rhs] (not counting
-@scheme[prefix]).}
+Represents a @racket[define-syntaxes] or
+@racket[define-values-for-syntax] form. The @racket[rhs] expression
+has its own @racket[prefix], which is pushed before evaluating
+@racket[rhs]; the stack is restored after obtaining the result
+values. The @racket[max-let-depth] field indicates the maximum size of
+the stack that will be created by @racket[rhs] (not counting
+@racket[prefix]).}
 
 @defstruct+[(req form) ([reqs syntax?]
                         [dummy toplevel?])]{
 
-Represents a top-level @scheme[#%require] form (but not one in a
-@scheme[module] form) with a sequence of specifications
-@scheme[reqs]. The @scheme[dummy] variable is used to access to the
+Represents a top-level @racket[#%require] form (but not one in a
+@racket[module] form) with a sequence of specifications
+@racket[reqs]. The @racket[dummy] variable is used to access to the
 top-level namespace.}
 
 
 @defstruct+[(seq form) ([forms (listof (or/c form? indirect? any/c))])]{
 
-Represents a @scheme[begin] form, either as an expression or at the
-top level (though the latter is more commonly a @scheme[splice] form).
-When a @scheme[seq] appears in an expression position, its
-@scheme[forms] are expressions.
+Represents a @racket[begin] form, either as an expression or at the
+top level (though the latter is more commonly a @racket[splice] form).
+When a @racket[seq] appears in an expression position, its
+@racket[forms] are expressions.
 
-After each form in @scheme[forms] is evaluated, the stack is restored
+After each form in @racket[forms] is evaluated, the stack is restored
 to its depth from before evaluating the form.}
 
 
 @defstruct+[(splice form) ([forms (listof (or/c form? indirect? any/c))])]{
 
-Represents a top-level @scheme[begin] form where each evaluation is
+Represents a top-level @racket[begin] form where each evaluation is
 wrapped with a continuation prompt.
 
-After each form in @scheme[forms] is evaluated, the stack is restored
+After each form in @racket[forms] is evaluated, the stack is restored
 to its depth from before evaluating the form.}
 
 
@@ -226,39 +226,39 @@ to its depth from before evaluating the form.}
                         [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
                         [internal-context (or/c #f #t stx?)])]{
 
-Represents a @scheme[module] declaration. The @scheme[body] forms use
-@scheme[prefix], rather than any prefix in place for the module
-declaration itself (and each @scheme[syntax-body] has its own
+Represents a @racket[module] declaration. The @racket[body] forms use
+@racket[prefix], rather than any prefix in place for the module
+declaration itself (and each @racket[syntax-body] has its own
 prefix).
 
-The @scheme[provides] and @scheme[requires] lists are each an
+The @racket[provides] and @racket[requires] lists are each an
 association list from phases to exports or imports. In the case of
-@scheme[provides], each phase maps to two lists: one for exported
+@racket[provides], each phase maps to two lists: one for exported
 variables, and another for exported syntax. In the case of
-@scheme[requires], each phase maps to a list of imported module paths.
+@racket[requires], each phase maps to a list of imported module paths.
 
-The @scheme[body] field contains the module's run-time code, and
-@scheme[syntax-body] contains the module's compile-time code.  After
-each form in @scheme[body] or @scheme[syntax-body] is evaluated, the
+The @racket[body] field contains the module's run-time code, and
+@racket[syntax-body] contains the module's compile-time code.  After
+each form in @racket[body] or @racket[syntax-body] is evaluated, the
 stack is restored to its depth from before evaluating the form.
 
-The @scheme[unexported] list contains lists of symbols for unexported
+The @racket[unexported] list contains lists of symbols for unexported
 definitions that can be accessed through macro expansion. The first
 list is phase-0 variables, the second is phase-0 syntax, and the last
 is phase-1 variables.
 
-The @scheme[max-let-depth] field indicates the maximum stack depth
-created by @scheme[body] forms (not counting the @scheme[prefix]
-array).  The @scheme[dummy] variable is used to access to the
+The @racket[max-let-depth] field indicates the maximum stack depth
+created by @racket[body] forms (not counting the @racket[prefix]
+array).  The @racket[dummy] variable is used to access to the
 top-level namespace.
 
-The @scheme[lang-info] value specifies an optional module path that
+The @racket[lang-info] value specifies an optional module path that
 provides information about the module's implementation language.
 
-The @scheme[internal-module-context] value describes the lexical
+The @racket[internal-module-context] value describes the lexical
 context of the body of the module. This value is used by
-@scheme[module->namespace]. A @scheme[#f] value means that the context
-is unavailable or empty. A @scheme[#t] value means that the context is
+@racket[module->namespace]. A @racket[#f] value means that the context
+is unavailable or empty. A @racket[#t] value means that the context is
 computed by re-importing all required modules. A syntax-object value
 embeds an arbitrary lexical context.}
 
@@ -270,7 +270,7 @@ embeds an arbitrary lexical context.}
                       [protected? boolean?]
                       [insp (or #t #f void?)])]{
 
-Describes an individual provided identifier within a @scheme[mod] instance.}
+Describes an individual provided identifier within a @racket[mod] instance.}
 
 @; --------------------------------------------------
 @section{Expressions}
@@ -279,7 +279,7 @@ Describes an individual provided identifier within a @scheme[mod] instance.}
 
 A supertype for all expression forms that can appear in compiled code,
 except for literals that are represented as themselves,
-@scheme[indirect] structures to create cycles, and some @scheme[seq]
+@racket[indirect] structures to create cycles, and some @racket[seq]
 structures (which can appear as an expression as long as it contains
 only other things that can be expressions).}
 
@@ -294,41 +294,41 @@ only other things that can be expressions).}
                         [max-let-depth exact-nonnegative-integer?]
                         [body (or/c expr? seq? indirect? any/c)])]{
 
-Represents a @scheme[lambda] form. The @scheme[name] field is a name
-for debugging purposes. The @scheme[num-params] field indicates the
+Represents a @racket[lambda] form. The @racket[name] field is a name
+for debugging purposes. The @racket[num-params] field indicates the
 number of arguments accepted by the procedure, not counting a rest
-argument; the @scheme[rest?] field indicates whether extra arguments
+argument; the @racket[rest?] field indicates whether extra arguments
 are accepted and collected into a ``rest'' variable. The
-@scheme[param-types] list contains @scheme[num-params] symbols
-indicating the type of each argumet, either @scheme['val] for a normal
-argument, @scheme['ref] for a boxed argument (representing a mutable
-local variable), or @scheme['flonum] for a flonum argument. The
-@scheme[closure-map] field is a vector of stack positions that are
-captured when evaluating the @scheme[lambda] form to create a closure.
-The @scheme[closure-types] field provides a corresponding list of
+@racket[param-types] list contains @racket[num-params] symbols
+indicating the type of each argumet, either @racket['val] for a normal
+argument, @racket['ref] for a boxed argument (representing a mutable
+local variable), or @racket['flonum] for a flonum argument. The
+@racket[closure-map] field is a vector of stack positions that are
+captured when evaluating the @racket[lambda] form to create a closure.
+The @racket[closure-types] field provides a corresponding list of
 types, but no distinction is made between normal values and boxed
 values; also, this information is redundant, since it can be inferred by
-the bindings referenced though @scheme[closure-map].
+the bindings referenced though @racket[closure-map].
 
 When the function is called, the rest-argument list (if any) is pushed
 onto the stack, then the normal arguments in reverse order, then the
-closure-captured values in reverse order. Thus, when @scheme[body] is
+closure-captured values in reverse order. Thus, when @racket[body] is
 run, the first value on the stack is the first value captured by the
-@scheme[closure-map] array, and so on.
+@racket[closure-map] array, and so on.
 
-The @scheme[max-let-depth] field indicates the maximum stack depth
-created by @scheme[body] plus the arguments and closure-captured
-values pushed onto the stack. The @scheme[body] field is the
+The @racket[max-let-depth] field indicates the maximum stack depth
+created by @racket[body] plus the arguments and closure-captured
+values pushed onto the stack. The @racket[body] field is the
 expression for the closure's body.}
 
 
 @defstruct+[(closure expr) ([code lam?] [gen-id symbol?])]{
 
-A @scheme[lambda] form with an empty closure, which is a procedure
+A @racket[lambda] form with an empty closure, which is a procedure
 constant. The procedure constant can appear multiple times in the
-graph of expressions for bytecode, and the @scheme[code] field can
-refer back to the same @scheme[closure] through an @scheme[indirect]
-for a recursive constant procedure; the @scheme[gen-id] is different
+graph of expressions for bytecode, and the @racket[code] field can
+refer back to the same @racket[closure] through an @racket[indirect]
+for a recursive constant procedure; the @racket[gen-id] is different
 for each such constant.}
 
 
@@ -340,8 +340,8 @@ An indirection used in expression positions to form cycles.}
 @defstruct+[(case-lam expr) ([name (or/c symbol? vector?)]
                              [clauses (listof lam?)])]{
 
-Represents a @scheme[case-lambda] form as a combination of
-@scheme[lambda] forms that are tried (in order) based on the number of
+Represents a @racket[case-lambda] form as a combination of
+@racket[lambda] forms that are tried (in order) based on the number of
 arguments given.}
 
 
@@ -350,26 +350,26 @@ arguments given.}
                             [flonum? boolean?]
                             [unused? boolean?])]{
 
-Pushes an uninitialized slot onto the stack, evaluates @scheme[rhs]
-and puts its value into the slot, and then runs @scheme[body]. If
-@scheme[flonum?] is @scheme[#t], then @scheme[rhs] must produce a
-flonum, and the slot must be accessed by @scheme[localref]s that
-expect a flonum. If @scheme[unused?] is @scheme[#t], then the slot
-must not be used, and the value of @scheme[rhs] is not actually pushed
-onto the stack (but @scheme[rhs] is constrained to produce a single
+Pushes an uninitialized slot onto the stack, evaluates @racket[rhs]
+and puts its value into the slot, and then runs @racket[body]. If
+@racket[flonum?] is @racket[#t], then @racket[rhs] must produce a
+flonum, and the slot must be accessed by @racket[localref]s that
+expect a flonum. If @racket[unused?] is @racket[#t], then the slot
+must not be used, and the value of @racket[rhs] is not actually pushed
+onto the stack (but @racket[rhs] is constrained to produce a single
 value).
 
-After @scheme[rhs] is evaluated, the stack is restored to its depth
-from before evaluating @scheme[rhs]. Note that the new slot is created
-before evaluating @scheme[rhs].}
+After @racket[rhs] is evaluated, the stack is restored to its depth
+from before evaluating @racket[rhs]. Note that the new slot is created
+before evaluating @racket[rhs].}
 
 
 @defstruct+[(let-void expr) ([count exact-nonnegative-integer?]
                              [boxes? boolean?]
                              [body (or/c expr? seq? indirect? any/c)])]{
 
-Pushes @scheme[count] uninitialized slots onto the stack and then runs
-@scheme[body]. If @scheme[boxes?] is @scheme[#t], then the slots are
+Pushes @racket[count] uninitialized slots onto the stack and then runs
+@racket[body]. If @racket[boxes?] is @racket[#t], then the slots are
 filled with boxes that contain @|undefined-const|.}
 
 
@@ -379,36 +379,36 @@ filled with boxes that contain @|undefined-const|.}
                                   [rhs (or/c expr? seq? indirect? any/c)]
                                   [body (or/c expr? seq? indirect? any/c)])]{
 
-Runs @scheme[rhs] to obtain @scheme[count] results, and installs them
+Runs @racket[rhs] to obtain @racket[count] results, and installs them
 into existing slots on the stack in order, skipping the first
-@scheme[pos] stack positions. If @scheme[boxes?] is @scheme[#t], then
+@racket[pos] stack positions. If @racket[boxes?] is @racket[#t], then
 the values are put into existing boxes in the stack slots.
 
-After @scheme[rhs] is evaluated, the stack is restored to its depth
-from before evaluating @scheme[rhs].}
+After @racket[rhs] is evaluated, the stack is restored to its depth
+from before evaluating @racket[rhs].}
 
 
 @defstruct+[(let-rec expr) ([procs (listof lam?)]
                             [body (or/c expr? seq? indirect? any/c)])]{
 
-Represents a @scheme[letrec] form with @scheme[lambda] bindings. It
-allocates a closure shell for each @scheme[lambda] form in
-@scheme[procs], installs each onto the stack in previously
+Represents a @racket[letrec] form with @racket[lambda] bindings. It
+allocates a closure shell for each @racket[lambda] form in
+@racket[procs], installs each onto the stack in previously
 allocated slots in reverse order (so that the closure shell for the
-last element of @scheme[procs] is installed at stack position
-@scheme[0]), fills out each shell's closure (where each closure
+last element of @racket[procs] is installed at stack position
+@racket[0]), fills out each shell's closure (where each closure
 normally references some other just-created closures, which is
 possible because the shells have been installed on the stack), and
-then evaluates @scheme[body].}
+then evaluates @racket[body].}
 
 
 @defstruct+[(boxenv expr) ([pos exact-nonnegative-integer?]
                            [body (or/c expr? seq? indirect? any/c)])]{
 
-Skips @scheme[pos] elements of the stack, setting the slot afterward
+Skips @racket[pos] elements of the stack, setting the slot afterward
 to a new box containing the slot's old value, and then runs
-@scheme[body]. This form appears when a @scheme[lambda] argument is
-mutated using @scheme[set!] within its body; calling the function
+@racket[body]. This form appears when a @racket[lambda] argument is
+mutated using @racket[set!] within its body; calling the function
 initially pushes the value directly on the stack, and this form boxes
 the value so that it can be mutated later.}
 
@@ -420,14 +420,14 @@ the value so that it can be mutated later.}
                              [flonum? boolean?])]{
 
 Represents a local-variable reference; it accesses the value in the
-stack slot after the first @scheme[pos] slots. If @scheme[unbox?]  is
-@scheme[#t], the stack slot contains a box, and a value is extracted
-from the box. If @scheme[clear?] is @scheme[#t], then after the value
+stack slot after the first @racket[pos] slots. If @racket[unbox?]  is
+@racket[#t], the stack slot contains a box, and a value is extracted
+from the box. If @racket[clear?] is @racket[#t], then after the value
 is obtained, the stack slot is cleared (to avoid retaining a reference
 that can prevent reclamation of the value as garbage). If
-@scheme[other-clears?] is @scheme[#t], then some later reference to
-the same stack slot may clear after reading. If @scheme[flonum?] is
-@scheme[#t], the slot holds to a flonum value.}
+@racket[other-clears?] is @racket[#t], then some later reference to
+the same stack slot may clear after reading. If @racket[flonum?] is
+@racket[#t], the slot holds to a flonum value.}
 
 
 @defstruct+[(toplevel expr) ([depth exact-nonnegative-integer?]
@@ -436,15 +436,15 @@ the same stack slot may clear after reading. If @scheme[flonum?] is
                              [ready? boolean?])]{
 
 Represents a reference to a top-level or imported variable via the
-@scheme[prefix] array. The @scheme[depth] field indicates the number
-of stack slots to skip to reach the prefix array, and @scheme[pos] is
+@racket[prefix] array. The @racket[depth] field indicates the number
+of stack slots to skip to reach the prefix array, and @racket[pos] is
 the offset into the array.
 
-If @scheme[const?] is @scheme[#t], then the variable definitely will
-be defined, and its value stays constant. If @scheme[ready?] is
-@scheme[#t], then the variable definitely will be defined (but its
-value might change in the future). If @scheme[const?] and
-@scheme[ready?] are both @scheme[#f], then a check is needed to
+If @racket[const?] is @racket[#t], then the variable definitely will
+be defined, and its value stays constant. If @racket[ready?] is
+@racket[#t], then the variable definitely will be defined (but its
+value might change in the future). If @racket[const?] and
+@racket[ready?] are both @racket[#f], then a check is needed to
 determine whether the variable is defined.}
 
 
@@ -453,19 +453,19 @@ determine whether the variable is defined.}
                               [midpt exact-nonnegative-integer?])]{
 
 Represents a reference to a quoted syntax object via the
-@scheme[prefix] array. The @scheme[depth] field indicates the number
-of stack slots to skip to reach the prefix array, and @scheme[pos] is
-the offset into the array. The @scheme[midpt] value is used internally
+@racket[prefix] array. The @racket[depth] field indicates the number
+of stack slots to skip to reach the prefix array, and @racket[pos] is
+the offset into the array. The @racket[midpt] value is used internally
 for lazy calculation of syntax information.}
 
 
 @defstruct+[(application expr) ([rator (or/c expr? seq? indirect? any/c)]
                                 [rands (listof (or/c expr? seq? indirect? any/c))])]{
 
-Represents a function call. The @scheme[rator] field is the expression
-for the function, and @scheme[rands] are the argument
+Represents a function call. The @racket[rator] field is the expression
+for the function, and @racket[rands] are the argument
 expressions. Before any of the expressions are evaluated,
-@scheme[(length rands)] uninitialized stack slots are created (to be
+@racket[(length rands)] uninitialized stack slots are created (to be
 used as temporary space).}
 
 
@@ -473,51 +473,51 @@ used as temporary space).}
                            [then (or/c expr? seq? indirect? any/c)]
                            [else (or/c expr? seq? indirect? any/c)])]{
 
-Represents an @scheme[if] form.
+Represents an @racket[if] form.
 
-After @scheme[test] is evaluated, the stack is restored to its depth
-from before evaluating @scheme[test].}
+After @racket[test] is evaluated, the stack is restored to its depth
+from before evaluating @racket[test].}
 
 
 @defstruct+[(with-cont-mark expr) ([key (or/c expr? seq? indirect? any/c)]
                                    [val (or/c expr? seq? indirect? any/c)]
                                    [body (or/c expr? seq? indirect? any/c)])]{
 
-Represents a @scheme[with-continuation-mark] expression. 
+Represents a @racket[with-continuation-mark] expression. 
 
-After each of @scheme[key] and @scheme[val] is evaluated, the stack is
-restored to its depth from before evaluating @scheme[key] or
-@scheme[val].}
+After each of @racket[key] and @racket[val] is evaluated, the stack is
+restored to its depth from before evaluating @racket[key] or
+@racket[val].}
 
 @defstruct+[(beg0 expr) ([seq (listof (or/c expr? seq? indirect? any/c))])]{
 
-Represents a @scheme[begin0] expression.
+Represents a @racket[begin0] expression.
 
-After each expression in @scheme[seq] is evaluated, the stack is
+After each expression in @racket[seq] is evaluated, the stack is
 restored to its depth from before evaluating the expression.}
 
 
 @defstruct+[(varref expr) ([toplevel toplevel?])]{
 
-Represents a @scheme[#%variable-reference] form.}
+Represents a @racket[#%variable-reference] form.}
 
 
 @defstruct+[(assign expr) ([id toplevel?]
                            [rhs (or/c expr? seq? indirect? any/c)]
                            [undef-ok? boolean?])]{
 
-Represents a @scheme[set!] expression that assigns to a top-level or
+Represents a @racket[set!] expression that assigns to a top-level or
 module-level variable. (Assignments to local variables are represented
-by @scheme[install-value] expressions.)
+by @racket[install-value] expressions.)
 
-After @scheme[rhs] is evaluated, the stack is restored to its depth
-from before evaluating @scheme[rhs].}
+After @racket[rhs] is evaluated, the stack is restored to its depth
+from before evaluating @racket[rhs].}
 
 
 @defstruct+[(apply-values expr) ([proc (or/c expr? seq? indirect? any/c)]
                                  [args-expr (or/c expr? seq? indirect? any/c)])]{
 
-Represents @scheme[(call-with-values (lambda () args-expr) proc)],
+Represents @racket[(call-with-values (lambda () args-expr) proc)],
 which is handled specially by the run-time system.}
 
 
@@ -533,9 +533,9 @@ kernel.}
                      [wraps (listof wrap?)]
                      [certs (or/c list? #f)])]{
 
-Represents a syntax object, where @scheme[wraps] contain the lexical
-information and @scheme[certs] is certificate information. When the
-@scheme[datum] part is itself compound, its pieces are wrapped, too.}
+Represents a syntax object, where @racket[wraps] contain the lexical
+information and @racket[certs] is certificate information. When the
+@racket[datum] part is itself compound, its pieces are wrapped, too.}
 
 
 @defstruct+[wrap ()]{
@@ -571,7 +571,7 @@ Represents a set of module and import bindings.}
                              [prefix (or/c symbol? #f)])]{
 
 Represents a set of simple imports from one module within a
-@scheme[module-rename].}
+@racket[module-rename].}
 
 @defstruct+[module-binding ()]{
 
@@ -580,7 +580,7 @@ A supertype for module bindings.}
 @defstruct+[(simple-module-binding module-binding) ([path module-path-index?])]{
                                                                                 
 Represents a single identifier import within
-a @scheme[module-rename].}
+a @racket[module-rename].}
 
 @defstruct+[(phased-module-binding module-binding) ([path module-path-index?]
                                                     [phase exact-integer?]
@@ -589,7 +589,7 @@ a @scheme[module-rename].}
                                                     [nominal-export-name any/c])]{
                                                                                  
 Represents a single identifier import within
-a @scheme[module-rename].}
+a @racket[module-rename].}
                                                                                  
 @defstruct+[(exported-nominal-module-binding module-binding) ([path module-path-index?]
                                                               [export-name any/c]
@@ -597,19 +597,19 @@ a @scheme[module-rename].}
                                                               [nominal-export-name any/c])]{ 
                                                                                             
 Represents a single identifier import within
-a @scheme[module-rename].}
+a @racket[module-rename].}
                                                                                            
 @defstruct+[(nominal-module-binding module-binding) ([path module-path-index?]
                                                      [nominal-path nominal-path?])]{       
                                                                                             
 Represents a single identifier import within
-a @scheme[module-rename].}
+a @racket[module-rename].}
                                                                                    
 @defstruct+[(exported-module-binding module-binding) ([path module-path-index?]
                                                       [export-name any/c])]{
                                                                                                                                                                     
 Represents a single identifier import within
-a @scheme[module-rename].}
+a @racket[module-rename].}
                                                                            
                                                                            
 @defstruct+[nominal-path ()]{

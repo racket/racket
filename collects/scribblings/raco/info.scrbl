@@ -4,17 +4,17 @@
                      string-constants
                      setup/getinfo))
 
-@title[#:tag "info.ss"]{@filepath{info.ss} File Format}
+@title[#:tag "info.rkt"]{@filepath{info.rkt} File Format}
 
 @defmodulelang[setup/infotab]
 
-In each collection, a special module file @filepath{info.ss} provides
+In each collection, a special module file @filepath{info.rkt} provides
 general information about a collection for use by various tools. For
-example, an @filepath{info.ss} file specifies how to build the
+example, an @filepath{info.rkt} file specifies how to build the
 documentation for a collection, and it lists plug-in tools for
-DrScheme that the collection provides.
+DrRacket or commands for @exec{raco} that the collection provides.
 
-Although an @filepath{info.ss} file contains a module declaration, the
+Although an @filepath{info.rkt} file contains a module declaration, the
 declaration has a highly constrained form. It must match the following
 grammar of @scheme[_info-module]:
 
@@ -28,8 +28,11 @@ grammar of @scheme[_info-module]:
 [info-module (module info intotab-mod-path
                (define id info-expr)
                ...)]
-[intotab-mod-path (lib "infotab.ss" "setup")
-                  setup/infotab]
+[intotab-mod-path setup/infotab
+                  (lib "setup/infotab.ss")
+                  (lib "setup/infotab.rkt")
+                  (lib "infotab.rkt" "setup")
+                  (lib "infotab.ss" "setup")]
 [info-expr (quote datum)
            (quasiquote datum)
            (info-primitive info-expr ...)
@@ -45,27 +48,20 @@ grammar of @scheme[_info-module]:
                 system-library-subpath]
 ]
 
-For example, the following declaration could be the @filepath{info.ss}
-library of the @filepath{help} collection. It contains definitions for
-three info tags, @scheme[name], @scheme[mzscheme-launcher-libraries], and
-@scheme[mzscheme-launcher-names].
+For example, the following declaration could be the @filepath{info.rkt}
+library of the @filepath{games} collection. It contains definitions for
+three info tags, @scheme[name], @scheme[racket-launcher-libraries], and
+@scheme[racket-launcher-names].
 
 @schememod[
 setup/infotab
-(define name "Help")
-(define mzscheme-launcher-libraries '("help.ss"))
-(define mzscheme-launcher-names     '("PLT Help"))
+(define name "Games")
+(define gracket-launcher-libraries '("main.rkt"))
+(define gracket-launcher-names     '("PLT Games"))
 ]
 
-As illustrated in this example, an @filepath{info.ss} file can use
+As illustrated in this example, an @filepath{info.rkt} file can use
 @hash-lang[] notation, but only with the @schememodname[setup/infotab]
 language.
-
-@;{
-The @scheme[name] tag is required for @exec{setup-plt} to recognize
-the collection and compile its files to bytecode. Similarly, an
-@filepath{info.ss} file in a sub-directory of a collection causes the
-sub-directory's files to be compiled.
-;}
 
 See also @scheme[get-info] from @schememodname[setup/getinfo].

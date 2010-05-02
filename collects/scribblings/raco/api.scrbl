@@ -11,7 +11,7 @@
                      compiler/comp-unit
                      launcher/launcher))
 
-@title{Scheme API for Compilation}
+@title{API for Raw Compilation}
 
 @defmodule[compiler/compiler]{
 
@@ -73,16 +73,15 @@ file is reported through the current output port.}
 Compiles the specified collection's files to @filepath{.zo} files.
 The @filepath{.zo} files are placed into the collection's
 @filepath{compiled} directory. By default, all files with the
-extension @filepath{.ss} or @filepath{.scm} in a collection are
+extension @filepath{.rkt}, @filepath{.ss}, or @filepath{.scm} in a collection are
 compiled, as are all such files within subdirectories, execept that
 any file or directory whose path starts with @scheme[scheme-path] is
 skipped. (``Starts with'' means that the simplified path @scheme[_p]'s
 byte-string form after @scheme[(simplify-path _p #f)]starts with the
 byte-string form of @scheme[(simplify-path skip-path #f)].)
 
-The collection compiler reads the collection's @filepath{info.ss} file
-(see @secref[#:doc '(lib "scribblings/setup-plt/setup-plt.scrbl")
-"info.ss"]) to obtain further instructions for compiling the
+The collection compiler reads the collection's @filepath{info.rkt} file
+(see @secref["info.rkt"]) to obtain further instructions for compiling the
 collection.  The following fields are used:
 
 @itemize[
@@ -112,8 +111,9 @@ collection.  The following fields are used:
  @item{@indexed-scheme[scribblings] : A list of pairs, each of which
        starts with a path for documentation source. The sources (and
        the files that they require) are compiled in the same way as
-       @filepath{.ss} and @filepath{.scm} files, unless the provided
-       @scheme[skip-docs?] argument is a true value.}
+       @filepath{.rkt}, @filepath{.ss}, and @filepath{.scm} files,
+       unless the provided @scheme[skip-docs?] argument is a true
+       value.}
 
 ]
 
@@ -130,8 +130,8 @@ The compilation process for an individual file is driven by
 
 Like @scheme[compile-collection-zos], but compiles the given directory
 rather than a collection. The @scheme[info] function behaves like the
-result of @scheme[get-info] to supply @filepath{info.ss} fields,
-instead of using an @filepath{info.ss} file (if any) in the directory.}
+result of @scheme[get-info] to supply @filepath{info.rkt} fields,
+instead of using an @filepath{info.rkt} file (if any) in the directory.}
 
 @; ----------------------------------------------------------------------
 

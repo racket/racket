@@ -402,7 +402,7 @@ language specifies run-time configuration by
 A @racket['configure-runtime] query returns a list of vectors, instead
 of directly configuring the environment, so that the indicated modules
 to be bundled with a program when creating a stand-alone
-executable; see @secref[#:doc '(lib "scribblings/mzc/mzc.scrbl") "exe"].
+executable; see @secref[#:doc '(lib "scribblings/raco/raco.scrbl") "exe"].
 
 For information on defining a new @hash-lang[] language, see
 @racketmodname[syntax/module-reader].
