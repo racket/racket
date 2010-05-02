@@ -351,7 +351,7 @@ This procedure is a load handler for use with @scheme[current-load].
 
 The handler recognizes PLT Scheme editor-format files (see
  @secref["editorfileformat"]) and decodes them for loading. It is
- normally installed as MrEd starts (see @secref[#:doc reference-doc
+ normally installed as GRacket starts (see @secref[#:doc reference-doc
  "running-sa"]).
 
 The handler recognizes editor files by the first twelve characters of

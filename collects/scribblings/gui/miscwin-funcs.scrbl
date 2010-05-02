@@ -100,7 +100,7 @@ The result depends on @scheme[what], and a @scheme[#f] result is only
 
  @item{@scheme['x-display] returns a ``path'' whose string identifies
  the X display if specified by either the @Flag{display} flag or the
- @envvar{DISPLAY} environment variable when MrEd starts under X. For
+ @envvar{DISPLAY} environment variable when GRacket starts under X. For
  other platforms, or when neither @Flag{display} nor @envvar{DISPLAY}
  was specified, the result is @scheme[#f].}
 

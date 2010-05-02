@@ -832,7 +832,7 @@ Enables or disables anti-aliased smoothing of lines, curves,
 Smoothing is supported under Windows only when Microsoft's
  @filepath{gdiplus.dll} is installed (which is always the case for Windows
  XP). Smoothing is supported under Mac OS X always. Smoothing is
- supported under X only when Cairo is installed when MrEd is compiled.
+ supported under X only when Cairo is installed when GRacket is compiled.
  Smoothing is never supported for black-and-white contexts. Smoothing
  is always supported (and cannot be disabled) for PostScript output.
 

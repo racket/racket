@@ -4,15 +4,15 @@
 
 @title[#:tag "mredprefs"]{Preferences}
 
-MrEd supports a number of preferences for global configuration. The
- MrEd preferences are stored in the common file reported by
+GRacket supports a number of preferences for global configuration. The
+ GRacket preferences are stored in the common file reported by
  @scheme[find-system-path] for @indexed-scheme['pref-file], and
  preference values can be retrieved and changed through
- @scheme[get-preference] and @scheme[put-preferences]. However, MrEd
+ @scheme[get-preference] and @scheme[put-preferences]. However, GRacket
  reads most preferences once at startup (all except the
  @Resource{playcmd}).
 
-The following are the (case-sensitive) preference names used by MrEd:
+The following are the (case-sensitive) preference names used by GRacket:
 
 @itemize[
 
@@ -62,7 +62,7 @@ The following are the (case-sensitive) preference names used by MrEd:
  command; see @scheme[play-sound] for details.}
 
  @item{@ResourceFirst{forceFocus} --- a true value enables extra
- effort in MrEd to move the focus to a top-level window that is shown
+ effort in GRacket to move the focus to a top-level window that is shown
  or raised.}
 
  @item{@ResourceFirst{doubleClickTime} --- overrides the
