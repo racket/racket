@@ -231,18 +231,20 @@ or override chaperone-property values of @scheme[bx].}
 
 
 @defproc[(chaperone-hash [hash hash?]
-                         [ref-proc (hash? any/c any/c . -> . any/c)]
-                         [set-proc (hash? any/c any/c . -> . any/c)]
+                         [ref-proc (hash? any/c . -> . (values 
+                                                        any/c 
+                                                        (hash? any/c any/c . -> . any/c)))]
+                         [set-proc (hash? any/c any/c . -> . (values any/c any/c))]
                          [remove-proc (hash? any/c . -> . any/c)]
                          [key-proc (hash? any/c . -> . any/c)]
                          [prop chaperone-property?]
                          [val any] ... ...)
-          (and/c vector? chaperone?)]{
+          (and/c hash? chaperone?)]{
 
 Returns a chaperoned value like @scheme[hash], but with
 @scheme[hash-ref], @scheme[hash-set!] or @scheme[hash-set] (as
 applicable) and @scheme[hash-remove] or @scheme[hash-remove!] (as
-application) operations on the chaperoned hash table redirected.  When
+application) operations on the chaperoned hash table redirected. When
 @scheme[hash-set] or @scheme[hash-remove] is used on a chaperoned hash
 table, the resulting hash table is given all of the chaperones of the
 given hash table. In addition, operations like
@@ -252,16 +254,19 @@ from the table. Operations like @scheme[hash-iterate-value] or
 @scheme[hash-iterate-map] implicitly use @scheme[hash-ref] and
 therefore redirect through @scheme[ref-proc].
 
-The @scheme[ref-proc] must accept @scheme[hash], an key passed
-@scheme[hash-ref], and the value that @scheme[hash-ref] on
-@scheme[hash] produces for the given key; it must produce the same
-value or a chaperone of the value, which is the result of
-@scheme[hash-ref] on the chaperone.
+The @scheme[ref-proc] must accept @scheme[hash] and a key passed
+@scheme[hash-ref]. It must returned the key or a chaperone of the key
+as well as a procedure. The returned procedure is called only if the
+returned key is found in @scheme[hash] via @scheme[hash-ref], in which
+case the procedure is called with @scheme[hash], the previously
+returned key, and the found value. The returned procedure must itself
+return the found value or a chaperone of the value.
 
 The @scheme[set-proc] must accept @scheme[hash], a key passed to
 @scheme[hash-set!] or @scheme[hash-set], and the value passed to
-@scheme[hash-set!] or @scheme[hash-set]; it must produce the same
-value or a chaperone of the value, which is used with
+@scheme[hash-set!] or @scheme[hash-set]; it must produce two values:
+the same key or a chaperone of the key and the same value or a
+chaperone of the value. The returned key and value are used with
 @scheme[hash-set!] or @scheme[hash-set] on the original @scheme[hash]
 to install the value.
 

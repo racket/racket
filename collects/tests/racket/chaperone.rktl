@@ -430,7 +430,8 @@
 (for-each
  (lambda (make-hash)
    (let ([h (chaperone-hash (make-hash)
-                            (lambda (h k v) v) (lambda (h k v) (values k v))
+                            (lambda (h k) (values k (lambda (h k v) v)))
+                            (lambda (h k v) (values k v))
                             (lambda (h k) k) (lambda (h k) k))])
      (test #t chaperone? h)
      (test #t hash? h)
@@ -450,10 +451,12 @@
           [remove-k #f]
           [access-k #f]
           [h2 (chaperone-hash h1
-                              (lambda (h k v) 
+                              (lambda (h k) 
                                 (set! get-k k)
-                                (set! get-v v)
-                                v) 
+                                (values k
+                                        (lambda (h k v)
+                                          (set! get-v v)
+                                          v)))
                               (lambda (h k v) 
                                 (set! set-k k)
                                 (set! set-v v)
@@ -470,8 +473,9 @@
                     (test #t (format "~s ~s ~s" proc val got) (equal? val got))))])
      (test #f hash-ref h1 'key #f)
      (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
-     (test #f hash-ref h2 'key #f)
-     (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
+     (test 'nope hash-ref h2 'key 'nope)
+     (test '(key #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
+     (set! get-k #f)
      (test (void) hash-set! h1 'key 'val)
      (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
      (test 'val hash-ref h1 'key #f)
@@ -508,10 +512,12 @@
           [remove-k #f]
           [access-k #f]
           [h2 (chaperone-hash h1
-                              (lambda (h k v) 
+                              (lambda (h k) 
                                 (set! get-k k)
-                                (set! get-v v)
-                                v) 
+                                (values k
+                                        (lambda (h k v)
+                                          (set! get-v v)
+                                          v)))
                               (lambda (h k v) 
                                 (set! set-k k)
                                 (set! set-v v)
@@ -528,10 +534,10 @@
                     (test #t (format "~s ~s ~s" proc val got) (equal? val got))))])
      (test #f hash-ref h1 'key #f)
      (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
-     (test #f hash-ref h2 'key #f)
-     (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
+     (test 'nope hash-ref h2 'key 'nope)
+     (test '(key #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
      (let ([h2 (hash-set h2 'key 'val)])
-       (test '(#f #f key val #f #f) list get-k get-v set-k set-v remove-k access-k)
+       (test '(key #f key val #f #f) list get-k get-v set-k set-v remove-k access-k)
        (test 'val hash-ref h2 'key #f)
        (test '(key val key val #f #f) list get-k get-v set-k set-v remove-k access-k)
        (let ([h2 (hash-set h2 'key2 'val2)])

@@ -2601,7 +2601,7 @@ static Scheme_Object *chaperone_hash(int argc, Scheme_Object **argv)
 
   if (!SCHEME_HASHTP(val) && !SCHEME_HASHTRP(val) && !SCHEME_BUCKTP(val))
     scheme_wrong_type("chaperone-hash", "hash", 0, argc, argv);
-  scheme_check_proc_arity("chaperone-hash", 3, 1, argc, argv); /* ref */
+  scheme_check_proc_arity("chaperone-hash", 2, 1, argc, argv); /* ref */
   scheme_check_proc_arity("chaperone-hash", 3, 2, argc, argv); /* set! */
   scheme_check_proc_arity("chaperone-hash", 2, 3, argc, argv); /* remove */
   scheme_check_proc_arity("chaperone-hash", 2, 4, argc, argv); /* key */
@@ -2721,10 +2721,9 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
       }
 #endif
 
-      if (mode == 0) {
-        orig = chaperone_hash_op(who, px->prev, k, v, mode);
-        if (!orig) return NULL;
-      } else if ((mode == 2) || (mode == 3))
+      if (mode == 0)
+        orig = NULL;
+      else if ((mode == 2) || (mode == 3))
         orig = k;
       else
         orig = v;
@@ -2733,7 +2732,6 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
         /* chaperone was on property accessors */
         o = orig;
       } else {
-
         red = SCHEME_BOX_VAL(px->redirects);
         red = SCHEME_VEC_ELS(red)[mode];
 
@@ -2741,17 +2739,13 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
         a[1] = k;
         a[2] = orig;
 
-        if (mode == 0) {
-          /* hash-ref */
-          o = _scheme_apply(red, 3, a);
-          what = "result";
-        } else if (mode == 1) {
+        if ((mode == 0) || (mode == 1)) {
           /* hash-set! */
           Scheme_Object **vals;
           int cnt;
           Scheme_Thread *p;
 
-          o = _scheme_apply_multi(red, 3, a);
+          o = _scheme_apply_multi(red, ((mode == 0) ? 2 : 3), a);
 
           if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
             p = scheme_current_thread;
@@ -2781,7 +2775,26 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
                              k);
           k = vals[0];
           o = vals[1];
-          what = "value";
+
+          if (mode == 0) {
+            red = o;
+            if (!scheme_check_proc_arity(NULL, 3, 1, 2, vals))
+              scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                               "%s: chaperone produced second value that is not a procedure (arity 3): %V",
+                               who,
+                               red);
+
+            orig = chaperone_hash_op(who, px->prev, k, v, mode);
+            if (!orig) return NULL;
+
+            /* hash-ref */
+            a[0] = px->prev;
+            a[1] = k;
+            a[2] = orig;
+            o = _scheme_apply(red, 3, a);
+            what = "result";
+          } else          
+            what = "value";
         } else {
           /* hash-remove! and key extraction */
           o = _scheme_apply(red, 2, a);
