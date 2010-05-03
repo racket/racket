@@ -322,4 +322,42 @@ the result of @scheme[proc].
 ]
 }
 
+@; ----------------------------------------
+@section{Vector Searching}
+
+@defproc[(vector-member [v any/c] [lst vector?])
+         (or/c natural-number/c #f)]{
+
+Locates the first element of @scheme[vec] that is @scheme[equal?] to
+ @scheme[v]. If such an element exists, the index of that element in
+ @scheme[vec] is returned. Otherwise, the result is @scheme[#f].
+
+@mz-examples[
+(vector-member 2 (vector 1 2 3 4))
+(vector-member 9 (vector 1 2 3 4))
+]}
+
+
+@defproc[(vector-memv [v any/c] [vec vector?])
+         (or/c natural-number/c #f)]{
+
+Like @scheme[member], but finds an element using @scheme[eqv?].
+@mz-examples[
+(vector-memv 2 (vector 1 2 3 4))
+(vector-memv 9 (vector 1 2 3 4))
+]}
+
+
+@defproc[(vector-memq [v any/c] [vec vector?])
+         (or/c natural-number/c #f)]{
+
+Like @scheme[member], but finds an element using @scheme[eq?].
+
+@mz-examples[
+(vector-memq 2 (vector 1 2 3 4))
+(vector-memq 9 (vector 1 2 3 4))
+]}
+}
+
+
 @close-eval[vec-eval]
