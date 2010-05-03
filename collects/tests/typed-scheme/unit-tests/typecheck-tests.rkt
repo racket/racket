@@ -799,14 +799,17 @@
                 (define: foo : (Integer * -> Integer) +)
                 (foo 1 2 3 4 5))
               -Integer]
+        [tc-e (let ()
+                (define: x : Any 7)
+                (if (box? x) (unbox x) 1))
+              Univ]
         )
   (test-suite
    "check-type tests"
    (test-exn "Fails correctly" exn:fail:syntax? (lambda () (parameterize ([orig-module-stx #'here])
                                                              (check-type #'here N B))))
    (test-not-exn "Doesn't fail on subtypes" (lambda () (check-type #'here N Univ)))
-   (test-not-exn "Doesn't fail on equal types" (lambda () (check-type #'here N N)))
-   )
+   (test-not-exn "Doesn't fail on equal types" (lambda () (check-type #'here N N))))
   (test-suite
    "tc-literal tests"
    (tc-l 5 -ExactPositiveInteger)
@@ -820,7 +823,8 @@
    (tc-l #f (-val #f))
    (tc-l #"foo" -Bytes)
    [tc-l () (-val null)]
-   )
+   [tc-l (3 . 4) (-pair -Pos -Pos)]
+   [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -Pos -Pos)])
   ))
 
 
