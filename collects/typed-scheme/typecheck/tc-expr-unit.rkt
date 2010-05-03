@@ -68,6 +68,12 @@
        [_ (make-Vector (apply Un 
                               (for/list ([l (syntax-e #'i)])
                                 (tc-literal l #f))))])]
+    [(~var i (3d hash?))
+     (let* ([h (syntax-e #'i)]
+            [ks (hash-map h (lambda (x y) (tc-literal x)))]
+            [vs (hash-map h (lambda (x y) (tc-literal y)))])
+       (make-Hashtable (apply Un ks) (apply Un vs)))]
+    [(a . b) (-pair (tc-literal #'a) (tc-literal #'b))]
     [_ Univ]))
 
 
