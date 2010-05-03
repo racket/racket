@@ -199,7 +199,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (syntax/loc stx
          (define: nm : arrty
            (lambda: formals body ...))))]
-    [(define: nm:id ~! (~describe "type annotation" (~seq : ty)) body)
+    [(define: nm:id ~! (~describe ":" :) (~describe "type" ty) body)
      (identifier? #'nm)
      (with-syntax ([new-nm (syntax-property #'nm 'type-label #'ty)])
        (syntax/loc stx (define new-nm body)))]
