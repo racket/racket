@@ -322,8 +322,6 @@ the result of @racket[proc].
 ]
 }
 
-@; ----------------------------------------
-@section{Vector Searching}
 
 @defproc[(vector-member [v any/c] [lst vector?])
          (or/c natural-number/c #f)]{
@@ -332,7 +330,7 @@ Locates the first element of @racket[vec] that is @racket[equal?] to
  @racket[v]. If such an element exists, the index of that element in
  @racket[vec] is returned. Otherwise, the result is @racket[#f].
 
-@mz-examples[
+@mz-examples[#:eval vec-eval
 (vector-member 2 (vector 1 2 3 4))
 (vector-member 9 (vector 1 2 3 4))
 ]}
@@ -341,8 +339,8 @@ Locates the first element of @racket[vec] that is @racket[equal?] to
 @defproc[(vector-memv [v any/c] [vec vector?])
          (or/c natural-number/c #f)]{
 
-Like @racket[member], but finds an element using @racket[eqv?].
-@mz-examples[
+Like @racket[vector-member], but finds an element using @racket[eqv?].
+@mz-examples[#:eval vec-eval
 (vector-memv 2 (vector 1 2 3 4))
 (vector-memv 9 (vector 1 2 3 4))
 ]}
@@ -351,9 +349,9 @@ Like @racket[member], but finds an element using @racket[eqv?].
 @defproc[(vector-memq [v any/c] [vec vector?])
          (or/c natural-number/c #f)]{
 
-Like @racket[member], but finds an element using @racket[eq?].
+Like @racket[vector-member], but finds an element using @racket[eq?].
 
-@mz-examples[
+@mz-examples[#:eval vec-eval
 (vector-memq 2 (vector 1 2 3 4))
 (vector-memq 9 (vector 1 2 3 4))
 ]}
