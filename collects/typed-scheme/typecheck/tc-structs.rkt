@@ -111,6 +111,7 @@
                                #:maker (or maker* maker)
                                #:predicate (or pred* pred)
                                #:struct-info si
+                               #:poly? poly?
                                #:constructor-return cret))))
 
 ;; generate names, and register the approriate types give field types and structure type
@@ -123,6 +124,7 @@
                                #:pred-wrapper [pred-wrapper values]
                                #:maker [maker* #f]
                                #:predicate [pred* #f]
+                               #:poly? [poly? #f]
                                #:constructor-return [cret #f])
   ;; create the approriate names that define-struct will bind
   (define-values (struct-type-id maker pred getters setters) (struct-names nm flds setters?))
@@ -137,7 +139,7 @@
       (cons (or maker* maker)
             (wrapper (->* external-fld-types (if cret cret name))))
       (cons (or pred* pred)
-            (make-pred-ty (if setters?
+            (make-pred-ty (if (and setters? poly?)
                               (make-StructTop sty)
                               (pred-wrapper name)))))
      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])
