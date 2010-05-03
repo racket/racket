@@ -145,14 +145,16 @@
     (revision-log-dir rev))
   (define trunk->log
     (rebase-path trunk-dir log-dir))
-  (define mzscheme-path
-    (path->string (build-path trunk-dir "bin" "mzscheme")))
+  (define racket-path
+    (path->string (build-path trunk-dir "bin" "racket")))
+  ; XXX fix
   (define mzc-path
     (path->string (build-path trunk-dir "bin" "mzc")))
-  (define mred-text-path
-    (path->string (build-path trunk-dir "bin" "mred-text")))
-  (define mred-path
-    (path->string (build-path trunk-dir "bin" "mred")))
+  (define gracket-text-path
+    (path->string (build-path trunk-dir "bin" "gracket-text")))
+  (define gracket-path
+    (path->string (build-path trunk-dir "bin" "gracket")))
+  ; XXX fix
   (define planet-path
     (path->string (build-path trunk-dir "bin" "planet")))
   (define collects-pth
@@ -185,13 +187,19 @@
                                               [#f
                                                #f]
                                               [(list-rest "mzscheme" rst)
-                                               (lambda () (list* mzscheme-path rst))]
+                                               (lambda () (list* racket-path rst))]
+                                              [(list-rest "racket" rst)
+                                               (lambda () (list* racket-path rst))]
                                               [(list-rest "mzc" rst)
                                                (lambda () (list* mzc-path rst))]
                                               [(list-rest "mred-text" rst)
-                                               (lambda () (list* mred-text-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
+                                               (lambda () (list* gracket-text-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
                                               [(list-rest "mred" rst)
-                                               (lambda () (list* mred-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
+                                               (lambda () (list* gracket-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
+                                              [(list-rest "gracket-text" rst)
+                                               (lambda () (list* gracket-text-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
+                                              [(list-rest "gracket" rst)
+                                               (lambda () (list* gracket-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
                                               [_
                                                #f]))]       
                                     (if pth-cmd
@@ -233,7 +241,7 @@
    #:timeout (current-subprocess-timeout-seconds)
    #:env (current-env)
    (build-path log-dir "src" "build" "set-browser.ss")
-   mzscheme-path 
+   racket-path 
    (list "-t" (path->string* (build-path (drdr-directory) "set-browser.ss"))))
   ; And go
   (notify! "Starting testing")
