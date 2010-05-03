@@ -367,6 +367,11 @@
 [vector-immutable (-poly (a) (->* (list) a (-vec a)))]
 [vector->immutable-vector (-poly (a) (-> (-vec a) (-vec a)))]
 [vector-fill! (-poly (a) (-> (-vec a) a -Void))]
+[vector-argmax (-poly (a) (-> (-> a -Real) (-vec a) a))]
+[vector-argmin (-poly (a) (-> (-> a -Real) (-vec a) a))]
+[vector-memq (-poly (a) (-> a (-vec a) (-opt -Nat)))]
+[vector-memv (-poly (a) (-> a (-vec a) (-opt -Nat)))]
+[vector-member (-poly (a) (a (-vec a) . -> . (-opt -Nat)))]
 ;; [vector->values no good type here]
 
 
