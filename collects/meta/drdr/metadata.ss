@@ -3,21 +3,23 @@
          "dirstruct.ss"
          "scm.ss")
 
-(define (testable-file? pth)
-  (define suffix (filename-extension pth))
-  (and suffix
-       (ormap (lambda (bs) (bytes=? suffix bs))
-              (list #"ss" #"scm" #"scrbl" #"rkt" #"sls"))))
-
 (define PROP:command-line "drdr:command-line")
 (define PROP:timeout "drdr:timeout")
 
 (define (path-command-line a-path)
   (match (get-prop a-path 'drdr:command-line #f)
     [#f
-     (if (testable-file? a-path)
-         (list "racket" "-qt" (path->string* a-path))
-         #f)]
+     (define suffix (filename-extension a-path))
+     (and suffix
+          (cond
+            [(ormap (lambda (bs) (bytes=? suffix bs))
+                    (list #"ss" #"scm" #"scrbl" #"rkt" #"sls"))
+             (list "racket" "-qt" (path->string* a-path))]
+            [(ormap (lambda (bs) (bytes=? suffix bs))
+                    (list #"rktl"))
+             (list "racket" "-f" (path->string* a-path))]
+            [else
+             #f]))]
     [""
      #f]
     [(? string? s)
