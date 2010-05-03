@@ -4,7 +4,7 @@
 @title{Custodians}
 
 When an extension allocates resources that must be explicitly freed
-(in the same way that a port must be explicitly closed), a Scheme
+(in the same way that a port must be explicitly closed), a Racket
 object associated with the resource should be placed into the
 management of the current custodian with @cppi{scheme_add_managed}.
 
@@ -93,7 +93,7 @@ Instructs the custodian @var{m} to shutdown all of its managed values.}
            [Scheme_Exit_Closer_Func f])]{
 
 Installs a function to be called on each custodian-registered item and
- its closer when MzScheme is about to exit. The registered function
+ its closer when Racket is about to exit. The registered function
  has the type
 
 @verbatim[#:indent 2]{

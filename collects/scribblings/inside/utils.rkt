@@ -152,7 +152,7 @@
 (define cppdef (lambda (x) (as-cpp-defn x (cpp x))))
 (define *var italic)
 
-(define mzc (exec "mzc"))
+(define mzc (exec "raco ctool"))
 
 (define (refsecref s)
   (secref #:doc '(lib "scribblings/reference/reference.scrbl") s))

@@ -2,8 +2,8 @@
 
 (require tests/eli-tester scheme/sandbox scheme/runtime-path scheme/file)
 
-(define-runtime-path tree-module      "tree.ss")
-(define-runtime-path file-tree-module "file-tree.ss")
+(define-runtime-path tree-module      "tree.rkt")
+(define-runtime-path file-tree-module "file-tree.rkt")
 
 (define (glob-tests)
   (define e

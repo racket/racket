@@ -10,17 +10,17 @@ This chapter describes how to set up face mappings for screen and
  especially complex X font mappings before fontconfig/Xft solved the
  problem.
 
-An implementor for a MrEd-based program may find it easier to use the
+An implementor for a GRacket-based program may find it easier to use the
  @method[font-name-directory<%> set-screen-name] and
  @method[font-name-directory<%> set-post-script-name] methods
  provided by @scheme[the-font-name-directory]. As a user of a
- MrEd-based program, preferences provide a mechanism for setting
+ GRacket-based program, preferences provide a mechanism for setting
  default mappings.
 
 Whether a programmer or a user, see @scheme[font-name-directory<%>] for
  an overview of the font mapping system.
 
-To find a font name for a family, MrEd looks for a preference name by
+To find a font name for a family, GRacket looks for a preference name by
  concatenating @litchar{MrEd:}, a @nonterm{dest}, a @nonterm{type},
  a @nonterm{weight}, and a @nonterm{style}, where
 
@@ -55,7 +55,7 @@ The value of the preference is parsed as described in
 Building items names by concatenating @nonterm{dest}, @nonterm{type},
  @nonterm{weight}, and @nonterm{style} can create a large number of preference
  entries, and the @nonterm{weight} and @nonterm{style} parts are useful only
- for X screen fonts. To avoid an explosion of preferences, MrEd finds
+ for X screen fonts. To avoid an explosion of preferences, GRacket finds
  preferences via a wildcarding search.
 
 The @nonterm{type}, @nonterm{weight}, and @nonterm{style} parts of a preference name
@@ -72,7 +72,7 @@ Wildcarded preference entries are used only when un-wildcarded values
  then the one with the ``earliest'' (i.e., closest to the beginning of
  the preference name) non-wildcarded part will prevail.
 
-The default MrEd preferences for Windows uses wildcarding to specify
+The default GRacket preferences for Windows uses wildcarding to specify
  the basic font mapping, as if written as:
 
 @schemeblock[
@@ -99,7 +99,7 @@ Suppose we define the mapping for variants of @scheme["Default"], and
 (|MrEd:ScreenRoman__| "+-*-*-medium-r-normal-*-*-%d-*-*-*-*-*-*")
 ]
 
-but the MrEd font-reading system provides a better syntax for
+but the GRacket font-reading system provides a better syntax for
  referencing another preference entry. When a preference value contains
  @litchar{${x}}, then the @litchar{${x}} fragment is replaced by the
  preference value of @litchar{x}. Thus, the above can be re-written:
@@ -180,19 +180,19 @@ Wildcarding can be specified in a reference by separating each
 ]
 
 Since @litchar{$[weight]} is between commas, it can be wildcarded if
- no name exactly matching @litchar{SchemeDefault$[weight]_} is
- found. In this case @litchar{SchemeDefault} and @litchar{_} can
+ no name exactly matching @litchar{ScreenDefault$[weight]_} is
+ found. In this case @litchar{ScreenDefault} and @litchar{_} can
  also be wildcarded, but this will have no effect.
 
 The wildcarding used in references need not reflect the wildcarding
- MrEd initial uses for finding fonts. In other words, a number of
+ GRacket initial uses for finding fonts. In other words, a number of
  comma-separated selects can appear between the curly braces.
 
 @; ------------------------------------------------------------------------
 
 @section{Internal Preferences}
 
-The initial font setup is built into MrEd through a built-in preference
+The initial font setup is built into GRacket through a built-in preference
  table. The table is shown at the end of this section. When font
  information is computed, it is @italic{almost} as if this table were
  installed into your preferences file; the difference is that preference
@@ -201,8 +201,8 @@ The initial font setup is built into MrEd through a built-in preference
  match.
 
 When no information is available for mapping a face name to a font,
- MrEd falls back to the system described in
- @scheme[font-name-directory<%>]. (Since a mapping is built into MrEd
+ GRacket falls back to the system described in
+ @scheme[font-name-directory<%>]. (Since a mapping is built into GRacket
  for every family, information is always available for the default
  font of a family.)
 
@@ -327,12 +327,12 @@ Internal preferences for Mac OS X only:
 @section-index["CID"]
 @section-index["CMap"]
 
-To generate PostScript output, MrEd must be able to find an @|AFM|
+To generate PostScript output, GRacket must be able to find an @|AFM|
  (AFM) file corresponding to the PostScript font. An AFM file
  typically uses the suffix @indexed-file{.afm}, and several AFM files
- are distributed with MrEd in the @filepath{afm} collection.
+ are distributed with GRacket in the @filepath{afm} collection.
 
-MrEd finds an AFM file by adding a @filepath{.afm} suffix to the
+GRacket finds an AFM file by adding a @filepath{.afm} suffix to the
  PostScript name of the font, and checking all directories specified
  by the @scheme[current-ps-afm-file-paths] parameter. The initial
  value of this parameter is determined by the
@@ -343,43 +343,43 @@ MrEd finds an AFM file by adding a @filepath{.afm} suffix to the
 
 Depending on whether the font is CID-based (typically for the Chinese,
  Japanese, Korean, and Vietnamese language families, and as indicated
- in the AFM file), MrEd must find additional files:
+ in the AFM file), GRacket must find additional files:
 
  @itemize[
 
  @item{@italic{Non-CID:} In addition to an AFM file
- @filepath{@nonterm{x}.afm}, MrEd looks for a
+ @filepath{@nonterm{x}.afm}, GRacket looks for a
  @filepath{@nonterm{x}-glyphlist.txt} file (in the same directory as the
  AFM file) to map glyph names in the AFM file to Unicode character
- values. In addition to this font-specific file, MrEd looks for a
+ values. In addition to this font-specific file, GRacket looks for a
  @indexed-file{glyphlist.txt} file to supply a mapping for Adobe's
  standard glyph names, and this mapping is used when a font-specific
  mapping is not supplied, or when the mapping does not cover a name
- found in the AFM file. MrEd looks for @filepath{glyphlist.txt} in the
+ found in the AFM file. GRacket looks for @filepath{glyphlist.txt} in the
  same place as AFM files. Since @filepath{glyphlist.txt} is large, if a
  @indexed-file{glyphshortlist.txt} file is available, it is read first,
  and then @filepath{glyphlist.txt} is read only if a character name must
  be resolved that is not in @filepath{glyphshortlist.txt}.}
 
- @item{@italic{CID:} In addition to an AFM file, MrEd must find and
+ @item{@italic{CID:} In addition to an AFM file, GRacket must find and
  read CMap files to convert glyph IDs for the font to Unicode
  characters. The character set name is used as the name of the CMap
- file to load, and MrEd checks all directories specified by the
+ file to load, and GRacket checks all directories specified by the
  @scheme[current-ps-cmap-file-paths] parameter. The initial value of
  this parameter is determined by the @indexed-envvar{PLTCMAPPATHS}
  environment variable; the environment variable's setting is parsed
  with @scheme[path-list-string->path-list] using @scheme[(list
  (collection-path "afm" "CMap"))] as the default list. In addition to
- a CMap file for the font's character set, MrEd must find a
+ a CMap file for the font's character set, GRacket must find a
  @indexed-file{UniCNS-UTF32-H} CMap file to complete the mapping to
- Unicode. MrEd automatically adds the font's character set to the font
+ Unicode. GRacket automatically adds the font's character set to the font
  name when producing PostScript with a CID-based font.}
 
  ]
 
 When drawing or measuring text using a particular PostScript font, if
  the font does not contain a glyph for a character (or if a relevant
- AFM file cannot be found for the font), then MrEd attempts to
+ AFM file cannot be found for the font), then GRacket attempts to
  substitute another PostScript font. A substitute font is selected by
  checking all @filepath{.afm} files in the directories specified
  by @scheme[current-ps-afm-file-paths] (in order), and choosing the

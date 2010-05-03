@@ -2,7 +2,7 @@
 @(require scribble/bnf
           "utils.ss")
 
-@title{@bold{Scribble}: PLT Documentation Tool}
+@title{@bold{Scribble}: Racket Documentation Tool}
 
 @author["Matthew Flatt" "Eli Barzilay"]
 
@@ -15,7 +15,7 @@ programmatically.
 
 This document itself is written using Scribble. At the time that it
 was written, its source was available at
-@(let ([url "http://svn.plt-scheme.org/plt/trunk/collects/scribblings/scribble/"])
+@(let ([url "http://git.racket-lang.org/plt/tree/HEAD:/collects/scribblings/scribble"])
    (link url url))
 starting with the @filepath{scribble.scrbl} file.
 

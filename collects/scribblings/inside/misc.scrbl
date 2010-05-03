@@ -4,7 +4,7 @@
 @title{Miscellaneous Utilities}
 
 The @cppi{MZSCHEME_VERSION} preprocessor macro is defined as a string
-describing the version of Scheme. The @cppi{MZSCHEME_VERSION_MAJOR}
+describing the version of Racket. The @cppi{MZSCHEME_VERSION_MAJOR}
 and @cppi{MZSCHEME_VERSION_MINOR} macros are defined as the major and
 minor version numbers, respectively.
 
@@ -35,7 +35,7 @@ Like @cpp{scheme_equal}, but accepts an extra value for cycle
 tracking. This procedure is meant to be called by a procedure
 installed with @cpp{scheme_set_type_equality}.}
 
-Returns 1 if the Scheme values are @scheme[equal?].}
+Returns 1 if the Racket values are @scheme[equal?].}
 
 @function[(long scheme_equal_hash_key
            [Scheme_Object* obj])]{
@@ -150,13 +150,13 @@ The same as @scheme[namespace-require].}
 @function[(Scheme_Object* scheme_load
            [char* file])]{
 
-Loads the specified Scheme file, returning the value of the last
+Loads the specified Racket file, returning the value of the last
 expression loaded, or @cpp{NULL} if the load fails.}
 
 @function[(Scheme_Object* scheme_load_extension
            [char* filename])]{
 
-Loads the specified Scheme extension file, returning the value provided
+Loads the specified Racket extension file, returning the value provided
 by the extension's initialization function.}
 
 @function[(Scheme_Hash_Table* scheme_make_hash_table
@@ -170,7 +170,7 @@ table hashes on a key's pointer address, while
 @cpp{SCHEME_hash_string} uses a key as a @cpp{char*} and hashes on the
 null-terminated string content. Since a hash table created with
 @cpp{SCHEME_hash_string} (instead of @cpp{SCHEME_hash_ptr}) does not
-use a key as a Scheme value, it cannot be used from Scheme code.
+use a key as a Racket value, it cannot be used from Racket code.
 
 Although the hash table interface uses the type @cpp{Scheme_Object*}
 for both keys and values, the table functions never inspect values,
@@ -212,7 +212,7 @@ that will be encountered.}
 @function[(Scheme_Hash_Table* scheme_make_hash_table_equal)]{
 
 Like @cpp{scheme_make_hash_table}, except that keys are treated as
-Scheme values and hashed based on @scheme[equal?] instead of
+Racket values and hashed based on @scheme[equal?] instead of
 @scheme[eq?].}
 
 @function[(void scheme_hash_set
@@ -334,8 +334,8 @@ Returns the current process ``time'' in milliseconds, just like
 
 @function[(char* scheme_banner)]{
 
-Returns the string that is used as the Scheme startup banner.}
+Returns the string that is used as the Racket startup banner.}
 
 @function[(char* scheme_version)]{
 
-Returns a string for the executing version of Scheme.}
+Returns a string for the executing version of Racket.}

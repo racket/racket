@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           "utils.ss"
-          (for-syntax scheme/base)
+          (for-syntax racket/base)
           (for-label setup/main-collects))
 
 @(define-syntax def-section-like
@@ -23,23 +23,23 @@
 @(define-syntax def-style-proc
    (syntax-rules ()
      [(_ id)
-      @def-elem-proc[id]{Like @scheme[elem], but with style @scheme['id].}]))
+      @def-elem-proc[id]{Like @racket[elem], but with style @racket['id].}]))
 
 @title[#:tag "base"]{Base Document Format}
 
-@defmodulelang[scribble/base]{The @schememodname[scribble/base] language
+@defmodulelang[scribble/base]{The @racketmodname[scribble/base] language
 provides functions and forms that can be used from code written either
-in Scheme or with @elem["@"] expressions.
+in Racket or with @elem["@"] expressions.
 
-The @schememodname[scribble/base] name can also be used as a
-library with @scheme[require], in which case it provides all of the same
+The @racketmodname[scribble/base] name can also be used as a
+library with @racket[require], in which case it provides all of the same
 bindings, but without setting the reader or setting the default
-rendering format to the PLT Scheme manual format.}
+rendering format to the Racket manual format.}
 
-Functions provided by this library, such as @scheme[title] and
-@scheme[italic], might be called from Scheme as
+Functions provided by this library, such as @racket[title] and
+@racket[italic], might be called from Racket as
 
-@schemeblock[
+@racketblock[
 (title #:tag "how-to" 
        "How to Design " (italic "Great") " Programs")
 ]
@@ -51,8 +51,8 @@ They can also be called with @elem["@"] notation as
 }|
 
 Although the procedures are mostly design to be used from @elem["@"]
-mode, they are easier to document in Scheme mode (partly because we
-have @schememodname[scribble/manual]).
+mode, they are easier to document in Racket mode (partly because we
+have @racketmodname[scribble/manual]).
 
 @; ------------------------------------------------------------------------
 
@@ -65,70 +65,70 @@ have @schememodname[scribble/manual]).
                 [pre-content pre-content?] ...+)
          title-decl?]{
 
-Generates a @scheme[title-decl] to be picked up by @scheme[decode] or
-@scheme[decode-part].  The @tech{decode}d @scheme[pre-content] (i.e.,
-parsed with @scheme[decode-content]) supplies the title content. If
-@scheme[tag] is @scheme[#f], a tag string is generated automatically
+Generates a @racket[title-decl] to be picked up by @racket[decode] or
+@racket[decode-part].  The @tech{decode}d @racket[pre-content] (i.e.,
+parsed with @racket[decode-content]) supplies the title content. If
+@racket[tag] is @racket[#f], a tag string is generated automatically
 from the content. The tag string is combined with the symbol
-@scheme['part] to form the full tag.
+@racket['part] to form the full tag.
 
-The @scheme[style] argument can be a style structure, or it can be one
-of the following: a @scheme[#f] that corresponds to a ``plain'' style,
+The @racket[style] argument can be a style structure, or it can be one
+of the following: a @racket[#f] that corresponds to a ``plain'' style,
 a string that is used as a @tech{style name}, a symbol that is used as
 a @tech{style property}, or a list of symbols to be used as @tech{style properties}.
-For information on styles, see @scheme[part]. For example, a style of
-@scheme['toc] causes sub-sections to be generated as separate pages in
+For information on styles, see @racket[part]. For example, a style of
+@racket['toc] causes sub-sections to be generated as separate pages in
 multi-page HTML output.
 
-The @scheme[tag-prefix] argument is propagated to the generated
-structure (see @secref["tags"]). If @scheme[tag-prefix] is a module
+The @racket[tag-prefix] argument is propagated to the generated
+structure (see @secref["tags"]). If @racket[tag-prefix] is a module
 path, it is converted to a string using
-@scheme[module-path-prefix->string].
+@racket[module-path-prefix->string].
 
-The @scheme[vers] argument is propagated to the @scheme[title-decl]
-structure. Use @scheme[""] as @scheme[vers] to suppress version
+The @racket[vers] argument is propagated to the @racket[title-decl]
+structure. Use @racket[""] as @racket[vers] to suppress version
 rendering in the output.
 
 The section title is automatically indexed by
-@scheme[decode-part]. For the index key, leading whitespace and a
+@racket[decode-part]. For the index key, leading whitespace and a
 leading ``A'', ``An'', or ``The'' (followed by more whitespace) is
 removed.}
 
 
-@def-section-like[section part-start?]{ Like @scheme[title], but
- generates a @scheme[part-start] of depth @scheme[0] to be by
- @scheme[decode] or @scheme[decode-part].}
+@def-section-like[section part-start?]{ Like @racket[title], but
+ generates a @racket[part-start] of depth @racket[0] to be by
+ @racket[decode] or @racket[decode-part].}
 
-@def-section-like[subsection part-start?]{ Like @scheme[section], but
- generates a @scheme[part-start] of depth @scheme[1].}
+@def-section-like[subsection part-start?]{ Like @racket[section], but
+ generates a @racket[part-start] of depth @racket[1].}
 
-@def-section-like[subsubsection part-start?]{ Like @scheme[section], but
- generates a @scheme[part-start] of depth @scheme[2].}
+@def-section-like[subsubsection part-start?]{ Like @racket[section], but
+ generates a @racket[part-start] of depth @racket[2].}
 
 @def-section-like[subsubsub*section paragraph?]{ Similar to
- @scheme[section], but merely generates a paragraph that looks like an
+ @racket[section], but merely generates a paragraph that looks like an
  unnumbered section heading (for when the nesting gets too deep to
  include in a table of contents).}
 
-@defform[(include-section module-path)]{ Requires @scheme[module-path]
- and returns its @scheme[doc] export (without making any imports
+@defform[(include-section module-path)]{ Requires @racket[module-path]
+ and returns its @racket[doc] export (without making any imports
  visible to the enclosing context). Since this form expands to
- @scheme[require], it must be used in a module or top-level context.}
+ @racket[require], it must be used in a module or top-level context.}
 
 @defproc[(author [auth content?] ...) block?]{
 
-Generates a @scheme[paragraph] with style name @scheme['author] to
+Generates a @racket[paragraph] with style name @racket['author] to
 show the author(s) of a document, where each author is represented by
 @tech{content}. Normally, this function is used after
-@scheme[title] for the beginning of a document. See also
-@scheme[author+email].}
+@racket[title] for the beginning of a document. See also
+@racket[author+email].}
 
 @defproc[(author+email [author elem] 
                        [email string?] 
                        [#:obfuscate? obfuscate? any/c #f])
          element?]{
 
-Combines an author name with an e-mail address. If @scheme[obfuscate?]
+Combines an author name with an e-mail address. If @racket[obfuscate?]
 is true, then the result obscures the e-mail address slightly to avoid
 address-harvesting robots.}
 
@@ -140,23 +140,23 @@ address-harvesting robots.}
                [pre-content pre-content?] ...) paragraph?]{
 
  Creates a @tech{paragraph} containing the @tech{decode}d
- @scheme[pre-content] (i.e., parsed with @scheme[decode-paragraph]).
+ @racket[pre-content] (i.e., parsed with @racket[decode-paragraph]).
 
- The @scheme[style] argument can be a style, @scheme[#f] to indicate a
+ The @racket[style] argument can be a style, @racket[#f] to indicate a
   ``plain'' style, a string that is used as a @tech{style name}, or a
   symbol that is used as a @tech{style name}. (Note that
-  @scheme[section] and @scheme[para] treat symbols differently as
-  @scheme[style] arguments.)}
+  @racket[section] and @racket[para] treat symbols differently as
+  @racket[style] arguments.)}
 
 
 @defproc[(nested [#:style style (or/c style? string? symbol? #f)] 
                  [pre-flow pre-flow?] ...) nested-flow?]{
 
  Creates a @tech{nested flow} containing the @tech{decode}d
- @scheme[pre-flow] (i.e., parsed with @scheme[decode-flow]).
+ @racket[pre-flow] (i.e., parsed with @racket[decode-flow]).
  
- The @scheme[style] argument is handled the same as @scheme[para].
- The @scheme['inset] style causes the nested flow to be inset compared
+ The @racket[style] argument is handled the same as @racket[para].
+ The @racket['inset] style causes the nested flow to be inset compared
  to surrounding text.}
 
 
@@ -175,25 +175,25 @@ of inlined.}
                    [#:style style (or/c style? string? symbol? #f) #f]) 
          itemization?]{
 
- Constructs an @scheme[itemization] given a sequence of items
- constructed by @scheme[item].
+ Constructs an @racket[itemization] given a sequence of items
+ constructed by @racket[item].
 
- The @scheme[style] argument is handled the same as @scheme[para]. The
- @scheme['ordered] style numbers items, instead of just using a
+ The @racket[style] argument is handled the same as @racket[para]. The
+ @racket['ordered] style numbers items, instead of just using a
  bullet.}
 
 
 @defproc[(item [pre-flow pre-flow?] ...) item?]{
 
-Creates an item for use with @scheme[itemlist]. The @tech{decode}d
-@scheme[pre-flow] (i.e., parsed with @scheme[decode-flow]) is the item
+Creates an item for use with @racket[itemlist]. The @tech{decode}d
+@racket[pre-flow] (i.e., parsed with @racket[decode-flow]) is the item
 content.}
 
 
 @defproc[(item? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is an item produced by
-@scheme[item], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an item produced by
+@racket[item], @racket[#f] otherwise.}
 
 
 @defproc[(tabular [cells (listof (listof (or/c block? content? 'cont)))]
@@ -204,29 +204,29 @@ Creates a @tech{table} with the given content, which is supplies as a
 list of rows, where each row has a list of cells. The length of all
 rows must match.
 
-Use @scheme['cont] as a cell to continue the content of the preceding
+Use @racket['cont] as a cell to continue the content of the preceding
 cell in a row in the space that would otherwise be used for a new
-cell. A @scheme['cont] must not appear as the first cell in a row.
+cell. A @racket['cont] must not appear as the first cell in a row.
 
-The @scheme[style] argument is handled the same as @scheme[para].}
+The @racket[style] argument is handled the same as @racket[para].}
 
 @defproc[(verbatim [#:indent indent exact-nonnegative-integer? 0] [str string?] ...+)
          block?]{
 
-Typesets @scheme[str]s in typewriter font with the linebreaks
-specified by newline characters in @scheme[str]. Consecutive spaces in
-the @scheme[str]s are converted to @scheme[hspace] to ensure that they
+Typesets @racket[str]s in typewriter font with the linebreaks
+specified by newline characters in @racket[str]. Consecutive spaces in
+the @racket[str]s are converted to @racket[hspace] to ensure that they
 are all preserved in the output. Additional space (via
-@scheme[hspace]) as specified by @scheme[indent] is added to the
+@racket[hspace]) as specified by @racket[indent] is added to the
 beginning of each line.
 
-The @scheme[str]s are @emph{not} decoded with @scheme[decode-content],
-so @scheme[(verbatim "---")] renders with three hyphens instead of an
-em-dash. Beware, however, that @litchar["@"] for a @scheme[verbatim]
+The @racket[str]s are @emph{not} decoded with @racket[decode-content],
+so @racket[(verbatim "---")] renders with three hyphens instead of an
+em-dash. Beware, however, that @litchar["@"] for a @racket[verbatim]
 call performs some processing before delivering arguments to
-@scheme[verbatim]. The @scheme[verbatim] form is typically used with
+@racket[verbatim]. The @racket[verbatim] form is typically used with
 @litchar["|{"]...@litchar["}|"] or similar brackets to disable
-@litchar["@"] notation within the @scheme[verbatim] argument, like
+@litchar["@"] notation within the @racket[verbatim] argument, like
 this:
 
 @verbatim[#:indent 2]|{
@@ -245,7 +245,7 @@ Even with @litchar["|{"]...@litchar["}|"], beware that consistent
 leading whitespace is removed; see @secref["alt-body-syntax"] for more
 information.
 
-See also @scheme[literal].}
+See also @racket[literal].}
 
 @; ------------------------------------------------------------------------
 
@@ -255,8 +255,8 @@ See also @scheme[literal].}
                [#:style style (or style? string? symbol? #f) #f])
         element?]{
 
-Wraps the @tech{decode}d @scheme[pre-content] as an element with style
-@scheme[style].}
+Wraps the @tech{decode}d @racket[pre-content] as an element with style
+@racket[style].}
 
 
 @def-style-proc[italic]
@@ -265,35 +265,35 @@ Wraps the @tech{decode}d @scheme[pre-content] as an element with style
 @def-style-proc[subscript]
 @def-style-proc[superscript]
 
-@def-elem-proc[smaller]{Like @scheme[elem], but with style
-@scheme['smaller].  When uses of @scheme[smaller] are nested, text
+@def-elem-proc[smaller]{Like @racket[elem], but with style
+@racket['smaller].  When uses of @racket[smaller] are nested, text
 gets progressively smaller.}
 
-@def-elem-proc[larger]{Like @scheme[elem], but with style
-@scheme['larger].  When uses of @scheme[larger] are nested, text
+@def-elem-proc[larger]{Like @racket[elem], but with style
+@racket['larger].  When uses of @racket[larger] are nested, text
 gets progressively larger.}
 
 @defproc[(emph [pre-content pre-content?] ...) element?]{
-The same as @scheme[italic].}
+The same as @racket[italic].}
 
 @defproc[(linebreak) element?]{
 Produces an element that forces a line break.}
 
 @defproc[(hspace [n exact-nonnegative-integer?]) element?]{
 
-Produces an element containing @scheme[n] spaces and style
-@scheme['hspace].}
+Produces an element containing @racket[n] spaces and style
+@racket['hspace].}
 
 @defproc[(literal [str string?] ...+) element?]{
 
-Produces an element containing literally @scheme[str]s with no
-decoding via @scheme[decode-content].
+Produces an element containing literally @racket[str]s with no
+decoding via @racket[decode-content].
 
-Beware that @litchar["@"] for a @scheme[literal] call performs some
-processing before delivering arguments to @scheme[literal]. The
-@scheme[literal] form can be used with @litchar["|{"]...@litchar["}|"]
+Beware that @litchar["@"] for a @racket[literal] call performs some
+processing before delivering arguments to @racket[literal]. The
+@racket[literal] form can be used with @litchar["|{"]...@litchar["}|"]
 or similar brackets to disable @litchar["@"] notation within the
-@scheme[literal] argument, like this:
+@racket[literal] argument, like this:
 
 @verbatim[#:indent 2]|{
  @literal|{@bold{---}}|
@@ -305,7 +305,7 @@ which renders as
    @literal|{@bold{---}}|
 }|
 
-See also @scheme[verbatim].}
+See also @racket[verbatim].}
 
 
 @defproc[(image [path (or/c path-string? (cons/c 'collects (listof bytes?)))]
@@ -315,21 +315,21 @@ See also @scheme[verbatim].}
          element?]{
 
  Creates an image element from the given path. The @tech{decode}d
- @scheme[pre-content] serves as the alternate text for contexts where
+ @racket[pre-content] serves as the alternate text for contexts where
  the image cannot be displayed.
 
  The path is relative to the current directory, which is set by
  @exec{setup-plt} and @exec{scribble} to the directory of the main
- document file. The @scheme[path] argument also can be a result of
- @scheme[path->main-collects-relative].
+ document file. The @racket[path] argument also can be a result of
+ @racket[path->main-collects-relative].
 
- The strings in @scheme[suffixes] are filtered to those supported by
+ The strings in @racket[suffixes] are filtered to those supported by
  given renderer, and then the acceptable suffixes are tried in
- order. The HTML renderer supports @scheme[".png"] and
- @scheme[".gif"], while the Latex renderer supports @scheme[".png"],
- @scheme[".pdf"], and @scheme[".ps"] (but @scheme[".ps"] works only
- when converting Latex output to DVI, and @scheme[".png"] and
- @scheme[".pdf"] work only for converting Latex output to PDF).}
+ order. The HTML renderer supports @racket[".png"] and
+ @racket[".gif"], while the Latex renderer supports @racket[".png"],
+ @racket[".pdf"], and @racket[".ps"] (but @racket[".ps"] works only
+ when converting Latex output to DVI, and @racket[".png"] and
+ @racket[".pdf"] work only for converting Latex output to PDF).}
 
 
 @; ------------------------------------------------------------------------
@@ -340,9 +340,9 @@ See also @scheme[verbatim].}
                     [#:style style (or/c style? string? symbol? #f) (if underline? #f "plainlink")]) 
          element?]{
 
-The @tech{decode}d @scheme[pre-content] is hyperlinked to
-@scheme[url].  If @scheme[style] is not supplied, then
-@scheme[underline?] determines how the link is rendered.}
+The @tech{decode}d @racket[pre-content] is hyperlinked to
+@racket[url].  If @racket[style] is not supplied, then
+@racket[underline?] determines how the link is rendered.}
 
 
 @defproc[(url [dest string?]) element?]{
@@ -356,27 +356,27 @@ Generates a literal hyperlinked URL.}
                  [#:underline? underline? any/c #t])
          element?]{
 
-Inserts the hyperlinked title of the section tagged @scheme[tag], but
-elements in the title content with the @scheme['aux] @tech{style property}
+Inserts the hyperlinked title of the section tagged @racket[tag], but
+elements in the title content with the @racket['aux] @tech{style property}
 are omitted in the hyperlink label.
 
-If @scheme[#:doc module-path] is provided, the @scheme[tag] refers to
-a tag with a prefix determined by @scheme[module-path]. When
+If @racket[#:doc module-path] is provided, the @racket[tag] refers to
+a tag with a prefix determined by @racket[module-path]. When
 @exec{setup-plt} renders documentation, it automatically adds a tag
 prefix to the document based on the source module. Thus, for example,
-to refer to a section of the PLT Scheme reference,
-@scheme[module-path] would be @scheme['(lib
+to refer to a section of the Racket reference,
+@racket[module-path] would be @racket['(lib
 "scribblings/reference/reference.scrbl")].
 
-The @scheme[#:tag-prefixes prefixes] argument similarly supports
+The @racket[#:tag-prefixes prefixes] argument similarly supports
 selecting a particular section as determined by a path of tag
-prefixes. When a @scheme[#:doc] argument is provided, then
-@scheme[prefixes] should trace a path of tag-prefixed subsections to
-reach the @scheme[tag] section. When @scheme[#:doc] is not provided,
-the @scheme[prefixes] path is relative to any enclosing section (i.e.,
+prefixes. When a @racket[#:doc] argument is provided, then
+@racket[prefixes] should trace a path of tag-prefixed subsections to
+reach the @racket[tag] section. When @racket[#:doc] is not provided,
+the @racket[prefixes] path is relative to any enclosing section (i.e.,
 the youngest ancestor that produces a match).
 
-If @scheme[underline?] is @scheme[#f], then the hyperlink is rendered
+If @racket[underline?] is @racket[#f], then the hyperlink is rendered
 in HTML without an underline.}
 
 
@@ -386,37 +386,37 @@ in HTML without an underline.}
                   [#:underline? underline? any/c #t]
                   [pre-content pre-content?] ...) element?]{
 
-Like @scheme[secref], but the link label is the @tech{decode}d
-@scheme[pre-content] instead of the target section's name.}
+Like @racket[secref], but the link label is the @tech{decode}d
+@racket[pre-content] instead of the target section's name.}
 
 
 @defproc[(other-doc [module-path module-path?]
                     [#:underline? underline? any/c #t])
          element?]{
 
-Like @scheme[secref] for the document's implicit @scheme["top"]
+Like @racket[secref] for the document's implicit @racket["top"]
 tag. Use this function to refer to a whole manual instead of
-@scheme[secref], in case a special style in the future is used for
+@racket[secref], in case a special style in the future is used for
 manual titles.}
 
 
 @defproc[(elemtag [t (or/c tag? string?)] [pre-content pre-content?] ...) element?]{
 
-The tag @scheme[t] refers to the content form of
-@scheme[pre-content].}
+The tag @racket[t] refers to the content form of
+@racket[pre-content].}
 
 
 @defproc[(elemref [t (or/c tag? string?)] [pre-content pre-content?] ... 
                   [#:underline? underline? any/c #t]) element?]{
 
-The @tech{decode}d @scheme[pre-content] is hyperlinked to @scheme[t],
-which is normally defined using @scheme[elemtag].}
+The @tech{decode}d @racket[pre-content] is hyperlinked to @racket[t],
+which is normally defined using @racket[elemtag].}
 
 @defproc[(module-path-prefix->string [mod-path module-path?])
          string?]{
 
 Converts a module path to a string by resolving it to a path, and
-using @scheme[path->main-collects-relative].}
+using @racket[path->main-collects-relative].}
 
 @; ------------------------------------------------------------------------
 
@@ -427,16 +427,16 @@ using @scheme[path->main-collects-relative].}
          index-element?]{
 
 Creates an index element given a plain-text string---or list of
-strings for a hierarchy, such as @scheme['("strings" "plain")] for a
+strings for a hierarchy, such as @racket['("strings" "plain")] for a
 ``plain'' entry below a more general ``strings'' entry. As index keys,
-the strings are ``cleaned'' using @scheme[clean-up-index-strings]. The
+the strings are ``cleaned'' using @racket[clean-up-index-strings]. The
 strings (without clean-up) also serve as the text to render in the
-index. The @tech{decode}d @scheme[pre-content] is the text to appear
+index. The @tech{decode}d @racket[pre-content] is the text to appear
 inline as the index target.
 
-Use @scheme[index] when an index entry should point to a specific word
+Use @racket[index] when an index entry should point to a specific word
 or phrase within the typeset document (i.e., the
-@scheme[pre-content]). Use @scheme[section-index], instead, to create
+@racket[pre-content]). Use @racket[section-index], instead, to create
 an index entry that leads to a section, instead of a specific word or
 phrase within the section.}
 
@@ -445,23 +445,23 @@ phrase within the section.}
                  [word-contents (listof list?)]
                  [pre-content pre-content?] ...)
          index-element?]{
-Like @scheme[index], except that @scheme[words] must be a list, and
+Like @racket[index], except that @racket[words] must be a list, and
 the list of contents render in the index (in parallel to
-@scheme[words]) is supplied as @scheme[word-contents].
+@racket[words]) is supplied as @racket[word-contents].
 }
 
 @defproc[(as-index [pre-content pre-content?] ...)
          index-element?]{
 
-Like @scheme[index], but the word to index is determined by applying
-@scheme[content->string] on the @tech{decode}d @scheme[pre-content].}
+Like @racket[index], but the word to index is determined by applying
+@racket[content->string] on the @tech{decode}d @racket[pre-content].}
 
 
 @defproc[(section-index [word string?] ...)
          part-index-decl?]{
 
-Creates a @scheme[part-index-decl] to be associated with the enclosing
-section by @scheme[decode]. The @scheme[word]s serve as both the keys
+Creates a @racket[part-index-decl] to be associated with the enclosing
+section by @racket[decode]. The @racket[word]s serve as both the keys
 and as the rendered forms of the keys within the index.}
 
 
@@ -469,7 +469,7 @@ and as the rendered forms of the keys within the index.}
          part?]{
 
 Produces a part that shows the index the enclosing document. The
-optional @scheme[tag] argument is used as the index section's tag.}
+optional @racket[tag] argument is used as the index section's tag.}
 
 
 @; ------------------------------------------------------------------------
@@ -491,10 +491,10 @@ for the enclosing section, depending on the output type. For
 multi-page HTML output, the flow element is a table of contents; for
 Latex output, the flow element is empty.
 
-The meaning of the @scheme[style] argument depends on the output type,
-but @scheme['immediate-only] normally creates a table of contents that
+The meaning of the @racket[style] argument depends on the output type,
+but @racket['immediate-only] normally creates a table of contents that
 contains only immediate sub-sections of the enclosing section. See
-also the @scheme['quiet] style of @scheme[part] (i.e., in a
-@scheme[part] structure, not supplied as the @scheme[style] argument
-to @scheme[local-table-of-contents]), which normally suppresses
+also the @racket['quiet] style of @racket[part] (i.e., in a
+@racket[part] structure, not supplied as the @racket[style] argument
+to @racket[local-table-of-contents]), which normally suppresses
 sub-part entries in a table of contents.}

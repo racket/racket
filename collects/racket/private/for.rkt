@@ -41,6 +41,7 @@
              in-hash-keys
              in-hash-values
              in-hash-pairs
+             in-directory
 
              in-sequences
              in-cycle
@@ -1321,5 +1322,41 @@
                       (raise-type-error 'in-input-port-chars "input-port" p*))
                     (lambda () (read-char p*)))
                   eof)]])))
+  
+  (define in-directory
+    (case-lambda
+     [(dir)
+      (when dir
+        (unless (path-string? dir)
+          (raise-type-error 'in-directory "#f, path, or path string" dir)))
+      (let ([make-gen (lambda ()
+                        (call-with-continuation-prompt
+                         (lambda ()
+                           (define (reply v)
+                             (let/cc k
+                               (abort-current-continuation
+                                (default-continuation-prompt-tag)
+                                (lambda () (cons (lambda () v) k)))))
+                           (let loop ([dir (path->complete-path (or dir (current-directory)))]
+                                      [prefix dir])
+                             (for ([i (in-list (directory-list dir))])
+                               (let ([p (if prefix (build-path prefix i) i)]
+                                     [fp (build-path dir i)])
+                                 (reply p)
+                                 (when (directory-exists? fp)
+                                   (loop fp p)))))
+                           (reply eof))))])
+        (make-do-sequence 
+         (lambda ()
+           (values
+            (lambda (gen) ((car gen)))
+            (lambda (gen) (call-with-continuation-prompt
+                           (lambda ()
+                             ((cdr gen)))))
+            (make-gen)
+            (lambda (gen) (not (eof-object? ((car gen)))))
+            (lambda (val) #t)
+            (lambda (gen val) #t)))))]
+     [() (in-directory #f)]))
 
   )

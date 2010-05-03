@@ -1847,24 +1847,36 @@ The @scheme[externalizable<%>] interface includes only the
 
 @section[#:tag "objectprinting"]{Object Printing}
 
-To customize the way that a class instance is printed by @scheme[write]
-or @scheme[display], implement the @scheme[printable<%>] interface.
+To customize the way that a class instance is printed by
+@racket[print], @scheme[write] and @scheme[display], implement the
+@scheme[printable<%>] interface.
 
 @defthing[printable<%> interface?]{
 
 The @scheme[printable<%>] interface includes only the
-@scheme[custom-write] and @scheme[custom-print] methods. Each accepts
+@scheme[custom-print], @scheme[custom-write], and
+@scheme[custom-display] methods. The @scheme[custom-print] method
+accepts two arguments: the destination port and the current
+@scheme[quaisquote] depth as an exact nonnegative integer. The
+@scheme[custom-write] and @scheme[custom-display] methods each accepts
 a single argument, which is the destination port to @scheme[write] or
 @scheme[display] the object.
 
-Calls to the @scheme[custom-write] or @scheme[custom-display] are like
-calls to a procedure attached to a structure type through the
-@scheme[prop:custom-write] property. In particular, recursive printing
-can trigger an escape from the call.
+Calls to the @racket[custom-print], @scheme[custom-write], or
+@scheme[custom-display] methods are like calls to a procedure attached
+to a structure type through the @scheme[prop:custom-write]
+property. In particular, recursive printing can trigger an escape from
+the call.
 
 See @scheme[prop:custom-write] for more information. The
 @scheme[printable<%>] interface is implemented with
 @scheme[interface*] and @scheme[prop:custom-write].}
+
+@defthing[writable<%> interface?]{
+
+Like @scheme[printable<%>], but includes only the
+@scheme[custom-write] and @scheme[custom-print] methods.
+A @racket[print] request is directed to @scheme[custom-write].}
 
 @; ------------------------------------------------------------------------
 

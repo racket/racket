@@ -3,27 +3,27 @@
 
 @title[#:tag "im:values+types"]{Values and Types}
 
-A Scheme value is represented by a pointer-sized value. The low bit is
+A Racket value is represented by a pointer-sized value. The low bit is
 a mark bit: a 1 in the low bit indicates an immediate integer, a 0
 indicates a (word-aligned) pointer.
 
-A pointer Scheme value references a structure that begins with a
+A pointer Racket value references a structure that begins with a
 @cppi{Scheme_Object} sub-structure, which in turn starts with a tag
 that has the C type @cppi{Scheme_Type}. The rest of the structure,
 following the @cppi{Scheme_Object} header, is type-dependent.
-PLT Scheme's C interface gives Scheme values the type
+Racket's C interface gives Racket values the type
 @cpp{Scheme_Object*}. (The ``object'' here does not refer to objects
-in the sense of the @schememodname[scheme/class] library.)
+in the sense of the @schememodname[racket/class] library.)
 
 Examples of @cpp{Scheme_Type} values include @cpp{scheme_pair_type}
 and @cpp{scheme_symbol_type}. Some of these are implemented as
 instances of @cppi{Scheme_Simple_Object}, which is defined in
 @filepath{scheme.h}, but extension or embedding code should never access
 this structure directly. Instead, the code should use macros, such as
-@cpp{SCHEME_CAR}, that provide access to the data of common Scheme
+@cpp{SCHEME_CAR}, that provide access to the data of common Racket
 types.
 
-For most Scheme types, a constructor is provided for creating values
+For most Racket types, a constructor is provided for creating values
 of the type. For example, @cpp{scheme_make_pair} takes two
 @cpp{Scheme_Object*} values and returns the @scheme[cons] of the
 values.
@@ -32,12 +32,12 @@ The macro @cppdef{SCHEME_TYPE} takes a @cpp{Scheme_Object *} and returns
 the type of the object. This macro performs the tag-bit check, and
 returns @cppi{scheme_integer_type} when the value is an immediate
 integer; otherwise, @cpp{SCHEME_TYPE} follows the pointer to get the
-type tag. Macros are provided to test for common Scheme types; for
+type tag. Macros are provided to test for common Racket types; for
 example, @cpp{SCHEME_PAIRP} returns @cpp{1} if the value is a cons
 cell, @cpp{0} otherwise.
 
-In addition to providing constructors, PLT Scheme defines six global
-constant Scheme values: @cppi{scheme_true}, @cppi{scheme_false},
+In addition to providing constructors, Racket defines six global
+constant Racket values: @cppi{scheme_true}, @cppi{scheme_false},
 @cppi{scheme_null}, @cppi{scheme_eof}, @cppi{scheme_void}, and
 @cppi{scheme_undefined}. Each of these has a type tag, but each is
 normally recognized via its constant address.
@@ -46,7 +46,7 @@ normally recognized via its constant address.
 can create new a primitive data type by calling
 @cppi{scheme_make_type}, which returns a fresh @cpp{Scheme_Type}
 value. To create a collectable instance of this type, allocate memory
-for the instance with @cpp{scheme_malloc}. From PLT Scheme's
+for the instance with @cpp{scheme_malloc}. From Racket's
 perspective, the main constraint on the data format of such an
 instance is that the first @cpp{sizeof(Scheme_Object)} bytes must
 correspond to a @cpp{Scheme_Object} record; furthermore, the first
@@ -54,7 +54,7 @@ correspond to a @cpp{Scheme_Object} record; furthermore, the first
 @cpp{scheme_make_type}. Extensions with modest needs can use
 @cppi{scheme_make_cptr}, instead of creating an entirely new type.
 
-Scheme values should never be allocated on the stack, and they should
+Racket values should never be allocated on the stack, and they should
 never contain pointers to values on the stack. Besides the problem of
 restricting the value's lifetime to that of the stack frame,
 allocating values on the stack creates problems for continuations and
@@ -89,7 +89,7 @@ types:
  floating-point value; test for this type with @cppdef{SCHEME_DBLP}}
 
  @item{@cppdef{scheme_float_type} --- single-precision flonum
- inexact numbers, when specifically enabled when compiling PLT Scheme;
+ inexact numbers, when specifically enabled when compiling Racket;
  @cppi{SCHEME_FLOAT_VAL} or @cppdef{SCHEME_FLT_VAL} extracts the
  floating-point value; test for this type with @cppdef{SCHEME_FLTP}}
 
@@ -109,7 +109,7 @@ types:
  @item{@cppdef{scheme_char_string_type} --- @index['("strings"
  "conversion to C")]{@cppdef{SCHEME_CHAR_STR_VAL}} extracts the string
  as a @cpp{mzchar*}; the string is always nul-terminated, but may also
- contain embedded nul characters, and the Scheme string is modified if
+ contain embedded nul characters, and the Racket string is modified if
  this string is modified; @cppdef{SCHEME_CHAR_STRLEN_VAL} extracts the
  string length (in characters, not counting the nul terminator); test
  for this type with @cppdef{SCHEME_CHAR_STRINGP}}
@@ -117,7 +117,7 @@ types:
  @item{@cppdef{scheme_byte_string_type} ---
  @cppdef{SCHEME_BYTE_STR_VAL} extracts the string as a @cpp{char*}; the
  string is always nul-terminated, but may also contain embedded nul
- characters, and the Scheme string is modified if this string is
+ characters, and the Racket string is modified if this string is
  modified; @cppdef{SCHEME_BYTE_STRLEN_VAL} extracts the string length
  (in bytes, not counting the nul terminator); test for this type with
  @cppdef{SCHEME_BYTE_STRINGP}}
@@ -158,7 +158,7 @@ types:
 
  @item{@cppdef{scheme_vector_type} --- @cppdef{SCHEME_VEC_SIZE}
  extracts the length and @cppdef{SCHEME_VEC_ELS} extracts the array of
- Scheme values (the Scheme vector is modified when this array is
+ Racket values (the Racket vector is modified when this array is
  modified); test for this type with @cppdef{SCHEME_VECTORP}; 3m: see
  @secref["im:3m"] for a caution about @cppi{SCHEME_VEC_ELS}}
 
@@ -222,7 +222,7 @@ The following are the procedure types:
  @item{@cppdef{scheme_closed_prim_type} --- an old-style primitive
  procedure with a data pointer}
 
- @item{@cppdef{scheme_compiled_closure_type} --- a Scheme
+ @item{@cppdef{scheme_compiled_closure_type} --- a Racket
  procedure}
 
  @item{@cppdef{scheme_cont_type} --- a continuation}
@@ -289,9 +289,9 @@ There are six global constants:
 
 @section[#:tag "im:strings"]{Strings}
 
-As noted in @secref["im:unicode"], a Scheme character is a Unicode
+As noted in @secref["im:unicode"], a Racket character is a Unicode
  code point represented by a @cpp{mzchar} value, and character strings
- are @cpp{mzchar} arrays. PLT Scheme also supplies byte strings, which
+ are @cpp{mzchar} arrays. Racket also supplies byte strings, which
  are @cpp{char} arrays.
 
 For a character string @var{s}, @cpp{@cpp{SCHEME_CHAR_STR_VAL}(@var{s})}
@@ -319,7 +319,7 @@ For more fine-grained control over UTF-8 encoding, use the
 
 Returns the character value. The @var{ch} value must be a legal
 Unicode code point (and not a surrogate, for example). The first 256
-characters are represented by constant Scheme values, and others are
+characters are represented by constant Racket values, and others are
 allocated.}
 
 @function[(Scheme_Object* scheme_make_char_or_null
@@ -389,7 +389,7 @@ Creates an integer given the high and low @cpp{long}s of an unsigned
 
 Extracts the integer value. Unlike the @cppi{SCHEME_INT_VAL} macro,
  this procedure will extract an integer that fits in a @cpp{long} from
- a Scheme bignum. If @var{o} fits in a @cpp{long}, the extracted
+ a Racket bignum. If @var{o} fits in a @cpp{long}, the extracted
  integer is placed in @var{*i} and 1 is returned; otherwise, 0 is
  returned and @var{*i} is unmodified.}
 
@@ -422,13 +422,13 @@ Creates a new floating-point value.}
            [float d])]{
 
 Creates a new single-precision floating-point value. The procedure is
-available only when PLT Scheme is compiled with single-precision
+available only when Racket is compiled with single-precision
 numbers enabled.}
 
 @function[(double scheme_real_to_double
            [Scheme_Object* o])]{
 
-Converts a Scheme real number to a double-precision floating-point
+Converts a Racket real number to a double-precision floating-point
 value.}
 
 @function[(Scheme_Object* scheme_make_pair
@@ -440,7 +440,7 @@ Makes a @scheme[cons] pair.}
 @function[(Scheme_Object* scheme_make_byte_string
            [char* bytes])]{
 
-Makes a Scheme byte string from a nul-terminated C string. The
+Makes a Racket byte string from a nul-terminated C string. The
 @var{bytes} string is copied.}
 
 @function[(Scheme_Object* scheme_make_byte_string_without_copying
@@ -475,7 +475,7 @@ Like @cpp{scheme_make_sized_byte_string}, except the @var{len}
            [long size]
            [char fill])]{
 
-Allocates a new Scheme byte string.}
+Allocates a new Racket byte string.}
 
 @function[(Scheme_Object* scheme_append_byte_string
            [Scheme_Object* a]
@@ -486,7 +486,7 @@ Creates a new byte string by appending the two given byte strings.}
 @function[(Scheme_Object* scheme_make_locale_string
            [char* bytes])]{
 
-Makes a Scheme string from a nul-terminated byte string that is a
+Makes a Racket string from a nul-terminated byte string that is a
  locale-specific encoding of a character string; a new string is
  allocated during decoding.  The ``locale in the name of this function
  thus refers to @var{bytes}, and not the resulting string (which is
@@ -495,7 +495,7 @@ Makes a Scheme string from a nul-terminated byte string that is a
 @function[(Scheme_Object* scheme_make_utf8_string
            [char* bytes])]{
 
-Makes a Scheme string from a nul-terminated byte string that is a
+Makes a Racket string from a nul-terminated byte string that is a
  UTF-8 encoding. A new string is allocated during decoding. The
  ``utf8'' in the name of this function thus refers to @var{bytes}, and
  not the resulting string (which is internally stored as UCS-4).}
@@ -523,7 +523,7 @@ Like @cpp{scheme_make_sized_char_string}, except the @var{len} characters
 @function[(Scheme_Object* scheme_make_char_string
            [mzchar* chars])]{
 
-Makes a Scheme string from a nul-terminated UCS-4 string. The
+Makes a Racket string from a nul-terminated UCS-4 string. The
  @var{chars} string is copied.}
 
 @function[(Scheme_Object* scheme_make_char_string_without_copying
@@ -558,7 +558,7 @@ Like @cpp{scheme_make_sized_char_string}, except the @var{len}
            [long size]
            [mzchar fill])]{
 
-Allocates a new Scheme string.}
+Allocates a new Racket string.}
 
 @function[(Scheme_Object* scheme_append_char_string
            [Scheme_Object* a]
@@ -569,22 +569,22 @@ Creates a new string by appending the two given strings.}
 @function[(Scheme_Object* scheme_char_string_to_byte_string
            [Scheme_Object* s])]{
 
-Converts a Scheme character string into a Scheme byte string via UTF-8.}
+Converts a Racket character string into a Racket byte string via UTF-8.}
 
 @function[(Scheme_Object* scheme_byte_string_to_char_string
            [Scheme_Object* s])]{
 
-Converts a Scheme byte string into a Scheme character string via UTF-8.}
+Converts a Racket byte string into a Racket character string via UTF-8.}
 
 @function[(Scheme_Object* scheme_char_string_to_byte_string_locale
            [Scheme_Object* s])]{
 
-Converts a Scheme character string into a Scheme byte string via the locale's encoding.}
+Converts a Racket character string into a Racket byte string via the locale's encoding.}
 
 @function[(Scheme_Object* scheme_byte_string_to_char_string_locale
            [Scheme_Object* s])]{
 
-Converts a Scheme byte string into a Scheme character string via the locale's encoding.}
+Converts a Racket byte string into a Racket character string via the locale's encoding.}
 
 @function[(Scheme_Object* scheme_intern_symbol
            [char* name])]{
@@ -654,7 +654,7 @@ Creates a new weak box containing the value @var{v}.}
 @function[(Scheme_Type scheme_make_type
            [char* name])]{
 
-Creates a new type (not a Scheme value).}
+Creates a new type (not a Racket value).}
 
 @function[(Scheme_Object* scheme_make_cptr
            [void* ptr]
@@ -664,10 +664,10 @@ Creates a C-pointer object that encapsulates @var{ptr} and uses
  @var{typetag} to identify the type of the pointer. The
  @cppi{SCHEME_CPTRP} macro recognizes objects created by
  @cpp{scheme_make_cptr}. The @cppi{SCHEME_CPTR_VAL} macro extracts
- the original @var{ptr} from the Scheme object, and
+ the original @var{ptr} from the Racket object, and
  @cppi{SCHEME_CPTR_TYPE} extracts the type tag.
  The @cppi{SCHEME_CPTR_OFFSETVAL} macro returns @cpp{0} 
- for the result Scheme object.
+ for the result Racket object.
 
  The @var{ptr} can refer to either memory managed by the garbage
  collector or by some other memory manager. Beware, however, of
@@ -690,7 +690,7 @@ referencing memory managed by the garbage collector.}
 
 Creates a C-pointer object that encapsulates both @var{ptr} and @var{offset}.
  The @cppi{SCHEME_CPTR_OFFSETVAL} macro returns @var{offset} 
- for the result Scheme object (and the macro be used to change the offset,
+ for the result Racket object (and the macro be used to change the offset,
  since it also works on objects with no offset).
 
  The @var{ptr} can refer to either memory managed by the garbage

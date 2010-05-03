@@ -757,7 +757,10 @@
 				  (stepper-syntax-property 
                                    #`(define-values (def-proc-name ...)
                                        (let ()
-                                         (define-struct name_ (field_ ...) #:transparent #:constructor-name #,(car proc-names))
+                                         (define-struct name_ (field_ ...) 
+                                           #:transparent 
+                                           #:mutable
+                                           #:constructor-name #,(car proc-names))
                                          (values proc-name ...)))
                                    'stepper-define-struct-hint
                                    stx))))])

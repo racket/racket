@@ -7,15 +7,15 @@
 
 @title[#:tag "basic"]{Compatibility Basic Functions}
 
-@defmodule[scribble/basic]{The @schememodname[scribble/basic]
+@defmodule[scribble/basic]{The @racketmodname[scribble/basic]
 compatibility library mostly just re-exports
-@schememodname[scribble/base].}
+@racketmodname[scribble/base].}
 
 @defproc[(span-class [style-name string?] [pre-content any/c] ...)
          element?]{
 
 @compat[] Wraps the @tech{decode}d
-@scheme[pre-content] as an element with style @scheme[style-name].}
+@racket[pre-content] as an element with style @racket[style-name].}
 
 
 
@@ -23,5 +23,5 @@ compatibility library mostly just re-exports
                   [#:style style (or/c style? string? symbol? #f) #f]) 
          itemization?]{
 
-@compat[] Like @scheme[itemlist], but whitespace strings among the
-@scheme[itm]s are ignored.}
+@compat[] Like @racket[itemlist], but whitespace strings among the
+@racket[itm]s are ignored.}

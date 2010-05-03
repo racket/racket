@@ -5,7 +5,7 @@
 
 @title[#:tag "windowing-overview"]{Windowing}
 
-The PLT Scheme windowing toolbox provides the basic building blocks of GUI
+The Racket windowing toolbox provides the basic building blocks of GUI
  programs, including frames (top-level windows), modal dialogs, menus,
  buttons, check boxes, text fields, and radio buttons.  The toolbox
  provides these building blocks via built-in classes, such as the

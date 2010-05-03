@@ -11,7 +11,7 @@
                      rnrs/r5rs-6
                      rnrs/hashtables-6
                      r6rs
-                     (only-in scheme/base
+                     (only-in racket/base
                               lib
                               current-library-collection-paths
                               parameterize
@@ -23,7 +23,7 @@
 @(define r6rs @elem{R@superscript{6}RS})
 @(define r5rs @elem{R@superscript{5}RS})
 
-@title{@bold{R6RS}: Standard Language}
+@title{@bold{R6RS}: Scheme}
 
 The @link["../r6rs-std/index.html"]{The Revised@superscript{6} Report
 on the Algorithmic Language Scheme} defines a dialect of Scheme. We
@@ -32,13 +32,13 @@ defined by the standard.
 
 @margin-note{See @seclink[#:doc '(lib "scribblings/guide/guide.scrbl")
              "dialects"] for general information about different
-             dialects of Scheme within PLT Scheme.}
+             dialects of Scheme within Racket.}
 
 @|r6rs| defines both @defterm{libraries} and @defterm{top-level
-programs}. Both correspond to PLT Scheme @defterm{modules} (see
+programs}. Both correspond to Rackey @defterm{modules} (see
 @secref[#:doc guide-src "modules"]). That is, although @|r6rs| defines
 top-level programs as entry points, you can just as easily treat a
-library as an entry point when using PLT Scheme. The only difference
+library as an entry point when using Racket. The only difference
 is that an @|r6rs| top-level program cannot export any bindings to
 other modules.
 
@@ -59,7 +59,7 @@ To run a top-level program, either:
 
        Additional command-line arguments are propagated as
        command-line arguments to the program (accessed via 
-       @scheme[command-line]).
+       @racket[command-line]).
 
        To compile the file to bytecode (to speed future runs of the
        program), use @exec{plt-r6rs} with the @DFlag{compile} flag:
@@ -69,47 +69,47 @@ To run a top-level program, either:
        The bytecode file is written in a @filepath{compiled}
        sub-directory next to @nonterm{program-file}.
 
-       For example, if @filepath{hi.scm} contains
+       For example, if @filepath{hi.sps} contains
 
-       @schemeblock[
+       @racketblock[
        (import (rnrs))
        (display "hello\n")
        ]
 
        then
 
-       @commandline{plt-r6rs hi.scm}
+       @commandline{plt-r6rs hi.sps}
 
        prints ``hello.''}
 
- @item{Prefix the program with @schememetafont{#!r6rs}, which counts
+ @item{Prefix the program with @racketmetafont{#!r6rs}, which counts
        as a comment from the @|r6rs| perspective, but is a synonym for
-       @scheme[#,(hash-lang) r6rs] from the PLT Scheme perspective.
-       Such files can be run like any other PLT Scheme module, such as
-       using @exec{mzscheme}:
+       @racket[#,(hash-lang) r6rs] from the Racket perspective.
+       Such files can be run like any other Racket module, such as
+       using @exec{racket}:
 
-       @commandline{mzscheme @nonterm{program-file}}
+       @commandline{racket @nonterm{program-file}}
 
-       or using DrScheme with the @onscreen{Module} language. The
-       file can also be compiled to bytecode using @exec{mzc}:
+       or using DrRacket. The file can also be compiled to bytecode
+       using @exec{raco make}:
 
-       @commandline{mzc @nonterm{program-file}}
+       @commandline{raco make @nonterm{program-file}}
 
-       For example, if @filepath{hi.ss} contains
+       For example, if @filepath{hi.sps} contains
 
-       @schemeblock[
-       #,(schememetafont "#!r6rs")
+       @racketblock[
+       #,(racketmetafont "#!r6rs")
        (import (rnrs))
        (display "hello\n")
        ]
 
        then
 
-       @commandline{mzscheme hi.ss}
+       @commandline{racket hi.sps}
 
-       prints ``hello.'' Similarly, opening @filepath{hi.ss} in
-       DrScheme and clicking @onscreen{Run} prints ``hello'' within
-       the DrScheme interactions window.}
+       prints ``hello.'' Similarly, opening @filepath{hi.sps} in
+       DrRacket and clicking @onscreen{Run} prints ``hello'' within
+       the DrRacket interactions window.}
 
 ]
 
@@ -118,17 +118,17 @@ To run a top-level program, either:
 @section{Installing Libraries}
        
 To reference an @|r6rs| library from a top-level program or another
-library, it must be installed as a collection-based library in PLT
-Scheme.
+library, it must be installed as a collection-based library in
+Racket.
 
 One way to produce an @|r6rs| installed library is to create in
 a @techlink[#:doc guide-src]{collection} a file that starts with
-@schememetafont{#!r6rs} and that contains a @scheme[library] form. For
-example, the following file might be created in a @filepath{hello.ss}
+@racketmetafont{#!r6rs} and that contains a @racket[library] form. For
+example, the following file might be created in a @filepath{hello.sls}
 file within a @filepath{examples} collection directory:
 
-       @schemeblock[
-       #,(schememetafont "#!r6rs")
+       @racketblock[
+       #,(racketmetafont "#!r6rs")
        (library (examples hello)
          (export greet)
          (import (rnrs))
@@ -138,16 +138,16 @@ file within a @filepath{examples} collection directory:
        ]
 
 Alternately, the @exec{plt-r6rs} executable with the @DFlag{install}
-flag accepts a sequence of @scheme[library] declarations and installs
+flag accepts a sequence of @racket[library] declarations and installs
 them into separate files in a collection directory, based on the
 declared name of each library:
 
  @commandline{plt-r6rs --install @nonterm{libraries-file}}
 
 By default, libraries are installed into the user-specific collection
-directory (see @scheme[find-user-collects-dir]). The @DFlag{all-users}
+directory (see @racket[find-user-collects-dir]). The @DFlag{all-users}
 flag causes the libraries to be installed into the main installation,
-instead (see @scheme[find-collects-dir]):
+instead (see @racket[find-collects-dir]):
 
  @commandline{plt-r6rs --install --all-users @nonterm{libraries-file}}
 
@@ -159,15 +159,15 @@ the files are written. Libraries installed by @exec{plt-r6rs
 One final option is to supply a @as-index{@DPFlag{path}} flag to
 @exec{plt-r6rs}. A path added with @DPFlag{path} extends the set of
 directories that are searched to find a collection (i.e., it sets
-@scheme[current-library-collection-paths]). If @nonterm{dir} contains
+@racket[current-library-collection-paths]). If @nonterm{dir} contains
 @filepath{duck} and @filepath{cow} sub-directories with
 @filepath{duck/feather.sls} and @filepath{cow/bell.sls}, and if each
-file is an @|r6rs| library prefixed with @schememetafont{#!r6rs}, then
+file is an @|r6rs| library prefixed with @racketmetafont{#!r6rs}, then
 @exec{plt-r6rs ++path @nonterm{dir}} directs the @|r6rs| library
-references @scheme[(duck feather)] and @scheme[(cow bell)] to the
+references @racket[(duck feather)] and @racket[(cow bell)] to the
 files. Note that this technique does not support accessing
 @filepath{duck.sls} directly within @nonterm{dir}, since the library
-reference @scheme[(duck)] is treated like @scheme[(duck main)] for
+reference @racket[(duck)] is treated like @racket[(duck main)] for
 finding the library, as explained in @secref["libpaths"]. Multiple
 paths can be provided with multiple uses of @DPFlag{path}; the paths
 are searched in order, and before the installation's collections.
@@ -178,14 +178,14 @@ are searched in order, and before the installation's collections.
 
 @defmodulelang[r6rs]
 
-The @schememodname[r6rs] language is usually used in the form
-@schememetafont{#!}@schememodname[r6rs], which is equivalent to
-@scheme[@#,hash-lang[] @#,schememodname[r6rs]] and is also valid
+The @racketmodname[r6rs] language is usually used in the form
+@racketmetafont{#!}@racketmodname[r6rs], which is equivalent to
+@racket[@#,hash-lang[] @#,racketmodname[r6rs]] and is also valid
 @|r6rs| syntax.
 
-The @schememodname[r6rs] module language provides only a
-@schemeidfont{#%module-begin} binding, which is used to process the
-entire module body (see @scheme[module]). It allows the body of a
+The @racketmodname[r6rs] module language provides only a
+@racketidfont{#%module-begin} binding, which is used to process the
+entire module body (see @racket[module]). It allows the body of a
 module to use the syntax of either a @|r6rs| library or a @|r6rs|
 top-level program.
 
@@ -199,12 +199,12 @@ top-level program.
             (import import-spec ...)
             program-body ...)]]{
 
-An @schememodname[r6rs] module that contains a single @scheme[library]
+An @racketmodname[r6rs] module that contains a single @racket[library]
 form defines an @|r6rs| library, while a module body that starts with
-an @scheme[import] form defined an @|r6rs| top-level program.
+an @racket[import] form defined an @|r6rs| top-level program.
 
-The @scheme[library], @scheme[export], and @scheme[import] identifiers
-are not exported by the @schememodname[r6rs] library; they are
+The @racket[library], @racket[export], and @racket[import] identifiers
+are not exported by the @racketmodname[r6rs] library; they are
 recognized through equivalence to unbound identifiers.}
 
 @; ----------------------------------------
@@ -213,12 +213,12 @@ recognized through equivalence to unbound identifiers.}
 
 An @|r6rs| library name is sequence of symbols, optionally followed by
 a version as a sequence of exact, non-negative integers. Roughly, such
-a name is converted to a PLT Scheme module pathname (see @secref[#:doc
+a name is converted to a Racket module pathname (see @secref[#:doc
 guide-src "module-paths"]) by concatenating the symbols with a
 @litchar{/} separator, and then appending the version integers each
 with a preceding @litchar{-}. As a special case, when an @|r6rs| path
 contains a single symbol (optionally followed by a version), a
-@schemeidfont{main} symbol is effectively inserted after the initial
+@racketidfont{main} symbol is effectively inserted after the initial
 symbol. See below for further encoding considerations.
 
 When an @|r6rs| library or top-level program refers to another
@@ -229,9 +229,9 @@ time by searching the set of installed files.
 In addition, when an @|r6rs| library path is converted, a file
 extension is selected at compile time based on installed files. The
 search order for file extensions is @filepath{.mzscheme.ss},
-@filepath{.mzscheme.sls}, @filepath{.ss}, and @filepath{.sls}.  When
-resolving version constraints, these extensions are all tried when
-looking for matches.
+@filepath{.mzscheme.sls}, @filepath{.ss}, @filepath{.sls}, and
+@filepath{.rkt}.  When resolving version constraints, these extensions
+are all tried when looking for matches.
 
 
 
@@ -250,44 +250,44 @@ applied to each symbol before concatenating them:
  module paths.}
 
  @item{If the @|r6rs| library reference has two symbol elements and
- the second one is @schemeidfont{main} followed by any number of
+ the second one is @racketidfont{main} followed by any number of
  underscores, then an extra underscore is added to that symbol. This
- conversion avoids a collision between an explicit @schemeidfont{main}
- and the implicit @schemeidfont{main} when a library path has a single
+ conversion avoids a collision between an explicit @racketidfont{main}
+ and the implicit @racketidfont{main} when a library path has a single
  symbol element.}
 
 ]
 
-Examples (assuming a typical PLT Scheme installation):
+Examples (assuming a typical Racket installation):
 
-@schemeblock[
-(rnrs io simple (6))  @#,elem{means}  (lib "rnrs/io/simple-6.ss")
-(rnrs)                @#,elem{means}  (lib "rnrs/main-6.ss")
-(rnrs main)           @#,elem{means}  (lib "rnrs/main_.ss")
-(rnrs (6))            @#,elem{means}  (lib "rnrs/main-6.ss")
-(scheme base)         @#,elem{means}  (lib "scheme/base.ss")
-(achtung!)            @#,elem{means}  (lib "achtung%21/main.ss")
-(funco new-λ)         @#,elem{means}  (lib "funco/new-%ce%bb.ss")
+@racketblock[
+(rnrs io simple (6))  @#,elem{means}  (lib "rnrs/io/simple-6.rkt")
+(rnrs)                @#,elem{means}  (lib "rnrs/main-6.rkt")
+(rnrs main)           @#,elem{means}  (lib "rnrs/main_.rkt")
+(rnrs (6))            @#,elem{means}  (lib "rnrs/main-6.rkt")
+(racket base)         @#,elem{means}  (lib "racket/base.rkt")
+(achtung!)            @#,elem{means}  (lib "achtung%21/main.rkt")
+(funco new-λ)         @#,elem{means}  (lib "funco/new-%ce%bb.rkt")
 ]
 
 
 @; ----------------------------------------
 
-@section{Scheme Interoperability}
+@section{Language Interoperability}
 
 Using the conversion rules in @secref["libpaths"], and @r6rs library
 can refer to modules that are implemented in other dialects supported
-by PLT Scheme, and other PLT Scheme modules can refer to libraries
+by Racket, and other Racket modules can refer to libraries
 that are implemented in @|r6rs|.
 
 Beware that a @defterm{pair} in @|r6rs| corresponds to a
-@defterm{mutable pair} in @schememodname[scheme/base]. Otherwise,
-@|r6rs| libraries and @schememodname[scheme/base] share the same
+@defterm{mutable pair} in @racketmodname[racket/base]. Otherwise,
+@|r6rs| libraries and @racketmodname[racket/base] share the same
 datatype for numbers, characters, strings, bytevectors (a.k.a. byte
 strings), vectors, and so on. Hash tables are different. Input and
-output ports from @schememodname[scheme/base] can be used directly as
+output ports from @racketmodname[racket/base] can be used directly as
 binary ports with @|r6rs| libraries, and all @|r6rs| ports can be used
-as ports in @schememodname[scheme/base] programs, but only textual
+as ports in @racketmodname[racket/base] programs, but only textual
 ports created via @|r6rs| libraries can be used by other @|r6rs|
 operations that expect textual ports.
 
@@ -295,21 +295,21 @@ operations that expect textual ports.
 
 @section[#:tag "conformance"]{@|r6rs| Conformance}
 
-PLT Scheme's @|r6rs| support does not conform with the standard in
+Racket's @|r6rs| support does not conform with the standard in
 several known ways:
 
 @itemize[
 
- @item{When @scheme[guard] catches an exception that no clause
-       matches, the exception is re-@scheme[raise]ed without restoring
+ @item{When @racket[guard] catches an exception that no clause
+       matches, the exception is re-@racket[raise]ed without restoring
        the continuation to the one that raised the exception.
 
        This difference can be made visible using
-       @scheme[dynamic-wind]. According to @|r6rs|, the following
+       @racket[dynamic-wind]. According to @|r6rs|, the following
        program should print ``in'' and ``out'' twice, but each prints
-       once using PLT Scheme:
+       once using Racket:
 
-      @schemeblock[
+      @racketblock[
         (guard (exn [(equal? exn 5) 'five])
            (guard (exn [(equal? exn 6) 'six])
              (dynamic-wind
@@ -321,27 +321,27 @@ several known ways:
 
        Along similar lines, continuation capture and invocation within
        an exception handler is restricted. Unless the exception is
-       raised through @scheme[raise-continuable], a handler can escape
+       raised through @racket[raise-continuable], a handler can escape
        only through a continuation that is a tail of the current
        continuation, and a continuation captured within the handler
        cannot be invoked after control escapes from the raise.
 
        The initial exception handler does not return for
-       non-@scheme[&serious] conditions, but @scheme[raise] and
-       @scheme[raise-continuable] both install an uncaught-exception
-       handler (via @scheme[parameterize] and
-       @scheme[uncaught-exception-handler]) to one that returns for
-       non-@scheme[&serious] conditions.}
+       non-@racket[&serious] conditions, but @racket[raise] and
+       @racket[raise-continuable] both install an uncaught-exception
+       handler (via @racket[parameterize] and
+       @racket[uncaught-exception-handler]) to one that returns for
+       non-@racket[&serious] conditions.}
 
  @item{Inexact numbers are printed without a precision indicator, and
        precision indicators are ignored on input (e.g.,
-       @schemevalfont{0.5|7} is read the same as @scheme[0.5]).}
+       @racketvalfont{0.5|7} is read the same as @racket[0.5]).}
 
- @item{Word boundaries for @scheme[string-downcase],
-       @scheme[string-upcase], and @scheme[string-titlecase] are not
+ @item{Word boundaries for @racket[string-downcase],
+       @racket[string-upcase], and @racket[string-titlecase] are not
        determined as specified by Unicode Standard Annex #29.}
 
- @item{When an identifier bound by @scheme[letrec] or @scheme[letrec*]
+ @item{When an identifier bound by @racket[letrec] or @racket[letrec*]
        is referenced before it is bound, an exception is not raised;
        instead, the reference produces @|undefined-const|.}
 
@@ -357,13 +357,13 @@ several known ways:
        automatically reset the port's position to counteract the
        effects of buffering.}
 
- @item{The bindings in a namespace produced by @scheme[null-environment]
-       or @scheme[scheme-report-environment] correspond to @|r5rs| bindings
-       instead of @|r6rs| bindings. In particular, @scheme[=>], @scheme[else],
-       @scheme[_], and @scheme[...] are not bound.}
+ @item{The bindings in a namespace produced by @racket[null-environment]
+       or @racket[racket-report-environment] correspond to @|r5rs| bindings
+       instead of @|r6rs| bindings. In particular, @racket[=>], @racket[else],
+       @racket[_], and @racket[...] are not bound.}
 
- @item{Bindings for @schemeidfont{#%datum}, @schemeidfont{#%app},
-       @schemeidfont{#%top}, and @schemeidfont{#%top-interaction} are
+ @item{Bindings for @racketidfont{#%datum}, @racketidfont{#%app},
+       @racketidfont{#%top}, and @racketidfont{#%top-interaction} are
        imported into every library and program, and at every phase
        level for which the library or program has imports.}
 
@@ -388,7 +388,7 @@ several known ways:
 @(define-syntax-rule (r6rs-module mod-path lib html anchor title elem ...)
   (begin
     (subsection #:tag (format "~a" 'mod-path) 
-             (scheme lib) ": " title)
+             (racket lib) ": " title)
     (defmodule mod-path)
     "Original specification: " (link (format "../~a/~a#~a" (dir-of html) html anchor)
                                      title)
@@ -398,7 +398,7 @@ several known ways:
 
 @r6rs-module[rnrs/base-6 (rnrs base (6))
              "r6rs-Z-H-14.html" "node_sec_11.4" "Base"
-       ;; Generated with makeindex.ss --r6rs, then further converted and 
+       ;; Generated with makeindex.rkt --r6rs, then further converted and 
        ;; filtered by hand
          (* #f "r6rs-Z-H-14.html" "node_idx_496")
          (+ #f "r6rs-Z-H-14.html" "node_idx_494")
@@ -1119,10 +1119,10 @@ See also @secref["conformance"].
              (equal-hash #f "r6rs-lib-Z-H-14.html" "node_idx_1218")]
 
 A hashtable is a dictionary in the sense of
-@schememodname[scheme/dict], and hash table operations interact with
+@racketmodname[racket/dict], and hash table operations interact with
 threads in the same way for hash tables created with
-@scheme[make-hash] (e.g., @scheme[hashtable-ref] and
-@scheme[hashtable-set!] are thread-safe).
+@racket[make-hash] (e.g., @racket[hashtable-ref] and
+@racket[hashtable-set!] are thread-safe).
 
 @r6rs-module[rnrs/enums-6 (rnrs enums (6))
              "r6rs-lib-Z-H-15.html" "node_idx_1226" "Enumerations"

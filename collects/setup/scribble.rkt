@@ -10,6 +10,7 @@
          scheme/file
          scheme/fasl
          scheme/serialize
+         compiler/cm
          syntax/modread
          scribble/base-render
          scribble/core
@@ -379,37 +380,60 @@
 (define (make-sci-computed sci)
   (lambda () sci))
 
+(define (file-or-directory-modify-seconds/stamp file
+                                                stamp-time stamp-data pos
+                                                get-sha1)
+  (let ([t (file-or-directory-modify-seconds file #f (lambda () +inf.0))])
+    (cond
+     [(t . <= . stamp-time) stamp-time]
+     [(equal? (list-ref stamp-data pos) (get-sha1 file)) stamp-time]
+     [else t])))
+
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
                        with-record-error setup-printf)
          doc)
   (let* ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
          [info-in-file  (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
+         [stamp-file  (build-path (or latex-dest (doc-dest-dir doc)) "stamp.sxref")]
          [out-file (build-path (doc-dest-dir doc) "index.html")]
          [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
                    (build-path base "compiled" (path-add-suffix name ".zo")))]
          [renderer (make-renderer latex-dest doc)]
          [can-run? (can-build? only-dirs doc)]
-         [aux-time (max (file-or-directory-modify-seconds
-                         (build-path (collection-path "scribble")
-                                     "compiled"
-                                     (path-add-suffix
-                                      (if latex-dest
-                                        "latex-render.ss"
-                                        "html-render.ss")
-                                      ".zo"))
-                         #f (lambda () -inf.0))
-                        (file-or-directory-modify-seconds
-                         (build-path (collection-path "scribble")
-                                     "scribble.css")
-                         #f (lambda () +inf.0)))]
+         [stamp-time (file-or-directory-modify-seconds stamp-file #f (lambda () -inf.0))]
+         [stamp-data (with-handlers ([exn:fail:filesystem? (lambda (exn) (list "" "" ""))])
+                       (let ([v (call-with-input-file* stamp-file read)])
+                         (if (and (list? v)
+                                  (= 3 (length v))
+                                  (andmap string? v))
+                             v
+                             (list "" "" ""))))]
+         [renderer-path (build-path (collection-path "scribble")
+                                    "compiled"
+                                    (path-add-suffix
+                                     (if latex-dest
+                                         "latex-render.rkt"
+                                         "html-render.rkt")
+                                     ".zo"))]
+         [css-path (build-path (collection-path "scribble")
+                               "scribble.css")]
+         [aux-time (max (file-or-directory-modify-seconds/stamp
+                         renderer-path
+                         stamp-time stamp-data 1
+                         get-compiled-file-sha1)
+                        (file-or-directory-modify-seconds/stamp
+                         css-path
+                         stamp-time stamp-data 2
+                         get-file-sha1))]
          [my-time (file-or-directory-modify-seconds out-file #f (lambda () -inf.0))]
          [info-out-time (file-or-directory-modify-seconds info-out-file #f (lambda () #f))]
          [info-in-time (file-or-directory-modify-seconds info-in-file #f (lambda () #f))]
          [info-time (min (or info-out-time -inf.0) (or info-in-time -inf.0))]
          [vers (send renderer get-serialize-version)]
-         [src-time (max aux-time
-                        (file-or-directory-modify-seconds
-                         src-zo #f (lambda () +inf.0)))]
+         [src-time (file-or-directory-modify-seconds/stamp
+                    src-zo
+                    stamp-time stamp-data 0
+                    get-compiled-file-sha1)]
          [up-to-date?
           (and info-out-time
                info-in-time
@@ -535,6 +559,13 @@
                    (unless latex-dest 
                      (render-time "xref-in" (write-in info)))
                    (set-info-need-in-write?! info #f))
+                 (when (or (stamp-time . < . aux-time)
+                           (stamp-time . < . src-time))
+                   (let ([data (list (get-compiled-file-sha1 src-zo)
+                                     (get-compiled-file-sha1 renderer-path)
+                                     (get-file-sha1 css-path))])
+                     (with-output-to-file stamp-file #:exists 'truncate/replace (lambda () (write data)))
+                     (file-or-directory-modify-seconds stamp-file (max aux-time src-time))))
                  info))))
          (lambda () #f))
         #f))))

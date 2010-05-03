@@ -2541,7 +2541,7 @@ Scheme_Object *wxSchemeFindDirectory(int argc, Scheme_Object **argv)
     
     if (which == id_init_file)
       return append_path(home,
-			 scheme_make_path("\\gracketrc" + ends_in_slash));
+			 scheme_make_path("\\gracketrc.rktl" + ends_in_slash));
     if (which == id_setup_file)
       return append_path(home,
 			 scheme_make_path("\\gracket.ini" + ends_in_slash));  
@@ -2778,9 +2778,9 @@ int wxGetPreference(const char *name, char *res, long len)
     if (!ends_in_slash)
       s[l++] = '/';
 # ifdef wx_mac
-    memcpy(s + l, "org.racket-lang.prefs", 24);
+    memcpy(s + l, "org.racket-lang.prefs.rktd", 24);
 # else
-    memcpy(s + l, "racket-prefs", 13);
+    memcpy(s + l, "racket-prefs.rktd", 13);
 # endif
 #endif
 
@@ -2796,7 +2796,7 @@ int wxGetPreference(const char *name, char *res, long len)
     memcpy(s, home, l);
     if (!ends_in_slash)
       s[l++] = '\\';
-    memcpy(s + l, "racket-prefs", 13);
+    memcpy(s + l, "racket-prefs.rktd", 13);
 #endif
 
     /*************** Mac OS Classic ***************/
@@ -2825,7 +2825,7 @@ int wxGetPreference(const char *name, char *res, long len)
       memcpy(s, home, l);
       if (!ends_in_slash)
 	s[l++] = ':';
-      memcpy(s + l, "org.racket-lang.prefs", 24);
+      memcpy(s + l, "org.racket-lang.prefs.rktd", 24);
     }
 #endif
 

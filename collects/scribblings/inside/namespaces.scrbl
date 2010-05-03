@@ -3,17 +3,17 @@
 
 @title[#:tag "im:env"]{Namespaces and Modules}
 
-A Scheme namespace (a top-level environment) is represented by a value
-of type @cppi{Scheme_Env*} --- which is also a Scheme value, castable
+A Racket namespace (a top-level environment) is represented by a value
+of type @cppi{Scheme_Env*} --- which is also a Racket value, castable
 to @cpp{Scheme_Object*}. Calling @cppi{scheme_basic_env} returns a
-namespace that includes all of Scheme's standard global procedures
+namespace that includes all of Racket's standard global procedures
 and syntax.
 
 The @cpp{scheme_basic_env} function must be called once by an
-embedding program, before any other PLT Scheme function is called
+embedding program, before any other Racket function is called
 (except @cpp{scheme_make_param}), but @cpp{scheme_main_setup}
 automatically calls @cpp{scheme_basic_env}. The returned namespace is
-the initial current namespace for the main Scheme thread. Scheme
+the initial current namespace for the main Racket thread. Racket
 extensions cannot call @cpp{scheme_basic_env}.
 
 The current thread's current namespace is available from
@@ -22,7 +22,7 @@ The current thread's current namespace is available from
 
 New values can be added as @as-index{globals} in a namespace using
 @cppi{scheme_add_global}. The @cppi{scheme_lookup_global} function
-takes a Scheme symbol and returns the global value for that name, or
+takes a Racket symbol and returns the global value for that name, or
 @cpp{NULL} if the symbol is undefined.
 
 A @as-index{module}'s set of top-level bindings is implemented using
@@ -37,8 +37,8 @@ module files). After installing variables into the module with
 to make the module declaration available. All defined variables are
 exported from the primitive module.
 
-The Scheme @indexed-scheme[#%variable-reference] form produces a value
-that is opaque to Scheme code. Use @cpp{SCHEME_PTR_VAL} on the result
+The Racket @indexed-scheme[#%variable-reference] form produces a value
+that is opaque to Racket code. Use @cpp{SCHEME_PTR_VAL} on the result
 of @scheme[#%variable-reference] to obtain the same kind of value as
 returned by @cpp{scheme_global_bucket} (i.e., a bucket containing the
 variable's value, or @cpp{NULL} if the variable is not yet defined).
@@ -95,7 +95,7 @@ The @cppi{Scheme_Bucket} structure is defined as:
 
 Like @cpp{scheme_global_bucket}, but finds a variable in a
  module. The @var{mod} and @var{symbol} arguments are as for
- @scheme[dynamic-require] in Scheme. The @var{pos} argument should be
+ @scheme[dynamic-require] in Racket. The @var{pos} argument should be
  @cpp{-1} always. The @var{env} argument represents the namespace in
  which the module is declared.}
 

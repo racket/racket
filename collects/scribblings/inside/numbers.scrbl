@@ -3,9 +3,9 @@
 
 @title{Bignums, Rationals, and Complex Numbers}
 
-Scheme supports integers of an arbitrary magnitude; when an integer
+Racket supports integers of an arbitrary magnitude; when an integer
 cannot be represented as a fixnum (i.e., 30 or 62 bits plus a sign
-bit), then it is represented by the Scheme type
+bit), then it is represented by the Racket type
 @cppi{scheme_bignum_type}. There is no overlap in integer values
 represented by fixnums and bignums.
 
@@ -60,7 +60,7 @@ unspecified accuracy.}
 @function[(float scheme_bignum_to_float
            [Scheme_Object* n])]{
 
-If PLT Scheme is not compiled with single-precision floats, this procedure
+If Racket is not compiled with single-precision floats, this procedure
 is actually a macro alias for @cpp{scheme_bignum_to_double}.}
 
 @function[(Scheme_Object* scheme_bignum_from_double
@@ -72,7 +72,7 @@ number @var{d}. The conversion accuracy is reasonable but unspecified.}
 @function[(Scheme_Object* scheme_bignum_from_float
            [float f])]{
 
-If PLT Scheme is not compiled with single-precision floats, this procedure
+If Racket is not compiled with single-precision floats, this procedure
 is actually a macro alias for @cpp{scheme_bignum_from_double}.}
 
 @function[(char* scheme_bignum_to_string
@@ -121,7 +121,7 @@ Converts the rational @var{n} to a @cpp{double}.}
 @function[(float scheme_rational_to_float
            [Scheme_Object* n])]{
 
-If PLT Scheme is not compiled with single-precision floats, this procedure
+If Racket is not compiled with single-precision floats, this procedure
 is actually a macro alias for @cpp{scheme_rational_to_double}.}
 
 @function[(Scheme_Object* scheme_rational_numerator
@@ -142,7 +142,7 @@ Converts the given @cpp{double} into a maximally-precise rational.}
 @function[(Scheme_Object* scheme_rational_from_float
            [float d])]{
 
-If PLT Scheme is not compiled with single-precision floats, this procedure
+If Racket is not compiled with single-precision floats, this procedure
 is actually a macro alias for @cpp{scheme_rational_from_double}.}
 
 @function[(Scheme_Object* scheme_make_complex

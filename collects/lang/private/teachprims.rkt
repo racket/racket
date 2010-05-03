@@ -163,6 +163,11 @@ namespace.
     (check-second 'member a b)
     (not (boolean? (member a b)))))
 
+(define-teach beginner member? 
+  (lambda (a b)
+    (check-second 'member? a b)
+    (not (boolean? (member a b)))))
+
 (define-teach beginner remove
   (lambda (a b)
     (check-second 'remove a b)
@@ -350,6 +355,7 @@ namespace.
  beginner-sqr
  beginner-list?
  beginner-member
+ beginner-member?
  beginner-remove
  beginner-cons
  beginner-list*

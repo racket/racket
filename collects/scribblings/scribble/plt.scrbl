@@ -3,8 +3,8 @@
 
 @title[#:tag "plt-manuals" #:style 'toc]{Scribbling Documentation}
 
-The @schememodname[scribble/manual] language and associated libraries
-provide extensive support for documenting PLT Scheme libraries. The
+The @racketmodname[scribble/manual] language and associated libraries
+provide extensive support for documenting Racket libraries. The
 most significant aspect of support for documentation is the way that
 source-code bindings are connected to documentation sites through the
 module namespace---a connection that is facilitated by the fact that

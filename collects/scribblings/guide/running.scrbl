@@ -167,7 +167,8 @@ instead of @racketmodname[racket/init].
 
 @section[#:tag "exe"]{Creating Stand-Alone Executables}
 
-@(define mzc-doc '(lib "scribblings/mzc/mzc.scrbl"))
+@(define raco-doc '(lib "scribblings/raco/raco.scrbl"))
 
 For information on creating and distributing executables, see
-@secref[#:doc mzc-doc "sa"] in @other-manual[mzc-doc].
+@secref[#:doc raco-doc "exe"] and @secref[#:doc raco-doc "exe-dist"] in
+@other-manual[raco-doc].

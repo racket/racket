@@ -463,7 +463,7 @@
                [`(ext collects ,(and (? bytes?) s) ...) (pltpath s)]
                [_ (error 'dependencies "bad dependency item in ~s: ~s"
                          file x)]))
-           (cdr x))))
+           (cddr x))))
   (dprintf "Reading dependencies...")
   (let loop ([tree (tree-filter "*.dep" *plt-tree*)])
     (if (pair? tree)

@@ -12,6 +12,6 @@
                  [make-print-reasons #f]
                  [make-print-checking #f])
     (make/proc
-     `((,(build-path dir "gl-info_ss.zo")
+     `((,(build-path dir "gl-info_rkt.zo")
         ("make-gl-info.rkt" ,(build-path (find-include-dir) "schvers.h"))
         ,(lambda () (make-gl-info dir)))))))

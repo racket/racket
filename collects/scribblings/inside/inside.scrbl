@@ -2,19 +2,19 @@
 @(require "utils.ss")
 
 @title[#:tag-prefix '(lib "scribblings/inside/inside.scrbl") 
-       #:tag "top"]{@bold{Inside}: PLT Scheme C API}
+       #:tag "top"]{@bold{Inside}: Racket C API}
 
 @author["Matthew Flatt"]
 
-This manual describes PLT Scheme's C interface, which allows the
+This manual describes Racket's C interface, which allows the
 interpreter to be extended by a dynamically-loaded library, or
 embedded within an arbitrary C/C++ program. The manual assumes
-familiarity with PLT Scheme as described in @|MzScheme|.
+familiarity with Racket as described in @|MzScheme|.
 
 For an alternative way of dealing with foreign code, see
 @other-manual['(lib "scribblings/foreign/foreign.scrbl")], which
-describes the @schememodname[scheme/foreign] module for manipulating
-low-level libraries and structures purely through Scheme code.
+describes the @racketmodname[ffi/unsafe] module for manipulating
+low-level libraries and structures purely through Racket code.
 
 @table-of-contents[]
 
