@@ -3,7 +3,7 @@
 
 (Section 'vector)
 
-(require scheme/vector)
+(require racket/vector)
 
 
 (test #t vector? '#(0 (2 2 2 2) "Anna"))
@@ -183,6 +183,19 @@
   (err/rt-test (vector-argmax (lambda (x) x) (vector +i)) (check-regs #rx"vector-argmax" #rx"procedure that returns real numbers"))
   (err/rt-test (vector-argmax (lambda (x) x) (vector)) (check-regs #rx"vector-argmax" #rx"non-empty vector")))
 
+
+;; vector-mem{ber,v,q}
+
+  (test 0 vector-member 7 #(7 1 2))
+  (test #f vector-member 7 #(0 1 2))
+  (test 1 vector-memq 'x #(7 x 2))
+  (test 1 vector-memv 'x #(7 x 2))
+  (test #f vector-memq 1000000000000 #(7 1000000000000 2))
+  (test 1 vector-memv 1000000000000 #(7 1000000000000 2))
+  (test 1 vector-member 1000000000000 #(7 1000000000000 2))
+  (test #f vector-memq (cons 1 2) (vector 7 (cons 1 2) 2))
+  (test #f vector-memv (cons 1 2) (vector 7 (cons 1 2) 2))
+  (test 1 vector-member (cons 1 2) (vector 7 (cons 1 2) 2))
 
 
 ;; ---------- check no collisions with srfi/43 ----------
