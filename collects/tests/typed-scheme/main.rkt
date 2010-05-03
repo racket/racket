@@ -10,7 +10,7 @@
          "unit-tests/test-utils.ss")
 
 (define (scheme-file? s)
-  (regexp-match ".*[.](ss|scm)" (path->string s)))
+  (regexp-match ".*[.](rkt|ss|scm)" (path->string s)))
 
 (define-namespace-anchor a)
 
