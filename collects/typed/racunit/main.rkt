@@ -5,8 +5,8 @@
   (case-lambda
     (Any Any -> Void)
     (Any Any String -> Void)))
-(define-type (Predicate A) (Any -> Boolean))
-(define-type (Thunk A) (-> Any))
+(define-type (Predicate A) (A -> Boolean))
+(define-type (Thunk A) (-> A))
 
 ; 3.2
 (require/typed/provide
@@ -43,15 +43,13 @@
     (Any -> #t)
     (Any String -> #t))]
  [check-exn
-  (All (A B)
-       (case-lambda 
-         ((Predicate A) (Thunk B) -> #t)
-         ((Predicate A) (Thunk B) String -> #t)))]
+  (case-lambda 
+    ((Predicate Any) (Thunk Any) -> #t)
+    ((Predicate Any) (Thunk Any) String -> #t))]
  [check-not-exn
-  (All (A)
-       (case-lambda
-         ((Thunk A) -> #t)
-         ((Thunk A) String -> #t)))]
+  (case-lambda
+    ((Thunk Any) -> #t)
+    ((Thunk Any) String -> #t))]
  [fail
   (case-lambda
     (-> #t)

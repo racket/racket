@@ -10,7 +10,7 @@
 
 (: my-* : Integer Integer -> Integer)
 (define (my-* a b)
-  (if (zero? a)
+  (if (= a 1)
       b
       (my-* (sub1 a) (my-+ b b))))
 
