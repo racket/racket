@@ -18,6 +18,7 @@
          (except-in (env type-environments) extend)
          (rep type-rep filter-rep object-rep)
          (r:infer infer)
+         '#%paramz
          (for-template 
           (only-in '#%kernel [apply k:apply])
           "internal-forms.ss" scheme/base scheme/bool '#%paramz
