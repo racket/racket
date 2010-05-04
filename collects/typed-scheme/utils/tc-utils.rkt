@@ -46,7 +46,7 @@ don't depend on any other portion of the system
         [stx (locate-stx e)])
     (when (and (warn-unreachable?)
                (log-level? l 'warning)
-               (syntax-original? (syntax-local-introduce e))
+               (and (syntax-transforming?) (syntax-original? (syntax-local-introduce e)))
                #;(and (orig-module-stx) (eq? (debug syntax-source-module e) (debug syntax-source-module (orig-module-stx))))
 	       #;(syntax-source-module stx))
       (log-message l 'warning (format "Typed Scheme has detected unreachable code: ~e" (syntax->datum (locate-stx e)))
