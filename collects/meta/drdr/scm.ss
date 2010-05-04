@@ -179,7 +179,7 @@
 
 (define (scm-revisions-after cur-rev)
   (define newest-rev (newest-push))
-  (for/list ([rev (in-range (add1 cur-rev) newest-rev)]
+  (for/list ([rev (in-range (add1 cur-rev) (add1 newest-rev))]
              #:when
              (let ([info (push-info rev)])
                (and info (hash-has-key? (push-data-branches info) master-branch))))
