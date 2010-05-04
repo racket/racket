@@ -13,7 +13,8 @@ In addition, you can make it work as a git command -- put this in a file
 called "git-prop" somewhere in your path (make sure to "chmod +x" it):
 
   #!/bin/sh
-  exec "$(git rev-parse --show-toplevel)/collects/meta/props" "$@"
+  top="$(git rev-parse --show-toplevel)" || exit 1
+  exec "$top/collects/meta/props" "$@"
 
 and use it as a git command: `git prop cmd args...'.  This will use the script
 from the work tree that you're now in, with any mzscheme executable that
