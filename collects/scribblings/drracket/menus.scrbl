@@ -15,7 +15,7 @@
 
 @itemize[
   
- @item{@defmenuitem{New} Creates a new DrScheme window.}
+ @item{@defmenuitem{New} Creates a new DrRacket window.}
 
  @item{@defmenuitem{Open...} Opens a find-file dialog for choosing
   a file to load into a @tech{definitions window}.}
@@ -44,7 +44,7 @@
 
  @item{@defmenuitem{Save Definitions As Text...} Like @onscreen{Save
   Definitions As...}, but the file is saved in plain-text format (see
-  @secref["drscheme-file-formats"]). Subsequent saves also write in
+  @secref["drracket-file-formats"]). Subsequent saves also write in
   plain-text format.}
   
  @item{@defmenuitem{Save Interactions} Saves the contents of the interactions
@@ -57,7 +57,7 @@
   
  @item{@defmenuitem{Save Interactions As Text...}  Like @onscreen{Save
   Interactions As...}, but the file is saved in plain-text format (see
-  @secref["drscheme-file-formats"]). Subsequent saves are write in
+  @secref["drracket-file-formats"]). Subsequent saves are write in
   plain-text format.}
   
  ]}
@@ -65,7 +65,7 @@
 @item{@defmenuitem{Log Definitions and Interactions...} Starts a
   running of log of the text in the interactions and definitions
   windows, organized by executions. In a directory of your choosing,
-  DrScheme saves files with the names @filepath{01-definitions},
+  DrRacket saves files with the names @filepath{01-definitions},
   @filepath{01-interactions}, @filepath{02-definitions},
   @filepath{02-interactions}, @|etc| as you interact with various
   programs.}
@@ -80,11 +80,11 @@
   specify the parameters of a multi-file search. The results of the
   search are displayed in a separate window.}
 
- @item{@defmenuitem{Close} Closes this DrScheme window. If this window
-  is the only open DrScheme window, then DrScheme quits, except under
+ @item{@defmenuitem{Close} Closes this DrRacket window. If this window
+  is the only open DrRacket window, then DrRacket quits, except under
   Mac OS X.}
 
- @item{{@onscreen{Quit} or @onscreen{Exit}} Exits DrScheme. (Under Mac
+ @item{{@onscreen{Quit} or @onscreen{Exit}} Exits DrRacket. (Under Mac
   OS X, this menu item is in the Apple menu.)}
 
 ]
@@ -158,7 +158,7 @@ case-sensitive and case-insensitive search.}
 
 @item{@defmenuitem{Add User-defined Keybindings...} Choosing this menu
   item opens a file dialog where you can select a file containing
-  Scheme-definitions of keybindings. See @secref["defining-shortcuts"]
+  Racket-definitions of keybindings. See @secref["defining-shortcuts"]
   for more information.}
 
 ]}
@@ -188,14 +188,14 @@ appears at any time.
  @item{@defmenuitem{Hide Interactions} Hides interactions window.}
 
  @item{@defmenuitem{Show Program Contour} Shows a ``20,000 foot''
-   overview window along the edge of the DrScheme
+   overview window along the edge of the DrRacket
    window. Each pixel in this window corresponds to a letter
    in the program text.}
 
  @item{@defmenuitem{Hide Program Contour} Hides the contour window.}
    
  @item{@defmenuitem{Show Module Browser} Shows the module DAG rooted
-   at the currently opened file in DrScheme.
+   at the currently opened file in DrRacket.
    
    See also @secref["module-browser"].}
 
@@ -205,8 +205,8 @@ appears at any time.
 
  @item{@defmenuitem{Toolbar} 
 @itemize[
-@item{@defmenuitem{Toolbar on Left} Moves the tool bar (defaultly on the top of DrScheme's window) to the left-hand side, organized vertically.}
-@item{@defmenuitem{Toolbar on Top} Moves the toolbar to the top of the DrScheme window.}
+@item{@defmenuitem{Toolbar on Left} Moves the tool bar (defaultly on the top of DrRacket's window) to the left-hand side, organized vertically.}
+@item{@defmenuitem{Toolbar on Top} Moves the toolbar to the top of the DrRacket window.}
 @item{@defmenuitem{Toolbar on Right} Moves the tool bar to the right-hand side, organized vertically.}
 @item{@defmenuitem{Toolbar Hidden} Hides the toolbar entirely.}]}
 
@@ -219,13 +219,13 @@ appears at any time.
    section. Profiling does not apply to all languages.}
    
  @item{@defmenuitem{Hide Profile} Hides any profiling
-   information currently displayed in the DrScheme window.}
+   information currently displayed in the DrRacket window.}
 
  @item{@defmenuitem{Dock Test Report} Like the dock button on the test report
    window, this causes all test report windows to merge with the appropriate
-   DrScheme window at the bottom of the frame.}
+   DrRacket window at the bottom of the frame.}
   @item{@defmenuitem{Undock Test Report} Like the undock button on the test report
-   window, this causes the test reports attached to appropriate DrScheme tabs
+   window, this causes the test reports attached to appropriate DrRacket tabs
    to become separate windows.}
  
  @item{@defmenuitem{Show Tracing} Shows a trace of functions called since
@@ -264,7 +264,7 @@ Note: whenever a program is run, the interactions window is made
  @item{@defmenuitem{Add Teachpack...} Opens a find-file dialog for
   choosing a teachpack to extend the current language. Click
   @onscreen{Run} to make the teachpack available in the interactions
-  windows. See @secref["extending-drscheme"] for information on
+  windows. See @secref["extending-drracket"] for information on
   creating teachpacks.}
 
 @item{@defmenuitem{Clear All Teachpacks} Clears all of the current
@@ -278,7 +278,7 @@ clears only the corresponding teachpack.
 
 @; ----------------------------------------
 
-@section[#:tag "menu:scheme"]{@onscreen{Scheme}}
+@section[#:tag "menu:racket"]{@onscreen{Racket}}
 
 @itemize[
 
@@ -291,7 +291,7 @@ clears only the corresponding teachpack.
 
 @item{@defmenuitem{Limit Memory...} Allow you to specify a
 limit on the amount of memory that a program running in
-DrScheme is allowed to consume.}
+DrRacket is allowed to consume.}
 
 @item{@defmenuitem{Clear Error Highlight} Removes the red
 background that signals the source location of an error.}
@@ -308,7 +308,7 @@ background that signals the source location of an error.}
   }
 
  @item{@defmenuitem{Reindent} Indents the selected text according to
-  the standard Scheme formatting conventions. (Pressing the Tab key
+  the standard Racket formatting conventions. (Pressing the Tab key
   has the same effect.)}
   
  @item{@defmenuitem{Reindent All} Indents all of the text in either
@@ -345,7 +345,7 @@ background that signals the source location of an error.}
 @itemize[
 
  @item{@defmenuitem{Insert Comment Box} Inserts a box that is ignored
-  by DrScheme; use it to write comments for people who read your
+  by DrRacket; use it to write comments for people who read your
   program.}
 
  @item{@defmenuitem{Insert Image...} Opens a find-file dialog for
@@ -368,19 +368,19 @@ background that signals the source location of an error.}
 
  @item{@defmenuitem{Insert @|lam-str|} Inserts the symbol @|lam-str|
    (as a Unicode character) into the program. The @|lam-str| symbol is
-   normally bound the same as @scheme[lambda].}
+   normally bound the same as @racket[lambda].}
 
  @item{@defmenuitem{Insert XML Box} Inserts an XML; see
    @secref["xml-boxes"] for more information.}
 
- @item{@defmenuitem{Insert Scheme Box} Inserts a box to contain Scheme
+ @item{@defmenuitem{Insert Racket Box} Inserts a box to contain Racket
    code, typically used inside an XML box; see @secref["xml-boxes"].}
 
- @item{@defmenuitem{Insert Scheme Splice Box} Inserts a box to contain Scheme
+ @item{@defmenuitem{Insert Racket Splice Box} Inserts a box to contain Racket
    code, typically used inside an XML box; see also @secref["xml-boxes"].}
 
  @item{@defmenuitem{Insert Pict Box} Creates a box for generating a
-   Slideshow picture. Inside the pict box, insert and arrange Scheme
+   Slideshow picture. Inside the pict box, insert and arrange Racket
    boxes that produce picture values.}
 
 ]  
@@ -392,7 +392,7 @@ background that signals the source location of an error.}
 @itemize[
 
  @item{@defmenuitem{Bring Frame to Front...}  Opens a window that lists
-   all of the opened DrScheme frames. Selecting one of them brings the
+   all of the opened DrRacket frames. Selecting one of them brings the
    window to the front.}
 
  @item{@defmenuitem{Most Recent Window} Toggles between the currently
@@ -401,7 +401,7 @@ background that signals the source location of an error.}
 ]
 
 Additionally, after the above menu items, this menu contains
-an entry for each window in DrScheme. Selecting a menu item
+an entry for each window in DrRacket. Selecting a menu item
 brings the corresponding window to the front.
 
 @; ----------------------------------------
@@ -411,19 +411,19 @@ brings the corresponding window to the front.
 @itemize[
 
  @item{@defmenuitem{Help Desk} Opens the Help Desk. This is the clearing 
- house for all documentation about DrScheme and its language.}
+ house for all documentation about DrRacket and its language.}
  
- @item{@defmenuitem{About DrScheme...} Shows the credits for DrScheme.}
+ @item{@defmenuitem{About DrRacket...} Shows the credits for DrRacket.}
 
  @item{@defmenuitem{Related Web Sites} Provides links to related web sites.}
 
  @item{@defmenuitem{Tool Web Sites} Provides links to web sites for
    installed tools.}
 
- @item{@defmenuitem{Interact with DrScheme in English} Changes DrScheme's
+ @item{@defmenuitem{Interact with DrRacket in English} Changes DrRacket's
    interface to use English; the menu item appears only when the
    current language is not English. Additional menu items switch
-   DrScheme to other languages.}
+   DrRacket to other languages.}
 
 ]
 

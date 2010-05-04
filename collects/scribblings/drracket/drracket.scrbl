@@ -1,12 +1,12 @@
 #lang scribble/doc
 @(require scribble/manual)
 
-@title{@bold{DrScheme}: PLT Programming Environment}
+@title{@bold{DrRacket}: Programming Environment}
 
 @author["Robert Bruce Findler" "PLT"]
 
-DrScheme is a graphical environment for developing programs using the
-PLT Scheme programming languages.
+DrRacket is a graphical environment for developing programs using the
+Racket programming languages.
 
 @table-of-contents[]
 

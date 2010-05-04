@@ -6,7 +6,7 @@
 @title[#:tag "running" #:style 'toc]{Running and Creating Executables}
 
 While developing programs, many Racket programmers use the
-@seclink[#:doc '(lib "scribblings/drscheme/drscheme.scrbl")
+@seclink[#:doc '(lib "scribblings/drracket/drracket.scrbl")
 "top"]{DrRacket} programming environment. To run a program without the
 development environment, use @exec{racket} (for console-based
 programs) or @exec{gracket} (for GUI programs). This chapter mainly

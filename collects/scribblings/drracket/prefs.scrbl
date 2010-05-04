@@ -11,20 +11,20 @@ The preferences dialog consists of several panels.
 
 @section{@onscreen{Font}}
 
- This panel controls the main font used by DrScheme.
+ This panel controls the main font used by DrRacket.
 
 @section{@onscreen{Colors}}
 
   The @onscreen{Colors} panel has several sub-panels that let you
-  configure the colors that DrScheme uses for the editor background,
+  configure the colors that DrRacket uses for the editor background,
   for highlighting matching parentheses, for the online coloring for
-  Scheme and Java modes, for @onscreen{Check Syntax}, and for the
+  Racket and Java modes, for @onscreen{Check Syntax}, and for the
   colors of the text in the @tech{interactions window}.
 
   It also has two buttons, @onscreen{White on Black} and
   @onscreen{Black on White}, which set a number of defaults for the
-  color preferences and change a few other aspects of DrScheme's
-  behavior to make DrScheme's colors look nicer for those two modes.
+  color preferences and change a few other aspects of DrRacket's
+  behavior to make DrRacket's colors look nicer for those two modes.
 
 @section{@onscreen{Editing}}
   
@@ -34,14 +34,14 @@ The preferences dialog consists of several panels.
 
    @item{@onscreen{Indenting}
 
-         This panel controls which keywords DrScheme recognizes for
+         This panel controls which keywords DrRacket recognizes for
          indenting, and how each keyword is treated.}
 
  @item{@onscreen{Square bracket}
 
-      This panel controls which keywords DrScheme uses to determine
+      This panel controls which keywords DrRacket uses to determine
       when to rewrite @litchar["["] to @litchar["("]. For
-      @scheme[cond]-like keywords, the number in parenthesis indicates
+      @racket[cond]-like keywords, the number in parenthesis indicates
       how many sub-expressions are skipped before square brackets are
       started.
 
@@ -57,7 +57,7 @@ The preferences dialog consists of several panels.
      menu).} 
 
    @item{@PrefItem{Auto-save files} --- If checked, the editor
-    generates autosave files (see @secref["drscheme-autosave-files"])
+    generates autosave files (see @secref["drracket-autosave-files"])
     for files that have not been saved after five minutes.}
     
   @item{@PrefItem{Backup files} --- If checked, when saving a file for
@@ -69,7 +69,7 @@ The preferences dialog consists of several panels.
    @item{@PrefItem{Map delete to backspace} --- If checked, the editor
     treats the Delete key like the Backspace key.}
 
-   @item{@PrefItem{Show status-line} --- If checked, DrScheme shows a
+   @item{@PrefItem{Show status-line} --- If checked, DrRacket shows a
     status line at the bottom of each window.}
 
    @item{@PrefItem{Count column numbers from one} --- If checked, the
@@ -82,26 +82,26 @@ The preferences dialog consists of several panels.
     rather than the character offset into the text.}
 
    @item{@PrefItem{Wrap words in editor buffers} --- If checked,
-     DrScheme editors auto-wrap text lines by default. Changing this
+     DrRacket editors auto-wrap text lines by default. Changing this
      preference affects new windows only.}
 
    @item{@PrefItem{Use separate dialog for searching} --- If checked,
     then selecting the @onscreen{Find} menu item opens a separate
     dialog for searching and replacing. Otherwise, selecting
     @onscreen{Find} opens an interactive search-and-replace panel at
-    the bottom of a DrScheme window.}
+    the bottom of a DrRacket window.}
 
    @item{@PrefItem{Reuse existing frames when opening new files} ---
-    If checked, new files are opened in the same DrScheme window,
-    rather than creating a new DrScheme window for each new file.}
+    If checked, new files are opened in the same DrRacket window,
+    rather than creating a new DrRacket window for each new file.}
 
    @item{@PrefItem{Enable keybindings in menus} --- If checked, some
-    DrScheme menu items have keybindings. Otherwise, no menu items
+    DrRacket menu items have keybindings. Otherwise, no menu items
     have key bindings. This preference is designed for people who are
     comfortable editing in Emacs and find the standard menu
     keybindings interfere with the Emacs keybindings.}
     
-  @item{@PrefItem{Color syntax interactively} --- If checked, DrScheme
+  @item{@PrefItem{Color syntax interactively} --- If checked, DrRacket
     colors your syntax as you type.}
 
   @item{@PrefItem{Automatically print to PostScript file} --- If
@@ -110,15 +110,15 @@ The preferences dialog consists of several panels.
     computer.}
 
   @item{@PrefItem{Open files in separate tabs (not separate windows)}
-    -- If checked, DrScheme will use tabs in the front-most window to
+    -- If checked, DrRacket will use tabs in the front-most window to
     open new files, rather than creating new windows for new files.}
 
   @item{@PrefItem{Automatically open interactions window when running
-    a program} -- If checked, DrScheme shows the interactions window
+    a program} -- If checked, DrRacket shows the interactions window
     (if it is hidden) when a program is run.}
 
 @item{@PrefItem{Put the interactions window beside the definitions
-   window} -- If checked, DrScheme puts the interactions window to the
+   window} -- If checked, DrRacket puts the interactions window to the
    right of the definitions window. By default, the interactions
    window is below the definitions window.}
 
@@ -130,7 +130,7 @@ The preferences dialog consists of several panels.
 
   ]}
 
- @item{@onscreen{Scheme}
+ @item{@onscreen{Racket}
 
   @itemize[
 
@@ -159,27 +159,27 @@ The preferences dialog consists of several panels.
   @itemize[
 
    @item{@PrefItem{Ask before changing save format} --- If checked,
-    DrScheme consults the user before saving a file in non-text format
-    (see @secref["drscheme-file-formats"]).}
+    DrRacket consults the user before saving a file in non-text format
+    (see @secref["drracket-file-formats"]).}
 
-   @item{@PrefItem{Verify exit} --- If checked, DrScheme consults the
+   @item{@PrefItem{Verify exit} --- If checked, DrRacket consults the
     user before exiting.}
 
    @item{@PrefItem{Only warn once when executions and interactions are
-    not synchronized} --- If checked, DrScheme warns the user on the
+    not synchronized} --- If checked, DrRacket warns the user on the
     first interaction after the definitions window, language, or
     teachpack is changed without a corresponding click on
     @onscreen{Run}. Otherwise, the warning appears on every
     interaction.}
 
    @item{@PrefItem{Ask about clearing test coverage} --- If checked,
-     when test coverage annotations are displayed DrScheme prompts
+     when test coverage annotations are displayed DrRacket prompts
      about removing them. This setting only applies to the PLT
-     languages. DrScheme never asks in the teaching languages.}
+     languages. DrRacket never asks in the teaching languages.}
 
-   @item{@PrefItem{Check for newer PLT Scheme versions} --- If
-     checked, DrScheme periodically polls a server to determine
-     whether a newer version of DrScheme is available.}
+   @item{@PrefItem{Check for newer PLT Racket versions} --- If
+     checked, DrRacket periodically polls a server to determine
+     whether a newer version of DrRacket is available.}
 
  ]
 

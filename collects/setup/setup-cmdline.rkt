@@ -6,7 +6,8 @@
 #lang racket/base
 
 (require racket/cmdline
-         raco/command-name)
+         raco/command-name
+         "private/command-name.rkt")
 
 (provide parse-cmdline)
 
@@ -24,21 +25,10 @@
   (define (add-flags l)
     (set! x-flags (append (reverse l) x-flags)))
 
-  (define-values (short-name long-name)
-    (let ([p (find-system-path 'run-file)])
-      (let-values ([(base name dir?) (split-path p)])
-        (cond
-         [(current-command-name)
-          (values (format "~a ~a" name (current-command-name))
-                  (program+command-name))]
-         ;; Hack for bootstrapping, if the program name is "raco",
-         ;; then claim to be the "setup" command:
-         [(equal? (path->string name) "raco")
-          (values (format "~a setup" name)
-                  (format "~a setup" p))]
-         [else
-          (values (path->string name) p)]))))
+  (define-values (short-name long-name) (get-names))
 
+  ;; Beware of the poor-man's duplicate of this command-line specification
+  ;; in "main.rkt"!
   (define-values (x-specific-collections x-archives)
     (command-line
      #:program long-name

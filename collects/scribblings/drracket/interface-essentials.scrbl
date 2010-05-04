@@ -3,9 +3,9 @@
           scribble/decode
           scribble/eval
           scribble/struct
-          scribble/scheme
+          scribble/racket
           (for-label htdp/convert
-                     scheme/gui/base))
+                     racket/gui/base))
 
 @(define (ioinputfont . s)
    (apply tt s))
@@ -14,35 +14,35 @@
 
 @title[#:tag "interface-essentials" #:style 'toc]{Interface Essentials}
 
-The DrScheme window has three parts: a row of buttons at the top, two
+The DrRacket window has three parts: a row of buttons at the top, two
 editing panels in the middle, and a status line at the bottom.
 
 @centerline{@image[#:scale 0.7 "example.png"]}
 
 The top editing panel, called the @deftech{definitions window}, is for
 defining programs. The above figure shows a program that defines the
-function @scheme[square].
+function @racket[square].
 
 The bottom panel, called the @deftech{interactions window}, is for
-evaluating Scheme expressions interactively. The @onscreen{Language} line
+evaluating Racket expressions interactively. The @onscreen{Language} line
 in the interactions window indicates which primitives are available in
 the definitions and interactions windows.  In the above figure, the
-language is @drlang{Module}.
+language is determined from the program source's @hash-lang[] line.
 
 @margin-note{The interactions window is described further in
 @secref["interactions-window"], later in this manual.}
 
 Clicking the @onscreen{Run} button evaluates the program in the
 definitions window, making the program's definitions available in the
-interactions window. Given the definition of @scheme[square] as in the
-figure above, typing @scheme[(square 2)] in the interactions window
-produces the result @scheme[4].
+interactions window. Given the definition of @racket[square] as in the
+figure above, typing @racket[(square 2)] in the interactions window
+produces the result @racket[4].
 
-The @deftech{status line} at the bottom of DrScheme's window provides
+The @deftech{status line} at the bottom of DrRacket's window provides
 information about the current line and position of the editing caret,
-whether the current file can be modified, and whether DrScheme is
+whether the current file can be modified, and whether DrRacket is
 currently evaluating any expression. The @as-index{recycling icon}
-flashes while DrScheme is ``recycling'' internal resources, such as
+flashes while DrRacket is ``recycling'' internal resources, such as
 memory.
 
 @local-table-of-contents[]
@@ -51,7 +51,7 @@ memory.
 
 @section[#:tag "buttons"]{Buttons}
 
-The left end of the row of buttons in DrScheme contains a miniature
+The left end of the row of buttons in DrRacket contains a miniature
 button with the @index['("filename button")]{current file's
 name}. Clicking the button opens a menu that shows the file's full
 pathname. Selecting one of the menu entries produces an open-file
@@ -74,8 +74,8 @@ The @as-index{@onscreen{Step} button}---which appears only for the
 @as-index{Stepper}, which shows the evaluation of a program as a
 series of small steps. Each evaluation step replaces an expression in
 the program with an equivalent one using the evaluation rules of
-DrScheme. For example, a step might replace @scheme[(+ 1 2)] with
-@scheme[3]. These are the same rules used by DrScheme to evaluate a
+DrRacket. For example, a step might replace @racket[(+ 1 2)] with
+@racket[3]. These are the same rules used by DrRacket to evaluate a
 program.  Clicking @onscreen{Step} opens a new window that contains
 the program from the definitions window, plus several new buttons:
 these buttons allow navigation of the evaluation as a series of steps.
@@ -103,16 +103,16 @@ annotations:
 
  @item{@bold{Lexical Structure:} The lexical structure is shown with
        arrows overlaid on the program text.  When the mouse cursor
-       passes over a variable, DrScheme draws an arrow from the
+       passes over a variable, DrRacket draws an arrow from the
        binding location to the variable, or from the binding location
        to every bound occurrence of the variable.
 
        @index['("Check syntax" "purple arrows")]{@index['("Check
        syntax" "question-mark arrows")]{In}} addition to indicating
-       definite references with blue arrows, DrScheme also draws
+       definite references with blue arrows, DrRacket also draws
        arrows to indicate potential references within macro
        definitions. Potential arrows are drawn in purple and annotated
-       with a question mark to indicate uncertainty, because DrScheme
+       with a question mark to indicate uncertainty, because DrRacket
        cannot predict how such identifiers will eventually be
        used. Their roles may depend on the arguments to the macro and
        the context the macro is used in.
@@ -131,12 +131,12 @@ annotations:
 
   @item{@bold{Require Annotations:} Right-clicking (or
         Control-clicking under Mac OS X) on the argument to
-        @scheme[require] activates a popup menu that lets you open the
-        file that contains the @scheme[require]d module.
+        @racket[require] activates a popup menu that lets you open the
+        file that contains the @racket[require]d module.
 
-        Passing the mouse cursor over a @scheme[require] expression
+        Passing the mouse cursor over a @racket[require] expression
         inside a module shows all of the variables that are used from
-        that @scheme[require] expression. Additionally, if no
+        that @racket[require] expression. Additionally, if no
         variables are used from that require expression, it is colored
         like an unbound variable.
 
@@ -150,7 +150,7 @@ The @as-index{@onscreen{Run} button} evaluates the program in the
 @tech{definitions window} and resets the @tech{interactions window}.
 
 The @as-index{@onscreen{Break} button} interrupts an evaluation, or
-beeps if DrScheme is not evaluating anything. For example, after
+beeps if DrRacket is not evaluating anything. For example, after
 clicking @onscreen{Run} or entering an expression into the
 interactions window, click @onscreen{Break} to cancel the
 evaluation. Click the @onscreen{Break} button once to try to interrupt
@@ -163,27 +163,28 @@ evaluation immediately.
 
 @section-index["language levels"]
 
-DrScheme supports multiple dialects of Scheme, as well as some
-non-Scheme languages. You specify a language in one of two ways:
+DrRacket supports multiple dialects of Racket, as well as some
+non-Racket languages. You specify a language in one of two ways:
 
 @itemize[
 
- @item{Select the @drlang{Module} language (via the
-       @menuitem["Language" "Choose Language..."] menu item), and then
-       specify a specific language as part of the program usually by
-       starting the definitions-window content with @hash-lang[].}
+ @item{Select the @drlang{Use the language declared in the source}
+       option (via the @menuitem["Language" "Choose Language..."] menu
+       item), and then specify a specific language as part of the
+       program usually by starting the definitions-window content with
+       @hash-lang[].}
 
   @item{Select the @menuitem["Language" "Choose Language..."] menu
-       item, and choose a language other than @drlang{Module}. After
-       changing the language, click @onscreen{Run} to reset the
-       language in the interactions window. The bottom-left corner of
-       DrScheme's main window also has a shortcut menu item for
-       selecting previously selected languages.}
+       item, and choose a specific language. After changing the
+       language, click @onscreen{Run} to reset the language in the
+       interactions window. The bottom-left corner of DrRacket's main
+       window also has a shortcut menu item for selecting previously
+       selected languages.}
 
 ]
 
-The former method, @drlang{Module} with @hash-lang[], is the recommend
-mode, and it is described further in @secref["module"].
+Using a language declared in a program's source is the recommend mode,
+and it is described further in @secref["module"].
 
 The @menuitem["Language" "Choose Language..."] dialog contains a
 @onscreen{Show Details} button for configuring certain details of the
@@ -192,68 +193,68 @@ default language specification, a @onscreen{Custom} indicator appears
 next to the language-selection control at the top of the dialog.
 
 See @secref["languages"] (later in this manual) for more information
-on the languages that DrScheme supports.
+on the languages that DrRacket supports.
 
 @; ----------------------------------------------------------------------
 
 @section[#:tag "editor"]{Editing with Parentheses}
 
 @index['("flashing parenthesis matches")]{@index['("gray highlight
-regions")]{In}} Scheme mode, especially, DrScheme's editor provides
+regions")]{In}} Racket mode, especially, DrRacket's editor provides
 special support for managing parentheses in a program. When the
-blinking caret is next to a parenthesis, DrScheme shades the region
+blinking caret is next to a parenthesis, DrRacket shades the region
 between the parenthesis and its matching parenthesis. This feature is
 especially helpful when for balancing parentheses to complete an
 expression.
 
-@index['("formatting Scheme code")]{@index['("indenting Scheme
-code")]{Although}} whitespace is not significant in Scheme, DrScheme
-encourages a particular format for Scheme code. When you type Enter or
+@index['("formatting Racket code")]{@index['("indenting Racket
+code")]{Although}} whitespace is not significant in Racket, DrRacket
+encourages a particular format for Racket code. When you type Enter or
 Return, the editor inserts a new line and automatically indents it. To
-make DrScheme re-indent an existing line, move the blinking caret to
+make DrRacket re-indent an existing line, move the blinking caret to
 the line and hit the Tab key. (The caret can be anywhere in the line.)
 You can re-indent an entire region by selecting the region and typing
 Tab.
 
 @index['("changing a parenthesis as you type")]{@index['("automatic
-parenthesis")]{DrScheme}} also rewrites parenthesis as you type them,
+parenthesis")]{DrRacket}} also rewrites parenthesis as you type them,
 in order to make them match better. If you type a closing parenthesis
 @litchar{)}, a closing square bracket @litchar{]}, or a closing curley brace
-@litchar["}"], and if DrScheme can match it back to some earlier opening
-parenthesis, bracket, or brace, then DrScheme changes what you type to
-match.  DrScheme also rewrites open square brackets, usually to an
+@litchar["}"], and if DrRacket can match it back to some earlier opening
+parenthesis, bracket, or brace, then DrRacket changes what you type to
+match.  DrRacket also rewrites open square brackets, usually to an
 open parenthesis. There are some exceptions where opening square
 brackets are not automatically changed to parentheses:
 
 @itemize[
 
- @item{If the square bracket is after @scheme[cond]-like keyword,
+ @item{If the square bracket is after @racket[cond]-like keyword,
        potentially skipping some of the sub-expressions in the
-       @scheme[cond]-like expression (for example, in a @scheme[case]
+       @racket[cond]-like expression (for example, in a @racket[case]
        expression, the square brackets start in the second
        sub-expression).}
 
  @item{If the square bracket begins a new expression immediately after
-       a @scheme[local]-like keyword. Note that the second expression
-       after a @scheme[local]-like keyword will automatically become
+       a @racket[local]-like keyword. Note that the second expression
+       after a @racket[local]-like keyword will automatically become
        an ordinary parenthesis.}
 
  @item{If the square bracket is after a parenthesis that is after a
-       @scheme[letrec]-like keyword,}
+       @racket[letrec]-like keyword,}
 
  @item{If the square bracket is in a sequence and the s-expression
-      before in the sequence is a compound expression, DrScheme uses
+      before in the sequence is a compound expression, DrRacket uses
       the same kind parenthesis, brace, or bracket as before, or}
 
  @item{If the square bracket is in the middle of string,
        comment, character, or symbol.}
 ]
 
-The upshot of DrScheme's help is that you can always use the
+The upshot of DrRacket's help is that you can always use the
 (presumably unshifted) square brackets on your keyboard to type
 parenthesis. For example, when typing
 
-@schemeblock[
+@racketblock[
 (define (length l)
   (cond
    [(empty? l) 0]
@@ -261,26 +262,26 @@ parenthesis. For example, when typing
 ]
 
 If you always type @litchar{[} and @litchar{]} where any of the square
-brackets or parentheses appear, DrScheme will change the square
+brackets or parentheses appear, DrRacket will change the square
 brackets to match the code above.
 
 Of course, these features can be disabled and customized in the
 preferences dialog; see @secref["prefs-explanation"].  Also, in case
-DrScheme does not produce the character you want, holding down the
-control key while typing disables DrScheme's parenthesis, brace, and
+DrRacket does not produce the character you want, holding down the
+control key while typing disables DrRacket's parenthesis, brace, and
 bracket converter.
  
 @; -------------------------------
 
 @section{Searching}
 
-DrScheme's search and replace feature is interactive,
+DrRacket's search and replace feature is interactive,
 similar to those in Safari, Firefox, and Emacs, but with a
 few differences.
 
 To start a search, first select the @onscreen{Find} menu
 item from the @onscreen{Edit} menu. This will open a small
-editor at the bottom of the DrScheme window. Start typing in
+editor at the bottom of the DrRacket window. Start typing in
 there and, as you type, all occurrences of the string you're
 searching for will be circled in the editor window. Watch
 the space right next to the search window to see how many
@@ -292,17 +293,17 @@ string. This will color in one of the circles. Use
 occurrence.
 
 If you click back into the definitions window, the
-@onscreen{Find Again} menu item, DrScheme will move the
+@onscreen{Find Again} menu item, DrRacket will move the
 selection to the next occurrence of the search string.
 
-DrScheme also supports a mode where typing in the search
+DrRacket also supports a mode where typing in the search
 editor takes you directly to the next occurrence of the
 search string, without selecting the @onscreen{Find Again}
 menu item. In the preference dialog, in the
 @onscreen{Editing} sectino and then in the
 @onscreen{General} section is a checkbox labelled
 @onscreen{Search using anchors}. When it is checked,
-DrScheme shows a little red dot and a red line indicating
+DrRacket shows a little red dot and a red line indicating
 where the @deftech{search anchor} is. When the search anchor
 is enabled, typing in the search window jumps to the first 
 occurrence of the search string after the anchor.
@@ -311,13 +312,13 @@ occurrence of the search string after the anchor.
 
 @section{Tabbed Editing}
 
-DrScheme's allows you to edit multiple files in a single window via
+DrRacket's allows you to edit multiple files in a single window via
 tabs. The @menuitem["File" "New Tab"] menu item creates a new tab to
 show a new file. Each tab has its own interactions window.
 
 In the @onscreen{General} sub-pane of the @onscreen{Editing} pane in
 the preferences window, a checkbox labelled @onscreen{Open files in
-separate tabs} causes DrScheme to open files in new tabs in the
+separate tabs} causes DrRacket to open files in new tabs in the
 frontmost window, rather than opening a new window for the file.
 
 The key bindings Control-Pageup and Control-Pagedown move between
@@ -335,15 +336,15 @@ last @tt{>} prompt. To enter an expression, the blinking caret must
 appear after the last prompt, and also after the space following the
 prompt.
 
-When you type a complete expression and hit Enter or Return, DrScheme
+When you type a complete expression and hit Enter or Return, DrRacket
 evaluates the expression and prints the result. After printing the
-result, DrScheme creates a new prompt for another expression. Some
-expressions return a special ``void'' value; DrScheme never prints
+result, DrRacket creates a new prompt for another expression. Some
+expressions return a special ``void'' value; DrRacket never prints
 void, but instead produces a new prompt immediately.
 
 If the expression following the current prompt is incomplete, then
-DrScheme will not try to evaluate it. In that case, hitting Enter or
-Return produces a new, auto-indented line. You can force DrScheme to
+DrRacket will not try to evaluate it. In that case, hitting Enter or
+Return produces a new, auto-indented line. You can force DrRacket to
 evaluate the expression by typing Alt-Return or Command-Return
 (depending on your platform).
 
@@ -364,17 +365,17 @@ retrieve old expressions.
 
 @subsection{Errors}
 
-@index['("error highlighting")]{Whenever} DrScheme encounters an error
+@index['("error highlighting")]{Whenever} DrRacket encounters an error
 while evaluating an expression, it prints an error message in the
 interactions window and highlights the expression that triggered the
 error. The highlighted expression might be in the definitions window,
 or it might be after an old prompt in the interactions window.
 
-For certain kinds of errors, DrScheme turns a portion of the error
+For certain kinds of errors, DrRacket turns a portion of the error
 message into a hyperlink. Click the hyperlink to get help regarding a
 function or keyword related to the error.
 
-For some run-time errors, DrScheme shows a bug icon next to the error
+For some run-time errors, DrRacket shows a bug icon next to the error
 message. Click the bug icon to open a window that shows a ``stack'' of
 expressions that were being evaluated at the time of the error. In
 addition, if the expressions in the stack appear in the
@@ -387,19 +388,19 @@ from the next deeper one in the stack.
 
 @section-index["I/O"]
 
-Many Scheme programs avoid explicit input and output operations,
+Many Racket programs avoid explicit input and output operations,
 obtaining input via direct function calls in the @tech{interactions
-window}, and producing output by returning values. Other Scheme
+window}, and producing output by returning values. Other Racket
 programs explicitly print output for the user during evaluation using
-@as-index{@scheme[write]} or @as-index{@scheme[display]}, or
-explicitly request input from the user using @as-index{@scheme[read]}
-or @as-index{@scheme[read-char]}.
+@as-index{@racket[write]} or @as-index{@racket[display]}, or
+explicitly request input from the user using @as-index{@racket[read]}
+or @as-index{@racket[read-char]}.
 
 Explicit input and output appear in the @tech{interactions window},
 but within special boxes that separate explicit I/O from normal
 expressions and results. For example, evaluating
 
-@schemeblock[
+@racketblock[
 @#,tt{>} (read)
 ]
 
@@ -408,61 +409,61 @@ in the interactions window produces a special box for entering input:
 @centerline{@image[#:scale 0.6 "io.png"]}
 
 Type a number into the box and hit Enter, and that number becomes the
-result of the @scheme[(read)] expression. Once text is submitted for
-an input box, it is moved outside the input box, and when DrScheme
+result of the @racket[(read)] expression. Once text is submitted for
+an input box, it is moved outside the input box, and when DrRacket
 shows a new prompt, it hides the interaction box. Thus, if you type
-@scheme[5] in the above input box and hit Return, the result appears
+@racket[5] in the above input box and hit Return, the result appears
 as follows:
 
-@schemeblock[
+@racketblock[
 @#,tt{>} (read)
 @#,ioinputfont{5}
-@#,schemeresult[5]
+@#,racketresult[5]
 @#,tt{>} @#,tt{_}
 ]
 
 In this case, the first @ioinputfont{5} is the input, and the second
-@schemeresult[5] is the result of the @scheme[(read)] expression. The
-second @schemeresult[5] is colored blue, as usual for a result printed
-by DrScheme. (The underscore indicates the location of the blinking
+@racketresult[5] is the result of the @racket[(read)] expression. The
+second @racketresult[5] is colored blue, as usual for a result printed
+by DrRacket. (The underscore indicates the location of the blinking
 caret.)
 
 Output goes into the @tech{interactions window} directly. If you run
 the program
 
-@schememod[
-scheme
+@racketmod[
+racket
 (define v (read))
 (display v) (newline)
 v
 ]
 
-and provide the input S-expression @scheme[(1 2)], the interactions
+and provide the input S-expression @racket[(1 2)], the interactions
 window ultimately appears as follows:
 
-@schemeblock[
+@racketblock[
 @#,ioinputfont{(1 2)}
 @#,iooutputfont{(1 2)}
-@#,schemeresult[(1 2)]
+@#,racketresult[(1 2)]
 @#,tt{>} @#,tt{_}
 ]
 
-In this example, @scheme[display] produces output immediately beneath
+In this example, @racket[display] produces output immediately beneath
 the input you typed, and the final result is printed last. The
 displayed output is drawn in purple. (The above example assumes
 default printing. With constructor-style value printing, the final
-before the prompt would be @scheme[(list 1 2)].)
+before the prompt would be @racket[(list 1 2)].)
 
 Entering the same program line-by-line in the interactions window
 produces a different-looking result:
 
-@schemeblock[
+@racketblock[
 @#,tt{>} (define v (read))
 @#,ioinputfont{(1 2)}
 @#,tt{>} (display v)
 @#,iooutputfont{(1 2)}
 @#,tt{>} v
-@#,schemeresult[(1 2)]
+@#,racketresult[(1 2)]
 @#,tt{>} @#,tt{_}
 ]
 
@@ -470,65 +471,65 @@ Depending on the input operation, you may enter more text into an
 input box than is consumed. In that case, the leftover text remains in
 the input stream for later reads. For example, in the following
 interaction, two values are provided in response to the first
-@scheme[(read)], so the second value is returned immediately for the
-second @scheme[(read)]:
+@racket[(read)], so the second value is returned immediately for the
+second @racket[(read)]:
 
-@schemeblock[
+@racketblock[
 @#,tt{>} (read)
 @#,ioinputfont{5 6}
-@#,schemeresult[5]
+@#,racketresult[5]
 @#,tt{>} (read)
-@#,schemeresult[6]
+@#,racketresult[6]
 @#,tt{>} @#,tt{_}
 ]
 
 The following example illustrates that submitting input with Return
 inserts a newline character into the input stream:
 
-@schemeblock[
+@racketblock[
 @#,tt{>} (read)
 @#,ioinputfont{5}
 
-@#,schemeresult[5]
+@#,racketresult[5]
 @#,tt{>} (read-char)
-@#,schemeresult[#\newline]
+@#,racketresult[#\newline]
 @#,tt{>} @#,tt{_}
 ]
 
-Within a @scheme[@#,hash-lang[] @#,schememodname[scheme]] module,
+Within a @racket[@#,hash-lang[] @#,racketmodname[racket]] module,
 the results of top-level expression print the same as the results of
 an expression entered in the @tech{interactions window}. The reason is
-that @scheme[@#,hash-lang[] @#,schememodname[scheme]] explicitly
+that @racket[@#,hash-lang[] @#,racketmodname[racket]] explicitly
 prints the results of top-level expressions using
-@scheme[(current-print)], and DrScheme sets @scheme[(current-print)]
+@racket[(current-print)], and DrRacket sets @racket[(current-print)]
 to print values in the same way as for interactions.
 
 @; ----------------------------------------------------------------------
 
 @section{Graphical Syntax}
 
-In addition to normal textual program, DrScheme supports certain
+In addition to normal textual program, DrRacket supports certain
 graphical elements as expressions within a program. Plug-in tools can
 extend the available graphical syntax, but this section describes some
 of the more commonly used elements.
 
 @subsection{Images}
 
-DrScheme's @menuitem["Insert" "Insert Image..."] menu item lets you
+DrRacket's @menuitem["Insert" "Insert Image..."] menu item lets you
 select an image file from disk (in various formats such as GIF, PNG,
 and BMP), and the image is inserted at the current editing caret.
 
 As an expression an image behaves like a number or string constant: it
-evaluates to itself. DrScheme's @tech{interactions window} knows how
-to draw image-value results or images displayed via @scheme[print].
+evaluates to itself. DrRacket's @tech{interactions window} knows how
+to draw image-value results or images displayed via @racket[print].
 
 A program can manipulate image values in various ways, such as using
-the @scheme[htdp/image] library or as an
-@scheme[image-snip%] value.
+the @racket[htdp/image] library or as an
+@racket[image-snip%] value.
 
-@subsection[#:tag "xml-boxes"]{XML Boxes and Scheme Boxes}
+@subsection[#:tag "xml-boxes"]{XML Boxes and Racket Boxes}
 
-DrScheme has special support for XML concrete syntax. The
+DrRacket has special support for XML concrete syntax. The
 @menuitem["Special" "Insert XML Box"] menu item inserts an embedded
 editor into your program. In that embedded editor, you type XML's
 concrete syntax. When a program containing an XML box is evaluated,
@@ -546,24 +547,25 @@ right-clicking or Control-clicking (Mac OS X) on the top portion of
 the XML box.
 
 In addition to containing XML text, XML boxes can also
-contain Scheme boxes. Scheme boxes contain Scheme
+contain Racket boxes. Racket boxes contain Racket
 expressions. These expressions are evaluated and their
 contents are placed into the containing XML box's xexpr.
-There are two varieties of Scheme box: the standard Scheme
-box and the splicing Scheme box. The standard Scheme box
+There are two varieties of Racket box: the standard Racket
+box and the splicing Racket box. The standard Racket box
 inserts its value into the containing xexpr. The contents of
 the splice box must evaluate to a list and the elements of
 the list are ``flattened'' into the containing xexpr.
-Right-clicking or control-clicking (Mac OS X) on the top of a Scheme
-box opens a menu to toggle the box between a Scheme box and
-a Scheme splice box.
+Right-clicking or control-clicking (Mac OS X) on the top of a Racket
+box opens a menu to toggle the box between a Racket box and
+a Racket splice box.
 
 @; ----------------------------------------------------------------------
 
 @section[#:tag "debugger"]{Graphical Debugging Interface}
 
-@bold{Tip:} Changing the name of a file in the middle of a debugging
-session will prevent the debugger from working properly on that file.
+@margin-note{@bold{Tip:} Changing the name of a file in the middle of
+a debugging session will prevent the debugger from working properly on
+that file.}
 
 Like the @onscreen{Run} button, the @as-index{@onscreen{Debug} button}
 runs the program in the definitions window.  However, instead of
@@ -631,17 +633,17 @@ breakpoint at that location; the latter sets a one-time breakpoint and
 resumes execution.  An ordinary breakpoint appears as a red circle,
 and a one-time breakpoint appears as a yellow circle.
 
-@bold{Tip:} If the debugged program is not in the @onscreen{Module}
-language, then the @italic{first time} it is debugged, breakpoints
-will only become available in expressions as they are evaluated.
-However, the next time the program is debugged, the debugger will
-remember the set of breakable locations from the previous session.
+@bold{Tip:} If the debugged program is not a module, then the
+@italic{first time} it is debugged, breakpoints will only become
+available in expressions as they are evaluated.  However, the next
+time the program is debugged, the debugger will remember the set of
+breakable locations from the previous session.
 
 @bold{Tip:} Clicking the @onscreen{Run} button after a debugging
 session will cause all breakpoints to disappear from the definitions
 window.  These breakpoints are not forgotten, and clicking
 @onscreen{Debug} again will restore them.  However, breakpoints do
-@italic{not} persist across restarts of DrScheme.}
+@italic{not} persist across restarts of DrRacket.}
 
     @item{If execution is paused at the start of an expression, then
 right-clicking or control-clicking (Mac OS X) on the green triangle
@@ -671,7 +673,7 @@ enter a new value for the variable.}
 @subsection{Stack View Pane}
 
 In addition, while execution is paused, the stack view pane at the
-right of the DrScheme frame is active.  The top of the pane shows a
+right of the DrRacket frame is active.  The top of the pane shows a
 list of active stack frames.  Mousing over a frame produces a faint
 green highlighting of the corresponding expression.  Clicking on the
 frame selects that frame, which makes its lexical variables visible.
@@ -681,10 +683,10 @@ The bottom of the pane shows the lexical variables in the selected
 stack frame.
 
 The following screenshot illustrates several aspects of the debugger
-interface.  The red circle before the @scheme[if] is a breakpoint,
-and the green triangle at the end of the @scheme[(fact (sub1 n))] is where
+interface.  The red circle before the @racket[if] is a breakpoint,
+and the green triangle at the end of the @racket[(fact (sub1 n))] is where
 execution is currently paused.  The expression's return value is
-displayed at the left of the button bar, and the value of @scheme[n]
+displayed at the left of the button bar, and the value of @racket[n]
 is displayed in the stack view pane.
 
 @centerline{@image[#:scale 0.5 "debugger1.png"]}
@@ -692,7 +694,7 @@ is displayed in the stack view pane.
 @subsection{Debugging Multiple Files}
 
 To debug a program that spans several files, make sure that all of the
-files are open in DrScheme.  Click the @onscreen{Debug} button in the
+files are open in DrRacket.  Click the @onscreen{Debug} button in the
 window containing the main program.  As this program loads additional
 files that are present in other windows or tabs, message boxes will
 pop up asking whether or not to include the file in the debugging
@@ -710,7 +712,7 @@ file cannot be included in another debugging session.
 
 The module browser shows you the structure of all of the files in your program.
 It can be opened via the @onscreen{Show} menu, or via the @onscreen{Module Browser ...} 
-menu item in the @onscreen{Scheme} menu.
+menu item in the @onscreen{Racket} menu.
 
 A module browser window contains a square for each
   module. The squares are colored based on the number of
@@ -730,13 +732,13 @@ A module browser window contains a square for each
   The module browser will also show you the phases that each
   module is loaded in; choose the ``Long, with phases'' menu item
   in the ``Names'' popup menu. The integers indicate the phases and
-  if @scheme[#f] is present, it means the module is loaded @scheme[for-label].
+  if @racket[#f] is present, it means the module is loaded @racket[for-label].
 
 @section[#:tag "create-exe"]{Creating Executables}
 
-DrScheme's @onscreen{Create Executable...} menu item lets you create
+DrRacket's @onscreen{Create Executable...} menu item lets you create
 an executable for your program that you can start without first
-starting DrScheme. To create an executable, first save your program to
+starting DrRacket. To create an executable, first save your program to
 a file and set the language and teachpacks.  Click @onscreen{Run},
 just to make sure that the program is working as you expect. The
 executable you create will not have a read-eval-print-loop, so be sure
@@ -744,7 +746,7 @@ to have an expression that starts your program running in the
 definitions window before creating the executable.
 
 Once you are satisfied with your program, choose the @onscreen{Create
-Executable...}  menu item from the @onscreen{Scheme} menu. You will be
+Executable...}  menu item from the @onscreen{Racket} menu. You will be
 asked to choose an executable file name or an archive file name. In
 the latter case, unpack the generated archive (on this machine or
 another one) to access the executable. In either case, you will be
@@ -754,7 +756,7 @@ program on your computer.
 The result of @onscreen{Create Executable...} is either a
 @defterm{launcher executable}, a @defterm{stand-alone executable}, or
 a @defterm{distribution archive}, and it uses either a
-@defterm{MzScheme} (textual) or @defterm{MrEd} (graphical) engine.
+@defterm{Racket} (textual) or @defterm{GRacket} (graphical) engine.
 For programs implemented with certain languages, @onscreen{Create
 Executable...}  will prompt you to choose the executable type and
 engine, while other languages support only one type or engine.
@@ -765,14 +767,14 @@ Each type has advantages and disadvantages:
 
   @item{A @deftech{launcher executable} uses the latest version of
   your program source file when it starts. It also accesses library
-  files from your DrScheme installation when it runs. Since a launcher
+  files from your DrRacket installation when it runs. Since a launcher
   executable contains specific paths to access those files, launchers
   usually cannot be moved from one machine to another.}
 
  @item{A @deftech{stand-alone executable} embeds a compiled copy of
- your program and any Scheme libraries that your program uses. When
+ your program and any Racket libraries that your program uses. When
  the executable is started, it uses the embedded copies and does not
- need your original source file. It may, however, access your DrScheme
+ need your original source file. It may, however, access your DrRacket
  installation for DLLs, frameworks, shared libraries, or helper
  executables. Consequently, a stand-alone executable usually cannot be
  moved from one machine to another.}
@@ -785,10 +787,11 @@ Each type has advantages and disadvantages:
 
 ]
 
-In general, DrScheme's @drlang{Module} language gives you the most
-options. Most other languages only allow one type of executable. The
-teaching languages create stand-alone executables in
-distributions. The legacy languages create launchers.
+In general, DrRacket's gives you the most options when it infers a
+language from a program's source. Most other languages only allow one
+type of executable. The teaching languages, for example, create
+stand-alone executables in distributions. The legacy languages create
+only launchers.
 
 @bold{Tip:} Disable debugging in the language dialog before creating
 your executable. With debugging enabled, you will see a stack trace

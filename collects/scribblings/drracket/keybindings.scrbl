@@ -2,9 +2,9 @@
 @(require "common.ss"
 	  scribble/struct
           scribble/bnf
-          scheme/list
+          racket/list
 	  mrlib/tex-table
-          (for-label scheme/gui/base))
+          (for-label racket/gui/base))
 
 @(define (keybinding key . desc)
    (let* ([keys (if (string? key) (list key) key)]
@@ -13,8 +13,8 @@
 
 @(define-syntax-rule (def-mod-beg id)
   (begin
-   (require (for-label mzscheme))
-   (define id @scheme[#%module-begin])))
+   (require (for-label racket/base))
+   (define id @racket[#%module-begin])))
 @(def-mod-beg mz-mod-begin)
 
 @title{Keyboard Shortcuts}
@@ -194,36 +194,36 @@ These are the currently supported macro names and the keys they map into:
 
  The @onscreen{Add User-defined Keybindings...} menu item in the
  @onscreen{Keybindings} sub-menu of @onscreen{Edit} selects a file
- containing Scheme definitions of keybindings. The file must contain a
+ containing Racket definitions of keybindings. The file must contain a
  module that uses a special keybindings language,
- @scheme[framework/keybinding-lang]. To do so, begin your file with
+ @racket[framework/keybinding-lang]. To do so, begin your file with
  this line:
 
-@schememod[
+@racketmod[
 s-exp framework/keybinding-lang
 ]
 
-The @scheme[framework/keybinding-lang] languages provides all of the bindings
-from @schememodname[scheme], @schememodname[scheme/class], and
-@schememodname[drscheme/tool-lib], 
+The @racket[framework/keybinding-lang] languages provides all of the bindings
+from @racketmodname[racket], @racketmodname[racket/class], and
+@racketmodname[drscheme/tool-lib], 
 except that it adjusts @|mz-mod-begin| to
-introduce a @schemeidfont{keybinding} form:
+introduce a @racketidfont{keybinding} form:
 
 @specform[#:literals (keybindings)
           (keybinding string-expr proc-expr)]{
 
-Declares a keybinding, where @scheme[string-expr] must produce a
+Declares a keybinding, where @racket[string-expr] must produce a
 suitable first argument for @xmethod[keymap% map-function], and the
-@scheme[proc-expr] must produce a suitable second argument for
+@racket[proc-expr] must produce a suitable second argument for
 @xmethod[keymap% add-function].}
 
 For example, this remaps the key combination ``control-a'' key to ``!''.
 
-@schememod[
+@racketmod[
 s-exp framework/keybinding-lang
 (keybinding "c:a" (λ (editor evt) (send editor insert "!")))
 ]
 
-Note that DrScheme does not reload this file automatically when you
-make a change, so you'll need to restart DrScheme to see changes to
+Note that DrRacket does not reload this file automatically when you
+make a change, so you'll need to restart DrRacket to see changes to
 the file.

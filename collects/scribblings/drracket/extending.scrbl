@@ -2,16 +2,16 @@
 @(require "common.ss"
           (for-label compiler/cm))
 
-@title[#:tag "extending-drscheme"]{Extending DrScheme}
+@title[#:tag "extending-drracket"]{Extending DrRacket}
 
-DrScheme supports two forms of extension to the programming
+DrRacket supports two forms of extension to the programming
  environment:
 
 @itemize[
 
-@item{@index['("languages" "extending")]{@index['("DrScheme
+@item{@index['("languages" "extending")]{@index['("DrRacket
   Teachpacks")]{A @deftech{teachpack}}} extends the set of procedures
-  that are built into a language in DrScheme.  For example, a
+  that are built into a language in DrRacket.  For example, a
   teachpack might extend the Beginning Student language with a
   procedure for playing sounds.
 
@@ -24,7 +24,7 @@ DrScheme supports two forms of extension to the programming
   See @secref["teachpacks"] for information in creating teachpacks.}
 
 @item{A @deftech{tool} extends the set of utilities within the
-  DrScheme environment. For example, DrScheme's @onscreen{Check
+  DrRacket environment. For example, DrRacket's @onscreen{Check
   Syntax} button starts a syntax-checking tool. For information on
   creating @tech{tools}, see @other-manual['(lib
   "scribblings/tools/tools.scrbl")].}
@@ -56,8 +56,8 @@ the students to implement the interesting part of this exercise and
 still be able to enjoy today's graphics without the useless
 memorization.
 
-A single Scheme source file defines a teachpack (although the file may
-access other files via @scheme[require]). The file must contain a
+A single Racket source file defines a teachpack (although the file may
+access other files via @racket[require]). The file must contain a
 module (see @secref[#:doc '(lib "scribblings/guide/guide.scrbl")
 "modules"]). Each exported syntax definition or value definition from
 the module is provided as a new primitive form or primitive operation
@@ -67,8 +67,8 @@ As an example, the following teachpack provides a lazy cons
 implementation. To test it, be sure to save it in a file named
 @filepath{lazycons.ss}.
 
-@schememod[
-scheme
+@racketmod[
+racket
 
 (provide (rename-out [:lcons lcons]) lcar lcdr)
 
@@ -87,7 +87,7 @@ scheme
 
 Then, in this program:
 
-@schemeblock[
+@racketblock[
 (define (lmap f l)
   (lcons
    (f (lcar l))
@@ -96,7 +96,7 @@ Then, in this program:
 (define all-nums (lcons 1 (lmap add1 all-nums)))
 ]
 
-the list @scheme[all-nums] is bound to an infinite list
+the list @racket[all-nums] is bound to an infinite list
  of ascending numbers.
 
 For more examples, see the @filepath{htdp} sub-collection in the
@@ -106,53 +106,53 @@ For more examples, see the @filepath{htdp} sub-collection in the
 
 @section[#:tag "environment-variables"]{Environment Variables}
 
-Several environment variables can affect DrScheme's behavior:
+Several environment variables can affect DrRacket's behavior:
 
 @itemize[
 
  @item{@indexed-envvar{PLTNOTOOLS} : When this environment variable is
-       set, DrScheme doesn't load any tools.}
+       set, DrRacket doesn't load any tools.}
 
  @item{@indexed-envvar{PLTONLYTOOL} : When this environment variable
-       is set, DrScheme only loads the tools in the collection named
+       is set, DrRacket only loads the tools in the collection named
        by the value of the environment variable. If the variable is
        bound to a parenthesized list of collections, only the tools in
        those collections are loaded (The contents of the environment
-       variable are @scheme[read] and expected to be a single symbol
+       variable are @racket[read] and expected to be a single symbol
        or a list of symbols).}
 
  @item{@indexed-envvar{PLTDRCM} : When this environment variable is
-       set, DrScheme installs the compilation manager before starting
+       set, DrRacket installs the compilation manager before starting
        up, which means that the @filepath{.zo} files are automatically
-       kept up to date, as DrScheme's (or a tools) source is modified.
+       kept up to date, as DrRacket's (or a tools) source is modified.
 
        If the variable is set to @litchar{trace} then the compilation
        manager's output is traced, using the
-       @scheme[manager-trace-handler] procedure.}
+       @racket[manager-trace-handler] procedure.}
 
  @item{@indexed-envvar{PLTDRDEBUG} : When this environment variable is
-       set, DrScheme starts up with errortrace enabled. If the
-       variable is set to @litchar{profile}, DrScheme also records
+       set, DrRacket starts up with errortrace enabled. If the
+       variable is set to @litchar{profile}, DrRacket also records
        profiling information about itself.}
 
  @item{@indexed-envvar{PLTDRPROFILE} : When this environment variable is
-       set, DrScheme uses the @schememodname[profile] library (with
+       set, DrRacket uses the @racketmodname[profile] library (with
        a little GUI) to collect profiling information about itself.}
 
  @item{@indexed-envvar{PLTDRBREAK} : When this environment variable is
-       set, DrScheme creates a window with a break button, during
-       startup. Clicking the button breaks DrScheme's eventspace's
+       set, DrRacket creates a window with a break button, during
+       startup. Clicking the button breaks DrRacket's eventspace's
        main thread. This works well in combination with
        @envvar{PLTDRDEBUG} since the source locations are reported for
        the breaks.}
 
  @item{@indexed-envvar{PLTDRTESTS} : When this environment variable is
-       set, DrScheme installs a special button in the button bar that
+       set, DrRacket installs a special button in the button bar that
        starts the test suite. (The test suite is available only in the
        source distribution.)}
 
  @item{@indexed-envvar{PLTSTRINGCONSTANTS} : When this environment
-       variable is set, DrScheme prints out the string constants that
+       variable is set, DrRacket prints out the string constants that
        have not yet been translated. If it is set to a particular
        language (corresponding to one of the files in
        @filepath{string-constants} collection) it only shows the unset
