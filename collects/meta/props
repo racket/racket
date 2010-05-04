@@ -1689,7 +1689,7 @@ path/s is either such a string or a list of them.
 "collects/tests/typed-scheme" responsible (samth)
 "collects/tests/typed-scheme/fail" drdr:command-line ""
 "collects/tests/typed-scheme/fail/with-type3.rkt" responsible (sstrickl)
-"collects/tests/typed-scheme/nightly-run.rkt" drdr:timeout 600
+"collects/tests/typed-scheme/nightly-run.rkt" drdr:timeout 1200
 "collects/tests/typed-scheme/run.rkt" drdr:command-line "" drdr:timeout 600
 "collects/tests/typed-scheme/xfail" drdr:command-line ""
 "collects/tests/units" responsible (sstrickl)
