@@ -163,7 +163,7 @@
                (begin-for-syntax/once
                 (for ([x (syntax->list #'(external ...))])
                   (unless (identifier-binding x 0)
-                    (raise-syntax-error #f "literal identifier has no binding"
+                    (raise-syntax-error #f "unbound identifier not allowed as literal"
                                         (quote-syntax #,stx) x))))))))]))
 
 #|

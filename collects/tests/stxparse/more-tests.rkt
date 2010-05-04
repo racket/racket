@@ -93,11 +93,20 @@
        #rx"^define-syntax-class: "
        #rx"expected syntax-class variant")
 
+;(tcerr "check-literals-bound: unbound literal"
+;       (let () (define-syntax-class x #:literals (foo) (pattern (foo))) 0)
+;       #rx"^define-syntax-class: "
+;       #rx"unbound identifier not allowed as literal")
+
 (tcerr "check-literals-bound: unbound literal"
-       (let () (define-syntax-class x #:literals (foo) (pattern (foo))) 0)
-       #rx"^define-syntax-class: "
+       (let () (define-literal-set x (foo)) 0)
+       #rx"^define-literal-set: "
        #rx"unbound identifier not allowed as literal")
 
+(tcerr "check-literals-bound: unbound literal"
+       (syntax-parse #'x #:literals (define defunky) [_ 'ok])
+       #rx"^syntax-parse: "
+       #rx"unbound identifier not allowed as literal")
 
 (tcerr "append-lits+litsets: duplicate"
        (let () 

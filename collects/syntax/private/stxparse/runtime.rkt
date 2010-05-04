@@ -615,7 +615,7 @@ An Expectation is one of
 ;; FIXME: change to normal 'error', if src gets stripped away
 (define (check-literal id phase ctx)
   (unless (identifier-binding id phase)
-    (raise-syntax-error #f "literal identifier has no binding" ctx id)))
+    (raise-syntax-error #f "unbound identifier not allowed as literal" ctx id)))
 
 ;; free-identifier=?/phases : id phase-level id phase-level -> boolean
 ;; Determines whether x has the same binding at phase-level phase-x
