@@ -143,6 +143,19 @@
                        (make-client-cookie "phpbb3_e1p9b_u" "54" #f #f)
                        (make-client-cookie "phpbb3_e1p9b_k" "" #f #f)
                        (make-client-cookie "phpbb3_e1p9b_sid" "3fa8d7a7b65fbabcbe9b345861dc079a" #f #f)))
+     
+     (test-equal? "Google"
+                  (request-cookies 
+                  (make-request 
+                   #"GET" (string->url "http://test.com/foo")
+                   (list (make-header #"Cookie" 
+                                      #"teaching-order=course;
+__utmz=165257760.1272597702.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)\r\n"))
+                   (delay empty) #f
+                   "host" 80 "client"))
+                  (list (make-client-cookie "teaching-order" "course" #f #f)
+                        (make-client-cookie "__utmz" "165257760.1272597702.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)" #f #f)))
+                  
     
     )))
 
