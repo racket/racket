@@ -5,8 +5,8 @@
 
 (define-type check-ish-ty
   (case-lambda
-    (Any Any -> Void)
-    (Any Any String -> Void)))
+    (Any Any -> (U #t Void))
+    (Any Any String -> (U #t Void))))
 (define-type (Predicate A) (A -> Boolean))
 (define-type (Thunk A) (-> A))
 
