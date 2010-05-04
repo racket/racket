@@ -389,18 +389,23 @@ path/s is either such a string or a list of them.
                    (loop base (sub1 n))
                    (error* #f "could not find the plt root from ~a"
                            (path-only this-file))))))))
+  (define check-existing-paths? #t)
   (define (paths->list path paths)
     (if (and (equal? "-" path) (null? paths))
       (for/list ([p (in-lines (current-input-port))]) p)
       (let ([root (normalize-path (find-root))])
         (define (norm p)
           (let ([n (find-relative-path root (normalize-path p))])
-            (if (equal? n root)
-              ""
-              (let ([n (path->string n)])
-                (if (regexp-match #rx"^\\.\\.(?:/|$)" n)
-                  (error* #f "path is not in the plt tree: ~s" p)
-                  n)))))
+            (cond
+              [(not (or (not check-existing-paths?)
+                        (file-exists? n)
+                        (directory-exists? n)))
+               (error* #f "path does not exist: ~s" p)]
+              [(equal? n root) ""]
+              [else (let ([n (path->string n)])
+                      (if (regexp-match #rx"^\\.\\.(?:/|$)" n)
+                        (error* #f "path is not in the plt tree: ~s" p)
+                        n))])))
         (if (null? paths) (norm path) (map norm (cons path paths))))))
   (define (get prop path . paths)
     (let ([prop (string->symbol prop)]
@@ -417,9 +422,11 @@ path/s is either such a string or a list of them.
       (set-prop! (paths->list path paths) prop val #:as-string? #t)
       (write-props)))
   (define (del prop path . paths)
+    (set! check-existing-paths? #f)
     (del-prop! (paths->list path paths) (string->symbol prop))
     (write-props))
   (define (mv from to)
+    (set! check-existing-paths? #f)
     (let ([nonesuch (gensym 'none)]
           [from (paths->list from null)]
           [to (paths->list to null)])
@@ -430,6 +437,7 @@ path/s is either such a string or a list of them.
             (del-prop! from p)))))
     (write-props))
   (set! running-as-script? #t)
+  ;; (perhaps add some `--force' flag to (set! check-existing-paths? #f))
   (let* ([verb (if (pair? args) (car args) (usage "missing subcommand"))]
          [args (cdr args)]
          [proc (or (for/or ([v (in-list (verbs))] #:when (member verb (car v)))
