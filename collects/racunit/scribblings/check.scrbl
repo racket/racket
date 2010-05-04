@@ -332,9 +332,7 @@ of these parameters.
 @defparam[current-check-handler handler (-> any/c any/c)]{
 
 Parameter containing the function that handles exceptions
-raised by check failures.  The default behaviour is to print
-an error message including the exception message and stack
-trace.  }
+raised by check failures.  The default value is @racket[raise].  }
 
 @defparam[current-check-around check (-> thunk any/c)]{
 

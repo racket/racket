@@ -56,13 +56,6 @@
      (if (procedure? v)
          v
          (raise-type-error 'current-test-case-around "procedure" v)))))      
-
-;; test-case-check-handler : (-> exn void)
-;;
-;; Raise any exceptions that occur in checks, halting
-;; evaluation of following expression within the scope of
-;; the test case
-(define test-case-check-handler raise)
   
 (define-syntax (test-begin stx)
   (syntax-case stx ()
@@ -71,7 +64,7 @@
        ((current-test-case-around)
         (lambda ()
           (parameterize
-              ([current-check-handler test-case-check-handler]
+              ([current-check-handler raise]
                [current-check-around  check-around])
             expr ...))))]
     [_
