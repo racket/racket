@@ -282,6 +282,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *dummy_output_port_;
   struct Scheme_Bucket_Table *place_local_modpath_table_;
   struct Scheme_Hash_Table *opened_libs_;
+  struct mzrt_mutex *jit_lock_;
 /*KPLAKE1*/
 } Thread_Local_Variables;
 
@@ -566,6 +567,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define dummy_output_port XOA (scheme_get_thread_local_variables()->dummy_output_port_)
 #define place_local_modpath_table XOA (scheme_get_thread_local_variables()->place_local_modpath_table_)
 #define opened_libs XOA (scheme_get_thread_local_variables()->opened_libs_)
+#define jit_lock XOA (scheme_get_thread_local_variables()->jit_lock_)
 /*KPLAKE2*/
 
 /* **************************************** */
