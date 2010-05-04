@@ -1,7 +1,6 @@
-#lang typed/scheme
+#lang typed/scheme/base
 
 (require typed/racunit)
-
 (: my-+ : Integer Integer -> Integer)
 (define (my-+ a b)
   (if (zero? a)
@@ -10,9 +9,10 @@
 
 (: my-* : Integer Integer -> Integer)
 (define (my-* a b)
-  (if (= a 1)
+  (if (= 1 a)
       b
       (my-* (sub1 a) (my-+ b b))))
 
-(check-equal? (my-+ 1 1) 2 "Simple addition")
-(check-equal? (my-* 1 2) 2 "Simple multiplication")
+(test-begin
+ (check-equal? (my-+ 1 1) 2 "Simple addition")
+ (check-equal? (my-* 2 2) 4 "Simple multiplication"))
