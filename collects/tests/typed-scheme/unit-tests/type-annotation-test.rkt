@@ -1,11 +1,12 @@
 #lang scheme/base
 (require "test-utils.ss"
          (for-syntax scheme/base)
-         (private type-annotation parse-type base-types)
-         (types convenience utils)
-	 (env type-environments type-name-env init-envs)
+         typed-scheme/private/type-annotation
+         typed-scheme/private/parse-type
+         (types abbrev utils)
+	 (env type-environments  init-envs)
 	 (utils tc-utils)
-	 (rep type-rep)
+	 (rep type-rep filter-rep object-rep)
          racunit)
 
 (provide type-annotation-tests)
@@ -13,10 +14,8 @@
 (define-syntax-rule (tat ann-stx ty)
   (check-tc-result-equal? (format "~a" (quote ann-stx))  
                           (type-ascription (let ([ons (current-namespace)]
-                                                 [ns (make-empty-namespace)])
+                                                 [ns (make-base-namespace)])
                                              (parameterize ([current-namespace ns])
-                                               (namespace-attach-module ons 'racket/base ns)
-                                               (namespace-require 'racket/base)
                                                (namespace-require 'typed-scheme/private/prims)
                                                (namespace-require 'typed-scheme/private/base-types)
                                                (namespace-require 'typed-scheme/private/base-types-extra)

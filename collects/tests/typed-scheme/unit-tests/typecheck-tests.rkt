@@ -6,7 +6,8 @@
 (require (private base-env prims type-annotation 
 		  base-types-extra
 		  base-env-numeric
-		  base-env-indexing)
+		  base-env-indexing
+                  parse-type)
 	 (typecheck typechecker)
 	 (rep type-rep filter-rep object-rep)
          (rename-in (types utils union convenience abbrev)
@@ -17,7 +18,7 @@
          (utils tc-utils utils)
          unstable/mutated-vars
          (env type-name-env type-environments init-envs)
-         racunit
+         racunit racunit/text-ui
          syntax/parse
          (for-syntax (utils tc-utils)
                      (typecheck typechecker)
