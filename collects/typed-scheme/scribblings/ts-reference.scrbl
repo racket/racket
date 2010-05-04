@@ -21,6 +21,7 @@
 @subsubsub*section{Base Types}
 @deftogether[(
 @defidform[Number]
+@defidform[Complex]
 @defidform[Real]
 @defidform[Integer]
 @defidform[Natural]
