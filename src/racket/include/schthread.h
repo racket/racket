@@ -30,7 +30,7 @@ extern "C" {
 # if _MSC_VER
 #  define THREAD_LOCAL /* empty */
 #  define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-# elif defined(OS_X) || defined(GC2_PLACES_TESTING)
+# elif (defined(__APPLE__) && defined(__MACH__)) || defined(GC2_PLACES_TESTING)
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
 #   define INLINE_GETSPECIFIC_ASSEMBLY_CODE
@@ -300,7 +300,7 @@ START_XFORM_SKIP;
 static inline Thread_Local_Variables *scheme_get_thread_local_variables() __attribute__((used));
 static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
   Thread_Local_Variables *x = NULL;
-#  if defined(OS_X)
+#  if defined(__APPLE__) && defined(__MACH__)
 #   if defined(__x86_64__)
   asm volatile("movq %%gs:0x60(,%1,8), %0" : "=r"(x) : "r"(scheme_thread_local_key));
 #   else

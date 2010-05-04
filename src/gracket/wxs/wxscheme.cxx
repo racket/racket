@@ -2767,7 +2767,7 @@ int wxGetPreference(const char *name, char *res, long len)
 # ifdef wx_mac
     home = scheme_expand_user_filename("~/Library/Preferences/", -1, NULL, NULL, 0);
 # else
-    home = scheme_expand_user_filename("~/.plt-scheme/", -1, NULL, NULL, 0);
+    home = scheme_expand_user_filename("~/.racket/", -1, NULL, NULL, 0);
 # endif 
     
     l = strlen(home);
