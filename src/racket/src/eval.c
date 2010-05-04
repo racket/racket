@@ -12388,6 +12388,15 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
         did_one = 0;
         goto top;
       }
+    } else if (SAME_TYPE(type, scheme_case_closure_type)) {
+      Scheme_Case_Lambda *seq;
+      int i;
+      seq = (Scheme_Case_Lambda *)expr;
+      for (i = 0; i < seq->count; i++) {
+        scheme_validate_expr(port, seq->array[i], stack, tls, depth, letlimit, delta, 
+                             num_toplevels, num_stxes, num_lifts,
+                             NULL, 0, 0, vc, 0, 0);
+      }
     } else if (need_flonum) {
       if (!SCHEME_FLOATP(expr))
         no_flo(need_flonum, port);
