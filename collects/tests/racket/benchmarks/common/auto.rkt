@@ -397,6 +397,14 @@ exec racket -qu "$0" ${1+"$@"}
                 clean-up-zo
                 (append '(nucleic2)
                         mutable-pair-progs))
+     (make-impl 'typed-scheme
+                void
+                mk-racket
+                (lambda (bm)
+                  (system (format "racket -u ~a-typed.rkt" bm)))
+                extract-racket-times
+                clean-up-zo
+                mutable-pair-progs)
      (make-impl 'chicken
                 void
                 (run-mk "mk-chicken.rktl")
