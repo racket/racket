@@ -6,7 +6,7 @@
 
 (define-struct client-cookie 
   (name value domain path)
-  #:transparent)
+  #:prefab)
 
 (provide/contract
  [struct client-cookie 
@@ -70,12 +70,13 @@
         (position-offset start-pos)
         (- (position-offset end-pos) (position-offset start-pos))))
 
-(define assoc-list-parser
+(define cookies-parser
   (parser (src-pos)
-          (start cookie)
+          (start cookies)
           (tokens regular keywords)
-          (grammar (cookie [(VERSION EQUALS rhs separator items) $5]
-                           [(items) $1])
+          (grammar (cookies [(cookie-version items) (cons $1 $2)]
+                            [(items) $1])
+                   (cookie-version [(VERSION EQUALS rhs separator) (cons "$Version" $3)])
                    (items [(item separator items) (cons $1 $3)]
                           [(item) (list $1)])
                    (separator
@@ -92,7 +93,7 @@
           (end EOF)
           (error (lambda (tok-ok? tok-name tok-value start-pos end-pos)
                    (raise-syntax-error
-                    'assoc-list-parser
+                    'cookies-parser
                     (format 
                      (if tok-ok? 
                          "Did not expect token ~a"
@@ -101,15 +102,13 @@
                     (datum->syntax #f tok-value (make-srcloc start-pos end-pos)))))))
 
 (define (do-parse str)
-  (with-handlers ([exn:fail? 
-                   (λ (e) empty)])
-    (with-input-from-string 
-     str
-     (λ () 
-       (let ([ip (current-input-port)])
-         (port-count-lines! ip)
-         (parameterize ([current-source-name (object-name ip)])
-           (raw->cookies (assoc-list-parser (λ () (cookie-lexer ip))))))))))
+  (with-input-from-string 
+      str
+    (λ () 
+      (define ip (current-input-port))
+      (port-count-lines! ip)
+      (parameterize ([current-source-name (object-name ip)])
+        (raw->cookies (cookies-parser (λ () (cookie-lexer ip))))))))
 
 ;; raw->cookies : flat-property-list -> (listof cookie)
 (define (raw->cookies associations)
