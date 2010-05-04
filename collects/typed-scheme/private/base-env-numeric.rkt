@@ -136,7 +136,7 @@
 [tan  (N . -> . N)]
 [acos (N . -> . N)]
 [asin (N . -> . N)]
-[atan (N . -> . N)]
+[atan (cl->* (N . -> . N) (-Real -Real . -> . N))]
 [gcd  (null -Integer . ->* . -Integer)]
 [lcm  (null -Integer . ->* . -Integer)]
 
