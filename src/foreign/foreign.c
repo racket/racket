@@ -192,7 +192,7 @@ int ffi_lib_FIXUP(void *p) {
 END_XFORM_SKIP;
 #endif
 
-static Scheme_Hash_Table *opened_libs;
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 
 /* (ffi-lib filename no-error?) -> ffi-lib */
 #define MYNAME "ffi-lib"
@@ -2839,8 +2839,6 @@ void scheme_init_foreign_globals()
   GC_register_traversers(ffi_callback_tag, ffi_callback_SIZE, ffi_callback_MARK, ffi_callback_FIXUP, 1, 0);
 # endif /* MZ_PRECISE_GC */
   scheme_set_type_printer(ctype_tag, ctype_printer);
-  MZ_REGISTER_STATIC(opened_libs);
-  opened_libs = scheme_make_hash_table(SCHEME_hash_string);
   MZ_REGISTER_STATIC(default_sym);
   default_sym = scheme_intern_symbol("default");
   MZ_REGISTER_STATIC(stdcall_sym);
@@ -2867,6 +2865,11 @@ void scheme_init_foreign_globals()
   fail_ok_sym = scheme_intern_symbol("fail-ok");
   MZ_REGISTER_STATIC(abs_sym);
   abs_sym = scheme_intern_symbol("abs");
+}
+
+void scheme_init_foreign_places() {
+  MZ_REGISTER_STATIC(opened_libs);
+  opened_libs = scheme_make_hash_table(SCHEME_hash_string);
 }
 
 void scheme_init_foreign(Scheme_Env *env)
