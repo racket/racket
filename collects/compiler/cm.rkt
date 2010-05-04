@@ -427,7 +427,8 @@
                                                           'so-suffix)))
                        dep-path)
         (try-file-sha1 (build-path dir (path-add-suffix name #".zo"))
-                       dep-path))))
+                       dep-path)
+        "")))
 
 (define (rkt->ss p)
   (let ([b (path->bytes p)])

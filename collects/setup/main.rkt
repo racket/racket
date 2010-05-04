@@ -81,8 +81,8 @@
           (on? "-n"))
       ;; Don't use .zos, in case they're out of date, and don't load
       ;;  cm:
-      (when (or (on? "--clean" values)
-                (on? "-c" values))
+      (when (or (on? "--clean")
+                (on? "-c"))
 	(use-compiled-file-paths null)
 	(print-bootstrapping))
   
