@@ -9,7 +9,8 @@
          "test-suite.rkt"
          "util.rkt")
 
-(provide (struct-out exn:test:check)
+(provide (struct-out exn:test)
+         (struct-out exn:test:check)
          (struct-out check-info)
          (struct-out test-result)
          (struct-out test-failure)
@@ -45,6 +46,10 @@
          (rename-out [make-racunit-test-case make-test-case]
                      [racunit-test-case? test-case?]
                      [racunit-test-suite? test-suite?])
+         current-test-name
+         current-test-case-around
+         test-suite-test-case-around
+         test-suite-check-around
          
          define-test-suite
          define/provide-test-suite
@@ -80,6 +85,9 @@
          define-check
          define-simple-check
          define-binary-check
+         
+         current-check-handler
+         current-check-around
 
          check
          check-exn
@@ -93,6 +101,7 @@
          check-=
          check-not-false
          check-not-eq?
+         check-not-eqv?
          check-not-equal?
          check-regexp-match
          fail)

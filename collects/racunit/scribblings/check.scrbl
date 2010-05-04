@@ -36,6 +36,7 @@ For example, the following check succeeds:
 @defproc*[([(check-eq? (v1 any) (v2 any) (message string? "")) #t]
            [(check-not-eq? (v1 any) (v2 any) (message string? "")) #t]
            [(check-eqv? (v1 any) (v2 any) (message string? "")) #t]
+           [(check-not-eqv? (v1 any) (v2 any) (message string? "")) #t]
            [(check-equal? (v1 any) (v2 any) (message string? "")) #t]
            [(check-not-equal? (v1 any) (v2 any) (message string? "")) #t])]{
 
@@ -50,6 +51,7 @@ For example, the following checks all fail:
   (check-eq? (list 1) (list 1) "allocated data not eq?")
   (check-not-eq? 1 1 "integers are eq?")
   (check-eqv? 1 1.0 "not eqv?")
+  (check-not-eqv? 1 1 "integers are eqv?")
   (check-equal? 1 1.0 "not equal?")
   (check-not-equal? (list 1) (list 1) "equal?")
 ]

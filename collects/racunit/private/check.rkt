@@ -30,6 +30,7 @@
          check-=
          check-not-false
          check-not-eq?
+         check-not-eqv?
          check-not-equal?
          fail)
 
@@ -262,6 +263,9 @@
 
 (define-simple-check (check-not-eq? expr1 expr2)
   (not (eq? expr1 expr2)))
+
+(define-simple-check (check-not-eqv? expr1 expr2)
+  (not (eqv? expr1 expr2)))
 
 (define-simple-check (check-not-equal? expr1 expr2)
   (not (equal? expr1 expr2)))
