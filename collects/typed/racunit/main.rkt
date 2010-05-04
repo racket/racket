@@ -1,5 +1,7 @@
 #lang typed/scheme
-(require typed/private/utils)
+(require typed/private/utils
+         typed/private/rewriter
+         "type-env-ext.rkt")
 
 (define-type check-ish-ty
   (case-lambda
@@ -67,7 +69,7 @@
  racunit
  [make-check-name (String -> CheckInfo)]
  [make-check-params ((Listof Any) -> CheckInfo)]
- [make-check-location ((List Any (U Number #f) (U Number #f) (U Number #f) (U Number #f)) -> CheckInfo)]
+ [make-check-location ((List Any (Option Number) (Option Number) (Option Number) (Option Number)) -> CheckInfo)]
  [make-check-expression (Any -> CheckInfo)]
  [make-check-message (String -> CheckInfo)]
  [make-check-actual (Any -> CheckInfo)]
@@ -89,7 +91,18 @@
   (Parameter ((Thunk Any) -> Any))])
 
 ; 3.3
-(require (only-in racunit test-begin test-case))
+(require (prefix-in t: (except-in racunit struct:check-info struct:exn:test struct:exn:test:check struct:test-result struct:test-failure
+                                  struct:test-error struct:test-success)))
+(define-rewriter t:test-begin test-begin 
+  [t:current-test-case-around current-test-case-around]
+  [t:check-around check-around]
+  [t:current-check-handler current-check-handler]
+  [t:current-check-around current-check-around])
+(define-rewriter t:test-case test-case
+  [t:current-test-case-around current-test-case-around]
+  [t:check-around check-around]
+  [t:current-check-handler current-check-handler]
+  [t:current-check-around current-check-around])
 (provide test-begin test-case)
 
 (require/opaque-type TestCase test-case? racunit)
