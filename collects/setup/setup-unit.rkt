@@ -28,14 +28,19 @@
 
 (define-namespace-anchor anchor)
 
-;; read info files without compiling them
+;; read info files using whatever namespace, .zo-use, and compilation
+;;  configuration was in place for loading setup, instead of whatever
+;;  is in place for the collections that setup is processing:
 (define getinfo
   (let ([ns (namespace-anchor->empty-namespace anchor)]
-        [compile (current-compile)])
+        [compile (current-compile)]
+        [loader (current-load/use-compiled)]
+        [paths (use-compiled-file-paths)])
     (lambda (path)
       (parameterize ([current-namespace ns]
                      [current-compile compile]
-                     [use-compiled-file-paths '()])
+                     [current-load/use-compiled loader]
+                     [use-compiled-file-paths paths])
         (get-info/full path)))))
 
 (provide setup@)
