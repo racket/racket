@@ -10,7 +10,8 @@
          (prefix-in t: (combine-in "base-types-extra.ss" "base-types.ss")) (only-in "colon.ss" :)
          scheme/match 
          (for-template scheme/base "base-types-extra.ss" "colon.ss")
-         (for-template (prefix-in t: "base-types-extra.ss")))
+         (for-template (prefix-in t: "base-types-extra.ss")
+                       (prefix-in t: (only-in "base-types.ss" Vectorof))))
 
 (define-struct poly (name vars) #:prefab)
 

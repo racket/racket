@@ -604,7 +604,55 @@ An Expectation is one of
 
 ;; 
 
-(provide phase+)
+(provide phase+
+         check-literal
+         free-identifier=?/phases)
 
 (define (phase+ a b)
   (and (number? a) (number? b) (+ a b)))
+
+;; check-literal : id phase-level stx -> void
+;; FIXME: change to normal 'error', if src gets stripped away
+(define (check-literal id phase ctx)
+  (unless (identifier-binding id phase)
+    (raise-syntax-error #f "literal identifier has no binding" ctx id)))
+
+;; free-identifier=?/phases : id phase-level id phase-level -> boolean
+;; Determines whether x has the same binding at phase-level phase-x
+;; that y has at phase-level y.
+;; At least one of the identifiers MUST have a binding (module or lexical)
+(define (free-identifier=?/phases x phase-x y phase-y)
+  (let ([base-phase (syntax-local-phase-level)])
+    (let ([bx (identifier-binding x (phase+ base-phase phase-x))]
+          [by (identifier-binding y (phase+ base-phase phase-y))])
+      (cond [(and (list? bx) (list? by))
+             (let ([modx (module-path-index-resolve (first bx))]
+                   [namex (second bx)]
+                   [phasex (fifth bx)]
+                   [mody (module-path-index-resolve (first by))]
+                   [namey (second by)]
+                   [phasey (fifth by)])
+               (and (eq? modx mody) ;; resolved-module-paths are interned
+                    (eq? namex namey)
+                    (equal? phasex phasey)))]
+            [else
+             ;; One must be lexical (can't be #f, since one must be bound)
+             ;; lexically-bound names bound in only one phase; just compare
+             (free-identifier=? x y)]))))
+
+;; ----
+
+(provide begin-for-syntax/once)
+
+;; (begin-for-syntax/once expr/phase1 ...)
+;; evaluates in pass 2 of module/intdefs expansion
+(define-syntax (begin-for-syntax/once stx)
+  (syntax-case stx ()
+    [(bfs/o e ...)
+     (cond [(list? (syntax-local-context))
+            #`(define-values ()
+                (begin (begin-for-syntax/once e ...)
+                       (values)))]
+           [else
+            #'(let-syntax ([m (lambda _ (begin e ...) #'(void))])
+                (m))])]))

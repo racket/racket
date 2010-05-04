@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          racket/dict
+         racket/list
          syntax/stx
          syntax/id-table
          "../util.ss"
@@ -92,9 +93,9 @@ A ConventionRule is (list regexp DeclEntry)
 
 #|
 A LiteralSet is
-  (make-literalset (listof (list symbol id ct-phase)))
+  (make-literalset (listof (list symbol id)) stx)
 |#
-(define-struct literalset (literals) #:transparent)
+(define-struct literalset (literals phase) #:transparent)
 
 ;; make-dummy-stxclass : identifier -> SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
@@ -110,14 +111,14 @@ DeclEnv =
                 (listof ConventionRule))
 
 DeclEntry =
-  (make-den:lit id id ct-phase)
+  (make-den:lit id id ct-phase ct-phase)
   (make-den:class id id (listof syntax) bool)
   (make-den:parser id id (listof SAttr) bool bool)
   (make-den:delayed id id id)
 |#
 (define-struct declenv (table conventions))
 
-(define-struct den:lit (internal external phase))
+(define-struct den:lit (internal external input-phase lit-phase))
 (define-struct den:class (name class args))
 (define-struct den:parser (parser description attrs splicing? commit?))
 (define-struct den:delayed (parser description class))
@@ -127,7 +128,8 @@ DeclEntry =
    (for/fold ([table (make-immutable-bound-id-table)])
        ([literal literals])
      (bound-id-table-set table (car literal)
-                         (make den:lit (car literal) (cadr literal) (caddr literal))))
+                         (make den:lit (first literal) (second literal)
+                               (third literal) (fourth literal))))
    conventions))
 
 (define (declenv-lookup env id #:use-conventions? [use-conventions? #t])
@@ -141,7 +143,7 @@ DeclEntry =
   ;; So blame-declare? only applies to stxclass declares
   (let ([val (declenv-lookup env id #:use-conventions? #f)])
     (match val
-      [(struct den:lit (_i _e _p))
+      [(struct den:lit (_i _e _ip _lp))
        (wrong-syntax id "identifier previously declared as literal")]
       [(struct den:class (name _c _a))
        (if (and blame-declare? stxclass-name)
@@ -205,10 +207,9 @@ DeclEntry =
 (define SideClause/c
   (or/c clause:fail? clause:with? clause:attr?))
 
-;; ct-phase
-;;   #f means not specified, ie default, ie 0
-;;   syntax means computed by given expr
-(define ct-phase/c (or/c syntax? #f))
+;; ct-phase = syntax, expr that computes absolute phase
+;;   usually = #'(syntax-local-phase-level)
+(define ct-phase/c syntax?)
 
 (provide (struct-out den:lit)
          (struct-out den:class)
@@ -225,7 +226,7 @@ DeclEntry =
  [stxclass-lookup-config (parameter/c (symbols 'no 'try 'yes))]
 
  [new-declenv
-  (->* [(listof (list/c identifier? identifier? ct-phase/c))]
+  (->* [(listof (list/c identifier? identifier? ct-phase/c ct-phase/c))]
        [#:conventions list?]
        DeclEnv/c)]
  [declenv-lookup

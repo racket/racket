@@ -258,16 +258,10 @@
                 (fail x
                       #:expect (expectation pattern0)
                       #:fce fc)))]
-       [#s(pat:literal attrs literal #f)
-        #`(if (and (identifier? x) (free-identifier=? x (quote-syntax literal)))
-              k
-              (fail x
-                    #:expect (expectation pattern0)
-                    #:fce fc))]
-       [#s(pat:literal attrs literal phase)
+       [#s(pat:literal attrs literal input-phase lit-phase)
         #`(if (and (identifier? x)
-                   (free-identifier=? x (quote-syntax literal)
-                                      (phase+ (syntax-local-phase-level) phase)))
+                   (free-identifier=?/phases x input-phase
+                                             (quote-syntax literal) lit-phase))
               k
               (fail x
                     #:expect (expectation pattern0)
@@ -629,7 +623,7 @@
     [(_ #s(pat:datum attrs d))
      #'(begin (collect-error '(datum d))
               (make-expect:atom 'd))]
-    [(_ #s(pat:literal attrs lit phase))
+    [(_ #s(pat:literal attrs lit input-phase lit-phase))
      #'(begin (collect-error '(literal lit))
               (make-expect:literal (quote-syntax lit)))]
     ;; 2 pat:compound patterns
