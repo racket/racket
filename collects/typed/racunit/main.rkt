@@ -2,12 +2,11 @@
 (require typed/private/utils)
 
 (define-type check-ish-ty
-  (All (A B)
-       (case-lambda
-         (A B -> #t)
-         (A B String -> #t))))
-(define-type (Predicate A) (A -> Boolean))
-(define-type (Thunk A) (-> A))
+  (case-lambda
+    (Any Any -> Void)
+    (Any Any String -> Void)))
+(define-type (Predicate A) (Any -> Boolean))
+(define-type (Thunk A) (-> Any))
 
 ; 3.2
 (require/typed/provide
