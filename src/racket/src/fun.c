@@ -4118,6 +4118,11 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   }
   
   if ((c == argc) || (c == (argc + 1))) {
+    if (c > argc) {
+      post = argv2[0];
+      memmove(argv2, argv2 + 1, sizeof(Scheme_Object*)*c);
+    } else
+      post = NULL;
     for (i = 0; i < argc; i++) {
       if (!scheme_chaperone_of(argv2[i], argv[i])) {
         if (argc == 1)
@@ -4163,7 +4168,6 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     }
   } else {
     /* Last element is a filter for the result(s) */
-    post = argv2[argc];
     if (!SCHEME_PROCP(post))
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                        "procedure chaperone: %V: expected <procedure> as last result, produced: %V",

@@ -1186,26 +1186,33 @@
                                          (+ alen 2)
                                          len)
                                         wrap-proc))
-                                     (let ([new-args (car results)])
-                                       (unless (and (list? new-args)
-                                                    (= (length new-args) (length args)))
-                                         (raise-mismatch-error
-                                          '|keyword procedure chaperone|
-                                          "expected a list of keyword-argument values as first result from chaperoning procedure: "
-                                          wrap-proc))
-                                       (for-each
-                                        (lambda (kw new-arg arg)
-                                          (unless (chaperone-of? new-arg arg)
-                                            (raise-mismatch-error
-                                             '|keyword procedure chaperone|
-                                             (format
-                                              "~a keyword result is not a chaperone of original argument from chaperoning procedure: "
-                                              kw)
-                                             wrap-proc)))
-                                        kws
-                                        new-args
-                                        args))
-                                   (apply values kws results))))))]
+                                     (let ([extra? (= len (+ alen 2))])
+                                       (let ([new-args ((if extra? cadr car) results)])
+                                         (unless (and (list? new-args)
+                                                      (= (length new-args) (length args)))
+                                           (raise-mismatch-error
+                                            '|keyword procedure chaperone|
+                                            (format
+                                             "expected a list of keyword-argument values as first result~a from chaperoning procedure: "
+                                             (if (= len alen)
+                                                 ""
+                                                 " (after the result chaperoning procedure)"))
+                                            wrap-proc))
+                                         (for-each
+                                          (lambda (kw new-arg arg)
+                                            (unless (chaperone-of? new-arg arg)
+                                              (raise-mismatch-error
+                                               '|keyword procedure chaperone|
+                                               (format
+                                                "~a keyword result is not a chaperone of original argument from chaperoning procedure: "
+                                                kw)
+                                               wrap-proc)))
+                                          kws
+                                          new-args
+                                          args))
+                                       (if extra?
+                                           (apply values (car results) kws (cdr results))
+                                           (apply values kws results))))))))]
                           [new-proc
                            (cond
                             [(okp? proc)

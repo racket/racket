@@ -143,9 +143,10 @@
             f 
             (lambda (x) 
               (set! in x)
-              (values x (lambda (y)
-                          (set! out y)
-                          y))))])
+              (values (lambda (y)
+                        (set! out y)
+                        y)
+                      x)))])
   (test '(10 10) f 10)
   (test #f values in)
   (test #f values out)
@@ -161,10 +162,10 @@
             f 
             (lambda (x y z)
               (set! in (vector x y z))
-              (values x y z
-                      (lambda (y z)
+              (values (lambda (y z)
                         (set! out (vector y z))
-                        (values y z)))))])
+                        (values y z))
+                      x y z)))])
   (test-values '(b (a c)) (lambda () (f 'a 'b 'c)))
   (test #f values in)
   (test #f values out)
@@ -197,6 +198,37 @@
   (test 'f object-name f2)
   (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2))))
 
+;; Optional keyword arguments with result chaperone:
+(let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b))]
+       [in #f]
+       [out #f]
+       [f2 (chaperone-procedure
+            f
+            (lambda (x #:a [a 'nope] #:b [b 'nope])
+              (set! in (list x a b))
+              (if (and (eq? a 'nope) (eq? b 'nope))
+                  x
+                  (values
+                   (lambda (z) (set! out z) z)
+                   (append 
+                    (if (eq? a 'nope) null (list a))
+                    (if (eq? b 'nope) null (list b)))
+                   x))))])
+  (test '(1 a b) f 1)
+  (test '(#f #f) list in out)
+  (test '(1 a b) f2 1)
+  (test '((1 nope nope) #f) list in out)
+  (test '(1 2 b) f 1 #:a 2)
+  (test '(1 2 b) f2 1 #:a 2)
+  (test '((1 2 nope) (1 2 b)) list in out)
+  (test '(1 a 3) f 1 #:b 3)
+  (test '(1 a 3) f2 1 #:b 3)
+  (test '(1 2 3) f 1 #:a 2 #:b 3)
+  (test '(1 2 3) f2 1 #:a 2 #:b 3)
+  (test 1 procedure-arity f2)
+  (test 'f object-name f2)
+  (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2))))
+
 ;; Required keyword arguments:
 (let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
        [in #f]
@@ -216,6 +248,35 @@
   (err/rt-test (f2 1 #:a 2))
   (test '(1 a 3) f 1 #:b 3)
   (test '(1 a 3) f2 1 #:b 3)
+  (test '(1 2 3) f 1 #:a 2 #:b 3)
+  (test '(1 2 3) f2 1 #:a 2 #:b 3)
+  (test 1 procedure-arity f2)
+  (test 'f object-name f2)
+  (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2))))
+
+;; Required keyword arguments:
+(let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b))]
+       [in #f]
+       [out #f]
+       [f2 (chaperone-procedure
+            f
+            (lambda (x #:a [a 'nope] #:b [b 'nope])
+              (set! in (list x a b))
+              (if (and (eq? a 'nope) (eq? b 'nope))
+                  x
+                  (values
+                   (lambda (z) (set! out z) z)
+                   (append 
+                    (if (eq? a 'nope) null (list a))
+                    (if (eq? b 'nope) null (list b)))
+                   x))))])
+  (err/rt-test (f 1))
+  (err/rt-test (f2 1))
+  (err/rt-test (f 1 #:a 2))
+  (err/rt-test (f2 1 #:a 2))
+  (test '(1 a 3) f 1 #:b 3)
+  (test '(1 a 3) f2 1 #:b 3)
+  (test '((1 nope 3) (1 a 3)) list in out)
   (test '(1 2 3) f 1 #:a 2 #:b 3)
   (test '(1 2 3) f2 1 #:a 2 #:b 3)
   (test 1 procedure-arity f2)
@@ -358,9 +419,10 @@
            [a3 (chaperone-procedure (if linear? a2 a1)
                                     (lambda (z)
                                       (set! pre z)
-                                      (values z (lambda (r)
-                                                  (set! post r)
-                                                  r))))]
+                                      (values (lambda (r)
+                                                (set! post r)
+                                                r)
+                                              z)))]
            [a2 (if rev?
                    (chaperone-struct a3 a-y (lambda (a v) (set! get v) v))
                    a2)])
@@ -632,10 +694,10 @@
                                                              r)]
                                                           [(v)
                                                            (set! pre-cd? #t)
-                                                           (values v
-                                                                   (lambda (x)
+                                                           (values (lambda (x)
                                                                      (set! post-cd? #t)
-                                                                     (void)))]))])
+                                                                     (void))
+                                                                   v)]))])
         (test #t parameter? cd1)
         (test #t parameter? cd2)
         (test '(#f #f #f #f) list pre-cd? post-cd? got-cd? post-got-cd?)

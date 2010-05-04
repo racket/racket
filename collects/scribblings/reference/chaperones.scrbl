@@ -103,24 +103,26 @@ of the required keywords of @scheme[proc].
 
 For applications without keywords, the result of @scheme[wrapper-proc]
 must be either the same number of values as supplied to it or one more
-than the number of supplied values. For each supplied value, the
-corresponding result must be the same or a chaperone of (in the sense
-of @scheme[chaperone-of?]) the supplied value. The additional result,
-if any, must be a procedure that accepts as many results as produced
-by @scheme[proc]; it must return the same number of results, each of
-which is the same or a chaperone of the corresponding original result.
-If @scheme[wrapper-proc] returns the same number of values as it is
-given (i.e., it does not return a procedure to chaperone
-@scheme[proc]'s result), then @scheme[proc] is called in @tech{tail
-position} with respect to the call to the chaperone.
+than the number of supplied values, where an extra result is supplied
+before the others. For each supplied value, the corresponding result
+must be the same or a chaperone of (in the sense of
+@scheme[chaperone-of?])  the supplied value. The additional result, if
+any, that precedes the chaperoned values must be a procedure that
+accepts as many results as produced by @scheme[proc]; it must return
+the same number of results, each of which is the same or a chaperone
+of the corresponding original result.  If @scheme[wrapper-proc]
+returns the same number of values as it is given (i.e., it does not
+return a procedure to chaperone @scheme[proc]'s result), then
+@scheme[proc] is called in @tech{tail position} with respect to the
+call to the chaperone.
 
 For applications that include keyword arguments, @scheme[wrapper-proc]
-must return an additional value before any other values. The
-additional value must be a list of chaperones of the keyword arguments
-that were supplied to the chaperoned procedure (i.e., not counting
-optional arguments that were not supplied). The arguments must be
-ordered according to the sorted order of the supplied arguments'
-keywords.
+must return an additional value before any other values but after the
+result-chaperoning procedure (if any). The additional value must be a
+list of chaperones of the keyword arguments that were supplied to the
+chaperoned procedure (i.e., not counting optional arguments that were
+not supplied). The arguments must be ordered according to the sorted
+order of the supplied arguments' keywords.
 
 Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[procedure-chaperone] must be even) add chaperone properties
