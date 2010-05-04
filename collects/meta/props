@@ -8,11 +8,12 @@ exec racket -um "$0" "$@"
 
 This file contains "properties" of various files and directories in the PLT
 tree.  Its format is briefly described below, but it is mainly intended to be
-used as a script -- run it with `-h' to find out how to use it.  In addition,
-you can add this to your git config file:
+used as a command-line script -- run it with `-h' to find out how to use it.
+In addition, you can make it work as a git command -- put this in a file
+called "git-prop" somewhere in your path (make sure to "chmod +x" it):
 
-  [alias]
-    prop = "!$(git rev-parse --show-toplevel)/collects/meta/props"
+  #!/bin/sh
+  exec "$(git rev-parse --show-toplevel)/collects/meta/props" "$@"
 
 and use it as a git command: `git prop cmd args...'.  This will use the script
 from the work tree that you're now in, with any mzscheme executable that
