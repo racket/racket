@@ -418,7 +418,7 @@
                 andmap ormap reverse extend-parameterization)
     [(#%plain-app extend-parameterization pmz args ...)
      (let loop ([args (syntax->list #'(args ...))])
-       (if (null? args) Univ
+       (if (null? args) (ret Univ)
            (let* ([p (car args)]
                   [pt (single-value p)]
                   [v (cadr args)]
