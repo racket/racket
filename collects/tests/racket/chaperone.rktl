@@ -533,6 +533,8 @@
                   ;; Avoid printign hash-table argument, which implicitly uses `ref':
                   (let ([got (apply proc args)])
                     (test #t (format "~s ~s ~s" proc val got) (equal? val got))))])
+     (test #f hash-iterate-first h1)
+     (test #f hash-iterate-first h2)
      (test #f hash-ref h1 'key #f)
      (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
      (test 'nope hash-ref h2 'key 'nope)
@@ -540,6 +542,9 @@
      (set! get-k #f)
      (test (void) hash-set! h1 'key 'val)
      (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
+     (test #f not (hash-iterate-first h1))
+     (test #f not (hash-iterate-first h2))
+     (test #f hash-iterate-next h2 (hash-iterate-first h2))
      (test 'val hash-ref h1 'key #f)
      (test '(#f #f #f #f #f #f) list get-k get-v set-k set-v remove-k access-k)
      (test 'val hash-ref h2 'key #f)
@@ -720,6 +725,12 @@
   (check-param current-directory)
   (let ([p (make-parameter 88)])
     (check-param p)))
+
+;; ----------------------------------------
+
+(test #t equal?
+      (chaperone-procedure add1 void) 
+      (chaperone-procedure add1 void))
 
 ;; ----------------------------------------
 
