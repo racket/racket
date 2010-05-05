@@ -250,7 +250,7 @@ application) operations on the chaperoned hash table redirected. When
 @scheme[hash-set] or @scheme[hash-remove] is used on a chaperoned hash
 table, the resulting hash table is given all of the chaperones of the
 given hash table. In addition, operations like
-@scheme[hash-iterate-key] or @scheme[hash-iterate-map], which extract
+@scheme[hash-iterate-key] or @scheme[hash-map], which extract
 keys from the table, use @scheme[key-proc] to filter keys extracted
 from the table. Operations like @scheme[hash-iterate-value] or
 @scheme[hash-iterate-map] implicitly use @scheme[hash-ref] and

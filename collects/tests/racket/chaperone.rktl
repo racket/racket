@@ -626,6 +626,37 @@
 
 ;; ----------------------------------------
 
+(letrec ([wrap
+          (lambda (v)
+            (cond
+             [(hash? v)
+              (chaperone-hash v
+                              (lambda (h k)
+                                (values (wrap k)
+                                        (lambda (h k v) (wrap v))))
+                              (lambda (h k v)
+                                (values (wrap k) (wrap v)))
+                              (lambda (h k)
+                                (wrap k))
+                              (lambda (h k)
+                                (wrap k)))]
+             [(procedure? v) (chaperone-procedure 
+                              v 
+                              (lambda args
+                                (apply values
+                                       (lambda args
+                                         (apply values (map wrap args)))
+                                       (map wrap args))))]
+             [(number? v) v]
+             [else (error 'wrap "cannot wrap: ~v" v)]))])
+  (let ([ht (wrap (wrap (make-hash)))])
+    (hash-set! ht add1 sub1)
+    (test 9 (hash-ref ht add1) 10)
+    (test '(10) 'for-hash (for/list ([(k v) (in-hash ht)])
+                            (k (v 10))))))
+
+;; ----------------------------------------
+
 (let ()
   (define-struct a (x y) #:transparent)
   (let* ([a1 (make-a 1 2)]

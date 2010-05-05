@@ -2692,6 +2692,7 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
   while (1) {
     if (!SCHEME_NP_CHAPERONEP(o)) {
       if (mode == 0) {
+        /* hash-ref */
         if (SCHEME_HASHTP(o))
           return scheme_hash_get((Scheme_Hash_Table *)o, k);
         else if (SCHEME_HASHTRP(o))
@@ -2699,6 +2700,7 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
         else
           return scheme_lookup_in_table((Scheme_Bucket_Table *)o, (const char *)k);
       } else if ((mode == 1) || (mode == 2)) {
+        /* hash-set! or hash-remove! */
         if (SCHEME_HASHTP(o))
           scheme_hash_set((Scheme_Hash_Table *)o, k, v);
         else if (SCHEME_HASHTRP(o)) {
@@ -2734,9 +2736,10 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
 
       if (mode == 0)
         orig = NULL;
-      else if (mode == 3)
+      else if (mode == 3) {
         orig = chaperone_hash_op(who, px->prev, k, v, mode);
-      else if (mode == 2)
+        k = orig;
+      } else if (mode == 2)
         orig = k;
       else
         orig = v;
@@ -2753,7 +2756,7 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
         a[2] = orig;
 
         if ((mode == 0) || (mode == 1)) {
-          /* hash-set! */
+          /* hash-ref or hash-set! */
           Scheme_Object **vals;
           int cnt;
           Scheme_Thread *p;
@@ -2790,6 +2793,7 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
           o = vals[1];
 
           if (mode == 0) {
+            /* hash-ref */
             red = o;
             if (!scheme_check_proc_arity(NULL, 3, 1, 2, vals))
               scheme_raise_exn(MZEXN_FAIL_CONTRACT,
