@@ -48,11 +48,11 @@
 @(define-syntax-rule (compat sid rid)
    (compat-except sid rid))
 
-@title{@bold{Scheme}: Compatibility Libraries}
+@title{@bold{Scheme}: Compatibility Libraries and Executables}
 
 Racket was once called ``PLT Scheme,'' and a number of libraries with
 names starting @schemeidfont{scheme} provide compatibility with the
-old name.
+old name. A few @seclink["compat-exe"]{old executables} are also provided.
 
 @table-of-contents[]
 
@@ -287,3 +287,6 @@ and @|make-module-evaluator-id| from @racketmodname[racket/sandbox].}
 @compat[scheme/unsafe/ops racket/unsafe/ops]
 @compat[scheme/vector racket/vector]
 
+@; ----------------------------------------
+
+@include-section["compat.scrbl"]

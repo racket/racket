@@ -90,8 +90,8 @@ The result depends on @scheme[what], and a @scheme[#f] result is only
  platform-specific:
   @itemize[
 
-  @item{@|AllUnix|: @indexed-file{.mredrc}}
-  @item{Windows: @indexed-file{mredrc.ss}}
+  @item{@|AllUnix|: @indexed-file{.gracketrc}}
+  @item{Windows: @indexed-file{racketrc.rktl}}
 
   ]}
 
