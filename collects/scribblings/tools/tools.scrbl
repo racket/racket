@@ -482,9 +482,9 @@ for a list of the capabilities registered by default.
 Check Syntax is a part of the DrScheme collection, but is implemented via the tools api, i.e.,
 not taking any advantage of 
 
-@defmodule[drscheme/syncheck-drscheme-button]
+@defmodule[drscheme/syncheck-drracket-button]
 
-@defthing[syncheck-drscheme-button
+@defthing[syncheck-drracket-button
           (list/c 
            string?
            (is-a?/c bitmap%)

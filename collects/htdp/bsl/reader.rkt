@@ -27,7 +27,7 @@
   (case key
     [(drscheme:toolbar-buttons)
      (list (dynamic-require 'stepper/drscheme-button 'stepper-drscheme-button)
-           (dynamic-require 'drscheme/syncheck-drscheme-button 'syncheck-drscheme-button))]
+           (dynamic-require 'drscheme/syncheck-drracket-button 'syncheck-drracket-button))]
     
     [(drscheme:opt-out-toolbar-buttons)
      ;; opt-out of all of the extra buttons b/c 
