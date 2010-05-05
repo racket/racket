@@ -431,9 +431,9 @@ path/s is either such a string or a list of them.
           [from (paths->list from null)]
           [to (paths->list to null)])
       (for ([p (in-list (map prop-name known-props))])
-        (let ([v (get-prop from p (lambda () nonesuch) #:strict? #t #:as-string? #t)])
+        (let ([v (get-prop from p nonesuch #:strict? #t)])
           (unless (eq? v nonesuch)
-            (set-prop! to p v #:as-string? #t)
+            (set-prop! to p v)
             (del-prop! from p)))))
     (write-props))
   (set! running-as-script? #t)
