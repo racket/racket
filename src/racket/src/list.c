@@ -2397,11 +2397,16 @@ static Scheme_Object *hash_table_for_each(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *hash_table_next(const char *name, int start, int argc, Scheme_Object *argv[])
 {
-  if (SCHEME_HASHTP(argv[0])) {
+  Scheme_Object *o = argv[0];
+
+  if (SCHEME_NP_CHAPERONEP(o))
+    o = SCHEME_CHAPERONE_VAL(o);
+
+  if (SCHEME_HASHTP(o)) {
     Scheme_Hash_Table *hash;
     int i, sz;
 
-    hash = (Scheme_Hash_Table *)argv[0];
+    hash = (Scheme_Hash_Table *)o;
 
     sz = hash->size;
     if (start >= 0) {
@@ -2414,21 +2419,21 @@ static Scheme_Object *hash_table_next(const char *name, int start, int argc, Sch
     }
 
     return scheme_false;
-  } else if (SCHEME_HASHTRP(argv[0])) {
+  } else if (SCHEME_HASHTRP(o)) {
     int v;
-    v = scheme_hash_tree_next((Scheme_Hash_Tree *)argv[0], start);
+    v = scheme_hash_tree_next((Scheme_Hash_Tree *)o, start);
     if (v == -1)
       return scheme_false;
     else if (v == -2)
       return NULL;
     else
       return scheme_make_integer(v);
-  } else if (SCHEME_BUCKTP(argv[0])) {
+  } else if (SCHEME_BUCKTP(o)) {
     Scheme_Bucket_Table *hash;
     Scheme_Bucket *bucket;
     int i, sz;
 
-    hash = (Scheme_Bucket_Table *)argv[0];
+    hash = (Scheme_Bucket_Table *)o;
 
     sz = hash->size;
     
