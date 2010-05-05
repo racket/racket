@@ -1,42 +1,42 @@
 #lang scribble/doc
 @(require "common.ss"
           scribble/eval
-          (for-syntax scheme/base))
+          (for-syntax racket/base))
 
-@title[#:tag "main"]{Scheme-Style OpenGL}
+@title[#:tag "main"]{Racket-Style OpenGL}
 
 @defmodule[sgl]
 
-The functions in @schememodname[sgl] use Scheme style names instead of
-C style names.  To convert a C OpenGL name to a Scheme OpenGL name,
-change the @tt{gl} prefix to @schemeidfont{gl-}, separate adjacent
+The functions in @racketmodname[sgl] use Racket style names instead of
+C style names.  To convert a C OpenGL name to a Racket OpenGL name,
+change the @tt{gl} prefix to @racketidfont{gl-}, separate adjacent
 words with hyphens, and convert to all lower case.  Functions that
 have several variants to accommodate different numbers and types of
 arguments are collapsed into one or two functions in
-@schememodname[sgl].  For example, @schememodname[sgl] provides two
-vertex functions: @scheme[vertex] and @scheme[vertex-v].  The
-@scheme[vertex] function accepts 2, 3 or 4 numerical arguments, and
-the @scheme[vertex-v] function accepts @scheme[gl-vector]s of length
+@racketmodname[sgl].  For example, @racketmodname[sgl] provides two
+vertex functions: @racket[vertex] and @racket[vertex-v].  The
+@racket[vertex] function accepts 2, 3 or 4 numerical arguments, and
+the @racket[vertex-v] function accepts @racket[gl-vector]s of length
 2, 3 or 4.  The C language OpenGL interface, in contrast, has 24
 vertex functions: @tt{glVertex3i}, @tt{glVertex4fv}, etc.
 
-Functions in @schememodname[sgl] take symbols instead of integers for
+Functions in @racketmodname[sgl] take symbols instead of integers for
 @tt{GLenum} arguments.  Each function checks that the given symbol is
 an acceptable argument and raises an exception if it is not.  Given
 the name of a C-language @tt{#define} constant, determine the
 corresponding symbolic argument by removing the leading @tt{GL_},
 converting the letters to lower-case and replacing each @tt{_} with
-@schemeidfont{-}.  For example, @tt{GL_TRIANGLES} becomes
-@scheme['triangles], and @tt{GL_TRIANGLE_STRIP} becomes
-@scheme['triangle-strip].  Additionally, the functions check the
+@racketidfont{-}.  For example, @tt{GL_TRIANGLES} becomes
+@racket['triangles], and @tt{GL_TRIANGLE_STRIP} becomes
+@racket['triangle-strip].  Additionally, the functions check the
 length of any array arguments to ensure that OpenGL does not attempt
 to write or read after the array.
 
-The @schememodname[sgl] module is not as complete as the
-@schememodname[sgl/gl] module.
+The @racketmodname[sgl] module is not as complete as the
+@racketmodname[sgl/gl] module.
 
 @as-examples[
-@schemeblock[
+@racketblock[
 (require sgl sgl/gl-vectors)
 (gl-begin 'triangles)
 (gl-vertex 1 2 3)
@@ -48,12 +48,12 @@ The @schememodname[sgl] module is not as complete as the
 
 Represents a selection.}
 
-@(define-syntax-rule (def-scheme-gl (id ...) body ...)
+@(define-syntax-rule (def-racket-gl (id ...) body ...)
    @deftogether[(
     @defthing[id procedure?] ...
    ) body ...])
 
-@def-scheme-gl[(
+@def-racket-gl[(
 gl-accum
 gl-active-texture
 gl-alpha-func
@@ -192,25 +192,25 @@ gl-window-pos
 gl-window-pos-v
 )]{
 
-Scheme-style variants of the OpenGL functions.}
+Racket-style variants of the OpenGL functions.}
 
 
 @defproc[(gl-process-selection [vec gl-uint-vector?]
                                [hits exact-nonnegative-integer?])
          (listof gl-selection-record?)]{
 
-Parses the contents of @scheme[vec] from the format used by
-@scheme[glSelectBuffer].  The second argument should be the number of
-hits as returned by @scheme[glRenderMode].}
+Parses the contents of @racket[vec] from the format used by
+@racket[glSelectBuffer].  The second argument should be the number of
+hits as returned by @racket[glRenderMode].}
 
 
 @defproc[(gl-get-gl-version-number) exact-nonnegative-integer?]{
 
-Returns the run-time OpenGL version number as an integer: @scheme[10],
-@scheme[11], @scheme[12], @scheme[13], @scheme[14], @scheme[15], or
-@scheme[20].}
+Returns the run-time OpenGL version number as an integer: @racket[10],
+@racket[11], @racket[12], @racket[13], @racket[14], @racket[15], or
+@racket[20].}
 
 @defproc[(gl-get-glu-version-number) exact-nonnegative-integer?]{
 
-Returns the run-time GLU version number as an integer: @scheme[10],
-@scheme[11], @scheme[12], or @scheme[13].}
+Returns the run-time GLU version number as an integer: @racket[10],
+@racket[11], @racket[12], or @racket[13].}

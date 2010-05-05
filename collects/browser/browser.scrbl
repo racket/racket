@@ -7,52 +7,52 @@
                    browser/htmltext
                    browser/external
                    browser/tool
-                   scheme/base
-                   scheme/contract
-                   scheme/class
-                   scheme/gui/base
+                   racket/base
+                   racket/contract
+                   racket/class
+                   racket/gui/base
                    net/url
                    framework/framework))
 
 @(define-syntax-rule (def-ext id)
   (begin
    (require (for-label net/sendurl))
-   (define id (scheme send-url))))
+   (define id (racket send-url))))
 @(def-ext net-send-url)
 
 
 @title{@bold{Browser}: Simple HTML Rendering}
 
-The @schememodname[browser] library provides the following procedures
+The @racketmodname[browser] library provides the following procedures
 and classes for parsing and viewing HTML files.  The
-@schememodname[browser/htmltext] library provides a simplified interface
-for rendering to a subclass of the MrEd @scheme[text%] class.  The
-@schememodname[browser/external] library provides utilities for
+@racketmodname[browser/htmltext] library provides a simplified interface
+for rendering to a subclass of the GRacket @racket[text%] class.  The
+@racketmodname[browser/external] library provides utilities for
 launching an external browser (such as Firefox).
 
 @section[#:tag "browser"]{Browser}
 
 @defmodule[browser]
 
-The browser supports basic HTML commands, plus special Scheme hyperlinks
+The browser supports basic HTML commands, plus special Racket hyperlinks
 of the form @litchar{<A MZSCHEME=sexpr>...</A>}.  When the user clicks
-on such a link, the string @scheme[sexpr] is parsed as a Scheme program
-and evaluated.  Since @scheme[sexpr] is likely to contain Scheme
+on such a link, the string @racket[sexpr] is parsed as a Racket program
+and evaluated.  Since @racket[sexpr] is likely to contain Racket
 strings, and since escape characters are difficult for people to read, a
-@litchar{|} character in @scheme[sexpr] is converted to a @litchar{"}
+@litchar{|} character in @racket[sexpr] is converted to a @litchar{"}
 character before it is parsed.  Thus,
 
 @verbatim[#:indent 2]{
   <A MZSCHEME="|This goes nowhere.|">Nowhere</A>
 }
 
-creates a ``Nowhere'' hyperlink, which executes the Scheme program
+creates a ``Nowhere'' hyperlink, which executes the Racket program
 
-@schemeblock[
+@racketblock[
   "This goes nowhere."
 ]
 
-The value of that program is a string.  When a Scheme hyperlink returns
+The value of that program is a string.  When a Racket hyperlink returns
 a string, it is parsed as a new HTML document.  Thus, where the use
 clicks on ``Nowhere,'' the result is a new page that says ``This goes
 nowhere.''
@@ -75,16 +75,16 @@ of a string, it replaces the comment in the document.  Other types of
 return values are ignored.
 
 If the html file is being accessed as a @litchar{file:} url, the
-@scheme[current-load-relative-directory] parameter is set to the
-directory during the evaluation of the mzscheme code (in both
-examples).  The Scheme code is executed through @scheme[eval].
+@racket[current-load-relative-directory] parameter is set to the
+directory during the evaluation of the mzracket code (in both
+examples).  The Racket code is executed through @racket[eval].
 
 The @litchar{MZSCHEME} forms are disabled unless the web page is a
-@litchar{file:} url that points into the @scheme[doc] collection.
+@litchar{file:} url that points into the @racket[doc] collection.
 
 @defproc[(open-url [url (or/c url? string? input-port?)]) (is-a?/c hyper-frame%)]{
   Opens the given url in a vanilla browser frame and returns the
-  frame.  The frame is an instance of @scheme[hyper-frame%].
+  frame.  The frame is an instance of @racket[hyper-frame%].
 }
 
 @defboolparam[html-img-ok ok?]{
@@ -102,13 +102,13 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 @defmixin[hyper-frame-mixin (frame%) ()]{
 
   @defconstructor/auto-super[([url (or/c url? string? input-port?)])]{
-    Shows the frame and visits @scheme[url].
+    Shows the frame and visits @racket[url].
   }
 
   @defmethod[(get-hyper-panel%) (subclass?/c panel%)]{
     Returns the class that is instantiated when the frame is created.
     Must be a panel with hyper-panel-mixin mixed in.  Defaults to just
-    returning @scheme[hyper-panel%].
+    returning @racket[hyper-panel%].
   }
 
   @defmethod[(get-hyper-panel) (is-a?/c panel%)]{
@@ -125,7 +125,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 @; ----------------------------------------------------------------------
 
 @defmixin[hyper-no-show-frame-mixin (frame%) ()]{
-  The same as the @scheme[hyper-frame-mixin], except that it doesn't
+  The same as the @racket[hyper-frame-mixin], except that it doesn't
   show the frame and the initialization arguments are unchanged.
 }
 
@@ -139,21 +139,21 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @defmixin[hyper-text-mixin (text%) ()]{
 
-  An instance of a @scheme[hyper-text-mixin]-extended class should be
+  An instance of a @racket[hyper-text-mixin]-extended class should be
   displayed only in an instance of a class created with
-  @scheme[hyper-canvas-mixin].
+  @racket[hyper-canvas-mixin].
 
   @defconstructor/auto-super[([url (or/c url? string? input-port?)]
                               [status-frame
                                (or/c (is-a?/c top-level-window<%>) false/c)]
                               [post-data (or/c false/c bytes?)])]{
-    The @scheme[url] is loaded into the @scheme[text%] object (using the
+    The @racket[url] is loaded into the @racket[text%] object (using the
     @method[hyper-text-mixin reload] method), a top-level window for
     status messages and dialogs, a progress procedure used as for
-    @scheme[get-url], and either @scheme[#f] or a post string to be sent
+    @racket[get-url], and either @racket[#f] or a post string to be sent
     to a web server (technically changing the GET to a POST).
 
-    Sets the autowrap-bitmap to @scheme[#f].
+    Sets the autowrap-bitmap to @racket[#f].
   }
 
   @defmethod[(map-shift-style [start exact-nonnegative-integer?]
@@ -170,7 +170,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   }
 
   @defmethod[(get-url) (or/c url? string? input-port? false/c)]{
-    Returns the URL displayed by the editor, or @scheme[#f] if there is
+    Returns the URL displayed by the editor, or @racket[#f] if there is
     none.
   }
 
@@ -194,9 +194,9 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
              (or/c exact-nonnegative-integer? false/c)]{
     Finds the location of a tag in the buffer (where tags are installed
     in HTML with @litchar{<A NAME="name">}) and returns its position.
-    If @scheme[name] is a number, the number is returned (assumed to be
+    If @racket[name] is a number, the number is returned (assumed to be
     an offset rather than a tag).  Otherwise, if the tag is not found,
-    @scheme[#f] is returned.
+    @racket[#f] is returned.
   }
 
   @defmethod[(remove-tag [name string?]) void?]{
@@ -215,11 +215,11 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
     Installs a hyperlink.
   }
 
-  @defmethod[(add-scheme-callback [start exact-nonnegative-integer?]
+  @defmethod[(add-racket-callback [start exact-nonnegative-integer?]
                                   [end exact-nonnegative-integer?]
-                                  [scheme-expr string?])
+                                  [racket-expr string?])
              void?]{
-    Installs a Scheme evaluation hyperlink.
+    Installs a Racket evaluation hyperlink.
   }
 
   @defmethod[(add-thunk-callback [start exact-nonnegative-integer?]
@@ -229,7 +229,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
     Installs a thunk-based hyperlink.
   }
 
-  @defmethod[(eval-scheme-string [str string?]) any]{
+  @defmethod[(eval-racket-string [str string?]) any]{
     Called to handle the @litchar{<A MZSCHEME="expr">...</A>} tag and
     @litchar{<! MZSCHEME="expr">} comments (see above).  Evaluates the
     string; if the result is a string, it is opened as an HTML page.
@@ -239,13 +239,13 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
     Reloads the current page.
 
     The text defaultly uses the basic style named
-    @scheme["Html Standard"] in the editor (if it exists).
+    @racket["Html Standard"] in the editor (if it exists).
   }
 
   @defmethod[(remap-url [url (or/c url? string?)]) (or/c url? string?)]{
     When visiting a new page, this method is called to remap the url.
     The remapped url is used in place of the original url.  If this
-    method returns @scheme[#f], the page doesn't go anywhere.
+    method returns @racket[#f], the page doesn't go anywhere.
 
     This method may be killed (if the user clicks the ``stop'' button).
   }
@@ -261,7 +261,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @defclass[hyper-text% (hyper-text-mixin text:keymap%) ()]{
 
-  Extends the @scheme[text:keymap%] class to support standard key
+  Extends the @racket[text:keymap%] class to support standard key
   bindings in the browser window.
 
 }
@@ -270,8 +270,8 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @defmixin[hyper-canvas-mixin (editor-canvas%) ()]{
 
-  A @scheme[hyper-can-mixin]-extended canvas's parent should be an
-  instance of a class derived with @scheme[hyper-panel-mixin].
+  A @racket[hyper-can-mixin]-extended canvas's parent should be an
+  instance of a class derived with @racket[hyper-panel-mixin].
 
   @defconstructor/auto-super[()]{
   }
@@ -279,8 +279,8 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   @defmethod[(get-editor%) (subclass?/c text%)]{
 
     Returns the class used to implement the editor in the browser
-    window.  It should be derived from @scheme[hyper-text%] and should
-    pass on the initialization arguments to @scheme[hyper-text%].
+    window.  It should be derived from @racket[hyper-text%] and should
+    pass on the initialization arguments to @racket[hyper-text%].
 
     The dynamic extent of the initialization of this editor is called on
     a thread that may be killed (via a custodian shutdown).  In that
@@ -299,30 +299,30 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
                        [post-data (or/c bytes? false/c) #f])
              void?]{
     Changes to the given url, loading it by calling the
-    @scheme[make-editor] method.  If @scheme[relative-to-url] is not
-    @scheme[#f], it must be a URL for resolving @scheme[url] as a
-    relative URL.  @scheme[url] may also be a port, in which case,
-    @scheme[relative-to-url] must be @scheme[#f].
+    @racket[make-editor] method.  If @racket[relative-to-url] is not
+    @racket[#f], it must be a URL for resolving @racket[url] as a
+    relative URL.  @racket[url] may also be a port, in which case,
+    @racket[relative-to-url] must be @racket[#f].
 
-    The @scheme[progress-proc] procedure is called with a boolean at the
+    The @racket[progress-proc] procedure is called with a boolean at the
     point where the URL has been resolved and enough progress has been
     made to dismiss any message that the URL is being resolved.  The
-    procedure is called with @scheme[#t] if the URL will be loaded into
-    a browser window, @scheme[#f] otherwise (e.g., the user will save
+    procedure is called with @racket[#t] if the URL will be loaded into
+    a browser window, @racket[#f] otherwise (e.g., the user will save
     the URL content to a file).
 
-    If @scheme[post-data-bytes] is a byte string instead of false, the
+    If @racket[post-data-bytes] is a byte string instead of false, the
     URL GET is changed to a POST with the given data.
   }
 
   @defmethod[(set-page [page any/c] [notify? any/c]) void?]{
-    Changes to the given page.  If @scheme[notify?] is not @scheme[#f],
+    Changes to the given page.  If @racket[notify?] is not @racket[#f],
     the canvas's parent is notified about the change by calling its
-    @scheme[leaving-page] method.
+    @racket[leaving-page] method.
   }
 
   @defmethod[(after-set-page) void?]{
-    Called during @scheme[set-page].  Defaultly does nothing.
+    Called during @racket[set-page].  Defaultly does nothing.
   }
 }
 
@@ -334,28 +334,28 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
     Creates controls and a hyper text canvas.  The controls permit a
     user to move back and forth in the hypertext history.
 
-    The @scheme[info-line?] argument indicates whether the browser
+    The @racket[info-line?] argument indicates whether the browser
     should contain a line to display special @litchar{DOCNOTE} tags in a
     page.  Such tags are used primarily by the PLT documentation.
   }
 
   @defmethod[(make-canvas [container (is-a?/c area-container<%>)]) void?]{
     Creates the panel's hypertext canvas, an instance of a class derived
-    using @scheme[hyper-canvas-mixin].  This method is called during
+    using @racket[hyper-canvas-mixin].  This method is called during
     initialization.
   }
 
   @defmethod[(get-canvas%) (subclass?/c editor-canvas%)]{
     Returns the class instantiated by make-canvas.  It must be derived
-    from @scheme[hyper-canvas-mixin].
+    from @racket[hyper-canvas-mixin].
   }
 
   @defmethod[(make-control-bar-panel [container (is-a?/c area-container<%>)])
              any/c]{
     Creates the panel's sub-container for the control bar containing the
-    navigation buttons.  If @scheme[#f] is returned, the panel will have
+    navigation buttons.  If @racket[#f] is returned, the panel will have
     no control bar.  The default method instantiates
-    @scheme[horizontal-panel%].
+    @racket[horizontal-panel%].
   }
 
   @defmethod[(rewind) void?]{
@@ -373,15 +373,15 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   @defmethod[(on-navigate) void?]{
     Callback that is invoked any time the displayed hypertext page
     changes (either by clicking on a link in the canvas or by
-    @scheme[rewind] or @scheme[forward] calls).
+    @racket[rewind] or @racket[forward] calls).
   }
 
   @defmethod[(leaving-page [page any/c] [new-page any/c])
              any]{
     This method is called by the hypertext canvas to notify the panel
-    that the hypertext page changed.  The @scheme[page] is @scheme[#f]
-    if @scheme[new-page] is the first page for the canvas.  See also
-    @scheme[page->editor].
+    that the hypertext page changed.  The @racket[page] is @racket[#f]
+    if @racket[new-page] is the first page for the canvas.  See also
+    @racket[page->editor].
   }
 
   @defmethod[(filter-notes [notes (listof string?)])
@@ -391,7 +391,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   }
 
   @defmethod[(reload) void?]{
-    Reloads the currently visible page by calling the @scheme[reload]
+    Reloads the currently visible page by calling the @racket[reload]
     method of the currently displayed hyper-text.
   }
 }
@@ -404,7 +404,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @defproc[(editor->page [editor (is-a?/c text%)]) any/c]{
   Creates a page record for the given editor, suitable for use with the
-  @scheme[set-page] method of @scheme[hyper-canvas-mixin].
+  @racket[set-page] method of @racket[hyper-canvas-mixin].
 }
 
 @defproc[(page->editor [page any/c]) (is-a?/c text%)]{
@@ -416,7 +416,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 }
 
 @defclass[image-map-snip% snip% ()]{
-  Instances of this class behave like @scheme[image-snip%] objects,
+  Instances of this class behave like @racket[image-snip%] objects,
   except they have a @litchar{<map> ... </map>} associated with them and
   when clicking on them (in the map) they will cause their init arg text
   to follow the corresponding link.
@@ -425,7 +425,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
   }
 
   @defmethod[(set-key [key string?]) void?]{
-    Sets the key for the image map (eg, @scheme["#key"]).
+    Sets the key for the image map (eg, @racket["#key"]).
   }
 
   @defmethod[(get-key) string?]{
@@ -436,8 +436,8 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
                        [region (listof number?)]
                        [href string?])
              void?]{
-    Registers the shape named by @scheme[shape] whose coordinates are
-    specified by @scheme[region] to go to @scheme[href] when that region
+    Registers the shape named by @racket[shape] whose coordinates are
+    specified by @racket[region] to go to @racket[href] when that region
     of the image is clicked on.
   }
 }
@@ -449,8 +449,8 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 @defmodule[browser/browser-unit]
 
 @defthing[browser@ unit?]{
-  Imports @scheme[mred^], @scheme[tcp^], and @scheme[url^], and exports
-  @scheme[browser^].
+  Imports @racket[mred^], @racket[tcp^], and @racket[url^], and exports
+  @racket[browser^].
 }
 
 @; ----------------------------------------------------------------------
@@ -460,7 +460,7 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 @defmodule[browser/browser-sig]
 
 @defsignature[browser^ ()]{
-  Includes all of the bindings of the @schememodname[browser] library.
+  Includes all of the bindings of the @racketmodname[browser] library.
 }
 
 @; ----------------------------------------------------------------------
@@ -472,12 +472,12 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 @definterface[html-text<%> (text%)]{
 
   @defmethod[(get-url) (or/c url? string? false/c)]{
-    Returns a base URL used for building relative URLs, or @scheme[#f]
+    Returns a base URL used for building relative URLs, or @racket[#f]
     if no base is available.
   }
 
   @defmethod[(set-title [str string?]) void?]{
-    Registers the title @scheme[str] for the rendered page.
+    Registers the title @racket[str] for the rendered page.
   }
 
   @defmethod[(add-link [start exact-nonnegative-integer?]
@@ -497,11 +497,11 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
     Changes the style for the given range to the link style.
   }
 
-  @defmethod[(add-scheme-callback [start exact-nonnegative-integer?]
+  @defmethod[(add-racket-callback [start exact-nonnegative-integer?]
                                   [end exact-nonnegative-integer?]
-                                  [scheme-expr string?])
+                                  [racket-expr string?])
              void?]{
-    Installs a Scheme evaluation hyperlink.
+    Installs a Racket evaluation hyperlink.
   }
 
   @defmethod[(add-thunk-callback [start exact-nonnegative-integer?]
@@ -519,9 +519,9 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 
 @defmixin[html-text-mixin (text%) ()]{
-  Extends the given @scheme[text%] class with implementations of the
-  @scheme[html-text<%>] methods.  Hyperlinks are attached to clickbacks
-  that use @net-send-url from @schememodname[net/sendurl].
+  Extends the given @racket[text%] class with implementations of the
+  @racket[html-text<%>] methods.  Hyperlinks are attached to clickbacks
+  that use @net-send-url from @racketmodname[net/sendurl].
 }
 
 @defproc[(render-html-to-text [in input-port?]
@@ -529,12 +529,12 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
                               [load-img? any/c]
                               [eval-mz? any/c])
          void?]{
-  Reads HTML from @scheme[in] and renders it to @scheme[dest].  If
-  @scheme[load-img?] is @scheme[#f], then images are rendered as Xed-out
-  boxes.  If @scheme[eval-mz?] is @scheme[#f], then @litchar{MZSCHEME}
+  Reads HTML from @racket[in] and renders it to @racket[dest].  If
+  @racket[load-img?] is @racket[#f], then images are rendered as Xed-out
+  boxes.  If @racket[eval-mz?] is @racket[#f], then @litchar{MZSCHEME}
   hyperlink expressions and comments are not evaluated.
 
-  Uses the style named @scheme["Html Standard"] in the editor's
+  Uses the style named @racket["Html Standard"] in the editor's
   style-list (if it exists) for all of the inserted text's default
   style.
 }
@@ -546,21 +546,21 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 @defmodule[browser/external]
 
 @defproc[(send-url [str null] [separate-window? void #t]) null]{
-  Like @net-send-url from @scheme[net/sendurl], but under Unix, the user
+  Like @net-send-url from @racket[net/sendurl], but under Unix, the user
   is prompted for a browser to use if none is recorded in the
   preferences file.
 }
 
 @defproc[(browser-preference? [v any/c]) boolean?]{
-  Returns @scheme[#t] if @scheme[v] is a valid browser preference.
+  Returns @racket[#t] if @racket[v] is a valid browser preference.
 }
 
 @defproc[(update-browser-preference [url (or/c string? false/c)]) void?]{
   Under Unix, prompts the user for a browser preference and records the
   user choice as a framework preference (even if one is already
-  recorded).  If @scheme[url] is not @scheme[#f], it is used in the
-  dialog to explain which URL is to be opened; if it is @scheme[#f], the
-  @scheme['internal] will be one of the options for the user.
+  recorded).  If @racket[url] is not @racket[#f], it is used in the
+  dialog to explain which URL is to be opened; if it is @racket[#f], the
+  @racket['internal] will be one of the options for the user.
 }
 
 @defproc[(install-help-browser-preference-panel) void?]{
@@ -569,19 +569,19 @@ The @litchar{MZSCHEME} forms are disabled unless the web page is a
 
 @defproc[(add-to-browser-prefs-panel [proc ((is-a?/c panel%) . -> . any)])
          void?]{
-  The @scheme[proc] is called when the ``Browser'' panel is constructed
-  for preferences.  The supplied argument is the panel, so @scheme[proc]
+  The @racket[proc] is called when the ``Browser'' panel is constructed
+  for preferences.  The supplied argument is the panel, so @racket[proc]
   can add additional option controls.  If the panel is already created,
-  @scheme[proc] is called immediately.
+  @racket[proc] is called immediately.
 }
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "tool"]{DrScheme Browser Preference Panel}
+@section[#:tag "tool"]{DrRacket Browser Preference Panel}
 
 @defmodule[browser/tool]
 
 @defthing[tool@ unit?]{
-  A unit that implements a DrScheme tool to add the ``Browser''
+  A unit that implements a DrRacket tool to add the ``Browser''
   preference panel.
 }

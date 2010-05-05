@@ -1,18 +1,18 @@
 #lang scribble/doc
 @(require "common.ss"
           scribble/bnf
-          (for-syntax scheme/base))
+          (for-syntax racket/base))
 
 @title[#:tag "gl-vectors"]{OpenGL Vectors}
 
 @defmodule[sgl/gl-vectors]
 
-The @schememodname[sgl/gl-vectors] module supports OpenGL programming
-with @scheme[cvector]s.  In this document and in the error messages, a
-``gl-vector'' is just a @scheme[cvector], while a
-``gl-@nonterm{type}-vector'' is a @scheme[cvector] with an appropriate
-type. Using the @schememodname[sgl/gl-vectors] module instead of using
-@scheme[cvector] directly because these functions are specialized to
+The @racketmodname[sgl/gl-vectors] module supports OpenGL programming
+with @racket[cvector]s.  In this document and in the error messages, a
+``gl-vector'' is just a @racket[cvector], while a
+``gl-@nonterm{type}-vector'' is a @racket[cvector] with an appropriate
+type. Using the @racketmodname[sgl/gl-vectors] module instead of using
+@racket[cvector] directly because these functions are specialized to
 handling the OpenGL types correctly.
 
 @deftogether[(
@@ -24,7 +24,7 @@ handling the OpenGL types correctly.
 @defproc[(gl-vector-set! [vec cvector?][pos exact-nonnegative-integer?][v any/v]) void?]
 )]{
 
-Synonyms for @scheme[cvector?], @scheme[cvector->vector], @scheme[cvector-length], etc.}
+Synonyms for @racket[cvector?], @racket[cvector->vector], @racket[cvector-length], etc.}
 
 @(define-syntax (define-gl-vector stx)
   (syntax-case stx ()
@@ -66,10 +66,10 @@ Synonyms for @scheme[cvector?], @scheme[cvector->vector], @scheme[cvector-length
              @defproc[(gl-<type>-vector* [x real?][vec gl-<type>-vector?]) gl-<type>-vector?]
              )]{
 
-             Operations on vectors of @scheme[<type>] elements. The @scheme[gl-<type>-vector+]
-             and @scheme[gl-<type>-vector-] functions compute the element-by-element sum and
-             difference of the given vectors, respectively. The @scheme[gl-<type>-vector*] function
-             multiplies each element of @scheme[vec] by @scheme[x].})))]))
+             Operations on vectors of @racket[<type>] elements. The @racket[gl-<type>-vector+]
+             and @racket[gl-<type>-vector-] functions compute the element-by-element sum and
+             difference of the given vectors, respectively. The @racket[gl-<type>-vector*] function
+             multiplies each element of @racket[vec] by @racket[x].})))]))
 
 @(define-gl-vector byte)
 @(define-gl-vector ubyte)
@@ -84,5 +84,5 @@ Synonyms for @scheme[cvector?], @scheme[cvector->vector], @scheme[cvector-length
 @defproc[(gl-vector-norm [vec gl-vector?]) real?]{
 
 Returns the square root of the sum of the squares of the elements
-of @scheme[vec].}
+of @racket[vec].}
 

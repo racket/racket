@@ -2,16 +2,16 @@
 @(require "common.ss"
           scribble/bnf
           scribble/eval
-          (for-syntax scheme/base))
+          (for-syntax racket/base))
 
 @title[#:tag "gl"]{C-Style OpenGL}
 
 @defmodule[sgl/gl]
 
-The @schememodname[sgl/gl] module provides a direct interface to the
+The @racketmodname[sgl/gl] module provides a direct interface to the
 system's GL library closely following the conventions of the
 C-language OpenGL API.  It provides a binding for each @tt{#defined}
-constant (these start with @schemeidfont{GL_}) and for the functions
+constant (these start with @racketidfont{GL_}) and for the functions
 in the GL 1.5 and GLU 1.3 specifications, except for the following:
 
 @itemize[#:style 'compact
@@ -26,13 +26,13 @@ in the GL 1.5 and GLU 1.3 specifications, except for the following:
 
 If one of the provided functions is not present on your system
 (e.g. if your system supports only GL 1.3), then the corresponding
-@schememodname[sgl/gl] function raises a run-time exception when
+@racketmodname[sgl/gl] function raises a run-time exception when
 invoked.
 
-The functions provided by @schememodname[sgl/gl] perform comparable
+The functions provided by @racketmodname[sgl/gl] perform comparable
 checking to their C-language counterparts; they check the types of
 their arguments, but do not check the length of array arguments.  The
-following details the kinds of Scheme values that can be provided for
+following details the kinds of Racket values that can be provided for
 each primitive OpenGL type:
 
 @itemize[
@@ -60,24 +60,24 @@ each primitive OpenGL type:
        @as-index{@tt{GLclampd}}:
        real number}
 
- @item{@as-index{@tt{GLboolean}}: any value, where @scheme[#f] means
+ @item{@as-index{@tt{GLboolean}}: any value, where @racket[#f] means
        @as-index{@tt{GL_FALSE}} and all other values mean
-       @as-index{@tt{GL_TRUE}}; do not use @scheme[GL_FALSE] or
-       @scheme[GL_TRUE], since they are bound to integers, both will
+       @as-index{@tt{GL_TRUE}}; do not use @racket[GL_FALSE] or
+       @racket[GL_TRUE], since they are bound to integers, both will
        end up being converted to GL_TRUE.}
 
 ]
 				    
-OpenGL functions that take vector arguments accept @scheme[cvector]
-values. The type of the @scheme[cvector] is checked; for example,
+OpenGL functions that take vector arguments accept @racket[cvector]
+values. The type of the @racket[cvector] is checked; for example,
 @tt{glVertex3fv} expects a vector of @tt{GLfloats}, so
-@scheme[glVertex3fv] accepts only a @scheme[cvector] containing reals.
-See also @schememodname[sgl/gl-vectors]. Functions that accept arrays
-of type @tt{void*} accept any @scheme[cvector]; you must ensure that
+@racket[glVertex3fv] accepts only a @racket[cvector] containing reals.
+See also @racketmodname[sgl/gl-vectors]. Functions that accept arrays
+of type @tt{void*} accept any @racket[cvector]; you must ensure that
 you supply the proper kind of vector, as in the C-language OpenGL API.
 
 @as-examples[
-@schemeblock[
+@racketblock[
 (require sgl/gl
          sgl/gl-vectors)
 (glBegin GL_TRIANGLES)
@@ -187,16 +187,16 @@ function directly return @tt{GLdouble} vectors.}
 )]{
 
 These functions do not take vectors, instead they return a
-@scheme[selection-buffer-object] or @scheme[feedback-buffer-object].
-The @scheme[select-buffer->gl-uint-vector] and
-@scheme[feedback-buffer->gl-float-vector] functions copy the contents
+@racket[selection-buffer-object] or @racket[feedback-buffer-object].
+The @racket[select-buffer->gl-uint-vector] and
+@racket[feedback-buffer->gl-float-vector] functions copy the contents
 of the buffer into a vector.  Because the OpenGL library writes to the
 buffer-object on OpenGL function calls after @tt{glSelectBuffer} or
 @tt{glFeedbackBuffer} has returned, if the buffer is garbage collected
-before OpenGL is finished writing to it, the entire Scheme system can
-crash.  The @scheme[gl-process-selection] function in
-@schememodname[sgl] helps interpret the results of @tt{glSelectBuffer}
-in a Scheme-friendly format.}
+before OpenGL is finished writing to it, the entire Racket system can
+crash.  The @racket[gl-process-selection] function in
+@racketmodname[sgl] helps interpret the results of @tt{glSelectBuffer}
+in a Racket-friendly format.}
 
 @def-C-gl[(
 glAccum
@@ -1633,9 +1633,9 @@ All OpenGL-defined constants.}
 @defproc[(feedback-buffer->gl-float-vector [buf feedback-buffer-object?])
          gl-float-vector?]{
 
-Converts a result from @scheme[glFeedbackBuffer] to a vector.}
+Converts a result from @racket[glFeedbackBuffer] to a vector.}
 
 @defproc[(select-buffer->gl-uint-vector [buf select-buffer-object?])
          gl-uint-vector?]{
 
-Converts a result from @scheme[glSelectBuffer] to a vector.}
+Converts a result from @racket[glSelectBuffer] to a vector.}
