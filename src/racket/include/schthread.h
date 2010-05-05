@@ -284,6 +284,8 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Bucket_Table *place_local_modpath_table_;
   struct Scheme_Hash_Table *opened_libs_;
   struct mzrt_mutex *jit_lock_;
+  struct free_list_entry *free_list_;
+  int free_list_bucket_count_;
 /*KPLAKE1*/
 } Thread_Local_Variables;
 
@@ -570,6 +572,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define place_local_modpath_table XOA (scheme_get_thread_local_variables()->place_local_modpath_table_)
 #define opened_libs XOA (scheme_get_thread_local_variables()->opened_libs_)
 #define jit_lock XOA (scheme_get_thread_local_variables()->jit_lock_)
+#define free_list XOA (scheme_get_thread_local_variables()->free_list_)
+#define free_list_bucket_count XOA (scheme_get_thread_local_variables()->free_list_bucket_count_)
 /*KPLAKE2*/
 
 /* **************************************** */

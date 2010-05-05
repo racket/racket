@@ -233,7 +233,6 @@ void scheme_init_dynamic_extension(Scheme_Env *env);
 #ifndef NO_REGEXP_UTILS
 extern void scheme_regexp_initialize(Scheme_Env *env);
 #endif
-void scheme_init_salloc(void);
 void scheme_init_memtrace(Scheme_Env *env);
 void scheme_init_paramz(Scheme_Env *env);
 void scheme_init_parameterization();
