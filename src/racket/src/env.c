@@ -476,10 +476,6 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   printf("process @ %ld\n", scheme_get_process_milliseconds());
 #endif
 
-#ifdef MZ_USE_JIT
-  scheme_init_jit();
-#endif
-
   /* error handling and buffers */
   /* this check prevents initializing orig ports twice for the first initial
    * place.  The kernel initializes orig_ports early. */

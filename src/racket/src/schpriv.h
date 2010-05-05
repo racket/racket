@@ -234,9 +234,6 @@ void scheme_init_dynamic_extension(Scheme_Env *env);
 extern void scheme_regexp_initialize(Scheme_Env *env);
 #endif
 void scheme_init_salloc(void);
-#ifdef MZ_USE_JIT
-void scheme_init_jit(void);
-#endif
 void scheme_init_memtrace(Scheme_Env *env);
 void scheme_init_paramz(Scheme_Env *env);
 void scheme_init_parameterization();
