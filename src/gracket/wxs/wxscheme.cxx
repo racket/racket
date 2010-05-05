@@ -2778,9 +2778,9 @@ int wxGetPreference(const char *name, char *res, long len)
     if (!ends_in_slash)
       s[l++] = '/';
 # ifdef wx_mac
-    memcpy(s + l, "org.racket-lang.prefs.rktd", 24);
+    memcpy(s + l, "org.racket-lang.prefs.rktd", 26);
 # else
-    memcpy(s + l, "racket-prefs.rktd", 13);
+    memcpy(s + l, "racket-prefs.rktd", 17);
 # endif
 #endif
 
@@ -2796,7 +2796,7 @@ int wxGetPreference(const char *name, char *res, long len)
     memcpy(s, home, l);
     if (!ends_in_slash)
       s[l++] = '\\';
-    memcpy(s + l, "racket-prefs.rktd", 13);
+    memcpy(s + l, "racket-prefs.rktd", 17);
 #endif
 
     /*************** Mac OS Classic ***************/
@@ -2825,7 +2825,7 @@ int wxGetPreference(const char *name, char *res, long len)
       memcpy(s, home, l);
       if (!ends_in_slash)
 	s[l++] = ':';
-      memcpy(s + l, "org.racket-lang.prefs.rktd", 24);
+      memcpy(s + l, "org.racket-lang.prefs.rktd", 26);
     }
 #endif
 
