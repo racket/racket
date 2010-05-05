@@ -7,19 +7,23 @@
    (apply link (apply build-path (find-doc-dir) "release-notes" path)
                content))
 @(define (mzport doc from to)
-   (rl-link (list "mzscheme" doc) (format "Porting from ~a to ~a" from to)))
+   (rl-link (list "racket" doc) (format "Porting from ~a to ~a" from to)))
 
 @main-page['release]
 
 @itemize[#:style "compact"]{
 
- @item{@rl-link['("drscheme" "HISTORY.txt")]{DrScheme}}
- @item{@rl-link['("mzscheme" "HISTORY.txt")]{MzScheme}
+ @item{@rl-link['("racket" "HISTORY.txt")]{Racket core}
        @itemize[#:style "compact"]{
+         @item{@mzport["Racket_5.txt" "v4.x" "v5.x"]}
          @item{@mzport["MzScheme_4.txt" "v3xx" "v4.x"]}
          @item{@mzport["MzScheme_300.txt" "v2xx" "v3xx"]}
          @item{@mzport["MzScheme_200.txt" "v1xx" "v2xx"]}}}
- @item{@rl-link['("mred" "HISTORY.txt")]{MrEd}}
+ @item{@rl-link['("drracket" "HISTORY.txt")]{DrRacket}}
+ @item{@rl-link['("gracket" "HISTORY.txt")]{GRacket}}
+ @item{@rl-link['("teachpack" "HISTORY.txt")]{Teachpacks}}
  @item{@rl-link['("stepper" "HISTORY.txt")]{Stepper}}
+ @item{@rl-link['("plai" "HISTORY.txt")]{PLAI}}
+ @item{@rl-link['("redex" "HISTORY.txt")]{Redex}}
 
 }

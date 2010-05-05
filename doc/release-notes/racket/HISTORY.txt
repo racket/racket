@@ -1,10 +1,16 @@
-Version 4.2.5.10
-regexp-match* et al. now disable ^ matching on all but the first
- match, and empty matches are allowed in all positions except
- immediately after an empty match
-
-Version 4.2.5.3
+Version 5.0, May 2010
+Changed the core executable from mzscheme to racket
+Changed default value printer to use quasiquote style
+The language of a program's main module can specify run-time
+ configuration actions, such as setting the default printer's
+ style
+Changed regexp-match* et al. to make ^ matching relative to the
+ original string (not substrings for matches after the for) and to
+ allow empty matches in all positions except immediately after an
+ empty match
 Added chaperones
+Changed paths like the preferences file to use "racket" instead
+ of "mzscheme" or "plt-scheme"
 
 Version 4.2.5, March 2010
 Added scheme/future, enabled by default on main platforms

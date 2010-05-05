@@ -7,9 +7,9 @@ compatibility with older versions of Racket:
 
 @itemlist[
 
- @item{@as-index{@exec{mzscheme}} --- the same a @exec{racket -I scheme/base}}
+ @item{@as-index{@exec{mzscheme}} --- the same a @exec{racket -I scheme/init}}
 
- @item{@as-index{@exec{mred}} --- the same a @exec{gracket -I scheme/base}}
+ @item{@as-index{@exec{mred}} --- the same a @exec{gracket -I scheme/gui/init}}
 
  @item{@as-index{@exec{drscheme}} --- the same as @exec{drracket}}
 
