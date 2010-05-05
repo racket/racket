@@ -609,6 +609,7 @@ path/s is either such a string or a list of them.
 "collects/drscheme/private/unit.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/sprof.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/syncheck-drracket-button.rkt" drdr:command-line "mred-text ~s"
+"collects/drscheme/syncheck-drscheme-button.rkt" drdr:command-line "gracket-text ~s"
 "collects/drscheme/syncheck.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drscheme/tool-lib.rkt" drdr:command-line "mzc ~s"
 "collects/dynext" responsible (mflatt)
@@ -1188,7 +1189,7 @@ path/s is either such a string or a list of them.
 "collects/scribble" responsible (mflatt eli)
 "collects/scribble/run.rkt" drdr:command-line "mzc ~s"
 "collects/scribble/tools/drscheme-buttons.rkt" drdr:command-line "mred-text ~s"
-"collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line "mred-text ~s" drdr:timeout 240
+"collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line "mred-text ~s" drdr:timeout 600
 "collects/scribblings" responsible (mflatt eli robby mathias)
 "collects/scribblings/foreign/unsafe-foreign.rkt" drdr:command-line "mzc ~s"
 "collects/scribblings/framework/standard-menus.scrbl" drdr:command-line ""
