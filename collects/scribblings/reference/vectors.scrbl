@@ -355,7 +355,6 @@ Like @racket[vector-member], but finds an element using @racket[eq?].
 (vector-memq 2 (vector 1 2 3 4))
 (vector-memq 9 (vector 1 2 3 4))
 ]}
-}
 
 
 @close-eval[vec-eval]
