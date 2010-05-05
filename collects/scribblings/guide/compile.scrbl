@@ -43,4 +43,4 @@ Racket installation.
 ]
 
 For more information on @exec{raco}, see @other-manual['(lib
-"scribblings/mzc/mzc.scrbl")].
+"scribblings/raco/raco.scrbl")].

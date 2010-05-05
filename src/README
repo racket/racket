@@ -1,36 +1,35 @@
 
-This is the source code distribution for PLT Scheme (MzScheme and/or
-MrEd with DrScheme). For license information, please see the file
-plt/notes/COPYING.LIB.
+This is the source code distribution for Racket. For license
+information, please see the file racket/notes/COPYING.LIB.
 
 Compiled binaries, documentation, and up-to-date information are
-available at http://plt-scheme.org/; pre-compiled nightly builds are
-available at http://pre.plt-scheme.org/installers/.
+available at http://racket-lang.org/; pre-compiled nightly builds are
+available at http://pre.racket-lang.org/installers/.
 
-The MzScheme and MrEd source code should compile and execute on
+The Racket and GRacket source code should compile and execute on
 Windows, Mac OS X, or any Unix/X platform (including Linux).
 
 Per-platform instructions are below.
 
 Please report bugs via one of the following:
-  - DrScheme's "submit bug report" menu              (preferred)
-  - http://bugs.plt-scheme.org/
-  - the mailing list (plt-scheme@list.cs.brown.edu)  (last resort)
+  - DrRacket's "submit bug report" menu            (preferred)
+  - http://bugs.racket-lang.org/
+  - the mailing list (racket@list.cs.brown.edu)    (last resort)
 
 -PLT
- scheme@plt-scheme.org
+ racket@racket-lang.org
 
 ========================================================================
  Compiling for Windows
 ========================================================================
 
 To compile with Microsoft Visual C, read the instructions in
-plt\src\worksp\README.
+racket\src\worksp\README.
 
 To compile with Cygwin tools, follow the Unix instructions below, and
 be sure to configure with --enable-shared. The result is a Unix-style
-build, not a Windows-style build (e.g., MzScheme's `system-type'
-procedure returns 'unix, not 'windows, and MrEd uses X11).
+build, not a Windows-style build (e.g., Racket's `system-type'
+procedure returns 'unix, not 'windows, and GRacket uses X11).
 
 ========================================================================
  Compiling for Mac OS X
@@ -39,39 +38,41 @@ procedure returns 'unix, not 'windows, and MrEd uses X11).
 First, install the Mac OS X Developer Tools from Apple. Then, follow
 the Unix instructions below, but note the following:
 
- * The MzScheme build creates a framework, PLT_MzScheme.framework,
-   which is installed into plt/lib. This framework is used by the
-   executable `mzscheme' that goes into plt/bin.
+ * The Racket build creates a framework, Racket.framework, which is
+   installed into racket/lib. This framework is used by the executable
+   `racket' that goes into racket/bin.
 
- * The MrEd build creates a framework, PLT_MrEd.framework, which is
-   installed into plt/lib. This framework is used by the executable
-   bundle MrEd.app that goes into the `plt' directory.  Installation
-   creates a script, plt/bin/mred, that runs the bundle.
+ * The GRacket build creates a framework, GRacket.framework, which is
+   installed into racket/lib. This framework is used by the executable
+   bundle GRacket.app that goes into the "racket" directory.
+   Installation creates a script, racket/bin/mred, that runs the
+   bundle.
 
- * The --enable-shared flag for `configure' must not be used,
-   because builds create and use frameworks by default. Furthermore,
-   --disable-shared is not supported. (Unless you use --enable-xonx...)
+ * The --enable-shared flag for `configure' must not be used, because
+   builds create and use frameworks by default. Furthermore,
+   --disable-shared is not supported. (Unless you use
+   --enable-xonx...)
 
- * To build an X11-based MrEd, run `configure' with the --enable-xonx
-   flag. Frameworks are not used for such builds, so --enable-shared
-   is allowed. The --enable-xonx flag also affects the MzScheme build,
-   so that `system-type' reports 'unix.
+ * To build an X11-based GRacket, run `configure' with the
+   --enable-xonx flag. Frameworks are not used for such builds, so
+   --enable-shared is allowed. The --enable-xonx flag also affects the
+   Racket build, so that `system-type' reports 'unix.
 
  * To use --prefix without --enable-xonx, you must also supply
    --enable-macprefix. BEWARE! The directory structure for a non-xonx
    build does not fit a typical Unix directory structure. For example,
    frameworks are written directly to a "lib" subdirectory, and
-   executables like "MrEd.app" are written directly to the prefix
+   executables like "GRacket.app" are written directly to the prefix
    directory. (Requiring --enable-macprefix with --prefix for a
    non-xonx build helps prevent accidental installation of a Mac-style
    directory structure on top of an existing Unix-style directory
    structure.)
 
  * Under Mac OS X 10.6 and later, `configure' by default selects
-   32-bit mode for building MzScheme and MrEd. To build MzScheme in
-   64-bit mode (MrEd is not support in that mode), use the following
-   arguments to `configure': --enable-mac64, --enable-sgc, and
-   --disable-mred.
+   32-bit mode for building Racket and GRacket. To build Racket in
+   64-bit mode (GRacket is not support in that mode), use the
+   following arguments to `configure': --enable-mac64, --enable-sgc,
+   and --disable-mred.
 
 ========================================================================
  Compiling for supported Unix variants (including Linux) or Cygwin
@@ -88,7 +89,7 @@ Quick instructions:
    make
    make install
 
- This will create an in-place installation of PLT Scheme and store the
+ This will create an in-place installation of Racket and store the
  results of C/C++ compilation in a separate `build' subdirectory,
  which is useful if you need to update your sources, delete the build,
  and start from scratch.
@@ -99,17 +100,17 @@ Quick instructions:
 
 Detailed instructions:
 
- 0. If you have an old PLT installation in the target directory,
+ 0. If you have an old Racket installation in the target directory,
     remove it (unless you are using Subversion with an "in-place"
     build as described below).
 
     Also, make sure that you have libraries and header files for Xft
     and Cairo (v1.23 and up) if you would like support for font
     smoothing (Xft) and graphics smoothing (Cairo). These libraries
-    are not distributed with PLT Scheme. The configure process checks
+    are not distributed with Racket. The configure process checks
     automatically whether these libraries are available.
 
-    OpenGL support for MrEd sometimes requires special configuration
+    OpenGL support for GRacket sometimes requires special configuration
     (though generally not under Linux). See the note at the end of
     this section if OpenGL fails to work.
 
@@ -141,10 +142,10 @@ Detailed instructions:
     the same directory as this README), with optional command-line
     arguments --prefix=TARGETDIR or --enable-shared (or both).
 
-    For example, if you want to install into /usr/local/plt using
+    For example, if you want to install into /usr/local/racket using
     dynamic libraries, then run:
 
-        [here]configure --prefix=/usr/local/plt --enable-shared
+      [here]configure --prefix=/usr/local/racket --enable-shared
 
     Again, "[here]" is the directory path containing the `configure'
     script.  If you follow the convention of running from a "build"
@@ -155,13 +156,13 @@ Detailed instructions:
     If the --prefix flag is omitted, the binaries are built for an
     in-place installation (i.e., the parent of the directory
     containing this README will be used directly). Unless
-    --enable-shared is used, the plt directory can be moved later;
-    most system administrators would recommend that you use
-    --enable-shared, but the PLT Scheme developers distribute binaries
+    --enable-shared is used, the "racket" directory can be moved
+    later; most system administrators would recommend that you use
+    --enable-shared, but the Racket developers distribute binaries
     built without --enable-shared.
 
     The `configure' script generates the makefiles for building
-    MzScheme and/or MrEd. The current directory at the time
+    Racket and/or GRacket. The current directory at the time
     `configure' is run will be used as working space for building the
     executables (independent of --prefix). This build directory does
     not have to be in the source tree, even for an "in-place"
@@ -201,30 +202,31 @@ Detailed instructions:
     With Cygwin, you may need to use `make --unix'.
 
     Binaries and libraries are placed in subdirectories of the build
-    directory. For example, the `mzscheme' binary appears in the
-    `mzscheme' directory.
+    directory. For example, the `racket3m' binary appears in the
+    `racket' directory.
 
  4. Run `make install'.
 
     This step copies binaries and libraries into place within the
-    target installation. For example, the `mzscheme' binary is copied
+    target installation. For example, the `racket' binary is copied
     into the "bin" directory for an in-place build, or into the
     executable directory for a --prefix build.
 
     For a --prefix build, this step also creates a "config.rkt" module
-    in a "config" collection, so that various PLT tools and libraries
-    can find the installation directories. At this stage, in case you
-    are packaging an installation instead of installing directly, you
-    can redirect the installation by setting the "DESTDIR" environment
-    variable. For example, `make DESTDIR=/tmp/plt-build install'
-    places the installation into "/tmp/plt-build" instead of the
-    location originally specified with --prefix. The resulting
-    installation will not work, however, until it is moved to the
-    location originally specified with --prefix.
+    in a "config" collection, so that various Racket tools and
+    libraries can find the installation directories. At this stage, in
+    case you are packaging an installation instead of installing
+    directly, you can redirect the installation by setting the
+    "DESTDIR" environment variable. For example, `make
+    DESTDIR=/tmp/racket-build install' places the installation into
+    "/tmp/racket-build" instead of the location originally specified
+    with --prefix. The resulting installation will not work, however,
+    until it is moved to the location originally specified with
+    --prefix.
 
     Finally, the `make install' step compiles ".zo" bytecode files for
-    installed Scheme source, and generates launcher programs like
-    "DrScheme". Use `make plain-install' to install without compiling
+    installed Racket source, and generates launcher programs like
+    DrRacket. Use `make plain-install' to install without compiling
     ".zo" files or creating launchers.
 
     If the installation fails because the target directory cannot be
@@ -241,11 +243,11 @@ Detailed instructions:
     your "add-ons" directory, which you can most easily find by
     evaluating
       (find-system-path 'addon-dir)
-    in MzScheme. In addition, if you configure with --enabled-shared,
+    in Racket. In addition, if you configure with --enabled-shared,
     you may accumlate many unused versions of the dynamic libraries in
     your installation target.
 
-After an "in-place" install without Subversion, the plt/src directory
+After an "in-place" install without Subversion, the racket/src directory
 is no longer needed, and it can be safely deleted. Build information
 is recorded in a "buildinfo" file in the installation.
 
@@ -257,11 +259,11 @@ OpenGL, Unix, and pthreads
 --------------------------
 
 On some Unix systems, programs that use the OpenGL library must also
-link to pthreads. To use MrEd's OpenGL support on these systems, MrEd
+link to pthreads. To use GRacket's OpenGL support on these systems, GRacket
 must be configured with the --enable-pthread option. Unfortunately,
-MzScheme's normal stack handling and use of signals (for its own
+Racket's normal stack handling and use of signals (for its own
 thread scheduling) do not interact well with pthreads. Thus, when
-pthreads are enabled, MzScheme and MrEd cannot use interupt timers,
+pthreads are enabled, Racket and GRacket cannot use interupt timers,
 and the stack is limited to 1MB. These restrictions can degrade
 performance and thread-responsiveness.
 
@@ -270,14 +272,14 @@ and if --enable-pthread is not specified, `configure' prints a warning
 and disables GL support. On some systems, including at least FreeBSD
 with the MESA GL implementation (but not the NVIDIA implementation,
 which does not need pthreads), `configure' cannot detect the need for
-pthreads. On these platforms, GL support will be included in MrEd,
+pthreads. On these platforms, GL support will be included in GRacket,
 but it will not work properly unless --enable-pthread is specified.
 
 ========================================================================
  CGC versus 3m
 ========================================================================
 
-MzScheme and MrEd have two variants: CGC and 3m. The CGC variant is
+Racket and GRacket have two variants: CGC and 3m. The CGC variant is
 older, and it cooperates more easily with extensions written in C.
 The 3m variant is the default, and it usually provides better overall
 performance.
@@ -298,7 +300,7 @@ suffix and 3m variants with a "3m" suffix.
  Embedded Paths in the Executables
 ========================================================================
 
-On all platforms, the MzScheme and MrEd binaries embed a path to the
+On all platforms, the Racket and GRacket binaries embed a path to the
 main "collects" directory of library collections. This path can be
 relative to the executable. Multiple paths can be provided, in which
 case the first path is the main "collects" path, and additional paths
@@ -313,14 +315,14 @@ the overall list must be less than 1024 bytes long.
 As an alternative to editing an exeuctable directly, the
 `create-embedding-executable' procedure from `compiler/embed' can be
 used to change the embedded path. For example, the following program
-clones the MzScheme executable to "/tmp/mz" and changes the embedded
+clones the Racket executable to "/tmp/mz" and changes the embedded
 path in the clone to "/tmp/collects":
 
  (require compiler/embed)
  (create-embedding-executable "/tmp/mz" #:collects-path "/tmp/collects")
 
-Similarly, `mzc' in `--exe' or `--gui-exe' mode accepts a `--collects'
-flag to set the collection path in the generated executable.
+Similarly, `raco exe' mode accepts a `--collects' flag to set the
+collection path in the generated executable.
 
 Under Windows, executables also embed a path to DLLs. For more
 information, see worksp\README.
@@ -330,59 +332,12 @@ Paths to all other installation directories are found through the
 documentation for "config search paths" for more information.
 
 ========================================================================
- Compiling the OSKit-based Kernel
-========================================================================
-
-To build the OSKit-based MzScheme kernel, run the configure script
-with the --enable-oskit or --enable-smalloskit flag. The result of
-compiling will be `mzscheme.multiboot' in the `mzscheme' build
-directory. It is a kernel in multiboot format.
-
-Before building the MzScheme kernel, you must first install OSKit,
-which is available from the Flux Research Group at Utah:
-     http://www.cs.utah.edu/projects/flux/oskit/
-
-By default, configure assumes that OSKit is installed in
-/usr/local. To specify a different location for OSKit, define the
-OSKHOME environment variable.
-
-For simplicity, the MzScheme kernel uses SGC rather than Boehm's
-conservative garbage collector.
-
-The --enable-smalloskit configuration produces a kernel without
-networking or filesystem support. The kernel created by
---enable--oskit accepts filesystem and networking configuration
-information on its multiboot command line via the --fs and --net
-flags:
-
-  --fs <drive> <partition> : mounts the given partition as the root
-   directory. For example, to mount the seventh parition on main disk,
-   supply: --fs hda f. Many filesystem formats are supported,
-   including EXT2, MSDOS, and VFAT (all of the ones supported by
-   Linux; see OSKit for details). The standard kernel can only mount
-   one filesystem per run; hack main.c to get more.
-
-  --net <address> <netmask> <gateway> : initializes ethernet support
-   for MzScheme's TCP primitives. Example: --net 128.42.6.101
-   255.255.255.0 128.42.6.254. Many types of ethernet cards are
-   supported (the ones supported by FreeBSD; see OSKit for details).
-
-Each of --fs and --net should be used once at most. The --fs and --net
-flags must appear before any other command-line arguments, which are
-handled by MzScheme in the usual way.
-
-To access a filesystem or the network from non-multiboot kernels
-(e.g., a LILO-compatible kernel), you must hardwire filesystem and
-networking parameters in oskglue.inc when compiling the kernel; see
-oskglue.inc for details (grep for `hardwire').
-
-========================================================================
  Porting to New Platforms
 ========================================================================
 
-At a mininum, to port MzScheme to a new platform, edit
-mzscheme/sconfig.h to provide a platform-specific compilation
-information. As distributed, mzscheme/sconfig.h contains
+At a mininum, to port Racket to a new platform, edit
+racket/sconfig.h to provide a platform-specific compilation
+information. As distributed, racket/sconfig.h contains
 configurations for the following platforms:
 
               Windows (x86)
@@ -395,7 +350,7 @@ configurations for the following platforms:
               NetBSD (x86)
 
 If your platfrom is not supported by the Boehm garbage collector
-(distributed with PLT source), provide the `--enable-sgc' flag to
+(distributed with Racket source), provide the `--enable-sgc' flag to
 `configure'.
 
 ========================================================================
@@ -405,7 +360,7 @@ If your platfrom is not supported by the Boehm garbage collector
 Garbage Collector
 -----------------
 
-The conservative garbage collector distributed with MzScheme (in the
+The conservative garbage collector distributed with Racket (in the
 gc directory) has been modified slightly from Boehm's standard
 distribution. Mostly, the change modify the way that object
 finalization is handled.
@@ -413,14 +368,14 @@ finalization is handled.
 Configuration Options
 ---------------------
 
-By default, MzScheme is compiled without support for single-precision
+By default, Racket is compiled without support for single-precision
 floating point numbers. This and other options can be modified by
-setting flags in mzscheme/sconfig.h.
+setting flags in racket/sconfig.h.
 
-Modifying MzScheme
+Modifying Racket
 ------------------
 
-If you modify MzScheme and change any primitive syntax or the
+If you modify Racket and change any primitive syntax or the
 collection of built-in identifers, be sure to turn off
-USE_COMPILED_MACROS in schminc.h. Otherwise, MzScheme won't start.
+USE_COMPILED_MACROS in schminc.h. Otherwise, Racket won't start.
 See schminc.h for details.

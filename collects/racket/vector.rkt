@@ -4,7 +4,8 @@
          vector-take vector-drop vector-split-at
          vector-take-right vector-drop-right vector-split-at-right
          vector-filter vector-filter-not
-         vector-count vector-argmin vector-argmax)
+         vector-count vector-argmin vector-argmax
+         vector-member vector-memq vector-memv)
 (require racket/unsafe/ops)
 
 ;; unchecked version of `vector-copy'
@@ -50,9 +51,9 @@
 ;; length is passed to save the computation
 (define (vector-map/update f target length vs)
   (for ([i (in-range length)])
-    (unsafe-vector-set!
+    (unsafe-vector*-set!
      target i
-     (apply f (map (lambda (vec) (unsafe-vector-ref vec i)) vs)))))
+     (apply f (map (lambda (vec) (unsafe-vector*-ref vec i)) vs)))))
 
 ;; check that `v' is a vector
 ;; that `v' and all the `vs' have the same length
@@ -68,12 +69,12 @@
      0 f))
   (unless (vector? v)
     (raise-type-error name "vector" 1 v))
-  (let ([len (unsafe-vector-length v)])
+  (let ([len (unsafe-vector*-length v)])
     (for ([e (in-list vs)]
           [i (in-naturals 2)])
       (unless (vector? e)
         (raise-type-error name "vector" e i))
-      (unless (= len (unsafe-vector-length e))
+      (unless (= len (unsafe-vector*-length e))
         (raise
          (make-exn:fail:contract
           (format "~e: all vectors must have same size; ~a"
@@ -129,8 +130,8 @@
             ([i (in-range len)]
              #:when
              (apply f
-                    (unsafe-vector-ref v i)
-                    (map (lambda (v) (unsafe-vector-ref v i)) vs)))
+                    (unsafe-vector*-ref v i)
+                    (map (lambda (v) (unsafe-vector*-ref v i)) vs)))
           (add1 c))
         (error 'vector-count "all vectors must have same size")))
     (for/fold ([cnt 0]) ([i (in-vector v)] #:when (f i))
@@ -141,7 +142,7 @@
     (raise-type-error name "vector" v))
   (unless (exact-nonnegative-integer? n)
     (raise-type-error name "non-negative exact integer" n))
-  (let ([len (unsafe-vector-length v)])
+  (let ([len (unsafe-vector*-length v)])
     (unless (<= 0 n len)
       (raise-mismatch-error
        name
@@ -177,14 +178,14 @@
   (let* ([vs (cons v vs)]
          [lens (for/list ([e (in-list vs)] [i (in-naturals)])
                  (if (vector? e)
-                   (unsafe-vector-length e)
+                   (unsafe-vector*-length e)
                    (raise-type-error 'vector-append "vector" e i)))]
          [new-v (make-vector (apply + lens))])
     (let loop ([start 0] [lens lens] [vs vs])
       (when (pair? lens)
         (let ([len (car lens)] [v (car vs)])
           (for ([i (in-range len)])
-            (unsafe-vector-set! new-v (+ i start) (unsafe-vector-ref v i)))
+            (unsafe-vector*-set! new-v (+ i start) (unsafe-vector*-ref v i)))
           (loop (+ start len) (cdr lens) (cdr vs)))))
     new-v))
 
@@ -194,13 +195,13 @@
                (procedure-arity-includes? f 1))
     (raise-type-error name "procedure (arity 1)" f))
   (unless (and (vector? xs)
-               (< 0 (unsafe-vector-length xs)))
+               (< 0 (unsafe-vector*-length xs)))
     (raise-type-error name "non-empty vector" xs))
-  (let ([init-min-var (f (unsafe-vector-ref xs 0))])
+  (let ([init-min-var (f (unsafe-vector*-ref xs 0))])
     (unless (real? init-min-var)
       (raise-type-error name "procedure that returns real numbers" f))
     (let-values ([(min* min-var*)
-                  (for/fold ([min (unsafe-vector-ref xs 0)]
+                  (for/fold ([min (unsafe-vector*-ref xs 0)]
                              [min-var init-min-var])
                       ([e (in-vector xs 1)])
                     (let ([new-min (f e)])
@@ -214,3 +215,19 @@
 
 (define (vector-argmin f xs) (mk-min < 'vector-argmin f xs))
 (define (vector-argmax f xs) (mk-min > 'vector-argmax f xs))
+
+(define-syntax-rule (vm-mk name cmp)
+  (define (name val vec)
+    (unless (vector? vec)
+      (raise-type-error 'name "vector" 1 vec))
+    (let ([sz (unsafe-vector*-length vec)])
+      (let loop ([k 0])
+        (cond [(= k sz) #f]
+              [(cmp val
+                    (unsafe-vector*-ref vec k))
+               k]
+              [else (loop (unsafe-fx+ 1 k))])))))
+
+(vm-mk vector-member equal?)
+(vm-mk vector-memq eq?)
+(vm-mk vector-memv eqv?)

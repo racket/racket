@@ -1,6 +1,6 @@
 #!/bin/sh
 #|
-exec mzscheme -qu "$0" ${1+"$@"}
+exec racket -qu "$0" ${1+"$@"}
 |#
 
 (module auto mzscheme
@@ -23,7 +23,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
 	  (loop (sub1 n))))
       (- (current-inexact-milliseconds) start)))
 
-  (define (test-mzscheme input rx iterations)
+  (define (test-racket input rx iterations)
     (test-mz input (byte-pregexp rx) iterations))
 
   (define (test-mzunicode input rx iterations)
@@ -272,7 +272,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define benchmark-names (map car inputs))
   
   (define testers
-    (list (list 'mzscheme test-mzscheme)
+    (list (list 'racket test-racket)
           (list 'perl test-perl)
           (list 'python test-python)
           (list 'pcre test-pcre)

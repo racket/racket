@@ -44,7 +44,7 @@ proportional to the depth of the value being printed, due to the
 initial cycle check.}
 
 @defproc[(print [datum any/c][out output-port? (current-output-port)]
-                [exact-nonnegative-integer? qq-depth 0])
+                [qq-depth exact-nonnegative-integer? 0])
          void?]{
 
 Writes @racket[datum] to @racket[out], normally the same way as
@@ -163,13 +163,15 @@ mutable pairs print using @litchar["{"] and @litchar["}"] instead of
 
 @defboolparam[print-unreadable on?]{
 
-A parameter that controls printing values that have no
+A parameter that enables or disables printing of values that have no
 @racket[read]able form (using the default reader), including
 structures that have a custom-write procedure (see
 @racket[prop:custom-write]), but not including @tech{uninterned}
 symbols and @tech{unreadable symbols} (which print the same as
-@tech{interned} symbols); defaults to @racket[#t]. See
-@secref["printing"] for more information.}
+@tech{interned} symbols). If the parameter value is @racket[#f], an
+attempt to print an unreadable value raises @racket[exn:fail]. The
+parameter value defaults to @racket[#t]. See @secref["printing"] for
+more information.}
 
 @defboolparam[print-graph on?]{
 

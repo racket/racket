@@ -3,53 +3,53 @@
           scribble/bnf
           scribble/eval
           "utils.ss"
-          (for-syntax scheme/base)
+          (for-syntax racket/base)
           (for-label (only-in scribble/reader
                               use-at-readtable)))
 
 @(define read-eval (make-base-eval))
-@(interaction-eval #:eval read-eval (require (for-syntax scheme/base)))
+@(interaction-eval #:eval read-eval (require (for-syntax racket/base)))
 
 @title[#:tag "reader-internals"]{@"@" Reader Internals}
 
 @;--------------------------------------------------------------------
 @section{Using the @"@" Reader}
 
-You can use the reader via Scheme's @schemefont{#reader} form:
+You can use the reader via Racket's @racketfont{#reader} form:
 
-@schemeblock[
- @#,schemefont|{
+@racketblock[
+ @#,racketfont|{
      #reader scribble/reader @foo{This is free-form text!}
 }|]
 
-or use the @scheme[at-exp] meta-language as described in
+or use the @racket[at-exp] meta-language as described in
 @secref["at-exp-lang"].
 
 Note that the Scribble reader reads @"@"-forms as S-expressions.  This
 means that it is up to you to give meanings for these expressions in
-the usual way: use Scheme functions, define your functions, or require
-functions.  For example, typing the above into @exec{mzscheme} is likely
+the usual way: use Racket functions, define your functions, or require
+functions.  For example, typing the above into @exec{racket} is likely
 going to produce a ``reference to undefined identifier'' error, unless
-@scheme[foo] is defined. You can use @scheme[string-append] instead,
-or you can define @scheme[foo] as a function (with variable arity).
+@racket[foo] is defined. You can use @racket[string-append] instead,
+or you can define @racket[foo] as a function (with variable arity).
 
 A common use of the Scribble @"@"-reader is when using Scribble as a
 documentation system for producing manuals.  In this case, the manual
 text is likely to start with
 
-@schememod[scribble/doc]
+@racketmod[scribble/doc]
 
 which installs the @"@" reader starting in ``text mode,'' wraps the
-file content afterward into a Scheme module where many useful Scheme
+file content afterward into a Racket module where many useful Racket
 and documentation related functions are available, and parses the body
-into a document using @schememodname[scribble/decode].  See
+into a document using @racketmodname[scribble/decode].  See
 @secref["docreader"] for more information.
 
-Another way to use the reader is to use the @scheme[use-at-readtable]
+Another way to use the reader is to use the @racket[use-at-readtable]
 function to switch the current readtable to a readtable that parses
 @"@"-forms.  You can do this in a single command line:
 
-@commandline{mzscheme -ile scribble/reader "(use-at-readtable)"}
+@commandline{racket -ile scribble/reader "(use-at-readtable)"}
 
 @;--------------------------------------------------------------------
 @section{Syntax Properties}
@@ -57,12 +57,12 @@ function to switch the current readtable to a readtable that parses
 The Scribble reader attaches properties to syntax objects.  These
 properties might be useful in some rare situations.
 
-Forms that Scribble reads are marked with a @scheme['scribble]
+Forms that Scribble reads are marked with a @racket['scribble]
 property, and a value of a list of three elements: the first is
-@scheme['form], the second is the number of items that were read from
+@racket['form], the second is the number of items that were read from
 the datum part, and the third is the number of items in the body part
-(strings, sub-forms, and escapes).  In both cases, a @scheme[0] means
-an empty datum/body part, and @scheme[#f] means that the corresponding
+(strings, sub-forms, and escapes).  In both cases, a @racket[0] means
+an empty datum/body part, and @racket[#f] means that the corresponding
 part was omitted.  If the form has neither parts, the property is not
 attached to the result.  This property can be used to give different
 meanings to expressions from the datum and the body parts, for
@@ -102,10 +102,10 @@ example, implicitly quoted keywords:
 
 In addition, the Scribble parser uses syntax properties to mark syntax
 items that are not physically in the original source --- indentation
-spaces and newlines.  Both of these will have a @scheme['scribble]
+spaces and newlines.  Both of these will have a @racket['scribble]
 property; an indentation string of spaces will have
-@scheme['indentation] as the value of the property, and a newline will
-have a @scheme['(newline S)] value where @scheme[S] is the original
+@racket['indentation] as the value of the property, and a newline will
+have a @racket['(newline S)] value where @racket[S] is the original
 newline string including spaces that precede and follow it (which
 includes the indentation for the following item).  This can be used to
 implement a verbatim environment: drop indentation strings, and use
@@ -147,26 +147,26 @@ is an example of this.
 @;--------------------------------------------------------------------
 @section[#:tag "at-exp-lang"]{Adding @"@"-expressions to a Language}
 
-@defmodulelang[at-exp]{The @schememodname[at-exp] language installs
+@defmodulelang[at-exp]{The @racketmodname[at-exp] language installs
 @"@"-reader support in the readtable, and then chains to the reader of
 another language that is specified immediately after
-@schememodname[at-exp].}
+@racketmodname[at-exp].}
 
-For example, @scheme[@#,hash-lang[] at-exp scheme/base] adds @"@"-reader
-support to @scheme[scheme/base], so that
+For example, @racket[@#,hash-lang[] at-exp racket/base] adds @"@"-reader
+support to @racket[racket/base], so that
 
-@schememod[
-at-exp scheme/base
+@racketmod[
+at-exp racket/base
 
-(define (greet who) @#,elem{@tt["@"]@scheme[string-append]@schemeparenfont["{"]@schemevalfont{Hello, }@tt["@|"]@scheme[who]@tt["|"]@schemevalfont{.}@schemeparenfont["}"]})
+(define (greet who) @#,elem{@tt["@"]@racket[string-append]@racketparenfont["{"]@racketvalfont{Hello, }@tt["@|"]@racket[who]@tt["|"]@racketvalfont{.}@racketparenfont["}"]})
 (greet "friend")]
 
-reports @scheme["Hello, friend."].
+reports @racket["Hello, friend."].
 
 @;--------------------------------------------------------------------
 @section{Interface}
 
-@defmodule[scribble/reader]{The @schememodname[scribble/reader] module
+@defmodule[scribble/reader]{The @racketmodname[scribble/reader] module
 provides direct Scribble reader functionality for advanced needs.}
 
 @; The `with-scribble-read' trick below shadows `read' and
@@ -193,7 +193,7 @@ for reading.
 @defproc[(read-syntax-inside [source-name any/c (object-name in)]
                              [in input-port? (current-input-port)])
          (or/c syntax? eof-object?)]{
-These @schemeid[-inside] variants parse as if starting inside a
+These @racketid[-inside] variants parse as if starting inside a
 @litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
 Useful for implementing languages that are textual by default (see
 @filepath{docreader.ss} for example).
@@ -216,26 +216,26 @@ resulting reader in several ways:
 
 @itemize[
 
-@item{@scheme[readtable] --- a readtable to base the @"@"-readtable
+@item{@racket[readtable] --- a readtable to base the @"@"-readtable
   on.}
 
-@item{@scheme[command-char] --- the character used for @"@"-forms.}
+@item{@racket[command-char] --- the character used for @"@"-forms.}
 
-@item{@scheme[datum-readtable] --- determines the readtable used for
-  reading the datum part.  A @scheme[#t] values uses the
+@item{@racket[datum-readtable] --- determines the readtable used for
+  reading the datum part.  A @racket[#t] values uses the
   @"@"-readtable, otherwise it can be a readtable, or a
   readtable-to-readtable function that will construct one from the
   @"@"-readtable.  The idea is that you may want to have completely
   different uses for the datum part, for example, introducing a
   convenient @litchar{key=val} syntax for attributes.}
 
-@item{@scheme[syntax-post-proc] --- function that is applied on
+@item{@racket[syntax-post-proc] --- function that is applied on
   each resulting syntax value after it has been parsed (but before it
   is wrapped quoting punctuations).  You can use this to further
   control uses of @"@"-forms, for example, making the command be the
   head of a list:
 
-  @schemeblock[
+  @racketblock[
     (use-at-readtable
       #:syntax-post-processor
       (lambda (stx)
@@ -249,31 +249,31 @@ resulting reader in several ways:
 @defproc[(make-at-reader [#:syntax? syntax? #t] [#:inside? inside? #f] ...)
           procedure?]{
 Constructs a variant of a @"@"-readtable.  The arguments are the same
-as in @scheme[make-at-readtable], with two more that determine the
-kind of reader function that will be created: @scheme[syntax?] chooses
-between a @scheme[read]- or @scheme[read-syntax]-like function, and
-@scheme[inside?] chooses a plain reader or an @schemeid[-inside]
+as in @racket[make-at-readtable], with two more that determine the
+kind of reader function that will be created: @racket[syntax?] chooses
+between a @racket[read]- or @racket[read-syntax]-like function, and
+@racket[inside?] chooses a plain reader or an @racketid[-inside]
 variant.
 
 The resulting function has a different contract and action based on
-these inputs.  The expected inputs are as in @scheme[read] or
-@scheme[read-syntax] depending on @scheme[syntax?]; the function will
-read a single expression or, if @scheme[inside?] is true, the whole
+these inputs.  The expected inputs are as in @racket[read] or
+@racket[read-syntax] depending on @racket[syntax?]; the function will
+read a single expression or, if @racket[inside?] is true, the whole
 input; it will return a syntactic list of expressions rather than a
 single one in this case.
 
-Note that @scheme[syntax?] defaults to @scheme[#t], as this is the
+Note that @racket[syntax?] defaults to @racket[#t], as this is the
 more expected common case when you're dealing with concrete-syntax
 reading.
 
-Note that if @scheme[syntax?] is true, the @scheme[read]-like function
+Note that if @racket[syntax?] is true, the @racket[read]-like function
 is constructed by simply converting a syntax result back into a datum.}
 
 @defproc[(use-at-readtable ...) void?]{
 
-Passes all arguments to @scheme[make-at-readtable], and installs the
-resulting readtable using @scheme[current-readtable]. It also enables
-line counting for the current input-port via @scheme[port-count-lines!].
+Passes all arguments to @racket[make-at-readtable], and installs the
+resulting readtable using @racket[current-readtable]. It also enables
+line counting for the current input-port via @racket[port-count-lines!].
 
 This is mostly useful for playing with the Scribble syntax on the REPL.}
 

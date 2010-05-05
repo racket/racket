@@ -103,24 +103,26 @@ of the required keywords of @scheme[proc].
 
 For applications without keywords, the result of @scheme[wrapper-proc]
 must be either the same number of values as supplied to it or one more
-than the number of supplied values. For each supplied value, the
-corresponding result must be the same or a chaperone of (in the sense
-of @scheme[chaperone-of?]) the supplied value. The additional result,
-if any, must be a procedure that accepts as many results as produced
-by @scheme[proc]; it must return the same number of results, each of
-which is the same or a chaperone of the corresponding original result.
-If @scheme[wrapper-proc] returns the same number of values as it is
-given (i.e., it does not return a procedure to chaperone
-@scheme[proc]'s result), then @scheme[proc] is called in @tech{tail
-position} with respect to the call to the chaperone.
+than the number of supplied values, where an extra result is supplied
+before the others. For each supplied value, the corresponding result
+must be the same or a chaperone of (in the sense of
+@scheme[chaperone-of?])  the supplied value. The additional result, if
+any, that precedes the chaperoned values must be a procedure that
+accepts as many results as produced by @scheme[proc]; it must return
+the same number of results, each of which is the same or a chaperone
+of the corresponding original result.  If @scheme[wrapper-proc]
+returns the same number of values as it is given (i.e., it does not
+return a procedure to chaperone @scheme[proc]'s result), then
+@scheme[proc] is called in @tech{tail position} with respect to the
+call to the chaperone.
 
 For applications that include keyword arguments, @scheme[wrapper-proc]
-must return an additional value before any other values. The
-additional value must be a list of chaperones of the keyword arguments
-that were supplied to the chaperoned procedure (i.e., not counting
-optional arguments that were not supplied). The arguments must be
-ordered according to the sorted order of the supplied arguments'
-keywords.
+must return an additional value before any other values but after the
+result-chaperoning procedure (if any). The additional value must be a
+list of chaperones of the keyword arguments that were supplied to the
+chaperoned procedure (i.e., not counting optional arguments that were
+not supplied). The arguments must be ordered according to the sorted
+order of the supplied arguments' keywords.
 
 Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[procedure-chaperone] must be even) add chaperone properties
@@ -231,37 +233,42 @@ or override chaperone-property values of @scheme[bx].}
 
 
 @defproc[(chaperone-hash [hash hash?]
-                         [ref-proc (hash? any/c any/c . -> . any/c)]
-                         [set-proc (hash? any/c any/c . -> . any/c)]
+                         [ref-proc (hash? any/c . -> . (values 
+                                                        any/c 
+                                                        (hash? any/c any/c . -> . any/c)))]
+                         [set-proc (hash? any/c any/c . -> . (values any/c any/c))]
                          [remove-proc (hash? any/c . -> . any/c)]
                          [key-proc (hash? any/c . -> . any/c)]
                          [prop chaperone-property?]
                          [val any] ... ...)
-          (and/c vector? chaperone?)]{
+          (and/c hash? chaperone?)]{
 
 Returns a chaperoned value like @scheme[hash], but with
 @scheme[hash-ref], @scheme[hash-set!] or @scheme[hash-set] (as
 applicable) and @scheme[hash-remove] or @scheme[hash-remove!] (as
-application) operations on the chaperoned hash table redirected.  When
+application) operations on the chaperoned hash table redirected. When
 @scheme[hash-set] or @scheme[hash-remove] is used on a chaperoned hash
 table, the resulting hash table is given all of the chaperones of the
 given hash table. In addition, operations like
-@scheme[hash-iterate-key] or @scheme[hash-iterate-map], which extract
+@scheme[hash-iterate-key] or @scheme[hash-map], which extract
 keys from the table, use @scheme[key-proc] to filter keys extracted
 from the table. Operations like @scheme[hash-iterate-value] or
 @scheme[hash-iterate-map] implicitly use @scheme[hash-ref] and
 therefore redirect through @scheme[ref-proc].
 
-The @scheme[ref-proc] must accept @scheme[hash], an key passed
-@scheme[hash-ref], and the value that @scheme[hash-ref] on
-@scheme[hash] produces for the given key; it must produce the same
-value or a chaperone of the value, which is the result of
-@scheme[hash-ref] on the chaperone.
+The @scheme[ref-proc] must accept @scheme[hash] and a key passed
+@scheme[hash-ref]. It must returned the key or a chaperone of the key
+as well as a procedure. The returned procedure is called only if the
+returned key is found in @scheme[hash] via @scheme[hash-ref], in which
+case the procedure is called with @scheme[hash], the previously
+returned key, and the found value. The returned procedure must itself
+return the found value or a chaperone of the value.
 
 The @scheme[set-proc] must accept @scheme[hash], a key passed to
 @scheme[hash-set!] or @scheme[hash-set], and the value passed to
-@scheme[hash-set!] or @scheme[hash-set]; it must produce the same
-value or a chaperone of the value, which is used with
+@scheme[hash-set!] or @scheme[hash-set]; it must produce two values:
+the same key or a chaperone of the key and the same value or a
+chaperone of the value. The returned key and value are used with
 @scheme[hash-set!] or @scheme[hash-set] on the original @scheme[hash]
 to install the value.
 

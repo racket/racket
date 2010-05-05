@@ -1,0 +1,35 @@
+Racket v5.0 is the first release under the name "Racket". The Racket
+core was formerly named "MzScheme" and the overall package was
+formerly named "PLT Scheme".
+
+The Racket language is slightly different from the PLT Scheme language
+of v4.x:
+
+ * The preferred form for creating new structure types is now
+   `struct', which is like `define-struct', but it does not bind a
+   constructor with a `make-' prefix; instead, the structure-type name
+   doubles as its constructor.
+
+ * The default printing mode uses `quasiquote' to print values such as
+   lists and vectors. It prints instances of transparent structure
+   types as expressions.
+
+The old PLT Scheme language is still provided by the libraries
+`scheme', `scheme/base, etc. The new Racket language is provided by
+`racket', `racket/base', etc.  The `mzscheme' executable starts
+`racket' with `scheme/init' as the start-up language instead of
+`racket/init'.
+
+To improve compatibility between Racket and v4.x programs and libraries,
+
+ * the `racket' language includes the old `define-struct' form, and
+
+ * the `define-struct' form of `scheme' binds the type name as a
+   constructor, in addition to binding a `make-' prefixed name.
+
+Beware, however, that `scheme/unit' (and, hence, `scheme') exports a
+`struct' form for use in signatures that is different from the
+`struct' now exported by `racket'.
+
+The `slideshow' and `scribble/base' languages are now derived from
+`racket' and `racket/base' instead of `scheme' and `scheme/base'.

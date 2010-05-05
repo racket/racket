@@ -3,7 +3,7 @@
 
 @title{Evaluation}
 
-A Scheme S-expression is evaluated by calling @cppi{scheme_eval}.
+A Racket S-expression is evaluated by calling @cppi{scheme_eval}.
 This function takes an S-expression (as a @cpp{Scheme_Object*}) and a
 namespace and returns the value of the expression in that namespace.
 
@@ -12,7 +12,7 @@ a procedure, the number of arguments to pass to the procedure, and an
 array of @cpp{Scheme_Object *} arguments. The return value is the
 result of the application. There is also a function
 @cppi{scheme_apply_to_list}, which takes a procedure and a list
-(constructed with @cppi{scheme_make_pair}) and performs the Scheme
+(constructed with @cppi{scheme_make_pair}) and performs the Racket
 @scheme[apply] operation.
 
 The @cppi{scheme_eval} function actually calls @cppi{scheme_compile}
@@ -43,15 +43,15 @@ see @secref["exceptions"].
 
 @section-index{tail recursion}
 
-All of Scheme's built-in functions and syntax support proper
+All of Racket's built-in functions and syntax support proper
 tail-recursion. When a new primitive procedure or syntax is added to
-Scheme, special care must be taken to ensure that tail recursion is
+Racket, special care must be taken to ensure that tail recursion is
 handled properly. Specifically, when the final return value of a
 function is the result of an application, then
 @cppi{scheme_tail_apply} should be used instead of
 @cppi{scheme_apply}.  When @cppi{scheme_tail_apply} is called, it
 postpones the procedure application until control returns to the
-Scheme evaluation loop.
+Racket evaluation loop.
 
 For example, consider the following implementation of a
 @scheme[thunk-or] primitive, which takes any number of thunks and
@@ -158,9 +158,9 @@ Non-top-level version of @cpp{scheme_eval_compiled_multi}. (See @secref["topleve
 
 @function[(Scheme_Env* scheme_basic_env)]{
 
-Creates the main namespace for an embedded PLT Scheme. This procedure
-must be called before other Scheme library function (except
-@cpp{scheme_make_param}). Extensions to Scheme cannot call this
+Creates the main namespace for an embedded Racket. This procedure
+must be called before other Racket library function (except
+@cpp{scheme_make_param}). Extensions to Racket cannot call this
 function.
 
 If it is called more than once, this function resets all threads
@@ -176,7 +176,7 @@ Creates and returns a new namespace. This values can be cast to
 a parameterization using @cppi{scheme_set_param} with
 @cppi{MZCONFIG_ENV}.
 
-When PLT Scheme is embedded in an application, create the initial
+When Racket is embedded in an application, create the initial
 namespace with @cppi{scheme_basic_env} before calling this procedure
 to create new namespaces.}
 

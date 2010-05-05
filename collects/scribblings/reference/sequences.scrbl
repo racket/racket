@@ -193,6 +193,14 @@ its value from @scheme[hash] (as opposed to using @scheme[hash] directly
 as a sequence to get the key and value as separate values for each
 element).}
 
+@defproc[(in-directory [dir (or/c #f path-string?)]) sequence?]{
+
+Return a sequence that produces all of the paths for files,
+directories, and links with @racket[dir]. If @racket[dir] is not
+@racket[#f], then every produced path starts with @racket[dir] as its
+prefix. If @racket[dir] is @racket[#f], then paths in and relative to
+the current directory are produced.}
+
 @defproc[(in-producer [producer procedure?] [stop any/c] [args any/c] ...)
          sequence?]{
 Returns a sequence that contains values from sequential calls to

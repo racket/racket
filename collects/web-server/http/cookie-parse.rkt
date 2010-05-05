@@ -6,7 +6,7 @@
 
 (define-struct client-cookie 
   (name value domain path)
-  #:transparent)
+  #:prefab)
 
 (provide/contract
  [struct client-cookie 
@@ -41,19 +41,21 @@
    qdtext         = <any TEXT except <">>
 |#
 (define-lex-abbrevs
-  (tspecial (:or (char-set "()<>@,;:\\\"/[]?={}") whitespace #\tab))
+  (illegal (char-set "()<>@:/[]?{}"))
+  (tspecial (:or (char-set "()<>@,;\\\"/[]?={}") whitespace #\tab))
   (token-char (:- any-char tspecial iso-control)))
 
-(define-tokens regular (TOKEN QUOTED-STRING))
+(define-tokens regular (TOKEN QUOTED-STRING ILLEGAL))
 (define-empty-tokens keywords (EQUALS SEMI COMMA PATH DOMAIN VERSION EOF))
 
-(define cookie-lexer
+(define lex-cookie
   (lexer-src-pos
    [(eof) (token-EOF)]
-   [whitespace (return-without-pos (cookie-lexer input-port))]
+   [whitespace (return-without-pos (lex-cookie input-port))]
    ["=" (token-EQUALS)]
    [";" (token-SEMI)]
    ["," (token-COMMA)]
+   [(:+ illegal) (token-ILLEGAL lexeme)]
    ["$Path" (token-PATH)]
    ["$Domain" (token-DOMAIN)]
    ["$Version" (token-VERSION)]
@@ -70,29 +72,35 @@
         (position-offset start-pos)
         (- (position-offset end-pos) (position-offset start-pos))))
 
-(define assoc-list-parser
+(define parse-raw-cookies
   (parser (src-pos)
-          (start cookie)
+          (start items)
           (tokens regular keywords)
-          (grammar (cookie [(VERSION EQUALS rhs separator items) $5]
-                           [(items) $1])
-                   (items [(item separator items) (cons $1 $3)]
+          (grammar (items [(item separator items) (cons $1 $3)]
                           [(item) (list $1)])
-                   (separator
-                    [(COMMA) #t]
-                    [(SEMI) #t])
+                   (separator [(COMMA) #t]
+                              [(SEMI) #t])
                    (item [(lhs EQUALS rhs) (cons $1 $3)]
                          ; This is not part of the spec. It is illegal
                          [(lhs EQUALS) (cons $1 "")])
-                   (lhs [(DOMAIN) 'domain]
+                   (lhs [(VERSION) "$Version"]
+                        [(DOMAIN) 'domain]
                         [(PATH) 'path]
                         [(TOKEN) $1])
-                   (rhs [(TOKEN) $1]
-                        [(QUOTED-STRING) $1]))
+                   (rhs [(TOKEN) $1] ; This is legal, but is subsumed by the illegal rule
+                        [(QUOTED-STRING) $1]
+                        ; This is not part of the spec. It is illegal
+                        [(illegal) $1])
+                   (illegal
+                    [(EQUALS) "="]
+                    [(ILLEGAL) $1]
+                    [(illegal illegal) (string-append $1 $2)]
+                    [(TOKEN) $1]))
+          (suppress) ; The illegal rule creates many conflicts
           (end EOF)
           (error (lambda (tok-ok? tok-name tok-value start-pos end-pos)
                    (raise-syntax-error
-                    'assoc-list-parser
+                    'parse-cookies
                     (format 
                      (if tok-ok? 
                          "Did not expect token ~a"
@@ -100,58 +108,38 @@
                      tok-name)
                     (datum->syntax #f tok-value (make-srcloc start-pos end-pos)))))))
 
-(define (do-parse str)
-  (with-handlers ([exn:fail? 
-                   (λ (e) empty)])
-    (with-input-from-string 
-     str
-     (λ () 
-       (let ([ip (current-input-port)])
-         (port-count-lines! ip)
-         (parameterize ([current-source-name (object-name ip)])
-           (raw->cookies (assoc-list-parser (λ () (cookie-lexer ip))))))))))
+(define (parse-cookie-likes ip)
+  (parse-raw-cookies (λ () (lex-cookie ip))))
+
+(define (parse-cookies str)
+  (with-input-from-string 
+      str
+    (λ () 
+      (define ip (current-input-port))
+      (port-count-lines! ip)
+      (parameterize ([current-source-name (object-name ip)])
+        (raw->cookies (parse-cookie-likes ip))))))
 
 ;; raw->cookies : flat-property-list -> (listof cookie)
-(define (raw->cookies associations)
-  
-  ;; get-cookie-setter : symbol -> cookie string -> cookie
-  ;; gets a setter for the given property
-  (define (get-cookie-setter property-name)
-    (case property-name
-      [(domain)
-       (λ (c x) 
-         (struct-copy client-cookie c
-                      [domain x]))]      
-      [(path)
-       (λ (c x) 
-         (struct-copy client-cookie c
-                      [path x]))]
-      [else 
-       (λ (c x) c)]))
-  
-  (unless (and (pair? associations) (string? (car (car associations))))
-    (error 'raw->cookies "expected a non-empty association list headed by a cookie"))
-  
-  (let loop ([l (cdr associations)]
-             [c (make-client-cookie (car (car associations))
-                                    (cdr (car associations))
-                                    #f #f)])
-    (cond
-      [(null? l) (list c)]
-      [(string? (car (car l)))
-       (cons c (loop (cdr l) (make-client-cookie
-                              (car (car l))
-                              (cdr (car l))
-                              #f #f)))]
-      [else
-       (loop (cdr l)
-             ((get-cookie-setter (car (car l))) c (cdr (car l))))])))
+(define raw->cookies
+  (match-lambda
+    [(list-rest (cons (? string? key) val) l)
+     (let loop ([l l] [c (make-client-cookie key val #f #f)])
+       (match l
+         [(list)
+          (list c)]
+         [(list-rest (cons (? string? key) val) l)
+          (list* c (loop l (make-client-cookie key val #f #f)))]
+         [(list-rest (cons 'domain val) l)
+          (loop l (struct-copy client-cookie c [domain val]))]
+         [(list-rest (cons 'path val) l)
+          (loop l (struct-copy client-cookie c [path val]))]))]))
 
 ;; request-cookies* : request -> (listof cookie)
 (define (request-cookies req)
   (define hdrs (request-headers/raw req))
   (apply append
-         (map (compose do-parse bytes->string/utf-8 header-value)
+         (map (compose parse-cookies bytes->string/utf-8 header-value)
               (filter (lambda (h)
                         (bytes-ci=? #"Cookie" (header-field h)))
                       hdrs))))

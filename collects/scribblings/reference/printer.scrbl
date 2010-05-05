@@ -238,7 +238,8 @@ for which the structure is an instance:
 
  @item{If the structure has a @scheme[prop:custom-write] property
        value, then the associated procedure is used to print the
-       structure.}
+       structure, unless the @racket[print-unreadable] parameter is
+       set to @racket[#f].}
 
  @item{If the structure type is transparent, or if any ancestor is
        transparent, then the structure prints as the vector produced
@@ -335,7 +336,10 @@ starting with @litchar{#px} (for @scheme[pregexp]-based regexps) or
 
 @section[#:tag "print-unreadable"]{Printing Unreadable Values}
 
-For any value with no other printing specification, the output form is
-@litchar{#<}@nonterm{something}@litchar{>}, where @nonterm{something}
-is specific to the type of the value and sometimes to the value
-itself.
+For any value with no other printing specification, assuming that the
+@racket[print-unreadable] parameter is set to @racket[#t], the output
+form is @litchar{#<}@nonterm{something}@litchar{>}, where
+@nonterm{something} is specific to the type of the value and sometimes
+to the value itself. If @racket[print-unreadable] is set to
+@racket[#f], then attempting to print an unreadable value raises
+@racket[exn:fail].

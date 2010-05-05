@@ -30,6 +30,7 @@
          check-=
          check-not-false
          check-not-eq?
+         check-not-eqv?
          check-not-equal?
          fail)
 
@@ -174,7 +175,7 @@
 
 (define-syntax define-binary-check
   (syntax-rules ()
-    ((_ (name expr1 expr2) expr ...)
+    [(_ (name expr1 expr2) expr ...)
      (define-check (name expr1 expr2)
        (with-check-info*
         (list (make-check-actual expr1)
@@ -183,8 +184,8 @@
           (let ((result (begin expr ...)))
             (if result
                 result
-                (fail-check)))))))
-    ((_ (name pred expr1 expr2))
+                (fail-check))))))]
+    [(_ (name pred expr1 expr2))
      (define-check (name expr1 expr2)
        (with-check-info*
         (list (make-check-actual expr1)
@@ -192,7 +193,7 @@
         (lambda ()
           (if (pred expr1 expr2)
               #t
-              (fail-check))))))))
+              (fail-check)))))]))
 
 (define-check (check-exn pred thunk)
   (let/ec succeed
@@ -262,6 +263,9 @@
 
 (define-simple-check (check-not-eq? expr1 expr2)
   (not (eq? expr1 expr2)))
+
+(define-simple-check (check-not-eqv? expr1 expr2)
+  (not (eqv? expr1 expr2)))
 
 (define-simple-check (check-not-equal? expr1 expr2)
   (not (equal? expr1 expr2)))

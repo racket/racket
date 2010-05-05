@@ -2,6 +2,10 @@
 @(require (for-syntax racket)
           (for-label (only-in scheme/foreign unsafe! provide* define-unsafer)
                      (only-in scheme/base make-base-namespace make-base-empty-namespace)
+                     (only-in scheme/pretty pretty-print)
+                     (only-in racket/pretty pretty-write)
+                     (only-in scheme/class printable<%>)
+                     (only-in racket/class writable<%>)
                      scheme/gui/base
                      scheme/sandbox))
 
@@ -10,24 +14,31 @@
                                  make-base-empty-namespace-id
                                  sandbox-namespace-specs-id
                                  make-evaluator-id
-                                 make-module-evaluator-id)
+                                 make-module-evaluator-id
+                                 pretty-print-id
+                                 printable<%>-id)
   (begin
     (require (for-label (only-in scheme struct)
                         (only-in racket/base make-base-namespace
                                              make-base-empty-namespace)
+                        (only-in racket/pretty pretty-print)
                         racket/sandbox))
     (define unit-struct (racket struct))
     (define make-base-namespace-id (racket make-base-namespace))
     (define make-base-empty-namespace-id (racket make-base-empty-namespace))
     (define sandbox-namespace-specs-id (racket sandbox-namespace-specs))
     (define make-evaluator-id (racket make-evaluator))
-    (define make-module-evaluator-id (racket make-module-evaluator))))
+    (define make-module-evaluator-id (racket make-module-evaluator))
+    (define pretty-print-id (racket pretty-print))
+    (define printable<%>-id (racket printable<%>))))
 @(def-extras unit-struct
              make-base-namespace-id
              make-base-empty-namespace-id
              sandbox-namespace-specs-id
              make-evaluator-id
-             make-module-evaluator-id)
+             make-module-evaluator-id
+             pretty-print-id
+             printable<%>-id)
 
 @(define-syntax-rule (compat-except sid rid . rest)
    (begin
@@ -37,21 +48,24 @@
 @(define-syntax-rule (compat sid rid)
    (compat-except sid rid))
 
-@title{@bold{Scheme}: Compatibility Libraries}
+@title{@bold{Scheme}: Compatibility Libraries and Executables}
 
 Racket was once called ``PLT Scheme,'' and a number of libraries with
 names starting @schemeidfont{scheme} provide compatibility with the
-old name.
+old name. A few @seclink["compat-exe"]{old executables} are also provided.
 
 @table-of-contents[]
 
 @compat-except[scheme racket]{, except that @schememodname[racket]'s
 @scheme[struct] is not exported, the @|unit-struct| from
-@schememodname[scheme/unit] is exported, @schememodname[scheme/set]
-is not re-exported, and @schememodname[scheme/nest] is re-exported}
+@schememodname[scheme/unit] is exported, @schememodname[scheme/set] is
+not re-exported, @racket[pretty-print] is re-directed in as
+@racketmodname[scheme/pretty], and @schememodname[scheme/nest] is
+re-exported}
 
 @compat-except[scheme/base racket/base]{, except that
-@schememodname[racket]'s @scheme[struct] is not exported, and
+@schememodname[racket]'s @scheme[struct] is not exported, @scheme[in-directory]
+is not exported, and
 @scheme[make-base-namespace] and @scheme[make-base-empty-namespace]
 are different}
 
@@ -68,7 +82,21 @@ with @schememodname[scheme/base] attached.}
 
 @compat[scheme/async-channel racket/async-channel]
 @compat[scheme/bool racket/bool]
-@compat[scheme/class racket/class]
+
+@; ----------------------------------------------------------------------
+
+@compat-except[scheme/class racket/class]{, except that
+@racket[writable<%>] is exported under the name @racket[printable<%>]
+(and @|printable<%>-id| from @schememodname[racket/class] is not
+exported)}
+
+@defthing[printable<%> interface?]{
+
+An alias for @racket[writable<%>].
+}
+
+@; ----------------------------------------------------------------------
+
 @compat[scheme/cmdline racket/cmdline]
 @compat[scheme/contract racket/contract]
 @compat[scheme/control racket/control]
@@ -180,7 +208,21 @@ than a precise prose description:
 @compat[scheme/package racket/package]
 @compat[scheme/path racket/path]
 @compat[scheme/port racket/port]
-@compat[scheme/pretty racket/pretty]
+
+@; ----------------------------------------
+
+@compat-except[scheme/pretty racket/pretty]{, except that
+@racket[pretty-write] is exported under the name @racket[pretty-print]
+(and @|pretty-print-id| from @schememodname[racket/pretty] is not
+exported)}
+
+@defproc[(pretty-print [v any/c] [port output-port? (current-output-port)])
+         void?]{
+
+An alias for @racket[pretty-write].}
+
+@; ----------------------------------------
+
 @compat[scheme/promise racket/promise]
 @compat[scheme/provide racket/provide]
 @compat[scheme/provide-syntax racket/provide-syntax]
@@ -245,3 +287,6 @@ and @|make-module-evaluator-id| from @racketmodname[racket/sandbox].}
 @compat[scheme/unsafe/ops racket/unsafe/ops]
 @compat[scheme/vector racket/vector]
 
+@; ----------------------------------------
+
+@include-section["compat.scrbl"]

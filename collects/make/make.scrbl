@@ -12,7 +12,7 @@
                      dynext/file-sig
                      compiler/sig))
 
-@(define mzc-manual @other-manual['(lib "scribblings/mzc/mzc.scrbl")])
+@(define raco-manual @other-manual['(lib "scribblings/raco/raco.scrbl")])
 
 @title{@bold{Make}: Dependency Manager}
 
@@ -27,8 +27,8 @@ syntax of @exec{make}, only in Scheme.
 @section[#:tag "overview"]{Overview}
 
 @margin-note{If you want to build Scheme modules with automatic
-dependency tracking, just use @exec{mzc} as described in
-@|mzc-manual|.}
+dependency tracking, just use @exec{raco make} as described in
+@|raco-manual|.}
 
 If you are already familiar with @exec{make}, skip to the precise
 details of the @schememodname[make] library in @secref["make"]. This
@@ -238,8 +238,8 @@ A unit that imports nothing and exports @scheme[make^].}
 
 The @schememodname[make/setup-extension] library helps compile C code
 via Setup PLT's ``pre-install'' phase (triggered by a
-@schemeidfont{pre-install-collection} item in @filepath{info.ss}; see
-also @secref[#:doc '(lib "scribblings/setup-plt/setup-plt.scrbl")
+@schemeidfont{pre-install-collection} item in @filepath{info.rkt}; see
+also @secref[#:doc '(lib "scribblings/raco/raco.scrbl")
 "setup-info"]).
 
 The @scheme[pre-install] function takes a number of arguments that
@@ -361,7 +361,7 @@ The arguments are as follows:
     AIX-specific compile flag in this step when compiling under AIX.}
 
   @item{@scheme[3m-too?]--- a boolean. If true, when the 3m variant is
-    installed, use the equivalent to @exec{mzc --xform} to transform
+    installed, use the equivalent to @exec{raco ctool --xform} to transform
     the source file and then compile and link for 3m. Otherwise, the
     extension is built only for CGC when the CGC variant is installed.}
 
@@ -384,8 +384,8 @@ managing dependencies. Supply @scheme['#("zo")] as @scheme[argv] to
 compile all files. The @scheme[collection-name] argument is used only
 for printing status information.
 
-Compilation is performed as with @exec{mzc --make} (see
-@|mzc-manual|).}
+Compilation is performed as with @exec{raco make} (see
+@|raco-manual|).}
 
 @subsection{Signature}
 

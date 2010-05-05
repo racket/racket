@@ -360,7 +360,7 @@ Editor data is read and written using @scheme[editor-stream-in%] and
  @scheme[write-editor-global-footer]. Similarly, reading editors from
  a stream is initialized with @scheme[read-editor-global-header] and
  finalized with @scheme[read-editor-global-footer]. Optionally, to
- support streams that span versions of PLT Scheme, use
+ support streams that span versions of Racket, use
  @scheme[write-editor-version] and @scheme[read-editor-version] before
  the header operations.
 

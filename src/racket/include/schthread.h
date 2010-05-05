@@ -30,7 +30,7 @@ extern "C" {
 # if _MSC_VER
 #  define THREAD_LOCAL /* empty */
 #  define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-# elif defined(OS_X) || defined(GC2_PLACES_TESTING)
+# elif (defined(__APPLE__) && defined(__MACH__)) || defined(GC2_PLACES_TESTING)
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
 #   define INLINE_GETSPECIFIC_ASSEMBLY_CODE
@@ -281,6 +281,8 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *dummy_input_port_;
   struct Scheme_Object *dummy_output_port_;
   struct Scheme_Bucket_Table *place_local_modpath_table_;
+  struct Scheme_Hash_Table *opened_libs_;
+  struct mzrt_mutex *jit_lock_;
 /*KPLAKE1*/
 } Thread_Local_Variables;
 
@@ -300,7 +302,7 @@ START_XFORM_SKIP;
 static inline Thread_Local_Variables *scheme_get_thread_local_variables() __attribute__((used));
 static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
   Thread_Local_Variables *x = NULL;
-#  if defined(OS_X)
+#  if defined(__APPLE__) && defined(__MACH__)
 #   if defined(__x86_64__)
   asm volatile("movq %%gs:0x60(,%1,8), %0" : "=r"(x) : "r"(scheme_thread_local_key));
 #   else
@@ -564,6 +566,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define dummy_input_port XOA (scheme_get_thread_local_variables()->dummy_input_port_)
 #define dummy_output_port XOA (scheme_get_thread_local_variables()->dummy_output_port_)
 #define place_local_modpath_table XOA (scheme_get_thread_local_variables()->place_local_modpath_table_)
+#define opened_libs XOA (scheme_get_thread_local_variables()->opened_libs_)
+#define jit_lock XOA (scheme_get_thread_local_variables()->jit_lock_)
 /*KPLAKE2*/
 
 /* **************************************** */

@@ -1,0 +1,1633 @@
+Version 5.0, May 2010
+Changed the core executable from mzscheme to racket
+Changed default value printer to use quasiquote style
+The language of a program's main module can specify run-time
+ configuration actions, such as setting the default printer's
+ style
+Changed regexp-match* et al. to make ^ matching relative to the
+ original string (not substrings for matches after the for) and to
+ allow empty matches in all positions except immediately after an
+ empty match
+Added chaperones
+Changed paths like the preferences file to use "racket" instead
+ of "mzscheme" or "plt-scheme"
+
+Version 4.2.5, March 2010
+Added scheme/future, enabled by default on main platforms
+Changed module to wrap each body expression in a prompt
+Changed define-cstruct to bind type name for struct-out, etc.
+
+Version 4.2.4, January 2010
+Added scheme/flonum and scheme/fixnum
+Extended scheme/unsafe/ops
+Changed JIT to support unboxed local binding of known-flonum
+ arguments to unsafe-fl functions
+Changed JIT to inline numeric ops with more than 2 arguments
+Added #:save-errno option for foreign-function types
+Added module->imports and module->exports
+
+Version 4.2.3, November 2009
+Changed _pointer (in scheme/foreign) to mean a pointer that does not
+ refer to GCable memory; added _gcpointer
+Added scheme/vector
+
+Version 4.2.2, September 2009
+Added scheme/unsafe/ops
+Added print-syntax-width
+Added file-or-directory-identity
+Inside: embedding applications should call scheme_seal_parameters
+ after initializing parameter values (currently used by Planet)
+
+Version 4.2.1, July 2009
+Added string->unreadable-symbol and symbol-interned?
+Added syntax-local-lift-provide
+Added syntax-local-lift-values-expression
+Added identifier-prune-lexical-context and quote-syntax/prune
+
+Version 4.2, May 2009
+Changed visiting of modules at phase N to happen only when compilation
+ at phase N starts
+Changed expander to detect a reaname transformer and install a
+ free-identifier=? syntax-object equivalence
+Changed provide to convert an exported rename transformer to its
+ free-identifier=? target
+Added 'not-free-identifier=? syntax property to disable free-identifier=? 
+ propagation through a rename transformer
+Added prop:rename-transformer and prop:set!-transformer
+Fixed scheme/local so that local syntax bindings are visible to later
+ local definitions
+Changed current-process-milliseconds to accept a thread argument
+Added hash-hash-key?, hash-ref!
+Added in-sequences, in-cycle
+
+Version 4.1.5, March 2009
+Allow infix notation for prefab structure literals
+Change quasiquote so that unquote works in value positions of #hash
+Change read-syntax to represent #hash value forms as syntax
+Added bitwise-bit-field
+
+Version 4.1.4, January 2009
+Changed memory accounting to bias charges to parent instead of children
+Changed function contracts to preserve tail recursion in many cases
+Added scheme/package, scheme/splicing, ffi/objc
+Added exception-backtrace support for x86_84+JIT
+Added equal?/recur
+Added equal<%> and interface* to scheme/class
+Added procedure-rename
+Added extra arguments to call-with-continuation-prompt
+Added extra argument to raise-syntax-error
+Added compile-context-preservation-enabled
+Added syntax-local-lift-require
+Added internal-definition-context-seal, which must be used on an
+ internal-definition context before it's part of a fully expanded form
+Added syntax-local-make-delta-introducer
+Changed make-rename-transformer to accept an introducer argument that
+ cooperates with syntax-local-make-delta-introducer
+Added internal-defininition-context?
+Added identifier-remove-from-defininition-context
+
+Version 4.1.3, November 2008
+Changed scheme to re-export scheme/port
+In scheme/port: added 
+Added call-with-immediate-continuation-mark
+In scheme/port: added port->string, port->bytes, port->lines
+ port->bytes-lines, display-lines, [call-]with-input-from-{string,bytes},
+ and [call-]with-output-to-{string,bytes}
+In scheme/file: added file->string, file->bytes, file->lines,
+ file->value, file->bytes-lines, write-to-file, display-to-file,
+ and display-lines-to-file
+Added variable-reference? and empty #%variable-reference form
+Extended continuation-marks to work on a thread argument
+
+Version 4.1.2, October 2008
+Changed binding of identifiers introduced by unit signatures
+ to take into account the signature use's context
+Added make-syntax-delta-introducer
+Changed continuation-marks to accept a thread argument
+Added eqv-based hash tables
+Added hash-update and hash-update!
+Changed -X and -S to complete directory relative to pwd, and
+ changed -S to add after main collects
+
+Version 4.1.1, October 2008
+Added read-language
+Added module-compiled-language-info, module->language-info,
+ and 'module-language property support
+
+Version 4.1, August 2008
+Changed namespaces to have a base phase; for example, calling
+ eval at compile-time uses a phase-1 namespace
+Added logging facilities: make-logger, etc.
+Added "inheritance" to structure type properties, and change
+ prop:procedure from scheme/base to better support keywords
+Added bitwise-bit-set?
+Added in-value
+
+Version 4.0, June 2008
+>> See MzScheme_4.txt
+
+Version 372, December 2007
+Added syntax-local-lift-context
+Added #lang
+Added require-for-label, provide-for-syntax, provide-for-label,
+ identifier-label-binding, module-label-identifier=?
+
+Version 371, August 2007
+Added hash-table-iterate-{first,next,key,value}
+Added keyword<?
+Added make-derived-parameter
+Added make-sibling-inspector
+Added graph? argument to read[-syntax]/recursive
+Added read-accept-infix-dot
+Changed #!<space> and #!/ to general comment forms
+Added continuation?
+Added continuation-prompt-tag?
+Inside MzScheme: GC_{malloc,free}_immobile_box
+foreign.ss: added {malloc,free}-immobile-box
+
+Version 370, May 2007
+Memory management:
+ Default build uses 3m instead of CGC
+ Added custodian boxes and custodian-memory-accounting-available?
+ Added initial custodian argument to custodian-require-memory
+Exceptions:
+ Removed current-exception-handler and initial-exception-handler
+ Added uncaught-exception-handler
+ Default error escape handler aborts to default continuation
+  tag with the void procedure
+ Added call-with-exception-handler
+ Changed read-eval-print-loop and the default load handler to wrap
+  each evaluation with a prompt and with #%top-interaction
+ Changed top-level begin to insert a prompt around each sub-expression
+  except the last
+ Added #%top-interaction and #%expression
+ Changed make-exn to automatically convert a mutable message string
+  to an immutable string
+Units:
+ New unit system provided by MzLib's "unit.ss"
+Ports and pathnames:
+ Added prop:input-port and prop:output-port
+ Added support for manipulating filesystem paths that work on 
+  other platforms
+ Added string->path-element and path-element->string
+ Changed path->directory-path, simplify-path, and split-path to include
+  a trailing path separator even when the result would be a directory
+  path without it
+ Changed simplify-path for Windows paths to replace / with \
+ Changed current-directory to apply path->directory-path to given paths
+ Added reset?, start-, and end-index arguments to get-output-bytes
+ Added port-closed?
+ Added optional argument to tcp-addresses to get port numbers
+Syntax and loading:
+ Default load handler enables #reader (even when not reading a module)
+ Added module-path-index-resolve
+ Added syntax-local-expand-expression
+ Changed dyanmic-require to expand requests for exported syntax
+  bindings
+ Added an argument to syntax-local-certifier indicating whether the
+  generated procedure attaches active or inactive certificates
+ Changed macro expansion of bound identifiers so that `local-expand'
+  works with an empty stop list
+ Module top-level enforces initial categorization of expressions
+  versus other forms
+ Changed H-expression parsing to represent angle brackets specially
+Misc:
+ Changed print-struct default to #t instead of #f
+ Added parameterize*
+ Added 'gc and 'so-suffix flags for system-type
+ Added vector->values
+ Changed char-whitespace? to produce #t for #\u0085
+ Added -p, -P, and -Q command-line options
+ Added procedure-struct-type?
+ Added system-idle-evt
+ Fixed mzc --exe to work with C-implemented extension modules
+MzLib:
+ serialize.ss: Path includes the path's convention
+ foreign.ss: Added ptr-add, memmove, memcpy, and memset
+ runtime-paths.ss: Cooperates with mzc --exe
+Inside MzScheme:
+ Use SCHEME_INPUT_PORTP() instead of SCHEME_INPORTP()
+     SCHEME_OUTPUT_PORTP() instead of SCHEME_OUTPORTP()
+     scheme_input_port_record() instead of cast to Scheme_Input_Port*
+     scheme_output_port_record() instead of cast to Scheme_Output_Port*
+ Added scheme_set_type_equality() with help from Dimitris Vyzovitis
+ Added XFORM_START_SKIP, etc.
+
+Version 360, November 2006
+Continuations:
+ Added delimited continuations: call-with-continuation-prompt,
+  call-with-composable-continuation, etc.
+ Changed call-with-escape-continuation so that its argument is
+  no longer applied in tail position (reverses a change in v350)
+Regexps:
+ Added case-insensitive mode, multi-line mode, lookahead, lookbehind, 
+  non-backtracking, and conditionals to regexp language
+ Added pregexp, byte-pregexp, and #px..., which includes numeric
+  quantifiers, backreferences char classes, and Unicode predicates
+ Added regexp-match?, pregexp?, and byte-pregexp?
+ Improved [p]regexp performance
+Filesystem:
+ Unix and Mac OS X: Changed path operations to use "./~..." as an
+  encoding for a relative path "~..."
+ Changed simplify-path to always normalize path separators,
+  preserve syntactic directoryness, and remove \\?\ from
+  Windows paths when possible
+ Added path-element->bytes and bytes->path-element
+ Changed make-file-or-directory-link to not expand the link
+  content, and changed make-security-guard to have a separate
+  link guard procedure
+Misc:
+ Removed write-image-to-file and read-image-from-file
+ ormap and andmap now tail-apply a given function for the 
+  last list element(s)
+ eval evaluates its argument in tail position
+ Improved compilation of call-with-values and an immediate
+  lambda argument to avoid closure creation
+ Added raise-arity-error
+ Changed bytecode compiler to perform more closure conversion
+  and lifting
+ Changed local-expand; #f stop list means expand only immediate
+MzLib:
+ class.ss: added inherit/inner and inherit/super, to eventually
+  replace rename-super and rename-inner;
+  added member-name-key=?
+
+Version 352, July 2006
+Minor bug fixes
+
+Version 351, July 2006
+Changed hash-table-get to accept a non-prcedure third argument as
+ a default value (instead of requiring a thunk)
+Changed the module name resolver protocol so that the resolver is
+ required to accept 1, 3, and 4 arguments; the new 4-argument mode
+ supports resolving a module path without loading the module
+Changed syntax/loc to not adjust location information for a
+ template that contains only a pattern variable
+MzLib: Added define-member-name, member-name-key, and 
+ generate-member-key to class.ss
+Added syntax-local-lift-moule-end-declaration
+Changed namespace-attach-module and namespace-unprotect-module
+ to accept quoted module paths, instead of only symbolic names
+Fixed avoidable overflow and undeflow in magnitude and / for
+ inexact complex numbers
+Fixed bug in continuation sharing
+Improved 3m performance
+Upgraded to gc 6.7
+
+Version 350, June 2006
+JIT compiler:
+ Added just-in-time native-code compiler with a new eval-jit-enabled
+  parameter
+ Added compile-enforce-module-constants parameter; the default is #t,
+  which effectively prohibits redeclaraing modules or changing
+  variable bindings through module->namespace
+ Added function inlining, and fixed constant propagation and folding 
+  in bytecode compiler
+Stack trace:
+ Added a "stack trace" to the default error display
+ Added exn:fail:user and raise-user-error
+Installation and executables:
+ Changed installation process to support more configurable directory
+  structure
+ Dropped PLTHOME, and instead added support to embed a path to the
+  main "collects" directory within the executable
+ Changed style of executables generated by mzc --[gui-]exe under
+  Unix; for old-style executables, use --orig-exe, or use --exe-dir 
+  to package the executable
+ Added 'run-file, 'collects-dir, and 'orig-dir modes to find-system-path
+ Changed initial program binding to the result of find-system path
+  with 'run-file instead of 'exec-file
+ Added use-user-specific-search-paths parameter, -U flag
+Continuations:
+ For nested captured continuations, the shared continuation tail is
+  represented by shared data
+ The body of let/cc and the procedure passed to call/ec are
+  evaluated/called as a tail expression/call
+ Made parameter/mark lookup amortized constant time,
+  instead of potentially O(stack depth)
+Misc:
+ Added char-general-category
+ Added string-normalize-nf[k]{d,c}
+ Changed bitwise-{and,ior,xor} to accept 0 arguments
+ Changed file-position: eof moves to the end of a file/string
+ Changed readtable to support "default" parser used for symbols/numbers
+ Changed system-type's optional argument to 'os, 'link, or 'machine
+ Added current-thread-initial-stack-size
+ Added procedure-closure-contents-eq?
+ Added struct-type-make-constructor and struct-type-make-predicate
+ Inside MzScheme: added scheme_make_prim_closure_w_arity(), etc.
+
+Version 301, December 2005
+Fixed a custom-input-port bug in the case that a read or peek procedure
+ returns an event created by handle-evt
+
+Version 300, December 2005
+Generalized network-address handling, includes IPv6
+Added ephemerons
+0.0 and -0.0 are different by eqv?
+Added keyword values (#: prefix) and keyword? predicate
+Added system-language+country
+Added current-preserved-thread-cell-values
+Added #%variable-reference
+MzLib: added object-method-arity-includes? to class.ss
+Added --xform mode to mzc
+
+Version 299.400, Setember 2005
+Improved Windows path support (e.g., \\?\ paths)
+Added optional argument to simplify-path
+Added 'pair-shape property to reader
+Inside MzScheme: added scheme_get_port_file_descriptor()
+ and scheme_get_port_socket()
+
+Version 299.200, August 2005
+Ports:
+ TCP output ports are now block-buffered by default
+ Changed file-stream-buffer-mode to work on more port types,
+  including TCP ports and custom ports
+ Added extra argument to make-input-port and make-output-port
+  to get/set buffer mode
+ Changed port-count-lines! and port-next-location to work
+  on output-ports
+ Changed make-output-port to take three new arguments:
+  get-location procedure, count-lines! procedure,
+  and initial position
+ Changed make-input-port to take two new arguments: count-lines!
+  procedure (defaults to void) and initial position
+ Added relocate-input-port, relocate-output-port, transplant-input-port,
+  and transplant-output-port to MzLib's "port.ss"
+Strings and Unicode:
+ \U allows up to 8 digits instead of 6
+ Changed char-lower-case? and char-upper-case?
+ Added string-upcase, string-downcase, string-titlecase,
+  string-foldcase, and char-foldcase
+ In case-insenstive mode, symbols are case-folded instead
+  of downcased (which is usually the same thing)
+Reader:
+ Added #reader and readtables
+ When { or [ is disabled, it is treated as an illegal character
+  instead of a symbol character by the reader
+ Changed read-syntax[/recursive] to remove the delta-list
+  argument
+ Changed read handler to remove the delta-list argument
+ Changed read[-syntax]/recursive to produce a special-comment
+  value when a comment is parsed (instead of reading the
+  next datum)
+Printer:
+ Added custom struct writers through prop:custom-write,
+  custom-write?, custom-write-accessor
+Syntax and Macros:
+ Changed expansion of internal definitions so that local
+  macros that expand to definition forms can be used
+  within the local definition set
+ Added syntax-local-make-definition-context
+ Added syntax-local-bind-syntaxes
+ Added optional definition-context argument to
+  local-expand and syntax-local-value
+ Changed certification so that a reference cannot have more
+  certificates than its binding, and lexical context gives
+  syntax-quoted values inactive instead of active certificates
+ Added sub-form for require: only
+ Added module-provide-protected?
+ Fixed all-from provides to include redundant imports from the
+  indicated require
+ Added prefix-all-defined and prefix-all-defined-except
+  provide forms
+Structure Types:
+ Struct custodian can be #f to make it fully transparent
+Libraries:
+ Added define-serializable-class[*], externalizble<%>,
+  class/derived, and inspect clause form to MzLib's "class.ss"
+ Changed run-server in thread.ss to use the same parameterization
+  for all connection threads
+ Added define-struct/properties to MzLib's "struct.ss"
+ Removed pretty-print-display-string-handler from MzLib's
+  "pretty.ss", and adapted protocol for hook procedures
+  slightly (i.e., they usually must write to a given port)
+ Changed collects/web-server request-bindings/raw
+  to return an alist of bytes, not strings
+Misc:
+ Cygwin build produces a Unix-style installation instead of
+  a Windows-style installation (e.g., system-type is 'unix)
+
+Version 299.100, March 2005
+Unicode and Strings:
+ Removed char-locale... operations
+ Removed char->latin-1-integer and latin-1-integer->char
+ Added string-copy!, read-string!, peek-string!, and write-string
+ Added convert-stream, reencode-input-port, etc. to port.ss
+ Added \u and \U syntax in strings and chars
+ Fixed log for large exact integers
+ Added path-string?, path-replace-suffix
+ Renamed all of the number "byte-string" functions to "bytes"
+ Added \' escape for strings (for compatibility with C & Java)
+ Added locale-string-encoding
+ Changed regexp-replace* to raise an exception if it matches an
+  empty string
+ Added binding of greek-lambda character (code point #x03BB) to
+  expand to lambda
+Paths:
+ Changed pref dir (all platforms) and pref file name (except Windows);
+  changed home dir under Windows to use the registry-specified profile
+  directory
+ Added 'doc-dir and 'desk-dir to find-system-path
+ Unix and Mac OS X: path expansion removes redundant slashes
+ Removed exists check for current-directory
+Ports:
+ Change default buffering of file-stream output ports
+ Changed file-stream-buffer-mode to work on input ports
+ Changed make-custom-input-port to make-input-port
+ Changed make-custom-output-port to make-output-port
+ Added terminal-port?
+ Added pipe-content-length
+ Changed {read,peek}-bytes-avail!{,*,/enable-break} to produce
+  a special-reading procedure when a stream contains specials
+ Added make-pipe-with-specials to MzLib's "port.ss"; procedures
+  like copy-port now also handle specials
+ Moved most of (lib "thread.ss") to (lib "port.ss"), and many
+  remaining useless procedures (such as dynamic-enable-break)
+  were removed
+ Added port-progress-evt, port-commit-peeked, and
+  port-provides-progress-evts?
+ Added an optional progress-event argument to peek-bytes-avail!,
+  etc., before the port argument
+ Added an optional progress-event argument to regexp-match-peek
+  and regexp-match-peek-positions
+ Peeking from a limited pipe effectively increases its capacity,
+  temporarily
+ Added optional port name arguments to make-pipe
+  and open-{input,output}-{string,bytes}
+ Changed object-name for input ports and output ports
+ Added write-special and write-special-avail*
+ A location-offset lists for a port read handler can contain #f
+ Changed read-syntax to make the source name optional (defaults
+  to the port's name)
+Syntax and Macros: 
+ Eliminated "identifier for a definition has a module context"
+  errors
+ In a syntax template, when an identifier has more ellipses
+  then in the pattern, inner ellipses bind more
+  tightly than the outer ellipses
+ New forms: require-for-template (core), define-values-for-syntax
+  (core), define-for-syntax, begin-for-syntax
+ New procedures: local-transformer-expand, syntax-transforming?,
+  syntax-local-lift-expression, local-expand/capture-lifts,
+  local-transformer-expand/capture-lift, syntax-recertify, 
+  module-template-identifier=?, identifier-template-binding,
+  rename-transformer-target
+ Removed fluid-let-syntax, syntax-local-certifier
+ Added (lib "stxparam.ss"), partly as a replacement for
+  fluid-let-syntax
+ Removed use of #%top from references to a module's own bindings
+ Added protect sub-form of provide
+ module-compiled-imports now returns 3 values
+ indentifier-[transformer-]binding returns a list of five items
+  instead of four for a module-bound identifier
+ Added 'module-begin to the set of possible results from
+  syntax-local-context
+ Added begin-with-definitions to (lib "etc.ss")
+ Added syntax-property-symbol-keys
+ Added namespace-unprotect-module
+ Changed eval, expand, etc. so that only the leading
+  identifier in a module form is given context
+ Changed module expansion/compilation so that it's deterministic,
+  as long as macros do not use gensym or external side-effects;
+  using generate-temporaries preserves determinism
+ Changed module->namespace and module re-definition so that they're
+  controlled by the code inspector, not the modules attach state
+ Added current-compile parameter, which is used by compile
+  and by the default evaluation handler
+ Changed expansion-time structure type info to allow #f in place
+  of a mutator id
+ Added construct-time field guards to structure types
+ Changed raise-syntax-error so that it no longer accepts a list
+  as its first argument
+Reader Syntax:
+ Added #<< here strings
+ Added H-expression mode to reader, triggered by #hx or #honu,
+  and escaped by #sx
+ Added read-honu, read-honu-syntax, and print-honu
+ Changed #; for top-level read; graph assignments are forgotten
+  before reading the next expression
+Control Flow and Paramaters:
+ While an exception handler is called, the current exception
+  handler is reset to the default handler; similarly,
+  the error display and escape handlers are called by the
+  default exception handler in a context that resets the
+  corresponding parameters to the default handlers
+ An exception handler can handle exceptions that are raised
+  during the handler (by using with-handlers or setting the
+  current-exception-handler parameter)
+ During the evaluation of dynamic-wind pre and post thunks,
+  the current continuation marks and parameterization are reset
+  to those active at the time of the dynamic-wind call
+  (except that the parameterization is extended to disable
+  breaks)
+ Added current-parameterization and call-with-parameterization
+ Added continuation-mark-set-first
+ Removed optional argument of continuation-mark-set->list
+ Added continuation-mark-set->list*
+ Added call-with-continuation-barrier
+ Renamed "continuation boundary" to "continuation barrier"
+ Added call-with-semaphore and call-with-semaphore/enable-break
+Events:
+ Renamed udp-send-evt and udp-receive-evt to udp-send-ready-evt
+  and udp-receive-ready-evt
+ Added udp-send-evt, udp-send-to-evt, and udp-receive!-evt
+ Added tcp-accept-evt
+ Added make-alarm
+Misc:
+ Regexp grammar changed to match docs with respect to "-"
+ Struct property types are now overridable in subtypes
+ Added module-compiled-exports
+ Added hash-table-copy and hash-table-count
+ Changed the random-number generator to use L'Ecuyer's MRG32k3a
+  algorithm, as encouraged by SRFI-37
+ Changed random to accept 0 arguments to generate a random real
+  number, and added pseudo-random-generator->vector and
+  vector->pseudo-random-generator; these are compatible
+  with the SRFI-27 reference implementation
+ Added print-unreadable parameter
+ Changed use-compiled-file-kinds to use-compiled-file-paths
+ Mac OS X: extension suffix changed from ".so" to ".dylib"
+Libraries:
+ "class.ss" MzLib module: changed the interface to 
+  make-primitive-class; see plt/collects/mzscheme/examples/tree.cxx 
+  for details
+ "serialize.ss" MzLib module: new
+ "contract.ss" MzLib module: names are more uniform; if the name of a
+  contract a suffix, the suffix is now "/c" (instead of one of "/p",
+  "/c", or "/f")
+ "url.ss" in the "net" collection: new url data definition; url/user is
+   gone, and no extra encoding/decoding required once a url has been
+   parsed anymore
+Inside MzScheme: 
+ Added scheme_set_type_printer, scheme_print_bytes,
+  and scheme_print_string
+
+Version 209, December 2004
+Fixed (abs -1073741824)
+Avoided gcc 3.4 bug(?) related to inline checking for -0.0
+
+Version 208, August 2004
+Added string-copy! and hash-table-count
+Upgraded to gc 6.3
+
+Version 207, May 2004
+Fixed comparison of infinities and 0.0 in eqv?
+Fixed incorrect handling of -0.0 versus 0.0 for various
+ platforms, including x86 with gcc 3.2
+Fixed inefficient (/ x 1) for an exact rational x
+
+Version 206, January 2004
+A shut-down custodian is no longer allowed to manage new
+ objects
+Changed thread-resume so that it adds custodians to a thread,
+ instead of changing the thread's custodian
+Added make-thread-group, etc.
+Changed define to support MIT-style curried-procedure forms
+Added an optional argument to peek-char and 
+ peek-char-or-special to indicate the number of characters
+ to skip in the input stream
+Added optional argument to file-or-directory-modify-seconds
+ for setting the modification date of a file or directory
+Added integer-sqrt, quotient/remainder, integer-sqrt/remainder
+Fixed transitivity of numerical comparison for mixed
+ inexact--exact comparisons when the inexact versions
+ of the numbers are = but the exact versions are not
+Macro templates can include consecutive ... for splicing
+ sequences
+Macro patterns can include sub-patterns after ...
+Improved error reporting for with-syntax
+Non-constant syntax pairs generated from templates
+ (in syntax-case, with-syntax, quasisyntax, etc.)
+ keep source-location and context information,
+ instead of acquiring the context and location of
+ the generator expression as a whole
+generate-temporaries produces identifiers that are
+ suitable for use as defined names in the module
+ being expanded (if any)
+Added syntax-local-module-introduce, which is used
+ by generate-temporaries
+Added syntax-track-origin
+Changed syntax-local-get-shadower to add the current
+ module expansion context, if any
+Added 'disappeared-binding and 'disappeared-use properties
+ and refined 'origin tracking for internal definitions
+ and spliced sequences
+Added optional namespace argument to most of the
+ namespace- primitives
+Added vector-immutable
+Fixed a bug in the bytecode verifier that caused it to skip
+ significant parts of typical bytecode
+Added a hook for (planet ...) module paths to the standard
+ module name resolver
+MzLib's contract.ss: changed and/f to and/c, or/f is deprected
+ (use union), added object contracts, flat-contracts (without
+ names) are a separate type; use flat-contract-predicate rather
+ than flat-named-contract, added flat-rec-contract, improved
+ performance
+MzLib's class.ss: added get-field and field-bound?
+
+
+Version 205, August 2003
+Extended regexp language with "(?:...)"
+Added 'addon-dir for find-system-path
+Changed default library collections path list to include
+  (build-path (find-system-path 'addon-dir) (version) "collects")
+Added #; reader comment syntax
+Added namespace-module-registry
+Added module->namespace
+Changed eval handler so that when it is given a syntax object, it
+ does not extend the object's lexical context with top-level
+ bindings from the current namespace
+Added namespace-syntax-introduce
+Added eval-syntax, compile-syntax, expand-syntax, expand-syntax-once,
+ and expand-syntax-to-top-form
+Added set!-transformer-procedure
+Added namespace-undefine-variable!
+syntax-local-context can return a list for internal-define
+ expansion, and local-expand accepts a list to mean 
+ internal-define expansion; for built-in expansion, each
+ list item uniquely indicates a distinct, active
+ internal-define expansion context
+Added syntax-local-get-shadower
+Changed top-level `define-syntaxes' to treat zero results
+ from the right-hand side as an abort, so that
+   (define-syntax (id ...) (values))
+ declares the ids. This is useful for macros that
+ expand to mutuaully recursive definitions of private
+ variables
+Changed the expansion-time information associated with a
+ struct type to include an identifier for the super-type
+Handling of --main/-C command-line flag changed
+Changed "scheme-<dialect>" script handling to add the script
+ path as an argument, which matches SRFI-22
+Changed Windows extension-linking convention; extensions
+ link directly to the MzScheme/GC DLLs
+Added an optional argument to system-library-subath
+Added custodian-managed-list
+Changed vector-set-performance-stats! to accept an optional
+ thread argument for thread-specific stats
+Mac OS Classic: file-size result no longer includes
+ the resource-fork size
+Added a `super-new' local form to (lib "class.ss")
+Added a `new' form to (lib "class.ss")
+3m: changed to the calling convention for managing
+ GC_variable_stack
+
+Version 204, May 2003
+Added UDP operations
+Added synchronous channels
+Added thread-suspend and thread-resume
+Added thread/suspend-to-kill
+Added thread-dead?
+Added thread-suspend-waitable, thread-resume-waitable, 
+ and thread-dead-waitable
+Added make-wrapped-waitable, make-guard-waitable, and
+ make-nack-guard-waitable a la CML
+Added waitables->waitable-set, which is like CML's choose
+Renamed make-nack-waitable to make-nack-guard-waitable
+ to claify its relation to make-guard-waitable
+Added make-poll-guard-waitable
+Added make-semaphore-peek
+Added current-wait-pseudo-random-generator
+Changed unreachable threads to be garbage-collected when
+ blocked on any combination of otherwise unreachable
+ waitables by object-wait-multiple, semaphore-wait, 
+ channel-put, channge-get, or thread-wait; in addition,
+ unreachable suspended threads are garbage-collected
+Added "async-channel.ss" to MzLib
+Changed make-custom-input-port to drop the initial
+ waitable argument; instead, the read and peek
+ functions should return a waitable instead of 0
+Changed make-custom-output-port so that the first
+ argument is #f or a procedure to return a waitable
+ (instead of #f or a waitable)
+Added tcp-port?
+Added port-file-identity
+Deprecated normal-case-path
+Changed the symbolic name for a file-based module to be
+ determined without using normal-case-path
+Fixed MzLib's regexp-split, etc., to work on input ports
+Changed make-struct-type-property to accept a guard
+ procedure for the property
+Changed make-struct-type to accept a list of immutable
+ field positions
+Changed struct-type-info to return 8 values instead of 6
+ to include information on immutable fields
+Changed proc-spec handling in make-struct-type; an integer
+ value must be < init-field-k, and overriding is disallowed
+ (for consistency with user-defined properties)
+Added prop:waitable
+Changed handling of top-level and module top-level definitions
+ of identifiers that originate from a macro expansion; such
+ definitions now bind only the uses of the identifier with the
+ same expansion origin
+Added make-syntax-introducer, for creating new macro origins
+Changed generate-temporaries so that it does not use gensym,
+ but instead uses make-syntax-introducer to distinguish names
+Added make-rename-transformer and rename-transformer?
+Changed syntax-local-value to cooperate specially with
+ rename transformers
+Fixed parse problems with # in numbers, as in `1#/2' and
+ `#e#x+e#s+e@-e#l-e'
+Added literal hashtable syntax #hash..., added support
+ for immutable hash tables, and added print-hash-table
+ parameter
+Added literal regexp syntax #rx... and changed the printer
+ to use this notation for printing regexps
+Changed hash-table? to accept 'weak and/or 'equal and return
+ #t only if the first argument is a hash table created with
+ the corresponding flag(s)
+Changed equal? to compare hash tables by determining whether
+ they map the same keys to equal? values
+Added vector->immutable-vector
+Added immutable-box
+Added vector-set-performance-stats!
+Changed columns to count from 0 instead of 1 
+
+Version 203, December 2002
+Added support for structure types whose instances act as
+ procedures
+Added open-input-output-file
+Added port-count-lines-enabled parameter
+
+Version 202, August 2002
+Changed expansion of () to '()
+Unix: Fixed open on fifos to not block
+Windows 9x: Added workaround for resolution of "127.0.0.1"
+
+Version 201, July 2002
+Fixed bug in port reading (especially variants of read-string)
+ and file-position that follow peeks on the port
+Added exn:special-comment, expected to be used by custom input ports
+ that contain non-character-based comments (e.g., the comment boxes
+ soon to appear in DrScheme)
+Windows: added special handling of "special files" (COM1, etc.);
+ internally MzScheme opens the file only once to satisfy multiple
+ open-input-file and open-output-file calls that have the
+ port open at the same time
+
+Version 200, June 2002
+>> See MzScheme_200.txt for information on major changes in
+   MzScheme 200. Minor changes are listed below.
+(cond) alays returns void; the cond-allow-fallthough parameter and
+ exn:cond exception have been removed
+Changed all comparison precedures to require at least two
+ operands, including =, <, ..., char=?, char<?, ...,
+ string=?, string<?, ...
+Added locale support with string-locale<?, etc.
+Added integer-byte-string->integer, floating-point-byte-string->real,
+ integer->integer-byte-string, real->floating-point-byte-string,
+Renamed exn:misc:user-break to exn:break
+Removed the port field of exn:read
+Renamed arity to procedure-arity
+Replaced primitive-name and inferred-name with object-name
+Added security guards for controlling file and network access
+Added an "infix" conversion in the reader, triggered by a pair of dots
+ between a pair of parens
+Added #cs and #ci prefixes for controlling case sentivity during read
+Added current-command-line-arguments parameter
+Added error-print-source-location parameter
+Added current-load/use-compiled parameter
+Changed string constants to support ANSI C escapes (e.g., \n)
+Fixed leaks (file descriptors, etc.) that could happen with
+ thread kills
+Fixed memory bug in the run-time support for mzc-compiled code
+Fixed an old and serious set of tail-call+thread-or-exception+GC bugs 
+ in the core interpreter
+Changed the error display handler to take a raised value (usually
+ an exception record) as a second argument
+Removed make-hash-table-weak and changed make-hash-table to
+ accept up to two flag arguments: 'weak and/or 'equal
+Added eq-hash-code and equal-hash-code
+Extended regexp-match, etc. to work on port inputs
+Added read-strng-avail!* and write-string-avail*, which never block
+Added peek-string, peek-string-avail!, peek-string-avail!*,
+ and peek-string-avail!/enable-break
+Added port-count-lines!, which enables line-couting for a port,
+ and port-next-location
+Extended custom ports to support non-char input, added
+ read-char-or-special and peek-char-or-special
+Added immutable?
+Quoted portions of a symbol (using | or \) preserve their case,
+Added read-dot-as-symbol and read-accept-quasiquote parameters
+Added an optional third argument to tcp-listen to reuse addresses
+Added tcp-connect/enable-break and tcp-accept/enable-break
+Added object-wait-multiple and object-wait-multiple/enable-break
+Added cons-immutable, list-immutable, and list*-immutable, 
+ and removed pair->immutable-pair
+Replaced read-dot-as-symbol with read-accept-dot
+Fixed quotient, remainder, and modulo when the first argument
+ is exact 0 and the second argument is inexact
+Default for pconvert.ss's whole/fractional-exact-numbers parameter
+ changed to #f
+Load handler or load extension handler now takes two arguments
+ instead of one: the filename and the expected module name
+Added shell-execute for Windows
+Moved send-event to MrEd; added a "sendevent.ss" MzLib library
+Changed assf in MzLib
+Added special handling when MzScheme is invoked with the name
+ "scheme-<dialect>", useful to support SRFI-22
+New implementation of Windows I/O
+Renamed "2k" to "3m" (for "moving memory manager")
+Upgraded to gc 6.1alpha2
+Inside MzScheme: changed type of third argument for
+ scheme_block_until() from void* to Scheme_Object*
+Inside MzScheme: added scheme_add_waitable() and
+ scheme_add_waitable_through_sema() for extending the set of objects
+ supported by object-wait-multiple
+
+Version 103, August 28, 2000
+Changed define-values and set!-values to require distinct variables
+ for binding
+Windows: Fixed bug in close-output-port for TCP ports
+Closing a TCP output port always sends an EOF to the other
+ end of the connection, even if the associated input port
+ remains open
+Changed order of first two arguments to process[*]/ports and
+ fixed bugs
+Added an optional limit argument to make-pipe
+Added deflate.ss library to MzLib, providing gzip, etc.
+Added not-break-exn?, useful mainly as a predicate in a
+ with-handlers expressions
+Fixed load/use-compiled, require-library, and many MzLib functions to
+ propagate break exceptions correctly
+Added check-parameter-procedure and changed parameterize
+Changed order of first two arguments to process[*]/ports, and
+ fixed bugs
+Fixed bugs in (eval (compile e))
+Changed handling of pre- and post-queued breaks by
+ call-in-nested-thread
+Unix: fixed interaction among signals, I/O, and process sleeping
+Unix: fixed bug in writing/closing file-stream output ports
+ when a write error occurs
+MacOS: changed `split-path' to preserve the colon suffix on a root
+ name
+
+Version 102, June 26, 2000
+Switched to configure-based makefiles (autoconf)
+with-input-from-file and with-output-to-file close the port when
+ control leaves the dynamic extent of the call (normally, through an
+ exception, or through a general continuation jump).
+Added detail field to exn:i/o:filesystem
+Added immutable strings and pairs, string->immutable-string,
+ cons-immutable, list-immutable, and list*-immutable
+Added read-decimal-as-inexact parameter
+Fixed number reader to allow +inf.0, -inf.0, and +nan.0 in
+ complex constants
+Fixed bugs in number reader for hexadecimal numbers containing `.'
+ and/or `s'/`l'-based exponents; note that `#e#x+e.s+e@-e.l-e'
+ is a legal number(!)
+Fixed reading from special devices, such as /dev/null and /dev/zero,
+ in Solaris and HP/UX
+Fixed blocking output (to stdout, stderr, or a process port) so that
+ only the writing thread is blocked
+Changed read-string! to read-string-avail!, added
+ read-string-avail!/enable-break
+Added write-string-avail and write-string-avail/enable-break
+Added process/ports and process*/ports
+Added file-stream-port?
+Added 'update to the set of flags for open-output-file et al.
+Changed default exit handler to return only results in 0 to 255
+ as results to the OS, and everything else means 1
+Changed time-apply to return four values, and to take an argument
+ list to provide to the timed procedure
+Change find-executable-path to accept #f as its second argument
+Change normal-case-path to remove spaces at the end of a path
+Changed angle on inexact zero (0 for 0.0, pi for -0.0)
+Fixed arithmetic-shift for a -32 shift
+Fixed angle on +nan.0
+Fixed expt on 0 and a negative number
+Added 'exec-file flag to find-system-path
+Added provide-library
+Added square and mergesort to MzLib's function.ss
+Added tcp-addresses
+Added -k command-line flag
+Inside MzScheme: provided a way to fix the GC--thread problems
+ under Windows, via GC_use_registered_statics
+Inside MzScheme: scheme_basic_env() initializes break-enabled
+ to #f instead of #t
+Inside MzScheme: changed scheme_get_chars to consume an
+ offset into the string
+Inside MzScheme: added embedding-settable function
+ scheme_console_output, used to report low-level errors
+Inside MzScheme: restricted the format strings accepted by
+ scheme_signal_error, scheme_raise_exn, and scheme_warning
+Inside MzScheme: added scheme_count_lines; scheme_tell_line
+ can return -1 if lines are not counted for a port
+Inside MzScheme: added offset argument to scheme_write_string
+ and scheme_read_bignum
+
+Version 101, October 25, 1999
+Added 'sys-dir to find-system-path
+Added latin-1-integer->char and char->latin-1-integer
+Added time-zone-offset field to the date structure
+Added continuation field to exn:misc:user-break
+Windows: all network sockets are closed on exit
+Fixed (acos 0)
+Fixed (expt x y) where x is negative and y is non-integral
+Inside MzScheme: scheme_param_config's 2nd argument is
+ now a Scheme_Object*
+
+Version 100, August 9, 1999
+ + indicates a change since 100alpha4
+ * indicates a change since 100alpha3
+Changed class syntax, splitting public clause use into:
+ public : defines ivars not in superclass
+ override : defines ivars already in superclass
+Changed empty superclass from the empty list to object%;
+ every class initialization must call super-init
+Added ivar-in-interface?
++ Added class-initialization-arity
+* Added class->interface
+* Added object-interface
++ Removed object-class
++ Removed ivar-in-class?; replace (ivar-in-class? x c)
+ with (ivar-in-interface? (class->interface x c))
+Changed interface: raises an exception if a superinterface
+ declares a variable that is also declared in the interface
+ expression
+Removed letrec*; letrec has the same semantics
+* Fixed scope of function name in a named let
+Internal definitions are allowed only at the beginning of lambda,
+ case-lambda, let, let-values, let*, let*-values,
+ letrec, letrec-values, fluid-let, let-macro, let-id-macro,
+ let-expansion-time, parameterize, and with-handlers
+begin expressions are flattened in an internal-definition context
+(begin) allowed in a top-level, unit, or internal-definition
+ context
+Removed invoke-open-unit; see the new invoke.ss library, which
+ includes define-values/invoke-unit
+Self-import is now allowed for unit linking
+Removed constant-name and constant-name-all-globals
+Removed secure-primitive-exception-types
+Removed readable type symbols (e.g., #<procedure>)
+Removed semaphore-callback (MrEd now has queue-callback)
+Removed parameterizations (but not parameters!)
+parameterize sets parameter values in parallel (like let)
+ instead of in series (like let*)
+* Changed the initialization of the exception handler in a new
+ thread to use the value of the initial-exception-handler
+ parameter
+Fixed unfairness in threads (perpetually creating threads
+ would starve certain threads, particularly the main thread)
+Unreachable thread blocked on an unreachable semaphore is
+ garbage-collectable
+Added current-memory-use
+Fixed weak hash table bug (could drop keys too soon)
+Added optional peek-proc argument to make-input-port
+Changed TCP writes to block when the underlying implementation
+ blocks, and removed tcp-port-send-waiting?
+Asynchronous breaks are now disabled during dynamic-wind
+ pre and post thunks
+Removed user-break-poll-handler; spawn a thread that sleeps and
+ calls break-thread, instead
+Removed dynamic-enable-break (no long needed since dynamic-wind
+ post thunks can't be broken), but moved it to MzLib's thread.ss
+Removed execption-break-enabled (now always disabled)
+Added call-in-nested-thread
+Removed thread-weight
+Renamed the call-with-escaping-continution procedure to
+ call-with-escape-continution (call/ec is unchanged)
+Finished with-continuation-mark and current-continuation-marks
+ and documented them; the errortrace poor man's debugger relies
+ on continuation marks; see plt/collects/errortrace/doc.txt
+Removed debug-info-handler and replaced the debug-info field
+ with a continuation-marks field
+Added raise-mismatch-error
+MacOS: getenv and putenv work within MzScheme; if a file named
+ "Environment" resides in MzScheme's folder, it provides the
+ initial environment; see the documentation for details
+MacOS: fixed TCP problems
+Fixed read-write invariance for inexact (floating-point) numbers
+Changed handling of inexact can complex numbers towards compliance
+ with Brad Lucier's proposal:
+  (* 0 x) = 0 for all x
+  (log 1) = 0, etc.
+  -0.0 and 0.0 are properly distinguished; (- 0.0) = -0.0, and
+   (/ (expt 2 400) -inf.0) = -0.0; (eqv? 0.0 -0.0) = #f even
+   though (= 0.0 -0.0) = #t
+  Complex numbers can have an inexact real/imaginary part with
+   an exact zero imaginary/real part; thus, 4.0 is different
+   from 4.0+0.0i, and 0+4.0i is different from 0.0+4.0i; note
+   that (sqrt -4.0) is 0+2.0i
+  Complex numbers can have a +nan.0 real/imaginary part with
+   an imaginary/real part that is not +nan.0
+All zero-length vectors are eq
+Vectors are written (but not displayed) using the Chez-style
+ #n(...) shorthand by default; added print-vector-length
+ parameter
+* The value of a built-in procedure is eq across namespaces
+Replaced require-library-use-compiled with use-compiled-file-kinds
+Changed interface for wills: no current executor, register-will
+ -> will-register, will-executor-try -> will-try-execute, added
+ will-execute
+MzLib cleanup:
+ Removed `@' suffix for embedded units in mzlib:core@ and mzlib@
+ Removed all c.ss libraries, plus constan[t].ss
+ Removed catch-errors and let-enumerate from macro.ss
+ Removed make-class and make-class* from compat.ss
+ Removed zsin, zcos, ztan, zasin, zacos, zatan, zlog, zexp,
+  and zsqrt from zmath.ss (MzScheme's built-ins do complex)
+ Moved from functio.ss to thread.ss: dynamic-disable-break,
+  make-single-threader
+ Removed from functio.ss: dynamic-wind/protect-break
+ Added to thread.ss: dynamic-enable-break
+ Moved MzLib's compat.ss out of the core
+ Removes all but the first two arguments to pretty-print (the
+  rest have parameters, which are more convenient anyway)
+ Changed require to reference-file in refer.ss
+file.ss library: added make-directory*
+pretty-print: default display string handler is now the default
+ port display handler instead of the display procedure
+Ported to BeOS
+Ported to OSKit
+Ported to LinuxThreads, sortof; semaphore-waiting threads cannot
+ be broken or killed
+Inside MzScheme: new built-in type: scheme_complex_izi_type
+Inside MzScheme: changed scheme_eval_string to raise an exception
+ if the expression returns multiple values, and added
+ scheme_eval_string_multi
+
+Version 53, July 25, 1998
+Changed file-modify-seconds to file-or-directory-modify-seconds
+Changed rename-file to rename-file-or-directory
+Changed file procedures to return void on success and raise
+ and exception on failure: delete-file, rename-file-or-directory,
+ file-size, copy-file, make-directory, delete-directory
+Changed the procedures file-or-directory-modify-seconds and 
+ file-or-directory-permissions to raise an exception if the
+ file/directory does not exist
+Changed current-drive to raise exn:misc:unsupported on platforms
+ other than Windows
+Added find-system-path
+Fixed expand-defmacro for initialization argument expressions
+ in a class*/names form
+Fixed call/ec bug related to dynamic-wind (see !!! in 
+ tests/basic.ss)
+Fixed dynamic-wind bug: multiple levels of pre-thunks for a
+ jump into a continuation were evaluated in reverse order
+Fixed atan: second argument is allowed to be an exact non-integer
+Fixed equal?: comparisons on equivalent vectors or structs
+ with cycles no longer crash (until MzScheme runs out of memory)
+Added make-temporary-file to MzLib's file.ss
+Changed random and random-seed to use a parameter-specified
+ random number generator; the generator is initially
+ seeded with a number based on (current-milliseconds)
+Removed the obsolete MzLib trigger library
+Added with-continuation-mark and current-continuation-marks,
+ but these have not yet been documented because their
+ semanticses are not yet finalized
+
+Version 52, May 25, 1998
+R5RS non-compliance reduced to macros
+Added scheme-report-environment, null-environment, and
+ interaction-environment
+Changed reference-library, etc. to require-library
+ and changed require-library, etc. to require-library/proc
+Changed uq-ivar and uq-make-gerenric to ivar/proc and 
+ make-generic/proc
+current-directory is now a parameter
+Added simplify-path
+Changed execute and execute* to exit via the exit handler
+Top-level definitions are no longer allowed in the branches 
+ of an if expression; consider replacing an expression like
+ (if ... (define x ...)) with 
+ (if ... (global-defined-value 'x ...))
+expand-defmacro now signals the same set of syntax errors
+ as compile and eval
+local-expand-defmacro no longer expands define expressions
+ in a non-top-level context; to implement a macro that
+ detects define forms, use local-expand-body-expression
+Fixed bug in (let/ec a (let/ec b (let/cc k ...))); calling
+ b then k then a would fail, jumping to b instead of a
+Fixed read-eval-print loop when jumping to the continuation
+ of a previous eval and raising an exception there before
+ the evaluation finishes
+regexp-replace and regexp-replace*: \$ ("\\$" in Scheme)
+ is now replaced by the empty string; this allows forms
+ like "\\0\\$3", which inserts the 1st submatch and "3"
+Fixed a potential bug with continuations (although I never
+ saw it happen); they need to be marked by the GC with
+ interior pointer marking
+Changed read-line to break lines only on #\newline by default;
+ new optional argument roughly parameterizes over the 
+ line-breaking character(s)
+Add read-string and read-string! for reading a block
+ of characters from a port
+Changed MzLib's read-string and read-string-all to
+ read-from-string and read-from-string-all
+Changed MzLib's with-semaphore to return the value returned
+ by the thunk.
+Added the command-line macro to MzLib's cmdline.ss
+Linux and FreeBSD: turned on support for using more
+ than 256 file descriptors
+Inside MzScheme: current-directory, now a parameter, no
+ longer sets the current directory as managed by the OS
+Inside MzScheme: scheme_split_pathname changed
+Inside MzScheme: scheme_setcwd and scheme_getcwd renamed to
+ scheme_os_setcwd and scheme_os_getcwd; these set and get the
+ OS-managed cwd, but they have no effect on the current 
+ directory seen by Scheme code
+
+Version 51, March 25, 1998
+Changed load/use-compiled: searches for .zo files in
+ a "compiled/" subdirectory, and searches for .so/.dll
+ files in (build-path "compiled" (system-library-subpath))
+Changed load and current-load/default-load-handler: `load'
+ now sets the current-load-relative-directory, so a load
+ handler does not need to set this parameter
+Added current-load-extension (load-extension handler)
+Unix: fixed file-or-directory-permissions for group-based 
+ permissions when the group is not the current group (but
+ still includes the user)
+Windows: fixed directory-exists? et al. for UNC paths
+Added local-expand-body-expression
+Removed input-port-post-semaphore; this procedure can be
+ implemented using thread, peek-char, and semaphore-post
+Fixed thread: thunk can return any number of values
+Fixed custodian-shutdown-all: if it has to shutdown the
+ current thread, it does so immediately instead of
+ waiting for the next thread context switch
+Fixed will executors: will can return multiple values
+Added link-exists?
+Added copy-file
+Added path-list-string->path-list
+Added collection-path
+The delete-file and rename-file functions now reliably work
+ on links rather than the destination of the link (now fixed
+ for MacOS and documented this way)
+Fixed rename-file: works for directories too, but the
+ destination file/directory cannot exist already.
+Added a new mode flag for open-output-file et al.:
+ 'truncate/replace tries 'truncate then 'replace
+Changed initial setting of current-library-collection-paths
+Unit definitions and embedded definitions are not allowed
+ to shadow syntax or macro names; this restriction resolves
+ all potential ambiguity resulting from shadowing syntax
+Changed display for symbols containg special characters:
+ the special characters are not escaped (or bar-quoted)
+Changed write to use the value of (read-accept-bar-quote)
+ for printing symbols containing special charaters; if
+ bar qute reading is off, it is turned off for printing, too
+Fixed unit/sig: correctly handles syntax where defintions in 
+ the unit shadow syntactic forms
+Fixed round of exact rational n/d in the case when (odd? d)
+ and (= (remainder n d) (quotient d 2))
+Extended exp, sin, cos, tan, log, asin, acons, atan to
+ complex numbers; changed sqrt to choose the root with a
+ positive real part
+Removed rectangular <, >, <=, >= for complex numbers
+Changed storage of loaded-library table from built into the
+ `require-library' procedure to built into the current
+ namespace
+Added require-relative-library
+Fixed error messages for +, -, etc. to show all arguments
+Fixed format, fprintf, and printf: "~~" allowed at the end
+ of the format string
+Fixed with-handlers: predicate procedures are evaluated
+ with the same exception handler as a handler procedure
+Added send-event, currently only supported for MacOS
+Changed MzLib's pconver.ss libraries; the print-convert-hook@
+ unit was removed (along with the pchookr.ss library) and
+ replaced with parameters defined in pconverr.ss for similar
+ (more powerful) hooks.
+Fixed interfaces for compiled-file (.zo) loading across
+ MzScheme startups
+Fixed bug in ports returned by make-pipe that caused
+ spurious eofs
+Unused interned symbols are now garbage-collected
+Added support for single-precision floating points (turned
+ off in default compilation)
+Changed read-eval-print-loop, removing its cooperation with
+ the default error escape handler; instead, it installs its
+ own error escape handler
+Improved the support for dynamic extensions that gives an 
+ error if an extension is already loaded, or calls a
+ reloading function provided by the extension (scheme_reload)
+Unix images: removed constraint against using stdio before
+ dumps, but images are disabled by default. Also added
+ read-image-from-file procedure
+MzLib functio.ss: added remv*, remq*, remove*, filter,
+ assf, memf, empty, and empty?
+MzLib file.ss: added remove-directory/files
+MzLib constan.ss: added constant-signature-content macro
+MzLib pconver.ss: added whole/fractional-exact-numbers and
+ empty-list-name
+MzLib pretty.ss: added pretty-print-show-inexactness
+MzLib compile.ss: changed the set of compilation flags
+Removed begin-expansion-time
+Moved begin-elaboration-time from MzLib into MzScheme
+Added MzLib library traceld.ss
+MacOS: MzScheme always prompts for extra arguments, even if
+  a file is dragged onto the application or a launcher program
+  starts it
+MacOS: Fixed problems with inexact arithmetic: inexact->exact
+  for certain negative numbers and miscellaenous inf.0 and
+  nan.0 problems
+Windows: CYGWIN32 gcc compiler now supported
+Inside MzScheme: scheme_setjmp and scheme_longjmp now
+ work on values of type mz_jmp_buf instead of jmp_buf
+Inside MzScheme: scheme_apply_multi and scheme_apply were
+ reversed! (The _ forms where ok.)
+Upgraded to gc 4.13alpha1
+
+Version 50, August 26, 1997
+Added compile-time inferrence of names for closures, classes,
+  and units to improve error messages
+Added inferred-name
+Added file-size
+Added write-image-to-file for creating heap images of a
+  MzScheme program
+Fixed reader to disallow . in vectors: #(1 . 2) or #(1 . (3))
+Removed global-defined-signature
+Fixed string->number: explicit radix in string can override
+  radix argument
+Bug fixed in call/cc related to dynamic-wind (see !!! in 
+  tests/basic.ss)
+Fixed weak hash table's accumulation of hashing buckets
+Added 'empty flag for make-namespace
+Added two-argument form for global-defined-value
+Added system-library-subpath
+Changed standalone mzscheme to return -1 if a loaded file
+  or evaluated expression returns an error without the rep
+Refined error messages
+
+Version 49, May 31, 1997 
+Multiple superclass inheritance is no longer supported
+Added (Java-ish) interfaces to object system
+class* syntax changed to accomodate interfaces and removed
+  multiple superclasses
+uq-ivar always takes two arguments; class is not a legal argument
+uq-make-generic accepts a class or an interface
+Object system exceptions changed
+Added custodian system
+Embedded define conventions changed: "regular" defines are only
+  allowed in begin expressions and the branches of an if;
+  embedded defines can appear in a begin0 expression, but not
+  in the first position; defines must all appear at the beginning
+  of the block
+Contents of a begin expression as an immediate unit or unit/sig 
+  expression are promoted to immediate expressions
+case supports only R4RS syntax; a single non-list "datum" is
+  no longer allowed
+Removed catch; use let/ec instead
+Removed vector-append
+Removed load-with-cd (use load/cd)
+Added load/use-compiled
+Added current-load-directory parameter (set by the default load
+ handler while loading a file) and load-relative (uses the
+ parameter for loading a relative filename)
+unit/sig's include form is like load-relative instead of load/cd
+require-library uses load or load/use-compiled instead of load/cd
+Windows: expand-path does not put a drive on a driveless path
+  anymore; use path->complete-path instead
+compile-file moved out of MzScheme into MzLib "compile.ss"; now 
+  takes a single flag list argument instead of two final Booleans
+current-base-parameterization parameter replaced with 
+  parameterization-branch-handler parameter
+Parameterizations support sharing (in addition to defaulting);
+  see docs for make-parameterization-with-sharing
+Added print, port print handlers, and a global port print handler
+Changed the default print handler to use print instead of write
+Fixed bug in ports returned by make-pipe
+Fixed bug in dynamic-wind; continuation jumps into the pre-thunk
+  had a non-intuitive semantics; the correct semantics is now 
+  implemented and documented (also for jumps with the post-thunk)
+Changed time-apply to always return a list as its first return
+  value; time form can return multiple values for its expressions
+format, fprintf, and printf are case-insensitive for ~ directives;
+  added ~v, ~e, ~<whitespace>
+Added semaphore-wait/enable-break
+Added thread-running? and thread-wait
+Fixed bug in threads and timed sleeping
+Fixed bug in breaking a blocked thread
+Fixed bug in continuations returning multiple values through a
+  dynamic-wind (multiple return values could be corrupted)
+Fixed arity reporting for continuations
+Fixed Windows system* and read from console stdin and process*
+  ports: MzScheme threads no longer blocked; ctl-c breaking works
+  in stand-alone console MzScheme
+process and process* now return a list of 5 values (instead of 4)
+map, for-each, andmap, and ormap raise exn:application:map-arity
+ when the procedure's arity does not match the number of supplied
+ lists; note that (map (lambda () 10) null) now signals an error
+list-ref and list-tail accept arbitrarily large indices
+Type for indices changed: must be an exact integer (matches R4RS better)
+  affects make-vector, vector-ref, vector-set!, make-string, string-ref, 
+  string-set!, substring, and struct-ref
+make-namespace's '[no-]set!-undefined and '[no-]auto-else flags
+  removed; replaced with two new parameters: 
+  compile-allow-set!-undefined and compile-allow-cond-fallthrough
+Fixed in units: (define x y) (define y 0) x => #<undefined> instead of 
+  #<void>
+exn:struct's super-type field renamed struct-type for consistency
+exn:i/o:filesystem:filename split into exn:i/o:filesystem:path
+  and exn:i/o:filesystem:file; username exception moved under path
+Unix: system no longer blocks other MzScheme threads
+Unix: processes created by process and process* are not zombies forever, 
+  anymore. (The SIGCHLD signal is handled appropriately.)
+MacOS: dynamic extension suopport via CFM (PPC only in the distributed
+  applications from PLT)
+Windows: removed attempted fix for thread-blocking problem 
+  when reading stdin from console
+Fixed auto-flush of stdout for read of stdin
+Fixed <, >, <=, >= for certain exact rational number comparisons
+Fixed inexact->exact for negative inexact numbers (fractional part
+  was added to the resulting number with the wrong sign)
+Fixed rational? to answer #t for inexact numbers
+Fixed odd?, even?, and trig functions for +inf.0 and -inf.0
+Fixed handling of +nan.0 by many math routines; fixed +nan.0 for
+  everything under Windows
+Added R4RS rationalize
+compound-unit/sig export var clause syntax now matches documentation
+Added require-library-use-zo
+Moved cons? and last-pair into functio.ss instead of compat.ss
+Library system generalized to supoprt multiple collections;
+  current-library-path replaced with current-library-collection-path
+require-library now returns the result of the loaded library
+Removed load-recent from MzLib's file.ss; use load/use-compiled
+  instead
+Added reference-library, "refer.ss" [core], "XXXr.ss" MzLib libraries
+Added build-string, build-vector, build-list, loop-until to MzLib's 
+  functio.ss
+Added thread.ss MzLib library [core]
+Added inflate.ss MzLib library
+Moved synrule.ss out of core
+Fixed MzLib's stringu.ss to not use macro.ss
+Updated MzLib's spidey.ss, added it to core
+Removed define-some, define-virtual-struct, define-struct-tree from
+  MzLib's macro.ss
+begin-expansion-time returns the value of the last expression
+set-thread-weight! replaced with 2-argument thread-weight
+Inside MzScheme: changed class/object toolbox, added custodian
+  toolbox
+Upgraded to gc 4.11
+
+Version 48: Skipped to avoid confusion with Scheme48
+
+Version 47, January 11, 1997
+WARNING: multiple inhertance is going away in the next version or so
+Added will executors
+pretty-print-print-hook and pretty-print-size-hook now take
+ three arguments: value display? port
+file-position can return the current position for any port
+Fixed errors reading floating-point constants due to system
+ library bugs:
+   Linux: strtod("0e...", ...) quits looking after "0"
+   SunOS/Solaris: strtod(".3e2666666666") returned 0.0
+   HP/UX: strtod(".3e2666666666") fails
+Windows: fixed thread-blocking problem for reading stdin from console
+Insize MzScheme: when working with "fd_set" values, use
+  MZ_FD_ZERO, MZ_FD_SET, MZ_FD_CLR, MZ_FD_ISSET; use 
+  scheme_get_fdset() to get the second or third fd_set in an array;
+  routines for thread-blocking are now documented in "Inside MzScheme"
+
+Version 46, December 5, 1996
+unit/sig macros moved out of MzLib and into core MzScheme; 
+  (require-library "unitsig.ss") is obsolete, but still supported
+  as a no-op
+Unit signature matching is now position-independent, and the error
+  messages are better
+Removed obsolete install-unit-with-signature
+(begin) or (begin0) is now a syntax error
+Changed class* syntax so that an explicit name for `this' is provided
+MzLib's class-asi* changed to class*-asi, while adding new `this' id
+Prettier(?) printing for prims like >: #<|primitive:>|>
+invoke-open-unit w/o path/prefix is now the same as #f instead of ();
+  the path form will probably be phased out in a future release
+quasiquote syntax changed slightly
+stdout/stderr are not auto-flushed for read-char or peek-char on stdin
+ (still flushed by read and read-line)
+Added port-display-handler and port-write-handler
+
+Version 45, November 12, 1996
+Multiple return values are agressively supported
+IMPORTANT: let-values is now analogous to let; the old 
+  let-values is now let*-values
+let-values, letrec-values, define-values, and begin0 are primitive
+define-struct and let-struct expand to new struct form
+Added thread-savy parameterization system; namespace system changed
+pipe changed to make-pipe, returns 2 values
+Case-sensitivity for the reader is a settable parameter
+Reading [] and {} as parens is a settable parameter
+class* syntax extended to allow local renaming of public ivars
+delay/force support multiple values
+else and => in cond and else are now "scoped"
+normalize-path from MzLib signals an error for bad paths
+Windows: build-path can join a drive to a (driveless) absolute path
+  and //machine/disk drive names are supported; also fixed 
+  file-system-root-list
+Added complete-path? and current-drive (for Windows)
+Fixed (begin (values ...) ...) and (begin0 (values ...) ...)
+Fixed comparisons between inexact and exact when the
+  exact to inexact conversion results in overflow or underflow,
+  and fixed (exact->inexact (/ X Y)) and (/ +inf.0 X), etc. when 
+  X & Y are larger than the largest floating-point, fixed modulo,
+  remainder, quotient for infinities
+Fixed TCP problems (Unix, Windows) and implemented for MacOS
+Fixed dynamic-loading to always search from current directory
+Fixed real process idling for a timed sleep
+Fixed file read/write exceptions (write exceptions now raised)
+Fixed quasiquote bug with ,@ and unquoting depth
+Fixed filesystem-root-list for Windows
+Fixed dynamic-wind when a continuation is invoked from the post-thunk
+Fixed continuations for re-entry of a continuation that is mulitply-invoked
+Fixed string->number with leading spaces; e.g., (string->number " 1") 
+invoke-unit import variable restriction removed (locals are allowed)
+(case-lambda) is now legal
+\ escapes & and \ in regexp-replace replacement string
+Added regexp-replace*
+Added port-read-handler
+Inside MzScheme: Changed use of scheme_sleep
+Inside MzScheme: Changed primitive unit init func arguments
+Inside MzScheme: Changed primitive accessing of unit boxes and environment boxes
+Inside MzScheme: Revoked syntax extensibility
+Reimplemented the core interpreter (chained closures -> flattened)
+
+Version 44, September 9, 1996
+load, load/cd return value of last loaded expression
+scheme_load returns Scheme_Object* or NULL
+Built-in TCP support (Not MacOS, yet)
+unit clauses macro-expanded before checking `define' keywords
+Better dynamic extension handling and compilation support
+Fixed read blocking threads in FreeBSD
+Extensions' scheme_initialize must return Scheme_Object*
+scheme_sleep has internal default for basic sleeping, installed by
+ scheme_basic_env if scheme_sleep is still NULL
+Unix/Winsock: fds arg for needs_wakeup and scheme_sleep expanded 
+ for writes and exceptions
+Fixed quotient for inexact numbers
+Fixed bug comparing a bignum rational with a fixnum rational
+Fixed startup crash when PATH env variable is slightly bad
+Sped up thread switching for Mac
+Sped up thread switching for most Unix for a small number of threads
+Upgraded to gc 11alpha3
+
+Version 43 re-released August 12, 1996 with libguile
+
+Version 43, August 9, 1996
+"functor" -> "unit"
+signed units added to and used by mzlib (sigfunctors gone)
+Made .zo files smaller and faster to load
+Use 64-bit fixnums for Alpha
+system, system*, process*, and execute* supported for Windows
+Fixed memory bug in printing hexadecimal
+Fix bug in modulo
+Better floating-point control for infinity, nan results
+ on many platforms
+
+Version 42: June 8, 1996
+Functor system added
+Fixed (cond (1)), etc.
+Fixed type-checking for numerical comparisons; e.g., (< 2 1 'a)
+Fixed dynamic-wind and call/ec for values
+Fixed read for strings containing #\nul
+Non-matching cond/case raises an error
+Made string=?, char=?, etc. multi-arity like numerical =, etc.
+Changed definition of time-apply (returns values, now)
+MzScheme threads can almost be real OS threads under Solaris, but more work
+  is needed to guarantee safety for the symbol table and globals. More thread 
+  systems to follow.
+spawn-eval replaced by make-eval
+thread-input-port, thread-output-port, and thread-error-port removed
+binary-and, etc. replaced with 2's complement bitwise-and, etc.
+Fixed writing compiled quoted graph expressions
+Fixed return value of system
+test.scm expanded and broken into multiple files: (load/cd "tests/all.ss")
+
+Version 0.41: April 15, 1996
+Revised class syntax; see the manual
+Exception system added; primitive errors raise exceptions
+defmacro replaced by define-macro
+Added define-id-macro
+Fixed let-macro shadowing local vars
+Improved error messages; error-print-width
+Fixed stack checking for Win32
+'. no longer allowed
+unquote and unquote-splicing now defined at top level
+equal? supports boxes
+
+Version 0.40: March 24, 1996
+structure:X => struct:x
+mzlib path uses MZLIB or PLTHOME environment variables
+
+Version 0.39: March 6, 1996
+Fixed expand-defmacro for (lambda () (and)) et al.
+Fixed sqrt on complex numbers; coefficients were reversed
+Cleaned up read and display/write to handle C stack overflow
+Arity checking bug fixed for arity 0
+Pretty-print is parameterized by depth
+
+Version 0.38: February 22, 1996
+Fixed bug in compiling frame-sharing; e.g.,
+  (let ([d 0]) ((car (cons (let ([a 4]) (lambda () a)) 
+			   (let ([b 7]) b)))))
+ returned 7 instead of 4
+Fixed bug in closing port by call-with-input-file
+Fixed magnitude on negative reals
+Fixed angle on negative reals
+Fixed cos, sin, etc. on rationals
+Fixed min and max on rationals with non-rationals
+Fixed (random 0)
+Fixed equal? on really long lists
+Fixed list procedures with arbitrary duration: checking for break
+Fixed char-X? and characters past ASCII 127
+Fixed hash table bug that causes infinite internal loop
+Fixed bug in reading #| |# comments at the end of a list
+Filesystem utilities added
+"processes" are now called "threads"; procedure names changed accordingly
+eval can return multiple values; r-e-p-l handles correctly
+Some changes to compilation interface:
+  must set new flag is_proc_closure in compile_info rec
+  scheme_static_distance changed; use flags
+scheme_sleep() must now take a float
+current-prompt-read added
+Console version reads ~/.mzschemerc init file (or mzscheme.rc)
+NO_STAT compilation flag -> NO_STAT_PROC
+
+Version 0.37: unreleased
+
+Version 0.36: January 18, 1996
+Fixed bug in bignum multiplication
+
+Version 0.35: January 17, 1996
+current-print added
+x@y notation supported
+~ expanded in pathnames (Unix)
+Fixed bug parsing #T, etc.
+Fixed bug parsing hex numbers and others
+Fixed fp-initialization bug for Win32
+Better printing for special symbols
+
+Version 0.34: December 30, 1995
+Various bignum operations sped up
+Chez-style symbol parsing supported (escaping \ and quoting |)
+
+Version 0.33: December 21, 1995
+rationals and complex numbers supported
+make-class and make-class* syntax changed (one set of parens
+  added). The old syntax is still supported for now, but you
+  should convert. The old syntax will eventualy go away (and
+  Zodiac will never be compatible with it).
+class variables and cvar no longer allowed
+ivar always takes an object; if class included, must be first
+threads/processes changed w.r.t. environment used during execution
+error handler split into erro displayer and error escaper
+stack limitation of expander/compiler removed
+expand => expand-defmacro
+expand-once => expand-defmacro-once
+user-break-poll => user-break-poll-handler
+enable-break => break-enabled
+#% now legal for starting non-keyword symbols
+full floating-point input format supported
+
+Version 0.32: December 4, 1995
+Added weak boxes
++inf.0, -inf.0, -nan.0, +nan.0 constants added
+Better checking when using floats as indices (vector-ref, etc.)
+Better (correct!) hashing procedure
+Fixed threads in Win32s/WinNT by creating a new stack
+Fixed bug in spawning new (MzScheme) processes
+Fixed incorrect process progress (~deadlock) analysis
+Fixed bug in resizing hash table
+Fixed bug in read (reading "+", "-", or "." at EOF)
+Fixed bug in read-number (fractions and forcing; e.g. "../")
+Fixed bug in open-output-string (> 100 chars gave empty result)
+Fixed regexp-replace (memory bug)
+
+Version 0.31: November 14, 1995
+Bignum bigs: subtracting from 0, comparing negative
+(current-eval) initially returned the wrong procedure
+tan procedure added
+putenv
+S-expression graph reading and printing
+
+Version 0.30: October 25, 1995
+Added call-with-values and regexp
+Unix stack-checking setup code fixed
+
+Version 0.29: October 18, 1995
+Added `arity' procedure
+Bug fix related to forms such as (let ([x (let ...)]) ...)
+
+Verion 0.28: October 3, 1995
+Fixed general stack overflow-checking for Unix
+
+Verion 0.27: September 26, 1995
+Moved compilation flags from the Makefile into "sconfig.h"
+More general stack overflow-checking (when needed)
+Computations can overflow the stack and continue
+Changed command line flags; added -r (or --script) flag
+Added multiple inheritance and `rename', `share', and `local' declarations
+Merged Patrick Barta's Windows DLL implementation for `load-extention'
+Re-implemented `quasiquote', `and', and `or' as a macros
+Re-implemented let-forms to make small `let's efficient
+`let*' expands to `let'
+Made core syntactic form names keywords
+Added #% keywords
+Added `hash-table-map' and `hash-table-for-each'
+Fixed bignum bugs: `eqv?'/`equal?' and `modulo'
+Fixed inexact bugs: `floor', `ceiling', and `round'
+Created this "HISTORY" file

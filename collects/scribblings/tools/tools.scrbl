@@ -25,7 +25,7 @@ familiarity with
 PLT Scheme, as described in 
 @(other-manual '(lib "scribblings/guide/guide.scrbl")),
 DrScheme, as described in
-@(other-manual '(lib "scribblings/drscheme/drscheme.scrbl")),
+@(other-manual '(lib "scribblings/drracket/drracket.scrbl")),
 and the Framework, as described in
 @(other-manual '(lib "scribblings/framework/framework.scrbl")).
 
@@ -373,7 +373,7 @@ implements that method before overriding it:
 ]
 
 To help test your tool, use the 
-@seclink["environment-variables" #:doc '(lib "scribblings/drscheme/drscheme.scrbl")]{@tt{PLTONLYTOOL}}
+@seclink["environment-variables" #:doc '(lib "scribblings/drracket/drracket.scrbl")]{@tt{PLTONLYTOOL}}
 environment variable to load it in isolation.
 
 @section{Creating New Kinds of DrScheme Frames}
@@ -482,9 +482,9 @@ for a list of the capabilities registered by default.
 Check Syntax is a part of the DrScheme collection, but is implemented via the tools api, i.e.,
 not taking any advantage of 
 
-@defmodule[drscheme/syncheck-drscheme-button]
+@defmodule[drscheme/syncheck-drracket-button]
 
-@defthing[syncheck-drscheme-button
+@defthing[syncheck-drracket-button
           (list/c 
            string?
            (is-a?/c bitmap%)

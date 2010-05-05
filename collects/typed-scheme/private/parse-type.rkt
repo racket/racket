@@ -6,11 +6,12 @@
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: scheme/contract)
          syntax/parse
-         (env type-environments type-name-env type-alias-env lexical-env)
-         (prefix-in t: (combine-in "base-types-extra.rkt" "base-types.rkt")) (only-in "colon.rkt" :)
+         (env type-environments type-name-env type-alias-env lexical-env)         
          scheme/match 
-         (for-template scheme/base "base-types-extra.rkt" "colon.rkt")
-         (for-template (prefix-in t: "base-types-extra.rkt")))
+         (for-template scheme/base "colon.ss")
+         ;; needed at this phase for tests
+         (combine-in (prefix-in t: "base-types-extra.ss") "colon.ss")
+         (for-template (prefix-in t: "base-types-extra.ss")))
 
 (define-struct poly (name vars) #:prefab)
 
@@ -86,8 +87,7 @@
 
 (define-splicing-syntax-class latent-filter
   #:description "latent filter"  
-  (pattern (~seq t:expr @:id pe:path-elem ...)
-           #:fail-unless (eq? (syntax-e #'@) '@) "expected @"
+  (pattern (~seq t:expr (~describe "@" (~datum @)) pe:path-elem ...)
            #:attr type (parse-type #'t)
            #:attr path (attribute pe.pe))
   (pattern t:expr
@@ -98,8 +98,8 @@
   (parameterize ([current-orig-stx stx])    
     (syntax-parse
         stx
-      #:literals (t:Class t:Refinement t:Instance t:Tuple t:List cons t:pred t:-> : case-lambda
-                          t:Vectorof t:mu t:Rec t:U t:All t:Opaque t:Parameter quote)
+      #:literals (t:Class t:Refinement t:Instance t:List cons t:pred t:-> : case-lambda
+                          t:Rec t:U t:All t:Opaque t:Parameter quote)
       [t
        #:declare t (3d Type?)
        (attribute t.datum)]
@@ -152,7 +152,7 @@
               [_ (tc-error/stx 
                   ty
                   "Component of case-lambda type was not a function clause")]))))]
-      [((~and kw t:Vectorof) t)
+      #;[((~and kw t:Vectorof) t)
        (add-type-name-reference #'kw)
        (make-Vector (parse-type #'t))]
       [((~and kw t:Rec) x:id t)
@@ -289,11 +289,11 @@
        (tc-error "Opaque: bad syntax")]
       [(t:U . rest)
        (tc-error "Union: bad syntax")]
-      [(t:Vectorof . rest)
+      #;[(t:Vectorof . rest)
        (tc-error "Vectorof: bad syntax")]
-      [((~and (~datum mu) t:mu) . rest) 
+      [((~and (~datum mu) t:Rec) . rest) 
        (tc-error "mu: bad syntax")]
-      [(t:mu . rest) 
+      [(t:Rec . rest) 
        (tc-error "Rec: bad syntax")]
       [(t ... t:-> . rest)
        (tc-error "->: bad syntax")]

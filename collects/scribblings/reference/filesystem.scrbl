@@ -76,7 +76,7 @@ by @racket[kind], which must be one of the following:
 
   @item{@|AllUnix|: @indexed-file{.racketrc}}
 
-  @item{Windows: @indexed-file{racketrc.rkts}}
+  @item{Windows: @indexed-file{racketrc.rktl}}
 
   ]}
 
@@ -382,12 +382,11 @@ directory is not deleted successfully, the
 @defproc[(directory-list [path path-string? (current-directory)]) 
          (listof path?)]{
 
+@margin-note{See also the @scheme[in-directory] sequence constructor.}
+
 Returns a list of all files and directories in the directory specified
-by @racket[path]. If @racket[path] is omitted, a list of files and
-directories in the current directory is returned. Under @|AllUnix|, an
-element of the list can start with @litchar{./~} if it would otherwise
-start with @litchar{~}. Under Windows, an element of the list may
-start with @litchar{\\?\REL\\}.}
+by @racket[path]. Under Windows, an element of the list may start with
+@litchar{\\?\REL\\}.}
 
 
 @defproc[(filesystem-root-list) (listof path?)]{

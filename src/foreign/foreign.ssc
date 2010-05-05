@@ -162,7 +162,7 @@ END_XFORM_SKIP;
   [name    "Scheme_Object*"]
   [objects "Scheme_Hash_Table*"]]
 
-static Scheme_Hash_Table *opened_libs;
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 
 /* (ffi-lib filename no-error?) -> ffi-lib */
 @cdefine[ffi-lib 1 2]{
@@ -2199,12 +2199,15 @@ void scheme_init_foreign_globals()
                  (reverse (cstructs)))
   }
   scheme_set_type_printer(ctype_tag, ctype_printer);
-  MZ_REGISTER_STATIC(opened_libs);
-  opened_libs = scheme_make_hash_table(SCHEME_hash_string);
   @(maplines (lambda (sym)
                @list{MZ_REGISTER_STATIC(@(cadr sym));
                      @(cadr sym) = scheme_intern_symbol("@(car sym)")})
              (reverse (symbols)))
+}
+
+void scheme_init_foreign_places() {
+  MZ_REGISTER_STATIC(opened_libs);
+  opened_libs = scheme_make_hash_table(SCHEME_hash_string);
 }
 
 void scheme_init_foreign(Scheme_Env *env)

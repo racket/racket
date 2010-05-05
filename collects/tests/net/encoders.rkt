@@ -12,12 +12,12 @@
           (make-bytes 204 (char->integer #\x))
           (list->bytes (for/list ([i (in-range 256)]) i))
           ;; Something that doesn't end with a LF:
-          (bytes-append (with-input-from-file (build-path dir "net.rkt")
+          (bytes-append (with-input-from-file (build-path dir "net.rktl")
                           (lambda () (read-bytes 500)))
            #"xxx")
           ;; CRLF:
           (regexp-replace #rx#"\r?\n"
-                          (with-input-from-file (build-path dir "net.rkt")
+                          (with-input-from-file (build-path dir "net.rktl")
                             (lambda () (read-bytes 500)))
            #"\r\n"))))
 
@@ -61,7 +61,7 @@
                    ;; check 1/4 of the files, randomly
                    (let ([p (build-path dir f)])
                      (and (zero? (random 4))
-                          (not (regexp-match #rx"^flat.*\\.rkt$"
+                          (not (regexp-match #rx"^flat.*\\.rktl$"
                                              (path-element->string f)))
                           (file-exists? p)
                           p)))

@@ -1,8 +1,8 @@
 .\" dummy line
-.TH MZSCHEME 1 "January 2008"
+.TH MZSCHEME 1 "May 2010"
 .UC 4
 .SH NAME
-mzscheme \- The PLT Scheme implementation
+mzscheme \- compatibility executable for Racket 
 .SH SYNOPSIS
 .B mzscheme
 [
@@ -11,35 +11,20 @@ mzscheme \- The PLT Scheme implementation
 .I argument ...
 ]
 .SH DESCRIPTION
-MzScheme
-is the PLT
-Scheme implementation.
+MzScheme is the old name for the core Racket implementation.
 
 .PP
-Run
-.PP
-   mzscheme --help
-.PP
-for a list of command-line options and other start-up information.
-
-.PP
-Supplying no arguments to
+For most cases, running
 .B mzscheme
-is the same as supplying the
-.B -i
-option for interactive evaluation.
-
-.PP
-Supplying a single non-switch argument to
-.B mzscheme
-is the same as putting
-.B -u
-before the argument to run it as a module-based script.
+is the same as running
+.BR racket ,
+except that the default interaction language is slightly
+different for backward compatibility.
 
 .SH MORE INFORMATION
 For further information, run
 .PP
-   plt-help
+   raco docs
 .PP
 to open installed documentation in your web browser.
 
@@ -48,15 +33,7 @@ Alternately, consult the on-line
 documentation and other information available at
 .PP
 .ce 1
-http://www.plt-scheme.org/software/mzscheme/
+http://www.racket-lang.org/
 
-.SH AUTHOR
-MzScheme
-was implemented by Matthew Flatt (mflatt@plt-scheme.org).
-It was originally based on libscheme, written by Brent Benson.
 .SH SEE ALSO
-.BR plt-help(1),
-.BR drscheme(1),
-.BR mred(1),
-.BR setup-plt(1),
-.BR mzc(1)
+.BR racket(1)

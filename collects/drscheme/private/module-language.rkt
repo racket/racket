@@ -213,7 +213,7 @@
              
              (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
              (manager-skip-file-handler
-              (λ (p) (file-date-in-paths 
+              (λ (p) (file-stamp-in-paths 
                       p
                       (cons (CACHE-DIR) (current-library-collection-paths)))))))))
       

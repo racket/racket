@@ -6,7 +6,7 @@
 @title[#:tag "running" #:style 'toc]{Running and Creating Executables}
 
 While developing programs, many Racket programmers use the
-@seclink[#:doc '(lib "scribblings/drscheme/drscheme.scrbl")
+@seclink[#:doc '(lib "scribblings/drracket/drracket.scrbl")
 "top"]{DrRacket} programming environment. To run a program without the
 development environment, use @exec{racket} (for console-based
 programs) or @exec{gracket} (for GUI programs). This chapter mainly
@@ -167,7 +167,8 @@ instead of @racketmodname[racket/init].
 
 @section[#:tag "exe"]{Creating Stand-Alone Executables}
 
-@(define mzc-doc '(lib "scribblings/mzc/mzc.scrbl"))
+@(define raco-doc '(lib "scribblings/raco/raco.scrbl"))
 
 For information on creating and distributing executables, see
-@secref[#:doc mzc-doc "sa"] in @other-manual[mzc-doc].
+@secref[#:doc raco-doc "exe"] and @secref[#:doc raco-doc "exe-dist"] in
+@other-manual[raco-doc].

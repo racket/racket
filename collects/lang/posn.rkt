@@ -1,5 +1,10 @@
+#lang racket/base
 
 ;; The posn struct for the teaching languages
-(module posn mzscheme
-  (define-struct posn (x y) (make-inspector)) ; transparent
-  (provide (struct posn (x y))))
+(provide (struct-out posn) make-posn)
+
+(struct posn (x y) #:mutable #:transparent)
+
+;; We define a separate function so tha it has the 
+;; name `make-posn':
+(define (make-posn x y) (posn x y))

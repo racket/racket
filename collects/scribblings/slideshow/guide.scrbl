@@ -15,21 +15,21 @@
 
 @title{Creating Slide Presentations}
 
-The @schememodname[slideshow] module acts as a language that includes:
+The @racketmodname[slideshow] module acts as a language that includes:
 
 @itemize[
 
- @item{all of @schememodname[scheme];}
+ @item{all of @racketmodname[racket];}
 
- @item{pict-creating functions from @schememodname[slideshow/pict]; and}
+ @item{pict-creating functions from @racketmodname[slideshow/pict]; and}
 
- @item{slide-composing functions from @schememodname[slideshow/base].}
+ @item{slide-composing functions from @racketmodname[slideshow/base].}
 
 ]
 
-The @schememodname[slideshow] and @schememodname[slideshow/base]
+The @racketmodname[slideshow] and @racketmodname[slideshow/base]
 module initialization also check the
-@scheme[current-command-line-arguments] parameter to configure the
+@racket[current-command-line-arguments] parameter to configure the
 slide mode (e.g., printing).
 
 The rest of this section repeats information that is presented by the
@@ -39,11 +39,11 @@ link.
 
 @section{Slide Basics}
 
-The main Slideshow function is @scheme[slide], which adds a slide to
+The main Slideshow function is @racket[slide], which adds a slide to
 the presentation with a given content. For example, the ``Hello
 World'' presentation can be defined by the following module:
 
-@schememod[
+@racketmod[
 slideshow
 
 (slide
@@ -51,7 +51,7 @@ slideshow
  (t "Hello World!"))
 ]
  
-The @scheme[t] function in this example creates a pict containing the
+The @racket[t] function in this example creates a pict containing the
 given text using the default font and style.
 
 Executing the above module pops up a slide-presentation window. Type
@@ -73,13 +73,13 @@ Alt-q (or Meta-q) to end the slides. Here are more controls:
   (list "Alt, Meta, or Cmd with arrow"        "move window 10 pixels")
 ]
 
-The @scheme[slide] function accepts any number of arguments. Each
+The @racket[slide] function accepts any number of arguments. Each
 argument is a pict to be centered on the slide. The picts are stacked
-vertically with @scheme[gap-size] separation between each pict, and
+vertically with @racket[gap-size] separation between each pict, and
 the total result is centered (as long as there's a gap of at least
-@scheme[(* 2 gap-size)] between the title and content).
+@racket[(* 2 gap-size)] between the title and content).
 
-@schememod[
+@racketmod[
 slideshow
 
 (slide
@@ -89,10 +89,10 @@ slideshow
 ]
 
 Various functions format paragraphs and generate bulleted items for
-lists. For example, @scheme[item] creates a bulleted paragraph that
+lists. For example, @racket[item] creates a bulleted paragraph that
 spans (by default) the middle @math{2/3} of the slide:
 
-@schememod[
+@racketmod[
 slideshow
 
 (slide
@@ -103,17 +103,17 @@ slideshow
        "could be" (bt "Goodbye Dlrow!")))
 ]
 
-As the example illustrates, the @scheme[item] function accepts a
+As the example illustrates, the @racket[item] function accepts a
 mixture of strings and picts, and it formats them as a paragraph.
 
 @; ------------------------------------------------------------------------
 
 @section[#:tag "staging"]{Staging Slides}
 
-The @scheme[slide] function creates a slide as a side effect. It can
+The @racket[slide] function creates a slide as a side effect. It can
 be put inside a function to abstract over a slide:
 
-@schememod[
+@racketmod[
 slideshow
 
 (define (slide-n n)
@@ -125,42 +125,42 @@ slideshow
 (slide-n 2)
 (slide-n 3)]
 
-The @scheme[slide] function also has built-in support for some common
-multi-slide patterns. Each element argument to @scheme[slide] is
+The @racket[slide] function also has built-in support for some common
+multi-slide patterns. Each element argument to @racket[slide] is
 usually a pict, but there are a few other possibilities:
 
 @itemize[
 
-  @item{If an element is @scheme['next], then a slide is generated
+  @item{If an element is @racket['next], then a slide is generated
     containing only the preceding elements, and then the elements are
-    re-processed without the @scheme['next]. Multiple @scheme['next]
+    re-processed without the @racket['next]. Multiple @racket['next]
     elements generate multiple slides.}
 
-  @item{If an element is @scheme['alts], then the next element must be
+  @item{If an element is @racket['alts], then the next element must be
     a list of element lists. Each list up to the last one is appended
-    to the elements before @scheme['alts] and the resulting list of
+    to the elements before @racket['alts] and the resulting list of
     elements is processed. The last lists is appended to the preceding
     elements along with the remaining elements (after the list of
     lists) and the result is re-processed.}
 
- @item{A @scheme['nothing] element is ignored (useful as a result of a
+ @item{A @racket['nothing] element is ignored (useful as a result of a
     branching expression).}
 
- @item{A @scheme['next!] element is like @scheme['next], except that
+ @item{A @racket['next!] element is like @racket['next], except that
     it is preserved when condensing (via the @DFlag{condense} flag).}
 
- @item{A @scheme['alts~] element is like @scheme['alts], except that
+ @item{A @racket['alts~] element is like @racket['alts], except that
     it is @italic{not} preserved when condensing.}
 
-  @item{A comment produced by @scheme[comment] is ignored, except when
+  @item{A comment produced by @racket[comment] is ignored, except when
     commentary is displayed.}
 
 ]
 
-Here's an example to illustrate how @scheme['next] and @scheme['alts]
+Here's an example to illustrate how @racket['next] and @racket['alts]
 work:
 
-@schememod[
+@racketmod[
 slideshow
 
 (slide
@@ -190,27 +190,27 @@ they are displayed. Thus, one picture unit reliably corresponds
 to a ``pixel'' that occupies @math{1/1024} by @math{1/768} of the
 screen.
 
-The @scheme[text] form for generating text pictures takes into
+The @racket[text] form for generating text pictures takes into
 account any expected scaling for the display when measuring
-text. (All Slideshow text functions, such as @scheme[t] and
-@scheme[item] are built on @scheme[text].) In particular, scaling
+text. (All Slideshow text functions, such as @racket[t] and
+@racket[item] are built on @racket[text].) In particular, scaling
 the picture causes a different font size to be used for drawing
 the slide---rather than bitmap-scaling the original font---and
 changing the font size by a factor of @math{k} does not
 necessarily scale all text dimensions equally by a factor of
 @math{k}---because, for most devices, each character must have
 integer dimensions. Nevertheless, especially if you use the
-@scheme[current-expected-text-scale] parameter, Slideshow is
+@racket[current-expected-text-scale] parameter, Slideshow is
 usually able to produce good results when the slide is scaled.
 
 More generally, different font sets on different platforms can
-change the way a slide is rendered. For example, the @scheme[tt]
+change the way a slide is rendered. For example, the @racket[tt]
 font on one platform might be slightly wider than on another,
 causing different line breaks, and so on. Beware.
 
 Beware also of using bitmaps in slides when the presentation
 screen is not @math{1024} by @math{768}. In that case, consider
-using @scheme[size-in-pixels] (with the caveat that the resulting
+using @racket[size-in-pixels] (with the caveat that the resulting
 picture will take up different amounts of the slide on different
 displays).
 
@@ -221,16 +221,16 @@ displays).
 @defmodule[slideshow/start]
 
 The @exec{slideshow} executable invokes the
-@schememodname[slideshow/start] module, which inspects the command
-line as reported by @scheme[current-command-line-arguments] to get
+@racketmodname[slideshow/start] module, which inspects the command
+line as reported by @racket[current-command-line-arguments] to get
 another module to provide the slide content. It also initializes
-variables like @scheme[printing?] and @scheme[condense?] based on
+variables like @racket[printing?] and @racket[condense?] based on
 flags supplied on the command line.
 
-Thus, if the above example is in @filepath{multi-step.ss}, then the
+Thus, if the above example is in @filepath{multi-step.rkt}, then the
 command
 
-@commandline{slideshow multi-step.ss}
+@commandline{slideshow multi-step.rkt}
 
 runs the slides.
 

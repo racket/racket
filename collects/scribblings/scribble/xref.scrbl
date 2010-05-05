@@ -8,7 +8,7 @@
 
 @title[#:tag "xref"]{Cross-Reference Utilities}
 
-@defmodule[scribble/xref]{The @schememodname[scribble/xref] library
+@defmodule[scribble/xref]{The @racketmodname[scribble/xref] library
 provides utilities for querying cross-reference information that was
 collected from a document build.}
 
@@ -16,8 +16,8 @@ collected from a document build.}
 
 @defproc[(xref? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a cross-reference record created
-by @scheme[load-xref], @scheme[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is a cross-reference record created
+by @racket[load-xref], @racket[#f] otherwise.}
 
 
 @defproc[(load-xref [sources (listof (-> any/c))]
@@ -28,18 +28,18 @@ by @scheme[load-xref], @scheme[#f] otherwise.}
 
 Creates a cross-reference record given a list of functions that each
 produce a serialized information obtained from @xmethod[render%
-serialize-info]. If a @scheme[sources] element produces @scheme[#f],
+serialize-info]. If a @racket[sources] element produces @racket[#f],
 its result is ignored.
 
 Since the format of serialized information is specific to a rendering
-class, the optional @scheme[using-render%] argument accepts the
+class, the optional @racket[using-render%] argument accepts the
 relevant class. It default to HTML rendering.
 
-If @scheme[root-path] is not @scheme[#f], then file paths that are
-serialized as relative to an instantiation-supplied @scheme[root-path]
-are deserialized as relative instead to the given @scheme[root-path].
+If @racket[root-path] is not @racket[#f], then file paths that are
+serialized as relative to an instantiation-supplied @racket[root-path]
+are deserialized as relative instead to the given @racket[root-path].
 
-Use @scheme[load-collections-xref] from @schememodname[setup/xref] to
+Use @racket[load-collections-xref] from @racketmodname[setup/xref] to
 get all cross-reference information for installed documentation.}
 
 
@@ -58,7 +58,7 @@ get all cross-reference information for installed documentation.}
                                        [mode (or/c exact-integer? false/c)])
          (or/c tag? false/c)]{
 
-Locates a tag in @scheme[xref] that documents a module export. The
+Locates a tag in @racket[xref] that documents a module export. The
 binding is specified in one of several ways, as described below; all
 possibilities encode an exporting module and a symbolic name. The name
 must be exported from the specified module. Documentation is found
@@ -66,35 +66,35 @@ either for the specified module or, if the exported name is
 re-exported from other other module, for the other module
 (transitively).
 
-The @scheme[mode] argument specifies the relevant phase level for the
-binding. The @scheme[binding] is specified in one of four ways:
+The @racket[mode] argument specifies the relevant phase level for the
+binding. The @racket[binding] is specified in one of four ways:
 
 @itemize[
 
- @item{If @scheme[binding] is an identifier, then
-       @scheme[identifier-binding] is used with @scheme[mode] to
+ @item{If @racket[binding] is an identifier, then
+       @racket[identifier-binding] is used with @racket[mode] to
        determine the binding.}
 
- @item{If @scheme[binding] is a two-element list, then the first
+ @item{If @racket[binding] is a two-element list, then the first
        element provides the exporting module and the second the
-       exported name. The @scheme[mode] argument is effectively
+       exported name. The @racket[mode] argument is effectively
        ignored.}
 
- @item{If @scheme[binding] is a seven-element list, then it corresponds
-       to a result from @scheme[identifier-binding] using
-       @scheme[mode].}
+ @item{If @racket[binding] is a seven-element list, then it corresponds
+       to a result from @racket[identifier-binding] using
+       @racket[mode].}
 
- @item{If @scheme[binding] is a five-element list, then the first
+ @item{If @racket[binding] is a five-element list, then the first
        element is as for the two-element-list case, and the remain
        elements are as in the last four elements of the seven-element
        case.}
 
 ]
 
-If a documentation point exists in @scheme[xref], a tag is returned,
-which might be used with @scheme[xref-tag->path+anchor] or embedded in
-a document rendered via @scheme[xref-render]. If no definition point
-is found in @scheme[xref], the result is @scheme[#f].}
+If a documentation point exists in @racket[xref], a tag is returned,
+which might be used with @racket[xref-tag->path+anchor] or embedded in
+a document rendered via @racket[xref-render]. If no definition point
+is found in @racket[xref], the result is @racket[#f].}
 
 
 @defproc[(xref-tag->path+anchor [xref xref?]
@@ -104,24 +104,24 @@ is found in @scheme[xref], the result is @scheme[#f].}
          (values (or/c false/c path?)
                  (or/c false/c string?))]{
 
-Returns a path and anchor string designated by the key @scheme[tag]
-according the cross-reference @scheme[xref]. The first result is
-@scheme[#f] if no mapping is found for the given tag. The second
-result is @scheme[#f] if the first result is @scheme[#f], and it can
-also be @scheme[#f] if the tag refers to a page rather than a specific
+Returns a path and anchor string designated by the key @racket[tag]
+according the cross-reference @racket[xref]. The first result is
+@racket[#f] if no mapping is found for the given tag. The second
+result is @racket[#f] if the first result is @racket[#f], and it can
+also be @racket[#f] if the tag refers to a page rather than a specific
 point in a page.
 
-The optional @scheme[using-render%] argument is as for
-@scheme[load-xref].}
+The optional @racket[using-render%] argument is as for
+@racket[load-xref].}
 
 
 @defproc[(xref-tag->index-entry [xref xref?]
                                 [tag tag?])
          (or/c false/c entry?)]{
 
-Extract an @scheme[entry] structure that provides addition information
-about the definition (of any) referenced by @scheme[tag]. This
-function can be composed with @scheme[xref-binding->definition-tag] to
+Extract an @racket[entry] structure that provides addition information
+about the definition (of any) referenced by @racket[tag]. This
+function can be composed with @racket[xref-binding->definition-tag] to
 obtain information about a binding, such as the library that exports
 the binding and its original name.}
 
@@ -134,22 +134,22 @@ the binding and its original name.}
                       [#:refer-to-existing-files? use-existing? any/c (not dest)])
          (or/c void? any/c)]{
 
-Renders @scheme[doc] using the cross-reference info in @scheme[xref]
-to the destination @scheme[dest]. For example, @scheme[doc] might be a
+Renders @racket[doc] using the cross-reference info in @racket[xref]
+to the destination @racket[dest]. For example, @racket[doc] might be a
 generated document of search results using link tags described in
-@scheme[xref].
+@racket[xref].
 
-If @scheme[dest] is @scheme[#f], no file is written, and the result is
+If @racket[dest] is @racket[#f], no file is written, and the result is
 an X-expression for the rendered page. Otherwise, the file
-@scheme[dest] is written and the result is @|void-const|.
+@racket[dest] is written and the result is @|void-const|.
 
-The optional @scheme[using-render%] argument is as for
-@scheme[load-xref]. It determines the kind of output that is
+The optional @racket[using-render%] argument is as for
+@racket[load-xref]. It determines the kind of output that is
 generated.
 
-If @scheme[use-existing?] is true, then files referenced during
+If @racket[use-existing?] is true, then files referenced during
 rendering (such as image files) are referenced from their existing
-locations, instead of copying to the directory of @scheme[dest].}
+locations, instead of copying to the directory of @racket[dest].}
 
 
 @defproc[(xref-transfer-info [renderer (is-a?/c render%)]
@@ -157,15 +157,15 @@ locations, instead of copying to the directory of @scheme[dest].}
                              [xref xref?])
          void?]{
 
-Transfers cross-reference information to @scheme[ci], which is the
-initially collected information from @scheme[renderer].}
+Transfers cross-reference information to @racket[ci], which is the
+initially collected information from @racket[renderer].}
                              
 
 
 @defproc[(xref-index [xref xref?]) (listof entry?)]{
 
-Converts indexing information @scheme[xref] into a list of
-@scheme[entry] structures.}
+Converts indexing information @racket[xref] into a list of
+@racket[entry] structures.}
 
 
 @defstruct[entry ([words (and/c (listof string?) cons?)]
@@ -175,8 +175,8 @@ Converts indexing information @scheme[xref] into a list of
 
 Represents a single entry in a Scribble document index.
 
-The @scheme[words] list corresponds to
-@scheme[index-element-plain-seq]. The @scheme[content] list
-corresponds to @scheme[index-element-entry-seq]. The @scheme[desc]
-value corresponds to @scheme[index-element-desc]. The @scheme[tag] is
+The @racket[words] list corresponds to
+@racket[index-element-plain-seq]. The @racket[content] list
+corresponds to @racket[index-element-entry-seq]. The @racket[desc]
+value corresponds to @racket[index-element-desc]. The @racket[tag] is
 the destination for the index link into the main document.}

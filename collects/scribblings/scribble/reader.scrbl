@@ -3,41 +3,41 @@
           scribble/bnf
           scribble/eval
           "utils.ss"
-          (for-syntax scheme/base)
+          (for-syntax racket/base)
           (for-label (only-in scribble/reader
                               use-at-readtable)))
 
 @(define read-eval (make-base-eval))
-@(interaction-eval #:eval read-eval (require (for-syntax scheme/base)))
+@(interaction-eval #:eval read-eval (require (for-syntax racket/base)))
 
-@(define (at-exp-scheme)
-   @scheme[#, @hash-lang[] #, @schememodname[at-exp] #, @schemeidfont{scheme}])
+@(define (at-exp-racket)
+   @racket[#, @hash-lang[] #, @racketmodname[at-exp] #, @racketidfont{racket}])
 
 @title[#:tag "reader"]{@"@" Syntax}
 
 The Scribble @"@" notation is designed to be a convenient facility for
-free-form text in Scheme code, where ``@"@"'' was chosen as one of the
-least-used characters in existing Scheme code. An @"@"-expression is
+free-form text in Racket code, where ``@"@"'' was chosen as one of the
+least-used characters in existing Racket code. An @"@"-expression is
 simply an S-expression in disguise.
 
 Typically, @"@" notation is enabled through
-@schememodname[scribble/base] or similar languages, but you can also
+@racketmodname[scribble/base] or similar languages, but you can also
 add @"@" notation to an S-expression-based language using the
-@schememodname[at-exp] meta-language. For example,
+@racketmodname[at-exp] meta-language. For example,
 
 @verbatim[#:indent 2]|{
-  #lang at-exp scheme
+  #lang at-exp racket
   (define v '@op{str})
 }|
 
 is equivalent to 
 
-@schememod[
-scheme
+@racketmod[
+racket
 (define v '(op "str"))
 ]
 
-Using @at-exp-scheme[] is probably the easiest way to try the examples
+Using @at-exp-racket[] is probably the easiest way to try the examples
 in this chapter.
 
 @;--------------------------------------------------------------------
@@ -46,7 +46,7 @@ in this chapter.
 To review @secref["how-to:reader"], the concrete syntax of @"@"-forms
 is roughly
 
-@schemeblock[
+@racketblock[
  @#,BNF-seq[@litchar["@"]
             @nonterm{cmd}
             @litchar{[} @kleenestar{@nonterm{datum}} @litchar{]}
@@ -57,15 +57,15 @@ where all three parts after @litchar["@"] are optional, but at least
 one should be present.  (Spaces are not allowed between the
 three parts.)  Roughly, a form matching the above grammar is read as
 
-@schemeblock[
+@racketblock[
   (@#,nonterm{cmd} @#,kleenestar{@nonterm{datum}} @#,kleenestar{@nonterm{parsed-body}})
 ]
 
 where @nonterm{parsed-body} is the translation of each
 @nonterm{text-body} in the input.  Thus, the initial @nonterm{cmd}
-determines the Scheme code that the input is translated into.  The
-common case is when @nonterm{cmd} is a Scheme identifier, which reads
-as a plain Scheme form, with datum arguments and/or string arguments.
+determines the Racket code that the input is translated into.  The
+common case is when @nonterm{cmd} is a Racket identifier, which reads
+as a plain Racket form, with datum arguments and/or string arguments.
 
 Here is one example:
 
@@ -73,38 +73,38 @@ Here is one example:
   @foo{blah blah blah}
 }===|
 
-The example shows how an input syntax is read as Scheme syntax, not
+The example shows how an input syntax is read as Racket syntax, not
 what it evaluates to. If you want to see the translation of an example
 into S-expression form, add a quote in front of it in a
-@at-exp-scheme[] module. For example, running
+@at-exp-racket[] module. For example, running
 
 @verbatim[#:indent 2]|{
-  #lang at-exp scheme
+  #lang at-exp racket
   '@foo{blah blah blah}
 }|
 
-in DrScheme prints the output
+in DrRacket prints the output
 
-@nested[#:style 'inset]{@schemeresult[(foo "blah blah blah")]}
+@nested[#:style 'inset]{@racketresult[(foo "blah blah blah")]}
 
 while omitting the quote
 
 @verbatim[#:indent 2]|{
-  #lang at-exp scheme
+  #lang at-exp racket
   @foo{blah blah blah}
 }|
 
-triggers a syntax error because @scheme[foo] is not bound, and
+triggers a syntax error because @racket[foo] is not bound, and
 
 @verbatim[#:indent 2]|{
-  #lang at-exp scheme
+  #lang at-exp racket
   (define (foo str) (printf "He wrote ~s.\n" str))
   @foo{blah blah blah}
 }|
 
 prints the output
 
-@nested[#:style 'inset]{@schemeoutput{He wrote "blah blah blah".}}
+@nested[#:style 'inset]{@racketoutput{He wrote "blah blah blah".}}
 
 Here are more examples of @"@"-forms:
 
@@ -122,13 +122,13 @@ Here are more examples of @"@"-forms:
 }===|
 
 As seen in the last example, multiple lines and the newlines that
-separate them are parsed to multiple Scheme strings.  More generally,
+separate them are parsed to multiple Racket strings.  More generally,
 a @nonterm{text-body} is made of text, newlines, and nested
 @"@"-forms, where the syntax for @"@"-forms is the same whether it's
-in a @nonterm{text-body} context as in a Scheme context.  A
+in a @nonterm{text-body} context as in a Racket context.  A
 @nonterm{text-body} that isn't an @"@"-form is converted to a string
 expression for its @nonterm{parsed-body}; newlines and following
-indentations are converted to @scheme["\n"] and all-space string
+indentations are converted to @racket["\n"] and all-space string
 expressions.
 
 @scribble-examples|==={
@@ -142,8 +142,8 @@ expressions.
 
 The command part of an @"@"-form is optional as well. In that case,
 the @"@" forms is read as a list, which usually counts as a function
-application, but it also useful when quoted with the usual Scheme
-@scheme[quote]:
+application, but it also useful when quoted with the usual Racket
+@racket[quote]:
 
 @scribble-examples|==={
   @{blah blah}
@@ -155,8 +155,8 @@ application, but it also useful when quoted with the usual Scheme
 
 Finally, we can also drop the datum and text parts, which leaves us with
 only the command---which is read as is, not within a parenthesized
-form.  This is not useful when reading Scheme code, but it can be used
-inside a text block to escape a Scheme identifier.  A vertical bar
+form.  This is not useful when reading Racket code, but it can be used
+inside a text block to escape a Racket identifier.  A vertical bar
 (@litchar{|}) can be used to delimit the escaped identifier when
 needed.
 
@@ -167,7 +167,7 @@ needed.
   @{blah @|foo|: blah}
 }===|
 
-Actually, the command part can be any Scheme expression (that does not
+Actually, the command part can be any Racket expression (that does not
 start with @litchar["["], @litchar["{"], or @litchar["|"]), which is
 particularly useful with such escapes since they can be used with any
 expression.
@@ -177,7 +177,7 @@ expression.
   @foo{A @"string" escape}
 }===|
 
-Note that an escaped Scheme string is merged with the surrounding text
+Note that an escaped Racket string is merged with the surrounding text
 as a special case.  This is useful if you want to use the special
 characters in your string, but escaping braces are not necessary if
 they are balanced.
@@ -214,10 +214,10 @@ and @litchar{<>}s.)  With this extension, Scribble syntax can be used as a
   @foo|<<{bar}@|{baz}>>|
 }===|
 
-On the flip side of this is, how can an @"@" sign be used in Scheme
-code?  This is almost never an issue, because Scheme strings and
+On the flip side of this is, how can an @"@" sign be used in Racket
+code?  This is almost never an issue, because Racket strings and
 characters are still read the same, and @litchar["@"] is set as a
-non-terminating reader macro so it can be used in Scheme identifiers
+non-terminating reader macro so it can be used in Racket identifiers
 anywhere except in the first character of an identifier.  When
 @litchar["@"] must appear as the first character of an identifier, you
 must quote the identifier just like other non-standard characters in
@@ -229,7 +229,7 @@ normal S-expression syntax: with a backslash or with vertical bars.
 }===|
 
 Note that spaces are not allowed before a @litchar{[} or a
-@litchar["{"], or they will be part of the following text (or Scheme
+@litchar["{"], or they will be part of the following text (or Racket
 code).  (More on using braces in body texts below.)
 
 @scribble-examples|==={
@@ -238,11 +238,11 @@ code).  (More on using braces in body texts below.)
 
 Finally, remember that the Scribble is just an alternate for
 S-expressions. Identifiers still get their meaning, as in any
-Scheme code, through the lexical context in which they appear.
-Specifically, when the above @"@"-form appears in a Scheme expression
+Racket code, through the lexical context in which they appear.
+Specifically, when the above @"@"-form appears in a Racket expression
 context, the lexical environment must provide bindings for
-@scheme[foo] as a procedure or a macro; it can be defined, required,
-or bound locally (with @scheme[let], for example).
+@racket[foo] as a procedure or a macro; it can be defined, required,
+or bound locally (with @racket[let], for example).
 
 @; FIXME: unfortunate code duplication
 @interaction[
@@ -266,8 +266,8 @@ or bound locally (with @scheme[let], for example).
 @;--------------------------------------------------------------------
 @section{The Command Part}
 
-Besides being a Scheme identifier, the @nonterm{cmd} part of an
-@"@"-form can have Scheme punctuation prefixes, which will end up
+Besides being a Racket identifier, the @nonterm{cmd} part of an
+@"@"-form can have Racket punctuation prefixes, which will end up
 wrapping the @italic{whole} expression.
 
 @scribble-examples|==={
@@ -275,14 +275,14 @@ wrapping the @italic{whole} expression.
   @#`#'#,@foo{blah}
 }===|
 
-When writing Scheme code, this means that @litchar|{@`',@foo{blah}}|
+When writing Racket code, this means that @litchar|{@`',@foo{blah}}|
 is exactly the same as @litchar|{`@',@foo{blah}}| and
 @litchar|{`',@@foo{blah}}|, but unlike the latter two, the first
 construct can appear in body texts with the same meaning, whereas the
 other two would not work (see below).
 
 After the optional punctuation prefix, the @nonterm{cmd} itself is not
-limited to identifiers; it can be @italic{any} Scheme expression.
+limited to identifiers; it can be @italic{any} Racket expression.
 
 @scribble-examples|==={
   @(lambda (x) x){blah}
@@ -305,7 +305,7 @@ the @litchar["@"] and the @litchar{;}), then the construct is a
 comment.  There are two comment forms, one for arbitrary-text and
 possibly nested comments, and another one for line comments:
 
-@schemeblock[
+@racketblock[
 @#,BNF-seq[@litchar["@;{"] @kleenestar{@nonterm{any}} @litchar["}"]]
 
 @#,BNF-seq[@litchar["@;"] @kleenestar{@nonterm{anything-else-without-newline}}]
@@ -323,7 +323,7 @@ following spaces (or tabs) are part of the comment (similar to
        blah}
 }===|
 
-Tip: if you're editing in a Scheme-aware editor (like DrScheme or
+Tip: if you're editing in a Racket-aware editor (like DrRacket or
 Emacs), it is useful to comment out blocks like this:
 
 @verbatim[#:indent 2]|==={
@@ -337,7 +337,7 @@ parenthesis.
 
 If only the @nonterm{cmd} part of an @"@"-form is specified, then the
 result is the command part only, without an extra set of parenthesis.
-This makes it suitable for Scheme escapes in body texts.  (More on this
+This makes it suitable for Racket escapes in body texts.  (More on this
 below, in the description of the body part.)
 
 @scribble-examples|==={
@@ -356,7 +356,7 @@ Finally, note that there are currently no special rules for using
 @;--------------------------------------------------------------------
 @section{The Datum Part}
 
-The datum part can contains arbitrary Scheme expressions, which
+The datum part can contains arbitrary Racket expressions, which
 are simply stacked before the body text arguments:
 
 @scribble-examples|==={
@@ -383,7 +383,7 @@ for the same purpose.
   @foo{}
 }===|
 
-The most common use of the datum part is for Scheme forms that expect
+The most common use of the datum part is for Racket forms that expect
 keyword-value arguments that precede the body of text arguments.
 
 @scribble-examples|==={
@@ -408,7 +408,7 @@ are valid text.
 
 As described above, the text turns to a sequence of string arguments
 for the resulting form.  Spaces at the beginning and end of lines are
-discarded, and newlines turn to individual @scheme["\n"] strings
+discarded, and newlines turn to individual @racket["\n"] strings
 (i.e., they are not merged with other body parts); see also the
 information about newlines and indentation below. Spaces are
 @italic{not} discarded if they appear after the open @litchar["{"]
@@ -422,7 +422,7 @@ single-line body.
   @foo[1]{ bar }
 }===|
 
-If @litchar["@"] appears in a body, then it is interpreted as Scheme
+If @litchar["@"] appears in a body, then it is interpreted as Racket
 code, which means that the @"@"-reader is applied recursively, and the
 resulting syntax appears as part of the S-expression, among other
 string contents.
@@ -433,8 +433,8 @@ string contents.
 
 If the nested @"@" construct has only a command---no body or datum
 parts---it will not appear in a subform.  Given that the command part
-can be any Scheme expression, this makes @"@" a general escape to
-arbitrary Scheme code.
+can be any Racket expression, this makes @"@" a general escape to
+arbitrary Racket code.
 
 @scribble-examples|==={
   @foo{a @bar c}
@@ -497,19 +497,19 @@ in reverse order with paren-like characters (@litchar{(},
   @foo|!!{X |!!@b{Y}...}!!|
 }===|
 
-Finally, remember that you can use an expression escape with a Scheme
+Finally, remember that you can use an expression escape with a Racket
 string for confusing situations.  This works well when you only need
 to quote short pieces, and the above works well when you have larger
 multi-line body texts.
 
 @;--------------------------------------------------------------------
-@subsection{Scheme Expression Escapes}
+@subsection{Racket Expression Escapes}
 
-In some cases, you may want to use a Scheme identifier (or a number or
+In some cases, you may want to use a Racket identifier (or a number or
 a boolean etc.) in a position that touches the following text; in
-these situations you should surround the escaped Scheme expression by
+these situations you should surround the escaped Racket expression by
 a pair of @litchar{|} characters.  The text inside the bars is
-parsed as a Scheme expression.
+parsed as a Racket expression.
 
 @scribble-examples|==={
   @foo{foo@bar.}
@@ -518,7 +518,7 @@ parsed as a Scheme expression.
   @foo{foo@|3|.}
 }===|
 
-This form is a generic Scheme expression escape, there is no body text
+This form is a generic Racket expression escape, there is no body text
 or datum part when you use this form.
 
 @scribble-examples|==={
@@ -552,8 +552,8 @@ you want to control the sub expressions in the form.
 }===|
 
 Note that @litchar["@|{...}|"] can be parsed as either an escape expression or
-as the Scheme command part of a @"@"-form.  The latter is used in this case
-(since there is little point in Scheme code that uses braces.
+as the Racket command part of a @"@"-form.  The latter is used in this case
+(since there is little point in Racket code that uses braces.
 
 @scribble-examples|==={
   @|{blah}|
@@ -603,7 +603,7 @@ for spaces between a @litchar["{"] and text, or between text and a
 
 A single newline that follows an open brace or precedes a closing
 brace is discarded, unless there are only newlines in the body; other
-newlines are read as a @scheme["\n"] string
+newlines are read as a @racket["\n"] string
 
 @scribble-examples|==={
   @foo{bar
@@ -631,7 +631,7 @@ newlines are read as a @scheme["\n"] string
 }===|
 
 In the parsed S-expression syntax, a single newline string is used for
-all newlines; you can use @scheme[eq?] to identify this line.  This
+all newlines; you can use @racket[eq?] to identify this line.  This
 can be used to identify newlines in the original @nonterm{text-body}.
 
 @; FIXME: unfortunate code duplication (again):
@@ -641,7 +641,7 @@ can be used to identify newlines in the original @nonterm{text-body}.
                  @#,tt["  }"])])
     (for-each (lambda (x) (display (if (eq? x nl) "\n... " x)))
               @#,tt["@`{foo"]
-              @#,elem[@tt["   @"] @scheme[,@(list "bar" "\n" "baz")]]
+              @#,elem[@tt["   @"] @racket[,@(list "bar" "\n" "baz")]]
               @#,tt["   blah}}"])
     (newline))
   (let ([nl (car @'{
@@ -658,7 +658,7 @@ S-expressions, but the column of each line is noticed, and all-space
 indentation strings are added so the result has the same indentation.
 A indentation string is added to each line according to its distance
 from the leftmost syntax object (except for empty lines).  (Note: if
-you try these examples on a mzscheme REPL, you should be aware that
+you try these examples on a Racket REPL, you should be aware that
 the reader does not know about the ``@litchar{> }'' prompt.)
 
 @scribble-examples|==={
@@ -722,11 +722,11 @@ example, in
 }===|
 
 a formatter will need to apply the 2-space indentation to the
-rendering of the @scheme[bold] body.
+rendering of the @racket[bold] body.
 
 Note that to get a first-line text to be counted as a leftmost line,
 line and column accounting should be on for the input port
-(@scheme[use-at-readtable] turns them on for the current input port).
+(@racket[use-at-readtable] turns them on for the current input port).
 Without this,
 
 @litchar/lines|==={
@@ -745,7 +745,7 @@ source accounting is not on, but
 }===|
 
 will (due to the last line).  Pay attention to this, as it can be a
-problem with Scheme code, for example:
+problem with Racket code, for example:
 
 @litchar/lines|==={
   @code{(define (foo x)

@@ -35,7 +35,7 @@ changes that make it suitable as a preprocessor language:
 @; TODO:
 @; * make all example sections be subsections,
 @; * add a reference section,
-@; * a section on "scribble/text.ss"
+@; * a section on "scribble/text.rkt"
 @; * maybe a section on additional utilities: begin/text
 
 @;--------------------------------------------------------------------
@@ -926,13 +926,13 @@ trivial: the preprocessor source is still source code in a module, so
 you can @racket[require] additional files with utility functions.
 
 @example|-{#lang scribble/text
-           @(require "itemize.ss")
+           @(require "itemize.rkt")
            Todo:
            @itemize[@list{Hack some}
                     @list{Sleep some}
                     @list{Hack some
                           more}]
-           ---***--- itemize.ss
+           ---***--- itemize.rkt
            #lang racket
            (provide itemize)
            (define (itemize . items)
@@ -953,14 +953,14 @@ often be useful here, since such files need to deal with texts.  Using
 it, it is easy to include a lot of textual content.
 
 @example|-{#lang scribble/text
-           @(require "stuff.ss")
+           @(require "stuff.rkt")
            Todo:
            @itemize[@list{Hack some}
                     @list{Sleep some}
                     @list{Hack some
                           more}]
            @summary
-           ---***--- stuff.ss
+           ---***--- stuff.rkt
            #lang at-exp racket/base
            (require racket/list)
            (provide (all-defined-out))

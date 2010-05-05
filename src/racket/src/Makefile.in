@@ -111,8 +111,8 @@ mzheaders: $(srcdir)/schemex.h $(srcdir)/schemexm.h $(srcdir)/schemex.inc $(srcd
 
 mzobjects: $(OBJS)
 
-$(srcdir)/startup.inc : $(srcdir)/startup.rkt $(srcdir)/sstoinc
-	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/startup.inc ; else $(PERL) $(srcdir)/sstoinc < $(srcdir)/startup.rkt > $(srcdir)/startup.inc ; fi
+$(srcdir)/startup.inc : $(srcdir)/startup.rktl $(srcdir)/sstoinc
+	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/startup.inc ; else $(PERL) $(srcdir)/sstoinc < $(srcdir)/startup.rktl > $(srcdir)/startup.inc ; fi
 
 $(srcdir)/schemex.h : $(srcdir)/schemef.h $(srcdir)/makex
 	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/schemex.h ; else $(PERL) $(srcdir)/makex < $(srcdir)/schemef.h > $(srcdir)/schemex.h ; fi

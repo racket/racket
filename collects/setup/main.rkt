@@ -23,20 +23,41 @@
         (namespace-attach-module cns ''#%builtin ns)
         ns)))
 
-  (define-values (short-name flags specific-collections specific-planet-packages archives)
-    ;; Load the command-line parser without using .zos,
-    ;;  and in its own namespace to avoid poluting the cm-managed
-    ;;  namespace later
+  (define-values (short-name long-names)
+    ;; Load the name modulewithout using .zos, and in its own namespace to 
+    ;;  avoid poluting the cm-managed namespace later
     (parameterize ([use-compiled-file-paths null]
                    [current-namespace (make-kernel-namespace)])
-      ((dynamic-require 'setup/setup-cmdline 'parse-cmdline)
-       (current-command-line-arguments))))
+      ((dynamic-require 'setup/private/command-name 'get-names))))
+
+  ;; Poor-man's processing of the command-line flags to drop strings
+  ;; that will not be parsed as flags by "parse-cmdline.rkt". We don't
+  ;; want to load "parse-cmdline.rkt" because it takes a long time with
+  ;; bytecode files disabled, and we're not yet sure whether to trust
+  ;; bytecode ifes that do exist.
+  (define-values (filter-flags)
+    (lambda (flags)
+      (if (or (null? flags)
+              (not (regexp-match? #rx"^-" (car flags)))
+              (equal? "-l" (car flags)))
+          null
+          (if (equal? "-P" (car flags))
+              (if ((length flags) . > . 5)
+                  (filter-flags (list-tail flags 5))
+                  null)
+              (if (or (equal? "--mode" (car flags))
+                      (equal? "--doc-pdf" (car flags)))
+                  (if (pair? (cdr flags))
+                      (filter-flags (cddr flags))
+                      null)
+                  (cons (car flags) (filter-flags (cdr flags))))))))
+
+  (define-values (flags) (filter-flags (vector->list (current-command-line-arguments))))
 
   ;; Checks whether a flag is present:
   (define-values (on?)
-    (lambda (flag-name not)
-      (let ([a (assq flag-name flags)])
-        (and a (not (cadr a))))))
+    (lambda (flag-name)
+      (member flag-name flags)))
 
   (define-values (print-bootstrapping)
     (lambda ()
@@ -54,11 +75,14 @@
                    (map bytes->path (cdr p)))
             p))))
 
-  (if (or (on? 'clean values)
-	  (on? 'make-zo not))
+  (if (or (on? "--clean")
+          (on? "-c")
+	  (on? "--no-zo")
+          (on? "-n"))
       ;; Don't use .zos, in case they're out of date, and don't load
       ;;  cm:
-      (when (on? 'clean values)
+      (when (or (on? "--clean")
+                (on? "-c"))
 	(use-compiled-file-paths null)
 	(print-bootstrapping))
   
@@ -113,7 +137,7 @@
                                                                     (unless (and (pair? dep)
                                                                                  (eq? (car dep) 'ext))
                                                                       (dynamic-require (main-collects-relative->path dep) #f)))
-                                                                  (cdr deps))))
+                                                                  (cddr deps))))
 						     ;; Not a .zo! Don't use .zo files at all...
 						     (escape (lambda ()
 							       ;; Try again without .zo
@@ -143,7 +167,7 @@
 				    (dynamic-require 'compiler/cm 'trust-existing-zos)])
 			       ;; Return the two extracted functions:
 			       (lambda () (values mk trust-zos)))))))))])
-	(when (on? 'trust-existing-zos values)
+	(when (on? "--trust-zos")
 	  (trust-zos #t))
 	(current-load/use-compiled (mk))))
 

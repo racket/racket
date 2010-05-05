@@ -19,9 +19,10 @@
          (except-in (env type-environments) extend)
          (rep type-rep filter-rep object-rep)
          (r:infer infer)
+         '#%paramz
          (for-template 
           (only-in '#%kernel [apply k:apply])
-          "internal-forms.rkt" scheme/base scheme/bool
+          "internal-forms.rkt" scheme/base scheme/bool '#%paramz
           (only-in racket/private/class-internal make-object do-make-object)))
 
 (import tc-expr^ tc-lambda^ tc-dots^ tc-let^)
@@ -414,7 +415,21 @@
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
                 values apply k:apply not list list* call-with-values do-make-object make-object cons
-                andmap ormap reverse)
+                andmap ormap reverse extend-parameterization)
+    [(#%plain-app extend-parameterization pmz args ...)
+     (let loop ([args (syntax->list #'(args ...))])
+       (if (null? args) Univ
+           (let* ([p (car args)]
+                  [pt (single-value p)]
+                  [v (cadr args)]
+                  [vt (single-value v)])
+             (match pt
+               [(tc-result1: (Param: a b))
+                (check-below vt a)
+                (loop (cddr args))]
+               [(tc-result1: t) 
+                (tc-error/expr #:ret (or expected (ret Univ)) "expected Parameter, but got ~a" t)
+                (loop (cddr args))]))))]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)
      (match (tc/funapp #'prod #'() (single-value #'prod) null #f)

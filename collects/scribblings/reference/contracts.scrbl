@@ -725,16 +725,19 @@ first variable (the internal name) with the name specified by the
 second variable (the external name).
 
 The @racket[struct] form of a @racket[provide/contract] clause
-provides a structure definition, and each field has a contract that
-dictates the contents of the fields. The struct definition must come
-before the provide clause in the module's body. If the struct has a
-parent, the second @racket[struct] form (above) must be used, with the
-first name referring to the struct itself and the second name
-referring to the parent struct. Unlike @racket[define-struct],
-however, all of the fields (and their contracts) must be listed. The
-contract on the fields that the sub-struct shares with its parent are
-only used in the contract for the sub-struct's maker, and the selector
-or mutators for the super-struct are not provided.
+provides a structure-type definition, and each field has a contract
+that dictates the contents of the fields. The structure-type
+definition must appear before the @racket[provide] clause within the
+enclosing module. If the structure type has a parent, the second
+@racket[struct] form (above) must be used, with the first name
+referring to the structure type to export and the second name
+referring to the parent structure type. Unlike a @racket[struct]
+definition, however, all of the fields (and their contracts) must be
+listed. The contract on the fields that the sub-struct shares with its
+parent are only used in the contract for the sub-struct's maker, and
+the selector or mutators for the super-struct are not provided. The
+exported structure-type name always doubles as a constructor, even if
+the original structure-type name does not act as a constructor.
 
 The @racket[#:∃] and @racket[#:exists] clauses define new abstract
 contracts. The variables are bound in the remainder of the @racket[provide/contract]

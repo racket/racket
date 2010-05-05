@@ -910,7 +910,7 @@
                                  (when pf? (out "s")))
                                (pp-list (let ([l (vector->list v)])
                                           (if (and qd (not pf?))
-                                              (cons (make-unquoted (object-name v))
+                                              (cons (make-unquoted (object-name obj))
                                                     (cdr l))
                                               l))
                                         extra pp-expr #f depth

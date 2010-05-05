@@ -86,7 +86,8 @@
                    (list (make-header #"Cookie" #"$Version=\"1\"; name=\"value\""))
                    (delay empty) #f
                    "host" 80 "client"))
-                 (list (make-client-cookie "name" "value" #f #f)))
+                 (list (make-client-cookie "$Version" "1" #f #f)
+                       (make-client-cookie "name" "value" #f #f)))
     
     (test-equal? "Path"
                  (request-cookies 
@@ -95,7 +96,8 @@
                    (list (make-header #"Cookie" #"$Version=\"1\"; name=\"value\"; $Path=\"/acme\""))
                    (delay empty) #f
                    "host" 80 "client"))
-                 (list (make-client-cookie "name" "value" #f "/acme")))
+                 (list (make-client-cookie "$Version" "1" #f #f)
+                       (make-client-cookie "name" "value" #f "/acme")))
     
     (test-equal? "Domain"
                  (request-cookies 
@@ -104,7 +106,8 @@
                    (list (make-header #"Cookie" #"$Version=\"1\"; name=\"value\"; $Domain=\".acme\""))
                    (delay empty) #f
                    "host" 80 "client"))
-                 (list (make-client-cookie "name" "value" ".acme" #f)))
+                 (list (make-client-cookie "$Version" "1" #f #f)
+                       (make-client-cookie "name" "value" ".acme" #f)))
     
     (test-equal? "Multiple"
                  (request-cookies 
@@ -113,7 +116,8 @@
                    (list (make-header #"Cookie" #"$Version=\"1\"; key1=\"value1\"; key2=\"value2\""))
                    (delay empty) #f
                    "host" 80 "client"))
-                 (list (make-client-cookie "key1" "value1" #f #f)
+                 (list (make-client-cookie "$Version" "1" #f #f)
+                       (make-client-cookie "key1" "value1" #f #f)
                        (make-client-cookie "key2" "value2" #f #f)))
     
     (test-equal? "Multiple w/ paths & domains"
@@ -123,7 +127,8 @@
                    (list (make-header #"Cookie" #"$Version=\"1\"; key1=\"value1\"; $Path=\"/acme\"; key2=\"value2\"; $Domain=\".acme\""))
                    (delay empty) #f
                    "host" 80 "client"))
-                 (list (make-client-cookie "key1" "value1" #f "/acme")
+                 (list (make-client-cookie "$Version" "1" #f #f)
+                       (make-client-cookie "key1" "value1" #f "/acme")
                        (make-client-cookie "key2" "value2" ".acme" #f)))
     
      (test-equal? "phpBB. PR10689"
@@ -138,8 +143,21 @@
                        (make-client-cookie "phpbb3_e1p9b_u" "54" #f #f)
                        (make-client-cookie "phpbb3_e1p9b_k" "" #f #f)
                        (make-client-cookie "phpbb3_e1p9b_sid" "3fa8d7a7b65fbabcbe9b345861dc079a" #f #f)))
+     
+     (test-equal? "Google"
+                  (request-cookies 
+                  (make-request 
+                   #"GET" (string->url "http://test.com/foo")
+                   (list (make-header #"Cookie" 
+                                      #"teaching-order=course;
+__utmz=165257760.1272597702.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)\r\n"))
+                   (delay empty) #f
+                   "host" 80 "client"))
+                  (list (make-client-cookie "teaching-order" "course" #f #f)
+                        (make-client-cookie "__utmz" "165257760.1272597702.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)" #f #f)))
+                  
     
     )))
 
-#;(require racunit/text-ui)
-#;(run-tests cookies-tests)
+(require racunit/text-ui)
+(run-tests cookies-tests)

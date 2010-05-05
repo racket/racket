@@ -1,8 +1,8 @@
 .\" dummy line
-.TH DRSCHEME 1 "January 2008"
+.TH DRSCHEME 1 "May 2010"
 .UC 4
 .SH NAME
-drscheme \- The PLT Scheme programming environment
+drscheme \- the Racket programming environment
 .SH SYNOPSIS
 .B drscheme
 [
@@ -12,78 +12,13 @@ drscheme \- The PLT Scheme programming environment
 .I file ...
 ]
 .SH DESCRIPTION
-DrScheme
-is the PLT Scheme
-programming environment.
+DrScheme is the old name for the Racket programming environment.
+
 .PP
-The
+Running
 .B drscheme
-program treats non-switch command-line arguments as files to open.
+is the same as running
+.BR drracket .
 
-.SH X OPTIONS
-When running in X11, DrScheme accepts the following standard
-.IR Xoption s:
-.B -display
-.IR disp ,
-.B -geometry
-.IR geom ,
-.B -bg
-.IR color ,
-.B -background
-.IR color ,
-.B -fg
-.IR color ,
-.B -foreground
-.IR color ,
-.B -fn
-.IR font ,
-.B -font
-.IR font ,
-.BR -iconic ,
-.B -name
-.IR name ,
-.BR -rv ,
-.BR -reverse ,
-.BR +rv ,
-.B -selectionTimeout
-.IR time ,
-.BR -synchronous ,
-.B -title
-.IR name ,
-.B -xnllanguage
-.IR lang ,
-.B -xrm
-.IR file .
-.PP
-In addition, the option
-.B -singleInstance
-is treated like an X option (it must appear before all other
-options), and it runs MrEd in single-instance mode.
-In single-instance mode, when an existing instance
-is running with the same host and executable name, all non-option
-arguments are treated as file names and sent to the 
-existing instance.
-
-.SH MORE INFORMATION
-.PP
-
-For further information, run
-.PP
-   plt-help
-.PP
-to open installed documentation in your web browser.
-
-.PP
-Alternately, consult the on-line
-documentation and other information available at
-.PP
-.ce 1
-http://www.drscheme.org/
-
-.SH AUTHOR
-.I DrScheme
-was implemented by PLT, http://www.plt-scheme.org/.
 .SH SEE ALSO
-.BR plt-help(1),
-.BR mzscheme(1),
-.BR mred(1)
+.BR drracket(1)

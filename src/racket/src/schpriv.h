@@ -266,6 +266,7 @@ void scheme_init_print_global_constants(void);
 void scheme_init_variable_references_constants(void);
 void scheme_init_logger(void);
 void scheme_init_file_places(void);
+void scheme_init_foreign_places(void);
 
 Scheme_Logger *scheme_get_main_logger(void);
 void scheme_init_logger_config(void);

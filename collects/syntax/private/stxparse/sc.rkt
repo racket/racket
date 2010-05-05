@@ -4,6 +4,7 @@
                      unstable/syntax
                      unstable/struct
                      "minimatch.ss"
+                     "../util/txlift.ss"
                      "rep-data.ss"
                      "rep.ss")
          racket/list
@@ -143,14 +144,50 @@
 (define-syntax (define-literal-set stx)
   (syntax-case stx ()
     [(define-literal-set name (lit ...))
-     (begin
+     (let ([phase-of-definition (syntax-local-phase-level)])
        (unless (identifier? #'name)
          (raise-syntax-error #f "expected identifier" stx #'name))
-       (let ([lits (check-literals-list #'(lit ...) stx)])
+       (let ([lits (check-literals-list/litset #'(lit ...) stx)])
          (with-syntax ([((internal external) ...) lits])
-           #'(define-syntax name
-               (make-literalset
-                (list (list 'internal (quote-syntax external)) ...))))))]))
+           #`(begin
+               (define phase-of-literals
+                 (let ([phase-of-module-instantiation
+                        ;; Hack to get enclosing module's base phase
+                        (variable-reference->phase (#%variable-reference))])
+                   (- phase-of-module-instantiation
+                      '#,(if (zero? phase-of-definition) 0 1))))
+               (define-syntax name
+                 (make-literalset
+                  (list (list 'internal (quote-syntax external)) ...)
+                  (quote-syntax phase-of-literals)))
+               (begin-for-syntax/once
+                (for ([x (syntax->list #'(external ...))])
+                  (unless (identifier-binding x 0)
+                    (raise-syntax-error #f "unbound identifier not allowed as literal"
+                                        (quote-syntax #,stx) x))))))))]))
+
+#|
+Literal sets: The goal is for literals to refer to their bindings at
+
+  phase 0 relative to the enclosing module
+
+Use cases, explained:
+1) module X with def-lit-set is required-for-syntax
+     phase-of-mod-inst = 1
+     phase-of-def = 0
+     literals looked up at abs phase 1
+       which is phase 0 rel to module X
+2) module X with local def-lit-set within define-syntax
+     phase-of-mod-inst = 1 (mod at 0, but +1 within define-syntax)
+     phase-of-def = 1
+     literals looked up at abs phase 0
+       which is phase 0 rel to module X
+3) module X with def-lit-set in phase-2 position (really uncommon case!)
+     phase-of-mod-inst = 1 (not 2, apparently)
+     phase-of-def = 2
+     literals looked up at abs phase 0
+       (that's why the weird (if (z?) 0 1) term)
+|#
 
 ;; ----
 

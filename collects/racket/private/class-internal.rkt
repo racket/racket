@@ -34,7 +34,7 @@
            class?
            mixin
            interface interface* interface?
-           object% object? externalizable<%> printable<%> equal<%>
+           object% object? externalizable<%> printable<%> writable<%> equal<%>
            object=?
            new make-object instantiate
            send send/apply send* class-field-accessor class-field-mutator with-method
@@ -4669,13 +4669,22 @@
 (define externalizable<%>
   (_interface () externalize internalize))
 
-(define printable<%>
+(define writable<%>
   (interface* () 
-              ([prop:custom-write (lambda (obj port write?)
-                                    (if write?
+              ([prop:custom-write (lambda (obj port mode)
+                                    (if mode
                                         (send obj custom-write port)
                                         (send obj custom-display port)))])
               custom-write custom-display))
+
+(define printable<%>
+  (interface* () 
+              ([prop:custom-write (lambda (obj port mode)
+                                    (case mode
+                                      [(#t) (send obj custom-write port)]
+                                      [(#f) (send obj custom-display port)]
+                                      [else (send obj custom-print port mode)]))])
+              custom-write custom-display custom-print))
 
 (define equal<%>
   (interface* () 
@@ -4728,7 +4737,7 @@
          class?
          mixin
          (rename-out [_interface interface]) interface* interface?
-         object% object? object=? externalizable<%> printable<%> equal<%>
+         object% object? object=? externalizable<%> printable<%> writable<%> equal<%>
          new make-object instantiate
          get-field set-field! field-bound? field-names
          send send/apply send* class-field-accessor class-field-mutator with-method

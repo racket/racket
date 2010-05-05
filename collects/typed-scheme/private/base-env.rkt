@@ -116,7 +116,9 @@
 [newline (->opt [-Output-Port] -Void)]
 [not (-> Univ B)]
 [box (-poly (a) (a . -> . (-box a)))]
-[unbox (-poly (a) ((-box a) . -> . a))]
+[unbox (-poly (a) (cl->*                   
+                   ((-box a) . -> . a)
+                   ((make-BoxTop) . -> . Univ)))]
 [set-box! (-poly (a) ((-box a) a . -> . -Void))]
 [box? (make-pred-ty (make-BoxTop))]
 [cons? (make-pred-ty (-pair Univ Univ))]
@@ -365,6 +367,11 @@
 [vector-immutable (-poly (a) (->* (list) a (-vec a)))]
 [vector->immutable-vector (-poly (a) (-> (-vec a) (-vec a)))]
 [vector-fill! (-poly (a) (-> (-vec a) a -Void))]
+[vector-argmax (-poly (a) (-> (-> a -Real) (-vec a) a))]
+[vector-argmin (-poly (a) (-> (-> a -Real) (-vec a) a))]
+[vector-memq (-poly (a) (-> a (-vec a) (-opt -Nat)))]
+[vector-memv (-poly (a) (-> a (-vec a) (-opt -Nat)))]
+[vector-member (-poly (a) (a (-vec a) . -> . (-opt -Nat)))]
 ;; [vector->values no good type here]
 
 

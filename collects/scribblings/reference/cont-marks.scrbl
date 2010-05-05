@@ -48,7 +48,7 @@ continuation's frames to the marks that were present when
 @racket[call-with-composable-continuation] was invoked.
 
 @defproc[(continuation-marks [cont (or/c continuation? thread?)]
-                             [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
+                             [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          continuation-mark-set?]{
 
 Returns an opaque value containing the set of continuation marks for
@@ -63,7 +63,7 @@ respect to @racket[prompt-tag] and does not include a prompt for
 @racket[cont] is a dead thread, the result is an empty set of
 continuation marks.}
 
-@defproc[(current-continuation-marks [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
+@defproc[(current-continuation-marks [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          continuation-mark-set?]{
 
 Returns an opaque value containing the set of continuation marks for
@@ -80,7 +80,7 @@ other words, it produces the same value as
 @defproc[(continuation-mark-set->list 
           [mark-set continuation-mark-set?]
           [key-v any/c]
-          [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
+          [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          list?]{
 Returns a newly-created list containing the marks for @racket[key-v]
 in @racket[mark-set], which is a set of marks returned by
@@ -92,7 +92,7 @@ separated by a prompt tagged with @racket[prompt-tag]..}
           [mark-set continuation-mark-set?]
           [key-list (listof any/c)]
           [none-v any/c #f]
-          [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
+          [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          (listof vector?)]{
 Returns a newly-created list containing vectors of marks in
 @racket[mark-set] for the keys in @racket[key-list], up to
@@ -107,7 +107,7 @@ elements to indicate the lack of a value.}
 @defproc[(continuation-mark-set-first 
           [mark-set (or/c continuation-mark-set? #f)]
           [key-v any/c]
-          [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
+          [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
          any]{
 Returns the first element of the list that would be returned by
 @racket[(continuation-mark-set->list (or mark-set

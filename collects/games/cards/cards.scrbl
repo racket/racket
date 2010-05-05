@@ -97,7 +97,6 @@ Returns a region like one made by @scheme[make-region], but the is
                                  [y real?]
                                  [w (and/c real? (not/c negative?))]
                                  [h (and/c real? (not/c negative?))]
-                                 [label (or/c string? false/c)]
                                  [paint-callback
                                   ((is-a?/c dc<%>) real? real? real? real? . -> . any)])
          region?]{

@@ -744,7 +744,7 @@ static void emit_indentation(mz_jit_state *jitter)
 
 #ifdef MZ_USE_PLACES
 
-static mzrt_mutex *jit_lock;
+THREAD_LOCAL_DECL(static mzrt_mutex *jit_lock);
 THREAD_LOCAL_DECL(static int in_jit_critical_section);
 
 static void BEGIN_JIT_CRITICAL_SECTION()

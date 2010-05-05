@@ -5,7 +5,7 @@
 @title{Dynamic Loading}
 
 @defmodule[racket/gui/dynamic]{The @racketmodname[racket/gui/dynamic]
-library provides functions for dynamically accessing the PLT Racket
+library provides functions for dynamically accessing the Racket
 GUI toolbox, instead of directly requiring @racket[racket/gui] or
 @racket[racket/gui/base].}
 
@@ -13,8 +13,8 @@ GUI toolbox, instead of directly requiring @racket[racket/gui] or
 
 Returns @racket[#t] if dynamic access to the GUI bindings are
 available---that is, that the program is being run as a
-@exec{mred}-based application, as opposed to a pure
-@exec{mzracket}-based application, and that GUI modules are attached
+GRacket-based application, as opposed to a pure
+Racket-based application, and that GUI modules are attached
 to the namespace in which @racket[racket/gui/dynamic] was
 instantiated.
 

@@ -5,7 +5,7 @@
 
 @title[#:tag "drawing-overview"]{Drawing}
 
-Drawing in PLT Scheme requires a @deftech{device context}
+Drawing in Racket requires a @deftech{device context}
 (@deftech{DC}), which is an instance of the @scheme[dc<%>]
 interface. For example, the @method[canvas<%> get-dc] method of a
 canvas returns a @scheme[dc<%>] instance for drawing into the canvas
@@ -153,12 +153,12 @@ For all types of DCs, the drawing origin is the top-left corner of the
  initially correspond to points (1/72 of an inch).
 
 More complex shapes are typically best implemented with
- @deftech{paths}. The following example uses paths to draw the PLT
- Scheme logo. It also enables smoothing, so that the logo's curves are
+ @deftech{paths}. The following example uses paths to draw the
+ Racket logo. It also enables smoothing, so that the logo's curves are
  anti-aliased when smoothing is available. (Smoothing is always
  available under Mac OS X, smoothing is available under Windows XP or
  when @filepath{gdiplus.dll} is installed, and smoothing is available
- under X when Cairo is installed before MrEd is compiled.)
+ under X when Cairo is installed before GRacket is compiled.)
 
 @(begin
 #readerscribble/comment-reader
@@ -249,7 +249,7 @@ More complex shapes are typically best implemented with
   (send dc #,(:: dc<%> draw-path) right-logo-path))
 
 ;; Create a frame to display the logo on a light-purple background:
-(define f (new frame% [label "PLT Logo"]))
+(define f (new frame% [label "Racket Logo"]))
 (define c
   (new canvas% 
        [parent f]

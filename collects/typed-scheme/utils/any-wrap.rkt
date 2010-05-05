@@ -5,14 +5,16 @@
 (define-struct any-wrap (val)
   #:property prop:custom-write
   (lambda (v p write?)
-    (fprintf p "#<Typed Value>")))
+    (fprintf p "#<Typed Value: ~a>" (any-wrap-val v))))
 
 (define (traverse wrap?)
   (define (t v)
     (match v
       [(? (lambda (e) (and (any-wrap? e) (not wrap?)))) (any-wrap-val v)]
       [(? (lambda (e) 
-            (or (number? e) (string? e) (char? e) (symbol? e) (keyword? e) (bytes? e) (void? e)))) v]
+            (or (number? e) (string? e) (char? e) (symbol? e)
+                (keyword? e) (bytes? e) (boolean? e) (void? e))))
+       v]
       [(cons x y) (cons (t x) (t y))]
       [(and (? immutable?) (? vector?)) (vector-map t v)]
       [(and (? immutable?) (box v)) (box (t v))]

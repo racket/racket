@@ -154,7 +154,7 @@
     [(struct s pats)
      (parse-struct stx cert parse #'s #'pats)]
     [(s . pats)
-     (struct-info? (syntax-local-value #'s (lambda () #f)))
+     (and (identifier? #'s) (struct-info? (syntax-local-value #'s (lambda () #f))))
      (parse-struct stx cert parse #'s #'pats)]
     [(? p q1 qs ...)
      (make-And (cons (make-Pred (cert #'p))

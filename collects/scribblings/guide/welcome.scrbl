@@ -173,7 +173,7 @@ options:
  @item{From a command-line prompt, run @exec{raco exe
        @nonterm{src-filename}}, where @nonterm{src-filename} contains
        the program. See @secref[#:doc '(lib
-       "scribblings/mzc/mzc.scrbl") "exe"] for more information.}
+       "scribblings/raco/raco.scrbl") "exe"] for more information.}
 
  @item{With Unix or Mac OS X, you can turn the program file into an
        executable script by inserting the line
@@ -206,16 +206,16 @@ tempted to put just
   (substring str 4 7))
 ]
 
-into @filepath{extract.scm} and run @exec{racket} with
+into @filepath{extract.rktl} and run @exec{racket} with
 
 @interaction[
 #:eval piece-eval
-(eval:alts (load "extract.scm") (void))
+(eval:alts (load "extract.rktl") (void))
 (extract "the dog out")
 ]
 
 That will work, because @exec{racket} is willing to imitate a
-traditional Scheme environment, but we strongly recommend against using
+traditional Lisp environment, but we strongly recommend against using
 @racket[load] or writing programs outside of a module.
 
 Writing definitions outside of a module leads to bad error messages,
