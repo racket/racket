@@ -1,8 +1,9 @@
 #lang scheme/base
 
 ;; Builds different kinds of executables for different platforms.
-
-;; proposed changes below -robby.
+;; The `plt-help' executable is for backward compatibity.
+;; The `Racket Documentation' executable is to help Windows and
+;;  Mac users who are completely lost and need something to click.
 
 (provide post-installer)
 (require launcher)
@@ -23,11 +24,11 @@
                 make-mzscheme-launcher
                 mzscheme-program-launcher-path
                 '())))
-    (for ([variant (variants)])
+    (for ([variant (remove* '(script-3m script-cgc) (variants))])
       (parameterize ([current-launcher-variant variant])
         (mk-launcher '("-l-" "help/help")
-                     (mk-path "plt-help")       ;; change to "Racket Docs"
-                     `([exe-name . "plt-help"]  ;; get rid of this (in favor of 'raco docs')
+                     (mk-path (if mr? "Racket Documentation" "plt-help"))
+                     `([exe-name . ,(if mr? "Racket Documentation" "plt-help")]
                        [relative? . #t]
                        [framework-root . #f]
                        [dll-dir . #f]
