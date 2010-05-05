@@ -11,7 +11,7 @@ General Public License (LGPL).  This means
 
 @itemize[
 
- @item{You can link Racket software (such as Racket) into
+ @item{You can link Racket software into
        proprietary applications, provided you follow the specific
        rules stated in the LGPL.}
 
