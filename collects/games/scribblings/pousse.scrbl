@@ -3,7 +3,7 @@
 
 @gametitle["Pousse" "pousse" "Tic-Tac-Toe-like Game"]
 
-@onscreen{Pousse} (French for "push", pronounced "poo-ss") is a 2
+@onscreen{Pousse} (French for ``push,'' pronounced ``poo-ss'') is a 2
 person game, played on an @math{N} by @math{N} board (usually 4 by 4).
 Initially the board is empty, and the players take turns inserting one
 marker of their color (@onscreen{X} or @onscreen{O}) on the board.
