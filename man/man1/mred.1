@@ -1,8 +1,8 @@
-\" dummy line
-.TH MRED 1 "January 2008"
+.\" dummy line
+.TH MRED 1 "May 2010"
 .UC 4
 .SH NAME
-mred \- The PLT Graphical Scheme implementation
+mred \- compatibility executable for Racket 
 .SH SYNOPSIS
 .B mred
 [
@@ -10,40 +10,21 @@ mred \- The PLT Graphical Scheme implementation
 ] [
 .I argument ...
 ]
-
 .SH DESCRIPTION
-MrEd
-is the PLT graphical Scheme
-implementation.
-It embeds and extends 
-MzScheme
-with a graphical user interface (GUI) toolbox.
+MrEd is the old name for the GUI Racket implementation.
 
 .PP
-Run
-.PP
-   mred --help
-.PP
-for a list of command-line options and other start-up information.
-
-.PP
-Supplying no arguments to
+For most cases, running
 .B mred
-is the same as supplying the
-.B -i
-option for interactive evaluation.
-
-.PP
-Supplying a single non-switch argument to
-.B mred
-is the same as putting
-.B -u
-before the argument to run it as a module-based script.
+is the same as running
+.BR gracket ,
+except that the default interaction language is slightly
+different for backward compatibility.
 
 .SH MORE INFORMATION
 For further information, run
 .PP
-   plt-help
+   raco docs
 .PP
 to open installed documentation in your web browser.
 
@@ -52,15 +33,7 @@ Alternately, consult the on-line
 documentation and other information available at
 .PP
 .ce 1
-http://www.plt-scheme.org/software/mred/
-
-.SH AUTHOR
-MrEd was implemented by Matthew Flatt (mflatt@plt-scheme.org),
-Robert Bruce Findler (robby@plt-scheme.org), and
-John Clements (clements@plt-scheme.org), based on
-MzScheme.
+http://www.racket-lang.org/
 
 .SH SEE ALSO
-.BR plt-help(1),
-.BR drscheme(1),
-.BR mzscheme(1)
+.BR gracket(1)

@@ -1,8 +1,8 @@
 .\" dummy line
-.TH MZC 1 "January 2008"
+.TH MZC 1 "May 2010"
 .UC 4
 .SH NAME
-mzc \- The PLT Scheme compiler tool
+mzc \- compatibility Racket compiler tool
 .SH SYNOPSIS
 .B mzc
 [
@@ -12,8 +12,9 @@ mzc \- The PLT Scheme compiler tool
 ]
 .SH DESCRIPTION
 .B mzc
-performs various tasks such as compiling Scheme source to bytecode,
-packaging executables, and packaging installable archives.
+provides an old interface to some Racket tools that are now
+normally provided via
+.BR raco .
 
 .PP
 Run
@@ -25,7 +26,7 @@ for a list of command-line options.
 .SH MORE INFORMATION
 For further information, run
 .PP
-   plt-help
+   raco docs
 .PP
 to open installed documentation in your web browser.
 
@@ -34,12 +35,8 @@ Alternately, consult the on-line
 documentation and other information available at
 .PP
 .ce 1
-http://www.plt-scheme.org/software/mzc/
+http://www.racket-lang.org/
 
-.SH AUTHOR
-.B mzc
-was implemented by PLT, http://www.plt-scheme.org/.
 .SH SEE ALSO
-.BR plt-help(1),
-.BR mzscheme(1),
-.BR drscheme(1)
+.BR raco(1),
+.BR racket(1)

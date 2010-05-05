@@ -1,0 +1,61 @@
+\" dummy line
+.TH GRACKET 1 "May 2010"
+.UC 4
+.SH NAME
+gracket \- the GUI Racket implementation
+.SH SYNOPSIS
+.B gracket
+[
+.I option ...
+] [
+.I argument ...
+]
+
+.SH DESCRIPTION
+GRacket is the GUI-application variant of
+.BR racket .
+
+.PP
+Run
+.PP
+   gracket --help
+.PP
+for a list of command-line options and other start-up information.
+
+.PP
+Supplying no arguments to
+.B gracket
+is the same as supplying the
+.B -i
+option for interactive evaluation.
+
+.PP
+Supplying a single non-switch argument to
+.B gracket
+is the same as putting
+.B -u
+before the argument to run it as a module-based script.
+
+.SH MORE INFORMATION
+For further information, run
+.PP
+   raco docs
+.PP
+to open installed documentation in your web browser.
+
+.PP
+Alternately, consult the on-line
+documentation and other information available at
+.PP
+.ce 1
+http://www.racket-lang.org/
+
+.SH AUTHOR
+GRacket was implemented by Matthew Flatt (mflatt@racket-lang.org),
+Robert Bruce Findler (robby@racket-lang.org),
+John Clements (clements@racket-lang.org), and PLT.
+
+.SH SEE ALSO
+.BR raco(1),
+.BR drracket(1),
+.BR racket(1)

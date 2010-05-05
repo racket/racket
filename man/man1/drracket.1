@@ -1,0 +1,89 @@
+.\" dummy line
+.TH DRRACKET 1 "May 2010"
+.UC 4
+.SH NAME
+drracket \- the Racket programming environment
+.SH SYNOPSIS
+.B drracket
+[
+.I Xoption ...
+]
+[
+.I file ...
+]
+.SH DESCRIPTION
+DrRacket
+is the Racket
+programming environment.
+.PP
+The
+.B drracket
+program treats non-switch command-line arguments as files to open.
+
+.SH X OPTIONS
+When running in X11, DrRacket accepts the following standard
+.IR Xoption s:
+.B -display
+.IR disp ,
+.B -geometry
+.IR geom ,
+.B -bg
+.IR color ,
+.B -background
+.IR color ,
+.B -fg
+.IR color ,
+.B -foreground
+.IR color ,
+.B -fn
+.IR font ,
+.B -font
+.IR font ,
+.BR -iconic ,
+.B -name
+.IR name ,
+.BR -rv ,
+.BR -reverse ,
+.BR +rv ,
+.B -selectionTimeout
+.IR time ,
+.BR -synchronous ,
+.B -title
+.IR name ,
+.B -xnllanguage
+.IR lang ,
+.B -xrm
+.IR file .
+.PP
+In addition, the option
+.B -singleInstance
+is treated like an X option (it must appear before all other
+options), and it runs DrRacket in single-instance mode.
+In single-instance mode, when an existing instance
+is running with the same host and executable name, all non-option
+arguments are treated as file names and sent to the 
+existing instance.
+
+.SH MORE INFORMATION
+.PP
+
+For further information, run
+.PP
+   raco docs
+.PP
+to open installed documentation in your web browser.
+
+.PP
+Alternately, consult the on-line
+documentation and other information available at
+.PP
+.ce 1
+http://www.racket-lang.org/
+
+.SH AUTHOR
+.I DrRacket
+was implemented by PLT.
+.SH SEE ALSO
+.BR raco(1),
+.BR racket(1),
+.BR gracket(1)

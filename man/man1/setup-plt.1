@@ -1,8 +1,8 @@
 .\" dummy line
-.TH SETUP-PLT 1 "January 2008"
+.TH SETUP-PLT 1 "May 2010"
 .UC 4
 .SH NAME
-setup-plt \- The PLT Scheme setup tool
+setup-plt \- compatibility Racket setup tool
 .SH SYNOPSIS
 .B setup-plt
 [
@@ -11,9 +11,10 @@ setup-plt \- The PLT Scheme setup tool
 .I argument ...
 ]
 .SH DESCRIPTION
-Setup PLT
-performs various installation and setup tasks for a PLT Scheme
-installation.
+.B setup-plt
+provides an old interface to some Racket tools that are now
+normally provided via
+.BR raco .
 
 .PP
 Run
@@ -25,7 +26,7 @@ for a list of command-line options.
 .SH MORE INFORMATION
 For further information, run
 .PP
-   plt-help
+   raco help
 .PP
 to open installed documentation in your web browser.
 
@@ -34,12 +35,8 @@ Alternately, consult the on-line
 documentation and other information available at
 .PP
 .ce 1
-http://www.plt-scheme.org/
+http://www.racket-lang.org/
 
-.SH AUTHOR
-Setup PLT
-was implemented by PLT, http://www.plt-scheme.org/.
 .SH SEE ALSO
-.BR plt-help(1),
-.BR mzscheme(1),
-.BR drscheme(1)
+.BR raco(1),
+.BR racket(1)
