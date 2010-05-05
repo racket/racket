@@ -2305,17 +2305,19 @@ static Scheme_Object *do_map_hash_table(int argc,
           v = scheme_chaperone_hash_get(chaperone, v);
         } else
           v = (Scheme_Object *)bucket->val;
-        p[1] = v;
-	if (keep) {
-	  v = _scheme_apply(f, 2, p);
-	  v = cons(v, scheme_null);
-	  if (last)
-	    SCHEME_CDR(last) = v;
-	  else
-	    first = v;
-	  last = v;
-	} else
-	  _scheme_apply_multi(f, 2, p);
+        if (v) {
+          p[1] = v;
+          if (keep) {
+            v = _scheme_apply(f, 2, p);
+            v = cons(v, scheme_null);
+            if (last)
+              SCHEME_CDR(last) = v;
+            else
+              first = v;
+            last = v;
+          } else
+            _scheme_apply_multi(f, 2, p);
+        }
       }
     }
   } else if (SCHEME_HASHTP(obj)) {
@@ -2333,17 +2335,19 @@ static Scheme_Object *do_map_hash_table(int argc,
         } else {
           v = hash->vals[i];
         }
-        p[1] = v;
-	if (keep) {
-	  v = _scheme_apply(f, 2, p);
-	  v = cons(v, scheme_null);
-	  if (last)
-	    SCHEME_CDR(last) = v;
-	  else
-	    first = v;
-	  last = v;
-	} else
-	  _scheme_apply_multi(f, 2, p);
+        if (v) {
+          p[1] = v;
+          if (keep) {
+            v = _scheme_apply(f, 2, p);
+            v = cons(v, scheme_null);
+            if (last)
+              SCHEME_CDR(last) = v;
+            else
+              first = v;
+            last = v;
+          } else
+            _scheme_apply_multi(f, 2, p);
+        }
       }
     }
   } else {
@@ -2361,17 +2365,19 @@ static Scheme_Object *do_map_hash_table(int argc,
         ik = chaperone_hash_key(name, chaperone, ik);
         iv = scheme_chaperone_hash_get(chaperone, ik);
       }
-      p[1] = iv;
-      if (keep) {
-        v = _scheme_apply(f, 2, p);
-        v = cons(v, scheme_null);
-        if (last)
-          SCHEME_CDR(last) = v;
-        else
-          first = v;
-        last = v;
-      } else
-        _scheme_apply_multi(f, 2, p);
+      if (iv) {
+        p[1] = iv;
+        if (keep) {
+          v = _scheme_apply(f, 2, p);
+          v = cons(v, scheme_null);
+          if (last)
+            SCHEME_CDR(last) = v;
+          else
+            first = v;
+          last = v;
+        } else
+          _scheme_apply_multi(f, 2, p);
+      }
       pos = scheme_hash_tree_next(hash, pos);
     }
   }
@@ -2723,7 +2729,9 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
 
       if (mode == 0)
         orig = NULL;
-      else if ((mode == 2) || (mode == 3))
+      else if (mode == 3)
+        orig = chaperone_hash_op(who, px->prev, k, v, mode);
+      else if (mode == 2)
         orig = k;
       else
         orig = v;
