@@ -559,6 +559,11 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     obj1 = SCHEME_PTR_VAL(obj1);
     obj2 = SCHEME_PTR_VAL(obj2);
     goto top;
+  } else if (!eql->for_chaperone && SCHEME_CHAPERONEP(obj1)) {
+    /* both chaperones */
+    obj1 = ((Scheme_Chaperone *)obj1)->val;
+    obj2 = ((Scheme_Chaperone *)obj2)->val;
+    goto top;
   } else {
     Scheme_Equal_Proc eqlp = scheme_type_equals[SCHEME_TYPE(obj1)];
     if (eqlp) {
