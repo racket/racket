@@ -1,5 +1,5 @@
-#lang scheme/base
-(require (for-template scheme/base))
+#lang racket/base
+(require (for-template racket/base))
 (provide txlift
          get-txlifts
          get-txlifts-as-definitions
