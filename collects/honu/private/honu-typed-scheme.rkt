@@ -269,8 +269,9 @@
      (lambda (transformer)
        (let-values ([(code rest) (transformer body context)])
          (combine-k code rest)))]
-    [else (call-values parse-one (extract-until body (list #'\;
-                                                           )))]))
+    [else (call-values (extract-until body (list #'\;
+                                                 ))
+                       parse-one )]))
 
 #|
 (define-honu-macro (e ... * e ... \;))
@@ -295,13 +296,6 @@ x(2)
 
 )
 
-(define-syntax (define-honu-syntax stx)
-  (let-values ([(id rhs) (normalize-definition stx #'lambda #f)])
-    (with-syntax ([id id]
-                  [rhs rhs])
-                 #'(define-syntax id (make-honu-transformer rhs)))))
-
-
 #|
 
 Yes, check out head patterns and splicing syntax classes.
@@ -320,6 +314,14 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 
 |#
 
+(define-syntax (define-honu-syntax stx)
+  (let-values ([(id rhs) (normalize-definition stx #'lambda #f)])
+    (with-syntax ([id id]
+                  [rhs rhs])
+      (syntax/loc stx
+                 (define-syntax id (make-honu-transformer rhs))))))
+
+
 (define-honu-syntax honu-provide
   (lambda (stx ctx)
     (syntax-parse stx
@@ -327,6 +329,8 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       [(_ something:id semicolon . rest)
        (values #'(provide something)
                #'rest)])))
+
+;; (honu-syntax ...)
 
 (define-honu-syntax honu-macro-item
   (lambda (stx ctx)
@@ -465,11 +469,18 @@ if (foo){
 (define-syntax (honu-top stx)
   (raise-syntax-error #f "interactive use is not yet supported"))
 
+(define-syntax (foobar2000 stx)
+  (printf "Called foobar2000 on ~a\n" (syntax->datum stx))
+  (syntax-case stx ()
+    [(_ x y ...) #'(printf "foobar2000 ~a\n" x)]))
+
 (define (display2 x y)
   (printf "~a ~a" x y))
 
+
+
 (define-syntax (honu-unparsed-begin stx)
-  ;; (printf "honu unparsed begin: ~a\n" (syntax->datum stx))
+  (printf "honu unparsed begin: ~a\n" (syntax->datum stx))
   (syntax-case stx ()
     [(_) #'(begin (void))]
     [(_ . body) (let-values ([(code rest) (parse-block-one/2 #'body
@@ -479,7 +490,8 @@ if (foo){
                   ;; (printf "Rest is ~a\n" (syntax->datum rest))
                   (with-syntax ([code code]
                                 [(rest ...) rest])
-                    #'(begin code (honu-unparsed-begin rest ...))))]
+                    (syntax/loc stx
+                                (begin code (honu-unparsed-begin rest ...)))))]
     #;
     [(_ . body) (let-values ([(code rest) (parse-block-one the-top-block-context
                                                            #'body 
@@ -490,9 +502,17 @@ if (foo){
                                 [(rest ...) rest])
                     #'(begin code (honu-unparsed-begin rest ...))))]))
 
+#;
 (define-syntax-rule (#%dynamic-honu-module-begin forms ...)
                     #;
                     (#%module-begin-typed-scheme
                      ;; (require honu/private/typed-utils)
                      (honu-unparsed-begin forms ...))
                     (#%plain-module-begin (honu-unparsed-begin forms ...)))
+
+(define-syntax (#%dynamic-honu-module-begin stx)
+  (syntax-case stx ()
+    [(_ forms ...)
+     (begin
+       (printf "Module begin ~a\n" (syntax->datum #'(forms ...)))
+       #'(#%plain-module-begin (honu-unparsed-begin forms ...)))]))

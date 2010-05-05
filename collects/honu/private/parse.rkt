@@ -3,11 +3,14 @@
 (require "contexts.ss"
          "util.ss"
          (for-template "literals.ss"
-                       "language.ss")
+                       "language.ss"
+                       "syntax.ss")
          syntax/parse
          syntax/parse/experimental/splicing
          (for-syntax syntax/parse)
          scheme/splicing
+         (for-syntax syntax/define)
+         syntax/name
          syntax/stx
          (for-syntax "util.ss")
          (for-template scheme/base))
@@ -40,8 +43,14 @@
   #:attrs (result)
   #:description "honu-expr"
   (lambda (stx fail)
+    (printf "Honu expr ~a\n" stx)
     (cond
      [(stx-null? stx) (fail)]
+     [(syntax-parse stx #:literals (honu-syntax)
+        [(honu-syntax expr ...) #'(expr ...)]
+        [else #f]) => (lambda (exprs)
+                               (printf "Ignoring honu-syntax 1!\n")
+                               (list exprs 0 #''()))]
      [(get-transformer stx) => (lambda (transformer)
                                  (printf "Transforming honu macro ~a\n" (car stx))
                                  (let-values ([(used rest)
@@ -55,8 +64,14 @@
   #:attributes (result)
   #:description "honu-expr"
   (lambda (stx fail)
+    (printf "Honu expr ~a\n" stx)
     (cond
      [(stx-null? stx) (fail)]
+     [(syntax-parse stx #:literals (honu-syntax)
+        [(honu-syntax expr ...) #'(expr ...)]
+        [else #f]) => (lambda (exprs)
+                               (printf "Ignoring honu-syntax 2!\n")
+                               (list '() 0 exprs))]
      [(get-transformer stx) => (lambda (transformer)
                                  (printf "Transforming honu macro ~a\n" (car stx))
                                  (let-values ([(used rest)
@@ -96,6 +111,7 @@
    (define-splicing-syntax-class (do-rest context left)
      (pattern (~seq (~var op operator-class)
                     (~var right (next context))
+
                     (~var new-right (do-rest context ((attribute op.func) left #'right.result))))
               #:with result (attribute new-right.result))
      (pattern (~seq) #:with result left))
@@ -203,6 +219,26 @@
                #:with result #'e.result])
 
 
+(define (fix-output stx)
+  #|
+  (printf "Fix output ~a\n" stx)
+  (when (and (stx-pair? stx) (equal? 'syntax (syntax->datum (stx-car stx))))
+    (printf "syntax == honu-syntax? ~a\n" (free-identifier=? (stx-car stx) #'honu-syntax)))
+  |#
+  (syntax-parse stx #:literals (honu-syntax #%parens syntax)
+    [((honu-syntax (#%parens x ...) y ...) rest ...)
+     (with-syntax ([(y* ...) (fix-output #'(y ... rest ...))])
+       (syntax/loc stx 
+       (x ... y* ...)))]
+    ;; dont touch real syntax
+    [(syntax stuff ...) stx]
+    [(z x ...)
+     (with-syntax ([z* (fix-output #'z)]
+                   [(x* ...) (fix-output #'(x ...))])
+       (syntax/loc stx
+                   (z* x* ...)))]
+    [else stx]))
+
 (define (parse-block-one/2 stx context)
   (define (parse-one stx context)
     
@@ -213,10 +249,30 @@
       #;
       [(x:number . rest) (values #'x #'rest)]
       ))
+  (printf "Parsing ~a\n" stx)
   (cond
     [(stx-null? stx) (values stx '())]
     [(get-transformer stx) => (lambda (transformer)
-                                (transformer stx context))]
+                                (printf "Parse one: execute transformer ~a\n" transformer)
+                                #;
+                                (printf "output of transformer is ~a\n" (let-values ([(a b) (transformer stx context)]) (list a b)))
+                                (call-values (transformer stx context)
+                                             (lambda (reparse rest)
+                                               (printf "Transformer gave us ~a\n" reparse)
+                                               #;
+                                               (values reparse rest)
+                                               #;
+                                               (values (fix-output reparse) rest)
+                                               #;
+                                               (printf "Macroized ~a and ~a\n" reparse rest)
+                                               (syntax-parse (fix-output reparse) #:literals (honu-unparsed-expr)
+                                                 [(honu-unparsed-expr stuff ...)
+                                                  (let-values ([(out rest2)
+                                                                (with-syntax ([(more ...) rest])
+                                                                  (parse-block-one/2 #'(stuff ... more ...) context))])
+                                                    (values out rest2))]
+                                                 [else (values reparse rest)]))
+                                             ))]
     [else (parse-one stx context)]))
 
 (define-values (prop:honu-transformer honu-transformer? honu-transformer-ref)
@@ -229,7 +285,6 @@
            (let ([str (symbol->string (syntax-e stx))])
              (and (positive? (string-length str))
                   (memq (string-ref str 0) sym-chars)))))))
-
 
 (define-values (struct:honu-trans make-honu-trans honu-trans? honu-trans-ref honu-trans-set!)
   (make-struct-type 'honu-trans #f 1 0 #f
@@ -244,6 +299,8 @@
       "procedure (arity 2)"
       proc))
   (make-honu-trans proc))
+
+
 
 
 ;; returns a transformer or #f
@@ -283,3 +340,14 @@
   ;; (printf "~a bound transformer? ~a\n" stx (bound-transformer stx))
   (or (bound-transformer stx)
       (special-transformer stx)))
+
+#;
+(define-honu-syntax honu-syntax
+  (lambda (stx ctx)
+  (syntax-case stx ()
+    [(_ expr ...)
+     (begin
+       (printf "Honu syntax on ~a\n" #'(expr ...))
+       (raise-syntax-error 'honu-syntax "should have been handled already")
+       #;
+       (parse-block-one/2 #'(expr ...) the-expression-context))])))

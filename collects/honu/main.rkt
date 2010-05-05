@@ -6,6 +6,7 @@
          ;; "private/honu.ss"
          "private/parse.ss"
          "private/literals.ss"
+         "private/syntax.ss"
          "private/macro.ss")
 
 (define test-x-class
@@ -30,6 +31,7 @@
                      )
          #%datum
          #%braces
+         #%parens
          x
          true
          false
@@ -37,11 +39,13 @@
          display2
          newline
          else
+         foobar2000
          (rename-out
            (honu-if if)
            (honu-provide provide)
            (honu-macro-item macroItem)
            (honu-macro macro)
+           (honu-syntax syntax)
            ))
 
 #;

@@ -33,7 +33,7 @@
            (loop (stx-cdr r) (cons (stx-car r) val-stxs))]))]
     [(r ids) (extract-until r ids #f)]))
 
-(define-syntax-rule (call-values function values-producing)
+(define-syntax-rule (call-values values-producing function)
   (call-with-values (lambda () values-producing) function))
 
 ;; shortcut for treating arguments as syntax objects
