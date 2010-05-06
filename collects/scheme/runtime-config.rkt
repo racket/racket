@@ -4,4 +4,4 @@
 
   (define-values (configure)
     (lambda (config)
-      (print-as-quasiquote #f))))
+      (print-as-expression #f))))

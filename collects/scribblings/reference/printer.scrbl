@@ -11,7 +11,7 @@ using @scheme[read] on the output produces a value that is
 printing of strings, byte strings, characters, and symbols changes to
 render the character/byte content directly to the output port. The
 printer's @scheme[print] mode is similar to @scheme[write], but it is
-sensitive to the @scheme[print-as-quasiquote] parameter for printing
+sensitive to the @scheme[print-as-expression] parameter for printing
 values in a way that @scheme[read] plus @scheme[eval] on the output
 can be @scheme[equal?] to the printed value.
 
@@ -68,7 +68,7 @@ characters. That is, the display form of a symbol is the same as the
 display form of @scheme[symbol->string] applied to the symbol.
 
 Symbols @scheme[print] the same as they @scheme[write], unless
-@scheme[print-as-quasiquote] is set to @scheme[#t] and the current
+@scheme[print-as-expression] is set to @scheme[#t] and the current
 @scheme[quasiquote] depth is @scheme[0]. In that case, the symbol's
 @scheme[print]ed form is prefixed with @litchar{'}. If the current
 @scheme[quasiquote] depth is @scheme[1], and if the symbol is
@@ -146,9 +146,9 @@ including the tail as two elements of the enclosing list.
 The printed form of a pair is the same in both @scheme[write] and
 @scheme[display] modes, except as the printed form of the pair's
 @scheme[car] and @scheme[cdr] vary with the mode. The @scheme[print]
-form is also the same is @scheme[print-as-quasiquote] is @scheme[#f].
+form is also the same is @scheme[print-as-expression] is @scheme[#f].
 
-When @scheme[print-as-quasiquote] is @scheme[#t] and the current
+When @scheme[print-as-expression] is @scheme[#t] and the current
 @scheme[quasiquote] depth is @scheme[0], then the empty list prints as
 @litchar{'()} and a pair's output is prefixed with @litchar{`}; the
 pair's content is printed at @scheme[quasiquote] depth is
@@ -211,7 +211,7 @@ decimal integer is printed after the @litchar{#}, and a repeated last
 element is printed only once.
 
 Vectors @scheme[print] the same as they @scheme[write], unless
-@scheme[print-as-quasiquote] is set to @scheme[#t] and the current
+@scheme[print-as-expression] is set to @scheme[#t] and the current
 @scheme[quasiquote] depth is @scheme[0]. In that case, the vector's
 @scheme[print]ed form is prefixed with @litchar{`}, and its content is
 printed with @scheme[quasiquote] depth @scheme[1].
@@ -230,7 +230,7 @@ for which the structure is an instance:
        structure type key, then the printed form each field in the
        structure, and then @litchar{)}.
 
-       In @scheme[print] mode when @scheme[print-as-quasiquote] is set
+       In @scheme[print] mode when @scheme[print-as-expression] is set
        to @scheme[#t] and the current @scheme[quasiquote] depth is
        @scheme[0], the structure's @scheme[print]ed form is prefixed
        with @litchar{`} and its content is printed with
@@ -245,9 +245,9 @@ for which the structure is an instance:
        transparent, then the structure prints as the vector produced
        by @scheme[struct->vector] in @scheme[display] mode, in
        @scheme[write] mode, or in @scheme[print] mode when
-       @scheme[print-as-quasiquote] is set to @scheme[#f].
+       @scheme[print-as-expression] is set to @scheme[#f].
 
-       In @scheme[print] mode with @scheme[print-as-quasiquote] as
+       In @scheme[print] mode with @scheme[print-as-expression] as
        @scheme[#t], then the printed form is prefixed with as many
        @litchar{,}s as the current @scheme[quasiquote] depth. Instead
        of printing as a vector, the structure content is printed as a
@@ -278,7 +278,7 @@ additional space if the key--value pair is not the last to be printed.
 After all key-value pairs, the printed form completes with
 @litchar{)}.
 
-In @scheme[print] mode when @scheme[print-as-quasiquote] is
+In @scheme[print] mode when @scheme[print-as-expression] is
 @scheme[#t] and the current quasiquote depth is @scheme[0], then the
 printed form is prefixed with @litchar{`} and the hash table's content
 is printed at @scheme[quasiquote] depth @scheme[1]. In the printed
@@ -293,7 +293,7 @@ hash table prints (un@scheme[read]ably) as @litchar{#<hash>}.
 
 When the @scheme[print-box] parameter is set to @scheme[#t], 
 a box prints as @litchar{#&} followed by the printed form of its content.
-In @scheme[print] mode when @scheme[print-as-quasiquote] is
+In @scheme[print] mode when @scheme[print-as-expression] is
 @scheme[#t] and the current quasiquote depth is @scheme[0], then the
 printed form is prefixed with @litchar{`} and the box's content
 is printed at @scheme[quasiquote] depth @scheme[1].

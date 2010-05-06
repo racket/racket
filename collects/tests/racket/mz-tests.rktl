@@ -5,6 +5,7 @@
 (load-relative "unicode.rktl")
 (load-relative "rx.rktl")
 (load-relative "read.rktl")
+(load-relative "print.rktl")
 (load-relative "macro.rktl")
 (load-relative "syntax.rktl")
 (load-relative "procs.rktl")

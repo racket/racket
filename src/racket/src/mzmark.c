@@ -3404,6 +3404,7 @@ static int place_async_channel_val_SIZE(void *p, struct NewGC *gc) {
 static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   int i;
+  gcMARK2(pac->msgs, gc);
   for (i = pac->size; i--; )
     gcMARK2(pac->msgs[i], gc);
 
@@ -3414,6 +3415,7 @@ static int place_async_channel_val_MARK(void *p, struct NewGC *gc) {
 static int place_async_channel_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
   int i;
+  gcFIXUP2(pac->msgs, gc);
   for (i = pac->size; i--; )
     gcFIXUP2(pac->msgs[i], gc);
 
@@ -3834,6 +3836,7 @@ static int mark_print_params_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pp->print_port, gc);
   gcMARK2(pp->print_buffer, gc);
   gcMARK2(pp->depth_delta, gc);
+  gcMARK2(pp->uq_ht, gc);
   return
   gcBYTES_TO_WORDS(sizeof(PrintParams));
 }
@@ -3844,6 +3847,7 @@ static int mark_print_params_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pp->print_port, gc);
   gcFIXUP2(pp->print_buffer, gc);
   gcFIXUP2(pp->depth_delta, gc);
+  gcFIXUP2(pp->uq_ht, gc);
   return
   gcBYTES_TO_WORDS(sizeof(PrintParams));
 }

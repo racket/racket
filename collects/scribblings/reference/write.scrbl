@@ -44,7 +44,7 @@ proportional to the depth of the value being printed, due to the
 initial cycle check.}
 
 @defproc[(print [datum any/c][out output-port? (current-output-port)]
-                [qq-depth exact-nonnegative-integer? 0])
+                [quote-depth (or/c 0 1) 0])
          void?]{
 
 Writes @racket[datum] to @racket[out], normally the same way as
@@ -53,10 +53,10 @@ Writes @racket[datum] to @racket[out], normally the same way as
 the handler specified by @racket[global-port-print-handler] is called;
 the default handler uses the default printer in @racket[write] mode.
 
-The optional @racket[qq-depth] argument adjust printing when the
-@racket[print-as-quasiquote] parameter is set to @racket[#t]. In that
-case, @racket[qq-depth] specifies the starting @racket[quasiquote]
-depth for printing @racket[datum].
+The optional @racket[quote-depth] argument adjusts printing when the
+@racket[print-as-expression] parameter is set to @racket[#t]. In that
+case, @racket[quote-depth] specifies the starting quote depth for
+printing @racket[datum].
 
 The rationale for providing @racket[print] is that @racket[display]
 and @racket[write] both have specific output conventions, and those
@@ -209,7 +209,7 @@ with @racket[quote], @racket['quasiquote], @racket['unquote],
 @racket['unsyntax], or @racket['unsyntax-splicing]; defaults to
 @racket[#f]. See @secref["print-pairs"] for more information.}
 
-@defboolparam[print-as-quasiquote on?]{
+@defboolparam[print-as-expression on?]{
 
 A parameter that controls printing in @racket[print] mode (as opposed
 to @racket[write] or @racket[display]); defaults to @racket[#f]. See
@@ -253,7 +253,7 @@ it is not @racket[#f], otherwise the path is left relative).}
                                   [proc (any/c output-port? . -> . any)])
             void?])]{}
 
-@defproc*[([(port-print-handler [out output-port?]) ((any/c output-port?) (exact-nonnegative-integer?) . ->* . any)]
+@defproc*[([(port-print-handler [out output-port?]) ((any/c output-port?) ((or/c 0 1)) . ->* . any)]
            [(port-print-handler [out output-port?]
                                 [proc (any/c output-port? . -> . any)])
             void?])]{
@@ -277,7 +277,7 @@ default print handler calls the global port print handler (the value
 of the @racket[global-port-print-handler] parameter); the default
 global port print handler is the same as the default write handler.}
 
-@defproc*[([(global-port-print-handler) ((any/c output-port?) (exact-nonnegative-integer?) . ->* . any)]
+@defproc*[([(global-port-print-handler) ((any/c output-port?) ((or/c 0 1)) . ->* . any)]
            [(global-port-print-handler [proc (any/c output-port? . -> . any)]) void?])]{
 
 A parameter that determines @deftech{global port print handler},

@@ -539,7 +539,7 @@ void scheme_init_read(Scheme_Env *env)
   GLOBAL_PARAMETER("print-honu",                    print_honu,             MZCONFIG_HONU_MODE,                   env);
   GLOBAL_PARAMETER("print-syntax-width",            print_syntax_width,     MZCONFIG_PRINT_SYNTAX_WIDTH,          env);
   GLOBAL_PARAMETER("print-reader-abbreviations",    print_reader,           MZCONFIG_PRINT_READER,                env);
-  GLOBAL_PARAMETER("print-as-quasiquote",           print_as_qq,            MZCONFIG_PRINT_AS_QQ,                 env);
+  GLOBAL_PARAMETER("print-as-expression",           print_as_qq,            MZCONFIG_PRINT_AS_QQ,                 env);
 
   GLOBAL_PRIM_W_ARITY("make-readtable",     make_readtable,     1, -1,      env);
   GLOBAL_FOLDING_PRIM("readtable?",         readtable_p,        1, 1, 1,    env);
@@ -766,7 +766,7 @@ print_reader(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 print_as_qq(int argc, Scheme_Object *argv[])
 {
-  DO_CHAR_PARAM("print-as-quasiquote", MZCONFIG_PRINT_AS_QQ);
+  DO_CHAR_PARAM("print-as-expression", MZCONFIG_PRINT_AS_QQ);
 }
 
 static Scheme_Object *good_syntax_width(int c, Scheme_Object **argv)

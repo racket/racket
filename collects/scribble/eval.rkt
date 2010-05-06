@@ -124,7 +124,7 @@
                                                       (list
                                                        (hspace 2)
                                                        (elem #:style result-color
-                                                             (to-element/no-color v #:qq? (print-as-quasiquote)))))))))
+                                                             (to-element/no-color v #:qq? (print-as-expression)))))))))
                             val-list))))
              (loop (cdr expr-paras)
                    (cdr val-list+outputs)
@@ -320,7 +320,7 @@
 
   (define (show-val v)
     (elem #:style result-color
-          (to-element/no-color v #:qq? (print-as-quasiquote))))
+          (to-element/no-color v #:qq? (print-as-expression))))
 
   (define (do-interaction-eval-show ev e)
     (parameterize ([current-command-line-arguments #()])

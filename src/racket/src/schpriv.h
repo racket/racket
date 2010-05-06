@@ -719,6 +719,7 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a);
 Scheme_Object *scheme_object_name(Scheme_Object *a);
 
 Scheme_Object *scheme_is_writable_struct(Scheme_Object *s);
+Scheme_Object *scheme_is_print_as_constructor_struct(Scheme_Object *s);
 
 #define SCHEME_STRUCT_INSPECTOR(obj) (((Scheme_Structure *)obj)->stype->inspector)
 
