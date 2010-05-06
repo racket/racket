@@ -1919,12 +1919,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           if (notdisplay >= 3) {
             if (SAME_OBJ(qq_ellipses, obj)) {
               /* no quoting */
-            } else if (notdisplay == 4) {
-              if (SAME_OBJ(obj, unquote_symbol)
-                  || SAME_OBJ(obj, unquote_splicing_symbol))
-                print_utf8_string(pp, ",'", 0, 2);
-              else
-                notdisplay = to_quoted(NULL, pp, notdisplay);
             } else
               notdisplay = to_quoted(NULL, pp, notdisplay);
           }
@@ -3285,6 +3279,69 @@ print_byte_string(const char *str, int delta, int len, int notdisplay, PrintPara
   }
 }
 
+static int is_special_reader_form(PrintParams *pp, int notdisplay, Scheme_Object *p)
+{
+  Scheme_Object *v;
+
+  if (notdisplay && (notdisplay != 3) && pp->print_reader) {
+    v = SCHEME_CAR(p);
+    p = SCHEME_CDR(p);
+    if (!SCHEME_PAIRP(p)) return 0;
+    p = SCHEME_CDR(p);
+    if (!SCHEME_NULLP(p)) return 0;
+    if (SCHEME_SYMBOLP(v)) {
+      if (SAME_OBJ(v, quote_symbol)
+          || SAME_OBJ(v, quasiquote_symbol)
+          || SAME_OBJ(v, unquote_symbol)
+          || SAME_OBJ(v, unquote_splicing_symbol)
+          || SAME_OBJ(v, syntax_symbol)
+          || SAME_OBJ(v, quasisyntax_symbol)
+          || SAME_OBJ(v, unsyntax_symbol)
+          || SAME_OBJ(v, unsyntax_splicing_symbol))
+        return 1;
+          
+    }
+  }
+  return 0;
+}
+
+static void print_special_reader_form(Scheme_Object *v, PrintParams *pp, int notdisplay)
+{
+  const char *str;
+  int len;
+
+  if (SAME_OBJ(v, quote_symbol)) {
+    str = "'";
+    len = 1;
+  } else if (SAME_OBJ(v, quasiquote_symbol)) {
+    str = "`";
+    len = 1;
+  } else if (SAME_OBJ(v, unquote_symbol)) {
+    str = ",";
+    len = 1;
+  } else if (SAME_OBJ(v, unquote_splicing_symbol)) {
+    str = ",@";
+    len = 2;
+  } else if (SAME_OBJ(v, syntax_symbol)) {
+    str = "#'";
+    len = 2;
+  } else if (SAME_OBJ(v, quasisyntax_symbol)) {
+    str = "#`";
+    len = 2;
+  } else if (SAME_OBJ(v, unsyntax_symbol)) {
+    str = "#,";
+    len = 2;
+  } else if (SAME_OBJ(v, unsyntax_splicing_symbol)) {
+    str = "#,@";
+    len = 3;
+  } else {
+    str = "???";
+    len = 3;
+  }
+
+  print_utf8_string(pp, str, 0, len);
+}
+
 static void
 print_pair(Scheme_Object *pair, int notdisplay, int compact, 
 	   Scheme_Hash_Table *ht, 
@@ -3381,7 +3438,13 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
     if (!super_compact)
       print_compact(pp, CPT_PAIR);
   } else {
-    if ((notdisplay == 3) && !first_unquoted) {
+    if (round_parens 
+        && !first_unquoted 
+        && is_special_reader_form(pp, notdisplay, pair)) {
+      print_special_reader_form(SCHEME_CAR(pair), pp, notdisplay);
+      (void)print(SCHEME_CADR(pair), notdisplay, compact, ht, mt, pp);
+      return;
+    } else if ((notdisplay == 3) && !first_unquoted) {
       if (SAME_TYPE(pair_type, scheme_pair_type)) {
         if (scheme_is_list(pair))
           print_utf8_string(pp,"(list ", 0, 6);
@@ -3404,7 +3467,8 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
   print(SCHEME_CAR(pair), (first_unquoted ? 1 : notdisplay), compact, ht, mt, pp);
 
   cdr = SCHEME_CDR(pair);
-  while (SAME_TYPE(SCHEME_TYPE(cdr), pair_type)) {
+  while (SAME_TYPE(SCHEME_TYPE(cdr), pair_type)
+         && !is_special_reader_form(pp, notdisplay, pair)) {
     if (ht && !super_compact) {
       if (is_graph_point(ht, cdr)) {
 	/* This needs a tag */

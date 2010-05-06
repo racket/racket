@@ -1441,11 +1441,9 @@
           (let ((head (do-remap (car l))) (tail (cdr l)))
             (case head
               ((quote quasiquote syntax
-                quasisyntax unsyntax unsyntax-splicing)
+                quasisyntax unsyntax unsyntax-splicing
+                unquote unquote-splicing)
                (length1? tail))
-              ((unquote unquote-splicing)
-               (and (not (equal? qd 1))
-                    (length1? tail)))
               (else #f)))))
 
   (define (reader-adjust-qd v qd)
