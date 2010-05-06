@@ -2,6 +2,7 @@
 
 ; $Id: earley.sch,v 1.2 1999/07/12 18:05:19 lth Exp $
 ; 990708 / lth -- changed 'main' to 'earley-benchmark'.
+; 100404 / Vincent St-Amour -- got rid of one-armed ifs
 ;
 ; (make-parser grammar lexer) is used to create a parser from the grammar
 ; description `grammar' and the lexer function `lexer'.
@@ -199,7 +200,8 @@
               (vector-set! steps i (- i nb-nts))
               (vector-set! names i (list (vector-ref nts i) 0))
               (vector-set! enders i (list i))
-              (nt-loop (- i 1)))))
+              (nt-loop (- i 1)))
+            #f))
 
         (let def-loop ((defs grammar) (conf (vector-length nts)))
           (if (pair? defs)
@@ -220,7 +222,8 @@
                           (vector-set! steps conf (- (ind head nts) nb-nts))
                           (add-conf conf head nts enders)
                           (rule-loop (cdr rules) (+ conf 1) (+ rule-num 1))))))
-                  (def-loop (cdr defs) conf))))))))
+                  (def-loop (cdr defs) conf))))
+            #f))))
 
 ; Now, for each non-terminal, compute the starters, enders and predictors and
 ; the names and steps tables.
@@ -309,7 +312,8 @@
             (if (< tail 0)
               (begin
                 (vector-set! conf-set 0 (vector-ref state 0))
-                (vector-set! state 0 conf)))))
+                (vector-set! state 0 conf))
+              #f)))
 
         (define (conf-set-adjoin* states state-num l i)
           (let ((state (vector-ref states state-num)))
@@ -321,7 +325,8 @@
                     (begin
                       (conf-set-adjoin state conf-set conf i)
                       (loop (cdr l1)))
-                    (loop (cdr l1))))))))
+                    (loop (cdr l1))))
+                #f))))
 
         (define (conf-set-adjoin** states states* state-num conf i)
           (let ((state (vector-ref states state-num)))
@@ -329,7 +334,8 @@
               (let* ((state* (vector-ref states* state-num))
                      (conf-set* (conf-set-get* state* state-num conf)))
                 (if (not (conf-set-next conf-set* i))
-                  (conf-set-adjoin state* conf-set* conf i))
+                  (conf-set-adjoin state* conf-set* conf i)
+                  #f)
                 #t)
               #f)))
 
@@ -340,7 +346,8 @@
                 (begin
                   (conf-set-adjoin state conf-set conf i)
                   (loop (conf-set-next other-set i)))
-                (loop (conf-set-next other-set i))))))
+                (loop (conf-set-next other-set i)))
+              #f)))
 
         (define (forw states state-num starters enders predictors steps nts)
 
@@ -357,7 +364,8 @@
                     (begin
                       (conf-set-adjoin state starter-set starter state-num)
                       (loop1 (cdr l)))
-                    (loop1 (cdr l))))))
+                    (loop1 (cdr l))))
+                #f))
 
             ; check for possible completion of the non-terminal `nt' to the
             ; right of the dot
@@ -370,7 +378,8 @@
                            (next-set (conf-set-get* state state-num next)))
                       (conf-set-union state next-set next conf-set)
                       (loop2 (cdr l)))
-                    (loop2 (cdr l)))))))
+                    (loop2 (cdr l))))
+                #f)))
 
           (define (reduce states state state-num conf-set head preds)
 
@@ -386,9 +395,11 @@
                         (if pred-set
                           (let* ((next (+ pred 1))
                                  (next-set (conf-set-get* state state-num next)))
-                            (conf-set-union state next-set next pred-set)))
+                            (conf-set-union state next-set next pred-set))
+                          #f)
                         (loop2 (conf-set-next conf-set i)))
-                      (loop1 (cdr l))))))))
+                      (loop1 (cdr l)))))
+                #f)))
 
           (let ((state (vector-ref states state-num))
                 (nb-nts (vector-length nts)))
@@ -404,7 +415,8 @@
                       (predict state state-num conf-set conf step starters enders)
                       (let ((preds (vector-ref predictors (+ step nb-nts))))
                         (reduce states state state-num conf-set head preds)))
-                    (loop)))))))
+                    (loop))
+                  #f)))))
 
         (define (forward starters enders predictors steps nts toks)
           (let* ((nb-toks (vector-length toks))
@@ -418,7 +430,8 @@
                 (let ((tok-nts (cdr (vector-ref toks i))))
                   (conf-set-adjoin* states (+ i 1) tok-nts i) ; scan token
                   (forw states (+ i 1) starters enders predictors steps nts)
-                  (loop (+ i 1)))))
+                  (loop (+ i 1)))
+                #f))
             states))
 
         (define (produce conf i j enders steps toks states states* nb-nts)
@@ -438,7 +451,9 @@
                                  (conf-set-adjoin** states states* j ender k))
                             (loop2 (conf-set-next ender-set k)))
                           (loop1 (cdr l))))
-                      (loop1 (cdr l)))))))))
+                      (loop1 (cdr l))))
+                  #f))
+              #f)))
 
         (define (back states states* state-num enders steps nb-nts toks)
           (let ((state* (vector-ref states* state-num)))
@@ -455,7 +470,8 @@
                           (produce conf i state-num enders steps
                                    toks states states* nb-nts)
                           (loop2 (conf-set-next conf-set i)))
-                        (loop1)))))))))
+                        (loop1))))
+                  #f)))))
 
         (define (backward states enders steps nts toks)
           (let* ((nb-toks (vector-length toks))
@@ -467,12 +483,14 @@
               (if (pair? l)
                 (let ((conf (car l)))
                   (conf-set-adjoin** states states* nb-toks conf 0)
-                  (loop1 (cdr l)))))
+                  (loop1 (cdr l)))
+                #f))
             (let loop2 ((i nb-toks))
               (if (>= i 0)
                 (begin
                   (back states states* i enders steps nb-nts toks)
-                  (loop2 (- i 1)))))
+                  (loop2 (- i 1)))
+                #f))
             states*))
 
         (define (parsed? nt i j nts enders states)

@@ -5,6 +5,7 @@
 ; Created:      8-Apr-85
 ; Modified:     6-May-85 09:29:22 (Bob Shaw)
 ;               11-Aug-87 (Will Clinger)
+;               4-May-10 (Vincent St-Amour)
 ; Language:     Scheme
 ; Status:       Public Domain
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -51,7 +52,8 @@
       (if (< i n)
           (begin (set! m (+ m 1))
                  (set! i (+ i i))
-                 (loop))))
+                 (loop))
+          #t))
     (cond ((not (= n (expt 2 m)))
            (error "array size not a power of two.")))
     ;; interchange elements in bit-reversed order
