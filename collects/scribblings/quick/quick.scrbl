@@ -318,11 +318,11 @@ a list containing the given values:
 @mr-interaction[(list "red" "green" "blue")
                 (list (circle 10) (square 10))]
 
-As you can see, a list prints as a backquoted pair of parentheses wrapped around
+As you can see, a list prints as a single quote and then pair of parentheses wrapped around
 the printed form of the list elements. There's room for confusion
 here, because parentheses are used for both expressions, such as
 @racket[(circle 10)], and printed results, such as
-@racketresult[`("red" "green" "blue")]. The backquote is the key difference,
+@racketresult['("red" "green" "blue")]. The quote is the key difference,
 as @seclink[#:doc '(lib "scribblings/guide/guide.scrbl") "quoting-lists"]{discussed
 elsewhere}. To help emphasize the difference, in the documentation and in DrRacket, 
 result parentheses are printed in blue, unlike expression parentheses.

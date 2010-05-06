@@ -69,27 +69,27 @@ a pair, but @italic{is not} a list:
 In general, the rule for printing a pair is as follows: use the dot
 notation always, but if the dot is immediately followed by an open
 parenthesis, then remove the dot, the open parenthesis, and the
-matching close parenthesis. Thus, @racketresultfont{`(0 . (1 . 2))}
-becomes @racketresult[`(0 1 . 2)], and
-@racketresultfont{`(1 . (2 . (3 . ())))} becomes @racketresult[`(1 2 3)].
+matching close parenthesis. Thus, @racketresultfont{'(0 . (1 . 2))}
+becomes @racketresult['(0 1 . 2)], and
+@racketresultfont{'(1 . (2 . (3 . ())))} becomes @racketresult['(1 2 3)].
 
 @;------------------------------------------------------------------------
 @section[#:tag "quoting-lists"]{Quoting Pairs and Symbols with @racket[quote]}
 
-After you see
+A list prints with a quote mark before it, but if an element of a list
+is itself a list, then no quote mark is printed for the inner list:
 
 @interaction[
-(list (list 1) (list 2) (list 3))
+(list (list 1) (list 2 3) (list 4))
 ]
 
-enough times, you'll wish (or you're already wishing) that there was a
-way to write just @racket[((1) (2) (3))] and have it mean the list of
-lists that prints as @racketresult[`((1) (2) (3))]. The @racket[quote]
-form does exactly that:
+For nested lists, especially, the @racket[quote] form lets you write a
+list as an expression in essentially the same way that the list it
+prints:
 
 @interaction[
-(eval:alts (@#,racket[quote] ((1) (2) (3))) '((1) (2) (3)))
 (eval:alts (@#,racket[quote] ("red" "green" "blue")) '("red" "green" "blue"))
+(eval:alts (@#,racket[quote] ((1) (2 3) (4))) '((1) (2 4) (4)))
 (eval:alts (@#,racket[quote] ()) '())
 ]
 
@@ -116,7 +116,7 @@ that looks like an identifier, but with a @litchar{'} prefix:
 (eval:alts (@#,racket[quote] jane-doe) 'jane-doe)
 ]
 
-A value that prints like an identifier is a @defterm{symbol}. In the
+A value that prints like a quoted identifier is a @defterm{symbol}. In the
 same way that parenthesized output should not be confused with
 expressions, a printed symbol should not be confused with an
 identifier. In particular, the symbol @racket[(@#,racket[quote]
@@ -141,28 +141,38 @@ map
 (eval:alts (symbol->string (@#,racket[quote] @#,racketidfont{map})) (symbol->string 'map))
 ]
 
-When @racket[quote] is used on a parenthesized sequence of
-identifiers, it creates a list of symbols:
+In the same way that @racket[quote] for a list automatically applies
+itself to nested lists, @racket[quote] on a parenthesized sequence of
+identifiers automatically applies itself to the identifiers to create
+a list of symbols:
 
 @interaction[
 (eval:alts (car (@#,racket[quote] (@#,racketidfont{road} @#,racketidfont{map}))) (car '(road map)))
 (eval:alts (symbol? (car (@#,racket[quote] (@#,racketidfont{road} @#,racketidfont{map})))) (symbol? (car '(road map))))
 ]
 
-When a symbol is inside a
-list that is printed with @litchar{`}, the @litchar{'} on the symbol
-is omitted, since @litchar{`} is doing the job already:
+When a symbol is inside a list that is printed with
+@litchar{'}, the @litchar{'} on the symbol is omitted, since
+@litchar{'} is doing the job already:
 
 @interaction[
 (eval:alts (@#,racket[quote] (@#,racketidfont{road} @#,racketidfont{map})) '(road map))
 ]
 
+The @racket[quote] form has no effect on a literal expression such as
+a number or string:
+
+@interaction[
+(eval:alts (@#,racket[quote] 42) 42)
+(eval:alts (@#,racket[quote] "on the record") "on the record")
+]
+
 @;------------------------------------------------------------------------
 @section{Abbreviating @racket[quote] with @racketvalfont{'}}
 
-If @racket[(@#,racket[quote] (1 2 3))] still seems like too much
-typing, you can abbreviate by just putting @litchar{'} in front of
-@racket[(1 2 3)]:
+As you may have guessed, you can abbreviate a use of
+@racket[quote] by just putting @litchar{'} in front of a form to
+quote:
 
 @interaction[
 '(1 2 3)
@@ -183,57 +193,24 @@ way. You can see this if you put a @litchar{'} in front of a form that has a
 @litchar{'}:
 
 @interaction[
-(eval:alts (car '(@#,racketvalfont{quote} @#,racketvalfont{road})) 'quote)
 (car ''road)
+(eval:alts (car '(@#,racketvalfont{quote} @#,racketvalfont{road})) 'quote)
 ]
 
-Beware, however, that the @tech{REPL}'s printer recognizes the symbol
-@racketidfont{quote} when printing output, and then it uses
-@racketidfont{'} in the output:
+The @litchar{'} abbreviation works in output as well as input. The
+@tech{REPL}'s printer recognizes the symbol @racket['quote] as the
+first element of a two-element list when printing output, in which
+case it uses @racketidfont{'} to print the output:
 
 @interaction[
-(eval:alts (list (@#,racketvalfont{quote} (@#,racketvalfont{quote} @#,racketvalfont{road}))) '('road))
-(list ''road)
+(eval:alts (@#,racketvalfont{quote} (@#,racketvalfont{quote} @#,racketvalfont{road})) ''road)
+(eval:alts '(@#,racketvalfont{quote} @#,racketvalfont{road}) ''road)
+''road
 ]
 
 @; FIXME:
 @; warning about how "quote" creates constant data, which is subtly
 @; different than what "list" creates
-
-@;------------------------------------------------------------------------
-@section{Quasiquoting with @racketvalfont{`}}
-
-At this point, you may wonder why a symbol that is written with
-@litchar{'} prints back with @litchar{'}, while a list that is written
-with @litchar{'} prints back with @litchar{`}:
-
-@interaction[
-'road
-'(left right)
-]
-
-The @litchar{`} character is a shorthand for @racket[quasiquote] in
-the same way that @litchar{'} is short for @racket[quote]. The
-@racket[quasiquote] form is like @scheme[quote], except that the
-content of a @scheme[quasiquote]d form can escape back to a Racket
-expression using @racket[unquote], which is abbreviated @litchar{,}:
-
-@moreguide["qq"]{@racket[quasiquote]}
-
-@interaction[
-`(1 ,(+ 1 1) "buckle my shoe")
-]
-
-The value printer in Racket uses @litchar{`} for a lists in case it
-must escape to print certain kinds of values that cannot be written
-directly under @scheme[quote]. For example, a source-location record
-is created with the @racket[srcloc] function, and it prints like an
-equivalent call to @racket[srcloc]:
-
-@interaction[
-(srcloc "file.rkt" 1 0 1 (+ 4 4))
-(list 'here (srcloc "file.rkt" 1 0 1 8) 'there)
-]
 
 @;------------------------------------------------------------------------
 @section[#:tag "lists-and-syntax"]{Lists and Racket Syntax}

@@ -10,11 +10,14 @@ values. Unlike a list, a vector supports constant-time access and
 update of its elements.
 
 A vector prints similar to a list---as a parenthesized sequence of its
-elements---but a vector is prefixed with @litchar{#}. For a vector as
-an expression, an optional length can be supplied. Also, a vector as
-an expression implicitly quotes the forms for its content, which means
-that identifiers and parenthesized forms in a vector constant
-represent symbols and lists.
+elements---but a vector is prefixed with @litchar{#} after
+@litchar{'}, or it uses @schemeresult[vector] of one of its elements
+cannot be expressed with @racket[quote].
+
+For a vector as an expression, an optional length can be
+supplied. Also, a vector as an expression implicitly @racket[quote]s
+the forms for its content, which means that identifiers and
+parenthesized forms in a vector constant represent symbols and lists.
 
 @refdetails/gory["parse-vector"]{the syntax of vectors}
 
