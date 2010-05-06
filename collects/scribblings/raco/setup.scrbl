@@ -984,15 +984,17 @@ An @deftech{unpackable} is one of the following:
    provides functions for accessing fields in @filepath{info.rkt}
    files.}
 
-@defproc[(get-info (collection-names (listof string?)))
+@defproc[(get-info [collection-names (listof string?)]
+                   [#:namespace namespace (or/c namespace? #f) #f])
          (or/c
           (symbol? [(-> any)] . -> . any)
           false/c)]{
    Accepts a list of strings naming a collection or sub-collection,
    and calls @racket[get-info/full] with the full path corresponding to the
-   named collection.}
+   named collection and the @scheme[namespace] argument.}
 
-@defproc[(get-info/full (path path?))
+@defproc[(get-info/full [path path?]
+                         [#:namespace namespace (or/c namespace? #f) #f])
          (or/c
           (symbol? [(-> any)] . -> . any)
           false/c)]{
@@ -1010,16 +1012,20 @@ An @deftech{unpackable} is one of the following:
    case. If the name is not defined and no @racket[_thunk] is
    provided, then an exception is raised.
    
-   @racket[get-info/full] returns @racket[#f] if there is
-   no @filepath{info.rkt} or @filepath{info.rkt} file in the directory. If there is a
-   @filepath{info.rkt} file that has the wrong shape (i.e., not a module
+   The @racket[get-info/full] function returns @racket[#f] if there is
+   no @filepath{info.rkt} or @filepath{info.ss} file in the directory. If there is a
+   @filepath{info.rkt} (or @filepath{info.ss}) file that has the wrong shape (i.e., not a module
    using @racketmodname[setup/infotab] or @racket[(lib "infotab.rkt" "setup")]),
    or if the @filepath{info.rkt} file fails to load, then an exception
    is raised. If the @filepath{info.rkt} file loaded, @racket[get-info/full]
    returns the @racket[get-info] file. If the @filepath{info.rkt} file does not exist, 
    then @racket[get-info/full] does
    the same checks for the @filepath{info.rkt} file, either raising an exception
-   or returning the @racket[get-info] function from the @filepath{info.rkt} file.}
+   or returning the @racket[get-info] function from the @filepath{info.rkt} file.
+
+   The @filepath{info.rkt} (or @filepath{info.ss}) module is loaded
+   into @scheme[namespace] if it is not @scheme[#f], or a private,
+   weakly-held namespace otherwise.}
 
 @defproc[(find-relevant-directories
           (syms (listof symbol?))
