@@ -157,6 +157,11 @@
   (ptest "#0='(#0#\n     \"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\"\n     #0#)" 
          (read (open-input-string "#0=(#0# \"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\" #0#)")))
 
+  (ptest "''a" ''a)
+  (ptest "'`a" '`a)
+  (ptest "'`,#,#`a" '`,#,#`a)
+  (ptest "'`,#,#`,@#,@a" '`,#,#`,@#,@a)
+
   (void))
 
 (report-errs)

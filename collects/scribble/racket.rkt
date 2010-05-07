@@ -442,7 +442,7 @@
               (set! src-col (syntax-column (cadr l)))
               (hash-set! next-col-map src-col dest-col)
               (set! highlight? #t)
-              ((loop init-line! quote-depth expr?) (cadr l) #f)
+              ((loop init-line! quote-depth expr? #f) (cadr l))
               (set! highlight? h?)
               (set! src-col (add1 src-col)))]
            [(and (pair? (syntax-e c))
@@ -979,27 +979,33 @@
   (define-struct forced-pair (car cdr))
 
   (define (quotable? v)
-    (cond
-     [(syntax? v) (quotable? (syntax-e v))]
-     [(pair? v) (and (quotable? (car v))
-                     (quotable? (cdr v)))]
-     [(vector? v) (andmap quotable? (vector->list v))]
-     [(hash? v) (for/and ([(k v) (in-hash v)])
-                  (and (quotable? k)
-                       (quotable? v)))]
-     [(box? v) (quotable? (unbox v))]
-     [(and (struct? v)
-           (prefab-struct-key v))
-      (andmap quotable? (vector->list (struct->vector v)))]
-     [(struct? v) (if (custom-write? v)
-                      (if (and (custom-print-as-constructor? v)
-                               (custom-print-as-constructor-accessor v))
-                          #f
-                          #t)
-                      #f)]
-     [(struct-proxy? v) #f]
-     [(mpair? v) #f]
-     [else #t]))
+    (define graph (make-hasheq))
+    (let quotable? ([v v])
+      (if (hash-ref graph v #f)
+          #t
+          (begin
+            (hash-set! graph v #t)
+            (cond
+             [(syntax? v) (quotable? (syntax-e v))]
+             [(pair? v) (and (quotable? (car v))
+                             (quotable? (cdr v)))]
+             [(vector? v) (andmap quotable? (vector->list v))]
+             [(hash? v) (for/and ([(k v) (in-hash v)])
+                          (and (quotable? k)
+                               (quotable? v)))]
+             [(box? v) (quotable? (unbox v))]
+             [(and (struct? v)
+                   (prefab-struct-key v))
+              (andmap quotable? (vector->list (struct->vector v)))]
+             [(struct? v) (if (custom-write? v)
+                              (if (and (custom-print-as-constructor? v)
+                                       (custom-print-as-constructor-accessor v))
+                                  #f
+                                  #t)
+                              #f)]
+             [(struct-proxy? v) #f]
+             [(mpair? v) #f]
+             [else #t])))))
 
   (define (do-syntax-ize v col line ht graph? qq no-cons?)
     (cond

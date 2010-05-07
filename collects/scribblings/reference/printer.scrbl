@@ -4,33 +4,56 @@
 
 @title[#:tag "printing" #:style 'quiet]{The Printer}
 
-The default printer generally prints core datatypes in such a way that
-using @scheme[read] on the output produces a value that is
-@scheme[equal?] to the printed value---when the printed is used in
-@scheme[write]. When the printer is used in @scheme[display] mode, the
-printing of strings, byte strings, characters, and symbols changes to
-render the character/byte content directly to the output port. The
-printer's @scheme[print] mode is similar to @scheme[write], but it is
-sensitive to the @scheme[print-as-expression] parameter for printing
-values in a way that @scheme[read] plus @scheme[eval] on the output
-can be @scheme[equal?] to the printed value.
+The Racket printer support three modes:
+
+@itemlist[
+
+ @item{@racket[print] mode by default prints most datatypes in such a
+       way that evaluating the output as an expression produces a
+       value that is @racket[equal?] to the printed value;}
+
+ @item{@racket[write] mode prints core datatypes in such a way that
+       using @racket[read] on the output produces a value that is
+       @racket[equal?] to the printed value; when
+       @racket[print-as-expression] is set to @racket[#f], then
+       @racket[print] mode is like @racket[write] mode;}
+
+ @item{@racket[display] mode prints core datatypes is a form in a more
+       ``end-user'' style rather than ``programmer' style; for
+       example, a string @racket[display]s as its content characters
+       without surrounding @litchar{"}s or escapes.}
+
+]
 
 When the @scheme[print-graph] parameter is set to @scheme[#t], then
 the printer first scans an object to detect cycles. The scan traverses
 the components of pairs, mutable pairs, vectors, boxes (when
 @scheme[print-box] is @scheme[#t]), hash tables (when
-@scheme[print-hash-table] is @scheme[#t]), and fields of structures
+@scheme[print-hash-table] is @scheme[#t]), fields of structures
 exposed by @scheme[struct->vector] (when @scheme[print-struct] is
-@scheme[#t]). If @scheme[print-graph] is @scheme[#t], then this
-information is used to display sharing by printing graph definitions
-and references (see @secref["parse-graph"]). If a cycle is detected in
-the initial scan, then @scheme[print-graph] is effectively set to
-@scheme[#t] automatically.
+@scheme[#t]), and fields of structures exposed by printing when the
+structure's type has the @scheme[prop:custom-write] property. If
+@scheme[print-graph] is @scheme[#t], then this information is used to
+print sharing through graph definitions and references (see
+@secref["parse-graph"]). If a cycle is detected in the initial scan,
+then @scheme[print-graph] is effectively set to @scheme[#t]
+automatically.
 
 With the exception of displaying byte strings, printing is defined in
 terms of Unicode characters; see @secref["ports"] for information
 on how a character stream is written to an port's underlying byte
 stream.
+
+In @racket[print] mode when @racket[print-as-expression] is
+@scheme[#t] (as is the default), a value prints at a @deftech{quoting
+depth} of either @scheme[0] (unquoted) or @scheme[1] (quoted). The
+initial quoting depth is accepted as an optional argument by
+@racket[print], and printing of some compound datatypes adjusts the
+print depth for component values. For example, when a list is printed
+at quoting depth @scheme[0] and all of its elements are
+@deftech{quotable}, the list is printed with a @litchar{'} prefix, and
+the list's elements are printed at quoting depth @scheme[1].
+
 
 @section[#:tag "print-symbol"]{Printing Symbols}
 
@@ -69,16 +92,15 @@ display form of @scheme[symbol->string] applied to the symbol.
 
 Symbols @scheme[print] the same as they @scheme[write], unless
 @scheme[print-as-expression] is set to @scheme[#t] and the current
-@scheme[quasiquote] depth is @scheme[0]. In that case, the symbol's
-@scheme[print]ed form is prefixed with @litchar{'}. If the current
-@scheme[quasiquote] depth is @scheme[1], and if the symbol is
-@scheme['unquote] or @scheme[quasiquote], then the @scheme[print]ed
-form is prefixed with @litchar{,'}.
+@tech{quoting depth} is @scheme[0]. In that case, the symbol's
+@scheme[print]ed form is prefixed with @litchar{'}. For the purposes
+of printing enclosing datatypes, a symbol is @tech{quotable}.
 
 @section{Printing Numbers}
 
 A number prints the same way in @scheme[write], @scheme[display], and
-@scheme[print] modes.
+@scheme[print] modes. For the purposes of printing enclosing
+datatypes, a symbol is @tech{quotable}.
 
 A @tech{complex number} that is not a @tech{real number} always prints
 as @nonterm{m}@litchar{+}@nonterm{n}@litchar{i}, where @nonterm{m} and
@@ -107,7 +129,8 @@ printed form of its exact negation.
 
 The constant @scheme[#t] prints as @litchar{#t}, and the constant
 @scheme[#f] prints as @litchar{#f} in all modes (@scheme[display],
-@scheme[write], and @scheme[print]).
+@scheme[write], and @scheme[print]). For the purposes of printing
+enclosing datatypes, a symbol is @tech{quotable}.
 
 @section[#:tag "print-pairs"]{Printing Pairs and Lists}
 
@@ -130,8 +153,8 @@ printed form depends on the @scheme[cdr]:
 ]
 
 If @scheme[print-reader-abbreviations] is set to @scheme[#t], then
-pair printing is adjusted in the case of a pair that starts a
-two-element list whose first element is @scheme[quote],
+pair printing in @scheme[write] mode is adjusted in the case of a pair
+that starts a two-element list whose first element is @scheme['quote],
 @scheme['quasiquote], @scheme['unquote], @scheme['unquote-splicing],
 @scheme['syntax], @scheme['quasisyntax], @scheme['unsyntax],
 @scheme['unsyntax-splicing]. In that case, the pair is printed with
@@ -146,28 +169,48 @@ including the tail as two elements of the enclosing list.
 The printed form of a pair is the same in both @scheme[write] and
 @scheme[display] modes, except as the printed form of the pair's
 @scheme[car] and @scheme[cdr] vary with the mode. The @scheme[print]
-form is also the same is @scheme[print-as-expression] is @scheme[#f].
+form is also the same is @scheme[print-as-expression] is @scheme[#f]
+or when the quoting depth is @scheme[1].
 
-When @scheme[print-as-expression] is @scheme[#t] and the current
-@scheme[quasiquote] depth is @scheme[0], then the empty list prints as
-@litchar{'()} and a pair's output is prefixed with @litchar{`}; the
-pair's content is printed at @scheme[quasiquote] depth is
-@scheme[1]. In addition, when @scheme['quasiquote], @scheme['unquote],
-or @scheme['unquote-splicing] appears as the first element of a
-two-element list, the @scheme[quasiquote] depth is adjusted
-appropriately for printing the second element of the list.
+For @scheme[print] mode when @scheme[print-as-expression] is
+@scheme[#t] and the @tech{quoting depth} is @scheme[0], then the empty
+list prints as @litchar{'()}. For a pair whose @scheme[car] and
+@scheme[cdr] are @tech{quotable}, the pair prints in @scheme[write]
+mode but with a @litchar{'} prefix; the pair's content is printed with
+@tech{quoting depth} @scheme[1]. Otherwise, when the @scheme[car] or
+@scheme[cdr] is not @tech{quotable}, then pair prints with either
+@litchar{cons} (when the @scheme[cdr] is not a pair), @litchar{list}
+(when the pair is a list), or @litchar{list*} (otherwise) after the
+openining @litchar{(}, any @litchar{.} that would otherwise be printed
+is suppressed, and the pair content is printed at @tech{quoting depth}
+@scheme[0].
 
 By default, mutable pairs (as created with @scheme[mcons]) print the
-same as pairs, except that @litchar["{"] and @litchar["}"] are used
-instead of @litchar{(} and @litchar{)}. Note that the reader
-treats @litchar["{"]...@litchar["}"] and @litchar{(}...@litchar{)}
-equivalently on input, creating immutable pairs in both cases.
+same as pairs for @scheme[write] and @scheme[display], except that
+@litchar["{"] and @litchar["}"] are used instead of @litchar{(} and
+@litchar{)}. Note that the reader treats @litchar["{"]...@litchar["}"]
+and @litchar{(}...@litchar{)} equivalently on input, creating
+immutable pairs in both cases. Mutable in @scheme[print] mode with
+@scheme[print-as-expression] as @scheme[#f] or a @tech{quoting depth}
+of @scheme[1] also use @litchar["{"] and @litchar["}"]. In
+@scheme[print] mode with @scheme[print-as-expression] as @scheme[#t]
+and a @tech{quoting depth} of @scheme[0], a mutable pair prints as
+@litchar{(mcons }, the @scheme[mcar] and @scheme[mcdr] printed at
+@tech{quoting depth} @scheme[0] and separated by a space, and a
+closing @litchar{)}.
 
 If the @scheme[print-pair-curly-braces] parameter is set to
-@scheme[#t], then immutable pairs print using @litchar["{"] and
-@litchar["}"].  If the @scheme[print-mpair-curly-braces] parameter is
-set to @scheme[#f], then mutable pairs print using @litchar{(} and
-@litchar{)}.
+@scheme[#t], then pairs print using @litchar["{"] and @litchar["}"] in
+when not using @scheme[print] mode with @scheme[print-as-expression] a
+@scheme[#t] and a @tech{quoting depth} of @scheme[0].  If the
+@scheme[print-mpair-curly-braces] parameter is set to @scheme[#f],
+then mutable pairs print using @litchar{(} and @litchar{)} in that
+mode.
+
+For the purposes of printing enclosing datatypes, an empty list is
+always @tech{quotable}, a pair is @tech{quotable} when its
+@scheme[car] and @scheme[cdr] are @tech{quotable}, and a mutable list
+is never @tech{quotable}.
 
 @section{Printing Strings}
 
@@ -201,6 +244,10 @@ is written using @litchar{\a}, @litchar{\b}, @litchar{\t},
 @litchar{\e} if possible, otherwise using @litchar{\} followed by one
 to three octal digits (only as many as necessary).
 
+For the purposes of printing enclosing datatypes, a string or a byte
+string is @tech{quotable}.
+
+
 @section[#:tag "print-vectors"]{Printing Vectors}
 
 In @scheme[display] mode, the printed form of a vector is @litchar{#}
@@ -212,9 +259,14 @@ element is printed only once.
 
 Vectors @scheme[print] the same as they @scheme[write], unless
 @scheme[print-as-expression] is set to @scheme[#t] and the current
-@scheme[quasiquote] depth is @scheme[0]. In that case, the vector's
-@scheme[print]ed form is prefixed with @litchar{`}, and its content is
-printed with @scheme[quasiquote] depth @scheme[1].
+@tech{quoting depth} is @scheme[0]. In that case, if all of the
+vector's elements are @tech{quotable}, then the vector's
+@scheme[print]ed form is prefixed with @litchar{'} and its elements
+printed with @tech{quoting depth} @scheme[1]. If its elements are not
+all @tech{quotable}, then the vector @racket[print]s as
+@litchar["(vector "], the elements at @tech{quoting depth} @scheme[0],
+and a closing @litchar{)}. A vector is @tech{quotable} when all of
+its elements are @tech{quotable}.
 
 
 @section[#:tag "print-structure"]{Printing Structures}
@@ -225,36 +277,55 @@ for which the structure is an instance:
 
 @itemize[
 
- @item{If the structure type is a @techlink{prefab} structure type,
-       then it prints using @litchar{#s(} followed by the @tech{prefab}
-       structure type key, then the printed form each field in the
-       structure, and then @litchar{)}.
+ @item{If the structure type is a @tech{prefab} structure type,
+       then it prints in @scheme[write] or @scheme[display] mode using
+       @litchar{#s(} followed by the @tech{prefab} structure type key,
+       then the printed form each field in the structure, and then
+       @litchar{)}.
 
        In @scheme[print] mode when @scheme[print-as-expression] is set
-       to @scheme[#t] and the current @scheme[quasiquote] depth is
-       @scheme[0], the structure's @scheme[print]ed form is prefixed
-       with @litchar{`} and its content is printed with
-       @scheme[quasiquote] depth @scheme[1].}
+       to @scheme[#t] and the current @tech{quoting depth} is
+       @scheme[0], if the structure's content is all @tech{quotable},
+       then the structure's @scheme[print]ed form is prefixed with
+       @litchar{'} and its content is printed with @tech{quoting
+       depth} @scheme[1]. If any of its content is not quotable, then
+       the structure type prints the same as a non-@tech{prefab}
+       structure type.
+
+       An instance of a @tech{prefab} structure type is @tech{quotable}
+       when all of its content is @tech{quotable}.}
 
  @item{If the structure has a @scheme[prop:custom-write] property
        value, then the associated procedure is used to print the
        structure, unless the @racket[print-unreadable] parameter is
-       set to @racket[#f].}
+       set to @racket[#f].
 
- @item{If the structure type is transparent, or if any ancestor is
-       transparent, then the structure prints as the vector produced
+       An instance of a structure with a @scheme[prop:custom-write]
+       property is @tech{quotable} if it does not have a
+       @scheme[prop:custom-print-as-constructor] value as @scheme[#t]
+       and its content is @tech{quotable}. The content is determined
+       by the values recursively printed by the structure's
+       @scheme[prop:custom-write] procedure.}
+
+ @item{If the structure's type is transparent or if any ancestor is
+       transparent (i.e,. @scheme[struct?] on the instance produces
+       @scheme[#t]), then the structure prints as the vector produced
        by @scheme[struct->vector] in @scheme[display] mode, in
        @scheme[write] mode, or in @scheme[print] mode when
-       @scheme[print-as-expression] is set to @scheme[#f].
+       @scheme[print-as-expression] is set to @scheme[#f] or when the
+       @tech{quoting depth} is @scheme[0].
 
        In @scheme[print] mode with @scheme[print-as-expression] as
-       @scheme[#t], then the printed form is prefixed with as many
-       @litchar{,}s as the current @scheme[quasiquote] depth. Instead
-       of printing as a vector, the structure content is printed as a
-       list, where the first element is the list is the structure's
-       type name (as determined by @scheme[object-name]) printed in
-       @scheme[write] mode, while the remaining elements are
-       @scheme[print]ed at @scheme[quasiquote] depth @scheme[0].}
+       @scheme[#t] and a @tech{quoting depth} of @scheme[0], the
+       structure content is printed with a @litchar{(} followed by the
+       list is the structure's type name (as determined by
+       @scheme[object-name]) in @scheme[write] mode; the remaining
+       elements are @scheme[print]ed at @tech{quoting depth}
+       @scheme[0] and separated by a space, and finally a closing
+       @litchar{)}.
+
+       A transparent structure type that is not a @tech{prefab}
+       structure type is never @tech{quotable}.}
 
  @item{For any other structure type, the structure prints as an
        unreadable value; see @secref["print-unreadable"] for more
@@ -263,75 +334,103 @@ for which the structure is an instance:
 
 If the @scheme[print-struct] parameter is set to @scheme[#f], then all
 structures without a @scheme[prop:custom-write] property print as
-unreadable values.
+unreadable values (see @secref["print-unreadable"]) and count as
+@tech{quotable}.
 
 
 @section[#:tag "print-hashtable"]{Printing Hash Tables}
 
-When the @scheme[print-hash-table] parameter is set to @scheme[#t], a
-hash table prints starting with @litchar{#hash(}, @litchar{#hasheqv(}, or @litchar{#hasheq(}
-for a table using @scheme[equal?], @scheme[eqv?], or @scheme[eq?] key comparisons,
-respectively. After this prefix, each key--value mapping is shown as
-@litchar{(}, the printed form of a key, a space, @litchar{.}, a space,
-the printed form the corresponding value, and @litchar{)}, with an
-additional space if the key--value pair is not the last to be printed.
-After all key-value pairs, the printed form completes with
-@litchar{)}.
+When the @scheme[print-hash-table] parameter is set to @scheme[#t], in
+@scheme[write] and @scheme[display] modes, a hash table prints
+starting with @litchar{#hash(}, @litchar{#hasheqv(}, or
+@litchar{#hasheq(} for a table using @scheme[equal?], @scheme[eqv?],
+or @scheme[eq?] key comparisons, respectively. After this prefix, each
+key--value mapping is shown as @litchar{(}, the printed form of a key,
+a space, @litchar{.}, a space, the printed form the corresponding
+value, and @litchar{)}, with an additional space if the key--value
+pair is not the last to be printed.  After all key-value pairs, the
+printed form completes with @litchar{)}.
 
 In @scheme[print] mode when @scheme[print-as-expression] is
-@scheme[#t] and the current quasiquote depth is @scheme[0], then the
-printed form is prefixed with @litchar{`} and the hash table's content
-is printed at @scheme[quasiquote] depth @scheme[1]. In the printed
-form, keys may be printed with @litchar{,} escapes, even though
-@scheme[quasiquote] does not support @scheme[unquote] escapes in the
-key position.
+@scheme[#f] or the @tech{quoting depth} is @scheme[1], the printed for
+is the same as for @scheme[write]. Otherwise, if the hash table's keys
+and values are all @tech{quotable}, the table prints with a
+@litchar{'} prefix, and the table's key and values are @racket[print]ed
+at @tech{quoting depth} @scheme[1]. If some key or value is not
+@tech{quotable}, the hash table prints as @litchar["(hash "],
+@litchar["(hasheqv "], or @litchar["(hasheq "] followed by alternating
+keys and values @racket[print]ed at @tech{quoting depth} @scheme[1] and
+separated by spaces, and finally a closing @litchar{)}. A hash table
+is @tech{quotable} when all of its keys and values are
+@tech{quotable}.
 
 When the @scheme[print-hash-table] parameter is set to @scheme[#f], a
-hash table prints (un@scheme[read]ably) as @litchar{#<hash>}.
+hash table prints as @litchar{#<hash>} and counts as @tech{quotable}.
+
 
 @section[#:tag "print-box"]{Printing Boxes}
 
-When the @scheme[print-box] parameter is set to @scheme[#t], 
-a box prints as @litchar{#&} followed by the printed form of its content.
+When the @scheme[print-box] parameter is set to @scheme[#t], a box
+prints as @litchar{#&} followed by the printed form of its content in
+@scheme[write] mode, @scheme[display], or @scheme[print] mode when
+@scheme[print-as-expression] is @scheme[#f] or the @tech{quoting
+depth} is @scheme[1].
+
 In @scheme[print] mode when @scheme[print-as-expression] is
-@scheme[#t] and the current quasiquote depth is @scheme[0], then the
-printed form is prefixed with @litchar{`} and the box's content
-is printed at @scheme[quasiquote] depth @scheme[1].
+@scheme[#t] and the @tech{quoting depth} is @scheme[0], a box prints
+with a @litchar{'} prefix and its value is printed at @tech{quoting
+depth} @scheme[1] when its content is @tech{quotable}, otherwise the
+box prints a @litchar["(box "] followed by the content at
+@tech{quoting depth} @scheme[0] and a closing @litchar{)}. A box is
+@tech{quotable} when its content is @tech{quotable}.
 
 When the @scheme[print-box] parameter is set to @scheme[#f], a box
-prints (un@scheme[read]ably) as @litchar{#<box>}.
+prints as @litchar{#<box>} and counts as @tech{quotable}.
+
 
 @section{Printing Characters}
 
 Characters with the special names described in
-@secref["parse-character"] @scheme[write] and @scheme[print] using the same name.
-(Some characters have multiple names; the @scheme[#\newline] and
-@scheme[#\nul] names are used instead of @scheme[#\linefeed] and
-@scheme[#\null]).  Other graphic characters (according to
-@scheme[char-graphic?]) @scheme[write] as @litchar{#\} followed by the
-single character, and all others characters are written in
-@scheme[#\u] notation with four digits or @scheme[#\U] notation with
-eight digits (using the latter only if the character value it does not
-fit in four digits).
+@secref["parse-character"] @scheme[write] and @scheme[print] using the
+same name.  (Some characters have multiple names; the
+@scheme[#\newline] and @scheme[#\nul] names are used instead of
+@scheme[#\linefeed] and @scheme[#\null]).  Other graphic characters
+(according to @scheme[char-graphic?]) @scheme[write] as @litchar{#\}
+followed by the single character, and all others characters are
+written in @scheme[#\u] notation with four digits or @scheme[#\U]
+notation with eight digits (using the latter only if the character
+value it does not fit in four digits).
 
 All characters @scheme[display] directly as themselves (i.e., a single
 character).
 
+For the purposes of printing enclosing datatypes, a character is
+@tech{quotable}.
+
+
 @section{Printing Keywords}
 
-Keywords @scheme[write], @scheme[print], and @scheme[display] the same as symbols,
-except (see @secref["print-symbol"]) with a leading @litchar{#:} (after any 
-@litchar{'} prefix added in @scheme[print] mode),
-and without special handing for an initial @litchar{#} or when the
-printed form would matches a number or a delimited @litchar{.} (since
-@litchar{#:} distinguishes the keyword).
+Keywords @scheme[write], @scheme[print], and @scheme[display] the same
+as symbols, except (see @secref["print-symbol"]) with a leading
+@litchar{#:} (after any @litchar{'} prefix added in @scheme[print]
+mode), and without special handing for an initial @litchar{#} or when
+the printed form would matches a number or a delimited @litchar{.}
+(since @litchar{#:} distinguishes the keyword).
+
+For the purposes of printing enclosing datatypes, a keyword is
+@tech{quotable}.
+
 
 @section{Printing Regular Expressions}
 
-Regexp values in all modes (@scheme[write], @scheme[display], and @scheme[print])
-starting with @litchar{#px} (for @scheme[pregexp]-based regexps) or
-@litchar{#rx} (for @scheme[regexp]-based regexps) followed by the
-@scheme[write] form of the regexp's source string or byte string.
+Regexp values in all modes (@scheme[write], @scheme[display], and
+@scheme[print]) starting with @litchar{#px} (for
+@scheme[pregexp]-based regexps) or @litchar{#rx} (for
+@scheme[regexp]-based regexps) followed by the @scheme[write] form of
+the regexp's source string or byte string.
+
+For the purposes of printing enclosing datatypes, a regexp value is
+@tech{quotable}.
 
 
 @section[#:tag "print-unreadable"]{Printing Unreadable Values}
@@ -343,3 +442,6 @@ form is @litchar{#<}@nonterm{something}@litchar{>}, where
 to the value itself. If @racket[print-unreadable] is set to
 @racket[#f], then attempting to print an unreadable value raises
 @racket[exn:fail].
+
+For the purposes of printing enclosing datatypes, a value that prints
+unreadably nevertheless counts as @tech{quotable}.
