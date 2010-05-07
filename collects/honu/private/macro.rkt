@@ -424,6 +424,7 @@
                      (define (X) (raise-syntax-error (syntax->datum #'name) "implement for this context"))
                      (values
                       ;; this is sort of ugly, is there a better way?
+                      ;; foo
                       (cond
                         [(type-context? ctx) (X)]
                         [(type-or-expression-context? ctx) (X)]
