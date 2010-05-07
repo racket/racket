@@ -97,6 +97,7 @@
 
   [pattern (~seq (~var call (call context))) #:with result #'call.call]
   [pattern (~seq x:number) #:with result #'x]
+  [pattern (~seq x:str) #:with result #'x]
   [pattern (~seq x:id) #:with result #'x]
   #;
   [pattern (~seq (~var e (honu-expr context))) #:with result #'e.result]
@@ -221,23 +222,41 @@
 
 (define (fix-output stx)
   #|
-  (printf "Fix output ~a\n" stx)
-  (when (and (stx-pair? stx) (equal? 'syntax (syntax->datum (stx-car stx))))
+  (printf "Fix output ~a\n" (syntax->datum stx))
+  (when (and (stx-pair? stx) (equal? 'honu-syntax (syntax->datum (stx-car stx))))
     (printf "syntax == honu-syntax? ~a\n" (free-identifier=? (stx-car stx) #'honu-syntax)))
   |#
-  (syntax-parse stx #:literals (honu-syntax #%parens scheme-syntax)
+  (syntax-parse stx #:literals (honu-syntax #%parens scheme-syntax syntax)
     [((honu-syntax (#%parens x ...) y ...) rest ...)
+     #;
+     (printf "a1\n")
      (with-syntax ([(y* ...) (fix-output #'(y ... rest ...))])
        (syntax/loc stx 
        (x ... y* ...)))]
+    [(honu-syntax (#%parens x ...) y ...)
+     #;
+     (printf "a2\n")
+     (with-syntax ([(y* ...) (fix-output #'(y ...))])
+       (syntax/loc stx
+                   (x ... y* ...)))]
     ;; dont touch real syntax
-    [(syntax stuff ...) stx]
+    [(syntax stuff ...)
+     #;
+     (printf " aa\n")
+     stx]
     [(z x ...)
+     #;
+     (printf "a3\n")
      (with-syntax ([z* (fix-output #'z)]
                    [(x* ...) (fix-output #'(x ...))])
        (syntax/loc stx
                    (z* x* ...)))]
-    [else stx]))
+    [(honu-syntax . rest)
+     (raise-syntax-error 'fix-output "invalid use of honu-syntax")]
+    [else
+      #;
+      (printf " no change\n")
+      stx]))
 
 (define (parse-block-one/2 stx context)
   (define (parse-one stx context)
@@ -258,6 +277,7 @@
                                 (printf "output of transformer is ~a\n" (let-values ([(a b) (transformer stx context)]) (list a b)))
                                 (call-values (transformer stx context)
                                              (lambda (reparse rest)
+                                               (define fixed (fix-output reparse))
                                                (printf "Transformer gave us ~a\n" reparse)
                                                #;
                                                (values reparse rest)
@@ -265,13 +285,14 @@
                                                (values (fix-output reparse) rest)
                                                #;
                                                (printf "Macroized ~a and ~a\n" reparse rest)
-                                               (syntax-parse (fix-output reparse) #:literals (honu-unparsed-expr)
+                                               (printf "Fixed syntax ~a\n" (syntax->datum fixed))
+                                               (syntax-parse fixed #:literals (honu-unparsed-expr)
                                                  [(honu-unparsed-expr stuff ...)
                                                   (let-values ([(out rest2)
                                                                 (with-syntax ([(more ...) rest])
                                                                   (parse-block-one/2 #'(stuff ... more ...) context))])
                                                     (values out rest2))]
-                                                 [else (values reparse rest)]))
+                                                 [else (values fixed rest)]))
                                              ))]
     [else (parse-one stx context)]))
 

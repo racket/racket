@@ -4,6 +4,7 @@
          "literals.ss"
          "parse.ss"
          "syntax.ss"
+         (for-template "syntax.ss")
          (for-syntax "debug.ss"
                      "contexts.ss"
                      scheme/base
@@ -423,14 +424,16 @@
                    (with-syntax ([(out (... ...)) (unpull #'pulled)])
                      (define (X) (raise-syntax-error (syntax->datum #'name) "implement for this context"))
                      (values
+                       (syntax/loc stx (honu-unparsed-expr (honu-syntax (#%parens out (... ...)))))
                       ;; this is sort of ugly, is there a better way?
+                      #;
                       (cond
                         [(type-context? ctx) (X)]
                         [(type-or-expression-context? ctx) (X)]
                         [(expression-context? ctx) (syntax/loc stx (honu-unparsed-expr (out (... ...))))]
                         [(expression-block-context? ctx)
                          (syntax/loc stx 
-                         (honu-unparsed-begin out (... ...)))]
+                         (honu-unparsed-begin (honu-syntax #%parens (out (... ...)))))]
                         [(block-context? ctx)
                          (syntax/loc stx
                          (honu-unparsed-begin out (... ...)))]
@@ -438,7 +441,7 @@
                         [(constant-definition-context? ctx) (X)]
                         [(function-definition-context? ctx) (X)]
                         [(prototype-context? ctx) (X)]
-                        [else (syntax/loc stx (out (... ...)))])
+                        [else (syntax/loc stx (honu-syntax (#%parens (out (... ...)))))])
                       #;
                       #'(honu-unparsed-begin out (... ...))
                       #'rrest)
