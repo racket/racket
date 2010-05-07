@@ -132,7 +132,7 @@ please adhere to these guidelines:
   (web-materials "Relaterede websites") ;; menu item title
   (tool-web-sites "Tool Web Sites")   ;; menu item title
   (drscheme-homepage "DrRacket")
-  (plt-homepage "PLT")
+  (plt-homepage "Racket")
   (how-to-use-scheme "How to Use Scheme") ;; title of a book.
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
   
@@ -241,7 +241,7 @@ please adhere to these guidelines:
   
   ;; modes
   (mode-submenu-label "Tilstande")
-  (scheme-mode "Scheme-tilstand")
+  (scheme-mode "Racket-tilstand")
   (text-mode "Tekst-tilstand")
   
   (scheme-mode-color-symbol "Symbol")
@@ -379,7 +379,7 @@ please adhere to these guidelines:
   (preferences "Indstillinger")
   (error-saving-preferences "Fejl under lagring af indstillinger: ~a")
   (error-reading-preferences "Fejl ved indlæsning af indstillinger")
-  (scheme-prefs-panel-label "Scheme")
+  (scheme-prefs-panel-label "Racket")
   (warnings-prefs-panel-label "Advarsler")
   (editor-prefs-panel-label "Redigering")
   (general-prefs-panel-label "Generelt")
@@ -443,7 +443,7 @@ please adhere to these guidelines:
   ; warning message when lockfile is around
   (waiting-for-pref-lock "Venter på indstillingernes låsefil...")
   (pref-lock-not-gone
-   "Indstillingernes låsefil:\n\n   ~a\n\nforhindrer indstillingerne i at blive gemt. Sørg for, at du ikke kører PLT-programmer og slet denne fil.")
+   "Indstillingernes låsefil:\n\n   ~a\n\nforhindrer indstillingerne i at blive gemt. Sørg for, at du ikke kører Racket-programmer og slet denne fil.")
   (still-locked-exit-anyway? "Indstillingerne blev ikke gemt rigtigt. Afslut alligevel?")
   
   ;;; indenting preferences panel
@@ -781,7 +781,7 @@ please adhere to these guidelines:
   (language-menu-name "&Sprog")
   
   ;;; scheme-menu
-  (scheme-menu-name "S&cheme")
+  (scheme-menu-name "Ra&cket")
   (execute-menu-item-label "Kør")
   (execute-menu-item-help-string "Genstart programmet i definitionsvinduet")
   (break-menu-item-label "Afbryd")
@@ -803,12 +803,12 @@ please adhere to these guidelines:
   (create-executable-menu-item-label "Lav binær kørselfil...")
   (create-executable-title "Lav binær kørselsfil")
   (must-save-before-executable "Du skal gemme dit program, før du laver en binær fil")
-  (save-a-mred-launcher "Gem en MrEd-starter")
-  (save-a-mzscheme-launcher "Gem en MzScheme-starter")
-  (save-a-mred-stand-alone-executable "Gem en selvstændig MrEd-kørselsfil")
-  (save-a-mzscheme-stand-alone-executable "Gen en selvstændig MzScheme kørselsfil")
-  (save-a-mred-distribution "Gem en MrEd-distribution")
-  (save-a-mzscheme-distribution "Gem en MzScheme-distribution")
+  (save-a-mred-launcher "Gem en GRacket-starter")
+  (save-a-mzscheme-launcher "Gem en Racket-starter")
+  (save-a-mred-stand-alone-executable "Gem en selvstændig GRacket-kørselsfil")
+  (save-a-mzscheme-stand-alone-executable "Gen en selvstændig Racket kørselsfil")
+  (save-a-mred-distribution "Gem en GRacket-distribution")
+  (save-a-mzscheme-distribution "Gem en Racket-distribution")
   
   (definitions-not-saved "Definitionsvinduet har ikke været gemt. Den binære kørselsfil vil bruge den senest gemte version af definitionsvinduet. Fortsæt?")
   (launcher "Starter")
@@ -924,7 +924,7 @@ please adhere to these guidelines:
   (advanced-student "Rutineret")
   (advanced-one-line-summary "Øvet med lambda og mutation")
   (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
-  (pretty-big-scheme "Temmelig omfattende Scheme")
+  (pretty-big-scheme "Temmelig omfattende Racket")
   (pretty-big-scheme-one-line-summary "Grafisk, med mange standardbiblioteker")
   (r5rs-language-name "R5RS")
   (r5rs-one-line-summary "R5RS, uden dikkedarer")
@@ -1032,14 +1032,14 @@ please adhere to these guidelines:
   ;;; version checker
  (version:update-menu-item   "Undersøger om der er opdateringer...")
  (version:update-check       "Opdateringstjek") ; dialog title, with the next line
- (version:connecting-server  "Forbinder til PLTs versionsserver")
- (version:results-title      "PLT Versionstjek")
- (version:do-periodic-checks "Tjek med mellemrum om der er kommet nye PLT Scheme-versioner")
+ (version:connecting-server  "Forbinder til Rackets versionsserver")
+ (version:results-title      "Racket Versionstjek")
+ (version:do-periodic-checks "Tjek med mellemrum om der er kommet nye Racket-versioner")
  (version:take-me-there      "Til download") ; ...to the download website
  ;; the next one can appear alone, or followed by a comma and the one after that
- (version:plt-up-to-date     "Din PLT version er up-to-date")
+ (version:plt-up-to-date     "Din Racket version er up-to-date")
  (version:but-newer-alpha    "men læg mærke til, at der er en nyere alpha-udgave")
- ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+ ;; This is used in this context: "Racket vNNN <<<*>>> http://download..."
  (version:now-available-at   "er nu klar på")
 
   ;; special menu
@@ -1066,8 +1066,8 @@ please adhere to these guidelines:
   (module-browser-show-lib-paths/short "Følg lib requires") ;; check box label in show module browser pane in drscheme window.
   (module-browser-show-planet-paths/short "Følg planet requires") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "Opdater") ;; button label in show module browser pane in drscheme window.
-  (module-browser-only-in-plt-and-module-langs
-   "Moduloversigten er kun tilgængelig for programmer i PLT-sprogene og i modul-sproget (og kun for de programmer, som benytter moduler).")
+;  (module-browser-only-in-plt-and-module-langs
+;   "Moduloversigten er kun tilgængelig for programmer i PLT-sprogene og i modul-sproget (og kun for de programmer, som benytter moduler).")
   (module-browser-name-length "Navnelængde")
   (module-browser-name-short "Kort")
   (module-browser-name-medium "Mellem")
@@ -1106,13 +1106,13 @@ please adhere to these guidelines:
   (snips-and-arrows-hide-all-snips-in-editor "Skjul alle snips i editoren")
   
   (xml-tool-insert-xml-box "Indsæt XML-kasse")
-  (xml-tool-insert-scheme-box "Indsæt Scheme-kasse")
-  (xml-tool-insert-scheme-splice-box "Indsæt Scheme-splejningskasse (Splice Box)")
+  (xml-tool-insert-scheme-box "Indsæt Racket-kasse")
+  (xml-tool-insert-scheme-splice-box "Indsæt Racket-splejningskasse (Splice Box)")
   (xml-tool-xml-box "XML-Kasse")
-  (xml-tool-scheme-box "Scheme-Kasse")
-  (xml-tool-scheme-splice-box "Scheme-splejsningskasse Scheme Splice Box")
-  (xml-tool-switch-to-scheme "Skift til Scheme-kasse")
-  (xml-tool-switch-to-scheme-splice "Skift til Scheme-splejsningskasse")
+  (xml-tool-scheme-box "Racket-Kasse")
+  (xml-tool-scheme-splice-box "Racket-splejsningskasse Racket Splice Box")
+  (xml-tool-switch-to-scheme "Skift til Racket-kasse")
+  (xml-tool-switch-to-scheme-splice "Skift til Racket-splejsningskasse")
   (xml-tool-eliminate-whitespace-in-empty-tags "Fjern blanktegn i tomme tags")
   (xml-tool-leave-whitespace-alone "Bevar blanktegn")
   
@@ -1189,7 +1189,7 @@ please adhere to these guidelines:
   ;; Errors
   (test-case-empty-error "Tomt test")
   (test-case-too-many-expressions-error "For mange udtryk i testen.")
-  ;; Dr. Scheme window menu items
+  ;; DrRacket window menu items
   (test-case-insert "Indsæt test")
   (test-case-disable-all "Slå alle tests fra")
   (test-case-enable-all "Slp alle tests til")

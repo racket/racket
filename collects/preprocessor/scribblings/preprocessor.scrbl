@@ -8,13 +8,13 @@
 
 @author["Eli Barzilay"]
 
-The @filepath{preprocessor} collection defines two Scheme-based
-preprocessors for texts that can have embedded Scheme code.  The two
+The @filepath{preprocessor} collection defines two Racket-based
+preprocessors for texts that can have embedded Racket code.  The two
 processors share a few features, like several command-line flags and
-the fact that embedded Scheme code is case-sensitive by default.
+the fact that embedded Racket code is case-sensitive by default.
 
 Note that these processors are @bold{not} intended as preprocessors for
-Scheme code, since you have macros to do that.
+Racket code, since you have macros to do that.
 
 @table-of-contents[]
 
@@ -24,7 +24,7 @@ Scheme code, since you have macros to do that.
 
 @defmodule[preprocessor/pp-run]
 
-The preprocessors can be invoked from Scheme programs, but the main
+The preprocessors can be invoked from Racket programs, but the main
 usage should be through the launchers.  Both launchers use code from
 @schememodname[preprocessor/pp-run] that allows a special invocation
 mode through the @DFlag{run} flag.

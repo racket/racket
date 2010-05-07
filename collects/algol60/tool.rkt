@@ -118,6 +118,6 @@
 					      `(module m algol60/base
 						 ,code))
 					     (list "-mvqe" "(require m)"))))))
-	  (define/public (get-one-line-summary) "Algol 60 (not Scheme at all!)")
+	  (define/public (get-one-line-summary) "Of historic interest")
           
           (super-instantiate ()))))))

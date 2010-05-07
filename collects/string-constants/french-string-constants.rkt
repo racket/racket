@@ -134,7 +134,7 @@
   (web-materials "Sites web apparentés") ;; menu item title
   (tool-web-sites "Sites web d'outils")   ;; menu item title
   (drscheme-homepage "DrRacket")
-  (plt-homepage "PLT")
+  (plt-homepage "Racket")
   (how-to-use-scheme "How to Use Scheme") ;; title of a book.
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
   
@@ -413,7 +413,7 @@
   (prefs-file-locked "Le fichier de préférences est verrouillé (car le fichier ~a existe), donc vos préférences n'ont pu être sauvegardées.  Annuler le changement des préférences ?")
   (try-again "Essayer à nouveau") ;; button label
   (prefs-file-still-locked "Le fichier de préférences est toujours verrouillé (car le fichier ~a existe), donc vos changements ne vont pas être sauvegardés.")
-  (scheme-prefs-panel-label "Scheme")
+  (scheme-prefs-panel-label "Racket")
   (warnings-prefs-panel-label "Avertissements")
   (editor-prefs-panel-label "Edition")
   (general-prefs-panel-label "Général")
@@ -483,7 +483,7 @@
   ; warning message when lockfile is around
   (waiting-for-pref-lock "Attente sur le fichier de verrouillage des préférences...")
   (pref-lock-not-gone
-   "Les préférences sont verrouillées par le fichier :\n\n   ~a\n\nqui empêche les préférences d'être sauvegardées. Assurez-vous qu'aucun logiciel PLT n'est en cours d'exécution et effacer le fichier.")
+   "Les préférences sont verrouillées par le fichier :\n\n   ~a\n\nqui empêche les préférences d'être sauvegardées. Assurez-vous qu'aucun logiciel Racket n'est en cours d'exécution et effacer le fichier.")
   (still-locked-exit-anyway? "Les préférences n'ont pu être sauvegardées correctement. Quitter quand même ?")
   
   ;;; indenting preferences panel
@@ -869,7 +869,7 @@
   (language-menu-name "&Langage")
   
   ;;; scheme-menu
-  (scheme-menu-name "&Scheme")
+  (scheme-menu-name "&Racket")
   (execute-menu-item-label "Exécuter")
   (execute-menu-item-help-string "Réexécuter le programme de la fenêtre de définition.") 
   (ask-quit-menu-item-label "Demander au programme de quitter")
@@ -896,12 +896,12 @@
   (create-executable-menu-item-label "Créer un exécutable...")
   (create-executable-title "Créer un exécutable")
   (must-save-before-executable "Vous devez sauvegarder votre programme avant de créer un exécutable.")
-  (save-a-mred-launcher "Sauvegarder un lanceur de type MrEd")
-  (save-a-mzscheme-launcher "Sauvegarder un lanceur de type MzScheme")
-  (save-a-mred-stand-alone-executable "Sauvegarder un exécutable autonome de type MrEd")
-  (save-a-mzscheme-stand-alone-executable "Sauvegarder un exécutable autonome de type MzScheme")
-  (save-a-mred-distribution "Sauvegarder une distribution MrEd")
-  (save-a-mzscheme-distribution "Sauvegarder une distribution MzScheme")
+  (save-a-mred-launcher "Sauvegarder un lanceur de type GRacket")
+  (save-a-mzscheme-launcher "Sauvegarder un lanceur de type Racket")
+  (save-a-mred-stand-alone-executable "Sauvegarder un exécutable autonome de type GRacket")
+  (save-a-mzscheme-stand-alone-executable "Sauvegarder un exécutable autonome de type Racket")
+  (save-a-mred-distribution "Sauvegarder une distribution GRacket")
+  (save-a-mzscheme-distribution "Sauvegarder une distribution Racket")
   
   (definitions-not-saved "La fenêtre de définition n'a pas été sauvegardée. L'exécutable va utiliser la dernière version sauvegardée de la fenêtre de définition. Continuer ?")
   ;; The "-explanatory-label" variants are the labels used for the radio buttons in
@@ -1159,14 +1159,14 @@
   ;;; version checker
   (version:update-menu-item "Rechercher des mises à jour...")
   (version:update-check "Recherche de mises à jour") ; dialog title, with the next line
-  (version:connecting-server  "Connection au serveur de version PLT")
+  (version:connecting-server  "Connection au serveur de version Racket")
   (version:results-title      "Vérification de la version")
-  (version:do-periodic-checks "Périodiquement rechercher de nouvelles mises à jour de PLT Scheme ?")
+  (version:do-periodic-checks "Périodiquement rechercher de nouvelles mises à jour de Racket ?")
   (version:take-me-there      "Allons-y") ; ...to the download website
   ;; the next one can appear alone, or followed by a comma and the one after that
-  (version:plt-up-to-date     "Votre version de PLT Scheme est à jour")
+  (version:plt-up-to-date     "Votre version de Racket est à jour")
   (version:but-newer-alpha    "mais notez qu'il existe une nouvelle version au stade alpha")
-  ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+  ;; This is used in this context: "Racket vNNN <<<*>>> http://download..."
   (version:now-available-at   "est maintenant disponible à")
   
   ;; insert menu
@@ -1193,8 +1193,8 @@
   (module-browser-show-lib-paths/short "(require (lib ...))") ;; check box label in show module browser pane in drscheme window.
   (module-browser-show-planet-paths/short "(require (planet ...))") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "Rafraîchir") ;; button label in show module browser pane in drscheme window.
-  (module-browser-only-in-plt-and-module-langs
-   "Le navigateur de modules n'est disponible que pour les programmes écrits dans l'un des langages PLT ou dans le langage \"module\", et seulement pour les programmes qui contiennent des modules.")
+;  (module-browser-only-in-plt-and-module-langs
+;   "Le navigateur de modules n'est disponible que pour les programmes écrits dans l'un des langages PLT ou dans le langage \"module\", et seulement pour les programmes qui contiennent des modules.")
   (module-browser-name-length "Noms")
   (module-browser-name-short "courts")
   (module-browser-name-medium "moyens")
@@ -1233,13 +1233,13 @@
   (snips-and-arrows-hide-all-snips-in-editor "Cacher les boîtes de cet éditeur")
   
   (xml-tool-insert-xml-box "Insérer une boîte XML")
-  (xml-tool-insert-scheme-box "Insérer une boîte Scheme")
-  (xml-tool-insert-scheme-splice-box "Insérer une boîte Scheme à raccord")
+  (xml-tool-insert-scheme-box "Insérer une boîte Racket")
+  (xml-tool-insert-scheme-splice-box "Insérer une boîte Racket à raccord")
   (xml-tool-xml-box "Boîte XML")
-  (xml-tool-scheme-box "Boîte Scheme")
-  (xml-tool-scheme-splice-box "Boîte Scheme à raccord")
-  (xml-tool-switch-to-scheme "Changer pour une boîte Scheme")
-  (xml-tool-switch-to-scheme-splice "Changer pour une boîte Scheme à raccord")
+  (xml-tool-scheme-box "Boîte Racket")
+  (xml-tool-scheme-splice-box "Boîte Racket à raccord")
+  (xml-tool-switch-to-scheme "Changer pour une boîte Racket")
+  (xml-tool-switch-to-scheme-splice "Changer pour une boîte Racket à raccord")
   (xml-tool-eliminate-whitespace-in-empty-tags
    "Eliminer les espaces dans les délimiteurs vides")
   (xml-tool-leave-whitespace-alone
@@ -1380,7 +1380,7 @@
   ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "Attacher le rapport de test")
   (test-engine-undock-report "Détacher le rapport de test")
-  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  ;;Following two appear in Racket (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "Revalider les tests")
   (test-engine-disable-tests "Invalider les tests")
   
@@ -1447,7 +1447,7 @@
   ;; Errors
   (test-case-empty-error "Test vide")
   (test-case-too-many-expressions-error "Expressions trop nombreuses dans un test.")
-  ;; Dr. Scheme window menu items
+  ;; DrRacket window menu items
   (test-case-insert "Insérer un test")
   (test-case-disable-all "Invalider tous les tests")
   (test-case-enable-all "Revalider tous les tests")

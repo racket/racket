@@ -365,7 +365,7 @@ all of the names in the tools library, for use defining keybindings
   @{This function implements an error-display-handler in terms
     of another error-display-handler.
     
-    See also MzScheme's
+    See also Racket's
     @racket[error-display-handler]
     parameter.
     
@@ -1123,7 +1123,7 @@ all of the names in the tools library, for use defining keybindings
              string?
              (string-constant scheme-menu-name)]{
                                                  controls the name of the menu just to the right of the language
-                                                 menu (defaultly named ``Scheme'')}
+                                                 menu (defaultly named ``Racket'')}
         @cap[drscheme:define-popup
              (or/c #f
                    (list/c string? string? string?)
@@ -1370,7 +1370,7 @@ all of the names in the tools library, for use defining keybindings
     procedure is executed to initialize language-specific
     settings before the code in @racket[program-filename] runs.
     
-    The @racket[gui?] argument indicates if a MrEd or MzScheme
+    The @racket[gui?] argument indicates if a GRacket or Racket
     stand-alone executable is created.
     
     The @racket[use-copy?] argument indicates if the initial

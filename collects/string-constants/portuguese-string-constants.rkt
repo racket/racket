@@ -134,7 +134,7 @@ please adhere to these guidelines:
  (web-materials "Sítios Web Relacionados") ;; menu item title
  (tool-web-sites "Sítios Web de Ferramentas")   ;; menu item title
  (drscheme-homepage "DrRacket")
- (plt-homepage "PLT")
+ (plt-homepage "Racket")
  (how-to-use-scheme "Como Usar o Scheme") ;; title of a book.
  (teachscheme!-homepage "AprenderScheme!") ;; probably this should be a `word' in all languages
 
@@ -241,7 +241,7 @@ please adhere to these guidelines:
 
  ;; modes
  (mode-submenu-label "Modos")
- (scheme-mode "Modo Scheme")
+ (scheme-mode "Modo Racket")
  (text-mode "Modo Texto")
 
  (scheme-mode-color-symbol "Símbolo")
@@ -381,7 +381,7 @@ please adhere to these guidelines:
  (prefs-file-locked "The preferences file is locked (because the file ~a exists), so your preference change could not be saved. Cancel preference change?")
  (try-again "Tentar de novo") ;; button label
  (prefs-file-still-locked "O ficheiro de preferências continua trancado (porque o ficheiro ~a existe), logo as suas modificações não serão guardadas.")
- (scheme-prefs-panel-label "Scheme")
+ (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Avisos")
  (editor-prefs-panel-label "Editar")
  (general-prefs-panel-label "Geral")
@@ -444,7 +444,7 @@ please adhere to these guidelines:
  ; warning message when lockfile is around
  (waiting-for-pref-lock "À espera do ficheiro de tranca das preferências...")
  (pref-lock-not-gone
-  "O ficheiro de tranca:\n\n   ~a\n\nprevine que as preferências de serem guardadas. Certifique-se que nenhum software PLT está a correr e apague este ficheiro.")
+  "O ficheiro de tranca:\n\n   ~a\n\nprevine que as preferências de serem guardadas. Certifique-se que nenhum software Racket está a correr e apague este ficheiro.")
  (still-locked-exit-anyway? "As preferências não foram guardadas com sucesso. Pretende continuar?")
  
  ;;; indenting preferences panel
@@ -770,7 +770,7 @@ please adhere to these guidelines:
  (language-menu-name "&Linguagem")
  
  ;;; scheme-menu
- (scheme-menu-name "S&cheme")
+ (scheme-menu-name "Ra&cket")
  (execute-menu-item-label "Correr")
  (execute-menu-item-help-string "Reiniciar o programa na janela de definições")
  (break-menu-item-label "Parar")
@@ -791,10 +791,10 @@ please adhere to these guidelines:
  (create-executable-menu-item-label "Criar Executável...")
  (create-executable-title "Criar Executável")
  (must-save-before-executable "Tem de gravar o seu programa antes de criar um executável.")
- (save-a-mred-launcher "Save a MrEd Launcher")
- (save-a-mzscheme-launcher "Save a MzScheme Launcher")
- (save-a-mred-stand-alone-executable "Save a MrEd Stand-alone Executable")
- (save-a-mzscheme-stand-alone-executable "Save a MzScheme Stand-alone Executable")
+ (save-a-mred-launcher "Save a GRacket Launcher")
+ (save-a-mzscheme-launcher "Save a Racket Launcher")
+ (save-a-mred-stand-alone-executable "Save a GRacket Stand-alone Executable")
+ (save-a-mzscheme-stand-alone-executable "Save a Racket Stand-alone Executable")
 
  (definitions-not-saved "The definitions window has not been saved. The executable will use the latest saved version of the definitions window. Continue?")
  (launcher "Launcher")
@@ -1004,8 +1004,8 @@ please adhere to these guidelines:
  (module-browser-compiling-defns "Module Browser: compiling definitions")
  (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
- (module-browser-only-in-plt-and-module-langs
-  "The module browser is only available for programs in the PLT languages and in the module language (and only for programs that have modules in them).")
+; (module-browser-only-in-plt-and-module-langs
+;  "The module browser is only available for programs in the PLT languages and in the module language (and only for programs that have modules in them).")
  (module-browser-name-length "Name length")
  (module-browser-name-short "Short")
  (module-browser-name-medium "Medium")
@@ -1043,13 +1043,13 @@ please adhere to these guidelines:
  (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
 
  (xml-tool-insert-xml-box "Inserir Caixa XML")
- (xml-tool-insert-scheme-box "Inserir Caixa Scheme")
- (xml-tool-insert-scheme-splice-box "Inserir Scheme Splice Box")
+ (xml-tool-insert-scheme-box "Inserir Caixa Racket")
+ (xml-tool-insert-scheme-splice-box "Inserir Racket Splice Box")
  (xml-tool-xml-box "Caixa XML")
- (xml-tool-scheme-box "Caixa Scheme")
- (xml-tool-scheme-splice-box "Scheme Splice Box")
- (xml-tool-switch-to-scheme "Switch to Scheme box")
- (xml-tool-switch-to-scheme-splice "Switch to Scheme splice box")
+ (xml-tool-scheme-box "Caixa Racket")
+ (xml-tool-scheme-splice-box "Racket Splice Box")
+ (xml-tool-switch-to-scheme "Switch to Racket box")
+ (xml-tool-switch-to-scheme-splice "Switch to Racket splice box")
  (xml-tool-eliminate-whitespace-in-empty-tags
   "Eliminiate whitespace in empty tags")
  (xml-tool-leave-whitespace-alone
@@ -1126,7 +1126,7 @@ please adhere to these guidelines:
   ;; Errors
   (test-case-empty-error "Empty test case")
   (test-case-too-many-expressions-error "Too many expressions in a test case.")
-  ;; Dr. Scheme window menu items
+  ;; DrRacket window menu items
   (test-case-insert "Insert Test Case")
   (test-case-disable-all "Disable all Test Cases")
   (test-case-enable-all "Enable all Test Cases")

@@ -32,7 +32,7 @@
  ;;; important urls
  (web-materials "Verwante Web Sites") ;; menu item title
  (drscheme-homepage "DrRacket")
- (plt-homepage "PLT")
+ (plt-homepage "Racket")
  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
 
@@ -207,7 +207,7 @@
  (preferences "Voorkeuren")
  (error-saving-preferences "Fout bij opslaan voorkeuren: ~a")
  (error-reading-preferences "Fout bij lezen voorkeuren")
- (scheme-prefs-panel-label "Scheme")
+ (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Waarschuwingen")
  (editor-prefs-panel-label "Bewerken")
  (highlight-parens "Oplichten tussen bijeenhorende haken") ; -- ugly Dutch - should say something completely different, such as "highlight substructure"
@@ -250,7 +250,7 @@
  ; warning message when lockfile is around
  (waiting-for-pref-lock "Waiting for the preferences lockfile...") ; <**>
  (pref-lock-not-gone
-  "The preferences lockfile:\n\n   ~a\n\nprevents the preferences from being saved. Ensure that no PLT software is running and delete this file.")
+  "The preferences lockfile:\n\n   ~a\n\nprevents the preferences from being saved. Ensure that no Racket software is running and delete this file.")
  (still-locked-exit-anyway? "Opslaan voorkeuren mislukt. Toch afsluiten?")
  
  ;;; indenting preferences panel
@@ -520,7 +520,7 @@
  (language-menu-name "&Taal")
  
  ;;; scheme-menu
- (scheme-menu-name "S&cheme")
+ (scheme-menu-name "Ra&cket")
  (execute-menu-item-label "Doen!")
  (execute-menu-item-help-string "Voer het programma in het definitievenster uit")
  (break-menu-item-label "Onderbreken")
@@ -738,13 +738,13 @@
  ;(mrflow-language-primitives-error "Onjuiste bestandsnaam voor typentabel basisfuncties: ~a")
 
  (xml-tool-insert-xml-box "XMLblok")
- (xml-tool-insert-scheme-box "Schemeblok")
- (xml-tool-insert-scheme-splice-box "Scheme Splice Box")
+ (xml-tool-insert-scheme-box "Racketblok")
+ (xml-tool-insert-scheme-splice-box "Racket Splice Box")
  (xml-tool-xml-box "XML Box")
- (xml-tool-scheme-box "Scheme Box")
- (xml-tool-scheme-splice-box "Scheme Splice Box")
- (xml-tool-switch-to-scheme "Switch to Scheme box")
- (xml-tool-switch-to-scheme-splice "Switch to Scheme splice box")
+ (xml-tool-scheme-box "Racket Box")
+ (xml-tool-scheme-splice-box "Racket Splice Box")
+ (xml-tool-switch-to-scheme "Switch to Racket box")
+ (xml-tool-switch-to-scheme-splice "Switch to Racket splice box")
  (xml-tool-eliminate-whitespace-in-empty-tags
   "Verwijder wit in lege tags") ; <**> - don't know the official Dutch for 'tag' here..
  (xml-tool-leave-whitespace-alone "Laat wit staan")

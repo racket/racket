@@ -19,17 +19,17 @@
 
 @title{WXME Decoding}
 
-@defmodule[wxme]{The @schememodname[wxme] library provides tools for
-reading @tech{WXME} @scheme[editor<%>]-format files (see
-@secref["editorfileformat"]) without the @scheme[scheme/gui] library
-(i.e., using @exec{mzscheme} instead of @exec{mred}).}
+@defmodule[wxme]{The @racketmodname[wxme] library provides tools for
+reading @tech{WXME} @racket[editor<%>]-format files (see
+@secref["editorfileformat"]) without the @racket[racket/gui] library
+(i.e., using @exec{racket} instead of @exec{gracket}).}
 
 
 @defproc[(is-wxme-stream? [in input-port?]) boolean?]{
 
-Peeks from @scheme[in] and returns @scheme[#t] if it starts with the
+Peeks from @racket[in] and returns @racket[#t] if it starts with the
 magic bytes indicating a @tech{WXME}-format stream (see
-@secref["editorfileformat"]), @scheme[#f] otherwise.}
+@secref["editorfileformat"]), @racket[#f] otherwise.}
 
 
 @defproc[(wxme-port->text-port [in input-port?] [close? any/c #t]) 
@@ -37,10 +37,10 @@ magic bytes indicating a @tech{WXME}-format stream (see
 
 Takes an input port whose stream starts with @tech{WXME}-format data
 and returns an input port that produces a text form of the WXME
-content, like the result of opening a WXME file in DrScheme and saving
+content, like the result of opening a WXME file in DrRacket and saving
 it as text.
 
-If @scheme[close?] is true, then closing the result port close the
+If @racket[close?] is true, then closing the result port close the
 original port.
 
 See @secref["snipclassmapping"] for information about the kinds of
@@ -55,24 +55,24 @@ non-text content that can be read.}
 Takes an input port whose stream starts with @tech{WXME}-format data
 and returns an input port that produces text content converted to
 bytes, and non-text content as ``special'' values (see
-@scheme[read-char-or-special]).
+@racket[read-char-or-special]).
 
 These special values produced by the new input port are different than
-the ones produced by reading a file into an @scheme[editor<%>]
-object. Instead of instances of the @scheme[snip%], the special values
-are typically simple extensions of @scheme[object%].  See
+the ones produced by reading a file into an @racket[editor<%>]
+object. Instead of instances of the @racket[snip%], the special values
+are typically simple extensions of @racket[object%].  See
 @secref["snipclassmapping"] for information about the kinds of
 non-text content that can be read.
 
-If @scheme[close?] is true, then closing the result port close the
+If @racket[close?] is true, then closing the result port close the
 original port.
 
-The @scheme[snip-filter] procedure is applied to any special value
+The @racket[snip-filter] procedure is applied to any special value
 generated for the stream, and its result is used as an alternate
 special value.
 
 If a special value (possibly produced by the filter procedure) is an
-object implementing the @scheme[readable<%>] interface, then the
+object implementing the @racket[readable<%>] interface, then the
 object's @method[readable<%> read-special] method is called to produce
 the special value.}
 
@@ -93,8 +93,8 @@ any) is consumed.}
          void?]{
 
 Maps a snip-class name to a quoted module path that provides a
-@scheme[reader%] implementation. The module path must have the form
-@scheme['(lib #,(scheme _string ...))], where each @scheme[_string]
+@racket[reader%] implementation. The module path must have the form
+@racket['(lib #,(racket _string ...))], where each @racket[_string]
 contains only alpha-numeric ASCII characters, @litchar{.},
 @litchar{_}, @litchar{-}, and spaces.}
 
@@ -102,14 +102,14 @@ contains only alpha-numeric ASCII characters, @litchar{.},
 @defproc[(string->lib-path [str string?] [gui? any/c])
          (cons/c (one-of/c 'lib) (listof string?))]{
 
-Returns a quoted module path for @scheme[str] for either
-@scheme[editor<%>] mode when @scheme[gui?] is true, or
-@schememodname[wxme] mode when @scheme[gui?] is @scheme[#f]. For the
+Returns a quoted module path for @racket[str] for either
+@racket[editor<%>] mode when @racket[gui?] is true, or
+@racketmodname[wxme] mode when @racket[gui?] is @racket[#f]. For the
 latter, built-in mappings and mapping registered via
-@scheme[register-lib-mapping!] are used. If @scheme[str] cannot be
+@racket[register-lib-mapping!] are used. If @racket[str] cannot be
 parsed as a library path, and if no mapping is available (either
 because the class is built-in or not known), the result is
-@scheme[#f].}
+@racket[#f].}
 
 
 @defboolparam[unknown-extensions-skip-enabled skip?]{
@@ -130,26 +130,26 @@ default is the current platform's endian order.}
 
 @defproc[(wxme-read [in input-port?]) any/c]{
 
-Like @scheme[read], but for a stream that starts with
+Like @racket[read], but for a stream that starts with
 @tech{WXME}-format data. If multiple S-expressions are in the
 @tech{WXME} data, they are all read and combined with
-@scheme['begin].
+@racket['begin].
 
-If @scheme[scheme/gui/base] is available (as determined by
-@scheme[gui-available?]), then @scheme[open-input-text-editor] is
-used. Otherwise, @scheme[wxme-port->port] is used.}
+If @racket[racket/gui/base] is available (as determined by
+@racket[gui-available?]), then @racket[open-input-text-editor] is
+used. Otherwise, @racket[wxme-port->port] is used.}
 
 
 @defproc[(wxme-read-syntax [source-v any/c] [in input-port?])
          (or/c syntax? eof-object?)]{
 
-Like @scheme[read-syntax], but for a @tech{WXME}-format input stream.
+Like @racket[read-syntax], but for a @tech{WXME}-format input stream.
 If multiple S-expressions are in the @tech{WXME} data, they are all
-read and combined with @scheme['begin].
+read and combined with @racket['begin].
 
-If @scheme[scheme/gui/base] is available (as determined by
-@scheme[gui-available?]), then @scheme[open-input-text-editor] is
-used. Otherwise, @scheme[wxme-port->port] is used.}
+If @racket[racket/gui/base] is available (as determined by
+@racket[gui-available?]), then @racket[open-input-text-editor] is
+used. Otherwise, @racket[wxme-port->port] is used.}
 
 
 @definterface[snip-reader<%> ()]{
@@ -175,7 +175,7 @@ stream. This method reads the data and returns either bytes to be
 returned as part of the decoded stream or any other kind of value to
 be returned as a ``special'' value from the decoded stream. The result
 value can optionally be an object that implements
-@scheme[readable<%>].}
+@racket[readable<%>].}
 
 }
 
@@ -200,14 +200,14 @@ obtain the ``special'' result from the @tech{WXME}-decoding port.}
 @definterface[stream<%> ()]{
 
 Represents a @tech{WXME} input stream for use by
-@scheme[snip-reader<%>] instances.
+@racket[snip-reader<%>] instances.
 
 @defmethod[(read-integer [what any/c]) exact-integer?]{
 
 Reads an exact integer, analogous to @method[editor-stream-in%
 get-exact].
 
-The @scheme[what] field describes what is being read, for
+The @racket[what] field describes what is being read, for
 error-message purposes, in case the stream does not continue with an
 integer.}
 
@@ -216,34 +216,34 @@ integer.}
 Reads an exact integer that has a fixed size in the stream, analogous
 to @method[editor-stream-in% get-fixed].
 
-The @scheme[what] argument is as for @method[stream<%> read-integer].}
+The @racket[what] argument is as for @method[stream<%> read-integer].}
 
 @defmethod[(read-inexact [what any/c]) (and/c real? inexact?)]{
 
 Reads an inexact real number, analogous to @method[editor-stream-in%
 get-inexact].
 
-The @scheme[what] argument is as for @method[stream<%> read-integer].}
+The @racket[what] argument is as for @method[stream<%> read-integer].}
 
 @defmethod[(read-raw-bytes [what any/c]) bytes?]{
 
 Reads raw bytes, analogous to @method[editor-stream-in%
 get-unterminated-bytes].
 
-The @scheme[what] argument is as for @method[stream<%> read-integer].}
+The @racket[what] argument is as for @method[stream<%> read-integer].}
 
 @defmethod[(read-bytes [what any/c]) bytes?]{
 
 Reads raw bytes, analogous to @method[editor-stream-in% get-bytes].
 
-The @scheme[what] argument is as for @method[stream<%> read-integer].}
+The @racket[what] argument is as for @method[stream<%> read-integer].}
 
 @defmethod[(read-editor [what any/c]) input-port?]{
 
 Reads a nested editor, producing a new input port to extract the
 editor's content.
 
-The @scheme[what] argument is as for @method[stream<%> read-integer].}
+The @racket[what] argument is as for @method[stream<%> read-integer].}
 }
 
 @; ----------------------------------------------------------------------
@@ -256,77 +256,77 @@ time. See also @secref["editorsnipclasses"].
 
 Ideally, the snip-class name is generated as
 
-@schemeblock[
-(format "~s" (list '(lib #,(scheme _string ...))
-                   '(lib #,(scheme _string ...))))
+@racketblock[
+(format "~s" (list '(lib #,(racket _string ...))
+                   '(lib #,(racket _string ...))))
 ]
 
-where each element of the @scheme[format]ed list is a quoted module
-path (see @scheme[module-path?]). The @scheme[_string]s must contain only
+where each element of the @racket[format]ed list is a quoted module
+path (see @racket[module-path?]). The @racket[_string]s must contain only
 alpha-numeric ASCII characters, plus @litchar{.}, @litchar{_},
-@litchar{-}, and spaces, and they must not be @scheme["."] or
-@scheme[".."].
+@litchar{-}, and spaces, and they must not be @racket["."] or
+@racket[".."].
 
 In that case, the first quoted module path is used for loading
 @tech{WXME} files in graphical mode; the corresponding module must
-provide @schemeidfont{snip-class} object that implements the
-@scheme[snip-class%] class. The second quoted module path is used by
-the @schememodname[wxme] library for converting @tech{WXME} streams
+provide @racketidfont{snip-class} object that implements the
+@racket[snip-class%] class. The second quoted module path is used by
+the @racketmodname[wxme] library for converting @tech{WXME} streams
 without graphical support; the corresponding module must provide a
-@schemeidfont{reader} object that implements the @scheme[reader<%>]
-interface. Naturally, the @scheme[snip-class%] instance and
-@scheme[reader<%>] instance are expected to parse the same format, but
+@racketidfont{reader} object that implements the @racket[reader<%>]
+interface. Naturally, the @racket[snip-class%] instance and
+@racket[reader<%>] instance are expected to parse the same format, but
 generate different results suitable for the different contexts (i.e.,
 graphical or not).
 
 If a snip-class name is generated as
 
-@schemeblock[
-(format "~s" '(lib #,(scheme _string ...)))
+@racketblock[
+(format "~s" '(lib #,(racket _string ...)))
 ]
 
 then graphical mode uses the sole module path, and
-@schememodname[wxme] needs a compatibility mapping. Install one with
-@scheme[register-lib-mapping!].
+@racketmodname[wxme] needs a compatibility mapping. Install one with
+@racket[register-lib-mapping!].
 
 If a snip-class name has neither of the above formats, then graphical
 mode can use the data only if a snip class is registered for the name,
-or if it the name of one of the built-in classes: @scheme["wxtext"],
-@scheme["wxtab"], @scheme["wximage"], or @scheme["wxmedia"] (for
-nested editors). The @schememodname[wxme] library needs a
-compatibility mapping installed with @scheme[register-lib-mapping!]
+or if it the name of one of the built-in classes: @racket["wxtext"],
+@racket["wxtab"], @racket["wximage"], or @racket["wxmedia"] (for
+nested editors). The @racketmodname[wxme] library needs a
+compatibility mapping installed with @racket[register-lib-mapping!]
 if it is not one of the built-in classes.
 
 Several compatibility mappings are installed automatically for the
-@schememodname[wxme] library. They correspond to popular graphical
-elements supported by various versions of DrScheme, including comment
-boxes, fractions, XML boxes, Scheme boxes, text boxes, and images
+@racketmodname[wxme] library. They correspond to popular graphical
+elements supported by various versions of DrRacket, including comment
+boxes, fractions, XML boxes, Racket boxes, text boxes, and images
 generated by the ``world'' and ``image'' teachpacks (or, more
-generally, from @schememodname[mrlib/cache-image-snip]), and test-case
+generally, from @racketmodname[mrlib/cache-image-snip]), and test-case
 boxes.
 
-For a port created by @scheme[wxme-port->port], nested editors are
-represented by instances of the @scheme[editor%] class provided by the
-@schememodname[wxme/editor] library. This class provides a single
+For a port created by @racket[wxme-port->port], nested editors are
+represented by instances of the @racket[editor%] class provided by the
+@racketmodname[wxme/editor] library. This class provides a single
 method, @method[editor% get-content-port], which returns a port for
 the editor's content. Images are represented as instances of the
-@scheme[image%] class provided by the @schememodname[wxme/image]
+@racket[image%] class provided by the @racketmodname[wxme/image]
 library.
 
 Comment boxes are represented as instances of a class that extends
-@scheme[editor%] to implement @scheme[readable<%>]; see
-@schememodname[wxme/comment]. The read form produces a special comment
-(created by @scheme[make-special-comment]), so that the comment box
-disappears when @scheme[read] is used to read the stream; the
-special-comment content is the readable instance. XML, Scheme, and
-text boxes similarly produce instances of @scheme[editor%] and
-@scheme[readable<%>] that expand in the usual way; see
-@schememodname[wxme/xml], @schememodname[wxme/scheme], and
-@scheme[wxme/text]. Images from the ``world'' and ``image'' teachpacks
-are packaged as instances of @scheme[cache-image%] from the
-@schememodname[wxme/cache-image] library. Test-case boxes are packaged
-as instances of @scheme[test-case%] from the
-@schememodname[wxme/test-case] library.
+@racket[editor%] to implement @racket[readable<%>]; see
+@racketmodname[wxme/comment]. The read form produces a special comment
+(created by @racket[make-special-comment]), so that the comment box
+disappears when @racket[read] is used to read the stream; the
+special-comment content is the readable instance. XML, Racket, and
+text boxes similarly produce instances of @racket[editor%] and
+@racket[readable<%>] that expand in the usual way; see
+@racketmodname[wxme/xml], @racketmodname[wxme/scheme], and
+@racket[wxme/text]. Images from the ``world'' and ``image'' teachpacks
+are packaged as instances of @racket[cache-image%] from the
+@racketmodname[wxme/cache-image] library. Test-case boxes are packaged
+as instances of @racket[test-case%] from the
+@racketmodname[wxme/test-case] library.
 
 @; ----------------------------------------
 
@@ -341,7 +341,7 @@ mode.
 
 @defmethod[(get-content-port) input-port?]{
 
-Returns a port (like the one from @scheme[wxme-port->port]) for the
+Returns a port (like the one from @racket[wxme-port->port]) for the
 editor's content.}
 
 }
@@ -358,7 +358,7 @@ Instantiated for images in a @tech{WXME} stream in text mode.
 
 @defmethod[(get-filename) (or/c bytes? false/c)]{
 
-Returns a filename as bytes, or @scheme[#f] if data is available
+Returns a filename as bytes, or @racket[#f] if data is available
 instead.}
 
 @defmethod[(get-data) (or/c bytes? false/c)]{
@@ -391,7 +391,7 @@ display image.}
 
 @; ----------------------------------------
 
-@section{DrScheme Comment Boxes}
+@section{DrRacket Comment Boxes}
 
 @defmodule[wxme/comment]
 
@@ -403,7 +403,7 @@ A text-mode reader for comment boxes.}]
 
 @defclass[comment-editor% editor% (readable<%>)]{
 
-Instantiated for DrScheme comment boxes in a @tech{WXME} stream for
+Instantiated for DrRacket comment boxes in a @tech{WXME} stream for
 text mode.
 
 @defmethod[(get-data) false/c]{
@@ -418,14 +418,14 @@ No data is available.
                          [position (or/c exact-nonnegative-integer? false/c)])
            any/c]{
 
-Generates a special comment using @scheme[make-special-comment]. The
+Generates a special comment using @racket[make-special-comment]. The
 special comment contains the comment text.}
 
 }
 
 @; ----------------------------------------
 
-@section{DrScheme XML Boxes}
+@section{DrRacket XML Boxes}
 
 @defmodule[wxme/xml]
 
@@ -437,13 +437,13 @@ A text-mode reader for XML boxes.}]
 
 @defclass[xml-editor% editor% (readable<%>)]{
 
-Instantiated for DrScheme XML boxes in a @tech{WXME} stream for text
+Instantiated for DrRacket XML boxes in a @tech{WXME} stream for text
 mode.
 
 @defmethod[(get-data) any/c]{
 
-Returns @scheme[#t] if whitespace is elimited from the contained XML
-literal, @scheme[#f] otherwise.}
+Returns @racket[#t] if whitespace is elimited from the contained XML
+literal, @racket[#f] otherwise.}
 
 @defmethod[(read-special [source any/c]
                          [line (or/c exact-nonnegative-integer? false/c)]
@@ -451,33 +451,33 @@ literal, @scheme[#f] otherwise.}
                          [position (or/c exact-nonnegative-integer? false/c)])
            any/c]{
 
-Generates a @scheme[quasiquote] S-expression that enclosed the XML,
-with @scheme[unquote] and @scheme[unquote-splicing] escapes for nested
-Scheme boxes.}
+Generates a @racket[quasiquote] S-expression that enclosed the XML,
+with @racket[unquote] and @racket[unquote-splicing] escapes for nested
+Racket boxes.}
 
 }
 
 @; ----------------------------------------
 
-@section{DrScheme Scheme Boxes}
+@section{DrRacket Racket Boxes}
 
 @defmodule[wxme/scheme]
 
 @in[wxme/scheme
 @defthing[reader (is-a?/c snip-reader<%>)]{
 
-A text-mode reader for Scheme boxes.}]
+A text-mode reader for Racket boxes.}]
 
 
-@defclass[scheme-editor% editor% (readable<%>)]{
+@defclass[racket-editor% editor% (readable<%>)]{
 
-Instantiated for DrScheme Scheme boxes in a @tech{WXME} stream for text
+Instantiated for DrRacket Racket boxes in a @tech{WXME} stream for text
 mode.
 
 @defmethod[(get-data) any/c]{
 
-Returns @scheme[#t] if the box corresponds to a splicing unquote,
-@scheme[#f] for a non-splicing unquote.}
+Returns @racket[#t] if the box corresponds to a splicing unquote,
+@racket[#f] for a non-splicing unquote.}
 
 @defmethod[(read-special [source any/c]
                          [line (or/c exact-nonnegative-integer? false/c)]
@@ -491,7 +491,7 @@ Generates an S-expression for the code in the box.}
 
 @; ----------------------------------------
 
-@section{DrScheme Text Boxes}
+@section{DrRacket Text Boxes}
 
 @defmodule[wxme/text]
 
@@ -503,7 +503,7 @@ A text-mode reader for text boxes.}]
 
 @defclass[text-editor% editor% (readable<%>)]{
 
-Instantiated for DrScheme text boxes in a @tech{WXME} stream for text
+Instantiated for DrRacket text boxes in a @tech{WXME} stream for text
 mode.
 
 @defmethod[(get-data) false/c]{
@@ -522,19 +522,19 @@ Generates a string containing the text.}
 
 @; ----------------------------------------
 
-@section{DrScheme Fractions}
+@section{DrRacket Fractions}
 
 @defmodule[wxme/number]
 
 @in[wxme/number
 @defthing[reader (is-a?/c snip-reader<%>)]{
 
-A text-mode reader for DrScheme fractions that generates exact,
+A text-mode reader for DrRacket fractions that generates exact,
 rational numbers.}]
 
 @; ----------------------------------------
 
-@section{DrScheme Teachpack Images}
+@section{DrRacket Teachpack Images}
 
 @defmodule[wxme/cache-image]
 
@@ -543,12 +543,12 @@ rational numbers.}]
 
 A text-mode reader for images in a WXME stream generated by the
 ``image'' and ``world'' teachpacks---or, more generally, by
-@schememodname[mrlib/cache-image-snip].}]
+@racketmodname[mrlib/cache-image-snip].}]
 
 
 @defclass[cache-image% object% ()]{
 
-Instantiated for DrScheme teachpack boxes in a @tech{WXME} stream for
+Instantiated for DrRacket teachpack boxes in a @tech{WXME} stream for
 text mode.
 
 @defmethod[(get-argb) (vectorof byte?)]{
@@ -573,19 +573,19 @@ Returns an offset down into the image for the pinhole.}
 
 }
 
-@section{DrScheme Test-Case Boxes}
+@section{DrRacket Test-Case Boxes}
 
 @defmodule[wxme/test-case]
 
 @in[wxme/test-case
 @defthing[reader (is-a?/c snip-reader<%>)]{
 
-A text-mode reader for DrScheme test-case boxes in a WXME stream. It
-generates instances of @scheme[test-case%].}]
+A text-mode reader for DrRacket test-case boxes in a WXME stream. It
+generates instances of @racket[test-case%].}]
 
 @defclass[test-case% object% ()]{
 
-Instantiated for old-style DrScheme test-case boxes in a @tech{WXME}
+Instantiated for old-style DrRacket test-case boxes in a @tech{WXME}
 stream for text mode.
 
 @defmethod[(get-comment) (or/c false/c input-port?)]{
@@ -610,14 +610,14 @@ Returns a port for the ``error msg'' field, if any.}
 
 @defmethod[(get-enabled?) boolean?]{
 
-Returns @scheme[#t] if the test is enabled.}
+Returns @racket[#t] if the test is enabled.}
 
 @defmethod[(get-collapsed?) boolean?]{
 
-Returns @scheme[#t] if the test is collapsed.}
+Returns @racket[#t] if the test is collapsed.}
 
 @defmethod[(get-error-box?) boolean?]{
 
-Returns @scheme[#t] if the test is for an exception.}
+Returns @racket[#t] if the test is for an exception.}
 
 }

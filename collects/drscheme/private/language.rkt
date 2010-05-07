@@ -660,7 +660,7 @@
     (define base-rb (and (boolean? show-base)
                          (instantiate radio-box% ()
                            (label (string-constant executable-base))
-                           (choices (list "MzScheme" "MrEd"))
+                           (choices (list "Racket" "GRacket"))
                            (parent base-panel)
                            (callback (lambda (rb e) (reset-filename-suffix))))))
     
