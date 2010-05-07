@@ -4,7 +4,7 @@
          "literals.ss"
          "parse.ss"
          "syntax.ss"
-         (for-template "syntax.ss")
+         ;; (for-template "syntax.ss")
          (for-syntax "debug.ss"
                      "contexts.ss"
                      scheme/base
@@ -392,10 +392,81 @@
        (with-syntax ([pulled (pull #'(x ...))])
          #'(unpull pulled)))]))
 
+
+
 (define-honu-syntax honu-macro
   (lambda (stx ctx)
+    (define-syntax-class honu-macro1
+                     #:literals (#%parens #%braces)
+                     [pattern (_ (#%parens honu-literal ...)
+                                 (#%braces (#%braces name pattern ...))
+                                 (#%braces (#%braces template ...))
+                                 . rest)
+                              #:with result
+                              (with-syntax ([pulled (pull #'(template ...))]
+                                            [(pattern* ...) (map (lambda (stx)
+                                                                   (if (and (identifier? stx)
+                                                                            (not (ormap (lambda (f)
+                                                                                          (free-identifier=? stx f))
+                                                                                        (syntax->list #'(honu-literal ...))))
+                                                                            (not (free-identifier=? stx #'(... ...))))
+                                                                     (with-syntax ([x stx])
+                                                                       #'(~and x (~not (~or honu-literal ...))))
+                                                                     stx))
+                                                                 (syntax->list #'(pattern ...)))]
+                                            )
+                                (list
+                                  (syntax/loc stx
+                                              (define-honu-syntax name
+                                                (lambda (stx ctx)
+                                                  ;; (define-literal-set literals (honu-literal ...))
+                                                  (syntax-parse stx
+                                                    ;; #:literal-sets (literals)
+                                                    #:literals (honu-literal ...)
+                                                    [(name pattern* ... . rrest)
+                                                     (with-syntax ([(out (... ...)) (unpull #'pulled)])
+                                                       (define (X) (raise-syntax-error (syntax->datum #'name) "implement for this context"))
+                                                       (values
+                                                         (syntax/loc stx (honu-unparsed-expr (honu-syntax (#%parens out (... ...)))))
+                                                         ;; this is sort of ugly, is there a better way?
+                                                         #;
+                                                         (cond
+                                                           [(type-context? ctx) (X)]
+                                                           [(type-or-expression-context? ctx) (X)]
+                                                           [(expression-context? ctx) (syntax/loc stx (honu-unparsed-expr (out (... ...))))]
+                                                           [(expression-block-context? ctx)
+                                                            (syntax/loc stx 
+                                                                        (honu-unparsed-begin (honu-syntax #%parens (out (... ...)))))]
+                                                           [(block-context? ctx)
+                                                            (syntax/loc stx
+                                                                        (honu-unparsed-begin out (... ...)))]
+                                                           [(variable-definition-context? ctx) (X)]
+                                                           [(constant-definition-context? ctx) (X)]
+                                                           [(function-definition-context? ctx) (X)]
+                                                           [(prototype-context? ctx) (X)]
+                                                           [else (syntax/loc stx (honu-syntax (#%parens (out (... ...)))))])
+                                                         #;
+                                                         #'(honu-unparsed-begin out (... ...))
+                                                         #'rrest)
+                                                       #;
+                                                       #'(honu-unparsed-block
+                                                           #f obj 'obj #f ctx
+                                                           out (... ...))
+                                                       #;
+                                                       (values
+                                                         #;
+                                                         #'(honu-unparsed-expr out (... ...))
+                                                         #'(honu-unparsed-block
+                                                             #f obj 'obj #f ctx
+                                                             out (... ...) rrest)
+                                                         #;
+                                                         #'rrest))]))))
+                                  #'rest))])
     (printf "Executing honu macro\n")
-    (syntax-case stx (#%parens #%braces)
+    (syntax-parse stx #:literals (#%parens #%braces)
+      [out:honu-macro1 (apply (lambda (a b) (values a b)) (syntax->list (attribute out.result)))]
+
+      #;
       [(_ (#%parens honu-literal ...)
           (#%braces (#%braces name pattern ...))
           (#%braces (#%braces template ...))
