@@ -150,17 +150,17 @@ src-filter      := (src: "")
 docs-filter     := (- (doc: "")   ; all docs,
                       (notes: "") ; excluding basic stuff
                       std-docs)   ; and things in svn
-docsrc-filter   := (+ (collects: "setup/scribble.ss") ; only with doc sources
+docsrc-filter   := (+ (collects: "setup/scribble.rkt") ; only with doc sources
                       (collects: "**/scribblings/")
                       (srcfile: "*.{scrbl|scribble}")
                       std-docs)
 man-filter      := (man: "*")
-tests-filter    := (+ (collects: "**/tests/") (srcfile: "tests.ss"))
+tests-filter    := (+ (collects: "**/tests/") (srcfile: "tests.rkt"))
 gui-filter      := (- (+ (collects: "**/gui/") (srcfile: "gui.rkt"))
                       ;; for use in mz code that works in mr too
                       (srcfile: "scheme/gui/dynamic.rkt")
                       (srcfile: "racket/gui/dynamic.rkt"))
-tools-filter    := (+ (collects: "**/tools/") (srcfile: "tools.ss"))
+tools-filter    := (+ (collects: "**/tools/") (srcfile: "tools.rkt"))
 
 ;; these are in the doc directory, but are comitted in svn and should be
 ;; considered like sources
@@ -327,7 +327,7 @@ plt := (+ dr plt-extras)
 ;; Packages etc
 
 mz-base := "/plt/readme.txt"          ; generated
-           (package: "mzscheme")
+           (package: "mzscheme") (notes: "racket")
            "/plt/include/"
            ;; configuration stuff
            (cond (not src) => (collects: "info-domain/")) ; filtered
@@ -337,22 +337,23 @@ mz-base := "/plt/readme.txt"          ; generated
            ;; include the time-stamp collection when not a public release
            (cond (not release)
                  => (- (collects: "repos-time-stamp/")
-                       (cond (not dr) => (srcfile: "time-stamp.ss"))))
+                       (cond (not dr) => (srcfile: "time-stamp.rkt"))))
 mz-manuals := (scribblings: "main/") ; generates main pages (next line)
-              (doc: "license/" "release/" "acks/" "search/" "master-index/"
+              (doc: "license/" "release/" "acks/" "search/"
                     "getting-started/")
               (notes: "COPYING.LIB" "COPYING-libscheme.txt")
               (doc: "doc-license.txt") ; needed (when docs are included)
               (doc+src: "reference/" "guide/" "quick/" "more/"
                         "foreign/" "inside/" ;; "places/" <- not ready yet
+                        "scheme/"
                         "honu/")
               (doc: "*.{html|css|js|sxref}")
-              (scribblings: "{{info|icons}.ss|*.png}" "compiled")
+              (scribblings: "{{info|icons}.rkt|*.png}" "compiled")
 
-mr-base := (package: "mred") (bin: "mred-text") (collects: "afm/")
+mr-base := (package: "mred") (notes: "gracket") (bin: "mred-text") (collects: "afm/")
 mr-manuals := (doc+src: "gui/")
 
-dr-base := (package: "drscheme") (package: "framework")
+dr-base := (package: "drscheme") (doc: "drracket") (notes: "drracket") (package: "framework")
 dr-manuals := (doc+src: "tools/")
 
 ;; Misc hooks, to be added on by package rules below
@@ -362,7 +363,7 @@ dr-extras  :=
 plt-extras :=
 
 ;; Tests definitions
-mz-tests := (tests: "mzscheme/" "info.ss" "utils/" "match/" "eli-tester.ss")
+mz-tests := (tests: "mzscheme/" "info.rkt" "utils/" "match/" "eli-tester.rkt")
 
 ;; ============================================================================
 ;; Source definitions
@@ -383,7 +384,7 @@ mr-src := (src: "mred/" "wxcommon/"
                               "worksp/{png|wxme|wxs|wxutils|wxwin|zlib}/"))
 
 foreign-src := (src: "foreign/{Makefile.in|README}"
-                     "foreign/{foreign.*|ssc-utils.ss}"
+                     "foreign/{foreign.*|ssc-utils.rkt}"
                      (cond win  => "foreign/libffi_msvc"
                            else => "foreign/gcc"))
 
@@ -429,7 +430,7 @@ platform-dependent := ; hook for package rules
 
 ;; -------------------- setup
 mz-extras :+= (- (package: "setup-plt" #:collection "setup/")
-                 (cond (not dr) => (srcfile: "plt-installer{|-sig|-unit}.ss")))
+                 (cond (not dr) => (srcfile: "plt-installer{|-sig|-unit}.rkt")))
 
 ;; -------------------- raco
 mz-extras :+= (package: "raco")
@@ -508,7 +509,7 @@ mz-extras :+= (package: "srfi") (doc: "srfi-std")
 
 ;; -------------------- xml
 mz-extras :+= (- (package: "xml/")
-                 (cond* (not plt) => (srcfile: "*-{tool|snipclass}.ss"
+                 (cond* (not plt) => (srcfile: "*-{tool|snipclass}.rkt"
                                                "xml.png")))
 
 ;; -------------------- ffi
@@ -534,7 +535,7 @@ mr-extras :+= (- (+ (package: "mrlib/")
 
 ;; -------------------- sgl
 mr-extras :+= (package: "sgl/")
-;; gl-info.ss doesn't exist, but gl-info.zo holds platform-dependent data
+;; gl-info.rkt doesn't exist, but gl-info.zo holds platform-dependent data
 platform-dependent :+= (and (collects: "sgl/")
                             (srcfile: "sgl/gl-info"))
 
@@ -579,7 +580,7 @@ dr-extras :+= (collects: "defaults/")
 
 ;; -------------------- version
 mz-extras :+= (- (package: "version/")
-                 (cond* (not dr) => (srcfile: "tool.ss")))
+                 (cond* (not dr) => (srcfile: "tool.rkt")))
 
 ;; -------------------- browser
 dr-extras :+= (package: "browser/")
@@ -612,14 +613,16 @@ plt-extras :+= (package: "frtime/")
 dr-extras :+= (package: "typed-scheme/" ; used in drscheme
                         #:docs "ts-{reference|guide}/")
               (- (collects: "typed/")
-                 (cond (not plt) => (collects: "typed/test-engine/")))
+                 (cond (not plt) => (collects: "typed/test-engine/")
+                                    (collects: "typed/racunit/")
+                                    (srcfile: "typed/racunit.rkt")))
 
 ;; -------------------- gui-debugger
 plt-extras :+= (collects: "gui-debugger/")
 
 ;; -------------------- swindle
 mz-extras :+= (- (package: "swindle")
-                 (cond (not dr) => (srcfile: "tool.ss" "swindle*.png")))
+                 (cond (not dr) => (srcfile: "tool.rkt" "swindle*.png")))
 
 ;; -------------------- plot
 plt-extras :+=
@@ -664,5 +667,7 @@ plt-extras :+= (package: "plai/")
 
 plt-extras :+= (package: "racunit/")
 plt-extras :+= (package: "schemeunit/")
+
+plt-extras :+= (package: "raclog/")
 
 ;; ============================================================================
