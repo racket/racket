@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@title{@bold{Net}: PLT Networking Libraries}
+@title{@bold{Net}: Racket Networking Libraries}
 
 @table-of-contents[]
 
