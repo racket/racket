@@ -46,6 +46,7 @@
            (honu-macro-item macroItem)
            (honu-macro macro)
            (honu-syntax syntax)
+           (scheme-syntax schemeSyntax)
            ))
 
 #;

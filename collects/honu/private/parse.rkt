@@ -225,7 +225,7 @@
   (when (and (stx-pair? stx) (equal? 'syntax (syntax->datum (stx-car stx))))
     (printf "syntax == honu-syntax? ~a\n" (free-identifier=? (stx-car stx) #'honu-syntax)))
   |#
-  (syntax-parse stx #:literals (honu-syntax #%parens syntax)
+  (syntax-parse stx #:literals (honu-syntax #%parens scheme-syntax)
     [((honu-syntax (#%parens x ...) y ...) rest ...)
      (with-syntax ([(y* ...) (fix-output #'(y ... rest ...))])
        (syntax/loc stx 
