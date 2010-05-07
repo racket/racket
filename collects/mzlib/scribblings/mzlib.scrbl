@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@title{@bold{MzLib}: Legacy PLT Libraries}
+@title{@bold{MzLib}: Legacy Racket Libraries}
 
 The @filepath{mzlib} collection contains wrappers and libraries for
-compatibility with older versions of PLT Scheme. In many ways, the
+compatibility with older versions of Racket. In many ways, the
 libraries of the @filepath{mzlib} collection go with the
 @schememodname[mzscheme] legacy language. Newer variants of many
 libraries reside in the @filepath{scheme} collection.

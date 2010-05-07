@@ -47,9 +47,9 @@ the same name (as extracted by @scheme[syntax-e]) and @scheme[a-id]
 has no binding other than at the top level.
 
 This procedure is useful in conjunction with @scheme[syntax-case*] to
-match procedure names that are normally bound by MzScheme. For
+match procedure names that are normally bound by Racket. For
 example, the @scheme[include] macro uses this procedure to recognize
 @scheme[build-path]; using @scheme[free-identifier=?]  would not work
 well outside of @scheme[module], since the top-level
-@scheme[build-path] is a distinct variable from the MzScheme export
+@scheme[build-path] is a distinct variable from the @schememodname[racket/base] export
 (though it's bound to the same procedure, initially).}

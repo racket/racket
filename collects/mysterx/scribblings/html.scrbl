@@ -12,7 +12,7 @@
   Goodman's @italic{Dynamic HTML} will have more complete information.
 
   Many of the @scheme[mx-element%] methods have two variants, a
-  version that takes or returns Scheme data, and another
+  version that takes or returns Racket data, and another
   @schemeidfont{-native} version that takes or returns a string.  For
   methods that return values of element properties, we assume two
   characteristics, which we do not mention in the methods'

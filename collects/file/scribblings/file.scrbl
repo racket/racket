@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@title{@bold{File}: PLT File Format Libraries}
+@title{@bold{File}: Racket File Format Libraries}
 
 @table-of-contents[]
 

@@ -9,15 +9,15 @@
 @defmodule[openssl]
 
 The @schememodname[openssl] library provides glue for the OpenSSL
-library with the Scheme port system. It provides functions nearly
-identically to the standard TCP subsystem in PLT Scheme, plus a
+library with the Racket port system. It provides functions nearly
+identically to the standard TCP subsystem in Racket, plus a
 generic @scheme[ports->ssl-ports] interface.
 
 To use this library, you will need OpenSSL installed on your machine,
 but
 
 @itemize[
-  @item{for Windows, the PLT Scheme distribution for Windows includes
+  @item{for Windows, the Racket distribution for Windows includes
   the necessary DLLs.}
 
   @item{for Mac OS X, version 10.2 and later provides the necessary
@@ -344,8 +344,8 @@ collection for testing purposes where the peer identifies itself using
 For Windows, @schememodname[openssl] relies on @filepath{libeay32.dll}
 and @filepath{ssleay32.dll}, where the DLLs are located in the same
 place as @filepath{libmzsch@nonterm{vers}.dll} (where @nonterm{vers}
-is either @tt{xxxxxxx} or a mangling of PLT Scheme's version
-number). The DLLs are distributed as part of PLT Scheme.
+is either @tt{xxxxxxx} or a mangling of Racket's version
+number). The DLLs are distributed as part of Racket.
 
 For Unix variants, @schememodname[openssl] relies on
 @filepath{libcryto.so} and @filepath{libssl.so}, which must be

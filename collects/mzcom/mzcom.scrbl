@@ -9,20 +9,20 @@
            (list @elem{@(tt name) COM @|what|})
            (apply tt proto)))
 
-@title{@bold{MzCOM}: Scheme as a Windows COM Object}
+@title{@bold{MzCOM}: Racket as a Windows COM Object}
 
 @author["Paul Steckler"]
 
 @exec{MzCOM.exe} is a Windows COM (i.e., Component Object Model) class
-wrapper for PLT Scheme.
+wrapper for Racket.
 
 During normal installation of MzCOM, the executable is registered as a
-COM object automatically.  If you move the PLT Scheme installation
+COM object automatically.  If you move the Racket installation
 folder, re-register @exec{MzCOM.exe} with
 
 @commandline{mzcom.exe /RegServer}
 
-The @exec{MzCOM.exe} executable find DLLs and PLT Scheme library
+The @exec{MzCOM.exe} executable find DLLs and Racket library
 collections relative to its own path.
 
 @; ----------------------------------------------------------------------
@@ -61,11 +61,11 @@ From Visual C++:
 where @tt{<version>} is the version number.  You'll need the
 definition of @tt{IID_IMzObj} (see @secref["guids"]).  The header file
 @filepath{mzcom.h} is generated as @filepath{src\worksp\mzcom\} when
-building from the PLT Scheme source distribution. The above C/C++ code
+building from the Racket source distribution. The above C/C++ code
 is for illustration; your actual code should check return values, of
 course.
 
-Using @schememodname[mysterx] to manipulate COM objects within Scheme,
+Using @schememodname[mysterx] to manipulate COM objects within Racket,
 you can load MzCOM with either
 
 @schemeblock[
@@ -84,7 +84,7 @@ methods may be called directly or by using OLE Automation.
 
 @section[#:tag "guids"]{GUIDs}
 
-When compiled from the PLT Scheme source distibrution, the directory
+When compiled from the Racket source distibrution, the directory
 @filepath{src\worksp\mzcom\} contains the file @filepath{MzCOM_i.c}
 that contains GUIDs for MzCOM.  Those GUIDs are as follows:
 
@@ -122,15 +122,15 @@ MzCOM support three COM methods:
       Takes and returns @tt{BSTR}s (BASIC strings).  The returned
        value is the result of evaluating the input expression,
        formatted as a string.  The input string may contain several
-       S-expressions.  The embedded PLT Scheme updates its environment
+       S-expressions.  The embedded Racket updates its environment
        with each evaluation.  Therefore, it is possible to define
        procedures in a call to @tt{Eval}, and use the procedures in
        subsequent calls.}
 
  @item{@com-index["Reset" "method"]{Reset :: void Reset(void)}
 
-       Resets the Scheme environment to the initial environment.
-       Also, the custodian for the primary Scheme thread is invoked,
+       Resets the Racket environment to the initial environment.
+       Also, the custodian for the primary Racket thread is invoked,
        shutting all its managed values.}
 ]
 
@@ -155,8 +155,8 @@ means to obtain COM error information.
 
 @section{Evaluation thread}
 
-The PLT Scheme evaluator runs in a Win32 thread created when MzCOM is
-loaded.  If an expression kills the primary MzScheme thread, as in
+The Racket evaluator runs in a Win32 thread created when MzCOM is
+loaded.  If an expression kills the primary Racket thread, as in
 
 @schemeblock[
   (kill-thread (current-thread))

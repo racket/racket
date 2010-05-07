@@ -34,13 +34,13 @@
 
 @(require scribble/manual)
 
-@title{@bold{Lazy Scheme}}
+@title{@bold{Lazy Racket}}
 
 @author["Eli Barzilay"]
 
 @defmodulelang[lazy]
 
-Lazy Scheme is available as both a language level and a module that
+Lazy Racket is available as both a language level and a module that
 can be used to write lazy code. To write lazy code, simply use
 @schememodname[lazy] as your module's language:
 

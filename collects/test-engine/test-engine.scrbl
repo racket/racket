@@ -16,7 +16,7 @@
 
 @defmodule[test-engine/scheme-tests]
 
-This module provides test forms for use in Scheme programs, as well
+This module provides test forms for use in Racket programs, as well
 as parameters to configure the behavior of test reports.
 
 Each check form may only occur at the top-level; results are collected

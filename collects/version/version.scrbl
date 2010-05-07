@@ -10,10 +10,10 @@
 
 @(define (selflink s) (link s (tt s)))
 
-@title{@bold{Version}: PLT Version Checking}
+@title{@bold{Version}: Racket Version Checking}
 
 The version collection contains several version-related pieces that
-are used by PLT Scheme. See also @scheme[version] from
+are used by Racket. See also @scheme[version] from
 @schememodname[scheme/base].
 
 @; ----------------------------------------------------------------------
@@ -25,7 +25,7 @@ are used by PLT Scheme. See also @scheme[version] from
 @defthing[patchlevel exact-nonnegative-integer?]{
 
 Indicates the current installed patch level, which is normally zero,
-but may be updated by patches to DrScheme.}
+but may be updated by patches to DrRacket.}
 
 @; ----------------------------------------
 
@@ -72,20 +72,20 @@ indicates the current state of the curent installation:
 
 @; ----------------------------------------------------------------------
 
-@section{DrScheme Version Tool}
+@section{DrRacket Version Tool}
 
 @defmodule[version/tool]
 
-The @scheme[version/tool] library implements a DrScheme tool that
+The @scheme[version/tool] library implements a DrRacket tool that
 
 @itemize[
 
   @item{makes the patchlevel display as a version @tt{p}@nonterm{N}
-  suffix in DrScheme (though the base verion reported by
+  suffix in DrRacket (though the base verion reported by
   @scheme[(version)] is not changed);}
 
   @item{if enabled by the user, periodically checks whether a
-  new PLT Scheme distribution is available for download.}
+  new Racket distribution is available for download.}
 
 ]
 
@@ -97,11 +97,11 @@ The @scheme[version/tool] library implements a DrScheme tool that
 
 The @schememodname[version/utils] library provides a few of convenient
 utilities for dealing with version strings.  Unless explicitly noted,
-these functions do not handle legacy versions of PLT Scheme.}
+these functions do not handle legacy versions of Racket.}
 
 @defproc[(valid-version? [str string?]) boolean?]{
 
-Returns @scheme[#t] if @scheme[str] is a valid PLT Scheme version
+Returns @scheme[#t] if @scheme[str] is a valid Racket version
 string, @scheme[#f] otherwise.}
 
 @defproc[(version->list [str valid-version?])
@@ -131,7 +131,7 @@ alpha version.  @scheme[str] is assumed to be a valid version.}
 
 Converts the version string into an integer.  For version
 @scheme["X.YY.ZZZ.WWW"], the result will be @schemevalfont{XYYZZZWWW}.
-This function works also for legacy PLT Scheme versions, by
+This function works also for legacy Racket versions, by
 translating @scheme["XYY.ZZZ"] to @schemevalfont{XYYZZZ000}.  The
 resulting integer can thefore be used to conveniently compare any two
 (valid) version strings.  If the version string is invalid the

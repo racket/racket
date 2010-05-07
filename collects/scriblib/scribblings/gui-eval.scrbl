@@ -7,7 +7,7 @@
 @schememodname[scriblib/gui-eval] library support example
 evaluations with results that are @schememodname[slideshow] picts.}
 
-The trick is that @schememodname[scheme/gui] is not generally
+The trick is that @schememodname[racket/gui] is not generally
 available when rendering documentation, because it requires a GUI
 context. The picture output is rendered to an image file when the
 @envvar{MREVAL} environment variable is set, so run the enclosing
@@ -27,5 +27,5 @@ generated image.
 
 Like @scheme[interaction], etc., but actually evaluating the forms
 only when the @envvar{MREVAL} environment variable is set, and then in
-an evaluator that is initialized with @schememodname[scheme/gui/base]
+an evaluator that is initialized with @schememodname[racket/gui/base]
 and @schememodname[slideshow]. }

@@ -16,9 +16,9 @@
 
 @title{@bold{Make}: Dependency Manager}
 
-The @schememodname[make] library provides a Scheme version of the
+The @schememodname[make] library provides a Racket version of the
 popular @exec{make} utility.  Its syntax is intended to imitate the
-syntax of @exec{make}, only in Scheme.
+syntax of @exec{make}, only in Racket.
 
 @table-of-contents[]
 
@@ -26,7 +26,7 @@ syntax of @exec{make}, only in Scheme.
 
 @section[#:tag "overview"]{Overview}
 
-@margin-note{If you want to build Scheme modules with automatic
+@margin-note{If you want to build Racket modules with automatic
 dependency tracking, just use @exec{raco make} as described in
 @|raco-manual|.}
 
@@ -77,10 +77,10 @@ utility uses existing programs to build your project --- each rule has
 a shell command line.
 
 The @schememodname[make] library provides similar functionality,
-except that the description is in Scheme, and the steps that are
-needed to build target files are implemented as Scheme functions.
+except that the description is in Racket, and the steps that are
+needed to build target files are implemented as Racket functions.
 
-Here's a Scheme program that is equivalent to the above:
+Here's a Racket program that is equivalent to the above:
 
 @schemeblock[
 (require make)
@@ -258,7 +258,7 @@ function helps with a few:
    @item{taming to some degree the differing conventions of Unix and
      Windows, }
 
-   @item{setting up suitable dependencies on PLT Scheme headers, and}
+   @item{setting up suitable dependencies on Racket headers, and}
 
    @item{using a pre-compiled binary when a @filepath{precompiled}
      directory is present.}

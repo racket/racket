@@ -215,7 +215,7 @@ For @scheme[fern1], you will probably want to point the turtle up
 before running this one, with something like:
 
 @schemeblock[
-@scheme[(turn/radians (- (/ pi 2)))]
+(turn/radians (- (/ pi 2)))
 ]
 
 For @scheme[fern2], you may need to backup a little.}

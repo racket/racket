@@ -5,7 +5,7 @@
 
 @defmodulelang[swindle]
 
-Swindle extends PLT Scheme with many additional features.  The main
+Swindle extends Racket with many additional features.  The main
 feature that started this project is a CLOS-like object system based
 on Tiny-CLOS from Xerox, but there is a lot more.
 
@@ -32,7 +32,7 @@ only a subset of the system is needed.
   simple ones like @scheme[inc!], and @scheme[push!].  (Available
   separately using @scheme[swindle/setf], where the names
   @scheme[setf!] and @scheme[psetf!] are used to avoid changing the
-  Scheme form)}
+  Racket form)}
 
 @item{Easy macro-defining macros --- simple @scheme[syntax-rules] macros with
   @scheme[defsubst], and a generic @scheme[defmacro] utility, all with a local
@@ -57,7 +57,7 @@ only a subset of the system is needed.
   stand-alone methods, method-combination, and some MOP extensions.
   (Available without syntax bindings in @scheme[swindle/tiny-clos])}
 
-@item{Good integration with the Scheme implementation: primitive
+@item{Good integration with the Racket implementation: primitive
   values have corresponding Swindle classes, and struct types can also
   be used as type specializers.  A Swindle class will be made when
   needed, and it will reflect the struct hierarchy.  In addition,
@@ -81,7 +81,7 @@ only a subset of the system is needed.
 @item{A language that can easily create HTML, where the result is
   human-editable.  (@scheme[swindle/html])}
 
-@item{Customizable syntax: easy to add customized languages to DrScheme.
+@item{Customizable syntax: easy to add customized languages to DrRacket.
   (@scheme[custom])}
 
 ]
@@ -133,8 +133,8 @@ whole Swindle environment.
   Compilation definitions.}
 
 @item{@scheme[swindle/tool] (module) ---
-  Setup for Swindle in DrScheme: makes some languages available in
-  DrScheme, including custom Swindle-based languages.}
+  Setup for Swindle in DrRacket: makes some languages available in
+  DrRacket, including custom Swindle-based languages.}
 
 @item{@scheme[swindle/custom] (module) ---
   A sample file that demonstrates how to create a Swindle-based
