@@ -68,7 +68,7 @@ Looks for the given object name @scheme[objname] in the given
 @scheme[lib] library.  If @scheme[lib] is not a foreign-library value
 produced by @scheme[ffi-lib], it is converted to one by calling
 @scheme[ffi-lib]. If @scheme[objname] is found in @scheme[lib], it is
-converted to Scheme using the given @scheme[type]. Types are described
+converted to Racket using the given @scheme[type]. Types are described
 in @secref["types"]; in particular the @scheme[get-ffi-obj] procedure
 is most often used with function types created with @scheme[_fun].
 
@@ -101,7 +101,7 @@ Looks for @scheme[objname] in @scheme[lib] similarly to
 @scheme[get-ffi-obj], but then it stores the given @scheme[new] value
 into the library, converting it to a C value.  This can be used for
 setting library customization variables that are part of its
-interface, including Scheme callbacks.}
+interface, including Racket callbacks.}
 
 
 @defproc[(make-c-parameter [objname (or/c string? bytes? symbol?)]
@@ -114,7 +114,7 @@ Returns a parameter-like procedure that can either references the
 specified foreign value, or set it.  The arguments are handled as in
 @scheme[get-ffi-obj].
 
-A parameter-like function is useful in case Scheme code and library
+A parameter-like function is useful in case Racket code and library
 code interact through a library value.  Although
 @scheme[make-c-parameter] can be used with any time, it is not
 recommended to use this for foreign functions, since each reference
@@ -124,9 +124,9 @@ actual call.}
 
 @defform[(define-c id lib-expr type-expr)]{
 
-Defines @scheme[id] behave like a Scheme binding, but @scheme[id] is
+Defines @scheme[id] behave like a Racket binding, but @scheme[id] is
 actually redirected through a parameter-like procedure created by
-@scheme[make-c-parameter]. The @scheme[id] is used both for the Scheme
+@scheme[make-c-parameter]. The @scheme[id] is used both for the Racket
 binding and for the foreign object's name.}
 
 @defproc[(ffi-obj-ref [objname (or/c string? bytes? symbol?)]

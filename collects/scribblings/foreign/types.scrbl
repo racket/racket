@@ -23,7 +23,7 @@ along with conversion functions to and from the existing types.
 
 Creates a new @tech{C type} value whose representation for foreign
 code is the same as @scheme[type]'s. The given conversions functions
-convert to and from the Scheme representation of @scheme[type]. Either
+convert to and from the Racket representation of @scheme[type]. Either
 conversion function can be @scheme[#f], meaning that the conversion
 for the corresponding direction is the identity function.  If both
 functions are @scheme[#f], @scheme[type] is returned.}
@@ -119,7 +119,7 @@ correspond to @scheme[_int16]. The @scheme[_int] aliases correspond to
 For cases where speed matters and where you know that the integer is
 small enough, the types @scheme[_fixnum] and @scheme[_ufixnum] are
 similar to @scheme[_long] and @scheme[_ulong] but assume that the
-quantities fit in PLT Scheme's immediate integers (i.e., not bignums).}
+quantities fit in Racket's immediate integers (i.e., not bignums).}
 
 @defthing*[([_fixint ctype?]
             [_ufixint ctype?])]{
@@ -146,7 +146,7 @@ value to @scheme[1].}
 
 @defthing[_void ctype?]{
 
-Indicates a Scheme @|void-const| return value, and it cannot be used
+Indicates a Racket @|void-const| return value, and it cannot be used
 to translate values to C. This type cannot be used for function
 inputs.}
 
@@ -157,9 +157,9 @@ inputs.}
 @subsection{Primitive String Types}
 
 The five primitive string types correspond to cases where a C
-representation matches MzScheme's representation without encodings.
+representation matches Racket's representation without encodings.
 
-The form @scheme[_bytes] form can be used type for Scheme byte
+The form @scheme[_bytes] form can be used type for Racket byte
 strings, which corresponds to C's @cpp{char*} type.  In addition to
 translating byte strings, @scheme[#f] corresponds to the @cpp{NULL}
 pointer.
@@ -168,8 +168,8 @@ pointer.
 @defthing[_string/ucs-4 ctype?]
 )]{
 
-A type for Scheme's native Unicode strings, which are in UCS-4 format.
-These correspond to the C @cpp{mzchar*} type used by PLT Scheme. As usual, the types
+A type for Racket's native Unicode strings, which are in UCS-4 format.
+These correspond to the C @cpp{mzchar*} type used by Racket. As usual, the types
 treat @scheme[#f] as @cpp{NULL} and vice-versa.}
 
 
@@ -183,7 +183,7 @@ Unicode strings in UTF-16 format. As usual, the types treat
 
 @defthing[_path ctype?]{
 
-Simple @cpp{char*} strings, corresponding to Scheme's paths. As usual,
+Simple @cpp{char*} strings, corresponding to Racket's paths. As usual,
 the types treat @scheme[#f] as @cpp{NULL} and vice-versa.
 
 Beware that changing the current directory via
@@ -196,7 +196,7 @@ them to a foreign function.}
 
 @defthing[_symbol ctype?]{
 
-Simple @cpp{char*} strings as Scheme symbols (encoded in UTF-8).
+Simple @cpp{char*} strings as Racket symbols (encoded in UTF-8).
 Return values using this type are interned as symbols.}
 
 
@@ -206,7 +206,7 @@ Return values using this type are interned as symbols.}
             [_string/latin-1 ctype?]
             [_string/locale ctype?])]{
 
-Types that correspond to (character) strings on the Scheme side and
+Types that correspond to (character) strings on the Racket side and
 @cpp{char*} strings on the C side.  The bridge between the two requires
 a transformation on the content of the string.  As usual, the types
 treat @scheme[#f] as @cpp{NULL} and vice-versa.}
@@ -216,18 +216,18 @@ treat @scheme[#f] as @cpp{NULL} and vice-versa.}
             [_string*/locale ctype?])]{
 
 Similar to @scheme[_string/utf-8], etc., but accepting a wider range
-of values: Scheme byte strings are allowed and passed as is, and
-Scheme paths are converted using @scheme[path->bytes].}
+of values: Racket byte strings are allowed and passed as is, and
+Racket paths are converted using @scheme[path->bytes].}
 
 
 @subsection{Variable Auto-Converting String Type}
 
 The @scheme[_string/ucs-4] type is rarely useful when interacting with
 foreign code, while using @scheme[_bytes] is somewhat unnatural, since
-it forces Scheme programmers to use byte strings. Using
+it forces Racket programmers to use byte strings. Using
 @scheme[_string/utf-8], etc., meanwhile, may prematurely commit to a
 particular encoding of strings as bytes. The @scheme[_string] type
-supports conversion between Scheme strings and @cpp{char*} strings
+supports conversion between Racket strings and @cpp{char*} strings
 using a parameter-determined conversion.
 
 @defthing[_string ctype?]{
@@ -248,19 +248,19 @@ so @italic{before} interfaces are defined.}
 
 @defthing[_file ctype?]{
 
-Like @scheme[_path], but when values go from Scheme to C,
+Like @scheme[_path], but when values go from Racket to C,
 @scheme[cleanse-path] is used on the given value.  As an output value,
 it is identical to @scheme[_path].}
 
 @defthing[_bytes/eof ctype?]{
 
 Similar to the @scheme[_bytes] type, except that a foreign return
-value of @cpp{NULL} is translated to a Scheme @scheme[eof] value.}
+value of @cpp{NULL} is translated to a Racket @scheme[eof] value.}
 
 @defthing[_string/eof ctype?]{
 
 Similar to the @scheme[_string] type, except that a foreign return
-value of @cpp{NULL} is translated to a Scheme @scheme[eof] value.}
+value of @cpp{NULL} is translated to a Racket @scheme[eof] value.}
 
 @; ------------------------------------------------------------
 
@@ -268,8 +268,8 @@ value of @cpp{NULL} is translated to a Scheme @scheme[eof] value.}
 
 @defthing[_pointer ctype?]{
 
-Corresponds to Scheme ``C pointer'' objects.  These pointers can have
-an arbitrary Scheme object attached as a type tag.  The tag is ignored
+Corresponds to Racket ``C pointer'' objects.  These pointers can have
+an arbitrary Racket object attached as a type tag.  The tag is ignored
 by built-in functionality; it is intended to be used by interfaces.
 See @secref["foreign:tagged-pointers"] for creating pointer types that
 use these tags for safety. A @scheme[#f] value is converted to
@@ -296,12 +296,15 @@ formerly occupied by the reference to be used later by the garbage
 collector.}
 
 
-@defthing[_scheme ctype?]{
+@deftogether[(
+@defthing[_racket ctype?]
+@defthing[_scheme ctype?]
+)]{
 
-This type can be used with any Scheme object; it corresponds to the
-@cpp{Scheme_Object*} type of PLT Scheme's C API (see
+A type that can be used with any Racket object; it corresponds to the
+@cpp{Scheme_Object*} type of Racket's C API (see
 @|InsideMzScheme|).  It is useful only for libraries that are aware of
-PLT Scheme's C API.}
+Racket's C API.}
 
 
 @defthing[_fpointer ctype?]{
@@ -358,14 +361,14 @@ instead, since it manages a wide range of complicated cases.
 The resulting type can be used to reference foreign functions (usually
 @scheme[ffi-obj]s, but any pointer object can be referenced with this type),
 generating a matching foreign callout object.  Such objects are new primitive
-procedure objects that can be used like any other Scheme procedure.
+procedure objects that can be used like any other Racket procedure.
 As with other pointer types, @scheme[#f] is treated as a @cpp{NULL}
 function pointer and vice-versa.
 
 A type created with @scheme[_cprocedure] can also be used for passing
-Scheme procedures to foreign functions, which will generate a foreign
-function pointer that calls the given Scheme procedure when it is
-used.  There are no restrictions on the Scheme procedure; in
+Racket procedures to foreign functions, which will generate a foreign
+function pointer that calls the given Racket procedure when it is
+used.  There are no restrictions on the Racket procedure; in
 particular, its lexical context is properly preserved.
 
 The optional @scheme[abi] keyword argument determines the foreign ABI
@@ -375,12 +378,12 @@ platform-dependent default; other possible values are
 ``cdecl'').  This is especially important on Windows, where most
 system functions are @scheme['stdcall], which is not the default.
 
-If @scheme[atomic?] is true, then when a Scheme procedure is given
-this procedure type and called from foreign code, then the PLT Scheme
-process is put into atomic mode while evaluating the Scheme procedure
-body. In atomic mode, other Scheme threads do not run, so the Scheme
+If @scheme[atomic?] is true, then when a Racket procedure is given
+this procedure type and called from foreign code, then the Racket
+process is put into atomic mode while evaluating the Racket procedure
+body. In atomic mode, other Racket threads do not run, so the Racket
 code must not call any function that potentially synchronizes with
-other threads, or else it may deadlock. In addition, the Scheme code
+other threads, or else it may deadlock. In addition, the Racket code
 must not perform any potentially blocking operation (such as I/O), it
 must not raise an uncaught exception, it must not perform any escaping
 continuation jumps, and its non-tail recursion must be minimal to
@@ -397,8 +400,8 @@ accessible through @scheme[saved-errno]. If @scheme[save-errno] is
 under Windows (on other platforms @scheme[saved-errno] will return
 0). If @scheme[save-errno] is @scheme[#f], no error value is saved
 automatically. The error-recording support provided by
-@scheme[save-errno] is needed because the PLT Scheme runtime system
-may otherwise preempt the current Scheme thread and itself call
+@scheme[save-errno] is needed because the Racket runtime system
+may otherwise preempt the current Racket thread and itself call
 functions that set error values.
 
 The optional @scheme[wrapper], if provided, is expected to be a
@@ -410,10 +413,10 @@ manipulations before the foreign function is invoked, and return
 different results (for example, grabbing a value stored in an
 ``output'' pointer and returning multiple values).  It can also be
 used for callbacks, as an additional layer that tweaks arguments from
-the foreign code before they reach the Scheme procedure, and possibly
+the foreign code before they reach the Racket procedure, and possibly
 changes the result values too.
 
-Sending Scheme functions as callbacks to foreign code is achieved by
+Sending Racket functions as callbacks to foreign code is achieved by
 translating them to a foreign ``closure,'' which foreign code can call
 as plain C functions.  Additional care must be taken in case the
 foreign code might hold on to the callback function.  In these cases
@@ -446,14 +449,14 @@ values: @itemize[
   allowing the box itself to be garbage-collected.  This is can be
   useful if the box is held for a dynamic extent that corresponds to
   when the callback is needed; for example, you might encapsulate some
-  foreign functionality in a Scheme class or a unit, and keep the
+  foreign functionality in a Racket class or a unit, and keep the
   callback box as a field in new instances or instantiations of the
   unit.}
 
 @item{A box holding @scheme[null] (or any list) -- this is similar to
   the previous case, except that new callback values are consed onto
   the contents of the box.  It is therefore useful in (rare) cases
-  when a Scheme function is used in multiple callbacks (that is, sent
+  when a Racket function is used in multiple callbacks (that is, sent
   to foreign code to hold onto multiple times).}
 
 @item{Finally, if a one-argument function is provided as
@@ -643,7 +646,7 @@ following:
   one will be freshly allocated before the call.}
 
  @item{@scheme[io] --- combines the above into an
-  @italic{input/output} pointer argument: the wrapper gets the Scheme
+  @italic{input/output} pointer argument: the wrapper gets the Racket
   value, allocates and set a pointer using this value, and then
   references the value after the call.  The ``@scheme[_ptr]'' name can
   be confusing here: it means that the foreign function expects a
@@ -691,7 +694,7 @@ length of the list which the C function will most likely require.}
 @defform[(_vector mode type maybe-len)]{
 
 A @tech{custom function type} like @scheme[_list], except that it uses
-Scheme vectors instead of lists.}
+Racket vectors instead of lists.}
 
 
 @defform*[#:literals (o)
@@ -717,7 +720,7 @@ is present for consistency with the above macros).}
 
 The primitive type constructor for creating new C struct types.  These
 types are actually new primitive types; they have no conversion
-functions associated.  The corresponding Scheme objects that are used
+functions associated.  The corresponding Racket objects that are used
 for structs are pointers, but when these types are used, the value
 that the pointer @italic{refers to} is used, rather than the pointer
 itself.  This value is basically made of a number of bytes that is
@@ -741,7 +744,7 @@ below for a more efficient approach.}
 
 Defines a new C struct type, but unlike @scheme[_list-struct], the
 resulting type deals with C structs in binary form, rather than
-marshaling them to Scheme values.  The syntax is similar to
+marshaling them to Racket values.  The syntax is similar to
 @scheme[define-struct], providing accessor functions for raw struct
 values (which are pointer objects).  The new type uses pointer tags to
 guarantee that only proper struct objects are used.  The @scheme[_id]
@@ -793,7 +796,7 @@ inheritance, where a sub-struct is made by having a first field that
 is its super-struct.  Instances of the sub-struct can be considered as
 instances of the super-struct, since they share the same initial
 layout.  Using the tag of an initial cstruct field means that the same
-behavior is implemented in Scheme; for example, accessors and mutators
+behavior is implemented in Racket; for example, accessors and mutators
 of the super-cstruct can be used with the new sub-cstruct.  See the
 example below.
 
@@ -914,7 +917,7 @@ take an @cpp{A} pointer:
 (gety b)
 ]
 
-Constructing a @cpp{B} instance in Scheme requires allocating a
+Constructing a @cpp{B} instance in Racket requires allocating a
  temporary @cpp{A} struct:
 
 @schemeblock[

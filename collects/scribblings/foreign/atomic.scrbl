@@ -11,7 +11,7 @@
 @defproc[(end-atomic) void?]
 )]{
 
-Disables and enables context switches at the level of Scheme
+Disables and enables context switches at the level of Racket
 threads. Calls to @scheme[start-atomic] and @scheme[end-atomic] can be
 nested.
 
