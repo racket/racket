@@ -22,7 +22,6 @@
 
 (provide (all-defined-out))
 
-
 ;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
 (begin-for-syntax
@@ -476,8 +475,6 @@ if (foo){
 
 (define (display2 x y)
   (printf "~a ~a" x y))
-
-
 
 (define-syntax (honu-unparsed-begin stx)
   (printf "honu unparsed begin: ~a\n" (syntax->datum stx))

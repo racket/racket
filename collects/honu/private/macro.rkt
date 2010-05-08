@@ -7,6 +7,8 @@
          ;; (for-template "syntax.ss")
          (for-syntax "debug.ss"
                      "contexts.ss"
+                     "parse.ss"
+                     "honu-typed-scheme.ss"
                      scheme/base
                      syntax/parse
                      syntax/stx
@@ -392,10 +394,29 @@
        (with-syntax ([pulled (pull #'(x ...))])
          #'(unpull pulled)))]))
 
-
-
 (define-honu-syntax honu-macro
   (lambda (stx ctx)
+    (define-syntax-class honu-macro2
+                         #:literals (#%parens #%braces)
+      [pattern (_ name (#%braces code ...)
+                  . rest)
+               #:with result
+               (list
+                 (syntax/loc stx
+                             (define-honu-syntax name
+                               (lambda (stx ctx)
+                                 (honu-unparsed-begin code ...))))
+                 #;
+                 (with-syntax ([parsed (let-values ([(out rest*)
+                                                     (parse-block-one/2 #'(code ...)
+                                                                        the-expression-context)])
+                                         out)])
+                   (syntax/loc stx
+                               (define-honu-syntax name
+                                 (lambda (stx ctx)
+                                   parsed))))
+                 #'rest)])
+
     (define-syntax-class honu-macro1
                      #:literals (#%parens #%braces)
                      [pattern (_ (#%parens honu-literal ...)
@@ -465,6 +486,7 @@
     (printf "Executing honu macro\n")
     (syntax-parse stx #:literals (#%parens #%braces)
       [out:honu-macro1 (apply (lambda (a b) (values a b)) (syntax->list (attribute out.result)))]
+      [out:honu-macro2 (apply (lambda (a b) (values a b)) (syntax->list (attribute out.result)))]
 
       #;
       [(_ (#%parens honu-literal ...)

@@ -1,10 +1,12 @@
 #lang scheme/base
 
+(require (for-syntax scheme/base))
 (require scheme/class)
 
 (require "private/honu-typed-scheme.ss"
          ;; "private/honu.ss"
          "private/parse.ss"
+         (for-syntax "private/literals.ss")
          "private/literals.ss"
          "private/syntax.ss"
          "private/macro.ss")
@@ -30,6 +32,9 @@
                      (honu-. |.|)
                      )
          #%datum
+         (for-syntax #%datum
+                     (rename-out (semicolon \;
+                                            )))
          #%braces
          #%parens
          x
@@ -37,6 +42,7 @@
          false
          display
          display2
+         (for-syntax display)
          newline
          else
          foobar2000
