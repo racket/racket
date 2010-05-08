@@ -90,6 +90,7 @@
                                            [max-let-depth exact-nonnegative-integer?])) 
 
 (define-form-struct (mod form) ([name symbol?] 
+                                [srcname symbol?]
                                 [self-modidx module-path-index?] 
                                 [prefix prefix?] 
                                 [provides (listof (list/c (or/c exact-integer? #f)
