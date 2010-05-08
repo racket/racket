@@ -51,6 +51,7 @@ wraps the load of the module.)
          (print-mpair-curly-braces #f)
          (run-in-user-thread
           (lambda ()
+            (print-as-expression #f)
             ((namespace-variable-value 'install-eopl-exception-handler)))))
        (super-instantiate ())))
 

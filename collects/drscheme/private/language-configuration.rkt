@@ -1433,12 +1433,21 @@
              (read-curly-brace-as-paren #f)
              (read-accept-infix-dot #f)
              (print-mpair-curly-braces #f)
-             (print-vector-length #f))))
+             (print-vector-length #f)
+             (print-as-expression #f))))
         (define/override (get-transformer-module) #f)
 
         (define/override (default-settings) 
           (make-simple-settings+assume #f 'write 'mixed-fraction-e #f #t 'debug #t))
 
+        (super-new)))
+  
+    (define (pretty-big-mixin %)
+      (class %
+        (define/override (on-execute setting run-in-user-thread)
+          (super on-execute setting run-in-user-thread)
+          (run-in-user-thread
+           (λ () (print-as-expression #f))))
         (super-new)))
     
     (define get-all-scheme-manual-keywords
@@ -1514,7 +1523,7 @@
                       (list -200 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
-                      (λ (%) (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %))))))
+                      (λ (%) (pretty-big-mixin (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %)))))))
         (add-language
          (make-simple '(lib "r5rs/lang.rkt")
                       "plt:r5rs"
