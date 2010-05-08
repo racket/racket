@@ -1433,21 +1433,25 @@
              (read-curly-brace-as-paren #f)
              (read-accept-infix-dot #f)
              (print-mpair-curly-braces #f)
-             (print-vector-length #f)
-             (print-as-expression #f))))
+             (print-vector-length #f))))
         (define/override (get-transformer-module) #f)
 
         (define/override (default-settings) 
-          (make-simple-settings+assume #f 'write 'mixed-fraction-e #f #t 'debug #t))
+          (make-simple-settings+assume #f 'trad-write 'mixed-fraction-e #f #t 'debug #t))
 
         (super-new)))
   
     (define (pretty-big-mixin %)
       (class %
-        (define/override (on-execute setting run-in-user-thread)
-          (super on-execute setting run-in-user-thread)
-          (run-in-user-thread
-           (λ () (print-as-expression #f))))
+        (define/override (default-settings) 
+          (let ([s (super default-settings)])
+            (make-simple-settings+assume (drracket:language:simple-settings-case-sensitive s)
+                                         'trad-write
+                                         (drracket:language:simple-settings-fraction-style s)
+                                         (drracket:language:simple-settings-show-sharing s)
+                                         (drracket:language:simple-settings-insert-newlines s)
+                                         (drracket:language:simple-settings-annotations s)
+                                         (simple-settings+assume-no-redef? s))))
         (super-new)))
     
     (define get-all-scheme-manual-keywords

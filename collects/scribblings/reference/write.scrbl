@@ -212,7 +212,7 @@ with @racket[quote], @racket['quasiquote], @racket['unquote],
 @defboolparam[print-as-expression on?]{
 
 A parameter that controls printing in @racket[print] mode (as opposed
-to @racket[write] or @racket[display]); defaults to @racket[#f]. See
+to @racket[write] or @racket[display]); defaults to @racket[#t]. See
 @secref["printing"] for more information.}
 
 @defboolparam[print-honu on?]{

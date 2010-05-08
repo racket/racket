@@ -148,6 +148,21 @@ must occur after all the @scheme[provide*] forms to which it refers.}
 @compat[scheme/help racket/help]
 @compat[scheme/include racket/include]
 @compat[scheme/init racket/init]
+
+@;------------------------------------------------------------------------
+
+@section[#:tag "scheme/language-info"]{@schememodname[scheme/language-info]}
+
+@defmodule[scheme/language-info]{
+The @schememodname[scheme/language-info] library is like
+@schememodname[racket/language-info], except that it produces
+@scheme['(#(scheme/runtime-config configure #f))] for the
+@scheme['configure-runtime] information key.}
+
+See also @racketmodname[scheme/runtime-config].
+
+@;------------------------------------------------------------------------
+
 @compat[scheme/list racket/list]
 @compat[scheme/load racket/load]
 @compat[scheme/local racket/local]
@@ -230,6 +245,19 @@ An alias for @racket[pretty-write].}
 @compat[scheme/require racket/require]
 @compat[scheme/require-syntax racket/require-syntax]
 @compat[scheme/require-transform racket/require-transform]
+
+@;------------------------------------------------------------------------
+
+@section[#:tag "scheme/runtime-config"]{@schememodname[scheme/runtime-config]}
+
+@defmodule[scheme/runtime-config]{
+The @schememodname[scheme/runtime-config] library is like
+@schememodname[racket/runtime-config], except that the result of its
+@schemeidfont{configure} function is a procedure that sets
+@racket[print-as-expression] to @scheme[#f].}
+
+@; ----------------------------------------
+
 @compat[scheme/runtime-path racket/runtime-path]
 
 @; ----------------------------------------

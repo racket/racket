@@ -18,7 +18,7 @@ operations manage tags to distinguish pointer types.
             ctype])]{
 
 Construct a kind of a pointer that gets a specific tag when converted
-to Scheme, and accept only such tagged pointers when going to C.  An
+to Racket, and accept only such tagged pointers when going to C.  An
 optional @scheme[ptr-type] can be given to be used as the base pointer
 type, instead of @scheme[_pointer].
 
@@ -37,7 +37,7 @@ an interface can hide its value from users (e.g., not provide the
 
 @scheme[_cpointer/null] is similar to @scheme[_cpointer] except that
 it tolerates @cpp{NULL} pointers both going to C and back.  Note that
-@cpp{NULL} pointers are represented as @scheme[#f] in Scheme, so they
+@cpp{NULL} pointers are represented as @scheme[#f] in Racket, so they
 are not tagged.}
 
 
@@ -63,7 +63,7 @@ obtain a tag. The tag is the string form of @schemevarfont{id}.}
 
 These two functions treat pointer tags as lists of tags.  As described
 in @secref["foreign:pointer-funcs"], a pointer tag does not have any
-role, except for Scheme code that uses it to distinguish pointers;
+role, except for Racket code that uses it to distinguish pointers;
 these functions treat the tag value as a list of tags, which makes it
 possible to construct pointer types that can be treated as other
 pointer types, mainly for implementing inheritance via upcasts (when a

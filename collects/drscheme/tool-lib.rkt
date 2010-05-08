@@ -1433,15 +1433,23 @@ all of the names in the tools library, for use defining keybindings
  
  (proc-doc/names
   drracket:language:simple-module-based-language-convert-value
-  (-> any/c drracket:language:simple-settings? any/c)
+  (-> any/c drracket:language:simple-settings? any)
   (value settings)
-  @{Sets the @racket[constructor-style-printing] and @racket[show-sharing] 
-    parameters based on @racket[settings] and sets @racket[current-print-convert-hook]
-    to ignore snips and then uses @racket[print-convert] on @racket[value].
-    
-    Unless, of course, the @racket[settings] argument has @racket['write] in
-    the @racket[simple-settings-printing-style] field, in which case it simply 
-    returns @racket[value].})
+  @{The result can be either one or two values. The first result is
+    the converted value. The second result is @racket[#t] if the converted
+    value should be printed with @racket[write] (or @racket[pretty-write]),
+    @racket[#f] if the converted result should be printed with
+    @racket[print] (or @racket[pretty-print]); the default second
+    result is @racket[#t].
+
+    The default implementation of this method depends on the 
+    @racket[simple-settings-printing-style] field of @racket[settings].
+    If it is @racket['print], the
+    result is @racket[(values value #f)]. If it is @racket['write] or @racket['trad-write],
+    the result is just @racket[value]. Otherwise, the result is produce by 
+    adjusting the @racket[constructor-style-printing] and @racket[show-sharing] 
+    parameters based on @racket[settings], setting @racket[current-print-convert-hook]
+    to ignore snips, and then applying @racket[print-convert] to @racket[value].})
  
  (proc-doc/names
   drracket:language:setup-printing-parameters
@@ -1500,7 +1508,7 @@ all of the names in the tools library, for use defining keybindings
   drracket:language:simple-settings-printing-style
   (drracket:language:simple-settings?
    . -> .
-   (symbols 'constructor 'quasiquote 'write))
+   (symbols 'constructor 'quasiquote 'write 'print))
   (simple-settings)
   
   @{Extracts the printing-style setting from a simple-settings.})
@@ -1554,7 +1562,7 @@ all of the names in the tools library, for use defining keybindings
  (proc-doc/names
   drracket:language:make-simple-settings
   (-> boolean?
-      (symbols 'constructor 'quasiquote 'write)
+      (symbols 'constructor 'quasiquote 'write 'trad-write 'print)
       (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
       boolean?
       boolean?

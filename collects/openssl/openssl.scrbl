@@ -2,7 +2,8 @@
 @(require scribble/manual
           scribble/bnf
           (for-label openssl
-		     scheme))
+		     scheme
+                     openssl/sha1))
 
 @title{@bold{OpenSSL}}
 
@@ -336,6 +337,35 @@ roots loaded by @scheme[ssl-load-verify-root-certificates!].
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes where the peer identifies itself using
 @filepath{test.pem}.}
+
+@; ----------------------------------------------------------------------
+
+@section{SHA-1 Hashing}
+
+@defmodule[openssl/sha1]{The @schememodname[openssl/sha1] library
+provides a Racket wrapper for the OpenSSL library's SHA-1 hashing
+functions.}
+
+@defproc[(sha1 [in input-port]) string?]{
+
+Returns a 40-character string that represents the SHA-1 hash (in
+hexadecimal notation) of the content from @scheme[in], consuming all
+of the input from @scheme[in] until an end-of-file.
+
+The @scheme[sha1] function composes @scheme[bytes->hex-string] with
+@racket[sha1-bytes].}
+
+@defproc[(sha1-bytes [in input-port]) bytes?]{
+
+Returns a 20-byte byte string that represents the SHA-1 hash of the
+content from @scheme[in], consuming all of the input from @scheme[in]
+until an end-of-file.}
+
+@defproc[(bytes->hex-string [bstr bytes?]) string?]{
+
+Converts the given byte string to a string representation, where each
+byte in @scheme[bstr] is converted to its two-digit hexadecimal
+representation in the resulting string.}
 
 @; ----------------------------------------------------------------------
 

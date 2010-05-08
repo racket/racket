@@ -196,17 +196,24 @@
                (set-printing-parameters
                 settings
                 (λ () 
-                  (let ([converted-value (drscheme:language:simple-module-based-language-convert-value value settings)])
-                    (cond
-                      [(drscheme:language:simple-settings-insert-newlines settings)
-                       (if (number? width)
-                           (parameterize ([pretty-print-columns width])
-                             (pretty-write converted-value port))
-                           (pretty-write converted-value port))]
-                      [else
-                       (parameterize ([pretty-print-columns 'infinity])
-                         (pretty-write converted-value port))
-                       (newline port)])))))
+                  (let-values ([(converted-value write?)
+                                (call-with-values
+                                    (lambda ()
+                                      (drscheme:language:simple-module-based-language-convert-value value settings))
+                                  (case-lambda
+                                   [(converted-value) (values converted-value #t)]
+                                   [(converted-value write?) (values converted-value write?)]))])
+                    (let ([pretty-out (if write? pretty-write pretty-print)])
+                      (cond
+                       [(drscheme:language:simple-settings-insert-newlines settings)
+                        (if (number? width)
+                            (parameterize ([pretty-print-columns width])
+                              (pretty-out converted-value port))
+                            (pretty-out converted-value port))]
+                       [else
+                        (parameterize ([pretty-print-columns 'infinity])
+                          (pretty-out converted-value port))
+                        (newline port)]))))))
              settings
              width))
           
@@ -309,13 +316,11 @@
                        (case (drscheme:language:simple-settings-printing-style settings)
                          [(constructor) 0]
                          [(quasiquote) 1]
-                         [(write) 2]
-                         [(print) 2])
+                         [(print trad-write write) 2])
                        (case (drscheme:language:simple-settings-printing-style settings)
                          [(constructor) 0]
                          [(quasiquote) 0]
-                         [(write) 1]
-                         [(print) 1])))
+                         [(print trad-write write) 1])))
              (send fraction-style set-selection
                    (case (drscheme:language:simple-settings-fraction-style settings)
                      [(mixed-fraction) 0]

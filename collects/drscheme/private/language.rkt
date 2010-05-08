@@ -161,7 +161,7 @@
              (= (vector-length printable)
                 (procedure-arity make-simple-settings))
              (boolean? (vector-ref printable 0))
-             (memq (vector-ref printable 1) '(constructor quasiquote write))
+             (memq (vector-ref printable 1) '(constructor quasiquote write trad-write print))
              (memq (vector-ref printable 2) 
                    '(mixed-fraction 
                      mixed-fraction-e
@@ -172,7 +172,7 @@
              (memq (vector-ref printable 5) '(none debug debug/profile test-coverage))
              (apply make-simple-settings (vector->list printable))))
       (define/public (default-settings) 
-        (make-simple-settings #t 'write 'mixed-fraction-e #f #t 'debug))
+        (make-simple-settings #t 'print 'mixed-fraction-e #f #t 'debug))
       (define/public (default-settings? x)
         (equal? (simple-settings->vector x)
                 (simple-settings->vector (default-settings))))
@@ -198,7 +198,7 @@
                                   insert-newlines
                                   annotations))
   ;;  case-sensitive  : boolean
-  ;;  printing-style  : (union 'write 'constructor 'quasiquote)
+  ;;  printing-style  : (union 'print 'write 'trad-write 'constructor 'quasiquote)
   ;;  fraction-style  : (union 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
   ;;  show-sharing    : boolean
   ;;  insert-newlines : boolean
@@ -267,18 +267,21 @@
                              (string-constant output-style-label)
                              (list (string-constant constructor-printing-style)
                                    (string-constant quasiquote-printing-style)
+                                   (string-constant write-printing-style)
                                    (string-constant print-printing-style))
                              output-panel
-                             (λ (rb evt)
-                               (let ([on? (not (= (send rb get-selection) 3))])
-                                 (send fraction-style enable on?)
-                                 (send show-sharing enable on?)
-                                 (send insert-newlines enable on?)))
+                             (λ (rb evt) (enable-fraction-style))
                              '(horizontal vertical-label))]
              [fraction-style
               (make-object check-box% (string-constant decimal-notation-for-rationals)
                 output-panel
                 void)]
+             [enable-fraction-style 
+              (lambda ()
+                (let ([on? (member (send output-style get-selection) '(0 1))])
+                  (send fraction-style enable on?)
+                  (send show-sharing enable on?)
+                  (send insert-newlines enable on?)))]
              [show-sharing (make-object check-box%
                              (string-constant sharing-printing-label)
                              output-panel
@@ -299,7 +302,8 @@
           (case (send output-style get-selection)
             [(0) 'constructor]
             [(1) 'quasiquote]
-            [(2) 'write])
+            [(2) 'trad-write]
+            [(3) 'print])
           (if (send fraction-style get-value)
               'repeating-decimal-e
               'mixed-fraction-e)
@@ -320,7 +324,9 @@
                (case (simple-settings-printing-style settings)
                  [(constructor) 0]
                  [(quasiquote) 1]
-                 [(write) 2]))
+                 [(write trad-write) 2]
+                 [(print) 3]))
+         (enable-fraction-style)
          (send fraction-style set-value (eq? (simple-settings-fraction-style settings)
                                              'repeating-decimal-e))
          (send show-sharing set-value (simple-settings-show-sharing settings))
@@ -333,21 +339,28 @@
   
   ;; simple-module-based-language-render-value/format : TST settings port (union #f (snip% -> void)) (union 'infinity number) -> void
   (define (simple-module-based-language-render-value/format value settings port width)
-    (let ([converted-value (simple-module-based-language-convert-value value settings)])
-      (setup-printing-parameters 
-       (λ ()
-         (cond
-           [(simple-settings-insert-newlines settings)
-            (if (number? width)
-                (parameterize ([pretty-print-columns width])
-                  (pretty-print converted-value port))
-                (pretty-print converted-value port))]
-           [else
-            (parameterize ([pretty-print-columns 'infinity])
-              (pretty-print converted-value port))
-            (newline port)]))
-       settings
-       width)))
+    (let-values ([(converted-value write?)
+                  (call-with-values
+                      (lambda ()
+                        (simple-module-based-language-convert-value value settings))
+                    (case-lambda
+                     [(converted-value) (values converted-value #t)]
+                     [(converted-value write?) (values converted-value write?)]))])
+      (let ([pretty-out (if write? pretty-write pretty-print)])
+        (setup-printing-parameters 
+         (λ ()
+            (cond
+             [(simple-settings-insert-newlines settings)
+              (if (number? width)
+                  (parameterize ([pretty-print-columns width])
+                    (pretty-out converted-value port))
+                  (pretty-out converted-value port))]
+             [else
+              (parameterize ([pretty-print-columns 'infinity])
+                (pretty-out converted-value port))
+              (newline port)]))
+         settings
+         width))))
   
   (define default-pretty-print-current-style-table (pretty-print-current-style-table))
   
@@ -415,11 +428,11 @@
                            (write-special (render-syntax/snip value) port)]
                           [else (write-special (value->snip value) port)]))]
                      [print-graph
-                      ;; only turn on print-graph when using `write' printing 
-                      ;; style because the sharing is being taken care of
+                      ;; only turn on print-graph when using `write' or `print' printing 
+                      ;; style, because the sharing is being taken care of
                       ;; by the print-convert sexp construction when using
                       ;; other printing styles.
-                      (and (eq? (simple-settings-printing-style settings) 'write)
+                      (and (memq (simple-settings-printing-style settings) '(write print))
                            (simple-settings-show-sharing settings))])
         (thunk))))
   
@@ -429,7 +442,8 @@
   ;; simple-module-based-language-convert-value : TST settings -> TST
   (define (simple-module-based-language-convert-value value settings)
     (case (simple-settings-printing-style settings)
-      [(write) value]
+      [(print) (values value #f)]
+      [(write trad-write) value]
       [(constructor)
        (parameterize ([constructor-style-printing #t]
                       [show-sharing (simple-settings-show-sharing settings)]
@@ -477,11 +491,16 @@
        
        (global-port-print-handler
         (λ (value port)
-          (let ([converted-value (simple-module-based-language-convert-value value setting)])
+          (let-values ([(converted-value write?)
+                        (call-with-values 
+                            (lambda () (simple-module-based-language-convert-value value setting))
+                          (case-lambda
+                           [(converted-value) (values converted-value #t)]
+                           [(converted-value write?) (values converted-value write?)]))])
             (setup-printing-parameters 
              (λ ()
                (parameterize ([pretty-print-columns 'infinity])
-                 (pretty-print converted-value port)))
+                 ((if write? pretty-write pretty-print) converted-value port)))
              setting
              'infinity))))
        (current-inspector (make-inspector))
@@ -507,20 +526,18 @@
        
        (define (render-value value port)
          (parameterize ([pretty-print-columns 'infinity])
-           (pretty-print (convert-value value) port)))
-       
-       (define (convert-value value)
-         ,(case (simple-settings-printing-style setting)
-            [(write) `value]
-            [(constructor)
-             `(parameterize ([constructor-style-printing #t]
-                             [show-sharing ,(simple-settings-show-sharing setting)])
-                (print-convert value))]
-            [(quasiquote)
-             `(parameterize ([constructor-style-printing #f]
-                             [show-sharing ,(simple-settings-show-sharing setting)])
-                (print-convert value))]))
-       
+           ,(case (simple-settings-printing-style setting)
+              [(print) `(pretty-print value port)]
+              [(write trad-write) `(pretty-write value port)]
+              [(constructor)
+               `(parameterize ([constructor-style-printing #t]
+                               [show-sharing ,(simple-settings-show-sharing setting)])
+                  (pretty-write (print-convert value) port))]
+              [(quasiquote)
+               `(parameterize ([constructor-style-printing #f]
+                               [show-sharing ,(simple-settings-show-sharing setting)])
+                  (pretty-write (print-convert value) port))])))
+         
        ,(if (memq (simple-settings-annotations setting) '(debug debug/profile test-coverage))
             `(require errortrace)
             `(void))

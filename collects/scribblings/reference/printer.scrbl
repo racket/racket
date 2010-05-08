@@ -183,7 +183,11 @@ mode but with a @litchar{'} prefix; the pair's content is printed with
 (when the pair is a list), or @litchar{list*} (otherwise) after the
 openining @litchar{(}, any @litchar{.} that would otherwise be printed
 is suppressed, and the pair content is printed at @tech{quoting depth}
-@scheme[0].
+@scheme[0]. In all cases, when @scheme[print-as-expression] is
+@scheme[#t] for @scheme[print] mode, then the value of
+@scheme[print-reader-abbreviations] is ignored and reader
+abbreviations are always used for lists printed at @tech{quoting
+depth} @scheme[1].
 
 By default, mutable pairs (as created with @scheme[mcons]) print the
 same as pairs for @scheme[write] and @scheme[display], except that
