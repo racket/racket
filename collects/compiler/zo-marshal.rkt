@@ -90,9 +90,10 @@
 
 (define (traverse-module mod-form visit)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body unexported 
+    [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported 
                        max-let-depth dummy lang-info internal-context))
      (traverse-data name visit)
+     (traverse-data srcname visit)
      (traverse-data self-modidx visit)
      (traverse-prefix prefix visit)
      (for-each (lambda (f) (map (lambda (v) (traverse-data v visit)) (cdr f))) requires)
@@ -431,7 +432,7 @@
 
 (define (out-module mod-form out)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body unexported 
+    [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported 
                        max-let-depth dummy lang-info internal-context))
      (out-syntax MODULE_EXPD
                  (let* ([lookup-req (lambda (phase)
@@ -504,6 +505,7 @@
                         [l (list* #f #f l)] ; obsolete `functional?' info
                         [l (cons lang-info l)] ; lang-info
                         [l (cons self-modidx l)]
+                        [l (cons srcname l)]
                         [l (cons name l)])
                    (make-module-decl l))
                  out)]))
