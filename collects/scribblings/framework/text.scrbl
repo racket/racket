@@ -121,7 +121,7 @@
 
     The result of this method is a symbol that identifies this
     editor and that is used as the port-name of a port that is
-    read from this editor if this editor is used in DrScheme.
+    read from this editor if this editor is used in DrRacket.
     See also
     @method[text:basic<%> port-name-matches?].
   }
@@ -345,7 +345,7 @@
   hits are coalesced into a single search results when
   bubbles are drawn. This means, for example, that searching
   for a space in a file with 80,000 spaces (as one file in
-  the PLT Scheme code base has) is still tractable, since
+  the Racket code base has) is still tractable, since
   many of those spaces will be next to each other and thus
   there will be far fewer bubbles (the file in question has
   only 20,000 such bubbles).

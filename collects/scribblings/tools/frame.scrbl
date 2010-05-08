@@ -5,7 +5,7 @@
 @defclass[drracket:frame:name-message% canvas% ()]{
 
 This class implements the little filename button in the top-right hand
-side of drscheme's frame.
+side of DrRacket's frame.
 
 
 
@@ -40,7 +40,7 @@ Provides an implementation of
 
 @defmixin[drracket:frame:basics-mixin (frame:standard-menus<%>) (drracket:frame:basics<%>)]{
 
-Use this mixin to establish some common menu items across various DrScheme windows.
+Use this mixin to establish some common menu items across various DrRacket windows.
 
 
 
@@ -88,7 +88,7 @@ adds a
                                    [evt (is-a?/c control-event%)])
            void?]{
 
-Opens a new, empty DrScheme window.
+Opens a new, empty DrRacket window.
 
 
 }
@@ -127,7 +127,7 @@ Returns the empty string.
 @methspec{
 
 Each string in the result of this method is added as a menu
-item to DrScheme's ``Related Web Sites'' menu item. The
+item to DrRacket's ``Related Web Sites'' menu item. The
 first string is the name of the menu item and the second
 string is a url that, when the menu item is chosen, is sent
 to the user's browser.
@@ -145,7 +145,7 @@ Defaultly returns the empty list.
                                      [evt (is-a?/c control-event%)])
            void?]{
 
-Opens an about box for DrScheme.
+Opens an about box for DrRacket.
 
 
 }
@@ -154,7 +154,7 @@ Opens an about box for DrScheme.
            (help-menu:about-string)
            string?]{
 
-Returns the string @scheme["DrScheme"].
+Returns the string @scheme["DrRacket"].
 
 
 }
@@ -163,7 +163,7 @@ Returns the string @scheme["DrScheme"].
            (help-menu:before-about [help-menu (is-a?/c menu%)])
            void?]{
 
-Adds the Help Desk menu item and the Welcome to DrScheme menu item.
+Adds the Help Desk menu item and the Welcome to DrRacket menu item.
 }
 
 @defmethod[#:mode override 
@@ -243,7 +243,7 @@ that evaluation is taking place in the user's program.
 
 This method is intended to be overridden. It's job is to
 update the @scheme["View"] menu to match the state of the
-visible windows. In the case of the standard DrScheme
+visible windows. In the case of the standard DrRacket
 window, it change the menu items to reflect the visibility of
 the definitions and interaction @scheme[editor-canvas%]s.
 

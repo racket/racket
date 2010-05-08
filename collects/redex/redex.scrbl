@@ -77,7 +77,7 @@ the names documented in this library.
 The module @schememodname[redex/reduction-semantics]
 provides only the non-GUI portions of what is described in
 this manual (everything except the last two sections),
-making it suitable for use with @tt{mzscheme} scripts.
+making it suitable for use with @tt{racket} scripts.
 
 @table-of-contents[]
 
@@ -109,20 +109,20 @@ in the grammar are terminals.
             real
             string 
             variable 
-            (variable-except <id> ...)
-            (variable-prefix <id>)
+            (variable-except id ...)
+            (variable-prefix id)
             variable-not-otherwise-mentioned
             hole
             symbol
-            (name <id> <pattern>)
-            (in-hole <pattern> <pattern>)
-            (hide-hole <pattern>)
-            (side-condition <pattern> guard)
-            (cross <id>)
+            (name id pattern)
+            (in-hole pattern pattern)
+            (hide-hole pattern)
+            (side-condition pattern guard)
+            (cross id)
             (<pattern-sequence> ...)
-            <scheme-constant>]
+            racket-constant]
    [pattern-sequence 
-     <pattern> 
+     pattern 
      (code:line ... (code:comment "literal ellipsis"))
      ..._id])
 
@@ -262,9 +262,9 @@ there via @tt{_} pattersn) are bound using @scheme[term-let] in the
 guard. 
 }
 
-@item{The @tt{(@defpattech[cross] symbol)} @pattern is used for the compatible
+@item{The @scheme[(@defpattech[cross] id)] @pattern is used for the compatible
 closure functions. If the language contains a non-terminal with the
-same name as @scheme[symbol], the @pattern @scheme[(cross symbol)] matches the
+same name as @scheme[symbol], the @pattern @scheme[(cross id)] matches the
 context that corresponds to the compatible closure of that
 non-terminal.
 }
@@ -395,7 +395,7 @@ all non-GUI portions of Redex) and also exported by
 @schememodname[redex] (which includes all of Redex).
 
 Object language expressions in Redex are written using
-@scheme[term]. It is similar to Scheme's @scheme[quote] (in
+@scheme[term]. It is similar to Racket's @scheme[quote] (in
 many cases it is identical) in that it constructs lists as
 the visible representation of terms. 
 
@@ -405,14 +405,14 @@ stands for repetition unless otherwise indicated):
 @(schemegrammar* #:literals (in-hole hole unquote unquote-splicing) 
    [term identifier
          (term-sequence ...)
-         ,scheme-expression
+         ,racket-expression
          (in-hole term term)
          hole
          #t #f
          string]
    [term-sequence 
      term
-     ,@scheme-expression
+     ,@racket-expression
      (code:line ... (code:comment "literal ellipsis"))])
 
 @itemize[
@@ -425,15 +425,15 @@ corresponding symbol, unless the identifier is bound by
 @item{A term written @scheme[(_term-sequence ...)] constructs a list of
 the terms constructed by the sequence elements.}
 
-@item{A term written @scheme[,_scheme-expression] evaluates the
-@scheme[scheme-expression] and substitutes its value into the term at
+@item{A term written @scheme[,_racket-expression] evaluates the
+@scheme[_racket-expression] and substitutes its value into the term at
 that point.}
 
-@item{A term written @scheme[,@_scheme-expression] evaluates the
-@scheme[scheme-expression], which must produce a list. It then splices
+@item{A term written @scheme[,@_racket-expression] evaluates the
+@scheme[_racket-expression], which must produce a list. It then splices
 the contents of the list into the expression at that point in the sequence.}
 
-@item{A term written @scheme[(in-hole @|tttterm| @|tttterm|)]
+@item{A term written @scheme[(in-hole @#,|tttterm| @#,|tttterm|)]
  is the dual to the @pattern @scheme[in-hole] -- it accepts
  a context and an expression and uses @scheme[plug] to combine
 them.}
@@ -681,9 +681,9 @@ all non-GUI portions of Redex) and also exported by
                [reduction-case (--> @#,ttpattern @#,tttterm extras ...)]
                [extras name
                        (fresh fresh-clause ...)
-                       (side-condition scheme-expression)
+                       (side-condition racket-expression)
                        (where tl-pat @#,tttterm)
-                       (side-condition/hidden scheme-expression)
+                       (side-condition/hidden racket-expression)
                        (where/hidden tl-pat @#,tttterm)]
                [fresh-clause var ((var1 ...) (var2 ...))]
                [tl-pat identifier (tl-pat-ele ...)]
@@ -722,7 +722,7 @@ bound by the left-hand side of the rule.
 All side-conditions provided with @scheme[side-condition] and
 @scheme[hidden-side-condition] are collected with @scheme[and] and
 used as guards on the case being matched. The argument to each
-side-condition should be a Scheme expression, and the pattern
+side-condition should be a Racket expression, and the pattern
 variables in the @|ttpattern| are bound in that expression. A
 @scheme[side-condition/hidden] form is the same as
 @scheme[side-condition], except that the side condition is not
@@ -901,8 +901,8 @@ all non-GUI portions of Redex) and also exported by
                ...)
              ([contract (code:line) 
                         (code:line id : @#,ttpattern ... -> @#,ttpattern)]
-              [extras (side-condition scheme-expression)
-                      (side-condition/hidden scheme-expression)
+              [extras (side-condition racket-expression)
+                      (side-condition/hidden racket-expression)
                       (where tl-pat @#,tttterm)
                       (where/hidden tl-pat @#,tttterm)]
               [tl-pat identifier (tl-pat-ele ...)]
@@ -1451,9 +1451,9 @@ filled in for the remaining colors.
 
 The @scheme[scheme-colors?] argument, if @scheme[#t] causes
 @scheme[traces] to color the contents of each of the windows according
-to DrScheme's Scheme mode color Scheme. If it is @scheme[#f],
+to DrRacket's Racket mode color scheme. If it is @scheme[#f],
 @scheme[traces] just uses black for the color scheme. 
-In addition, Scheme-mode parenthesis highlighting is
+In addition, Racket-mode parenthesis highlighting is
 enabled when @scheme[scheme-colors?]
 is @scheme[#t] and not when it is @scheme[#f].
 
@@ -1698,7 +1698,7 @@ Slideshow (see
 
 This section documents two classes of operations, one for
 direct use of creating postscript figures for use in papers
-and for use in DrScheme to easily adjust the typesetting:
+and for use in DrRacket to easily adjust the typesetting:
 @scheme[render-term],
 @scheme[render-language],
 @scheme[render-reduction-relation], 
@@ -1808,7 +1808,7 @@ other tools that combine picts together.
 
 If provided with one argument, @scheme[render-metafunction]
 produces a pict that renders properly in the definitions
-window in DrScheme. If given two arguments, it writes
+window in DrRacket. If given two arguments, it writes
 postscript into the file named by @scheme[filename] (which
 may be either a string or bytes).
 
@@ -2071,12 +2071,12 @@ single reduction relation.
 @deftech{Removing the pink background from PLT Redex rendered picts and ps files}
 
 When reduction rules, a metafunction, or a grammar contains
-unquoted Scheme code or side-conditions, they are rendered
+unquoted Racket code or side-conditions, they are rendered
 with a pink background as a guide to help find them and
 provide alternative typesettings for them. In general, a
 good goal for a PLT Redex program that you intend to typeset
 is to only include such things when they correspond to
-standard mathematical operations, and the Scheme code is an
+standard mathematical operations, and the Racket code is an
 implementation of those operations.
 
 To replace the pink code, use:
@@ -2174,7 +2174,7 @@ explanation of logical-space):
 @defproc[(lw? (v any/c)) boolean?]{}
 @defidform[lw]{}]]{
 
-The lw data structure corresponds represents a pattern or a Scheme
+The lw data structure corresponds represents a pattern or a Racket
 expression that is to be typeset.  The functions listed above
 construct @scheme[lw] structs, select fields out of them, and
 recognize them. The @scheme[lw] binding can be used with

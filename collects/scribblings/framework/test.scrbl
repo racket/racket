@@ -8,7 +8,7 @@
 
 The framework provides several new primitive functions that simulate
 user actions, which may be used to test applications.  You use these
-primitives and combine them just as regular MzScheme functions.  For
+primitives and combine them just as regular Racket functions.  For
 example, 
 @schemeblock[
 (test:keystroke #\A)

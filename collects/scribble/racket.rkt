@@ -487,7 +487,7 @@
                 (let ([i (cadr (syntax->list c))])
                   (set! src-col (or (syntax-column i) src-col))
                   (hash-set! next-col-map src-col dest-col)
-                  ((loop init-line! (+ quote-depth quote-delta) expr? #f) i))))]
+                  ((loop init-line! (max 0 (+ quote-depth quote-delta)) expr? #f) i))))]
            [(and (pair? (syntax-e c))
                  (or (not expr?) 
                      (positive? quote-depth)

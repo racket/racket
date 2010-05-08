@@ -61,12 +61,11 @@ all of the names in the tools library, for use defining keybindings
     These buttons are ``opt out'', meaning that if the language doesn't explicitly ask to not
     have this button (or all such buttons), the button will appear.
     
-    @section-index["drscheme:opt-out-toolbar-buttons"]
     See @racket[read-language] for more details on how language's specify how to opt out.
     DrRacket will invoke the @tt{get-info} proc from @racket[read-language] with
-    @tt{'drscheme:opt-out-toolbar-buttons}. If the result is a list of symbols, the
+    @indexed-scheme['drscheme:opt-out-toolbar-buttons]. If the result is a list of symbols, the
     listed symbols are opted out. If the result is @racket[#f], all buttons are opted
-    out. The default is the empty list, meaning that all opt-out buttons appear..
+    out. The default is the empty list, meaning that all opt-out buttons appear.
     })
  
  (proc-doc/names

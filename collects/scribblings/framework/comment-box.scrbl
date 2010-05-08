@@ -6,7 +6,7 @@
 
 @defclass[comment-box:snip% editor-snip:decorated% (readable-snip<%>)]{
   This snip implements the comment boxes that you see in
-  DrScheme.
+  DrRacket.
 
   @defmethod*[#:mode override (((make-editor) (is-a?/c text%)))]{
 

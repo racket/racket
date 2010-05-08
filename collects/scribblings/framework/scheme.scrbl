@@ -2,7 +2,7 @@
 @(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
-@title{Scheme}
+@title{Racket}
 
 @definterface[scheme:sexp-snip<%> ()]{
   @defmethod*[(((get-saved-snips) (listof snip%)))]{
@@ -35,7 +35,7 @@
   }
 }
 @definterface[scheme:text<%> (text:basic<%> mode:host-text<%> color:text<%>)]{
-  Texts matching this interface support Scheme mode operations.
+  Texts matching this interface support Racket mode operations.
   @defmethod*[(((get-limit (start exact-integer)) int))]{
 
     Returns a limit for backward-matching parenthesis starting at position
@@ -225,7 +225,7 @@
   }
 }
 @defmixin[scheme:text-mixin (text:basic<%> mode:host-text<%> color:text<%> text:autocomplete<%>) (scheme:text<%>)]{
-  This mixin adds functionality for editing Scheme files.
+  This mixin adds functionality for editing Racket files.
 
   The result of this mixin uses the same initialization arguments as the
   mixin's argument.
@@ -241,7 +241,7 @@
   implements this interface.
 }
 @defmixin[scheme:text-mode-mixin (color:text-mode<%> mode:surrogate-text<%>) (scheme:text-mode<%>)]{
-  This mixin adds Scheme mode functionality
+  This mixin adds Racket mode functionality
   to the mode that it is mixed into. The resulting
   mode assumes that it is only set to an editor
   that is the result of

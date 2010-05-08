@@ -9,8 +9,8 @@
 
 @defclass[drracket:rep:text% scheme:text% (drracket:rep:text<%>)]{
 
-This class implements a read-eval-print loop for DrScheme.  User
-submitted evaluations in DrScheme are evaluated asynchronously, in an
+This class implements a read-eval-print loop for DrRacket.  User
+submitted evaluations in DrRacket are evaluated asynchronously, in an
 eventspace created for the user. No evaluations carried out by this
 class affect the implementation that uses it.
 
@@ -52,7 +52,7 @@ are just ignored.
 @methspec{
 
 Use this function to evaluate code or run actions that should mimic
-the user's interactions. For example, DrScheme uses this function to
+the user's interactions. For example, DrRacket uses this function to
 evaluate expressions in the definitions window and expressions
 submitted at the prompt.
 
@@ -102,18 +102,18 @@ The @scheme[complete-program?] argument determines if the
   @method[drracket:language:language<%> front-end/interaction] method.
   When evaluation finishes, it calls @scheme[cleanup] on the user's main thread.
 
-  This method must be called from the drscheme main thread.
+  This method must be called from the DrRacket main thread.
 }
                  
 @defmethod[#:mode augment (after-many-evals) any]{
-  Called from the drscheme main thread after
+  Called from the DrRacket main thread after
   @method[drracket:rep:text% evaluate-from-port] finishes (no matter
   how it finishes).
 }
 
 @defmethod[#:mode augment (on-execute [run-on-user-thread (-> any)]) any]{
 
-  Called from the drscheme thread after the language's
+  Called from the DrRacket thread after the language's
   @method[drracket:language:language<%> on-execute]
   method has been invoked, and after the
   special values have been setup (the ones registered
@@ -220,7 +220,7 @@ See also
 @defmethod[(initialize-console)
            void?]{
 
-This inserts the ``Welcome to DrScheme'' message into the interactions
+This inserts the ``Welcome to DrRacket'' message into the interactions
 buffer, calls
 @method[drracket:rep:text% reset-console],
 @method[drracket:rep:text% insert-prompt], and 
@@ -263,7 +263,7 @@ Calls the super method.
            void?]{
 @methspec{
 
-This method queues thunks for drscheme's eventspace in a
+This method queues thunks for DrRacket's eventspace in a
 special output-related queue.
 }}
 
@@ -306,7 +306,7 @@ Calls @scheme[f], after switching to the user's thread.
            void?]{
 Shuts down the user's program and all windows. Reclaims any
 resources the program allocated.  It is expected to be
-called from DrScheme's main eventspace thread.
+called from DrRacket's main eventspace thread.
 
 }
 
@@ -316,7 +316,7 @@ This waits for all pending IO in the rep to finish
 and then returns.
 
 This method must only be called from the main thread in
-DrScheme's eventspace
+DrRacket's eventspace
 
 }
 
@@ -333,7 +333,7 @@ in the user's eventspace
 
 @defmixin[drracket:rep:drs-bindings-keymap-mixin (editor:keymap<%>) ()]{
 
-This mixin adds some drscheme-specific keybindings to the
+This mixin adds some DrRacket-specific keybindings to the
 editor it is mixed onto.
 
 
@@ -343,7 +343,7 @@ editor it is mixed onto.
            (listof (is-a?/c keymap%))]{
 
 Calls the super method and adds in a keymap with the
-drscheme-specific keybindings:
+DrRacket-specific keybindings:
 
 @itemize[
 @item{f5 - Run}
@@ -375,7 +375,7 @@ process the program.
 Tools that annotate the program text should augment this
 method to clear their own annotations on the program text.
 
-DrScheme calls this method before a program is run (via the
+DrRacket calls this method before a program is run (via the
 Run button).
 
 }
