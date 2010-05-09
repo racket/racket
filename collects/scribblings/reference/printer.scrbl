@@ -4,26 +4,38 @@
 
 @title[#:tag "printing" #:style 'quiet]{The Printer}
 
-The Racket printer support three modes:
+The Racket printer supports three modes:
 
 @itemlist[
 
- @item{@racket[print] mode by default prints most datatypes in such a
-       way that evaluating the output as an expression produces a
-       value that is @racket[equal?] to the printed value;}
-
  @item{@racket[write] mode prints core datatypes in such a way that
        using @racket[read] on the output produces a value that is
-       @racket[equal?] to the printed value; when
-       @racket[print-as-expression] is set to @racket[#f], then
-       @racket[print] mode is like @racket[write] mode;}
+       @racket[equal?] to the printed value;}
 
  @item{@racket[display] mode prints core datatypes is a form in a more
        ``end-user'' style rather than ``programmer' style; for
        example, a string @racket[display]s as its content characters
-       without surrounding @litchar{"}s or escapes.}
+       without surrounding @litchar{"}s or escapes;}
+
+ @item{@racket[print] mode by default---when
+       @scheme[print-as-expression] is @scheme[#t]---prints most
+       datatypes in such a way that evaluating the output as an
+       expression produces a value that is @racket[equal?] to the
+       printed value; when @racket[print-as-expression] is set to
+       @racket[#f], then @racket[print] mode is like @racket[write]
+       mode.}
 
 ]
+
+In @racket[print] mode when @racket[print-as-expression] is
+@scheme[#t] (as is the default), a value prints at a @deftech{quoting
+depth} of either @scheme[0] (unquoted) or @scheme[1] (quoted). The
+initial quoting depth is accepted as an optional argument by
+@racket[print], and printing of some compound datatypes adjusts the
+print depth for component values. For example, when a list is printed
+at quoting depth @scheme[0] and all of its elements are
+@deftech{quotable}, the list is printed with a @litchar{'} prefix, and
+the list's elements are printed at quoting depth @scheme[1].
 
 When the @scheme[print-graph] parameter is set to @scheme[#t], then
 the printer first scans an object to detect cycles. The scan traverses
@@ -43,16 +55,6 @@ With the exception of displaying byte strings, printing is defined in
 terms of Unicode characters; see @secref["ports"] for information
 on how a character stream is written to an port's underlying byte
 stream.
-
-In @racket[print] mode when @racket[print-as-expression] is
-@scheme[#t] (as is the default), a value prints at a @deftech{quoting
-depth} of either @scheme[0] (unquoted) or @scheme[1] (quoted). The
-initial quoting depth is accepted as an optional argument by
-@racket[print], and printing of some compound datatypes adjusts the
-print depth for component values. For example, when a list is printed
-at quoting depth @scheme[0] and all of its elements are
-@deftech{quotable}, the list is printed with a @litchar{'} prefix, and
-the list's elements are printed at quoting depth @scheme[1].
 
 
 @section[#:tag "print-symbol"]{Printing Symbols}
