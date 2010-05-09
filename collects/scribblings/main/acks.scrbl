@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
-          drscheme/acks
+          drracket/acks
           "private/utils.ss")
 
 @main-page['acks]

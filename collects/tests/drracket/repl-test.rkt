@@ -13,7 +13,7 @@ This produces an ACK message
 
 |#
 
-(require "drscheme-test-util.ss"
+(require "drracket-test-util.ss"
          mred
          framework)
 
@@ -59,7 +59,7 @@ This produces an ACK message
   (string-append
    (regexp-quote "#<syntax:")
    ".*"
-   (regexp-quote "tests/drscheme/repl-test-tmp")
+   (regexp-quote "tests/drracket/repl-test-tmp")
    "3?"
    (regexp-quote ".ss")))
 
@@ -1088,7 +1088,7 @@ This produces an ACK message
   #;
   (normal-case-path
    (normalize-path 
-    (collection-path "tests" "drscheme"))))
+    (collection-path "tests" "drracket"))))
 
 (define tmp-load-short-filename "repl-test-tmp.ss")
 (define tmp-load-filename (build-path tmp-load-directory tmp-load-short-filename))
@@ -1361,7 +1361,7 @@ This produces an ACK message
     (next-test)
     (clear-definitions drscheme-frame)
     (do-execute drscheme-frame)
-    (test:menu-select "Scheme" kill-menu-item)
+    (test:menu-select "Racket" kill-menu-item)
     (let ([win (wait-for-new-frame drscheme-frame)])
       (test:button-push "OK")
       (let ([drs2 (wait-for-new-frame win)])
@@ -1385,7 +1385,7 @@ This produces an ACK message
      "(define (f) (queue-callback f) (error 'ouch)) (f)")
     (do-execute drscheme-frame #f)
     (sleep 1/2)
-    (test:menu-select "Scheme" kill-menu-item)
+    (test:menu-select "Racket" kill-menu-item)
     (let ([win (wait-for-new-frame drscheme-frame null 360)])
       (test:button-push "OK")
       (let ([drs2 (wait-for-new-frame win)])

@@ -100,8 +100,8 @@
  (cond
    [(or prince-kuhio-day? kamehameha-day?)
     (set-splash-progress-bar? #f)
-    (let ([size ((dynamic-require 'drscheme/private/palaka 'palaka-pattern-size) 4)])
-      (vector (dynamic-require 'drscheme/private/honu-logo 'draw-honu) 
+    (let ([size ((dynamic-require 'drracket/private/palaka 'palaka-pattern-size) 4)])
+      (vector (dynamic-require 'drracket/private/honu-logo 'draw-honu) 
               size 
               size))]
    [texas-independence-day?
@@ -134,10 +134,10 @@
                      (label "Break All Threads")
                      (callback
                       (λ (x y)
-                        ((dynamic-require 'drscheme/private/key 'break-threads))))
+                        ((dynamic-require 'drracket/private/key 'break-threads))))
                      (parent f))])
         (send f show #t)))))
 
-(dynamic-require 'drscheme/tool-lib #f)
+(dynamic-require 'drracket/tool-lib #f)
 (shutdown-splash)
 (close-splash)

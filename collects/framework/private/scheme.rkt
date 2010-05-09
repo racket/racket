@@ -1186,7 +1186,7 @@
            (values lexeme type paren start end backup-delta mode)))))
     
     (define/override (put-file text sup directory default-name)
-      (parameterize ([finder:default-extension "ss"]
+      (parameterize ([finder:default-extension "rkt"]
                      [finder:default-filters '(["Racket Sources" "*.rkt;*.ss;*.scm"]
                                                ["Any" "*.*"])])
         ;; don't call the surrogate's super, since it sets the default extension

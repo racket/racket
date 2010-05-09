@@ -42,7 +42,7 @@ This file sets up the right lexical environment to invoke the tools that want to
   (syntax-case stx ()
     [(_ body tool-name)
      (let ()
-       (define tool-lib-src (build-path (collection-path "drscheme") "tool-lib.rkt"))
+       (define tool-lib-src (build-path (collection-path "drracket") "tool-lib.rkt"))
        (define full-sexp
          (call-with-input-file tool-lib-src
            (λ (port)

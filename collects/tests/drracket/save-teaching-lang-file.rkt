@@ -5,7 +5,7 @@
          framework/test
          framework/preferences)
 
-(require tests/drscheme/drscheme-test-util)
+(require tests/drracket/drracket-test-util)
 
 (fire-up-drscheme-and-run-tests
  (λ ()

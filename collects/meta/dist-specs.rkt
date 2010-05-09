@@ -353,7 +353,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
 mr-base := (package: "mred") (notes: "gracket") (bin: "mred-text") (collects: "afm/")
 mr-manuals := (doc+src: "gui/")
 
-dr-base := (package: "drscheme") (doc: "drracket") (notes: "drracket") (package: "framework")
+dr-base := (package: "drracket") (package: "drscheme") (package: "framework")
 dr-manuals := (doc+src: "tools/")
 
 ;; Misc hooks, to be added on by package rules below

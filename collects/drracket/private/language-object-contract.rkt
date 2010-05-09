@@ -85,7 +85,7 @@
                (define id (reconstitute #,ctc provide?))
                #,@(if (syntax-e #'provide?)
                       (list 
-                       #`(require/doc drscheme/private/recon)
+                       #`(require/doc drracket/private/recon)
                        #`(provide/doc
                           (thing-doc id
                                      contract?

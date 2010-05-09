@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "drscheme-test-util.ss"
+(require "drracket-test-util.ss"
          scheme/class
          scheme/path
          scheme/gui/base
@@ -21,7 +21,7 @@
   (let ([tp-names
          (let ([teachpack-path (normal-case-path
                                 (normalize-path
-                                 (collection-path "tests" "drscheme")))])
+                                 (collection-path "tests" "drracket")))])
            (let loop ([tp-exps tp-exps]
                       [n 0])
              (cond
@@ -63,7 +63,7 @@
   (let ([tp-name (normal-case-path
                   (normalize-path
                    (build-path
-                    (collection-path "tests" "drscheme")
+                    (collection-path "tests" "drracket")
                     "teachpack-tmp.ss")))])
     (call-with-output-file tp-name
       (lambda (port) (display tp-exp port))
@@ -93,7 +93,7 @@
   (let ([tp-name (normal-case-path
                   (normalize-path
                    (build-path
-                    (collection-path "tests" "drscheme")
+                    (collection-path "tests" "drracket")
                     "teachpack-tmp.ss")))])
     (call-with-output-file tp-name
       (lambda (port) (display tp-exp port))

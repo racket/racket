@@ -141,7 +141,7 @@
                            (if (vector? info-result)
                                'hash-lang-racket
                                (get-lang-name pos))
-                           'drscheme/private/module-language-tools)
+                           'drracket/private/module-language-tools)
                  ((if (vector? info-result)
                       (vector-ref info-result 0)
                       info-result)

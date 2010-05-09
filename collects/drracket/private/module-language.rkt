@@ -212,11 +212,11 @@
                (case annotations
                  [(none)
                   (use-compiled-file-paths
-                   (cons (build-path "compiled" "drscheme")
+                   (cons (build-path "compiled" "drracket")
                          (use-compiled-file-paths)))]
                  [(debug)
                   (use-compiled-file-paths
-                   (cons (build-path "compiled" "drscheme" "errortrace")
+                   (cons (build-path "compiled" "drracket" "errortrace")
                          (use-compiled-file-paths)))]))
              
              (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))

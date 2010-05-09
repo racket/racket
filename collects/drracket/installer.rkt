@@ -14,8 +14,8 @@
   (define (install-variation variant)
     (parameterize ([current-launcher-variant variant])
       (make-mred-launcher
-       (list "-ZmvqL" "drscheme.rkt" "drscheme")
+       (list "-ZmvqL" "drracket.rkt" "drracket")
        (mred-program-launcher-path "DrScheme")
        (cons
-        `(exe-name . "DrScheme")
-        (build-aux-from-path (build-path (collection-path "drscheme") "drscheme"))))))
+        `(exe-name . "DrRacket")
+        (build-aux-from-path (build-path (collection-path "drracket") "drracket"))))))

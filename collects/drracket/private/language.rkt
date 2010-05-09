@@ -279,9 +279,7 @@
              [enable-fraction-style 
               (lambda ()
                 (let ([on? (member (send output-style get-selection) '(0 1))])
-                  (send fraction-style enable on?)
-                  (send show-sharing enable on?)
-                  (send insert-newlines enable on?)))]
+                  (send fraction-style enable on?)))]
              [show-sharing (make-object check-box%
                              (string-constant sharing-printing-label)
                              output-panel
@@ -1138,7 +1136,7 @@
       ((if gui? make-mred-launcher make-mzscheme-launcher)
        (list
         (path->string
-         (build-path (collection-path "drscheme" "private") 
+         (build-path (collection-path "drracket" "private") 
                      (if gui? 
                          "launcher-mred-bootstrap.rkt"
                          "launcher-mz-bootstrap.rkt")))

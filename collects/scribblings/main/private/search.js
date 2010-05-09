@@ -194,8 +194,8 @@ function InitializeSearch() {
         +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
         +MakeContextQueryItem("M:", "Bindings")
         +MakeContextQueryItem("T:reference", "Reference manual")
-        +MakeContextQueryItem("M:scheme", "{{scheme}} bindings")
-        +MakeContextQueryItem("M:scheme/base", "{{scheme/base}} bindings")
+        +MakeContextQueryItem("M:racket", "{{racket}} bindings")
+        +MakeContextQueryItem("M:racket/base", "{{racket/base}} bindings")
         +'</ul>'
       +'</div>'
       +MakeChevrons(1,

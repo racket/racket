@@ -2,11 +2,11 @@
 @(begin
 (require scribble/manual
          (for-label scheme/gui/base)
-         (for-label drscheme/tool-lib)
+         (for-label drracket/tool-lib)
          (for-label scheme/unit scheme/contract scheme/class)
          (for-label scheme/base)
          (for-label framework/framework)
-         (for-label drscheme/syncheck-drracket-button))
+         (for-label drracket/syncheck-drracket-button))
 
 (define (File x) @tt[x])
 (define (FileFirst x) @tt[x]) ;; indexing missing
@@ -19,7 +19,7 @@
 
 @author["Robert Bruce Findler"]
 
-@(defmodule drscheme/tool-lib)
+@defmodule*[(drracket/tool-lib drscheme/tool-lib)]
 
 This manual describes DrRacket's tools interface. It assumes
 familiarity with 
@@ -29,6 +29,10 @@ DrRacket, as described in
 @(other-manual '(lib "scribblings/drracket/drracket.scrbl")),
 and the Framework, as described in
 @(other-manual '(lib "scribblings/framework/framework.scrbl")).
+
+The @racketmodname[drscheme/tool-lib] library is for backward
+compatibility; it exports all of the bindings of
+@racketmodname[drracket/tool-lib].
 
 @table-of-contents[]
 
@@ -163,7 +167,7 @@ then the same collection would be expected to contain a
 @File{tool.rkt} file. It might contain something like this:
 @schememod[
 scheme/gui
-(require drscheme/tool)
+(require drracket/tool)
 
 (provide tool@)
 
@@ -477,7 +481,7 @@ for a list of the capabilities registered by default.
 
 Check Syntax is a part of the DrRacket collection, but is implemented via the tools API.
 
-@defmodule[drscheme/syncheck-drracket-button]
+@defmodule[drracket/syncheck-drracket-button]
 
 @defthing[syncheck-drracket-button
           (list/c 
