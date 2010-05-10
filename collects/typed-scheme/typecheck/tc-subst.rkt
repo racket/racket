@@ -126,12 +126,14 @@
                 [#:arr dom rng rest drest kws
                        ;; here we have to increment the count for the domain, where the new bindings are in scope
                        (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
-                              [st* (lambda (t) (for-type (+ arg-count k) t))])
-                         (make-arr (map for-type dom)
-                                   (st* rng)
-                                   (and rest (for-type rest))
-                                   (and drest (cons (for-type (car drest)) (cdr drest)))
-                                   (map for-type kws)))]))
+                              [st* (lambda (t) (index-free-in? (+ arg-count k) t))])
+                         (for-each for-type dom)
+                         (st* rng)
+                         (and rest (for-type rest))
+                         (and drest (for-type (car drest)))
+                         (for-each for-type kws)
+                         ;; dummy return value
+                         (make-arr* null Univ))]))
    (for-type type)
     #f))
 
