@@ -10,7 +10,7 @@
                   parse-type)
 	 (typecheck typechecker)
 	 (rep type-rep filter-rep object-rep)
-         (rename-in (types utils union convenience abbrev)
+         (rename-in (types utils union convenience abbrev filter-ops)
                     [Un t:Un]
                     [true-lfilter -true-lfilter]
                     [true-filter -true-filter]
@@ -45,8 +45,8 @@
 
 (define (-path t var [p null])
   (ret t
-       (-FS (list (make-NotTypeFilter (-val #f) p var))
-            (list (make-TypeFilter (-val #f) p var)))
+       (-FS (make-NotTypeFilter (-val #f) p var)
+            (make-TypeFilter (-val #f) p var))
        (make-Path p var)))
 
 
@@ -163,10 +163,10 @@
         [tc-e (let: ([x : Number 5]) x) #:proc (get-let-name x 0 (-path -Number #'x))]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -Pos]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y))) 
-              #:proc (syntax-parser [(_ ([(_ y) . _]) . _) (ret -Boolean (-FS (list (make-TypeFilter (-val #f) null #'y)) null))])]
+              #:proc (syntax-parser [(_ ([(_ y) . _]) . _) (ret -Boolean (-FS (make-TypeFilter (-val #f) null #'y) -top))])]
         [tc-e/t (values 3) -Pos]
         [tc-e (values) #:ret (ret null)]
-        [tc-e (values 3 #f) #:ret (ret (list -Pos (-val #f)) (list (-FS (list) (list (make-Bot))) (-FS (list (make-Bot)) (list))))]
+        [tc-e (values 3 #f) #:ret (ret (list -Pos (-val #f)) (list (-FS -top -bot) (-FS -bot -top)))]
         [tc-e (map #{values @ Symbol} '(a b c)) (-pair Sym (make-Listof  Sym))]
         [tc-e (letrec: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                        (fact 20))
@@ -182,7 +182,7 @@
               N]
         [tc-e (let: ([v : (Un Number Boolean) #f])
                     (if (boolean? v) 5 (+ v 1)))
-              #:proc (get-let-name v 0 (ret N (-FS null (list (make-NotTypeFilter -Boolean null #'v)))))]
+              #:proc (get-let-name v 0 (ret N (-FS -top (make-NotTypeFilter -Boolean null #'v))))]
         [tc-e (let: ([f : (Number Number -> Number) +]) (f 3 4)) N]
         [tc-e (let: ([+ : (Boolean -> Number) (lambda: ([x : Boolean]) 3)]) (+ #f)) N]
         [tc-e (when #f #t) -Void]
@@ -202,9 +202,9 @@
         [tc-e/t (begin0 #t) (-val #t)]
         [tc-e/t (begin0 #t 3) (-val #t)]
         [tc-e/t #t (-val #t)]
-        [tc-e #f #:ret (ret (-val #f) (-FS (list (make-Bot)) null))]
+        [tc-e #f #:ret (ret (-val #f) (-FS -bot -top))]
         [tc-e/t '#t (-val #t)]
-        [tc-e '#f #:ret (ret (-val #f) (-FS (list (make-Bot)) null))]
+        [tc-e '#f #:ret (ret (-val #f) (-FS -bot -top))]
         [tc-e/t (if #f 'a 3) -Pos]
         [tc-e/t (if #f #f #t) (t:Un (-val #t))]
         [tc-e (when #f 3) -Void]
@@ -246,12 +246,12 @@
               N]
         
         [tc-e (let ([x 1]) x) #:proc (get-let-name x 0 (-path -Pos #'x))]
-        [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS (list (make-Bot)) null))]
-        [tc-e (boolean? number?) #:ret (ret -Boolean (-FS (list (make-Bot)) null))]
+        [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS -bot -top))]
+        [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot -top))]
         
         [tc-e (let: ([x : (Option Number) #f]) x) #:proc (get-let-name x 0 (-path (t:Un N (-val #f)) #'x))]
         [tc-e (let: ([x : Any 12]) (not (not x)))
-              #:proc (get-let-name x 0 (ret -Boolean (-FS (list (make-NotTypeFilter (-val #f) null #'x)) (list (make-TypeFilter (-val #f) null #'x)))))]
+              #:proc (get-let-name x 0 (ret -Boolean (-FS (make-NotTypeFilter (-val #f) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         
         [tc-e (let: ([x : (Option Number) #f])
                     (if (let ([z 1]) x)
@@ -324,10 +324,10 @@
         ;; eq? as predicate
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (eq? x 'foo) 3 x)) 
-              #:proc (get-let-name x 0 (ret N (-FS (list) (list (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+              #:proc (get-let-name x 0 (ret N (-FS -top (-and (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (eq? 'foo x) 3 x))
-              #:proc (get-let-name x 0 (ret N (-FS (list) (list (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+              #:proc (get-let-name x 0 (ret N (-FS -top (-and (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
         
         [tc-err (let: ([x : (U String 'foo) 'foo])
                       (if (string=? x 'foo)
@@ -343,30 +343,30 @@
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? x sym) 3 x))
               #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                     (ret -Pos (-FS (list) (list (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
+                                     (ret -Pos (-FS -top (-and (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? sym x) 3 x))
                #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                      (ret -Pos (-FS (list) (list (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
+                                      (ret -Pos (-FS -top (-and (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
         ;; equal? as predicate for symbols
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? x 'foo) 3 x))
-                #:proc (get-let-name x 0 (ret N (-FS (list) (list (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+                #:proc (get-let-name x 0 (ret N (-FS -top (-and (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? 'foo x) 3 x))
-                #:proc (get-let-name x 0 (ret N (-FS (list) (list (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+                #:proc (get-let-name x 0 (ret N (-FS -top (-and (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
         
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? x sym) 3 x))
                #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                      (ret -Pos (-FS (list) (list (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
+                                      (ret -Pos (-FS -top (-and (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? sym x) 3 x))
               #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                     (ret -Pos (-FS (list) (list (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
+                                     (ret -Pos (-FS -top (-and (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
         
         [tc-e (let: ([x : (Listof Symbol)'(a b c)])
                     (cond [(memq 'a x) => car]
@@ -401,25 +401,25 @@
         
         ;;; tests for and
         [tc-e (let: ([x : Any 1]) (and (number? x) (boolean? x))) 
-              #:ret (ret B (-FS (list (make-Bot)) null))]
+              #:ret (ret B (-FS -bot -top))]
         [tc-e (let: ([x : Any 1]) (and (number? x) x))
               #:proc (get-let-name x 0 (ret (t:Un N (-val #f)) (-FS 
-                                                                (list (make-TypeFilter N null #'x) (make-NotTypeFilter (-val #f) null #'x))
-                                                                (list (make-ImpFilter
-                                                                       (list (make-NotTypeFilter (-val #f) null #'x))
-                                                                       (list (make-NotTypeFilter N null #'x)))
+                                                                (-and (make-TypeFilter N null #'x) (make-NotTypeFilter (-val #f) null #'x))
+                                                                (-and (make-ImpFilter
+                                                                       (make-NotTypeFilter (-val #f) null #'x)
+                                                                       (make-NotTypeFilter N null #'x))
                                                                       (make-ImpFilter
-                                                                       (list (make-TypeFilter N null #'x))
-                                                                       (list (make-TypeFilter (-val #f) null #'x)))))))]
+                                                                       (make-TypeFilter N null #'x)
+                                                                       (make-TypeFilter (-val #f) null #'x))))))]
         [tc-e (let: ([x : Any 1]) (and x (boolean? x)))
-              #:proc (get-let-name x 0 (ret -Boolean (-FS (list (make-NotTypeFilter (-val #f) null #'x) (make-TypeFilter -Boolean null #'x))
-                                                           (list
+              #:proc (get-let-name x 0 (ret -Boolean (-FS (-and (make-NotTypeFilter (-val #f) null #'x) (make-TypeFilter -Boolean null #'x))
+                                                           (-and
                                                             (make-ImpFilter
-                                                             (list (make-TypeFilter B null #'x))
-                                                             (list (make-TypeFilter (-val #f) null #'x)))
+                                                             (make-TypeFilter B null #'x)
+                                                             (make-TypeFilter (-val #f) null #'x))
                                                             (make-ImpFilter
-                                                             (list (make-NotTypeFilter (-val #f) null #'x))
-                                                             (list (make-NotTypeFilter B null #'x)))))))]
+                                                              (make-NotTypeFilter (-val #f) null #'x)
+                                                              (make-NotTypeFilter B null #'x))))))]
         
         [tc-e/t (let: ([x : Any 3])
                       (if (and (list? x) (not (null? x)))
@@ -468,8 +468,8 @@
                       x 0 
                       (ret Univ
                            (-FS 
-                            null
-                            (list (make-NotTypeFilter -Boolean null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+                            -top
+                            (-and (make-NotTypeFilter -Boolean null #'x) (make-TypeFilter (-val #f) null #'x)))))]
         
         ;; T-AbsPred
         [tc-e/t (let ([p? (lambda: ([x : Any]) (number? x))])
@@ -486,7 +486,7 @@
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
                 ;(t:-> Univ Univ : (-FS (list (-not-filter (-val #f))) (list (-filter (-val #f)))) : (make-Path null 0))]
-                (make-pred-ty Univ Univ (-val #f) 0 null)]
+                (make-pred-ty (list Univ) Univ (-val #f) 0 null)]
         [tc-e/t (let* ([z (ann 1 : Any)]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -500,7 +500,7 @@
                   (lambda: ([x : Any]) (if (p? x) x 12)))
                 (t:-> Univ Univ)]
         
-        [tc-e (not 1) #:ret (ret B (-FS (list (make-Bot)) null))]
+        [tc-e (not 1) #:ret (ret B (-FS -bot -top))]
         
         [tc-err ((lambda () 1) 2)]
         [tc-err (apply (lambda () 1) '(2))]
@@ -654,9 +654,8 @@
         ;; instantiating non-dotted terms
         [tc-e/t (inst (plambda: (a) ([x : a]) x) Integer)
                 (make-Function (list (make-arr* (list -Integer) -Integer
-                                                #:names (list #'x)
-                                                #:filters (-FS (-not-filter (-val #f) #'x)
-                                                               (-filter (-val #f) #'x)) 
+                                                #:filters (-FS (-not-filter (-val #f) 0)
+                                                               (-filter (-val #f) 0))
                                                 #:object (make-Path null #'x))))]
         [tc-e/t (inst (plambda: (a) [x : a *] (apply list x)) Integer)
                 ((list) -Integer . ->* . (-lst -Integer))]
