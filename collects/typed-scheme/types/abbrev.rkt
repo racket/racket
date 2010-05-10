@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket/base
 
 (require "../utils/utils.rkt")
 
@@ -8,7 +8,7 @@
          scheme/list
          scheme/match         
          scheme/promise
-         scheme/flonum
+         scheme/flonum (except-in scheme/contract ->* ->)
          unstable/syntax
          (prefix-in c: scheme/contract)
          (for-syntax scheme/base syntax/parse)
