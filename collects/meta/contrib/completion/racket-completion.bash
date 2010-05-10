@@ -89,6 +89,18 @@ _raco_planet()
     COMPREPLY=( $(compgen -W "${planetcmds}" -- ${cur}) )
 }
 
+raco_cmds=$()
+
+_raco_help()
+{
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    if [ ${#raco_cmds[@]} -eq 0 ]; then
+      # removing the empty string on the next line breaks things.  such as my brain.
+      raco_cmds=$( echo '' 'help' ;  for x in `racket -e '(begin (require raco/all-tools) (for ([(k v) (all-tools)]) (printf "~a\n" k)))'` ; do echo ${x} ; done )
+    fi
+    COMPREPLY=( $(compgen -W "${raco_cmds}" -- ${cur}) )
+}
+
 _raco()
 {
     COMPREPLY=()
@@ -101,8 +113,8 @@ _raco()
 
     if [ $COMP_CWORD -eq 1 ]; then
       # removing the empty string on the next line breaks things.  such as my brain.
-      local cmds=$( echo '' '--help' ;  for x in `racket -e '(begin (require raco/all-tools) (for ([(k v) (all-tools)]) (printf "~a\n" k)))'` ; do echo ${x} ; done )
-      COMPREPLY=($(compgen -W "${cmds}" -- ${cur}))  
+      raco_cmds=$( echo '' 'help' ;  for x in `racket -e '(begin (require raco/all-tools) (for ([(k v) (all-tools)]) (printf "~a\n" k)))'` ; do echo ${x} ; done )
+      COMPREPLY=($(compgen -W "${raco_cmds}" -- ${cur}))  
     elif [ $COMP_CWORD -eq 2 ]; then
       # Here we'll handle the main raco commands
       local prev="${COMP_WORDS[1]}"
@@ -120,7 +132,8 @@ _raco()
         planet)
           _raco_planet
           ;;
-        --help)
+        help)
+          _raco_help
           ;;
         *)
           _filedir
