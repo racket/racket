@@ -1,4 +1,3 @@
-
 #include <windows.h>
 
 static int warned;
