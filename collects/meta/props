@@ -1171,8 +1171,8 @@ path/s is either such a string or a list of them.
 "collects/redex/tests/run-tests.rkt" drdr:command-line "mred-text ~s --examples --no-bitmaps" drdr:timeout 300
 "collects/redex/tests/term-test.rkt" drdr:command-line "mzc ~s"
 "collects/redex/tests/tl-test.rkt" drdr:command-line "mzc ~s"
-"collects/repos-time-stamp" responsible (eli)
-"collects/repos-time-stamp/time-stamp.rkt" drdr:command-line "mred-text -t ~s"
+"collects/repo-time-stamp" responsible (eli)
+"collects/repo-time-stamp/time-stamp.rkt" drdr:command-line "mred-text -t ~s"
 "collects/rnrs" responsible (mflatt)
 "collects/s-exp" responsible (mflatt eli)
 "collects/scheme" responsible (mflatt sstrickl samth robby eli)
@@ -1337,7 +1337,7 @@ path/s is either such a string or a list of them.
 "collects/tests/deinprogramm/image.rkt" drdr:command-line "mred-text -t ~s"
 "collects/tests/deinprogramm/run-image-test.rkt" drdr:command-line "mred-text -t ~s"
 "collects/tests/drracket" responsible (robby)
-"collects/tests/drracket/drscheme-test-util.rkt" drdr:command-line "mred -t ~s"
+"collects/tests/drracket/drracket-test-util.rkt" drdr:command-line "mred -t ~s"
 "collects/tests/drracket/io.rkt" drdr:command-line "mred ~s"
 "collects/tests/drracket/language-test.rkt" drdr:command-line "mred ~s" drdr:timeout 600
 "collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line "mred-text -t ~s"
