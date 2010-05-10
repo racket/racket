@@ -74,10 +74,11 @@
     (define (check-body)
       (with-lexical-env/extend 
        arg-list arg-types
-       (make lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null rest-ty 
-                        ;; make up a fake name if none exists, this is an error case anyway
-                        (cons (or rest (generate-temporary)) drest)
-                        (tc-exprs/check (syntax->list body) ret-ty))))
+       (lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null 
+                   (and rest-ty (list (or rest (generate-temporary)) rest-ty))
+                   ;; make up a fake name if none exists, this is an error case anyway
+                   (and drest (cons (or rest (generate-temporary)) drest))
+                   (tc-exprs/check (syntax->list body) ret-ty))))
     (when (or (not (= arg-len tys-len))
               (and (or rest-ty drest) (not rest)))
       (tc-error/delayed (expected-str tys-len rest-ty drest arg-len rest)))
@@ -165,7 +166,7 @@
              (make lam-result
                    (map list arg-list arg-types)
                    null
-                   rest-type
+                   (list #'rest rest-type)
                    #f
                    (tc-exprs (syntax->list body)))))]))]))
 
