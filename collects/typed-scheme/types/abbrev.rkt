@@ -268,7 +268,15 @@
 
 (d/c (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
-     (make-TypeFilter t p i))
+     (if (type-equal? Univ t) 
+         -top
+         (make-TypeFilter t p i)))
+
+(d/c (-not-filter t i [p null])
+     (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
+     (if (type-equal? (make-Union null) t)
+         -top
+         (make-NotTypeFilter t p i)))
 
 (define (-filter-at t o)
   (match o
@@ -278,11 +286,6 @@
   (match o
     [(Path: p i) (-not-filter t i p)]
     [_ -top]))
-
-
-(d/c (-not-filter t i [p null])
-     (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
-     (make-NotTypeFilter t p i))
 
 (define (asym-pred dom rng filter)
   (make-Function (list (make-arr* (list dom) rng #:filters filter))))

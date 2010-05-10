@@ -69,10 +69,10 @@
   (filter-case (#:Type sb-t #:Filter rec) f
                [#:TypeFilter 
                 t p (lookup: idx)
-                (make-TypeFilter t p idx)]
+                (-filter t idx p)]
                [#:NotTypeFilter
                 t p (lookup: idx)
-                (make-NotTypeFilter t p idx)]))
+                (-filter t idx p)]))
 
 (define (merge-filter-sets fs)
   (match fs

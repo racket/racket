@@ -42,8 +42,8 @@
                                 (for/list ([n names]
                                            [f+ fs+]
                                            [f- fs-])
-                                  (list (make-ImpFilter (make-NotTypeFilter (-val #f) null n) f+)
-                                        (make-ImpFilter (make-TypeFilter (-val #f) null n) f-)))))]))))
+                                  (list (make-ImpFilter (-not-filter (-val #f) n) f+)
+                                        (make-ImpFilter (-filter (-val #f) n) f-)))))]))))
      ;; extend the lexical environment for checking the body
   (with-lexical-env/extend/props
    ;; the list of lists of name

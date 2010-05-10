@@ -27,30 +27,30 @@
   (match* ((resolve t) lo)
     ;; pair ops
     [((Pair: t s) (TypeFilter: u (list rst ... (CarPE:)) x))
-     (make-Pair (update t (make-TypeFilter u rst x)) s)]
+     (make-Pair (update t (-filter u x rst)) s)]
     [((Pair: t s) (NotTypeFilter: u (list rst ... (CarPE:)) x))
-     (make-Pair (update t (make-NotTypeFilter u rst x)) s)]
+     (make-Pair (update t (-not-filter u x rst)) s)]
     [((Pair: t s) (TypeFilter: u (list rst ... (CdrPE:)) x))
-     (make-Pair t (update s (make-TypeFilter u rst x)))]
+     (make-Pair t (update s (-filter u x rst)))]
     [((Pair: t s) (NotTypeFilter: u (list rst ... (CdrPE:)) x))
-     (make-Pair t (update s (make-NotTypeFilter u rst x)))]
+     (make-Pair t (update s (-not-filter u x rst)))]
     
     ;; syntax ops
     [((Syntax: t) (TypeFilter: u (list rst ... (SyntaxPE:)) x))
-     (make-Syntax (update t (make-TypeFilter u rst x)))]
+     (make-Syntax (update t (-filter u x rst)))]
     [((Syntax: t) (NotTypeFilter: u (list rst ... (SyntaxPE:)) x))
-     (make-Syntax (update t (make-NotTypeFilter u rst x)))]
+     (make-Syntax (update t (-not-filter u x rst)))]
     
     ;; struct ops
     [((Struct: nm par flds proc poly pred cert acc-ids maker-id) 
       (TypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))     
      (make-Struct nm par 
                   (replace-nth flds idx 
-                               (lambda (e) (update e (make-TypeFilter u rst x))))
+                               (lambda (e) (update e (-filter u x rst))))
                   proc poly pred cert acc-ids maker-id)]
     [((Struct: nm par flds proc poly pred cert acc-ids maker-id) 
       (NotTypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))
-     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-NotTypeFilter u rst x)))) proc poly pred cert acc-ids maker-id)]
+     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (-not-filter u x rst)))) proc poly pred cert acc-ids maker-id)]
     
     ;; otherwise
     [(t (TypeFilter: u (list) _))

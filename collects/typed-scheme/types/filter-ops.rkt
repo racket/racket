@@ -69,7 +69,7 @@
           [(and p (TypeFilter: t1 f1 x) (? (lambda _ or?)))
            (hash-update! tf-map
                          (list f1 (hash-name-ref x))
-                         (match-lambda [(TypeFilter: t2 _ _) (make-TypeFilter (Un t1 t2) f1 x)]
+                         (match-lambda [(TypeFilter: t2 _ _) (-filter (Un t1 t2) x f1)]
                                        [p (int-err "got something that isn't a typefilter ~a" p)])
                          p)
            (loop (cdr props) others)]
@@ -80,16 +80,17 @@
               (list -bot)]
              [(TypeFilter: t2 _ _)
               (hash-set! tf-map (list f1 (hash-name-ref x))
-                         (make-TypeFilter (restrict t1 t2) f1 x))
+                         (-filter (restrict t1 t2) x f1))
               (loop (cdr props) others)]
              [#f
               (hash-set! tf-map (list f1 (hash-name-ref x))
-                         (make-TypeFilter t1 f1 x))
+                         (-filter t1 x f1))
               (loop (cdr props) others)])]
           [(and p (NotTypeFilter: t1 f1 x) (? (lambda _ (not or?))))
            (hash-update! ntf-map
                          (list f1 (hash-name-ref x))
-                         (match-lambda [(NotTypeFilter: t2 _ _) (make-NotTypeFilter (Un t1 t2) f1 x)]
+                         (match-lambda [(NotTypeFilter: t2 _ _) 
+                                        (-not-filter (Un t1 t2) x f1)]
                                        [p (int-err "got something that isn't a nottypefilter ~a" p)])
                          p)
            (loop (cdr props) others)]

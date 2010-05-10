@@ -141,8 +141,8 @@
 (define (tc-id id)
   (let* ([ty (lookup-type/lexical id)])
     (ret ty
-         (make-FilterSet (make-NotTypeFilter (-val #f) null id) 
-                         (make-TypeFilter (-val #f) null id))
+         (make-FilterSet (-not-filter (-val #f) id) 
+                         (-filter (-val #f) id))
          (make-Path null id))))
 
 ;; typecheck an expression, but throw away the effect

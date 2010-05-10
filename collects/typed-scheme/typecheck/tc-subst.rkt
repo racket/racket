@@ -80,8 +80,8 @@
        (cond [(name-ref=? i k)
 	      (maker
 	       (subst-type t k o polarity)
-	       (append p p*) 
-	       i*)]
+	       i*
+               (append p p*))]
 	     [(index-free-in? k t) (if polarity -top -bot)]
 	     [else f])]))
   (match f
@@ -92,9 +92,9 @@
     [(Bot:) -bot]
     [(Top:) -top]
     [(TypeFilter: t p i)
-     (tf-matcher t p i k o polarity make-TypeFilter)]
+     (tf-matcher t p i k o polarity -filter)]
     [(NotTypeFilter: t p i)
-     (tf-matcher t p i k o polarity make-NotTypeFilter)]))
+     (tf-matcher t p i k o polarity -not-filter)]))
 
 (define (index-free-in? k type)
   (let/ec 
