@@ -124,7 +124,8 @@
    (FAIL (-poly (a b) (-> a a)) (-poly (a b) (-> a b)))
    
    ;; polymorphic function types should be subtypes of the function top
-   [(-poly (a) (a . -> . a)) top-func]   
+   [(-poly (a) (a . -> . a)) top-func]
+   (FAIL (-> Univ) (null Univ . ->* . Univ))
 
    [(cl->* (-Number . -> . -String) (-Boolean . -> . -String)) ((Un -Boolean -Number) . -> . -String)]
    ))
