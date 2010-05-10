@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (require "test-utils.ss"
          (for-syntax scheme/base)
@@ -156,9 +156,9 @@
         [tc-e/t #(2 3 #t) (make-Vector (t:Un -Pos (-val #t)))]
         [tc-e/t '(#t #f) (-lst* (-val #t) (-val #f))]
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
-                (make-Poly '(a) (t:-> (make-Listof  (-v a)) (-v a)))]
+                (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
-              (make-Poly '(a) (t:-> (make-Listof  (-v a)) (-v a)))]
+                (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
         [tc-e/t (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (t:-> N N N)]
         [tc-e (let: ([x : Number 5]) x) #:proc (get-let-name x 0 (-path -Number #'x))]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -Pos]
@@ -215,8 +215,8 @@
               -Pos]
         [tc-e/t (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list N) N N)]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3) N]
-        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) N]
-        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) N]
+        [tc-e/t ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) N]
+        [tc-e/t ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) N]
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4)) N]
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4 6 7)) N]
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '()) N]
@@ -793,7 +793,7 @@
         (tc-e (or (string->number "7") 7) 
               #:ret (ret -Number -true-filter))
         [tc-e (let ([x 1]) (if x x (add1 x))) 
-              #:ret (ret -Pos -true-filter)]
+              #:ret (ret -Pos (-FS -top -bot))]
         [tc-e (let: ([x : (U (Vectorof Number) String) (vector 1 2 3)])
                 (if (vector? x) (vector-ref x 0) (string-length x)))
          -Number]
