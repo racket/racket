@@ -638,7 +638,7 @@
   ;; the last round, and #f means no desc
   (define desc-order '(part mod libs delayed #f))
   ;; this defines an imposed ordering for module names
-  (define lib-order '(#rx"^scheme(?:/|$)" #rx"^r.rs(?:/|$)" #rx"^lang(?:/|$)"))
+  (define lib-order '(#rx"^racket(?:/|$)" #rx"^r.rs(?:/|$)" #rx"^lang(?:/|$)"))
   (define (lib<? lib1 lib2)
     (define (lib-level lib)
       (let loop ([i 0] [rxs lib-order])
