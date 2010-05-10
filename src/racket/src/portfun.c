@@ -3697,8 +3697,10 @@ static Scheme_Object *sch_default_global_port_print_handler(int argc, Scheme_Obj
 {
   if (!SCHEME_OUTPUT_PORTP(argv[1]))
     scheme_wrong_type("default-global-port-print-handler", "output-port", 1, argc, argv);
-  if ((argc > 2) && !scheme_nonneg_exact_p(argv[2]))
-    scheme_wrong_type("default-global-port-print-handler", "non-negative exact integer", 
+  if ((argc > 2) 
+      && !SAME_OBJ(argv[2], scheme_make_integer(0))
+      && !SAME_OBJ(argv[2], scheme_make_integer(1)))
+    scheme_wrong_type("default-global-port-print-handler", "0 or 1", 
                       2, argc, argv);
 
   if (argc == 2) {
@@ -3772,8 +3774,9 @@ display_write(char *name,
     
     if (argc > 2) {
       h = argv[2];
-      if (!scheme_nonneg_exact_p(h))
-        scheme_wrong_type(name, "non-negative exact integer", 2, argc, argv);
+      if (!SAME_OBJ(h, scheme_make_integer(0))
+          && !SAME_OBJ(h, scheme_make_integer(1)))
+        scheme_wrong_type(name, "0 or 1", 2, argc, argv);
     } else
       h = scheme_make_integer(0);
 

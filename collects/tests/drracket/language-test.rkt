@@ -14,7 +14,7 @@ the settings above should match r5rs
 |#
 
 
-(require "drscheme-test-util.ss"
+(require "drracket-test-util.ss"
          tests/utils/gui
          mred
          framework
@@ -86,7 +86,7 @@ the settings above should match r5rs
     (test-expression "true" "#t")
     (test-expression "mred^" "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: mred^")
     (test-expression "(eq? 'a 'A)" "#f")
-    (test-expression "(set! x 1)" "{stop-multi.png} {stop-22x22.png} set!: cannot set undefined identifier: x")
+    (test-expression "(set! x 1)" "{stop-multi.png} {stop-22x22.png} set!: cannot set undefined variable: x")
     (test-expression "(define qqq 2) (set! qqq 1)" "")
     (test-expression "(cond [(= 1 2) 3])" "")
     (test-expression "(cons 1 2)" "(1 . 2)")
@@ -186,7 +186,7 @@ the settings above should match r5rs
     (test-expression "true" "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: true")
     (test-expression "mred^" "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: mred^")
     (test-expression "(eq? 'a 'A)" "#t")
-    (test-expression "(set! x 1)" "{stop-multi.png} {stop-22x22.png} set!: cannot set undefined identifier: x")
+    (test-expression "(set! x 1)" "{stop-multi.png} {stop-22x22.png} set!: cannot set undefined variable: x")
     (test-expression "(define qqq 2) (set! qqq 1)" "")
     (test-expression "(cond ((= 1 2) 3))" "")
     (test-expression "(cons 1 2)" "(1 . 2)")
@@ -938,7 +938,7 @@ the settings above should match r5rs
                      "false")
     (test-expression "(set! x 1)"
                      "x: name is not defined"
-                     "set!: cannot set identifier before its definition: x")
+                     "set!: cannot set variable before its definition: x")
     (test-expression "(define qqq 2) (set! qqq 1)" 
                      "(void)" 
                      "define: cannot redefine name: qqq\n(void)")

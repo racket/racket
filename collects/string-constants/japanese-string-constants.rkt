@@ -134,7 +134,7 @@ please adhere to these guidelines:
  (web-materials "関連するウェブサイト") ;; menu item title
  (tool-web-sites "ツールのウェブサイト")   ;; menu item title
  (drscheme-homepage "DrRacket")
- (plt-homepage "PLT")
+ (plt-homepage "Racket")
  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
 
@@ -249,7 +249,7 @@ please adhere to these guidelines:
 
  ;; modes
  (mode-submenu-label "モード")
- (scheme-mode "Scheme モード")
+ (scheme-mode "Racket モード")
  (text-mode "Text モード")
 
  (scheme-mode-color-symbol "シンボル")
@@ -408,7 +408,7 @@ please adhere to these guidelines:
  (prefs-file-locked "環境設定ファイルがロックされています (ファイル ~a が存在します), 環境設定の変更を保存できません。環境設定の変更をキャンセルしますか？")
  (try-again "再試行") ;; button label
  (prefs-file-still-locked "環境設定ファイルが依然としてロックされているため (ファイル ~a が存在します), 環境設定の変更を保存できません。")
- (scheme-prefs-panel-label "Scheme")
+ (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "警告")
  (editor-prefs-panel-label "編集")
  (general-prefs-panel-label "一般")
@@ -478,7 +478,7 @@ please adhere to these guidelines:
  ; warning message when lockfile is around
  (waiting-for-pref-lock "環境設定のロックファイルを待っています...")
  (pref-lock-not-gone
-  "環境設定のロックファイル:\n\n   ~a\n\n があるために、環境設定の保存ができません。PLT のソフトウェアが実行されていないことを確認した上で、このファイルを削除してください。")
+  "環境設定のロックファイル:\n\n   ~a\n\n があるために、環境設定の保存ができません。Racket のソフトウェアが実行されていないことを確認した上で、このファイルを削除してください。")
  (still-locked-exit-anyway? "環境設定が保存できませんでした。とりあえず終了しますか？")
 
  ;;; indenting preferences panel
@@ -861,7 +861,7 @@ please adhere to these guidelines:
  (language-menu-name "言語(&L)")
 
  ;;; scheme-menu
- (scheme-menu-name "S&cheme")
+ (scheme-menu-name "Ra&cket")
  (execute-menu-item-label "実行")
  (execute-menu-item-help-string "定義ウィンドウのプログラムを再開始します")
  (ask-quit-menu-item-label "プログラムを停止しますか？")
@@ -888,12 +888,12 @@ please adhere to these guidelines:
  (create-executable-menu-item-label "実行ファイルの作成...")
  (create-executable-title "実行ファイルの作成")
  (must-save-before-executable "実行ファイルを作成する前に、プログラムを保存してください。")
- (save-a-mred-launcher "MrEd ランチャの保存")
- (save-a-mzscheme-launcher "MzScheme ランチャの保存")
- (save-a-mred-stand-alone-executable "MrEd スタンドアロン実行ファイルの保存")
- (save-a-mzscheme-stand-alone-executable "MzScheme スタンドアロン実行ファイルの保存")
- (save-a-mred-distribution "MrEd 配布物の保存")
- (save-a-mzscheme-distribution "MzScheme 配布物の保存")
+ (save-a-mred-launcher "GRacket ランチャの保存")
+ (save-a-mzscheme-launcher "Racket ランチャの保存")
+ (save-a-mred-stand-alone-executable "GRacket スタンドアロン実行ファイルの保存")
+ (save-a-mzscheme-stand-alone-executable "Racket スタンドアロン実行ファイルの保存")
+ (save-a-mred-distribution "GRacket 配布物の保存")
+ (save-a-mzscheme-distribution "Racket 配布物の保存")
 
  (definitions-not-saved "定義ウィンドウが保存されていません。実行ファイルでは定義ウィンドウの最新の保存が使われます。よろしいですか？")
  ;; The "-explanatory-label" variants are the labels used for the radio buttons in
@@ -1147,14 +1147,14 @@ please adhere to these guidelines:
  ;;; version checker
  (version:update-menu-item   "アップデートの確認...")
  (version:update-check       "アップデートの確認") ; dialog title, with the next line
- (version:connecting-server  "PLT バージョン サーバーに接続しています")
- (version:results-title      "PLT バージョンの確認")
- (version:do-periodic-checks "PLT Scheme の新しいバージョンを定期的に確認してください")
+ (version:connecting-server  "Racket バージョン サーバーに接続しています")
+ (version:results-title      "Racket バージョンの確認")
+ (version:do-periodic-checks "Racket の新しいバージョンを定期的に確認してください")
  (version:take-me-there      "ダウンロードする") ; ...to the download website
  ;; the next one can appear alone, or followed by a comma and the one after that
- (version:plt-up-to-date     "この PLT バージョンは最新です")
+ (version:plt-up-to-date     "この Racket バージョンは最新です")
  (version:but-newer-alpha    "しかし、これより新しいアルファ リリースが存在します")
- ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+ ;; This is used in this context: "Racket vNNN <<<*>>> http://download..."
  (version:now-available-at   "が次のサイトから入手できます")
 
  ;; insert menu
@@ -1181,8 +1181,8 @@ please adhere to these guidelines:
  (module-browser-show-lib-paths/short "必要なライブラリを含める") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "更新") ;; button label in show module browser pane in drscheme window.
  (module-browser-refresh "再表示") ;; button label in show module browser pane in drscheme window.
- (module-browser-only-in-plt-and-module-langs
-  "モジュール ブラウザは PLT 言語、または、モジュール言語のプログラム (あるいは、それらの言語のモジュールを持つプログラム) でのみ利用可能です。")
+; (module-browser-only-in-plt-and-module-langs
+;  "モジュール ブラウザは PLT 言語、または、モジュール言語のプログラム (あるいは、それらの言語のモジュールを持つプログラム) でのみ利用可能です。")
  (module-browser-name-length "名前の長さ")
  (module-browser-name-short "短い")
  (module-browser-name-medium "普通")
@@ -1220,13 +1220,13 @@ please adhere to these guidelines:
  (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
 
  (xml-tool-insert-xml-box "XML ボックスを挿入")
- (xml-tool-insert-scheme-box "Scheme ボックスを挿入")
- (xml-tool-insert-scheme-splice-box "Scheme Splice ボックスを挿入")
+ (xml-tool-insert-scheme-box "Racket ボックスを挿入")
+ (xml-tool-insert-scheme-splice-box "Racket Splice ボックスを挿入")
  (xml-tool-xml-box "XML ボックス")
- (xml-tool-scheme-box "Scheme ボックス")
- (xml-tool-scheme-splice-box "Scheme Splice ボックス")
- (xml-tool-switch-to-scheme "Scheme ボックスに切り替え")
- (xml-tool-switch-to-scheme-splice "Scheme Splice ボックスに切り替え")
+ (xml-tool-scheme-box "Racket ボックス")
+ (xml-tool-scheme-splice-box "Racket Splice ボックス")
+ (xml-tool-switch-to-scheme "Racket ボックスに切り替え")
+ (xml-tool-switch-to-scheme-splice "Racket Splice ボックスに切り替え")
  (xml-tool-eliminate-whitespace-in-empty-tags
   "空タグ内の空白を削除")
  (xml-tool-leave-whitespace-alone
@@ -1359,7 +1359,7 @@ please adhere to these guidelines:
   ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "テスト結果を切り離して表示する")
   (test-engine-undock-report "テスト結果を統合して表示する")
-  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  ;;Following two appear in Racket (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "テストを有効にする")
   (test-engine-disable-tests "テストを無効にする")
   
@@ -1370,7 +1370,7 @@ please adhere to these guidelines:
   ;; Errors
   (test-case-empty-error "空のテストケース")
   (test-case-too-many-expressions-error "テストケース内に式が多過ぎます。")
-  ;; Dr. Scheme window menu items
+  ;; DrRacket window menu items
   (test-case-insert "テストケースを挿入")
   (test-case-disable-all "すべてのテストケースを無効にする")
   (test-case-enable-all "すべてのテストケースを有効にする")

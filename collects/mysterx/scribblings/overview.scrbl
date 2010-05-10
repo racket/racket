@@ -12,11 +12,11 @@ Recent versions of Windows come with DCOM; DCOM packages for Windows
 
 Two Windows DLLs support low-level operations in MysterX:
 @filepath{myspage.dll} and @filepath{myssink.dll}.  Both are installed
-in the registry (using @exec{regsvr32.exe}) when Setup PLT runs the
-MysterX post-installer. If you move the location of your PLT
-installation, you may need to re-run Setup PLT to make MysterX
-work. Neither of these DLLs is specific to a PLT Scheme version, so
-it's ok for one version of PLT Scheme to use the DLLs registered by
+in the registry (using @exec{regsvr32.exe}) when @exec{raco setup} runs the
+MysterX post-installer. If you move the location of your Racket
+installation, you may need to re-run @exec{raco setup} to make MysterX
+work. Neither of these DLLs is specific to a Racket version, so
+it's ok for one version of Racket to use the DLLs registered by
 another.
 
 @margin-note{Prior to version 369.4, @filepath{myssink.dll} was
@@ -77,7 +77,7 @@ class system, you may also need
 ]
 
 Several MysterX procedures take HTML strings as input.  The
-@schememodname[xml] library provides procedures that convert Scheme
+@schememodname[xml] library provides procedures that convert Racket
 syntax into XML strings.  You may find using these procedures useful
 in creating HTML strings for use by MysterX.
 

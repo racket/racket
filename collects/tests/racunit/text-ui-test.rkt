@@ -119,7 +119,7 @@
                 (with-all-output-to-string (failing-binary-test/complex-params)))])
       (check string-contains
              op
-             "`((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+             "'((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
   (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
   (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14))")))
    
@@ -129,7 +129,7 @@
                 (with-all-output-to-string (failing-test/complex-params)))])
       (check string-contains
              op
-             "`((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
+             "'((0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
   (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
   (0 1 2 3 4 5 6 7 8 9 10 11 12 13 14))")))
    

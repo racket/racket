@@ -35,7 +35,7 @@ Compiles the given input file (C source) to the given output file (a
 compiled-object file). The @scheme[quiet?] argument indicates whether
 command should be echoed to the current output port. The
 @scheme[include-dirs] argument is a list of directories to search for
-include files; the PLT Scheme installation's @filepath{include}
+include files; the Racket installation's @filepath{include}
 directories are added automatically.}
 
 
@@ -358,20 +358,20 @@ Appends the platform-standard dynamic-extension file suffix to
                                    (program any/c #f))
          (or/c path? false/c)]{
 
-Strips the Scheme file suffix from @scheme[s] and returns a stripped
+Strips the Racket file suffix from @scheme[s] and returns a stripped
 path. Unlike the other functions below, when @scheme[program] is not
 @scheme[#f], then any suffix (including no suffix) is allowed. If
-@scheme[s] is not a Scheme file and @scheme[program] is @scheme[#f],
+@scheme[s] is not a Racket file and @scheme[program] is @scheme[#f],
 @scheme[#f] is returned.}
 
 @defproc[(extract-base-filename/c (s path-string?) 
                                   (program any/c #f)) 
          (or/c path? false/c)]{
 
-Strips the Scheme file suffix from @scheme[s] and
-returns a stripped path. If @scheme[s] is not a Scheme file name and
+Strips the Racket file suffix from @scheme[s] and
+returns a stripped path. If @scheme[s] is not a Racket file name and
 @scheme[program] is a symbol, and error is signaled.  If @scheme[s] is
-not a Scheme file and @scheme[program] is @scheme[#f], @scheme[#f] is
+not a Racket file and @scheme[program] is @scheme[#f], @scheme[#f] is
 returned.}
 
 @defproc[(extract-base-filename/kp (s path-string?) (program any/c #f)) (or/c path? false/c)]{

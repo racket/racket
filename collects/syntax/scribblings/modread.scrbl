@@ -18,7 +18,7 @@ values.}
 
 Inspects @scheme[stx] to check whether evaluating it will declare a
 module named @scheme[expected-module-sym]---at least if @scheme[module] is bound
-in the top-level to MzScheme's @scheme[module]. The syntax object @scheme[stx] can
+in the top-level to Racket's @scheme[module]. The syntax object @scheme[stx] can
 contain a compiled expression. Also, @scheme[stx] can be an end-of-file, on
 the grounds that @scheme[read-syntax] can produce an end-of-file.
 

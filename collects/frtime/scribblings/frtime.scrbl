@@ -17,8 +17,8 @@
 @author["Greg Cooper"]
 
 The @schememodname[frtime] language supports declarative construction of
-reactive systems in a syntax very similar to that of MzScheme.  To
-interact with FrTime, select FrTime from the "Choose Language" menu.
+reactive systems in a syntax very similar to that of Racket.  To
+interact with FrTime, select @onscreen{FrTime} from the @onscreen{Choose Language} menu.
 You can also make FrTime the language for a module:
 
 @schemeblock[
@@ -144,7 +144,7 @@ anything else.}
 any]{provides a mechanism for applying ordinary Scheme primitives to
 behaviors.  If any of the @scheme[val]s are behaviors, returns a
 behavior whose current value is always equal to @scheme[(proc
-(value-now arg) ...)].  In FrTime, many MzScheme primitives are
+(value-now arg) ...)].  In FrTime, many Racket primitives are
 implicitly lifted.}
 
 The following forms allow importation of lifted procedures that aren't

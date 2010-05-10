@@ -1,18 +1,18 @@
 #lang scribble/manual
 
-@begin[(require "utils.rkt" (for-label typed/scheme/base))]
+@begin[(require "utils.rkt" (for-label typed/racket/base))]
 
 @title[#:tag "varargs"]{Variable-Arity Functions: Programming with Rest Arguments}
 
-Typed Scheme can handle some uses of rest arguments.
+Typed Racket can handle some uses of rest arguments.
 
 @section{Uniform Variable-Arity Functions}
 
-In Scheme, one can write a function that takes an arbitrary
+In Racket, one can write a function that takes an arbitrary
 number of arguments as follows:
 
-@schememod[
-scheme
+@racketmod[
+racket
 (define (sum . xs)
   (if (null? xs)
       0
@@ -25,12 +25,12 @@ scheme
 The arguments to the function that are in excess to the
 non-rest arguments are converted to a list which is assigned
 to the rest parameter.  So the examples above evaluate to
-@schemeresult[0], @schemeresult[10], and @schemeresult[4].
+@racketresult[0], @racketresult[10], and @racketresult[4].
 
-We can define such functions in Typed Scheme as well:
+We can define such functions in Typed Racket as well:
 
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (: sum (Number * -> Number))
 (define (sum . xs)
   (if (null? xs)
@@ -43,10 +43,10 @@ of the rest parameter is used at the same type.
 @section{Non-Uniform Variable-Arity Functions}
 
 However, the rest argument may be used as a heterogeneous list.
-Take this (simplified) definition of the Scheme function @scheme[map]:
+Take this (simplified) definition of the Racket function @racket[map]:
 
-@schememod[
-scheme
+@racketmod[
+racket
 (define (map f as . bss)
   (if (or (null? as)
           (ormap null? bss))
@@ -58,21 +58,21 @@ scheme
 (map cons (list 1 2 3) (list (list 4) (list 5) (list 6)))
 (map + (list 1 2 3) (list 2 3 4) (list 3 4 5) (list 4 5 6))]
 
-Here the different lists that make up the rest argument @scheme[bss]
-can be of different types, but the type of each list in @scheme[bss]
-corresponds to the type of the corresponding argument of @scheme[f].
+Here the different lists that make up the rest argument @racket[bss]
+can be of different types, but the type of each list in @racket[bss]
+corresponds to the type of the corresponding argument of @racket[f].
 We also know that, in order to avoid arity errors, the length of
-@scheme[bss] must be one less than the arity of @scheme[f] (as
-@scheme[as] corresponds to the first argument of @scheme[f]).
+@racket[bss] must be one less than the arity of @racket[f] (as
+@racket[as] corresponds to the first argument of @racket[f]).
                                                             
-The example uses of @scheme[map] evaluate to @schemeresult[(list 2 3 4 5)],
-@schemeresult[(list (list 1 4) (list 2 5) (list 3 6))], and
-@schemeresult[(list 10 14 18)].
+The example uses of @racket[map] evaluate to @racketresult[(list 2 3 4 5)],
+@racketresult[(list (list 1 4) (list 2 5) (list 3 6))], and
+@racketresult[(list 10 14 18)].
 
-In Typed Scheme, we can define @scheme[map] as follows:
+In Typed Racket, we can define @racket[map] as follows:
 
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (: map 
    (All (C A B ...)
         ((A B ... B -> C) (Listof A) (Listof B) ... B
@@ -85,21 +85,21 @@ typed/scheme
       (cons (apply f (car as) (map car bss))
             (apply map f (cdr as) (map cdr bss)))))]
 
-Note that the type variable @scheme[B] is followed by an
+Note that the type variable @racket[B] is followed by an
 ellipsis.  This denotes that B is a dotted type variable
 which corresponds to a list of types, much as a rest
 argument corresponds to a list of values.  When the type
-of @scheme[map] is instantiated at a list of types, then
-each type @scheme[t] which is bound by @scheme[B] (notated by
-the dotted pre-type @scheme[t ... B]) is expanded to a number
-of copies of @scheme[t] equal to the length of the sequence
-assigned to @scheme[B].  Then @scheme[B] in each copy is
+of @racket[map] is instantiated at a list of types, then
+each type @racket[t] which is bound by @racket[B] (notated by
+the dotted pre-type @racket[t ... B]) is expanded to a number
+of copies of @racket[t] equal to the length of the sequence
+assigned to @racket[B].  Then @racket[B] in each copy is
 replaced with the corresponding type from the sequence.
 
-So the type of @scheme[(inst map Integer Boolean String Number)]
+So the type of @racket[(inst map Integer Boolean String Number)]
 is
 
-@scheme[((Boolean String Number -> Integer)
+@racket[((Boolean String Number -> Integer)
          (Listof Boolean) (Listof String) (Listof Number)
          ->
          (Listof Integer))].

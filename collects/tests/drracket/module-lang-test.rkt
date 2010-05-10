@@ -260,5 +260,5 @@
       "3")
 
 
-(require "drscheme-test-util.ss")
+(require "drracket-test-util.ss")
 (fire-up-drscheme-and-run-tests run-test)

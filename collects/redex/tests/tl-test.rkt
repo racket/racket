@@ -645,14 +645,14 @@
     (let ([sp (open-output-string)])
       (parameterize ([current-output-port sp]
                      [current-traced-metafunctions 'all]
-                     [print-as-quasiquote #f])
+                     [print-as-expression #f])
         (term (f 1)))
       (test (get-output-string sp) ">(f 1)\n<0\n"))
     
     (let ([sp (open-output-string)])
       (parameterize ([current-output-port sp]
                      [current-traced-metafunctions '(f)]
-                     [print-as-quasiquote #f])
+                     [print-as-expression #f])
         (term (f 1)))
       (test (get-output-string sp) ">(f 1)\n<0\n")))
   

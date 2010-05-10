@@ -151,7 +151,7 @@ identifiers used by the @scheme[reader-option]s.
  @item{@scheme[#:info] specifies an implementation of reflective
        information that is used by external tools to manipulate the
        @emph{source} of modules in the language @scheme[_something]. For
-       example, DrScheme uses information from @scheme[#:info] to
+       example, DrRacket uses information from @scheme[#:info] to
        determine the style of syntax coloring that it should use for
        editing a module's source.
 
@@ -178,7 +178,7 @@ identifiers used by the @scheme[reader-option]s.
        key, for which it returns @scheme[language-module]; it returns
        the given default value for any other key.
 
-       In the case of the DrScheme syntax-coloring example, DrScheme
+       In the case of the DrRacket syntax-coloring example, DrRacket
        supplies @scheme['color-lexer] as the symbol argument, and it
        supplies @scheme[#f] as the default. The default-filtering
        argument (i.e., the third argument to the @scheme[#:info]
@@ -189,7 +189,7 @@ identifiers used by the @scheme[reader-option]s.
        reflective information that is used by external tools to
        manipulate the module in the language @scheme[_something] in
        its @emph{expanded}, @emph{compiled} or @emph{declared} form
-       (as opposed to source). For example, when MzScheme starts a
+       (as opposed to source). For example, when Racket starts a
        program, it uses information attached to the main module to
        initialize the run-time environment.
 
@@ -219,8 +219,8 @@ identifiers used by the @scheme[reader-option]s.
        @scheme[language-data] are bound, the same as for
        @scheme[#:info].
 
-       In the case of the MzScheme run-time configuration example,
-       MzScheme uses the @scheme[#:language-info] vector to obtain a
+       In the case of the Racket run-time configuration example,
+       Racket uses the @scheme[#:language-info] vector to obtain a
        function, and then it passes @scheme['configure-runtime] to the
        function to obtain information about configuring the runtime
        environment. See also @secref[#:doc refman "configure-runtime"].}

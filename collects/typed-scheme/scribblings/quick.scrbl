@@ -1,18 +1,18 @@
 #lang scribble/manual
 
-@(require "utils.rkt" (for-label (only-meta-in 0 typed/scheme)))
+@(require "utils.rkt" (for-label (only-meta-in 0 typed/racket)))
 @(provide typed-mod)
 
 @title[#:tag "quick"]{Quick Start}
 
-Given a module written in the @schememodname[scheme] language, using
-Typed Scheme requires the following steps:
+Given a module written in the @racketmodname[racket] language, using
+Typed Racket requires the following steps:
 
 @itemize[#:style 
          'ordered
-         @item{Change the language to @schememodname[typed/scheme].}
-         @item{Change the uses of @scheme[(require mod)] to
-           @scheme[(require typed/mod)].} 
+         @item{Change the language to @racketmodname[typed/racket].}
+         @item{Change the uses of @racket[(require mod)] to
+           @racket[(require typed/mod)].} 
          @item{Annotate structure definitions and top-level
            definitions with their types.} ]
 
@@ -20,12 +20,12 @@ Then, when the program is run, it will automatically be typechecked
 before any execution, and any type errors will be reported.  If there
 are any type errors, the program will not run.
 
-Here is an example program, written in the @schememodname[scheme]
+Here is an example program, written in the @racketmodname[racket]
 language:
 
 @(define typed-mod
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (define-struct: pt ([x : Real] [y : Real]))
 
 (: mag (pt -> Number))
@@ -34,8 +34,8 @@ typed/scheme
 ]
 )
 
-@schememod[
-scheme
+@racketmod[
+racket
 (define-struct pt (x y))
 
 (code:contract mag : pt -> number)
@@ -43,6 +43,6 @@ scheme
   (sqrt (+ (sqr (pt-x p)) (sqr (pt-y p)))))
 ]
 
-Here is the same program, in @schememodname[typed/scheme]:
+Here is the same program, in @racketmodname[typed/racket]:
 
 @|typed-mod|

@@ -2,7 +2,7 @@
 (module stepper-test mzscheme
   (require mred
            mzlib/class
-           "drscheme-test-util.ss"
+           "drracket-test-util.ss"
            tests/utils/gui
            framework
            mzlib/pretty)

@@ -8,10 +8,11 @@
 (define user-infotable (get-planet-cache-path))
 
 ;; get-info : (listof path-or-string) -> info/#f
-(define (get-info coll-path)
+(define (get-info coll-path #:namespace [ns #f])
   (get-info/full (apply collection-path
                         (map (lambda (x) (if (path? x) (path->string x) x))
-                             coll-path))))
+                             coll-path))
+                 #:namespace ns))
 
 ;; HACK:
 ;; This require is not used.  It just requires the file, since
@@ -24,11 +25,11 @@
 (require (prefix-in !!!HACK!!! setup/infotab/lang/reader))
 
 ;; get-info/full : path -> info/#f
-(define (get-info/full dir)
-  (or (get-info/full/ext dir "rkt")
-      (get-info/full/ext dir "ss")))
+(define (get-info/full dir #:namespace [ns #f])
+  (or (get-info/full/ext dir "rkt" ns)
+      (get-info/full/ext dir "ss" ns)))
 
-(define (get-info/full/ext dir ext)
+(define (get-info/full/ext dir ext ns)
   (define file (build-path dir (format "info.~a" ext)))
   (define (err fmt . args)
     (apply error 'get-info (string-append "info file " fmt " in ~a")
@@ -60,7 +61,7 @@
           ;; that is required).
           ;; We are, however, trusting that the bytecode form of the
           ;; file (if any) matches the source.
-          (parameterize ([current-namespace (info-namespace)])
+          (parameterize ([current-namespace (or ns (info-namespace))])
             (dynamic-require file '#%info-lookup))]
          [else (err "does not contain a module of the right shape")])))
 
@@ -201,8 +202,8 @@
 
 (provide/contract
  (reset-relevant-directories-state! (-> any))
- (get-info ((listof path-or-string?) . -> . (or/c info? boolean?)))
- (get-info/full (path? . -> . (or/c info? boolean?)))
+ (get-info (((listof path-or-string?)) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
+ (get-info/full ((path?) (#:namespace (or/c namespace? #f)) . ->* . (or/c info? boolean?)))
  (find-relevant-directories
   (->* [(listof symbol?)]
        [(lambda (x) (memq x '(preferred all-available)))]

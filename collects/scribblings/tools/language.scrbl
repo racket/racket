@@ -152,8 +152,8 @@ The settings in this structure reflect the settings show in
 the language configuration dialog for languages constructed
 with this mixin. The first controls the input for the
 language. The rest specify printing controls for the
-language. The style @scheme['write] is the default style,
-used in the MzScheme REPL. The sharing field determines if
+language. The style @scheme['print] is the default style,
+as normally used in the Racket REPL. The sharing field determines if
 cycles and sharing in values are displayed when the value is
 rendered. The insert newlines field determines if values in
 the repl are formatted with @scheme[write] style-line
@@ -323,7 +323,7 @@ Returns @scheme[#t].
 @definterface[drracket:language:module-based-language<%> ()]{
 
 This interface is for languages that can be implemented
-with MzScheme @scheme[module]s.
+with Racket @scheme[module]s.
 
 Use the
 @scheme[drracket:language:module-based-language->language-mixin]
@@ -476,8 +476,8 @@ This method is the same as
 @defmethod[(use-mred-launcher)
            boolean?]{
 This method is called when an executable is created to
-determine if the executable should use the mred or the
-mzscheme binary.
+determine if the executable should use the GRacket or the
+Racket binary.
 
 }
 
@@ -488,7 +488,7 @@ mzscheme binary.
 The result of this method controls how the module is
 attached to the user's namespace. If 
 the method returns @scheme[#t], 
-the mzscheme primitive
+the Racket primitive
 @scheme[namespace-require/copy]
 is used and if it returns @scheme[#f],
 @scheme[namespace-require]
@@ -565,10 +565,10 @@ to install the result of
 @definterface[drracket:language:language<%> ()]{
 
 Implementations of this interface are languages that
-DrScheme supports.
+DrRacket supports.
 
 See @secref["adding-languages"] for an overview of
-adding languages to DrScheme.
+adding languages to DrRacket.
 
 
 
@@ -698,7 +698,7 @@ and
  
   This method is called on the user's main eventspace thread, and without
   a prompt or other control delimiter. It must return without raising an
-  error, or else the DrScheme window will be wedged.
+  error, or else the DrRacket window will be wedged.
 }
 
 @defmethod[(front-end/interaction [port input-port]
@@ -717,7 +717,7 @@ See also
 @defmethod[(get-comment-character)
            (values string? char?)]{
 Returns text to be used for the ``Insert Large Letters''
-menu item in DrScheme. The first result is a prefix to be
+menu item in DrRacket. The first result is a prefix to be
 placed at the beginning of each line and the second result
 is a character to be used for each pixel in the letters.
 
@@ -727,7 +727,7 @@ is a character to be used for each pixel in the letters.
            string?]{
 Returns the name of the language, as shown in the REPL when
 executing programs in the language and in the bottom left of
-the drscheme window.
+the DrRacket window.
 
 }
 
@@ -738,7 +738,7 @@ This method is used in a manner analogous to
 
 Each element in the list indicates how the names at that
 point in dialog will be sorted. Names with lower numbers
-appear first. If two languages are added to DrScheme with
+appear first. If two languages are added to DrRacket with
 the same strings (as given by the 
 @method[drracket:language:language<%> get-language-position] method) the corresponding numbers returned by this method
 must be the same. Additionally, no two languages can have the
@@ -800,8 +800,8 @@ This method is only called when
 It is expected to return a string that contains N lines,
 where N is the result of calling
 @method[drracket:language:language<%> get-metadata-lines]. The string is prefixed to the buffer before the file is
-saved by DrScheme, and removed from the buffer after it is
-opened in DrScheme.
+saved by DrRacket, and removed from the buffer after it is
+opened in DrRacket.
 
 The string is expect to be a prefix to the file that sets up
 a reader for files in this language, using @tt{#reader}.
@@ -856,7 +856,7 @@ The result of this method is used when saving or loading files.
 
 If the result is a sexp, saved files get a prefix inserted
 at the beginning (the prefix is determined by calling
-@method[drracket:language:language<%> get-metadata]). When the file is then loaded, DrScheme recognizes this
+@method[drracket:language:language<%> get-metadata]). When the file is then loaded, DrRacket recognizes this
 prefix and sets the language back to match the saved file.
 
 See also
@@ -870,7 +870,7 @@ See also
 @defmethod[(get-style-delta)
            (or/c #f (is-a?/c style-delta%) (listof (list/c (is-a?/c style-delta%) number? number?)))]{
 The style delta that this method returns is used in the
-language dialog and the DrScheme REPL when the language's
+language dialog and the DrRacket REPL when the language's
 name is printed.
 
 When it is @scheme[#f], no styling is used.
@@ -883,7 +883,7 @@ the name.
 }
 
 @defmethod[(extra-repl-information [settings settings] [port output-port?]) void?]{
-  This method is called on the DrScheme eventspace main thread to insert extra
+  This method is called on the DrRacket eventspace main thread to insert extra
   information into the REPL to reflect the state of the program.
   
   It is used, for example, to print out the ``Teachpack'' lines in the HtDP languages.
@@ -893,7 +893,7 @@ the name.
                                                                                                      
 @defmethod[(marshall-settings [settings settings])
            writable]{
-Translates an instance of the settings type into a scheme
+Translates an instance of the settings type into a Racket
 object that can be written out to disk.
 
 }
@@ -904,7 +904,7 @@ object that can be written out to disk.
 This method is only called when
 @method[drracket:language:language<%> get-reader-module] returns an sexp.
 
-When a file is opened in DrScheme, if this language's
+When a file is opened in DrRacket, if this language's
 @method[drracket:language:language<%> get-reader-module] returns an sexp, the prefix of the file
 (the first N lines, where N is the number
 returned by 
@@ -921,27 +921,27 @@ the settings for this language.
 @defmethod[(on-execute [settings settings]
                        [run-in-user-thread ((-> any) -> any)])
            any]{
-The @scheme[on-execute] method is called on DrScheme's
+The @scheme[on-execute] method is called on DrRacket's
 eventspace's main thread before any evaluation happens
 when the Run button is clicked. It is also called when
-a new DrScheme tab (or window) is created to initialize
+a new DrRacket tab (or window) is created to initialize
 the empty interactions window.
 
-Use this method to initialize MzScheme's
+Use this method to initialize Racket's
 @secref[#:doc '(lib "scribblings/reference/reference.scrbl") "parameters"]
 for the user. When
 this function is called, the user's thread has already been
 created, as has its custodian. These parameters have been
-changed from the defaults in MzScheme:
+changed from the defaults in Racket:
 @itemize[
 @item{@scheme[current-custodian] is set to a new custodian.}
 @item{@scheme[current-namespace] has been set to a newly
   created empty namespace.This namespace has the following modules 
   copied (with @scheme[namespace-attach-module])
-  from DrScheme's original namespace:
+  from DrRacket's original namespace:
   @itemize[
   @item{@scheme['mzscheme]}
-  @item{@scheme['(lib "mred.ss" "mred")]}
+  @item{@scheme['mred]}
   ]}
 @item{
   @scheme[read-curly-brace-as-paren]
@@ -980,16 +980,16 @@ changed from the defaults in MzScheme:
   @scheme[current-output-port], and
   @scheme[current-error-port].}
 @item{The
-@scheme[event-dispatch-handler]   is set so that DrScheme can perform some initial setup and
+@scheme[event-dispatch-handler]   is set so that DrRacket can perform some initial setup and
   close down around the user's code.}
 @item{The
   @scheme[current-directory] and
   @scheme[current-load-relative-directory]
   are set to the directory where the definitions file is
   saved, or if it isn't saved, to the initial directory where
-  DrScheme started up.}
+  DrRacket started up.}
 @item{The snip-class-list, returned by
-@scheme[get-the-snip-class-list] is initialized with all of the snipclasses in DrScheme's eventspace's snip-class-list.}
+@scheme[get-the-snip-class-list] is initialized with all of the snipclasses in DrRacket's eventspace's snip-class-list.}
 
 @item{
 The 
@@ -1004,10 +1004,10 @@ that error message into the definitions window.}
 
 The @scheme[run-in-user-thread] arguments accepts thunks and
 runs them on the user's eventspace's main thread. These
-thunks must not raise an exceptions (or drscheme itself will
+thunks must not raise an exceptions (or DrRacket itself will
 get stuck). In addition, the output ports are not yet
 functioning, so print outs should be directed to the
-original drscheme output port, if necessary.
+original DrRacket output port, if necessary.
 
 }
 
@@ -1049,7 +1049,7 @@ See also
 
 @defmethod[(unmarshall-settings [input writable])
            (or/c settings false/c)]{
-Translates a Scheme value into a settings, returning
+Translates a Racket value into a settings, returning
 @scheme[#f] if that is not possible.
 
 }}

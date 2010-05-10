@@ -18,8 +18,8 @@ depth of the continuation.
          @item{Throw away @filepath{.zo} versions of your source}
          @item{Prefix your program with 
                       @schemeblock[(require trace)]
-               perhaps by starting @exec{mzscheme} with
-                  @commandline{mzscheme -l trace ...}
+               perhaps by starting @exec{racket} with
+                  @commandline{racket -l trace ...}
                before arguments to load your program.}
          @item{Run your program}
          ]
@@ -40,7 +40,7 @@ parameter.
 
 @defmodule[trace]{Invoking the
 @schememodname[trace] module sets the evaluation handler
-(via @scheme[current-eval]) to instrument Scheme source code.}
+(via @scheme[current-eval]) to instrument Racket source code.}
 
  NOTE: @schememodname[trace] has no effect on code loaded as
  compiled byte code (i.e., from a @filepath{.zo} file) or native code

@@ -14,7 +14,7 @@
 
 (require mzlib/pretty)
 
-(print-as-quasiquote #f)
+(print-as-expression #f)
 
 (define (pprec-print pprec port write?)
   (define (print-one n port)
@@ -325,6 +325,6 @@
 
 (test #t 'use-regression? use-regression?)
 
-(print-as-quasiquote #t)
+(print-as-expression #t)
 
 (report-errs)

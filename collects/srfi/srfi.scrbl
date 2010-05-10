@@ -57,7 +57,7 @@ Implementation} (a.k.a. @deftech{SRFI}) process allows individual
 members of the Scheme community to propose libraries and extensions to
 be supported by multiple Scheme implementations.
 
-PLT Scheme is distributed with implementations of many SRFIs, most of
+Racket is distributed with implementations of many SRFIs, most of
 which can be implemented as libraries. To import the bindings of SRFI
 @math{n}, use
 
@@ -65,9 +65,9 @@ which can be implemented as libraries. To import the bindings of SRFI
 (require @#,elem{@schemeidfont{srfi/}@math{n}})
 ]
 
-This document lists the SRFIs that are supported by PLT Scheme and
+This document lists the SRFIs that are supported by Racket and
 provides a link to the original SRFI specification (which is also
-distributed as part of PLT Scheme's documentation).
+distributed as part of Racket's documentation).
 
 @table-of-contents[]
 
@@ -565,7 +565,7 @@ are also available from @schememodname[scheme/foreign].
 )]
 
 Take care NOT to confuse the internal date structure with the
-PLT Scheme @scheme[date]; they are not the same, and all procedures
+Racket @scheme[date]; they are not the same, and all procedures
 from the SRFI library expect the former.
 
 @; ----------------------------------------
@@ -651,7 +651,7 @@ from the SRFI library expect the former.
 
 @srfi[30]{Nested Multi-line Comments}
 
-This SRFI's syntax is part of PLT Scheme's default reader.
+This SRFI's syntax is part of Racket's default reader.
 
 @; ----------------------------------------
 
@@ -684,7 +684,7 @@ This SRFI's syntax is part of PLT Scheme's default reader.
  (read-with-shared-structure #f "read-with-shared-structure")
 )]
 
-This SRFI's syntax is part of PLT Scheme's default reader and printer.
+This SRFI's syntax is part of Racket's default reader and printer.
 
 @; ----------------------------------------
 
@@ -919,7 +919,7 @@ Returns @scheme[#t] if @scheme[v] is a promise, @scheme[#f] otherwise.}
 
 Original specification: @link["../srfi-std/srfi-62.html"]{SRFI 62}
 
-This SRFI's syntax is part of PLT Scheme's default reader (no
+This SRFI's syntax is part of Racket's default reader (no
 @scheme[require] is needed).
 
 @; ----------------------------------------

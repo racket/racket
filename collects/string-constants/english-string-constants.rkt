@@ -134,7 +134,7 @@ please adhere to these guidelines:
  (web-materials "Related Web Sites") ;; menu item title
  (tool-web-sites "Tool Web Sites")   ;; menu item title
  (drscheme-homepage "DrRacket")
- (plt-homepage "PLT")
+ (plt-homepage "Racket")
  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
 
@@ -254,7 +254,7 @@ please adhere to these guidelines:
   
  ;; modes
  (mode-submenu-label "Modes")
- (scheme-mode "Scheme mode")
+ (scheme-mode "Racket mode")
  (text-mode "Text mode")
 
  (scheme-mode-color-symbol "Symbol")
@@ -413,7 +413,7 @@ please adhere to these guidelines:
  (prefs-file-locked "The preferences file is locked (because the file ~a exists), so your preference change could not be saved. Cancel preference change?")
  (try-again "Try again") ;; button label
  (prefs-file-still-locked "The preferences file is still locked (because the file ~a exists), so your preference change will not be saved.")
- (scheme-prefs-panel-label "Scheme")
+ (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Warnings")
  (editor-prefs-panel-label "Editing")
  (general-prefs-panel-label "General")
@@ -483,7 +483,7 @@ please adhere to these guidelines:
  ; warning message when lockfile is around
  (waiting-for-pref-lock "Waiting for the preferences lockfile...")
  (pref-lock-not-gone
-  "The preferences lockfile:\n\n   ~a\n\nprevents the preferences from being saved. Ensure that no PLT software is running and delete this file.")
+  "The preferences lockfile:\n\n   ~a\n\nprevents the preferences from being saved. Ensure that no Racket software is running and delete this file.")
  (still-locked-exit-anyway? "The preferences were not saved sucessfully. Exit anyway?")
  
  ;;; indenting preferences panel
@@ -869,7 +869,7 @@ please adhere to these guidelines:
  (language-menu-name "&Language")
  
  ;;; scheme-menu
- (scheme-menu-name "S&cheme")
+ (scheme-menu-name "Ra&cket")
  (execute-menu-item-label "Run")
  (execute-menu-item-help-string "Restart the program in the definitions window")
  (ask-quit-menu-item-label "Ask the Program to Quit")
@@ -896,12 +896,12 @@ please adhere to these guidelines:
  (create-executable-menu-item-label "Create Executable...")
  (create-executable-title "Create Executable")
  (must-save-before-executable "You must save your program before creating an executable.")
- (save-a-mred-launcher "Save a MrEd Launcher")
- (save-a-mzscheme-launcher "Save a MzScheme Launcher")
- (save-a-mred-stand-alone-executable "Save a MrEd Stand-alone Executable")
- (save-a-mzscheme-stand-alone-executable "Save a MzScheme Stand-alone Executable")
- (save-a-mred-distribution "Save a MrEd Distribution")
- (save-a-mzscheme-distribution "Save a MzScheme Distribution")
+ (save-a-mred-launcher "Save a GRacket Launcher")
+ (save-a-mzscheme-launcher "Save a Racket Launcher")
+ (save-a-mred-stand-alone-executable "Save a GRacket Stand-alone Executable")
+ (save-a-mzscheme-stand-alone-executable "Save a Racket Stand-alone Executable")
+ (save-a-mred-distribution "Save a GRacket Distribution")
+ (save-a-mzscheme-distribution "Save a Racket Distribution")
 
  (definitions-not-saved "The definitions window has not been saved. The executable will use the latest saved version of the definitions window. Continue?")
  ;; The "-explanatory-label" variants are the labels used for the radio buttons in
@@ -1166,14 +1166,14 @@ please adhere to these guidelines:
  ;;; version checker
  (version:update-menu-item   "Check for Updates...")
  (version:update-check       "Update check") ; dialog title, with the next line
- (version:connecting-server  "Connecting to PLT version server")
- (version:results-title      "PLT Version Check")
- (version:do-periodic-checks "Periodically check for newer PLT Scheme versions")
+ (version:connecting-server  "Connecting to Racket version server")
+ (version:results-title      "Racket Version Check")
+ (version:do-periodic-checks "Periodically check for newer Racket versions")
  (version:take-me-there      "Take Me There") ; ...to the download website
  ;; the next one can appear alone, or followed by a comma and the one after that
- (version:plt-up-to-date     "Your PLT version is up-to-date")
+ (version:plt-up-to-date     "Your Racket version is up-to-date")
  (version:but-newer-alpha    "but note that there is a newer alpha-release")
- ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+ ;; This is used in this context: "Racket vNNN <<<*>>> http://download..."
  (version:now-available-at   "is now available at")
 
  ;; insert menu
@@ -1201,7 +1201,7 @@ please adhere to these guidelines:
  (module-browser-show-planet-paths/short "Follow PLaneT requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
-  "The module browser is only available for programs in the PLT languages and in the module language (and only for programs that have modules in them).")
+  "The module browser is only available for module-based programs.")
  (module-browser-name-length "Name length")
  (module-browser-name-short "Short")
  (module-browser-name-medium "Medium")
@@ -1240,13 +1240,13 @@ please adhere to these guidelines:
  (snips-and-arrows-hide-all-snips-in-editor "Hide all snips in editor")
 
  (xml-tool-insert-xml-box "Insert XML Box")
- (xml-tool-insert-scheme-box "Insert Scheme Box")
- (xml-tool-insert-scheme-splice-box "Insert Scheme Splice Box")
+ (xml-tool-insert-scheme-box "Insert Racket Box")
+ (xml-tool-insert-scheme-splice-box "Insert Racket Splice Box")
  (xml-tool-xml-box "XML Box")
- (xml-tool-scheme-box "Scheme Box")
- (xml-tool-scheme-splice-box "Scheme Splice Box")
- (xml-tool-switch-to-scheme "Switch to Scheme box")
- (xml-tool-switch-to-scheme-splice "Switch to Scheme splice box")
+ (xml-tool-scheme-box "Racket Box")
+ (xml-tool-scheme-splice-box "Racket Splice Box")
+ (xml-tool-switch-to-scheme "Switch to Racket box")
+ (xml-tool-switch-to-scheme-splice "Switch to Racket splice box")
  (xml-tool-eliminate-whitespace-in-empty-tags
   "Eliminiate whitespace in empty tags")
  (xml-tool-leave-whitespace-alone
@@ -1387,7 +1387,7 @@ please adhere to these guidelines:
   ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "Dock Test Report")
   (test-engine-undock-report "Undock Test Report")
-  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  ;;Following two appear in Racket (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "Enable Tests")
   (test-engine-disable-tests "Disable Tests")
 
@@ -1454,7 +1454,7 @@ please adhere to these guidelines:
   ;; Errors
   (test-case-empty-error "Empty test case")
   (test-case-too-many-expressions-error "Too many expressions in a test case.")
-  ;; Dr. Scheme window menu items
+  ;; DrRacket window menu items
   (test-case-insert "Insert Test Case")
   (test-case-disable-all "Disable all Test Cases")
   (test-case-enable-all "Enable all Test Cases")

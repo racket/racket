@@ -205,7 +205,7 @@
 
 (define (read-module v)
   (match v
-    [`(,name ,self-modidx ,lang-info ,functional? ,et-functional?
+    [`(,name ,srcname ,self-modidx ,lang-info ,functional? ,et-functional?
              ,rename ,max-let-depth ,dummy
              ,prefix
              ,indirect-et-provides ,num-indirect-et-provides 
@@ -218,7 +218,7 @@
          [`(,syntax-body ,body
                          ,requires ,syntax-requires ,template-requires ,label-requires
                          ,more-requires-count . ,more-requires)
-          (make-mod name self-modidx
+          (make-mod name srcname self-modidx
                     prefix (let loop ([l phase-data])
                              (if (null? l)
                                  null

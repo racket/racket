@@ -61,11 +61,14 @@ special characters or that might otherwise look like numbers.
 
 @refdetails/gory["parse-symbol"]{the syntax of symbols}
 
-The @racket[display] form of a symbol is the same as the corresponding
-string.
+The @racket[write] function prints a symbol without a @litchar{'}
+prefix. The @racket[display] form of a symbol is the same as the
+corresponding string.
 
 @examples[
+(write 'Apple)
 (display 'Apple)
+(write '|6|)
 (display '|6|)
 ]
 

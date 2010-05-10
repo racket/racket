@@ -97,7 +97,7 @@ including the following:
 
 @itemize[
 
- @item{@racketmodname[typed/scheme] --- like
+ @item{@racketmodname[typed/racket] --- like
        @racketmodname[racket], but statically typed; see
        @other-manual['(lib "typed-scheme/scribblings/ts-guide.scrbl")]}
 

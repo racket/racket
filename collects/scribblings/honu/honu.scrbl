@@ -7,13 +7,13 @@
 
 @title{@bold{Honu}}
 
-@defterm{Honu} is a family of languages built on top of Scheme. Honu
-syntax resembles Java. Like Scheme, however, Honu has no fixed syntax,
+@defterm{Honu} is a family of languages built on top of Racket. Honu
+syntax resembles Java. Like Racket, however, Honu has no fixed syntax,
 because Honu supports extensibility through macros and a base syntax
 of @as-index{H-expressions}, which are analogous to S-expressions.
 
 The Honu language currently exists only as a undocumented
-prototype. Scheme's parsing and printing of H-expressions is
+prototype. Racket's parsing and printing of H-expressions is
 independent of the Honu language, however, so it is documented here.
 
 @table-of-contents[]
@@ -22,7 +22,7 @@ independent of the Honu language, however, so it is documented here.
 
 @section{H-expressions}
 
-The Scheme reader incorporates an H-expression reader, and Scheme's
+The Racket reader incorporates an H-expression reader, and Racket's
 printer also supports printing values in Honu syntax. The reader can
 be put into H-expression mode either by including @litchar{#hx} in the
 input stream, or by calling @scheme[read-honu] or
@@ -34,9 +34,9 @@ the default print handler) produces Honu output when the
 When the reader encounters @litchar{#hx}, it reads a single
 H-expression, and it produces an S-expression that encodes the
 H-expression. Except for atomic H-expressions, evaluating this
-S-expression as Scheme is unlikely to succeed. In other words,
+S-expression as Racket is unlikely to succeed. In other words,
 H-expressions are not intended as a replacement for S-expressions to
-represent Scheme code.
+represent Racket code.
 
 Honu syntax is normally used via @litchar{#lang honu}, which reads
 H-expressions repeatedly until an end-of-file is encountered, and
@@ -74,7 +74,7 @@ Ignoring whitespace, an H-expression is either
 Within a sequence of H-expressions, a sub-sequence between angle
 brackets is represented specially (see @secref["honu:parens"]).
 
-Whitespace for H-expressions is as in Scheme: any character for which
+Whitespace for H-expressions is as in Racket: any character for which
 @scheme[char-whitespace?] returns true counts as a whitespace.
 
 @; ----------------------------------------------------------------------
@@ -82,7 +82,7 @@ Whitespace for H-expressions is as in Scheme: any character for which
 @subsection[#:tag "honu:numbers"]{Numbers}
 
 The syntax for Honu numbers is the same as for Java. The S-expression
-encoding of a particular H-expression number is the obvious Scheme
+encoding of a particular H-expression number is the obvious Racket
 number.
 
 @; ----------------------------------------------------------------------
@@ -101,7 +101,7 @@ characters:
 }
 
 The S-expression encoding of an H-expression identifier is the obvious
-Scheme symbol.
+Racket symbol.
 
 Input is parsed to form maximally long identifiers. For example, the
 input @litchar{int->int;} is parsed as four H-expressions represented
@@ -114,7 +114,7 @@ by symbols: @scheme['int], @scheme['->], @scheme['int], and
 
 The syntax for an H-expression string is exactly the same as for an
 S-expression string, and an H-expression string is represented by the
-obvious Scheme string.
+obvious Racket string.
 
 @; ----------------------------------------------------------------------
 
@@ -124,7 +124,7 @@ The syntax for an H-expression character is the same as for an
 H-expression string that has a single content character, except that a
 @litchar{'} surrounds the character instead of @litchar{"}. The
 S-expression representation of an H-expression character is the
-obvious Scheme character.
+obvious Racket character.
 
 @; ----------------------------------------------------------------------
 
@@ -132,16 +132,16 @@ obvious Scheme character.
 
 A H-expression between @litchar{(} and @litchar{)}, @litchar{[} and
 @litchar{]}, or @litchar["{"] and @litchar["}"] is represented by a
-Scheme list. The first element of the list is @scheme['#%parens] for a
+Racket list. The first element of the list is @scheme['#%parens] for a
 @litchar{(}...@litchar{)} sequence, @scheme['#%brackets] for a
 @litchar{[}...@litchar{]} sequence, or @scheme['#%braces] for a
 @litchar["{"]...@litchar["}"] sequence. The remaining elements are the
-Scheme representations for the grouped H-expressions in order.
+Racket representations for the grouped H-expressions in order.
 
 In an H-expression sequence, when a @litchar{<} is followed by a
 @litchar{>}, and when nothing between the @litchar{<} and @litchar{>}
 is an immediate symbol containing a @litchar{=}, @litchar{&}, or
-@litchar{|}, then the sub-sequence is represented by a Scheme list
+@litchar{|}, then the sub-sequence is represented by a Racket list
 that starts with @scheme['#%angles] and continues with the elements of
 the sub-sequence between the @litchar{<} and @litchar{>}
 (exclusive). This representation is applied recursively, so that angle
@@ -175,14 +175,14 @@ is followed by an H-expression to be treated as whitespace. Note that
 
 @subsection{Honu Output Printing}
 
-Some Scheme values have a standard H-expression representation. For
+Some Racket values have a standard H-expression representation. For
 values with no H-expression representation but with a
-@scheme[read]able S-expression form, the Scheme printer produces an
+@scheme[read]able S-expression form, the Racket printer produces an
 S-expression prefixed with @litchar{#sx}. For values with neither an
 H-expression form nor a @scheme[read]able S-expression form, then
 printer produces output of the form @litchar{#<}...@litchar{>}, as in
-Scheme mode. The @scheme[print-honu] parameter controls whether
-Scheme's printer produces Scheme or Honu output.
+Racket mode. The @scheme[print-honu] parameter controls whether
+Racket's printer produces Racket or Honu output.
 
 The values with H-expression forms are as follows:
 

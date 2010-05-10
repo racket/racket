@@ -97,7 +97,7 @@
 	 (let ([n (make-base-empty-namespace)]
 	       [argv (if args (list->vector args) (vector))])
 	   (parameterize ([current-command-line-arguments argv]
-                          [print-as-quasiquote #f])
+                          [print-as-expression #f])
 	     (thread-wait
 	      (thread
 	       (lambda ()

@@ -35,7 +35,7 @@ defined by the standard.
              dialects of Scheme within Racket.}
 
 @|r6rs| defines both @defterm{libraries} and @defterm{top-level
-programs}. Both correspond to Rackey @defterm{modules} (see
+programs}. Both correspond to Racket @defterm{modules} (see
 @secref[#:doc guide-src "modules"]). That is, although @|r6rs| defines
 top-level programs as entry points, you can just as easily treat a
 library as an entry point when using Racket. The only difference

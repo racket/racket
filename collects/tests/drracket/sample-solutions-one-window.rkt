@@ -1,6 +1,6 @@
 
 (module sample-solutions-one-window mzscheme
-  (require "drscheme-test-util.ss"
+  (require "drracket-test-util.ss"
            tests/utils/gui
            mzlib/class
            mzlib/list
@@ -29,7 +29,7 @@
   
   (define ((test-single-file labels sample-solutions-dir toc) filename)
     (let* ([sample-solutions-teachpack-filename
-            (build-path (collection-path "tests" "drscheme") "sample-solutions-testsuite-tp.scm")]
+            (build-path (collection-path "tests" "drracket") "sample-solutions-testsuite-tp.scm")]
            [toc-entry (let ([lookup (assoc (string->symbol filename) toc)])
                         (if lookup
                             (cdr lookup)

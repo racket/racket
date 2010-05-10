@@ -134,7 +134,7 @@ please adhere to these guidelines:
  (web-materials "Связанные Web-сайты") ;; menu item title
  (tool-web-sites "Web-сайты установленных инструментов")   ;; menu item title
  (drscheme-homepage "DrRacket")
- (plt-homepage "PLT")
+ (plt-homepage "Racket")
  (how-to-use-scheme "Как использовать Scheme") ;; title of a book.
  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
 
@@ -254,7 +254,7 @@ please adhere to these guidelines:
 
  ;; modes
  (mode-submenu-label "Режимы")
- (scheme-mode "Режим Scheme")
+ (scheme-mode "Режим Racket")
  (text-mode "Режим текста")
 
  (scheme-mode-color-symbol "Символ")
@@ -413,7 +413,7 @@ please adhere to these guidelines:
  (prefs-file-locked "Файл настроек пользователя заблокирован (так как файл ~a существует), поэтому измененные настройки не будут сохранены. Отменить изменения?")
  (try-again "Попытаться снова") ;; button label
  (prefs-file-still-locked "Файл настроек пользователя все еще заблокирован (так как файл ~a существует), поэтому изменения настроек не будут сохранены..")
- (scheme-prefs-panel-label "Scheme")
+ (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Предупреждения")
  (editor-prefs-panel-label "Редактирование")
  (general-prefs-panel-label "Общее")
@@ -483,7 +483,7 @@ please adhere to these guidelines:
  ; warning message when lockfile is around
  (waiting-for-pref-lock "Ожидание завершения блокировки настроек пользователя...")
  (pref-lock-not-gone
-  "Файл блокировки настроек пользователя: \n\n   ~a\n\nне позволяет сохранить изменения настроек. Убедитесь в отсутствии работающего програмного обеспечения PLT и удалите этот файл.")
+  "Файл блокировки настроек пользователя: \n\n   ~a\n\nне позволяет сохранить изменения настроек. Убедитесь в отсутствии работающего програмного обеспечения Racket и удалите этот файл.")
  (still-locked-exit-anyway? "Настройки не сохранены. Все равно выйти?")
  
  ;;; indenting preferences panel
@@ -868,7 +868,7 @@ please adhere to these guidelines:
  (language-menu-name "&Язык")
  
  ;;; scheme-menu
- (scheme-menu-name "&Scheme")
+ (scheme-menu-name "&Racket")
  (execute-menu-item-label "Выполнить")
  (execute-menu-item-help-string "Перезапустить программу в окне определений")
  (ask-quit-menu-item-label "Прервать программу")
@@ -1157,14 +1157,14 @@ please adhere to these guidelines:
  ;;; version checker
  (version:update-menu-item   "Проверить обновления...")
  (version:update-check       "Проверка обновлений") ; dialog title, with the next line
- (version:connecting-server  "Соединение с сервером версии PLT")
- (version:results-title      "Проверка версии PLT")
- (version:do-periodic-checks "Периодически проверять более новые версии PLT Scheme")
+ (version:connecting-server  "Соединение с сервером версии Racket")
+ (version:results-title      "Проверка версии Racket")
+ (version:do-periodic-checks "Периодически проверять более новые версии Racket")
  (version:take-me-there      "Обновить") ; ...to the download website
  ;; the next one can appear alone, or followed by a comma and the one after that
- (version:plt-up-to-date     "У Вас новейшая версия PLT")
+ (version:plt-up-to-date     "У Вас новейшая версия Racket")
  (version:but-newer-alpha    "однако заметьте, что есть более новая альфа-версия")
- ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+ ;; This is used in this context: "Racket vNNN <<<*>>> http://download..."
  (version:now-available-at   "теперь доступно в")
 
  ;; insert menu
@@ -1191,8 +1191,8 @@ please adhere to these guidelines:
  (module-browser-show-lib-paths/short "Показывать пути к библиотекам") ;; check box label in show module browser pane in drscheme window.
  (module-browser-show-planet-paths/short "Показывать пути к PLanet") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Обновить") ;; button label in show module browser pane in drscheme window.
- (module-browser-only-in-plt-and-module-langs
-  "Браузер модуля доступен только для программ на PLT-языках и на языке модуля (и только для программ, которые содержат модули).")
+; (module-browser-only-in-plt-and-module-langs
+;  "Браузер модуля доступен только для программ на PLT-языках и на языке модуля (и только для программ, которые содержат модули).")
  (module-browser-name-length "Длина имени")
  (module-browser-name-short "Короткая")
  (module-browser-name-medium "Средняя")
@@ -1231,13 +1231,13 @@ please adhere to these guidelines:
  (snips-and-arrows-hide-all-snips-in-editor "Скрыть все инструменты, вставленные в редактор")
 
  (xml-tool-insert-xml-box "Вставить блок XML")
- (xml-tool-insert-scheme-box "Вставить блок Scheme")
- (xml-tool-insert-scheme-splice-box "Присоединить блок Scheme")
+ (xml-tool-insert-scheme-box "Вставить блок Racket")
+ (xml-tool-insert-scheme-splice-box "Присоединить блок Racket")
  (xml-tool-xml-box "XML блок")
- (xml-tool-scheme-box "Scheme блок")
- (xml-tool-scheme-splice-box "Присоединенный блок Scheme")
- (xml-tool-switch-to-scheme "Переключиться на блок Scheme")
- (xml-tool-switch-to-scheme-splice "Переключиться присоединенный на блок Scheme")
+ (xml-tool-scheme-box "Racket блок")
+ (xml-tool-scheme-splice-box "Присоединенный блок Racket")
+ (xml-tool-switch-to-scheme "Переключиться на блок Racket")
+ (xml-tool-switch-to-scheme-splice "Переключиться присоединенный на блок Racket")
  (xml-tool-eliminate-whitespace-in-empty-tags
   "Убирать пробелы в пустых тегах")
  (xml-tool-leave-whitespace-alone
@@ -1378,7 +1378,7 @@ please adhere to these guidelines:
   ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "Прикрепить отчет о тестировании")
   (test-engine-undock-report "Открепить отчет о тестировании")
-  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  ;;Following two appear in Racket (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "Разрешить тестирование")
   (test-engine-disable-tests "Запретить тестирование")
  
@@ -1445,7 +1445,7 @@ please adhere to these guidelines:
   ;; Errors
   (test-case-empty-error "Пустой тестовый набор")
   (test-case-too-many-expressions-error "Слишком много выражений в тестовом наборе.")
-  ;; Dr. Scheme window menu items
+  ;; DrRacket window menu items
   (test-case-insert "Вставить тестовый набор")
   (test-case-disable-all "Отключить все тестовые наборы")
   (test-case-enable-all "Включить все тестовые наборы")

@@ -2,22 +2,23 @@
 @(require scribble/manual
           scribble/bnf
           (for-label openssl
-		     scheme))
+		     scheme
+                     openssl/sha1))
 
 @title{@bold{OpenSSL}}
 
 @defmodule[openssl]
 
 The @schememodname[openssl] library provides glue for the OpenSSL
-library with the Scheme port system. It provides functions nearly
-identically to the standard TCP subsystem in PLT Scheme, plus a
+library with the Racket port system. It provides functions nearly
+identically to the standard TCP subsystem in Racket, plus a
 generic @scheme[ports->ssl-ports] interface.
 
 To use this library, you will need OpenSSL installed on your machine,
 but
 
 @itemize[
-  @item{for Windows, the PLT Scheme distribution for Windows includes
+  @item{for Windows, the Racket distribution for Windows includes
   the necessary DLLs.}
 
   @item{for Mac OS X, version 10.2 and later provides the necessary
@@ -339,13 +340,42 @@ collection for testing purposes where the peer identifies itself using
 
 @; ----------------------------------------------------------------------
 
+@section{SHA-1 Hashing}
+
+@defmodule[openssl/sha1]{The @schememodname[openssl/sha1] library
+provides a Racket wrapper for the OpenSSL library's SHA-1 hashing
+functions.}
+
+@defproc[(sha1 [in input-port]) string?]{
+
+Returns a 40-character string that represents the SHA-1 hash (in
+hexadecimal notation) of the content from @scheme[in], consuming all
+of the input from @scheme[in] until an end-of-file.
+
+The @scheme[sha1] function composes @scheme[bytes->hex-string] with
+@racket[sha1-bytes].}
+
+@defproc[(sha1-bytes [in input-port]) bytes?]{
+
+Returns a 20-byte byte string that represents the SHA-1 hash of the
+content from @scheme[in], consuming all of the input from @scheme[in]
+until an end-of-file.}
+
+@defproc[(bytes->hex-string [bstr bytes?]) string?]{
+
+Converts the given byte string to a string representation, where each
+byte in @scheme[bstr] is converted to its two-digit hexadecimal
+representation in the resulting string.}
+
+@; ----------------------------------------------------------------------
+
 @section{Implementation Notes}
 
 For Windows, @schememodname[openssl] relies on @filepath{libeay32.dll}
 and @filepath{ssleay32.dll}, where the DLLs are located in the same
 place as @filepath{libmzsch@nonterm{vers}.dll} (where @nonterm{vers}
-is either @tt{xxxxxxx} or a mangling of PLT Scheme's version
-number). The DLLs are distributed as part of PLT Scheme.
+is either @tt{xxxxxxx} or a mangling of Racket's version
+number). The DLLs are distributed as part of Racket.
 
 For Unix variants, @schememodname[openssl] relies on
 @filepath{libcryto.so} and @filepath{libssl.so}, which must be

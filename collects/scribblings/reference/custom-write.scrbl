@@ -14,8 +14,8 @@ instances of the structure type.
 The procedure for a @scheme[prop:custom-write] value takes three
 arguments: the structure to be printed, the target port, and an
 argument that is @scheme[#t] for @scheme[write] mode, @scheme[#f] for
-@scheme[display] mode, or an exact non-negative integer representing
-the current @scheme[quasiquote] depth for @scheme[print] mode.  The
+@scheme[display] mode, or @scheme[0] or @scheme[1] indicating
+the current @tech{quoting depth} for @scheme[print] mode.  The
 procedure should print the value to the given port using
 @scheme[write], @scheme[display], @scheme[print], @scheme[fprintf],
 @scheme[write-special], etc.
@@ -88,3 +88,16 @@ property, @scheme[#f] otherwise.}
          (custom-write? output-port? boolean?. -> . any)]{
 
 Returns the custom-write procedure associated with @scheme[v].}
+
+@deftogether[(
+@defthing[prop:custom-print-as-constructor struct-type-property?]
+@defthing[custom-print-as-constructor? struct-type-property?]
+@defthing[custom-print-as-constructor-accessor struct-type-property?]
+)]{
+
+A property and associated predicate and accessor. The property value
+is always a boolean. When a structure has this property as @scheme[#t]
+in addition to a @scheme[prop:custom-write] property value, then it is
+never considered @tech{quotable} for printing, which can change the
+way that enclosing datatypes are printed.}
+

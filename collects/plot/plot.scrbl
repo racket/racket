@@ -260,7 +260,7 @@ plots, fit curves to data, and some useful miscellaneous functions.
 @subsection{Plotting}
 
 The @scheme[plot] and @scheme[plot3d] functions generate plots that can be
-viewed in the DrScheme interactions window.
+viewed in the DrRacket interactions window.
 
 @defproc[(plot [data ((is-a?/c 2d-view%) . -> . void?)]
                [#:width width real? 400]

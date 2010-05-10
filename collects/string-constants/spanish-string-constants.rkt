@@ -42,7 +42,7 @@
  (web-materials "Sitios de Web Relacionados")
  (tool-web-sites "Sitios de Web de Herramientas")   ;; menu item title
  (drscheme-homepage "DrRacket")
- (plt-homepage "PLT")
+ (plt-homepage "Racket")
  (how-to-use-scheme "Cómo Usar Scheme")
  (teachscheme!-homepage "TeachScheme!")
  
@@ -150,7 +150,7 @@
 
   ;; modes
  (mode-submenu-label "Modos")
- (scheme-mode "Modo Scheme")
+ (scheme-mode "Modo Racket")
  (text-mode "Modo Texto")
 
  (scheme-mode-color-symbol "Símbolo")
@@ -282,7 +282,7 @@
  (preferences "Preferencias")
  (error-saving-preferences "Error al salvar preferencias: ~a")
  (error-reading-preferences "Error al leer preferencias")
- (scheme-prefs-panel-label "Scheme")
+ (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Advertencias")
  (editor-prefs-panel-label "Editando")
  (general-prefs-panel-label "General") 
@@ -342,7 +342,7 @@
  ; warning message when lockfile is around
  (waiting-for-pref-lock "Esperando el archivo candado de las preferencias...")
  (pref-lock-not-gone
-  "El archivo candado de las preferencias:\n\n   ~a\n\nevita que éstas sean salvadas. Asegúrate que ningún otro software de PLT esté corriendo y borra este archivo.")
+  "El archivo candado de las preferencias:\n\n   ~a\n\nevita que éstas sean salvadas. Asegúrate que ningún otro software de Racket esté corriendo y borra este archivo.")
  (still-locked-exit-anyway? "Las preferencias no fueron salvadas exitosamente. ¿Salir de cualquier forma?")
 
  ;;; indenting preferences panel
@@ -658,7 +658,7 @@
  (language-menu-name "&Lenguaje")
  
  ;;; scheme-menu
- (scheme-menu-name "S&cheme")
+ (scheme-menu-name "Ra&cket")
  (execute-menu-item-label "Ejecutar")
  (execute-menu-item-help-string "Reinicia el programa en la ventana de definiciones")
  (break-menu-item-label "Interrumpir")
@@ -679,10 +679,10 @@
  (create-executable-menu-item-label "Crear ejecutable...")
  (create-executable-title "Crear Ejecutable")
  (must-save-before-executable "Debes salvar tu programa antes de hacer un ejecutable.")
- (save-a-mred-launcher "Salvar un lanzador de MrEd")
- (save-a-mzscheme-launcher "Salvar un lanzador de MzScheme")
- (save-a-mred-stand-alone-executable "Salvar un ejecutable autocontenido de MrEd")
- (save-a-mzscheme-stand-alone-executable "Salvar un ejecutable autocontenido de MzScheme")
+ (save-a-mred-launcher "Salvar un lanzador de GRacket")
+ (save-a-mzscheme-launcher "Salvar un lanzador de Racket")
+ (save-a-mred-stand-alone-executable "Salvar un ejecutable autocontenido de GRacket")
+ (save-a-mzscheme-stand-alone-executable "Salvar un ejecutable autocontenido de Racket")
 
  (definitions-not-saved "La ventana de definiciones no ha sido salvada. El ejecutable usará la última versión salvada de la ventana de definiciones. ¿Desea continuar?")
  (launcher "Lanzador")
@@ -920,8 +920,8 @@
  (module-browser-show-lib-paths/short "Seguir los requires de bibliotecas (lib)") ;; check box label in show module browser pane in drscheme window.
  (module-browser-show-planet-paths/short "Seguir los requires de bibliotecas (planet)") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Refrescar") ;; button label in show module browser pane in drscheme window.
- (module-browser-only-in-plt-and-module-langs
-  "El navegador de módulos está disponible para programas en los lenguajes PLT y en el lenguaje con módulos (y únicamente para programas que incluyan módulos).")
+; (module-browser-only-in-plt-and-module-langs
+;  "El navegador de módulos está disponible para programas en los lenguajes PLT y en el lenguaje con módulos (y únicamente para programas que incluyan módulos).")
  (module-browser-name-length "Longitud de nombre")
  (module-browser-name-short "Corto")
  (module-browser-name-medium "Medio")
@@ -955,14 +955,14 @@
  (snips-and-arrows-user-action-disallowed "Cambios del usuario no son permitidos en editores que contienen partes insertadas por herramientas.  Esconde todas las partes antes de modificar el contenido del editor.")
  (snips-and-arrows-hide-all-snips-in-editor "Esconder todas las partes en el editor")
 
- (xml-tool-insert-scheme-box "Insertar Caja de Scheme")
- (xml-tool-insert-scheme-splice-box "Insertar Caja de Unión de Scheme")
+ (xml-tool-insert-scheme-box "Insertar Caja de Racket")
+ (xml-tool-insert-scheme-splice-box "Insertar Caja de Unión de Racket")
  (xml-tool-insert-xml-box "Insertar Caja de XML")
  (xml-tool-xml-box "Caja de XML")
- (xml-tool-scheme-box "Caja de Scheme")
- (xml-tool-scheme-splice-box "Caja de Unión de Scheme")
- (xml-tool-switch-to-scheme "Cambiar a caja de  Scheme")
- (xml-tool-switch-to-scheme-splice "Cambiar a caja de unión de Scheme")
+ (xml-tool-scheme-box "Caja de Racket")
+ (xml-tool-scheme-splice-box "Caja de Unión de Racket")
+ (xml-tool-switch-to-scheme "Cambiar a caja de  Racket")
+ (xml-tool-switch-to-scheme-splice "Cambiar a caja de unión de Racket")
  (xml-tool-eliminate-whitespace-in-empty-tags "Eliminar blancos en etiquetas vacías")
  (xml-tool-leave-whitespace-alone "Dejar blancos por la paz")
 
@@ -1034,7 +1034,7 @@
  ;; Errors
  (test-case-empty-error "Caso de prueba vacío")
  (test-case-too-many-expressions-error "Demasiadas expresiones en el caso de prueba.")
- ;; Dr. Scheme window menu items
+ ;; DrRacket window menu items
  (test-case-insert "Insertar Caso de Prueba")
  (test-case-disable-all "Deshabilitar todos los Casos de Prueba")
  (test-case-enable-all "Habilitar todos los Casos de Prueba")

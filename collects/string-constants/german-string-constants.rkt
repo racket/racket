@@ -36,7 +36,7 @@
  (web-materials "Verwandte Web-Seiten")
  (tool-web-sites "Web-Seiten mit Tools")
  (drscheme-homepage "DrRacket")
- (plt-homepage "PLT")
+ (plt-homepage "Racket")
  (how-to-use-scheme "How to Use Scheme")
  (teachscheme!-homepage "TeachScheme!")
 
@@ -155,7 +155,7 @@
 
  ;; modes
  (mode-submenu-label "Modi")
- (scheme-mode "Scheme-Modus")
+ (scheme-mode "Racket-Modus")
  (text-mode "Text-Modus")
 
  (scheme-mode-color-symbol "Symbol")
@@ -309,7 +309,7 @@
  (prefs-file-locked "Die Datei mit den Einstellungen ist gesperrt (weil die Datei ~a existiert), weshalb die Änderungen an den Einstellungen nicht gespeichert werden konnten. Änderung an den Einstellungen rückgängig machen?")
  (try-again "Nochmal versuchen") ;; button label
  (prefs-file-still-locked "Die Datei mit den Einstellungen ist immer noch gesperrt (weil die Datei ~a existiert), weshalb die Änderungen an den Einstellungen nicht gespeichert werden konnten.")
- (scheme-prefs-panel-label "Scheme")
+ (scheme-prefs-panel-label "Racket")
  (warnings-prefs-panel-label "Warnmeldungen")
  (editor-prefs-panel-label "Editieren")
  (general-prefs-panel-label "Allgemein")
@@ -381,7 +381,7 @@
  ; warning message when lockfile is around
  (waiting-for-pref-lock "Auf Lock-Datei für Einstellungen warten...")
  (pref-lock-not-gone
-  "Die Lock-Datei für die Einstellungen:\n\n   ~a\n\nverhindert, dass die Einstellungen abgespeichert werden können. Bitte stellen Sie sicher, dass keine andere PLT-Software läuft und löschen Sie dann diese Datei.")
+  "Die Lock-Datei für die Einstellungen:\n\n   ~a\n\nverhindert, dass die Einstellungen abgespeichert werden können. Bitte stellen Sie sicher, dass keine andere Racket-Software läuft und löschen Sie dann diese Datei.")
  (still-locked-exit-anyway? "Die Einstellungen wurden nicht korrekt gespeichert.  Trotzdem beenden?")
  
  ;;; indenting preferences panel
@@ -764,7 +764,7 @@
  (language-menu-name "&Sprache")
  
  ;;; scheme-menu
- (scheme-menu-name "S&cheme")
+ (scheme-menu-name "Ra&cket")
  (execute-menu-item-label "Start")
  (execute-menu-item-help-string "Das Programm im Definitionsfenster neu starten")
 
@@ -793,12 +793,12 @@
  (create-executable-menu-item-label "Programmdatei generieren...")
  (create-executable-title "Programmdatei generieren")
  (must-save-before-executable "Sie müssen vor der Generierung einer Programmdatei speichern.")
- (save-a-mred-launcher "MrEd-Launcher speichern")
- (save-a-mzscheme-launcher "MzScheme-Launcher speichern")
- (save-a-mred-stand-alone-executable "MrEd-Stand-Alone-Programmdatei speichern")
- (save-a-mzscheme-stand-alone-executable "MzScheme-Stand-Alone-Programmdatei speichern")
- (save-a-mred-distribution "MrEd-Distribution speichern")
- (save-a-mzscheme-distribution "MzScheme-Distribution speichern")
+ (save-a-mred-launcher "GRacket-Launcher speichern")
+ (save-a-mzscheme-launcher "Racket-Launcher speichern")
+ (save-a-mred-stand-alone-executable "GRacket-Stand-Alone-Programmdatei speichern")
+ (save-a-mzscheme-stand-alone-executable "Racket-Stand-Alone-Programmdatei speichern")
+ (save-a-mred-distribution "GRacket-Distribution speichern")
+ (save-a-mzscheme-distribution "Racket-Distribution speichern")
 
  (definitions-not-saved "Die Definitionen sind nicht gespeichert. Die Programmdatei wird von der letzten gespeicherten Version gezogen. Weitermachen?")
  (launcher "Launcher")
@@ -957,6 +957,13 @@
   
  (module-language-auto-text "Automatisch Zeile mit #lang") ;; shows up in the details section of the module language
 
+ ;; for the upper portion of the language dialog
+ (use-language-in-source "Im Quelltext angegebene Sprache benutzen")
+ (choose-a-language "Sprache auswählen")
+ (lang-in-source-discussion
+ "Die Zeile mit \"#lang\" am Anfang eines Programms legt die Sprache fest. Das ist der präferierte Standard-Modus von DrRacket.")
+ 
+
   ;;; from the `not a language language' used initially in drscheme.
  (must-choose-language "DrRacket kann keine Programme verarbeiten, bis Sie eine Sprache auswählen.")
  
@@ -970,6 +977,7 @@
  (start-with-after "anfangen?")
 
  (seasoned-plt-schemer? "Erfahrener PLT-Schemer?")
+ (racketeer? "Sind Sie ein Racketeer?")
  (looking-for-standard-scheme? "Wollen Sie Standard-Scheme?")
  
  ;; the three string constants are concatenated together and the middle
@@ -1057,14 +1065,14 @@
  ;;; version checker
  (version:update-menu-item "Nach Updates schauen...")
  (version:update-check "Update-Prüfung")
- (version:connecting-server  "Mit PLT-Versions-Server verbinden")
- (version:results-title      "PLT-Versions-Check")
- (version:do-periodic-checks "Regelmäßig nach neueren PLT-Scheme-Versionen schauen")
+ (version:connecting-server  "Mit Racket-Versions-Server verbinden")
+ (version:results-title      "Racket-Versions-Check")
+ (version:do-periodic-checks "Regelmäßig nach neueren Racket-Versionen schauen")
  (version:take-me-there      "Dorthin gehen") ; ...to the download website
  ;; the next one can appear alone, or followed by a comma and the one after that
- (version:plt-up-to-date     "Die PLT-Version ist aktuell")
+ (version:plt-up-to-date     "Die Racket-Version ist aktuell")
  (version:but-newer-alpha    "aber es gibt eine neuere Alpha-Version")
- ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+ ;; This is used in this context: "Racket vNNN <<<*>>> http://download..."
  (version:now-available-at   "ist jetzt verfügbar bei")
 
  ;; insert menu
@@ -1092,7 +1100,7 @@
  (module-browser-show-planet-paths/short "\"PLaneT\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Aktualisieren") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
-  "Der Modul-Browser ist nur für Programme in den PLT-Sprachen und in der Modul-Sprache verfügbar (und nur für Programme mit Modulen).")
+  "Der Modul-Browser ist nur für modulbasierte Programme verfügbar.")
  (module-browser-name-length "Länge der Namen")
  (module-browser-name-short "Kurz")
  (module-browser-name-medium "Mittel")
@@ -1131,13 +1139,13 @@
  (snips-and-arrows-hide-all-snips-in-editor "Alle Snips im Editor ausblenden")
 
  (xml-tool-insert-xml-box "XML-Kasten einfügen")
- (xml-tool-insert-scheme-box "Scheme-Kasten einfügen")
- (xml-tool-insert-scheme-splice-box "Scheme-Spleiß-Kasten einfügen")
+ (xml-tool-insert-scheme-box "Racket-Kasten einfügen")
+ (xml-tool-insert-scheme-splice-box "Racket-Spleiß-Kasten einfügen")
  (xml-tool-xml-box "XML-Kasten")
- (xml-tool-scheme-box "Scheme-Kasten")
- (xml-tool-scheme-splice-box "Scheme-Spleiß-Kasten")
- (xml-tool-switch-to-scheme "In Scheme-Kasten verwandeln")
- (xml-tool-switch-to-scheme-splice "In Scheme-Spleiß-Kasten verwandeln")
+ (xml-tool-scheme-box "Racket-Kasten")
+ (xml-tool-scheme-splice-box "Racket-Spleiß-Kasten")
+ (xml-tool-switch-to-scheme "In Racket-Kasten verwandeln")
+ (xml-tool-switch-to-scheme-splice "In Racket-Spleiß-Kasten verwandeln")
  (xml-tool-eliminate-whitespace-in-empty-tags
   "Überflüssigen Whitespace in leeren Tags entfernen")
  (xml-tool-leave-whitespace-alone
@@ -1280,7 +1288,7 @@
   ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "Testresultate andocken")
  (test-engine-undock-report "Testresultate abdocken")
-  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  ;;Following two appear in Racket (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "Test aktivieren")
   (test-engine-disable-tests "Tests deaktivieren")
   
@@ -1348,7 +1356,7 @@
   ;; Errors
   (test-case-empty-error "Leerer Testfall")
   (test-case-too-many-expressions-error "Zu viele Ausdrücke in einem Testfall")
-  ;; Dr. Scheme window menu items
+  ;; DrRacket window menu items
   (test-case-insert "Testfall einfügen")
   (test-case-disable-all "Alle Testfälle deaktivieren")
   (test-case-enable-all "Alle Testfälle aktivieren")

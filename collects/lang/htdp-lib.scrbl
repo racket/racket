@@ -63,8 +63,9 @@ Student language for @|htdp|; see @htdp-ref["advanced"].
 @defmodule[lang/plt-pretty-big-text]
 
 The @schememodname[lang/plt-pretty-big-text] module is similar to the
-@italic{HtDP} Advanced Student language, but with more of PLT Scheme's
-libraries. It provides the bindings of @schememodname[mzscheme],
+@italic{HtDP} Advanced Student language, but with more of Racket's
+libraries in legacy form. It provides the bindings of 
+@schememodname[mzscheme],
 @schememodname[mzlib/etc], @schememodname[mzlib/file],
 @schememodname[mzlib/list], @schememodname[mzlib/class],
 @schememodname[mzlib/unit], @schememodname[mzlib/include],
@@ -82,7 +83,7 @@ libraries. It provides the bindings of @schememodname[mzscheme],
 The @schememodname[lang/plt-pretty-big] module extends
 @scheme[lang/plt-pretty-big-text] with @schememodname[scheme/gui/base]
 and @schememodname[lang/imageeq].  This language corresponds to the
-@onscreen{Pretty Big Scheme} legacy language in DrScheme.
+@onscreen{Pretty Big} legacy language in DrRacket.
 
 @; ----------------------------------------------------------------------
 

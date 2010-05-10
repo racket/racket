@@ -8,9 +8,9 @@
 A @deftech{hash table} implements a mapping from keys to values, where
 both keys and values can be arbitrary Scheme values, and access and
 update to the table are normally constant-time operations. Keys are
-compared using @scheme[equal?] or @scheme[eq?], depending on whether
-the hash table is created with @scheme[make-hash] or
-@scheme[make-hasheq].
+compared using @scheme[equal?], @scheme[eqv?], or @scheme[eq?], depending on whether
+the hash table is created with @scheme[make-hash],
+@scheme[make-hasheqv], or @scheme[make-hasheq].
 
 @examples[
 (define ht (make-hash))
@@ -21,29 +21,50 @@ the hash table is created with @scheme[make-hash] or
 (hash-ref ht "coconut" "not there")
 ]
 
-A literal hash table can be written as an expression by using
+The @racket[hash], @racket[hasheqv], and @racket[hasheq] functions
+create immutable hash tables from an initial set of keys and values,
+which each value is provided as an argument after its key. Immutable
+hash tables can be extended with @scheme[hash-set], which produces a
+new immutable hash table in constant time.
+
+@examples[
+(define ht (hash "apple" 'red "banana" 'yellow))
+(hash-ref ht "apple")
+(define ht2 (hash-set ht "coconut" 'brown))
+(hash-ref ht "coconut")
+(hash-ref ht2 "coconut")
+]
+
+A literal immutable hash table can be written as an expression by using
 @litchar{#hash} (for an @scheme[equal?]-based table),
-@litchar{#hasheq} (for an @scheme[eq?]-based table), or
-@litchar{#hasheqv} (for an @scheme[eqv?]-based table). A parenthesized
+@litchar{#hasheqv} (for an @scheme[eqv?]-based table), or
+@litchar{#hasheq} (for an @scheme[eq?]-based table). A parenthesized
 sequence must immediately follow @litchar{#hash}, @litchar{#hasheq},
 or @litchar{#hasheqv}, where each element is a sequence is a dotted
-key--value pair. Literal hash tables are immutable, but they can be
-extended functionally (producing a new hash table without changing the
-old one) using @scheme[hash-set].
+key--value pair. The @litchar{#hash}, etc. forms implicitly
+@scheme[quote] their key and value sub-forms.
 
 @examples[
 (define ht #hash(("apple" . red)
                  ("banana" . yellow)))
 (hash-ref ht "apple")
-(define ht2 (hash-set ht "coconut" 'brown))
-(hash-ref ht "coconut")
-(hash-ref ht2 "coconut")
-ht2
 ]
 
 @refdetails/gory["parse-hashtable"]{the syntax of hash table literals}
 
-A non-literal hash table can optionally retain its keys
+Both mutable and immutable hash tables print like immutable hash
+tables, using a quoted @litchar{#hash}, @litchar{#hasheqv}, or
+@litchar{#hasheq} form if all keys and values can be expressed with
+@scheme[quote] or using @racketresult[hash], @racketresult[hasheq], or
+@racketresult[hasheqv] otherwise:
+
+@examples[
+#hash(("apple" . red)
+      ("banana" . yellow))
+(hash 1 (srcloc "file.rkt" 1 0 1 (+ 4 4)))
+]
+
+A mutable hash table can optionally retain its keys
 @defterm{weakly}, so each mapping is retained only so long as the key
 is retained elsewhere.
 

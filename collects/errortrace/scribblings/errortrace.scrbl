@@ -10,9 +10,9 @@
 @title[#:tag "top"]{@bold{Errortrace}: Debugging and Profiling}
 
 @bold{Errortrace} is a stack-trace-on-exceptions, profiler, and
-coverage tool for MzScheme. It is not a complete debugger; DrScheme
+coverage tool for Racket. It is not a complete debugger; DrRacket
 provides more. Meanwhile, using Errortrace might be better than
-MzScheme's limited stack-trace reporting.
+Racket's limited stack-trace reporting.
 
 @table-of-contents[]
 
@@ -29,19 +29,19 @@ Then,
 @itemize[
          @item{If your program has a module file @nonterm{prog}, run it with
               
-               @commandline{mzscheme -l errortrace -t @nonterm{prog}}}
+               @commandline{racket -l errortrace -t @nonterm{prog}}}
 
          @item{If you program is a non-module top-level sequence of
                definitions and expressions, you can instead add
                @schemeblock[(require errortrace)]
-               to the beginning of the program or start MzScheme with the @Flag{l} option before the
+               to the beginning of the program or start Racket with the @Flag{l} option before the
                arguments to load your program:
-               @commandline{mzscheme -l errortrace ...}}
+               @commandline{racket -l errortrace ...}}
 
          @item{If you have no main program and you want to use
-               MzScheme interactively, include the @Flag{i} flag
+               Racket interactively, include the @Flag{i} flag
                before @Flag{l}:
-               @commandline{mzscheme -i -l errortrace}}
+               @commandline{racket -i -l errortrace}}
          ]
 
 After starting @schememodname[errortrace] in one of these ways, when an
@@ -64,7 +64,7 @@ handler or the error display handler.
 
 Invoking the 
 @schememodname[errortrace] module sets the compilation
-handler to instrument Scheme source code.  It also sets the error 
+handler to instrument Racket source code.  It also sets the error 
 display handler to report source information for an exception, and it
 sets the @scheme[use-compiled-file-paths] parameter to trigger the use
 of Errortrace-specific @filepath{.zo} files.

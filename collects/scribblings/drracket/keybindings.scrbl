@@ -205,7 +205,7 @@ s-exp framework/keybinding-lang
 
 The @racket[framework/keybinding-lang] languages provides all of the bindings
 from @racketmodname[racket], @racketmodname[racket/class], and
-@racketmodname[drscheme/tool-lib], 
+@racketmodname[drracket/tool-lib], 
 except that it adjusts @|mz-mod-begin| to
 introduce a @racketidfont{keybinding} form:
 

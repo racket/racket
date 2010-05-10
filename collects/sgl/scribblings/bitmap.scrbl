@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss"
-          (for-label scheme/class))
+          (for-label racket/class))
 
 @title[#:tag "bitmaps"]{Bitmaps}
 
@@ -15,14 +15,14 @@
          exact-integer?]{
 
 Converts the given bitmap into an OpenGL list that can be rendered
-with @scheme[gl-call-list] or @scheme[glCallList]. The rendered object
+with @racket[gl-call-list] or @racket[glCallList]. The rendered object
 is a square on the @math{z=0} plane with corners at @math{(0,0)} and
 @math{(1,1)}.
 
-The @scheme[with-gl-proc] must accept a thunk and call it while the
+The @racket[with-gl-proc] must accept a thunk and call it while the
 relevant OpenGL context is selected. Otherwise, the relevant OpenGL
 context must be selected already.
 
-If @scheme[mask] is not @scheme[#f], it is used as the mask bitmap for
+If @racket[mask] is not @racket[#f], it is used as the mask bitmap for
 extracting alpha values.}
 

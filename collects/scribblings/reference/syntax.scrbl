@@ -202,9 +202,12 @@ is a module path (in the sense of @racket[module-path?]) and the
 second is a symbol, then the property value is preserved in the
 corresponding compiled and/or declared module. The third component of
 the vector should be printable and @racket[read]able, so that it can
-be preserved in marshaled bytecode. See also
-@racket[module-compiled-language-info] and
-@racket[module->language-info].}
+be preserved in marshaled bytecode. The @racketmodname[racket/base]
+and @racketmodname[racket] languages attach
+@scheme['#(racket/language-info get-info #f)] to a @racket[module]
+form. See also @racket[module-compiled-language-info],
+@racket[module->language-info], and
+@racketmodname[racket/language-info].}
 
 See also @secref["module-eval-model"] and @secref["mod-parse"].
 

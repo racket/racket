@@ -92,7 +92,7 @@
 
 (define (decompile-module mod-form stack)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body unexported 
+    [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported 
                        max-let-depth dummy lang-info internal-context))
      (let-values ([(globs defns) (decompile-prefix prefix)]
                   [(stack) (append '(#%modvars) stack)]

@@ -60,7 +60,7 @@
   (web-materials "相关网站") ;; menu item title
   (tool-web-sites "Tools网站")   ;; menu item title
   (drscheme-homepage "DrRacket")
-  (plt-homepage "PLT")
+  (plt-homepage "Racket")
   (how-to-use-scheme "How to Use Scheme") ;; title of a book.
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
   
@@ -170,7 +170,7 @@
   
   ;; modes
   (mode-submenu-label "模式")
-  (scheme-mode "Scheme模式")
+  (scheme-mode "Racket模式")
   (text-mode "文本模式")
   
   (scheme-mode-color-symbol "符号")
@@ -329,7 +329,7 @@
   (prefs-file-locked "存储参数的文件被锁定了（由于文件~a的存在），所以这些参数无法被保存。放弃修改？")
   (try-again "重试") ;; button label
   (prefs-file-still-locked "存储参数的文件仍然被锁定（由于文件~a的存在）, 所以这些参数将不会被保存。")
-  (scheme-prefs-panel-label "Scheme")
+  (scheme-prefs-panel-label "Racket")
   (warnings-prefs-panel-label "警告")
   (editor-prefs-panel-label "编辑")
   (general-prefs-panel-label "常规")
@@ -399,7 +399,7 @@
   ; warning message when lockfile is around
   (waiting-for-pref-lock "等待参数设置文件解锁...")
   (pref-lock-not-gone
-   "参数设置封锁文件：\n\n ~a\n\n禁止保存参数设置。请确定没有其他PLT软件正在运行中，然后删除该封锁文件。")
+   "参数设置封锁文件：\n\n ~a\n\n禁止保存参数设置。请确定没有其他Racket软件正在运行中，然后删除该封锁文件。")
   (still-locked-exit-anyway? "参数无法保存。仍然退出？")
   
   ;;; indenting preferences panel
@@ -770,7 +770,7 @@
   (language-menu-name "语言(&L)")
   
   ;;; scheme-menu
-  (scheme-menu-name "S&cheme")
+  (scheme-menu-name "Ra&cket")
   (execute-menu-item-label "运行")
   (execute-menu-item-help-string "运行定义视窗中的程序")
   (ask-quit-menu-item-label "中断")
@@ -797,12 +797,12 @@
   (create-executable-menu-item-label "创建可执行程序...")
   (create-executable-title "创建可执行程序")
   (must-save-before-executable "在创建可执行程序之前，你必须保存源程序")
-  (save-a-mred-launcher "保存为MrEd程序")
-  (save-a-mzscheme-launcher "保存为MzScheme程序")
-  (save-a-mred-stand-alone-executable "保存为MrEd可执行程序")
-  (save-a-mzscheme-stand-alone-executable "保存为MzScheme可执行程序")
-  (save-a-mred-distribution "保存为MrEd可发布程序")
-  (save-a-mzscheme-distribution "保存为MzScheme可发布程序")
+  (save-a-mred-launcher "保存为GRacket程序")
+  (save-a-mzscheme-launcher "保存为Racket程序")
+  (save-a-mred-stand-alone-executable "保存为GRacket可执行程序")
+  (save-a-mzscheme-stand-alone-executable "保存为Racket可执行程序")
+  (save-a-mred-distribution "保存为GRacket可发布程序")
+  (save-a-mzscheme-distribution "保存为Racket可发布程序")
   
   (definitions-not-saved "当前定义视窗中的程序并没有被保存过。将使用最近保存过的版本来生成可执行程序。是否继续？")
   ;; The "-explanatory-label" variants are the labels used for the radio buttons in
@@ -1014,7 +1014,7 @@
   ;;Following two appear in View menu, attach and free test report window from DrRacket frame
   (test-engine-dock-report "在面板中显示测试报告")
   (test-engine-undock-report "独立显示测试报告")
-  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  ;;Following two appear in Racket (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "启用测试功能")
   (test-engine-disable-tests "停用测试功能")
   
@@ -1061,14 +1061,14 @@
   ;;; version checker
   (version:update-menu-item   "检查更新...")
   (version:update-check       "检查更新") ; dialog title, with the next line
-  (version:connecting-server  "连接PLT版本服务器")
-  (version:results-title      "PLT版本检查")
-  (version:do-periodic-checks "自动定期检查PLT Scheme版本更新")
+  (version:connecting-server  "连接Racket版本服务器")
+  (version:results-title      "Racket版本检查")
+  (version:do-periodic-checks "自动定期检查Racket版本更新")
   (version:take-me-there      "下载") ; ...to the download website
   ;; the next one can appear alone, or followed by a comma and the one after that
-  (version:plt-up-to-date     "您现在使用的已经是当前版的PLT")
+  (version:plt-up-to-date     "您现在使用的已经是当前版的Racket")
   (version:but-newer-alpha    "但是还有一个更新的alpha版本")
-  ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
+  ;; This is used in this context: "Racket vNNN <<<*>>> http://download..."
   (version:now-available-at   "可以从这里获取：")
   
   ;; insert menu
@@ -1095,8 +1095,8 @@
   (module-browser-show-lib-paths/short "显示lib调用") ;; check box label in show module browser pane in drscheme window.
   (module-browser-show-planet-paths/short "显示planet调用") ;; check box label in show module browser pane in drscheme window.
   (module-browser-refresh "刷新") ;; button label in show module browser pane in drscheme window.
-  (module-browser-only-in-plt-and-module-langs
-   "Module浏览器只能在PLT语言和module语言(并且要求程序中有module)中使用。")
+;  (module-browser-only-in-plt-and-module-langs
+;   "Module浏览器只能在PLT语言和module语言(并且要求程序中有module)中使用。")
   (module-browser-name-length "名称长度")
   (module-browser-name-short "短")
   (module-browser-name-medium "中")
@@ -1126,13 +1126,13 @@
   ;(mrflow-language-primitives-error "Wrong filename for language primitives types table: ~a")
   
   (xml-tool-insert-xml-box "插入XML框")
-  (xml-tool-insert-scheme-box "插入Scheme框")
-  (xml-tool-insert-scheme-splice-box "插入Scheme接合框")
+  (xml-tool-insert-scheme-box "插入Racket框")
+  (xml-tool-insert-scheme-splice-box "插入Racket接合框")
   (xml-tool-xml-box "XML框")
-  (xml-tool-scheme-box "Scheme框")
-  (xml-tool-scheme-splice-box "Scheme接合框")
-  (xml-tool-switch-to-scheme "转变成Scheme框")
-  (xml-tool-switch-to-scheme-splice "转变成Scheme接合框")
+  (xml-tool-scheme-box "Racket框")
+  (xml-tool-scheme-splice-box "Racket接合框")
+  (xml-tool-switch-to-scheme "转变成Racket框")
+  (xml-tool-switch-to-scheme-splice "转变成Racket接合框")
   
   (show-recent-items-window-menu-item "在单独视窗中显示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
@@ -1166,7 +1166,7 @@
   (profj-insert-java-interactions-box "插入Java交互框")
   
   ;; The Test Suite Tool
-  ;; Dr. Scheme window menu items
+  ;; DrRacket window menu items
   (test-case-insert "插入Test Case")
   (test-case-disable-all "禁用所有Test Cases")
   (test-case-enable-all "允许所有Test Cases")

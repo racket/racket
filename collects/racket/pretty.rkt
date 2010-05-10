@@ -221,7 +221,7 @@
 							(pretty-print-print-line))
 				    (print-graph) (print-struct) (print-hash-table)
 				    (and (not display?) (print-vector-length)) (print-box) 
-                                    (and (not display?) as-qq? (print-as-quasiquote))
+                                    (and (not display?) as-qq? (print-as-expression))
 				    (pretty-print-depth)
 				    (lambda (o display?)
 				      (size-hook o display? port)))
@@ -488,14 +488,8 @@
 				 (ormap loop 
 					(vector->list (struct->vector obj)))]
 				[(hash? obj)
-				 (let/ec esc
-				   (hash-for-each
-				    obj
-				    (lambda (v k)
-				      (when (or (loop v)
-						(loop k))
-					(esc #t))))
-				   #f)])])
+                                 (for/or ([(k v) (in-hash obj)])
+                                   (or (loop v) (loop k)))])])
 			  (hash-remove! table obj)
 			  cycle)))))))
 
@@ -547,6 +541,67 @@
 			 (hash-set! table obj 
                                     (make-mark #f (box #f)))))))
                (void)))))
+
+     (define (custom-print? obj)
+       (and (custom-print-as-constructor? obj)
+            (custom-print-as-constructor-accessor obj)))
+
+     (define escapes-table
+       (let* ([table (make-hasheq)]
+              [local-cycle (and found-cycle (make-hasheq))]
+              [escapes! (lambda (obj)
+                          (hash-set! table obj #t)
+                          #t)]
+              [orf (lambda (a b) (or a b))])
+         (and print-as-qq?
+              (let loop ([obj obj])
+                (if (and local-cycle (hash-ref local-cycle obj #f))
+                    #f
+                    (begin
+                      (when local-cycle
+                        (hash-set! local-cycle obj #t))
+                      (begin0
+                       (cond
+                        [ #f]
+                        [(vector? obj)
+                         (let ([len (vector-length obj)])
+                           (let vloop ([esc? #f][i 0])
+                             (if (= i len)
+                                 (and esc? 
+                                      (escapes! obj))
+                                 (vloop (or (loop (vector-ref obj i)) esc?) 
+                                        (add1 i)))))]
+                        [(pair? obj)
+                         (and (orf (loop (car obj))
+                                   (loop (cdr obj)))
+                              (escapes! obj))]
+                        [(mpair? obj)
+                         (loop (mcar obj))
+                         (loop (mcdr obj))
+                         ;; always unquoted:
+                         #t]
+                        [(and (box? obj) print-box?) 
+                         (and (loop (unbox obj))
+                              (escapes! obj))]
+                        [(and (custom-write? obj)
+                              (not (struct-type? obj)))
+                         (and (or (loop (extract-sub-objects obj pport))
+                                  (custom-print? obj))
+                              (escapes! obj))]
+                        [(struct? obj)
+                         (and (or (loop (struct->vector obj))
+                                  (not (prefab-struct-key obj)))
+                              (escapes! obj))]
+                        [(hash? obj)
+                         (and (for/fold ([esc? #f]) ([(k v) (in-hash obj)])
+                                (or (orf (loop v) 
+                                         (loop k))
+                                    esc?))
+                              (escapes! obj))]
+                        [else #f])
+                       (when local-cycle
+                         (hash-remove! local-cycle obj)))))))
+         table))
 
      (define cycle-counter 0)
 
@@ -615,8 +670,44 @@
 	   (register-printing-port-like p pport)
 	   (parameterize ([pretty-printing #t]
 			  [pretty-print-columns (or width 'infinity)])
-	     ((custom-write-accessor obj) obj p (not display?))))))
+	     ((custom-write-accessor obj) obj p (or qd (not display?)))))))
 
+     ;; ------------------------------------------------------------
+     
+     (define (convert-pair obj)
+       (cond
+        [(list? obj) (cons (make-unquoted 'list) 
+                           ;; reconstruct first pair in case it
+                           ;; starts a cycle:
+                           (cons (car obj) (cdr obj)))]
+        [(and (pair? (cdr obj)) 
+              (not (and found
+                        (hash-ref found (cdr obj) #f))))
+         (cons (make-unquoted 'list*)
+               (cons
+                (car obj)
+                (let loop ([obj (cdr obj)])
+                  (cond
+                   [(and found (hash-ref found obj #f)) (list obj)]
+                   [(pair? obj) (cons (car obj) (loop (cdr obj)))]
+                   [else (list obj)]))))]
+        [else (list (make-unquoted 'cons) (car obj) (cdr obj))]))
+
+     (define (convert-hash obj expr?)
+       (let ([l (hash-map obj (lambda (k v)
+                                (if expr?
+                                    (list k v)
+                                    (cons k (make-hide v)))))])
+         (if expr?
+             (cons (make-unquoted
+                    (if (hash-eq? obj)
+                        'hasheq
+                        (if (hash-eqv? obj)
+                            'hasheqv
+                            'hash)))
+                   (apply append l))
+             l)))
+     
      ;; ------------------------------------------------------------
      ;; wr: write on a single line
      (define (wr* pport obj depth display? qd)
@@ -637,47 +728,43 @@
 
        (define (wr-lst l check? depth pair? car cdr open close qd)
 	 (if (pair? l)
-	     (check-expr-found 
-	      l pport check?
-	      #f #f
-	      (lambda ()
-		(if (and depth (zero? depth))
-		    (begin
-                      (out open)
-                      (out "...")
-                      (out close))
-		    (begin
-		      (out open)
-		      (wr (car l) (dsub1 depth) qd)
-		      (let loop ([l (cdr l)])
-			(check-expr-found
-			 l pport (and check? (pair? l))
-			 (lambda (s) (out " . ") (out s) (out close))
-			 (lambda ()
-			   (out " . ")
-			   (wr-lst l check? (dsub1 depth) pair? car cdr open close qd)
-			   (out close))
-			 (lambda ()
-			   (cond 
-			    [(pair? l) 
-			     (if (and (eq? (do-remap (car l)) 'unquote)
-                                      (not (equal? qd 1))
-				      (pair? (cdr l))
-				      (null? (cdr (cdr l))))
-				 (begin
-				   (out " . ,")
-				   (wr (car (cdr l)) (dsub1 depth)
-                                       (reader-adjust-qd (car l) qd))
-				   (out close))
-				 (begin
-				   (out " ")
-				   (wr (car l) (dsub1 depth) qd)
-				   (loop (cdr l))))]
-			    [(null? l) (out close)]
-			    [else
-			     (out " . ")
-			     (wr l (dsub1 depth) qd)
-			     (out close)]))))))))
+	     (if (and depth (zero? depth))
+                 (begin
+                   (out open)
+                   (out "...")
+                   (out close))
+                 (begin
+                   (out open)
+                   (wr (car l) (dsub1 depth) qd)
+                   (let loop ([l (cdr l)])
+                     (check-expr-found
+                      l pport (and check? (pair? l))
+                      (lambda (s) (out " . ") (out s) (out close))
+                      (lambda ()
+                        (out " . ")
+                        (wr-lst l check? (dsub1 depth) pair? car cdr open close qd)
+                        (out close))
+                      (lambda ()
+                        (cond 
+                         [(pair? l) 
+                          (if (and (eq? (do-remap (car l)) 'unquote)
+                                   (not (equal? qd 1))
+                                   (pair? (cdr l))
+                                   (null? (cdr (cdr l))))
+                              (begin
+                                (out " . ,")
+                                (wr (car (cdr l)) (dsub1 depth)
+                                    (reader-adjust-qd (car l) qd))
+                                (out close))
+                              (begin
+                                (out " ")
+                                (wr (car l) (dsub1 depth) qd)
+                                (loop (cdr l))))]
+                         [(null? l) (out close)]
+                         [else
+                          (out " . ")
+                          (wr l (dsub1 depth) qd)
+                          (out close)]))))))
              (begin
                (out open)
                (out close))))
@@ -694,34 +781,56 @@
 	     => (lambda (len)
 		  (output-hooked pport obj len display?))]
 	    
-	    [(pair? obj) 
-             (let ([qd (to-quoted out qd "`")])
-               (wr-expr obj depth pair? car cdr pair-open pair-close qd))]
+	    [(pair? obj)
+             (check-expr-found
+              obj pport #t
+              #f #f
+              (lambda ()
+                (let* ([qd (to-quoted out qd obj)]
+                       [pair (if (and qd (zero? qd))
+                                 (convert-pair obj)
+                                 obj)])
+                  (wr-expr pair depth pair? car cdr pair-open pair-close qd))))]
 	    [(mpair? obj) 
-             (let ([qd (to-quoted out qd "`")])
-               (wr-expr obj depth mpair? mcar mcdr mpair-open mpair-close qd))]
+             (check-expr-found
+              obj pport #t
+              #f #f
+              (lambda ()
+                (if (and qd (zero? qd))
+                    (wr-expr (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
+                             depth pair? car cdr pair-open pair-close qd)
+                    (wr-expr obj depth mpair? mcar mcdr mpair-open mpair-close qd))))]
 	    [(null? obj)
-             (let ([qd (to-quoted out qd "'")])
+             (let ([qd (to-quoted out qd obj)])
                (wr-lst obj #f depth pair? car cdr "(" ")" qd))]
 	    [(vector? obj)   
              (check-expr-found
               obj pport #t
               #f #f
               (lambda ()
-                (let ([qd (to-quoted out qd "`")])
-                  (out "#")
-                  (when print-vec-length?
-                    (out (number->string (vector-length obj))))
-                  (wr-lst (vector->repeatless-list obj) #f depth pair? car cdr "(" ")" qd))))]
+                (let ([qd (to-quoted out qd obj)]
+                      [vecl (vector->repeatless-list obj)])
+                  (if (and qd (zero? qd))
+                      (wr-lst (cons (make-unquoted 'vector) vecl)
+                              #f depth pair? car cdr "(" ")" qd)
+                      (begin
+                        (out "#")
+                        (when print-vec-length?
+                          (out (number->string (vector-length obj))))
+                        (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
 	    [(and (box? obj)
                   print-box?)
              (check-expr-found
               obj pport #t
               #f #f
               (lambda ()
-                (let ([qd (to-quoted out qd "`")])
-                  (out "#&") 
-                  (wr (unbox obj) (dsub1 depth) qd))))]
+                (let ([qd (to-quoted out qd obj)])
+                  (if (and qd (zero? qd))
+                      (wr-lst (list (make-unquoted 'box) (unbox obj))
+                              #f depth pair? car cdr "(" ")" qd)
+                      (begin
+                        (out "#&") 
+                        (wr (unbox obj) (dsub1 depth) qd))))))]
 	    [(and (custom-write? obj) 
 		  (not (struct-type? obj)))
 	     (check-expr-found
@@ -729,7 +838,10 @@
 	      #f #f
 	      (lambda ()
 		(parameterize ([pretty-print-columns 'infinity])
-		  (write-custom wr* obj pport depth display? width qd))))]
+                  (let ([qd (if (custom-print? obj)
+                                qd
+                                (to-quoted out qd obj))])
+                    (write-custom wr* obj pport depth display? width qd)))))]
 	    [(struct? obj)
 	     (if (and print-struct?
 		      (not (and depth
@@ -741,13 +853,13 @@
                     (let* ([v (struct->vector obj struct-ellipses)]
                            [pf? (prefab?! obj v)])
                       (let ([qd (if pf?
-                                    (to-quoted out qd "`")
-                                    (to-unquoted out qd))])
-                        (when (or (not qd) pf?)
+                                    (to-quoted out qd obj)
+                                    qd)])
+                        (when (or (not qd) (positive? qd))
                           (out "#")
                           (when pf? (out "s")))
                         (wr-lst (let ([l (vector->list v)])
-                                  (if (and qd (not pf?))
+                                  (if (and qd (zero? qd))
                                       (cons (make-unquoted (object-name obj))
                                             (cdr l))
                                       l))
@@ -763,14 +875,15 @@
 		  obj pport #t
 		  #f #f
 		  (lambda ()
-                    (let ([qd (to-quoted out qd "`")])
-                      (out (if (hash-eq? obj)
-                               "#hasheq"
-                               (if (hash-eqv? obj)
-                                   "#hasheqv"
-                                   "#hash")))
-                      (wr-lst (hash-map obj (lambda (k v)
-                                              (cons k (make-hide v))))
+                    (let* ([qd (to-quoted out qd obj)]
+                           [expr? (and qd (zero? qd))])
+                      (unless expr?
+                        (out (if (hash-eq? obj)
+                                 "#hasheq"
+                                 (if (hash-eqv? obj)
+                                     "#hasheqv"
+                                     "#hash"))))
+                      (wr-lst (convert-hash obj expr?)
                               #f depth
                               pair? car cdr "(" ")" qd))))
 		 (parameterize ([print-hash-table #f])
@@ -790,19 +903,13 @@
 	    [(and (pretty-print-.-symbol-without-bars)
 		  (eq? obj '|.|))
 	     (out ".")]
-            [(and (equal? qd 1)
-                  (or (eq? 'unquote obj)
-                      (eq? 'unquote-splicing obj)))
-             (out ",'")
-             (orig-write obj pport)]
             [(and qd (or (symbol? obj)
                          (keyword? obj)))
              (unless (eq? obj struct-ellipses)
-               (to-quoted out qd "'"))
+               (to-quoted out qd obj))
              (orig-write obj pport)]
             [(unquoted? obj)
-             (let ([qd (to-unquoted out qd)])
-               (orig-write (unquoted-val obj) pport))]
+             (orig-write (unquoted-val obj) pport)]
 	    [else
 	     ((if display? orig-display orig-write) obj pport)]))
        (unless (hide? obj)
@@ -878,38 +985,54 @@
 			 (pre-print pport obj)
 			 (cond
 			  [(pair? obj) 
-                           (let ([qd (to-quoted out qd "`")])
-                             (pp-pair obj extra depth 
+                           (let* ([qd (to-quoted out qd obj)]
+                                  [pair (if (and qd (zero? qd))
+                                            (convert-pair obj)
+                                            obj)])
+                             (pp-pair pair extra depth 
                                       pair? car cdr pair-open pair-close
                                       qd))]
                           [(mpair? obj)
-                           (let ([qd (to-quoted out qd "`")])
-                             (pp-pair obj extra depth 
-                                      mpair? mcar mcdr mpair-open mpair-close
-                                      qd))]
+                           (if (and qd (zero? qd))
+                               (pp-pair (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
+                                        extra depth 
+                                        pair? car cdr pair-open pair-close
+                                        qd)
+                               (pp-pair obj extra depth 
+                                        mpair? mcar mcdr mpair-open mpair-close
+                                        qd))]
 			  [(vector? obj)
-                           (let ([qd (to-quoted out qd "`")])
-                             (out "#")
-                             (when print-vec-length?
-                               (out (number->string (vector-length obj))))
-                             (pp-list (vector->repeatless-list obj) extra pp-expr #f depth
-                                      pair? car cdr pair-open pair-close
-                                      qd))]
+                           (let ([qd (to-quoted out qd obj)]
+                                 [vecl (vector->repeatless-list obj)])
+                             (if (and qd (zero? qd))
+                                 (pp-pair (cons (make-unquoted 'vector) vecl)
+                                          extra depth 
+                                          pair? car cdr pair-open pair-close
+                                          qd)
+                                 (begin
+                                   (out "#")
+                                   (when print-vec-length?
+                                     (out (number->string (vector-length obj))))
+                                   (pp-list vecl extra pp-expr #f depth
+                                            pair? car cdr pair-open pair-close
+                                            qd))))]
 			  [(and (custom-write? obj)
 				(not (struct-type? obj)))
-                           (let ([qd (to-unquoted out qd)])
+                           (let ([qd (if (custom-print? obj)
+                                         qd
+                                         (to-quoted out qd obj))])
                              (write-custom pp* obj pport depth display? width qd))]
 			  [(struct? obj) ; print-struct is on if we got here
                            (let* ([v (struct->vector obj struct-ellipses)]
                                   [pf? (prefab?! obj v)])
                              (let ([qd (if pf?
-                                           (to-quoted out qd "`")
-                                           (to-unquoted out qd))])
-                               (when (or (not qd) pf?)
+                                           (to-quoted out qd obj)
+                                           qd)])
+                               (when (or (not qd) (positive? qd))
                                  (out "#")
                                  (when pf? (out "s")))
                                (pp-list (let ([l (vector->list v)])
-                                          (if (and qd (not pf?))
+                                          (if (and qd (zero? qd))
                                               (cons (make-unquoted (object-name obj))
                                                     (cdr l))
                                               l))
@@ -917,19 +1040,27 @@
                                         pair? car cdr pair-open pair-close
                                         qd)))]
 			  [(hash? obj)
-                           (let ([qd (to-quoted out qd "`")])
-                             (out (if (hash-eq? obj)
-                                      "#hasheq"
-                                      (if (hash-eqv? obj)
-                                          "#hasheqv"
-                                          "#hash")))
-                             (pp-list (hash-map obj cons) extra pp-expr #f depth
+                           (let* ([qd (to-quoted out qd obj)]
+                                  [expr? (and qd (zero? qd))])
+                             (unless expr?
+                               (out (if (hash-eq? obj)
+                                        "#hasheq"
+                                        (if (hash-eqv? obj)
+                                            "#hasheqv"
+                                            "#hash"))))
+                             (pp-list (convert-hash obj expr?) extra pp-expr #f depth
                                       pair? car cdr pair-open pair-close
                                       qd))]
 			  [(and (box? obj) print-box?)
-                           (let ([qd (to-quoted out qd "`")])
-                             (out "#&") 
-                             (pr (unbox obj) extra pp-pair depth qd))])
+                           (let ([qd (to-quoted out qd obj)])
+                             (if (and qd (zero? qd))
+                                 (pp-pair (list (make-unquoted 'box) (unbox obj))
+                                          extra depth 
+                                          pair? car cdr pair-open pair-close
+                                          qd)
+                                 (begin
+                                   (out "#&") 
+                                   (pr (unbox obj) extra pp-pair depth qd))))])
 			 (post-print pport obj)))))
 	       ;; Not possible to split obj across lines; so just write directly
 	       (wr* pport obj depth display? qd))))
@@ -953,7 +1084,10 @@
                        ((pretty-print-remap-stylable) head))
 		   (let ((proc (style head expr apair? acar acdr)))
 		     (if proc
-                         (let ([qd (to-quoted out qd "`")])
+                         (let* ([qd (to-quoted out qd expr)]
+                                [pair (if (and qd (zero? qd))
+                                          (cons (make-unquoted 'list) obj)
+                                          obj)])
                            (proc expr extra depth
                                  apair? acar acdr open close
                                  qd))
@@ -1264,21 +1398,15 @@
 
        (pr obj 0 pp-expr depth qd))
 
-     (define (to-quoted out qd str)
+     (define (to-quoted out qd obj)
        (and qd
             (if (zero? qd)
-                (begin
-                  (out str)
-                  (add1 qd))
+                (if (hash-ref escapes-table obj #f)
+                    qd
+                    (begin
+                      (out "'")
+                      (add1 qd)))
                 qd)))
-
-     (define (to-unquoted out qd)
-       (and qd
-            (if (zero? qd)
-                qd
-                (begin
-                  (out ",")
-                  (to-unquoted out (sub1 qd))))))
 
      ;; ------------------------------------------------------------
      ;; This is where generic-write's body expressions start
@@ -1313,11 +1441,9 @@
           (let ((head (do-remap (car l))) (tail (cdr l)))
             (case head
               ((quote quasiquote syntax
-                quasisyntax unsyntax unsyntax-splicing)
+                quasisyntax unsyntax unsyntax-splicing
+                unquote unquote-splicing)
                (length1? tail))
-              ((unquote unquote-splicing)
-               (and (not (equal? qd 1))
-                    (length1? tail)))
               (else #f)))))
 
   (define (reader-adjust-qd v qd)

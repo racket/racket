@@ -161,7 +161,7 @@
     Calls
     @scheme[exit:on-exit]
     and then queues a callback
-    to call MzScheme's @scheme[exit]
+    to call Racket's @scheme[exit]
     function. If that returns, it
     calls
     @scheme[exit:set-exiting]

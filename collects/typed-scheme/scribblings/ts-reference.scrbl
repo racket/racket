@@ -1,19 +1,19 @@
 #lang scribble/manual
 
 @begin[(require "utils.rkt" scribble/eval
-                scheme/sandbox)
-       (require (for-label (only-meta-in 0 typed/scheme)
-                           scheme/list srfi/14
+                racket/sandbox)
+       (require (for-label (only-meta-in 0 typed/racket)
+                           racket/list srfi/14
                            version/check))]
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require (except-in typed/scheme #%top-interaction #%module-begin)))
+@(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
 
-@title[#:tag "top"]{The Typed Scheme Reference} 
+@title[#:tag "top"]{The Typed Racket Reference} 
 
 @author["Sam Tobin-Hochstadt"]
 
-@(defmodulelang* (typed/scheme/base typed/scheme)
+@(defmodulelang* (typed/racket/base typed/racket)
                  #:use-sources (typed-scheme/typed-scheme typed-scheme/private/prims))
 
 @section[#:tag "type-ref"]{Type Reference}
@@ -45,9 +45,9 @@
 @defidform[EOF]
 @defidform[Continuation-Mark-Set]
 @defidform[Char])]{
-These types represent primitive Scheme data.  Note that @scheme[Integer] represents exact integers.}
+These types represent primitive Racket data.  Note that @racket[Integer] represents exact integers.}
 
-@defidform[Any]{Any Scheme value. All other types are subtypes of @scheme[Any].}
+@defidform[Any]{Any Racket value. All other types are subtypes of @racket[Any].}
 
 @defidform[Nothing]{The empty type.  No values inhabit this type, and
 any expression of this type will not evaluate to a value.}
@@ -55,18 +55,18 @@ any expression of this type will not evaluate to a value.}
 
 The following base types are parameteric in their type arguments.
 
-@defform[(Listof t)]{Homogenous @rtech{lists} of @scheme[t]}
-@defform[(Boxof t)]{A @rtech{box} of @scheme[t]}
-@defform[(Syntaxof t)]{A @rtech{syntax object} containing a @scheme[t]}
-@defform[(Vectorof t)]{Homogenous @rtech{vectors} of @scheme[t]}
-@defform[(Option t)]{Either @scheme[t] of @scheme[#f]}
+@defform[(Listof t)]{Homogenous @rtech{lists} of @racket[t]}
+@defform[(Boxof t)]{A @rtech{box} of @racket[t]}
+@defform[(Syntaxof t)]{A @rtech{syntax object} containing a @racket[t]}
+@defform[(Vectorof t)]{Homogenous @rtech{vectors} of @racket[t]}
+@defform[(Option t)]{Either @racket[t] of @racket[#f]}
 @defform*[[(Parameter t)
-           (Parameter s t)]]{A @rtech{parameter} of @scheme[t].  If two type arguments are supplied, 
+           (Parameter s t)]]{A @rtech{parameter} of @racket[t].  If two type arguments are supplied, 
                                the first is the type the parameter accepts, and the second is the type returned.}
-@defform[(Pair s t)]{is the pair containing @scheme[s] as the @scheme[car]
-  and @scheme[t] as the @scheme[cdr]}
+@defform[(Pair s t)]{is the pair containing @racket[s] as the @racket[car]
+  and @racket[t] as the @racket[cdr]}
 @defform[(HashTable k v)]{is the type of a @rtech{hash table} with key type
-   @scheme[k] and value type @scheme[v].}
+   @racket[k] and value type @racket[v].}
 
 @subsubsub*section{Type Constructors}
 
@@ -75,62 +75,62 @@ The following base types are parameteric in their type arguments.
 	        (dom ... rest * -> rng)
 		(dom ... rest ... bound -> rng)
                 (dom -> rng : pred)]]{is the type of functions from the (possibly-empty)
-  sequence @scheme[dom ...] to the @scheme[rng] type.  The second form
-  specifies a uniform rest argument of type @scheme[rest], and the
+  sequence @racket[dom ...] to the @racket[rng] type.  The second form
+  specifies a uniform rest argument of type @racket[rest], and the
   third form specifies a non-uniform rest argument of type
-  @scheme[rest] with bound @scheme[bound].  In the third form, the
-  second occurrence of @scheme[...] is literal, and @scheme[bound]
+  @racket[rest] with bound @racket[bound].  In the third form, the
+  second occurrence of @racket[...] is literal, and @racket[bound]
   must be an identifier denoting a type variable. In the fourth form, 
-  there must be only one @scheme[dom] and @scheme[pred] is the type 
+  there must be only one @racket[dom] and @racket[pred] is the type 
   checked by the predicate.}
-@defform[(U t ...)]{is the union of the types @scheme[t ...]}
+@defform[(U t ...)]{is the union of the types @racket[t ...]}
 @defform[(case-lambda fun-ty ...)]{is a function that behaves like all of
-  the @scheme[fun-ty]s.  The @scheme[fun-ty]s must all be function
-  types constructed with @scheme[->].}
+  the @racket[fun-ty]s.  The @racket[fun-ty]s must all be function
+  types constructed with @racket[->].}
 @defform/none[(t t1 t2 ...)]{is the instantiation of the parametric type
-  @scheme[t] at types @scheme[t1 t2 ...]}
-@defform[(All (v ...) t)]{is a parameterization of type @scheme[t], with
-  type variables @scheme[v ...]}
+  @racket[t] at types @racket[t1 t2 ...]}
+@defform[(All (v ...) t)]{is a parameterization of type @racket[t], with
+  type variables @racket[v ...]}
 @defform[(List t ...)]{is the type of the list with one element, in order, 
-  for each type provided to the @scheme[List] type constructor.}
+  for each type provided to the @racket[List] type constructor.}
 @defform[(values t ...)]{is the type of a sequence of multiple values, with
-types @scheme[t ...].  This can only appear as the return type of a
+types @racket[t ...].  This can only appear as the return type of a
 function.}
-@defform/none[v]{where @scheme[v] is a number, boolean or string, is the singleton type containing only that value}
-@defform/none[(quote val)]{where @scheme[val] is a Scheme value, is the singleton type containing only that value}
-@defform/none[i]{where @scheme[i] is an identifier can be a reference to a type
+@defform/none[v]{where @racket[v] is a number, boolean or string, is the singleton type containing only that value}
+@defform/none[(quote val)]{where @racket[val] is a Racket value, is the singleton type containing only that value}
+@defform/none[i]{where @racket[i] is an identifier can be a reference to a type
 name or a type variable}
-@defform[(Rec n t)]{is a recursive type where @scheme[n] is bound to the
-recursive type in the body @scheme[t]}
+@defform[(Rec n t)]{is a recursive type where @racket[n] is bound to the
+recursive type in the body @racket[t]}
 
 Other types cannot be written by the programmer, but are used
 internally and may appear in error messages.
 
 @defform/none[(struct:n (t ...))]{is the type of structures named
-@scheme[n] with field types @scheme[t].  There may be multiple such
+@racket[n] with field types @racket[t].  There may be multiple such
 types with the same printed representation.}
 @defform/none[<n>]{is the printed representation of a reference to the
-type variable @scheme[n]}
+type variable @racket[n]}
 
 @section[#:tag "special-forms"]{Special Form Reference}
 
-Typed Scheme provides a variety of special forms above and beyond
-those in PLT Scheme.  They are used for annotating variables with types,
+Typed Racket provides a variety of special forms above and beyond
+those in Racket.  They are used for annotating variables with types,
 creating new types, and annotating expressions.
 
 @subsection{Binding Forms}
 
-@scheme[_loop], @scheme[_f], @scheme[_a], and @scheme[_v] are names, @scheme[_t] is a type.
- @scheme[_e] is an expression and @scheme[_body] is a block.
+@racket[_loop], @racket[_f], @racket[_a], and @racket[_v] are names, @racket[_t] is a type.
+ @racket[_e] is an expression and @racket[_body] is a block.
 
 @defform*[[
   (let: ([v : t e] ...) . body)
   (let: loop : t0 ([v : t e] ...) . body)]]{
-Local bindings, like @scheme[let], each with
-associated types.  In the second form, @scheme[_t0] is the type of the
-result of @scheme[_loop] (and thus the result of the entire
+Local bindings, like @racket[let], each with
+associated types.  In the second form, @racket[_t0] is the type of the
+result of @racket[_loop] (and thus the result of the entire
 			      expression as well as the final
-				expression in @scheme[body]).}
+				expression in @racket[body]).}
 @deftogether[[
 @defform[(letrec: ([v : t e] ...) . body)]
 @defform[(let*: ([v : t e] ...) . body)]
@@ -138,30 +138,30 @@ result of @scheme[_loop] (and thus the result of the entire
 @defform[(letrec-values: ([([v : t] ...) e] ...) . body)]
 @defform[(let*-values: ([([v : t] ...) e] ...) . body)]]]{
 Type-annotated versions of
-@scheme[letrec], @scheme[let*], @scheme[let-values],
-  @scheme[letrec-values], and @scheme[let*-values].}  
+@racket[letrec], @racket[let*], @racket[let-values],
+  @racket[letrec-values], and @racket[let*-values].}  
 
 @deftogether[[
 @defform[(let/cc: v : t . body)]
 @defform[(let/ec: v : t . body)]]]{Type-annotated versions of
-@scheme[let/cc] and @scheme[let/ec].}
+@racket[let/cc] and @racket[let/ec].}
 
 @subsection{Anonymous Functions}
 
 @defform/subs[(lambda: formals . body)
 ([formals ([v : t] ...) 
 	  ([v : t] ... . [v : t])])]{
-A function of the formal arguments @scheme[v], where each formal
+A function of the formal arguments @racket[v], where each formal
 argument has the associated type.  If a rest argument is present, then
-it has type @scheme[(Listof t)].}
+it has type @racket[(Listof t)].}
 @defform[(λ: formals . body)]{
-An alias for the same form using @scheme[lambda:].}
+An alias for the same form using @racket[lambda:].}
 @defform[(plambda: (a ...) formals . body)]{
 A polymorphic function, abstracted over the type variables
-@scheme[a]. The type variables @scheme[a] are bound in both the types
-of the formal, and in any type expressions in the @scheme[body].}
+@racket[a]. The type variables @racket[a] are bound in both the types
+of the formal, and in any type expressions in the @racket[body].}
 @defform[(case-lambda: [formals body] ...)]{
-A function of multiple arities.  Note that each @scheme[formals] must have a
+A function of multiple arities.  Note that each @racket[formals] must have a
 different arity.}
 @defform[(pcase-lambda: (a ...) [formals body] ...)]{
 A polymorphic function of multiple arities.}
@@ -173,8 +173,8 @@ A polymorphic function of multiple arities.}
                 expr ...+)
               ([step-expr-maybe code:blank
                                 step-expr])]{
-Like @scheme[do], but each @scheme[id] having the associated type @scheme[t], and 
-the final body @scheme[expr] having the type @scheme[u].
+Like @racket[do], but each @racket[id] having the associated type @racket[t], and 
+the final body @racket[expr] having the type @racket[u].
 }
 
 
@@ -184,9 +184,9 @@ the final body @scheme[expr] having the type @scheme[u].
 	   (define: (f . formals) : t . body)	   
 	   (define: (a ...) (f . formals) : t . body)]]{
 These forms define variables, with annotated types.  The first form
-defines @scheme[v] with type @scheme[t] and value @scheme[e].  The
-second and third forms defines a function @scheme[f] with appropriate
-types.  In most cases, use of @scheme[:] is preferred to use of @scheme[define:].}
+defines @racket[v] with type @racket[t] and value @racket[e].  The
+second and third forms defines a function @racket[f] with appropriate
+types.  In most cases, use of @racket[:] is preferred to use of @racket[define:].}
 
 
 
@@ -195,63 +195,63 @@ types.  In most cases, use of @scheme[:] is preferred to use of @scheme[define:]
 (define-struct: maybe-type-vars name-spec ([f : t] ...))
 ([maybe-type-vars code:blank (v ...)]
  [name-spec name (name parent)])]{
- Defines a @rtech{structure} with the name @scheme[name], where the
- fields @scheme[f] have types @scheme[t].  When @scheme[parent], the
-structure is a substructure of @scheme[parent].  When
-@scheme[maybe-type-vars] is present, the structure is polymorphic in the type
- variables @scheme[v].}
+ Defines a @rtech{structure} with the name @racket[name], where the
+ fields @racket[f] have types @racket[t].  When @racket[parent], the
+structure is a substructure of @racket[parent].  When
+@racket[maybe-type-vars] is present, the structure is polymorphic in the type
+ variables @racket[v].}
                                  
 @defform/subs[
 (define-struct/exec: name-spec ([f : t] ...) [e : proc-t])
 ([name-spec name (name parent)])]{
- Like @scheme[define-struct:], but defines an procedural structure.  
- The procdure @scheme[e] is used as the value for @scheme[prop:procedure], and must have type @scheme[proc-t].}
+ Like @racket[define-struct:], but defines an procedural structure.  
+ The procdure @racket[e] is used as the value for @racket[prop:procedure], and must have type @racket[proc-t].}
 
 @subsection{Names for Types}
 @defform*[[(define-type name t)
 	   (define-type (name v ...) t)]]{
-The first form defines @scheme[name] as type, with the same meaning as
-@scheme[t].  The second form is equivalent to
-@scheme[(define-type name (All (v ...) t))].  Type names may
+The first form defines @racket[name] as type, with the same meaning as
+@racket[t].  The second form is equivalent to
+@racket[(define-type name (All (v ...) t))].  Type names may
 refer to other types defined in the same module, but
 cycles among them are prohibited.}
 
 @subsection{Generating Predicates Automatically}
 @defform[(define-predicate name t)]{
-Defines @scheme[name] as a predicate for the type @scheme[t].
-@scheme[name] has the type @scheme[(Any -> Boolean : t)]. 
-@scheme[t] may not contain function types.}
+Defines @racket[name] as a predicate for the type @racket[t].
+@racket[name] has the type @racket[(Any -> Boolean : t)]. 
+@racket[t] may not contain function types.}
 
 
 @subsection{Type Annotation and Instantiation}
 
-@defform[(: v t)]{This declares that @scheme[v] has type @scheme[t].
-The definition of @scheme[v] must appear after this declaration.  This
+@defform[(: v t)]{This declares that @racket[v] has type @racket[t].
+The definition of @racket[v] must appear after this declaration.  This
 can be used anywhere a definition form may be used.}
 
-@defform[(provide: [v t] ...)]{This declares that the @scheme[v]s have
-the types @scheme[t], and also provides all of the @scheme[v]s.}
+@defform[(provide: [v t] ...)]{This declares that the @racket[v]s have
+the types @racket[t], and also provides all of the @racket[v]s.}
 
-@litchar{#{v : t}} This declares that the variable @scheme[v] has type
-@scheme[t].  This is legal only for binding occurences of @scheme[_v].
+@litchar{#{v : t}} This declares that the variable @racket[v] has type
+@racket[t].  This is legal only for binding occurences of @racket[_v].
 
-@defform[(ann e t)]{Ensure that @scheme[e] has type @scheme[t], or
-some subtype.  The entire expression has type @scheme[t].
+@defform[(ann e t)]{Ensure that @racket[e] has type @racket[t], or
+some subtype.  The entire expression has type @racket[t].
 This is legal only in expression contexts.}
 
-@litchar{#{e :: t}} This is identical to @scheme[(ann e t)].
+@litchar{#{e :: t}} This is identical to @racket[(ann e t)].
 
-@defform[(inst e t ...)]{Instantiate the type of @scheme[e] with types
-@scheme[t ...].  @scheme[e] must have a polymorphic type with the
+@defform[(inst e t ...)]{Instantiate the type of @racket[e] with types
+@racket[t ...].  @racket[e] must have a polymorphic type with the
 appropriate number of type variables. This is legal only in expression
 contexts.}
 
-@litchar|{#{e @ t ...}}| This is identical to @scheme[(inst e t ...)].
+@litchar|{#{e @ t ...}}| This is identical to @racket[(inst e t ...)].
 
 @subsection{Require}
 
-Here, @scheme[_m] is a module spec, @scheme[_pred] is an identifier
-naming a predicate, and @scheme[_r] is an optionally-renamed identifier.
+Here, @racket[_m] is a module spec, @racket[_pred] is an identifier
+naming a predicate, and @racket[_r] is an optionally-renamed identifier.
 
 @defform/subs[#:literals (struct opaque)
 (require/typed m rt-clause ...)
@@ -259,54 +259,54 @@ naming a predicate, and @scheme[_r] is an optionally-renamed identifier.
 	    [struct name ([f : t] ...)]
 	    [struct (name parent) ([f : t] ...)]
 	    [opaque t pred]])
-]{This form requires identifiers from the module @scheme[m], giving
+]{This form requires identifiers from the module @racket[m], giving
 them the specified types.   
 
-The first form requires @scheme[r], giving it type @scheme[t].
+The first form requires @racket[r], giving it type @racket[t].
 
-@index["struct"]{The second and third forms} require the struct with name @scheme[name]
-with fields @scheme[f ...], where each field has type @scheme[t].  The
-third form allows a @scheme[parent] structure type to be specified.
+@index["struct"]{The second and third forms} require the struct with name @racket[name]
+with fields @racket[f ...], where each field has type @racket[t].  The
+third form allows a @racket[parent] structure type to be specified.
 The parent type must already be a structure type known to Typed
-Scheme, either built-in or via @scheme[require/typed].  The
-structure predicate has the appropriate Typed Scheme filter type so
-that it may be used as a predicate in @scheme[if] expressions in Typed
-Scheme.
+Racket, either built-in or via @racket[require/typed].  The
+structure predicate has the appropriate Typed Racket filter type so
+that it may be used as a predicate in @racket[if] expressions in Typed
+Racket.
 
-@index["opaque"]{The fourth case} defines a new type @scheme[t].  @scheme[pred], imported from
-module @scheme[m], is a predicate for this type.  The type is defined
-as precisely those values to which @scheme[pred] produces
-@scheme[#t].  @scheme[pred] must have type @scheme[(Any -> Boolean)].  
+@index["opaque"]{The fourth case} defines a new type @racket[t].  @racket[pred], imported from
+module @racket[m], is a predicate for this type.  The type is defined
+as precisely those values to which @racket[pred] produces
+@racket[#t].  @racket[pred] must have type @racket[(Any -> Boolean)].  
 Opaque types must be required lexically before they are used.
 
 In all cases, the identifiers are protected with @rtech{contracts} which
 enforce the specified types.  If this contract fails, the module
-@scheme[m] is blamed. 
+@racket[m] is blamed. 
 
-Some types, notably polymorphic types constructed with @scheme[All],
+Some types, notably polymorphic types constructed with @racket[All],
 cannot be converted to contracts and raise a static error when used in
-a @scheme[require/typed] form.}
+a @racket[require/typed] form.}
 
-@section{Libraries Provided With Typed Scheme}
+@section{Libraries Provided With Typed Racket}
 
-The @schememodname[typed/scheme] language corresponds to the
-@schememodname[scheme] language---that is, any identifier provided
-by @schememodname[scheme], such as @scheme[modulo] is available by default in
-@schememodname[typed/scheme].  
+The @racketmodname[typed/racket] language corresponds to the
+@racketmodname[racket] language---that is, any identifier provided
+by @racketmodname[racket], such as @racket[modulo] is available by default in
+@racketmodname[typed/racket].  
 
-@schememod[typed/scheme
+@racketmod[typed/racket
 (modulo 12 2)
 ]
 
-The @schememodname[typed/scheme/base] language corresponds to the
-@schememodname[scheme/base] language.
+The @racketmodname[typed/racket/base] language corresponds to the
+@racketmodname[racket/base] language.
 
-Some libraries have counterparts in the @schemeidfont{typed}
+Some libraries have counterparts in the @racketidfont{typed}
 collection, which provide the same exports as the untyped versions.
-Such libraries include @schememodname[srfi/14],
-@schememodname[net/url], and many others.  
+Such libraries include @racketmodname[srfi/14],
+@racketmodname[net/url], and many others.  
 
-@schememod[typed/scheme
+@racketmod[typed/racket
 (require typed/srfi/14)
 (char-set= (string->char-set "hello")
            (string->char-set "olleh"))
@@ -316,33 +316,33 @@ To participate in making more libraries available, please visit
 @link["http://www.ccs.neu.edu/home/samth/adapt/"]{here}.
 
 
-Other libraries can be used with Typed Scheme via
-@scheme[require/typed].
+Other libraries can be used with Typed Racket via
+@racket[require/typed].
 
-@schememod[typed/scheme
+@racketmod[typed/racket
 (require/typed version/check
                [check-version (-> (U Symbol (Listof Any)))])
 (check-version)
 ]
 
-@section{Typed Scheme Syntax Without Type Checking}
+@section{Typed Racket Syntax Without Type Checking}
 
 @defmodulelang[typed-scheme/no-check]
 
-On occasions where the Typed Scheme syntax is useful, but actual
-typechecking is not desired, the @schememodname[typed-scheme/no-check]
+On occasions where the Typed Racket syntax is useful, but actual
+typechecking is not desired, the @racketmodname[typed-scheme/no-check]
 language is useful.  It provides the same bindings and syntax as Typed
-Scheme, but does no type checking.
+Racket, but does no type checking.
 
 Examples:
 
-@schememod[typed-scheme/no-check
+@racketmod[typed-scheme/no-check
 (: x Number)
 (define x "not-a-number")]
 
 @section{Typed Regions}
 
-The @scheme[with-type] for allows for localized Typed Scheme regions in otherwise untyped code.
+The @racket[with-type] for allows for localized Typed Racket regions in otherwise untyped code.
 
 @defform*/subs[[(with-type result-spec fv-clause body ...+)
                 (with-type export-spec fv-clause body ...+)]
@@ -350,16 +350,16 @@ The @scheme[with-type] for allows for localized Typed Scheme regions in otherwis
                           (code:line #:freevars ([id fv-type] ...))]
                [result-spec (code:line #:result type)]
                [export-spec ([export-id export-type] ...)])]{
-The first form, an expression, checks that @scheme[body ...+] has the type @scheme[type].
-If the last expression in @scheme[body ...+] returns multiple values, @scheme[type] must
-be a type of the form @scheme[(values t ...)].
+The first form, an expression, checks that @racket[body ...+] has the type @racket[type].
+If the last expression in @racket[body ...+] returns multiple values, @racket[type] must
+be a type of the form @racket[(values t ...)].
 Uses of the result values are appropriately checked by contracts generated from 
-@scheme[type].
+@racket[type].
 
-The second form, which can be used as a definition, checks that each of the @scheme[export-id]s 
+The second form, which can be used as a definition, checks that each of the @racket[export-id]s 
 has the specified type.  These types are also enforced in the surrounding code with contracts.
 
-The @scheme[id]s are assumed to 
+The @racket[id]s are assumed to 
 have the types ascribed to them; these types are converted to contracts and checked dynamically.
 
 @examples[#:eval the-eval

@@ -9,9 +9,9 @@ The @schememodname[sgl] libraries provide access to the rendering
 functions of @as-index{OpenGL} 1.5 and @as-index{GLU} 1.3
 libraries. The @schememodname[sgl] libraries to not address
 system-level concerns, such as the attachment of GL rendering contexts
-to displays. Instead, the libraries should work with any PLT Scheme
+to displays. Instead, the libraries should work with any Racket
 extension that provides GL with access to the system (such as a
-binding for @tt{glx}). Notably, the @schememodname[scheme/gui/base]
+binding for @tt{glx}). Notably, the @schememodname[racket/gui/base]
 library provides support for rendering contexts via the
 @scheme[canvas%] class and its @method[canvas% with-gl-context]
 method.

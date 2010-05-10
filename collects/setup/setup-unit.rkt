@@ -41,7 +41,7 @@
                      [current-compile compile]
                      [current-load/use-compiled loader]
                      [use-compiled-file-paths paths])
-        (get-info/full path)))))
+        (get-info/full path #:namespace ns)))))
 
 (provide setup@)
 

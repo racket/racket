@@ -79,7 +79,7 @@
     Typically, this method is called when the frame
     containing the editor is closed, but in some cases an
     editor is considered ``closed'' before the frame it is
-    in is closed (eg, when a tab in DrScheme is closed), and
+    in is closed (e.g., when a tab in DrRacket is closed), and
     thus @method[editor:basic<%> on-close] will be called at that point.
     
 

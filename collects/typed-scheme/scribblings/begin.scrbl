@@ -1,12 +1,12 @@
 #lang scribble/manual
 
-@begin[(require (for-label (only-meta-in 0 typed/scheme)) scribble/eval
+@begin[(require (for-label (only-meta-in 0 typed/racket)) scribble/eval
 		"utils.rkt" (only-in "quick.scrbl" typed-mod))]
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require typed/scheme))
+@(the-eval '(require typed/racket))
 
-@title[#:tag "beginning"]{Beginning Typed Scheme}
+@title[#:tag "beginning"]{Beginning Typed Racket}
 
 Recall the typed module from @secref["quick"]:                 
 
@@ -14,62 +14,62 @@ Recall the typed module from @secref["quick"]:
 
 Let us consider each element of this program in turn.
 
-@schememod[typed/scheme]
+@racketmod[typed/racket]
 
 This specifies that the module is written in the
-@schememodname[typed/scheme] language, which is a typed version of the
-@schememodname[scheme] language.  Typed versions of other languages
+@racketmodname[typed/racket] language, which is a typed version of the
+@racketmodname[racket] language.  Typed versions of other languages
 are provided as well; for example, the
-@schememodname[typed/scheme/base] language corresponds to
-@schememodname[scheme/base].   
+@racketmodname[typed/racket/base] language corresponds to
+@racketmodname[racket/base].   
 
-@schemeblock[(define-struct: pt ([x : Real] [y : Real]))]
+@racketblock[(define-struct: pt ([x : Real] [y : Real]))]
 
-@margin-note{Many forms in Typed Scheme have the same name as the
-untyped forms, with a @scheme[:] suffix.}
-This defines a new structure, name @scheme[pt], with two fields,
-@scheme[x] and @scheme[y].  Both fields are specified to have the type
-@scheme[Real], which corresponds to the @rtech{real numbers}.
+@margin-note{Many forms in Typed Racket have the same name as the
+untyped forms, with a @racket[:] suffix.}
+This defines a new structure, name @racket[pt], with two fields,
+@racket[x] and @racket[y].  Both fields are specified to have the type
+@racket[Real], which corresponds to the @rtech{real numbers}.
  The
-@scheme[define-struct:] form corresponds to the @scheme[define-struct]
-form from @schememodname[scheme]---when porting a program from
-@schememodname[scheme] to @schememodname[typed/scheme], uses of
-@scheme[define-struct] should be changed to @scheme[define-struct:].
+@racket[define-struct:] form corresponds to the @racket[define-struct]
+form from @racketmodname[racket]---when porting a program from
+@racketmodname[racket] to @racketmodname[typed/racket], uses of
+@racket[define-struct] should be changed to @racket[define-struct:].
 
-@schemeblock[(: mag (pt -> Number))]
+@racketblock[(: mag (pt -> Number))]
 
-This declares that @scheme[mag] has the type @scheme[(pt -> Number)].
-@;{@scheme[mag] must be defined at the top-level of the module containing
+This declares that @racket[mag] has the type @racket[(pt -> Number)].
+@;{@racket[mag] must be defined at the top-level of the module containing
 the declaration.}
 
-The type @scheme[(pt -> Number)] is a function type, that is, the type
+The type @racket[(pt -> Number)] is a function type, that is, the type
 of a procedure.  The input type, or domain, is a single argument of
-type @scheme[pt], which refers to an instance of the @scheme[pt]
-structure.  The @scheme[->] both indicates that this is a function
+type @racket[pt], which refers to an instance of the @racket[pt]
+structure.  The @racket[->] both indicates that this is a function
 type and separates the domain from  the range, or output type, in this
-case @scheme[Number].
+case @racket[Number].
 
-@schemeblock[
+@racketblock[
 (define (mag p)
   (sqrt (+ (sqr (pt-x p)) (sqr (pt-y p)))))
 ]
 
 This definition is unchanged from the untyped version of the code.
-The goal of Typed Scheme is to  allow almost all definitions to be
+The goal of Typed Racket is to  allow almost all definitions to be
 typechecked without change.  The typechecker verifies that the body of
-the function has the type @scheme[Real], under the assumption that
-@scheme[p] has the type @scheme[pt], taking these types from the
+the function has the type @racket[Real], under the assumption that
+@racket[p] has the type @racket[pt], taking these types from the
 earlier type declaration.  Since the body does have this type, the
 program is accepted.
 
 
 @section{Datatypes and Unions}
 
-Many data structures involve multiple variants.  In Typed Scheme, we
-represent these using @italic{union types}, written @scheme[(U t1 t2 ...)].
+Many data structures involve multiple variants.  In Typed Racket, we
+represent these using @italic{union types}, written @racket[(U t1 t2 ...)].
 
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (define-type Tree (U leaf node))
 (define-struct: leaf ([val : Number]))
 (define-struct: node ([left : Tree] [right : Tree]))
@@ -87,36 +87,36 @@ typed/scheme
                  (tree-sum (node-right t)))]))
 ]
 
-In this module, we have defined two new datatypes: @scheme[leaf] and
-@scheme[node].  We've also defined the type name @scheme[Tree] to be
-@scheme[(U node leaf)], which represents a binary tree of numbers.  In
-essence, we are saying that the @scheme[tree-height] function accepts
-a @scheme[Tree], which is either a @scheme[node] or a @scheme[leaf],
+In this module, we have defined two new datatypes: @racket[leaf] and
+@racket[node].  We've also defined the type name @racket[Tree] to be
+@racket[(U node leaf)], which represents a binary tree of numbers.  In
+essence, we are saying that the @racket[tree-height] function accepts
+a @racket[Tree], which is either a @racket[node] or a @racket[leaf],
 and produces a number.
 
 In order to calculate interesting facts about trees, we have to take
 them apart and get at their contents.  But since accessors such as
-@scheme[node-left] require a @scheme[node] as input, not a
-@scheme[Tree], we have to determine which kind of input we
+@racket[node-left] require a @racket[node] as input, not a
+@racket[Tree], we have to determine which kind of input we
 were passed.  
 
 For this purpose, we use the predicates that come with each defined
-structure.  For example, the @scheme[leaf?] predicate distinguishes
-@scheme[leaf]s from all other Typed Scheme values.  Therefore, in the
-first branch of the @scheme[cond] clause in @scheme[tree-sum], we know
-that @scheme[t] is a @scheme[leaf], and therefore we can get its value
-with the @scheme[leaf-val] function.
+structure.  For example, the @racket[leaf?] predicate distinguishes
+@racket[leaf]s from all other Typed Racket values.  Therefore, in the
+first branch of the @racket[cond] clause in @racket[tree-sum], we know
+that @racket[t] is a @racket[leaf], and therefore we can get its value
+with the @racket[leaf-val] function.
 
-In the else clauses of both functions, we know that @scheme[t] is not
-a @scheme[leaf], and since the type of @scheme[t] was @scheme[Tree] by
-process of elimination we can determine that @scheme[t] must be a
-@scheme[node].  Therefore, we can use accessors such as
-@scheme[node-left] and @scheme[node-right] with @scheme[t] as input.
+In the else clauses of both functions, we know that @racket[t] is not
+a @racket[leaf], and since the type of @racket[t] was @racket[Tree] by
+process of elimination we can determine that @racket[t] must be a
+@racket[node].  Therefore, we can use accessors such as
+@racket[node-left] and @racket[node-right] with @racket[t] as input.
 
 
 @section{Type Errors}
 
-When Typed Scheme detects a type error in the module, it raises an
+When Typed Racket detects a type error in the module, it raises an
 error before running the program.  
 
 @examples[#:eval the-eval
@@ -124,7 +124,7 @@ error before running the program.
 ]
 
 @;{
-Typed Scheme also attempts to detect more than one error in the module.
+Typed Racket also attempts to detect more than one error in the module.
 
 @examples[#:eval the-eval
 (string-append "a string" (add1 "not a number"))

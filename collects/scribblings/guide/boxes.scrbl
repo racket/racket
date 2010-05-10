@@ -5,9 +5,9 @@
 
 @title[#:tag "boxes"]{Boxes}
 
-A @deftech{box} is like a single-element vector. It prints as
-@litchar{#&} followed by the printed form of the boxed value.  A
-@litchar{#&} form can also be used as an expression, but since the
+A @deftech{box} is like a single-element vector. It can print as a
+quoted @litchar{#&} followed by the printed form of the boxed value.
+A @litchar{#&} form can also be used as an expression, but since the
 resulting box is constant, it has practically no use.
 
 @; So what are boxes good for, anyway?

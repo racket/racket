@@ -23,12 +23,16 @@ a list containing the values:
 @interaction[(list "red" "green" "blue")
              (list 1 2 3 4 5)]
 
-As you can see, a list result prints in the @tech{REPL} as a backquote
-@litchar{`} and then a pair of parentheses wrapped around the printed
+@margin-note{A list usually prints with @litchar{'}, but the printed
+             form of a list depends on its content. See
+             @secref["pairs"] for more information.}
+
+As you can see, a list result prints in the @tech{REPL} as a quote
+@litchar{'} and then a pair of parentheses wrapped around the printed
 form of the list elements. There's an opportunity for confusion here,
 because parentheses are used for both expressions, such as
 @racket[(list "red" "green" "blue")], and printed results, such as
-@racketresult['("red" "green" "blue")]. In addition to the backquote,
+@racketresult['("red" "green" "blue")]. In addition to the quote,
 parentheses for results are printed in blue in the documentation and
 in DrRacket, whereas parentheses for expressions are brown.
 

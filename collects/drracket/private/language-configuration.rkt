@@ -1437,8 +1437,21 @@
         (define/override (get-transformer-module) #f)
 
         (define/override (default-settings) 
-          (make-simple-settings+assume #f 'write 'mixed-fraction-e #f #t 'debug #t))
+          (make-simple-settings+assume #f 'trad-write 'mixed-fraction-e #f #t 'debug #t))
 
+        (super-new)))
+  
+    (define (pretty-big-mixin %)
+      (class %
+        (define/override (default-settings) 
+          (let ([s (super default-settings)])
+            (make-simple-settings+assume (drracket:language:simple-settings-case-sensitive s)
+                                         'trad-write
+                                         (drracket:language:simple-settings-fraction-style s)
+                                         (drracket:language:simple-settings-show-sharing s)
+                                         (drracket:language:simple-settings-insert-newlines s)
+                                         (drracket:language:simple-settings-annotations s)
+                                         (simple-settings+assume-no-redef? s))))
         (super-new)))
     
     (define get-all-scheme-manual-keywords
@@ -1514,7 +1527,7 @@
                       (list -200 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
-                      (λ (%) (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %))))))
+                      (λ (%) (pretty-big-mixin (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %)))))))
         (add-language
          (make-simple '(lib "r5rs/lang.rkt")
                       "plt:r5rs"
