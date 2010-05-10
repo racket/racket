@@ -168,6 +168,10 @@
                          (fp ")")]))]
     [(arr: _ _ _ _ _) (fp "(arr ") (print-arr c) (fp ")")]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
+    [(HeterogenousVector: e) (fp "(Vector") 
+                             (for ([i (in-list e)])
+                               (fp " ~a" i))
+                             (fp ")")]
     [(Box: e) (fp "(Boxof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]

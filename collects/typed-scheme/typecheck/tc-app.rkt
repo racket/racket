@@ -415,7 +415,7 @@
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
                 values apply k:apply not list list* call-with-values do-make-object make-object cons
-                andmap ormap reverse extend-parameterization)
+                andmap ormap reverse extend-parameterization vector-ref)
     [(#%plain-app extend-parameterization pmz args ...)
      (let loop ([args (syntax->list #'(args ...))])
        (if (null? args) (ret Univ)
@@ -430,6 +430,54 @@
                [(tc-result1: t) 
                 (tc-error/expr #:ret (or expected (ret Univ)) "expected Parameter, but got ~a" t)
                 (loop (cddr args))]))))]
+    ;; vector-ref on het vectors
+    [(#%plain-app (~and op vector-ref) v e:expr)
+     (let ([e-t (single-value #'e)])
+       (match (single-value #'v)
+         [(tc-result1: (and t (HeterogenousVector: es)))
+          (let ([ival (or (and (number? (syntax-e #'i)) (syntax-e #'i))
+                          (match e-t
+                            [(tc-result1: (Value: (? number? i))) i]
+                            [_ #f]))])
+            (cond [(not ival)
+                   (check-below e-t -Nat)
+                   (if expected 
+                       (check-below (apply Un es) expected)
+                       (apply (Un es)))]
+                  [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
+                   (if expected 
+                       (check-below (ret (list-ref es ival)) expected)
+                       (ret (list-ref es ival)))]
+                  [(not (and (integer? ival) (exact? ival)))
+                   (tc-error/expr #:ret (or expected (ret (Un))) "expected exact integer for vector index, but got ~a" ival)]
+                  [(< ival 0)
+                   (tc-error/expr #:ret (or expected (ret (Un))) "index ~a too small for vector ~a" ival t)]
+                  [(not (<= ival (sub1 (length es))))
+                   (tc-error/expr #:ret (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
+         [v-ty
+          (let ([arg-tys (list v-ty e-t)])
+            (tc/funapp #'op #'args (single-value #'op) arg-tys expected))]))]
+    [(#%plain-app (~literal vector) args:expr ...)
+     (match expected
+       [#f
+        (ret (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))]
+       [(tc-result1: (Vector: t))
+        (for ([e (in-list (syntax->list #'(args ...)))])
+          (tc-expr/check e t))
+        expected]
+       [(tc-result1: (HeterogenousVector: ts))
+        (unless (= (length ts) (length (syntax->list #'(args ...))))
+          (tc-error/expr "expected vector with ~a elements, but got ~a" 
+                         (length ts)
+                         (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
+        (for ([e (in-list (syntax->list #'(args ...)))]
+              [t (in-list ts)])
+          (tc-expr/check e t))
+        expected]
+       [(tc-result1: t)
+        (tc-error/expr "expected ~a, but got ~a" t (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))
+        expected]
+       [_ (int-err "bad expected: ~a" expected)])]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)
      (match (tc/funapp #'prod #'() (single-value #'prod) null #f)

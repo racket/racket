@@ -317,6 +317,9 @@
                A0]
               [((Box: _) (BoxTop:)) A0]
               [((Vector: _) (VectorTop:)) A0]
+              [((HeterogenousVector: _) (VectorTop:)) A0]
+              [((HeterogenousVector: (list e ...)) (Vector: e*))
+               (if (andmap (lambda (e0) (type-equal? e0 e*)) e) A0 (fail! s t))]
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy

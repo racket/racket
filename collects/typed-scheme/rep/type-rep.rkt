@@ -76,6 +76,12 @@
     [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
     [#:key 'vector])
 
+;; elems are all Types
+(dt HeterogenousVector ([elems (listof Type/c)])
+    [#:frees (make-invariant (combine-frees (map free-vars* elems))) (make-invariant (combine-frees (map free-idxs* elems)))]
+    [#:key 'vector]
+    [#:fold-rhs (*HeterogenousVector (map type-rec-id elems))])
+
 ;; elem is a Type
 (dt Box ([elem Type/c]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
     [#:key 'box])  

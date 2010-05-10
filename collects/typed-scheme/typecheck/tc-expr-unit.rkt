@@ -62,12 +62,17 @@
      (match expected
        [(Vector: t)
         (make-Vector (apply Un 
-                            (for/list ([l (syntax-e #'i)])
+                            (for/list ([l (in-vector (syntax-e #'i))])
                               (tc-literal l t))))]
+       [(HeterogenousVector: ts)
+        (make-HeterogenousVector 
+         (for/list ([l (in-vector (syntax-e #'i))]
+                    [t (in-list ts)])
+           (tc-literal l t)))]
        ;; errors are handled elsewhere
-       [_ (make-Vector (apply Un 
-                              (for/list ([l (syntax-e #'i)])
-                                (tc-literal l #f))))])]
+       [_ (make-HeterogenousVector 
+           (for/list ([l (in-vector (syntax-e #'i))])
+             (tc-literal l #f)))])]
     [(~var i (3d hash?))
      (let* ([h (syntax-e #'i)]
             [ks (hash-map h (lambda (x y) (tc-literal x)))]
