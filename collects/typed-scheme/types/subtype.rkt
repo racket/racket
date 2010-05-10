@@ -144,6 +144,9 @@
                     (subtypes*/varargs t-dom s-dom s-rest)
                     (kw-subtypes* t-kws s-kws)
                     (subtype* s-rng t-rng))]
+      [((arr: s-dom s-rng #f #f s-kws)
+        (arr: t-dom t-rng t-rest #f t-kws))
+       (fail! s t)]
       [((arr: s-dom s-rng s-rest #f s-kws)
         (arr: t-dom t-rng t-rest #f t-kws))
        (subtype-seq A0
@@ -352,7 +355,6 @@
 ;(trace subtype*)
 ;(trace supertype-of-one/arr)
 ;(trace arr-subtype*/no-fail)
-;(trace subtype-of-one)
 ;(trace subtype*/no-fail)
 ;(trace subtypes*)
 ;(trace subtype)
