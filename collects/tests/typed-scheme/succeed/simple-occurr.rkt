@@ -1,4 +1,4 @@
-#lang typed/scheme
+#lang typed/racket
 
 (: x (U #f Number))
 (define x 7)

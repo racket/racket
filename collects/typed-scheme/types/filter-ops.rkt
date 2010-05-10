@@ -43,11 +43,11 @@
               [((TypeFilter: t1 p1 i1)
                 (TypeFilter: t2 p1 i2))
                (and (name-ref=? i1 i2)
-                    (subtype t1 t2))]
+                    (subtype t2 t1))]
               [((NotTypeFilter: t2 p1 i2)
                 (NotTypeFilter: t1 p1 i1))
                (and (name-ref=? i1 i2)
-                    (subtype t1 t2))]
+                    (subtype t2 t1))]
               [(_ _) #f])))
 
 (define (hash-name-ref i)

@@ -5,7 +5,7 @@
          "tc-app-helper.rkt" "find-annotation.rkt"
          "tc-subst.rkt"
          syntax/parse scheme/match mzlib/trace scheme/list 
-	 unstable/sequence
+	 unstable/sequence unstable/debug
          ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
          scheme/bool
          (only-in racket/private/class-internal make-object do-make-object)
