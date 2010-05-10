@@ -53,8 +53,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 4,2,5,10
- PRODUCTVERSION 4,2,5,10
+ FILEVERSION 4,2,5,14
+ PRODUCTVERSION 4,2,5,14
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,12 +70,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "MzCOM Module"
-            VALUE "FileVersion", "4, 2, 5, 10"
+            VALUE "FileVersion", "4, 2, 5, 14"
             VALUE "InternalName", "MzCOM"
             VALUE "LegalCopyright", "Copyright 2000-2010 PLT (Paul Steckler)"
             VALUE "OriginalFilename", "MzCOM.EXE"
             VALUE "ProductName", "MzCOM Module"
-            VALUE "ProductVersion", "4, 2, 5, 10"
+            VALUE "ProductVersion", "4, 2, 5, 14"
         END
     END
     BLOCK "VarFileInfo"
@@ -108,7 +108,7 @@ BEGIN
     CTEXT           "MzCOM v. 4.2",IDC_STATIC,71,8,61,8
     CTEXT           "Copyright (c) 2000-2010 PLT (Paul Steckler)",IDC_STATIC,
                     41,20,146,9
-    CTEXT           "MzScheme v. 4.2",IDC_STATIC,64,35,75,8
+    CTEXT           "Racket v. 4.2",IDC_STATIC,64,35,75,8
     CTEXT           "Copyright (c) 1995-2010 PLT Inc.",IDC_STATIC,
                     30,47,143,8
     ICON            MZICON,IDC_STATIC,11,16,20,20
