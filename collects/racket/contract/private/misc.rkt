@@ -990,10 +990,75 @@
     [(_ hdp tlp) (opt/cons-ctc #'hdp #'tlp)]))
 
 (define (list/c . args)
-  (let loop ([args (coerce-contracts 'list/c args)])
-    (cond
-      [(null? args) (flat-contract null?)]
-      [else (cons/c (car args) (loop (cdr args)))])))
+  (let* ([args (coerce-contracts 'list/c args)])
+    (if (andmap flat-contract? args)
+      (flat-list/c args)
+      (higher-order-list/c args))))
+
+(struct flat-list/c [args]
+        #:property prop:flat-contract
+        (build-flat-contract-property
+         #:name
+         (lambda (c)
+           (apply build-compound-type-name
+             'list/c (flat-list/c-args c)))
+         #:first-order
+         (lambda (c)
+           (lambda (x)
+             (and (list? x)
+                  (= (length x) (length (flat-list/c-args c)))
+                  (for/and ([arg/c (in-list (flat-list/c-args c))]
+                            [v (in-list x)])
+                    (arg/c v)))))
+         #:projection
+         (lambda (c)
+           (lambda (b)
+             (lambda (x)
+               (unless (list? x)
+                 (raise-blame-error b x "expected a list, got: ~e" x))
+               (let* ([args (flat-list/c-args c)]
+                      [expected (length args)]
+                      [actual (length x)])
+                 (unless (= actual expected)
+                   (raise-blame-error
+                    b x
+                    "expected a list of ~a elements, but got ~a elements in: ~e"
+                    expected actual x))
+                 (for ([arg/c (in-list args)] [v (in-list x)])
+                   (((contract-projection arg/c) b) v))
+                 x))))))
+
+(struct higher-order-list/c [args]
+        #:property prop:contract
+        (build-contract-property
+         #:name
+         (lambda (c)
+           (apply build-compound-type-name
+             'list/c (higher-order-list/c-args c)))
+         #:first-order
+         (lambda (c)
+           (lambda (x)
+             (and (list? x)
+                  (= (length x) (length (higher-order-list/c-args c)))
+                  (for/and ([arg/c (in-list (higher-order-list/c-args c))]
+                            [v (in-list x)])
+                    (contract-first-order-passes? arg/c v)))))
+         #:projection
+         (lambda (c)
+           (lambda (b)
+             (lambda (x)
+               (unless (list? x)
+                 (raise-blame-error b x "expected a list, got: ~e" x))
+               (let* ([args (higher-order-list/c-args c)]
+                      [expected (length args)]
+                      [actual (length x)])
+                 (unless (= actual expected)
+                   (raise-blame-error
+                    b x
+                    "expected a list of ~a elements, but got ~a elements in: ~e"
+                    expected actual x))
+                 (for/list ([arg/c (in-list args)] [v (in-list x)])
+                   (((contract-projection arg/c) b) v))))))))
 
 (define (syntax/c ctc-in)
   (let ([ctc (coerce-contract 'syntax/c ctc-in)])
