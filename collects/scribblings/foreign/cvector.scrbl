@@ -17,9 +17,9 @@ pointer to a memory block).
 
 Like @scheme[_bytes], @scheme[_cvector] can be used as a simple type
 that corresponds to a pointer that is managed as a safe C vector on
-the Scheme side.  The longer form behaves similarly to the
+the Racket side.  The longer form behaves similarly to the
 @scheme[_list] and @scheme[_vector] custom types, except that
-@scheme[_cvector] is more efficient; no Scheme list or vector is
+@scheme[_cvector] is more efficient; no Racket list or vector is
 needed.}
 
 @defproc[(make-cvector [type ctype?][length exact-nonnegative-integer?]) cvector?]{

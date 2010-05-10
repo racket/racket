@@ -12,7 +12,7 @@ add this test:
 
 |#
 
-(require "drscheme-test-util.ss"
+(require "drracket-test-util.ss"
          tests/utils/gui
          mzlib/class
          mzlib/pretty

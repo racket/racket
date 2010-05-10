@@ -7,7 +7,7 @@ trigger runtime errors in check syntax.
 |#
 #lang scheme/base
 
-  (require "drscheme-test-util.ss"
+  (require "drracket-test-util.ss"
            string-constants/string-constant
            tests/utils/gui
            scheme/path

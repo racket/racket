@@ -957,6 +957,13 @@
   
  (module-language-auto-text "Automatisch Zeile mit #lang") ;; shows up in the details section of the module language
 
+ ;; for the upper portion of the language dialog
+ (use-language-in-source "Im Quelltext angegebene Sprache benutzen")
+ (choose-a-language "Sprache auswählen")
+ (lang-in-source-discussion
+ "Die Zeile mit \"#lang\" am Anfang eines Programms legt die Sprache fest. Das ist der präferierte Standard-Modus von DrRacket.")
+ 
+
   ;;; from the `not a language language' used initially in drscheme.
  (must-choose-language "DrRacket kann keine Programme verarbeiten, bis Sie eine Sprache auswählen.")
  
@@ -970,6 +977,7 @@
  (start-with-after "anfangen?")
 
  (seasoned-plt-schemer? "Erfahrener PLT-Schemer?")
+ (racketeer? "Sind Sie ein Racketeer?")
  (looking-for-standard-scheme? "Wollen Sie Standard-Scheme?")
  
  ;; the three string constants are concatenated together and the middle
@@ -1091,8 +1099,8 @@
  (module-browser-show-lib-paths/short "\"lib\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
  (module-browser-show-planet-paths/short "\"PLaneT\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Aktualisieren") ;; button label in show module browser pane in drscheme window.
-; (module-browser-only-in-plt-and-module-langs
-;  "Der Modul-Browser ist nur für Programme in den PLT-Sprachen und in der Modul-Sprache verfügbar (und nur für Programme mit Modulen).")
+ (module-browser-only-in-plt-and-module-langs
+  "Der Modul-Browser ist nur für modulbasierte Programme verfügbar.")
  (module-browser-name-length "Länge der Namen")
  (module-browser-name-short "Kurz")
  (module-browser-name-medium "Mittel")

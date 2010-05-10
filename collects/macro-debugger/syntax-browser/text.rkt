@@ -2,7 +2,7 @@
 (require scheme/list
          scheme/class
          scheme/gui
-         drscheme/arrow
+         drracket/arrow
          framework/framework
          unstable/interval-map
          unstable/gui/notify

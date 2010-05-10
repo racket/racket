@@ -91,15 +91,13 @@
          (reset-section-jump!)))))
  files-to-process)
 
-(debug-printf admin "  restoring preferences file ~s to ~s\n"
-              old-preferences-file preferences-file)
-(when (file-exists? preferences-file)
-  (unless (file-exists? old-preferences-file)
-    (error 'framework-test "lost preferences file backup!"))
+(when (file-exists? old-preferences-file)
+  (debug-printf admin "  restoring preferences file ~s to ~s\n"
+                old-preferences-file preferences-file)
   (delete-file preferences-file)
   (copy-file old-preferences-file preferences-file)
-  (delete-file old-preferences-file))
-(debug-printf admin "  restored preferences file\n")
+  (delete-file old-preferences-file)
+  (debug-printf admin "  restored preferences file\n"))
 
 (shutdown-listener)
 

@@ -29,16 +29,18 @@ use an intermediate redirecting file due to a bug in IE7.)
 Under Mac OS X, @scheme[send-url] runs @exec{osascript} to start the
 user's chosen browser.
 
-Under Unix, @scheme[send-url] uses the value of the
-@scheme[external-browser] parameter to select a browser.
+Under Unix, @scheme[send-url] uses a user-preference, or when none is
+set, it will look for a known browser.  See the description of
+@scheme[external-browser] for details.
 
 The @scheme[url] string is usually escaped to avoid dangerous shell
-characters (quotations, dollar signs, backslashes, and non-ASCII).
-Note that it is a good idea to encode URLs before passing them to this
-function.  Also note that the encoding is meant to make the URL work
-in shell quotes: URLs can still hold characters like @litchar{#},
-@litchar{?}, and @litchar{&}, so the @scheme[external-browser] should
-use quotations.}
+characters (quotations, dollar signs, backslashes, and non-ASCII).  Note
+that it is a good idea to encode URLs before passing them to this
+function.
+
+On all platforms, @scheme[external-browser] parameter can be set to a
+procedure to override the above behavior --- the procedure will be
+called with the @scheme[url] string.}
 
 @defproc[(send-url/file [path path-string?] [separate-window? any/c #t]
                         [#:fragment fragment (or/c string? false/c) #f]
@@ -71,20 +73,24 @@ old temporary files are still deleted as described above.}
 
 @defparam[external-browser cmd browser-preference?]{
 
-A parameter that, under Unix, determines the browser started
-@scheme[send-url].
+A parameter that can hold a procedure to override how a browser is
+started, or @scheme[#f] to use the default platform-dependent command.
 
-The parameter is initialized to the value of the
-@scheme['external-browser] preference.
+Under Unix, the command that is used depends on the
+@scheme['external-browser] preference.  If the preference is unset,
+@scheme[send-url] uses the first of the browsers from
+@scheme[unix-browser-list] for which the executable is found.
+Otherwise, the preference should hold a symbol indicating a known
+browser (from the @scheme[unix-browser-list]), or it a pair of a prefix
+and a suffix string that are concatenated around the @scheme[url] string
+to make up a shell command to run.  In addition, the
+@scheme[external-browser] paremeter can be set to one of these values,
+and @scheme[send-url] will use it instead of the preference value.
 
-The parameter value can be any of the symbols in
-@scheme[unix-browser-list], @scheme[#f] to indicate that the
-preference is unset, or a pair of strings.  If the preference is
-unset, @scheme[send-url] uses the first of the browsers from
-@scheme[unix-browser-list] for which the executable is found. If the
-parameter is a pair of strings, then a command line is constructed by
-concatenating in order the first string, the URL string, and the
-second string.
+Note that the URL is encoded to make it work inside shell double-quotes:
+URLs can still hold characters like @litchar{#}, @litchar{?}, and
+@litchar{&}, so if the @scheme[external-browser] is set to a pair of
+prefix/suffix strings, they should use double quotes around the url.
 
 If the preferred or default browser can't be launched,
 @scheme[send-url] fails. See @scheme[get-preference] and

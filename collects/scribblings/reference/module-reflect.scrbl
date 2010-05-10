@@ -323,7 +323,8 @@ the interpretation of results is up to external tools, such as
 DrRacket.  If no information is available for a given key, the result
 should be the given default value.
 
-See also @racket[module->language-info].}
+See also @racket[module->language-info] and
+@racketmodname[racket/language-info].}
 
 
 @;------------------------------------------------------------------------

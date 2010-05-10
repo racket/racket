@@ -1,5 +1,5 @@
 #lang scheme/gui
-(require "drscheme-test-util.ss" mzlib/etc framework scheme/string)
+(require "drracket-test-util.ss" mzlib/etc framework scheme/string)
 
 (provide test t rx run-test in-here write-test-modules)
 
@@ -184,8 +184,8 @@
     (equal? (regexp-replace* #rx"[\n\t ]+" a " ")
             (regexp-replace* #rx"[\n\t ]+" b " ")))
   
-  (define drs/compiled/et (build-path "compiled" "drscheme" "errortrace"))
-  (define drs/compiled (build-path "compiled" "drscheme"))
+  (define drs/compiled/et (build-path "compiled" "drracket" "errortrace"))
+  (define drs/compiled (build-path "compiled" "drracket"))
   (define compiled/et (build-path "compiled" "errortrace"))
   (define compiled (build-path "compiled"))
   

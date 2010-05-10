@@ -210,6 +210,7 @@ to its depth from before evaluating the form.}
 
 
 @defstruct+[(mod form) ([name symbol?]
+                        [srcname symbol?]
                         [self-modidx module-path-index?]
                         [prefix prefix?]
                         [provides (listof (list/c (or/c exact-integer? #f)

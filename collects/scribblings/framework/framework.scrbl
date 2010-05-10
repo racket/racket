@@ -1,85 +1,85 @@
 #lang scribble/doc
 
-@(require (for-label framework scheme/gui))
+@(require (for-label framework racket/gui))
 @(require scribble/manual)
 
-@title{@bold{Framework}: PLT GUI Application Framework}
+@title{@bold{Framework}: Racket GUI Application Framework}
 @(defmodule framework)
 
 @author["Robert Bruce Findler" "Matthew Flatt"]
 
 The framework provides a number of mixins, classes and
 functions designed to help you build a complete application
-program on top of the @scheme[scheme/gui] library.
+program on top of the @racket[racket/gui] library.
 
 @itemize[
 @item{@bold{Entire Framework}
 
 @itemize[
 
-@item{@scheme[(require @#,schememodname[framework])]
+@item{@racket[(require @#,racketmodname[framework])]
 
   This library provides all of the definitions and syntax
   described in this manual.
 }
-@item{@scheme[(require framework/framework-sig)]
+@item{@racket[(require framework/framework-sig)]
   
   This library provides the signature definitions:
-  @scheme[framework^], and
-  @scheme[framework-class^].
-  The @scheme[framework^] signature contains all of the 
+  @racket[framework^], and
+  @racket[framework-class^].
+  The @racket[framework^] signature contains all of the 
   names of the procedures described in this manual, except
-  those that begin with @scheme[test:] and
-  @scheme[gui-utils:]. The @scheme[framework-class^]
+  those that begin with @racket[test:] and
+  @racket[gui-utils:]. The @racket[framework-class^]
   signature contains all of the classes defined in this
   manual.
 }
-@item{@scheme[(require framework/framework-unit)]
+@item{@racket[(require framework/framework-unit)]
 
   This library provides one
-  @scheme[unit/sig]: @scheme[framework@]. It exports the signature
-  @scheme[framework^]. It imports the @scheme[mred^] signature.
+  @racket[unit/sig]: @racket[framework@]. It exports the signature
+  @racket[framework^]. It imports the @racket[mred^] signature.
 
 }
 ]}
 @item{
  @bold{Test Suite Engine}
 
-@scheme[(require @#,schememodname[framework/test])]
+@racket[(require @#,racketmodname[framework/test])]
 
 This library provides all of the definitions beginning with
-@scheme[test:] described in this manual.
+@racket[test:] described in this manual.
 }
 @item{ @bold{GUI Utilities}
-@scheme[(require @#,schememodname[framework/gui-utils])]
+@racket[(require @#,racketmodname[framework/gui-utils])]
     
     This libraries provides all of the definitions beginning
-    with @scheme[gui-utils:] described in this manual.
+    with @racket[gui-utils:] described in this manual.
 }
 @item{ @bold{Preferences}
-@scheme[(require @#,schememodname[framework/preferences])]
+@racket[(require @#,racketmodname[framework/preferences])]
     
   This library provides a subset of the names of the
   @tt{framework.ss} library, namely those for
   manipulating preference settings and is designed to be
-  used from mzscheme.
+  used from @exec{racket}.
 
 The precise set of exported names is:
-@scheme[preferences:snapshot?],
-@scheme[preferences:restore-prefs-snapshot],
-@scheme[preferences:get-prefs-snapshot],
-@scheme[exn:make-unknown-preference],
-@scheme[exn:unknown-preference?],
-@scheme[preferences:low-level-put-preferences],
-@scheme[preferences:get],
-@scheme[preferences:set],
-@scheme[preferences:add-callback],
-@scheme[preferences:set-default],
-@scheme[preferences:set-un/marshall], and
-@scheme[preferences:restore-defaults].
+@racket[preferences:snapshot?],
+@racket[preferences:restore-prefs-snapshot],
+@racket[preferences:get-prefs-snapshot],
+@racket[exn:make-unknown-preference],
+@racket[exn:unknown-preference?],
+@racket[preferences:low-level-put-preferences],
+@racket[preferences:get],
+@racket[preferences:set],
+@racket[preferences:add-callback],
+@racket[preferences:set-default],
+@racket[preferences:set-un/marshall], and
+@racket[preferences:restore-defaults].
 }
 @item{@bold{Decorated Editor Snip}
-@scheme[(require framework/decorated-editor-snip)]
+@racket[(require framework/decorated-editor-snip)]
 
 This library is here for backwards compatibility. The
 functionality in it has moved into the framework proper, in

@@ -66,4 +66,6 @@
   (send pdf-bitmap save-file "../pdf.png" 'png)
   (send html-bitmap save-file "../html.png" 'png))
 
-(send f show #t)
+(match (current-command-line-arguments)
+ [(vector "skip") (void)]
+ [_ (send f show #t)])

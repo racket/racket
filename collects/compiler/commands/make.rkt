@@ -30,7 +30,7 @@
    [("--vv") "Very verbose mode"
     (verbose #t)
     (very-verbose #t)]
-   #:args file file))
+   #:args (file . another-file) (cons file another-file)))
 
 (if (disable-deps)
     ;; Just compile one file:

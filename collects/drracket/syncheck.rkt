@@ -23,11 +23,11 @@ If the namespace does not, they are colored the unbound color.
          scheme/class
          scheme/list
          scheme/promise
-         drscheme/tool
+         drracket/tool
          syntax/toplevel
          syntax/boundmap
          mrlib/switchable-button
-         (prefix-in drracket:arrow: drscheme/arrow)
+         (prefix-in drracket:arrow: drracket/arrow)
          (prefix-in fw: framework/framework)
          mred
          framework

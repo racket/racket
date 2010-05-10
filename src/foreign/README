@@ -13,7 +13,7 @@ under the MIT License.
 
 The directory is synced from the GCC repository, revision 140226.
 
-Our copy of libffi for PLT Scheme has been changed in a few small
+Our copy of libffi for Racket has been changed in a few small
 ways:
 
 Local changes:

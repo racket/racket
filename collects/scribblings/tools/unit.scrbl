@@ -44,7 +44,7 @@ Enables the Run button, and the Run menu item and unlocks
 
 @defmethod[(get-defs)
            (is-a?/c drracket:unit:definitions-text<%>)]{
-This text is initially the top half of the drscheme window and
+This text is initially the top half of the DrRacket window and
 contains the users program.
 
 This text defaults to a @scheme[text%]
@@ -58,7 +58,7 @@ object, but if you change
            (or/c string? false/c)]{
 
 This is the directory that the file is saved in, or the
-directory DrScheme started up in, if the file has not been
+directory DrRacket started up in, if the file has not been
 saved.
 
 
@@ -80,7 +80,7 @@ Returns the frame that this tab is inside.
 
 @defmethod[(get-ints)
            (is-a?/c drracket:rep:text%)]{
-This text is initially the bottom half of the drscheme window and
+This text is initially the bottom half of the DrRacket window and
 contains the users interactions with the REPL.
 
 This text defaults to a @scheme[drracket:rep:text%]
@@ -100,7 +100,7 @@ Indicates if this tab is the currently active tab.
            boolean?]{
 
 Indicates if the running message in the bottom right of
-drscheme's frame should be ``running'' or ``not running''
+DrRacket's frame should be ``running'' or ``not running''
 when this frame is active.
 
 
@@ -202,7 +202,7 @@ Passes all arguments to @scheme[super-init].
 
 @defclass[drracket:unit:frame% (drracket:frame:basics-mixin (drracket:frame:mixin frame:searchable%)) (drracket:unit:frame<%>)]{
 
-This frame inserts the Scheme and Language menus into the menu bar as it is initialized.
+This frame inserts the @onscreen{Racket} and @onscreen{Language} menus into the menu bar as it is initialized.
 
 
 
@@ -246,7 +246,7 @@ Breaks the user's evaluation started by the Run button
            void?]{
 
 Loads this file into this already created frame. In normal
-DrScheme use, this method is only called if this is the
+DrRacket use, this method is only called if this is the
 first frame opened and no editing has occurred. It should be
 safe to call this at anytime, however.
 
@@ -353,7 +353,7 @@ Returns the break button. Mostly used for test suites.
 
 @defmethod[(get-button-panel)
            (is-a?/c horizontal-panel%)]{
-This panel goes along the top of the drscheme window and has buttons
+This panel goes along the top of the DrRacket window and has buttons
 for important actions the user frequently executes. 
 
 A tool can add a button to this panel to make some new functionality
@@ -390,7 +390,7 @@ Returns the result of
 @methspec{
 
 This method is provided so that tools can add 
-@scheme[area-container<%>]s to the drscheme frame. Override this method so that it
+@scheme[area-container<%>]s to the DrRacket frame. Override this method so that it
 returns a child of the super-classes's result and insert new 
 children in between.
 
@@ -475,7 +475,7 @@ Calls the super method.
            void?]{
 
 Updates the preferences for the window width and height
-so next time a drscheme window is opened, it will be this
+so next time a DrRacket window is opened, it will be this
 width and height.
 
 
@@ -518,7 +518,7 @@ This method is called by the
 @defmethod[(update-save-message [name string?])
            void?]{
 
-Updates the save message on the drscheme frame. This method is called by
+Updates the save message on the DrRacket frame. This method is called by
 the 
 @method[drracket:unit:definitions-text% set-filename] method.
 
@@ -540,7 +540,7 @@ items based on the contents of the windows.
 
 @defmethod[(get-language-menu) (is-a?/c menu%)]{ Returns the
   language-specific menu. This menu is called the
-  @onscreen{Scheme} menu in the Scheme language but is, in general,
+  @onscreen{Racket} menu in the Racket language but is, in general,
   controlled by the @scheme['drscheme:language-menu-title] 
   capability (see @scheme[drracket:language:register-capability]
   for details on capabilities).
@@ -598,7 +598,7 @@ Returns the currently active tab.
            (is-a?/c drracket:unit:definitions-canvas%)]{
 
 This canvas is the canvas containing the 
-@method[drracket:unit:frame<%> get-definitions-text]. It is initially the top half of the drscheme window.
+@method[drracket:unit:frame<%> get-definitions-text]. It is initially the top half of the DrRacket window.
 
 This canvas defaults to a @scheme[drracket:unit:definitions-canvas%]
 object, but if you change the
@@ -629,7 +629,7 @@ Returns the Insert menu.
            (instanceof (derivedfrom drracket:unit:interactions-canvas%))]{
 
 This canvas is the canvas containing the 
-@method[drracket:unit:frame<%> get-interactions-text]. It is initially the bottom half of the drscheme window.
+@method[drracket:unit:frame<%> get-interactions-text]. It is initially the bottom half of the DrRacket window.
 
 This canvas defaults to a @scheme[drracket:unit:interactions-canvas%]
 object, but if you use the
@@ -761,9 +761,9 @@ Called when the next settings changes. See also
 
 @defmethod[(begin-metadata-changes)
            void?]{
-Augment this method to be notified when DrScheme is changing
+Augment this method to be notified when DrRacket is changing
 the buffer to insert metadata. The metadata is only inserted
-during saving, so tools that track changes to DrScheme will
+during saving, so tools that track changes to DrRacket will
 need to ignore changes that occur after this method is
 called, and before
 @method[drracket:unit:definitions-text<%> end-metadata-changes] is called.
@@ -789,7 +789,7 @@ the calls cannot be nested).
 @defmethod[(get-next-settings)
            language-settings]{
 This method returns the language-settings that will be used
-when the user next clicks Run in this DrScheme window.
+when the user next clicks Run in this DrRacket window.
 
 }
 
@@ -822,7 +822,7 @@ source field of an exception record) matches this editor.
            void?]{
 @methspec{
 
-This method, when called, puts this drscheme window in a
+This method, when called, puts this DrRacket window in a
 state such that interactions submitted to the REPL will
 trigger a yellow warning message. The state is reset when
 the program is next Run.

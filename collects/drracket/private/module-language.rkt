@@ -106,7 +106,7 @@
       (define/override (default-settings)
         (let ([super-defaults (super default-settings)])
           (make-module-language-settings
-           #t 'write 'mixed-fraction-e #f #t 'debug;; simple settings defaults 
+           #t 'print 'mixed-fraction-e #f #t 'debug;; simple settings defaults 
            
            '(default)
            #()
@@ -163,7 +163,15 @@
                            (andmap string? (vector->list command-line-args))
                            (string? auto-text)
                            (boolean? compilation-on?)
-                           (let ([super (super unmarshall-settings (car marshalled))])
+                           (let ([super (super unmarshall-settings 
+                                               (let ([p (car marshalled)])
+                                                 ;; Convert 'write to 'print:
+                                                 (if (eq? (vector-ref p 1) 'write)
+                                                     (list->vector 
+                                                      (list* (vector-ref p 0)
+                                                             'print
+                                                             (cddr (vector->list p))))
+                                                     p)))])
                              (and super
                                   (apply make-module-language-settings
                                          (append
@@ -204,11 +212,11 @@
                (case annotations
                  [(none)
                   (use-compiled-file-paths
-                   (cons (build-path "compiled" "drscheme")
+                   (cons (build-path "compiled" "drracket")
                          (use-compiled-file-paths)))]
                  [(debug)
                   (use-compiled-file-paths
-                   (cons (build-path "compiled" "drscheme" "errortrace")
+                   (cons (build-path "compiled" "drracket" "errortrace")
                          (use-compiled-file-paths)))]))
              
              (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))

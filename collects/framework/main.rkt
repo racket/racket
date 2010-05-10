@@ -247,7 +247,7 @@
   (-> void?)
   ()
   @{Adds a preferences panel for configuring options related to
-         Scheme.})
+         Racket.})
  
  (proc-doc/names
   preferences:add-to-warnings-checkbox-panel
@@ -261,7 +261,7 @@
   (((is-a?/c vertical-panel%) . -> . void?) . -> . void?)
   (proc)
   @{Saves @scheme[proc] until the preferences panel is created, when it
-          is called with the Scheme preferences panel to add new children to
+          is called with the Racket preferences panel to add new children to
           the panel.})
  
  (proc-doc/names
@@ -1343,14 +1343,14 @@
   scheme:get-keymap
   (-> (is-a?/c keymap%))
   ()
-  @{Returns a keymap with binding suitable for Scheme.})
+  @{Returns a keymap with binding suitable for Racket.})
  
  (proc-doc/names
   scheme:add-coloring-preferences-panel
   (-> any)
   ()
   @{
-    Installs the ``Scheme'' preferences panel in the ``Syntax Coloring''
+    Installs the ``Racket'' preferences panel in the ``Syntax Coloring''
              section.})
  
  (proc-doc/names
@@ -1359,7 +1359,7 @@
   ()
   @{Returns 
     a table mapping from symbols 
-    (naming the categories that the online colorer uses for Scheme mode coloring) to their colors.
+    (naming the categories that the online colorer uses for Racket mode coloring) to their colors.
     
     These symbols are suitable for input to
     @scheme[scheme:short-sym->pref-name] and
@@ -1373,7 +1373,7 @@
   ()
   @{Returns 
     a table mapping from symbols 
-    (naming the categories that the online colorer uses for Scheme mode coloring) to their colors when
+    (naming the categories that the online colorer uses for Racket mode coloring) to their colors when
     the user chooses the white-on-black mode in the preferences dialog.
     
     See also @scheme[scheme:get-color-prefs-table].})
@@ -1399,7 +1399,7 @@
   (-> (is-a?/c editor-wordbreak-map%))
   ()
   @{This method returns a @scheme[editor-wordbreak-map%] that is suitable
-         for Scheme.})
+         for Racket.})
  
  (proc-doc/names
   scheme:init-wordbreak-map
@@ -1411,7 +1411,7 @@
   scheme:setup-keymap
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
-  @{Initializes @scheme[keymap] with Scheme-mode keybindings.})
+  @{Initializes @scheme[keymap] with Racket-mode keybindings.})
  
  (proc-doc/names
   editor:set-default-font-color

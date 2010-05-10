@@ -2,21 +2,21 @@
 
 @begin[(require "utils.ss"
 		scribble/core scribble/eval
-		(for-label (only-meta-in 0 typed/scheme) mzlib/etc))]
+		(for-label (only-meta-in 0 typed/racket) mzlib/etc))]
 
 @(define the-eval (make-base-eval))
-@(the-eval '(require typed/scheme))
+@(the-eval '(require typed/racket))
 
-@title[#:tag "types"]{Types in Typed Scheme}
+@title[#:tag "types"]{Types in Typed Racket}
 
-Typed Scheme provides a rich variety of types to describe data. This
+Typed Racket provides a rich variety of types to describe data. This
 section introduces them.  
 
 @section{Basic Types}
 
-The most basic types in Typed Scheme are those for primitive data,
-such as @scheme[True] and @scheme[False] for booleans, @scheme[String]
-for strings, and @scheme[Char] for characters.
+The most basic types in Typed Racket are those for primitive data,
+such as @racket[True] and @racket[False] for booleans, @racket[String]
+for strings, and @racket[Char] for characters.
 
 @interaction[#:eval the-eval
 '"hello, world"
@@ -25,13 +25,13 @@ for strings, and @scheme[Char] for characters.
 #f]
 
 Each symbol is given a unique type containing only that symbol.  The
-@scheme[Symbol] type includes all symbols.
+@racket[Symbol] type includes all symbols.
 
 @interaction[#:eval the-eval
 'foo
 'bar]
 
-Typed Scheme also provides a rich hierarchy for describing particular
+Typed Racket also provides a rich hierarchy for describing particular
 kinds of numbers.
 
 @interaction[#:eval the-eval
@@ -49,20 +49,20 @@ Finally, any value is itself a type:
 @section{Function Types}
 
 We have already seen some examples of function types.  Function types
-are constructed using @scheme[->], with the argument types before the
+are constructed using @racket[->], with the argument types before the
 arrow and the result type after.  Here are some example function
 types:
 
-@schemeblock[
+@racketblock[
 (Number -> Number)
 (String String -> Boolean)
 (Char -> (values String Natural))
 ]
 
-The first type requires a @scheme[Number] as input, and produces a
-@scheme[Number].  The second requires two arguments.  The third takes
+The first type requires a @racket[Number] as input, and produces a
+@racket[Number].  The second requires two arguments.  The third takes
 one argument, and produces  @rtech{multiple values}, of types
-@scheme[String] and @scheme[Natural].  Here are example functions for
+@racket[String] and @racket[Natural].  Here are example functions for
 each of these types.
 
 @interaction[#:eval the-eval
@@ -74,7 +74,7 @@ each of these types.
 @section{Union Types}
 
 Sometimes a value can be one of several types.  To specify this, we
-can use a union type, written with the type constructor @scheme[U].  
+can use a union type, written with the type constructor @racket[U].  
 
 @interaction[#:eval the-eval
 (let ([a-number 37])
@@ -85,7 +85,7 @@ can use a union type, written with the type constructor @scheme[U].
 Any number of types can be combined together in a union, and nested
 unions are flattened.  
 
-@schemeblock[(U Number String Boolean Char)]
+@racketblock[(U Number String Boolean Char)]
 
 @section{Recursive Types}
 
@@ -93,34 +93,34 @@ unions are flattened.
 to describe an infinite family of data.  For example, this is the type
 of binary trees of numbers.  
 
-@schemeblock[
+@racketblock[
 (Rec BT (U Number (Pair BT BT)))]
 
-The @scheme[Rec] type constructor specifies that the type @scheme[BT]
+The @racket[Rec] type constructor specifies that the type @racket[BT]
 refers to the whole binary tree type within the body of the
-@scheme[Rec] form.
+@racket[Rec] form.
 
 @section{Structure Types}
 
-Using @scheme[define-struct:] introduces new types, distinct from any
+Using @racket[define-struct:] introduces new types, distinct from any
 previous type.    
 
-@schemeblock[(define-struct: point ([x : Real] [y : Real]))]
+@racketblock[(define-struct: point ([x : Real] [y : Real]))]
 
-Instances of this structure, such as @scheme[(make-point 7 12)], have type @scheme[point].
+Instances of this structure, such as @racket[(make-point 7 12)], have type @racket[point].
 
 @section{Subtyping}
 
-In Typed Scheme, all types are placed in a hierarchy, based on what
+In Typed Racket, all types are placed in a hierarchy, based on what
 values are included in the type.  When an element of a larger type is
 expected, an element of a smaller type may be provided.  The smaller
 type is called a @deftech{subtype} of the larger type.  The larger
 type is called a @deftech{supertype}. For example,
-@scheme[Integer] is a subtype of @scheme[Real], since every integer is
+@racket[Integer] is a subtype of @racket[Real], since every integer is
 a real number.  Therefore, the following code is acceptable to the
 type checker:
 
-@schemeblock[
+@racketblock[
 (: f (Real -> Real))
 (define (f x) (* x 0.75))
 
@@ -130,30 +130,30 @@ type checker:
 (f x)
 ]
 
-All types are subtypes of the @scheme[Any] type.
+All types are subtypes of the @racket[Any] type.
 
 The elements of a union type are individually subtypes of the whole
-union, so @scheme[String] is a subtype of @scheme[(U String Number)].
+union, so @racket[String] is a subtype of @racket[(U String Number)].
 One function type is a subtype of another if they have the same number
 of arguments, the subtype's arguments are more permissive (is a supertype), and the
 subtype's result type is less permissive (is a subtype).
-For example, @scheme[(Any -> String)] is a subtype of @scheme[(Number
+For example, @racket[(Any -> String)] is a subtype of @racket[(Number
 -> (U String #f))].
 
 @;@section{Occurrence Typing}
 
 @section{Polymorphism}
 
-Typed Scheme offers abstraction over types as well as values.
+Typed Racket offers abstraction over types as well as values.
 
 @subsection{Polymorphic Data Structures}
 
-Virtually every Scheme program uses lists and sexpressions.  Fortunately, Typed
-Scheme can handle these as well.  A simple list processing program can be
+Virtually every Racket program uses lists and sexpressions.  Fortunately, Typed
+Racket can handle these as well.  A simple list processing program can be
 written like this:
 
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (: sum-list ((Listof Number) -> Number))
 (define (sum-list l)
   (cond [(null? l) 0]
@@ -161,17 +161,17 @@ typed/scheme
 ]
 
 This looks similar to our earlier programs --- except for the type
-of @scheme[l], which looks like a function application.  In fact, it's
-a use of the @italic{type constructor} @scheme[Listof], which takes
-another type as its input, here @scheme[Number].  We can use
-@scheme[Listof] to construct the type of any kind of list we might
+of @racket[l], which looks like a function application.  In fact, it's
+a use of the @italic{type constructor} @racket[Listof], which takes
+another type as its input, here @racket[Number].  We can use
+@racket[Listof] to construct the type of any kind of list we might
 want.  
 
 We can define our own type constructors as well.  For example, here is
 an analog of the @tt{Maybe} type constructor from Haskell:
 
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (define-struct: None ())
 (define-struct: (a) Some ([v : a]))
 
@@ -184,32 +184,32 @@ typed/scheme
         [else (find v (cdr l))]))
 ]
 
-The first @scheme[define-struct:] defines @scheme[None] to be
+The first @racket[define-struct:] defines @racket[None] to be
 a structure with no contents.  
 
 The second definition
 
-@schemeblock[
+@racketblock[
 (define-struct: (a) Some ([v : a]))
 ]
 
-creates a parameterized type, @scheme[Just], which is a structure with
+creates a parameterized type, @racket[Just], which is a structure with
 one element, whose type is that of the type argument to
-@scheme[Just].  Here the type parameters (only one, @scheme[a], in
+@racket[Just].  Here the type parameters (only one, @racket[a], in
 this case) are written before the type name, and can be referred to in
 the types of the fields.
 
 The type definiton
-@schemeblock[
+@racketblock[
   (define-type (Opt a) (U None (Some a)))
 ]
-creates a parameterized type --- @scheme[Opt] is a potential
+creates a parameterized type --- @racket[Opt] is a potential
 container for whatever type is supplied.
 
-The @scheme[find] function takes a number @scheme[v] and list, and
-produces @scheme[(make-Some v)] when the number is found in the list,
-and @scheme[(make-None)] otherwise.  Therefore, it produces a
-@scheme[(Opt Number)], just as the annotation specified.  
+The @racket[find] function takes a number @racket[v] and list, and
+produces @racket[(make-Some v)] when the number is found in the list,
+and @racket[(make-None)] otherwise.  Therefore, it produces a
+@racket[(Opt Number)], just as the annotation specified.  
 
 @subsection{Polymorphic Functions}
 
@@ -217,8 +217,8 @@ Sometimes functions over polymorphic data structures only concern
 themselves with the form of the structure.  For example, one might
 write a function that takes the length of a list of numbers:
 
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (: list-number-length ((Listof Number) -> Integer))
 (define (list-number-length l)
   (if (null? l)
@@ -227,8 +227,8 @@ typed/scheme
 
 and also a function that takes the length of a list of strings:
 
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (: list-string-length ((Listof String) -> Integer))
 (define (list-string-length l)
   (if (null? l)
@@ -242,17 +242,17 @@ definition.
 
 We can abstract over the type of the element as follows:
 
-@schememod[
-typed/scheme
+@racketmod[
+typed/racket
 (: list-length (All (A) ((Listof A) -> Integer)))
 (define (list-length l)
   (if (null? l)
       0
       (add1 (list-length (cdr l)))))]
 
-The new type constructor @scheme[All] takes a list of type
+The new type constructor @racket[All] takes a list of type
 variables and a body type.  The type variables are allowed to
-appear free in the body of the @scheme[All] form.
+appear free in the body of the @racket[All] form.
 
 
 @include-section["varargs.scrbl"]

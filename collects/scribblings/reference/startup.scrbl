@@ -134,7 +134,9 @@ flags:
         the evaluation are printed via @racket[current-print].}
 
   @item{@FlagFirst{f} @nonterm{file} or @DFlagFirst{load}
-        @nonterm{file} : @racket[load]s @nonterm{file}.}
+        @nonterm{file} : @racket[load]s @nonterm{file}; if
+        @nonterm{file} is @filepath{-}, then expressions are read and
+        evaluated from standard input.}
 
   @item{@FlagFirst{t} @nonterm{file} or @DFlagFirst{require}
         @nonterm{file} : @racket[require]s @nonterm{file}.}

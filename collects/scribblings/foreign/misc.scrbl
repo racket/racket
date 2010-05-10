@@ -20,7 +20,7 @@ for cases where the regular expression begins with a @litchar{^} or
 ends with a @litchar{$}, in which case @scheme[regexp-replace] is
 used.
 
-For example, the following makes it convenient to define Scheme
+For example, the following makes it convenient to define Racket
 bindings such as @scheme[foo-bar] for foreign names like
 @scheme[MyLib_foo_bar]:
 
@@ -48,7 +48,7 @@ according to the given @scheme[type].}
 
 @defproc[(vector->cblock [vec vector?][type type?]) any]{
 
-Like @scheme[list->cblock], but for Scheme vectors.}
+Like @scheme[list->cblock], but for Racket vectors.}
 
 
 @defproc[(vector->cpointer [vec vector?]) cpointer?]{
@@ -93,7 +93,7 @@ The conversion is equivalent to
          list?]{
 
 Converts C @scheme[cblock], which is a vector of @scheme[type]s, to a
-Scheme list.  The arguments are the same as in the
+Racket list.  The arguments are the same as in the
 @scheme[list->cblock]. The @scheme[length] must be specified because
 there is no way to know where the block ends.}
 
@@ -101,4 +101,4 @@ there is no way to know where the block ends.}
 @defproc[(cblock->vector [cblock any/c][type ctype?][length exact-nonnegative-integer?])
          vector?]{
 
-Like @scheme[cblock->vector], but for Scheme vectors.}
+Like @scheme[cblock->vector], but for Racket vectors.}
