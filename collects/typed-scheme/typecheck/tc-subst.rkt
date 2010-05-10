@@ -43,7 +43,7 @@
                      ;; here we have to increment the count for the domain, where the new bindings are in scope
                      (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
                             [st* (if (integer? k)
-                                     (λ (t) (subst-type t (+ arg-count k) o polarity))
+                                     (λ (t) (subst-type t (if (number? k) (+ arg-count k) k) o polarity))
                                      st)])
                        (make-arr (map st dom)
                                  (st* rng)
@@ -126,7 +126,7 @@
                 [#:arr dom rng rest drest kws
                        ;; here we have to increment the count for the domain, where the new bindings are in scope
                        (let* ([arg-count (+ (length dom) (if rest 1 0) (if drest 1 0) (length kws))]
-                              [st* (lambda (t) (index-free-in? (+ arg-count k) t))])
+                              [st* (lambda (t) (index-free-in? (if (number? k) (+ arg-count k) k) t))])
                          (for-each for-type dom)
                          (st* rng)
                          (and rest (for-type rest))
