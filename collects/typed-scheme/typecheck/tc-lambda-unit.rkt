@@ -25,7 +25,7 @@
 (d-s/c lam-result ([args (listof (list/c identifier? Type/c))] 
                    [kws (listof (list/c keyword? identifier? Type/c boolean?))]
                    [rest (or/c #f (list/c identifier? Type/c))]
-                   [drest (or/c #f (list/c identifier? Type/c symbol?))]
+                   [drest (or/c #f (cons/c identifier? (cons/c Type/c symbol?)))]
                    [body tc-results?])
        #:transparent)
 
@@ -56,7 +56,11 @@
           (if rest " and a rest arg" "")))
 
 ;; listof[id] option[id] block listof[type] option[type] option[(cons type var)] tc-result -> lam-result
-(define (check-clause arg-list rest body arg-tys rest-ty drest ret-ty)
+(d/c (check-clause arg-list rest body arg-tys rest-ty drest ret-ty)
+     ((listof identifier?) 
+      (or/c #f identifier?) syntax? (listof Type/c) (or/c #f Type/c) (or/c #f (list/c Type/c symbol?)) tc-results? 
+      . --> . 
+      lam-result?)
   (let* ([arg-len (length arg-list)]
          [tys-len (length arg-tys)]
          [arg-types (if (andmap type-annotation arg-list)
@@ -70,7 +74,9 @@
     (define (check-body)
       (with-lexical-env/extend 
        arg-list arg-types
-       (make-lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null rest-ty drest 
+       (make lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null rest-ty 
+                        ;; make up a fake name if none exists, this is an error case anyway
+                        (cons (or rest (generate-temporary)) drest)
                         (tc-exprs/check (syntax->list body) ret-ty))))
     (when (or (not (= arg-len tys-len))
               (and (or rest-ty drest) (not rest)))
@@ -149,7 +155,7 @@
                        (map list arg-list arg-types)
                        null
                        #f
-                       (cons rest-type bound)
+                       (cons #'rest (cons rest-type bound))
                        (tc-exprs (syntax->list body)))))))]
          [else
           (let ([rest-type (get-type #'rest #:default Univ)])
