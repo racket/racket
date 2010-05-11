@@ -126,7 +126,12 @@
                        success-choose failure-k
                        port-success-k port-success-choose port-failure-k
                        need-leftover? peek?)
-    (let* ([len (cond [(string? string) (string-length string)]
+    (let* ([string (if (path? string)
+                       (if (or (string? pattern) (regexp? pattern))
+                           (path->string string)
+                           (path->bytes string))
+                       string)]
+           [len (cond [(string? string) (string-length string)]
                       [(bytes?  string) (bytes-length  string)]
                       [else #f])]
            [orig-rx (cond [(bytes? pattern) (byte-regexp pattern)]
@@ -143,7 +148,7 @@
           (raise-type-error 'name "input port" string))
         (unless (or len (input-port? string))
           (raise-type-error
-           'name "string, byte string or input port" string)))
+           'name "string, byte string, path, or input port" string)))
       (unless (and (number? start) (exact? start) (integer? start)
                    (start . >= . 0))
         (raise-type-error 'name "non-negative exact integer" start))
@@ -283,7 +288,11 @@
                                               (bytes? pattern)))
                   (string->bytes/utf-8 string (char->integer #\?))
                   string))
-    (define sub (if (bytes? buf) subbytes substring))
+    (define sub (if (or (bytes? buf) (and (path? string)
+                                          (or (bytes? pattern)
+                                              (byte-regexp? pattern))))
+                    subbytes 
+                    substring))
     (regexp-loop regexp-split loop start end pattern buf ipre
      ;; success-choose:
      (lambda (start mstart mend ms acc) (cons (sub buf start mstart) acc))
@@ -418,7 +427,11 @@
                                               (bytes? pattern)))
                   (string->bytes/utf-8 string (char->integer #\?))
                   string))
-    (define sub (if (bytes? buf) subbytes substring))
+    (define sub (if (or (bytes? buf) (and (path? string)
+                                          (or (bytes? pattern)
+                                              (byte-regexp? pattern))))
+                    subbytes 
+                    substring))
     (regexp-loop regexp-match* loop start end pattern buf ipre
      ;; success-choose:
      (lambda (start mstart mend ms acc) (cons (sub buf mstart mend) acc))

@@ -5000,25 +5000,38 @@ static Scheme_Object *gen_compare(char *name, int pos,
   rxpos *startp, *maybep, *endp, prefix_len = 0, prefix_offset = 0, minpos;
   int offset = 0, orig_offset, endset, m, was_non_byte, last_bytes_count = last_bytes;
   Scheme_Object *iport, *oport = NULL, *startv = NULL, *endv = NULL, *dropped, *unless_evt = NULL;
-  Scheme_Object *last_bytes_str = scheme_false;
+  Scheme_Object *last_bytes_str = scheme_false, *srcin;
   
   if (SCHEME_TYPE(argv[0]) != scheme_regexp_type
       && !SCHEME_BYTE_STRINGP(argv[0])
       && !SCHEME_CHAR_STRINGP(argv[0]))
     scheme_wrong_type(name, "regexp, byte-regexp, string, or byte string", 0, argc, argv);
   if ((peek || (!SCHEME_BYTE_STRINGP(argv[1]) && !SCHEME_CHAR_STRINGP(argv[1])))
-      && !SCHEME_INPUT_PORTP(argv[1]))
-    scheme_wrong_type(name, peek ? "input-port" : "string, byte string, or input port", 1, argc, argv);
+      && !SCHEME_INPUT_PORTP(argv[1])
+      && !SCHEME_PATHP(argv[1]))
+    scheme_wrong_type(name, peek ? "input-port" : "string, byte string, path, or input port", 1, argc, argv);
   
-  if (SCHEME_CHAR_STRINGP(argv[1])) {
+  srcin = argv[1];
+  if (SCHEME_PATHP(srcin)) {
+    if (SCHEME_BYTE_STRINGP(argv[0])
+        || (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_regexp_type)
+            && !(((regexp *)argv[0])->flags & REGEXP_IS_UTF8)))
+      srcin = scheme_make_sized_byte_string(SCHEME_PATH_VAL(srcin),
+                                            SCHEME_PATH_LEN(srcin),
+                                            1);
+    else
+      srcin = scheme_path_to_char_string(srcin);
+  }
+
+  if (SCHEME_CHAR_STRINGP(srcin)) {
     iport = NULL;
-    endset = SCHEME_CHAR_STRLEN_VAL(argv[1]);
-  } else if (SCHEME_INPUT_PORTP(argv[1])) {
-    iport = argv[1];
+    endset = SCHEME_CHAR_STRLEN_VAL(srcin);
+  } else if (SCHEME_INPUT_PORTP(srcin)) {
+    iport = srcin;
     endset = -2;
   } else {
     iport = NULL;
-    endset = SCHEME_BYTE_STRLEN_VAL(argv[1]);
+    endset = SCHEME_BYTE_STRLEN_VAL(srcin);
   }
 
   if (argc > 2) {
@@ -5027,7 +5040,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
     offset = scheme_extract_index(name, 2, argc, argv, len + 1, 0);
 
     if (!iport && (offset > len)) {
-      scheme_out_of_string_range(name, "offset ", argv[2], argv[1], 0, len);
+      scheme_out_of_string_range(name, "offset ", argv[2], srcin, 0, len);
       return NULL;
     } else if (offset < 0) {
       /* argument was a bignum */
@@ -5052,7 +5065,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	    return NULL;
 	  }
 	} else if (endset < offset || endset > len) {
-	  scheme_out_of_string_range(name, "ending ", argv[3], argv[1], offset, len);
+	  scheme_out_of_string_range(name, "ending ", argv[3], srcin, offset, len);
 	  return NULL;
 	}
 	endv = argv[3];
@@ -5117,16 +5130,16 @@ static Scheme_Object *gen_compare(char *name, int pos,
   was_non_byte = 0;
   orig_offset = 0; /* extra offset */
   if (!iport) {
-    if (SCHEME_BYTE_STRINGP(argv[1]))
-      full_s = SCHEME_BYTE_STR_VAL(argv[1]);
+    if (SCHEME_BYTE_STRINGP(srcin))
+      full_s = SCHEME_BYTE_STR_VAL(srcin);
     else {
       /* Extract substring and UTF-8 encode: */
       int blen;
-      blen = scheme_utf8_encode(SCHEME_CHAR_STR_VAL(argv[1]), offset, endset,
+      blen = scheme_utf8_encode(SCHEME_CHAR_STR_VAL(srcin), offset, endset,
 				NULL, 0,
 				0 /* not UTF-16 */);
       full_s = (char *)scheme_malloc_atomic(blen);
-      scheme_utf8_encode(SCHEME_CHAR_STR_VAL(argv[1]), offset, endset,
+      scheme_utf8_encode(SCHEME_CHAR_STR_VAL(srcin), offset, endset,
 			 (unsigned char *)full_s, 0,
 			 0 /* not UTF-16 */);
       orig_offset = offset;
@@ -5136,7 +5149,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
 	was_non_byte = 1;
       else {
 	/* Convert orig_offset into encoded bytes */
-	orig_offset = scheme_utf8_encode(SCHEME_CHAR_STR_VAL(argv[1]), 0, orig_offset,
+	orig_offset = scheme_utf8_encode(SCHEME_CHAR_STR_VAL(srcin), 0, orig_offset,
 					 NULL, 0,
 					 0);
       }
