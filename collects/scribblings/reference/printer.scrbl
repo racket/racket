@@ -321,7 +321,7 @@ for which the structure is an instance:
        In @scheme[print] mode when @scheme[print-as-expression] is
        @scheme[#t], the structure's @scheme[prop:custom-write]
        procedure is called with either @scheme[0] or @scheme[1] as the
-       @tech{quoting} depth, normally depending on the structure's
+       @tech{quoting depth}, normally depending on the structure's
        @scheme[prop:custom-print-quotable] property value. If the
        property value is @scheme['always], the @tech{quoting depth} is
        normally @scheme[1]. If the property value is @scheme['maybe],
