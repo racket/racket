@@ -1,6 +1,6 @@
 #lang typed/scheme
 
-(ann (vector-ref #(1 'foo 3) 0) Integer)
+(ann (vector-ref #(1 foo 3) 0) Integer)
 
 (define: x : (Vector Number String Symbol) (vector 1 "foo" 'bar))
 

@@ -435,15 +435,15 @@
      (let ([e-t (single-value #'e)])
        (match (single-value #'v)
          [(tc-result1: (and t (HeterogenousVector: es)))
-          (let ([ival (or (and (number? (syntax-e #'i)) (syntax-e #'i))
+          (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
                           (match e-t
                             [(tc-result1: (Value: (? number? i))) i]
                             [_ #f]))])
             (cond [(not ival)
                    (check-below e-t -Nat)
                    (if expected 
-                       (check-below (apply Un es) expected)
-                       (apply (Un es)))]
+                       (check-below (ret (apply Un es)) expected)
+                       (ret (apply (Un es))))]
                   [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
                    (if expected 
                        (check-below (ret (list-ref es ival)) expected)
@@ -463,7 +463,7 @@
         (ret (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))]
        [(tc-result1: (Vector: t))
         (for ([e (in-list (syntax->list #'(args ...)))])
-          (tc-expr/check e t))
+          (tc-expr/check e (ret t)))
         expected]
        [(tc-result1: (HeterogenousVector: ts))
         (unless (= (length ts) (length (syntax->list #'(args ...))))
@@ -472,7 +472,7 @@
                          (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
         (for ([e (in-list (syntax->list #'(args ...)))]
               [t (in-list ts)])
-          (tc-expr/check e t))
+          (tc-expr/check e (ret t)))
         expected]
        [(tc-result1: t)
         (tc-error/expr "expected ~a, but got ~a" t (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))
