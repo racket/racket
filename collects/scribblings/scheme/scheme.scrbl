@@ -59,6 +59,7 @@ old name. A few @seclink["compat-exe"]{old executables} are also provided.
 @compat-except[scheme racket]{, except that @schememodname[racket]'s
 @scheme[struct] is not exported, the @|unit-struct| from
 @schememodname[scheme/unit] is exported, @schememodname[scheme/set] is
+not re-exported, @schememodname[scheme/system] is
 not re-exported, @racket[pretty-print] is re-directed in as
 @racketmodname[scheme/pretty], and @schememodname[scheme/nest] is
 re-exported}

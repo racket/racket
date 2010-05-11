@@ -226,7 +226,7 @@ real process ID).
 
 @section{Simple Subprocesses}
 
-@note-lib-only[racket/system]
+@note-lib[racket/system]
 
 @defproc[(system [command string?]) boolean?]{
 
