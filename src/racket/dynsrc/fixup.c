@@ -1,4 +1,4 @@
-/* Link this file to gcc-compiled Win32 MzScheme extensions. */
+/* Link this file to gcc-compiled Win32 Racket extensions. */
 /* It must be the last file in the link list. */
 
 /* This is needed to terminate the list of inport stuff */

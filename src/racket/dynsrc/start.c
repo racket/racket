@@ -1,6 +1,6 @@
 /* Launcher program for Windows. */
-/* Builds a MzScheme starter if MZSTART is defined. */
-/* Builds a MrEd starter if MRSTART is defined. */
+/* Builds a Racket starter if MZSTART is defined. */
+/* Builds a GRacket starter if MRSTART is defined. */
 /* If neither is defined, MZSTART is auto-defined. */
 
 #include <windows.h>
@@ -19,15 +19,15 @@
 
 #ifdef MRSTART
 # define GOSUBDIR L"\\"
-# define GOEXE L"mred"
-# define sGOEXE "mred"
+# define GOEXE L"gracket"
+# define sGOEXE "gracket"
 # define WAITTILDONE 0
 #endif
 
 #ifdef MZSTART
 # define GOSUBDIR L"\\"
-# define GOEXE L"mzscheme"
-# define sGOEXE "mzscheme"
+# define GOEXE L"racket"
+# define sGOEXE "racket"
 # define WAITTILDONE 1
 #endif
 

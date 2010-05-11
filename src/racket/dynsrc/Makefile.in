@@ -1,5 +1,5 @@
 #
-# Makefile for mzscheme
+# Makefile for racket
 #
 
 # dynlink is a script that uses the right set of link commands
@@ -33,7 +33,7 @@ HEADERS = $(builddir)/../mzconfig.h \
           $(srcdir)/../include/escheme.h $(srcdir)/../src/stypes.h \
           $(srcdir)/../src/schemex.h $(srcdir)/../src/schemexm.h $(srcdir)/../src/schvers.h
 
-MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/mzscheme.exp
+MZDYNDEP = ../mzdyn.o $(srcdir)/../include/ext.exp $(srcdir)/../include/racket.exp
 
 ../mzdyn.o: $(srcdir)/mzdyn.c $(srcdir)/../src/schvers.h  $(HEADERS)
 	$(PLAIN_CC) @DYN_CFLAGS@ $(CFLAGS) -c $(srcdir)/mzdyn.c -o ../mzdyn.o
@@ -64,23 +64,23 @@ cygwin-install-core:
 	cp $(srcdir)/mzdyn.def mzdynx.def
 	dlltool --def mzdynx.def --output-exp mzdyn.exp
 	cd ../..; mkdir -p $(ILIBDIR)/gcc
-	cd ../..; cp mzscheme/dynsrc/mzdynx.def $(ILIBDIR)/gcc/mzdyn.def
-	cd ../..; cp mzscheme/dynsrc/init.o $(ILIBDIR)/gcc
-	cd ../..; cp mzscheme/dynsrc/fixup.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdynx.def $(ILIBDIR)/gcc/mzdyn.def
+	cd ../..; cp racket/dynsrc/init.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/fixup.o $(ILIBDIR)/gcc
 
 cygwin-install-cgc:
-	cd ../..; cp mzscheme/dynsrc/mzdyn.exp $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdyn.exp $(ILIBDIR)/gcc
 	gcc -c -O2 -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c
 	gcc -c -O2 -DAS_MSVC_EXTENSION -I$(builddir)/.. -I$(srcdir)/../include -o mzdynw.o $(srcdir)/mzdyn.c
-	cd ../..; cp mzscheme/dynsrc/mzdyn.o $(ILIBDIR)/gcc
-	cd ../..; cp mzscheme/dynsrc/mzdynw.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdyn.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdynw.o $(ILIBDIR)/gcc
 
 cygwin-install-3m:
-	cd ../..; cp mzscheme/dynsrc/mzdyn.exp $(ILIBDIR)/gcc/mzdyn3m.exp
+	cd ../..; cp racket/dynsrc/mzdyn.exp $(ILIBDIR)/gcc/mzdyn3m.exp
 	gcc -c -O2 -DMZ_PRECISE_GC -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c -o mzdyn3m.o
 	gcc -c -O2 -DAS_MSVC_EXTENSION -DMZ_PRECISE_GC -I$(builddir)/.. -I$(srcdir)/../include $(srcdir)/mzdyn.c -o mzdynw3m.o
-	cd ../..; cp mzscheme/dynsrc/mzdyn3m.o $(ILIBDIR)/gcc
-	cd ../..; cp mzscheme/dynsrc/mzdynw3m.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdyn3m.o $(ILIBDIR)/gcc
+	cd ../..; cp racket/dynsrc/mzdynw3m.o $(ILIBDIR)/gcc
 
 clean:
 	/bin/rm -f *.o Makefile.bak
