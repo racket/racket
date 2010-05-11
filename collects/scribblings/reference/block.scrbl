@@ -13,14 +13,15 @@
 @defform[(block defn-or-expr ...)]{
 
 Supports a mixture of expressions and mutually recursive definitions,
-much like a @scheme[module] body. Unlike in a @scheme[module],
-however, syntax definitions cannot be used to generate other immediate
-definitions (though they can be used for expressions).
+as in a @scheme[module] body. 
 
 The result of the @scheme[block] form is the result
 of the last @scheme[defn-or-expr] if it is an expression,
 @|void-const| otherwise. If no @scheme[defn-or-expr] is provided
 (after flattening @scheme[begin] forms), the result is @|void-const|.
+
+The final @scheme[defn-or-expr] is executed in tail position, if it is
+an expression.  
 
 
 @examples[#:eval ev
