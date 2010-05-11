@@ -320,7 +320,6 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       (syntax/loc stx
                  (define-syntax id (make-honu-transformer rhs))))))
 
-
 (define-honu-syntax honu-provide
   (lambda (stx ctx)
     (syntax-parse stx
@@ -339,6 +338,11 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
                    items ...) . rest)
        (values #'(define-syntax-class name [pattern x])
                #'rest)])))
+
+(define-honu-syntax honu-scheme
+  (lambda (stx ctx)
+    (syntax-parse stx #:literals (semicolon)
+      [(_ template semicolon rest ...) (values #'template #'(rest ...))])))
 
 (define-honu-syntax honu-if
   (lambda (stx ctx)

@@ -220,19 +220,56 @@
                #:with result #'e.result])
 
 
+
+
+(define-values (prop:honu-transformer honu-transformer? honu-transformer-ref)
+               (make-struct-type-property 'honu-transformer))
+
+(define-values (struct:honu-trans make-honu-trans honu-trans? honu-trans-ref honu-trans-set!)
+  (make-struct-type 'honu-trans #f 1 0 #f
+                    (list (list prop:honu-transformer #t))
+                    (current-inspector) 0))
+
+(define (make-honu-transformer proc)
+  (unless (and (procedure? proc)
+               (procedure-arity-includes? proc 2))
+    (raise-type-error
+      'define-honu-syntax
+      "procedure (arity 2)"
+      proc))
+  (make-honu-trans proc))
+
+
+
+#;
+(define-honu-syntax honu-scheme
+  (lambda (stx ctx)
+    (syntax-parse stx
+      [(_ template rest ...) (values #'template #'(rest ...))])))
+
 (define (fix-output stx)
   #|
   (printf "Fix output ~a\n" (syntax->datum stx))
   (when (and (stx-pair? stx) (equal? 'honu-syntax (syntax->datum (stx-car stx))))
     (printf "syntax == honu-syntax? ~a\n" (free-identifier=? (stx-car stx) #'honu-syntax)))
+  (when (identifier? stx)
+    (printf "Current phase ~a stx at ~a honu-scheme ~a same? ~a\n" (syntax-local-phase-level) (identifier-binding stx)
+            (identifier-transformer-binding #'honu-scheme)
+            (free-identifier=? stx #'honu-scheme)
+            ))
   |#
-  (syntax-parse stx #:literals (honu-syntax #%parens scheme-syntax syntax)
+  (syntax-parse stx #:literals (honu-syntax #%parens syntax)
     [((honu-syntax (#%parens x ...) y ...) rest ...)
      #;
      (printf "a1\n")
      (with-syntax ([(y* ...) (fix-output #'(y ... rest ...))])
        (syntax/loc stx 
        (x ... y* ...)))]
+    #;
+    [(start ... (honu-scheme code ...) rest ...)
+     (with-syntax ([(rest* ...) (fix-output #'(rest ...))])
+       (syntax/loc stx
+                   (start ... honu-scheme (code ...) rest* ...)))]
     [(honu-syntax (#%parens x ...) y ...)
      #;
      (printf "a2\n")
@@ -244,6 +281,8 @@
      #;
      (printf " aa\n")
      stx]
+    #;
+    [honu-scheme (raise-syntax-error 'asdfioj "got honu-scheme")]
     [(z x ...)
      #;
      (printf "a3\n")
@@ -278,7 +317,7 @@
                                 (call-values (transformer stx context)
                                              (lambda (reparse rest)
                                                (define fixed (fix-output reparse))
-                                               (printf "Transformer gave us ~a\n" reparse)
+                                               (printf "Transformer gave us ~a\n" (syntax->datum reparse))
                                                #;
                                                (values reparse rest)
                                                #;
@@ -296,8 +335,7 @@
                                              ))]
     [else (parse-one stx context)]))
 
-(define-values (prop:honu-transformer honu-transformer? honu-transformer-ref)
-               (make-struct-type-property 'honu-transformer))
+
 
 (define operator? 
   (let ([sym-chars (string->list "+-_=?:<>.!%^&*/~|")])
@@ -307,19 +345,6 @@
              (and (positive? (string-length str))
                   (memq (string-ref str 0) sym-chars)))))))
 
-(define-values (struct:honu-trans make-honu-trans honu-trans? honu-trans-ref honu-trans-set!)
-  (make-struct-type 'honu-trans #f 1 0 #f
-                    (list (list prop:honu-transformer #t))
-                    (current-inspector) 0))
-
-(define (make-honu-transformer proc)
-  (unless (and (procedure? proc)
-               (procedure-arity-includes? proc 2))
-    (raise-type-error
-      'define-honu-syntax
-      "procedure (arity 2)"
-      proc))
-  (make-honu-trans proc))
 
 
 
@@ -330,7 +355,9 @@
   (define (bound-transformer stx)
     (and (stx-pair? stx)
          (identifier? (stx-car stx))
-         (let ([v (syntax-local-value (stx-car stx) (lambda () #f))])
+         (let ([v (begin
+                    (printf "Transformer is ~a. Local value is ~a\n" (stx-car stx) (syntax-local-value (stx-car stx) (lambda () #f)))
+                    (syntax-local-value (stx-car stx) (lambda () (stx-car stx))))])
            (and (honu-transformer? v) v))))
   (define (special-transformer stx) 
     (and (stx-pair? stx)

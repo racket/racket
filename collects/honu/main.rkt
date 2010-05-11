@@ -7,8 +7,11 @@
          ;; "private/honu.ss"
          "private/parse.ss"
          (for-syntax "private/literals.ss")
+         (for-syntax "private/honu-typed-scheme.ss")
+         (for-syntax "private/parse.ss")
          "private/literals.ss"
          "private/syntax.ss"
+         (for-syntax "private/syntax.ss")
          "private/macro.ss")
 
 (define test-x-class
@@ -33,8 +36,14 @@
                      )
          #%datum
          (for-syntax #%datum
+                     display
+                     with-syntax
                      (rename-out (semicolon \;
-                                            )))
+                                            )
+                                 (honu-syntax syntax)
+                                 (honu-scheme scheme2)
+                                 (scheme-syntax schemeSyntax)
+                                 ))
          #%braces
          #%parens
          x
@@ -42,7 +51,6 @@
          false
          display
          display2
-         (for-syntax display)
          newline
          else
          foobar2000
@@ -52,6 +60,8 @@
            (honu-macro-item macroItem)
            (honu-macro macro)
            (honu-syntax syntax)
+           #;
+           (honu-scheme scheme2)
            (scheme-syntax schemeSyntax)
            ))
 
