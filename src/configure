@@ -1335,7 +1335,7 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-gracket           compile GRacket as well as Racket (enabled by default)
+  --enable-gracket        compile GRacket as well as Racket (enabled by default)
   --enable-gl             use OpenGL when available (enabled by default)
   --enable-xrender        use Xrender when available (enabled by default)
   --enable-xft            use Xft when available (enabled by default)

@@ -24,7 +24,7 @@ AC_INIT([PLT Scheme])
 AC_CONFIG_SRCDIR(racket/src/bignum.c)
 AC_CONFIG_HEADERS([racket/mzconfig.h])
 
-AC_ARG_ENABLE(gracket,    [  --enable-gracket           compile GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
+AC_ARG_ENABLE(gracket, [  --enable-gracket        compile GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
 
 AC_ARG_ENABLE(gl,      [  --enable-gl             use OpenGL when available (enabled by default)])
 AC_ARG_ENABLE(xrender, [  --enable-xrender        use Xrender when available (enabled by default)])
