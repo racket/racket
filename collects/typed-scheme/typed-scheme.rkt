@@ -34,8 +34,8 @@
 (define-syntax (module-begin stx)
   (define module-name (syntax-property stx 'enclosing-module-name))
   ;(printf "BEGIN: ~a~n" (syntax->datum stx))
-  (syntax-case stx ()
-     [(mb forms ...)
+  (syntax-parse stx
+     [(mb (~optional (~and #:optimize (~bind [opt? #'#t]))) forms ...)
       (nest
           ([begin (set-box! typed-context? #t)
                   (start-timing module-name)]
@@ -48,6 +48,8 @@
                           [infer-param infer]
                           ;; do we report multiple errors
                           [delay-errors? #t]
+                          ;; do we optimize?
+                          [optimize? (or (attribute opt?) (optimize?))]
                           ;; this parameter is for parsing types
                           [current-tvars initial-tvar-env]
                           ;; this parameter is just for printing types
@@ -81,7 +83,8 @@
            
            [with-syntax ([(transformed-body ...) 
                           (if (optimize?)
-                              (map optimize (syntax->list #'(transformed-body ...)))
+                              (begin (printf "optimizing ...\n")
+                                     (map optimize (syntax->list #'(transformed-body ...))))
                               #'(transformed-body ...))])])
         (do-time "Typechecked")
         #;(printf "checked ~a~n" module-name)

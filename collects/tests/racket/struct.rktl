@@ -840,13 +840,13 @@
 	  (let ([t (make-tuple (list (box 1) 2 "a"))])
 	    (set-box! (car (tuple-ref t 0)) t)
 	    (write t))))
-  (test "ack: here: '<10, 2, \"a\">" with-output-string 
+  (test "ack: here: <10, 2, \"a\">" with-output-string 
 	(lambda ()
 	  (with-handlers ([exn:fail? (lambda (exn)
 				       (printf "~a" (exn-message exn)))])
 	    (error 'ack "here: ~e" (make-tuple (list 10 2 "a"))))))
   
-  (test "ack: here: '<10000..." with-output-string 
+  (test "ack: here: <100000..." with-output-string 
 	(lambda ()
 	  (parameterize ([error-print-width 10])  
 	    (with-handlers ([exn:fail? (lambda (exn)

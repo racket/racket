@@ -294,6 +294,7 @@ static Scheme_Object *char_string_utf8_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *version(int argc, Scheme_Object *argv[]);
 static Scheme_Object *format(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_printf(int argc, Scheme_Object *argv[]);
+static Scheme_Object *sch_eprintf(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_fprintf(int argc, Scheme_Object *argv[]);
 static Scheme_Object *banner(int argc, Scheme_Object *argv[]);
 static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[]);
@@ -651,6 +652,11 @@ scheme_init_string (Scheme_Env *env)
   scheme_add_global_constant("printf",
 			     scheme_make_noncm_prim(sch_printf,
                                                     "printf",
+                                                    1, -1),
+			     env);
+  scheme_add_global_constant("eprintf",
+			     scheme_make_noncm_prim(sch_eprintf,
+                                                    "eprintf",
                                                     1, -1),
 			     env);
   scheme_add_global_constant("fprintf",
@@ -1895,6 +1901,14 @@ static Scheme_Object *
 sch_printf(int argc, Scheme_Object *argv[])
 {
   scheme_do_format("printf", scheme_get_param(scheme_current_config(), MZCONFIG_OUTPUT_PORT),
+		   NULL, 0, 0, 1, argc, argv);
+  return scheme_void;
+}
+
+static Scheme_Object *
+sch_eprintf(int argc, Scheme_Object *argv[])
+{
+  scheme_do_format("eprintf", scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PORT),
 		   NULL, 0, 0, 1, argc, argv);
   return scheme_void;
 }

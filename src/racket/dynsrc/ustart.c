@@ -1,7 +1,7 @@
 
 /* "Embedding" program for Unix/X11, to be used as
-   an alternative to embedding in the actual MzScheme
-   or MrEd binary. */
+   an alternative to embedding in the actual Racket
+   or GRacket binary. */
 
 #include <sys/types.h>
 #include <sys/uio.h>
@@ -18,7 +18,7 @@
     prog_end - offset; start to prog_end is the program region
     end - offset; prog_end to end is the command region
     count - number of cmdline args in command region
-    x11? - non-zero => launches MrEd for X
+    x11? - non-zero => launches GRacket for X
 
     In the command region, the format is a sequence of NUL-terminated strings:
      exe_path - program to start (relative is w.r.t. executable)
@@ -29,8 +29,8 @@ char *config = "cOnFiG:[***************************";
 
 char *binary_type_hack = "bINARy tYPe:ezic";
 
-/* This path list is used instead of the one in the MzScheme/MrEd
-   binary. That way, the same MzScheme/MrEd binary can be shared
+/* This path list is used instead of the one in the Racket/GRacket
+   binary. That way, the same Racket/GRacket binary can be shared
    among embedding exectuables that have different collection
    paths. */
 char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */

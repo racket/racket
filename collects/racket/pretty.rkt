@@ -542,10 +542,6 @@
                                     (make-mark #f (box #f)))))))
                (void)))))
 
-     (define (custom-print? obj)
-       (and (custom-print-as-constructor? obj)
-            (custom-print-as-constructor-accessor obj)))
-
      (define escapes-table
        (let* ([table (make-hasheq)]
               [local-cycle (and found-cycle (make-hasheq))]
@@ -585,9 +581,13 @@
                               (escapes! obj))]
                         [(and (custom-write? obj)
                               (not (struct-type? obj)))
-                         (and (or (loop (extract-sub-objects obj pport))
-                                  (custom-print? obj))
-                              (escapes! obj))]
+                         (let ([kind (if (custom-print-quotable? obj)
+                                         (custom-print-quotable-accessor obj)
+                                         'self)])
+                           (and (or (and (loop (extract-sub-objects obj pport))
+                                         (not (memq kind '(self always))))
+                                    (memq kind '(never)))
+                                (escapes! obj)))]
                         [(struct? obj)
                          (and (or (loop (struct->vector obj))
                                   (not (prefab-struct-key obj)))
@@ -838,9 +838,12 @@
 	      #f #f
 	      (lambda ()
 		(parameterize ([pretty-print-columns 'infinity])
-                  (let ([qd (if (custom-print? obj)
-                                qd
-                                (to-quoted out qd obj))])
+                  (let ([qd (let ([kind (if (custom-print-quotable? obj)
+                                            (custom-print-quotable-accessor obj)
+                                            'self)])
+                              (if (memq kind '(self never))
+                                  qd
+                                  (to-quoted out qd obj)))])
                     (write-custom wr* obj pport depth display? width qd)))))]
 	    [(struct? obj)
 	     (if (and print-struct?
@@ -1018,9 +1021,12 @@
                                             qd))))]
 			  [(and (custom-write? obj)
 				(not (struct-type? obj)))
-                           (let ([qd (if (custom-print? obj)
-                                         qd
-                                         (to-quoted out qd obj))])
+                           (let ([qd (let ([kind (if (custom-print-quotable? obj)
+                                            (custom-print-quotable-accessor obj)
+                                            'self)])
+                                       (if (memq kind '(self never))
+                                           qd
+                                           (to-quoted out qd obj)))])
                              (write-custom pp* obj pport depth display? width qd))]
 			  [(struct? obj) ; print-struct is on if we got here
                            (let* ([v (struct->vector obj struct-ellipses)]

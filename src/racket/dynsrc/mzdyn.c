@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995 Matthew Flatt
   All rights reserved.
@@ -11,7 +11,7 @@
   All rights reserved.
 */
 
-/* This file should be linked with any MzScheme extension dynamic
+/* This file should be linked with any Racket extension dynamic
    object. */
 
 #include "escheme.h"

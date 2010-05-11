@@ -652,6 +652,12 @@ original definition in the same module.  In a @tech{module context},
 an identifier can be either imported or defined for a given
 @tech{phase level}, but not both.}
 
+@defform[(local-require require-spec ...)]{
+
+Like @scheme[require], but for use in a local-definition context to
+import just into the local context. Only bindings from @tech{phase
+level} 0 are imported.}
+
 
 @guideintro["module-provide"]{@racket[provide]}
 
@@ -2418,6 +2424,8 @@ provides a hook to control interactive evaluation through
 @;------------------------------------------------------------------------
 @include-section["package.scrbl"]
 
+@;------------------------------------------------------------------------
+@include-section["block.scrbl"]
 
 @close-eval[require-eval]
 @close-eval[meta-in-eval]

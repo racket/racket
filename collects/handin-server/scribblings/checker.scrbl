@@ -36,7 +36,7 @@ keywords to customize features that you want it to have.  The body of
 the checker (following the keywords) can contain arbitrary code, using
 utility functions from @schememodname[handin-server/utils], as well as
 additional ones that are defined below.  Submission files are arriving
-to the handin server in binary form (in the MrEd format that is used
+to the handin server in binary form (in the GRacket format that is used
 to store text and other objects like images), and a number of these
 options involve genrating a textual version of this file.  The purpose
 of these options is to have these text files integrate easily into a
@@ -127,7 +127,7 @@ Keywords for configuring @scheme[check:]:
   @filepath{hw.scm}.  (The suffix changes the defaults of
   @scheme[:markup-prefix] and @scheme[:prefix-re].)  Can be
   @scheme[#f] for removing the original file after processing.  The
-  file is always stored in MrEd's binary format.}
+  file is always stored in GRacket's binary format.}
 
 @item{@indexed-scheme[:multi-file]---by default, this is set to
   @scheme[#f], which means that only DrScheme is used to send

@@ -19,12 +19,6 @@
       (current-inexact-milliseconds)
       0))
 
-(define eprintf
-  (if TIME-PRINTING?
-      (let ([eport (current-error-port)])
-        (lambda (fmt . args) (apply fprintf eport fmt args)))
-      void))
-
 ;; FIXME: assumes text never moves
 
 ;; print-syntax-to-editor : syntax text controller<%> config number number

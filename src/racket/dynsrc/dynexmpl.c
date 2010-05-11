@@ -1,5 +1,5 @@
 
-/* Example dynamically-loaded MzScheme extension, but not a good one.
+/* Example dynamically-loaded Racket extension, but not a good one.
 
    For example extensions, see plt/collects/mzscheme/examples. */
 

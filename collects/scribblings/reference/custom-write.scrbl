@@ -90,14 +90,17 @@ property, @scheme[#f] otherwise.}
 Returns the custom-write procedure associated with @scheme[v].}
 
 @deftogether[(
-@defthing[prop:custom-print-as-constructor struct-type-property?]
-@defthing[custom-print-as-constructor? struct-type-property?]
-@defthing[custom-print-as-constructor-accessor struct-type-property?]
+@defthing[prop:custom-print-quotable struct-type-property?]
+@defthing[custom-print-quotable? struct-type-property?]
+@defthing[custom-print-quotable struct-type-property?]
 )]{
 
 A property and associated predicate and accessor. The property value
-is always a boolean. When a structure has this property as @scheme[#t]
-in addition to a @scheme[prop:custom-write] property value, then it is
-never considered @tech{quotable} for printing, which can change the
-way that enclosing datatypes are printed.}
-
+is one of @scheme['self], @scheme['never], @scheme['maybe], or
+@scheme['always]. When a structure has this property in addition to a
+@scheme[prop:custom-write] property value, then the property value
+affects printing in @scheme[print] mode; see @secref["printing"]. When
+a value does not have the @scheme[prop:custom-print-quotable], it is
+equivalent to having the @scheme['self] property value, which is
+suitable both for self-quoting forms and printed forms that are
+unreadable.}

@@ -1,4 +1,3 @@
-
 #lang scheme/base
 
 (use-compiled-file-paths null)
@@ -502,4 +501,3 @@
 
 (copy-file/diff "mzdyn3m.exp" "../../../lib/msvc/mzdyn3m.exp")
 (copy-file/diff "mzdyn3m.obj" "../../../lib/msvc/mzdyn3m.obj")
-

@@ -67,8 +67,11 @@
 (define TAB-WIDTH 20)
 
 (define (replace-nuls s)
-  (if (for/or ([c (in-string s)]) (eq? #\nul c))
-      (regexp-replace* #rx"\0" s " ")
+  (if (for/or ([c (in-string s)]) (or (eq? #\nul c)
+                                      (eq? #\page c)))
+      (regexp-replace* #rx"\f"
+                       (regexp-replace* #rx"\0" s " ")
+                       "^L")
       s))
 
 ;; ------------------------------------------------------------

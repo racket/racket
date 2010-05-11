@@ -1,4 +1,4 @@
-/* Link this file to gcc-compiled Win32 MzScheme extensions */
+/* Link this file to gcc-compiled Win32 Racket extensions */
 
 /* init.cc for WIN32.   Copyright 1996 Cygnus Solutions
 This program is free software; you can redistribute it and/or modify

@@ -28,7 +28,8 @@
 @item{Create a file @filepath{config.ss} with the following content:
   @schemeblock[((active-dirs ("test")))]}
 
-@item{In your new directory, run @commandline{mred-text -l handin-server}}
+@item{In your new directory, run
+  @commandline{gracket-text -l handin-server}}
 
 @item{In the @filepath{handin-client} collection, edit
   @filepath{info.ss} and uncomment the lines that define

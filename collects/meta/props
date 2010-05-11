@@ -598,7 +598,6 @@ path/s is either such a string or a list of them.
 "collects/drracket/private/multi-file-search.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drracket/private/number-snip.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drracket/private/palaka.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/prefs-contract.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drracket/private/profile-drs.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drracket/private/rep.rkt" drdr:command-line "mred-text -t ~s"
 "collects/drracket/private/stick-figures.rkt" drdr:command-line "mzc ~s"
@@ -659,7 +658,6 @@ path/s is either such a string or a list of them.
 "collects/eopl" responsible (eli)
 "collects/errortrace" responsible (mflatt)
 "collects/ffi" responsible (eli)
-"collects/ffi/esd.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/examples/c-printf.rkt" drdr:command-line "mzc -k ~s"
 "collects/ffi/examples/esd.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/examples/magick.rkt" drdr:command-line "mzc ~s"
@@ -674,14 +672,8 @@ path/s is either such a string or a list of them.
 "collects/ffi/examples/use-xosd.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/examples/xmmsctrl.rkt" drdr:command-line ""
 "collects/ffi/examples/xosd.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/magick.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/objc.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/private/objc-doc-unsafe.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/sndfile.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/tcl.rkt" drdr:command-line "mzc ~s"
 "collects/ffi/unsafe/objc.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/xmmsctrl.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/xosd.rkt" drdr:command-line "mzc ~s"
 "collects/file" responsible (mflatt)
 "collects/framework" responsible (robby)
 "collects/framework/collapsed-snipclass.rkt" drdr:command-line "mred-text -t ~s"
@@ -1114,9 +1106,17 @@ path/s is either such a string or a list of them.
 "collects/r6rs" responsible (mflatt)
 "collects/r6rs/run.rkt" drdr:command-line "mzc ~s"
 "collects/racket" responsible (mflatt)
+"collects/racket/contract/private/arrow.rkt" responsible (robby)
+"collects/racket/contract/private/base.rkt" responsible (robby)
+"collects/racket/contract/private/ds-helpers.rkt" responsible (robby)
+"collects/racket/contract/private/ds.rkt" responsible (robby)
+"collects/racket/contract/private/guts.rkt" responsible (robby)
+"collects/racket/contract/private/helpers.rkt" responsible (robby)
 "collects/racket/gui/base.rkt" drdr:command-line "mred -t ~s"
 "collects/racket/gui/init.rkt" drdr:command-line "mred -t ~s"
 "collects/racket/gui.rkt" drdr:command-line "mred -t ~s"
+"collects/racket/match" responsible (samth)
+"collects/racket/match.rkt" responsible (samth)
 "collects/raclog" responsible (jay)
 "collects/raco" responsible (mflatt)
 "collects/raco/main.rkt" drdr:command-line ""
@@ -1177,16 +1177,9 @@ path/s is either such a string or a list of them.
 "collects/rnrs" responsible (mflatt)
 "collects/s-exp" responsible (mflatt eli)
 "collects/scheme" responsible (mflatt sstrickl samth robby eli)
-"collects/scheme/contract/private/arrow.rkt" responsible (robby)
-"collects/scheme/contract/private/base.rkt" responsible (robby)
-"collects/scheme/contract/private/ds-helpers.rkt" responsible (robby)
-"collects/scheme/contract/private/ds.rkt" responsible (robby)
-"collects/scheme/contract/private/guts.rkt" responsible (robby)
-"collects/scheme/contract/private/helpers.rkt" responsible (robby)
 "collects/scheme/gui/base.rkt" drdr:command-line "mred-text -t ~s"
 "collects/scheme/gui/init.rkt" drdr:command-line "mred-text -t ~s"
 "collects/scheme/gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/scheme/match" responsible (samth)
 "collects/scheme/match.rkt" responsible (samth)
 "collects/schemeunit" responsible (jay)
 "collects/schemeunit/gui.rkt" drdr:command-line "mred-text -t ~s"
@@ -1195,7 +1188,6 @@ path/s is either such a string or a list of them.
 "collects/scribble/tools/drscheme-buttons.rkt" drdr:command-line "mred-text ~s"
 "collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line "gracket-text ~s skip"
 "collects/scribblings" responsible (mflatt eli robby mathias)
-"collects/scribblings/foreign/unsafe-foreign.rkt" drdr:command-line "mzc ~s"
 "collects/scribblings/framework/standard-menus.scrbl" drdr:command-line ""
 "collects/scribblings/guide/contracts-examples/6.rkt" drdr:command-line "mzscheme -f ~s"
 "collects/scribblings/guide/read.scrbl" drdr:command-line ""
@@ -1595,7 +1587,6 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/place-channel.rktl" drdr:command-line ""
 "collects/tests/racket/port.rktl" drdr:command-line ""
 "collects/tests/racket/portlib.rktl" drdr:command-line ""
-"collects/tests/racket/pp-regression.rkt" drdr:command-line ""
 "collects/tests/racket/pretty.rktl" drdr:command-line "racket -f ~s"
 "collects/tests/racket/procs.rktl" drdr:command-line ""
 "collects/tests/racket/prompt-tests.rktl" drdr:command-line ""
@@ -1828,12 +1819,12 @@ path/s is either such a string or a list of them.
 "src/a-list" responsible (mflatt)
 "src/configure" responsible (mflatt)
 "src/foreign" responsible (eli)
+"src/gracket" responsible (mflatt)
 "src/lt" responsible (mflatt)
 "src/mac" responsible (mflatt)
-"src/mred" responsible (mflatt)
 "src/mysterx" responsible (eli)
 "src/mzcom" responsible (eli)
-"src/mzscheme" responsible (mflatt)
+"src/racket" responsible (mflatt)
 "src/worksp" responsible (mflatt)
 "src/wxcommon" responsible (mflatt)
 "src/wxmac" responsible (mflatt)

@@ -7297,21 +7297,21 @@ so that propagation occurs.
 
   (test-name '(cons/c boolean? integer?) (cons/c boolean? (flat-contract integer?)))
   (test-name '(cons/c boolean? integer?) (cons/c boolean? (flat-contract integer?)))
-  (test-name '(cons/c boolean? (cons/c integer? null?)) (list/c boolean? (flat-contract integer?)))
-  (test-name '(cons/c boolean? (cons/c integer? null?)) (list/c boolean? (flat-contract integer?)))
+  (test-name '(list/c boolean? integer?) (list/c boolean? (flat-contract integer?)))
+  (test-name '(list/c boolean? integer?) (list/c boolean? (flat-contract integer?)))
 
   (test-name '(cons/c boolean? integer?) (cons/c boolean? (flat-contract integer?)))
   (test-name '(cons/c boolean? integer?) (cons/c boolean? (flat-contract integer?)))
   (test-name '(cons/c boolean? integer?) (cons/c boolean? (flat-contract integer?)))
   (test-name '(cons/c (-> boolean? boolean?) integer?) (cons/c (-> boolean? boolean?) integer?))
   
-  (test-name '(cons/c boolean? (cons/c integer? null?))
+  (test-name '(list/c boolean? integer?)
              (list/c boolean? (flat-contract integer?)))
-  (test-name '(cons/c boolean? (cons/c integer? null?)) 
+  (test-name '(list/c boolean? integer?) 
              (list/c boolean? (flat-contract integer?)))
-  (test-name '(cons/c boolean? (cons/c integer? null?))
+  (test-name '(list/c boolean? integer?)
              (list/c boolean? (flat-contract integer?)))
-  (test-name '(cons/c (-> boolean? boolean?) (cons/c integer? null?))
+  (test-name '(list/c (-> boolean? boolean?) integer?)
              (list/c (-> boolean? boolean?) integer?))
   
   (test-name '(parameter/c integer?) (parameter/c integer?))

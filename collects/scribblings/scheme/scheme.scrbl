@@ -1,11 +1,11 @@
 #lang scribble/manual
-@(require (for-syntax racket)
-          (for-label (only-in scheme/foreign unsafe! provide* define-unsafer)
+@(require (for-label (only-in scheme/foreign unsafe! provide* define-unsafer)
                      (only-in scheme/base make-base-namespace make-base-empty-namespace)
                      (only-in scheme/pretty pretty-print)
                      (only-in racket/pretty pretty-write)
                      (only-in scheme/class printable<%>)
                      (only-in racket/class writable<%>)
+                     (only-in racket/base struct hash hasheq hasheqv in-directory local-require)
                      scheme/gui/base
                      scheme/sandbox))
 
@@ -56,16 +56,18 @@ old name. A few @seclink["compat-exe"]{old executables} are also provided.
 
 @table-of-contents[]
 
-@compat-except[scheme racket]{, except that @schememodname[racket]'s
-@scheme[struct] is not exported, the @|unit-struct| from
+@compat-except[scheme racket]{, except based on @schememodname[scheme/base]
+instead of @schememodname[racket/base], the @|unit-struct| from
 @schememodname[scheme/unit] is exported, @schememodname[scheme/set] is
+not re-exported, @schememodname[scheme/system] is
 not re-exported, @racket[pretty-print] is re-directed in as
 @racketmodname[scheme/pretty], and @schememodname[scheme/nest] is
 re-exported}
 
 @compat-except[scheme/base racket/base]{, except that
-@schememodname[racket]'s @scheme[struct] is not exported, @scheme[in-directory]
-is not exported, and
+@schememodname[racket]'s @scheme[struct], @scheme[hash],
+@scheme[hasheq], @scheme[hasheqv], @scheme[in-directory], and
+@scheme[local-require] are not exported, and
 @scheme[make-base-namespace] and @scheme[make-base-empty-namespace]
 are different}
 

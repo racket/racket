@@ -562,19 +562,24 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
     }
   } else if (SAME_TYPE(t, scheme_structure_type)
 	     || SAME_TYPE(t, scheme_proc_struct_type)) {
-    if (scheme_is_print_as_constructor_struct(obj)) {
-      /* Struct wants to be unquoted. */
+    if (scheme_is_writable_struct(obj)) {
       if (pp->print_unreadable) {
         res = check_cycles(writable_struct_subs(obj, for_write, pp), for_write, ht, pp);
-        if (for_write >= 3)
-          res |= 0x1;
+
+        if (for_write >= 3) {
+          Scheme_Object *kind;
+          kind = scheme_print_attribute_ref(obj);
+          
+          if (kind) {
+            if (!strcmp(SCHEME_SYM_VAL(kind), "never"))
+              res |= 0x1;
+            if (!strcmp(SCHEME_SYM_VAL(kind), "always")
+                || !strcmp(SCHEME_SYM_VAL(kind), "self"))
+              res -= (res & 0x1);
+          } else /* = "self" */
+            res -= (res & 0x1);
+        }
       } else
-        res = 0;
-    } else if (scheme_is_writable_struct(obj)) {
-      /* A "writeable" struct can be quoted or not. */
-      if (pp->print_unreadable)
-        res = check_cycles(writable_struct_subs(obj, for_write, pp), for_write, ht, pp);
-      else
         res = 0;
     } else {
       /* got here => printable */
@@ -2254,8 +2259,14 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       } else if (compact || !pp->print_unreadable) {
         cannot_print(pp, notdisplay, obj, ht, compact);
       } else if (scheme_is_writable_struct(obj)) {
-        if ((notdisplay == 3) && !scheme_is_print_as_constructor_struct(obj))
-          notdisplay = to_quoted(obj, pp, notdisplay);
+        if (notdisplay == 3) {
+          Scheme_Object *kind;
+          kind = scheme_print_attribute_ref(obj);
+          if (kind 
+              && strcmp(SCHEME_SYM_VAL(kind), "never")
+              && strcmp(SCHEME_SYM_VAL(kind), "self"))
+            notdisplay = to_quoted(obj, pp, notdisplay);
+        }
 	custom_write_struct(obj, ht, mt, pp, notdisplay);
       } else {
 	int pb;

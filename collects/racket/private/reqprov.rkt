@@ -14,7 +14,8 @@
              provide
              all-defined-out all-from-out
              rename-out except-out prefix-out struct-out combine-out
-             protect-out)
+             protect-out
+             local-require)
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; helpers
@@ -959,6 +960,62 @@
                     (export-protect? e)
                     (export-orig-stx e)))
                  exports))]))))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;; rename-import : Import Identifier -> Import
+  ;; Creates a new import that binds the given identifier, but otherwise acts as
+  ;; the original import.
+  (define-for-syntax (rename-import i id)
+    (make-import id
+                 (import-src-sym i)
+                 (import-src-mod-path i)
+                 (import-mode i)
+                 (import-req-mode i)
+                 (import-orig-mode i)
+                 (import-orig-stx i)))
+
+  ;; import->raw-require-spec : Import -> Syntax
+  ;; Constructs a raw-require-spec (suitable for #%require) that should have the
+  ;; same behavior as a require-spec that produces the given import.
+  (define-for-syntax (import->raw-require-spec i)
+    (datum->syntax
+     (import-orig-stx i)
+     (list #'just-meta
+           (import-req-mode i)
+           (list #'for-meta
+                 (import-mode i)
+                 (list #'rename
+                       (import-src-mod-path i)
+                       (syntax-local-introduce (import-local-id i))
+                       (import-src-sym i))))
+     (import-orig-stx i)))
+
+  ;; (do-local-require rename spec ...)
+  ;; Lifts (require spec ...) to the (module) top level, and makes the imported
+  ;; bindings available in the current context via a renaming macro.
+  (define-syntax (local-require stx)
+    (when (eq? 'expression (syntax-local-context))
+      (raise-syntax-error #f "not allowed in an expression context" stx))
+    (syntax-case stx []
+      [(_ spec ...)
+       (let*-values ([(imports sources)
+                      (expand-import
+                       (datum->syntax
+                        stx
+                        (list* #'only-meta-in 0 (syntax->list #'(spec ...)))
+                        stx))]
+                     [(names) (map import-local-id imports)]
+                     [(reqd-names) 
+                      (let ([ctx (syntax-local-get-shadower (datum->syntax #f (gensym)))])
+                        (map (lambda (n) (datum->syntax ctx (syntax-e n) n)) names))]
+                     [(renamed-imports) (map rename-import imports reqd-names)]
+                     [(raw-specs) (map import->raw-require-spec renamed-imports)]
+                     [(lifts) (map syntax-local-lift-require raw-specs reqd-names)])
+         (with-syntax ([(name ...) names]
+                       [(lifted ...) lifts])
+           (syntax/loc stx (define-syntaxes (name ...)
+                             (values (make-rename-transformer #'lifted) ...)))))]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   )

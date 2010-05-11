@@ -24,6 +24,7 @@
          racket/promise
          racket/bool
          racket/local
+         racket/system
          (for-syntax racket/base))
 
 (provide (all-from-out racket/contract
@@ -49,5 +50,6 @@
                        racket/cmdline
                        racket/promise
                        racket/bool
-                       racket/local)
+                       racket/local
+                       racket/system)
          (for-syntax (all-from-out racket/base)))

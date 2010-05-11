@@ -48,4 +48,4 @@
   (syntax-parse stx #:literal-sets (kernel-literals)
     [(define-values ~! ids e:opt-expr)
      (syntax/loc stx (define-values ids e.opt))]
-    [_ (printf "nothing happened") stx]))
+    [_ stx]))

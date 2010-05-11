@@ -306,12 +306,36 @@ for which the structure is an instance:
        structure, unless the @racket[print-unreadable] parameter is
        set to @racket[#f].
 
-       An instance of a structure with a @scheme[prop:custom-write]
-       property is @tech{quotable} if it does not have a
-       @scheme[prop:custom-print-as-constructor] value as @scheme[#t]
-       and its content is @tech{quotable}. The content is determined
-       by the values recursively printed by the structure's
-       @scheme[prop:custom-write] procedure.}
+       For @scheme[print] mode, an instance of a structure type with a
+       @scheme[prop:custom-write] property is treated as
+       @tech{quotable} if it has the
+       @scheme[prop:custom-print-quotable] property with a value of
+       @scheme['always]. If it has @scheme['maybe] as the property
+       value, then the structure is treated as @tech{quotable} if its
+       content is @tech{quotable}, where the content is determined by
+       the values recursively printed by the structure's
+       @scheme[prop:custom-write] procedure. Finally, if the structure
+       has @scheme['self] as the property value, then it is treated as
+       @tech{quotable}.
+
+       In @scheme[print] mode when @scheme[print-as-expression] is
+       @scheme[#t], the structure's @scheme[prop:custom-write]
+       procedure is called with either @scheme[0] or @scheme[1] as the
+       @tech{quoting depth}, normally depending on the structure's
+       @scheme[prop:custom-print-quotable] property value. If the
+       property value is @scheme['always], the @tech{quoting depth} is
+       normally @scheme[1]. If the property value is @scheme['maybe],
+       then the @tech{quoting depth} is @scheme[1] if the structure is
+       @tech{quotable}, or normally @scheme[0] otherwise. If the
+       property value is @scheme['self], then the quoting depth may be
+       @scheme[0] or @scheme[1]; it is normally @scheme[0] if the
+       structure is not printed as a part of an enclosing
+       @tech{quotable} value, even though the structure is treated as
+       @tech{quotable}. Finally, if the property value is
+       @scheme['never], then the @tech{quoting depth} is normally
+       @scheme[0]. The @tech{quoting depth} can vary from its normal
+       value if the structure is printed with an explicit quoting
+       depth of @scheme[1].}
 
  @item{If the structure's type is transparent or if any ancestor is
        transparent (i.e,. @scheme[struct?] on the instance produces

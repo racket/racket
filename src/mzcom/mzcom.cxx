@@ -108,10 +108,10 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance,
   lpCmdLine = GetCommandLine(); //this line necessary for _ATL_MIN_CRT
 
 #ifdef MZCOM_3M
-  load_delayed_dll(hInstance, "libmzsch3mxxxxxxx.dll");
+  load_delayed_dll(hInstance, "libracket3mxxxxxxx.dll");
 #else
   load_delayed_dll(hInstance, "libmzgcxxxxxxx.dll");
-  load_delayed_dll(hInstance, "libmzschxxxxxxx.dll");
+  load_delayed_dll(hInstance, "libracketxxxxxxx.dll");
 #endif
 
 #if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)

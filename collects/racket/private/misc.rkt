@@ -133,8 +133,6 @@
   
   ;; -------------------------------------------------------------------------
 
-  (define (port? x) (or (input-port? x) (output-port? x)))
-
   (define-values (struct:guard make-guard guard? guard-ref guard-set!)
     (make-struct-type 'evt #f 1 0 #f (list (cons prop:evt 0)) (current-inspector) #f '(0)))
 
@@ -161,6 +159,19 @@
 
   ;; -------------------------------------------------------------------------
 
+  (define (port? x) (or (input-port? x) (output-port? x)))
+
+  (define displayln
+    (case-lambda
+     [(v) (displayln v (current-output-port))]
+     [(v p) 
+      (unless (output-port? p)
+        (raise-type-error 'displayln "output port" 1 v p))
+      (display v p)
+      (newline p)]))
+
+  ;; -------------------------------------------------------------------------
+
   (#%provide define-syntax-rule
              rationalize 
              path-string? path-replace-suffix path-add-suffix normal-case-path
@@ -169,6 +180,6 @@
              load-relative load-relative-extension
              path-list-string->path-list find-executable-path
              collection-path load/use-compiled
-             port? guard-evt
-             channel-get channel-try-get channel-put
+             guard-evt channel-get channel-try-get channel-put
+             port? displayln
              find-library-collection-paths))
