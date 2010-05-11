@@ -35,85 +35,83 @@
 ; Returns the wrong answer for quotients.
 ; Fortunately these aren't used in the benchmark.
 
-(module dderiv-typed typed/scheme
+#lang typed/scheme/base
 
-  (define-type Plist (Listof (Pair Symbol ((Listof Deriv) -> Deriv))))
-  
-  (: pg-alist Plist)
-  (define pg-alist '())
-  (: put (Symbol Symbol ((Listof Deriv) -> Deriv) -> Void))
-  (define (put sym d what)
-    (set! pg-alist (cons (cons sym what) pg-alist)))
-  (: get (Symbol Symbol -> (U ((Listof Deriv) -> Deriv) #f)))
-  (define (get sym d)
-    (cond ((assq sym pg-alist) => cdr)
-          (else #f)))
+(define-type Plist (Listof (Pair Symbol ((Listof Deriv) -> Deriv))))
 
-  (define-type Deriv (Rec Deriv (U Number
-                                   Symbol
-                                   (Pair (U '+ '- '* '/)
-                                         (Listof Deriv)))))
-  
-  (: dderiv-aux (Deriv -> Deriv))
-  (define (dderiv-aux a)
-    (list '/ (dderiv a) a))
+(: pg-alist Plist)
+(define pg-alist '())
+(: put (Symbol Symbol ((Listof Deriv) -> Deriv) -> Void))
+(define (put sym d what)
+  (set! pg-alist (cons (cons sym what) pg-alist)))
+(: get (Symbol Symbol -> (U ((Listof Deriv) -> Deriv) #f)))
+(define (get sym d)
+  (cond ((assq sym pg-alist) => cdr)
+        (else #f)))
 
-  (: f+dderiv ((Listof Deriv) -> Deriv))
-  (define (f+dderiv a)
-    (cons '+ (map dderiv a)))
+(define-type Deriv (Rec Deriv (U Number
+                                 Symbol
+                                 (Pair (U '+ '- '* '/)
+                                       (Listof Deriv)))))
 
-  (: f-dderiv ((Listof Deriv) -> Deriv))
-  (define (f-dderiv a)
-    (cons '- (map dderiv a)))
+(: dderiv-aux (Deriv -> Deriv))
+(define (dderiv-aux a)
+  (list '/ (dderiv a) a))
 
-  (: *dderiv ((Listof Deriv) -> Deriv))
-  (define (*dderiv a)
-    (list '*
-          (ann (cons '* a) Deriv)
-          (ann (cons '+ (map dderiv-aux a)) Deriv)))
+(: f+dderiv ((Listof Deriv) -> Deriv))
+(define (f+dderiv a)
+  (cons '+ (map dderiv a)))
 
-  (: /dderiv ((Listof Deriv) -> Deriv))
-  (define (/dderiv a)
-    (list '-
-          (list '/
-                (dderiv (car a))
-                (cadr a))
-          (list '/
-                (car a)
-                (list '*
-                      (cadr a)
-                      (cadr a)
-                      (dderiv (cadr a))))))
+(: f-dderiv ((Listof Deriv) -> Deriv))
+(define (f-dderiv a)
+  (cons '- (map dderiv a)))
 
-  (: dderiv (Deriv -> Deriv))
-  (define (dderiv a)
-    (cond
-     ((not (pair? a))
-      (cond ((eq? a 'x) 1) (else 0)))
-     (else (let ((dderiv (get (car a) 'dderiv)))
-             (cond (dderiv (dderiv (cdr a)))
-                   (else 'error))))))
+(: *dderiv ((Listof Deriv) -> Deriv))
+(define (*dderiv a)
+  (list '*
+        (ann (cons '* a) Deriv)
+        (ann (cons '+ (map dderiv-aux a)) Deriv)))
 
-  (: run ( -> Void))
-  (define (run)
-    (do ((i 0 (+ i 1)))
-        ((= i 50000))
-      (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
-      (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
-      (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
-      (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
-      (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))))
-  
-  (put '+ 'dderiv f+dderiv)    ; install procedure on the property list
-  
-  (put '- 'dderiv f-dderiv)    ; install procedure on the property list
-  
-  (put '* 'dderiv *dderiv)    ; install procedure on the property list
-  
-  (put '/ 'dderiv /dderiv)    ; install procedure on the property list
-  
+(: /dderiv ((Listof Deriv) -> Deriv))
+(define (/dderiv a)
+  (list '-
+        (list '/
+              (dderiv (car a))
+              (cadr a))
+        (list '/
+              (car a)
+              (list '*
+                    (cadr a)
+                    (cadr a)
+                    (dderiv (cadr a))))))
+
+(: dderiv (Deriv -> Deriv))
+(define (dderiv a)
+  (cond
+   ((not (pair? a))
+    (cond ((eq? a 'x) 1) (else 0)))
+   (else (let ((dderiv (get (car a) 'dderiv)))
+           (cond (dderiv (dderiv (cdr a)))
+                 (else 'error))))))
+
+(: run ( -> Void))
+(define (run)
+  (do ((i 0 (+ i 1)))
+      ((= i 50000))
+    (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
+    (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
+    (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
+    (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
+    (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))))
+
+(put '+ 'dderiv f+dderiv)    ; install procedure on the property list
+
+(put '- 'dderiv f-dderiv)    ; install procedure on the property list
+
+(put '* 'dderiv *dderiv)    ; install procedure on the property list
+
+(put '/ 'dderiv /dderiv)    ; install procedure on the property list
+
 ;;; call:  (run)
-  
-  (time (run))
 
-  )
+(time (run))

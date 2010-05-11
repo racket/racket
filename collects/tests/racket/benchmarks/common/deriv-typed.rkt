@@ -1,3 +1,4 @@
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; File:         deriv.sch
 ; Description:  The DERIV benchmark from the Gabriel tests.
@@ -17,55 +18,53 @@
 ; Returns the wrong answer for quotients.
 ; Fortunately these aren't used in the benchmark.
 
-(module deriv-typed typed/scheme
+#lang typed/scheme/base
 
-  (define-type Deriv (Rec Deriv (U Number
-                                   Symbol
-                                   (Pair (U '+ '- '* '/)
-                                         (Listof Deriv)))))
-  
-  (: deriv-aux (Deriv -> Deriv))
-  (define (deriv-aux a) (list '/ (deriv a) a))
+(define-type Deriv (Rec Deriv (U Number
+                                 Symbol
+                                 (Pair (U '+ '- '* '/)
+                                       (Listof Deriv)))))
 
-  (: deriv (Deriv -> Deriv))
-  (define (deriv a)
-    (cond
-     ((not (pair? a))
-      (cond ((eq? a 'x) 1) (else 0)))
-     ((eq? (car a) '+)
-      (cons '+ (map deriv (cdr a))))
-     ((eq? (car a) '-)
-      (cons '- (map deriv
-                    (cdr a))))
-     ((eq? (car a) '*)
-      (list '*
-            a
-            (ann (cons '+ (map deriv-aux (cdr a))) Deriv)))
-     ((eq? (car a) '/)
-      (list '-
-            (list '/
-                  (deriv (cadr a))
-                  (caddr a))
-            (list '/
-                  (cadr a)
-                  (list '*
-                        (caddr a)
-                        (caddr a)
-                        (deriv (caddr a))))))
-     (else 'error)))
+(: deriv-aux (Deriv -> Deriv))
+(define (deriv-aux a) (list '/ (deriv a) a))
 
-  (: run ( -> Void))
-  (define (run)
-    (do ((i 0 (+ i 1)))
-        ((= i 50000))
-      (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
-      (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
-      (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
-      (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
-      (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))))
-  
+(: deriv (Deriv -> Deriv))
+(define (deriv a)
+  (cond
+   ((not (pair? a))
+    (cond ((eq? a 'x) 1) (else 0)))
+   ((eq? (car a) '+)
+    (cons '+ (map deriv (cdr a))))
+   ((eq? (car a) '-)
+    (cons '- (map deriv
+                  (cdr a))))
+   ((eq? (car a) '*)
+    (list '*
+          a
+          (ann (cons '+ (map deriv-aux (cdr a))) Deriv)))
+   ((eq? (car a) '/)
+    (list '-
+          (list '/
+                (deriv (cadr a))
+                (caddr a))
+          (list '/
+                (cadr a)
+                (list '*
+                      (caddr a)
+                      (caddr a)
+                      (deriv (caddr a))))))
+   (else 'error)))
+
+(: run ( -> Void))
+(define (run)
+  (do ((i 0 (+ i 1)))
+      ((= i 50000))
+    (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
+    (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
+    (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
+    (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
+    (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))))
+
 ;;; call:  (run)
-  
-  (time (run))
 
-  )
+(time (run))

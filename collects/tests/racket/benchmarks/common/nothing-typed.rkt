@@ -1,2 +1,3 @@
-(module nothing-typed typed/scheme
-  (time 1))
+#lang typed/scheme/base
+
+(time 1)
