@@ -53,8 +53,8 @@ This directory contains the following files and sub-directories:
 
   @item{@indexed-scheme[session-memory-limit] --- maximum size in
     bytes of memory allowed for per-session computation, if
-    per-session limits are supported (i.e., when using MrEd and
-    MzScheme with the (default) exact garbage collector and memory
+    per-session limits are supported (i.e., when using GRacket and
+    Racket with the (default) exact garbage collector and memory
     accounting); the default is 40000000.}
 
   @item{@indexed-scheme[default-file-name] --- the default filename
@@ -437,10 +437,10 @@ This directory contains the following files and sub-directories:
   will be listed and accessible.}
 ]
 
-The server can be run within either MzScheme or MrEd, but
-@schememodname[handin-server/utils] requires MrEd (which means that
+The server can be run within either Racket or GRacket, but
+@schememodname[handin-server/utils] requires GRacket (which means that
 @scheme[checker] modules will likely require the server to run under
-MrEd).  Remember that if you're not using the (default) 3m garbage
+GRacket).  Remember that if you're not using the (default) 3m garbage
 collector you don't get memory accounting.
 
 The server currently provides no mechanism for a graceful shutdown,

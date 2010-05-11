@@ -602,7 +602,7 @@
                      (lambda (x)
                        (set! no-limit-warning? #t)
                        (log-line "WARNING: per-session memory limit ~a"
-                                 "not supported by MrEd"))])
+                                 "not supported by GRacket"))])
       (custodian-limit-memory
        session-cust (get-conf 'session-memory-limit) session-cust)))
   (let ([watcher (parameterize ([current-custodian orig-custodian])
