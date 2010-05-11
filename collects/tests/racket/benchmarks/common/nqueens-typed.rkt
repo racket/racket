@@ -1,5 +1,6 @@
 ;;; NQUEENS -- Compute number of solutions to 8-queens problem.
 ;; 2006/08 -- renamed `try' to `try-it' to avoid Bigloo collision (mflatt)
+;; 2010/04 -- got rid of the one-armed id (stamourv)
 
 (module nqueens-typed typed/scheme
 
