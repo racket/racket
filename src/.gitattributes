@@ -1,4 +1,4 @@
-# These files need to be CRLF for MSVC and Windows users to be happy.
+# These files need to be CRLF for MSVC and Windows to be happy.
 # If you clone the git reposity under Windows, then it will normally
 # convert all LFs to CRLF, anyway. But these file need to be CRLF
 # when cloned to a Unix filesystem to assemble a Racket distribution.
@@ -7,20 +7,20 @@
 *.manifest -crlf
 *.rc -crlf
 *.bat -crlf
-src/worksp/README -crlf
-src/racket/gc/BCC_MAKEFILE -crlf
-src/racket/gc/digimars.mak -crlf
-src/worksp/README -crlf
-src/worksp/extradlls/README.TXT -crlf
-src/worksp/gracket/gracket.manifest
-src/worksp/mzcom/mzcom.def
-src/worksp/mzcom/mzcom.rgs
-src/worksp/mzcom/mzcomps.def
-src/worksp/mzcom/mzobj.rgs
+worksp/README -crlf
+racket/gc/BCC_MAKEFILE -crlf
+racket/gc/digimars.mak -crlf
+worksp/README -crlf
+worksp/extradlls/README.TXT -crlf
+worksp/gracket/gracket.manifest -crlf
+worksp/mzcom/mzcom.def -crlf
+worksp/mzcom/mzcom.rgs -crlf
+worksp/mzcom/mzcomps.def -crlf
+worksp/mzcom/mzobj.rgs -crlf
 
 # These files seem to be generated. Maybe they shouldn't be
-# in the repository; in any case, they are generated with 
+# in the repository; in any case, they are generated with
 # CRLF, so let's keep them that way.
-src/worksp/mzcom/mzcom.h -crlf
-src/worksp/racket/resource.h -crlf
-src/worksp/starters/resource.h -crlf
+worksp/mzcom/mzcom.h -crlf
+worksp/racket/resource.h -crlf
+worksp/starters/resource.h -crlf
