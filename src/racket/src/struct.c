@@ -40,7 +40,7 @@ READ_ONLY Scheme_Object *scheme_write_special_symbol;
 
 READ_ONLY static Scheme_Object *location_struct;
 READ_ONLY static Scheme_Object *write_property;
-READ_ONLY static Scheme_Object *print_as_constructor_property;
+READ_ONLY static Scheme_Object *print_attribute_property;
 READ_ONLY static Scheme_Object *evt_property;
 READ_ONLY static Scheme_Object *proc_property;
 READ_ONLY static Scheme_Object *rename_transformer_property;
@@ -88,7 +88,7 @@ static Scheme_Object *chaperone_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *argv[]);
-static Scheme_Object *check_print_as_constructor_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_print_attribute_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -286,20 +286,20 @@ scheme_init_struct (Scheme_Env *env)
     scheme_add_global_constant("custom-write-accessor", access, env);
   }
 
-  REGISTER_SO(print_as_constructor_property);
+  REGISTER_SO(print_attribute_property);
   {
     Scheme_Object *a[2], *pred, *access;
-    guard = scheme_make_prim_w_arity(check_print_as_constructor_property_value_ok,
-				     "guard-for-prop:custom-print-as-constructor",
+    guard = scheme_make_prim_w_arity(check_print_attribute_property_value_ok,
+				     "guard-for-prop:custom-print-quotable",
 				     2, 2);
 
-    a[0] = scheme_intern_symbol("custom-print-as-constructor");
+    a[0] = scheme_intern_symbol("custom-print-quotable");
     a[1] = guard;
-    print_as_constructor_property = make_struct_type_property_from_c(2, a, &pred, &access,
-                                                                     scheme_struct_property_type);
-    scheme_add_global_constant("prop:custom-print-as-constructor", print_as_constructor_property, env);
-    scheme_add_global_constant("custom-print-as-constructor?", pred, env);
-    scheme_add_global_constant("custom-print-as-constructor-accessor", access, env);
+    print_attribute_property = make_struct_type_property_from_c(2, a, &pred, &access,
+                                                                scheme_struct_property_type);
+    scheme_add_global_constant("prop:custom-print-quotable", print_attribute_property, env);
+    scheme_add_global_constant("custom-print-quotable?", pred, env);
+    scheme_add_global_constant("custom-print-quotable-accessor", access, env);
   }
   
   REGISTER_SO(evt_property);
@@ -1481,12 +1481,22 @@ static Scheme_Object *check_write_property_value_ok(int argc, Scheme_Object *arg
   return v;
 }
 
-static Scheme_Object *check_print_as_constructor_property_value_ok(int argc, Scheme_Object *argv[])
+static Scheme_Object *check_print_attribute_property_value_ok(int argc, Scheme_Object *argv[])
 {
-  if (SCHEME_TRUEP(argv[0]))
-    return scheme_true;
-  else
-    return scheme_false;
+  Scheme_Object *s = argv[0];
+  if (SCHEME_SYMBOLP(s) && !SCHEME_SYM_WEIRDP(s)) {
+    if (!strcmp(SCHEME_SYM_VAL(s), "self")
+        || !strcmp(SCHEME_SYM_VAL(s), "never")
+        || !strcmp(SCHEME_SYM_VAL(s), "always")
+        || !strcmp(SCHEME_SYM_VAL(s), "maybe"))
+      return s;
+  }
+
+  scheme_arg_mismatch("guard-for-prop:custom-print-quotable",
+                      "not 'self, 'never, 'always, or 'maybe: ",
+                      s); 
+
+  return NULL;
 }
 
 Scheme_Object *scheme_is_writable_struct(Scheme_Object *s)
@@ -1494,11 +1504,9 @@ Scheme_Object *scheme_is_writable_struct(Scheme_Object *s)
   return scheme_struct_type_property_ref(write_property, s);
 }
 
-Scheme_Object *scheme_is_print_as_constructor_struct(Scheme_Object *s)
+Scheme_Object *scheme_print_attribute_ref(Scheme_Object *s)
 {
-  s = scheme_struct_type_property_ref(print_as_constructor_property, s);
-  if (!s || SCHEME_FALSEP(s)) return NULL;
-  return scheme_true;
+  return scheme_struct_type_property_ref(print_attribute_property, s);
 }
 
 /*========================================================================*/
