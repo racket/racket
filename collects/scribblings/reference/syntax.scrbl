@@ -2418,6 +2418,8 @@ provides a hook to control interactive evaluation through
 @;------------------------------------------------------------------------
 @include-section["package.scrbl"]
 
+@;------------------------------------------------------------------------
+@include-section["block.scrbl"]
 
 @close-eval[require-eval]
 @close-eval[meta-in-eval]

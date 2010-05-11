@@ -5,6 +5,7 @@
                      scheme/bool
                      scheme/local
                      setup/dirs
+                     racket/block
                      (only-in scheme build-list build-string build-vector
                               symbol=?)))
 
@@ -54,20 +55,9 @@ binding's right-hand side. Other forms may redefine ``top level''
 (using @scheme[local-expand/capture-lifts]) for the expressions that
 they enclose.
 
-
 @defform[(begin-with-definitions defn-or-expr ...)]{
 
-Supports a mixture of expressions and mutually recursive definitions,
-much like a @scheme[module] body. Unlike in a @scheme[module],
-however, syntax definitions cannot be used to generate other immediate
-definitions (though they can be used for expressions).
-
-The result of the @scheme[begin-with-definitions] form is the result
-of the last @scheme[defn-or-expr] if it is an expression,
-@|void-const| otherwise. If no @scheme[defn-or-expr] is provided
-(after flattening @scheme[begin] forms), the result is @|void-const|.}
-
-
+The same as @racket[(block defn-or-expr ...)].}
 
 @defform[(define-syntax-set (id ...) defn ...)]{
 

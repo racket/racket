@@ -2,7 +2,8 @@
 
 (require setup/main-collects
          racket/local
-         racket/bool
+         racket/bool 
+         racket/block
          (only scheme/base
                build-string
                build-list
@@ -46,7 +47,7 @@
 
          hash-table
 
-         begin-with-definitions
+         (rename block begin-with-definitions)
 
          begin-lifted)
 
@@ -348,80 +349,6 @@
                 (hash-table-put! ht key val) ...
                 ht)))]
          [_else (raise-syntax-error 'hash-table "bad syntax" stx)]))]))
-
-(define-syntax (begin-with-definitions stx)
-  ;; Body can have mixed exprs and defns. Wrap expressions with
-  ;; `(define-values () ... (values))' as needed, and add a (void)
-  ;; at the end if needed.
-  (let* ([def-ctx (syntax-local-make-definition-context)]
-         [ctx (list (gensym 'intdef))]
-         [kernel-forms (kernel-form-identifier-list)]
-         [init-exprs (let ([v (syntax->list stx)])
-                       (unless v
-                         (raise-syntax-error #f "bad syntax" stx))
-                       (cdr v))]
-         [exprs (let loop ([exprs init-exprs])
-                  (apply
-                   append
-                   (map (lambda (expr)
-                          (let ([expr (local-expand expr ctx kernel-forms def-ctx)])
-                            (syntax-case expr (begin define-syntaxes define-values)
-                              [(begin . rest)
-                               (loop (syntax->list #'rest))]
-                              [(define-syntaxes (id ...) rhs)
-                               (andmap identifier? (syntax->list #'(id ...)))
-                               (with-syntax ([rhs (local-transformer-expand
-                                                   #'rhs
-                                                   'expression
-                                                   null)])
-                                 (syntax-local-bind-syntaxes
-                                  (syntax->list #'(id ...))
-                                  #'rhs def-ctx)
-                                 (list #'(define-syntaxes (id ...) rhs)))]
-                              [(define-values (id ...) rhs)
-                               (andmap identifier? (syntax->list #'(id ...)))
-                               (let ([ids (syntax->list #'(id ...))])
-                                 (syntax-local-bind-syntaxes ids #f def-ctx)
-                                 (list expr))]
-                              [else
-                               (list expr)])))
-                        exprs)))])
-    (internal-definition-context-seal def-ctx)
-    (let loop ([exprs exprs]
-               [prev-stx-defns null]
-               [prev-defns null]
-               [prev-exprs null])
-      (cond
-        [(null? exprs)
-         #`(letrec-syntaxes+values
-            #,(map stx-cdr (reverse prev-stx-defns))
-            #,(map stx-cdr (reverse prev-defns))
-            #,@(if (null? prev-exprs)
-                 (list #'(void))
-                 (reverse prev-exprs)))]
-        [(and (stx-pair? (car exprs))
-              (identifier? (stx-car (car exprs)))
-              (module-identifier=? #'define-syntaxes (stx-car (car exprs))))
-         (loop (cdr exprs)
-               (cons (car exprs) prev-stx-defns)
-               prev-defns
-               prev-exprs)]
-        [(and (stx-pair? (car exprs))
-              (identifier? (stx-car (car exprs)))
-              (module-identifier=? #'define-values (stx-car (car exprs))))
-         (loop (cdr exprs)
-               prev-stx-defns
-               (cons (car exprs)
-                     (append
-                      (map (lambda (expr)
-                             #`(define-values () (begin #,expr (values))))
-                           prev-exprs)
-                      prev-defns))
-               null)]
-        [else (loop (cdr exprs)
-                    prev-stx-defns
-                    prev-defns
-                    (cons (car exprs) prev-exprs))]))))
 
 (define-syntax (begin-lifted stx)
   (syntax-case stx ()
