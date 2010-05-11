@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; To include a test, add an appropriate entry in `tests' below.
 ;; Notes:
@@ -6,9 +6,9 @@
 ;;   additional sandboxing.  (There is a timeout of 10 minutes.)
 ;; - Specifically, the I/O ports are not diverted -- so please keep
 ;;   output to a minimum, preferrably nothing if there are no errors.
-;; - Tests are only running in mzscheme (*not* mred), but note that
-;;   they will run with both the default 3m and the CGC executable,
-;;   and with the JIT enabled and disabled.
+;; - Tests are only running in racket (*not* gracket), but note that
+;;   they will run with both the default 3m and the CGC executable, and
+;;   with the JIT enabled and disabled.
 ;; - They will also run on all build platforms, some can be slow (eg,
 ;;   the Solaris build, or if we get an ARM build).  Many of the build
 ;;   machines are used by people, be polite!
@@ -29,9 +29,9 @@
 ;;   specifications for things to require into the initial namespace
 ;;   for the test before the test is loaded.  ('no-handler is a
 ;;   special flag that means that errors raised by the test suite are
-;;   ignored, and should only be used by the mzscheme tests.)
+;;   ignored, and should only be used by the racket tests.)
 (define tests
-  '([no-handler load "mzscheme/quiet.ss" (lib "scheme/init")]
+  '([no-handler load "racket/quiet.ss" (lib "racket/init")]
     ;; [require "planet/lang.ss"]
     [require "typed-scheme/nightly-run.ss"]
     [require "match/plt-match-tests.ss"]
@@ -43,7 +43,7 @@
     [require "profile/main.ss"]
     ))
 
-(require scheme/runtime-path)
+(require racket/runtime-path)
 
 (define-runtime-path here ".")
 
