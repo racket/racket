@@ -5430,6 +5430,14 @@
         (set! write-locked? wl?)
         (set! flow-locked? fl?))))
 
+  (define/private (new-page-line? line)
+    (let ([len (mline-len line)])
+      (and (<= 1 len 2)
+           (let* ([pos (mline-get-position line)]
+                  [s (get-text pos (+ pos len))])
+             (or (equal? s "\f")
+                 (equal? s "\f\n"))))))
+
   (define/private (has/print-page dc page print?)
     (if flow-locked?
         #f
@@ -5463,59 +5471,70 @@
                        [next-h 0.0])
                    (let loop ([h h]
                               [i i]
-                              [line line])
-                     (if (or (zero? h)
-                             (and (i . < . num-valid-lines)
-                                  ((mline-h line) . < . (- H h))))
-                         (loop (+ h (mline-h line))
+                              [line line]
+                              [can-continue? #t]
+                              [unline 0.0])
+                     (cond
+                      [(or (zero? h)
+                           (and (i . < . num-valid-lines)
+                                ((mline-h line) . < . (- H h))
+                                can-continue?))
+                       (let ([lh (mline-h line)]
+                             [new-page? (new-page-line? line)])
+                         (loop (+ h lh)
                                (add1 i)
-                               (mline-next line))
-                         (let-values ([(h i line)
-                                       (if (and (h . < . H)
-                                                (i . < . num-valid-lines)
-                                                ((mline-h line) . > . H))
-                                           ;; we'll have to break it up anyway; start now?
+                               (mline-next line)
+                               (not new-page?)
+                               (if new-page? lh unline)))]
+                      [else
+                       (let-values ([(h i line)
+                                     (cond
+                                      [(and (h . < . H)
+                                            (i . < . num-valid-lines)
+                                            ((mline-h line) . > . H))
+                                       ;; we'll have to break it up anyway; start now?
+                                       (let* ([pos (find-scroll-line (+ y H))]
+                                              [py (scroll-line-location pos)])
+                                         (if (py . > . (+ y h))
+                                             ;; yes, at least one line will fit
+                                             (values (+ h (mline-h line))
+                                                     (add1 i)
+                                                     (mline-next line))
+                                             (values h i line)))]
+                                      [else
+                                       (values h i line)])])
+                         (let-values ([(next-h h)
+                                       (if (h . > . H)
+                                           ;; only happens if we have something that's too big to fit on a page;
+                                           ;; look for internal scroll positions
                                            (let* ([pos (find-scroll-line (+ y H))]
                                                   [py (scroll-line-location pos)])
-                                             (if (py . > . (+ y h))
-                                                 ;; yes, at least one line will fit
-                                                 (values (+ h (mline-h line))
-                                                         (add1 i)
-                                                         (mline-next line))
-                                                 (values h i line)))
-                                           (values h i line))])
-                           (let-values ([(next-h h)
-                                         (if (h . > . H)
-                                             ;; only happens if we have something that's too big to fit on a page;
-                                             ;; look for internal scroll positions
-                                             (let* ([pos (find-scroll-line (+ y H))]
-                                                    [py (scroll-line-location pos)])
-                                               (if (py . > . y)
-                                                   (let ([new-h (- py y)])
-                                                     (values (- h new-h)
-                                                             new-h))
-                                                   (values next-h h)))
-                                             (values next-h h))])
-                             (or (if print?
-                                     (begin
-                                       (when (or (negative? page) (= this-page page))
-                                         (begin
-                                           (when (negative? page)
-                                             (send dc start-page))
-                                           (do-redraw dc 
-                                                      (+ y (if (zero? i) 0 1))
-                                                      (+ y (- h 1))
-                                                      0 W (+ (- y) vm) hm
-                                                      'no-caret #f #f)
-                                           (when (negative? page)
-                                             (send dc end-page))))
-                                       #f)
-                                     (= this-page page))
-                                 (ploop (add1 this-page)
-                                        line
-                                        (+ y h)
-                                        next-h 
-                                        i)))))))))))))))
+                                             (if (py . > . y)
+                                                 (let ([new-h (- py y)])
+                                                   (values (- h new-h)
+                                                           new-h))
+                                                 (values next-h h)))
+                                           (values next-h h))])
+                           (or (if print?
+                                   (begin
+                                     (when (or (negative? page) (= this-page page))
+                                       (begin
+                                         (when (negative? page)
+                                           (send dc start-page))
+                                         (do-redraw dc 
+                                                    (+ y (if (zero? i) 0 1))
+                                                    (+ y (- h 1 unline))
+                                                    0 W (+ (- y) vm) hm
+                                                    'no-caret #f #f)
+                                         (when (negative? page)
+                                           (send dc end-page))))
+                                     #f)
+                                   (= this-page page))
+                               (ploop (add1 this-page)
+                                      line
+                                      (+ y h)
+                                      next-h 
+                                      i))))])))))))))))
 
   (define/override (do-has-print-page? dc page)
     (has/print-page dc page #f))
