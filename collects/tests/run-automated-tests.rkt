@@ -31,16 +31,16 @@
 ;;   special flag that means that errors raised by the test suite are
 ;;   ignored, and should only be used by the racket tests.)
 (define tests
-  '([no-handler load "racket/quiet.ss" (lib "racket/init")]
-    ;; [require "planet/lang.ss"]
-    [require "typed-scheme/nightly-run.ss"]
-    [require "match/plt-match-tests.ss"]
-    ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
-    [require "lazy/main.ss"]
-    [require "scribble/main.ss"]
-    [require "net/main.ss"]
-    [require "file/main.ss"]
-    [require "profile/main.ss"]
+  '([no-handler load "racket/quiet.rktl" (lib "racket/init")]
+    ;; [require "planet/lang.rkt"]
+    [require "typed-scheme/nightly-run.rkt"]
+    [require "match/plt-match-tests.rkt"]
+    ;; [require "stepper/automatic-tests.rkt" (lib "scheme/base")]
+    [require "lazy/main.rkt"]
+    [require "scribble/main.rkt"]
+    [require "net/main.rkt"]
+    [require "file/main.rkt"]
+    [require "profile/main.rkt"]
     ))
 
 (require racket/runtime-path)
