@@ -6,7 +6,7 @@
 (define-syntax debug
   (syntax-rules ()
     [(_ (f . args))
-     (begin (printf "starting ~a~n" 'f)
+     (begin (printf "starting ~a (~a)~n" 'f f)
             (let ([l (list . args)])
               (printf "arguments are:~n")
               (for/list ([arg 'args]
