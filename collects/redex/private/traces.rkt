@@ -131,7 +131,8 @@
                    #:multiple? [multiple? #f] 
                    #:pred [pred (λ (x) #t)] 
                    #:pp [pp default-pretty-printer] 
-                   #:scheme-colors? [scheme-colors? #t]
+                   #:racket-colors? [racket-colors? #t]
+                   #:scheme-colors? [scheme-colors? racket-colors?]
                    #:colors [colors '()]
                    #:layout [layout void]
                    #:edge-label-font [edge-label-font #f]
@@ -147,6 +148,7 @@
                         #:multiple? multiple? 
                         #:pred pred
                         #:pp pp
+                        #:racket-colors? racket-colors?
                         #:scheme-colors? scheme-colors?
                         #:colors colors
                         #:layout layout
@@ -241,7 +243,8 @@
                 #:pred [pred (λ (x) #t)] 
                 #:pp [pp default-pretty-printer] 
                 #:colors [colors '()]
-                #:scheme-colors? [scheme-colors? #t]
+                #:racket-colors? [racket-colors? #t]
+                #:scheme-colors? [scheme-colors? racket-colors?]
                 #:layout [layout void]
                 #:edge-label-font [edge-label-font #f]
                 #:edge-labels? [edge-labels? #t]
@@ -353,7 +356,8 @@
   (define default-colors (list (dark-pen-color) (light-pen-color) 
                                (dark-text-color) (light-text-color)
                                (dark-brush-color) (light-brush-color)))
-      
+  
+  (define code-colors? (and racket-colors? scheme-colors?))
   
   ;; only changed on the reduction thread
   ;; frontier : (listof (is-a?/c graph-editor-snip%))
@@ -361,7 +365,7 @@
     (filter
      (λ (x) x)
      (map (lambda (expr) (apply build-snip
-                                snip-cache #f expr pred pp #f scheme-colors?
+                                snip-cache #f expr pred pp #f code-colors?
                                 (get-user-char-width user-char-width expr)
                                 default-colors))
           exprs)))
@@ -432,7 +436,7 @@
                                                                      dark-pen-color
                                                                      light-pen-color) 
                                                    (red->colors name)])
-                                       (build-snip snip-cache snip sexp pred pp name scheme-colors? 
+                                       (build-snip snip-cache snip sexp pred pp name code-colors? 
                                                    (get-user-char-width user-char-width sexp)
                                                    light-arrow-color dark-arrow-color dark-label-color light-label-color
                                                    dark-pen-color light-pen-color)))))))
@@ -788,7 +792,7 @@
 ;; returns #f if a snip corresponding to the expr has already been created.
 ;; also adds in the links to the parent snip
 ;; =eventspace main thread=
-(define (build-snip cache parent-snip expr pred pp name scheme-colors? cw
+(define (build-snip cache parent-snip expr pred pp name code-colors? cw
                     light-arrow-color dark-arrow-color dark-label-color light-label-color
                     dark-brush-color light-brush-color)
   (let-values ([(snip new?)
@@ -797,7 +801,7 @@
                            cache
                            expr
                            (lambda ()
-                             (let ([new-snip (make-snip parent-snip expr pred pp scheme-colors? cw)])
+                             (let ([new-snip (make-snip parent-snip expr pred pp code-colors? cw)])
                                (hash-set! cache expr new-snip)
                                (k new-snip #t))))
                           #f))])
@@ -844,7 +848,7 @@
 ;;          -> (is-a?/c graph-editor-snip%)
 ;; unconditionally creates a new graph-editor-snip
 ;; =eventspace main thread=
-(define (make-snip parent-snip expr pred pp scheme-colors? cw)
+(define (make-snip parent-snip expr pred pp code-colors? cw)
   (let* ([text (new program-text%)]
          [es (instantiate graph-editor-snip% ()
                (char-width cw)
@@ -855,7 +859,7 @@
     (send text set-autowrap-bitmap #f)
     (send text set-max-width 'none)
     (send text freeze-colorer)
-    (unless scheme-colors?
+    (unless code-colors?
       (send text stop-colorer #t))
     (send es format-expr)
     es))

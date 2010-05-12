@@ -35,6 +35,7 @@
                             (any/c term-node? . -> . any))
                #:pp pp-contract
                #:colors (listof (list/c string? string?))
+               #:racket-colors? boolean?
                #:scheme-colors? boolean?
                #:layout (-> any/c any/c)
                #:edge-label-font (or/c #f (is-a?/c font%))
@@ -51,6 +52,8 @@
                                (any/c term-node? . -> . any))
                   #:pp pp-contract
                   #:colors (listof any/c)
+                  #:racket-colors? boolean?
+                  #:scheme-colors? boolean?
                   #:layout (-> any/c any/c)
                   #:edge-label-font (or/c #f (is-a?/c font%))
                   #:edge-labels? boolean?
