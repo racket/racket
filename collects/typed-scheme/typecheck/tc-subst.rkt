@@ -24,12 +24,13 @@
                     (subst-object old-obj k o #t)))]))
 
 (d/c (subst-filter-set fs k o polarity [t #f])
-       (->* (FilterSet? name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
+       (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
        (define extra-filter (if t (make-TypeFilter t null k) -top))
   (match fs
     [(FilterSet: f+ f-)
      (combine (subst-filter (-and extra-filter f+) k o polarity)
-	      (subst-filter (-and extra-filter f-) k o polarity))]))
+	      (subst-filter (-and extra-filter f-) k o polarity))]
+    [_ (-FS -top -top)]))
 
 (d/c (subst-type t k o polarity)
      (-> Type/c name-ref/c Object? boolean? Type/c)
