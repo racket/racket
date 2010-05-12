@@ -14,7 +14,7 @@
 _smart_filedir()
 {
   COMPREPLY=()
-  _filedir '@(rkt|ss|scm|scrbl)'
+  _filedir '@(rkt|rktl|ss|scm|scrbl)'
   if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
     _filedir
   fi
