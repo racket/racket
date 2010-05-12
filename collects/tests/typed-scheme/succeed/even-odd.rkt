@@ -7,6 +7,10 @@
 (define-type EvenParity (Rec Even (U '() (Z Even) (O (Rec Odd (U (Z Odd) (O Even)))))))
 (define-type OddParity (Rec Odd (U (Z Odd) (O (Rec Even (U '() (Z Even) (O Odd)))))))
 
+(define: x : (Z EvenParity) (make-Z null))
+(Z-b x)
+
+
 (: append-one (case-lambda (EvenParity -> OddParity)
                            (OddParity -> EvenParity)                           
                            (Bitstring -> Bitstring)))
