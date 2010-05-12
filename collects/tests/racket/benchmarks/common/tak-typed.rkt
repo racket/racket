@@ -12,8 +12,6 @@
  
 ;;; TAK -- A vanilla version of the TAKeuchi function
 
-#lang typed/scheme/base
-
 (: tak (Integer Integer Integer -> Integer))
 (define (tak x y z)
   (if (not (< y x))

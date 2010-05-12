@@ -21,8 +21,6 @@
 
 ;;; CTAK -- A version of the TAK function that uses the CATCH/THROW facility.
 
-#lang typed/scheme/base
-
 (: ctak (Integer Integer Integer -> Integer))
 (define (ctak x y z)
   ((inst call-with-current-continuation Integer Integer)

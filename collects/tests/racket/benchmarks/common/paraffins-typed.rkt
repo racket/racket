@@ -1,7 +1,5 @@
 ;;; PARAFFINS -- Compute how many paraffins exist with N carbon atoms.
 
-#lang typed/scheme/base
-
 (require/typed scheme/base (collect-garbage ( -> Void)))
 
 (define-type Radical (Rec Radical (U 'C 'H 'BCP 'CCP (Vectorof Radical))))

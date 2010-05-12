@@ -12,8 +12,6 @@
 
 ; End of new code.
 
-#lang typed/scheme/base
-
 ;;; ==== std.ss ====
 
 ; (define-syntax assert

@@ -13,8 +13,6 @@
 ;;; DIV2 -- Benchmark which divides by 2 using lists of n ()'s.
 ;;; This file contains a recursive as well as an iterative test.
 
-#lang typed/scheme/base
-
 (: create-n (Integer -> (Listof Any)))
 (define (create-n n)
   (do ((n n (- n 1))

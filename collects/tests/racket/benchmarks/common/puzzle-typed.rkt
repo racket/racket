@@ -10,8 +10,6 @@
 ; Status:       Public Domain
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#lang typed/scheme/base
-
 (: iota (Integer -> (Listof Integer)))
 (define (iota n)
   (do: : (Listof Integer)

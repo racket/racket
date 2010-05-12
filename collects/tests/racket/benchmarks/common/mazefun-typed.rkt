@@ -1,8 +1,6 @@
 ;;; MAZEFUN -- Constructs a maze in a purely functional way,
 ;;; written by Marc Feeley.
 
-#lang typed/scheme/base
-
 (: iota (Integer -> (Listof Integer)))
 (define iota
   (lambda (n)

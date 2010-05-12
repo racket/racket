@@ -14,8 +14,6 @@
 ;;; memory effects.  Results should be the same as for TAK on stack machines.
 ;;; Distribution of calls is not completely flat.
 
-#lang typed/scheme/base
-
 (: tak (Integer Integer Integer -> Integer))
 (define (tak x y z)
   (: tak0 (Integer Integer Integer -> Integer))

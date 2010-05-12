@@ -3,7 +3,6 @@
 ;; 2010/04 -- got rid of the one-armed id (stamourv)
 ;; 2010/05 -- ported to typed Scheme (stamourv)
 
-#lang typed/scheme/base
 (define trace? #f)
 
 (: nqueens (Integer -> Integer))

@@ -12,8 +12,6 @@
  
 ;;; TAKL -- The TAKeuchi function using lists as counters.
 
-#lang typed/scheme/base
-
 (: listn (Integer -> (Listof Integer)))
 (define (listn n)
   (if (not (= 0 n))

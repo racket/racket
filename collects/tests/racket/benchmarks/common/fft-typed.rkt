@@ -10,8 +10,6 @@
 ; Status:       Public Domain
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#lang typed/scheme/base
-
 (: pi Complex)
 (define pi (atan 0 -1))
 

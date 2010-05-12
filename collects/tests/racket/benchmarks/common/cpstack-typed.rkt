@@ -11,8 +11,6 @@
 ;;; CPSTAK -- A continuation-passing version of the TAK benchmark.
 ;;; A good test of first class procedures and tail recursion.
 
-#lang typed/scheme/base
-
 (: cpstak (Integer Integer Integer -> Integer))
 (define (cpstak x y z)
   (: tak (Integer Integer Integer (Integer -> Integer) -> Integer))

@@ -13,8 +13,6 @@
 
 ;;; TRIANG -- Board game benchmark.
 
-#lang typed/scheme/base
-
 (: *board* (Vectorof Integer))
 (define *board* (make-vector 16 1))
 (: *sequence* (Vectorof Integer))

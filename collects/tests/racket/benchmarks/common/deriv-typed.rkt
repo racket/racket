@@ -18,8 +18,6 @@
 ; Returns the wrong answer for quotients.
 ; Fortunately these aren't used in the benchmark.
 
-#lang typed/scheme/base
-
 (define-type Deriv (Rec Deriv (U Number
                                  Symbol
                                  (Pair (U '+ '- '* '/)

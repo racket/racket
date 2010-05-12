@@ -35,8 +35,6 @@
 ; Returns the wrong answer for quotients.
 ; Fortunately these aren't used in the benchmark.
 
-#lang typed/scheme/base
-
 (define-type Plist (Listof (Pair Symbol ((Listof Deriv) -> Deriv))))
 
 (: pg-alist Plist)

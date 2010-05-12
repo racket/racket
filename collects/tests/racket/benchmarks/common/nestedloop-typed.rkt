@@ -1,5 +1,3 @@
-#lang typed/scheme/base
-
 ;; Imperative body:
 (: loops (Integer -> Integer))
 (define (loops n)

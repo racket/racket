@@ -3,8 +3,6 @@
 
 ;;; LATTICE -- Obtained from Andrew Wright.
 
-#lang typed/scheme/base
-
 (define-type Verdict (U 'less 'more 'equal 'uncomparable))
 
 ;; Given a comparison routine that returns one of

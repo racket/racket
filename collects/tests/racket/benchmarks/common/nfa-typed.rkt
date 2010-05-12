@@ -3,8 +3,6 @@
 ;; Changed by Matthew 2006/08/21 to move string->list out of the loop
 ;; Changed by Vincent 2010/04/05 to convert to typed Scheme
 
-#lang typed/scheme/base
-
 (define-type Result (U 'state2 'state4 #f))
 
 (: recursive-nfa ((Listof Char) -> (U 'state2 'state4 'fail)))
