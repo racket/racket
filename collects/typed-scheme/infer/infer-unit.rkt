@@ -511,4 +511,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;(trace cgen cgen/arr)
+;(trace cgen)

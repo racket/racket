@@ -9,7 +9,8 @@
          "def-binding.rkt"
          syntax/kerncase
          syntax/struct
-         mzlib/trace         
+         mzlib/trace      
+         unstable/debug
          scheme/match
          (for-syntax scheme/base))
 
