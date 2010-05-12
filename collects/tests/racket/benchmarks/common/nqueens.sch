@@ -1,5 +1,6 @@
 ;;; NQUEENS -- Compute number of solutions to 8-queens problem.
 ;; 2006/08 -- renamed `try' to `try-it' to avoid Bigloo collision (mflatt)
+;; 2010/04 -- got rid of the one-armed id (stamourv)
 
 (define trace? #f)
 
@@ -12,7 +13,7 @@
   (define (try-it x y z)
     (if (null? x)
       (if (null? y)
-        (begin (if trace? (begin (write z) (newline))) 1)
+        (begin (if trace? (begin (write z) (newline)) #t) 1)
         0)
       (+ (if (ok? (car x) 1 z)
            (try-it (append (cdr x) y) '() (cons (car x) z))

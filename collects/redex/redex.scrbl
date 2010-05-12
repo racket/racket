@@ -3,11 +3,11 @@
           scribble/bnf
           scribble/struct
           scribble/eval
-          (for-syntax scheme/base)
-          (for-label scheme/base
-                     scheme/gui
-                     scheme/pretty
-                     scheme/contract
+          (for-syntax racket/base)
+          (for-label racket/base
+                     racket/gui
+                     racket/pretty
+                     racket/contract
 		     mrlib/graph
                      (only-in slideshow/pict pict? text dc-for-text-size text-style/c)
                      redex))
@@ -17,7 +17,7 @@
      [(_ arg)
       (identifier? #'arg)
       (let ([as (symbol->string (syntax-e #'arg))])
-        #`(index '("Redex Pattern" #,as) (deftech #:style? #f @scheme[arg])))]))
+        #`(index '("Redex Pattern" #,as) (deftech #:style? #f @racket[arg])))]))
 
 @(define-syntax (pattech stx)
    (syntax-case stx ()
@@ -28,8 +28,8 @@
 @(define-syntax (ttpattern stx)
    (syntax-case stx ()
     [(_ args ...)
-     #'((tech (schemevarfont "pattern")) args ...)]
-    [x (identifier? #'x) #'(tech (schemevarfont "pattern"))]))
+     #'((tech (racketvarfont "pattern")) args ...)]
+    [x (identifier? #'x) #'(tech (racketvarfont "pattern"))]))
 
 @(define-syntax (pattern stx)
    (syntax-case stx ()
@@ -40,8 +40,8 @@
 @(define-syntax (tttterm stx)
    (syntax-case stx ()
     [(_ args ...)
-     #'((tech (schemevarfont "term")) args ...)]
-    [x (identifier? #'x) #'(tech (schemevarfont "term"))]))
+     #'((tech (racketvarfont "term")) args ...)]
+    [x (identifier? #'x) #'(tech (racketvarfont "term"))]))
 
 @(define-syntax (tterm stx)
    (syntax-case stx ()
@@ -52,8 +52,8 @@
 @(define-syntax-rule (arrows a0 a ...)
    (make-blockquote #f 
     (list (make-paragraph 
-           (list (schemeidfont (make-element #f (list (symbol->string 'a0))))
-                 (make-element #f (list " " (hspace 1) " " (schemeidfont (symbol->string 'a)))) ...)))))
+           (list (racketidfont (make-element #f (list (symbol->string 'a0))))
+                 (make-element #f (list " " (hspace 1) " " (racketidfont (symbol->string 'a)))) ...)))))
 
 @(define redex-eval (make-base-eval))
 @(interaction-eval #:eval redex-eval (require redex/reduction-semantics))
@@ -67,14 +67,14 @@ reduction semantics, plus a suite of tools for working with the
 semantics. 
 
 This is a reference manual for Redex. See
-@link["http://redex.plt-scheme.org/"]{@tt{http://redex.plt-scheme.org/}}
+@link["http://redex.racket-lang.org/"]{@tt{http://redex.racket-lang.org/}}
 for a gentler overview. (See also the @tt{examples} subdirectory in
 the @tt{redex} collection.)
 
 To load Redex use: @defmodule[redex] which provides all of
 the names documented in this library.
 
-The module @schememodname[redex/reduction-semantics]
+The module @racketmodname[redex/reduction-semantics]
 provides only the non-GUI portions of what is described in
 this manual (everything except the last two sections),
 making it suitable for use with @tt{racket} scripts.
@@ -86,9 +86,9 @@ making it suitable for use with @tt{racket} scripts.
 @defmodule[redex/reduction-semantics]
 
 All of the exports in this section are provided both by
-@schememodname[redex/reduction-semantics] (which includes
+@racketmodname[redex/reduction-semantics] (which includes
 all non-GUI portions of Redex) and also exported by
-@schememodname[redex] (which includes all of Redex).
+@racketmodname[redex] (which includes all of Redex).
 
 This section covers Redex's @deftech{pattern} language, used in many
 of Redex's forms.
@@ -101,7 +101,7 @@ This is the grammar for the Redex pattern language. Non-terminal
 references are wrapped with angle brackets; otherwise identifiers
 in the grammar are terminals.
 
-@(schemegrammar* #;#:literals #;(any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole hide-hole name in-hole side-condition cross) 
+@(racketgrammar* #;#:literals #;(any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole hide-hole name in-hole side-condition cross) 
    [pattern any 
             number 
             natural
@@ -109,20 +109,20 @@ in the grammar are terminals.
             real
             string 
             variable 
-            (variable-except id ...)
-            (variable-prefix id)
+            (variable-except <id> ...)
+            (variable-prefix <id>)
             variable-not-otherwise-mentioned
             hole
             symbol
-            (name id pattern)
-            (in-hole pattern pattern)
-            (hide-hole pattern)
-            (side-condition pattern guard)
-            (cross id)
+            (name <id> <pattern>)
+            (in-hole <pattern> <pattern>)
+            (hide-hole <pattern>)
+            (side-condition <pattern> guard)
+            (cross <id>)
             (<pattern-sequence> ...)
-            racket-constant]
+            <racket-constant>]
    [pattern-sequence 
-     pattern 
+     <pattern> 
      (code:line ... (code:comment "literal ellipsis"))
      ..._id])
 
@@ -218,7 +218,7 @@ If the symbol is a non-terminal followed by @tt{_!_}, for example
 the same @pattern are constrained to be different. For
 example, this @|pattern|:
 
-@schemeblock[(e_!_1 e_!_1 e_!_1)]
+@racketblock[(e_!_1 e_!_1 e_!_1)]
 
 matches lists of three @tt{e}s, but where all three of them are
 distinct.
@@ -242,7 +242,7 @@ matches the first @|ttpattern|. This match must include exactly one match
 against the second @|ttpattern|. If there are zero matches or more
 than one match, an exception is raised.
 
-When matching the first argument of in-hole, the @scheme[hole] @pattern
+When matching the first argument of in-hole, the @racket[hole] @pattern
 matches any sexpression. Then, the sexpression that matched the hole
 @pattern is used to match against the second @|pattern|.
 }
@@ -255,16 +255,16 @@ that @|ttpattern|.
 
 @item{The @tt{(@defpattech[side-condition] @ttpattern guard)} @pattern
 matches what the embedded @ttpattern matches, and then the guard
-expression is evaluated. If it returns @scheme[#f], the @pattern fails
+expression is evaluated. If it returns @racket[#f], the @pattern fails
 to match, and if it returns anything else, the @pattern matches. Any
-occurrences of @scheme[name] in the @pattern (including those implicitly
-there via @tt{_} pattersn) are bound using @scheme[term-let] in the
+occurrences of @racket[name] in the @pattern (including those implicitly
+there via @tt{_} pattersn) are bound using @racket[term-let] in the
 guard. 
 }
 
-@item{The @scheme[(@defpattech[cross] id)] @pattern is used for the compatible
+@item{The @tt{(@defpattech[cross] symbol)} @pattern is used for the compatible
 closure functions. If the language contains a non-terminal with the
-same name as @scheme[symbol], the @pattern @scheme[(cross id)] matches the
+same name as @racket[symbol], the @pattern @racket[(cross symbol)] matches the
 context that corresponds to the compatible closure of that
 non-terminal.
 }
@@ -285,11 +285,11 @@ another ellipses.
 
 Multiple ellipses are allowed. For example, this @|pattern|:
 
-@schemeblock[((name x a) ... (name y a) ...)]
+@racketblock[((name x a) ... (name y a) ...)]
 
 matches this sexpression:
 
-@schemeblock[(@#,tttterm (a a))]
+@racketblock[(@#,tttterm (a a))]
 
 three different ways. One where the first @tt{a} in the @pattern
 matches nothing, and the second matches both of the
@@ -305,11 +305,11 @@ length.
 
 As an example, this @|pattern|:
 
-@schemeblock[((name x a) ..._1 (name y a) ..._1)]
+@racketblock[((name x a) ..._1 (name y a) ..._1)]
 
 only matches this sexpression:
 
-@schemeblock[(@#,tttterm (a a))]
+@racketblock[(@#,tttterm (a a))]
 
 one way, with each named @pattern matching a single a. Unlike
 the above, the two @|pattern|s with mismatched lengths is ruled
@@ -321,16 +321,16 @@ different.
 
 Thus, with the @|pattern|:
 
-@schemeblock[((name x a) ..._!_1 (name y a) ..._!_1)]
+@racketblock[((name x a) ..._!_1 (name y a) ..._!_1)]
 
 and the expression
 
-@schemeblock[(@#,tttterm (a a))]
+@racketblock[(@#,tttterm (a a))]
 
-two matches occur, one where @tt{x} is bound to @scheme['()] and
-@tt{y} is bound to @scheme['(a a)] and one where @tt{x} is bound to
-@scheme['(a a)] and @tt{y} is
-bound to @scheme['()].
+two matches occur, one where @tt{x} is bound to @racket['()] and
+@tt{y} is bound to @racket['(a a)] and one where @tt{x} is bound to
+@racket['(a a)] and @tt{y} is
+bound to @racket['()].
 
 }
 ]
@@ -338,18 +338,18 @@ bound to @scheme['()].
 @defform*[[(redex-match lang @#,ttpattern any)
            (redex-match lang @#,ttpattern)]]{
           
-If @scheme[redex-match] receives three arguments, it
+If @racket[redex-match] receives three arguments, it
 matches the pattern (in the language) against its third
 argument. If it matches, this returns a list of match
 structures describing the matches. If it fails, it returns
-@scheme[#f].
+@racket[#f].
 
-If @scheme[redex-match] receives only two arguments, it
+If @racket[redex-match] receives only two arguments, it
 builds a procedure for efficiently testing if expressions
-match the pattern, using the language @scheme[lang]. The
+match the pattern, using the language @racket[lang]. The
 procedures accepts a single expression and if the expresion
 matches, it returns a list of match structures describing the
-matches. If the match fails, the procedure returns @scheme[#f].
+matches. If the match fails, the procedure returns @racket[#f].
 }
 
 @defproc[(match? [val any/c]) boolean?]{
@@ -365,17 +365,17 @@ binds the pattern variables in this match.
 
 @defstruct[bind ([name symbol?] [exp any/c])]{
 
-Instances of this struct are returned by @scheme[redex-match].
-Each @scheme[bind] associates a name with an s-expression from the
+Instances of this struct are returned by @racket[redex-match].
+Each @racket[bind] associates a name with an s-expression from the
 language, or a list of such s-expressions, if the @tt{(@pattech[name] ...)}
 clause is followed by an ellipsis.  Nested ellipses produce
 nested lists.
 }
 
 @defparam[caching-enabled? on? boolean?]{
-  When this parameter is @scheme[#t] (the default), Redex caches the results of 
+  When this parameter is @racket[#t] (the default), Redex caches the results of 
   pattern matching and metafunction evaluation. There is a separate cache for
-  each pattern and metafunction; when one fills (see @scheme[set-cache-size!]),
+  each pattern and metafunction; when one fills (see @racket[set-cache-size!]),
   Redex evicts all of the entries in that cache.
                                          
   Caching should be disabled when matching a pattern that depends on values
@@ -384,25 +384,25 @@ nested lists.
 }
 
 @defproc[(set-cache-size! [size positive-integer?]) void?]{                                                           
-Changes the size of the per-pattern and per-metafunction caches. The default size is @scheme[350].
+Changes the size of the per-pattern and per-metafunction caches. The default size is @racket[350].
 }
 
 @section{Terms}
 
 All of the exports in this section are provided both by
-@schememodname[redex/reduction-semantics] (which includes
+@racketmodname[redex/reduction-semantics] (which includes
 all non-GUI portions of Redex) and also exported by
-@schememodname[redex] (which includes all of Redex).
+@racketmodname[redex] (which includes all of Redex).
 
 Object language expressions in Redex are written using
-@scheme[term]. It is similar to Racket's @scheme[quote] (in
+@racket[term]. It is similar to Racket's @racket[quote] (in
 many cases it is identical) in that it constructs lists as
 the visible representation of terms. 
 
 The grammar of @deftech{term}s is (note that an ellipsis
 stands for repetition unless otherwise indicated):
 
-@(schemegrammar* #:literals (in-hole hole unquote unquote-splicing) 
+@(racketgrammar* #:literals (in-hole hole unquote unquote-splicing) 
    [term identifier
          (term-sequence ...)
          ,racket-expression
@@ -417,28 +417,28 @@ stands for repetition unless otherwise indicated):
 
 @itemize[
 
-@item{A term written @scheme[_identifier] is equivalent to the
+@item{A term written @racket[_identifier] is equivalent to the
 corresponding symbol, unless the identifier is bound by
-@scheme[term-let] (or in a @|pattern| elsewhere) or is
+@racket[term-let] (or in a @|pattern| elsewhere) or is
 @tt{hole} (as below).  }
 
-@item{A term written @scheme[(_term-sequence ...)] constructs a list of
+@item{A term written @racket[(_term-sequence ...)] constructs a list of
 the terms constructed by the sequence elements.}
 
-@item{A term written @scheme[,_racket-expression] evaluates the
-@scheme[_racket-expression] and substitutes its value into the term at
+@item{A term written @racket[,_racket-expression] evaluates the
+@racket[racket-expression] and substitutes its value into the term at
 that point.}
 
-@item{A term written @scheme[,@_racket-expression] evaluates the
-@scheme[_racket-expression], which must produce a list. It then splices
+@item{A term written @racket[,@_racket-expression] evaluates the
+@racket[racket-expression], which must produce a list. It then splices
 the contents of the list into the expression at that point in the sequence.}
 
-@item{A term written @scheme[(in-hole @#,|tttterm| @#,|tttterm|)]
- is the dual to the @pattern @scheme[in-hole] -- it accepts
- a context and an expression and uses @scheme[plug] to combine
+@item{A term written @racket[(in-hole @|tttterm| @|tttterm|)]
+ is the dual to the @pattern @racket[in-hole] -- it accepts
+ a context and an expression and uses @racket[plug] to combine
 them.}
 
-@item{A term written @scheme[hole] produces a hole.}
+@item{A term written @racket[hole] produces a hole.}
 
 @item{A term written as a literal boolean or a string
 produces the boolean or the string.}
@@ -448,15 +448,15 @@ produces the boolean or the string.}
 
 This form is used for construction of a term.
 
-It behaves similarly to @scheme[quasiquote], except for a few special
+It behaves similarly to @racket[quasiquote], except for a few special
 forms that are recognized (listed below) and that names bound by
-@scheme[term-let] are implicitly substituted with the values that
+@racket[term-let] are implicitly substituted with the values that
 those names were bound to, expanding ellipses as in-place sublists (in
 the same manner as syntax-case patterns).
 
 For example,
 
-@schemeblock[
+@racketblock[
 (term-let ([body '(+ x 1)]
            [(expr ...) '(+ - (values * /))]
            [((id ...) ...) '((a) (b) (c d))])
@@ -465,7 +465,7 @@ For example,
 
 evaluates to
 
-@schemeblock[
+@racketblock[
 '(let-values ([(a) +] 
               [(b) -] 
               [(c d) (values * /)]) 
@@ -474,17 +474,17 @@ evaluates to
 
 It is an error for a term variable to appear in an
 expression with an ellipsis-depth different from the depth
-with which it was bound by @scheme[term-let]. It is also an error
-for two @scheme[term-let]-bound identifiers bound to lists of
+with which it was bound by @racket[term-let]. It is also an error
+for two @racket[term-let]-bound identifiers bound to lists of
 different lengths to appear together inside an ellipsis.
 }
 
 @defidform[hole]{ Recognized specially within
-  @scheme[term]. A @scheme[hole] form is an
+  @racket[term]. A @racket[hole] form is an
   error elsewhere.  }
 
 @defidform[in-hole]{ Recognized specially within
-  @scheme[reduction-relation]. An @scheme[in-hole] form is an
+  @racket[reduction-relation]. An @racket[in-hole] form is an
   error elsewhere.  }
 
 @defform/subs[(term-let ([tl-pat expr] ...) body)
@@ -499,8 +499,8 @@ syntactic form.
 
 Note that each ellipsis should be the literal symbol consisting of
 three dots (and the ... elsewhere indicates repetition as usual). If
-@scheme[tl-pat] is an identifier, it matches any value and binds it to
-the identifier, for use inside @scheme[term]. If it is a list, it
+@racket[tl-pat] is an identifier, it matches any value and binds it to
+the identifier, for use inside @racket[term]. If it is a list, it
 matches only if the value being matched is a list value and only if
 every subpattern recursively matches the corresponding list
 element. There may be a single ellipsis in any list pattern; if one is
@@ -508,9 +508,9 @@ present, the pattern before the ellipses may match multiple adjacent
 elements in the list value (possibly none).
 
 This form is a lower-level form in Redex, and not really designed to
-be used directly. If you want a @scheme[let]-like form that uses
-Redex's full pattern matching facilities, see @scheme[term-match] and
-@scheme[term-match/single].
+be used directly. If you want a @racket[let]-like form that uses
+Redex's full pattern matching facilities, see @racket[term-match] and
+@racket[term-match/single].
 
 }
 
@@ -523,7 +523,7 @@ where the pattern matches. If one of the patterns matches
 multiple times, the expression is evaluated multiple times,
 once with the bindings in the pattern for each match.
 
-When evaluating a @scheme[term-match] expression, the patterns are
+When evaluating a @racket[term-match] expression, the patterns are
 compiled in an effort to speed up matching. Using the procedural
 result multiple times to avoid compiling the patterns multiple times.
 }
@@ -536,10 +536,10 @@ function returns the expression behind the first sucessful
 match. If that pattern produces multiple matches, an error
 is signaled. If no patterns match, an error is signaled.
 
-Raises an exception recognized by @scheme[exn:fail:redex?] if
+Raises an exception recognized by @racket[exn:fail:redex?] if
 no clauses match or if one of the clauses matches multiple ways.
 
-When evaluating a @scheme[term-match/single] expression, the patterns
+When evaluating a @racket[term-match/single] expression, the patterns
 are compiled in an effort to speed up matching. Using the procedural
 result multiple times to avoid compiling the patterns multiple times.
 }
@@ -549,7 +549,7 @@ result multiple times to avoid compiling the patterns multiple times.
 The first argument to this function is an sexpression to
 plug into. The second argument is the sexpression to replace
 in the first argument. It returns the replaced term. This is
-also used when a @scheme[term] sub-expression contains @tt{in-hole}.
+also used when a @racket[term] sub-expression contains @tt{in-hole}.
 }
 
 @defproc[(variable-not-in [t any/c] [var symbol?]) symbol?]{
@@ -572,16 +572,16 @@ produce variables that are always distinct.
 }
 
 @defproc[(exn:fail:redex? [v any/c]) boolean?]{
-  Returns @scheme[#t] if its argument is a Redex exception record, and
-  @scheme[#f] otherwise.
+  Returns @racket[#t] if its argument is a Redex exception record, and
+  @racket[#f] otherwise.
 }
 
 @section{Languages}
 
 All of the exports in this section are provided both by
-@schememodname[redex/reduction-semantics] (which includes
+@racketmodname[redex/reduction-semantics] (which includes
 all non-GUI portions of Redex) and also exported by
-@schememodname[redex] (which includes all of Redex).
+@racketmodname[redex] (which includes all of Redex).
 
 @defform/subs[(define-language lang-name 
                 (non-terminal-spec @#,ttpattern ...)
@@ -591,7 +591,7 @@ all non-GUI portions of Redex) and also exported by
 This form defines the grammar of a language. It allows the
 definition of recursive @|pattern|s, much like a BNF, but for
 regular-tree grammars. It goes beyond their expressive
-power, however, because repeated @scheme[name] @|pattern|s and
+power, however, because repeated @racket[name] @|pattern|s and
 side-conditions can restrict matches in a context-sensitive
 way.
 
@@ -603,7 +603,7 @@ productions.
 As a simple example of a grammar, this is the lambda
 calculus:
 
-@schemeblock[
+@racketblock[
   (define-language lc-lang
     (e (e e ...)
        x
@@ -614,8 +614,8 @@ calculus:
     (x variable-not-otherwise-mentioned))
 ]
 
-with non-terminals @scheme[e] for the expression language, @scheme[x] for
-variables, @scheme[c] for the evaluation contexts and @scheme[v] for values.
+with non-terminals @racket[e] for the expression language, @racket[x] for
+variables, @racket[c] for the evaluation contexts and @racket[v] for values.
 }
 
 @defform[(define-extended-language language language
@@ -625,7 +625,7 @@ variables, @scheme[c] for the evaluation contexts and @scheme[v] for values.
 This form extends a language with some new, replaced, or
 extended non-terminals. For example, this language:
 
-@schemeblock[
+@racketblock[
   (define-extended-language lc-num-lang
     lc-lang
     (v ....     (code:comment "extend the previous `v' non-terminal")
@@ -634,9 +634,9 @@ extended non-terminals. For example, this language:
     (x (variable-except lambda +)))
 ]
 
-extends lc-lang with two new alternatives for the @scheme[v]
-non-terminal, carries forward the @scheme[e] and @scheme[c]
-non-terminals, and replaces the @scheme[x] non-terminal with a
+extends lc-lang with two new alternatives for the @racket[v]
+non-terminal, carries forward the @racket[e] and @racket[c]
+non-terminals, and replaces the @racket[x] non-terminal with a
 new one (which happens to be equivalent to the one that would 
 have been inherited).
 
@@ -663,16 +663,16 @@ defined by this language.
 
 @defproc[(compiled-lang? [l any/c]) boolean?]{
 
-Returns @scheme[#t] if its argument was produced by @scheme[language], @scheme[#f]
+Returns @racket[#t] if its argument was produced by @racket[language], @racket[#f]
 otherwise.
 }
 
 @section{Reduction Relations}
 
 All of the exports in this section are provided both by
-@schememodname[redex/reduction-semantics] (which includes
+@racketmodname[redex/reduction-semantics] (which includes
 all non-GUI portions of Redex) and also exported by
-@schememodname[redex] (which includes all of Redex).
+@racketmodname[redex] (which includes all of Redex).
 
 @defform/subs[#:literals (--> fresh side-condition where) 
               (reduction-relation language domain main-arrow reduction-case ...)
@@ -690,9 +690,9 @@ all non-GUI portions of Redex) and also exported by
                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 Defines a reduction relation casewise, one case for each of the
-clauses beginning with @scheme[-->] (or with @scheme[arrow], if
-specified). Each of the @scheme[pattern]s
-refers to the @scheme[language], and binds variables in the
+clauses beginning with @racket[-->] (or with @racket[arrow], if
+specified). Each of the @racket[pattern]s
+refers to the @racket[language], and binds variables in the
 @|tttterm|. 
 
 Following the @|pattern| and @|tterm| can be the name of the
@@ -701,44 +701,44 @@ some side-conditions. The name can either be a literal
 name (identifier), or a literal string. 
 
 The fresh variables clause generates variables that do not
-occur in the term being matched. If the @scheme[fresh-clause] is a
+occur in the term being matched. If the @racket[fresh-clause] is a
 variable, that variable is used both as a binding in the
 rhs-exp and as the prefix for the freshly generated
 variable. (The variable does not have to be
 a non-terminal in the language of the reduction relation.)
 
-The second case of a @scheme[fresh-clause] is used when you want to
+The second case of a @racket[fresh-clause] is used when you want to
 generate a sequence of variables. In that case, the ellipses
 are literal ellipses; that is, you must actually write
-ellipses in your rule. The variable @scheme[var1] is like the
-variable in first case of a @scheme[fresh-clause], namely it is
+ellipses in your rule. The variable @racket[var1] is like the
+variable in first case of a @racket[fresh-clause], namely it is
 used to determine the prefix of the generated variables and
 it is bound in the right-hand side of the reduction rule,
 but unlike the single-variable fresh clause, it is bound to
-a sequence of variables. The variable @scheme[var2] is used to
-determine the number of variables generated and @scheme[var2] must be
+a sequence of variables. The variable @racket[var2] is used to
+determine the number of variables generated and @racket[var2] must be
 bound by the left-hand side of the rule.
 
-All side-conditions provided with @scheme[side-condition] and
-@scheme[hidden-side-condition] are collected with @scheme[and] and
+All side-conditions provided with @racket[side-condition] and
+@racket[hidden-side-condition] are collected with @racket[and] and
 used as guards on the case being matched. The argument to each
 side-condition should be a Racket expression, and the pattern
 variables in the @|ttpattern| are bound in that expression. A
-@scheme[side-condition/hidden] form is the same as
-@scheme[side-condition], except that the side condition is not
-rendered when typesetting via @schememodname[redex/pict].
+@racket[side-condition/hidden] form is the same as
+@racket[side-condition], except that the side condition is not
+rendered when typesetting via @racketmodname[redex/pict].
 
-Each @scheme[where] clause acts as a side condition requiring a
+Each @racket[where] clause acts as a side condition requiring a
 successful pattern match, and it can bind pattern variables in the
-side-conditions (and @scheme[where] clauses) that follow and in the
+side-conditions (and @racket[where] clauses) that follow and in the
 metafunction result. The bindings are the same as bindings in a
-@scheme[term-let] expression. A @scheme[where/hidden] clause is the
-same as a @scheme[where] clause, but the clause is not
-rendered when typesetting via @schememodname[redex/pict].
+@racket[term-let] expression. A @racket[where/hidden] clause is the
+same as a @racket[where] clause, but the clause is not
+rendered when typesetting via @racketmodname[redex/pict].
 
 As an example, this
 
-@schemeblock[
+@racketblock[
   (reduction-relation
    lc-lang
    (--> (in-hole c_1 ((lambda (variable_i ...) e_body) v_i ...))
@@ -762,21 +762,21 @@ defines a reduction relation for the lambda-calculus above.
 
 Defines a reduction relation with shortcuts. As above, the
 first section defines clauses of the reduction relation, but
-instead of using @scheme[-->], those clauses can use any identifier
+instead of using @racket[-->], those clauses can use any identifier
 for an arrow, as long as the identifier is bound after the
-@scheme[with] clause. 
+@racket[with] clause. 
 
-Each of the clauses after the @scheme[with] define new relations
-in terms of other definitions after the @scheme[with] clause or in
-terms of the main @scheme[-->] relation.
+Each of the clauses after the @racket[with] define new relations
+in terms of other definitions after the @racket[with] clause or in
+terms of the main @racket[-->] relation.
 
-A @scheme[fresh] variable is always fresh with respect to the entire
+A @racket[fresh] variable is always fresh with respect to the entire
 term, not just with respect to the part that matches the
 right-hand-side of the newly defined arrow.
 
 As an example, this
 
-@schemeblock[
+@racketblock[
   (reduction-relation
    lc-num-lang
    (==> ((lambda (variable_i ...) e_body) v_i ...)
@@ -800,9 +800,9 @@ where the @tt{==>} relation is defined by reducing in the context
 @defform[(extend-reduction-relation reduction-relation language more ...)]{
 
 This form extends the reduction relation in its first
-argument with the rules specified in @scheme[more]. They should
-have the same shape as the rules (including the @scheme[with]
-clause) in an ordinary @scheme[reduction-relation].
+argument with the rules specified in @racket[more]. They should
+have the same shape as the rules (including the @racket[with]
+clause) in an ordinary @racket[reduction-relation].
 
 If the original reduction-relation has a rule with the same
 name as one of the rules specified in the extension, the old
@@ -838,13 +838,13 @@ closure of the reduction for the specified non-terminal.
 
 This accepts a reduction, a language, a pattern representing
 a context (ie, that can be used as the first argument to
-@scheme[in-hole]; often just a non-terminal) in the language and
+@racket[in-hole]; often just a non-terminal) in the language and
 returns the closure of the reduction in that context.
 }
 
 @defproc[(reduction-relation? [v any/c]) boolean?]{
-  Returns @scheme[#t] if its argument is a reduction-relation, and
-  @scheme[#f] otherwise.
+  Returns @racket[#t] if its argument is a reduction-relation, and
+  @racket[#f] otherwise.
 }
 
 @defproc[(apply-reduction-relation [r reduction-relation?] [t any/c]) (listof any/c)]{
@@ -858,7 +858,7 @@ list of terms that the term reduces to.
           [t any/c])
          (listof (list/c (union false/c string?) any/c))]{
 
-Like @scheme[apply-reduction-relation], but the result indicates the
+Like @racket[apply-reduction-relation], but the result indicates the
 names of the reductions that were used.
 }
 
@@ -867,8 +867,8 @@ names of the reductions that were used.
           [t any/c])
          (listof any/c)]{
 
-The function @scheme[apply-reduction-relation*] accepts a reduction relation and a
-term. Starting from @scheme[t], it follows every reduction
+The function @racket[apply-reduction-relation*] accepts a reduction relation and a
+term. Starting from @racket[t], it follows every reduction
 path and returns all of the terms that do not reduce further.
 If there are infinite reduction
 sequences that do not repeat, this function will not
@@ -876,23 +876,23 @@ terminate (it does terminate if the only infinite reduction paths are cyclic).
 }
 
 @defidform[-->]{ Recognized specially within
-  @scheme[reduction-relation]. A @scheme[-->] form is an
+  @racket[reduction-relation]. A @racket[-->] form is an
   error elsewhere.  }
 
 @defidform[fresh]{ Recognized specially within
-  @scheme[reduction-relation]. A @scheme[fresh] form is an
+  @racket[reduction-relation]. A @racket[fresh] form is an
   error elsewhere.  }
 
 @defidform[with]{ Recognized specially within
-  @scheme[reduction-relation]. A @scheme[with] form is an
+  @racket[reduction-relation]. A @racket[with] form is an
   error elsewhere.  }
 
 @section{Metafunctions and Relations}
 
 All of the exports in this section are provided both by
-@schememodname[redex/reduction-semantics] (which includes
+@racketmodname[redex/reduction-semantics] (which includes
 all non-GUI portions of Redex) and also exported by
-@schememodname[redex] (which includes all of Redex).
+@racketmodname[redex] (which includes all of Redex).
 
 @defform/subs[#:literals (: -> where side-condition side-condition/hidden where/hidden)
              (define-metafunction language
@@ -908,31 +908,31 @@ all non-GUI portions of Redex) and also exported by
               [tl-pat identifier (tl-pat-ele ...)]
               [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
-The @scheme[define-metafunction] form builds a function on
+The @racket[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
 expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
 the rhs-expressions is implicitly wrapped in @|tttterm|. 
 
-The @scheme[side-condition], @scheme[hidden-side-condition],
-@scheme[where], and @scheme[where/hidden] clauses behave as
-in the @scheme[reduction-relation] form.
+The @racket[side-condition], @racket[hidden-side-condition],
+@racket[where], and @racket[where/hidden] clauses behave as
+in the @racket[reduction-relation] form.
 
-Raises an exception recognized by @scheme[exn:fail:redex?] if
+Raises an exception recognized by @racket[exn:fail:redex?] if
 no clauses match, if one of the clauses matches multiple ways
 (and that leads to different results for the different matches),
 or if the contract is violated.
 
 Note that metafunctions are assumed to always return the same results
 for the same inputs, and their results are cached, unless
-@scheme[caching-enabled?] is set to @scheme[#f]. Accordingly, if a
+@racket[caching-enabled?] is set to @racket[#f]. Accordingly, if a
 metafunction is called with the same inputs twice, then its body is
 only evaluated a single time.
 
 As an example, these metafunctions finds the free variables in
 an expression in the lc-lang above:
 
-@schemeblock[
+@racketblock[
     (define-metafunction lc-lang
       free-vars : e -> (x ...)
       [(free-vars (e_1 e_2 ...))
@@ -952,7 +952,7 @@ the free variables of the body, minus the bound parameters.
 
 Here are the helper metafunctions used above.
 
-@schemeblock[
+@racketblock[
     (define-metafunction lc-lang
       ∪ : (x ...) ... -> (x ...)
       [(∪ (x_1 ...) (x_2 ...) (x_3 ...) ...)
@@ -971,9 +971,9 @@ Here are the helper metafunctions used above.
        (- (x_1 ...) (x_3 ...))])
 ]
 
-Note the side-condition in the second case of @scheme[-]. It
+Note the side-condition in the second case of @racket[-]. It
 ensures that there is a unique match for that case. Without
-it, @scheme[(term (- (x x) x))] would lead to an ambiguous
+it, @racket[(term (- (x x) x))] would lead to an ambiguous
 match.
 
 }
@@ -983,18 +983,18 @@ match.
            [(g @#,ttpattern ...) @#,tttterm extras ...] 
            ...)]{
 
-Defines a metafunction @scheme[g] as an extension of an existing
-metafunction @scheme[f]. The metafunction @scheme[g] behaves as 
-if @scheme[f]'s clauses were appended to its definition (with 
-occurrences of @scheme[f] changed to @scheme[g] in the inherited
+Defines a metafunction @racket[g] as an extension of an existing
+metafunction @racket[f]. The metafunction @racket[g] behaves as 
+if @racket[f]'s clauses were appended to its definition (with 
+occurrences of @racket[f] changed to @racket[g] in the inherited
 clauses).
 }
 
-For example, @scheme[define-metafunction/extension] may be used to extend
+For example, @racket[define-metafunction/extension] may be used to extend
 the free-vars function above to the forms introduced by the language
 lc-num-lang.
                 
-@schemeblock[
+@racketblock[
 (define-metafunction/extension free-vars lc-num-lang
   free-vars-num : e -> (x ...)
   [(free-vars-num number) 
@@ -1005,9 +1005,9 @@ lc-num-lang.
 ]
                 
 @defform[(in-domain? (metafunction-name @#,tttterm ...))]{
-Returns @scheme[#t] if the inputs specified to @scheme[metafunction-name] are
-legtimate inputs according to @scheme[metafunction-name]'s contract,
-and @scheme[#f] otherwise.
+Returns @racket[#t] if the inputs specified to @racket[metafunction-name] are
+legtimate inputs according to @racket[metafunction-name]'s contract,
+and @racket[#f] otherwise.
 }
 
 @defform/subs[#:literals ()
@@ -1016,7 +1016,7 @@ and @scheme[#f] otherwise.
                ([tl-pat identifier (tl-pat-ele ...)]
                 [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
-The @scheme[define-relation] form builds a relation on
+The @racket[define-relation] form builds a relation on
 sexpressions according to the pattern and right-hand-side
 expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
@@ -1029,13 +1029,13 @@ the values of others).
 
 Unlike metafunctions, relations check all possible ways to match each
 case, looking for a true result and if none of the clauses match, then
-the result is @scheme[#f]. If there are multiple expressions on
+the result is @racket[#f]. If there are multiple expressions on
 the right-hand side of a relation, then all of them must be satisfied
 in order for that clause of the relation to be satisfied.
 
 Note that relations are assumed to always return the same results for
 the same inputs, and their results are cached, unless
-@scheme[caching-enable?] is set to @scheme[#f]. Accordingly, if a
+@racket[caching-enable?] is set to @racket[#f]. Accordingly, if a
 relation is called with the same inputs twice, then its right-hand
 sides are evaluated only once.
 }
@@ -1043,23 +1043,23 @@ sides are evaluated only once.
 @defparam[current-traced-metafunctions traced-metafunctions (or/c 'all (listof symbol?))]{
 
 Controls which metafunctions are currently being traced. If it is
-@scheme['all], all of them are. Otherwise, the elements of the list
+@racket['all], all of them are. Otherwise, the elements of the list
 name the metafunctions to trace. 
 
-Defaults to @scheme['()].
+Defaults to @racket['()].
 
 }
 
 @section{Testing}
 
 All of the exports in this section are provided both by
-@schememodname[redex/reduction-semantics] (which includes
+@racketmodname[redex/reduction-semantics] (which includes
 all non-GUI portions of Redex) and also exported by
-@schememodname[redex] (which includes all of Redex).
+@racketmodname[redex] (which includes all of Redex).
 
 @defform[(test-equal e1 e2)]{
 
-Tests to see if @scheme[e1] is equal to @scheme[e2].
+Tests to see if @racket[e1] is equal to @racket[e2].
 }
 
 @defform/subs[(test-->> rel-expr option ... e1-expr e2-expr ...)
@@ -1070,10 +1070,10 @@ Tests to see if @scheme[e1] is equal to @scheme[e2].
                            [e1-expr any/c]
                            [e2-expr any/c])]{
 
-Tests to see if the term @scheme[e1-expr],
-reduces to the terms @scheme[e2-expr] under @scheme[rel-expr],
-using @scheme[pred-expr] to determine equivalence. This test uses
-@scheme[apply-reduction-relation*], so it does not terminate
+Tests to see if the term @racket[e1-expr],
+reduces to the terms @racket[e2-expr] under @racket[rel-expr],
+using @racket[pred-expr] to determine equivalence. This test uses
+@racket[apply-reduction-relation*], so it does not terminate
 when the resulting reduction graph is infinite.
 }
 
@@ -1084,9 +1084,9 @@ when the resulting reduction graph is infinite.
                            [e1-expr any/c]
                            [e2-expr any/c])]{
 
-Tests to see if the term @scheme[e1-expr],
-reduces to the terms @scheme[e2-expr] in a single @scheme[rel-expr]
-step, using @scheme[pred-expr] to determine equivalence.
+Tests to see if the term @racket[e1-expr],
+reduces to the terms @racket[e2-expr] in a single @racket[rel-expr]
+step, using @racket[pred-expr] to determine equivalence.
 }
                                             
 @examples[
@@ -1110,7 +1110,7 @@ step, using @scheme[pred-expr] to determine equivalence.
        (test-results)]
 
 @defform[(test-predicate p? e)]{
-Tests to see if the value of @scheme[e] matches the predicate @scheme[p?].
+Tests to see if the value of @racket[e] matches the predicate @racket[p?].
 }
 
 @defproc[(test-results) void?]{
@@ -1122,25 +1122,25 @@ prints the test results for the next round of tests.
 @defform/subs[(make-coverage subject)
               ([subject (code:line metafunction)
                         (code:line relation-expr)])]{
-Constructs a structure (recognized by @scheme[coverage?])
+Constructs a structure (recognized by @racket[coverage?])
 to contain per-case test coverage of the supplied metafunction
-or reduction relation. Use with @scheme[relation-coverage] and 
-@scheme[covered-cases].
+or reduction relation. Use with @racket[relation-coverage] and 
+@racket[covered-cases].
 }
 
 @defproc[(coverage? [v any/c]) boolean?]{
-Returns @scheme[#t] for a value produced by @scheme[make-coverage]
-and @scheme[#f] for any other.}
+Returns @racket[#t] for a value produced by @racket[make-coverage]
+and @racket[#f] for any other.}
 
 @defparam[relation-coverage tracked (listof coverage?)]{
-Redex populates the coverage records in @scheme[tracked] (default @scheme[null]),
+Redex populates the coverage records in @racket[tracked] (default @racket[null]),
 counting the times that tests exercise each case of the associated metafunction
 and relations.}
 
 @defproc[(covered-cases 
           [c coverage?])
          (listof (cons/c string? natural-number/c))]{
-Extracts the coverage information recorded in @scheme[c], producing
+Extracts the coverage information recorded in @racket[c], producing
 an association list mapping names (or source locations, in the case of
 metafunctions or unnamed reduction-relation cases) to application counts.}
 
@@ -1177,32 +1177,32 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
                            [attempt-num-expr natural-number/c]
                            [retries-expr natural-number/c])]{
                                                              
-In its first form, @scheme[generate-term] produces a random term matching
+In its first form, @racket[generate-term] produces a random term matching
 the given pattern (according to the given language). In its second, 
-@scheme[generate-term] produces a procedure for constructing the same.
-This procedure expects @scheme[size-expr] (below) as its sole positional
+@racket[generate-term] produces a procedure for constructing the same.
+This procedure expects @racket[size-expr] (below) as its sole positional
 argument and allows the same optional keyword arguments as the first form.
 The second form may be more efficient when generating many terms.
 
-The argument @scheme[size-expr] bounds the height of the generated term
+The argument @racket[size-expr] bounds the height of the generated term
 (measured as the height of its parse tree). 
          
-The optional keyword argument @scheme[attempt-num-expr] 
-(default @scheme[1]) provides coarse grained control over the random
-decisions made during generation; increasing @scheme[attempt-num-expr]
+The optional keyword argument @racket[attempt-num-expr] 
+(default @racket[1]) provides coarse grained control over the random
+decisions made during generation; increasing @racket[attempt-num-expr]
 tends to increase the complexity of the result. For example, the expected
-length of @pattech[pattern-sequence]s increases with @scheme[attempt-num-expr].
+length of @pattech[pattern-sequence]s increases with @racket[attempt-num-expr].
 
 The random generation process does not actively consider the constraints
 imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s; instead, 
 it uses a ``guess and check'' strategy in which it freely generates 
 candidate terms then tests whether they happen to satisfy the constraints,
-repeating as necessary. The optional keyword argument @scheme[retries-expr]
-(default @scheme[100]) bounds the number of times that 
-@scheme[generate-term] retries the generation of any pattern. If 
-@scheme[generate-term] is unable to produce a satisfying term after 
-@scheme[retries-expr] attempts, it raises an exception recognized by
-@scheme[exn:fail:redex:generation-failure?].}
+repeating as necessary. The optional keyword argument @racket[retries-expr]
+(default @racket[100]) bounds the number of times that 
+@racket[generate-term] retries the generation of any pattern. If 
+@racket[generate-term] is unable to produce a satisfying term after 
+@racket[retries-expr] attempts, it raises an exception recognized by
+@racket[exn:fail:redex:generation-failure?].}
                                                             
 @defform/subs[(redex-check language @#,ttpattern property-expr kw-arg ...)
               ([kw-arg (code:line #:attempts attempts-expr)
@@ -1215,33 +1215,33 @@ repeating as necessary. The optional keyword argument @scheme[retries-expr]
                            [relation-expr reduction-relation?]
                            [retries-expr natural-number/c]
                            [print?-expr any/c])]{
-Searches for a counterexample to @scheme[property-expr], interpreted
+Searches for a counterexample to @racket[property-expr], interpreted
 as a predicate universally quantified over the pattern variables
-bound by @scheme[pattern]. @scheme[redex-check] constructs and tests 
+bound by @racket[pattern]. @racket[redex-check] constructs and tests 
 a candidate counterexample by choosing a random term @math{t} that 
-matches @scheme[pattern] then evaluating @scheme[property-expr]
-using the @scheme[match-bindings] produced by @scheme[match]ing
-@math{t} against @scheme[pattern].
+matches @racket[pattern] then evaluating @racket[property-expr]
+using the @racket[match-bindings] produced by @racket[match]ing
+@math{t} against @racket[pattern].
 
-@scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[1000])
+@racket[redex-check] generates at most @racket[attempts-expr] (default @racket[1000])
 random terms in its search. The size and complexity of these terms increase with 
 each failed attempt. 
 
-When @scheme[print?-expr] produces any non-@scheme[#f] value (the default), 
-@scheme[redex-check] prints the test outcome on @scheme[current-output-port].
-When @scheme[print?-expr] produces @scheme[#f], @scheme[redex-check] prints
+When @racket[print?-expr] produces any non-@racket[#f] value (the default), 
+@racket[redex-check] prints the test outcome on @racket[current-output-port].
+When @racket[print?-expr] produces @racket[#f], @racket[redex-check] prints
 nothing, instead 
 @itemlist[
-  @item{returning a @scheme[counterexample] structure when the test reveals a counterexample,}
-  @item{returning @scheme[#t] when all tests pass, or}
-  @item{raising a @scheme[exn:fail:redex:test] when checking the property raises an exception.}
+  @item{returning a @racket[counterexample] structure when the test reveals a counterexample,}
+  @item{returning @racket[#t] when all tests pass, or}
+  @item{raising a @racket[exn:fail:redex:test] when checking the property raises an exception.}
 ]
 
-When passed a metafunction or reduction relation via the optional @scheme[#:source]
-argument, @scheme[redex-check] distributes its attempts across the left-hand sides
-of that metafunction/relation by using those patterns, rather than @scheme[pattern],
+When passed a metafunction or reduction relation via the optional @racket[#:source]
+argument, @racket[redex-check] distributes its attempts across the left-hand sides
+of that metafunction/relation by using those patterns, rather than @racket[pattern],
 as the basis of its generation. It is an error if any left-hand side generates a
-term that does not match @scheme[pattern].}
+term that does not match @racket[pattern].}
 
 @examples[
 #:eval redex-eval
@@ -1283,14 +1283,14 @@ term that does not match @scheme[pattern].}
           #:source R))]
 
 @defstruct[counterexample ([term any/c]) #:inspector #f]{
-Produced by @scheme[redex-check], @scheme[check-reduction-relation], and 
-@scheme[check-metafunction] when testing falsifies a property.}
+Produced by @racket[redex-check], @racket[check-reduction-relation], and 
+@racket[check-metafunction] when testing falsifies a property.}
 
 @defstruct[(exn:fail:redex:test exn:fail:redex) ([source exn:fail?] [term any/c])]{
-Raised by @scheme[redex-check], @scheme[check-reduction-relation], and 
-@scheme[check-metafunction] when testing a property raises an exception.
-The @scheme[exn:fail:redex:test-source] component contains the exception raised by the property,
-and the @scheme[exn:fail:redex:test-term] component contains the term that induced the exception.}
+Raised by @racket[redex-check], @racket[check-reduction-relation], and 
+@racket[check-metafunction] when testing a property raises an exception.
+The @racket[exn:fail:redex:test-source] component contains the exception raised by the property,
+and the @racket[exn:fail:redex:test-term] component contains the term that induced the exception.}
 
 @defform/subs[(check-reduction-relation relation property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
@@ -1298,16 +1298,16 @@ and the @scheme[exn:fail:redex:test-term] component contains the term that induc
               #:contracts ([property (-> any/c any/c)]
                            [attempts-expr natural-number/c]
                            [retries-expr natural-number/c])]{
-Tests @scheme[relation] as follows: for each case of @scheme[relation],
-@scheme[check-reduction-relation] generates @scheme[attempts] random
-terms that match that case's left-hand side and applies @scheme[property] 
+Tests @racket[relation] as follows: for each case of @racket[relation],
+@racket[check-reduction-relation] generates @racket[attempts] random
+terms that match that case's left-hand side and applies @racket[property] 
 to each random term.
 
 This form provides a more convenient notation for
-@schemeblock[(redex-check L any (property (term any)) 
+@racketblock[(redex-check L any (property (term any)) 
                           #:attempts (* n attempts)
                           #:source relation)]
-when @scheme[relation] is a relation on @scheme[L] with @scheme[n] rules.}
+when @racket[relation] is a relation on @racket[L] with @racket[n] rules.}
 
 @defform/subs[(check-metafunction metafunction property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
@@ -1315,8 +1315,8 @@ when @scheme[relation] is a relation on @scheme[L] with @scheme[n] rules.}
               #:contracts ([property (-> (listof any/c) any/c)]
                            [attempts-expr natural-number/c]
                            [retries-expr natural-number/c])]{
-Like @scheme[check-reduction-relation] but for metafunctions. 
-@scheme[check-metafunction] calls @scheme[property] with lists
+Like @racket[check-reduction-relation] but for metafunctions. 
+@racket[check-metafunction] calls @racket[property] with lists
 containing arguments to the metafunction.}
 
 @examples[
@@ -1335,8 +1335,8 @@ containing arguments to the metafunction.}
        (check-metafunction Σ (λ (args) (printf "~s\n" args)) #:attempts 2)]
                                                             
 @defproc[(exn:fail:redex:generation-failure? [v any/c]) boolean?]{
-  Recognizes the exceptions raised by @scheme[generate-term], 
-  @scheme[redex-check], etc. when those forms are unable to produce
+  Recognizes the exceptions raised by @racket[generate-term], 
+  @racket[redex-check], etc. when those forms are unable to produce
   a term matching some pattern.
 }
                                                             
@@ -1344,12 +1344,12 @@ containing arguments to the metafunction.}
 
 It is easy to write grammars and reduction rules that are
 subtly wrong and typically such mistakes result in examples
-that just get stuck when viewed in a @scheme[traces] window.
+that just get stuck when viewed in a @racket[traces] window.
 
 The best way to debug such programs is to find an expression
 that looks like it should reduce but doesn't and try to find
 out what pattern is failing to match. To do so, use the
-@scheme[redex-match] special form, described above.
+@racket[redex-match] special form, described above.
 
 In particular, first ceck to see if the term matches the
 main non-terminal for your system (typically the expression
@@ -1384,14 +1384,15 @@ exploring reduction sequences.
                        default-pretty-printer]
                  [#:colors colors 
                   (listof 
-                   (cons/c string 
+                   (cons/c string? 
                            (and/c (listof (or/c string? (is-a?/c color%)))
-                                  (lambda (x) (member (length x) '(2 3 4 6))))))]
-
-                 [#:scheme-colors? scheme-colors? boolean? #t]
+                                  (lambda (x) (<= 0 (length x) 6)))))
+                  '()]
+                 [#:racket-colors? racket-colors? boolean? #t]
+                 [#:scheme-colors? scheme-colors? boolean? racket-colors?]
                  [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
-                 [#:x-spacing number? 15]
-                 [#:y-spacing number? 15]
+                 [#:x-spacing x-spacing number? 15]
+                 [#:y-spacing y-spacing number? 15]
                  [#:layout layout (-> (listof term-node?) void) void]
                  [#:edge-labels? edge-label-font boolean? #t]
                  [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
@@ -1399,19 +1400,19 @@ exploring reduction sequences.
          void?]{
 
 This function opens a new window and inserts each expression
-in expr (if @scheme[multiple?] is #t -- if
-@scheme[multiple?] is #f, then expr is treated as a single
+in expr (if @racket[multiple?] is #t -- if
+@racket[multiple?] is #f, then expr is treated as a single
 expression). Then, it reduces the terms until at least
-@scheme[reduction-steps-cutoff] (see below) different terms are
+@racket[reduction-steps-cutoff] (see below) different terms are
 found, or no more reductions can occur. It inserts each new
 term into the gui. Clicking the @onscreen{reduce} button reduces
 until reduction-steps-cutoff more terms are found.
 
-The @scheme[pred] function indicates if a term has a particular
-property. If it returns @scheme[#f], the term is displayed with a
-pink background. If it returns a string or a @scheme[color%] object,
+The @racket[pred] function indicates if a term has a particular
+property. If it returns @racket[#f], the term is displayed with a
+pink background. If it returns a string or a @racket[color%] object,
 the term is displayed with a background of that color (using
-@scheme[the-color-database] to map the string to a color). If it
+@racket[the-color-database] to map the string to a color). If it
 returns any other value, the term is displayed normally. If
 the pred function accepts two arguments, a term-node
 corresponding to the term is passed to the predicate. This
@@ -1419,27 +1420,27 @@ lets the predicate function explore the (names of the)
 reductions that led to this term, using term-node-children,
 term-node-parents, and term-node-labels.
 
-The @scheme[pred] function may be called more than once per node. In
+The @racket[pred] function may be called more than once per node. In
 particular, it is called each time an edge is added to a
 node. The latest value returned determines the color.
 
-The @scheme[pp] function is used to specially print expressions. It
+The @racket[pp] function is used to specially print expressions. It
 must either accept one or four arguments. If it accepts one
 argument, it will be passed each term and is expected to
 return a string to display the term.
 
-If the @scheme[pp] function takes four arguments, it should render
+If the @racket[pp] function takes four arguments, it should render
 its first argument into the port (its second argument) with
 width at most given by the number (its third argument). The
 final argument is the text where the port is connected --
 characters written to the port go to the end of the editor.
 
-The @scheme[colors] argument, if provided, specifies a list of
+The @racket[colors] argument, if provided, specifies a list of
 reduction-name/color-list pairs. The traces gui will color arrows
 drawn because of the given reduction name with the given color instead
 of using the default color.
 
-The @scheme[cdr] of each of the elements of @scheme[colors] is a list
+The @racket[cdr] of each of the elements of @racket[colors] is a list
 of colors, organized in pairs. The first two colors cover the colors
 of the line and the border around the arrow head, the first when the
 mouse is over a graph node that is connected to that arrow, and the
@@ -1449,43 +1450,42 @@ the color that fills the arrow head.  If fewer than six colors are
 specified, the colors specified colors are used and then defaults are
 filled in for the remaining colors.
 
-The @scheme[scheme-colors?] argument, if @scheme[#t] causes
-@scheme[traces] to color the contents of each of the windows according
-to DrRacket's Racket mode color scheme. If it is @scheme[#f],
-@scheme[traces] just uses black for the color scheme. 
-In addition, Racket-mode parenthesis highlighting is
-enabled when @scheme[scheme-colors?]
-is @scheme[#t] and not when it is @scheme[#f].
+The @racket[racket-colors?] argument (along with @racket[scheme-colors?],
+retained for backward compatibility), controls the coloring of the
+coloring of each window. When @racket[racket-colors?] is @racket[#t] (and
+@racket[scheme-colors?] is @racket[#t] too), @racket[traces] colors the 
+contents according to DrRacket's Racket-mode color scheme; otherwise,
+@racket[traces] uses a black color scheme.
 
-The @scheme[term-filter] function is called each time a new node is
+The @racket[term-filter] function is called each time a new node is
 about to be inserted into the graph. If the filter returns false, the
 node is not inserted into the graph.
 
-The @scheme[x-spacing] and @scheme[y-spacing] control the amount of
+The @racket[x-spacing] and @racket[y-spacing] control the amount of
 space put between the snips in the default layout.
 
-The @scheme[layout] argument is called (with all of the terms) when
+The @racket[layout] argument is called (with all of the terms) when
 new terms is inserted into the window. In general, it is called when
 after new terms are inserted in response to the user clicking on the
 reduce button, and after the initial set of terms is inserted.
-See also @scheme[term-node-set-position!].
+See also @racket[term-node-set-position!].
 
-If @scheme[edge-labels?] is @scheme[#t] (the default), then edge labels
+If @racket[edge-labels?] is @racket[#t] (the default), then edge labels
 are drawn; otherwise not.
 
-The @scheme[edge-label-font] argument is used as the font on the edge
-labels. If @scheme[#f] is suppled, the @scheme[dc<%>] object's default
+The @racket[edge-label-font] argument is used as the font on the edge
+labels. If @racket[#f] is suppled, the @racket[dc<%>] object's default
 font is used.
 
-The traces library an instance of the @schememodname[mrlib/graph]
-library's @scheme[graph-pasteboard<%>] interface to layout
+The traces library an instance of the @racketmodname[mrlib/graph]
+library's @racket[graph-pasteboard<%>] interface to layout
 the graphs.  Sometimes, overriding one of its methods can
 help give finer-grained control over the layout, so the
-@scheme[graph-pasteboard-mixin] is applied to the class
+@racket[graph-pasteboard-mixin] is applied to the class
 before it is instantiated. Also note that all of the snips
 inserted into the editor by this library have a
 @tt{get-term-node} method which returns the snip's
-@scheme[term-node].
+@racket[term-node].
 
 }
 
@@ -1501,23 +1501,28 @@ inserted into the editor by this library have a
                           (or/c (any -> string)
                                 (any output-port number (is-a?/c text%) -> void))
                           default-pretty-printer]
-                    [#:colors colors (listof (list string string)) '()]
+                    [#:colors colors 
+                              (listof 
+                               (cons/c string?
+                                       (and/c (listof (or/c string? (is-a?/c color%)))
+                                              (lambda (x) (<= 0 (length x) 6)))))
+                              '()]
                     [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
                     [#:layout layout (-> (listof term-node?) void) void]
-                    [#:x-spacing number? 15]
-                    [#:y-spacing number? 15]
+                    [#:x-spacing x-spacing number? 15]
+                    [#:y-spacing y-spacing number? 15]
                     [#:edge-labels? edge-label-font boolean? #t]
                     [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
                     [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values]
                     [#:post-process post-process (-> (is-a?/c graph-pasteboard<%>) any/c)])
          void?]{
 
-This function  behaves just like the function @scheme[traces], but
+This function  behaves just like the function @racket[traces], but
 instead of opening a window to show the reduction graph, it just saves
-the reduction graph to the specified @scheme[file].
+the reduction graph to the specified @racket[file].
 
-All of the arguments behave like the arguments to @scheme[traces],
-with the exception of the @scheme[post-process] argument. It is called
+All of the arguments behave like the arguments to @racket[traces],
+with the exception of the @racket[post-process] argument. It is called
 just before the PostScript is created with the graph pasteboard.
 }
 
@@ -1532,8 +1537,8 @@ This function opens a stepper window for exploring the
 behavior of its third argument in the reduction system
 described by its first two arguments. 
 
-The @scheme[pp] argument is the same as to the
-@scheme[traces] functions (above).
+The @racket[pp] argument is the same as to the
+@racket[traces] functions (above).
 }
 
 @defproc[(stepper/seed [reductions reduction-relation?]
@@ -1543,8 +1548,8 @@ The @scheme[pp] argument is the same as to the
                            default-pretty-printer])
          void?]{
 
-Like @scheme[stepper], this function opens a stepper window, but it
-seeds it with the reduction-sequence supplied in @scheme[seed].
+Like @racket[stepper], this function opens a stepper window, but it
+seeds it with the reduction-sequence supplied in @racket[seed].
 }
 
 @defproc[(term-node-children [tn term-node?]) (listof term-node?)]{
@@ -1570,29 +1575,29 @@ graph.
 
 Returns a list of the names of the reductions that led to
 the given node, in the same order as the result of
-term-node-parents. If the list contains @scheme[#f], that means that
+term-node-parents. If the list contains @racket[#f], that means that
 the corresponding step does not have a label.
 }
 
 @defproc[(term-node-set-color! [tn term-node?] [color (or/c string? (is-a?/c color%) false/c)]) void?]{
 
 Changes the highlighting of the node; if its second argument
-is @scheme[#f], the coloring is removed, otherwise the color is set
-to the specified @scheme[color%] object or the color named by the
-string. The @scheme[color-database<%>] is used to convert the string
-to a @scheme[color%] object.
+is @racket[#f], the coloring is removed, otherwise the color is set
+to the specified @racket[color%] object or the color named by the
+string. The @racket[color-database<%>] is used to convert the string
+to a @racket[color%] object.
 }
 
 @defproc[(term-node-color [tn term-node?]) (or/c string? (is-a?/c color%) false/c)]{
 
-Returns the current highlighting of the node. See also @scheme[term-node-set-color!].
+Returns the current highlighting of the node. See also @racket[term-node-set-color!].
 }
 
 
 @defproc[(term-node-set-red! [tn term-node?] [red? boolean?]) void?]{
 
 Changes the highlighting of the node; if its second argument
-is @scheme[#t], the term is colored pink, if it is @scheme[#f], the term is
+is @racket[#t], the term is colored pink, if it is @racket[#f], the term is
 not colored specially.
 
 }
@@ -1604,20 +1609,20 @@ Returns the expression in this node.
 
 @defproc[(term-node-set-position! [tn term-node?] [x (and/c real? positive?)] [y (and/c real? positive?)]) void?]{
 
-Sets the position of @scheme[tn] in the graph to (@scheme[x],@scheme[y]). 
+Sets the position of @racket[tn] in the graph to (@racket[x],@racket[y]). 
 }
 
 @defproc[(term-node-x [tn term-node?]) real]{
-Returns the @tt{x} coordinate of @scheme[tn] in the window.
+Returns the @tt{x} coordinate of @racket[tn] in the window.
 }
 @defproc[(term-node-y [tn term-node?]) real]{
-Returns the @tt{y} coordinate of @scheme[tn] in the window.
+Returns the @tt{y} coordinate of @racket[tn] in the window.
 }
 @defproc[(term-node-width [tn term-node?]) real]{
-Returns the width of @scheme[tn] in the window.
+Returns the width of @racket[tn] in the window.
 }
 @defproc[(term-node-height [tn term-node?]) real?]{
-Returns the height of @scheme[tn] in the window.
+Returns the height of @racket[tn] in the window.
 }
 
 @defproc[(term-node? [v any/c]) boolean?]{
@@ -1627,7 +1632,7 @@ Recognizes term nodes.
 
 @defparam[reduction-steps-cutoff cutoff number?]{
 
-A parameter that controls how many steps the @scheme[traces] function
+A parameter that controls how many steps the @racket[traces] function
 takes before stopping.
 }
 
@@ -1668,15 +1673,15 @@ color used to draw the label on the edge.
 
 @defproc[(default-pretty-printer [v any] [port output-port] [width number] [text (is-a?/c text%)]) void?]{
 
-This is the default value of @scheme[pp] used by @scheme[traces] and
-@scheme[stepper] and it uses
-@scheme[pretty-print].
+This is the default value of @racket[pp] used by @racket[traces] and
+@racket[stepper] and it uses
+@racket[pretty-print].
 
-It sets the @scheme[pretty-print-columns] parameter to
-@scheme[width], and it sets @scheme[pretty-print-size-hook]
-and @scheme[pretty-print-print-hook] to print holes and the
-symbol @scheme['hole] to match the way they are input in a
-@scheme[term] expression.
+It sets the @racket[pretty-print-columns] parameter to
+@racket[width], and it sets @racket[pretty-print-size-hook]
+and @racket[pretty-print-print-hook] to print holes and the
+symbol @racket['hole] to match the way they are input in a
+@racket[term] expression.
 
 }
 
@@ -1684,7 +1689,7 @@ symbol @scheme['hole] to match the way they are input in a
 
 @defmodule[redex/pict]
 
-The @schememodname[redex/pict] library provides functions
+The @racketmodname[redex/pict] library provides functions
 designed to automatically typeset grammars, reduction
 relations, and metafunction written with plt redex.
 
@@ -1699,33 +1704,33 @@ Slideshow (see
 This section documents two classes of operations, one for
 direct use of creating postscript figures for use in papers
 and for use in DrRacket to easily adjust the typesetting:
-@scheme[render-term],
-@scheme[render-language],
-@scheme[render-reduction-relation], 
-@scheme[render-metafunctions], and
-@scheme[render-lw], 
+@racket[render-term],
+@racket[render-language],
+@racket[render-reduction-relation], 
+@racket[render-metafunctions], and
+@racket[render-lw], 
 and one
 for use in combination with other libraries that operate on picts
-@scheme[term->pict],
-@scheme[language->pict],
-@scheme[reduction-relation->pict],
-@scheme[metafunction->pict], and
-@scheme[lw->pict].
+@racket[term->pict],
+@racket[language->pict],
+@racket[reduction-relation->pict],
+@racket[metafunction->pict], and
+@racket[lw->pict].
 The primary difference between these functions is that the former list
-sets @scheme[dc-for-text-size] and the latter does not.
+sets @racket[dc-for-text-size] and the latter does not.
 
 @defproc[(render-term [lang compiled-lang?] [term any/c] [file (or/c #f path-string?)]) 
          (if file void? pict?)]{
-  Renders the term @scheme[term]. If @scheme[file] is @scheme[#f],
-  it produces a pict; if @scheme[file] is a path,  it saves
+  Renders the term @racket[term]. If @racket[file] is @racket[#f],
+  it produces a pict; if @racket[file] is a path,  it saves
   Encapsulated PostScript in the provided filename. See
-  @scheme[render-language] for details on the construction of the pict.
+  @racket[render-language] for details on the construction of the pict.
   }
 
                                
 @defproc[(term->pict [lang compiled-lang?] [term any/c]) pict?]{
- Produces a pict like @scheme[render-term], but without
- adjusting @scheme[dc-for-text-size].
+ Produces a pict like @racket[render-term], but without
+ adjusting @racket[dc-for-text-size].
 
  This function is primarily designed to be used with
  Slideshow or with other tools that combine picts together.
@@ -1738,26 +1743,26 @@ sets @scheme[dc-for-text-size] and the latter does not.
                            (render-language-nts)])
          (if file void? pict?)]{
 
-Renders a language. If @scheme[file] is @scheme[#f],
-it produces a pict; if @scheme[file] is a path, it saves
+Renders a language. If @racket[file] is @racket[#f],
+it produces a pict; if @racket[file] is a path, it saves
 Encapsulated PostScript in the provided filename. See
-@scheme[render-language-nts] for information on the
-@scheme[nts] argument.
+@racket[render-language-nts] for information on the
+@racket[nts] argument.
 
-This function parameterizes @scheme[dc-for-text-size] to install a
-relevant dc: a @scheme[bitmap-dc%] or a @scheme[post-script-dc%], depending on
-whether @scheme[file] is a path.
+This function parameterizes @racket[dc-for-text-size] to install a
+relevant dc: a @racket[bitmap-dc%] or a @racket[post-script-dc%], depending on
+whether @racket[file] is a path.
 
-See @scheme[language->pict] if you are using Slideshow or
-are otherwise setting @scheme[dc-for-text-size].  }
+See @racket[language->pict] if you are using Slideshow or
+are otherwise setting @racket[dc-for-text-size].  }
 
 @defproc[(language->pict (lang compiled-lang?)
                          [#:nts nts (or/c false/c (listof (or/c string? symbol?)))
                           (render-language-nts)])
          pict?]{
 
-Produce a pict like @scheme[render-language], but without
-adjusting @scheme[dc-for-text-size].
+Produce a pict like @racket[render-language], but without
+adjusting @racket[dc-for-text-size].
 
 This function is primarily designed to be used with
 Slideshow or with other tools that combine picts together.
@@ -1768,16 +1773,16 @@ Slideshow or with other tools that combine picts together.
                                     [#:style style reduction-rule-style/c (rule-pict-style)])
          (if file void? pict?)]{
 
-Renders a reduction relation. If @scheme[file] is @scheme[#f],
-it produces a pict; if @scheme[file] is a path, it saves
+Renders a reduction relation. If @racket[file] is @racket[#f],
+it produces a pict; if @racket[file] is a path, it saves
 Encapsulated PostScript in the provided filename. See
-@scheme[rule-pict-style] for information on the
-@scheme[style] argument.
+@racket[rule-pict-style] for information on the
+@racket[style] argument.
 
-This function parameterizes @scheme[dc-for-text-size] to install a
-relevant dc: a @scheme[bitmap-dc%] or a @scheme[post-script-dc%], depending on
-whether @scheme[file] is a path. See also
-@scheme[reduction-relation->pict].
+This function parameterizes @racket[dc-for-text-size] to install a
+relevant dc: a @racket[bitmap-dc%] or a @racket[post-script-dc%], depending on
+whether @racket[file] is a path. See also
+@racket[reduction-relation->pict].
 
 The following forms of arrows can be typeset: 
 
@@ -1790,8 +1795,8 @@ The following forms of arrows can be typeset:
                                    [#:style style reduction-rule-style/c (rule-pict-style)])
          pict?]{
 
-  Produces a pict like @scheme[render-reduction-relation], but 
-  without setting @scheme[dc-for-text-size].
+  Produces a pict like @racket[render-reduction-relation], but 
+  without setting @racket[dc-for-text-size].
 
 This function is
 primarily designed to be used with Slideshow or with
@@ -1806,33 +1811,33 @@ other tools that combine picts together.
 @defform/none[#:literals (render-metafunctions)
               (render-metafunctions metafunction-name ... #:file filename)]{}]]{
 
-If provided with one argument, @scheme[render-metafunction]
+If provided with one argument, @racket[render-metafunction]
 produces a pict that renders properly in the definitions
 window in DrRacket. If given two arguments, it writes
-postscript into the file named by @scheme[filename] (which
+postscript into the file named by @racket[filename] (which
 may be either a string or bytes).
 
-Similarly, @scheme[render-metafunctions] accepts multiple 
+Similarly, @racket[render-metafunctions] accepts multiple 
 metafunctions and renders them together, lining up all of the
 clauses together.
 
-This function sets @scheme[dc-for-text-size]. See also
-@scheme[metafunction->pict] and
-@scheme[metafunctions->pict].
+This function sets @racket[dc-for-text-size]. See also
+@racket[metafunction->pict] and
+@racket[metafunctions->pict].
 }
 
 @defform[(metafunction->pict metafunction-name)]{
-  This produces a pict, but without setting @scheme[dc-for-text-size].
+  This produces a pict, but without setting @racket[dc-for-text-size].
   It is suitable for use in Slideshow or other libraries that combine
   picts.
 }
 
 @defform[(metafunctions->pict metafunction-name ...)]{
-  Like @scheme[metafunction->pict], 
-  this produces a pict, but without setting @scheme[dc-for-text-size]
+  Like @racket[metafunction->pict], 
+  this produces a pict, but without setting @racket[dc-for-text-size]
   and is suitable for use in Slideshow or other libraries that combine
   picts. Like
-  @scheme[render-metafunctions], it accepts multiple metafunctions
+  @racket[render-metafunctions], it accepts multiple metafunctions
   and renders them together.
 }
 
@@ -1840,25 +1845,25 @@ This function sets @scheme[dc-for-text-size]. See also
 
 @defparam[render-language-nts nts (or/c false/c (listof symbol?))]{
   The value of this parameter controls which non-terminals
-  @scheme[render-language] and @scheme[language->pict] render by default. If it
-  is @scheme[#f] (the default), all non-terminals are rendered.
+  @racket[render-language] and @racket[language->pict] render by default. If it
+  is @racket[#f] (the default), all non-terminals are rendered.
   If it is a list of symbols, only the listed symbols are rendered.
 
-  See also @scheme[language-nts].
+  See also @racket[language-nts].
 }
 
 @defparam[extend-language-show-union show? boolean?]{
 
 If this is #t, then a language constructed with
 extend-language is shown as if the language had been
-constructed directly with @scheme[language]. If it is #f, then only
+constructed directly with @racket[language]. If it is #f, then only
 the last extension to the language is shown (with
 four-period ellipses, just like in the concrete syntax).
 
-Defaultly @scheme[#f].
+Defaultly @racket[#f].
 
 Note that the #t variant can look a little bit strange if
-@scheme[....] are used and the original version of the language has
+@racket[....] are used and the original version of the language has
 multi-line right-hand sides.
 }
 
@@ -1870,15 +1875,15 @@ multi-line right-hand sides.
 @defparam[rule-pict-style style reduction-rule-style/c]{
 
 This parameter controls the style used by default for the reduction
-relation. It can be @scheme['horizontal], where the left and
+relation. It can be @racket['horizontal], where the left and
 right-hand sides of the reduction rule are beside each other or
-@scheme['vertical], where the left and right-hand sides of the
-reduction rule are above each other.  The @scheme['compact-vertical]
+@racket['vertical], where the left and right-hand sides of the
+reduction rule are above each other.  The @racket['compact-vertical]
 style moves the reduction arrow to the second line and uses less space
-between lines.  The @scheme['vertical-overlapping-side-conditions]
+between lines.  The @racket['vertical-overlapping-side-conditions]
 variant, the side-conditions don't contribute to the width of the
 pict, but are just overlaid on the second line of each rule.  The
-@scheme['horizontal-left-align] style is like the @scheme['horizontal]
+@racket['horizontal-left-align] style is like the @racket['horizontal]
 style, but the left-hand sides of the rules are aligned on the left,
 instead of on the right.
 
@@ -1888,7 +1893,7 @@ instead of on the right.
 
 A contract equivalent to
 
-@schemeblock[
+@racketblock[
 (symbols 'vertical 
          'compact-vertical
          'vertical-overlapping-side-conditions
@@ -1918,22 +1923,22 @@ label on each rule, but only in horizontal mode. Defaults to
                                         'left-right/beside-side-conditions)]{
 
 This parameter controls the style used for typesetting
-metafunctions. The @scheme['left-right] style means that the
+metafunctions. The @racket['left-right] style means that the
 results of calling the metafunction are displayed to the 
-right of the arguments and the @scheme['up-down] style means that
+right of the arguments and the @racket['up-down] style means that
 the results are displayed below the arguments.
 
-The @scheme['left-right/vertical-side-conditions] and
-@scheme['up-down/vertical-side-conditions] variants format side
+The @racket['left-right/vertical-side-conditions] and
+@racket['up-down/vertical-side-conditions] variants format side
 conditions each on a separate line, instead of all on the same line.
 
-The @scheme['left-right/compact-side-conditions] and
-@scheme['up-down/compact-side-conditions] variants move side
+The @racket['left-right/compact-side-conditions] and
+@racket['up-down/compact-side-conditions] variants move side
 conditions to separate lines to avoid making the rendered form wider
 than it would be otherwise.
 
-The @scheme['left-right/beside-side-conditions] variant is like
-@scheme['left-right], except it puts the side-conditions on the 
+The @racket['left-right/beside-side-conditions] variant is like
+@racket['left-right], except it puts the side-conditions on the 
 same line, instead of on a new line below the case.}
 
 
@@ -1943,8 +1948,8 @@ same line, instead of on a new line below the case.}
                                          (or/c zero? positive?)))
                           pair?))]{
 
-This parameter controls which cases in a metafunction are rendered. If it is @scheme[#f] (the default), then all of the
-cases appear. If it is a list of numbers, then only the selected cases appear (counting from @scheme[0]).
+This parameter controls which cases in a metafunction are rendered. If it is @racket[#f] (the default), then all of the
+cases appear. If it is a list of numbers, then only the selected cases appear (counting from @racket[0]).
 }
 
 @deftogether[[
@@ -1957,34 +1962,34 @@ cases appear. If it is a list of numbers, then only the selected cases appear (c
 @defparam[default-style style text-style/c]{}]]{
 
 These parameters determine the font used for various text in
-the picts. See @scheme[text] in the texpict collection for
-documentation explaining @scheme[text-style/c]. One of the more
-useful things it can be is one of the symbols @scheme['roman],
-@scheme['swiss], or @scheme['modern], which are a serif, sans-serif, and
+the picts. See @racket[text] in the texpict collection for
+documentation explaining @racket[text-style/c]. One of the more
+useful things it can be is one of the symbols @racket['roman],
+@racket['swiss], or @racket['modern], which are a serif, sans-serif, and
 monospaced font, respectively. (It can also encode style
 information, too.)
 
-The @scheme[label-style] is used for the reduction rule label
-names. The @scheme[literal-style] is used for names that aren't
+The @racket[label-style] is used for the reduction rule label
+names. The @racket[literal-style] is used for names that aren't
 non-terminals that appear in patterns. The
-@scheme[metafunction-style] is used for the names of
+@racket[metafunction-style] is used for the names of
 metafunctions. 
 
-The @scheme[non-terminal-style] is used for the names of non-terminals.
+The @racket[non-terminal-style] is used for the names of non-terminals.
 Two parameters style the text in the (optional) "underscore" component
-of a non-terminal reference. The first, @scheme[non-terminal-subscript-style],
-applies to the segment between the underscore and the first caret (@scheme[^]) 
-to follow it; the second, @scheme[non-terminal-superscript-style], applies
+of a non-terminal reference. The first, @racket[non-terminal-subscript-style],
+applies to the segment between the underscore and the first caret (@racket[^]) 
+to follow it; the second, @racket[non-terminal-superscript-style], applies
 to the segment following that caret. For example, in the non-terminal 
-reference @scheme[x_y_z], @scheme[x] has style @scheme[non-terminal-style],
-@scheme[y] has style @scheme[non-terminal-subscript-style], and @scheme[z]
-has style @scheme[non-terminal-superscript-style].
+reference @racket[x_y_z], @racket[x] has style @racket[non-terminal-style],
+@racket[y] has style @racket[non-terminal-subscript-style], and @racket[z]
+has style @racket[non-terminal-superscript-style].
 
 The
-@scheme[non-terminal-subscript-style] is used for the portion
+@racket[non-terminal-subscript-style] is used for the portion
 after the underscore in non-terminal references.
 
-The @scheme[default-style] is used for parenthesis, the dot in dotted
+The @racket[default-style] is used for parenthesis, the dot in dotted
 lists, spaces, the separator words in the grammar, the
 "where" and "fresh" in side-conditions, and other places
 where the other parameters aren't used.
@@ -2018,7 +2023,7 @@ Defaults to #t.
 
 This parameter's function is called whenever Redex typesets
 some part of a grammar, reduction relation, or
-metafunction. It defaults to slideshow's @scheme[text] function.
+metafunction. It defaults to slideshow's @racket[text] function.
 }
 
 @defparam[set-arrow-pict! proc (-> symbol? (-> pict?) void?)]{
@@ -2039,14 +2044,14 @@ single reduction relation.
   fonts), they are created by combining two ‘[’ characters
   or two ‘]’ characters together.
   
-  The procedure accepts a string that is either @scheme["["]
-  or @scheme["]"], and returns four numbers. The first two
+  The procedure accepts a string that is either @racket["["]
+  or @racket["]"], and returns four numbers. The first two
   numbers determine the offset (from the left and from the
   right respectively) for the second square bracket, and the
   second two two numbers determine the extra space added (to
   the left and to the right respectively).
 
-  The default value of the parameter is: @schemeblock[
+  The default value of the parameter is: @racketblock[
      (λ (str size)
        (let ([inset-amt (floor/even (max 4 (* size 1/2)))])
          (cond
@@ -2061,10 +2066,10 @@ single reduction relation.
                     (/ inset-amt 2)
                     0)])))]
 
- where @scheme[floor/even] returns the nearest even number
+ where @racket[floor/even] returns the nearest even number
  below its argument.  This means that for sizes 9, 10, and
- 11, @scheme[inset-amt] will be 4, and for 12, 13, 14, and
- 15, @scheme[inset-amt] will be 6.
+ 11, @racket[inset-amt] will be 4, and for 12, 13, 14, and
+ 15, @racket[inset-amt] will be 6.
 
 }
 
@@ -2083,13 +2088,13 @@ To replace the pink code, use:
 
 @defform[(with-unquote-rewriter proc expression)]{
 
-It installs @scheme[proc] the current unqoute rewriter and
+It installs @racket[proc] the current unqoute rewriter and
 evaluates expression. If that expression computes any picts,
 the unquote rewriter specified is used to remap them.
 
-The @scheme[proc] should be a function of one argument. It receives
-a @scheme[lw] struct as an argument and should return
-another @scheme[lw] that contains a rewritten version of the
+The @racket[proc] should be a function of one argument. It receives
+a @racket[lw] struct as an argument and should return
+another @racket[lw] that contains a rewritten version of the
 code.
 }
 
@@ -2100,7 +2105,7 @@ new one that rewrites the value of name-symbol to
 string-or-pict-returning-thunk (applied, in the case of a
 thunk), during the evaluation of expression.
 
-@scheme[name-symbol] is expected to evaluate to a symbol. The value
+@racket[name-symbol] is expected to evaluate to a symbol. The value
 of string-or-thunk-returning-pict is used whever the symbol
 appears in a pattern.
 }
@@ -2111,41 +2116,41 @@ This extends the current set of compound-rewriters with one
 new one that rewrites the value of name-symbol via proc,
 during the evaluation of expression.
 
-@scheme[name-symbol] is expected to evaluate to a symbol. The value
-of proc is called with a @scheme[(listof lw)], and is expected to
-return a new @scheme[(listof (or/c lw? string? pict?))],
+@racket[name-symbol] is expected to evaluate to a symbol. The value
+of proc is called with a @racket[(listof lw)], and is expected to
+return a new @racket[(listof (or/c lw? string? pict?))],
 rewritten appropriately. 
 
 The list passed to the rewriter corresponds to the
-@scheme[lw] for the sequence that has name-symbol's value at
+@racket[lw] for the sequence that has name-symbol's value at
 its head.
 
 The result list is constrained to have at most 2 adjacent
-non-@scheme[lw]s. That list is then transformed by adding
-@scheme[lw] structs for each of the non-@scheme[lw]s in the
-list (see the description of @scheme[lw] below for an
+non-@racket[lw]s. That list is then transformed by adding
+@racket[lw] structs for each of the non-@racket[lw]s in the
+list (see the description of @racket[lw] below for an
 explanation of logical-space):
 
 @itemize[
 @item{
-    If there are two adjacent @scheme[lw]s, then the logical
+    If there are two adjacent @racket[lw]s, then the logical
     space between them is filled with whitespace.}
 
 @item{
-    If there is a pair of @scheme[lw]s with just a single
-    non-@scheme[lw] between them, a @scheme[lw] will be
-    created (containing the non-@scheme[lw]) that uses all
-    of the available logical space between the @scheme[lw]s.
+    If there is a pair of @racket[lw]s with just a single
+    non-@racket[lw] between them, a @racket[lw] will be
+    created (containing the non-@racket[lw]) that uses all
+    of the available logical space between the @racket[lw]s.
 }
 
 @item{
-    If there are two adjacent non-@scheme[lw]s between two
-    @scheme[lw]s, the first non-@scheme[lw] is rendered
-    right after the first @scheme[lw] with a logical space
+    If there are two adjacent non-@racket[lw]s between two
+    @racket[lw]s, the first non-@racket[lw] is rendered
+    right after the first @racket[lw] with a logical space
     of zero, and the second is rendered right before the
-    last @scheme[lw] also with a logical space of zero, and
-    the logical space between the two @scheme[lw]s is
-    absorbed by a new @scheme[lw] that renders using no
+    last @racket[lw] also with a logical space of zero, and
+    the logical space between the two @racket[lw]s is
+    absorbed by a new @racket[lw] that renders using no
     actual space in the typeset version.
 }]
 }
@@ -2176,9 +2181,9 @@ explanation of logical-space):
 
 The lw data structure corresponds represents a pattern or a Racket
 expression that is to be typeset.  The functions listed above
-construct @scheme[lw] structs, select fields out of them, and
-recognize them. The @scheme[lw] binding can be used with
-@scheme[copy-struct].
+construct @racket[lw] structs, select fields out of them, and
+recognize them. The @racket[lw] binding can be used with
+@racket[copy-struct].
 }
 
 @defform[(to-lw arg)]{
@@ -2198,12 +2203,12 @@ be a lw in the third-to-last position for the dot.
 
 For example, this expression:
 
-@schemeblock[(a)]
+@racketblock[(a)]
 
 becomes this lw (assuming the above expression
 appears as the first thing in the file):
 
-@schemeblock[
+@racketblock[
      (build-lw (list (build-lw "(" 0 0 0 1)
                               (build-lw 'a 0 0 1 1)
                               (build-lw ")" 0 0 2 1))
@@ -2212,7 +2217,7 @@ appears as the first thing in the file):
 
 If there is some whitespace in the sequence, like this one:
 
-@schemeblock[
+@racketblock[
   (a b)
 ]
 
@@ -2220,7 +2225,7 @@ then there is no lw that corresponds to that
 whitespace; instead there is a logical gap between the
 lws.
 
-@schemeblock[
+@racketblock[
      (build-lw (list (build-lw "(" 0 0 0 1)
                      (build-lw 'a 0 0 1 1)
                      (build-lw 'b 0 0 3 1)
@@ -2253,7 +2258,7 @@ the logical space (ie, the line/column &
 line-span/column-span) fields of the lws. As an
 example, if this is the original pattern:
 
-@schemeblock[
+@racketblock[
    (all good boys
         deserve fudge)
 ]
@@ -2264,47 +2269,47 @@ positions of "boys" and "fudge" will be determined by the
 natural size of the words as they rendered in the
 appropriate font.
 
-When @scheme['spring] appears in the list in the @scheme[e]
-field of a @scheme[lw] struct, then it absorbs all of the
-space around it. It is also used by @scheme[to-lw] when
+When @racket['spring] appears in the list in the @racket[e]
+field of a @racket[lw] struct, then it absorbs all of the
+space around it. It is also used by @racket[to-lw] when
 constructing the picts for unquoted strings. For example, this expression
 
-@schemeblock[,x]
+@racketblock[,x]
 
 corresponds to these structs:
 
-@schemeblock[(build-lw (list (build-lw "" 1 0 9 0)
+@racketblock[(build-lw (list (build-lw "" 1 0 9 0)
                              'spring
                              (build-lw x 1 0 10 1))
                        1 0 9 2)]
 
-and the @scheme['spring] causes there to be no space between
-the empty string and the @scheme[x] in the typeset output.
+and the @racket['spring] causes there to be no space between
+the empty string and the @racket[x] in the typeset output.
 
 }
 
 @defproc[(render-lw (language/nts (or/c (listof symbol?) compiled-lang?))
                     (lw lw?)) pict?]{
 
-  Produces a pict that corresponds to the @scheme[lw] object
-  argument, using @scheme[language/nts] to determine which
-  of the identifiers in the @scheme[lw] argument are
+  Produces a pict that corresponds to the @racket[lw] object
+  argument, using @racket[language/nts] to determine which
+  of the identifiers in the @racket[lw] argument are
   non-terminals.
 
-  This function sets @scheme[dc-for-text-size]. See also
-  @scheme[lw->pict].
+  This function sets @racket[dc-for-text-size]. See also
+  @racket[lw->pict].
 }
 
 @defproc[(lw->pict (language/ntw (or/c (listof symbol?) compiled-lang?))
                    (lw lw?)) pict?]{
 
-  Produces a pict that corresponds to the @scheme[lw] object
-  argument, using @scheme[language/nts] to determine which
-  of the identifiers in the @scheme[lw] argument are
+  Produces a pict that corresponds to the @racket[lw] object
+  argument, using @racket[language/nts] to determine which
+  of the identifiers in the @racket[lw] argument are
   non-terminals.
 
-  This does not set the @scheme[dc-for-text-size] parameter. See also
-  @scheme[render-lw].
+  This does not set the @racket[dc-for-text-size] parameter. See also
+  @racket[render-lw].
 }
 
 @deftogether[[

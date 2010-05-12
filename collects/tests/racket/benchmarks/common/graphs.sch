@@ -2,6 +2,7 @@
 ; and to expand the four macros below.
 ; Modified 11 June 1997 by Will Clinger to eliminate assertions
 ; and to replace a use of "recur" with a named let.
+; Modified 4 May 2010 by Vincent St-Amour to get rid of one-armed ifs
 ;
 ; Performance note: (graphs-benchmark 7) allocates
 ;   34509143 pairs
@@ -70,8 +71,9 @@
         (let ((x (make-vector size (f 0))))
           (let loop ((i 1))
             (if (< i size) (begin               ; [wdc - was when]
-              (vector-set! x i (f i))
-              (loop (+ i 1)))))
+                             (vector-set! x i (f i))
+                             (loop (+ i 1)))
+                #t))
           x))))
 
 (define vector-fold
@@ -616,7 +618,9 @@
 					    (lambda (t)
 						(if (vector-ref from-m t)
                                                    (begin ; [wdc - was when]
-						    (vector-set! from-f t #t)))))))))))))
+						    (vector-set! from-f t #t))
+                                                   #t))))
+                                       #t)))))))
 	    res)))
 
 

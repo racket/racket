@@ -137,7 +137,7 @@ xobjects: $(OBJS) main.@LTO@
 
 XFORMDEP = $(srcdir)/gc2.h $(srcdir)/gc2_obj.h $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt \
            $(srcdir)/precomp.c $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
-           $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schemef.h \
+           $(srcdir)/../sconfig.h ../mzconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schemef.h \
            $(srcdir)/../src/stypes.h $(srcdir)/../include/schthread.h $(srcdir)/../src/mzrt.h 
 
 LIGHTNINGDEP = $(srcdir)/../src/lightning/i386/core.h $(srcdir)/../src/lightning/i386/core-common.h \
@@ -333,12 +333,13 @@ gc2.@LTO@: \
 		$(srcdir)/immobile_boxes.c \
 		$(srcdir)/../include/scheme.h \
 		$(srcdir)/../include/schthread.h \
-		$(srcdir)/../include/../sconfig.h \
-		$(srcdir)/../include/../uconfig.h \
-		$(srcdir)/../include/../src/stypes.h \
-		$(srcdir)/../include/../src/schexn.h \
-		$(srcdir)/../include/../gc2/gc2.h \
-		$(srcdir)/../include/../src/schemef.h \
+		$(srcdir)/../sconfig.h \
+		../mzconfig.h \
+		$(srcdir)/../uconfig.h \
+		$(srcdir)/../src/stypes.h \
+		$(srcdir)/../src/schexn.h \
+		$(srcdir)/../gc2/gc2.h \
+		$(srcdir)/../src/schemef.h \
 		$(builddir)/../mzconfig.h \
 		$(srcdir)/../src/mzrt.h \
 		$(srcdir)/../src/schpriv.h \

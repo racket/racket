@@ -7,20 +7,20 @@
 *.manifest -crlf
 *.rc -crlf
 *.bat -crlf
-worksp/README -crlf
-racket/gc/BCC_MAKEFILE -crlf
-racket/gc/digimars.mak -crlf
-worksp/README -crlf
-worksp/extradlls/README.TXT -crlf
-worksp/gracket/gracket.manifest -crlf
-worksp/mzcom/mzcom.def -crlf
-worksp/mzcom/mzcom.rgs -crlf
-worksp/mzcom/mzcomps.def -crlf
-worksp/mzcom/mzobj.rgs -crlf
+/worksp/README -crlf
+/racket/gc/BCC_MAKEFILE -crlf
+/racket/gc/digimars.mak -crlf
+/worksp/README -crlf
+/worksp/extradlls/README.TXT -crlf
+/worksp/gracket/gracket.manifest -crlf
+/worksp/mzcom/mzcom.def -crlf
+/worksp/mzcom/mzcom.rgs -crlf
+/worksp/mzcom/mzcomps.def -crlf
+/worksp/mzcom/mzobj.rgs -crlf
 
 # These files seem to be generated. Maybe they shouldn't be
 # in the repository; in any case, they are generated with
 # CRLF, so let's keep them that way.
-worksp/mzcom/mzcom.h -crlf
-worksp/racket/resource.h -crlf
-worksp/starters/resource.h -crlf
+/worksp/mzcom/mzcom.h -crlf
+/worksp/racket/resource.h -crlf
+/worksp/starters/resource.h -crlf

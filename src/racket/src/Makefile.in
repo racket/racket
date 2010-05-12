@@ -236,7 +236,7 @@ vector.@LTO@: $(srcdir)/vector.c
 gmp_alpha_gcc.@LTO@: $(srcdir)/gmp/gmp_alpha_gcc.s
 	$(AS) -o gmp_alpha_gcc.@LTO@ $(srcdir)/gmp/gmp_alpha_gcc.s
 
-SCONFIG =   $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h
+SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 
 # More dependencies
 

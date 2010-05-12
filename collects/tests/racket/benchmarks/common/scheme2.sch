@@ -85,9 +85,11 @@
 
 (define (variable x)
   (if (not (symbol? x))
-    (scheme-error "Identifier expected" x))
+    (scheme-error "Identifier expected" x)
+    #t)
   (if (memq x scheme-syntactic-keywords)
-    (scheme-error "Variable name can not be a syntactic keyword" x)))
+    (scheme-error "Variable name can not be a syntactic keyword" x)
+    #t))
 
 (define (shape form n)
   (let loop ((form form) (n n) (l form))
@@ -137,7 +139,8 @@
               (comp-quasiquotation-list form (- level 1) env)))
            ((eq? (car form) 'unquote-splicing)
             (if (= level 1)
-              (scheme-error "Ill-placed 'unquote-splicing'" form))
+              (scheme-error "Ill-placed 'unquote-splicing'" form)
+              #t)
             (comp-quasiquotation-list form (- level 1) env))
            (else
             (comp-quasiquotation-list form level env))))
@@ -268,7 +271,8 @@
   (let ((pattern (cadr expr)))
     (let ((name (if (pair? pattern) (car pattern) pattern)))
       (if (not (symbol? name))
-        (scheme-error "Identifier expected" name))
+        (scheme-error "Identifier expected" name)
+        #t)
       name)))
 
 (define (definition-value expr)
@@ -672,7 +676,8 @@
         (vector-set! x 3 c)
         (let loop ((n nb-vars) (x x) (i 4) (l d))
           (if (<= i n)
-            (begin (vector-set! x i (car l)) (loop n x (+ i 1) (cdr l)))))
+            (begin (vector-set! x i (car l)) (loop n x (+ i 1) (cdr l)))
+            #t))
         (body x)))))
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -769,7 +774,8 @@
       (vector-set! x 0 rte)
       (let loop ((x x) (i 1) (l vals))
         (if (pair? l)
-          (begin (vector-set! x i ((car l) x)) (loop x (+ i 1) (cdr l)))))
+          (begin (vector-set! x i ((car l) x)) (loop x (+ i 1) (cdr l)))
+          #t))
       (body x))))
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

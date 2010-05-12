@@ -12,6 +12,7 @@
 ; By Ozan Yigit
 
 ;;; Rehacked by Olin 4/1995.
+;;; One-armed ifs removed by Vincent St-Amour 5/5/2010
 
 (define (random-state n)
   (vector n))
@@ -125,7 +126,8 @@
                    (let ((next (vector-ref x 1)))        
                      (cond ((not (eq? r next))
                             (vector-set! x 1 r)
-                            (lp next))))))
+                            (lp next)))))
+                 #t)
              r)))))                     ; Then return r.
 
 (define (set-equal? s1 s2) (eq? (get-set-root s1) (get-set-root s2)))
@@ -238,7 +240,8 @@
                      (wall-mask (bitwise-not (wall:bit wall))))
                  (union! set1 set2)
                  (set-cell:walls c1 (bitwise-and walls wall-mask))
-                 (if (= (set-size set1) ncells) (quit #f))))))
+                 (if (= (set-size set1) ncells) (quit #f) #t))
+               #t)))
        walls))))
 
 
@@ -255,7 +258,8 @@
     (set-cell:parent node parent)
     (do-children (lambda (child)
                    (if (not (eq? child parent))
-                       (search child node)))
+                       (search child node)
+                       #t))
                  maze node)))
 
 ;;; Move the root to NEW-ROOT.
@@ -264,7 +268,7 @@
   (let lp ((node new-root) (new-parent #f))
     (let ((old-parent (cell:parent node)))
       (set-cell:parent node new-parent)
-      (if old-parent (lp old-parent node)))))
+      (if old-parent (lp old-parent node) #t))))
 
 ;;; How far from CELL to the root?
 
@@ -436,10 +440,12 @@
           ((<= y 1))    ; Don't do bottom row.
           (let ((hex (href harr x y)))
             (if (not (zero? x))
-                (add-wall hex (href harr (- x 3) (- y 1)) south-west))
+                (add-wall hex (href harr (- x 3) (- y 1)) south-west)
+                #t)
             (add-wall hex (href harr x (- y 2)) south)
             (if (< x xmax)
-                (add-wall hex (href harr (+ x 3) (- y 1)) south-east)))))
+                (add-wall hex (href harr (+ x 3) (- y 1)) south-east)
+                #t))))
 
     ;; Do the SE and SW walls of the odd columns on the bottom row.
     ;; If the rightmost bottom hex lies in an odd column, however,
@@ -449,14 +455,16 @@
           ;; Do rightmost odd col.
           (let ((rmoc-hex (href harr rmoc-x 1)))
             (if (< rmoc-x xmax) ; Not  a corner -- do E wall.
-                (add-wall rmoc-hex (href harr xmax 0) south-east))
+                (add-wall rmoc-hex (href harr xmax 0) south-east)
+                #t)
             (add-wall rmoc-hex (href harr (- rmoc-x 3) 0) south-west))
 
           (do ((x (- rmoc-x 6) ; Do the rest of the bottom row's odd cols.
                   (- x 6)))
               ((< x 3)) ; 3 is X coord of leftmost odd column.
             (add-wall (href harr x 1) (href harr (- x 3) 0) south-west)
-            (add-wall (href harr x 1) (href harr (+ x 3) 0) south-east))))
+            (add-wall (href harr x 1) (href harr (+ x 3) 0) south-east)))
+        #t)
 
     (list->vector walls)))
 
@@ -504,28 +512,31 @@
          (nc (harr:ncols harr))
          (maxy (* 2 (- nr 1)))
          (maxx (* 3 (- nc 1))))
-    (if (not (bit-test walls south-west)) (proc (href harr (- x 3) (- y 1))))
-    (if (not (bit-test walls south))      (proc (href harr x       (- y 2))))
-    (if (not (bit-test walls south-east)) (proc (href harr (+ x 3) (- y 1))))
+    (if (not (bit-test walls south-west)) (proc (href harr (- x 3) (- y 1))) #t)
+    (if (not (bit-test walls south))      (proc (href harr x       (- y 2))) #t)
+    (if (not (bit-test walls south-east)) (proc (href harr (+ x 3) (- y 1))) #t)
 
     ;; NW neighbor, if there is one (we may be in col 1, or top row/odd col)
     (if (and (> x 0)    ; Not in first column.
              (or (<= y maxy)            ; Not on top row or
                  (zero? (modulo x 6)))) ; not in an odd column.
         (let ((nw (href harr (- x 3) (+ y 1))))
-          (if (not (bit-test (cell:walls nw) south-east)) (proc nw))))
+          (if (not (bit-test (cell:walls nw) south-east)) (proc nw) #t))
+        #t)
 
     ;; N neighbor, if there is one (we may be on top row).
     (if (< y maxy)              ; Not on top row
         (let ((n (href harr x (+ y 2))))
-          (if (not (bit-test (cell:walls n) south)) (proc n))))
+          (if (not (bit-test (cell:walls n) south)) (proc n) #t))
+        #t)
 
     ;; NE neighbor, if there is one (we may be in last col, or top row/odd col)
     (if (and (< x maxx) ; Not in last column.
              (or (<= y maxy)            ; Not on top row or
                  (zero? (modulo x 6)))) ; not in an odd column.
         (let ((ne (href harr (+ x 3) (+ y 1))))
-          (if (not (bit-test (cell:walls ne) south-west)) (proc ne))))))
+          (if (not (bit-test (cell:walls ne) south-west)) (proc ne) #t))
+        #t)))
 
 
 
@@ -612,7 +623,8 @@
       (write-ch (dot/space harr (- nrows 1) (+ c 1)))
       (write-ch #\\))
     (if (odd? ncols)
-        (write-ch (if (= entrance (- ncols 1)) #\space #\_)))
+        (write-ch (if (= entrance (- ncols 1)) #\space #\_))
+        #t)
 ;   (newline)
     (write-ch #\newline)
 

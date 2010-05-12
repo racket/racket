@@ -7,6 +7,7 @@
 ; 970215 / wdc Removed most i/o and added dynamic-benchmark.
 ; 990707 / lth Added a quote and changed the call to run-benchmark.
 ; 010404 / wdc Changed the input file path name to "dynamic-input.sch".
+; 100404 / Vincent St-Amour Got rid of one-armed ifs
 
 ;; Fritz's dynamic type inferencer, set up to run on itself
 ;; (see the end of this file).
@@ -1034,7 +1035,9 @@
 	(let ((tv-def (tvar-def tv-rep)))
 	  (asymm-link! tv-rep dynamic)
 	  (if (not (null? tv-def))
-	      (map equiv-with-dynamic! (type-args tv-def))))))
+	      (map equiv-with-dynamic! (type-args tv-def))
+              #f))
+        #f))
   '())
 ;----------------------------------------------------------------------------
 ; Polymorphic type management
