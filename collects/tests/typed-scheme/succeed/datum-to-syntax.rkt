@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed/scheme
 
 (: convert (Number -> Syntax))
 (define (convert n) (datum->syntax #f n))
