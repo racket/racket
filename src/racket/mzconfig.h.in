@@ -4,7 +4,6 @@
 #ifndef __MZSCHEME_CONFIGURATION_INFO__
 #define __MZSCHEME_CONFIGURATION_INFO__
 
-
 /* The size of a `char', as computed by sizeof. */
 #undef SIZEOF_CHAR
 
@@ -38,9 +37,11 @@
 /* Whether pthread_rwlock is availabale: */
 #undef HAVE_PTHREAD_RWLOCK
 
-/* Enable futures and/or places: */
+/* Enable futures and/or places (but not with sgc): */
+#if !defined(USE_SENORA_GC) || defined(NEWGC_BTC_ACCOUNT)
 #undef MZ_USE_FUTURES
 #undef MZ_USE_PLACES
+#endif
 
 /* Configure use of pthreads for the user-thread timer: */
 #undef USE_PTHREAD_INSTEAD_OF_ITIMER

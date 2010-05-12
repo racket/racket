@@ -1,6 +1,5 @@
-
 /* 
-   Configuration for compiling MzScheme
+   Configuration for compiling Racket
 
    If you want to set all the flags externally (on the command line
    with -D or some other compiler-dependent way), then define
@@ -9,11 +8,10 @@
    The best flag settings are already provided for some auto-detected
    architecture/system/compilers. Otherwise, the default settings 
    are generic Unix.  Send other architecture/system/compiler-specific 
-   info to "plt-bugs@cs.rice.edu".
+   info to "racket@racket-lang.org".
 */
 
 #ifndef FLAGS_ALREADY_SET
-
 
 /******** (BEGIN KNOWN ARCHITECTURE/SYSTEM CONFIGURATIONS) ********/
 
