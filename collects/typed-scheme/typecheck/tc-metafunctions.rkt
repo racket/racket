@@ -72,7 +72,7 @@
                 (-filter t idx p)]
                [#:NotTypeFilter
                 t p (lookup: idx)
-                (-filter t idx p)]))
+                (-not-filter t idx p)]))
 
 (define (merge-filter-sets fs)
   (match fs
