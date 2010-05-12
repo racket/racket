@@ -20,6 +20,7 @@ constraints.
 @note-lib[racket/contract #:use-sources (racket/contract/private/ds
                                          racket/contract/private/base
                                          racket/contract/private/guts
+                                         racket/contract/private/hash
                                          racket/contract/private/misc
                                          racket/contract/private/provide)]
 

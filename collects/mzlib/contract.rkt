@@ -30,6 +30,7 @@
 ;;
 
 (require racket/contract/private/base
+         racket/contract/private/hash
          racket/contract/private/misc
          racket/contract/private/provide
          racket/contract/private/guts
@@ -44,6 +45,7 @@
              contract-struct)
  
  (all-from-out racket/contract/private/base)
+ (all-from-out racket/contract/private/hash)
  (all-from-out racket/contract/private/provide)
  (except-out (all-from-out racket/contract/private/misc)
              check-between/c
