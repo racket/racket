@@ -60,7 +60,9 @@
     [((Union: ts) lo)
      (apply Un (map (lambda (t) (update t lo)) ts))]
     [(t* lo)
-     (int-err "update along ill-typed path: ~a ~a ~a" t t* lo)]))
+     #;
+     (int-err "update along ill-typed path: ~a ~a ~a" t t* lo)
+     t]))
 
 ;; sets the flag box to #f if anything becomes (U)
 (d/c (env+ env fs flag)
