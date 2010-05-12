@@ -382,8 +382,10 @@
 
 (define ((sub-f st) e)
   (filter-case (#:Type st
-                #:Filter (sub-f st))
+                #:Filter (sub-f st)
+                #:PathElem (sub-pe st))
                e))
+
 
 (define ((sub-o st) e)
   (object-case (#:Type st
@@ -436,6 +438,8 @@
           (loop (nameTo (car names) count ty)
                 (cdr names)
                 (sub1 count))))))
+
+;(trace abstract-many)
 
 
 ;; instantiate-many : List[Type] Scope^n -> Type 
