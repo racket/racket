@@ -67,7 +67,7 @@ reduction semantics, plus a suite of tools for working with the
 semantics. 
 
 This is a reference manual for Redex. See
-@link["http://redex.racket-lang.org/"]{@tt{http://redex.racket.org/}}
+@link["http://redex.racket-lang.org/"]{@tt{http://redex.racket-lang.org/}}
 for a gentler overview. (See also the @tt{examples} subdirectory in
 the @tt{redex} collection.)
 
