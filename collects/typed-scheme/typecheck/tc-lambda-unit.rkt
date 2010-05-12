@@ -58,7 +58,7 @@
 ;; listof[id] option[id] block listof[type] option[type] option[(cons type var)] tc-result -> lam-result
 (d/c (check-clause arg-list rest body arg-tys rest-ty drest ret-ty)
      ((listof identifier?) 
-      (or/c #f identifier?) syntax? (listof Type/c) (or/c #f Type/c) (or/c #f (list/c Type/c symbol?)) tc-results? 
+      (or/c #f identifier?) syntax? (listof Type/c) (or/c #f Type/c) (or/c #f (cons/c Type/c symbol?)) tc-results? 
       . --> . 
       lam-result?)
   (let* ([arg-len (length arg-list)]
@@ -188,6 +188,16 @@
                     [(pair? (syntax-e s))
                      (+ 1 (loop (cdr (syntax-e s))))]
                     [else 1]))]))
+  (define (formals->list s)
+    (let loop ([s s])
+      (cond
+        [(pair? s)
+         (cons (car s) (loop (cdr s)))]
+        [(null? s) s]
+        [(pair? (syntax-e s))
+         (cons (stx-car s) (loop (cdr (syntax-e s))))]
+        [(null? (syntax-e s)) null]
+        [else (list s)])))
   (define (go formals bodies formals* bodies* nums-seen)
     (cond 
       [(null? formals)
@@ -212,7 +222,7 @@
           (let ([fmls (car (syntax->list formals))])            
             (for/list ([args argss] [ret rets] [rest rests] [drest drests])
               (tc/lambda-clause/check fmls (car (syntax->list bodies))
-                                      args (values->tc-results ret (syntax->list fmls)) rest drest)))]
+                                      args (values->tc-results ret (formals->list fmls)) rest drest)))]
          [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))]
     ;; otherwise
     [else (go (syntax->list formals) (syntax->list bodies) null null null)]))
