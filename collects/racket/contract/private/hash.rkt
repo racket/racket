@@ -13,12 +13,18 @@
         [rng-ctc (if flat?
                      (coerce-flat-contract 'hash/c rng)
                      (coerce-contract 'hash/c rng))])
-    (if (or flat?
-            (and (eq? immutable #t)
-                 (flat-contract? dom-ctc)
-                 (flat-contract? rng-ctc)))
-        (make-flat-hash/c dom-ctc rng-ctc immutable)
-        (make-ho-hash/c dom-ctc rng-ctc immutable))))
+    (unless (chaperone-contract? dom-ctc)
+      (error 'hash/c "expected either a flat or chaperone contract for the domain, got ~s" (contract-name dom-ctc)))
+    (cond
+      [(or flat?
+           (and (eq? immutable #t)
+                (flat-contract? dom-ctc)
+                (flat-contract? rng-ctc)))
+       (make-flat-hash/c dom-ctc rng-ctc immutable)]
+      [(chaperone-contract? rng-ctc)
+       (make-chaperone-hash/c dom-ctc rng-ctc immutable)]
+      [else
+       (make-proxy-hash/c dom-ctc rng-ctc immutable)])))
 
 (define (hash/c-first-order ctc) 
   (let ([dom-ctc (hash/c-dom ctc)]
@@ -33,6 +39,10 @@
               (return #f)))
         (unless (hash? val)
           (fail "expected a hash, got ~a" val))
+        (when (and (not flat?)
+                   (not (flat-contract? dom-ctc))
+                   (not (hash-equal? val)))
+          (fail "expected equal?-based hash table due to higher-order domain contract, got ~a" val))
         (case immutable
           [(#t) 
            (unless (immutable? val) 
@@ -85,7 +95,55 @@
          ((hash/c-first-order ctc) val #:blame blame)
          val)))))
 
-(define-struct (ho-hash/c hash/c) ()
+(define (ho-projection hash-wrapper)
+  (λ (ctc)
+    (let ([dom-proc (contract-projection (hash/c-dom ctc))]
+          [rng-proc (contract-projection (hash/c-rng ctc))]
+          [immutable (hash/c-immutable ctc)])
+      (λ (blame)
+        (let ([pos-dom-proj (dom-proc blame)]
+              [neg-dom-proj (dom-proc (blame-swap blame))]
+              [pos-rng-proj (rng-proc blame)]
+              [neg-rng-proj (rng-proc (blame-swap blame))])
+          (λ (val)
+            ((hash/c-first-order ctc) val #:blame blame)
+            
+            (if (immutable? val)
+                (let ([hash-maker
+                       (cond
+                         [(hash-equal? val) make-immutable-hash]
+                         [(hash-eqv? val) make-immutable-hasheqv]
+                         [(hash-eq? val) make-immutable-hasheq])])
+                  (hash-maker
+                   (for/list ([(k v) (in-hash val)])
+                     (cons (pos-dom-proj k)
+                           (pos-rng-proj v)))))
+                (hash-wrapper
+                 val
+                 (λ (h k)
+                   (values (neg-dom-proj k)
+                           (λ (h k v)
+                             (pos-rng-proj v))))
+                 (λ (h k v)
+                   (values (neg-dom-proj k)
+                           (neg-rng-proj v)))
+                 (λ (h k)
+                   (neg-dom-proj k))
+                 (λ (h k)
+                   (pos-dom-proj k))))))))))
+
+(define-struct (chaperone-hash/c hash/c) ()
+  #:omit-define-syntaxes
+
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:name hash/c-name
+   #:first-order hash/c-first-order
+   
+   #:projection
+   (ho-projection chaperone-hash)))
+
+(define-struct (proxy-hash/c hash/c) ()
   #:omit-define-syntaxes
 
   #:property prop:contract
@@ -94,38 +152,4 @@
    #:first-order hash/c-first-order
    
    #:projection
-   (λ (ctc)
-      (let ([dom-proc (contract-projection (hash/c-dom ctc))]
-            [rng-proc (contract-projection (hash/c-rng ctc))]
-            [immutable (hash/c-immutable ctc)])
-        (λ (blame)
-           (let ([pos-dom-proj (dom-proc blame)]
-                 [neg-dom-proj (dom-proc (blame-swap blame))]
-                 [pos-rng-proj (rng-proc blame)]
-                 [neg-rng-proj (rng-proc (blame-swap blame))])
-             (λ (val)
-               ((hash/c-first-order ctc) val #:blame blame)
-               
-               (if (immutable? val)
-                   (let ([hash-maker
-                          (cond
-                            [(hash-equal? val) make-immutable-hash]
-                            [(hash-eqv? val) make-immutable-hasheqv]
-                            [(hash-eq? val) make-immutable-hasheq])])
-                     (hash-maker
-                      (for/list ([(k v) (in-hash val)])
-                        (cons (pos-dom-proj k)
-                              (pos-rng-proj v)))))
-                   (proxy-hash
-                    val
-                    (λ (h k)
-                      (values (neg-dom-proj k)
-                              (λ (h k v)
-                                (pos-rng-proj v))))
-                    (λ (h k v)
-                      (values (neg-dom-proj k)
-                              (neg-rng-proj v)))
-                    (λ (h k)
-                      (neg-dom-proj k))
-                    (λ (h k)
-                      (pos-dom-proj k)))))))))))
+   (ho-projection proxy-hash)))

@@ -3665,6 +3665,31 @@
                         'neg)
               'x)
    1)
+  
+  (test/pos-blame
+   'hash/c13a
+   '(contract (hash/c (hash/c number? number?) number?)
+              (make-hasheq)
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'hash/c13b
+   '(contract (hash/c (hash/c number? number?) number?)
+              (make-hasheq)
+              'pos
+              'neg))
+  
+  (test/neg-blame
+   'hash/c13c
+   '(let ([h (contract (hash/c (hash/c number? number?) number?)
+                       (make-hash)
+                       'pos
+                       'neg)])
+      (hash-set! h (make-hash '((2 . 3))) 2)
+      (hash-set! h (make-hash '((3 . #t))) 3)
+      (for ([(k v) (in-hash h)])
+        (hash-ref k v))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
@@ -8821,23 +8846,45 @@ so that propagation occurs.
                             (define-struct s (a b))
                             (struct/c s any/c any/c)))
   
-  (ctest #t contract?      (hash/c any/c any/c #:immutable #f))
-  (ctest #t flat-contract? (hash/c any/c any/c #:immutable #f #:flat? #t))
+  ;; Hash contracts with flat domain/range contracts
+  (ctest #t contract?           (hash/c any/c any/c #:immutable #f))
+  (ctest #t chaperone-contract? (hash/c any/c any/c #:immutable #f))
+  (ctest #t flat-contract?      (hash/c any/c any/c #:immutable #f #:flat? #t))
 
-  (ctest #t flat-contract? (hash/c any/c any/c #:immutable #t))
-  (ctest #t flat-contract? (hash/c any/c any/c #:immutable #t #:flat? #t))
+  (ctest #t flat-contract?      (hash/c any/c any/c #:immutable #t))
+  (ctest #t flat-contract?      (hash/c any/c any/c #:immutable #t #:flat? #t))
 
-  (ctest #t contract?      (hash/c any/c any/c))
-  (ctest #t flat-contract? (hash/c any/c any/c #:flat? #t))
+  (ctest #t contract?           (hash/c any/c any/c))
+  (ctest #t chaperone-contract? (hash/c any/c any/c))
+  (ctest #t flat-contract?      (hash/c any/c any/c #:flat? #t))
   
-  (ctest #t contract?      (hash/c number? (-> number? number?) #:immutable #f))
-  (ctest #f flat-contract? (hash/c number? (-> number? number?) #:immutable #f))
-
-  (ctest #t contract?      (hash/c number? (-> number? number?) #:immutable #t))
-  (ctest #f flat-contract? (hash/c number? (-> number? number?) #:immutable #t))
+  ;; Hash contracts with chaperone range contracts
+  (ctest #t contract?           (hash/c number? (hash/c number? number?)))
+  (ctest #t chaperone-contract? (hash/c number? (hash/c number? number?)))
+  (ctest #f flat-contract?      (hash/c number? (hash/c number? number?)))
   
-  (ctest #t contract?      (hash/c number? (-> number? number?)))
-  (ctest #f flat-contract? (hash/c number? (-> number? number?)))
+  ;; Hash contracts with proxy range contracts
+  (ctest #t contract?           (hash/c number? (-> number? number?) #:immutable #f))
+  (ctest #f chaperone-contract? (hash/c number? (-> number? number?) #:immutable #f))
+  (ctest #f flat-contract?      (hash/c number? (-> number? number?) #:immutable #f))
+
+  (ctest #t contract?           (hash/c number? (-> number? number?) #:immutable #t))
+  (ctest #f chaperone-contract? (hash/c number? (-> number? number?) #:immutable #t))
+  (ctest #f flat-contract?      (hash/c number? (-> number? number?) #:immutable #t))
+  
+  (ctest #t contract?           (hash/c number? (-> number? number?)))
+  (ctest #f chaperone-contract? (hash/c number? (-> number? number?)))
+  (ctest #f flat-contract?      (hash/c number? (-> number? number?)))
+  
+  ;; Make sure that proxies cannot be used as the domain contract in hash/c.
+  (contract-error-test
+   '(let ([proxy-ctc
+           (make-contract
+            #:name 'proxy-ctc
+            #:first-order values
+            #:higher-order (λ (b) values))])
+      (hash/c proxy-ctc proxy-ctc))
+   exn:fail?)
 
   (ctest #t contract? 1)
   (ctest #t contract? (-> 1 1))
