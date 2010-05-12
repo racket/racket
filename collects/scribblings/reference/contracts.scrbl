@@ -319,21 +319,29 @@ type named by @racket[struct-id], and whose field values match the
 Produces a contract on parameters whose values must match
 @racket[contract].}
 
-@defproc[(hash/c [key contract?]
+@defproc[(hash/c [key chaperone-contract?]
                  [val contract?] 
-                 [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care])
+                 [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
+                 [#:flat? flat? boolean? #f])
          contract?]{
 Produces a contract that recognizes @racket[hash] tables with keys and values
 as specified by the @racket[key] and @racket[val] arguments.
 
-If the @racket[immutable] argument is @racket[#f] or
-@racket['dont-care], then the resulting contract is a flat contract,
-and the @racket[key] and @racket[val] arguments must also be flat
-contracts. 
+If the @racket[flat?] argument is @racket[#t], then the resulting contract is
+a flat contract, and the @racket[key] and @racket[val] arguments must also be flat
+contracts.  Such flat contracts will be unsound if applied to mutable hash tables,
+as they will not check future operations on the hash table.
 
-If @racket[immutable] is @racket[#t], then the other arguments do not
-have to be flat contracts, the result is not a flat contract, and
-checking this contract involves making a copy of the hash-table.
+If the @racket[immutable] argument is @racket[#t] and the @racket[key] and
+@racket[val] arguments are flat contracts, the result will be a flat contract.
+If either the domain or the range is a chaperone contract, then the result will
+be a chaperone contract.
+
+If the @racket[key] argument is a chaperone contract, then the resulting contract
+can only be applied to @racket[equal?]-based hash tables.  When a higher-order
+@racket[hash/c] contract is applied to a hash table, the result is not @racket[eq?]
+to the input.  The result will be a copy for immutable hash tables, and either a
+@tech{chaperone} or @tech{proxy} of the input for mutable hash tables.
 }
 
 
