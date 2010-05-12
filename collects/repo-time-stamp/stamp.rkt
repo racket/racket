@@ -11,7 +11,7 @@
 (define-runtime-path this "stamp.rkt")
 
 (define stamp
-  (let ([rx:secs+id #rx"^([0-9]+)\\|([0-9a-f]+)\\|(.*?)[ \r\n]*$"])
+  (let ([rx:secs+id #rx"^([0-9]+)\\|([0-9a-f]+|-)\\|(.*?)[ \r\n]*$"])
     (for*/or ([x (list
                   ;; info from an archive (incl. nightly builds)
                   (lambda () archive-id)
@@ -21,13 +21,14 @@
                                    (find-executable-path "git.exe"))])
                       (and exe
                            (let ([out (open-output-string)])
-                             (parameterize ([current-output-port out])
+                             (parameterize ([current-output-port out]
+                                            [current-error-port out])
                                (system* exe "log" "-1"
                                         "--pretty=format:%ct|%h|g")
                                (get-output-string out))))))
                   ;; fallback: get the date of this file, no id
                   (lambda ()
-                    (format "~a|0|f"
+                    (format "~a|-|f"
                             (file-or-directory-modify-seconds this))))])
       (let* ([x (x)]
              [m (and (string? x) (regexp-match rx:secs+id x))]
