@@ -104,12 +104,19 @@
                      [else (loop (cdr ps) (cons p result))]))))]
       [_ prop])))
 
+(define (flatten-props ps)
+  (let loop ([ps ps])
+    (match ps
+      [(list) null]
+      [(cons (AndFilter: ps*) ps) (loop (append ps* ps))]
+      [(cons p ps) (cons p (loop ps))])))
+
 (d/c (combine-props new-props old-props flag)
   ((listof Filter/c) (listof Filter/c) (box/c boolean?)
    . -> . 
    (values (listof (or/c ImpFilter? OrFilter? AndFilter?)) (listof (or/c TypeFilter? NotTypeFilter?))))
   (define (atomic-prop? p) (or (TypeFilter? p) (NotTypeFilter? p)))
-  (define-values (new-atoms new-formulas) (partition atomic-prop? new-props))
+  (define-values (new-atoms new-formulas) (partition atomic-prop? (flatten-props new-props)))
   (let loop ([derived-props null] 
              [derived-atoms new-atoms]
              [worklist (append old-props new-formulas)])
