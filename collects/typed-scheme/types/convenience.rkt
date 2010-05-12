@@ -43,16 +43,15 @@
         [_ (exit t)]))))
 
 
-;; DO NOT USE if t contains #f
 (define (-opt t) (Un (-val #f) t))
 
 (define In-Syntax
   (-mu e
-       (*Un (-val null) -Boolean -Symbol -String -Keyword -Char -Number 
-            (make-Vector (-Syntax e))
-            (make-Box (-Syntax e))
-            (-lst (-Syntax e))
-            (-pair (-Syntax e) (-Syntax e)))))
+       (Un (-val null) -Boolean -Symbol -String -Keyword -Char -Number 
+           (make-Vector (-Syntax e))
+           (make-Box (-Syntax e))
+           (-lst (-Syntax e))
+           (-pair (-Syntax e) (-Syntax e)))))
 
 (define Any-Syntax (-Syntax In-Syntax))
 
