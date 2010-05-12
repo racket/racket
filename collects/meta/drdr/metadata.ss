@@ -36,7 +36,7 @@
 ; XXX Document on help page
 ; XXX Use in computing "changes?"
 (define (path-random? a-path)
-  (get-prop a-path 'drdr:random?))
+  (get-prop a-path 'drdr:random))
 
 (provide/contract
  [PROP:command-line string?]
