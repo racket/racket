@@ -3532,6 +3532,46 @@
               'neg))
   
   (test/spec-passed
+   'hash/c1b
+   '(contract (hash/c symbol? boolean? #:flat? #t)
+              (make-hash)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'hash/c1c
+   '(let ([h (contract (hash/c symbol? boolean?)
+                       (make-hash)
+                       'pos
+                       'neg)])
+      (hash-set! h 'x #t)
+      (hash-ref h 'x)))
+  
+  (test/neg-blame
+   'hash/c1d
+   '(let ([h (contract (hash/c symbol? boolean?)
+                       (make-hash)
+                       'pos
+                       'neg)])
+      (hash-set! h 3 #t)))
+  
+  (test/neg-blame
+   'hash/c1e
+   '(let ([h (contract (hash/c symbol? boolean?)
+                       (make-hash)
+                       'pos
+                       'neg)])
+      (hash-set! h 'x 3)))
+  
+  (test/neg-blame
+   'hash/c1f
+   '(let ([h (contract (hash/c symbol? boolean?)
+                       (make-hash)
+                       'pos
+                       'neg)])
+      (hash-ref h 3)))
+  
+  (test/spec-passed
    'hash/c2
    '(contract (hash/c symbol? boolean?)
               (let ([h (make-hash)])
@@ -8781,10 +8821,24 @@ so that propagation occurs.
                             (define-struct s (a b))
                             (struct/c s any/c any/c)))
   
-  (ctest #t flat-contract? (hash/c any/c any/c #:immutable #f))
-  (ctest #f flat-contract? (hash/c any/c any/c #:immutable #t))
-  (ctest #t flat-contract? (hash/c any/c any/c))
+  (ctest #t contract?      (hash/c any/c any/c #:immutable #f))
+  (ctest #t flat-contract? (hash/c any/c any/c #:immutable #f #:flat? #t))
+
+  (ctest #t flat-contract? (hash/c any/c any/c #:immutable #t))
+  (ctest #t flat-contract? (hash/c any/c any/c #:immutable #t #:flat? #t))
+
+  (ctest #t contract?      (hash/c any/c any/c))
+  (ctest #t flat-contract? (hash/c any/c any/c #:flat? #t))
   
+  (ctest #t contract?      (hash/c number? (-> number? number?) #:immutable #f))
+  (ctest #f flat-contract? (hash/c number? (-> number? number?) #:immutable #f))
+
+  (ctest #t contract?      (hash/c number? (-> number? number?) #:immutable #t))
+  (ctest #f flat-contract? (hash/c number? (-> number? number?) #:immutable #t))
+  
+  (ctest #t contract?      (hash/c number? (-> number? number?)))
+  (ctest #f flat-contract? (hash/c number? (-> number? number?)))
+
   (ctest #t contract? 1)
   (ctest #t contract? (-> 1 1))
   
@@ -8887,15 +8941,15 @@ so that propagation occurs.
                       '(1 2 3 4)
                       '(1 2 3))
 
-  (test-flat-contract '(hash/c symbol? boolean?) (make-hash) 1)
-  (test-flat-contract '(hash/c symbol? boolean?) 
+  (test-flat-contract '(hash/c symbol? boolean? #:flat? #t) (make-hash) 1)
+  (test-flat-contract '(hash/c symbol? boolean? #:flat? #t) 
                       (let ([ht (make-hash)])
                         (hash-set! ht 'x #t)
                         ht)
                       (let ([ht (make-hash)])
                         (hash-set! ht 'x 1)
                         ht))
-  (test-flat-contract '(hash/c symbol? boolean?) 
+  (test-flat-contract '(hash/c symbol? boolean? #:flat? #t) 
                       (let ([ht (make-hash)])
                         (hash-set! ht 'x #t)
                         ht)
@@ -9497,12 +9551,16 @@ so that propagation occurs.
   
   (ctest #t contract-first-order-passes? (hash/c any/c any/c) (make-hash))
   (ctest #f contract-first-order-passes? (hash/c any/c any/c) #f)
-  (ctest #f contract-first-order-passes? (hash/c symbol? boolean?) (let ([ht (make-hash)])
+  (ctest #t contract-first-order-passes? (hash/c symbol? boolean?) (let ([ht (make-hash)])
                                                                      (hash-set! ht 'x 1)
                                                                      ht))
-  (ctest #f contract-first-order-passes? (hash/c symbol? boolean?) (let ([ht (make-hash)])
+  (ctest #f contract-first-order-passes? (hash/c symbol? boolean? #:flat? #t)
+         (let ([ht (make-hash)]) (hash-set! ht 'x 1) ht))
+  (ctest #t contract-first-order-passes? (hash/c symbol? boolean?) (let ([ht (make-hash)])
                                                                      (hash-set! ht 1 #f)
                                                                      ht))
+  (ctest #f contract-first-order-passes? (hash/c symbol? boolean? #:flat? #t)
+         (let ([ht (make-hash)]) (hash-set! ht 1 #f) ht))
   (ctest #t contract-first-order-passes? (hash/c symbol? boolean?) (let ([ht (make-hash)])
                                                                      (hash-set! ht 'x #t)
                                                                      ht))

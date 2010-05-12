@@ -2,107 +2,130 @@
 
 (require "guts.ss")
 
-(provide hash/c)
+(provide (rename-out [build-hash/c hash/c]))
 
-(define (hash/c dom rng #:immutable [immutable 'dont-care])
+(define (build-hash/c dom rng #:immutable [immutable 'dont-care] #:flat? [flat? #f])
   (unless (memq immutable '(#t #f dont-care))
     (error 'hash/c "expected #:immutable argument to be either #t, #f, or 'dont-care, got ~s" immutable))
-  (cond
-    [(eq? immutable #t) 
-     (make-immutable-hash/c (coerce-contract 'hash/c dom) 
-                            (coerce-contract 'hash/c rng))]
-    [else
-     (make-hash/c (coerce-flat-contract 'hash/c dom) 
-                  (coerce-flat-contract 'hash/c rng)
-                  immutable)]))
+  (let ([dom-ctc (if flat?
+                     (coerce-flat-contract 'hash/c dom)
+                     (coerce-contract 'hash/c dom))]
+        [rng-ctc (if flat?
+                     (coerce-flat-contract 'hash/c rng)
+                     (coerce-contract 'hash/c rng))])
+    (if (or flat?
+            (and (eq? immutable #t)
+                 (flat-contract? dom-ctc)
+                 (flat-contract? rng-ctc)))
+        (make-flat-hash/c dom-ctc rng-ctc immutable)
+        (make-ho-hash/c dom-ctc rng-ctc immutable))))
 
-;; hash-test : hash/c -> any -> bool
-(define (hash-test ctc)
-  (let ([dom-proc (flat-contract-predicate (hash/c-dom ctc))]
-        [rng-proc (flat-contract-predicate (hash/c-rng ctc))]
-        [immutable (hash/c-immutable ctc)])
-    (λ (val)
-      (and (hash? val)
-           (case immutable
-             [(#t) (immutable? val)]
-             [(#f) (not (immutable? val))]
-             [(dont-care) #t])
-           (let/ec k
-             (hash-for-each
-              val
-              (λ (dom rng)
-                (unless (dom-proc dom) (k #f))
-                (unless (rng-proc rng) (k #f))))
-             #t)))))
+(define (hash/c-first-order ctc) 
+  (let ([dom-ctc (hash/c-dom ctc)]
+        [rng-ctc (hash/c-rng ctc)]
+        [immutable (hash/c-immutable ctc)]
+        [flat? (flat-hash/c? ctc)])
+    (λ (val #:blame [blame #f])
+      (let/ec return
+        (define (fail . args)
+          (if blame
+              (apply raise-blame-error blame val args)
+              (return #f)))
+        (unless (hash? val)
+          (fail "expected a hash, got ~a" val))
+        (case immutable
+          [(#t) 
+           (unless (immutable? val) 
+             (fail "expected an immutable hash, got ~a" val))]
+          [(#f)
+           (when (immutable? val)
+             (fail "expected an mutable hash, got ~a" val))]
+          [(dont-care) (void)])
+        (when (or flat? (immutable? val))
+          (for ([(k v) (in-hash val)])
+            (if blame
+                (begin (((contract-projection dom-ctc) blame) k)
+                       (((contract-projection rng-ctc) blame) v)
+                       (void))
+                (unless (and (contract-first-order-passes? dom-ctc k)
+                             (contract-first-order-passes? rng-ctc v))
+                  (fail)))))
+        #t))))
 
-(define-struct hash/c (dom rng immutable)
+(define (hash/c-name ctc)
+  (apply 
+   build-compound-type-name
+   'hash/c (hash/c-dom ctc) (hash/c-rng ctc)
+   (append
+    (if (and (flat-hash/c? ctc)
+             (not (eq? (hash/c-immutable ctc) #t)))
+        (list '#:flat? #t)
+        null)
+    (case (hash/c-immutable ctc)
+      [(dont-care) null]
+      [(#t)
+       (list '#:immutable #t)]
+      [(#f)
+       (list '#:immutable #f)]))))
+
+(define-struct hash/c (dom rng immutable))
+
+(define-struct (flat-hash/c hash/c) ()
   #:omit-define-syntaxes
 
   #:property prop:flat-contract
   (build-flat-contract-property
-   #:first-order hash-test
+   #:name hash/c-name
+   #:first-order hash/c-first-order
+   
+   #:projection
+   (λ (ctc)
+     (λ (blame)
+       (λ (val)
+         ((hash/c-first-order ctc) val #:blame blame)
+         val)))))
+
+(define-struct (ho-hash/c hash/c) ()
+  #:omit-define-syntaxes
+
+  #:property prop:contract
+  (build-contract-property
+   #:name hash/c-name
+   #:first-order hash/c-first-order
+   
    #:projection
    (λ (ctc)
       (let ([dom-proc (contract-projection (hash/c-dom ctc))]
             [rng-proc (contract-projection (hash/c-rng ctc))]
             [immutable (hash/c-immutable ctc)])
         (λ (blame)
-           (let ([partial-dom-contract (dom-proc blame)]
-                 [partial-rng-contract (rng-proc blame)])
+           (let ([pos-dom-proj (dom-proc blame)]
+                 [neg-dom-proj (dom-proc (blame-swap blame))]
+                 [pos-rng-proj (rng-proc blame)]
+                 [neg-rng-proj (rng-proc (blame-swap blame))])
              (λ (val)
-                (unless (hash? val)
-                  (raise-blame-error blame val "expected a hash, got ~a" val))
-                (case immutable
-                  [(#t) (unless (immutable? val)
-                          (raise-blame-error blame val
-                                             "expected an immutable hash, got ~a" val))]
-                  [(#f) (when (immutable? val)
-                          (raise-blame-error blame val
-                                             "expected a mutable hash, got ~a" val))]
-                  [(dont-care) (void)])
-                
-                (hash-for-each
-                 val
-                 (λ (key val)
-                    (partial-dom-contract key)
-                    (partial-rng-contract val)))
-                
-                val)))))
-
-   #:name
-   (λ (ctc) (apply 
-             build-compound-type-name
-             'hash/c (hash/c-dom ctc) (hash/c-rng ctc)
-             (if (eq? 'dont-care (hash/c-immutable ctc))
-               '()
-               (list '#:immutable (hash/c-immutable ctc)))))))
-
-(define-struct immutable-hash/c (dom rng)
-  #:omit-define-syntaxes
-
-  #:property prop:contract
-  (build-contract-property
-   #:first-order (λ (ctc) (λ (val) (and (hash? val) (immutable? val))))
-   #:projection
-   (λ (ctc)
-      (let ([dom-proc (contract-projection (immutable-hash/c-dom ctc))]
-            [rng-proc (contract-projection (immutable-hash/c-rng ctc))])
-        (λ (blame)
-           (let ([partial-dom-contract (dom-proc blame)]
-                 [partial-rng-contract (rng-proc blame)])
-             (λ (val)
-                (unless (and (hash? val)
-                             (immutable? val))
-                  (raise-blame-error blame val
-                                     "expected an immutable hash"))
-                (make-immutable-hash
-                 (hash-map
-                  val
-                  (λ (k v)
-                     (cons (partial-dom-contract k)
-                           (partial-rng-contract v))))))))))
-
-   #:name
-   (λ (ctc) (build-compound-type-name
-             'hash/c (immutable-hash/c-dom ctc) (immutable-hash/c-rng ctc)
-             '#:immutable #t))))
+               ((hash/c-first-order ctc) val #:blame blame)
+               
+               (if (immutable? val)
+                   (let ([hash-maker
+                          (cond
+                            [(hash-equal? val) make-immutable-hash]
+                            [(hash-eqv? val) make-immutable-hasheqv]
+                            [(hash-eq? val) make-immutable-hasheq])])
+                     (hash-maker
+                      (for/list ([(k v) (in-hash val)])
+                        (cons (pos-dom-proj k)
+                              (pos-rng-proj v)))))
+                   (proxy-hash
+                    val
+                    (λ (h k)
+                      (values (neg-dom-proj k)
+                              (λ (h k v)
+                                (pos-rng-proj v))))
+                    (λ (h k v)
+                      (values (neg-dom-proj k)
+                              (neg-rng-proj v)))
+                    (λ (h k)
+                      (neg-dom-proj k))
+                    (λ (h k)
+                      (pos-dom-proj k)))))))))))
