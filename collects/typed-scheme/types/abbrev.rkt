@@ -9,7 +9,7 @@
          scheme/match         
          scheme/promise
          scheme/flonum (except-in scheme/contract ->* ->)
-         unstable/syntax
+         unstable/syntax unstable/mutated-vars
          (prefix-in c: scheme/contract)
          (for-syntax scheme/base syntax/parse)
 	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp scheme/flonum))
@@ -268,13 +268,13 @@
 
 (d/c (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
-     (if (type-equal? Univ t) 
+     (if (or (type-equal? Univ t) (and (identifier? i) (is-var-mutated? i))) 
          -top
          (make-TypeFilter t p i)))
 
 (d/c (-not-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)
-     (if (type-equal? (make-Union null) t)
+     (if (or (type-equal? (make-Union null) t) (and (identifier? i) (is-var-mutated? i)))
          -top
          (make-NotTypeFilter t p i)))
 
