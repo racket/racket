@@ -14,7 +14,10 @@
    create-model
    on-model-status-change
    register-view
-   on-view-shutdown))
+   on-view-shutdown
+
+   ;; field: locked?
+   ))
 
 ;; result
 ;; Represents a test (case or suite) together with the state associated

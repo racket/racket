@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/class
          unstable/class-iop
+         unstable/gui/notify
          racket/list
          racket/gui
          framework
@@ -276,6 +277,7 @@ still be there, just not visible?
     (inherit get-help-menu
              get-width
              get-height
+             get-menu-bar
              get-area-container)
 
     (define-syntax override-false
@@ -306,6 +308,14 @@ still be there, just not visible?
 
     (super-new (width width) (height height))
     (send (get-help-menu) delete)
+    (let ([racunit-menu
+           (new menu%
+                (label "RacUnit")
+                (parent (get-menu-bar)))])
+      (menu-option/notify-box racunit-menu
+                              "Lock"
+                              (get-field locked? controller)))
+
     (define view
       (new view%
            (controller controller)

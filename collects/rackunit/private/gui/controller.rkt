@@ -16,13 +16,18 @@
     ;; The model currently displayed in the Details view, of #f is none.
     (define-notify selected-model (new notify-box% (value #f)))
 
+    ;; locked? : (notify-box boolean)
+    (define-notify locked? (new notify-box% (value #f)))
+
     ;; view : #f or view<%>
     (define view #f)
 
     ;; check-ready : -> void
     (define/private (check-ready)
       (unless view
-        (error 'racunit "The RacUnit GUI is no longer running.")))
+        (error 'racunit "The RacUnit GUI is no longer running."))
+      (when (get-locked?)
+        (error 'racunit "The RacUnit GUI is locked and not accepting tests.")))
 
     ;; create-model : test suite<%>/#f -> result<%>
     (define/public (create-model test parent)
@@ -47,7 +52,7 @@
 
     ;; on-model-status-change : model<%> -> void
     (define/public (on-model-status-change model)
-      (check-ready)
+      ;; (check-ready) ;; allow completion of tests to change status
       (send view queue-for-update model)
       (let [(parent (send model get-parent))]
         (when parent (send parent on-child-status-change model))))
