@@ -236,7 +236,8 @@ path/s is either such a string or a list of them.
 ;; ----------------------------------------------------------------------------
 ;; Reading and writing
 
-(require (for-syntax scheme/base) scheme/file scheme/path scheme/list)
+(require scheme/file scheme/path scheme/list scheme/string
+         (for-syntax scheme/base))
 
 (define-syntax (this-file stx)
   (let ([src (syntax-source stx)])
@@ -470,12 +471,44 @@ path/s is either such a string or a list of them.
   ;; --------------------
   (make-prop
    'drdr:command-line
-   "command-line string (empty string means no execution)"
+   (string-append "command-line string (space-separated,"
+                  " empty => no execution, \"~s\" => the file)")
    (lambda (str)
-     (if (regexp-match #rx"^(|.*~s.*)$" str)
-       str
-       (error "expecting an empty string, or one with `~s'")))
-   values)
+     (define (bad) (error "expecting an empty string, or one with `~s'"))
+     (if (equal? str "")
+       #f
+       (let* ([str (regexp-replace #rx"^ +" str "")]
+              [str (regexp-replace #rx" +$" str "")]
+              [str (regexp-replace #rx"  +" str " ")])
+         (if (equal? str "")
+           #f
+           (let* ([xs (regexp-split #rx" " str)]
+                  [xs (cons (string->symbol (car xs))
+                            (map (lambda (x) (if (equal? x "~s") '* x))
+                                 (cdr xs)))]
+                  [*-tail (memq '* xs)]
+                  [commands '(racket gracket gracket-text raco
+                              mzscheme mred mred-text mzc)])
+             (unless (memq (car xs) commands)
+               (error
+                (format "unidentified command \"~s\", expecting one of ~s"
+                        (car xs) commands)))
+             (unless *-tail
+               (error "missing \"~s\" in the command"))
+             (when (memq '* (cdr *-tail))
+               (error "can't use more than a single `~s'"))
+             xs)))))
+   (lambda (cmd)
+     (define (bad) (error 'drdr:command-line "bad command-line value: ~e" cmd))
+     (cond [(not cmd) ""]
+           [(not (list? cmd)) (bad)]
+           [else (string-join (map (lambda (x)
+                                     (cond [(eq? x '*) "~s"]
+                                           [(symbol? x) (symbol->string x)]
+                                           [(string? x) x]
+                                           [else (bad)]))
+                                   cmd)
+                              " ")])))
   ;; --------------------
   (make-prop
    'drdr:timeout
@@ -490,11 +523,10 @@ path/s is either such a string or a list of them.
    'drdr:random
    "is file output random?"
    (lambda (str)
-     (if (regexp-match? #rx"^(yes|no)$" str)
-       (string=? "yes" str)
-       (error "expecting yes or no")))
-   (lambda (b)
-     (if b "yes" "no")))))
+     (cond [(equal? str "yes") #t]
+           [(equal? str "no")  #f]
+           [else (error "expecting \"yes\" or \"no\"")]))
+   (lambda (b) (if b "yes" "no")))))
 
 ;; read the arguments here, so just requiring this file verifies the data
 (read-props)
@@ -504,571 +536,571 @@ path/s is either such a string or a list of them.
 #| #:begin-props
 
 "collects/2htdp" responsible (matthias)
-"collects/2htdp/image.rkt" responsible (robby) drdr:command-line "mred-text -t ~s"
-"collects/2htdp/private/check-aux.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/private/checked-cell.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/private/image-more.rkt" responsible (robby) drdr:command-line "mred-text -t ~s"
-"collects/2htdp/private/img-err.rkt" responsible (robby) drdr:command-line "mred ~s"
-"collects/2htdp/private/last.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/private/launch-many-worlds.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/private/timer.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/private/universe-image.rkt" drdr:command-line "mred ~s"
-"collects/2htdp/private/universe.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/private/world.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/tests/bad-draw.rkt" drdr:command-line "mred ~s"
-"collects/2htdp/tests/full-scene-visible.rkt" drdr:command-line "mred ~s"
-"collects/2htdp/tests/image-equality-performance.rkt" responsible (robby) drdr:command-line "mred-text ~s"
-"collects/2htdp/tests/mouse-evt.rkt" drdr:command-line ""
-"collects/2htdp/tests/mp.rkt" drdr:command-line ""
-"collects/2htdp/tests/perform-robby.rkt" drdr:command-line "mred ~s"
-"collects/2htdp/tests/perform-whack.rkt" drdr:command-line ""
-"collects/2htdp/tests/profile-robby.rkt" drdr:command-line ""
-"collects/2htdp/tests/release.rkt" drdr:command-line "mred -t ~s"
-"collects/2htdp/tests/stop.rkt" drdr:command-line "mred ~s"
-"collects/2htdp/tests/test-image.rkt" responsible (robby) drdr:command-line "mred-text -qt ~s"
-"collects/2htdp/tests/ufo-rename.rkt" drdr:command-line "mred ~s"
-"collects/2htdp/tests/world0-stops.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/uchat/chatter.rkt" drdr:command-line "mzc -k ~s"
-"collects/2htdp/uchat/server.rkt" drdr:command-line "mzc -k ~s"
-"collects/2htdp/universe.rkt" drdr:command-line "mred-text -t ~s"
-"collects/2htdp/utest/balls.rkt" drdr:command-line "mzc ~s"
-"collects/2htdp/utest/sam.rkt" drdr:command-line "mzc ~s"
-"collects/2htdp/utest/shared.rkt" drdr:command-line "mred-text -t ~s"
+"collects/2htdp/image.rkt" responsible (robby) drdr:command-line (mred-text "-t" *)
+"collects/2htdp/private/check-aux.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/private/checked-cell.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/private/image-more.rkt" responsible (robby) drdr:command-line (mred-text "-t" *)
+"collects/2htdp/private/img-err.rkt" responsible (robby) drdr:command-line (mred *)
+"collects/2htdp/private/last.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/private/launch-many-worlds.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/private/timer.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/private/universe-image.rkt" drdr:command-line (mred *)
+"collects/2htdp/private/universe.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/private/world.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/tests/bad-draw.rkt" drdr:command-line (mred *)
+"collects/2htdp/tests/full-scene-visible.rkt" drdr:command-line (mred *)
+"collects/2htdp/tests/image-equality-performance.rkt" responsible (robby) drdr:command-line (mred-text *)
+"collects/2htdp/tests/mouse-evt.rkt" drdr:command-line #f
+"collects/2htdp/tests/mp.rkt" drdr:command-line #f
+"collects/2htdp/tests/perform-robby.rkt" drdr:command-line (mred *)
+"collects/2htdp/tests/perform-whack.rkt" drdr:command-line #f
+"collects/2htdp/tests/profile-robby.rkt" drdr:command-line #f
+"collects/2htdp/tests/release.rkt" drdr:command-line (mred "-t" *)
+"collects/2htdp/tests/stop.rkt" drdr:command-line (mred *)
+"collects/2htdp/tests/test-image.rkt" responsible (robby) drdr:command-line (mred-text "-qt" *)
+"collects/2htdp/tests/ufo-rename.rkt" drdr:command-line (mred *)
+"collects/2htdp/tests/world0-stops.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/uchat/chatter.rkt" drdr:command-line (mzc "-k" *)
+"collects/2htdp/uchat/server.rkt" drdr:command-line (mzc "-k" *)
+"collects/2htdp/universe.rkt" drdr:command-line (mred-text "-t" *)
+"collects/2htdp/utest/balls.rkt" drdr:command-line (mzc *)
+"collects/2htdp/utest/sam.rkt" drdr:command-line (mzc *)
+"collects/2htdp/utest/shared.rkt" drdr:command-line (mred-text "-t" *)
 "collects/afm" responsible (mflatt)
-"collects/afm/ttf-to-glyphlist.rkt" drdr:command-line "mzc ~s"
+"collects/afm/ttf-to-glyphlist.rkt" drdr:command-line (mzc *)
 "collects/algol60" responsible (mflatt)
-"collects/algol60/bd-tool.rkt" drdr:command-line "mred-text -t ~s"
-"collects/algol60/tool.rkt" drdr:command-line "mred-text -t ~s"
+"collects/algol60/bd-tool.rkt" drdr:command-line (mred-text "-t" *)
+"collects/algol60/tool.rkt" drdr:command-line (mred-text "-t" *)
 "collects/at-exp" responsible (eli)
 "collects/browser" responsible (robby)
-"collects/browser/browser-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/browser.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/bullet-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/external.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/htmltext.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/private/bullet.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/private/html.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/private/hyper.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/private/option-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/browser/tool.rkt" drdr:command-line "mred-text -t ~s"
+"collects/browser/browser-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/browser.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/bullet-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/external.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/htmltext.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/private/bullet.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/private/html.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/private/hyper.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/private/option-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/browser/tool.rkt" drdr:command-line (mred-text "-t" *)
 "collects/combinator-parser" responsible (kathyg)
 "collects/compiler" responsible (mflatt)
-"collects/compiler/commands/ctool.rkt" drdr:command-line ""
-"collects/compiler/commands/exe-dir.rkt" drdr:command-line ""
-"collects/compiler/commands/exe.rkt" drdr:command-line ""
-"collects/compiler/commands/make.rkt" drdr:command-line "mzc ~s"
-"collects/compiler/commands/pack.rkt" drdr:command-line ""
+"collects/compiler/commands/ctool.rkt" drdr:command-line #f
+"collects/compiler/commands/exe-dir.rkt" drdr:command-line #f
+"collects/compiler/commands/exe.rkt" drdr:command-line #f
+"collects/compiler/commands/make.rkt" drdr:command-line (mzc *)
+"collects/compiler/commands/pack.rkt" drdr:command-line #f
 "collects/config" responsible (mflatt eli)
 "collects/defaults" responsible (robby)
 "collects/deinprogramm" responsible (sperber)
-"collects/deinprogramm/contract/contract-test-display.rkt" drdr:command-line "mred-text -t ~s"
-"collects/deinprogramm/convert-explicit.scm" drdr:command-line ""
-"collects/deinprogramm/define-record-procedures.scm" drdr:command-line ""
-"collects/deinprogramm/deinprogramm-langs.rkt" drdr:command-line "mred-text -t ~s"
-"collects/deinprogramm/image.rkt" drdr:command-line "mred-text -t ~s"
-"collects/deinprogramm/line3d.rkt" drdr:command-line "mred-text -t ~s"
-"collects/deinprogramm/line3d.scm" drdr:command-line ""
-"collects/deinprogramm/quickcheck/quickcheck.scm" drdr:command-line ""
-"collects/deinprogramm/quickcheck/random.scm" drdr:command-line ""
-"collects/deinprogramm/run-dmda-code.rkt" drdr:command-line "mzc ~s"
-"collects/deinprogramm/turtle.rkt" drdr:command-line "mred-text -t ~s"
-"collects/deinprogramm/world.rkt" drdr:command-line "mred-text -t ~s"
+"collects/deinprogramm/contract/contract-test-display.rkt" drdr:command-line (mred-text "-t" *)
+"collects/deinprogramm/convert-explicit.scm" drdr:command-line #f
+"collects/deinprogramm/define-record-procedures.scm" drdr:command-line #f
+"collects/deinprogramm/deinprogramm-langs.rkt" drdr:command-line (mred-text "-t" *)
+"collects/deinprogramm/image.rkt" drdr:command-line (mred-text "-t" *)
+"collects/deinprogramm/line3d.rkt" drdr:command-line (mred-text "-t" *)
+"collects/deinprogramm/line3d.scm" drdr:command-line #f
+"collects/deinprogramm/quickcheck/quickcheck.scm" drdr:command-line #f
+"collects/deinprogramm/quickcheck/random.scm" drdr:command-line #f
+"collects/deinprogramm/run-dmda-code.rkt" drdr:command-line (mzc *)
+"collects/deinprogramm/turtle.rkt" drdr:command-line (mred-text "-t" *)
+"collects/deinprogramm/world.rkt" drdr:command-line (mred-text "-t" *)
 "collects/drracket" responsible (robby)
-"collects/drracket/arrow.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/drracket.rkt" drdr:command-line "mzc ~s"
-"collects/drracket/main.rkt" drdr:command-line "mzc ~s"
-"collects/drracket/private/app.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/auto-language.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/bindings-browser.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/bitmap-message.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/debug.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/drracket-normal.rkt" drdr:command-line "mzc ~s"
-"collects/drracket/private/eb.rkt" drdr:command-line "mred-text ~s"
-"collects/drracket/private/embedded-snip-utils.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/eval.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/font.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/frame.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/help-desk.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/honu-logo.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/init.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/insert-large-letters.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/label-frame-mred.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/language-configuration.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/language-object-contract.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/language.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/launcher-mred-bootstrap.rkt" drdr:command-line "mzc ~s"
-"collects/drracket/private/launcher-mz-bootstrap.rkt" drdr:command-line "mzc ~s"
-"collects/drracket/private/link.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/modes.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/module-browser.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/module-language-tools.rkt" drdr:command-line "mred-text ~s"
-"collects/drracket/private/module-language.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/multi-file-search.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/number-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/palaka.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/profile-drs.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/rep.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/stick-figures.rkt" drdr:command-line "mzc ~s"
-"collects/drracket/private/syncheck-debug.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/text.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/tools-drs.rkt" drdr:command-line "mred ~s"
-"collects/drracket/private/tools.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/tracing.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/private/unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/sprof.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/syncheck-drracket-button.rkt" drdr:command-line "mred-text ~s"
-"collects/drracket/syncheck.rkt" drdr:command-line "mred-text -t ~s"
-"collects/drracket/tool-lib.rkt" drdr:command-line "mzc ~s"
+"collects/drracket/arrow.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/drracket.rkt" drdr:command-line (mzc *)
+"collects/drracket/main.rkt" drdr:command-line (mzc *)
+"collects/drracket/private/app.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/auto-language.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/bindings-browser.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/bitmap-message.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/debug.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/drracket-normal.rkt" drdr:command-line (mzc *)
+"collects/drracket/private/eb.rkt" drdr:command-line (mred-text *)
+"collects/drracket/private/embedded-snip-utils.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/eval.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/font.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/frame.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/help-desk.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/honu-logo.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/init.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/insert-large-letters.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/label-frame-mred.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/language-configuration.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/language-object-contract.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/language.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/launcher-mred-bootstrap.rkt" drdr:command-line (mzc *)
+"collects/drracket/private/launcher-mz-bootstrap.rkt" drdr:command-line (mzc *)
+"collects/drracket/private/link.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/modes.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/module-browser.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/module-language-tools.rkt" drdr:command-line (mred-text *)
+"collects/drracket/private/module-language.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/multi-file-search.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/number-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/palaka.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/profile-drs.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/rep.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/stick-figures.rkt" drdr:command-line (mzc *)
+"collects/drracket/private/syncheck-debug.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/text.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/tools-drs.rkt" drdr:command-line (mred *)
+"collects/drracket/private/tools.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/tracing.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/private/unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/sprof.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/syncheck-drracket-button.rkt" drdr:command-line (mred-text *)
+"collects/drracket/syncheck.rkt" drdr:command-line (mred-text "-t" *)
+"collects/drracket/tool-lib.rkt" drdr:command-line (mzc *)
 "collects/drscheme" responsible (robby)
-"collects/drscheme/drscheme.rkt" drdr:command-line "mzc ~s"
-"collects/drscheme/main.rkt" drdr:command-line "mzc ~s"
-"collects/drscheme/tool-lib.rkt" drdr:command-line "mzc ~s"
+"collects/drscheme/drscheme.rkt" drdr:command-line (mzc *)
+"collects/drscheme/main.rkt" drdr:command-line (mzc *)
+"collects/drscheme/tool-lib.rkt" drdr:command-line (mzc *)
 "collects/dynext" responsible (mflatt)
-"collects/dynext/private/macinc.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/dynext/private/stdio.rkt" drdr:command-line ""
+"collects/dynext/private/macinc.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/dynext/private/stdio.rkt" drdr:command-line #f
 "collects/embedded-gui" responsible (mflatt)
-"collects/embedded-gui/embedded-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/aligned-pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/alignment-helpers.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/button-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/cue-text.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/dllist.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/embedded-message.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/fixed-width-label-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/grey-editor.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/lines.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/locked-pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/on-show-editor.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/on-show-pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/program-editor.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/really-resized-pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/single-line-text.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/snip-lib.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/snip-wrapper.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/stretchable-editor-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/suppress-modify-editor.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/tabbable-text.rkt" drdr:command-line "mred-text -t ~s"
-"collects/embedded-gui/private/tests/alignment-test.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/info.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/not-stetching.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/only-one-child.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/peer-stretchables.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/stretching-in-alignment.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/target-not-object.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/test-alignment.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/test-case-box.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/test-macro.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/test-show-feature-for-test-case.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/test-show-feature.rkt" drdr:command-line ""
-"collects/embedded-gui/private/tests/unaligned-childless-redux.rkt" drdr:command-line ""
-"collects/embedded-gui/private/verthoriz-alignment.rkt" drdr:command-line "mred-text -t ~s"
+"collects/embedded-gui/embedded-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/aligned-pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/alignment-helpers.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/button-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/cue-text.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/dllist.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/embedded-message.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/fixed-width-label-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/grey-editor.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/lines.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/locked-pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/on-show-editor.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/on-show-pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/program-editor.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/really-resized-pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/single-line-text.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/snip-lib.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/snip-wrapper.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/stretchable-editor-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/suppress-modify-editor.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/tabbable-text.rkt" drdr:command-line (mred-text "-t" *)
+"collects/embedded-gui/private/tests/alignment-test.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/info.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/not-stetching.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/only-one-child.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/peer-stretchables.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/stretching-in-alignment.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/target-not-object.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/test-alignment.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/test-case-box.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/test-macro.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/test-show-feature-for-test-case.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/test-show-feature.rkt" drdr:command-line #f
+"collects/embedded-gui/private/tests/unaligned-childless-redux.rkt" drdr:command-line #f
+"collects/embedded-gui/private/verthoriz-alignment.rkt" drdr:command-line (mred-text "-t" *)
 "collects/eopl" responsible (eli)
 "collects/errortrace" responsible (mflatt)
 "collects/ffi" responsible (eli)
-"collects/ffi/examples/c-printf.rkt" drdr:command-line "mzc -k ~s"
-"collects/ffi/examples/esd.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/magick.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/sndfile.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/tcl.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/use-c-printf.rkt" drdr:command-line "mzc -k ~s"
-"collects/ffi/examples/use-esd.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/use-magick.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/use-sndfile.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/use-tcl.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/use-xmmsctrl.rkt" drdr:command-line ""
-"collects/ffi/examples/use-xosd.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/examples/xmmsctrl.rkt" drdr:command-line ""
-"collects/ffi/examples/xosd.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/objc.rkt" drdr:command-line "mzc ~s"
-"collects/ffi/unsafe/objc.rkt" drdr:command-line "mzc ~s"
+"collects/ffi/examples/c-printf.rkt" drdr:command-line (mzc "-k" *)
+"collects/ffi/examples/esd.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/magick.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/sndfile.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/tcl.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/use-c-printf.rkt" drdr:command-line (mzc "-k" *)
+"collects/ffi/examples/use-esd.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/use-magick.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/use-sndfile.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/use-tcl.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/use-xmmsctrl.rkt" drdr:command-line #f
+"collects/ffi/examples/use-xosd.rkt" drdr:command-line (mzc *)
+"collects/ffi/examples/xmmsctrl.rkt" drdr:command-line #f
+"collects/ffi/examples/xosd.rkt" drdr:command-line (mzc *)
+"collects/ffi/objc.rkt" drdr:command-line (mzc *)
+"collects/ffi/unsafe/objc.rkt" drdr:command-line (mzc *)
 "collects/file" responsible (mflatt)
 "collects/framework" responsible (robby)
-"collects/framework/collapsed-snipclass.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/comment-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/decorated-editor-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/framework-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/framework.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/gui-utils.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/keybinding-lang.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/preferences.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/autosave.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/canvas.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/collapsed-snipclass-helpers.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/color-prefs.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/color.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/comment-box.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/decorated-editor-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/editor.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/exit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/finder.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/frame.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/group.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/handler.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/keymap.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/menu.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/number-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/preferences.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/scheme.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/search.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/private/standard-menus.rkt" drdr:command-line ""
-"collects/framework/private/text.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/splash.rkt" drdr:command-line "mred-text -t ~s"
-"collects/framework/test.rkt" drdr:command-line "mred-text -t ~s"
+"collects/framework/collapsed-snipclass.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/comment-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/decorated-editor-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/framework-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/framework.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/gui-utils.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/keybinding-lang.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/preferences.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/autosave.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/canvas.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/collapsed-snipclass-helpers.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/color-prefs.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/color.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/comment-box.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/decorated-editor-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/editor.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/exit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/finder.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/frame.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/group.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/handler.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/keymap.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/menu.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/number-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/preferences.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/scheme.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/search.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/private/standard-menus.rkt" drdr:command-line #f
+"collects/framework/private/text.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/splash.rkt" drdr:command-line (mred-text "-t" *)
+"collects/framework/test.rkt" drdr:command-line (mred-text "-t" *)
 "collects/frtime" responsible (jay gcooper)
-"collects/frtime/animation/graphics.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/animation.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/analog-clock.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/ball-on-string.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/delay-mouse.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/growing-points.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/mirror-lens.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/mouse.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/needles.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/orbit-mouse.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/piston.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/pong.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/push-pull-ball.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/rotation.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/tetris.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/tile-game.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/demos/ufo.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/frlibs/date.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/frp-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/frtime-big.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/frtime.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/gui/aux-mixin-macros.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/gui/demo/bindec.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/gui/demo/instr.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/gui/demo/timer.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/gui/fred.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/gui/mixin-macros.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/gui/simple.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/gui.rkt" drdr:command-line "mzc ~s"
-"collects/frtime/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/opt/frtime-opt-lang.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/reactive.rkt" drdr:command-line "mred-text -t ~s"
-"collects/frtime/tool/frtime-tool.rkt" drdr:command-line "mred-text -t ~s"
+"collects/frtime/animation/graphics.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/animation.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/analog-clock.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/ball-on-string.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/delay-mouse.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/growing-points.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/mirror-lens.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/mouse.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/needles.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/orbit-mouse.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/piston.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/pong.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/push-pull-ball.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/rotation.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/tetris.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/tile-game.rkt" drdr:command-line (mzc *)
+"collects/frtime/demos/ufo.rkt" drdr:command-line (mzc *)
+"collects/frtime/frlibs/date.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/frp-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/frtime-big.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/frtime.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/gui/aux-mixin-macros.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/gui/demo/bindec.rkt" drdr:command-line (mzc *)
+"collects/frtime/gui/demo/instr.rkt" drdr:command-line (mzc *)
+"collects/frtime/gui/demo/timer.rkt" drdr:command-line (mzc *)
+"collects/frtime/gui/fred.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/gui/mixin-macros.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/gui/simple.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/gui.rkt" drdr:command-line (mzc *)
+"collects/frtime/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/opt/frtime-opt-lang.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/reactive.rkt" drdr:command-line (mred-text "-t" *)
+"collects/frtime/tool/frtime-tool.rkt" drdr:command-line (mred-text "-t" *)
 "collects/games" responsible (mflatt robby)
-"collects/games/aces/aces.scm" drdr:command-line "mred-text -t ~s"
-"collects/games/blackjack/blackjack.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards/base.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards/card-class.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards/cards.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards/classes.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards/constants.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards/make-cards.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards/snipclass.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/cards.rkt" drdr:command-line "mred-text -t ~s"
+"collects/games/aces/aces.scm" drdr:command-line (mred-text "-t" *)
+"collects/games/blackjack/blackjack.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards/base.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards/card-class.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards/cards.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards/classes.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards/constants.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards/make-cards.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards/snipclass.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/cards.rkt" drdr:command-line (mred-text "-t" *)
 "collects/games/chat-noir" responsible (robby matthias)
-"collects/games/chat-noir/chat-noir-literate.rkt" drdr:command-line "mred-text ~s"
-"collects/games/chat-noir/chat-noir-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/checkers/checkers.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/checkers/honu-bitmaps.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/crazy8s/crazy8s.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/doors/doors.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/doors/utils.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/gcalc/gcalc.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/ginrummy/ginrummy.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/gl-board-game/gl-board.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/gl-board-game/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/gl-board-game.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/gobblet/check.rkt" drdr:command-line "mzc -k ~s"
-"collects/games/gobblet/gobblet.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/gobblet/gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/gobblet/robot.rkt" drdr:command-line "mzc -k ~s"
-"collects/games/gobblet/test-explore.rkt" drdr:command-line "mzc -k ~s"
-"collects/games/gobblet/test-model.rkt" drdr:command-line "mzc -k ~s"
-"collects/games/gofish/gofish.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/jewel/jewel.scm" drdr:command-line "mred-text -t ~s"
-"collects/games/jewel/text.scm" drdr:command-line "mred-text -t ~s"
-"collects/games/lights-out/board.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/lights-out/lights-out.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/main.rkt" drdr:command-line "mzc ~s"
-"collects/games/memory/memory.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/mines/gen-tiles.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/mines/mines.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/paint-by-numbers/gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/paint-by-numbers/main.rkt" drdr:command-line ""
-"collects/games/paint-by-numbers/paint-by-numbers.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/paint-by-numbers/raw-problems/build-final.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/games/paint-by-numbers/raw-problems/build-hattori.rkt" drdr:command-line "mred -t ~s"
-"collects/games/paint-by-numbers/raw-problems/build-rows-cols.rkt" drdr:command-line "mzc -k ~s"
-"collects/games/paint-by-numbers/raw-problems/build-solution-sets.rkt" drdr:command-line "mred -t ~s"
-"collects/games/paint-by-numbers/raw-problems/raw-hattori.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/games/paint-by-numbers/raw-problems/raw-kajitani.rkt" drdr:command-line "mred -t ~s"
-"collects/games/paint-by-numbers/raw-problems/raw-misc.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/games/paint-by-numbers/raw-problems/raw-problems.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/games/paint-by-numbers/raw-problems/size-calculation.rkt" drdr:command-line "mzc ~s"
-"collects/games/parcheesi/admin-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/parcheesi/die.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/parcheesi/gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/parcheesi/make-bitmap.rkt" drdr:command-line "mzc ~s"
-"collects/games/parcheesi/parcheesi.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/parcheesi/play-game.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/parcheesi/rules.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/pousse/pousse.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/same/same.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/show-help.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/slidey/slidey.rkt" drdr:command-line "mred-text -t ~s"
-"collects/games/spider/spider.rkt" drdr:command-line "mred-text -t ~s"
+"collects/games/chat-noir/chat-noir-literate.rkt" drdr:command-line (mred-text *)
+"collects/games/chat-noir/chat-noir-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/checkers/checkers.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/checkers/honu-bitmaps.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/crazy8s/crazy8s.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/doors/doors.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/doors/utils.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/gcalc/gcalc.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/ginrummy/ginrummy.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/gl-board-game/gl-board.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/gl-board-game/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/gl-board-game.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/gobblet/check.rkt" drdr:command-line (mzc "-k" *)
+"collects/games/gobblet/gobblet.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/gobblet/gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/gobblet/robot.rkt" drdr:command-line (mzc "-k" *)
+"collects/games/gobblet/test-explore.rkt" drdr:command-line (mzc "-k" *)
+"collects/games/gobblet/test-model.rkt" drdr:command-line (mzc "-k" *)
+"collects/games/gofish/gofish.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/jewel/jewel.scm" drdr:command-line (mred-text "-t" *)
+"collects/games/jewel/text.scm" drdr:command-line (mred-text "-t" *)
+"collects/games/lights-out/board.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/lights-out/lights-out.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/main.rkt" drdr:command-line (mzc *)
+"collects/games/memory/memory.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/mines/gen-tiles.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/mines/mines.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/paint-by-numbers/gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/paint-by-numbers/main.rkt" drdr:command-line #f
+"collects/games/paint-by-numbers/paint-by-numbers.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/paint-by-numbers/raw-problems/build-final.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/games/paint-by-numbers/raw-problems/build-hattori.rkt" drdr:command-line (mred "-t" *)
+"collects/games/paint-by-numbers/raw-problems/build-rows-cols.rkt" drdr:command-line (mzc "-k" *)
+"collects/games/paint-by-numbers/raw-problems/build-solution-sets.rkt" drdr:command-line (mred "-t" *)
+"collects/games/paint-by-numbers/raw-problems/raw-hattori.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/games/paint-by-numbers/raw-problems/raw-kajitani.rkt" drdr:command-line (mred "-t" *)
+"collects/games/paint-by-numbers/raw-problems/raw-misc.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/games/paint-by-numbers/raw-problems/raw-problems.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/games/paint-by-numbers/raw-problems/size-calculation.rkt" drdr:command-line (mzc *)
+"collects/games/parcheesi/admin-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/parcheesi/die.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/parcheesi/gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/parcheesi/make-bitmap.rkt" drdr:command-line (mzc *)
+"collects/games/parcheesi/parcheesi.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/parcheesi/play-game.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/parcheesi/rules.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/pousse/pousse.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/same/same.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/show-help.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/slidey/slidey.rkt" drdr:command-line (mred-text "-t" *)
+"collects/games/spider/spider.rkt" drdr:command-line (mred-text "-t" *)
 "collects/graphics" responsible (mflatt robby)
-"collects/graphics/graphics-posn-less-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/graphics/graphics-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/graphics/graphics.rkt" drdr:command-line "mred-text -t ~s"
-"collects/graphics/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/graphics/turtle-examples.rkt" drdr:command-line "mred-text -t ~s"
-"collects/graphics/turtle-test.rkt" drdr:command-line "mzc -k ~s"
-"collects/graphics/turtles.rkt" drdr:command-line "mred-text -t ~s"
-"collects/graphics/value-turtles-examples.rkt" drdr:command-line "mred-text -t ~s"
-"collects/graphics/value-turtles-test.rkt" drdr:command-line "mzc ~s"
-"collects/graphics/value-turtles.rkt" drdr:command-line "mred-text -t ~s"
+"collects/graphics/graphics-posn-less-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/graphics/graphics-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/graphics/graphics.rkt" drdr:command-line (mred-text "-t" *)
+"collects/graphics/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/graphics/turtle-examples.rkt" drdr:command-line (mred-text "-t" *)
+"collects/graphics/turtle-test.rkt" drdr:command-line (mzc "-k" *)
+"collects/graphics/turtles.rkt" drdr:command-line (mred-text "-t" *)
+"collects/graphics/value-turtles-examples.rkt" drdr:command-line (mred-text "-t" *)
+"collects/graphics/value-turtles-test.rkt" drdr:command-line (mzc *)
+"collects/graphics/value-turtles.rkt" drdr:command-line (mred-text "-t" *)
 "collects/gui-debugger" responsible (gmarceau)
-"collects/gui-debugger/debug-tool.rkt" drdr:command-line "mred-text -t ~s"
-"collects/gui-debugger/load-sandbox.rkt" drdr:command-line "mred-text -t ~s"
+"collects/gui-debugger/debug-tool.rkt" drdr:command-line (mred-text "-t" *)
+"collects/gui-debugger/load-sandbox.rkt" drdr:command-line (mred-text "-t" *)
 "collects/guibuilder" responsible (robby)
-"collects/guibuilder/base.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/canvas.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/feature.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/guibuilder.rkt" drdr:command-line "mzc ~s"
-"collects/guibuilder/multiple-choice.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/panel.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/readable.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/simple-control.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/slider-guage.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/text-field.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/tool.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/toolbar.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/top-level.rkt" drdr:command-line "mred-text -t ~s"
-"collects/guibuilder/utils.rkt" drdr:command-line "mred-text -t ~s"
+"collects/guibuilder/base.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/canvas.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/feature.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/guibuilder.rkt" drdr:command-line (mzc *)
+"collects/guibuilder/multiple-choice.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/panel.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/readable.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/simple-control.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/slider-guage.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/text-field.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/tool.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/toolbar.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/top-level.rkt" drdr:command-line (mred-text "-t" *)
+"collects/guibuilder/utils.rkt" drdr:command-line (mred-text "-t" *)
 "collects/handin-client" responsible (eli)
-"collects/handin-client/client-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/handin-client/handin-multi.rkt" drdr:command-line "mred-text -t ~s"
-"collects/handin-client/updater.rkt" drdr:command-line "mzc ~s"
+"collects/handin-client/client-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/handin-client/handin-multi.rkt" drdr:command-line (mred-text "-t" *)
+"collects/handin-client/updater.rkt" drdr:command-line (mzc *)
 "collects/handin-server" responsible (eli)
-"collects/handin-server/checker.rkt" drdr:command-line "mzc ~s"
-"collects/handin-server/main.rkt" drdr:command-line "mzc ~s"
-"collects/handin-server/overridden-collects/fake-teachpack/htdp/guess.rkt" drdr:command-line "mred-text -t ~s"
-"collects/handin-server/overridden-collects/fake-teachpack/htdp/master.rkt" drdr:command-line "mred-text -t ~s"
-"collects/handin-server/utils.rkt" drdr:command-line "mzc ~s"
-"collects/handin-server/web-status-server.rkt" drdr:command-line "mzc ~s"
+"collects/handin-server/checker.rkt" drdr:command-line (mzc *)
+"collects/handin-server/main.rkt" drdr:command-line (mzc *)
+"collects/handin-server/overridden-collects/fake-teachpack/htdp/guess.rkt" drdr:command-line (mred-text "-t" *)
+"collects/handin-server/overridden-collects/fake-teachpack/htdp/master.rkt" drdr:command-line (mred-text "-t" *)
+"collects/handin-server/utils.rkt" drdr:command-line (mzc *)
+"collects/handin-server/web-status-server.rkt" drdr:command-line (mzc *)
 "collects/help" responsible (robby)
-"collects/help/bug-report.rkt" drdr:command-line "mred-text -t ~s"
-"collects/help/help.rkt" drdr:command-line "mzc ~s"
+"collects/help/bug-report.rkt" drdr:command-line (mred-text "-t" *)
+"collects/help/help.rkt" drdr:command-line (mzc *)
 "collects/hierlist" responsible (mflatt)
-"collects/hierlist/hierlist.rkt" drdr:command-line "mred-text -t ~s"
+"collects/hierlist/hierlist.rkt" drdr:command-line (mred-text "-t" *)
 "collects/honu" responsible (mflatt rafkind)
 "collects/htdp" responsible (matthias)
-"collects/htdp/arrow-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/arrow.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/big-draw.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/convert.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/draw.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/elevator.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/graphing.rkt" drdr:command-line "mzc ~s"
-"collects/htdp/guess-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/guess.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/hangman-play.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/hangman-world-play.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/hangman-world.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/hangman.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/image.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/lkup-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/master-play.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/master.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/matrix-invisible.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/matrix-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/matrix.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/show-queen.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/arrow-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/arrow.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/convert.rkt" drdr:command-line "mzc ~s"
-"collects/htdp/tests/dir.rkt" drdr:command-line ""
-"collects/htdp/tests/draw.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/elevator.rkt" drdr:command-line "mzc ~s"
-"collects/htdp/tests/graphing.rkt" drdr:command-line "mzc ~s"
-"collects/htdp/tests/guess-gui.rkt" drdr:command-line ""
-"collects/htdp/tests/guess1.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/guess2.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/guess3.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/gui.rkt" drdr:command-line "mzc ~s"
-"collects/htdp/tests/hangman-error.rkt" drdr:command-line "mzc ~s"
-"collects/htdp/tests/hangman1.rkt" drdr:command-line "mred -t ~s"
-"collects/htdp/tests/lkup-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/master.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/matrix-client.rkt" drdr:command-line ""
-"collects/htdp/tests/matrix-example.rkt" drdr:command-line ""
-"collects/htdp/tests/matrix-test.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/world-add-line.rkt" drdr:command-line "mred-text -t ~s"
-"collects/htdp/tests/world-mouse.rkt" drdr:command-line "mzc ~s"
-"collects/htdp/tests/world.rkt" drdr:command-line "mred -t ~s"
-"collects/htdp/world.rkt" drdr:command-line "mred-text -t ~s"
+"collects/htdp/arrow-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/arrow.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/big-draw.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/convert.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/draw.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/elevator.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/graphing.rkt" drdr:command-line (mzc *)
+"collects/htdp/guess-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/guess.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/hangman-play.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/hangman-world-play.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/hangman-world.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/hangman.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/image.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/lkup-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/master-play.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/master.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/matrix-invisible.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/matrix-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/matrix.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/show-queen.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/arrow-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/arrow.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/convert.rkt" drdr:command-line (mzc *)
+"collects/htdp/tests/dir.rkt" drdr:command-line #f
+"collects/htdp/tests/draw.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/elevator.rkt" drdr:command-line (mzc *)
+"collects/htdp/tests/graphing.rkt" drdr:command-line (mzc *)
+"collects/htdp/tests/guess-gui.rkt" drdr:command-line #f
+"collects/htdp/tests/guess1.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/guess2.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/guess3.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/gui.rkt" drdr:command-line (mzc *)
+"collects/htdp/tests/hangman-error.rkt" drdr:command-line (mzc *)
+"collects/htdp/tests/hangman1.rkt" drdr:command-line (mred "-t" *)
+"collects/htdp/tests/lkup-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/master.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/matrix-client.rkt" drdr:command-line #f
+"collects/htdp/tests/matrix-example.rkt" drdr:command-line #f
+"collects/htdp/tests/matrix-test.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/world-add-line.rkt" drdr:command-line (mred-text "-t" *)
+"collects/htdp/tests/world-mouse.rkt" drdr:command-line (mzc *)
+"collects/htdp/tests/world.rkt" drdr:command-line (mred "-t" *)
+"collects/htdp/world.rkt" drdr:command-line (mred-text "-t" *)
 "collects/html" responsible (jay)
 "collects/icons" responsible (robby)
 "collects/lang" responsible (mflatt robby matthias)
-"collects/lang/htdp-langs.rkt" drdr:command-line "mred-text -t ~s"
-"collects/lang/plt-pretty-big.rkt" drdr:command-line "mred-text -t ~s"
-"collects/lang/private/imageeq.rkt" drdr:command-line "mred-text -t ~s"
+"collects/lang/htdp-langs.rkt" drdr:command-line (mred-text "-t" *)
+"collects/lang/plt-pretty-big.rkt" drdr:command-line (mred-text "-t" *)
+"collects/lang/private/imageeq.rkt" drdr:command-line (mred-text "-t" *)
 "collects/launcher" responsible (mflatt eli)
 "collects/lazy" responsible (eli)
 "collects/macro-debugger" responsible (ryanc)
-"collects/macro-debugger/model/trace-raw.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/stepper.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/controller.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/display.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/embed.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/frame.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/hrule-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/image.rkt" drdr:command-line "mred-text -qt ~s"
-"collects/macro-debugger/syntax-browser/keymap.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/prefs.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/pretty-printer.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/properties.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/snip-decorated.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/text.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser/widget.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/syntax-browser.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/tool.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/debug.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/extensions.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/frame.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/hiding-panel.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/prefs.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/step-display.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/stepper.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/term-record.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/view.rkt" drdr:command-line "mred-text -t ~s"
-"collects/macro-debugger/view/warning.rkt" drdr:command-line "mred-text -t ~s"
+"collects/macro-debugger/model/trace-raw.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/stepper.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/controller.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/display.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/embed.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/frame.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/hrule-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/image.rkt" drdr:command-line (mred-text "-qt" *)
+"collects/macro-debugger/syntax-browser/keymap.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/prefs.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/pretty-printer.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/properties.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/snip-decorated.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/text.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser/widget.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/syntax-browser.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/tool.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/debug.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/extensions.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/frame.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/hiding-panel.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/prefs.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/step-display.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/stepper.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/term-record.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/view.rkt" drdr:command-line (mred-text "-t" *)
+"collects/macro-debugger/view/warning.rkt" drdr:command-line (mred-text "-t" *)
 "collects/make" responsible (mflatt)
 "collects/meta" responsible (eli)
-"collects/meta/check-dists.rkt" drdr:command-line ""
-"collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line ""
-"collects/meta/drdr" responsible (jay) drdr:command-line ""
+"collects/meta/check-dists.rkt" drdr:command-line #f
+"collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
+"collects/meta/drdr" responsible (jay) drdr:command-line #f
 "collects/mred" responsible (mflatt robby)
-"collects/mred/edit-main.rkt" drdr:command-line "mzc ~s"
-"collects/mred/edit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/lang/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/mred-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/mred.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/app.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/check.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/const.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/dynamic.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/editor.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/filedialog.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/fontdialog.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/gdi.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/helper.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/kernel.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/lock.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/messagebox.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/misc.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/moredialogs.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrcanvas.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrcontainer.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrgroupbox.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mritem.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrmenu.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrpanel.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrpopup.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrtabgroup.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrtextfield.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrtop.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/mrwindow.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/path-dialog.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/repl.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/snipfile.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wx.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxcanvas.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxcontainer.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxgroupbox.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxitem.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/editor-admin.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/editor-canvas.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/editor-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/editor.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/keymap.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/mline.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/snip-admin.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/stream.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/style.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/text.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/undo.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxme/wx.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxmenu.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxpanel.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxtabgroup.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxtextfield.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxtop.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mred/private/wxwindow.rkt" drdr:command-line "mred-text -t ~s"
+"collects/mred/edit-main.rkt" drdr:command-line (mzc *)
+"collects/mred/edit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/lang/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/mred-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/mred.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/app.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/check.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/const.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/dynamic.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/editor.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/filedialog.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/fontdialog.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/gdi.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/helper.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/kernel.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/lock.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/messagebox.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/misc.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/moredialogs.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrcanvas.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrcontainer.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrgroupbox.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mritem.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrmenu.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrpanel.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrpopup.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrtabgroup.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrtextfield.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrtop.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/mrwindow.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/path-dialog.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/repl.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/snipfile.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wx.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxcanvas.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxcontainer.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxgroupbox.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxitem.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/editor-admin.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/editor-canvas.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/editor-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/editor.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/keymap.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/mline.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/snip-admin.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/stream.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/style.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/text.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/undo.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxme/wx.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxmenu.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxpanel.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxtabgroup.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxtextfield.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxtop.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mred/private/wxwindow.rkt" drdr:command-line (mred-text "-t" *)
 "collects/mrlib" responsible (robby)
-"collects/mrlib/aligned-pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/bitmap-label.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/cache-image-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/click-forwarding-editor.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/close-icon.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/gif.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/graph.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/hierlist/hierlist-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/hierlist.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/image-core.rkt" drdr:command-line "mred -t ~s"
-"collects/mrlib/include-bitmap.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/interactive-value-port.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/matrix-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/name-message.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/path-dialog.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/plot.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/aligned-editor-container.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/aligned-pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/geometry-managed-pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/interface.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/locked-pasteboard.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/pasteboard-lib.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/snip-lib.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/stretchable-editor-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/actual-bigger.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/edit-sequence-loop.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/example-min.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/example.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/insertion-without-display.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/minimal.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/more-tests-margin-aligned.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/more-tests-margin.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/more-tests-min-stretchable.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/more-tests-min.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/more-tests-text.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/more-tests.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/snip-dumper.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/stretchable-editor-snip-test-min.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/stretchable-editor-snip-test.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/test-alignment.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/test-locked-pasteboard.rkt" drdr:command-line ""
-"collects/mrlib/private/aligned-pasteboard/tests/test-macro.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/test-pasteboard-lib.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/test.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/aligned-pasteboard/tests/test2.rkt" drdr:command-line "mred -f ~s"
-"collects/mrlib/private/image-core-bitmap.rkt" drdr:command-line "mred-test -qt ~s"
-"collects/mrlib/switchable-button.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/syntax-browser.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/tab-choice.rkt" drdr:command-line "mred-text -t ~s"
-"collects/mrlib/text-string-style-desc.rkt" drdr:command-line "mred-text -t ~s"
+"collects/mrlib/aligned-pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/bitmap-label.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/cache-image-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/click-forwarding-editor.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/close-icon.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/gif.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/graph.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/hierlist/hierlist-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/hierlist.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/image-core.rkt" drdr:command-line (mred "-t" *)
+"collects/mrlib/include-bitmap.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/interactive-value-port.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/matrix-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/name-message.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/path-dialog.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/plot.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/aligned-editor-container.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/aligned-pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/geometry-managed-pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/interface.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/locked-pasteboard.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/pasteboard-lib.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/snip-lib.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/stretchable-editor-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/tests/actual-bigger.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/edit-sequence-loop.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/example-min.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/example.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/insertion-without-display.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/minimal.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/more-tests-margin-aligned.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/more-tests-margin.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/more-tests-min-stretchable.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/more-tests-min.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/more-tests-text.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/more-tests.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/snip-dumper.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/private/aligned-pasteboard/tests/stretchable-editor-snip-test-min.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/stretchable-editor-snip-test.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/test-alignment.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test-locked-pasteboard.rkt" drdr:command-line #f
+"collects/mrlib/private/aligned-pasteboard/tests/test-macro.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test-pasteboard-lib.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test2.rkt" drdr:command-line (mred "-f" *)
+"collects/mrlib/private/image-core-bitmap.rkt" drdr:command-line (mred-text "-qt" *)
+"collects/mrlib/switchable-button.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/syntax-browser.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/tab-choice.rkt" drdr:command-line (mred-text "-t" *)
+"collects/mrlib/text-string-style-desc.rkt" drdr:command-line (mred-text "-t" *)
 "collects/mysterx" responsible (mflatt)
-"collects/mysterx/main.rkt" drdr:command-line "mzc ~s"
-"collects/mysterx/mxdemo.rkt" drdr:command-line "mzc ~s"
-"collects/mysterx/mysterx.rkt" drdr:command-line "mzc ~s"
-"collects/mysterx/private/mxmain.rkt" drdr:command-line "mzc ~s"
-"collects/mysterx/private/prims.rkt" drdr:command-line "mzc ~s"
+"collects/mysterx/main.rkt" drdr:command-line (mzc *)
+"collects/mysterx/mxdemo.rkt" drdr:command-line (mzc *)
+"collects/mysterx/mysterx.rkt" drdr:command-line (mzc *)
+"collects/mysterx/private/mxmain.rkt" drdr:command-line (mzc *)
+"collects/mysterx/private/prims.rkt" drdr:command-line (mzc *)
 "collects/mzcom" responsible (mflatt)
 "collects/mzlib" responsible (eli cce robby sstrickl mflatt)
 "collects/mzlib/contract.rkt" responsible (robby)
@@ -1077,44 +1109,44 @@ path/s is either such a string or a list of them.
 "collects/mzlib/match.rkt" responsible (samth)
 "collects/mzlib/pconvert.rkt" responsible (robby)
 "collects/mzlib/plt-match.rkt" responsible (samth)
-"collects/mzlib/private/shared-body.rkt" drdr:command-line ""
+"collects/mzlib/private/shared-body.rkt" drdr:command-line #f
 "collects/mzlib/shared.rkt" responsible (robby)
 "collects/mzscheme" responsible (mflatt)
-"collects/mzscheme/examples/cfile.rkt" drdr:command-line ""
-"collects/mzscheme/examples/curses-demo.rkt" drdr:command-line ""
-"collects/mzscheme/examples/fmod-ez.rkt" drdr:command-line ""
-"collects/mzscheme/examples/msgbox.rkt" drdr:command-line ""
-"collects/mzscheme/examples/tree-finish.rkt" drdr:command-line ""
+"collects/mzscheme/examples/cfile.rkt" drdr:command-line #f
+"collects/mzscheme/examples/curses-demo.rkt" drdr:command-line #f
+"collects/mzscheme/examples/fmod-ez.rkt" drdr:command-line #f
+"collects/mzscheme/examples/msgbox.rkt" drdr:command-line #f
+"collects/mzscheme/examples/tree-finish.rkt" drdr:command-line #f
 "collects/net" responsible (eli jay)
 "collects/openssl" responsible (eli)
 "collects/parser-tools" responsible (sowens)
-"collects/parser-tools/private-lex/error-tests.rkt" drdr:command-line ""
+"collects/parser-tools/private-lex/error-tests.rkt" drdr:command-line #f
 "collects/plai" responsible (jay)
-"collects/plai/private/gc-gui.rkt" drdr:command-line "mred -t ~s"
+"collects/plai/private/gc-gui.rkt" drdr:command-line (mred "-t" *)
 "collects/planet" responsible (jacobm)
 "collects/plot" responsible (eli)
-"collects/plot/demos/demo-1.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/demo-10.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/demo-2.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/demo-3.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/demo-4.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/demo-5.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/demo-6.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/demo-7.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/demo-8.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/fit-demo-1.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/demos/fit-demo-2.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/extend.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/plot-extend.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/plot.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/renderers.rkt" drdr:command-line "mred-text -t ~s"
-"collects/plot/view.rkt" drdr:command-line "mred-text -t ~s"
+"collects/plot/demos/demo-1.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/demo-10.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/demo-2.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/demo-3.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/demo-4.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/demo-5.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/demo-6.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/demo-7.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/demo-8.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/fit-demo-1.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/demos/fit-demo-2.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/extend.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/plot-extend.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/plot.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/renderers.rkt" drdr:command-line (mred-text "-t" *)
+"collects/plot/view.rkt" drdr:command-line (mred-text "-t" *)
 "collects/preprocessor" responsible (eli)
 "collects/profile" responsible (eli)
 "collects/r5rs" responsible (mflatt)
 "collects/r6rs" responsible (mflatt)
-"collects/r6rs/run.rkt" drdr:command-line "mzc ~s"
+"collects/r6rs/run.rkt" drdr:command-line (mzc *)
 "collects/racket" responsible (mflatt)
 "collects/racket/contract/private/arrow.rkt" responsible (robby)
 "collects/racket/contract/private/base.rkt" responsible (robby)
@@ -1122,642 +1154,642 @@ path/s is either such a string or a list of them.
 "collects/racket/contract/private/ds.rkt" responsible (robby)
 "collects/racket/contract/private/guts.rkt" responsible (robby)
 "collects/racket/contract/private/helpers.rkt" responsible (robby)
-"collects/racket/gui/base.rkt" drdr:command-line "mred -t ~s"
-"collects/racket/gui/init.rkt" drdr:command-line "mred -t ~s"
-"collects/racket/gui.rkt" drdr:command-line "mred -t ~s"
+"collects/racket/gui/base.rkt" drdr:command-line (mred "-t" *)
+"collects/racket/gui/init.rkt" drdr:command-line (mred "-t" *)
+"collects/racket/gui.rkt" drdr:command-line (mred "-t" *)
 "collects/racket/match" responsible (samth)
 "collects/racket/match.rkt" responsible (samth)
 "collects/raclog" responsible (jay)
 "collects/raco" responsible (mflatt)
-"collects/raco/main.rkt" drdr:command-line ""
-"collects/raco/raco.rkt" drdr:command-line ""
+"collects/raco/main.rkt" drdr:command-line #f
+"collects/raco/raco.rkt" drdr:command-line #f
 "collects/racunit" responsible (jay noel ryanc)
-"collects/racunit/gui.rkt" responsible (ryanc) drdr:command-line "mred-text -t ~s"
+"collects/racunit/gui.rkt" responsible (ryanc) drdr:command-line (mred-text "-t" *)
 "collects/racunit/private/gui" responsible (ryanc)
-"collects/racunit/private/gui/config.rkt" drdr:command-line "mred-text -t ~s"
-"collects/racunit/private/gui/controller.rkt" drdr:command-line "mred-text -t ~s"
-"collects/racunit/private/gui/gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/racunit/private/gui/model2rml.rkt" drdr:command-line "mred-text -t ~s"
-"collects/racunit/private/gui/rml.rkt" drdr:command-line "mred-text -t ~s"
-"collects/racunit/private/gui/view.rkt" drdr:command-line "mred-text -t ~s"
-"collects/racunit/tool.rkt" responsible (ryanc) drdr:command-line "mred-text -t ~s"
+"collects/racunit/private/gui/config.rkt" drdr:command-line (mred-text "-t" *)
+"collects/racunit/private/gui/controller.rkt" drdr:command-line (mred-text "-t" *)
+"collects/racunit/private/gui/gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/racunit/private/gui/model2rml.rkt" drdr:command-line (mred-text "-t" *)
+"collects/racunit/private/gui/rml.rkt" drdr:command-line (mred-text "-t" *)
+"collects/racunit/private/gui/view.rkt" drdr:command-line (mred-text "-t" *)
+"collects/racunit/tool.rkt" responsible (ryanc) drdr:command-line (mred-text "-t" *)
 "collects/reader" responsible (mflatt)
 "collects/readline" responsible (mflatt)
 "collects/redex" responsible (clklein)
-"collects/redex/examples/arithmetic.rkt" drdr:command-line "mred-text -t ~s -- --no-print"
-"collects/redex/examples/beginner.rkt" drdr:command-line "mzscheme -t ~s -m"
-"collects/redex/examples/church.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/combinators.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/compatible-closure.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/letrec.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/mzscheme-machine/reduction-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/mzscheme-machine/verification-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/omega.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/r6rs/r6rs-tests.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/r6rs/show-examples.rkt" drdr:command-line "mred-text ~s"
-"collects/redex/examples/semaphores.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/subject-reduction.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/threads.rkt" drdr:command-line "mzc ~s"
-"collects/redex/examples/types.rkt" drdr:command-line "mzc ~s"
-"collects/redex/gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/pict.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/private/arrow.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/private/core-layout.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/private/dot.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/private/pict.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/private/sexp-diffs.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/private/size-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/private/stepper.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/private/traces.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/tests/bitmap-test-util.rkt" drdr:command-line "mred-text -t ~s"
-"collects/redex/tests/bitmap-test.rkt" drdr:command-line "mzc -k ~s"
-"collects/redex/tests/color-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/tests/core-layout-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/tests/hole-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/tests/keyword-macros-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/tests/matcher-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/tests/pict-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/tests/rg-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/tests/run-tests.rkt" drdr:command-line "mred-text ~s --examples --no-bitmaps" drdr:timeout 300
-"collects/redex/tests/term-test.rkt" drdr:command-line "mzc ~s"
-"collects/redex/tests/tl-test.rkt" drdr:command-line "mzc ~s"
+"collects/redex/examples/arithmetic.rkt" drdr:command-line (mred-text "-t" * "--" "--no-print")
+"collects/redex/examples/beginner.rkt" drdr:command-line (mzscheme "-t" * "-m")
+"collects/redex/examples/church.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/combinators.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/compatible-closure.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/letrec.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/mzscheme-machine/reduction-test.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/mzscheme-machine/verification-test.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/omega.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/r6rs/r6rs-tests.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/r6rs/show-examples.rkt" drdr:command-line (mred-text *)
+"collects/redex/examples/semaphores.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/subject-reduction.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/threads.rkt" drdr:command-line (mzc *)
+"collects/redex/examples/types.rkt" drdr:command-line (mzc *)
+"collects/redex/gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/pict.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/private/arrow.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/private/core-layout.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/private/dot.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/private/pict.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/private/sexp-diffs.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/private/size-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/private/stepper.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/private/traces.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/tests/bitmap-test-util.rkt" drdr:command-line (mred-text "-t" *)
+"collects/redex/tests/bitmap-test.rkt" drdr:command-line (mzc "-k" *)
+"collects/redex/tests/color-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/core-layout-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/hole-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/keyword-macros-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/matcher-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/pict-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/rg-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/run-tests.rkt" drdr:command-line (mred-text * "--examples" "--no-bitmaps") drdr:timeout 300
+"collects/redex/tests/term-test.rkt" drdr:command-line (mzc *)
+"collects/redex/tests/tl-test.rkt" drdr:command-line (mzc *)
 "collects/repo-time-stamp" responsible (eli)
-"collects/repo-time-stamp/time-stamp.rkt" drdr:command-line "mred-text -t ~s"
+"collects/repo-time-stamp/time-stamp.rkt" drdr:command-line (mred-text "-t" *)
 "collects/rnrs" responsible (mflatt)
 "collects/s-exp" responsible (mflatt eli)
 "collects/scheme" responsible (mflatt sstrickl samth robby eli)
-"collects/scheme/gui/base.rkt" drdr:command-line "mred-text -t ~s"
-"collects/scheme/gui/init.rkt" drdr:command-line "mred-text -t ~s"
-"collects/scheme/gui.rkt" drdr:command-line "mred-text -t ~s"
+"collects/scheme/gui/base.rkt" drdr:command-line (mred-text "-t" *)
+"collects/scheme/gui/init.rkt" drdr:command-line (mred-text "-t" *)
+"collects/scheme/gui.rkt" drdr:command-line (mred-text "-t" *)
 "collects/scheme/match.rkt" responsible (samth)
 "collects/schemeunit" responsible (jay)
-"collects/schemeunit/gui.rkt" drdr:command-line "mred-text -t ~s"
+"collects/schemeunit/gui.rkt" drdr:command-line (mred-text "-t" *)
 "collects/scribble" responsible (mflatt eli)
-"collects/scribble/run.rkt" drdr:command-line "mzc ~s"
-"collects/scribble/tools/drscheme-buttons.rkt" drdr:command-line "mred-text ~s"
-"collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line "gracket-text ~s skip"
+"collects/scribble/run.rkt" drdr:command-line (mzc *)
+"collects/scribble/tools/drscheme-buttons.rkt" drdr:command-line (mred-text *)
+"collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line (gracket-text * "skip")
 "collects/scribblings" responsible (mflatt eli robby mathias)
-"collects/scribblings/framework/standard-menus.scrbl" drdr:command-line ""
-"collects/scribblings/guide/contracts-examples/6.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/scribblings/guide/read.scrbl" drdr:command-line ""
+"collects/scribblings/framework/standard-menus.scrbl" drdr:command-line #f
+"collects/scribblings/guide/contracts-examples/6.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/scribblings/guide/read.scrbl" drdr:command-line #f
 "collects/scriblib" responsible (mflatt)
 "collects/setup" responsible (mflatt)
-"collects/setup/main.rkt" drdr:command-line ""
-"collects/setup/plt-installer.rkt" drdr:command-line "mred-text -t ~s"
-"collects/setup/setup-go.rkt" drdr:command-line ""
-"collects/setup/unixstyle-install.rkt" drdr:command-line "mzc ~s"
-"collects/setup/winvers.rkt" drdr:command-line "mzc ~s"
+"collects/setup/main.rkt" drdr:command-line #f
+"collects/setup/plt-installer.rkt" drdr:command-line (mred-text "-t" *)
+"collects/setup/setup-go.rkt" drdr:command-line #f
+"collects/setup/unixstyle-install.rkt" drdr:command-line (mzc *)
+"collects/setup/winvers.rkt" drdr:command-line (mzc *)
 "collects/sgl" responsible (jay sowens)
-"collects/sgl/bitmap.rkt" drdr:command-line "mred-text -t ~s"
-"collects/sgl/examples/alpha.rkt" drdr:command-line "mzc ~s"
-"collects/sgl/examples/gears.rkt" drdr:command-line "mzc -k ~s"
-"collects/sgl/examples/gl-frame.rkt" drdr:command-line "mred-text -t ~s"
+"collects/sgl/bitmap.rkt" drdr:command-line (mred-text "-t" *)
+"collects/sgl/examples/alpha.rkt" drdr:command-line (mzc *)
+"collects/sgl/examples/gears.rkt" drdr:command-line (mzc "-k" *)
+"collects/sgl/examples/gl-frame.rkt" drdr:command-line (mred-text "-t" *)
 "collects/sirmail" responsible (mflatt)
-"collects/sirmail/folderr.rkt" drdr:command-line "mred-text -t ~s"
-"collects/sirmail/main.rkt" drdr:command-line "mzc ~s"
-"collects/sirmail/optionr.rkt" drdr:command-line "mred-text -t ~s"
-"collects/sirmail/pref.rkt" drdr:command-line "mred-text -t ~s"
-"collects/sirmail/readr.rkt" drdr:command-line "mred-text -t ~s"
-"collects/sirmail/recover.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/sirmail/sendr.rkt" drdr:command-line "mred-text -t ~s"
-"collects/sirmail/sirmail.rkt" drdr:command-line "mzc ~s"
-"collects/sirmail/sirmailr.rkt" drdr:command-line "mred-text -t ~s"
-"collects/sirmail/spell.rkt" drdr:command-line "mred-text -t ~s"
+"collects/sirmail/folderr.rkt" drdr:command-line (mred-text "-t" *)
+"collects/sirmail/main.rkt" drdr:command-line (mzc *)
+"collects/sirmail/optionr.rkt" drdr:command-line (mred-text "-t" *)
+"collects/sirmail/pref.rkt" drdr:command-line (mred-text "-t" *)
+"collects/sirmail/readr.rkt" drdr:command-line (mred-text "-t" *)
+"collects/sirmail/recover.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/sirmail/sendr.rkt" drdr:command-line (mred-text "-t" *)
+"collects/sirmail/sirmail.rkt" drdr:command-line (mzc *)
+"collects/sirmail/sirmailr.rkt" drdr:command-line (mred-text "-t" *)
+"collects/sirmail/spell.rkt" drdr:command-line (mred-text "-t" *)
 "collects/slatex" responsible (sstrickl)
-"collects/slatex/pdf-slatex-launcher.rkt" drdr:command-line "mzc ~s"
-"collects/slatex/slatex-launcher.rkt" drdr:command-line "mzc ~s"
+"collects/slatex/pdf-slatex-launcher.rkt" drdr:command-line (mzc *)
+"collects/slatex/slatex-launcher.rkt" drdr:command-line (mzc *)
 "collects/slideshow" responsible (mflatt robby)
-"collects/slideshow/balloon.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/base.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/cmdline.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/code.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/core.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/examples/interlocking-components.scm" drdr:command-line "mzc ~s"
-"collects/slideshow/face.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/flash.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/initial-ones.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/main.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/param.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/pict-snipclass.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/pict.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/play.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/private/image-snipr.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/private/pict-box-lib.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/private/utils.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/run.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/slide.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/slides-to-picts.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/slideshow.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/start.rkt" drdr:command-line "mzc ~s"
-"collects/slideshow/step.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/tool.rkt" drdr:command-line "mred-text -t ~s"
-"collects/slideshow/tutorial-show.rkt" drdr:command-line "mzc ~s"
-"collects/slideshow/viewer.rkt" drdr:command-line "mred-text -t ~s"
+"collects/slideshow/balloon.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/base.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/cmdline.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/code.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/core.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/examples/interlocking-components.scm" drdr:command-line (mzc *)
+"collects/slideshow/face.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/flash.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/initial-ones.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/main.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/param.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/pict-snipclass.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/pict.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/play.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/private/image-snipr.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/private/pict-box-lib.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/private/utils.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/run.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/slide.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/slides-to-picts.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/slideshow.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/start.rkt" drdr:command-line (mzc *)
+"collects/slideshow/step.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/tool.rkt" drdr:command-line (mred-text "-t" *)
+"collects/slideshow/tutorial-show.rkt" drdr:command-line (mzc *)
+"collects/slideshow/viewer.rkt" drdr:command-line (mred-text "-t" *)
 "collects/srfi" responsible (mflatt noel chongkai jay)
-"collects/srfi/25/arlib.scm" drdr:command-line ""
-"collects/srfi/25/ix-ctor.scm" drdr:command-line ""
-"collects/srfi/25/op-ctor.scm" drdr:command-line ""
-"collects/srfi/32/test.scm" drdr:command-line "mzscheme -f ~s"
-"collects/srfi/67/compare-reference.scm" drdr:command-line ""
-"collects/srfi/74/blob.scm" drdr:command-line ""
-"collects/srfi/78/check-reference.scm" drdr:command-line ""
-"collects/srfi/78/examples-78.scm" drdr:command-line ""
-"collects/srpersist/main.rkt" drdr:command-line ""
-"collects/srpersist/srpersist.rkt" drdr:command-line ""
+"collects/srfi/25/arlib.scm" drdr:command-line #f
+"collects/srfi/25/ix-ctor.scm" drdr:command-line #f
+"collects/srfi/25/op-ctor.scm" drdr:command-line #f
+"collects/srfi/32/test.scm" drdr:command-line (mzscheme "-f" *)
+"collects/srfi/67/compare-reference.scm" drdr:command-line #f
+"collects/srfi/74/blob.scm" drdr:command-line #f
+"collects/srfi/78/check-reference.scm" drdr:command-line #f
+"collects/srfi/78/examples-78.scm" drdr:command-line #f
+"collects/srpersist/main.rkt" drdr:command-line #f
+"collects/srpersist/srpersist.rkt" drdr:command-line #f
 "collects/stepper" responsible (clements)
-"collects/stepper/drscheme-button.rkt" drdr:command-line "mred-text ~s"
-"collects/stepper/private/display-break-stuff.rkt" drdr:command-line "mred-text -t ~s"
-"collects/stepper/private/mred-extensions.rkt" drdr:command-line "mred-text -t ~s"
-"collects/stepper/private/vertical-separator-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/stepper/private/xml-snip-helpers.rkt" drdr:command-line "mred-text -t ~s"
-"collects/stepper/stepper+xml-tool.rkt" drdr:command-line "mred-text -t ~s"
-"collects/stepper/stepper-tool.rkt" drdr:command-line "mred-text -t ~s"
-"collects/stepper/view-controller.rkt" drdr:command-line "mred -t ~s"
-"collects/stepper/xml-tool.rkt" drdr:command-line "mred-text -t ~s"
+"collects/stepper/drscheme-button.rkt" drdr:command-line (mred-text *)
+"collects/stepper/private/display-break-stuff.rkt" drdr:command-line (mred-text "-t" *)
+"collects/stepper/private/mred-extensions.rkt" drdr:command-line (mred-text "-t" *)
+"collects/stepper/private/vertical-separator-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/stepper/private/xml-snip-helpers.rkt" drdr:command-line (mred-text "-t" *)
+"collects/stepper/stepper+xml-tool.rkt" drdr:command-line (mred-text "-t" *)
+"collects/stepper/stepper-tool.rkt" drdr:command-line (mred-text "-t" *)
+"collects/stepper/view-controller.rkt" drdr:command-line (mred "-t" *)
+"collects/stepper/xml-tool.rkt" drdr:command-line (mred-text "-t" *)
 "collects/string-constants" responsible (robby)
 "collects/swindle" responsible (eli)
-"collects/swindle/tool.rkt" drdr:command-line "mred-text -t ~s"
+"collects/swindle/tool.rkt" drdr:command-line (mred-text "-t" *)
 "collects/syntax" responsible (mflatt)
 "collects/syntax-color" responsible (sowens)
 "collects/teachpack" responsible (matthias)
-"collects/teachpack/2htdp/scribblings/image-gen.rkt" responsible (robby) drdr:command-line "mred-text ~s"
+"collects/teachpack/2htdp/scribblings/image-gen.rkt" responsible (robby) drdr:command-line (mred-text *)
 "collects/teachpack/2htdp/scribblings/image-toc.rkt" responsible (robby)
 "collects/teachpack/2htdp/scribblings/image-util.rkt" responsible (robby)
 "collects/teachpack/2htdp/scribblings/image.scrbl" responsible (robby)
-"collects/teachpack/2htdp/universe.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/balls.ss" drdr:command-line "mzc ~s"
-"collects/teachpack/deinprogramm/image.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/deinprogramm/line3d.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/deinprogramm/sound.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/deinprogramm/turtle.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/deinprogramm/universe.ss" drdr:command-line "mred-text -qt ~s"
-"collects/teachpack/deinprogramm/world.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/door.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/arrow-gui.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/arrow.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/convert.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/draw.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/elevator.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/graphing.ss" drdr:command-line "mzc ~s"
-"collects/teachpack/htdp/guess-gui.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/guess.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/gui.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/hangman.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/image.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/lkup-gui.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/master.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/matrix.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/show-queen.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/htdp/world.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/nuworld.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/server.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/turtles.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/value-turtles.ss" drdr:command-line "mred-text -t ~s"
-"collects/teachpack/world.ss" drdr:command-line "mred-text -t ~s"
+"collects/teachpack/2htdp/universe.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/balls.ss" drdr:command-line (mzc *)
+"collects/teachpack/deinprogramm/image.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/deinprogramm/line3d.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/deinprogramm/sound.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/deinprogramm/turtle.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/deinprogramm/universe.ss" drdr:command-line (mred-text "-qt" *)
+"collects/teachpack/deinprogramm/world.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/door.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/arrow-gui.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/arrow.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/convert.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/draw.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/elevator.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/graphing.ss" drdr:command-line (mzc *)
+"collects/teachpack/htdp/guess-gui.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/guess.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/gui.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/hangman.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/image.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/lkup-gui.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/master.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/matrix.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/show-queen.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/htdp/world.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/nuworld.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/server.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/turtles.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/value-turtles.ss" drdr:command-line (mred-text "-t" *)
+"collects/teachpack/world.ss" drdr:command-line (mred-text "-t" *)
 "collects/test-box-recovery" responsible (mflatt)
-"collects/test-box-recovery/tool.rkt" drdr:command-line "mred-text -t ~s"
+"collects/test-box-recovery/tool.rkt" drdr:command-line (mred-text "-t" *)
 "collects/test-engine" responsible (kathyg)
-"collects/test-engine/scheme-gui.rkt" drdr:command-line "mred-text -t ~s"
-"collects/test-engine/test-coverage.scm" drdr:command-line "mred-text -t ~s"
-"collects/test-engine/test-display.scm" drdr:command-line "mred-text -t ~s"
-"collects/test-engine/test-tool.scm" drdr:command-line "mred-text -t ~s"
+"collects/test-engine/scheme-gui.rkt" drdr:command-line (mred-text "-t" *)
+"collects/test-engine/test-coverage.scm" drdr:command-line (mred-text "-t" *)
+"collects/test-engine/test-display.scm" drdr:command-line (mred-text "-t" *)
+"collects/test-engine/test-tool.scm" drdr:command-line (mred-text "-t" *)
 "collects/tests" responsible (eli)
 "collects/tests/aligned-pasteboard" responsible (unknown)
-"collects/tests/aligned-pasteboard/example.rktl" drdr:command-line ""
-"collects/tests/aligned-pasteboard/old-bugs/big-min.rktl" drdr:command-line ""
-"collects/tests/aligned-pasteboard/old-bugs/missing-min.rktl" drdr:command-line ""
-"collects/tests/aligned-pasteboard/snip-dumper.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/aligned-pasteboard/test-alignment.rktl" drdr:command-line ""
-"collects/tests/aligned-pasteboard/test-pasteboard-lib.rktl" drdr:command-line ""
-"collects/tests/aligned-pasteboard/test-snip-lib.rktl" drdr:command-line ""
-"collects/tests/aligned-pasteboard/test.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/aligned-pasteboard/test2.rktl" drdr:command-line "mred -f ~s"
+"collects/tests/aligned-pasteboard/example.rktl" drdr:command-line #f
+"collects/tests/aligned-pasteboard/old-bugs/big-min.rktl" drdr:command-line #f
+"collects/tests/aligned-pasteboard/old-bugs/missing-min.rktl" drdr:command-line #f
+"collects/tests/aligned-pasteboard/snip-dumper.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/aligned-pasteboard/test-alignment.rktl" drdr:command-line #f
+"collects/tests/aligned-pasteboard/test-pasteboard-lib.rktl" drdr:command-line #f
+"collects/tests/aligned-pasteboard/test-snip-lib.rktl" drdr:command-line #f
+"collects/tests/aligned-pasteboard/test.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/aligned-pasteboard/test2.rktl" drdr:command-line (mred "-f" *)
 "collects/tests/compiler" responsible (jay)
 "collects/tests/compiler/regression.rkt" responsible (mflatt)
-"collects/tests/compiler/zo-test.rkt" drdr:command-line "mzscheme -t ~s -- -I -S -t 60 -v -R" drdr:random #t
+"collects/tests/compiler/zo-test.rkt" drdr:command-line (mzscheme "-t" * "--" "-I" "-S" "-t" "60" "-v" "-R") drdr:random #t
 "collects/tests/deinprogramm" responsible (sperber)
-"collects/tests/deinprogramm/image.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/deinprogramm/run-image-test.rkt" drdr:command-line "mred-text -t ~s"
+"collects/tests/deinprogramm/image.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/deinprogramm/run-image-test.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/drracket" responsible (robby)
-"collects/tests/drracket/drracket-test-util.rkt" drdr:command-line "mred -t ~s"
-"collects/tests/drracket/io.rkt" drdr:command-line "mred ~s"
-"collects/tests/drracket/language-test.rkt" drdr:command-line "mred ~s" drdr:timeout 600
-"collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/drracket/module-lang-test.rkt" drdr:command-line "mred ~s" drdr:timeout 120
-"collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line "mzc ~s" drdr:random #t
-"collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line "mzc ~s" drdr:random #t
-"collects/tests/drracket/randomly-click.rkt" drdr:command-line "" drdr:random #t
-"collects/tests/drracket/repl-test.rkt" drdr:command-line "mred ~s" drdr:timeout 600
-"collects/tests/drracket/sample-solutions-one-window.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/drracket/save-teaching-lang-file.rkt" drdr:command-line "mred ~s"
-"collects/tests/drracket/stepper-test.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/drracket/syncheck-test.rkt" drdr:command-line "mred ~s"
-"collects/tests/drracket/teachpack.rkt" drdr:command-line "mred ~s"
-"collects/tests/drracket/time-keystrokes.rkt" drdr:command-line "mred-text -t ~s"
+"collects/tests/drracket/drracket-test-util.rkt" drdr:command-line (mred "-t" *)
+"collects/tests/drracket/io.rkt" drdr:command-line (mred *)
+"collects/tests/drracket/language-test.rkt" drdr:command-line (mred *) drdr:timeout 600
+"collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/drracket/module-lang-test.rkt" drdr:command-line (mred *) drdr:timeout 120
+"collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *) drdr:random #t
+"collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line (mzc *) drdr:random #t
+"collects/tests/drracket/randomly-click.rkt" drdr:command-line #f drdr:random #t
+"collects/tests/drracket/repl-test.rkt" drdr:command-line (mred *) drdr:timeout 600
+"collects/tests/drracket/sample-solutions-one-window.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/drracket/save-teaching-lang-file.rkt" drdr:command-line (mred *)
+"collects/tests/drracket/stepper-test.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/drracket/syncheck-test.rkt" drdr:command-line (mred *)
+"collects/tests/drracket/teachpack.rkt" drdr:command-line (mred *)
+"collects/tests/drracket/time-keystrokes.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/framework" responsible (robby)
-"collects/tests/framework/canvas.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/debug.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/exit.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/frame.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/framework-test-engine.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/group-test.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/handler-test.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/info.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/keys.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/load.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/main.rkt" drdr:command-line "mred ~s" drdr:timeout 240
-"collects/tests/framework/mem.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/panel.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/pasteboard.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/prefs.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/scheme.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/search.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/test-suite-utils.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/text.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/framework/utils.rktl" drdr:command-line "mzscheme -f ~s"
+"collects/tests/framework/canvas.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/debug.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/exit.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/frame.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/framework-test-engine.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/group-test.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/handler-test.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/info.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/keys.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/load.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/main.rkt" drdr:command-line (mred *) drdr:timeout 240
+"collects/tests/framework/mem.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/panel.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/pasteboard.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/prefs.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/scheme.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/search.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/test-suite-utils.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/text.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/framework/utils.rktl" drdr:command-line (mzscheme "-f" *)
 "collects/tests/frtime" responsible (gcooper jay)
-"collects/tests/frtime/time.rkt" drdr:command-line "mred-text -t ~s"
+"collects/tests/frtime/time.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/future" responsible (jamesswaine mflatt robby)
-"collects/tests/future/future.rkt" drdr:command-line "mzscheme ~s"
+"collects/tests/future/future.rkt" drdr:command-line (mzscheme *)
 "collects/tests/future/random-future.rkt" drdr:timeout 240
 "collects/tests/honu" responsible (rafkind)
 "collects/tests/html" responsible (jay)
 "collects/tests/macro-debugger" responsible (ryanc)
-"collects/tests/macro-debugger/all-tests.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/macro-debugger/gui-tests.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/macro-debugger/tests/collects.rkt" drdr:command-line "mred-text -t ~s"
+"collects/tests/macro-debugger/all-tests.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/macro-debugger/gui-tests.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/macro-debugger/tests/collects.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/match" responsible (samth)
 "collects/tests/mred" responsible (mflatt)
-"collects/tests/mred/auto.rktl" drdr:command-line ""
-"collects/tests/mred/blits.rkt" drdr:command-line "mred -f ~s"
-"collects/tests/mred/dc.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/mred/draw.rkt" drdr:command-line "mzc ~s"
-"collects/tests/mred/editor.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/mred/gui-main.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/mred/gui.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/mred/item.rkt" drdr:command-line "mzc ~s"
-"collects/tests/mred/loadtest.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/mred/mem.rktl" drdr:command-line ""
-"collects/tests/mred/paramz.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/mred/png.rktl" drdr:command-line ""
-"collects/tests/mred/random.rktl" drdr:command-line ""
-"collects/tests/mred/showkey.rktl" drdr:command-line ""
-"collects/tests/mred/sixlib.rktl" drdr:command-line ""
-"collects/tests/mred/test-editor-admin.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/mred/testing.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/mred/text-scale.rktl" drdr:command-line ""
-"collects/tests/mred/windowing.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/mred/wxme-doc-random.rkt" drdr:command-line "mzc ~s"
-"collects/tests/mred/wxme-random.rkt" drdr:command-line ""
-"collects/tests/mred/wxme.rkt" drdr:command-line "mred-text -t ~s"
+"collects/tests/mred/auto.rktl" drdr:command-line #f
+"collects/tests/mred/blits.rkt" drdr:command-line (mred "-f" *)
+"collects/tests/mred/dc.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/mred/draw.rkt" drdr:command-line (mzc *)
+"collects/tests/mred/editor.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/mred/gui-main.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/mred/gui.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/mred/item.rkt" drdr:command-line (mzc *)
+"collects/tests/mred/loadtest.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/mred/mem.rktl" drdr:command-line #f
+"collects/tests/mred/paramz.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/mred/png.rktl" drdr:command-line #f
+"collects/tests/mred/random.rktl" drdr:command-line #f
+"collects/tests/mred/showkey.rktl" drdr:command-line #f
+"collects/tests/mred/sixlib.rktl" drdr:command-line #f
+"collects/tests/mred/test-editor-admin.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/mred/testing.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/mred/text-scale.rktl" drdr:command-line #f
+"collects/tests/mred/windowing.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/mred/wxme-doc-random.rkt" drdr:command-line (mzc *)
+"collects/tests/mred/wxme-random.rkt" drdr:command-line #f
+"collects/tests/mred/wxme.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/mysterx" responsible (mflatt)
-"collects/tests/mysterx/dhtmltests.rktl" drdr:command-line ""
-"collects/tests/mysterx/mystests.rktl" drdr:command-line ""
+"collects/tests/mysterx/dhtmltests.rktl" drdr:command-line #f
+"collects/tests/mysterx/mystests.rktl" drdr:command-line #f
 "collects/tests/mzcom" responsible (mflatt)
-"collects/tests/mzcom/test.rktl" drdr:command-line ""
+"collects/tests/mzcom/test.rktl" drdr:command-line #f
 "collects/tests/plai" responsible (jay)
-"collects/tests/plai/gc/bad-mutators/mut-1.rkt" drdr:command-line ""
-"collects/tests/plai/gc/bad-mutators/mutator0.rkt" drdr:command-line ""
-"collects/tests/plai/gc/bad-mutators/mutator1.rkt" drdr:command-line ""
-"collects/tests/plai/gc/bad-mutators/mutator2.rkt" drdr:command-line ""
-"collects/tests/plai/gc/bad-mutators/mutator3.rkt" drdr:command-line ""
-"collects/tests/plai/gc/bad-mutators/mutator5.rkt" drdr:command-line ""
-"collects/tests/plai/gc/bad-mutators/void-app.rkt" drdr:command-line ""
+"collects/tests/plai/gc/bad-mutators/mut-1.rkt" drdr:command-line #f
+"collects/tests/plai/gc/bad-mutators/mutator0.rkt" drdr:command-line #f
+"collects/tests/plai/gc/bad-mutators/mutator1.rkt" drdr:command-line #f
+"collects/tests/plai/gc/bad-mutators/mutator2.rkt" drdr:command-line #f
+"collects/tests/plai/gc/bad-mutators/mutator3.rkt" drdr:command-line #f
+"collects/tests/plai/gc/bad-mutators/mutator5.rkt" drdr:command-line #f
+"collects/tests/plai/gc/bad-mutators/void-app.rkt" drdr:command-line #f
 "collects/tests/plai/test-random-mutator.rkt" responsible (jay robby)
-"collects/tests/plai/web.rkt" drdr:command-line "mzc -k ~s"
+"collects/tests/plai/web.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/planet" responsible (robby jay)
-"collects/tests/planet/cmdline-tool.rkt" drdr:command-line ""
-"collects/tests/planet/examples/dummy-module.rkt" drdr:command-line ""
-"collects/tests/plot/run-tests.rkt" drdr:command-line "mred-text -t ~s"
+"collects/tests/planet/cmdline-tool.rkt" drdr:command-line #f
+"collects/tests/planet/examples/dummy-module.rkt" drdr:command-line #f
+"collects/tests/plot/run-tests.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/r6rs" responsible (mflatt)
 "collects/tests/racket" responsible (mflatt)
-"collects/tests/racket/advanced.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/all.rktl" drdr:command-line ""
-"collects/tests/racket/async-channel.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/awk.rktl" drdr:command-line ""
-"collects/tests/racket/basic.rktl" drdr:command-line ""
-"collects/tests/racket/beg-adv.rktl" drdr:command-line ""
-"collects/tests/racket/beg-bega.rktl" drdr:command-line ""
-"collects/tests/racket/beg-intm.rktl" drdr:command-line ""
-"collects/tests/racket/beg-intml.rktl" drdr:command-line ""
-"collects/tests/racket/bega-adv.rktl" drdr:command-line ""
-"collects/tests/racket/beginner-abbr.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/beginner.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/benchmarks/common/auto.rkt" drdr:command-line "racket ~s -- racket ctak"
-"collects/tests/racket/benchmarks/common/conform.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/ctak.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/destruct.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/div.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/dynamic.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/dynamic2.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/graphs.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/lattice.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/maze.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/maze2.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/mazefun.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/mk-bigloo.rktl" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/mk-chicken.rktl" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/mk-gambit.rktl" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/nestedloop.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/nqueens.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/paraffins.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/peval.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/r5rs-wrap.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/benchmarks/common/scheme.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/scheme2.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/sort1.rkt" drdr:command-line ""
-"collects/tests/racket/benchmarks/common/tak.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/takl.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/takr.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/common/takr2.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/mz/expand-class.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/benchmarks/mz/parsing.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/racket/benchmarks/mz/redsem.rkt" drdr:command-line "racket -f ~s -- --skip-struct-test"
-"collects/tests/racket/benchmarks/mz/ssax.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line "racket -qt ~s -- racket simple" drdr:timeout 600
-"collects/tests/racket/benchmarks/rx/pcre.rkt" drdr:command-line "racket ~s \"mz\"\"scheme\""
-"collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/chameneos.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/cheapconcurrency.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/fannkuch.rkt" drdr:command-line "racket -t ~s -- 4"
-"collects/tests/racket/benchmarks/shootout/fasta.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/hash.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/hash2.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/mandelbrot-generic.rkt" drdr:command-line "racket -t ~s -- 15"
-"collects/tests/racket/benchmarks/shootout/mandelbrot-unsafe.rkt" drdr:command-line "racket ~s 3"
-"collects/tests/racket/benchmarks/shootout/mandelbrot.rkt" drdr:command-line "racket -t ~s -- 15"
-"collects/tests/racket/benchmarks/shootout/meteor.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/nbody-generic.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/nbody-vec-generic.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/nbody-vec-unsafe.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/nbody-vec.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/nbody.rkt" drdr:command-line "racket -t ~s -- 10"
-"collects/tests/racket/benchmarks/shootout/nestedloop.rkt" drdr:command-line "racket -t ~s -- 2"
-"collects/tests/racket/benchmarks/shootout/nsieve.rkt" drdr:command-line "racket -t ~s -- 2"
-"collects/tests/racket/benchmarks/shootout/nsievebits.rkt" drdr:command-line "racket -t ~s -- 2"
-"collects/tests/racket/benchmarks/shootout/partialsums.rkt" drdr:command-line "racket -t ~s -- 25"
-"collects/tests/racket/benchmarks/shootout/pidigits-gmp.rkt" drdr:command-line "racket ~s 10"
-"collects/tests/racket/benchmarks/shootout/pidigits.rkt" drdr:command-line "racket -t ~s -- 25"
-"collects/tests/racket/benchmarks/shootout/random.rkt" drdr:command-line "racket -t ~s -- 25"
-"collects/tests/racket/benchmarks/shootout/recursive.rkt" drdr:command-line "racket -t ~s -- 2"
-"collects/tests/racket/benchmarks/shootout/run.rkt" drdr:command-line "racket -t ~s -- nsieve.rkt 1"
-"collects/tests/racket/benchmarks/shootout/spectralnorm-generic.rkt" drdr:command-line "racket -t ~s -- 25"
-"collects/tests/racket/benchmarks/shootout/spectralnorm-unsafe.rkt" drdr:command-line "racket ~s 5"
-"collects/tests/racket/benchmarks/shootout/spectralnorm.rkt" drdr:command-line "racket -t ~s -- 25"
-"collects/tests/racket/benchmarks/shootout/spellcheck.rkt" drdr:command-line "mzc ~s"
-"collects/tests/racket/benchmarks/shootout/strcat.rkt" drdr:command-line "racket -t ~s -- 25"
-"collects/tests/racket/benchmarks/shootout/thread-ring.rkt" drdr:command-line "racket -t ~s -- 25"
-"collects/tests/racket/binc.rktl" drdr:command-line ""
-"collects/tests/racket/boundmap-test.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/cache-image-snip-test.rktl" drdr:command-line "mred -f ~s"
-"collects/tests/racket/censor.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/chaperone.rktl" drdr:command-line ""
-"collects/tests/racket/char-set.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/chez-module.rktl" drdr:command-line ""
-"collects/tests/racket/cm.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/cmdline.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/compat.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/compile.rktl" drdr:command-line ""
-"collects/tests/racket/contmark.rktl" drdr:command-line ""
-"collects/tests/racket/contract-mzlib-test.rktl" drdr:command-line ""
-"collects/tests/racket/contract-opt-tests.rkt" drdr:command-line "racket -f ~s"
-"collects/tests/racket/contract-test.rktl" responsible (robby) drdr:command-line ""
-"collects/tests/racket/control.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/date.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/deep.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/dict.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/embed-in-c.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/embed-me4.rktl" drdr:command-line ""
-"collects/tests/racket/embed-me5.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/racket/embed-me7.rkt" drdr:command-line "mred-text -t ~s"
-"collects/tests/racket/embed-me9.rkt" drdr:command-line ""
-"collects/tests/racket/embed.rktl" drdr:command-line ""
-"collects/tests/racket/etc.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/expand.rktl" drdr:command-line ""
-"collects/tests/racket/fact.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/file.rktl" drdr:command-line ""
-"collects/tests/racket/filelib.rktl" drdr:command-line "" drdr:timeout 360
-"collects/tests/racket/fixnum.rktl" drdr:command-line "racket -f ~s" drdr:timeout 360
-"collects/tests/racket/for.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/foreign-test.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/function.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/head.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/htdp-image.rktl" responsible (robby) drdr:command-line "mred -f ~s"
-"collects/tests/racket/htdp-test.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/htdp.rktl" drdr:command-line ""
-"collects/tests/racket/id-table-test.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/imap.rktl" drdr:command-line ""
-"collects/tests/racket/intermediate-lambda.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/intermediate.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/intm-adv.rktl" drdr:command-line ""
-"collects/tests/racket/intm-intml.rktl" drdr:command-line ""
-"collects/tests/racket/intmlam-adv.rktl" drdr:command-line ""
-"collects/tests/racket/ktest.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/kw.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/list.rktl" drdr:command-line ""
-"collects/tests/racket/loadable.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/loadtest.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/logger.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/loop.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/ltest.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/macro.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/macrolib.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/makeflat.rktl" drdr:command-line ""
-"collects/tests/racket/makeflats.rktl" drdr:command-line ""
-"collects/tests/racket/math.rktl" drdr:command-line ""
-"collects/tests/racket/moddep.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/modprot.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/module-reader.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/module.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/mpair.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/mz-tests.rktl" drdr:command-line ""
-"collects/tests/racket/mzlib-tests.rktl" drdr:command-line ""
-"collects/tests/racket/mzq.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/name.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/namespac.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/nch.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/net.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/number.rktl" drdr:command-line ""
-"collects/tests/racket/numstrs.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/object-old.rktl" drdr:command-line ""
-"collects/tests/racket/object.rktl" drdr:command-line ""
-"collects/tests/racket/oe.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/openssl.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/optimize.rktl" drdr:command-line ""
-"collects/tests/racket/pack.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/package-gen.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/package.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/parallel.rktl" drdr:command-line ""
-"collects/tests/racket/param.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/path.rktl" drdr:command-line ""
-"collects/tests/racket/pathlib.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/pconvert.rktl" drdr:command-line ""
-"collects/tests/racket/place-channel.rktl" drdr:command-line ""
-"collects/tests/racket/port.rktl" drdr:command-line ""
-"collects/tests/racket/portlib.rktl" drdr:command-line ""
-"collects/tests/racket/pretty.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/procs.rktl" drdr:command-line ""
-"collects/tests/racket/prompt-tests.rktl" drdr:command-line ""
-"collects/tests/racket/prompt.rktl" drdr:command-line ""
-"collects/tests/racket/quiet.rktl" drdr:command-line "racket -f ~s" drdr:timeout 360
-"collects/tests/racket/read.rktl" drdr:command-line ""
-"collects/tests/racket/readtable.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/restart.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/runflats.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/rx.rktl" drdr:command-line ""
-"collects/tests/racket/sandbox.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/scheme-tests.rktl" drdr:command-line ""
-"collects/tests/racket/serialize.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/set.rktl" drdr:command-line ""
-"collects/tests/racket/shared-tests.rktl" drdr:command-line ""
-"collects/tests/racket/shared.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/srfi.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/stream.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/string-mzlib.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/string.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/struct.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/structlib.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/stx.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/subprocess.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/sync.rktl" drdr:command-line ""
-"collects/tests/racket/syntax-tests.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/syntax.rktl" drdr:command-line ""
-"collects/tests/racket/tcp.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/testing.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/thread.rktl" drdr:command-line ""
-"collects/tests/racket/threadlib.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/thrport.rktl" drdr:command-line ""
-"collects/tests/racket/trace.rktl" drdr:command-line ""
-"collects/tests/racket/trait.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/ttt/listlib.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/ttt/tic-bang.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/ttt/tic-func.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/ttt/ttt.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/ttt/uinc4.rktl" drdr:command-line ""
-"collects/tests/racket/ttt/veclib.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/udp.rktl" drdr:command-line ""
-"collects/tests/racket/uinc.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/uinc2.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/uinc3.rktl" drdr:command-line ""
-"collects/tests/racket/uni-norm.rktl" drdr:command-line ""
-"collects/tests/racket/unicode.rktl" drdr:command-line ""
-"collects/tests/racket/unit.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/unitsig.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/unsafe.rktl" drdr:command-line ""
-"collects/tests/racket/vector.rktl" drdr:command-line ""
-"collects/tests/racket/version.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/will.rktl" drdr:command-line "racket -f ~s"
-"collects/tests/racket/zo-marshal.rktl" drdr:command-line ""
-"collects/tests/racket/ztest.rktl" drdr:command-line ""
+"collects/tests/racket/advanced.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/all.rktl" drdr:command-line #f
+"collects/tests/racket/async-channel.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/awk.rktl" drdr:command-line #f
+"collects/tests/racket/basic.rktl" drdr:command-line #f
+"collects/tests/racket/beg-adv.rktl" drdr:command-line #f
+"collects/tests/racket/beg-bega.rktl" drdr:command-line #f
+"collects/tests/racket/beg-intm.rktl" drdr:command-line #f
+"collects/tests/racket/beg-intml.rktl" drdr:command-line #f
+"collects/tests/racket/bega-adv.rktl" drdr:command-line #f
+"collects/tests/racket/beginner-abbr.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/beginner.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/benchmarks/common/auto.rkt" drdr:command-line (racket * "--" "racket" "ctak")
+"collects/tests/racket/benchmarks/common/conform.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/ctak.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/destruct.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/div.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/dynamic.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/dynamic2.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/graphs.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/lattice.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/maze.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/maze2.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/mazefun.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/mk-bigloo.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/mk-chicken.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/mk-gambit.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/nestedloop.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/nqueens.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/paraffins.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/peval.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/r5rs-wrap.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/benchmarks/common/scheme.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/scheme2.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/sort1.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/tak.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/takl.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/takr.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/common/takr2.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/mz/expand-class.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/benchmarks/mz/parsing.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/racket/benchmarks/mz/redsem.rkt" drdr:command-line (racket "-f" * "--" "--skip-struct-test")
+"collects/tests/racket/benchmarks/mz/ssax.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line (racket "-qt" * "--" "racket" "simple") drdr:timeout 600
+"collects/tests/racket/benchmarks/rx/pcre.rkt" drdr:command-line (racket *)
+"collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/chameneos.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/cheapconcurrency.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/fannkuch.rkt" drdr:command-line (racket "-t" * "--" "4")
+"collects/tests/racket/benchmarks/shootout/fasta.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/hash.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/hash2.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/mandelbrot-generic.rkt" drdr:command-line (racket "-t" * "--" "15")
+"collects/tests/racket/benchmarks/shootout/mandelbrot-unsafe.rkt" drdr:command-line (racket * "3")
+"collects/tests/racket/benchmarks/shootout/mandelbrot.rkt" drdr:command-line (racket "-t" * "--" "15")
+"collects/tests/racket/benchmarks/shootout/meteor.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/nbody-generic.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/nbody-vec-generic.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/nbody-vec-unsafe.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/nbody-vec.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/nbody.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/nestedloop.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/nsieve.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/nsievebits.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/partialsums.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/pidigits-gmp.rkt" drdr:command-line (racket * "10")
+"collects/tests/racket/benchmarks/shootout/pidigits.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/random.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/recursive.rkt" drdr:command-line (racket "-t" * "--" "2")
+"collects/tests/racket/benchmarks/shootout/run.rkt" drdr:command-line (racket "-t" * "--" "nsieve.rkt" "1")
+"collects/tests/racket/benchmarks/shootout/spectralnorm-generic.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/spectralnorm-unsafe.rkt" drdr:command-line (racket * "5")
+"collects/tests/racket/benchmarks/shootout/spectralnorm.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/spellcheck.rkt" drdr:command-line (mzc *)
+"collects/tests/racket/benchmarks/shootout/strcat.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/benchmarks/shootout/thread-ring.rkt" drdr:command-line (racket "-t" * "--" "25")
+"collects/tests/racket/binc.rktl" drdr:command-line #f
+"collects/tests/racket/boundmap-test.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/cache-image-snip-test.rktl" drdr:command-line (mred "-f" *)
+"collects/tests/racket/censor.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/chaperone.rktl" drdr:command-line #f
+"collects/tests/racket/char-set.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/chez-module.rktl" drdr:command-line #f
+"collects/tests/racket/cm.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/cmdline.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/compat.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/compile.rktl" drdr:command-line #f
+"collects/tests/racket/contmark.rktl" drdr:command-line #f
+"collects/tests/racket/contract-mzlib-test.rktl" drdr:command-line #f
+"collects/tests/racket/contract-opt-tests.rkt" drdr:command-line (racket "-f" *)
+"collects/tests/racket/contract-test.rktl" responsible (robby) drdr:command-line #f
+"collects/tests/racket/control.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/date.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/deep.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/dict.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/embed-in-c.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/embed-me4.rktl" drdr:command-line #f
+"collects/tests/racket/embed-me5.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/racket/embed-me7.rkt" drdr:command-line (mred-text "-t" *)
+"collects/tests/racket/embed-me9.rkt" drdr:command-line #f
+"collects/tests/racket/embed.rktl" drdr:command-line #f
+"collects/tests/racket/etc.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/expand.rktl" drdr:command-line #f
+"collects/tests/racket/fact.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/file.rktl" drdr:command-line #f
+"collects/tests/racket/filelib.rktl" drdr:command-line #f drdr:timeout 360
+"collects/tests/racket/fixnum.rktl" drdr:command-line (racket "-f" *) drdr:timeout 360
+"collects/tests/racket/for.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/foreign-test.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/function.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/head.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/htdp-image.rktl" responsible (robby) drdr:command-line (mred "-f" *)
+"collects/tests/racket/htdp-test.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/htdp.rktl" drdr:command-line #f
+"collects/tests/racket/id-table-test.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/imap.rktl" drdr:command-line #f
+"collects/tests/racket/intermediate-lambda.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/intermediate.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/intm-adv.rktl" drdr:command-line #f
+"collects/tests/racket/intm-intml.rktl" drdr:command-line #f
+"collects/tests/racket/intmlam-adv.rktl" drdr:command-line #f
+"collects/tests/racket/ktest.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/kw.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/list.rktl" drdr:command-line #f
+"collects/tests/racket/loadable.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/loadtest.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/logger.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/loop.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/ltest.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/macro.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/macrolib.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/makeflat.rktl" drdr:command-line #f
+"collects/tests/racket/makeflats.rktl" drdr:command-line #f
+"collects/tests/racket/math.rktl" drdr:command-line #f
+"collects/tests/racket/moddep.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/modprot.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/module-reader.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/module.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/mpair.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/mz-tests.rktl" drdr:command-line #f
+"collects/tests/racket/mzlib-tests.rktl" drdr:command-line #f
+"collects/tests/racket/mzq.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/name.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/namespac.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/nch.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/net.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/number.rktl" drdr:command-line #f
+"collects/tests/racket/numstrs.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/object-old.rktl" drdr:command-line #f
+"collects/tests/racket/object.rktl" drdr:command-line #f
+"collects/tests/racket/oe.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/openssl.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/optimize.rktl" drdr:command-line #f
+"collects/tests/racket/pack.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/package-gen.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/package.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/parallel.rktl" drdr:command-line #f
+"collects/tests/racket/param.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/path.rktl" drdr:command-line #f
+"collects/tests/racket/pathlib.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/pconvert.rktl" drdr:command-line #f
+"collects/tests/racket/place-channel.rktl" drdr:command-line #f
+"collects/tests/racket/port.rktl" drdr:command-line #f
+"collects/tests/racket/portlib.rktl" drdr:command-line #f
+"collects/tests/racket/pretty.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/procs.rktl" drdr:command-line #f
+"collects/tests/racket/prompt-tests.rktl" drdr:command-line #f
+"collects/tests/racket/prompt.rktl" drdr:command-line #f
+"collects/tests/racket/quiet.rktl" drdr:command-line (racket "-f" *) drdr:timeout 360
+"collects/tests/racket/read.rktl" drdr:command-line #f
+"collects/tests/racket/readtable.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/restart.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/runflats.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/rx.rktl" drdr:command-line #f
+"collects/tests/racket/sandbox.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/scheme-tests.rktl" drdr:command-line #f
+"collects/tests/racket/serialize.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/set.rktl" drdr:command-line #f
+"collects/tests/racket/shared-tests.rktl" drdr:command-line #f
+"collects/tests/racket/shared.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/srfi.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/stream.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/string-mzlib.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/string.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/struct.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/structlib.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/stx.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/subprocess.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/sync.rktl" drdr:command-line #f
+"collects/tests/racket/syntax-tests.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/syntax.rktl" drdr:command-line #f
+"collects/tests/racket/tcp.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/testing.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/thread.rktl" drdr:command-line #f
+"collects/tests/racket/threadlib.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/thrport.rktl" drdr:command-line #f
+"collects/tests/racket/trace.rktl" drdr:command-line #f
+"collects/tests/racket/trait.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/ttt/listlib.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/ttt/tic-bang.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/ttt/tic-func.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/ttt/ttt.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/ttt/uinc4.rktl" drdr:command-line #f
+"collects/tests/racket/ttt/veclib.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/udp.rktl" drdr:command-line #f
+"collects/tests/racket/uinc.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/uinc2.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/uinc3.rktl" drdr:command-line #f
+"collects/tests/racket/uni-norm.rktl" drdr:command-line #f
+"collects/tests/racket/unicode.rktl" drdr:command-line #f
+"collects/tests/racket/unit.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/unitsig.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/unsafe.rktl" drdr:command-line #f
+"collects/tests/racket/vector.rktl" drdr:command-line #f
+"collects/tests/racket/version.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/will.rktl" drdr:command-line (racket "-f" *)
+"collects/tests/racket/zo-marshal.rktl" drdr:command-line #f
+"collects/tests/racket/ztest.rktl" drdr:command-line #f
 "collects/tests/raclog" responsible (jay)
 "collects/tests/racunit" responsible (jay noel)
-"collects/tests/run-automated-tests.rkt" drdr:command-line "mzc -k ~s" drdr:timeout 600
+"collects/tests/run-automated-tests.rkt" drdr:command-line (mzc "-k" *) drdr:timeout 600
 "collects/tests/scribble" responsible (eli mflatt)
 "collects/tests/slatex" responsible (jay sstrickl)
 "collects/tests/srfi" responsible (noel chongkai jay)
-"collects/tests/srfi/1/run-tests.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/srfi/40/run-tests.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/srfi/43/run-tests.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/srfi/load-srfis.rktl" drdr:command-line "mzscheme -f ~s"
+"collects/tests/srfi/1/run-tests.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/srfi/40/run-tests.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/srfi/43/run-tests.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/srfi/load-srfis.rktl" drdr:command-line (mzscheme "-f" *)
 "collects/tests/srpersist" responsible (unknown)
-"collects/tests/srpersist/srptests.rktl" drdr:command-line ""
+"collects/tests/srpersist/srptests.rktl" drdr:command-line #f
 "collects/tests/stepper" responsible (clements)
-"collects/tests/stepper/already-defined.rktl" drdr:command-line ""
-"collects/tests/stepper/bad-letrec-test.rktl" drdr:command-line ""
-"collects/tests/stepper/constructor-redexes.rktl" drdr:command-line ""
-"collects/tests/stepper/global-prim-reduction.rktl" drdr:command-line ""
-"collects/tests/stepper/image-test.rktl" drdr:command-line ""
-"collects/tests/stepper/intermediate-y.rktl" drdr:command-line ""
-"collects/tests/stepper/jump-to-ui-test.rkt" drdr:command-line ""
-"collects/tests/stepper/lambda-test.rktl" drdr:command-line ""
-"collects/tests/stepper/let-test.rktl" drdr:command-line ""
-"collects/tests/stepper/letrec-test.rktl" drdr:command-line ""
-"collects/tests/stepper/local-define-struct.rktl" drdr:command-line ""
-"collects/tests/stepper/local-test-2.rktl" drdr:command-line ""
-"collects/tests/stepper/local-test.rktl" drdr:command-line ""
-"collects/tests/stepper/long-error-message.rktl" drdr:command-line ""
-"collects/tests/stepper/multiply-defined.rktl" drdr:command-line ""
-"collects/tests/stepper/name-chaining.rktl" drdr:command-line ""
-"collects/tests/stepper/no-else-clause.rktl" drdr:command-line ""
-"collects/tests/stepper/non-procedure.rktl" drdr:command-line ""
-"collects/tests/stepper/print-convert-test.rktl" drdr:command-line ""
-"collects/tests/stepper/printing-reducing-test.rktl" drdr:command-line ""
-"collects/tests/stepper/procedure-display.rktl" drdr:command-line ""
-"collects/tests/stepper/right-redex.rktl" drdr:command-line ""
-"collects/tests/stepper/structures.rktl" drdr:command-line ""
-"collects/tests/stepper/symbol-identifier.rktl" drdr:command-line ""
-"collects/tests/stepper/symbols.rktl" drdr:command-line ""
-"collects/tests/stepper/syntax-error-ordering.rktl" drdr:command-line ""
-"collects/tests/stepper/test-or.rktl" drdr:command-line ""
-"collects/tests/stepper/two-tests.rktl" drdr:command-line ""
-"collects/tests/stepper/unannotated.rktl" drdr:command-line ""
-"collects/tests/stepper/undefined.rktl" drdr:command-line ""
-"collects/tests/stepper/world-test.rktl" drdr:command-line ""
-"collects/tests/stepper/write-display.rktl" drdr:command-line ""
+"collects/tests/stepper/already-defined.rktl" drdr:command-line #f
+"collects/tests/stepper/bad-letrec-test.rktl" drdr:command-line #f
+"collects/tests/stepper/constructor-redexes.rktl" drdr:command-line #f
+"collects/tests/stepper/global-prim-reduction.rktl" drdr:command-line #f
+"collects/tests/stepper/image-test.rktl" drdr:command-line #f
+"collects/tests/stepper/intermediate-y.rktl" drdr:command-line #f
+"collects/tests/stepper/jump-to-ui-test.rkt" drdr:command-line #f
+"collects/tests/stepper/lambda-test.rktl" drdr:command-line #f
+"collects/tests/stepper/let-test.rktl" drdr:command-line #f
+"collects/tests/stepper/letrec-test.rktl" drdr:command-line #f
+"collects/tests/stepper/local-define-struct.rktl" drdr:command-line #f
+"collects/tests/stepper/local-test-2.rktl" drdr:command-line #f
+"collects/tests/stepper/local-test.rktl" drdr:command-line #f
+"collects/tests/stepper/long-error-message.rktl" drdr:command-line #f
+"collects/tests/stepper/multiply-defined.rktl" drdr:command-line #f
+"collects/tests/stepper/name-chaining.rktl" drdr:command-line #f
+"collects/tests/stepper/no-else-clause.rktl" drdr:command-line #f
+"collects/tests/stepper/non-procedure.rktl" drdr:command-line #f
+"collects/tests/stepper/print-convert-test.rktl" drdr:command-line #f
+"collects/tests/stepper/printing-reducing-test.rktl" drdr:command-line #f
+"collects/tests/stepper/procedure-display.rktl" drdr:command-line #f
+"collects/tests/stepper/right-redex.rktl" drdr:command-line #f
+"collects/tests/stepper/structures.rktl" drdr:command-line #f
+"collects/tests/stepper/symbol-identifier.rktl" drdr:command-line #f
+"collects/tests/stepper/symbols.rktl" drdr:command-line #f
+"collects/tests/stepper/syntax-error-ordering.rktl" drdr:command-line #f
+"collects/tests/stepper/test-or.rktl" drdr:command-line #f
+"collects/tests/stepper/two-tests.rktl" drdr:command-line #f
+"collects/tests/stepper/unannotated.rktl" drdr:command-line #f
+"collects/tests/stepper/undefined.rktl" drdr:command-line #f
+"collects/tests/stepper/world-test.rktl" drdr:command-line #f
+"collects/tests/stepper/write-display.rktl" drdr:command-line #f
 "collects/tests/stxparse" responsible (ryanc)
-"collects/tests/stxparse/stxclass.rkt" drdr:command-line "mred-text -t ~s"
+"collects/tests/stxparse/stxclass.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/syntax-color" responsible (sowens mflatt)
-"collects/tests/syntax-color/paren-tree.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/syntax-color/token-tree.rktl" drdr:command-line "mzscheme -f ~s"
+"collects/tests/syntax-color/paren-tree.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/syntax-color/token-tree.rktl" drdr:command-line (mzscheme "-f" *)
 "collects/tests/test-engine" responsible (kathyg)
 "collects/tests/typed-scheme" responsible (samth)
-"collects/tests/typed-scheme/fail" drdr:command-line ""
+"collects/tests/typed-scheme/fail" drdr:command-line #f
 "collects/tests/typed-scheme/fail/with-type3.rkt" responsible (sstrickl)
 "collects/tests/typed-scheme/nightly-run.rkt" drdr:timeout 1200
-"collects/tests/typed-scheme/run.rkt" drdr:command-line "" drdr:timeout 600
-"collects/tests/typed-scheme/xfail" drdr:command-line ""
+"collects/tests/typed-scheme/run.rkt" drdr:command-line #f drdr:timeout 600
+"collects/tests/typed-scheme/xfail" drdr:command-line #f
 "collects/tests/units" responsible (sstrickl)
-"collects/tests/units/multi-mod-sigs.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/units/test-cert.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/units/test-exptime.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/units/test-harness.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/tests/units/test-runtime.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/units/test-unit-contracts.rktl" drdr:command-line "mzscheme -f ~s"
-"collects/tests/units/test-unit.rktl" drdr:command-line "mzscheme -f ~s"
+"collects/tests/units/multi-mod-sigs.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/units/test-cert.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/units/test-exptime.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/units/test-harness.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/tests/units/test-runtime.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/units/test-unit-contracts.rktl" drdr:command-line (mzscheme "-f" *)
+"collects/tests/units/test-unit.rktl" drdr:command-line (mzscheme "-f" *)
 "collects/tests/unstable/generics.rkt" responsible (jay)
-"collects/tests/unstable/srcloc.rktl" responsible (cce) drdr:command-line "mzscheme -f ~s"
+"collects/tests/unstable/srcloc.rktl" responsible (cce) drdr:command-line (mzscheme "-f" *)
 "collects/tests/utils" responsible (unknown)
-"collects/tests/utils/gui.rkt" drdr:command-line "mred-text -t ~s"
+"collects/tests/utils/gui.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/web-server" responsible (jay)
 "collects/tests/web-server/run-all-tests.rkt" drdr:timeout 300
-"collects/tests/web-server/servlet-env/env.rkt" drdr:command-line "mzc ~s"
-"collects/tests/web-server/servlet-env/insta.rkt" drdr:command-line "mzc -k ~s"
-"collects/tests/web-server/template/examples/blog-xexpr.rkt" drdr:command-line "mzc ~s"
-"collects/tests/web-server/template/examples/blog.rkt" drdr:command-line "mzc ~s"
+"collects/tests/web-server/servlet-env/env.rkt" drdr:command-line (mzc *)
+"collects/tests/web-server/servlet-env/insta.rkt" drdr:command-line (mzc "-k" *)
+"collects/tests/web-server/template/examples/blog-xexpr.rkt" drdr:command-line (mzc *)
+"collects/tests/web-server/template/examples/blog.rkt" drdr:command-line (mzc *)
 "collects/tests/xml" responsible (jay)
-"collects/tests/xml/test-clark.rkt" drdr:command-line "" drdr:timeout 300
-"collects/tests/xml/xml-snip-bug.rkt" drdr:command-line "mred -t ~s"
+"collects/tests/xml/test-clark.rkt" drdr:command-line #f drdr:timeout 300
+"collects/tests/xml/xml-snip-bug.rkt" drdr:command-line (mred "-t" *)
 "collects/tex2page" responsible (mflatt eli jay)
 "collects/texpict" responsible (mflatt robby)
-"collects/texpict/balloon.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/code.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/face-demo.rkt" drdr:command-line "mzc ~s"
-"collects/texpict/face.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/flash.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/mrpict-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/mrpict.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/pict-value-snip.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/private/common-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/slideshow-run.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/slideshow.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/symbol.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/texpict-unit.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/texpict.rkt" drdr:command-line "mred-text -t ~s"
-"collects/texpict/utils.rkt" drdr:command-line "mred-text -t ~s"
+"collects/texpict/balloon.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/code.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/face-demo.rkt" drdr:command-line (mzc *)
+"collects/texpict/face.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/flash.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/mrpict-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/mrpict.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/pict-value-snip.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/private/common-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/slideshow-run.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/slideshow.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/symbol.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/texpict-unit.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/texpict.rkt" drdr:command-line (mred-text "-t" *)
+"collects/texpict/utils.rkt" drdr:command-line (mred-text "-t" *)
 "collects/trace" responsible (mflatt robby)
 "collects/typed" responsible (samth)
-"collects/typed/framework/framework.rkt" drdr:command-line "mred-text -t ~s"
-"collects/typed/framework/prefs-contract.rkt" drdr:command-line "mred-text -t ~s"
-"collects/typed/mred/mred.rkt" drdr:command-line "mred-text -t ~s"
+"collects/typed/framework/framework.rkt" drdr:command-line (mred-text "-t" *)
+"collects/typed/framework/prefs-contract.rkt" drdr:command-line (mred-text "-t" *)
+"collects/typed/mred/mred.rkt" drdr:command-line (mred-text "-t" *)
 "collects/typed/racunit" responsible (jay)
-"collects/typed/racunit/gui.rkt" drdr:command-line "gracket -t ~s"
+"collects/typed/racunit/gui.rkt" drdr:command-line (gracket "-t" *)
 "collects/typed-scheme" responsible (samth)
 "collects/unstable" responsible (jay samth cce ryanc)
 "collects/unstable/debug.rkt" responsible (samth)
-"collects/unstable/gui/notify.rkt" drdr:command-line "mred-text -t ~s"
-"collects/unstable/gui/prefs.rkt" drdr:command-line "mred-text -t ~s"
+"collects/unstable/gui/notify.rkt" drdr:command-line (mred-text "-t" *)
+"collects/unstable/gui/prefs.rkt" drdr:command-line (mred-text "-t" *)
 "collects/unstable/hash.rkt" responsible (samth)
 "collects/unstable/match.rkt" responsible (samth)
 "collects/unstable/mutated-vars.rkt" responsible (samth)
@@ -1771,45 +1803,45 @@ path/s is either such a string or a list of them.
 "collects/unstable/scribblings/utils.rkt" responsible (samth)
 "collects/unstable/sequence.rkt" responsible (samth)
 "collects/version" responsible (eli)
-"collects/version/tool.rkt" drdr:command-line "mred-text -t ~s"
+"collects/version/tool.rkt" drdr:command-line (mred-text "-t" *)
 "collects/waterworld" responsible (eli)
-"collects/waterworld/waterworld.rkt" drdr:command-line "mzc ~s"
+"collects/waterworld/waterworld.rkt" drdr:command-line (mzc *)
 "collects/web-server" responsible (jay)
-"collects/web-server/default-web-root/configuration-table.rkt" drdr:command-line ""
-"collects/web-server/default-web-root/htdocs/servlets/examples/add-dispatch.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/default-web-root/htdocs/servlets/examples/bad-xexpr.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/default-web-root/htdocs/servlets/examples/basic.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/default-web-root/htdocs/servlets/examples/cookie.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/default-web-root/htdocs/servlets/examples/cookie2.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/default-web-root/htdocs/servlets/examples/digest.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/default-web-root/htdocs/servlets/examples/english-measure-questions.rkt" drdr:command-line ""
-"collects/web-server/default-web-root/htdocs/servlets/examples/response.rkt" drdr:command-line "mzscheme -f ~s"
-"collects/web-server/main.rkt" drdr:command-line ""
-"collects/web-server/scribblings/tutorial/examples/dummy-10.rkt" drdr:command-line ""
-"collects/web-server/scribblings/tutorial/examples/dummy-3.rkt" drdr:command-line ""
-"collects/web-server/scribblings/tutorial/examples/iteration-1.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/iteration-10.rkt" drdr:command-line ""
-"collects/web-server/scribblings/tutorial/examples/iteration-2.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/iteration-3.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/iteration-4.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/iteration-5.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/iteration-6.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/iteration-7.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/iteration-8.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/iteration-9.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/model-3.rkt" drdr:command-line ""
-"collects/web-server/scribblings/tutorial/examples/no-use-redirect.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/send-suspend-1.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/send-suspend-2.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/test-static.rkt" drdr:command-line "mzc ~s"
-"collects/web-server/scribblings/tutorial/examples/use-redirect.rkt" drdr:command-line "mzc ~s"
+"collects/web-server/default-web-root/configuration-table.rkt" drdr:command-line #f
+"collects/web-server/default-web-root/htdocs/servlets/examples/add-dispatch.rkt" drdr:command-line (mzc *)
+"collects/web-server/default-web-root/htdocs/servlets/examples/bad-xexpr.rkt" drdr:command-line (mzc *)
+"collects/web-server/default-web-root/htdocs/servlets/examples/basic.rkt" drdr:command-line (mzc *)
+"collects/web-server/default-web-root/htdocs/servlets/examples/cookie.rkt" drdr:command-line (mzc *)
+"collects/web-server/default-web-root/htdocs/servlets/examples/cookie2.rkt" drdr:command-line (mzc *)
+"collects/web-server/default-web-root/htdocs/servlets/examples/digest.rkt" drdr:command-line (mzc *)
+"collects/web-server/default-web-root/htdocs/servlets/examples/english-measure-questions.rkt" drdr:command-line #f
+"collects/web-server/default-web-root/htdocs/servlets/examples/response.rkt" drdr:command-line (mzscheme "-f" *)
+"collects/web-server/main.rkt" drdr:command-line #f
+"collects/web-server/scribblings/tutorial/examples/dummy-10.rkt" drdr:command-line #f
+"collects/web-server/scribblings/tutorial/examples/dummy-3.rkt" drdr:command-line #f
+"collects/web-server/scribblings/tutorial/examples/iteration-1.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/iteration-10.rkt" drdr:command-line #f
+"collects/web-server/scribblings/tutorial/examples/iteration-2.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/iteration-3.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/iteration-4.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/iteration-5.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/iteration-6.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/iteration-7.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/iteration-8.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/iteration-9.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/model-3.rkt" drdr:command-line #f
+"collects/web-server/scribblings/tutorial/examples/no-use-redirect.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/send-suspend-1.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/send-suspend-2.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/test-static.rkt" drdr:command-line (mzc *)
+"collects/web-server/scribblings/tutorial/examples/use-redirect.rkt" drdr:command-line (mzc *)
 "collects/wxme" responsible (mflatt)
 "collects/wxme/xml.rkt" responsible (jay)
 "collects/xml" responsible (jay)
-"collects/xml/scheme-snipclass.rkt" drdr:command-line "mred-text -t ~s"
-"collects/xml/text-box-tool.rkt" drdr:command-line "mred-text -t ~s"
-"collects/xml/text-snipclass.rkt" drdr:command-line "mred-text -t ~s"
-"collects/xml/xml-snipclass.rkt" drdr:command-line "mred-text -t ~s"
+"collects/xml/scheme-snipclass.rkt" drdr:command-line (mred-text "-t" *)
+"collects/xml/text-box-tool.rkt" drdr:command-line (mred-text "-t" *)
+"collects/xml/text-snipclass.rkt" drdr:command-line (mred-text "-t" *)
+"collects/xml/xml-snipclass.rkt" drdr:command-line (mred-text "-t" *)
 "doc/release-notes/COPYING-libscheme.txt" responsible (mflatt)
 "doc/release-notes/COPYING.LIB" responsible (mflatt)
 "doc/release-notes/drracket" responsible (robby)
