@@ -22,6 +22,18 @@
   (pattern (~and i:id (~or abs sin cos tan asin acos atan log exp))
            #:with unsafe (format-id #'here "unsafe-fl~a" #'i)))
 
+(define-syntax-class pair-opt-expr
+  (pattern e:opt-expr
+           #:when (match (type-of #'e) ; type of the operand
+                    [(tc-result1: (Pair: _ _)) #t]
+                    [_ #f])
+           #:with opt #'e.opt))
+
+(define-syntax-class pair-unary-op
+  #:literals (car cdr)
+  (pattern (~and i:id (~or car cdr))
+           #:with unsafe (format-id #'here "unsafe-~a" #'i)))
+
 (define-syntax-class opt-expr
   (pattern e:opt-expr*
            #:with opt (syntax-recertify #'e.opt this-syntax (current-code-inspector) #f)))
@@ -29,7 +41,8 @@
 (define-syntax-class opt-expr*
   #:literal-sets (kernel-literals)
   #:local-conventions ([#rx"^e" opt-expr]
-                       [#rx"^f" float-opt-expr])
+                       [#rx"^f" float-opt-expr]
+                       [#rx"^p" pair-opt-expr])
   (pattern (let-values ([ids e-rhs] ...) e-body ...)
            #:with opt #'(let-values ([ids e-rhs.opt] ...) e-body.opt ...))
   (pattern (#%plain-app op:float-unary-op f)
@@ -39,6 +52,8 @@
            (for/fold ([o #'f.opt])
              ([e (syntax->list #'(fs.opt ...))])
              #`(op.unsafe #,o #,e)))
+  (pattern (#%plain-app op:pair-unary-op p)
+           #:with opt #'(op.unsafe p.opt))
   (pattern (#%plain-app e ...)
            #:with opt #'(#%plain-app e.opt ...))
   (pattern other:expr
