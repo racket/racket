@@ -43,7 +43,7 @@
                (path->string co-dir))]
        (notify! "Checking out ~a@~a into ~a"
                 repo rev to-dir)
-       (scm-checkout rev repo to-dir))))
+       (scm-export-repo rev repo to-dir))))
   ;; Make the build directory
   (make-directory* build-dir)
   ;; Run Configure, Make, Make Install

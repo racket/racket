@@ -186,12 +186,6 @@
    (system* (find-executable-path "tar") "xf" "-" "--absolute-names"))
   (void))
 
-(define (scm-checkout rev repo dest)
-  (system* (git-path) "clone" (path->string* repo) (path->string* dest))
-  (parameterize ([current-directory dest])
-    (system* (git-path) "checkout" (push-data-end-commit (push-info rev))))
-  (void))
-
 (define (scm-update repo)
   (parameterize ([current-directory repo])
     (system* (git-path) "fetch" git-url-base))
@@ -211,5 +205,4 @@
  [scm-update (path? . -> . void?)]
  [scm-revisions-after (exact-nonnegative-integer? . -> . (listof exact-nonnegative-integer?))]
  [scm-export-file (exact-nonnegative-integer? path-string? string? path-string? . -> . void?)]
- [scm-export-repo (exact-nonnegative-integer? path-string? path-string? . -> . void?)]
- [scm-checkout (exact-nonnegative-integer? path-string? path-string? . -> . void?)])
+ [scm-export-repo (exact-nonnegative-integer? path-string? path-string? . -> . void?)])
