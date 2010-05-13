@@ -56,6 +56,8 @@
            #:with opt #'(op.unsafe p.opt))
   (pattern (#%plain-app e ...)
            #:with opt #'(#%plain-app e.opt ...))
+  (pattern (lambda (x ...) e ...)
+           #:with opt #'(lambda (x ...) e.opt ...))
   (pattern other:expr
            #:with opt #'other))
 
@@ -63,4 +65,6 @@
   (syntax-parse stx #:literal-sets (kernel-literals)
     [(define-values ~! ids e:opt-expr)
      (syntax/loc stx (define-values ids e.opt))]
+    [(#%app e:opt-expr ...) (syntax/loc stx (#%app e.opt ...))]
+    [(#%plain-app e:opt-expr ...) (syntax/loc stx (#%plain-app e.opt ...))]
     [_ stx]))
