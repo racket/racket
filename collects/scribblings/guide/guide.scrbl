@@ -50,6 +50,8 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["macros.scrbl"]
 
+@include-section["languages.scrbl"]
+
 @include-section["performance.scrbl"]
 
 @include-section["running.scrbl"]

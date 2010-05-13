@@ -224,10 +224,10 @@ streams. Instead, the syntax is determined by two layers:
 
 @itemize[
 
- @item{a @defterm{read} layer, which turns a sequence of characters
+ @item{a @deftech{reader} layer, which turns a sequence of characters
        into lists, symbols, and other constants; and}
 
- @item{an @defterm{expand} layer, which processes the lists, symbols,
+ @item{an @deftech{expander} layer, which processes the lists, symbols,
        and other constants to parse them as an expression.}
 
 ]
