@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "ss.ss")
+@(require "ss.ss"
+          (for-syntax racket/class))
 
 @(define paper-url "http://www.cs.utah.edu/plt/publications/jfp05-ff.pdf")
 
@@ -18,8 +19,10 @@ To get started, run the @exec{slideshow} executable, and click the
 To learn more about why Slideshow is cool, see also ``Slideshow:
 Functional Presentations'' @cite["Findler06"].
 
-@defmodulelang*/no-declare[(slideshow)]{Most of the bindings defined in
-the manual are provided by the @racketmodname[slideshow] language.}
+@defmodulelang*/no-declare[(slideshow)]{Most of the bindings defined
+in the manual are provided by the @racketmodname[slideshow] language,
+which also re-exports all of @racketmodname[racket] except for
+@racket[printable<%>] (due to backward-compatibility issues).}
 
 @table-of-contents[]
 

@@ -27,14 +27,17 @@
 
 @title[#:tag "base"]{Base Document Format}
 
-@defmodulelang[scribble/base]{The @racketmodname[scribble/base] language
-provides functions and forms that can be used from code written either
-in Racket or with @elem["@"] expressions.
+@defmodulelang[scribble/base]{The @racketmodname[scribble/base]
+language provides functions and forms that can be used from code
+written either in Racket or with @elem["@"] expressions. It
+essentially extends @racketmodname[racket/base], except that top-level
+forms within a module using the @racketmodname[scribble/base] language
+are treated as document content (like @racketmodname[scribble/doclang]).
 
-The @racketmodname[scribble/base] name can also be used as a
-library with @racket[require], in which case it provides all of the same
-bindings, but without setting the reader or setting the default
-rendering format to the Racket manual format.}
+The @racketmodname[scribble/base] name can also be used as a library
+with @racket[require], in which case it provides only the bindings
+defined in this section, and it also does not set the reader or
+set the default rendering format to the Racket manual format.}
 
 Functions provided by this library, such as @racket[title] and
 @racket[italic], might be called from Racket as
