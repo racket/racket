@@ -22,7 +22,6 @@
          symbols one-of/c
          listof non-empty-listof cons/c list/c
          vectorof vector-immutableof vector/c vector-immutable/c 
-         box-immutable/c box/c
          promise/c
          struct/c
          syntax/c
@@ -794,15 +793,6 @@
                     procs
                     (vector->list v)))))))
 
-(define/final-prop (box/c pred)
-  (let* ([ctc (coerce-flat-contract 'box/c pred)]
-         [p? (flat-contract-predicate ctc)])
-    (build-flat-contract
-     (build-compound-type-name 'box/c ctc)
-     (λ (x)
-       (and (box? x)
-            (p? (unbox x)))))))
-
 ;;
 ;; cons/c opter
 ;;
@@ -982,7 +972,6 @@
 
 (define cons/c-main-function (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
 (define/subexpression-pos-prop (cons/c a b) (cons/c-main-function a b))
-(define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))
 (define vector-immutable/c (*-immutable/c vector?
                                           vector-immutable
                                           (#t (λ (v i) (vector-ref v i)))
