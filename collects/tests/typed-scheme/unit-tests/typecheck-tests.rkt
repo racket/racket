@@ -315,7 +315,7 @@
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 x)
-              #:proc (syntax-parser [(_ _ (_ ([(x) _]) _)) (-path (t:Un (-val 'squarf) -Pos) #'x)])]
+              (t:Un (-val 'squarf) -Pos)]
         
         [tc-e/t (if #t 1 2) -Pos]
         
@@ -323,10 +323,10 @@
         ;; eq? as predicate
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (eq? x 'foo) 3 x)) 
-              #:proc (get-let-name x 0 (ret N (-FS -top (-and (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+              #:proc (get-let-name x 0 (ret N (-FS -top -top)))]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (eq? 'foo x) 3 x))
-              #:proc (get-let-name x 0 (ret N (-FS -top (-and (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+              #:proc (get-let-name x 0 (ret N (-FS -top -top)))]
         
         [tc-err (let: ([x : (U String 'foo) 'foo])
                       (if (string=? x 'foo)
@@ -342,30 +342,30 @@
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? x sym) 3 x))
               #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                     (ret -Pos (-FS -top (-and (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
+                                     (ret -Pos (-FS -top -top))])]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? sym x) 3 x))
                #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                      (ret -Pos (-FS -top (-and (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
+                                      (ret -Pos (-FS -top -top))])]
         ;; equal? as predicate for symbols
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? x 'foo) 3 x))
-                #:proc (get-let-name x 0 (ret N (-FS -top (-and (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+                #:proc (get-let-name x 0 (ret N (-FS -top -top)))]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? 'foo x) 3 x))
-                #:proc (get-let-name x 0 (ret N (-FS -top (-and (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x)))))]
+                #:proc (get-let-name x 0 (ret N (-FS -top -top)))]
         
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? x sym) 3 x))
                #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                      (ret -Pos (-FS -top (-and (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
+                                      (ret -Pos (-FS -top -top))])]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? sym x) 3 x))
               #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                     (ret -Pos (-FS -top (-and (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))])]
+                                     (ret -Pos (-FS -top -top))])]
         
         [tc-e (let: ([x : (Listof Symbol)'(a b c)])
                     (cond [(memq 'a x) => car]
@@ -388,11 +388,11 @@
         [tc-err (map #{3 : Any} #{12 : Any})]
         [tc-err (car 3)]
         
-        [tc-e (let: ([x : Any 1])
-                    (if (and (list? x) (not (null? x)))
-                        x
-                        'foo))
-              (t:Un (-val 'foo) (-pair Univ (-lst Univ)))]
+        [tc-e/t (let: ([x : Any 1])
+                  (if (and (list? x) (not (null? x)))
+                      x
+                      'foo))
+                (t:Un (-val 'foo) (-pair Univ (-lst Univ)))]
         
         [tc-e (cadr (cadr (list 1 (list 1 2 3) 3))) -Pos]
         
@@ -402,23 +402,9 @@
         [tc-e (let: ([x : Any 1]) (and (number? x) (boolean? x))) 
               #:ret (ret B (-FS -bot -top))]
         [tc-e (let: ([x : Any 1]) (and (number? x) x))
-              #:proc (get-let-name x 0 (ret (t:Un N (-val #f)) (-FS 
-                                                                (-and (make-TypeFilter N null #'x) (make-NotTypeFilter (-val #f) null #'x))
-                                                                (-and (make-ImpFilter
-                                                                       (make-NotTypeFilter (-val #f) null #'x)
-                                                                       (make-NotTypeFilter N null #'x))
-                                                                      (make-ImpFilter
-                                                                       (make-TypeFilter N null #'x)
-                                                                       (make-TypeFilter (-val #f) null #'x))))))]
+              #:proc (get-let-name x 0 (ret (t:Un N (-val #f)) (-FS -top -top)))]
         [tc-e (let: ([x : Any 1]) (and x (boolean? x)))
-              #:proc (get-let-name x 0 (ret -Boolean (-FS (-and (make-NotTypeFilter (-val #f) null #'x) (make-TypeFilter -Boolean null #'x))
-                                                           (-and
-                                                            (make-ImpFilter
-                                                             (make-TypeFilter B null #'x)
-                                                             (make-TypeFilter (-val #f) null #'x))
-                                                            (make-ImpFilter
-                                                              (make-NotTypeFilter (-val #f) null #'x)
-                                                              (make-NotTypeFilter B null #'x))))))]
+              #:proc (get-let-name x 0 (ret -Boolean (-FS -top -top)))]
         
         [tc-e/t (let: ([x : Any 3])
                       (if (and (list? x) (not (null? x)))
@@ -456,7 +442,7 @@
                             (boolean? y))
                         (if (boolean? x) 1 x)
                         4))
-              Univ]
+              #:ret (ret Univ (-FS -top -bot))]
         [tc-e (let: ([x : Any 1])
                     (if (if ((lambda: ([x : Any]) x) 12)
                             #t
@@ -472,11 +458,11 @@
         
         ;; T-AbsPred
         [tc-e/t (let ([p? (lambda: ([x : Any]) (number? x))])
-                  (lambda: ([x : Any]) (if (p? x) (add1 x) 12)))
+                  (lambda: ([x : Any]) (if (p? x) (add1 x) (add1 12))))
                 (t:-> Univ N)]
         [tc-e/t (let ([p? (lambda: ([x : Any]) (not (number? x)))])
                   (lambda: ([x : Any]) (if (p? x) 12 (add1 x))))
-                (t:-> Univ N : (-FS -top (-filter -Number #'x)))]
+                (t:-> Univ N : (-FS -top (-filter -Number 0)))]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) 11 12)))
@@ -484,8 +470,8 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                ;(t:-> Univ Univ : (-FS (list (-not-filter (-val #f))) (list (-filter (-val #f)))) : (make-Path null 0))]
-                (make-pred-ty (list Univ) Univ (-val #f) 0 null)]
+                (t:-> Univ Univ : (-FS  (-not-filter (-val #f) 0) (-filter (-val #f) 0)))
+                #;(make-pred-ty (list Univ) Univ (-val #f) 0 null)]
         [tc-e/t (let* ([z (ann 1 : Any)]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) (ann (add1 7) Any) 12)))
