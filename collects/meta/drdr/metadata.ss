@@ -61,7 +61,7 @@
                  (define tmp-file (make-temporary-file "props~a.ss" #f (current-temporary-directory)))
                  (and
                   ; Checkout the props file
-                  (scm-export
+                  (scm-export-file
                    rev
                    (plt-repository)
                    "collects/meta/props" 
