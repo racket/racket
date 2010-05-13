@@ -144,5 +144,6 @@ There is only one writer function at the moment:
 ]
 
 @(parameterize ([current-directory here])
-   (delete-file "output.txt"))
+   (with-handlers ([exn:fail:filesystem? void])
+     (delete-file "output.txt")))
 
