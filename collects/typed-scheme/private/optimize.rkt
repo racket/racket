@@ -40,13 +40,12 @@
 
 (define-syntax-class opt-expr*
   #:literal-sets (kernel-literals)
-  #:local-conventions ([#rx"^e" opt-expr]
-                       [#rx"^f" float-opt-expr]
-                       [#rx"^p" pair-opt-expr])
-  (pattern (let-values ([ids e-rhs] ...) e-body ...)
-           #:with opt #'(let-values ([ids e-rhs.opt] ...) e-body.opt ...))
+  #:local-conventions ([#px"^e" opt-expr]
+                       [#px"^f\\d*s?$" float-opt-expr]
+                       [#px"^p\\d*s?$" pair-opt-expr])
   (pattern (#%plain-app op:float-unary-op f)
            #:with opt #'(op.unsafe f.opt))
+  ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
   (pattern (#%plain-app op:float-binary-op f fs ...)
            #:with opt 
            (for/fold ([o #'f.opt])
@@ -54,17 +53,29 @@
              #`(op.unsafe #,o #,e)))
   (pattern (#%plain-app op:pair-unary-op p)
            #:with opt #'(op.unsafe p.opt))
-  (pattern (#%plain-app e ...)
-           #:with opt #'(#%plain-app e.opt ...))
-  (pattern (lambda (x ...) e ...)
-           #:with opt #'(lambda (x ...) e.opt ...))
+
+  ;; boring cases, just recur down
+  (pattern (#%plain-lambda formals e ...)
+           #:with opt #'(#%plain-lambda formals e.opt ...))
+  (pattern (define-values formals e ...)
+           #:with opt #'(define-values formals e.opt ...))
+  (pattern (case-lambda [formals e ...] ...)
+           #:with opt #'(case-lambda [formals e.opt ...] ...))
+  (pattern (let-values ([ids e-rhs] ...) e-body ...)
+           #:with opt #'(let-values ([ids e-rhs.opt] ...) e-body.opt ...))
+  (pattern (letrec-values ([ids e-rhs] ...) e-body ...)
+           #:with opt #'(letrec-values ([ids e-rhs.opt] ...) e-body.opt ...))
+  (pattern (letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs] ...) e-body ...)
+           #:with opt #'(letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs.opt] ...) e-body.opt ...))
+  (pattern (kw:identifier expr ...)
+           #:when (ormap (lambda (k) (free-identifier=? k #'kw))
+                         (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
+                               #'#%variable-reference #'with-continuation-mark))
+           #:with opt #'(kw expr.opt ...))
   (pattern other:expr
            #:with opt #'other))
 
 (define (optimize stx)
   (syntax-parse stx #:literal-sets (kernel-literals)
-    [(define-values ~! ids e:opt-expr)
-     (syntax/loc stx (define-values ids e.opt))]
-    [(#%app e:opt-expr ...) (syntax/loc stx (#%app e.opt ...))]
-    [(#%plain-app e:opt-expr ...) (syntax/loc stx (#%plain-app e.opt ...))]
-    [_ stx]))
+    [e:opt-expr
+     (syntax/loc stx e.opt)]))
