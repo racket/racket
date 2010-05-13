@@ -3,6 +3,7 @@
 (ann (vector 1 2 3) (U String (Vector Integer Integer Integer) (Vectorof Number)))
 
 (define v (ann (vector 1 2 3) (Vector Integer Integer Integer)))
+(define v* (ann #(1 2 3) (Vector Integer Integer Integer)))
 
 (vector-ref v 2)
 (vector-ref v 0)

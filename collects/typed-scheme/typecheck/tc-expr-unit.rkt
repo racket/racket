@@ -70,9 +70,9 @@
                     [t (in-list ts)])
            (tc-literal l t)))]
        ;; errors are handled elsewhere
-       [_ (make-HeterogenousVector 
-           (for/list ([l (in-vector (syntax-e #'i))])
-             (tc-literal l #f)))])]
+       [_ (make-Vector (apply Un 
+                              (for/list ([l (syntax-e #'i)])
+                                (tc-literal l #f))))])]
     [(~var i (3d hash?))
      (let* ([h (syntax-e #'i)]
             [ks (hash-map h (lambda (x y) (tc-literal x)))]
