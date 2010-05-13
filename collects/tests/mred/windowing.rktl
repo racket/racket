@@ -167,7 +167,7 @@
 			      
 (let ([f (make-object frame% "Yes & No" #f 150 151 20 21)])
   (let ([init-tests
-	 (lambda ()
+	 (lambda (hidden?)
 	   (st "Yes & No" f get-label)
 	   (st "Yes  No" f get-plain-label)
 	   (stv f set-label "Yeah & Nay")
@@ -176,8 +176,15 @@
 	   (stv f set-label "Yes & No")
 	   (st #f f get-parent)
 	   (st f f get-top-level-window)
-	   (st 20 f get-x)
-	   (st 21 f get-y)
+           (case (system-type 'os)
+             [(unix)
+              (st 21 f get-x)
+              (if hidden?
+                  (st 42 f get-y)
+                  (st 22 f get-y))]
+             [else
+              (st 20 f get-x)
+              (st 21 f get-y)])
 	   (st 150 f get-width)
 	   (st 151 f get-height)
 	   (stvals (list (send f get-width) (send f get-height)) f get-size)
@@ -232,15 +239,15 @@
     (cursor-tests)
 
     (printf "Init~n")
-    (init-tests)
+    (init-tests #f)
     (stv f show #t)
     (pause)
     (printf "Show Init~n")
-    (init-tests)
+    (init-tests #t)
     (stv f show #f)
     (pause)
     (printf "Hide Init~n")
-    (init-tests)
+    (init-tests #f)
     (send f show #t)
     (pause)
 
