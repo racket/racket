@@ -23,7 +23,7 @@
 	(test 'was-mismatch 'mismtach
 	      (with-handlers ([exn:fail:contract?
 			       (lambda (x)
-				 (fprintf (current-error-port) "~a~n" (exn-message x))
+                                 (printf "~a~n" (exn-message x))
 				 'was-mismatch)]
 			      [exn:fail? values])
 		expr)))])))
