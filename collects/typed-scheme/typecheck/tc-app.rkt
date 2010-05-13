@@ -428,7 +428,7 @@
                 (check-below vt a)
                 (loop (cddr args))]
                [(tc-result1: t) 
-                (tc-error/expr #:ret (or expected (ret Univ)) "expected Parameter, but got ~a" t)
+                (tc-error/expr #:return (or expected (ret Univ)) "expected Parameter, but got ~a" t)
                 (loop (cddr args))]))))]
     ;; vector-ref on het vectors
     [(#%plain-app (~and op vector-ref) v e:expr)
@@ -449,15 +449,15 @@
                        (check-below (ret (list-ref es ival)) expected)
                        (ret (list-ref es ival)))]
                   [(not (and (integer? ival) (exact? ival)))
-                   (tc-error/expr #:ret (or expected (ret (Un))) "expected exact integer for vector index, but got ~a" ival)]
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for vector index, but got ~a" ival)]
                   [(< ival 0)
-                   (tc-error/expr #:ret (or expected (ret (Un))) "index ~a too small for vector ~a" ival t)]
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too small for vector ~a" ival t)]
                   [(not (<= ival (sub1 (length es))))
-                   (tc-error/expr #:ret (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
          [v-ty
           (let ([arg-tys (list v-ty e-t)])
             (tc/funapp #'op #'args (single-value #'op) arg-tys expected))]))]
-    [(#%plain-app (~literal vector) args:expr ...)
+    [(#%plain-app (~and op (~literal vector)) args:expr ...)
      (match expected
        [#f
         (ret (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))]
@@ -475,6 +475,9 @@
           (tc-expr/check e (ret t)))
         expected]
        [(tc-result1: t)
+        (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
+            (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))
+        #;
         (tc-error/expr "expected ~a, but got ~a" t (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))
         expected]
        [_ (int-err "bad expected: ~a" expected)])]
