@@ -26,10 +26,15 @@
 (d/c (subst-filter-set fs k o polarity [t #f])
        (->* ((or/c FilterSet? NoFilter?) name-ref/c Object? boolean?) ((or/c #f Type/c)) FilterSet?)
        (define extra-filter (if t (make-TypeFilter t null k) -top))
+       (define (add-extra-filter f) 
+         (define f* (-and extra-filter f))
+         (match f*
+           [(Bot:) f*]
+           [_ f]))
   (match fs
     [(FilterSet: f+ f-)
-     (combine (subst-filter (-and extra-filter f+) k o polarity)
-	      (subst-filter (-and extra-filter f-) k o polarity))]
+     (combine (subst-filter (add-extra-filter f+) k o polarity)
+	      (subst-filter (add-extra-filter f-) k o polarity))]
     [_ (-FS -top -top)]))
 
 (d/c (subst-type t k o polarity)
