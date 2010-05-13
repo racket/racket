@@ -395,17 +395,17 @@ path/s is either such a string or a list of them.
       (for/list ([p (in-lines (current-input-port))]) p)
       (let ([root (normalize-path (find-root))])
         (define (norm p)
+          (unless (or (not check-existing-paths?)
+                      (file-exists? p)
+                      (directory-exists? p))
+            (error* #f "path does not exist: ~s" p))
           (let ([n (find-relative-path root (normalize-path p))])
-            (cond
-              [(not (or (not check-existing-paths?)
-                        (file-exists? n)
-                        (directory-exists? n)))
-               (error* #f "path does not exist: ~s" p)]
-              [(equal? n root) ""]
-              [else (let ([n (path->string n)])
-                      (if (regexp-match #rx"^\\.\\.(?:/|$)" n)
-                        (error* #f "path is not in the plt tree: ~s" p)
-                        n))])))
+            (if (equal? n root)
+              ""
+              (let ([n (path->string n)])
+                (if (regexp-match #rx"^\\.\\.(?:/|$)" n)
+                  (error* #f "path is not in the plt tree: ~s" p)
+                  n)))))
         (if (null? paths) (norm path) (map norm (cons path paths))))))
   (define (get prop path . paths)
     (let ([prop (string->symbol prop)]
