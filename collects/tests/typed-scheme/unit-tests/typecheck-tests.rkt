@@ -84,10 +84,10 @@
     [(_ expr #:proc p) 
      (quasisyntax/loc stx 
        (let-values ([(t e) (tc-expr/expand/values expr)])
-         #,(syntax/loc stx (check-tc-result-equal? (format "~s" 'expr) (t) (p e)))))]
+         #,(quasisyntax/loc stx (check-tc-result-equal? (format "~a ~s" #,(syntax-line stx) 'expr) (t) (p e)))))]
     [(_ expr #:ret r) 
-     (syntax/loc stx 
-       (check-tc-result-equal? (format "~a" 'expr) (tc-expr/expand expr) r))]
+     (quasisyntax/loc stx 
+       (check-tc-result-equal? (format "~a ~a" #,(syntax-line stx) 'expr) (tc-expr/expand expr) r))]
     [(_ expr ty f o) (syntax/loc stx (tc-e expr #:ret (ret ty f o)))]))
 
 (define-syntax (tc-e/t stx)
@@ -160,10 +160,10 @@
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
         [tc-e/t (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (t:-> N N N)]
-        [tc-e (let: ([x : Number 5]) x) #:proc (get-let-name x 0 (-path -Number #'x))]
+        [tc-e (let: ([x : Number 5]) x) N]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -Pos]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y))) 
-              #:proc (syntax-parser [(_ ([(_ y) . _]) . _) (ret -Boolean (-FS (make-TypeFilter (-val #f) null #'y) -top))])]
+              #:proc (syntax-parser [(_ ([(_ y) . _]) . _) (ret -Boolean (-FS -top -top))])]
         [tc-e/t (values 3) -Pos]
         [tc-e (values) #:ret (ret null)]
         [tc-e (values 3 #f) #:ret (ret (list -Pos (-val #f)) (list (-FS -top -bot) (-FS -bot -top)))]
@@ -182,7 +182,7 @@
               N]
         [tc-e (let: ([v : (Un Number Boolean) #f])
                     (if (boolean? v) 5 (+ v 1)))
-              #:proc (get-let-name v 0 (ret N (-FS -top (make-NotTypeFilter -Boolean null #'v))))]
+              #:proc (get-let-name v 0 (ret N (-FS -top -top)))]
         [tc-e (let: ([f : (Number Number -> Number) +]) (f 3 4)) N]
         [tc-e (let: ([+ : (Boolean -> Number) (lambda: ([x : Boolean]) 3)]) (+ #f)) N]
         [tc-e (when #f #t) -Void]
@@ -245,13 +245,12 @@
                         3))
               N]
         
-        [tc-e (let ([x 1]) x) #:proc (get-let-name x 0 (-path -Pos #'x))]
+        [tc-e (let ([x 1]) x) -Pos]
         [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS -bot -top))]
         [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot -top))]
         
-        [tc-e (let: ([x : (Option Number) #f]) x) #:proc (get-let-name x 0 (-path (t:Un N (-val #f)) #'x))]
-        [tc-e (let: ([x : Any 12]) (not (not x)))
-              #:proc (get-let-name x 0 (ret -Boolean (-FS (make-NotTypeFilter (-val #f) null #'x) (make-TypeFilter (-val #f) null #'x))))]
+        [tc-e (let: ([x : (Option Number) #f]) x) (t:Un N (-val #f))]
+        [tc-e (let: ([x : Any 12]) (not (not x))) -Boolean]
         
         [tc-e (let: ([x : (Option Number) #f])
                     (if (let ([z 1]) x)
@@ -489,7 +488,7 @@
                 (make-pred-ty (list Univ) Univ (-val #f) 0 null)]
         [tc-e/t (let* ([z (ann 1 : Any)]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
-                  (lambda: ([x : Any]) (if (p? x) x 12)))
+                  (lambda: ([x : Any]) (if (p? x) (ann (add1 7) Any) 12)))
                 (t:-> Univ Univ)]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
@@ -656,7 +655,7 @@
                 (make-Function (list (make-arr* (list -Integer) -Integer
                                                 #:filters (-FS (-not-filter (-val #f) 0)
                                                                (-filter (-val #f) 0))
-                                                #:object (make-Path null #'x))))]
+                                                #:object (make-Path null 0))))]
         [tc-e/t (inst (plambda: (a) [x : a *] (apply list x)) Integer)
                 ((list) -Integer . ->* . (-lst -Integer))]
         
@@ -793,7 +792,7 @@
         (tc-e (or (string->number "7") 7) 
               #:ret (ret -Number -true-filter))
         [tc-e (let ([x 1]) (if x x (add1 x))) 
-              #:ret (ret -Pos (-FS -top -bot))]
+              #:ret (ret -Pos (-FS -top -top))]
         [tc-e (let: ([x : (U (Vectorof Number) String) (vector 1 2 3)])
                 (if (vector? x) (vector-ref x 0) (string-length x)))
          -Number]
@@ -803,7 +802,7 @@
               -Integer]
         [tc-e (let ()
                 (define: x : Any 7)
-                (if (box? x) (unbox x) 1))
+                (if (box? x) (unbox x) (+ 1)))
               Univ]
         )
   (test-suite
