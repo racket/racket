@@ -443,7 +443,7 @@
                    (check-below e-t -Nat)
                    (if expected 
                        (check-below (ret (apply Un es)) expected)
-                       (ret (apply (Un es))))]
+                       (ret (apply Un es)))]
                   [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
                    (if expected 
                        (check-below (ret (list-ref es ival)) expected)
