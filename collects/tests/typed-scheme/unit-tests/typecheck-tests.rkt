@@ -215,8 +215,8 @@
               -Pos]
         [tc-e/t (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list N) N N)]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3) N]
-        [tc-e/t ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) N]
-        [tc-e/t ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) N]
+        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) N]
+        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) N]
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4)) N]
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4 6 7)) N]
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '()) N]
@@ -657,7 +657,8 @@
         [tc-e/t (plambda: (z x y ...) () (inst map z x y ... y))
               (-polydots (z x y) (t:-> (cl->*
                                         ((t:-> x z) (-pair x (-lst x)) . t:-> . (-pair z (-lst z)))
-                                        ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z)))))]
+                                        ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z)))
+                                       : (-FS (-not-filter (-val #f) #'map) (-filter (-val #f) #'map))))]
         
         ;; error tests
         [tc-err (#%variable-reference number?)]
