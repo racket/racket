@@ -12,7 +12,9 @@
    listen-selected-model
 
    create-model
-   on-model-status-change))
+   on-model-status-change
+   register-view
+   on-view-shutdown))
 
 ;; result
 ;; Represents a test (case or suite) together with the state associated
@@ -55,7 +57,8 @@
 ;; Presents a graphical interface for inspecting and running tests.
 (define-interface view<%> ()
   (create-view-link
-   queue-for-update))
+   queue-for-update
+   shutdown))
 
 ;; style-map
 ;; Maps symbolic style names ('bold, 'red) to GRacket styles.

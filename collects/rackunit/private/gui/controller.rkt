@@ -10,20 +10,23 @@
 
 (define controller%
   (class* object% (controller<%>)
-    (init display-window)
     (super-new)
 
     ;; model-shown : (notify-box (U model<%> #f))
     ;; The model currently displayed in the Details view, of #f is none.
     (define-notify selected-model (new notify-box% (value #f)))
 
-    (define view
-      (new view%
-           (controller this)
-           (parent (send display-window get-area-container))))
+    ;; view : #f or view<%>
+    (define view #f)
+
+    ;; check-ready : -> void
+    (define/private (check-ready)
+      (unless view
+        (error 'racunit "The RacUnit GUI is no longer running.")))
 
     ;; create-model : test suite<%>/#f -> result<%>
     (define/public (create-model test parent)
+      (define _ (check-ready))
       (define result
         (cond [(rackunit-test-case? test)
                (new case-result%
@@ -44,7 +47,16 @@
 
     ;; on-model-status-change : model<%> -> void
     (define/public (on-model-status-change model)
+      (check-ready)
       (send view queue-for-update model)
       (let [(parent (send model get-parent))]
         (when parent (send parent on-child-status-change model))))
+
+    ;; register-view : view<%> -> void
+    (define/public (register-view v)
+      (set! view v))
+
+    ;; on-view-shutdown : -> void
+    (define/public (on-view-shutdown)
+      (set! view #f))
     ))

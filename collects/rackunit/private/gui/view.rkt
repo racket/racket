@@ -10,8 +10,7 @@
          "model2rml.rkt"
          "rml.rkt")
 
-(provide make-view-frame
-         view%)
+(provide make-view-frame)
 
 (define style-map rackunit-style-map)
 
@@ -71,9 +70,15 @@ still be there, just not visible?
            (view this)
            (controller controller)))
 
+    ;; for update management
+    (define update-queue (make-hasheq))
+    (define update-lock (make-semaphore 1))
+
     (send editor lock #t)
     (with-handlers ([exn:fail? void])
       (send -hpane set-percentages VIEW-PANE-PERCENTS))
+
+    (send/i controller controller<%> register-view this)
 
     ;; View Links
 
@@ -101,9 +106,6 @@ still be there, just not visible?
                    (show-model model))))))
 
     ;; Update Management
-
-    (define update-queue (make-hasheq))
-    (define update-lock (make-semaphore 1))
 
     ;; queue-for-update : model -> void
     (define/public (queue-for-update model)
@@ -166,6 +168,12 @@ still be there, just not visible?
         (end-edit-sequence)
         (scroll-to-position 0)))
 
+    ;; Shutdown
+
+    ;; shutdown : -> void
+    ;; Notifies the controller that the view has hung up.
+    (define/public (shutdown)
+      (send/i controller controller<%> on-view-shutdown))
     ))
 
 
@@ -261,13 +269,14 @@ still be there, just not visible?
   (class (frame:standard-menus-mixin 
            (frame:basic-mixin frame%))
 
+    (init-field controller)
     (init [width (pref:width)]
           [height (pref:height)])
-    (super-new (width width) (height height))
 
     (inherit get-help-menu
              get-width
-             get-height)
+             get-height
+             get-area-container)
 
     (define-syntax override-false
       (syntax-rules ()
@@ -287,20 +296,26 @@ still be there, just not visible?
                     edit-menu:create-paste?
                     edit-menu:create-clear?
                     edit-menu:create-find?
-                    #;edit-menu:create-replace-and-find-again?
                     edit-menu:create-preferences?)
 
     (define/augment (on-close)
       (pref:width (get-width))
       (pref:height (get-height))
+      (send view shutdown)
       (inner (void) on-close))
 
-    (send (get-help-menu) delete)))
+    (super-new (width width) (height height))
+    (send (get-help-menu) delete)
+    (define view
+      (new view%
+           (controller controller)
+           (parent (get-area-container))))))
 
-;; make-view-frame : -> frame%
-(define (make-view-frame)
+;; make-view-frame : controller -> frame%
+(define (make-view-frame controller)
   (let ([frame 
          (new view-frame%
-              (label FRAME-LABEL))])
+              (label FRAME-LABEL)
+              (controller controller))])
     (send frame show #t)
     frame))

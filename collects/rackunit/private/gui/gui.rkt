@@ -11,12 +11,11 @@
 (provide make-gui-runner)
 
 (define (make-gui-runner)
+  (define controller
+    (new controller%))
   (define frame
     (parameterize ((current-eventspace (make-eventspace)))
-      (make-view-frame)))
-  (define controller
-    (new controller%
-         (display-window frame)))
+      (make-view-frame controller)))
   (lambda tests
     (for ([test (in-list tests)])
       (run test controller))))
@@ -146,5 +145,3 @@
   (values (make-output-collector 'output)
           (make-output-collector 'error)
           (lambda () output)))
-  
-
