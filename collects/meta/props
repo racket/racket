@@ -1335,7 +1335,7 @@ path/s is either such a string or a list of them.
 "collects/tests/aligned-pasteboard/test2.rktl" drdr:command-line "mred -f ~s"
 "collects/tests/compiler" responsible (jay)
 "collects/tests/compiler/regression.rkt" responsible (mflatt)
-"collects/tests/compiler/zo-test.rkt" drdr:command-line "mzscheme -t ~s -- -I -S -t 60 -v -R"
+"collects/tests/compiler/zo-test.rkt" drdr:command-line "mzscheme -t ~s -- -I -S -t 60 -v -R" drdr:random #t
 "collects/tests/deinprogramm" responsible (sperber)
 "collects/tests/deinprogramm/image.rkt" drdr:command-line "mred-text -t ~s"
 "collects/tests/deinprogramm/run-image-test.rkt" drdr:command-line "mred-text -t ~s"
@@ -1389,7 +1389,7 @@ path/s is either such a string or a list of them.
 "collects/tests/macro-debugger/tests/collects.rkt" drdr:command-line "mred-text -t ~s"
 "collects/tests/match" responsible (samth)
 "collects/tests/mred" responsible (mflatt)
-"collects/tests/mred/auto.rktl" drdr:command-line "mred -f ~s"
+"collects/tests/mred/auto.rktl" drdr:command-line ""
 "collects/tests/mred/blits.rkt" drdr:command-line "mred -f ~s"
 "collects/tests/mred/dc.rktl" drdr:command-line "mred -f ~s"
 "collects/tests/mred/draw.rkt" drdr:command-line "mzc ~s"
