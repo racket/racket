@@ -148,7 +148,7 @@
          (and (for/or ([p (in-list ps)])
                 ; XXX This squelch should be disabled if the committer changed this file
                 ; XXX But even then it can lead to problems
-                (not (path-random? (build-path (revision-trunk-dir cur-rev) p))))
+                (not (path-random? (build-path (revision-trunk-dir cur-rev) (substring (path->string* p) 1)))))
               (not (symbol=? id 'changes))))))
   (unless (andmap zero? nums)
     (send-mail-message "drdr@plt-scheme.org"
