@@ -59,7 +59,7 @@
   (output-response/method conn resp #"GET"))
 
 (define (output-response/method conn resp meth)
-  (define bresp (normalize-response (connection-close? conn) resp))
+  (define bresp (normalize-response resp (connection-close? conn)))
   (output-headers+response/basic conn bresp)
   (unless (bytes-ci=? meth #"HEAD")
     (output-response/basic conn bresp)))

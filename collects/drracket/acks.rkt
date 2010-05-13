@@ -54,6 +54,7 @@
    "Paul Steckler, "
    "Jens Axel Søgaard, "
    "Francisco Solsona, "
+   "Stevie Strickland, "
    "Sam Tobin-Hochstadt, "
    "Neil Van Dyke, "
    "David Van Horn, "

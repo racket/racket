@@ -246,9 +246,12 @@ Here is an example typical of what you will find in many applications:
   (list (string->bytes/utf-8 (xexpr->string xexpr))))
  ]}
                          
-@defproc[(normalize-response [close? boolean?] [response response/c])
+@defproc[(normalize-response [response response/c] [close? boolean? #f])
          (or/c response/full? response/incremental?)]{
  Coerces @racket[response] into a full response, filling in additional details where appropriate.
+         
+ @racket[close?] represents whether the connection will be closed after the response is sent (i.e. if HTTP 1.0 is being used.) The accuracy of this only matters if
+@racket[response] is a @racket[response/incremental?].
 }
 
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @racket[#"text/html; charset=utf-8"].}

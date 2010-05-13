@@ -439,13 +439,10 @@ An Expectation is one of
          #`(let ([value #,(attribute-mapping-var self)])
              (if (check-syntax '#,(attribute-mapping-depth self) value)
                  value
-                 (raise-syntax-error #f
-                                     "attribute is bound to non-syntax value"
-                                     (quote-syntax
-                                      #,(datum->syntax
-                                         stx
-                                         (attribute-mapping-name self)
-                                         stx)))))))))
+                 (raise-syntax-error
+                  #f
+                  (format "attribute is bound to non-syntax value: ~e" value)
+                  (quote-syntax #,(attribute-mapping-name self)))))))))
 
 ;; check-syntax : nat any -> boolean
 ;; Returns #t if value is a (listof^depth syntax)

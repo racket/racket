@@ -19,7 +19,7 @@
 (define (response/full->size resp)
   (apply + (map bytes-length (response/full-body resp))))
 
-(define (normalize-response close? resp)
+(define (normalize-response resp [close? #f])
   (cond
     [(response/full? resp)
      (make-response/full 
@@ -43,14 +43,14 @@
           (response/incremental-generator resp)))]
     [(response/basic? resp)
      (normalize-response
-      close?
       (make-response/full 
        (response/basic-code resp)
        (response/basic-message resp)
        (response/basic-seconds resp)
        (response/basic-mime resp)
        (response/basic-headers resp)
-       empty))]
+       empty)
+      close?)]
     [(and (list? resp)
           (not (empty? resp))
           (bytes? (first resp))
@@ -58,18 +58,18 @@
                                   (bytes? i)))
                   (rest resp)))
      (normalize-response
-      close?
       (make-response/full 
        200 #"Okay" (current-seconds) (car resp) empty
        (map (lambda (bs)
               (if (string? bs)
                   (string->bytes/utf-8 bs)
                   bs))
-            (rest resp))))]
+            (rest resp)))
+      close?)]
     [else
      (normalize-response
-      close?
-      (make-xexpr-response resp))]))
+      (make-xexpr-response resp)
+      close?)]))
 
 (define (make-xexpr-response
          xexpr
@@ -108,5 +108,5 @@
   ((pretty-xexpr/c)
    (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:headers (listof header?))
    . ->* . response/full?)]
- [normalize-response (boolean? response/c . -> . (or/c response/full? response/incremental?))]
+ [normalize-response ((response/c) (boolean?) . ->* . (or/c response/full? response/incremental?))]
  [TEXT/HTML-MIME-TYPE bytes?])

@@ -395,17 +395,17 @@ path/s is either such a string or a list of them.
       (for/list ([p (in-lines (current-input-port))]) p)
       (let ([root (normalize-path (find-root))])
         (define (norm p)
+          (unless (or (not check-existing-paths?)
+                      (file-exists? p)
+                      (directory-exists? p))
+            (error* #f "path does not exist: ~s" p))
           (let ([n (find-relative-path root (normalize-path p))])
-            (cond
-              [(not (or (not check-existing-paths?)
-                        (file-exists? n)
-                        (directory-exists? n)))
-               (error* #f "path does not exist: ~s" p)]
-              [(equal? n root) ""]
-              [else (let ([n (path->string n)])
-                      (if (regexp-match #rx"^\\.\\.(?:/|$)" n)
-                        (error* #f "path is not in the plt tree: ~s" p)
-                        n))])))
+            (if (equal? n root)
+              ""
+              (let ([n (path->string n)])
+                (if (regexp-match #rx"^\\.\\.(?:/|$)" n)
+                  (error* #f "path is not in the plt tree: ~s" p)
+                  n)))))
         (if (null? paths) (norm path) (map norm (cons path paths))))))
   (define (get prop path . paths)
     (let ([prop (string->symbol prop)]
@@ -484,7 +484,17 @@ path/s is either such a string or a list of them.
      (if (regexp-match? #rx"^ *[0-9]+ *$" str)
        (string->number str)
        (error "expecting an integer")))
-   number->string)))
+   number->string)
+   ;; --------------------
+  (make-prop
+   'drdr:random
+   "is file output random?"
+   (lambda (str)
+     (if (regexp-match? #rx"^(yes|no)$" str)
+       (string=? "yes" str)
+       (error "expecting yes or no")))
+   (lambda (b)
+     (if b "yes" "no")))))
 
 ;; read the arguments here, so just requiring this file verifies the data
 (read-props)
@@ -1335,9 +1345,9 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/language-test.rkt" drdr:command-line "mred ~s" drdr:timeout 600
 "collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line "mred-text -t ~s"
 "collects/tests/drracket/module-lang-test.rkt" drdr:command-line "mred ~s" drdr:timeout 120
-"collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line "mzc ~s"
-"collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line "mzc ~s"
-"collects/tests/drracket/randomly-click.rkt" drdr:command-line ""
+"collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line "mzc ~s" drdr:random #t
+"collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line "mzc ~s" drdr:random #t
+"collects/tests/drracket/randomly-click.rkt" drdr:command-line "" drdr:random #t
 "collects/tests/drracket/repl-test.rkt" drdr:command-line "mred ~s" drdr:timeout 600
 "collects/tests/drracket/sample-solutions-one-window.rkt" drdr:command-line "mred-text -t ~s"
 "collects/tests/drracket/save-teaching-lang-file.rkt" drdr:command-line "mred ~s"

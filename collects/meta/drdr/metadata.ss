@@ -33,11 +33,17 @@
 (define (path-responsible a-path)
   (get-prop a-path 'responsible #:as-string? #t))
 
+; XXX Document on help page
+; XXX Use in computing "changes?"
+(define (path-random? a-path)
+  (get-prop a-path 'drdr:random))
+
 (provide/contract
  [PROP:command-line string?]
  [PROP:timeout string?]
  [path-responsible (path-string? . -> . (or/c string? false/c))]
  [path-command-line (path-string? . -> . (or/c (listof string?) false/c))]
+ [path-random? (path-string? . -> . boolean?)]
  [path-timeout (path-string? . -> . (or/c exact-nonnegative-integer? false/c))])
 
 ;;; Property lookup
@@ -55,7 +61,7 @@
                  (define tmp-file (make-temporary-file "props~a.ss" #f (current-temporary-directory)))
                  (and
                   ; Checkout the props file
-                  (scm-export
+                  (scm-export-file
                    rev
                    (plt-repository)
                    "collects/meta/props" 

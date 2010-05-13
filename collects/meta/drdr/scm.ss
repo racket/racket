@@ -42,6 +42,17 @@
     [_
      #f]))
 
+(define (pipe/proc cmds)
+  (if (null? (cdr cmds))
+    ((car cmds))
+    (let-values ([(i o) (make-pipe 4096)])
+      (parameterize ([current-output-port o])
+        (thread (lambda () ((car cmds)) (close-output-port o))))
+      (parameterize ([current-input-port i])
+        (pipe/proc (cdr cmds))))))
+(define-syntax-rule (pipe expr exprs ...)
+  (pipe/proc (list (lambda () expr) (lambda () exprs) ...)))
+
 (define (system/output-port #:k k #:stdout [init-stdout #f] . as)
   (define _ (printf "~S~n" as))
   (define-values (sp stdout stdin stderr)
@@ -150,7 +161,7 @@
 (provide/contract
  [scm-commit-author ((or/c git-push? svn-rev-log?) . -> . string?)])
 
-(define (scm-export rev repo file dest)
+(define (scm-export-file rev repo file dest)
   (define commit
     (push-data-end-commit (push-info rev)))
   (call-with-output-file*
@@ -162,6 +173,17 @@
         #:k void
         #:stdout file-port
         (git-path) "--no-pager" "show" (format "~a:~a" commit file)))))
+  (void))
+
+(define (scm-export-repo rev repo dest)
+  (pipe
+   (system*
+    (git-path) "archive"
+    (format "--remote=~a" repo)
+    (format "--prefix=~a/" (regexp-replace #rx"/+$" (path->string* dest) ""))
+    "--format=tar"
+    (push-data-end-commit (push-info rev)))
+   (system* (find-executable-path "tar") "xf" "-" "--absolute-names"))
   (void))
 
 (define (scm-checkout rev repo dest)
@@ -188,5 +210,6 @@
 (provide/contract
  [scm-update (path? . -> . void?)]
  [scm-revisions-after (exact-nonnegative-integer? . -> . (listof exact-nonnegative-integer?))]
- [scm-export (exact-nonnegative-integer? path-string? string? path-string? . -> . void?)]
+ [scm-export-file (exact-nonnegative-integer? path-string? string? path-string? . -> . void?)]
+ [scm-export-repo (exact-nonnegative-integer? path-string? path-string? . -> . void?)]
  [scm-checkout (exact-nonnegative-integer? path-string? path-string? . -> . void?)])
