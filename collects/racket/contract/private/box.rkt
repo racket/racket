@@ -3,7 +3,8 @@
 (require (for-syntax racket/base)
          "guts.rkt")
 
-(provide box-immutable/c box/c)
+(provide box-immutable/c 
+         (rename-out [build-box/c box/c]))
 
 (define-syntax (*-immutable/c stx)
   (syntax-case stx ()
@@ -87,12 +88,104 @@
 
 (define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))
 
-(define/final-prop (box/c pred)
-  (let* ([ctc (coerce-flat-contract 'box/c pred)]
-         [p? (flat-contract-predicate ctc)])
-    (build-flat-contract
-     (build-compound-type-name 'box/c ctc)
-     (λ (x)
-       (and (box? x)
-            (p? (unbox x)))))))
+(define-struct box/c (content immutable))
+
+(define (box/c-first-order ctc)
+  (let ([elem-ctc (box/c-content ctc)]
+        [immutable (box/c-immutable ctc)]
+        [flat? (flat-box/c? ctc)])
+    (λ (val #:blame [blame #f])
+      (let/ec return
+        (define (fail . args)
+          (if blame
+              (apply raise-blame-error blame val args)
+              (return #f)))
+        (unless (box? val)
+          (fail "expected a box, got ~a" val))
+        (case immutable
+          [(#t)
+           (unless (immutable? val)
+             (fail "expected an immutable box, got ~a" val))]
+          [(#f)
+           (when (immutable? val)
+             (fail "expected a mutable box, got ~a" val))]
+          [(dont-care) (void)])
+        (when (or flat? (and (immutable? val) (not blame)))
+          (if blame
+              (begin (((contract-projection elem-ctc) blame) (unbox val))
+                     (void))
+              (unless (contract-first-order-passes? elem-ctc (unbox val))
+                (fail))))))))
+
+(define (box/c-name ctc)
+  (let ([elem-name (contract-name (box/c-content ctc))]
+        [immutable (box/c-immutable ctc)]
+        [flat? (flat-box/c? ctc)])
+    (apply build-compound-type-name
+           'box/c
+           elem-name
+           (if (and flat? (eq? immutable #t))
+               (list '#:immutable #t)
+               (append
+                (if (not (eq? immutable 'dont-care))
+                    (list '#:immutable immutable)
+                    null)
+                (if flat?
+                    (list '#:flat? #t)
+                    null))))))
+
+(define-struct (flat-box/c box/c) ()
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name box/c-name
+   #:first-order box/c-first-order
+   #:projection
+   (λ (ctc)
+     (λ (blame)
+       (λ (val)
+         ((box/c-first-order ctc) val #:blame blame)
+         val)))))
+
+(define (ho-projection box-wrapper)
+  (λ (ctc)
+    (let ([elem-ctc (box/c-content ctc)]
+          [immutable (box/c-immutable ctc)])
+      (λ (blame)
+        (let ([pos-elem-proj ((contract-projection elem-ctc) blame)]
+              [neg-elem-proj ((contract-projection elem-ctc) (blame-swap blame))])
+          (λ (val)
+            ((box/c-first-order ctc) val #:blame blame)
+            (if (immutable? val)
+                (box-immutable (pos-elem-proj (unbox val)))
+                (box-wrapper val
+                             (λ (b v) (pos-elem-proj v))
+                             (λ (b v) (neg-elem-proj v))))))))))
+
+(define-struct (chaperone-box/c box/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:name box/c-name
+   #:first-order box/c-first-order
+   #:projection (ho-projection chaperone-box)))
+
+(define-struct (proxy-box/c box/c) ()
+  #:property prop:contract
+  (build-contract-property
+   #:name box/c-name
+   #:first-order box/c-first-order
+   #:projection (ho-projection proxy-box)))
+
+(define (build-box/c elem #:immutable [immutable 'dont-care] #:flat? [flat? #f])
+  (let ([ctc (if flat?
+                 (coerce-flat-contract 'box/c elem)
+                 (coerce-contract 'box/c elem))])
+    (cond
+      [(or flat?
+           (and (eq? immutable #t)
+                (flat-contract? ctc)))
+       (make-flat-box/c ctc immutable)]
+      [(chaperone-contract? ctc)
+       (make-chaperone-box/c ctc immutable)]
+      [else
+       (make-proxy-box/c ctc immutable)])))
 

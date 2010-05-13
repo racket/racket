@@ -8885,6 +8885,30 @@ so that propagation occurs.
             #:higher-order (λ (b) values))])
       (hash/c proxy-ctc proxy-ctc))
    exn:fail?)
+  
+  (ctest #t contract?           (box/c number? #:flat? #t))
+  (ctest #t chaperone-contract? (box/c number? #:flat? #t))
+  (ctest #t flat-contract?      (box/c number? #:flat? #t))
+
+  (ctest #t contract?           (box/c number? #:immutable #t))
+  (ctest #t chaperone-contract? (box/c number? #:immutable #t))
+  (ctest #t flat-contract?      (box/c number? #:immutable #t))
+
+  (ctest #t contract?           (box/c number?))
+  (ctest #t chaperone-contract? (box/c number?))
+  (ctest #f flat-contract?      (box/c number?))
+
+  (ctest #t contract?           (box/c (box/c number?) #:immutable #t))
+  (ctest #t chaperone-contract? (box/c (box/c number?) #:immutable #t))
+  (ctest #f flat-contract?      (box/c (box/c number?) #:immutable #t))
+
+  (ctest #t contract?           (box/c (-> number? number?)))
+  (ctest #f chaperone-contract? (box/c (-> number? number?)))
+  (ctest #f flat-contract?      (box/c (-> number? number?)))
+
+  (ctest #t contract?           (box/c (-> number? number?) #:immutable #t))
+  (ctest #f chaperone-contract? (box/c (-> number? number?) #:immutable #t))
+  (ctest #f flat-contract?      (box/c (-> number? number?) #:immutable #t))
 
   (ctest #t contract? 1)
   (ctest #t contract? (-> 1 1))
@@ -8978,8 +9002,10 @@ so that propagation occurs.
   (test-flat-contract '(list/c a-predicate-that-wont-be-optimized (flat-contract integer?)) (list #t 1) (list 1 #f))
   (test-flat-contract '(list/c a-predicate-that-wont-be-optimized (flat-contract integer?)) (list #t 1) #f)
 
-  (test-flat-contract '(box/c boolean?) (box #f) (box 1))
-  (test-flat-contract '(box/c (flat-contract boolean?)) (box #t) #f)
+  (test-flat-contract '(box/c boolean? #:flat? #t) (box #f) (box 1))
+  (test-flat-contract '(box/c (flat-contract boolean?) #:flat? #t) (box #t) #f)
+  (test-flat-contract '(box-immutable/c boolean?) (box-immutable #f) (box-immutable 1))
+  (test-flat-contract '(box-immutable/c (flat-contract boolean?)) (box-immutable #t) #f)
   
   (test-flat-contract '(flat-rec-contract sexp (cons/c sexp sexp) number?) '(1 2 . 3) '(1 . #f))
   (test-flat-contract '(flat-murec-contract ([even1 (or/c null? (cons/c number? even2))] 
