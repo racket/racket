@@ -161,7 +161,7 @@ at least theoretically.
 
 
 ;; turn contracts on and off - off by default for performance.
-(define-for-syntax enable-contracts? #t)
+(define-for-syntax enable-contracts? #f)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c d/c/p)
 
 (define-syntax-rule (d/c/p (name . args) c . body)
@@ -190,6 +190,8 @@ at least theoretically.
       (make-rename-transformer #'with-contract)
       (lambda (stx)        
         (syntax-parse stx
+          [(_ name (~or #:results #:result) spec . body)
+           #'(let () . body)]
           [(_ name specs . body)
            #'(begin . body)]))))
 
