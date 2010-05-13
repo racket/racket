@@ -21,11 +21,12 @@
 (import tc-expr^)
 (export tc-let^)
 
-(d/c (do-check expr->type namess results form exprs body clauses expected)
-     ((syntax? syntax? tc-results? . c:-> . any/c)
-      (listof (listof identifier?)) (listof tc-results?)
-      syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?)
-      . c:-> . 
+(d/c (do-check expr->type namess results form exprs body clauses expected #:abstract [abstract null])
+     (((syntax? syntax? tc-results? . c:-> . any/c)
+       (listof (listof identifier?)) (listof tc-results?)
+       syntax? (listof syntax?) syntax? (listof syntax?) (or/c #f tc-results?))
+      (#:abstract any/c)
+      . c:->* . 
       tc-results?)
      (w/c t/p ([types (listof (listof Type/c))]
                [props (listof (listof Filter?))])
@@ -62,12 +63,12 @@
    (let ([subber (lambda (proc lst)
                    (for/list ([i (in-list lst)])
                      (for/fold ([s i])
-                       ([nm (in-list (apply append namess))])
+                       ([nm (in-list (apply append abstract namess))])
                        (proc s nm (make-Empty) #t))))])
      (if expected 
          (begin
            (hash-update! to-be-abstr expected
-                         (lambda (old-l) (apply append old-l namess))
+                         (lambda (old-l) (apply append old-l abstract namess))
                          null)
            (tc-exprs/check (syntax->list body) expected))
          (match (tc-exprs (syntax->list body))           
@@ -97,7 +98,7 @@
 
 (define (tc/letrec-values/internal namess exprs body form expected)
   (let* ([names (map syntax->list (syntax->list namess))]
-         [flat-names (apply append names)]
+         [orig-flat-names (apply append names)]
          [exprs (syntax->list exprs)]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
@@ -110,10 +111,12 @@
                   [_ (void)]))
               names
               exprs)
-    (let loop ([names names] [exprs exprs] [flat-names flat-names] [clauses clauses])
+    (let loop ([names names] [exprs exprs] [flat-names orig-flat-names] [clauses clauses])
       (cond 
         ;; after everything, check the body expressions
         [(null? names) 
+         (do-check void null null form null body null expected #:abstract orig-flat-names)
+         #;
          (if expected (tc-exprs/check (syntax->list body) expected) (tc-exprs (syntax->list body)))]
         ;; if none of the names bound in the letrec are free vars of this rhs
         [(not (ormap (lambda (n) (s:member n flat-names bound-identifier=?)) (free-vars (car exprs))))
