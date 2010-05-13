@@ -333,7 +333,7 @@ bracketed expressions:  @litchar{\d} matches a digit
 
 @margin-note{Following regexp custom, we identify ``word'' characters
 as @litchar{[A-Za-z0-9_]}, although these are too restrictive for what
-a Racketr might consider a ``word.''}
+a Racketeer might consider a ``word.''}
 
 The upper-case versions of these metasequences stand for the
 inversions of the corresponding character classes: @litchar{\D}
