@@ -71,13 +71,15 @@ AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statist
 
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags])
 
-AC_ARG_ENABLE(noopt,   [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
+AC_ARG_ENABLE(enable_sdk,   [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
 
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           compile X11 (not Quartz) GRacket for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
 AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
 AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS X install])
 AC_ARG_ENABLE(mac64,   [  --enable-mac64          do not force 32-bit build])
+
+AC_ARG_ENABLE(multilib,   [  --enable-multilib          no op option to remove error])
 
 AC_ARG_ENABLE(gc2_places_testing,  [  --enable-gc2-places-testing         compile gc2 places tesging support])
 

@@ -1374,6 +1374,7 @@ Optional Features:
   --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks
   --enable-macprefix      allow --prefix with a Mac OS X install
   --enable-mac64          do not force 32-bit build
+  --enable-multilib          no op option to remove error
   --enable-gc2-places-testing         compile gc2 places tesging support
 
 Optional Packages:
@@ -2010,9 +2011,9 @@ if test "${enable_noopt+set}" = set; then
 fi
 
 
-# Check whether --enable-noopt was given.
-if test "${enable_noopt+set}" = set; then
-  enableval=$enable_noopt;
+# Check whether --enable-enable_sdk was given.
+if test "${enable_enable_sdk+set}" = set; then
+  enableval=$enable_enable_sdk;
 fi
 
 
@@ -2039,6 +2040,12 @@ fi
 # Check whether --enable-mac64 was given.
 if test "${enable_mac64+set}" = set; then
   enableval=$enable_mac64;
+fi
+
+
+# Check whether --enable-multilib was given.
+if test "${enable_multilib+set}" = set; then
+  enableval=$enable_multilib;
 fi
 
 
