@@ -207,7 +207,7 @@
 
 (define (footer)
   `(div ([id "footer"])
-        "Powered by " (a ([href "http://plt-scheme.org/"]) "PLT Scheme") ". "
+        "Powered by " (a ([href "http://racket-lang.org/"]) "Racket") ". "
         "Written by " (a ([href "http://faculty.cs.byu.edu/~jay"]) "Jay McCarthy") ". "
         (a ([href "/help"])
            "Need help?")
@@ -461,7 +461,7 @@
           @div[[(class "help")]]{
             @h1{What is DrDr?}
             @p{DrDr is a server at @a[[(href "http://www.byu.edu")]]{Brigham Young University} that builds
-               and "tests" every revision of the PLT Scheme code base.}
+               and "tests" every revision of the Racket code base.}
             
             @h1{What kind of server?}
             @p{A 64-bit Linux 2.6.28-15 server running Ubuntu 9.04 with @,(number->string (number-of-cpus)) cores.}
