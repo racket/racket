@@ -180,7 +180,7 @@
              [(unix)
               (st 21 f get-x)
               (if hidden?
-                  (st 42 f get-y)
+                  (st 43 f get-y)
                   (st 22 f get-y))]
              [else
               (st 20 f get-x)
