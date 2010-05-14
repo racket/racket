@@ -560,6 +560,7 @@ case $OS in
   FreeBSD)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
+    GC_THREADS_FLAG="-DGC_FREEBSD_THREADS"
     enable_pthread=yes
     ;;
   OpenBSD)
