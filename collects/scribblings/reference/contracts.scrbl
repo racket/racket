@@ -22,6 +22,7 @@ constraints.
                                          racket/contract/private/guts
                                          racket/contract/private/box
                                          racket/contract/private/hash
+                                         racket/contract/private/vector
                                          racket/contract/private/misc
                                          racket/contract/private/provide)]
 

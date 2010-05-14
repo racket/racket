@@ -21,7 +21,6 @@
          printable/c
          symbols one-of/c
          listof non-empty-listof cons/c list/c
-         vectorof vector-immutableof vector/c vector-immutable/c 
          promise/c
          struct/c
          syntax/c
@@ -761,38 +760,6 @@
   (*-immutableof non-empty-list? for-each map andmap non-empty-list non-empty-listof))
 (define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
-(define/final-prop (immutable-vector? val) (and (immutable? val) (vector? val)))
-
-(define vector-immutableof
-  (*-immutableof immutable-vector?
-                 (λ (f v) (for ([e (in-vector v)]) (f e)))
-                 (λ (f v) (apply vector-immutable (for/list ([e (in-vector v)]) (f e))))
-                 (λ (f v) (for/and ([e (in-vector v)]) (f e)))
-                 immutable-vector
-                 vector-immutableof))
-
-(define/subexpression-pos-prop (vectorof p)
-  (let* ([ctc (coerce-flat-contract 'vectorof p)]
-         [pred (flat-contract-predicate ctc)])
-    (build-flat-contract
-     (build-compound-type-name 'vectorof ctc)
-     (λ (v)
-       (and (vector? v)
-            (andmap pred (vector->list v)))))))
-
-(define/subexpression-pos-prop (vector/c . args)
-  (let* ([ctcs (coerce-flat-contracts 'vector/c args)]
-         [largs (length args)]
-         [procs (map flat-contract-predicate ctcs)])
-    (build-flat-contract
-     (apply build-compound-type-name 'vector/c ctcs)
-     (λ (v)
-       (and (vector? v)
-            (= (vector-length v) largs)
-            (andmap (λ (p? x) (p? x))
-                    procs
-                    (vector->list v)))))))
-
 ;;
 ;; cons/c opter
 ;;
@@ -972,12 +939,6 @@
 
 (define cons/c-main-function (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
 (define/subexpression-pos-prop (cons/c a b) (cons/c-main-function a b))
-(define vector-immutable/c (*-immutable/c vector?
-                                          vector-immutable
-                                          (#t (λ (v i) (vector-ref v i)))
-                                          (λ (n v) (= n (vector-length v)))
-                                          immutable-vector
-                                          vector-immutable/c))
 
 ;;
 ;; cons/c opter
