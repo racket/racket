@@ -456,7 +456,7 @@
                    (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
          [v-ty
           (let ([arg-tys (list v-ty e-t)])
-            (tc/funapp #'op #'args (single-value #'op) arg-tys expected))]))]
+            (tc/funapp #'op #'(v e) (single-value #'op) arg-tys expected))]))]
     [(#%plain-app (~and op (~literal vector-set!)) v e:expr val:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'v)
@@ -475,14 +475,17 @@
                        (check-below (ret -Void) expected)
                        (ret -Void))]
                   [(not (and (integer? ival) (exact? ival)))
+                   (single-value #'val)
                    (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for vector index, but got ~a" ival)]
                   [(< ival 0)
+                   (single-value #'val)
                    (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too small for vector ~a" ival t)]
                   [(not (<= ival (sub1 (length es))))
+                   (single-value #'val)
                    (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
          [v-ty
-          (let ([arg-tys (list v-ty e-t)])
-            (tc/funapp #'op #'args (single-value #'op) arg-tys expected))]))]
+          (let ([arg-tys (list v-ty e-t (single-value #'val))])
+            (tc/funapp #'op #'(v e val) (single-value #'op) arg-tys expected))]))]
     [(#%plain-app (~and op (~literal vector)) args:expr ...)
      (match expected
        [(tc-result1: (Vector: t))
