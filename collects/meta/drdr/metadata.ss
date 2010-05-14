@@ -7,25 +7,26 @@
 (define PROP:timeout "drdr:timeout")
 
 (define (path-command-line a-path)
-  (match (get-prop a-path 'drdr:command-line #f)
-    [#f
-     (define suffix (filename-extension a-path))
-     (and suffix
-          (cond
-            [(ormap (lambda (bs) (bytes=? suffix bs))
-                    (list #"ss" #"scm" #"scrbl" #"rkt" #"sls"))
-             (list "racket" "-qt" (path->string* a-path))]
-            [(ormap (lambda (bs) (bytes=? suffix bs))
-                    (list #"rktl"))
-             (list "racket" "-f" (path->string* a-path))]
-            [else
-             #f]))]
-    [""
-     #f]
-    [(? string? s)
-     (map (lambda (s)
-            (regexp-replace (regexp-quote "~s") s (path->string* a-path)))
-          (regexp-split #rx" " s))]))
+  (define suffix (filename-extension a-path))
+  (define default-cmd
+    (and suffix
+         (cond
+           [(ormap (lambda (bs) (bytes=? suffix bs))
+                   (list #"ss" #"scm" #"scrbl" #"rkt" #"sls"))
+            '(racket "-qt" *)]
+           [(ormap (lambda (bs) (bytes=? suffix bs))
+                   (list #"rktl"))
+            '(racket "-f" *)]
+           [else
+            #f])))
+  (define (replace-* s)
+    (if (eq? '* s)
+        (path->string* a-path)
+        s))
+  (match (get-prop a-path 'drdr:command-line default-cmd)
+    [#f #f]
+    [(? list? l)
+     (map replace-* l)]))
 
 (define (path-timeout a-path)
   (get-prop a-path 'drdr:timeout #f))
@@ -42,7 +43,7 @@
  [PROP:command-line string?]
  [PROP:timeout string?]
  [path-responsible (path-string? . -> . (or/c string? false/c))]
- [path-command-line (path-string? . -> . (or/c (listof string?) false/c))]
+ [path-command-line (path-string? . -> . (or/c (cons/c symbol? (listof string?)) false/c))]
  [path-random? (path-string? . -> . boolean?)]
  [path-timeout (path-string? . -> . (or/c exact-nonnegative-integer? false/c))])
 

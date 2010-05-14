@@ -186,22 +186,16 @@
                                             (match pth-cmd/general
                                               [#f
                                                #f]
-                                              [(list-rest "mzscheme" rst)
+                                              [(list-rest (or 'mzscheme 'racket) rst)
                                                (lambda () (list* racket-path rst))]
-                                              [(list-rest "racket" rst)
-                                               (lambda () (list* racket-path rst))]
-                                              [(list-rest "mzc" rst)
+                                              [(list-rest 'mzc rst)
                                                (lambda () (list* mzc-path rst))]
-                                              [(list-rest "mred-text" rst)
+                                              [(list-rest (or 'mred 'mred-text
+                                                              'gracket 'gracket-text)
+                                                          rst)
                                                (lambda () (list* gracket-text-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
-                                              [(list-rest "mred" rst)
-                                               (lambda () (list* gracket-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
-                                              [(list-rest "gracket-text" rst)
-                                               (lambda () (list* gracket-text-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
-                                              [(list-rest "gracket" rst)
-                                               (lambda () (list* gracket-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
                                               [_
-                                               #f]))]       
+                                               #f]))]
                                     (if pth-cmd
                                         (submit-job!
                                          test-workers
