@@ -95,7 +95,7 @@
   (for/hash ([id (in-list responsible-ht-severity)])
     (define id-l
       (for*/list ([(_ ht) (in-hash diff)]
-                [f (in-list (hash-ref ht id empty))])
+                  [f (in-list (hash-ref ht id empty))])
         f))
     (values id (remove-duplicates id-l))))
 
@@ -107,7 +107,7 @@
  [responsible-ht-severity (listof symbol?)]
  [responsible-ht-id->str (hash/c symbol? string?)]
  [responsible-ht-difference (responsible-ht/c responsible-ht/c . -> . responsible-ht/c)])  
-  
+
 (define ERROR-LIMIT 50)
 (define (notify cur-rev 
                 start end
@@ -134,8 +134,8 @@
         (revision-commit-msg cur-rev)))))
   (define diff
     (with-handlers ([exn:fail? (lambda (x) #t)])
-       (define old (rev->responsible-ht (previous-rev)))
-       (responsible-ht-difference old responsible-ht)))
+      (define old (rev->responsible-ht (previous-rev)))
+      (responsible-ht-difference old responsible-ht)))
   (define include-committer?
     (and ; The committer can be found
      committer 
@@ -145,21 +145,20 @@
      diff
      (for*/or ([(r ht) (in-hash diff)]
                [(id ps) (in-hash ht)])
-         (and (for/or ([p (in-list ps)])
-                ; XXX This squelch should be disabled if the committer changed this file
-                ; XXX But even then it can lead to problems
-                (not (path-random? (build-path (revision-trunk-dir cur-rev) (substring (path->string* p) 1)))))
-              (not (symbol=? id 'changes))))))
+       (and (for/or ([p (in-list ps)])
+              ; XXX This squelch should be disabled if the committer changed this file
+              ; XXX But even then it can lead to problems
+              (not (path-random? (build-path (revision-trunk-dir cur-rev) (substring (path->string* p) 1)))))
+            (not (symbol=? id 'changes))))))
   (unless (andmap zero? nums)
     (send-mail-message "drdr@plt-scheme.org"
                        (format "[DrDr] R~a ~a"
                                cur-rev totals)
-                       (list* "jay.mccarthy@gmail.com"
-                              (map (curry format "~a@plt-scheme.org")
-                                   (append (if include-committer?
-                                               (list committer)
-                                               empty)
-                                           responsibles)))                              
+                       (map (curry format "~a@plt-scheme.org")
+                            (append (if include-committer?
+                                        (list committer)
+                                        empty)
+                                    responsibles))                             
                        empty empty
                        (flatten
                         (list (format "DrDr has finished building revision ~a after ~a."
@@ -195,7 +194,7 @@
                                                           [i (in-range ERROR-LIMIT)])
                                                  (format "\t\t~a" (path->url f)))
                                                ""))
-                                      ""))))))
+                                       ""))))))
   
   (send-mail-message "drdr"
                      (format "http://drdr.plt-scheme.org/~a/" 
