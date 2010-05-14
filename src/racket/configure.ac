@@ -79,9 +79,7 @@ AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to
 AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS X install])
 AC_ARG_ENABLE(mac64,   [  --enable-mac64          do not force 32-bit build])
 
-AC_ARG_ENABLE(multilib,   [  --enable-multilib          no op option to remove error])
-
-AC_ARG_ENABLE(gc2_places_testing,  [  --enable-gc2-places-testing         compile gc2 places tesging support])
+AC_ARG_ENABLE(gc2_places_testing,  [  --enable-gcplacestest   compile GC places testing support])
 
 ###### Get OS Type #######
 
