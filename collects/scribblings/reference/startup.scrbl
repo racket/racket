@@ -376,6 +376,8 @@ Extra arguments following the last option are available from the
 
 @section[#:tag "configure-runtime"]{Language Run-Time Configuration}
 
+@guidealso["module-runtime-config"]
+
 When a module is implemented using @hash-lang{}, the language after
 @hash-lang{} can specify configuration actions to perform when a
 module using the language is the main module of a program. The

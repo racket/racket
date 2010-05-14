@@ -309,6 +309,8 @@ import.}
 @defproc[(module-compiled-language-info [compiled-module-code compiled-module-expression?])
          (or/c #f (vector/c module-path? symbol? any/c))]{
 
+@guidealso["module-runtime-config"]
+
 Returns information intended to reflect the ``language'' of the
 module's implementation as originally attached to the syntax of the
 module's declaration though the @indexed-racket['module-language]

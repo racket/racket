@@ -764,6 +764,8 @@ neither defines nor uses graph tags for other top-level forms.
 
 @section[#:tag "parse-reader"]{Reading via an Extension}
 
+@guideintro["hash-reader"]{reader extension}
+
 When the reader encounters @as-index{@litchar{#reader}}, it loads
 an external reader procedure and applies it to the current input
 stream.
@@ -814,8 +816,7 @@ sequence must not start or end with @litchar{/}. A sequence
 that the terminating whitespace (if any) is not consumed before the
 external reading procedure is called.
 
-@margin-note{The @racketmodname[syntax/module-reader] library provides a
-             domain-specific language for writing language readers.}
+@guideintro["hash-languages"]{the creation languages for @hash-lang[]}
 
 Finally, @as-index{@litchar{#!}} is a synonym for @litchar{#lang}
 followed by a space when @litchar{#!} is followed by alphanumeric
@@ -824,12 +825,17 @@ is discouraged except as needed to construct programs that conform to
 certain grammars, such as that of R@superscript{6}RS
 @cite["Sperber07"].
 
+@margin-note{The @racketmodname[syntax/module-reader] library provides a
+             domain-specific language for writing language readers.}
+
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
 
 @subsection{S-Expression Reader Language}
 
 @defmodulelang[s-exp]
+
+@guideintro["s-exp"]{the @racketmodname[s-exp] meta-language}
 
 The @racket[s-exp] ``language'' is a kind of meta-language. It
 @racket[read]s the S-expression that follows @litchar{#lang s-exp} and
@@ -854,6 +860,8 @@ is equivalent to
 @subsection{Chaining Reader Language}
 
 @defmodulelang[reader]
+
+@guideintro["hash-lang reader"]{the @racketmodname[reader] meta-language}
 
 The @racket[reader] ``language'' is a kind of meta-language. It
 @racket[read]s the S-expression that follows @litchar{#lang reader}

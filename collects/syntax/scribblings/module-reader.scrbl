@@ -12,7 +12,12 @@
      (define name @scheme[#%module-begin])))
   (define-mb scheme-#%module-begin))
 
+@(define guide-doc '(lib "scribblings/guide/guide.scrbl"))
+
 @title[#:tag "module-reader"]{Module Reader}
+
+@margin-note{See also @secref[#:doc guide-doc "hash-languages"] in
+             @other-manual[guide-doc].}
 
 @defmodule[syntax/module-reader]
 
@@ -188,7 +193,7 @@ identifiers used by the @scheme[reader-option]s.
  @item{@scheme[#:language-info] specifies an implementation of
        reflective information that is used by external tools to
        manipulate the module in the language @scheme[_something] in
-       its @emph{expanded}, @emph{compiled} or @emph{declared} form
+       its @emph{expanded}, @emph{compiled}, or @emph{declared} form
        (as opposed to source). For example, when Racket starts a
        program, it uses information attached to the main module to
        initialize the run-time environment.

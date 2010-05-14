@@ -784,10 +784,10 @@
              [config-infos (if config?
                                (let ([a (assoc (car files) (unbox codes))])
                                  (let ([info (module-compiled-language-info (mod-code a))])
-                                   (when info
-                                     (let ([get-info ((dynamic-require (vector-ref info 0) (vector-ref info 1))
-                                                      (vector-ref info 2))])
-                                       (get-info 'configure-runtime null)))))
+                                   (and info
+                                        (let ([get-info ((dynamic-require (vector-ref info 0) (vector-ref info 1))
+                                                         (vector-ref info 2))])
+                                          (get-info 'configure-runtime null)))))
                                null)])
         ;; Add module for runtime configuration:
         (when config-infos

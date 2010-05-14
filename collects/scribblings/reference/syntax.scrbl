@@ -91,8 +91,9 @@ Within such specifications,
 
 Declares a top-level module. If the
 @racket[current-module-declare-name] parameter is set, the parameter
-value is used for the module name, otherwise @racket[(#,(racket quote)
-id)] is the name of the declared module.
+value is used for the module name and @racket[id] is ignored,
+otherwise @racket[(#,(racket quote) id)] is the name of the declared
+module.
 
 @margin-note/ref{For a @racket[module]-like form for use @emph{within}
 modules and other contexts, see @racket[define-package].}
@@ -175,7 +176,7 @@ defined. No expression can refer to a @tech{top-level variable}.
 
 The evaluation of a @racket[module] form does not evaluate the
 expressions in the body of the module. Evaluation merely declares a
-module, whose full name depends both on @racket[id] and
+module, whose full name depends both on @racket[id] or
 @racket[(current-module-declare-name)].
 
 The module body is executed only when the module is explicitly

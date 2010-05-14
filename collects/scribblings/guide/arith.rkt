@@ -17,6 +17,9 @@
   (define-values (line col pos) (port-next-location in))
   (define expr-match 
     (regexp-match 
+     ;; Match an operand followed by any number of 
+     ;; operator--operand sequences, and prohibit an
+     ;; additional operator from following immediately:
      #px"^([a-z]|[0-9]+)(?:[-+*/]([a-z]|[0-9]+))*(?![-+*/])"
      in))
 

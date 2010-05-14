@@ -5,41 +5,25 @@
           (for-label racket/match
                      syntax/readerr)
           "guide-utils.ss"
-          (for-syntax racket/base
-                      syntax/strip-context))
-
-@(define-syntax (racketmodfile stx)
-   (syntax-case stx ()
-    [(_ file)
-     (with-syntax ([(content ...)
-                    (call-with-input-file* (syntax-e #'file)
-                     (lambda (in)
-                       (read-bytes 6 in)
-                       (port-count-lines! in)
-                       (let loop ()
-                         (let ([v (read-syntax (object-name in) in)])
-                           (if (eof-object? v) 
-                               null 
-                               (cons (replace-context #'file v) 
-                                     (loop)))))))])
-        #'(racketmod content ...))]))
+          "modfile.rkt")
 
 @title[#:tag "hash-reader"]{Reader Extensions}
 
-The @tech{reader} layer of the Racket language supports a
-@litchar{#reader} syntax for allowing an external processor to parse
-raw bytes into forms to be consumed by the @tech{expander} layer.
-The syntax of @litchar{#reader} is
+The @tech{reader} layer of the Racket language can be extended through
+the @racketmetafont{#reader} form. A reader extension is implemented
+as a module that is named after @racketmetafont{#rader}. The module
+exports functions that parse raw characters into a form to be consumed
+by the @tech{expander} layer.
+
+The syntax of @racketmetafont{#reader} is
 
 @racketblock[@#,(BNF-seq @litchar{#reader} @nonterm{module-path} @nonterm{reader-specific})]
 
 where @nonterm{module-path} names a module that provides
 @racketidfont{read} and @racketidfont{read-syntax} functions. The
-@nonterm{module-path} itself is written with the reader syntax put in
-place by its context. The @nonterm{reader-specific} part is a sequence
-of characters that is parsed as determined by the @racketidfont{read}
-and @racketidfont{read-syntax} functions that are exported by the
-module named through @nonterm{module-path}.
+@nonterm{reader-specific} part is a sequence of characters that is
+parsed as determined by the @racketidfont{read} and
+@racketidfont{read-syntax} functions from @nonterm{module-path}.
 
 For example, suppose that file @filepath{five.rkt} contains
 
@@ -75,8 +59,8 @@ functions from @filepath{five.rkt} are not obliged to follow Racket
 lexical conventions and treat the continuous sequence @litchar{234567}
 as a single number. Since only the @litchar{23456} part is consumed by
 @racketidfont{read} or @racketidfont{read-syntax}, the @litchar{7}
-remains to be parsed in the usual racket way. Similarly, the reader
-functions from @filepath{five.rkt} are not obliged to treat spaces as
+remains to be parsed in the usual Racket way. Similarly, the reader
+functions from @filepath{five.rkt} are not obliged to ignore
 whitespace, and
 
 @racketmod[
@@ -96,7 +80,7 @@ racket/base
 since the first character immediately after @racket["five.rkt"] is a
 space.
 
-A @litchar{#reader} form can be used in the @tech{REPL}, too:
+A @racketmetafont{#reader} form can be used in the @tech{REPL}, too:
 
 @interaction[
 (eval:alts @#,(elem @racketmetafont{#reader}@racket["five.rkt"]@tt{abcde}) #reader"five.rkt"abcde)
@@ -108,30 +92,33 @@ A @litchar{#reader} form can be used in the @tech{REPL}, too:
 
 The difference between @racketidfont{read} and
 @racketidfont{read-syntax} is that @racketidfont{read} is meant to be
-used for data like the Racket @racket[read] function, while
-@racketidfont{read-syntax} is meant to be used to parse programs. More
-precisely, the @racketidfont{read} function will be used when the
-enclosing stream is being parsed by the Racket @racket[read], and
-@racketidfont{read-syntax} is used when the enclosing stream is being
-parsed by the Racket @racket[read-syntax] function. Nothing requires
-@racketidfont{read} and @racketidfont{read-syntax} to parse input in
-the same way, though they normally should.
+used for data while @racketidfont{read-syntax} is meant to be used to
+parse programs. More precisely, the @racketidfont{read} function will
+be used when the enclosing stream is being parsed by the Racket
+@racket[read], and @racketidfont{read-syntax} is used when the
+enclosing stream is being parsed by the Racket @racket[read-syntax]
+function. Nothing requires @racketidfont{read} and
+@racketidfont{read-syntax} to parse input in the same way, but making
+them different would confuse programmers and tools.
 
-Although the @racketidfont{read-syntax} function can return the same
-kind of value as @racketidfont{read}, it should normally return a
+The @racketidfont{read-syntax} function can return the same kind of
+value as @racketidfont{read}, but it should normally return a
 @tech{syntax object} that connects the parsed expression with source
 locations. Unlike the @filepath{five.rkt} example, the
-@racketidfont{read-syntax} function is typically implemented directly,
-and then @racketidfont{read} can use @racketidfont{read-syntax} and
-strip away source information.
+@racketidfont{read-syntax} function is typically implemented directly
+to produce @tech{syntax objects}, and then @racketidfont{read} can use
+@racketidfont{read-syntax} and strip away @tech{syntax object}
+wrappers to produce a raw result.
 
 The following @filepath{arith.rkt} module implements that reader to
 parse simple infix arithmetic expressions into Racket forms. For
 example, @litchar{1*2+3} parses into the Racket form @racket[(+ (* 1
-2) 3)]. Single-letter variables can appear in the expression. The
-implementation uses @racket[port-next-location] to obtain the current
-source location, and it uses @racket[datum->syntax] to turn raw values
-into @tech{syntax objects}.
+2) 3)]. The supported operators are @litchar{+}, @litchar{-},
+@litchar{*}, and @litchar{/}, while operands can be unsigned integers
+or single-letter variables. The implementation uses
+@racket[port-next-location] to obtain the current source location, and
+it uses @racket[datum->syntax] to turn raw values into @tech{syntax
+objects}.
 
 @racketmodfile["arith.rkt"]
 
@@ -161,13 +148,13 @@ the error message):
 
 @; ----------------------------------------------------------------------
 
-@section{Readtables}
+@section[#:tag "readtable"]{Readtables}
 
 A reader extension's ability to parse input characters in an arbitrary
 way can be powerful, but many cases of lexical extension call for a
 less general but more composable approach. In much the same way that
 the @tech{expander} level of Racket syntax can be extended through
-@tech{macros}, the @tech{reader} level of Racket syntax can be more
+@tech{macros}, the @tech{reader} level of Racket syntax can be
 composably extended through a @deftech{readtable}.
 
 The Racket reader is a recursive-descent parser, and the
@@ -208,15 +195,15 @@ character.
 The following @filepath{dollar.rkt} module defines a
 @racket[parse-dollar] function in terms of the @racketidfont{read} and
 @racketidfont{read-syntax} functions provided by @filepath{arith.rkt},
-and it puts it together with new @racketidfont{read} and
-@racketidfont{read-syntax} functions that install the readtable can
+and it puts @racket[parse-dollar] together with new @racketidfont{read} and
+@racketidfont{read-syntax} functions that install the readtable and
 chain to Racket's @racket[read] or @racket[read-syntax]:
 
 @racketmodfile["dollar.rkt"]
 
 With this reader extension, a single @racketmetafont{#reader} can be
 used at the beginning of an expression to enable multiple uses of
-@litchar{$} to switch to infix arithmetic:
+@litchar{$} that switch to infix arithmetic:
 
 @interaction[
 (eval:alts @#,(elem @racketmetafont{#reader}@racket["dollar.rkt"]@hspace[1]

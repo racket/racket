@@ -5,8 +5,8 @@
 @title[#:tag "languages" #:style 'toc]{Creating Languages}
 
 The @tech{macro} facilities defined in the preceding chapter let a
-programmer define syntactic extensions to a language, but the
-expressiveness of a macro is limited in two ways:
+programmer define syntactic extensions to a language, but a macro is
+limited in two ways:
 
 @itemlist[
 
@@ -33,5 +33,6 @@ the @tech{reader} layer, for defining the starting point of the
 @local-table-of-contents[]
 
 @;------------------------------------------------------------------------
-@; @include-section["module-languages.scrbl"]
+@include-section["module-languages.scrbl"]
 @include-section["reader-extension.scrbl"]
+@include-section["hash-languages.scrbl"]

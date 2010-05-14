@@ -25,7 +25,7 @@
     (check-$-after (arith:read-syntax src in) in src)]))
 
 (define (check-$-after val in src)
-  (regexp-match #px"^\\s*" in)
+  (regexp-match #px"^\\s*" in) ; skip whitespace
   (let ([ch (peek-char in)])
     (unless (equal? ch #\$) (bad-ending ch src in))
     (read-char in))

@@ -25,6 +25,8 @@ default value, and it returns @scheme['(#(racket/runtime-config
 configure #f))] if the key is @scheme['configure-runtime] or the
 default value otherwise.}
 
+@guidealso["module-runtime-config"]
+
 The vector @scheme['#(racket/language-info get-info #f)] is suitable
 for attaching to a module as its language info to get the same
 language information as the @scheme[racket/base] language.

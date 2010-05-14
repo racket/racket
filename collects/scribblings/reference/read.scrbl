@@ -120,6 +120,8 @@ value of @racket[current-readtable]), and @litchar{#reader} forms
 (which might produce comments) are not allowed before @litchar{#lang}
 or @litchar{#!}.
 
+@guidealso["language-get-info"]
+
 When it finds a @litchar{#lang} or @litchar{#!} specification, instead
 of dispatching to a @racketidfont{read} or @racketidfont{read-syntax}
 form as @racket[read] and @racket[read-syntax] do,
