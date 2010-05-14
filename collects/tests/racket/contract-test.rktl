@@ -10022,6 +10022,9 @@ so that propagation occurs.
   (test-obligations '(box/c a)
                     '((racket/contract:contract (box/c) ())
                       (racket/contract:positive-position a)))
+  (test-obligations '(box-immutable/c a)
+                    '((racket/contract:contract (box-immutable/c) ())
+                      (racket/contract:positive-position a)))
   
   
 ;                                                                
