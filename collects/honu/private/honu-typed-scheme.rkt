@@ -13,6 +13,7 @@
                      "ops.ss"
                      "parse.ss"
                      )
+         (for-template scheme/base)
          "literals.ss"
          ;; "typed-utils.ss"
          )
@@ -342,7 +343,10 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
 (define-honu-syntax honu-scheme
   (lambda (stx ctx)
     (syntax-parse stx #:literals (semicolon)
-      [(_ template semicolon rest ...) (values #'template #'(rest ...))])))
+      [(_ template semicolon rest ...)
+       (values (lambda () #'(lambda () template)) #'(rest ...))]
+      [else (raise-syntax-error 'scheme "need a semicolon probably" stx)]
+      )))
 
 (define-honu-syntax honu-if
   (lambda (stx ctx)
@@ -483,16 +487,22 @@ if (foo){
 (define-syntax (honu-unparsed-begin stx)
   (printf "honu unparsed begin: ~a\n" (syntax->datum stx))
   (syntax-case stx ()
-    [(_) #'(begin (void))]
-    [(_ . body) (let-values ([(code rest) (parse-block-one/2 #'body
+    [(_) #'(void)]
+    [(_ . body)
+     (begin
+       (printf "Body is ~a\n" #'body)
+     (let-values ([(code rest) (parse-block-one/2 #'body
                                                              the-expression-context
                                                              #;
                                                              the-top-block-context)])
                   ;; (printf "Rest is ~a\n" (syntax->datum rest))
                   (with-syntax ([code code]
                                 [(rest ...) rest])
-                    (syntax/loc stx
-                                (begin code (honu-unparsed-begin rest ...)))))]
+                    (if (stx-null? #'(rest ...))
+                      (syntax/loc stx
+                                  code)
+                      (syntax/loc stx
+                                  (begin code (honu-unparsed-begin rest ...)))))))]
     #;
     [(_ . body) (let-values ([(code rest) (parse-block-one the-top-block-context
                                                            #'body 

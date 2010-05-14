@@ -11,6 +11,8 @@
          (for-syntax "private/parse.ss")
          "private/literals.ss"
          "private/syntax.ss"
+         "private/more.ss"
+         (for-syntax "private/more.ss")
          (for-syntax "private/syntax.ss")
          "private/macro.ss")
 
@@ -27,6 +29,7 @@
                                 )
                      (honu-+ +)
                      (honu-* *)
+                     (+ scheme:+)
                      (honu-/ /)
                      (honu-- -)
                      (honu-? ?)
@@ -38,11 +41,20 @@
          (for-syntax #%datum
                      display
                      with-syntax
+                     quote
+                     #%app
+                     #%parens
+                     ...
+                     map
+                     syntax->list
                      (rename-out (semicolon \;
                                             )
+                                 (parse-an-expr parse)
+                                 (... scheme:...)
                                  (honu-syntax syntax)
+                                 (honu-+ +)
                                  (honu-scheme scheme2)
-                                 (scheme-syntax schemeSyntax)
+                                 (scheme-syntax scheme:syntax)
                                  ))
          #%braces
          #%parens
@@ -53,6 +65,9 @@
          display2
          newline
          else
+         #%app
+         quote
+         ...
          foobar2000
          (rename-out
            (honu-if if)
@@ -62,7 +77,7 @@
            (honu-syntax syntax)
            #;
            (honu-scheme scheme2)
-           (scheme-syntax schemeSyntax)
+           (scheme-syntax scheme:syntax)
            ))
 
 #;

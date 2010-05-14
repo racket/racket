@@ -4,7 +4,6 @@
          "literals.ss"
          "parse.ss"
          "syntax.ss"
-         ;; (for-template "syntax.ss")
          (for-syntax "debug.ss"
                      "contexts.ss"
                      "parse.ss"
@@ -396,6 +395,31 @@
 
 (define-honu-syntax honu-macro
   (lambda (stx ctx)
+    (define-syntax-class honu-macro3
+                         #:literals (#%parens #%braces)
+      [pattern (_ name (#%parens literals ...)
+                  (#%braces template ...) (#%braces code ...)
+                  . rest)
+               #:with result
+               (list
+                 (syntax/loc stx
+                             (define-honu-syntax name
+                               (lambda (stx ctx)
+                                 (syntax-parse stx #:literals (literals ...)
+                                   [(template ... rrest (... ...))
+                                    (values
+                                      (honu-unparsed-begin code ...)
+                                      #'(rrest (... ...)))]))))
+                 #;
+                 (with-syntax ([parsed (let-values ([(out rest*)
+                                                     (parse-block-one/2 #'(code ...)
+                                                                        the-expression-context)])
+                                         out)])
+                   (syntax/loc stx
+                               (define-honu-syntax name
+                                 (lambda (stx ctx)
+                                   parsed))))
+                 #'rest)])
     (define-syntax-class honu-macro2
                          #:literals (#%parens #%braces)
       [pattern (_ name (#%braces code ...)
@@ -405,7 +429,13 @@
                  (syntax/loc stx
                              (define-honu-syntax name
                                (lambda (stx ctx)
-                                 (honu-unparsed-begin code ...))))
+                                 (values
+                                   (honu-unparsed-begin code ...)
+                                   (begin
+                                     (printf "inside ~a stx is ~a\n" 'name stx)
+                                     (syntax-parse stx #:literals (semicolon)
+                                       [(_ semicolon rrest (... ...))
+                                        #'(rrest (... ...))]))))))
                  #;
                  (with-syntax ([parsed (let-values ([(out rest*)
                                                      (parse-block-one/2 #'(code ...)
@@ -485,8 +515,9 @@
                                   #'rest))])
     (printf "Executing honu macro\n")
     (syntax-parse stx #:literals (#%parens #%braces)
-      [out:honu-macro1 (apply (lambda (a b) (values a b)) (syntax->list (attribute out.result)))]
-      [out:honu-macro2 (apply (lambda (a b) (values a b)) (syntax->list (attribute out.result)))]
+      [out:honu-macro1 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
+      [out:honu-macro3 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
+      [out:honu-macro2 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
 
       #;
       [(_ (#%parens honu-literal ...)
