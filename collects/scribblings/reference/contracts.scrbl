@@ -259,17 +259,30 @@ Like @racket[vector/c], but the individual contracts need not be
 value, the result is not @racket[eq?] to the input.}
 
 
-@defproc[(box/c [c (or/c flat-contract? (any/c . -> . any/c))]) flat-contract?]{
+@defproc[(box/c [c contract?] 
+                [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
+                [#:flat? flat? boolean? #f])
+         contract?]{
+Returns a contract that recognizes boxes. The content of the box must match @racket[c].
 
-Returns a flat-contract that recognizes boxes. The content of the box
-must match @racket[c].}
+If the @racket[flat?] argument is @racket[#t], then the resulting contract is
+a flat contract, and the @racket[c] argument must also be a flat contract.  Such
+flat contracts will be unsound if applied to mutable boxes, as they will not check
+future operations on the box.
+
+If the @racket[immutable] argument is @racket[#t] and the @racket[c] argument is
+a flat contract, the result will be a flat contract.  If the @racket[c] argument is
+a chaperone contract, then the result will be a chaperone contract.
+
+When a higher-order @racket[box/c] contract is applied to a box, the result
+is not @racket[eq?] to the input.  The result will be a copy for immutable boxes
+and either a @tech{chaperone} or @tech{proxy} of the input for mutable boxes.}
 
 
-@defproc[(box-immutable/c [c (or/c contract? (any/c . -> . any/c))]) contract?]{
+@defproc[(box-immutable/c [c contract?]) contract?]{
 
-Like @racket[box/c], but @racket[c] need not be @tech{flat
-contract}. Beware that when this contract is applied to a value, the
-result is not @racket[eq?] to the input.}
+Returns the same contract as @racket[(box/c c #:immutable #t)]. This exists for
+reasons of backwards compatibility, and may be removed in the future.}
 
 
 @defproc[(listof [c (or/c contract? (any/c . -> . any/c))]) contract?]{
