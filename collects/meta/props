@@ -1371,15 +1371,15 @@ path/s is either such a string or a list of them.
 "collects/tests/deinprogramm" responsible (sperber)
 "collects/tests/deinprogramm/image.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/deinprogramm/run-image-test.rkt" drdr:command-line (mred-text "-t" *)
-"collects/tests/drracket" responsible (robby)
+"collects/tests/drracket" responsible (robby) drdr:random #t
 "collects/tests/drracket/drracket-test-util.rkt" drdr:command-line (mred "-t" *)
 "collects/tests/drracket/io.rkt" drdr:command-line (mred *)
 "collects/tests/drracket/language-test.rkt" drdr:command-line (mred *) drdr:timeout 600
 "collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/drracket/module-lang-test.rkt" drdr:command-line (mred *) drdr:timeout 120
-"collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *) drdr:random #t
-"collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line (mzc *) drdr:random #t
-"collects/tests/drracket/randomly-click.rkt" drdr:command-line #f drdr:random #t
+"collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *)
+"collects/tests/drracket/randomly-click-preferences.rkt" drdr:command-line (mzc *)
+"collects/tests/drracket/randomly-click.rkt" drdr:command-line #f
 "collects/tests/drracket/repl-test.rkt" drdr:command-line (mred *) drdr:timeout 600
 "collects/tests/drracket/sample-solutions-one-window.rkt" drdr:command-line (mred-text "-t" *)
 "collects/tests/drracket/save-teaching-lang-file.rkt" drdr:command-line (mred *)
