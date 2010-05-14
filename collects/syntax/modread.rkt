@@ -33,7 +33,8 @@
                        "expected a `module' declaration for `~a' in ~s, but found end-of-file"
                        expected-module filename))]
           [(compiled-module-expression? (syntax-e exp))
-           (if (eq? (module-compiled-name (syntax-e exp)) expected-module)
+           (if (or #t ; we don't check the name anymore
+                   (eq? (module-compiled-name (syntax-e exp)) expected-module))
              ;; It's fine:
              exp
              ;; Wrong name:
@@ -47,9 +48,10 @@
                   [_else #f]))
            ;; It's ok; need to install a specific `module' binding:
            (with-syntax ([(mod nm . _) exp])
-             (unless (eq? (syntax-e #'nm) expected-module)
-               (raise-wrong-module-name filename expected-module
-                                        (syntax-e #'nm)))
+             (when #f ; we don't check the name anymore
+               (unless (eq? (syntax-e #'nm) expected-module)
+                 (raise-wrong-module-name filename expected-module
+                                          (syntax-e #'nm))))
              (datum->syntax-object exp
                                    (cons (namespace-module-identifier)
                                          (cdr (syntax-e exp)))

@@ -126,10 +126,13 @@ If the second argument to the load handler is a symbol, then:
        (read-accept-reader #t)
        ]}
 
- @item{If the read result is not a @racketidfont{module} form with the
-       expected name, or if a second @racket[read-syntax] does not
-       produce an end-of-file, then the @exnraise[exn:fail] without
-       evaluating the form that was read from the file.}
+ @item{If the read result is not a @racketidfont{module} form, or if a
+       second @racket[read-syntax] does not produce an end-of-file,
+       then the @exnraise[exn:fail] without evaluating the form that
+       was read from the file. (In previous versions, the module
+       declaration was checked to match the name given as the second
+       argument to the load handler, but this check is no longer
+       performed.)}
 
  @item{The @tech{lexical information} of the initial
        @racketidfont{module} identifier is enriched with a binding for

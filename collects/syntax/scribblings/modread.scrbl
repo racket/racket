@@ -17,10 +17,14 @@ values.}
          (or/c syntax? false/c)]{
 
 Inspects @scheme[stx] to check whether evaluating it will declare a
-module named @scheme[expected-module-sym]---at least if @scheme[module] is bound
-in the top-level to Racket's @scheme[module]. The syntax object @scheme[stx] can
-contain a compiled expression. Also, @scheme[stx] can be an end-of-file, on
-the grounds that @scheme[read-syntax] can produce an end-of-file.
+module---at least if @scheme[module] is bound in the top-level to
+Racket's @scheme[module]. The syntax object @scheme[stx] can contain a
+compiled expression. Also, @scheme[stx] can be an end-of-file, on the
+grounds that @scheme[read-syntax] can produce an end-of-file.
+
+The @scheme[expected-module-sym] argument is currently ignored. In
+previous versions, the module form @scheme[stx] was obliged to declare
+a module who name matched @scheme[expected-module-sym].
 
 If @scheme[stx] can declare a module in an appropriate top-level, then
 the @scheme[check-module-form] procedure returns a syntax object that

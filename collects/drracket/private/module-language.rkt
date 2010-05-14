@@ -707,16 +707,17 @@
   
   ;; check-filename-matches : path datum syntax -> void
   (define (check-filename-matches filename datum unexpanded-stx)
-    (let-values ([(base name dir?) (split-path filename)])
-      (let ([expected (string->symbol
-                       (path->string (path-replace-suffix name #"")))])
-        (unless (equal? expected datum)
-          (raise-hopeless-syntax-error
-           (format
-            "module name doesn't match saved filename, got ~s and expected ~s"
-            datum
-            expected)
-           unexpanded-stx)))))
+    (when #f ; we don't check filename matching anymore
+      (let-values ([(base name dir?) (split-path filename)])
+        (let ([expected (string->symbol
+                         (path->string (path-replace-suffix name #"")))])
+          (unless (equal? expected datum)
+            (raise-hopeless-syntax-error
+             (format
+              "module name doesn't match saved filename, got ~s and expected ~s"
+              datum
+              expected)
+             unexpanded-stx))))))
   
   (define module-language-put-file-mixin
     (mixin (text:basic<%>) ()
