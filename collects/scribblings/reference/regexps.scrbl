@@ -272,7 +272,7 @@ earliest is found.
 
 Additional [byte] strings are returned in the list if @racket[pattern]
 contains parenthesized sub-expressions (but not when the open
-parenthesis is followed by @litchar{?:}). Matches for the
+parenthesis is followed by @litchar{?}). Matches for the
 sub-expressions are provided in the order of the opening parentheses
 in @racket[pattern]. When sub-expressions occur in branches of an
 @litchar{|} ``or'' pattern, in a @litchar{*} ``zero or more''

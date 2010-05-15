@@ -230,4 +230,7 @@ typedef struct Regwork {
   Scheme_Object *peekskip;
   char *prefix;
   rxpos prefix_len, prefix_delta;
+
+  int non_tail, rewind_stack_size, rewind_stack_count, rewind_stack_prompt;
+  rxpos *rewind_stack;
 } Regwork;

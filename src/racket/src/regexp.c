@@ -90,6 +90,9 @@ THREAD_LOCAL_DECL(static long rx_buffer_size);
 THREAD_LOCAL_DECL(static rxpos *startp_buffer_cache);
 THREAD_LOCAL_DECL(static rxpos *endp_buffer_cache);
 THREAD_LOCAL_DECL(static rxpos *maybep_buffer_cache);
+THREAD_LOCAL_DECL(static rxpos *match_stack_buffer_cache);
+
+#define MATCH_STACK_SIZE 24
 
 /*
  * Forward declarations for regcomp()'s friends.
@@ -2386,15 +2389,119 @@ static MZ_INLINE int in_ranges_ci(char *str, rxpos a, int l, int c)
 /*
  * Forwards.
  */
-static int regtry(regexp *, char *, int, int, rxpos *, rxpos *, rxpos *, int *, Regwork *rw, rxpos, 
+static int regtry(regexp *, char *, int, int, rxpos *, rxpos *, rxpos *, rxpos *, int *, Regwork *rw, rxpos, 
                   char *, rxpos, rxpos, int);
 static int regtry_port(regexp *, Scheme_Object *, Scheme_Object *, int nonblock,
-		       rxpos *, rxpos *, rxpos *, int *,
+		       rxpos *, rxpos *, rxpos *, rxpos *, int *,
 		       char **, rxpos *, rxpos *, rxpos, Scheme_Object*, Scheme_Object*, rxpos, 
                        char*, rxpos, rxpos,
 		       int, int *);
 static int regmatch(Regwork *rw, rxpos);
 static int regrepeat(Regwork *rw, rxpos, int);
+
+static void stack_room(Regwork *rw, int amt)
+{
+  if (rw->rewind_stack_count + amt > rw->rewind_stack_size) {
+    int sz;
+    rxpos *p;
+    sz = rw->rewind_stack_size * 2;
+    if (!sz) sz = MATCH_STACK_SIZE;
+    p = (rxpos *)scheme_malloc_atomic(sizeof(rxpos)*sz);
+    memcpy(p, rw->rewind_stack, rw->rewind_stack_size * sizeof(rxpos));
+    rw->rewind_stack = p;
+    rw->rewind_stack_size = sz;
+  }
+}
+
+static int match_push(Regwork *rw)
+{
+  if (rw->non_tail >= 0) {
+    int pos;
+
+    rw->non_tail++;
+    pos = rw->rewind_stack_count;
+    rw->rewind_stack_prompt = pos;
+
+    return pos;
+  } else
+    return 0;
+}
+
+static void match_pop(Regwork *rw, int pos, int matched)
+{
+  if (rw->non_tail >= 0) {
+    --rw->non_tail;
+
+    if (matched) {
+      /* Save elements on stack in case an enclosing match
+         needs to rewind. Area between prompt and pos are
+         mapping that don't need to be re-recorded. */
+      rw->rewind_stack_prompt = pos;
+    } else {
+      int i, no;
+      for (i = rw->rewind_stack_count; i > pos; i -= 3) {
+        no = rw->rewind_stack[i-3];
+        if (no < 0) {
+          rw->maybep[-no] = rw->rewind_stack[i-2];
+        } else {
+          rw->startp[no] = rw->rewind_stack[i-2];
+          rw->endp[no] = rw->rewind_stack[i-1];
+        }
+      }
+      rw->rewind_stack_count = pos;
+      rw->rewind_stack_prompt = pos;
+    }
+  }
+}
+
+static void match_set(Regwork *rw, int no, rxpos start, rxpos end)
+{
+  int i, count;
+
+  if (rw->non_tail > 0) {
+    count = rw->rewind_stack_count;
+    for (i = rw->rewind_stack_prompt; i < count; i += 3) {
+      if (rw->rewind_stack[i] == no)
+        break;
+    }
+    
+    if (i >= count) {
+      stack_room(rw, 3);
+      i = count;
+      rw->rewind_stack[i++] = no;
+      rw->rewind_stack[i++] = rw->startp[no];
+      rw->rewind_stack[i++] = rw->endp[no];
+      rw->rewind_stack_count = i;
+    }
+  }
+
+  rw->startp[no] = start;
+  rw->endp[no] = end;
+}
+
+static void match_maybe(Regwork *rw, int no, rxpos pos)
+{
+  int i, count;
+
+  if (rw->non_tail > 0) {
+    count = rw->rewind_stack_count;
+    for (i = rw->rewind_stack_prompt; i < count; i += 3) {
+      if (rw->rewind_stack[i] == (- no))
+        break;
+    }
+    
+    if (i >= count) {
+      stack_room(rw, 3);
+      i = count;
+      rw->rewind_stack[i++] = (- no);
+      rw->rewind_stack[i++] = rw->maybep[no];
+      rw->rewind_stack[i++] = 0;
+      rw->rewind_stack_count = i;
+    }
+  }
+
+  rw->maybep[no] = pos;
+}
 
 #ifdef DEBUG
 int regnarrate = 0;
@@ -2413,7 +2520,7 @@ regexec(const char *who,
 	/* used only for strings: */
 	int stringpos, int stringlen, int stringorigin,
 	/* Always used: */
-	rxpos *startp, rxpos *maybep, rxpos *endp,
+	rxpos *startp, rxpos *maybep, rxpos *endp, rxpos *match_stack,
 	Scheme_Object *port, Scheme_Object *unless_evt, int nonblock,
 	/* Used only when port is non-NULL: */
 	char **stringp, int peek, int get_offsets, long save_prior,
@@ -2542,7 +2649,7 @@ regexec(const char *who,
 
       *stringp = NULL;
       if (regtry_port(prog, port, unless_evt, nonblock, 
-		      startp, maybep, endp, counters, stringp, &len, &space, 0, 
+		      startp, maybep, endp, match_stack, counters, stringp, &len, &space, 0, 
 		      portend, peekskip, 0, prefix, prefix_len, prefix_offset, 0, 
                       &aborted)) {
 	if (!peek) {
@@ -2597,7 +2704,8 @@ regexec(const char *who,
 	return 0;
       }
     } else
-      return regtry(prog, string, stringpos, stringlen, startp, maybep, endp, counters, 0, 
+      return regtry(prog, string, stringpos, stringlen, startp, maybep, endp, 
+                    match_stack, counters, 0, 
 		    stringorigin, prefix, prefix_len, prefix_offset, 0);
   }
 
@@ -2637,7 +2745,7 @@ regexec(const char *who,
       }
 
       if (regtry_port(prog, port, unless_evt, nonblock,
-		      startp, maybep, endp, counters, stringp, &len, &space, skip, 
+		      startp, maybep, endp, match_stack, counters, stringp, &len, &space, skip, 
 		      portend, peekskip, 0, prefix, prefix_len, prefix_offset, 1,
                       &aborted)) {
 	if (!peek) {
@@ -2674,7 +2782,7 @@ regexec(const char *who,
     }
   } else {
     if (regtry(prog, string, stringpos, stringlen, 
-	       startp, maybep, endp, counters,
+	       startp, maybep, endp, match_stack, counters,
 	       0, stringorigin, prefix, prefix_len, prefix_offset, 1))
       return 1;
   }
@@ -2688,7 +2796,7 @@ regexec(const char *who,
    */
 static int			/* 0 failure, 1 success */
 regtry(regexp *prog, char *string, int stringpos, int stringlen, 
-       rxpos *startp, rxpos *maybep, rxpos *endp, int *counters,
+       rxpos *startp, rxpos *maybep, rxpos *endp, rxpos *match_stack, int *counters,
        Regwork *rw, rxpos stringorigin, 
        char *prefix, rxpos prefix_len, rxpos prefix_offset,
        int unanchored)
@@ -2717,6 +2825,14 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen,
   rw->prefix_len = prefix_len;
   rw->prefix_delta = prefix_len + prefix_offset - stringorigin;
   rw->boi = stringorigin - prefix_len;
+  rw->rewind_stack_size = (match_stack ? MATCH_STACK_SIZE : 0);
+  rw->rewind_stack_count = 0;
+  rw->rewind_stack_prompt = 0;
+  rw->rewind_stack = match_stack;
+  if (prog->nsubexp < 2)
+    rw->non_tail = -1;
+  else
+    rw->non_tail = 0;
 
   for (i = prog->nsubexp; i--; ) {
     startp[i] = rw->input_min - 1;
@@ -2758,8 +2874,8 @@ regtry(regexp *prog, char *string, int stringpos, int stringlen,
       }
       rw->input = stringpos;      
       for (i = prog->nsubexp; i--; ) {
-	startp[i] = rw->input_min - 1;
-	endp[i] = rw->input_min - 1;
+        startp[i] = rw->input_min - 1;
+        endp[i] = rw->input_min - 1;
       }
       /* try again... */
     } else
@@ -2871,7 +2987,7 @@ static void read_more_from_regport(Regwork *rw, rxpos need_total)
    */
 static int
 regtry_port(regexp *prog, Scheme_Object *port, Scheme_Object *unless_evt, int nonblock,
-	    rxpos *startp, rxpos *maybep, rxpos *endp, int *counters,
+	    rxpos *startp, rxpos *maybep, rxpos *endp, rxpos *match_stack, int *counters,
 	    char **work_string, rxpos *len, rxpos *size, rxpos skip, 
 	    Scheme_Object *maxlen, Scheme_Object *peekskip, 
 	    rxpos origin, char *prefix, rxpos prefix_len, rxpos prefix_offset,
@@ -2892,7 +3008,7 @@ regtry_port(regexp *prog, Scheme_Object *port, Scheme_Object *unless_evt, int no
   rw.peekskip = peekskip;
 
   m = regtry(prog, *work_string, skip, (*len) - skip, 
-	     startp, maybep, endp, counters,
+	     startp, maybep, endp, match_stack, counters,
 	     &rw, origin, prefix, prefix_len, prefix_offset, 0);
 
   if (read_at_least_one
@@ -3182,6 +3298,7 @@ regmatch(Regwork *rw, rxpos prog)
       {
         rxpos delta;
 	rxpos next;  /* Next node. */
+        int stack_pos, ok;
 
 	next = NEXT_OP(scan);
 
@@ -3190,8 +3307,12 @@ regmatch(Regwork *rw, rxpos prog)
         else {
           do {
             rw->input = is;
-            if (regmatch(rw, OPERAND(scan)))
-              return(1);
+            stack_pos = match_push(rw);
+            ok = regmatch(rw, OPERAND(scan));
+            match_pop(rw, stack_pos, ok);
+
+            if (ok) return(1);
+
 	    scan = next;
 	    delta = rNEXT(scan);
             if (!delta)
@@ -3215,6 +3336,7 @@ regmatch(Regwork *rw, rxpos prog)
 	int min, maxc;
 	int nongreedy = (the_op == STAR2 || the_op == PLUS2 || the_op == STAR4);
 	rxpos next;  /* Next node. */
+        int stack_pos, ok;
 	
 	/*
 	 * Lookahead to avoid useless match attempts
@@ -3257,8 +3379,10 @@ regmatch(Regwork *rw, rxpos prog)
 	    if (nextch == '\0' || ((save + no < rw->input_end)
 				   && (INPUT_REF(rw, save + no) == nextch))) {
 	      rw->input = is + no;
-	      if (regmatch(rw, next))
-		return(1);
+              stack_pos = match_push(rw);
+	      ok = regmatch(rw, next);
+              match_pop(rw, stack_pos, ok);
+              if (ok) return(1);
 	    }
 	    /* Couldn't or didn't -- back up. */
 	    no--;
@@ -3272,9 +3396,10 @@ regmatch(Regwork *rw, rxpos prog)
 	    if (nextch == '\0' || ((save+i < rw->input_end)
 				   && (INPUT_REF(rw, save+i) == nextch))) {
 	      rw->input = save + i;
-	      if (regmatch(rw, next)) {
-		return(1);
-	      }
+              stack_pos = match_push(rw);
+              ok = regmatch(rw, next);
+              match_pop(rw, stack_pos, ok);
+              if (ok) return(1);
 	    }
 
 	    if ((i == no) && (nongreedy == 2)) {
@@ -3392,6 +3517,7 @@ regmatch(Regwork *rw, rxpos prog)
       {
 	int t, no, no_start, no_end;
 	rxpos save, next;
+        int stack_pos, ok;
 	next = NEXT_OP(scan);
 	t = ((the_op != LOOKF) && (the_op != LOOKBF));
 	if ((the_op == LOOKBT)  || (the_op == LOOKBF)) {
@@ -3406,7 +3532,10 @@ regmatch(Regwork *rw, rxpos prog)
 	  for (no = no_start; no <= no_end; no++) {
 	    if (is - rw->input_min >= no) {
 	      rw->input = save - no;
-	      if (regmatch(rw, next)) {
+              stack_pos = match_push(rw);
+              ok = regmatch(rw, next);
+              match_pop(rw, stack_pos, ok);
+	      if (ok) {
 		if (rw->input == save) {
 		  /* Match */
 		  if (!t) return 0;
@@ -3424,7 +3553,10 @@ regmatch(Regwork *rw, rxpos prog)
 	} else {
           /* lookahead */
 	  rw->input = is;
-	  if (regmatch(rw, next)) {
+          stack_pos = match_push(rw);
+          ok = regmatch(rw, next);
+          match_pop(rw, stack_pos, ok);
+	  if (ok) {
 	    if (!t) return 0;
 	  } else {
 	    if (t) return 0;
@@ -3488,20 +3620,18 @@ regmatch(Regwork *rw, rxpos prog)
 	len = rOPLEN(OPERAND2(scan));
 	/* Check that the match happened more than 0 times: */
 	if (!len || (is > rw->maybep[no])) {
-	  rw->startp[no] = is - len;
-	  rw->endp[no] = is;
+          match_set(rw, no, is-len, is);
 	} else {
-	  rw->startp[no] = rw->input_min - 1;
-	  rw->endp[no] = rw->input_min - 1;
+          match_set(rw, no, rw->input_min - 1, rw->input_min - 1);
 	}
-	scan = NEXT_OP(scan);
+	scan = NEXT_OP(scan);        
       }
       break;
     case MAYBECONST:
       {
 	int no;
 	no = rOPLEN(OPERAND(scan));
-	rw->maybep[no] = is;
+        match_maybe(rw, no, is);
 	scan = NEXT_OP(scan);
       }
       break;
@@ -3601,6 +3731,7 @@ regmatch(Regwork *rw, rxpos prog)
       {
 	rxpos test = OPERAND3(scan);
 	int t;
+        int stack_pos;
 
 	if (rOP(test) == BACKREF) {
 	  int no;
@@ -3608,7 +3739,9 @@ regmatch(Regwork *rw, rxpos prog)
 	  t = (rw->endp[no] > rw->input_min);
 	} else {
 	  rw->input = is;
+          stack_pos = match_push(rw);
 	  t = regmatch(rw, test);
+          match_pop(rw, stack_pos, t);
 	}
 
 	if (t)
@@ -3646,41 +3779,16 @@ regmatch(Regwork *rw, rxpos prog)
 	}
 
 	if (no < 0) {
-	  /* No need to recur */
-	  scan = NEXT_OP(scan);
-	} else {
-	  rxpos next;
+	  /* Nothing to set */
+	} else if (isopen) {
+          /* Storing the position in maybep instead of startp
+             allows a backreference to refer to a match from a
+             previous iteration in patterns like `(a|\1x)*'. */
+          match_maybe(rw, no, is);
+        } else
+          match_set(rw, no, rw->maybep[no], is);
 
-	  next = NEXT_OP(scan);
-	  rw->input = is;
-          
-	  if (isopen) {
-	    int oldmaybe;
-	    oldmaybe = rw->maybep[no];
-	    rw->maybep[no] = is;
-	    if (regmatch(rw, next)) 
-	      return(1);
-	    else {
-	      rw->maybep[no] = oldmaybe;
-	      return(0);
-	    }
-	  } else {
-	    int oldstart, oldend;
-
-	    oldstart = rw->startp[no];
-	    oldend = rw->endp[no];
-	    rw->startp[no] = rw->maybep[no];
-	    rw->endp[no] = is;
-
-	    if (regmatch(rw, next)) {
-	      return(1);
-	    } else {
-	      rw->startp[no] = oldstart;
-	      rw->endp[no] = oldend;
-              return(0);
-	    }
-	  }
-	}
+        scan = NEXT_OP(scan);
       }
       break;
     }
@@ -4989,6 +5097,7 @@ void scheme_clear_rx_buffers(void)
   startp_buffer_cache = NULL;
   endp_buffer_cache = NULL;
   maybep_buffer_cache = NULL;
+  match_stack_buffer_cache = NULL;
 }
 
 static Scheme_Object *gen_compare(char *name, int pos, 
@@ -4997,7 +5106,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
 {
   regexp *r;
   char *full_s, *prefix = NULL;
-  rxpos *startp, *maybep, *endp, prefix_len = 0, prefix_offset = 0, minpos;
+  rxpos *startp, *maybep, *endp, *match_stack, prefix_len = 0, prefix_offset = 0, minpos;
   int offset = 0, orig_offset, endset, m, was_non_byte, last_bytes_count = last_bytes;
   Scheme_Object *iport, *oport = NULL, *startv = NULL, *endv = NULL, *dropped, *unless_evt = NULL;
   Scheme_Object *last_bytes_str = scheme_false, *srcin;
@@ -5165,14 +5274,24 @@ static Scheme_Object *gen_compare(char *name, int pos,
   } else {
     startp = MALLOC_N_ATOMIC(rxpos, r->nsubexp);
     maybep = NULL;
+    match_stack = NULL;
     endp = MALLOC_N_ATOMIC(rxpos, r->nsubexp);
   }
-  if ((r->nsubexp > 1) && !maybep)
+  if ((r->nsubexp > 1) && !maybep) {
     maybep = MALLOC_N_ATOMIC(rxpos, r->nsubexp);
+
+    if (match_stack_buffer_cache) {
+      match_stack = match_stack_buffer_cache;
+      match_stack_buffer_cache = NULL;
+    } else
+      match_stack = MALLOC_N_ATOMIC(rxpos, MATCH_STACK_SIZE);
+  } else {
+    match_stack = NULL;
+  }
 
   dropped = scheme_make_integer(0);
 
-  m = regexec(name, r, full_s, offset, endset - offset, offset, startp, maybep, endp,
+  m = regexec(name, r, full_s, offset, endset - offset, offset, startp, maybep, endp, match_stack,
 	      iport, unless_evt, nonblock,
 	      &full_s, peek, pos, last_bytes_count, oport, 
 	      startv, endv, &dropped, 
@@ -5331,6 +5450,8 @@ static Scheme_Object *gen_compare(char *name, int pos,
   } else if (maybep && !maybep_buffer_cache && (r->nsubexp == rx_buffer_size)) {
     maybep_buffer_cache = maybep;
   }
+  if (match_stack && !match_stack_buffer_cache)
+    match_stack_buffer_cache = match_stack;
 
   if (last_bytes) {
     Scheme_Object *a[2];
@@ -5503,7 +5624,7 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
     int m;
 
     do {
-      m = regexec(name, r, source, srcoffset, sourcelen - srcoffset, 0, startp, maybep, endp,
+      m = regexec(name, r, source, srcoffset, sourcelen - srcoffset, 0, startp, maybep, endp, NULL,
                   NULL, NULL, 0,
                   NULL, 0, 0, 0, NULL, NULL, NULL, NULL, 
                   prefix, prefix_len, prefix_offset);

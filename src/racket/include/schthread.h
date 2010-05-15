@@ -184,6 +184,7 @@ typedef struct Thread_Local_Variables {
   rxpos *startp_buffer_cache_;
   rxpos *endp_buffer_cache_;
   rxpos *maybep_buffer_cache_;
+  rxpos *match_stack_buffer_cache_;
   unsigned long scheme_os_thread_stack_base_;
   int traversers_registered_;
   struct Finalizations **save_fns_ptr_;
@@ -469,6 +470,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define startp_buffer_cache XOA (scheme_get_thread_local_variables()->startp_buffer_cache_)
 #define endp_buffer_cache XOA (scheme_get_thread_local_variables()->endp_buffer_cache_)
 #define maybep_buffer_cache XOA (scheme_get_thread_local_variables()->maybep_buffer_cache_)
+#define match_stack_buffer_cache XOA (scheme_get_thread_local_variables()->match_stack_buffer_cache_)
 #define scheme_os_thread_stack_base XOA (scheme_get_thread_local_variables()->scheme_os_thread_stack_base_)
 #define traversers_registered XOA (scheme_get_thread_local_variables()->traversers_registered_)
 #define save_fns_ptr XOA (scheme_get_thread_local_variables()->save_fns_ptr_)
