@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site base_url="http://pre.plt-scheme.org/"
+      store_into="/home/scheme/html/sitemap.xml.gz"
+      verbose="1">
+  <directory path="/home/scheme/html/"
+             url="http://pre.plt-scheme.org/"
+             default_file="index.html" />
+  <!-- Exclude URLs that end with a '~' (IE: emacs backup files) -->
+  <filter  action="drop" type="wildcard" pattern="*~" />
+  <!-- Exclude URLs within UNIX-style hidden files or directories -->
+  <filter  action="drop" type="regexp" pattern="/\.[^/]*" />
+  <!-- Exclude .plt files -->
+  <filter  action="drop" type="wildcard" pattern="*.plt" />
+  <!-- Exclude possible nested trees -->
+  <filter  action="drop" type="regexp" pattern="^http://[^/]*/[0-9]+" />
+</site>

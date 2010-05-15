@@ -1,0 +1,485 @@
+
+###############################################################################
+## Utilities
+
+PATH=/usr/bin:/bin
+
+if [ "x`echo -n`" = "x-n" ]; then
+  echon() { /bin/echo "$*\c"; }
+else
+  echon() { echo -n "$*"; }
+fi
+
+rm_on_abort=""
+failwith() {
+  echo "Error: $*" 1>&2
+  if test ! "x$rm_on_abort" = "x" && test -e "$rm_on_abort"; then
+    echon "  (Removing installation files in $rm_on_abort)"
+    "$rm" -rf "$rm_on_abort"
+    echo ""
+  fi
+  exit 1
+}
+exithandler() {
+  failwith "Aborting..."
+}
+
+trap exithandler 2 3 9 15
+
+lookfor() {
+  save_IFS="${IFS}"
+  IFS=":"
+  for dir in $PATH; do
+    if test -x "$dir/$1"; then
+      eval "$1=$dir/$1"
+      IFS="$save_IFS"
+      return
+    fi
+  done
+  IFS="$save_IFS"
+  failwith "could not find \"$1\"."
+}
+
+link() { # args are source, target, where we are
+  "$rm" -f "$2"      || failwith "could not remove \"$2\" in \"$3\"."
+  "$ln" -s "$1" "$2" || failwith "could not link \"$2\" in \"$3\"."
+}
+
+lookfor rm
+lookfor ls
+lookfor ln
+lookfor tail
+lookfor cksum
+lookfor tar
+lookfor gunzip
+lookfor mkdir
+lookfor basename
+lookfor dirname
+
+# Need this to make new `tail' respect old-style command-line arguments.  Can't
+# use `tail -n #' because some old tails won't know what to do with that.
+_POSIX2_VERSION=199209
+export _POSIX2_VERSION
+
+origpwd="`pwd`"
+
+echo "This program will extract and install $DISTNAME."
+echo ""
+echo "Note: the required diskspace for this installation is about $ORIGSIZE."
+
+###############################################################################
+## What kind of installation?
+
+echo ""
+echo "Do you want a Unix-style distribution?"
+echo "  In this distribution mode files go into different directories according"
+echo "  to Unix conventions.  A \"plt-uninstall\" script will be generated to"
+echo "  make it possible to remove the installation.  If say 'no', the whole"
+echo "  PLT directory is kept as a single (movable and erasable) unit, possibly"
+echo "  with external links into it."
+if test ! "x$RELEASED" = "xyes"; then
+  echo "*** This is a nightly build: such a distribution is not recommended"
+  echo "*** because it cannot be used to install multiple versions."
+fi
+unixstyle="x"
+while test "$unixstyle" = "x"; do
+  echon "Enter yes/no (default: no) > "
+  read unixstyle
+  case "$unixstyle" in
+    [yY]* ) unixstyle="yes" ;;
+    [nN]* ) unixstyle="no"  ;;
+    "" )    unixstyle="no"  ;;
+    * )     unixstyle="x"   ;;
+  esac
+done
+
+###############################################################################
+## Where do you want it?
+
+echo ""
+if test "$unixstyle" = "yes"; then
+  echo "Where do you want to base your installation of $DISTNAME?"
+  echo "  (Use an existing directory.  If you've done such an installation in"
+  echo "   the past, either use the same place, or manually run"
+  echo "   'plt-uninstaller' now.)"
+  TARGET1="..."
+else
+  echo "Where do you want to install the \"$TARGET\" directory tree?"
+  TARGET1="$TARGET"
+fi
+echo "  1 - /usr/$TARGET1 [default]"
+echo "  2 - /usr/local/$TARGET1"
+echo "  3 - \$HOME/$TARGET1 ($HOME/$TARGET1)"
+echo "  4 - ./$TARGET1 (here)"
+if test "$unixstyle" = "yes"; then
+  echo "  Or enter a different directory prefix to install in."
+else
+  echo "  Or enter a different \"plt\" directory to install in."
+fi
+echon "> "
+read where
+case "$where" in
+  "" | "1" ) where="/usr" ;;
+  "2" ) where="/usr/local" ;;
+  "3" ) where="$HOME" ;;
+  "4" | "." ) where="`pwd`" ;;
+  "/"* )
+    if test "$unixstyle" = "no"; then
+      TARGET="`\"$basename\" \"$where\"`"
+      where="`\"$dirname\" \"$where\"`"
+    fi
+    ;;
+  * )
+    if test "$unixstyle" = "no"; then
+      TARGET="`\"$basename\" \"$where\"`"
+      where="`\"$dirname\" \"$where\"`"
+    fi
+    if test -d "$where"; then cd "$where"; where="`pwd`"; cd "$origpwd"
+    else where="`pwd`/$where"; fi
+    ;;
+esac
+
+if test "$unixstyle" = "no"; then
+  # can happen when choosing the root
+  if test "$TARGET" = "/"; then
+    failwith "refusing to remove your root"
+  fi
+fi
+
+# WHERE1 can be used with "$WHERE1/$TARGET" to avoid a double slash
+case "$where" in
+  "" )   failwith "internal error (empty \$where)" ;;
+  "/" )  WHERE1="" ;;
+  *"/" ) failwith "internal error (\$where ends in a slash)" ;;
+  "/"* ) WHERE1="$where" ;;
+  * )    failwith "internal error (\$where is not absolute)" ;;
+esac
+
+if test ! -d "$where"; then
+  failwith "the directory \"$where\" does not exist."
+fi
+if test ! -w "$where"; then
+  failwith "cannot write to \"$where\"."
+fi
+
+###############################################################################
+## Deal with Unix-style path questions
+
+set_prefix() {
+  where="$1"
+  # default dirs -- mimic configure behavior
+  bindir="$WHERE1/bin"
+  collectsdir="$WHERE1/lib/plt/collects"
+  if   test -d "$WHERE1/share"; then docdir="$WHERE1/share/plt/doc"
+  elif test -d "$WHERE1/doc";   then docdir="$WHERE1/doc/plt"
+  else                               docdir="$WHERE1/share/plt/doc"
+  fi
+  libdir="$WHERE1/lib"
+  includepltdir="$WHERE1/include/plt"
+  libpltdir="$WHERE1/lib/plt"
+  mandir="$WHERE1/man"
+  # The source tree is always removed -- no point keeping it if it won't work
+  # if   test -d "$WHERE1/share"; then srcdir="$WHERE1/share/plt/src"
+  # elif test -d "$WHERE1/src";   then srcdir="$WHERE1/src/plt"
+  # else                               srcdir="$WHERE1/share/plt/src"
+  # fi
+}
+
+dir_createable() {
+  test_dir="`\"$dirname\" \"$1\"`"
+  if test -d "$test_dir" && test -w "$test_dir"; then return 0
+  elif test "$test_dir" = "/"; then return 1
+  else dir_createable "$test_dir"; fi
+}
+
+show_dir_var() {
+  if   test -f   "$2"; then dir_status="(error: not a directory!)"; err="yes"
+  elif test ! -d "$2"; then
+    if dir_createable "$2"; then dir_status="(will be created)"
+    else                    dir_status="(error: not writable!)"; err="yes"; fi
+  elif test ! -w "$2"; then dir_status="(error: not writable!)"; err="yes"
+  else                      dir_status="(exists)"
+  fi
+  echo "  $1 $2 $dir_status"
+}
+
+read_dir() {
+  read new_dir
+  case "$new_dir" in
+    "/"* ) echo "$new_dir" ;;
+    * )    echo "$WHERE1/$new_dir" ;;
+  esac
+}
+
+if test "$unixstyle" = "yes"; then
+  set_prefix "$where"
+  # loop for possible changes
+  done="no"
+  while test ! "$done" = "yes"; do
+    echo ""
+    echo "Target Directories:"
+    err="no"
+    show_dir_var "[e] Executables  " "$bindir"
+    show_dir_var "[s] Scheme Code  " "$collectsdir"
+    show_dir_var "[d] Core Docs    " "$docdir"
+    show_dir_var "[l] C Libraries  " "$libdir"
+    show_dir_var "[h] C headers    " "$includepltdir"
+    show_dir_var "[o] Extra C Objs " "$libpltdir"
+    show_dir_var "[m] Man Pages    " "$mandir"
+    if test "$PNAME" = "full"; then
+      echo "  (C sources are not kept)"
+      # show_dir_var "[r] Source Tree  " "$srcdir"
+    fi
+    if test "$err" = "yes"; then echo "*** Errors in some paths ***"; fi
+    echo "Enter a new prefix, a letter to change an entry, enter to continue"
+    echon "> "
+    read change_what
+    case "$change_what" in
+      [eE]* ) echon "New directory: "; bindir="`read_dir`" ;;
+      [sS]* ) echon "New directory: "; collectsdir="`read_dir`" ;;
+      [dD]* ) echon "New directory: "; docdir="`read_dir`" ;;
+      [lL]* ) echon "New directory: "; libdir="`read_dir`" ;;
+      [hH]* ) echon "New directory: "; includepltdir="`read_dir`" ;;
+      [oO]* ) echon "New directory: "; libpltdir="`read_dir`" ;;
+      [mM]* ) echon "New directory: "; mandir="`read_dir`" ;;
+      # [rR]* ) if test "$PNAME" = "full"; then
+      #           echon "New directory: "; srcdir="`read_dir`"
+      #         else
+      #           echo "Invalid response"
+      #         fi ;;
+      "/"*  ) set_prefix "$change_what" ;;
+      ""    ) done="yes" ;;
+      *     ) echo "Invalid response" ;;
+    esac
+  done
+  if test "$err" = "yes"; then failwith "errors in some paths"; fi
+fi
+
+###############################################################################
+## Integrity check
+
+echo ""
+echon "Checking the integrity of the binary archive... "
+SUM="`\"$tail\" +\"$BINSTARTLINE\" \"$0\" | \"$cksum\"`" \
+  || failwith "problems running cksum."
+SUM="`set $SUM; echo $1`"
+test "$BINSUM" = "$SUM" || failwith "bad CRC checksum."
+echo "ok."
+
+###############################################################################
+## Unpacking into $where/$TARGET
+
+unpack_installation() {
+  # test that no TARGET exists
+  if test -d "$WHERE1/$TARGET" || test -f "$WHERE1/$TARGET"; then
+    echon "\"$WHERE1/$TARGET\" exists, delete? "
+    read yesno
+    case "$yesno" in
+      [yY]*)
+        echon "Deleting old \"$WHERE1/$TARGET\"... "
+        "$rm" -rf "$WHERE1/$TARGET" \
+        || failwith "could not delete \"$WHERE1/$TARGET\"."
+        echo "done."
+        ;;
+      *) failwith "aborting because \"$WHERE1/$TARGET\" exists." ;;
+    esac
+  fi
+  # unpack
+  echon "Unpacking into \"$WHERE1/$TARGET\"... "
+  rm_on_abort="$WHERE1/$TARGET"
+  "$mkdir" "$WHERE1/$TARGET"
+  "$tail" +"$BINSTARTLINE" "$0" | "$gunzip" -c \
+  | { cd "$WHERE1/$TARGET"
+      "$tar" xf - || failwith "problems during unpacking of binary archive."
+    }
+  cd "$WHERE1/$TARGET"
+  test -d "collects" \
+    || failwith "unpack failed (could not find \"$WHERE1/$TARGET/collects\")."
+  echo "done."
+}
+
+###############################################################################
+## Whole-directory installations
+
+wholedir_install() {
+
+unpack_installation
+rm_on_abort=""
+
+cd "$where"
+if test -d "bin"; then
+  echo "Do you want to install new system links within the bin, lib, include,"
+  echo "  man, and doc subdirectories of \"$where\", possibly overriding"
+  echon "  existing links? "
+  read yesno
+  case "$yesno" in
+    [yY]* ) sysdir="$where" ;;
+    * ) sysdir="" ;;
+  esac
+else
+  cd "$origpwd"
+  echo ""
+  echo "If you want to install new system links within the bin, lib, include,"
+  echo "  man, and doc subdirectories of a common directory prefix (for"
+  echo "  example, \"/usr/local\") then enter the prefix you want to use."
+  echon "(default: skip links) > "
+  read sysdir
+  if test ! "x$sysdir" = "x"; then
+    if test ! -d "$sysdir"; then
+      echo "Directory \"$sysdir\" does not exist, skipping links."
+      sysdir=""
+    elif test ! -w "$sysdir"; then
+      echo "Directory \"$sysdir\" is not writable, skipping links."
+      sysdir=""
+    else
+      cd "$sysdir"
+      sysdir="`pwd`"
+    fi
+  fi
+fi
+
+if test ! "x$sysdir" = "x"; then
+  # binaries
+  cd "$sysdir"
+  if test -d "bin" && test -w "bin"; then
+    echo "Installing links in \"$sysdir/bin\"..."
+    printsep="  "
+    cd "bin"
+    for x in `cd "$WHERE1/$TARGET/bin"; ls`; do
+      if test -x "$WHERE1/$TARGET/bin/$x"; then
+        echon "${printsep}$x"
+        printsep=", "
+        link "$WHERE1/$TARGET/bin/$x" "$x" "$sysdir/bin"
+      fi
+    done
+    echo ""
+    echo "Done. (see \"$WHERE1/$TARGET/bin\" for other executables)"
+  else
+    echo "Skipping \"$sysdir/bin\" (does not exist or not writable)."
+  fi
+  # man pages
+  cd "$sysdir"
+  if test -d "man" && test -d "man/man1" && test -w "man/man1"; then
+    mandir="man/man1"
+  elif test -d "share" && test -d "share/man" && test -d "share/man/man1" \
+       && test -w "share/man/man1"; then
+    mandir="share/man/man1"
+  else
+    mandir=""
+  fi
+  if test "x$mandir" = "x"; then
+    echo "Skipping \"$sysdir/man/man1\" (does not exist or not writable)."
+  else
+    cd "$mandir"
+    echo "Installing links in \"$sysdir/$mandir\"..."
+    printsep="  "
+    for x in `cd "$WHERE1/$TARGET/man/man1/"; "$ls"`; do
+      echon "${printsep}$x"
+      printsep=", "
+      link "$WHERE1/$TARGET/man/man1/$x" "$x" "$sysdir/$mandir"
+    done
+    echo ""
+    echo "Done"
+  fi
+  # lib link
+  cd "$sysdir"
+  if test -d "lib" && test -w "lib"; then
+    libdir="lib"
+  elif test -d "share" && test -d "share/lib" && test -w "share/lib"; then
+    libdir="share/lib"
+  else
+    libdir=""
+  fi
+  if test "x$libdir" = "x"; then
+    echo "Skipping \"$sysdir/lib\" (does not exist or not writable)."
+  else
+    cd "$libdir"
+    echo "Installing \"$sysdir/$libdir/$TARGET\"."
+    link "$WHERE1/$TARGET/lib" "$TARGET" "$sysdir/$libdir"
+  fi
+  # include link
+  cd "$sysdir"
+  if test -d "include" && test -w "include"; then
+    incdir="include"
+  elif test -d "share" && test -d "share/include" \
+       && test -w "share/include"; then
+    incdir="share/include"
+  else
+    incdir=""
+  fi
+  if test "x$incdir" = "x"; then
+    echo "Skipping \"$sysdir/include\" (does not exist or not writable)."
+  else
+    cd "$incdir"
+    echo "Installing \"$sysdir/$incdir/$TARGET\"."
+    link "$WHERE1/$TARGET/include" "$TARGET" "$sysdir/$incdir"
+  fi
+  # doc link
+  cd "$sysdir"
+  if test -d "doc" && test -w "doc"; then
+    docdir="doc"
+  elif test -d "share" && test -d "share/doc" && test -w "share/doc"; then
+    docdir="share/doc"
+  else
+    docdir=""
+  fi
+  if test "x$docdir" = "x"; then
+    echo "Skipping \"$sysdir/doc\" (does not exist or not writable)."
+  else
+    cd "$docdir"
+    echo "Installing \"$sysdir/$docdir/$TARGET\"."
+    link "$WHERE1/$TARGET/notes" "$TARGET" "$sysdir/$docdir"
+  fi
+fi
+
+}
+
+###############################################################################
+## Unix-style installations
+
+unixstyle_install() {
+
+TARGET="$TARGET-tmp-install"
+if test -e "$WHERE1/$TARGET"; then
+  echo "\"$WHERE1/$TARGET\" already exists (needed for the installation),"
+  echon "  ok to remove? "
+  read R
+  case "$R" in
+    [yY]* ) "$rm" -rf "$WHERE1/$TARGET" ;;
+    * ) failwith "abort..." ;;
+  esac
+fi
+
+if test -x "$bindir/plt-uninstall"; then
+  echo "A previous PLT uninstaller is found at \"$bindir/plt-uninstall\","
+  echon "  ok to run it? "
+  read R
+  case "$R" in
+    [yY]* ) echon "  running uninstaller..."
+            "$bindir/plt-uninstall" || failwith "problems during uninstall"
+            echo " done." ;;
+    * ) failwith "abort..." ;;
+  esac
+fi
+
+unpack_installation
+
+cd "$where"
+"$TARGET/bin/mzscheme" "$TARGET/collects/setup/unixstyle-install.ss" \
+  "move" "$WHERE1/$TARGET" "$bindir" "$collectsdir" "$docdir" "$libdir" \
+  "$includepltdir" "$libpltdir" "$mandir" \
+|| failwith "installation failed"
+
+}
+
+###############################################################################
+## Done
+
+if test "$unixstyle" = "yes"; then unixstyle_install; else wholedir_install; fi
+
+echo ""
+echo "All done."
+
+exit
+
+========== tar.gz file follows ==========

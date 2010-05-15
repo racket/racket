@@ -1,0 +1,137 @@
+;; -*- scheme -*-
+
+;; This file defines the readme files for the different distributions.  It is
+;; similar to the distribution specs file, see that for explanations on its
+;; format.
+
+\\ := (cond win => "\r\n"
+            ;; (or ppc-osx-mac i386-osx-mac) => "\r" ; is this still needed?
+            else => "\n"  )
+
+package-name
+:= (cond full => "PLT Scheme Full Repository"
+         plt  => "PLT Scheme"
+         dr   => "DrScheme"
+         mr   => "MrEd"
+         mz   => "MzScheme")
+
+dist-type
+:= (cond src  => "source"
+         else => "executable")
+
+platform-type
+:= (cond unix => "Unix"
+         mac  => "Macintosh"
+         win  => "Windows")
+platform
+:= (cond i386-linux        => "Linux (i386)"
+         i386-linux-gcc2   => "Linux (i386/gcc2)"
+         i386-linux-fc2    => "Fedora Core 2 (i386)"
+         i386-linux-fc5    => "Fedora Core 5 (i386)"
+         i386-linux-fc6    => "Fedora Core 6 (i386)"
+         i386-linux-f7     => "Fedora 7 (i386)"
+         x86_64-linux-f7   => "Fedora 7 (x86_64)"
+         i386-linux-f9     => "Fedora 9 (i386)"
+         i386-linux-f12    => "Fedora 12 (i386)"
+         i386-linux-debian => "Debian Stable (i386)"
+         i386-linux-debian-testing  => "Debian Testing (i386)"
+         i386-linux-debian-unstable => "Debian Unstable (i386)"
+         i386-linux-ubuntu          => "Ubuntu (i386)"
+         i386-linux-ubuntu-dapper   => "Ubuntu Dapper (i386)"
+         i386-linux-ubuntu-edgy     => "Ubuntu Edgy (i386)"
+         i386-linux-ubuntu-feisty   => "Ubuntu Feisty (i386)"
+         i386-linux-ubuntu-hardy    => "Ubuntu Hardy (i386)"
+         i386-linux-ubuntu-intrepid => "Ubuntu Intrepid (i386)"
+         i386-linux-ubuntu-jaunty   => "Ubuntu Jaunty (i386)"
+         i386-freebsd      => "FreeBSD (i386)"
+         sparc-solaris     => "Solaris"
+         ppc-osx-mac       => "Mac OS X (PPC)"
+         i386-osx-mac      => "Mac OS X (Intel)"
+         ppc-darwin        => "Mac OS X using X11 (PPC)"
+         i386-darwin       => "Mac OS X using X11 (Intel)"
+         i386-win32        => "Windows"
+         else => platform-type)
+
+executable := (cond mac => "application" else => "executable")
+dir := (cond (or win mac) => "folder" else => "directory")
+
+version := (lambda () (version))
+
+drscheme*
+:= (cond unix => "bin/drscheme"  win => "DrScheme.exe"  mac => "DrScheme")
+plt-help*
+:= (cond unix => "bin/plt-help"  win => "plt-help.exe"  mac => "bin/plt-help")
+setup-plt*
+:= (cond unix => "bin/setup-plt" win => "Setup PLT.exe" mac => "bin/setup-plt")
+mred*
+:= (cond unix => "bin/mred"      win => "MrEd.exe"      mac => "MrEd")
+mzscheme*
+:= (cond unix => "bin/mzscheme"  win => "MzScheme.exe"  mac => "bin/mzscheme")
+mzc*
+:= (cond unix => "bin/mzc"       win => "mzc.exe"       mac => "bin/mzc")
+planet*
+:= (cond unix => "bin/planet"    win => "planet.exe"    mac => "bin/planet")
+
+intro
+:= "This is the "package-name" v"(version)" "dist-type" package "dir" for "
+   platform"." \\
+
+main-exe
+:= "These are some of the important "executable"s that are included:" \\
+   \\
+   (cond (or dr plt full) =>
+         "  "drscheme*" -- the PLT Scheme development environment" \\ \\)
+   "  "mzscheme*" -- a text-only Scheme interpreter" \\
+   (cond (or md dr plt full) =>
+         "  "mred*" -- a graphical Scheme interpreter" \\)
+   "  "mzc*" -- command-line tool for creating executables, etc." \\
+   (cond (or dr plt full) =>
+         "  "plt-help*" --- for Help (also built into DrScheme)" \\)
+   "  "setup-plt*" --- command-line setup tool" \\
+   "  "planet*" --- a command-line helper for for managing third-party "
+                   "libraries" \\
+   \\
+   (cond full => "This package contains the complete build tree, which "
+                 "includes `cgc' binaries that use a conservative collector." \\
+                 \\)
+
+main-src
+:= "You must compile MzScheme " (cond (or mr dr plt full) => "and MrEd ")
+   "before using the "package-name" software"
+   (cond (or dr plt full) => " (including DrScheme)")"." \\
+   \\
+   "For compilation instructions, see \""
+   (cond win  => "plt\\src\\worksp\\README"
+         else => "plt/src/README")
+   "\"." \\
+main
+:= (cond src => main-src else => main-exe)
+
+license
+:= "License" \\
+   "-------" \\ \\
+   "PLT Software" \\
+   "Copyright (c) 1995-2003 PLT" \\
+   "Copyright (c) 2004-2008 PLT Inc." \\
+   \\
+   "PLT software is distributed under the GNU Lesser General Public "
+   "License (LGPL).  This means you can link PLT software (such as "
+   "MzScheme or MrEd) into proprietary applications, provided you follow "
+   "the specific rules stated in the LGPL.  You can also modify PLT "
+   "software; if you distribute a modified version, you must distribute it "
+   "under the terms of the LGPL, which in particular means that you must "
+   "release the source code for the modified software.  See "
+   "doc/release-notes/COPYING.LIB for more information." \\
+   (cond full =>
+         \\ "Note that this is the "package-name" distribution, which might "
+         "contain parts that are GPL." \\)
+
+more-information
+:= "More Information" \\
+   "----------------" \\
+   \\
+   "For further information, use DrScheme's `Help' menu, or run "plt-help*". "
+   "Also, visit http://www.plt-scheme.org/." \\
+
+readme
+:= intro \\ main \\ \\ license \\ \\ more-information

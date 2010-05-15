@@ -1,0 +1,93 @@
+#!/bin/sh
+#| -*- mode: scheme -*-
+if [ -x "$PLTHOME/bin/mzscheme" ]; then
+  exec "$PLTHOME/bin/mzscheme" -rm "$0" "$@"
+else
+  exec "mzscheme" -rm "$0" "$@"
+fi
+|#
+
+(define begin-pattern #"<!-- begin: __XXX__ -->\n")
+(define end-pattern   #"\n<!-- end: __XXX__ -->")
+
+(define begin-re (regexp-replace #"XXX" begin-pattern #"([^<> ]+)"))
+(define end-re   (regexp-replace #"XXX" end-pattern   #"([^<> ]+)"))
+
+(define (regexp-match1 rx inp . disp?)
+  (cond [(if (and (pair? disp?) (car disp?))
+           (regexp-match rx inp 0 #f (current-output-port))
+           (regexp-match rx inp))
+         => cadr]
+        [else #f]))
+
+(define (eprintf fmt . args)
+  (apply fprintf (current-error-port) fmt args))
+
+(define (patch-file skeleton html)
+  (let ([skeleton (open-input-file skeleton)]
+        [html     (open-input-file html)])
+    (let loop ()
+      (let ([begin-tag (regexp-match1 begin-re skeleton #t)])
+        ;; (eprintf ">>> skeleton: ~a begin\n" begin-tag)
+        (if begin-tag
+          (let ([begin-tag* (regexp-match1 begin-re html)])
+            ;; (eprintf ">>> html: ~a begin\n" begin-tag*)
+            (unless (equal? begin-tag begin-tag*)
+              (error 'patch-html
+                     "mismatched input begin-tags, expecting ~a got ~a"
+                     begin-tag begin-tag*))
+            ;; leave tags in, so it is possible to run this script again
+            (display (regexp-replace #"XXX" begin-pattern begin-tag))
+            (let ([end-tag (regexp-match1 end-re html #t)])
+              ;; (eprintf ">>> html: ~a end\n" end-tag)
+              (unless (equal? end-tag begin-tag)
+                (error 'patch-html "bad end tag (~a) for begin tag (~a)"
+                       end-tag begin-tag))
+              (let ([end-tag* (regexp-match1 end-re skeleton)])
+                ;; (eprintf ">>> skeleton: ~a end\n" end-tag*)
+                (unless (equal? end-tag end-tag*)
+                  (error 'patch-html
+                         "mismatched input end-tags, expecting ~a got ~a"
+                         end-tag end-tag*))
+                ;; leave tags in, so it is possible to run this script again
+                (display (regexp-replace #"XXX" end-pattern end-tag))
+                (loop))))
+          (cond [(regexp-match1 begin-re html) =>
+                 (lambda (tag)
+                   (error 'patch-html
+                          "mismatched input tags, extraneous tag in target: ~a"
+                          tag))]))))
+    (close-input-port skeleton)
+    (close-input-port html)))
+
+(define (patch-dir skeleton-dir)
+  (printf "patching directory: ~a\n" (current-directory))
+  (for-each (lambda (p)
+              (if (cdr p)
+                (begin
+                  (unless (directory-exists? (car p)) (make-directory (car p)))
+                  (parameterize ([current-directory (car p)])
+                    (patch-dir (build-path skeleton-dir (car p)))))
+                (let ([skeleton (build-path skeleton-dir (car p))])
+                  (if (file-exists? (car p))
+                    (let ([tmp "/tmp/patch-html-file"])
+                      (printf "patching file: ~a\n"
+                              (build-path (current-directory) (car p)))
+                      (with-output-to-file tmp
+                        (lambda () (patch-file skeleton (car p)))
+                        #:exists 'truncate)
+                      (delete-file (car p))
+                      (copy-file tmp (car p))
+                      (delete-file tmp))
+                    (begin (printf "copying file: ~a/~a\n"
+                                   (current-directory) (car p))
+                           (copy-file skeleton (car p)))))))
+            (parameterize ([current-directory skeleton-dir])
+              (map (lambda (p)
+                     (cons p (cond [(file-exists? p) #f]
+                                   [(directory-exists? p) #t]
+                                   [else (error "internal-error")])))
+                   (directory-list)))))
+
+(define (main arg)
+  (patch-dir (path->complete-path arg)))
