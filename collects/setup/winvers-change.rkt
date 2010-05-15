@@ -5,8 +5,8 @@
 ;; "xxxxxxx" in their name by a "NNN_NNN" version number, and will also do this
 ;; rewrite in all files.  (Actually looking for a few known string templates,
 ;; to be safe.)  Note that this is done *in-place*, so it will not work from a
-;; running MzScheme.exe on Windows -- "winvers.ss" uses a trick of making a
-;; copy of the binary and restarting that copy for the actual change.
+;; running Racket.exe on Windows -- "winvers.ss" uses a trick of making a copy
+;; of the binary and restarting that copy for the actual change.
 
 #lang scheme/base
 
@@ -14,7 +14,7 @@
 (define binary-extensions '("exe" "dll" "lib" "so" "def" "exp" #|"obj" "o"|#))
 (define xxxs #"xxxxxxx")
 (define xxxs-re
-  (bytes-append #"(?:lib(?:mzsch|mzgc|mred)(?:|3m))(" xxxs #")"))
+  (bytes-append #"(?:lib(?:g?racket|mzgc)(?:|3m))(" xxxs #")"))
 (define renaming (regexp (format "^~a[.](?:dll|lib|exp)$" xxxs-re)))
 (define substitutions
   (map (lambda (s) (byte-regexp (regexp-replace #rx#"~a" s xxxs-re)))

@@ -9,14 +9,14 @@
   (let* ([tmpdir (find-system-path 'temp-dir)]
          [vers (build-path tmpdir "setvers")])
     (unless (directory-exists? vers) (make-directory vers))
-    (for ([p (in-list '("mzscheme.exe" "lib"))])
+    (for ([p (in-list '("racket.exe" "lib"))])
       (let ([dest (build-path vers p)])
         ((cond [(file-exists? dest) delete-file]
                [(directory-exists? dest) delete-directory/files]
                [else void])
          dest)
         (copy-directory/files (build-path (find-console-bin-dir) p) dest)))
-    (build-path vers "mzscheme.exe")))
+    (build-path vers "racket.exe")))
 
 (define (patch-files)
   (parameterize ([current-command-line-arguments
@@ -40,7 +40,7 @@
          (printf "re-launching last time...~n")
          (subprocess
           (current-output-port) (current-input-port) (current-error-port)
-          (build-path (find-console-bin-dir) "mzscheme.exe")
+          (build-path (find-console-bin-dir) "racket.exe")
           "-l" "setup/winvers" "finish")]
         [(equal? argv #("finish"))
          (sleep 1) ; time for other process to end
