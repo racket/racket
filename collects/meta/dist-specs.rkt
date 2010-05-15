@@ -327,13 +327,13 @@ plt := (+ dr plt-extras)
 ;; Packages etc
 
 mz-base := "/plt/readme.txt"          ; generated
-           (package: "mzscheme") (notes: "racket")
+           (package: "mzscheme") (package: "racket")
            "/plt/include/"
            ;; configuration stuff
            (cond (not src) => (collects: "info-domain/")) ; filtered
            (package: "config")
            ;; basic code
-           (collects: "scheme" "s-exp" "reader" "racket")
+           (collects: "scheme" "s-exp" "reader")
            ;; include the time-stamp collection when not a public release
            (cond (not release)
                  => (- (collects: "repos-time-stamp/")
@@ -350,7 +350,9 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
               (doc: "*.{html|css|js|sxref}")
               (scribblings: "{{info|icons}.rkt|*.png}" "compiled")
 
-mr-base := (package: "mred") (notes: "gracket") (bin: "mred-text") (collects: "afm/")
+mr-base := (package: "mred") (package: "gracket") 
+           (bin: "mred-text") (bin: "gracket-text")
+           (collects: "afm/")
 mr-manuals := (doc+src: "gui/")
 
 dr-base := (package: "drracket") (package: "drscheme") (package: "framework")
