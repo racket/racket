@@ -336,7 +336,7 @@ mz-base := "/plt/readme.txt"          ; generated
            (collects: "scheme" "s-exp" "reader")
            ;; include the time-stamp collection when not a public release
            (cond (not release)
-                 => (- (collects: "repos-time-stamp/")
+                 => (- (collects: "repo-time-stamp/")
                        (cond (not dr) => (srcfile: "time-stamp.rkt"))))
 mz-manuals := (scribblings: "main/") ; generates main pages (next line)
               (doc: "license/" "release/" "acks/" "search/"

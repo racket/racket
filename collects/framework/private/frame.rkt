@@ -2412,7 +2412,7 @@
 (define show-memory-text?
   (or (with-handlers ([exn:fail:filesystem?
                        (λ (x) #f)])
-        (directory-exists? (collection-path "repos-time-stamp")))
+        (directory-exists? (collection-path "repo-time-stamp")))
       (with-handlers ([exn:fail:filesystem?
                        (λ (x) #f)])
         (let ([fw (collection-path "framework")])
