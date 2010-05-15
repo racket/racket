@@ -6198,7 +6198,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
         buf[len++] = ch;
       } else {
         scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
-                        "read: expected only alphanumberic, `-', `+', `_', or `/'"
+                        "read: expected only alphanumeric, `-', `+', `_', or `/'"
                         " characters for `#%s', found %c",
                         init_ch ? "!" : "lang",
                         ch);
@@ -6212,7 +6212,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
     scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
                     (((ch == ' ') && !init_ch)
                      ? "read: expected a single space after `#lang'"
-                     : "read: expected a non-empty sequence of alphanumberic, `-', `+', `_', or `/' after `#%s'"),
+                     : "read: expected a non-empty sequence of alphanumeric, `-', `+', `_', or `/' after `#%s'"),
                     init_ch ? "!" : "lang ");
     return NULL;
   }

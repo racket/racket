@@ -36,7 +36,8 @@ languages and as module paths.
 
 At the same time, the syntax of @racket[_language] is far more
 restricted than a module path, because only @litchar{a}-@litchar{z},
-@litchar{A}-@litchar{Z}, @litchar{/} (not at the start or end),
+@litchar{A}-@litchar{Z}, @litchar{0}-@litchar{9},
+@litchar{/} (not at the start or end),
 @litchar{_}, @litchar{-}, and @litchar{+} are allowed in a
 @racket[_language] name. These restrictions keep the syntax of
 @hash-lang[] as simple as possible. Keeping the syntax of @hash-lang[]
@@ -374,7 +375,7 @@ directly with @exec{racket}, @filepath{kiddo.rkt} causes
 format, without the leading quote:
 
 @racketblock[
-@#,racketoutput{("O-Ren Ishii" "Vernita Green" "Elle Driver" "Budd" "Bill")}
+@#,racketoutput{("O-Ren Ishii" "Vernita Green" "Budd" "Elle Driver" "Bill")}
 ]
 
 The @filepath{kiddo.rkt} example illustrates how the format for

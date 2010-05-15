@@ -8,7 +8,7 @@
 Alan Perlis famously quipped ``Lisp programmers know the value of
 everything and the cost of nothing.'' A Racket programmer knows, for
 example, that a @racket[lambda] anywhere in a program produces a value
-that is closed over it lexical environment---but how much does
+that is closed over its lexical environment---but how much does
 allocating that value cost? While most programmers have a reasonable
 grasp of the cost of various operations and data structures at the
 machine level, the gap between the Racket language model and the

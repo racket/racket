@@ -11,7 +11,7 @@
 
 The @tech{reader} layer of the Racket language can be extended through
 the @racketmetafont{#reader} form. A reader extension is implemented
-as a module that is named after @racketmetafont{#rader}. The module
+as a module that is named after @racketmetafont{#reader}. The module
 exports functions that parse raw characters into a form to be consumed
 by the @tech{expander} layer.
 
@@ -110,7 +110,7 @@ to produce @tech{syntax objects}, and then @racketidfont{read} can use
 @racketidfont{read-syntax} and strip away @tech{syntax object}
 wrappers to produce a raw result.
 
-The following @filepath{arith.rkt} module implements that reader to
+The following @filepath{arith.rkt} module implements a reader to
 parse simple infix arithmetic expressions into Racket forms. For
 example, @litchar{1*2+3} parses into the Racket form @racket[(+ (* 1
 2) 3)]. The supported operators are @litchar{+}, @litchar{-},
