@@ -70,7 +70,7 @@ static void rungdb() {
         return;
         break;
       case 'd':
-        snprintf(outbuffer, 100, "xterm -e gdb ./mzscheme3m %d &", pid);
+        snprintf(outbuffer, 100, "xterm -e gdb ./racket3m %d &", pid);
         fprintf(stderr, "%s\n", outbuffer);
         if(system(outbuffer)) 
           fprintf(stderr, "system failed\n");

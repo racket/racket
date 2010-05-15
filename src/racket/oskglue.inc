@@ -59,7 +59,7 @@ oskit_error_t fs_gettime(struct oskit_timespec *tsp)
 
 int gethostname(char *s, int len)
 {
-  strncpy(s, "mzscheme-machine", len);
+  strncpy(s, "racket-machine", len);
   return 0;
 }
 

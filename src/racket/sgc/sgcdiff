@@ -1,5 +1,5 @@
 #!/bin/sh
-string=? ; exec $PLTHOME/bin/mzscheme -agrq $0 "$@"
+string=? ; exec $PLTHOME/bin/racket -agrq $0 "$@"
 
 ;; This script reads a stream of sgc (dump-memory-stats) output until
 ;; EOF. Then, the avg change per dump is reported for all types. This

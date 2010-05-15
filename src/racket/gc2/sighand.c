@@ -26,8 +26,8 @@
 static void launchgdb() {
   pid_t pid = getpid();
   char inbuffer[10];
-  
-  fprintf(stderr, "pid # %i run gdb \"gdb ./mzscheme3m %i\" or kill process.\n", pid, pid);
+
+  fprintf(stderr, "pid # %i run gdb \"gdb ./racket3m %i\" or kill process.\n", pid, pid);
   fflush(stderr);
 
   while(read(fileno(stdin), inbuffer, 10) <= 0){

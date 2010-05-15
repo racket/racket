@@ -1,6 +1,6 @@
 
 /* This file contains information for Windows that is collected using the
- * "configure" script on other platforms.  See src/mzscheme/mzconfig.h.in for
+ * "configure" script on other platforms.  See src/racket/mzconfig.h.in for
  * things that should be defined here.
  */
 

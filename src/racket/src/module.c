@@ -3311,8 +3311,8 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
       char *mred_note;
 
       if (!strcmp(SCHEME_SYM_VAL(SCHEME_PTR_VAL(name)), "#%mred-kernel")
-	  && !(scheme_strncmp(scheme_banner(), "Welcome to MzScheme", 19)))
-	mred_note = "; need to run in mred instead of mzscheme";
+	  && !(scheme_strncmp(scheme_banner(), "Welcome to Racket", 17)))
+	mred_note = "; need to run in gracket instead of racket";
       else
 	mred_note = "";
 

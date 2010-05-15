@@ -1,6 +1,6 @@
 #!/bin/sh
 #| -*- C -*-
-exec mzscheme "$0" > `echo "$0" | sed 's/ssc$/c/'` "$0"
+exec racket "$0" > `echo "$0" | sed 's/ssc$/c/'` "$0"
 |#
 
 #lang scribble/text

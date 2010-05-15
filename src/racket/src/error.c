@@ -1574,13 +1574,13 @@ static void do_wrong_syntax(const char *where,
   } else if (where == scheme_application_stx_string) {
     who = scheme_intern_symbol("#%app");
     nomwho = who;
-    mod = scheme_intern_symbol("mzscheme");
+    mod = scheme_intern_symbol("racket");
   } else if ((where == scheme_set_stx_string)
 	     || (where == scheme_var_ref_string)
 	     || (where == scheme_begin_stx_string)) {
     who = scheme_intern_symbol(where);
     nomwho = who;
-    mod = scheme_intern_symbol("mzscheme");
+    mod = scheme_intern_symbol("racket");
     if (where == scheme_begin_stx_string)
       where = "begin (possibly implicit)";
   }

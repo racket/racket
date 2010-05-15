@@ -1,9 +1,9 @@
 #!/bin/sh
 #|
 if [ "$PLTHOME" = "" ]; then
-  exec mzscheme -um "$0" "$@"
+  exec racket -um "$0" "$@"
 else
-  exec ${PLTHOME}/bin/mzscheme -um $0 "$@"
+  exec ${PLTHOME}/bin/racket -um $0 "$@"
 fi
 |#
 

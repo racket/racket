@@ -1,5 +1,5 @@
 #!/bin/sh
-string=? ; exec ${PLTHOME}/bin/mzscheme -gqr $0 "$@"
+string=? ; exec ${PLTHOME}/bin/racket -gqr $0 "$@"
 
 ; Script to check that global and static variables are registered
 
