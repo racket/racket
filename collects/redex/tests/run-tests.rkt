@@ -29,8 +29,8 @@
    (if test-examples? 
        '("../examples/pi-calculus.ss"
          ("../examples/beginner.ss" main)
-         "../examples/mzscheme-machine/reduction-test.ss"
-         "../examples/mzscheme-machine/verification-test.ss"
+         "../examples/racket-machine/reduction-test.ss"
+         "../examples/racket-machine/verification-test.ss"
          ("../examples/r6rs/r6rs-tests.ss" main))
        '())))
 
