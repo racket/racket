@@ -2,9 +2,9 @@
 
 ## This is the build script which creates the pre-compiled directory.  It is
 ## currently running from Eli's account on winooski, but it should be easy to
-## configure to run anywhere.  It updates the svn trees, so instead of running
-## it straight from there it is better to copy it someplace else before running
-## so we get clean copies.
+## configure to run anywhere.  It can update the repository, so instead of
+## running it straight from there it is better to copy it someplace else before
+## running so we get a clean copy.
 
 # if we're not using it already, switch to bash
 if [ "${BASH_VERSION:-not_bash}" = "not_bash" ]; then exec bash "$0" "$@"; fi
@@ -19,7 +19,7 @@ scriptlog="yes"
 # should we make binaries?
 make_bins="ask_or_yes"
 # should we do a repository update (and start with an empty iplt dir)?
-make_repos="ask_or_yes"
+make_repo="ask_or_yes"
 # should we make the pdf docs directory?
 make_pdf_docs="ask_or_yes"
 # should we re-make the build directories?
@@ -37,13 +37,13 @@ run_all_tests="no"
 # people to notify when a build starts
 buildnotifyemail=""
 
-# repository paths to use -- trunk, tags/..., or branches/...
-init_svnpath_vars() {
+# repository branches to use -- `master' or other branches
+init_repo_vars() {
   # use this function to initialize these on remote builds too
-  svnpath="${PLTSVNPATH:-trunk}"
+  gitbranch="${PLTBRANCH:-master}"
   svnipath="${PLTSVNIPATH:-trunk}"
 }
-init_svnpath_vars
+init_repo_vars
 
 # main machine that runs the whole build (the expected `$hostname' value)
 workmachine="winooski"
@@ -55,7 +55,7 @@ dmgmachine="kauai"
 nsismachine="pitcairn"
 
 # list of environment variables that should be carried over to ssh jobs
-ssh_vars=(PLTSVNPATH PLTSVNIPATH)
+ssh_vars=(PLTBRANCH PLTSVNIPATH)
 
 # Add stuff to be msetted later (when we have the `mset' function)
 declare -a initial_msets machines
@@ -112,9 +112,6 @@ buildscript="`pwd`/`basename \"$0\"`"
 hostname="`hostname`"
 hostname="${hostname%%.*}"
 
-# svn repository url
-svnroot="http://svn.plt-scheme.org"
-
 # web directory for pre-prelease stuff on $workmachine (relative to $maindir)
 prewebdir="html"
 # directory for installation (relative to $maindir)
@@ -157,8 +154,6 @@ unixinstallerscript="$unixinstallerdir/plt-installer-header"
 
 # full clean tgz before building anything (relative to $maindir)
 cleantgz="${installdir}-clean-tree.tgz"
-# full plt/src tgz (relative to $maindir)
-srctgz="$installdir-src.tgz"
 # log file for this script (relative to $maindir)
 scriptlogfile="build-log.txt"
 # name of html files to generate for web directories
@@ -173,11 +168,14 @@ lockfile="/tmp/plt-build-lock"
 # name for running this script remotely
 remotebuildscript="$tmpdir/build-plt"
 # full name for clean repository tgz file to transfer for distributed builds
-repostgz="$tmpdir/$cleantgz"
+repotgz="$tmpdir/$cleantgz"
 # full name for full tgz file (with binaries etc)
 fulltgz="$tmpdir/$installdir-full.tgz"
 # log file name prefix for background jobs
 bglogfile="$tmpdir/plt-bg-log"
+
+printf '.git*\n.mailmap\n' > "/tmp/plt-tar-excludes"
+git_excludes="--wildcards --exclude-from /tmp/plt-tar-excludes"
 
 last_part() {
   echo "$*" | sed 's/.*[ -]//'
@@ -649,12 +647,34 @@ _strip() {
   done
 }
 
-svn_get() { # inputs: svn repository, svn path, path in $maindir
-  local repos="$1" path="$2" dir="$3"; shift 3
-  show "Getting $repos/$path to $maindir/$dir"
+git_get() { # inputs: git repository, git branch, path in $maindir
+  local repo="$1" branch="$2" dir="$3"; shift 3
+  show "Getting $repo/$branch to $maindir/$dir"
   _cd "$maindir"
   if [[ ! -d "$dir" ]]; then
-    _run svn checkout --depth immediates "$svnroot/$repos" "$dir"
+    _run git clone "git://git.racket-lang.org/$repo.git" "$dir"
+  fi
+  _cd "$dir"
+  _run git pull origin "$branch"
+  _run git checkout "$branch"
+  git status -s > "$tmpdir/git-st" || exit_error "problems running git status"
+  if [[ -s "$tmpdir/git-st" ]]; then
+    echo "------------"
+    cat "$tmpdir/git-st" 1>&2
+    rm -f "$tmpdir/git-st"
+    exit_error "The clean directory is not clean (see above)"
+  fi
+  rm -f "$tmpdir/git-st"
+  _cd "$maindir"
+}
+
+svn_get() { # inputs: svn repository, svn path, path in $maindir
+  local repo="$1" path="$2" dir="$3"; shift 3
+  show "Getting $repo/$path to $maindir/$dir"
+  _cd "$maindir"
+  if [[ ! -d "$dir" ]]; then
+    _run svn checkout --depth immediates \
+         "http://svn.plt-scheme.org/$repo" "$dir"
   fi
   _cd "$dir"
   _run svn update --set-depth infinity "$path"
@@ -663,7 +683,7 @@ svn_get() { # inputs: svn repository, svn path, path in $maindir
   if [[ -s "$tmpdir/svn-st" ]]; then
     cat "$tmpdir/svn-st" 1>&2
     rm -f "$tmpdir/svn-st"
-    exit_error "The working directory is not clean (see above)"
+    exit_error "The clean directory is not clean (see above)"
   fi
   rm -f "$tmpdir/svn-st"
   _cd "$maindir"
@@ -823,9 +843,8 @@ parse_c_define() { # input: filename, varname
 }
 
 version_init() { # input: plthome
-  local vfile="$1/src/mzscheme/src/schvers.h"
-  [[ -e "$vfile" ]] \
-    || exit_error "Could not find version file at \"$vfile\""
+  local vfile="$1/src/racket/src/schvers.h"
+  [[ -e "$vfile" ]] || exit_error "Could not find version file at \"$vfile\""
   # parse version info
   version="`parse_c_define \"$vfile\" MZSCHEME_VERSION | sed -e 's/\"//g'`"
   version1="`parse_c_define \"$vfile\" MZSCHEME_VERSION_X`"
@@ -844,7 +863,7 @@ version_init() { # input: plthome
     separator "This is a release version ($version)"
     releasing="yes"
     reallyreleasing="yes"
-  elif [[ "$svnpath" = "release" ]]; then
+  elif [[ "$gitbranch" = "release" ]]; then
     separator "This is a pre-release version ($version)"
     releasing="yes"
     reallyreleasing="no"
@@ -1003,29 +1022,34 @@ MAIN_BUILD() {
   if [[ "$1" = "ask" ]]; then ask_mode="yes"; shift; fi
 
   ## --------------------------------------------------------------------------
-  if is_yes make_repos; then
+  if is_yes make_repo; then
     separator "Repository updates"
-    svn_get "plt" "$svnpath" "$cleandir"
+    git_get "plt" "$gitbranch" "$cleandir"
     svn_get "iplt" "$svnipath" "$cleanscriptdir"
   else
     show "Skipping repository updates"
   fi
 
-  version_init "$maindir/$cleandir/$svnpath"
-  if is_yes make_repos; then
+  version_init "$maindir/$cleandir"
+  if is_yes make_repo; then
     DO_AUTO_UPDATES
   fi
 
-  if is_yes make_repos; then
+  if is_yes make_repo; then
     _cd "$maindir"
     _rm "$scriptdir"
     _cp -r "$cleanscriptdir/$svnipath" "$scriptdir"
   fi
 
   if is_yes make_bins; then
-    _rm "$repostgz"
-    _cd "$maindir/$cleandir/$svnpath"
-    _tgzip "$repostgz" --exclude=".svn" *
+    _rm "$repotgz"
+    _cd "$maindir/$cleandir"
+    show "Creating archive"
+    git archive --format=tar "$gitbranch" | gzip > "$repotgz" \
+      || exit_error "Could not create archive"
+    git archive --format=tar --prefix=plt/ "$gitbranch" \
+    | gzip > "$maindir/$cleantgz" \
+      || exit_error "Could not create archive"
     _cd "$maindir"
   fi
 
@@ -1086,19 +1110,10 @@ MAIN_BUILD() {
 DO_AUTO_UPDATES() {
 
   ## --------------------------------------------------------------------------
-  separator "Updating repository files"
+  separator "Updating version-dependent files"
 
-  show "Updating stamp file"
-  _cd "$maindir/$cleandir/$svnpath"
-  local stamp="collects/repos-time-stamp/stamp.ss"
-  _rm "$stamp"
-  show "Creating $stamp"
-  { echo_n '#lang scheme/base (provide stamp) (define stamp "'
-    echo_n "`date +'%e%b%Y' | tr -d ' ' | tr 'A-Z' 'a-z'`"
-    echo '")'
-  } > "$stamp"
+  _cd "$maindir/$cleandir"
 
-  show "Updating version numbers"
   # if the racket executable is not there, we'll fail, but that
   # shouldn't be a problem since it will run again next time
   if [[ -x "$PLTHOME/bin/racket" ]]; then
@@ -1107,8 +1122,10 @@ DO_AUTO_UPDATES() {
     show "Skipping version update (no racket executable)"
   fi
 
-  show "Committing changes (if any)"
-  _run svn commit -m "Welcome to a new PLT day." .
+  if [[ "$(git status -s | wc -l)" != 0 ]]; then
+    _run git commit -am "New Racket version."
+    _run git push git@git.racket-lang.org:plt "$gitbranch"
+  fi
 
 }
 
@@ -1121,7 +1138,7 @@ DO_COPY_BUILD() { # inputs -- machine-name (for ssh)
 
   if [[ "$machine" != "$workmachine" ]]; then
     show "Running DO_BUILD on $machine in the background"
-    _scp "$repostgz" "${machine}:$repostgz"
+    _scp "$repotgz" "${machine}:$repotgz"
     _rm "$bglogfile-$machine"
     run_part -bg "$machine" "DO_BUILD" "$releasing" "$@" \
              &> "$bglogfile-$machine"
@@ -1144,7 +1161,7 @@ DO_BUILD() { # inputs -- releasing
   if [[ "$renice" != "" ]]; then dont_exit _run renice "$renice" "$$"; fi
 
   export PLTHOME="$workdir/$installdir" PATH="$PLTHOME/bin:$PATH"
-  export SETUP_ARGS="-l- setup -U"
+  export SETUP_ARGS="-N raco -l- raco setup -U"
 
   # make sure we don't use any planet caches (PLTPLANETDIR is set globally)
   _rm "$PLTPLANETDIR"
@@ -1159,19 +1176,12 @@ DO_BUILD() { # inputs -- releasing
     export PLT_EXTENSION_LIB_PATHS="${ext_lib_paths}:$PLT_EXTENSION_LIB_PATHS"
   fi
 
+  # create the tree to be built
+  _rmcd "$PLTHOME"
+  _tgunzipm "$repotgz"
   if [[ "$machine" != "$workmachine" ]]; then
-    _rmcd "$PLTHOME"
-    _tgunzipm "$repostgz"
+    # don't waste time on the docs except on the main machine
     export SETUP_ARGS="$SETUP_ARGS -D"
-  else
-    # on the main machine, copy the repository to keep meta .svn information
-    _cd "$workdir"
-    _rm "$PLTHOME"
-    _cp -r "$maindir/$cleandir/$svnpath" "$PLTHOME"
-    # and then create pre-build archives
-    show "Creating pre-build archives"
-    _tgzip "$maindir/$cleantgz" --exclude=".svn" "$installdir"
-    _tgzip "$maindir/$srctgz"   --exclude=".svn" "$installdir/src"
   fi
 
   ## --------------------------------------------------------------------------
@@ -1184,7 +1194,7 @@ DO_BUILD() { # inputs -- releasing
     build_step "configure" ../configure ${configure_args}
     build_step "make both" make both
     build_step "make install" make plain-install-both
-    build_step "setup-plt" "$PLTHOME/bin/racket" $SETUP_ARGS
+    build_step "raco setup" "$PLTHOME/bin/racket" $SETUP_ARGS
   fi
 
   ## --------------------------------------------------------------------------
@@ -1216,7 +1226,7 @@ DO_BUILD() { # inputs -- releasing
   _cd "$workdir"
   # excluding x/y does not work on solaris, so rename it instead
   _mv "$PLTHOME/src" "$PLTHOME/___src___"
-  _tgzip "$fulltgz" --exclude="___src___" --exclude=".svn" \
+  _tgzip "$fulltgz" --exclude="___src___" $git_excludes \
          --exclude="*.[Pp][Dd][Bb]" --exclude="*.[Ii][Ll][Kk]" \
          "$installdir"
   _mv "$PLTHOME/___src___" "$PLTHOME/src"
@@ -1249,9 +1259,9 @@ DO_BUILD() { # inputs -- releasing
   done
   sleep 8 # time to flush stderr
 
-  # MrEd-based tests on the main machine, in an Xvnc session
+  # GRacket-based tests on the main machine, in an Xvnc session
   if [[ "$machine" = "$workmachine" ]]; then
-    separator "${machine}(${platform}) running Mred/DrScheme tests"
+    separator "${machine}(${platform}) running GRacket tests"
     _start_xvnc
     dont_exit _timeout_run 60 env HOME="$testdir" "$drtestscript"
     dont_exit _timeout_run 300 env HOME="$testdir" \
@@ -1260,9 +1270,9 @@ DO_BUILD() { # inputs -- releasing
   fi
 
   ## --------------------------------------------------------------------------
-  # move to the target at the end of the build, only if building from trunk
+  # move to the target at the end of the build, only if building from master
   local targetdir="" mode="" op=""
-  if [[ "$svnpath" != "trunk" ]]; then :
+  if [[ "$gitbranch" != "master" ]]; then :
   elif [[ "$copytobak" != "" ]]; then
     targetdir="$copytobak"; mode="bk"; op="Backing up"
   elif [[ "$moveto" != "" ]]; then
@@ -1378,8 +1388,8 @@ DO_WIN32_BUILD() {
   # IFS="$SAVED_IFS"
 
   separator "win32: Full build"
-  build_w32step VSNET "mzscheme"
-  build_w32step VSNET "mred"
+  build_w32step VSNET "racket"
+  build_w32step VSNET "gracket"
   _cd "$PLTHOME/src/worksp/gc2"; build_w32step MZ "3M" make.ss
 
   _cd "$PLTHOME"
@@ -1394,19 +1404,19 @@ DO_WIN32_BUILD() {
   # _cd "$PLTHOME/src/srpersist"
   # build_w32step NMAKE "srpersist" /f srpersist.mak "install"
 
-  _cd "$PLTHOME"; build_w32step MZ "setup-plt" $SETUP_ARGS
+  _cd "$PLTHOME"; build_w32step MZ "raco setup" $SETUP_ARGS
 
   separator "win32: Building Cygwin libreries"
   _mcd "$PLTHOME/src/build"
-  _run ../configure --disable-mred
-  _cd "mzscheme/dynsrc"
+  _run ../configure --disable-gracket
+  _cd "racket/dynsrc"
   show "Running \"make\" for Cygwin"
   make && make cygwin-install \
   || exit_error "Errors when running \"make\" for Cygwin"
 
   # Borland is no longer supported:
   # separator "win32: Building Borland libreries"
-  # _cd "$PLTHOME/src/mzscheme/dynsrc"
+  # _cd "$PLTHOME/src/racket/dynsrc"
   # _run bcc32 -I"../include" -I"g:/borland/bcc55/include" \
   #        -o"mzdynb.obj" -c "mzdyn.c"
   # _md "$PLTHOME/lib/bcc"
@@ -1437,7 +1447,7 @@ BUILD_DOCS_AND_PDFS() {
     html_file_row "pdf" "pdf versions of the manuals"
     _rmcd "pdf"
     # avoid any work except for the pdf generation
-    _run "$PLTHOME/bin/setup-plt" \
+    _run "$PLTHOME/bin/raco" setup \
            --no-zo --no-launcher --no-install --no-post-install \
            --no-info-domain --no-docs --no-user --no-planet \
            --doc-pdf .
@@ -1955,7 +1965,7 @@ move_from_maindir() { # input: file-name
 copy_from() { # input: directory file-name
   _rmcd "TEMP_WEB"
   show "Copying: \"$1/$2\" to \"`pwd`\""
-  ( cd "$1" ; tar cf - --exclude=".svn" "$2" ) | tar xf - \
+  ( cd "$1" ; tar cf - $git_excludes "$2" ) | tar xf - \
   || exit_error "Could not copy \"$1/$2\" to \"`pwd`\""
   _cd ".."
   if [[ -e "$2" ]]; then _mv "$2" "TEMP_WEB/TEMP_WEB"; fi
@@ -1968,7 +1978,7 @@ BUILD_WEB() {
   local w="$prewebdir"
   # cases for "hidden" results: building a major version, or a non-default path
   if [[ "$reallyreleasing" = "yes" ]]; then w="$w/$version"
-  elif [[ "$svnpath" != "trunk" ]];    then w="$w/$svnpath"
+  elif [[ "$gitbranch" != "master" ]]; then w="$w/$gitbranch"
   elif [[ "$releasing" = "yes" ]];     then w="$w/$version"
   fi
 
@@ -2007,11 +2017,6 @@ BUILD_WEB() {
   move_from_maindir "$cleantgz"
   html_file_row "$cleantgz" \
     "The complete repository source tree packed in a gzipped tarball"
-  #----
-  move_from_maindir "$srctgz"
-  html_file_row "$srctgz" "An archive containing only plt/src" \
-    "<br><small>(can be used right after unpacking other tgz files to add" \
-    "the src contents to an existing plt tree)</small>"
   #----
   html_file_row "script.html" "Sample scripts for using nightly builds" \
     "<br><small>(read this if you want to use automatic scripts to keep" \
@@ -2065,7 +2070,7 @@ if [[ "$1" = "--dispatch" ]]; then
   shift
   while [[ "$1" = *"="* ]]; do eval "export $1"; shift; done
   machine="$1"; go="$2"; shift 2
-  init_svnpath_vars   # set the svnpath variables according to the env vars
+  init_repo_vars      # set the repository variables according to the env vars
   machineget platform # set the global platform for dependable script pieces
   show "Working on $machine($hostname)"
   show "Dispatching to $go($*)"
