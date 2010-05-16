@@ -1064,11 +1064,11 @@ path/s is either such a string or a list of them.
 "collects/mrlib/private/aligned-pasteboard/pasteboard-lib.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mrlib/private/aligned-pasteboard/snip-lib.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mrlib/private/aligned-pasteboard/stretchable-editor-snip.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/mrlib/private/aligned-pasteboard/tests/actual-bigger.rkt" drdr:command-line (gracket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/edit-sequence-loop.rkt" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/actual-bigger.rktl" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/edit-sequence-loop.rktl" drdr:command-line (gracket "-f" *)
 "collects/mrlib/private/aligned-pasteboard/tests/example-min.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/example.rkt" drdr:command-line #f
-"collects/mrlib/private/aligned-pasteboard/tests/insertion-without-display.rkt" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/insertion-without-display.rktl" drdr:command-line (gracket "-f" *)
 "collects/mrlib/private/aligned-pasteboard/tests/minimal.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/more-tests-margin-aligned.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/more-tests-margin.rkt" drdr:command-line #f
@@ -1079,13 +1079,12 @@ path/s is either such a string or a list of them.
 "collects/mrlib/private/aligned-pasteboard/tests/snip-dumper.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mrlib/private/aligned-pasteboard/tests/stretchable-editor-snip-test-min.rkt" drdr:command-line #f
 "collects/mrlib/private/aligned-pasteboard/tests/stretchable-editor-snip-test.rkt" drdr:command-line #f
-"collects/mrlib/private/aligned-pasteboard/tests/test-alignment.rkt" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test-alignment.rktl" drdr:command-line (gracket "-f" *)
 "collects/mrlib/private/aligned-pasteboard/tests/test-locked-pasteboard.rkt" drdr:command-line #f
-"collects/mrlib/private/aligned-pasteboard/tests/test-macro.rkt" drdr:command-line (gracket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/test-pasteboard-lib.rkt" drdr:command-line (gracket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rkt" drdr:command-line (gracket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/test.rkt" drdr:command-line (gracket "-f" *)
-"collects/mrlib/private/aligned-pasteboard/tests/test2.rkt" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test-pasteboard-lib.rktl" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test-snip-lib.rktl" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test.rktl" drdr:command-line (gracket "-f" *)
+"collects/mrlib/private/aligned-pasteboard/tests/test2.rktl" drdr:command-line (gracket "-f" *)
 "collects/mrlib/private/image-core-bitmap.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mrlib/switchable-button.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mrlib/syntax-browser.rkt" drdr:command-line (gracket-text "-t" *)
