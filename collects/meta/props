@@ -827,14 +827,10 @@ path/s is either such a string or a list of them.
 "collects/games/paint-by-numbers/gui.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/games/paint-by-numbers/main.rkt" drdr:command-line #f
 "collects/games/paint-by-numbers/paint-by-numbers.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/games/paint-by-numbers/raw-problems/build-final.rkt" drdr:command-line (racket "-f" *)
+"collects/games/paint-by-numbers/raw-problems/build-final.rkt" drdr:command-line (mzc *)
 "collects/games/paint-by-numbers/raw-problems/build-hattori.rkt" drdr:command-line (gracket "-t" *)
 "collects/games/paint-by-numbers/raw-problems/build-rows-cols.rkt" drdr:command-line (mzc "-k" *)
 "collects/games/paint-by-numbers/raw-problems/build-solution-sets.rkt" drdr:command-line (gracket "-t" *)
-"collects/games/paint-by-numbers/raw-problems/raw-hattori.rkt" drdr:command-line (racket "-f" *)
-"collects/games/paint-by-numbers/raw-problems/raw-kajitani.rkt" drdr:command-line (gracket "-t" *)
-"collects/games/paint-by-numbers/raw-problems/raw-misc.rkt" drdr:command-line (racket "-f" *)
-"collects/games/paint-by-numbers/raw-problems/raw-problems.rkt" drdr:command-line (racket "-f" *)
 "collects/games/paint-by-numbers/raw-problems/size-calculation.rkt" drdr:command-line (mzc *)
 "collects/games/parcheesi/admin-gui.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/games/parcheesi/die.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1290,7 +1286,6 @@ path/s is either such a string or a list of them.
 "collects/srfi/25/arlib.scm" drdr:command-line #f
 "collects/srfi/25/ix-ctor.scm" drdr:command-line #f
 "collects/srfi/25/op-ctor.scm" drdr:command-line #f
-"collects/srfi/32/test.scm" drdr:command-line (racket "-f" *)
 "collects/srfi/67/compare-reference.scm" drdr:command-line #f
 "collects/srfi/74/blob.scm" drdr:command-line #f
 "collects/srfi/78/check-reference.scm" drdr:command-line #f
@@ -1504,7 +1499,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/common/takr2.rkt" drdr:command-line (mzc *)
 "collects/tests/racket/benchmarks/mz/expand-class.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/benchmarks/mz/parsing.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/racket/benchmarks/mz/redsem.rkt" drdr:command-line (racket "-f" * "--" "--skip-struct-test")
+"collects/tests/racket/benchmarks/mz/redsem.rktl" drdr:command-line (racket "-f" * "--" "--skip-struct-test")
 "collects/tests/racket/benchmarks/mz/ssax.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line (racket "-t" * "--" "racket" "simple") drdr:timeout 600
 "collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line (racket "-t" * "--" "10")
@@ -1742,7 +1737,6 @@ path/s is either such a string or a list of them.
 "collects/tests/units/multi-mod-sigs.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/units/test-cert.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/units/test-exptime.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/units/test-harness.rkt" drdr:command-line (racket "-f" *)
 "collects/tests/units/test-runtime.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/units/test-unit-contracts.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/units/test-unit.rktl" drdr:command-line (racket "-f" *)
