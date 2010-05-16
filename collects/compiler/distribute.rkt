@@ -156,30 +156,30 @@
 		   (memq 'mredcgc types))
 	   (map copy-dll
 		(list
-		 (versionize "libmzsch~a.dll")
+		 (versionize "libracket~a.dll")
 		 (versionize "libmzgc~a.dll"))))
 	 (when (or (memq 'mzscheme3m types)
 		   (memq 'mred3m types))
 	   (map copy-dll
 		(list
-		 (versionize "libmzsch3m~a.dll"))))
+		 (versionize "libracket3m~a.dll"))))
 	 (when (memq 'mredcgc types)
 	   (map copy-dll
 		(list
-		 (versionize "libmred~a.dll"))))
+		 (versionize "libgracket~a.dll"))))
 	 (when (memq 'mred3m types)
 	   (map copy-dll
 		(list
-		 (versionize "libmred3m~a.dll")))))]
+		 (versionize "libgracket3m~a.dll")))))]
       [(macosx)
        (when (memq 'mzschemecgc types)
-	 (copy-framework "MzScheme" #f lib-dir))
+	 (copy-framework "Racket" #f lib-dir))
        (when (memq 'mzscheme3m types)
-	 (copy-framework "MzScheme" #t lib-dir))
+	 (copy-framework "Racket" #t lib-dir))
        (when (memq 'mredcgc types)
-	 (copy-framework "MrEd" #f lib-dir))
+	 (copy-framework "GRacket" #f lib-dir))
        (when (memq 'mred3m types)
-	 (copy-framework "MrEd" #t lib-dir))]
+	 (copy-framework "GRacket" #t lib-dir))]
       [(unix)
        (let ([lib-plt-dir (build-path lib-dir "plt")])
 	 (unless (directory-exists? lib-plt-dir)
@@ -191,25 +191,25 @@
 			      (build-path lib-plt-dir 
 					  (format "~a~a-~a" name variant (version)))))])
 	   (when (memq 'mzschemecgc types)
-	     (copy-bin "mzscheme" 'cgc))
+	     (copy-bin "racket" 'cgc))
 	   (when (memq 'mzscheme3m types)
-	     (copy-bin "mzscheme" '3m))
+	     (copy-bin "racket" '3m))
 	   (when (memq 'mredcgc types)
-	     (copy-bin "mred" 'cgc))
+	     (copy-bin "gracket" 'cgc))
 	   (when (memq 'mred3m types)
-	     (copy-bin "mred" '3m)))
+	     (copy-bin "gracket" '3m)))
 	 (when (shared-libraries?)
 	   (when (or (memq 'mzschemecgc types)
 		     (memq 'mredcgc types))
-	     (copy-shared-lib "mzscheme" lib-dir)
+	     (copy-shared-lib "racket" lib-dir)
 	     (copy-shared-lib "mzgc" lib-dir))
 	   (when (or (memq 'mzscheme3m types)
 		     (memq 'mred3m types))
-	     (copy-shared-lib "mzscheme3m" lib-dir))
+	     (copy-shared-lib "racket3m" lib-dir))
 	   (when (memq 'mredcgc types)
-	     (copy-shared-lib "mred" lib-dir))
+	     (copy-shared-lib "gracket" lib-dir))
 	   (when (memq 'mred3m types)
-	     (copy-shared-lib "mred3m" lib-dir))))]))
+	     (copy-shared-lib "gracket3m" lib-dir))))]))
 
   (define (search-dll dll-dir dll)
     (if dll-dir
