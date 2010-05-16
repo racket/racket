@@ -22,9 +22,9 @@ introduce bindings whose scope includes @scheme[body] and that
 determine the number of times that @scheme[body] is evaluated.
 
 In the simple case, each @scheme[for-clause] has one of its first two
-forms, where @scheme[[id seq-expr]] is a shorthand for @scheme[[(id
-...) seq-expr]].  In this simple case, the @scheme[seq-expr]s are
-evaluated left-to-right, and each must produce a sequence value (see
+forms, where @scheme[[id seq-expr]] is a shorthand for @scheme[[(id)
+seq-expr]].  In this simple case, the @scheme[seq-expr]s are evaluated
+left-to-right, and each must produce a sequence value (see
 @secref["sequences"]).
 
 The @scheme[for] form iterates by drawing an element from each
