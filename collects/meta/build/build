@@ -116,11 +116,13 @@ hostname="${hostname%%.*}"
 prewebdir="html"
 # directory for installation (relative to $maindir)
 installdir="plt"
+# directory in plt for build-related scripts (includes this script)
+scriptdir="collects/meta/build"
 # directory for internal stuff (relative to $maindir)
-scriptdir="iplt"
+internaldir="iplt"
 # directories for clean repository checkouts (relative to $maindir)
 cleandir="checkout"
-cleanscriptdir="icheckout"
+cleaninternaldir="icheckout"
 # directory for binaries (relative to $maindir)
 bindir="binaries"
 # directory for pre-installers (relative to $maindir)
@@ -134,21 +136,21 @@ docdir="docs"
 # directory for web content (relative to $maindir)
 webdir="web"
 # script for patching files with current version info
-versionpatcher="$maindir/$scriptdir/build/versionpatch"
+versionpatcher="$scriptdir/versionpatch"
 # DrScheme test script
-drtestscript="$maindir/$scriptdir/build/test-drscheme.ss"
+drtestscript="$scriptdir/test-drscheme.ss"
 # bundling script
-bundlescript="$maindir/$scriptdir/build/bundle"
+bundlescript="$scriptdir/bundle"
 # web build script
-webscript="$maindir/$scriptdir/web/build.ss"
+webscript="$maindir/$internaldir/web/build.ss"
 # html patching script
-htmlpatchscript="$maindir/$scriptdir/build/patch-html"
+htmlpatchscript="$scriptdir/patch-html"
 # sitemap materials
-sitemapdir="$maindir/$scriptdir/build/sitemap"
+sitemapdir="$scriptdir/sitemap"
 
-# platform-installer stuff, directories and files are all absolute
-nsisdir="$maindir/$scriptdir/build/nsis"
-unixinstallerdir="$maindir/$scriptdir/build/unix-installer"
+# platform-installer stuff, all relative the the plt tree
+nsisdir="$scriptdir/nsis"
+unixinstallerdir="$scriptdir/unix-installer"
 unixpathcheckscript="$unixinstallerdir/check-install-paths"
 unixinstallerscript="$unixinstallerdir/plt-installer-header"
 
@@ -173,9 +175,6 @@ repotgz="$tmpdir/$cleantgz"
 fulltgz="$tmpdir/$installdir-full.tgz"
 # log file name prefix for background jobs
 bglogfile="$tmpdir/plt-bg-log"
-
-printf '.git*\n.mailmap\n' > "/tmp/plt-tar-excludes"
-git_excludes="--wildcards --exclude-from /tmp/plt-tar-excludes"
 
 last_part() {
   echo "$*" | sed 's/.*[ -]//'
@@ -1025,7 +1024,7 @@ MAIN_BUILD() {
   if is_yes make_repo; then
     separator "Repository updates"
     git_get "plt" "$gitbranch" "$cleandir"
-    svn_get "iplt" "$svnipath" "$cleanscriptdir"
+    svn_get "iplt" "$svnipath" "$cleaninternaldir"
   else
     show "Skipping repository updates"
   fi
@@ -1037,8 +1036,8 @@ MAIN_BUILD() {
 
   if is_yes make_repo; then
     _cd "$maindir"
-    _rm "$scriptdir"
-    _cp -r "$cleanscriptdir/$svnipath" "$scriptdir"
+    _rm "$internaldir"
+    _cp -r "$cleaninternaldir/$svnipath" "$internaldir"
   fi
 
   if is_yes make_bins; then
@@ -1114,12 +1113,12 @@ DO_AUTO_UPDATES() {
 
   _cd "$maindir/$cleandir"
 
-  # if the racket executable is not there, we'll fail, but that
+  # if the racket executable or the script is not there, we'll fail, but that
   # shouldn't be a problem since it will run again next time
-  if [[ -x "$PLTHOME/bin/racket" ]]; then
-    dont_exit _run "$versionpatcher" "$version"
+  if [[ -x "$PLTHOME/bin/racket" && -x "$PLTHOME/$versionpatcher" ]]; then
+    dont_exit _run "$PLTHOME/$versionpatcher" "$version"
   else
-    show "Skipping version update (no racket executable)"
+    show "Skipping version update (no racket executable or version script)"
   fi
 
   if [[ "$(git status -s | wc -l)" != 0 ]]; then
@@ -1226,7 +1225,7 @@ DO_BUILD() { # inputs -- releasing
   _cd "$workdir"
   # excluding x/y does not work on solaris, so rename it instead
   _mv "$PLTHOME/src" "$PLTHOME/___src___"
-  _tgzip "$fulltgz" --exclude="___src___" $git_excludes \
+  _tgzip "$fulltgz" --exclude="___src___" \
          --exclude="*.[Pp][Dd][Bb]" --exclude="*.[Ii][Ll][Kk]" \
          "$installdir"
   _mv "$PLTHOME/___src___" "$PLTHOME/src"
@@ -1263,7 +1262,7 @@ DO_BUILD() { # inputs -- releasing
   if [[ "$machine" = "$workmachine" ]]; then
     separator "${machine}(${platform}) running GRacket tests"
     _start_xvnc
-    dont_exit _timeout_run 60 env HOME="$testdir" "$drtestscript"
+    dont_exit _timeout_run 60 env HOME="$testdir" "$PLTHOME/$drtestscript"
     dont_exit _timeout_run 300 env HOME="$testdir" \
                 "$PLTHOME/collects/tests/framework/framework-test"
     _end_xvnc
@@ -1534,7 +1533,7 @@ BUILD_BUNDLES() {
   local bundleflags=""
   if [[ "$releasing" = "yes" ]]; then bundleflags="$bundleflags ++release"; fi
   _run "$PLTHOME/bin/racket" \
-         "$bundlescript" -o "$maindir/$preinstdir" $bundleflags
+         "$PLTHOME/$bundlescript" -o "$maindir/$preinstdir" $bundleflags
 
 }
 
@@ -1569,7 +1568,7 @@ tgz_to_sh() {
   # check paths data in configure script
   if [[ "$unixpathcheckscript" != "DONE" ]]; then
     show "Checking paths in configure script"
-    _run "$unixpathcheckscript"
+    _run "$PLTHOME/$unixpathcheckscript"
     unixpathcheckscript="DONE"
   fi
   savedpwd="`pwd`"
@@ -1602,11 +1601,11 @@ tgz_to_sh() {
     echo "RELEASED=\"$releasing\""
   } > "$tgtsh" \
   || exit_error "Could not write \"$tgtsh\""
-  installerlines=$(( `get_first wc -l "$unixinstallerscript"` +
+  installerlines=$(( `get_first wc -l "$PLTHOME/$unixinstallerscript"` +
                      `get_first wc -l "$tgtsh"` +
                      2 ))
   echo "BINSTARTLINE=\"$installerlines\"" >> "$tgtsh"
-  cat "$unixinstallerscript" >> "$tgtsh"
+  cat "$PLTHOME/$unixinstallerscript" >> "$tgtsh"
   cat "$tmptgz" >> "$tgtsh"
   chmod +x "$tgtsh"
   rm "$tmptgz"
@@ -1717,7 +1716,7 @@ tgz_to_exe() {
   local tmptgz="$tmpdir/tgz2exe.tgz"
   local tmpexe="$tmpdir/tgz2exe.exe"
   _rm "$tmpdir/plt-nsis-$$"
-  _cp -r "$nsisdir" "$tmpdir/plt-nsis-$$"
+  _cp -r "$PLTHOME/$nsisdir" "$tmpdir/plt-nsis-$$"
   _cd "$tmpdir/plt-nsis-$$"
   show "Writing \"plt-defs.nsh\""
   { local def='!define'
@@ -1965,7 +1964,7 @@ move_from_maindir() { # input: file-name
 copy_from() { # input: directory file-name
   _rmcd "TEMP_WEB"
   show "Copying: \"$1/$2\" to \"`pwd`\""
-  ( cd "$1" ; tar cf - $git_excludes "$2" ) | tar xf - \
+  ( cd "$1" ; tar cf - "$2" ) | tar xf - \
   || exit_error "Could not copy \"$1/$2\" to \"`pwd`\""
   _cd ".."
   if [[ -e "$2" ]]; then _mv "$2" "TEMP_WEB/TEMP_WEB"; fi
@@ -2050,13 +2049,14 @@ BUILD_WEB() {
   separator "Patching up pre-release web content"
 
   _cd "$maindir/$w"
-  _run "$htmlpatchscript" "$maindir/$webdir/pre"
+  _run "$PLTHOME/$htmlpatchscript" "$maindir/$webdir/pre"
 
   ## --------------------------------------------------------------------------
   if [[ "$w" = "$prewebdir" ]]; then
     separator "Creating a site-map"
     _cd "$maindir/$w"
-    _run "$sitemapdir/sitemap_gen.py" --config="$sitemapdir/plt-pre.xml" \
+    _run "$PLTHOME/$sitemapdir/sitemap_gen.py" \
+         --config="$PLTHOME/$sitemapdir/plt-pre.xml" \
            > /dev/null
   fi
 
