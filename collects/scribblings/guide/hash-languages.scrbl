@@ -1,13 +1,19 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
+          scribble/racket
           "guide-utils.ss"
           "modfile.rkt"
+          (for-syntax racket/base)
           (for-label setup/dirs
                      syntax/strip-context
                      syntax-color/default-lexer))
 
-@title[#:tag "hash-languages"]{Defining new @hash-lang[] Languages}
+@(define-syntax ! (make-element-id-transformer (lambda (v) #'@tt{|})))
+@(define-syntax !- (make-element-id-transformer (lambda (v) #'@tt{|-})))
+
+
+@title[#:tag "hash-languages" #:style 'toc]{Defining new @hash-lang[] Languages}
 
 When loading a module as a source program that starts
 
@@ -24,8 +30,10 @@ forms. Thus, a @racket[_language] specified after @hash-lang[]
 controls both the @tech{reader}-level and @tech{expander}-level
 parsing of a module.
 
+@local-table-of-contents[]
+
 @; ----------------------------------------
-@section{Designating a @hash-lang[] Language}
+@section[#:tag "hash-lang syntax"]{Designating a @hash-lang[] Language}
 
 The syntax of a @racket[_language] intentionally overlaps with the
 syntax of a module path as used in @racket[require] or as a
@@ -49,13 +57,13 @@ fixed so that various different tools can ``boot'' into the extended
 world.
 
 Fortunately, the @hash-lang[] protocol provides a natural way to refer
-to languages in ways other than the rigid
-@racket[_language] syntax: by defining a @racket[_language]
-that implements its own nested protocol. We have already seen one example in
-@secref["s-exp"]: the @racketmodname[s-exp] @racket[_language] allows
-a programmer to specify a @tech{module language} using the general
-@tech{module path} syntax. Meanwhile, @racketmodname[s-exp] takes care
-of the @tech{reader}-level responsibilities of a @hash-lang[] language.
+to languages in ways other than the rigid @racket[_language] syntax:
+by defining a @racket[_language] that implements its own nested
+protocol. We have already seen one example (in @secref["s-exp"]): the
+@racketmodname[s-exp] @racket[_language] allows a programmer to
+specify a @tech{module language} using the general @tech{module path}
+syntax. Meanwhile, @racketmodname[s-exp] takes care of the
+@tech{reader}-level responsibilities of a @hash-lang[] language.
 
 Unlike @racketmodname[racket], @racketmodname[s-exp] cannot be used as a
 module path with @scheme[require]. Although the syntax of
@@ -87,8 +95,8 @@ language} at the @tech{expander} layer of parsing,
 @racketmodname[reader] lets a programmer specify a language at the
 @tech{reader} level.
 
-The module specified after @racket[@#,hash-lang[]
-@#,racketmodname[reader]] must provide two functions:
+A @racket[@#,hash-lang[] @#,racketmodname[reader]] must be followed by
+a module path, and the specified module must provide two functions:
 @racketidfont{read} and @racketidfont{read-syntax}. The protocol is
 the same as for a @racketmetafont{#reader} implementation, but for
 @hash-lang[], the @racketidfont{read} and @racketidfont{read-syntax}
@@ -137,17 +145,19 @@ the creation of new languages. In its most basic form, a language
 implemented with @racketmodname[syntax/module-reader] simply specifies
 the @tech{module language} to be used for the language, in which case
 the @tech{reader} layer of the language is the same as Racket. For
-example, if @filepath{raquet-mlang.rkt} contains
+example, with
 
 @racketmod[
+#:file "raquet-mlang.rkt"
 racket
 (provide (except-out (all-from-out racket) lambda)
          (rename-out [lambda function]))
 ]
 
-and @filepath{raquet.rkt} contains
+and
 
 @racketmod[
+#:file "raquet.rkt"
 s-exp syntax/module-reader
 "raquet-mlang.rkt"
 ]
@@ -194,9 +204,7 @@ access languages like @filepath{literal.rkt} and
 @filepath{dollar-racket.rkt}. If you want to use something like
 @racket[@#,hash-lang[] literal] directly, then you must move
 @filepath{literal.rkt} into a Racket @tech{collection} named
-@filepath{literal}, and the file @filepath{literal.rkt} must be
-renamed to @filepath{reader.rkt} and placed in a @filepath{lang}
-sub-directory of the @filepath{literal} collection.
+@filepath{literal}.
 
 To install a collection, you can create a directory either in the main
 Racket installation or in a user-specific directory. Use
@@ -213,8 +221,21 @@ Racket installation or in a user-specific directory. Use
 
 Move @filepath{literal.rkt} to @filepath{literal/lang/reader.rkt}
 within the directory reported by @racket[find-collects-dir] or
-@racket[find-user-collects-dir]. Then, @racket[literal] can be used
-directly after @hash-lang[]:
+@racket[find-user-collects-dir]. That is, the file
+@filepath{literal.rkt} must be renamed to @filepath{reader.rkt} and
+placed in a @filepath{lang} sub-directory of the @filepath{literal}
+collection.
+
+@racketblock[
+.... @#,elem{(the main installation or the user's space)}
+ !- @#,filepath{collects}  
+      !- @#,filepath{literal}
+           !- @#,filepath{lang}
+                !- @#,filepath{reader.rkt}
+]
+
+After moving the file, you can use @racket[literal] directly after
+@hash-lang[]:
 
 @racketmod[
 @#,racket[literal]
@@ -226,7 +247,7 @@ Perfect!
 @margin-note{See @other-manual['(lib "scribblings/raco/raco.scrbl")]
 for more information on using @exec{raco}.}
 
-You can package up a collection for others to install by using the
+You can also package a collection for others to install by using the
 @exec{raco pack} command-line tool:
 
 @commandline{raco pack --collection literal.plt literal}
@@ -242,7 +263,7 @@ information about @|PLaneT| packages.}
 A better approach may be to distribute your language as a @|PLaneT|
 package. A drawback of using a @|PLaneT| package is that users must
 type @racket[@#,hash-lang[] @#,schememodname[planet]] followed by a
-@|PLaneT| path to access the language. A great advantages are that the
+@|PLaneT| path to access the language. The great advantages are that the
 @|PLaneT| package can be installed automatically, it can be versioned,
 and it co-exists more easily with other packages.
 
@@ -264,10 +285,10 @@ The title of this document is ``@(get-name).''
 }|
 
 If you put that program in DrRacket's @tech{definitions area} and
-click @onscreen{Run}, then nothing much appears to happen, because the
-@racketmodname[scribble/base] language is similar to the
-@filepath{literal.rkt} example from @secref["hash-lang reader"]: It
-just binds and exports @racketidfont{doc} as a description of a document.
+click @onscreen{Run}, then nothing much appears to happen. The
+@racketmodname[scribble/base] language just binds and exports
+@racketidfont{doc} as a description of a document, similar to the way
+that @filepath{literal.rkt} exports a string as @racketidfont{data}.
 
 Simply opening a module with the language
 @racketmodname[scribble/base] in DrRacket, however, causes a
@@ -288,6 +309,7 @@ of a module in the @racket[literal] language as plain text instead of
 (erroneously) as Racket syntax:
 
 @racketmod[
+#:file "literal/lang/reader.rkt"
 racket
 (require syntax/strip-context)
 
@@ -310,7 +332,8 @@ racket
   (lambda (key default)
     (case key
       [(color-lexer)
-       (dynamic-require 'syntax-color/default-lexer 'default-lexer)]
+       (dynamic-require 'syntax-color/default-lexer 
+                        'default-lexer)]
       [else default])))
 ]
 
@@ -395,44 +418,90 @@ attached to the syntax object for a parsed @racket[module] form.
 
 Going back to the @racket[literal] language (see
 @secref["language-get-info"]), we can adjust the language so that
-directly running a @racket[literal] module causes it
-to print out its string, while using a @racket[literal] module
-in a larger program simply provides @racketidfont{data}
-without printing. To make this work, we must make two changes
-to @filepath{literal/lang/reader.rkt}:
+directly running a @racket[literal] module causes it to print out its
+string, while using a @racket[literal] module in a larger program
+simply provides @racketidfont{data} without printing. To make this
+work, we will need three extra module files:
+
+@racketblock[
+.... @#,elem{(the main installation or the user's space)}
+ !- @#,filepath{collects}
+      !- @#,filepath{literal}
+           !- @#,filepath{lang}
+           !    !- @#,filepath{reader.rkt}
+           !- @#,filepath{language-info.rkt}   @#,elem{(new)}
+           !- @#,filepath{runtime-config.rkt}  @#,elem{(new)}
+           !- @#,filepath{show.rkt}            @#,elem{(new)}
+]
+
+@itemlist[
+
+ @item{The @filepath{literal/language-info.rkt} module provides
+       reflective information about the language of modules written in
+       the @racket[literal] language. The name of this module is not
+       special; it will be connected to the @racket[literal] language
+       through a change to @filepath{literal/lang/reader.rkt}.}
+
+ @item{The @filepath{literal/runtime-config.rkt} module will be
+       identified by @filepath{literal/language-info.rkt} as the
+       run-time configuration code for a main module that uses the
+       @racket[literal] language.}
+
+ @item{The @filepath{literal/show.rkt} module will provide a
+       @racketidfont{show} function to be applied to the string
+       content of a @racket[literal] module. The run-time
+       configuration action in @filepath{literal/runtime-config.rkt}
+       will instruct @racketidfont{show} to print the strings that it
+       is given, but only when a module using the @racket[literal]
+       language is run directly.}
+
+]
+
+Multiple modules are needed to implement the printing change, because
+the different modules must run at different times. For example, the
+code needed to parse a @racket[literal] module is not needed after the
+module has been compiled, while the run-time configuration code is
+needed only when the module is run as the main module of a
+program. Similarly, when creating a stand-alone executable with
+@exec{raco exe}, the main module (in compiled form) must be queried
+for its run-time configuration, but the module and its configuration
+action should not run until the executable is started. By using
+different modules for these different tasks, we avoid loading code at
+times when it is not needed.
+
+The three new files are connected to the @racket[literal] language by
+changes to @filepath{literal/lang/reader.rkt}:
 
 @itemlist[
 
  @item{The @racket[module] form generated by the
-       @racketidfont{read-syntax} function must import a
+       @racketidfont{read-syntax} function must import the
        @racket[literal/show] module and call its @racketidfont{show}
-       function, which will print the given string if output has been
-       enabled.}
+       function.}
 
  @item{The @racket[module] form must be annotated with a
        @racket['language-info] syntax property, whose value points to
        a @racketidfont{get-language-info} function exported by a
        @racket[literal/language-info] module. The
        @racketidfont{get-language-info} function will be responsible
-       for reporting the runtime-configuration action of the
-       language. Finally, the runtime-configuration action will turn
-       on printing in @racket[literal/show].}
+       for reporting the @racket[literal/runtime-config] as the
+       run-time configuration action of the language.
+
+       The @racket['language-info] syntax property value is a vector
+       that contains a module (in this case
+       @racket[literal/language-info]), a symbol for one of the
+       module's exports (@racketidfont{get-language-info} in this
+       case), and an data value (which is not needed in this
+       case). The data component allows information to be propagated
+       from the source to the module's language information.}
 
 ]
-
-The @racketidfont{get-language-info} function is not attached to the
-@racket[module] form directly; instead, the function is identified by
-a module path and a symbol, so that the function can be loaded when it
-is needed. Those two parts are combined in a vector along with a third
-part, which is an argument to supply to the
-@racketidfont{get-language-info} function (in case extra information
-needs to be propagated from the source to the module's language
-information).
 
 These changes are implemented in the following revised
 @filepath{literal/lang/reader.rkt}:
 
 @racketmod[
+#:file "literal/lang/reader.rkt"
 racket
 (require syntax/strip-context)
 
@@ -460,7 +529,8 @@ racket
   (lambda (key default)
     (case key
       [(color-lexer)
-       (dynamic-require 'syntax-color/default-lexer 'default-lexer)]
+       (dynamic-require 'syntax-color/default-lexer 
+                        'default-lexer)]
       [else default])))
 ]
 
@@ -478,6 +548,7 @@ For @racket[literal], @filepath{literal/language-info.rkt} is
 implemented as:
 
 @racketmod[
+#:file "literal/language-info.rkt"
 racket
 
 (provide get-language-info)
@@ -493,17 +564,12 @@ racket
 The function returned by @racketidfont{get-language-info} answers a
 @racket['configure-runtime] query with a list of yet more vectors,
 where each vector contains a module name, an exported name, and a data
-value. This indirection through another set of vectors (as opposed to
-performing run-time configurations directly) allows the action to be
-delayed beyond the query time. For example, run-time configuration
-actions may need to collected to create a stand-alone executable, but
-the actions must be performed only when the executable is launched.
-
-For the @racket[literal] language, the run-time configuration action
-implemented in @filepath{literal/runtime-config.rkt} is to enable
-printing of strings that are sent to @racketidfont{show}:
+value. For the @racket[literal] language, the run-time configuration
+action implemented in @filepath{literal/runtime-config.rkt} is to
+enable printing of strings that are sent to @racketidfont{show}:
 
 @racketmod[
+#:file "literal/runtime-config.rkt"
 racket
 (require "show.rkt")
 
@@ -518,6 +584,7 @@ the @racketidfont{show-enabled} parameter and @racketidfont{show}
 function:
 
 @racketmod[
+#:file "literal/runtime-config.rkt"
 racket
 
 (provide show show-enabled)
@@ -534,20 +601,15 @@ following variant of @filepath{tuvalu.rkt} directly and through a
 @scheme[require] from another module:
 
 @racketmod[
+#:file "tuvalu.rkt"
 @#,racket[literal]
 Technology!
 System!
 Perfect!
 ]
 
-Customizing the @racket[literal] language required many different
-modules, because different modules are needed to keep the different
-phases and times of different tasks separate. For example, the code
-needed to correctly color @racket[literal] text in DrRacket should not
-be required to simply run a @racket[literal] program.
-
-The @racketmodname[syntax/module-reader] language lets you specify a
-module's language information through a @racket[#:language-info]
-optional specification. The value provided through
-@racket[#:language-info] is attached to a @racket[module] form
+When using @racketmodname[syntax/module-reader] to implement a
+language, specify a module's language information through the
+@racket[#:language-info] optional specification. The value provided
+through @racket[#:language-info] is attached to a @racket[module] form
 directly as a syntax property.

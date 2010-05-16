@@ -25,4 +25,4 @@
                                  null 
                                  (cons (replace-context #'file v) 
                                        (loop)))))))])
-         #'(racketmod content ...)))]))
+         #'(racketmod #:file file content ...)))]))

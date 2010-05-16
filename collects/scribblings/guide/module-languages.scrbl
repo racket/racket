@@ -29,12 +29,12 @@ language} that is a variant of @racketmodname[racket]:
 (module raquet racket
   (provide (except-out (all-from-out racket) lambda)
            (rename-out [lambda function])))
-(module tennis 'raquet
+(module score 'raquet
   (map (function (points) (case points
                            [(0) "love"] [(1) "fifteen"]
                            [(2) "thirty"] [(3) "forty"]))
        (list 0 2)))
-(require 'tennis)
+(require 'score)
 ]
 
 @; ----------------------------------------
@@ -65,7 +65,7 @@ as @tech{module language}:
 
 The other implicit forms provided by @racket[racket/base] are
 @racket[#%app] for function calls, @racket[#%datum] for literals, and
-@racket[#%top] for unbound identifiers:
+@racket[#%top] for identifiers that have no binding:
 
 @interaction[
 (module just-lambda racket
@@ -77,7 +77,7 @@ The other implicit forms provided by @racket[racket/base] are
 (require 'ten)
 ]
 
-Implicit forms like @racket[#%app] can be used explicitly in a module,
+Implicit forms such as @racket[#%app] can be used explicitly in a module,
 but they exist mainly to allow a module language to restrict or change
 the meaning of implicit uses. For example, a @racket[lambda-calculus]
 @tech{module language} might restrict functions to a single argument,
@@ -91,7 +91,7 @@ unbound identifiers as uninterpreted symbols:
                        [1-arg-app #%app]
                        [1-form-module-begin #%module-begin]
                        [no-literals #%datum]
-                       [unbound-as-self #%top]))
+                       [unbound-as-quoted #%top]))
   (define-syntax-rule (1-arg-lambda (x) expr)
     (lambda (x) expr))
   (define-syntax-rule (1-arg-app e1 e2)
@@ -100,7 +100,7 @@ unbound identifiers as uninterpreted symbols:
     (#%module-begin e))
   (define-syntax (no-literals stx)
     (raise-syntax-error #f "no" stx))
-  (define-syntax-rule (unbound-as-self . id)
+  (define-syntax-rule (unbound-as-quoted . id)
     'id))
 (module ok 'lambda-calculus
   ((lambda (x) (x z))
@@ -179,6 +179,6 @@ s-exp "html.rkt"
 (p "Updated: " ,(now))
 ]
 
-The later section @secref["hash-languages"] explains how to define
+Later in this guide, @secref["hash-languages"] explains how to define
 your own @hash-lang[] language, but first we explain how you can write
 @tech{reader}-level extensions to Racket.

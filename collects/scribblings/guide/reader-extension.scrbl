@@ -28,6 +28,7 @@ parsed as determined by the @racketidfont{read} and
 For example, suppose that file @filepath{five.rkt} contains
 
 @racketmod[
+#:file "five.rkt"
 racket/base
 
 (provide read read-syntax)

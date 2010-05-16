@@ -41,13 +41,13 @@ re-exports some variables from the linked units for further linking.
 The interface of a unit is described in terms of
 @deftech{signatures}. Each signature is defined (normally within a
 @racket[module]) using @racket[define-signature].  For example, the
-following signature, placed in a @filepath{toy-factory-sig.ss} file,
+following signature, placed in a @filepath{toy-factory-sig.rkt} file,
 describes the exports of a component that implements a toy factory:
 
 @margin-note{By convention, signature names with @litchar{^}.}
 
 @racketmod/eval[[#:file
-"toy-factory-sig.ss"
+"toy-factory-sig.rkt"
 racket]
 
 (define-signature toy-factory^
@@ -66,10 +66,10 @@ using @racket[define-unit] with an @racket[export] clause that names
 @margin-note{By convention, unit names with @litchar["@"].}
 
 @racketmod/eval[[#:file
-"simple-factory-unit.ss"
+"simple-factory-unit.rkt"
 racket
 
-(require "toy-factory-sig.ss")]
+(require "toy-factory-sig.rkt")]
 
 (define-unit simple-factory@
   (import)
@@ -97,7 +97,7 @@ for the sake of an example with interesting features, that the store
 is willing to sell only toys in a particular color.)
 
 @racketmod/eval[[#:file
-"toy-store-sig.ss"
+"toy-store-sig.rkt"
 racket]
 
 (define-signature toy-store^
@@ -109,11 +109,11 @@ racket]
 ]
 
 @racketmod/eval[[#:file
-"toy-store-unit.ss"
+"toy-store-unit.rkt"
 racket
 
-(require "toy-store-sig.ss"
-         "toy-factory-sig.ss")]
+(require "toy-store-sig.rkt"
+         "toy-factory-sig.rkt")]
 
 (define-unit toy-store@
   (import toy-factory^)
@@ -139,9 +139,9 @@ racket
 (provide toy-store@)
 ]
 
-Note that @filepath{toy-store-unit.ss} imports
-@filepath{toy-factory-sig.ss}, but not
-@filepath{simple-factory-unit.ss}.  Consequently, the
+Note that @filepath{toy-store-unit.rkt} imports
+@filepath{toy-factory-sig.rkt}, but not
+@filepath{simple-factory-unit.rkt}.  Consequently, the
 @racket[toy-store@] unit relies only on the specification of a toy
 factory, not on a specific implementation.
 
@@ -154,7 +154,7 @@ The @racket[simple-factory@] unit has no imports, so it can be
 
 @interaction[
 #:eval toy-eval
-(eval:alts (require "simple-factory-unit.ss") (void))
+(eval:alts (require "simple-factory-unit.rkt") (void))
 (invoke-unit simple-factory@)
 ]
 
@@ -183,7 +183,7 @@ to produce @racket[toy-store^]:
 
 @interaction[
 #:eval toy-eval
-(eval:alts (require "toy-store-unit.ss") (void))
+(eval:alts (require "toy-store-unit.rkt") (void))
 (define-values/invoke-unit/infer toy-store@)
 (get-inventory)
 (stock! 2)
@@ -206,10 +206,10 @@ repainted. Instead, the toys are always created using the store's
 color, which the factory gets by importing @racket[toy-store^]:
 
 @racketmod/eval[[#:file
-"store-specific-factory-unit.ss"
+"store-specific-factory-unit.rkt"
 racket
 
-(require "toy-factory-sig.ss")]
+(require "toy-factory-sig.rkt")]
 
 (define-unit store-specific-factory@
   (import toy-store^)
@@ -243,7 +243,7 @@ unit's imports using the exports of other linked units.
 
 @interaction[
 #:eval toy-eval
-(eval:alts (require "store-specific-factory-unit.ss") (void))
+(eval:alts (require "store-specific-factory-unit.rkt") (void))
 (define-compound-unit/infer toy-store+factory@
   (import)
   (export toy-factory^ toy-store^)
@@ -306,11 +306,11 @@ that creates a toy store in a @racket[lambda] to supply the store's
 color:
 
 @racketmod/eval[[#:file
-"toy-store-maker.ss"
+"toy-store-maker.rkt"
 racket
 
-(require "toy-store-sig.ss"
-         "toy-factory-sig.ss")]
+(require "toy-store-sig.rkt"
+         "toy-factory-sig.rkt")]
 
 (define toy-store@-maker
   (lambda (the-color)
@@ -346,9 +346,9 @@ To invoke a unit created by @racket[toy-store@-maker], we must use
 
 @interaction[
 #:eval toy-eval
-(eval:alts (require "simple-factory-unit.ss") (void))
+(eval:alts (require "simple-factory-unit.rkt") (void))
 (define-values/invoke-unit/infer simple-factory@)
-(eval:alts (require "toy-store-maker.ss") (void))
+(eval:alts (require "toy-store-maker.rkt") (void))
 (define-values/invoke-unit (toy-store@-maker 'purple)
   (import toy-factory^)
   (export toy-store^))
@@ -370,7 +370,7 @@ To link a unit from @racket[toy-store@-maker], we can use the
 
 @interaction[
 #:eval toy-eval
-(eval:alts (require "store-specific-factory-unit.ss") (void))
+(eval:alts (require "store-specific-factory-unit.rkt") (void))
 (define toy-store+factory@
   (compound-unit
    (import)
@@ -409,13 +409,13 @@ produced by the expression.
 
 @section{Whole-@racket[module] Signatures and Units}
 
-In programs that use units, modules like @filepath{toy-factory-sig.ss}
-and @filepath{simple-factory-unit.ss} are common. The
+In programs that use units, modules like @filepath{toy-factory-sig.rkt}
+and @filepath{simple-factory-unit.rkt} are common. The
 @racket[racket/signature] and @racket[racket/unit] module names can be
 used as languages to avoid much of the boilerplate module, signature,
 and unit declaration text.
 
-For example, @filepath{toy-factory-sig.ss} can be written as
+For example, @filepath{toy-factory-sig.rkt} can be written as
 
 @racketmod[
 racket/signature
@@ -427,15 +427,15 @@ toy-color   (code:comment #, @tt{(toy? -> symbol?)})
 ]
 
 The signature @racket[toy-factory^] is automatically provided from the
-module, inferred from the filename @filepath{toy-factory-sig.ss} by
-replacing the @filepath{-sig.ss} suffix with @racketidfont{^}.
+module, inferred from the filename @filepath{toy-factory-sig.rkt} by
+replacing the @filepath{-sig.rkt} suffix with @racketidfont{^}.
 
-Similarly, @filepath{simple-factory-unit.ss} module can be written
+Similarly, @filepath{simple-factory-unit.rkt} module can be written
 
 @racketmod[
 racket/unit
 
-(require "toy-factory-sig.ss")
+(require "toy-factory-sig.rkt")
 
 (import)
 (export toy-factory^)
@@ -453,8 +453,8 @@ racket/unit
 ]
 
 The unit @racket[simple-factory@] is automatically provided from the
-module, inferred from the filename @filepath{simple-factory-unit.ss} by
-replacing the @filepath{-unit.ss} suffix with @racketidfont["@"].
+module, inferred from the filename @filepath{simple-factory-unit.rkt} by
+replacing the @filepath{-unit.rkt} suffix with @racketidfont["@"].
 
 @; ----------------------------------------
 
@@ -474,7 +474,7 @@ of the @racket[toy-factory^] signature adds the contracts previously
 written in comments:
 
 @racketmod/eval[[#:file
-"contracted-toy-factory-sig.ss"
+"contracted-toy-factory-sig.rkt"
 racket]
 
 (define-signature contracted-toy-factory^
@@ -490,10 +490,10 @@ Now we take the previous implementation of @racket[simple-factory@] and
 implement this version of @racket[toy-factory^] instead:
 
 @racketmod/eval[[#:file
-"contracted-simple-factory-unit.ss"
+"contracted-simple-factory-unit.rkt"
 racket
 
-(require "contracted-toy-factory-sig.ss")]
+(require "contracted-toy-factory-sig.rkt")]
 
 (define-unit contracted-simple-factory@
   (import)
@@ -519,7 +519,7 @@ causes the appropriate contract errors.
 
 @interaction[
 #:eval toy-eval
-(eval:alts (require "contracted-simple-factory-unit.ss") (void))
+(eval:alts (require "contracted-simple-factory-unit.rkt") (void))
 (define-values/invoke-unit/infer contracted-simple-factory@)
 (build-toys 3)
 (build-toys #f)
@@ -539,10 +539,10 @@ implements the regular @racket[toy-factory^], but whose exports
 have been protected with an appropriate unit contract.
 
 @racketmod/eval[[#:file
-"wrapped-simple-factory-unit.ss"
+"wrapped-simple-factory-unit.rkt"
 racket
 
-(require "toy-factory-sig.ss")]
+(require "toy-factory-sig.rkt")]
 
 (define-unit/contract wrapped-simple-factory@
   (import)
@@ -568,7 +568,7 @@ racket
 
 @interaction[
 #:eval toy-eval
-(eval:alts (require "wrapped-simple-factory-unit.ss") (void))
+(eval:alts (require "wrapped-simple-factory-unit.rkt") (void))
 (define-values/invoke-unit/infer wrapped-simple-factory@)
 (build-toys 3)
 (build-toys #f)
