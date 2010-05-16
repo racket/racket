@@ -3350,6 +3350,8 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a)
   Scheme_Object *b;
 
   while (SCHEME_CHAPERONE_PROC_STRUCTP(a)) {
+    if (SCHEME_CHAPERONEP(a))
+      a = SCHEME_CHAPERONE_VAL(a);
     if (scheme_reduced_procedure_struct
         && scheme_is_struct_instance(scheme_reduced_procedure_struct, a)
         && SCHEME_TRUEP(((Scheme_Structure *)a)->slots[2])) {
@@ -3358,8 +3360,6 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a)
       /* Either use struct name, or extract proc, depending
          whether it's method-style */
       int is_method;
-      if (SCHEME_CHAPERONEP(a))
-        a = SCHEME_CHAPERONE_VAL(a);
       b = scheme_extract_struct_procedure(a, -1, NULL, &is_method);
       if (!is_method && SCHEME_PROCP(b)) {
         a = b;
