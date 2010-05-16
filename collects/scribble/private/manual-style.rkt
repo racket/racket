@@ -4,9 +4,12 @@
          "../base.ss"
          (only-in "../basic.ss" aux-elem itemize)
          "../scheme.ss"
-         (only-in "../core.ss" make-style plain)
+         (only-in "../core.ss" make-style plain
+                  make-nested-flow
+                  [element? core:element?])
          "manual-utils.ss"
          "on-demand.ss"
+         "manual-sprop.rkt"
          racket/list
          racket/contract
          racket/string)
@@ -18,6 +21,7 @@
          (rename-out [image image/plain])
          itemize
          aux-elem)
+(provide/contract [filebox ((or/c core:element? string?) pre-flow? . -> . block?)])
 
 (define styling-f/c
   (() () #:rest (listof pre-content?) . ->* . element?))
@@ -53,7 +57,7 @@
  [litchar (() () #:rest (listof string?) . ->* . element?)]
  [t (() () #:rest (listof pre-content?) . ->* . paragraph?)]
  [commandline (() () #:rest (listof pre-content?) . ->* . paragraph?)]
- [menuitem (string? string? . -> . element?)]) 
+ [menuitem (string? string? . -> . element?)])
 
 (define PLaneT (make-element "planetName" '("PLaneT")))
 
@@ -210,3 +214,20 @@
             [(eq? i 'rsquo) (list 'prime)]
             [else (list i)])))
       c))))
+
+(define (filebox filename . inside)
+  (make-nested-flow 
+   (make-style "Sfilebox" scheme-properties)
+   (list
+    (make-styled-paragraph 
+     (list (make-element
+            (make-style "Sfilename" scheme-properties)
+            (if (string? filename)
+                (filepath filename)
+                filename)))
+     (make-style "Sfiletitle" scheme-properties))
+    (make-nested-flow 
+     (make-style "Sfilecontent" scheme-properties)
+     (decode-flow inside)))))
+
+

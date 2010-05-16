@@ -65,16 +65,13 @@
                                                      ',#'lang
                                                      (to-element ',#'lang))
                                                    #'(racket lang)))))
-                            #'lang)]
-                   [(file ...)
-                    (if (syntax-e #'filename)
-                        (list
-                         (datum->syntax
-                          #'filename
-                          `(code:comment (unsyntax (t "In \"" ,(syntax-e #'filename) "\":")))
-                          #'filename))
-                        null)])
-       (syntax/loc stx (racketblock file ... modtag rest ...)))]
+                            #'lang)])
+       (if (syntax-e #'filename)
+           (quasisyntax/loc stx
+             (filebox
+              filename
+              #,(syntax/loc stx (racketblock0 modtag rest ...))))
+           (syntax/loc stx (racketblock modtag rest ...))))]
     [(_ lang rest ...)
      (syntax/loc stx (racketmod #:file #f lang rest ...))]))
 

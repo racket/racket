@@ -50,3 +50,9 @@
 \newenvironment{leftindent}{\begin{quote}}{\end{quote}}
 \newenvironment{insetpara}{\begin{quote}}{\end{quote}}
 
+\newcommand{\Sfiletitle}[1]{\hfill \fbox{#1}}
+\newcommand{\Sfilename}[1]{#1}
+\newenvironment{Sfilebox}{\begin{list}{}{\topsep=0pt\partopsep=0pt%
+\listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=2ex\rightmargin=2ex%
+\itemsep=0pt\parsep=0pt}\item}{\end{list}}
+\newenvironment{Sfilecontent}{}{}

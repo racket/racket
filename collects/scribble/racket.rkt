@@ -270,7 +270,10 @@
            [line (or (syntax-line first) 0)])
       (define (finish-line!)
         (when multi-line?
-          (set! docs (cons (make-paragraph omitable (reverse content))
+          (set! docs (cons (make-paragraph omitable 
+                                           (if (null? content)
+                                               (list (hspace 1))
+                                               (reverse content)))
                            docs))
           (set! content null)))
       (define out
