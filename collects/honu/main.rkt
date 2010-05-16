@@ -51,6 +51,7 @@
                                             )
                                  (parse-an-expr parse)
                                  (... scheme:...)
+                                 (honu-body:class body)
                                  (honu-syntax syntax)
                                  (honu-+ +)
                                  (honu-scheme scheme2)

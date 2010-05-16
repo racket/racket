@@ -352,6 +352,10 @@
     [else (raise-syntax-error 'parse-an-expr "cant parse" stx)]
     ))
 
+(define-splicing-syntax-class honu-body:class
+                     #:literals (#%braces)
+  [pattern (~seq (#%braces code ...))])
+
 (define (parse-block-one/2 stx context)
   (define (parse-one stx context)
     

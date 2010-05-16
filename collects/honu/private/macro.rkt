@@ -63,7 +63,16 @@
     [(_ x ...)
      |#
 
-(define-for-syntax (fix-template stx) stx)
+(define-for-syntax (fix-template stx)
+  (syntax-parse stx #:literals (honu-:)
+    [(variable:id honu-: class:id rest ...)
+     (with-syntax ([(rest* ...) (fix-template #'(rest ...))])
+       #'((~var variable class) rest* ...))]
+    [(one rest ...)
+     (with-syntax ([one* (fix-template #'one)]
+                   [(rest* ...) (fix-template #'(rest ...))])
+       #'(one* rest* ...))]
+    [else stx]))
 
 #|
 (define-for-syntax (fix-template stx)
@@ -402,14 +411,16 @@
                   . rest)
                #:with result
                (list
-                 (syntax/loc stx
-                             (define-honu-syntax name
-                               (lambda (stx ctx)
-                                 (syntax-parse stx #:literals (literals ...)
-                                   [(template ... rrest (... ...))
-                                    (values
-                                      (honu-unparsed-begin code ...)
-                                      #'(rrest (... ...)))]))))
+                 (with-syntax ([(fixed ...) (fix-template #'(template ...))])
+                   (syntax/loc stx
+                               (define-honu-syntax name
+                                 (lambda (stx ctx)
+                                   (syntax-parse stx #:literals (literals ...)
+                                     [(fixed ... rrest (... ...))
+                                      (values
+                                        (let ([result (honu-unparsed-begin code ...)])
+                                          (lambda () result))
+                                        #'(rrest (... ...)))])))))
                  #;
                  (with-syntax ([parsed (let-values ([(out rest*)
                                                      (parse-block-one/2 #'(code ...)
