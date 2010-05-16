@@ -205,7 +205,7 @@
 
 (define (read-module v)
   (match v
-    [`(,name ,self-modidx ,lang-info ,functional? ,et-functional?
+    [`(,name ,srcname ,self-modidx ,lang-info ,functional? ,et-functional?
              ,rename ,max-let-depth ,dummy
              ,prefix
              ,indirect-et-provides ,num-indirect-et-provides 
@@ -218,7 +218,7 @@
          [`(,syntax-body ,body
                          ,requires ,syntax-requires ,template-requires ,label-requires
                          ,more-requires-count . ,more-requires)
-          (make-mod name self-modidx
+          (make-mod name srcname self-modidx
                     prefix (let loop ([l phase-data])
                              (if (null? l)
                                  null
@@ -314,10 +314,10 @@
     [(15) 'quote-syntax-type]
     [(24) 'variable-type]
     [(25) 'module-variable-type]
-    [(96) 'case-lambda-sequence-type]
-    [(97) 'begin0-sequence-type]
-    [(100) 'module-type]
-    [(102) 'resolve-prefix-type]
+    [(99) 'case-lambda-sequence-type]
+    [(100) 'begin0-sequence-type]
+    [(103) 'module-type]
+    [(105) 'resolve-prefix-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers
@@ -412,7 +412,8 @@
     [32 closure]
     [33 delayed]
     [34 prefab]
-    [35 60 small-number]
+    [35 let-one-unused]
+    [36 60 small-number]
     [60 80 small-symbol]
     [80 92 small-marshalled]
     [92 ,(+ 92 small-list-max) small-proper-list]
@@ -766,9 +767,10 @@
                            (if ppr null (read-compact cp)))
                      (read-compact-list l ppr cp))
                  (loop l ppr)))]
-          [(let-one let-one-flonum)
+          [(let-one let-one-flonum let-one-unused)
            (make-let-one (read-compact cp) (read-compact cp)
-                         (eq? cpt-tag 'let-one-flonum))]
+                         (eq? cpt-tag 'let-one-flonum)
+                         (eq? cpt-tag 'let-one-unused))]
           [(branch)
            (make-branch (read-compact cp) (read-compact cp) (read-compact cp))]
           [(module-index) (module-path-index-join (read-compact cp) (read-compact cp))]

@@ -5,7 +5,8 @@
   (provide setup-option^)
 
   (define-signature setup-option^
-    (verbose
+    (setup-program-name
+     verbose
      make-verbose
      compiler-verbose
      clean

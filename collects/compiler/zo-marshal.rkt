@@ -90,9 +90,10 @@
 
 (define (traverse-module mod-form visit)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body unexported 
+    [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported 
                        max-let-depth dummy lang-info internal-context))
      (traverse-data name visit)
+     (traverse-data srcname visit)
      (traverse-data self-modidx visit)
      (traverse-prefix prefix visit)
      (for-each (lambda (f) (map (lambda (v) (traverse-data v visit)) (cdr f))) requires)
@@ -160,7 +161,7 @@
     [(struct case-lam (name lams))
      (traverse-data name visit)
      (for-each (lambda (lam) (traverse-lam lam visit)) lams)]
-    [(struct let-one (rhs body flonum?))
+    [(struct let-one (rhs body flonum? unused?))
      (traverse-expr rhs visit)
      (traverse-expr body visit)]
     [(struct let-void (count boxes? body))
@@ -247,11 +248,11 @@
 (define wcm-type-num 14)
 (define quote-syntax-type-num 15)
 (define variable-type-num 24)
-(define top-type-num 87)
-(define case-lambda-sequence-type-num 96)
-(define begin0-sequence-type-num 97)
-(define module-type-num 100)
-(define prefix-type-num 102)
+(define top-type-num 89)
+(define case-lambda-sequence-type-num 99)
+(define begin0-sequence-type-num 100)
+(define module-type-num 103)
+(define prefix-type-num 105)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -297,7 +298,8 @@
   CPT_PATH
   CPT_CLOSURE
   CPT_DELAY_REF
-  CPT_PREFAB)
+  CPT_PREFAB
+  CPT_LET_ONE_UNUSED)
 
 (define-enum
   0
@@ -314,7 +316,7 @@
   APPVALS_EXPD
   SPLICE_EXPD)
 
-(define CPT_SMALL_NUMBER_START 35)
+(define CPT_SMALL_NUMBER_START 36)
 (define CPT_SMALL_NUMBER_END 60)
 
 (define CPT_SMALL_SYMBOL_START 60)
@@ -430,7 +432,7 @@
 
 (define (out-module mod-form out)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body unexported 
+    [(struct mod (name srcname self-modidx prefix provides requires body syntax-body unexported 
                        max-let-depth dummy lang-info internal-context))
      (out-syntax MODULE_EXPD
                  (let* ([lookup-req (lambda (phase)
@@ -503,6 +505,7 @@
                         [l (list* #f #f l)] ; obsolete `functional?' info
                         [l (cons lang-info l)] ; lang-info
                         [l (cons self-modidx l)]
+                        [l (cons srcname l)]
                         [l (cons name l)])
                    (make-module-decl l))
                  out)]))
@@ -715,8 +718,12 @@
                     (cons (or name null)
                           lams)
                     out)]
-    [(struct let-one (rhs body flonum?))
-     (out-byte (if flonum? CPT_LET_ONE_FLONUM CPT_LET_ONE) out)
+    [(struct let-one (rhs body flonum? unused?))
+     (out-byte (cond
+                [flonum? CPT_LET_ONE_FLONUM]
+                [unused? CPT_LET_ONE_UNUSED]
+                [else CPT_LET_ONE])
+               out)
      (out-expr (protect-quote rhs) out)
      (out-expr (protect-quote body) out)]
     [(struct let-void (count boxes? body))

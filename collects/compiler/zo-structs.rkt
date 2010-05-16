@@ -90,6 +90,7 @@
                                            [max-let-depth exact-nonnegative-integer?])) 
 
 (define-form-struct (mod form) ([name symbol?] 
+                                [srcname symbol?]
                                 [self-modidx module-path-index?] 
                                 [prefix prefix?] 
                                 [provides (listof (list/c (or/c exact-integer? #f)
@@ -118,7 +119,7 @@
 (define-form-struct (closure expr) ([code lam?] [gen-id symbol?])) ; a static closure (nothing to close over)
 (define-form-struct (case-lam expr) ([name (or/c symbol? vector? empty?)] [clauses (listof (or/c lam? indirect?))])) ; each clause is a lam (added indirect)
 
-(define-form-struct (let-one expr) ([rhs (or/c expr? seq? indirect? any/c)] [body (or/c expr? seq? indirect? any/c)] [flonum? boolean?])) ; pushes one value onto stack
+(define-form-struct (let-one expr) ([rhs (or/c expr? seq? indirect? any/c)] [body (or/c expr? seq? indirect? any/c)] [flonum? boolean?] [unused? boolean?])) ; pushes one value onto stack
 (define-form-struct (let-void expr) ([count exact-nonnegative-integer?] [boxes? boolean?] [body (or/c expr? seq? indirect? any/c)])) ; create new stack slots
 (define-form-struct (install-value expr) ([count exact-nonnegative-integer?] 
                                           [pos exact-nonnegative-integer?] 
