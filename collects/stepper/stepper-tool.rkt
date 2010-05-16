@@ -13,7 +13,7 @@
          lang/stepper-language-interface
          scheme/pretty
          "xml-sig.ss"
-         "drscheme-button.ss") ;; get the stepper-button-callback private-member-name
+         "drracket-button.ss") ;; get the stepper-button-callback private-member-name
 
 (import drscheme:tool^ xml^ view-controller^)
 (export drscheme:tool-exports^ stepper-frame^)
@@ -213,7 +213,7 @@
              [stretchable-width #f]
              [stretchable-height #f]))
       
-      ;; called from drscheme-button.ss, installed via the #lang htdp/bsl (& co) reader into drscheme
+      ;; called from drracket-button.rkt, installed via the #lang htdp/bsl (& co) reader into drscheme
       (define/public (stepper-button-callback)
         (if stepper-frame
             (send stepper-frame show #t)

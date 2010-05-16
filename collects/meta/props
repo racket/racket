@@ -1226,7 +1226,7 @@ path/s is either such a string or a list of them.
 "collects/schemeunit/gui.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/scribble" responsible (mflatt eli)
 "collects/scribble/run.rkt" drdr:command-line (mzc *)
-"collects/scribble/tools/drscheme-buttons.rkt" drdr:command-line (gracket-text *)
+"collects/scribble/tools/drracket-buttons.rkt" drdr:command-line (gracket-text *)
 "collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line (gracket-text * "skip")
 "collects/scribblings" responsible (mflatt eli robby mathias)
 "collects/scribblings/framework/standard-menus.scrbl" drdr:command-line #f
@@ -1297,7 +1297,7 @@ path/s is either such a string or a list of them.
 "collects/srpersist/main.rkt" drdr:command-line #f
 "collects/srpersist/srpersist.rkt" drdr:command-line #f
 "collects/stepper" responsible (clements)
-"collects/stepper/drscheme-button.rkt" drdr:command-line (gracket-text *)
+"collects/stepper/drracket-button.rkt" drdr:command-line (gracket-text *)
 "collects/stepper/private/display-break-stuff.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/stepper/private/mred-extensions.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/stepper/private/vertical-separator-snip.rkt" drdr:command-line (gracket-text "-t" *)

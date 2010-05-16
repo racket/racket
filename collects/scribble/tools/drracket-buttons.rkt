@@ -8,7 +8,7 @@
          setup/xref
          net/sendurl)
 
-(provide drscheme-buttons)
+(provide drracket-buttons)
 
 (define-runtime-path pdf-png-path "pdf.png")
 (define-runtime-path html-png-path "html.png")
@@ -45,7 +45,7 @@
              (message-box "Scribble" (get-output-string p) drs-frame))
            (message-box "Not Named" "Cannot render unsaved file"))))))
 
-(define drscheme-buttons
+(define drracket-buttons
   (let ([html-button
          (make-render-button "Scribble HTML" html.png "--html" #".html" 
                              '("++xref-in" "setup/xref" "load-collections-xref"))]
