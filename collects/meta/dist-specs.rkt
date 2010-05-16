@@ -327,7 +327,7 @@ plt := (+ dr plt-extras)
 ;; Packages etc
 
 mz-base := "/plt/readme.txt"          ; generated
-           (package: "mzscheme") (package: "racket")
+           (package: "racket") (package: "mzscheme")
            "/plt/include/"
            ;; configuration stuff
            (cond (not src) => (collects: "info-domain/")) ; filtered
@@ -350,8 +350,8 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
               (doc: "*.{html|css|js|sxref}")
               (scribblings: "{{info|icons}.rkt|*.png}" "compiled")
 
-mr-base := (package: "mred") (package: "gracket") 
-           (bin: "mred-text") (bin: "gracket-text")
+mr-base := (package: "gracket") (bin: "gracket-text")
+           (package: "mred") (bin: "mred-text")
            (collects: "afm/")
 mr-manuals := (doc+src: "gui/")
 
@@ -365,24 +365,24 @@ dr-extras  :=
 plt-extras :=
 
 ;; Tests definitions
-mz-tests := (tests: "mzscheme/" "info.rkt" "utils/" "match/" "eli-tester.rkt")
+mz-tests := (tests: "racket/" "info.rkt" "utils/" "match/" "eli-tester.rkt")
 
 ;; ============================================================================
 ;; Source definitions
 
-mz-src := (+ (- (src: "README" "Makefile.in" "configure" "lt/" "mzscheme/"
+mz-src := (+ (- (src: "README" "Makefile.in" "configure" "lt/" "racket/"
                       (cond win => "worksp/{README|mzconfig.h}"
-                                   "worksp/{mzscheme|libmzsch|libmzgc|gc2}/"
+                                   "worksp/{racket|libracket|libmzgc|gc2}/"
                                    "worksp/{mzstart|starters}/"
                                    "worksp/extradlls/"))
                 (cond (not mr) => (src: "worksp/starters/mrstart.ico")))
              foreign-src)
 
-mr-src := (src: "mred/" "wxcommon/"
+mr-src := (src: "gracket/" "mred/" "wxcommon/"
                 (cond unix => "wxxt/"
                       mac  => "mac/" "a-list/" "wxmac/"
                       win  => "wxwindow/"
-                              "worksp/{jpeg|libmred|mred|mrstart}/"
+                              "worksp/{jpeg|libgracket|gracket|mrstart}/"
                               "worksp/{png|wxme|wxs|wxutils|wxwin|zlib}/"))
 
 foreign-src := (src: "foreign/{Makefile.in|README}"
@@ -414,13 +414,13 @@ binaries := (+ "/plt/bin/"
                "/plt/lib/"
                "/plt/include/"
                "/plt/collects/**/compiled/native/"
-               (cond unix => "/plt/bin/{mzscheme|mred}*"
-                             "/plt/bin/{|g}racket*"
+               (cond unix => "/plt/bin/{|g}racket*"
+                             "/plt/bin/{mzscheme|mred}*"
                      win  => "/plt/*.exe"
                              "/plt/*.dll"
                              "/plt/collects/launcher/*.exe"
-                     mac  => "/plt/bin/mzscheme*"
-                             "/plt/bin/racket*"
+                     mac  => "/plt/bin/racket*"
+                             "/plt/bin/mzscheme*"
                              "/plt/*.app"
                              "/plt/collects/launcher/*.app")
                platform-dependent)
@@ -612,7 +612,7 @@ plt-extras :+= (collects: "texpict/")
 plt-extras :+= (package: "frtime/")
 
 ;; -------------------- typed-scheme
-dr-extras :+= (package: "typed-scheme/" ; used in drscheme
+dr-extras :+= (package: "typed-scheme/" ; used in drracket
                         #:docs "ts-{reference|guide}/")
               (- (collects: "typed/")
                  (cond (not plt) => (collects: "typed/test-engine/")
@@ -660,8 +660,8 @@ plt-extras :+= (package: "deinprogramm/")
 
 ;; -------------------- unstable
 mz-extras :+= (- (package: "unstable")
-                 ;; should "gui" mean DrScheme or MrEd? It's not
-                 ;; obvious that "framework" is only in DrScheme.
+                 ;; should "gui" mean DrRacket or GRacket? It's not
+                 ;; obvious that "framework" is only in DrRacket.
                  (cond (not dr) => (collects: "unstable/gui")))
 
 ;; -------------------- plai

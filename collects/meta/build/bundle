@@ -1,4 +1,4 @@
-#!/bin/env mzscheme
+#!/bin/env racket
 ;; -*- scheme -*-
 
 #lang scheme/base
@@ -7,7 +7,7 @@
          meta/checker (prefix-in dist: meta/dist-specs) meta/specs
          (for-syntax scheme/base) ; for runtime-path
          (except-in scheme/mpair mappend)
-         (only-in (lib "process.ss") system))
+         (only-in scheme/system system))
 
 (define (/-ify x)
   (regexp-replace #rx"/?$" (if (path? x) (path->string x) x) "/"))
