@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2002 Matthew Flatt
 
@@ -529,7 +529,7 @@ static Boolean get_ext_file_spec(FSSpec *spec, const char *filename)
 	return scheme_mac_path_to_spec(filename, spec);
 #else
 	/* William Ng's code for always finding an extension in a particular place. */
-	/* This is a very Mac-like idea, but not MzScheme-like. */
+	/* This is a very Mac-like idea, but not Racket-like. */
     ProcessSerialNumber currentPSN;
     ProcessInfoRec info;
 	Boolean ret = false;

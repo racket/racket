@@ -4310,7 +4310,7 @@ static long started, rightnow, old;
 # define PRINTTIME(x) /* empty */
 #endif
 
-/* Immitate Boehm's private GC call; used by MzScheme */
+/* Immitate Boehm's private GC call; used by Racket */
 void GC_push_all_stack(void *sp, void *ep)
 {
   unsigned long s, e;

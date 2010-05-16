@@ -909,7 +909,7 @@ not a file that exists, @var{type} is filled with @cpp{0}.}
            [int noexn])]{
 
 Gets the @as-index{current working directory} according to the
-operating system. This is separate from MzScheme's current directory
+operating system. This is separate from Racket's current directory
 parameter.
 
 The directory path is written into @var{buf}, of length @var{buflen},

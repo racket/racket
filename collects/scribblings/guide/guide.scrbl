@@ -14,7 +14,7 @@ especially quick introduction to Racket, start with @|Quick|.
 @seclink["to-scheme"]{Chapter 2} provides a brief introduction to
 Racket. From @seclink["datatypes"]{Chapter 3} on, this guide dives
 into details---covering much of the Racket toolbox, but leaving
-precise details to @|MzScheme| and other reference manuals.
+precise details to @|Racket| and other reference manuals.
 
 @table-of-contents[]
 

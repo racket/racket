@@ -208,7 +208,7 @@ can contain other information).}
 @section{Memory Management}
 
 For general information on C-level memory management with Racket,
-see @|InsideMzScheme|.
+see @|InsideRacket|.
 
 @defproc[(malloc [bytes-or-type (or/c exact-nonnegative-integer? ctype?)]
                  [type-or-bytes (or/c exact-nonnegative-integer? ctype?) @#,elem{absent}]

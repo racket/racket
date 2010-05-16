@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
@@ -2559,7 +2559,7 @@ scheme_do_exit(int argc, Scheme_Object *argv[])
 }
 
 /* scheme_immediate_exit ensures that a call to exit() goes to the C
-   library used by the MzScheme DLL, and not some other copy of the
+   library used by the Racket DLL, and not some other copy of the
    library (in Windows) */
 void scheme_immediate_exit(int status)
 {

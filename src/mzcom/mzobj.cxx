@@ -146,7 +146,7 @@ void setupSchemeEnv(Scheme_Env *in_env)
     ExitThread(0);
   }
 
-  // set up collection paths, based on MzScheme startup
+  // set up collection paths, based on Racket startup
 
   mod = GetModuleHandle("mzcom.exe");
   GetModuleFileName(mod,exeBuff,sizeof(exeBuff));
@@ -192,7 +192,7 @@ static int do_evalLoop(Scheme_Env *env, int argc, char **_args)
   BSTR *pOutput, po;
   MSG msg;
 
-  // make sure all MzScheme calls are in this thread
+  // make sure all Racket calls are in this thread
 
   setupSchemeEnv(env);
 
@@ -275,7 +275,7 @@ static int do_evalLoop(Scheme_Env *env, int argc, char **_args)
     scheme_gc_ptr_ok(narrowInput);
 
     if (*pErrorState) {
-      wideError = wideStringFromSchemeObj(outputObj,"MzScheme error: ~a",18);
+      wideError = wideStringFromSchemeObj(outputObj,"Racket error: ~a",18);
       po = SysAllocString(L"");
       *pOutput = po;
       *pHr = E_FAIL;

@@ -1,6 +1,6 @@
 (module mz-testing mzscheme
 
-;;; `test.scm' Test correctness of MzScheme implementations.
+;;; `test.scm' Test correctness of Racket implementations.
 ;;; Copyright (C) 1991, 1992, 1993, 1994 Aubrey Jaffer.
 ;;; Modified for MzScheme by Matthew
 

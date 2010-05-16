@@ -86,7 +86,7 @@ The result depends on @scheme[what], and a @scheme[#f] result is only
  @item{@scheme['init-file] returns the path to the user-specific
  initialization file (containing Scheme code). The directory part of
  the path is the same path as returned for @scheme['init-dir] by
- MzScheme's @scheme[find-system-path].  The file name is
+ Racket's @scheme[find-system-path].  The file name is
  platform-specific:
   @itemize[
 
@@ -367,7 +367,7 @@ containing a typestring and value; each typestring is used ad the
 keyword name of an AppleEvent argument for the associated converted
 value. 
 
-The following types of MzScheme values can be converted to AppleEvent
+The following types of Racket values can be converted to AppleEvent
 values passed to the receiver:
 
 @atable[
@@ -390,7 +390,7 @@ if there is an error. If there is no error or return value,
 @scheme[send-event] returns @|void-const|.
 
 The following types of AppleEvent values can be reverse-converted into
-a MzScheme value returned by @scheme[send-event]:
+a Racket value returned by @scheme[send-event]:
 
 @atable[
 (tline @elem{Boolean}  @elem{@scheme[#t] or @scheme[#f]})

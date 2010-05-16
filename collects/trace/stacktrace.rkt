@@ -17,11 +17,11 @@
 (define-unit stacktrace@
   (import stacktrace-imports^)
   (export stacktrace^)
-  
+
   ;; TEMPLATE FUNCTIONS:
-  ;;  these functions' definitions follow the data definitions presented in the Syntax
-  ;;  chapter of the MzScheme Manual. 
-  
+  ;;  these functions' definitions follow the data definitions presented in the
+  ;;  Syntax chapter of the Racket Manual.
+
   (define (top-level-expr-iterator stx)
     (kernel-syntax-case stx #f
       [(module identifier name (#%plain-module-begin . module-level-exprs))

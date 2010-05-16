@@ -8,7 +8,7 @@
   (require (for-label racket/base))
   (provide (for-label (all-from-out racket/base)))
 
-  (provide Quick MzScheme HtDP
+  (provide Quick Racket HtDP
            tool
            moreguide
            guideother
@@ -60,6 +60,6 @@
     (secref #:doc '(lib "scribblings/reference/reference.scrbl") s))
 
   (define (ext-refsecref s)
-    (make-element #f (list (refsecref s) " in " MzScheme)))
+    (make-element #f (list (refsecref s) " in " Racket)))
 
-  (define MzScheme (other-manual '(lib "scribblings/reference/reference.scrbl"))))
+  (define Racket (other-manual '(lib "scribblings/reference/reference.scrbl"))))

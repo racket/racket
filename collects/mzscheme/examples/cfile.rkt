@@ -2,7 +2,7 @@
 ;; Direct access to fopen, fread, fwrite, and fclose. The interface is
 ;;  not remotely safe, since #f is accepted (and converted to NULL)
 ;;  for `(pointer "FILE")' arguments. Also, blocking reads or writes
-;;  will block all MzScheme threads.
+;;  will block all Racket threads.
 
 (c-declare "#include <stdio.h>")
 

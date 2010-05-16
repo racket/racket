@@ -98,7 +98,7 @@ garbage collector called the master.  Places are allowed to garbage collect
 independently of one another.  The master collector, however, has to pause all
 mutators before it can collect garbage.
 
-@section[#:tag "compiling"]{Enabling Places in MzScheme Builds}
+@section[#:tag "compiling"]{Enabling Places in Racket Builds}
 
 PLT's parallel-places support is only enabled if you pass
 @DFlag{enable-places} to @exec{configure} when you build PLT (and

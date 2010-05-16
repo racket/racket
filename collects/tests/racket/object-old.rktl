@@ -1,5 +1,5 @@
 
-; Test MzScheme's object system
+; Test Racket's object system
 
 (load-relative "loadtest.rktl")
 

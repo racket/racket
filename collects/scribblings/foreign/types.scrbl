@@ -303,7 +303,7 @@ collector.}
 
 A type that can be used with any Racket object; it corresponds to the
 @cpp{Scheme_Object*} type of Racket's C API (see
-@|InsideMzScheme|).  It is useful only for libraries that are aware of
+@|InsideRacket|).  It is useful only for libraries that are aware of
 Racket's C API.}
 
 

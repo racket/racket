@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2006-2010 PLT Scheme Inc.
 
     This library is free software; you can redistribute it and/or
@@ -290,7 +290,7 @@ typedef struct future_thread_params_t {
 } future_thread_params_t;
 
 /**********************************************************************/
-/* Plumbing for MzScheme initialization                               */
+/* Plumbing for Racket initialization                                 */
 /**********************************************************************/
 
 /* Invoked by the runtime on startup to make primitives known */

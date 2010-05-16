@@ -7,7 +7,7 @@
          (for-syntax scheme/base)
          (for-label scheme/base))
 
-(provide MzScheme
+(provide Racket
          mzc cpp cppi cppdef (rename-out [*var var])
          function subfunction
          FormatD
@@ -157,7 +157,7 @@
 (define (refsecref s)
   (secref #:doc '(lib "scribblings/reference/reference.scrbl") s))
 
-(define MzScheme
+(define Racket
   (other-manual '(lib "scribblings/reference/reference.scrbl")))
 
 (define (FormatD s)

@@ -88,7 +88,7 @@
         (unless (null? cc-recipients)
           (write-recipient-header "CC" cc-recipients)))
       (fprintf writer "Subject: ~a\n" subject)
-      (fprintf writer "X-Mailer: MzScheme: see www.plt-scheme.org\n")
+      (fprintf writer "X-Mailer: Racket (racket-lang.org)\n")
       (for-each (lambda (s)
                   (display s writer)
                   (newline writer))

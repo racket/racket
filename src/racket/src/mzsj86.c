@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995 Matthew Flatt
 
@@ -20,7 +20,7 @@
 */
 
 /* Re-implementation of i386 setjmp to avoid Windows-specific work,
-   which messes up MzScheme's (MrEd's, really) threads. */
+   which messes up Racket's (GRacket's, really) threads. */
 
 #include "schpriv.h"
 

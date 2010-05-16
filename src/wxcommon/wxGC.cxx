@@ -1,7 +1,7 @@
 /*************************************************************************
 
-MrEd interface to various garbage collectors, including the Boehm
- collector, SenoraGC, and MzScheme's precise collector.
+GRacket interface to various garbage collectors, including the Boehm
+ collector, SenoraGC, and Racket's precise collector.
 
 Copyright (c) 2004-2010 PLT Scheme Inc.
 

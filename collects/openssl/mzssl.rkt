@@ -5,7 +5,7 @@
 ;;   in the future. (This requirement comes from the SSL library.)
 
 ;; Another warning: data that is written and not buffered may still be
-;;  in flight between MzScheme and the underlying ports. A `flush-output'
+;;  in flight between Racket and the underlying ports. A `flush-output'
 ;;  won't return until sent data is actually in the underlying port.
 ;;  (This is due to the fact that unbuffered data cannot be written
 ;;  without blocking.)
@@ -655,7 +655,7 @@
 			   (flush-ssl mzssl enable-break?)
 			   0)
 			 ;; Write request; even if blocking is ok, we treat
-			 ;;  it as non-blocking and let MzScheme handle blocking
+			 ;;  it as non-blocking and let Racket handle blocking
 			 (let ([n (SSL_write (mzssl-ssl mzssl) xfer-buffer len)])
 			   (if (n . > . 0)
 			       (begin

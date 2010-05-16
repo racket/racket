@@ -69,7 +69,7 @@
    (verify e_b (imm ṽ_1* ...) ,(add1 (term n_l)) b γ η (shift 1 f))
    (where (s_1 γ_1 η_1) (verify e_r (uninit ṽ_1 ...) ,(add1 (term n_l)) #f γ η ∅))
    (side-condition (term (valid? s_1)))
-   ;; MRF: MzScheme implementation checks that s_1 starts with uninit
+   ;; MRF: the Racket implementation checks that s_1 starts with uninit
    (where (ṽ_1* ...) (trim s_1 (ṽ_1 ...)))]
   
   ; seq

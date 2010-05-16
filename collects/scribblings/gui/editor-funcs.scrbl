@@ -361,7 +361,7 @@ The handler recognizes editor files by the first twelve characters of
  insert-file], and then converting the editor content into a port with
  @scheme[open-input-text-editor]. After obtaining a port in this way,
  the content is read in essentially the same way as by the default
- MzScheme load handler. The difference is that the editor may contain
+ Racket load handler. The difference is that the editor may contain
  instances of @scheme[readable-snip<%>], which are ``read'' though the
  snips' @method[readable-snip<%> read-special] method; see
  @scheme[open-input-text-editor] for details.

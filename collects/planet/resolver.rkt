@@ -135,7 +135,7 @@ number of bytes in the package.
 
 3 Client Download Policies
 
-MzScheme invokes the PLaneT client once for each instance of a require-planet
+Racket invokes the PLaneT client once for each instance of a require-planet
 form in a program being run (i.e., the transitive closure of the "requires"
 relation starting from some specified root module; this closure is calculable
 statically). At each of these invocations, the client examines its internal

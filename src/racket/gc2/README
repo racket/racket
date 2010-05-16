@@ -1,12 +1,12 @@
 
 This README provides and overview of the precise GC interface used by
-MzScheme. The header files gc2.h and gc2_dump.h provide additional
+Racket. The header files gc2.h and gc2_dump.h provide additional
 documentation.
 
 GC Architecture
 ---------------
 
-The GC interface for MzScheme (and MrEd) is designed to support
+The GC interface for Racket (and GRacket) is designed to support
 precise collection with both moving and non-moving
 collectors. Generational and incremental collectors must rely on
 hardware-based memory protection for their implementation (to detect
@@ -15,7 +15,7 @@ writes into old objects, etc.).
 As a general rule, all pointers to collectable objects reference the
 beginning of the object (i.e., the pointer is never into the interior
 of the object). The exception is that a pointer may reference the
-interior of an "Interior" object, but MzScheme allocates such objects
+interior of an "Interior" object, but Racket allocates such objects
 infrequently, and only as relatively large objects.
 
 All alocated memory must be longword-aligned. For architectures where
@@ -31,7 +31,7 @@ confused with a longword-aligned pointer). Thus, the collector must
 distinguish between longword-aligned pointers into collected memory
 regions and all other pointers.
 
-At any point when the allocator/collector is invoked, MzScheme will
+At any point when the allocator/collector is invoked, Racket will
 have set the GC_variable_stack variable to indicate a chain of local
 pointer variables on the stack (i.e., both the chain of record and the
 pointer variables themselves are on the stack). The GC_variable_stack
@@ -54,7 +54,7 @@ The `next_frame' field in the structure gives the address of the next
 frame on the stack, and so on. The garbage collector should follow the
 chain of frames, adjusting pointers for copying collection, until it
 reaches a frame that is the same as the value returned by
-GC_get_thread_stack_base() (which is supplied by MzScheme).
+GC_get_thread_stack_base() (which is supplied by Racket).
 
 More generally, GC_mark_variable_stack() can be used to GC a stack
 that has been copied into the heap. See below for more details.
@@ -62,12 +62,12 @@ that has been copied into the heap. See below for more details.
 Memory Kinds
 ------------
 
-MzScheme allocates the following kinds of memory objects:
+Racket allocates the following kinds of memory objects:
 
  * Tagged - The object starts with a `short' integer containing the
    tag, but the tag will always be less than 256. After requesting
-   memory from the GC, MzScheme installs the tag before performing any
-   other memory operation. MzScheme provides three functions for each tag:
+   memory from the GC, Racket installs the tag before performing any
+   other memory operation. Racket provides three functions for each tag:
 
     o an operation for obtaining the value's size in words (not
       bytes!);
@@ -83,7 +83,7 @@ MzScheme allocates the following kinds of memory objects:
 
    Note that a two-space copying collector might use only the fixup
    operation, while a non-moving collector might use only the mark
-   operation. However, MzScheme currently relies on at least fixup
+   operation. However, Racket currently relies on at least fixup
    calls for scheme_runstack_rt-tagged objects.
 
  * Atomic - The allocated object contains no pointers to other
@@ -97,20 +97,20 @@ MzScheme allocates the following kinds of memory objects:
 
  * Tagged Array - The allocated object is an array of tagged
    objects. Every tagged object in the array is the same size and has
-   the same effective tag. After allocating the memory, MzScheme sets
+   the same effective tag. After allocating the memory, Racket sets
    the tag on the initial array element, but might not set the tag of
    other elements until later. (Even if tags are not set for all
    objects, the mark and fixup operations might be applied to all of
    them.)
 
  * Xtagged - The object is somehow tagged, but not with a leading
-   `short'. MzScheme provides a single mark and fixup operation (no
+   `short'. Racket provides a single mark and fixup operation (no
    size operation) for all xtagged objects.
 
  * Interior Array - Like array objects, but pointers to the object can
    reference its interior, rather than just the start of the object,
    and the object never moves. Such pointers will always be
-   longword-aligned. MzScheme allocates interior objects infrequently,
+   longword-aligned. Racket allocates interior objects infrequently,
    and only as relatively large objects.
 
  * Weak Box - The object has the following initial structure:
@@ -121,13 +121,13 @@ MzScheme allocates the following kinds of memory objects:
        void *val;
      }
 
-   MzScheme reads the `tag' and `val' fields, and both reads and
-   writes the `filler_used_for_hashing' field. MzScheme also provides
+   Racket reads the `tag' and `val' fields, and both reads and
+   writes the `filler_used_for_hashing' field. Racket also provides
    the value to be used for `tag', via GC_init_type_tags(). The reason
    this structure is implemented by the collector is to handle the
    special behavior of the weak link.
 
-   MzScheme can change `val' at any time; when a collection happens,
+   Racket can change `val' at any time; when a collection happens,
    if the object in `val' is collectable and is collected, then `val'
    is zeroed.  The `val' pointer must be updated by the collector if
    the object it refers to is moved by the collector, but it does not
@@ -154,7 +154,7 @@ MzScheme allocates the following kinds of memory objects:
      }
 
    The gc_private array contains collector-private values that are
-   neither read nor written by MzScheme. The array field is an array
+   neither read nor written by Racket. The array field is an array
    of weak pointers to collectable objects. See GC_malloc_weak_array()
    in gc2.h for more details.
 
@@ -176,7 +176,7 @@ MzScheme allocates the following kinds of memory objects:
 
  * Immobile box - a longword-sized box that can contain a reference to
    a collectable object, but it not itself collectable or movable. An
-   immobile box lets MzScheme refer to a collectable object (through
+   immobile box lets Racket refer to a collectable object (through
    one indirection) from memory that is not traversed by the
    collector.
 
@@ -258,7 +258,7 @@ Any function in the defined interface can be implemented as a
 macro. Indeed, gcMARK() and gcFIXUP() are expected to be
 macros.
 
-Due to the way that the MzScheme and MrEd code is generated for
+Due to the way that the Racket and GRacket code is generated for
 precise collection, the header file gc2.h must allow multiple
 inclusion in two different phases. If the pre-processor symbol
 GC2_JUST_MACROS is defined, then the header should only define

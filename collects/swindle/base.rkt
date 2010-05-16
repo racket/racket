@@ -1,7 +1,7 @@
 ;;; Written by Eli Barzilay: Maze is Life!  (eli@barzilay.org)
 
 ;;> The `base' module defines some basic low-level syntactic extensions to
-;;> MzScheme.  It can be used by itself to get these extensions.
+;;> Racket.  It can be used by itself to get these extensions.
 
 #lang mzscheme
 
@@ -505,7 +505,7 @@
          (rename string->keyword string->real-keyword))
 ;;>> (keyword? x)
 ;;>   A predicate for keyword symbols (symbols that begin with a ":").
-;;>   (Note: this is different from MzScheme's keywords!)
+;;>   (Note: this is different from Racket's keywords!)
 (define (keyword*? x)
   (and (symbol? x) (not (eq? x '||))
        (eq? (string-ref (symbol->string x) 0) #\:)))

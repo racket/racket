@@ -1,4 +1,4 @@
-This directory contains a few example MzScheme extensions. Most
+This directory contains a few example Racket extensions. Most
 examples are implemented directly in C. A few examples listed at the
 end use the mzc `c-lambda', etc. forms.
 
@@ -10,7 +10,7 @@ end use the mzc `c-lambda', etc. forms.
    from C and adding top-level definitions. (Manually instrumented for
    3m, so do not use `mzc --xform'.)
 
- * curses.c - links MzScheme to the curses library. Demonstrates more
+ * curses.c - links Racket to the curses library. Demonstrates more
    procedures and definitions, a little more type dispatching, and
    returning multiple values. (Manually instrumented for 3m, so do not
    use `mzc --xform'.)

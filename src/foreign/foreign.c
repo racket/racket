@@ -403,7 +403,7 @@ static Scheme_Object *foreign_ffi_obj_name(int argc, Scheme_Object *argv[])
 /*****************************************************************************/
 /* Type helpers */
 
-/* These are not defined in MzScheme because:
+/* These are not defined in Racket because:
  * - SCHEME_UINT_VAL is not really a simple accessor like other SCHEME_X_VALs
  * - scheme_make_integer_from_unsigned behaves the same as the signed version
  */
@@ -425,7 +425,7 @@ static Scheme_Object *foreign_ffi_obj_name(int argc, Scheme_Object *argv[])
 
 #else /* SIXTY_FOUR_BIT_INTEGERS defined */
 
-/* These will make sense in MzScheme when longs are longer than ints (needed
+/* These will make sense in Racket when longs are longer than ints (needed
  * for libffi's int32 types).  There is no need to deal with bignums because
  * mzscheme's fixnums are longs. */
 inline int scheme_get_realint_val(Scheme_Object *o, int *v)
@@ -508,10 +508,10 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * The following are the only primitive types.
  * The tricky part is figuring out what width-ed types correspond to
  * what internal types.  Matthew says:
- *   MzScheme expects to be compiled such that sizeof(int) == 4,
+ *   Racket expects to be compiled such that sizeof(int) == 4,
  *   sizeof(long) == sizeof(void*), sizeof(short) >= 2,
  *   sizeof(char) == 1, sizeof(float) == 4, and sizeof(double) == 8.
- *   So, on a 64-bit OS, MzScheme expects only `long' to change.
+ *   So, on a 64-bit OS, Racket expects only `long' to change.
  **********************************************************************/
 
 /* returns #<void> when used as output type, not for input types. */
@@ -783,7 +783,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  */
 
 /* This is used for passing and Scheme_Object* value as is.  Useful for
- * functions that know about Scheme_Object*s, like MzScheme's. */
+ * functions that know about Scheme_Object*s, like Racket's. */
 #define FOREIGN_scheme (25)
 /* Type Name:   scheme
  * LibFfi type: ffi_type_gcpointer

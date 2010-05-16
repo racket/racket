@@ -14,16 +14,16 @@
                            [init-namespace (-> any)])
          boolean?]{
 
-Simulates starting MzScheme with the vector of command-line strings
+Simulates starting Racket with the vector of command-line strings
 @scheme[argv]. The @scheme[init-argv], @scheme[adjust-flag-table], and
 @scheme[init-namespace] arguments are used to modify the default
 settings for command-line flags, adjust the parsing of command-line
 flags, and customize the initial namespace, respectively.
 
 The vector of strings @scheme[init-argv] is read first with the
-standard MzScheme command-line parsing. Flags that load files or
+standard Racket command-line parsing. Flags that load files or
 evaluate expressions (e.g., @Flag{f} and @Flag{e}) are ignored, but
-flags that set MzScheme's modes (e.g., @Flag{c} or @Flag{j})
+flags that set Racket's modes (e.g., @Flag{c} or @Flag{j})
 effectively set the default mode before @scheme[argv] is parsed.
 
 Before @scheme[argv] is parsed, the procedure
@@ -34,7 +34,7 @@ a table of command-line flags, and this table is used to parse
 add or remove flags from the standard set.
 
 After @scheme[argv] is parsed, a new thread and a namespace are
-created for the ``restarted'' MzScheme. (The new namespace is
+created for the ``restarted'' Racket. (The new namespace is
 installed as the current namespace in the new thread.) In the new
 thread, restarting performs the following actions:
 
@@ -64,4 +64,4 @@ the return value is determined as described above.
 
 Note that an error in a command-line expression followed by
 @scheme[read-eval-print-loop] produces a @scheme[#t] result. This is
-consistent with MzScheme's stand-alone behavior.}
+consistent with Racket's stand-alone behavior.}

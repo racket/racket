@@ -249,7 +249,7 @@
   (define/kw (zip->output files #:optional [out (current-output-port)])
     (parameterize ([current-output-port out])
       (let* ([seekable? (seekable-port? (current-output-port))]
-             [headers ; note: MzScheme's `map' is always left-to-right
+             [headers ; note: Racket's `map' is always left-to-right
               (map (lambda (file)
                      (zip-one-entry (build-metadata file) seekable?))
                    files)])

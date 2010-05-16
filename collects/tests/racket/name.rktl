@@ -1,5 +1,5 @@
 
-; Test MzScheme's name inference
+; Test Racket's name inference
 
 (load-relative "loadtest.rktl")
 

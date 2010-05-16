@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2006-2010 PLT Scheme Inc.
 
     This library is free software; you can redistribute it and/or
@@ -13221,7 +13221,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 }
 
 #if 0
-/* Sometimes useful for debugging MzScheme: */
+/* Sometimes useful for debugging Racket: */
 void scheme_dump_stack_trace(void)
 {
   void *p, *q;

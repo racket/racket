@@ -14,7 +14,7 @@
 ;; with `module-begin' or `top-interaction', and we wrap such
 ;; evaluations to swap the namespace in and out.
 
-;; One way in which this differs from MzScheme is that 
+;; One way in which this differs from Racket is that 
 ;; `#reader'-loaded modules see a different top-level namespace,
 ;; though it's the same module registry.
 

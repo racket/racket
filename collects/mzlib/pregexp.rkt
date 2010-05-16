@@ -3,7 +3,7 @@
 ;;   ;Portable regular expressions for Scheme
 ;;   ;Dorai Sitaram
 ;;   ;http://www.ccs.neu.edu/~dorai/pregexp/pregexp.html
-;; but `pregexp' functionality is now built into MzScheme, so
+;; but `pregexp' functionality is now built into Racket, so
 ;; this is mostly a wrapper module.
 
 (module pregexp mzscheme

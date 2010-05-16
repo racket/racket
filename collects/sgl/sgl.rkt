@@ -1,4 +1,4 @@
-;; sgl -- An OpenGL extension of MzScheme
+;; sgl -- An OpenGL extension of Racket
 ;;
 ;; Copyright (C) 2003-2010 Scott Owens <sowens@cs.utah.edu>
 ;;

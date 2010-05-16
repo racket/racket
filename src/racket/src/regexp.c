@@ -1,6 +1,6 @@
 /*
  * @(#)regexp.c	1.3 of 18 April 87
- * Revised for PLT MzScheme, 1995-2001
+ * Revised for PLT Racket, 1995-2001
  * Copyright (c) 2004-2010 PLT Scheme Inc.
  *
  *	Copyright (c) 1986 by University of Toronto.
@@ -24,7 +24,7 @@
  * precedence is structured in regular expressions.  Serious changes in
  * regular-expression syntax might require a total rethink.
  *
- * Notable changes for MzScheme:
+ * Notable changes for Racket:
  *   Removed hardwired limits on parenthesis nesting
  *   Changed to index-based instead of pointer-based (better for GC)
  *   Added non-greedy operators *?, +?, and ??
@@ -33,7 +33,7 @@
  *   Added \n backreferences
  *   Added numeric quantifiers
  *   Added case-insensitive and multi-line modes
- *   Added MzScheme glue
+ *   Added Racket glue
  *
  * from Vladimir Tsyshevsky:
  *  additional optional parameter `offset' in `regexp-match'

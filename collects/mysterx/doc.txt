@@ -99,8 +99,8 @@ _MysterX_
  
  Blocks until all browser windows have been closed or hidden,
  using the show method of mx-browser%.  This is useful when
- a MysterX program file is run as a script, to prevent MzScheme 
- or MrEd from closing prematurely.
+ a MysterX program file is run as a script, to prevent Racket
+ or GRacket from closing prematurely.
 
 > mx-browser% :: (make-object mx-browser% [label] [width] [height] [x] [y] [style-list])
 
@@ -202,7 +202,7 @@ _MysterX_
 
   Handles events using the registered event
   handlers.  The event handlers are called in a
-  thread separate from the main MzScheme REPL.
+  thread separate from the main Racket REPL.
 
 > stop-handling-events :: (send an-mx-browser stop-handling-events)
 

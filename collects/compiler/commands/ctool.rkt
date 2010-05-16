@@ -295,7 +295,7 @@
 
 (define (never-embedded action)
   (when (compiler:option:compile-for-embedded)
-    (error mzc-symbol "cannot ~a an extension for an embedded MzScheme" action)))
+    (error mzc-symbol "cannot ~a an extension for an embedded Racket" action)))
 
 (if (compiler:option:3m)
   (begin (link-variant '3m)  (compile-variant '3m))

@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
   All rights reserved.
@@ -204,7 +204,7 @@ typedef unsigned long long umzlonglong;
 # endif
 #endif
 
-/* MzScheme values have the type `Scheme_Object *'. The Scheme_Object
+/* Racket values have the type `Scheme_Object *'. The Scheme_Object
    structure declares just the header: a type tag and space for
    hashing or extra flags; actual object types will extend this
    structure.
@@ -226,7 +226,7 @@ typedef struct Scheme_Object
   /* For precise GC, the keyex field is used for all object types to
      store a hash key extension. The low bit is not used for this
      purpose, though. For string, pair, vector, and box values in all
-     variants of MzScheme, the low bit is set to 1 to indicate that
+     variants of Racket, the low bit is set to 1 to indicate that
      the object is immutable. Thus, the keyex field is needed even in
      non-precise GC mode, so such structures embed
      Scheme_Inclhash_Object */
@@ -263,7 +263,7 @@ typedef struct Scheme_Simple_Object
 
 typedef struct Scheme_Object *(*Scheme_Closure_Func)(struct Scheme_Object *);
 
-/* Scheme_Small_Object is used for several types of MzScheme values: */
+/* Scheme_Small_Object is used for several types of Racket values: */
 typedef struct {
   Scheme_Inclhash_Object iso;
   union {
@@ -922,7 +922,7 @@ typedef void (*Scheme_Needs_Wakeup_Fun)(Scheme_Object *, void *);
 typedef Scheme_Object *(*Scheme_Sync_Sema_Fun)(Scheme_Object *, int *repost);
 typedef int (*Scheme_Sync_Filter_Fun)(Scheme_Object *);
 
-/* The Scheme_Thread structure represents a MzScheme thread. */
+/* The Scheme_Thread structure represents a Racket thread. */
 
 typedef struct Scheme_Thread {
   Scheme_Object so;
@@ -1063,11 +1063,11 @@ typedef struct Scheme_Thread {
   Scheme_Simple_Object *list_stack;
   int list_stack_pos;
 
-  /* MzScheme client can use: */
+  /* Racket client can use: */
   void (*on_kill)(struct Scheme_Thread *p);
   void *kill_data;
 
-  /* MzScheme use only: */
+  /* Racket use only: */
   void (*private_on_kill)(void *);
   void *private_kill_data;
   void **private_kill_next; /* array of three pointers */
@@ -1683,7 +1683,7 @@ MZ_EXTERN long scheme_stackbottom;
 
 MZ_EXTERN int scheme_defining_primitives;
 
-/* These flags must be set before MzScheme is started: */
+/* These flags must be set before Racket is started: */
 MZ_EXTERN int scheme_case_sensitive; /* Defaults to 0 */
 MZ_EXTERN int scheme_no_keywords; /* Defaults to 0 */
 MZ_EXTERN int scheme_allow_set_undefined; /* Defaults to 0 */
@@ -1832,7 +1832,7 @@ struct mz_addrinfo {
 /*                              FFI functions                             */
 /*========================================================================*/
 
-/* If MzScheme is being empbedded, then we just include the
+/* If Racket is being empbedded, then we just include the
    prototypes. Otherwise, we may include a function-table definition
    instead, plus macros that map the usual name to table lookups. */
 

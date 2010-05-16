@@ -1,19 +1,19 @@
 ;; This file is converted to [c]startup.inc and evaluated by
-;; MzScheme's scheme_basic_env().
+;; Racket's scheme_basic_env().
 
 ;; It implements, in a non-bootstrapping way, some functions
-;; needed to start up MzScheme --- especially to install the
+;; needed to start up Racket --- especially to install the
 ;; default module-name resolver.
 
-;; MzScheme runs ((dynamic-require ''#%boot boot)) on startup. Then,
-;; after configuring all startup parameters, MzScheme may run
+;; Racket runs ((dynamic-require ''#%boot boot)) on startup. Then,
+;; after configuring all startup parameters, Racket may run
 ;; ((dynamic-require ''#%boot seal)), and it may seal multiple
 ;; times. So, replace the content of this file to get a different set
 ;; of initial module definitions and parameter values.
 
 ;; When using makefiles, `make startup' in [the build directory for]
 ;; plt/src/mzscheme creates plt/src/mzscheme/src/cstartup.inc. Note
-;; that `make startup' requires a working MzScheme executable; see
+;; that `make startup' requires a working Racket executable; see
 ;; schminc.h for information about avoiding cstartup.inc, and using
 ;; startup.inc (requires perl), instead. In fact, the recommend
 ;; build strategy for cstartup.inc is

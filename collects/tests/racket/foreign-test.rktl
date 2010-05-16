@@ -191,7 +191,7 @@
   (memcpy p 3 p 0 1 _int)
   (test 5 ptr-ref (ptr-add p 3 _int) _int)
 
-  ;; A MzScheme `int' is always 4 bytes.
+  ;; A Racket `int' is always 4 bytes.
   (memset p 1 17 9 _int)
   (test 5 ptr-ref p _int)
   (test #x11111111 ptr-ref (ptr-add p 4) _int)

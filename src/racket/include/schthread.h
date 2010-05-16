@@ -344,7 +344,7 @@ START_XFORM_SKIP;
 # endif
 MZ_EXTERN Thread_Local_Variables *scheme_external_get_thread_local_variables();
 # ifdef __mzscheme_private__
-/* In the MzScheme DLL, need thread-local to be fast: */
+/* In the Racket DLL, need thread-local to be fast: */
 MZ_EXTERN unsigned long scheme_tls_delta;
 #  ifdef MZ_USE_WIN_TLS_VIA_DLL
 MZ_EXTERN int scheme_tls_index;
@@ -362,7 +362,7 @@ static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
   return *scheme_get_thread_local_variables_ptr();
 }
 # else
-/* Outside the MzScheme DLL, slower thread-local is ok: */
+/* Outside the Racket DLL, slower thread-local is ok: */
 static __inline Thread_Local_Variables *scheme_get_thread_local_variables() {
   return scheme_external_get_thread_local_variables();
 }

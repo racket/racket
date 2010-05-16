@@ -9,7 +9,7 @@
 This manual describes Racket's C interface, which allows the
 interpreter to be extended by a dynamically-loaded library, or
 embedded within an arbitrary C/C++ program. The manual assumes
-familiarity with Racket as described in @|MzScheme|.
+familiarity with Racket as described in @|Racket|.
 
 For an alternative way of dealing with foreign code, see
 @other-manual['(lib "scribblings/foreign/foreign.scrbl")], which

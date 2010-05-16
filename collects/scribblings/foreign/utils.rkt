@@ -12,7 +12,7 @@
                     ffi/vector))
 
 (provide cpp
-         InsideMzScheme
+         InsideRacket
          (all-from-out scribble/manual)
          (for-label (all-from-out racket/base
                                   racket/contract
@@ -20,6 +20,5 @@
                                   ffi/unsafe/cvector
                                   ffi/vector)))
 
-
-(define InsideMzScheme
+(define InsideRacket
   (other-manual '(lib "scribblings/inside/inside.scrbl")))

@@ -2,7 +2,7 @@
 
 ;;> This module is the core object system.  It is a heavily hacked version
 ;;> of the original Tiny-CLOS code from Xerox, but it has been fitted to
-;;> MzScheme, optimized and extended.  See the source file for a lot of
+;;> Racket, optimized and extended.  See the source file for a lot of
 ;;> details about how the CLOS magic is created.
 ;;>
 ;;> [There is one difference between Swindle and Tiny-CLOS: the meta object
@@ -216,15 +216,15 @@
 ;;; implementation of instances and entities from people.
 
 ;;>> ???
-;;>   This is MzScheme's `unspecified' value which is used as the default
+;;>   This is Racket's `unspecified' value which is used as the default
 ;;>   value for unbound slots.  It is provided so you can check if a slot is
 ;;>   unbound.
-(define* ??? (letrec ([x x]) x)) ; this is MzScheme's #<undefined> value
+(define* ??? (letrec ([x x]) x)) ; this is Racket's #<undefined> value
 (define unspecified-initializer (lambda args ???))
 (define false-func (lambda args #f))
 
 ;; Basic allocation follows, all was in a single let, but this is not needed
-;; with MzScheme's modules.  Also modified to use simple structs for
+;; with Racket's modules.  Also modified to use simple structs for
 ;; everything, including entities since PLT has applicable struct objects.
 
 (define-values (struct:instance make-instance instance? inst-ref inst-set!)
@@ -484,13 +484,13 @@
 (define* singleton-value cadr)
 
 ;;>>...
-;;> Also note that MzScheme struct types are converted to appropriate
+;;> Also note that Racket struct types are converted to appropriate
 ;;> Swindle classes.  This way, it is possible to have Swindle generic
 ;;> functions that work with struct type specializers.
 
 ;;>> (struct-type->class struct-type)
 ;;>   This function is used to convert a struct-type to a corresponding
-;;>   Swindle subclass of `<struct>'.  See the MzScheme manual for details
+;;>   Swindle subclass of `<struct>'.  See the Racket manual for details
 ;;>   on struct types.
 (define struct-to-class-table (make-hash-table))
 (define* (struct-type->class stype)
@@ -1990,7 +1990,7 @@
 ;;>> <struct>
 ;;>> <opaque-struct>
 ;;>   These are also classes for built-in objects, but they are classes for
-;;>   MzScheme structs -- which can be used like Swindle classes since they
+;;>   Racket structs -- which can be used like Swindle classes since they
 ;;>   will get converted to appropriate Swindle subclasses of `<struct>'.
 ;;>   `<opaque-struct>' is a class of structs that are hidden -- see the
 ;;>   documentation for `struct-info' and the `skipped?' result.  Note that
@@ -2045,7 +2045,7 @@
 (defprimclass <input-port> <port>)
 (defprimclass <output-port> <port>)
 (defprimclass <stream-port> <port>)
-;; MzScheme stuff
+;; Racket stuff
 (defprimclass <input-stream-port> <input-port> <stream-port>)
 (defprimclass <output-stream-port> <output-port> <stream-port>)
 (defprimclass <void>)
@@ -2097,7 +2097,7 @@
                           :direct-supers (list <builtin> <function>)
                           :direct-slots  '()))
 ;;>> <primitive-procedure>
-;;>   The class of all primitive MzScheme procedures.
+;;>   The class of all primitive Racket procedures.
 (define* <primitive-procedure>
   (make <procedure-class>
         :name          '<primitive-procedure>

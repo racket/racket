@@ -1,5 +1,5 @@
 
-This variant of GNU Lightning version 1.2 is modified for MzScheme:
+This variant of GNU Lightning version 1.2 is modified for Racket:
 
  * For PowerPC, branches can be generated in long-jump mode, so that
    patched addresses are not limited to a 2^16 or 2^26 difference from

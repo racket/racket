@@ -79,10 +79,10 @@
                       [(macosx)
                        (cond
                          [(not mred?)
-                          ;; Need MzScheme:
+                          ;; Need Racket:
                           (string-append "racket" (variant-suffix variant #f))]
                          [mred?
-                          ;; Need MrEd:
+                          ;; Need GRacket:
                           (let ([sfx (variant-suffix variant #t)])
                             (build-path (format "GRacket~a.app" sfx)
                                         "Contents" "MacOS" 

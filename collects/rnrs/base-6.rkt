@@ -455,7 +455,7 @@
 
 ;; ----------------------------------------
 ;; letrec
-;;   Need bindings like R5RS, but int-def body like MzScheme
+;;   Need bindings like R5RS, but int-def body like Racket
 
 (define-syntax-rule (r6rs:letrec bindings . body)
   (r5rs:letrec bindings (let () . body)))
@@ -512,7 +512,7 @@
 
 ;; ----------------------------------------
 ;; lambda & define
-;;   Need rest-arg conversion like R5RS, but int-def handlign like MzScheme
+;;   Need rest-arg conversion like R5RS, but int-def handlign like Racket
 
 (define-syntax (r6rs:lambda stx)
   (syntax-case stx ()

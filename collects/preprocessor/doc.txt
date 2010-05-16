@@ -2,7 +2,7 @@
                              _preprocessor_
 ========================================================================
 
-The "preprocessor" collection defines two MzScheme-based preprocessors
+The "preprocessor" collection defines two Racket-based preprocessors
 for texts that can have embedded Scheme code.  The two processors share
 a few features, like several command-line flags and the fact that
 embedded Scheme code is case-sensitive by default.
@@ -332,7 +332,7 @@ Miscellaneous:
                                 _mztext_
 ========================================================================
 
-`mztext' is another MzScheme-based preprocessing language.  It can be
+`mztext' is another Racket-based preprocessing language.  It can be
 used as a preprocessor in a similar way to `mzpp' since it also uses
 `pp-run' functionality.  However, `mztext' uses a completely different
 processing principle, it is similar to TeX rather than the simple
@@ -450,7 +450,7 @@ their arity (preferring a the nullary treatment over the unary one):
 * A procedure of arity 0 is simply invoked, and its resulting value is
   used.  The procedure can freely use the input stream to retrieve
   arguments.  For example, here is how to define a standard C function
-  header for use in a MzScheme extension file:
+  header for use in a Racket extension file:
 
     |@(define (cfunc)
     |   (format

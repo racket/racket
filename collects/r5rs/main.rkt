@@ -463,7 +463,7 @@
 	   begin set!
            => else
 
-	   ;; We have to include the following MzScheme-isms to do anything,
+	   ;; We have to include the following Racket-isms to do anything,
 	   ;; but they're not legal R5RS names, anyway.
            (rename-out [#%plain-module-begin #%module-begin])
 	   #%app #%datum #%top #%top-interaction 

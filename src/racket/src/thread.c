@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
  
@@ -19,9 +19,9 @@
     Boston, MA 02110-1301 USA.
 */
 
-/* This file implements MzScheme threads.
+/* This file implements Racket threads.
 
-   Usually, MzScheme threads are implemented by copying the stack.
+   Usually, Racket threads are implemented by copying the stack.
    The scheme_thread_block() function is called occassionally by the
    evaluator so that the current thread can be swapped out.
    do_swap_thread() performs the actual swap. Threads can also be
@@ -29,7 +29,7 @@
    OS-specific thread code.
 
    Much of the work in thread management is knowning when to go to
-   sleep, to be nice to the OS outside of MzScheme. The rest of the
+   sleep, to be nice to the OS outside of Racket. The rest of the
    work is implementing custodians (called "custodians" in the code),
    parameters, and wills. */
 

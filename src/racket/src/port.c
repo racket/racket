@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
@@ -23,7 +23,7 @@
   All rights reserved.
 */
 
-/* This file implements the most platform-specific aspects of MzScheme
+/* This file implements the most platform-specific aspects of Racket
    port types, which means it deals with all the messy FILE and file
    descriptor issues, as well as implementing TCP. Also, `subprocess'
    is implemented here, since much of the work has to do with
@@ -1100,7 +1100,7 @@ void scheme_collapse_win_fd(void *fds)
 /*                      Windows thread suspension                         */
 /*========================================================================*/
 
-/* MzScheme creates Windows threads for various purposes, including
+/* Racket creates Windows threads for various purposes, including
    non-blocking FILE reads. Unfortunately, these threads can confuse
    the GC if they move virtual pages around while its marking. So we
    remember each created thread and suspend it during GC.
@@ -3137,7 +3137,7 @@ static Scheme_Object *do_get_ready_special(Scheme_Object *port,
   }
 
   /* Don't use scheme_tell_all(), because we always want the
-     MzScheme-computed values here. */
+     Racket-computed values here. */
   line = scheme_tell_line(port);
   col = scheme_tell_column(port);
   pos = scheme_tell(port);
@@ -7821,7 +7821,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	   so use scheme_console_printf instead */
         scheme_console_printf("racket: exec failed (%d)\n", err);
 
-	/* back to MzScheme signal dispositions: */
+	/* back to Racket signal dispositions: */
 	START_XFORM_SKIP;
 #ifndef DONT_IGNORE_FPE_SIGNAL
 	MZ_SIGSET(SIGFPE, SIG_IGN);
@@ -8105,7 +8105,7 @@ void scheme_release_file_descriptor(void)
 /*                             sleeping                                   */
 /*========================================================================*/
 
-/* This code is used to implement sleeping when MzScheme is completely
+/* This code is used to implement sleeping when Racket is completely
    blocked on external objects, such as ports. For Unix, sleeping is
    essentially just a select(). */
 
@@ -8387,7 +8387,7 @@ static void default_sleep(float v, void *fds)
 
 void scheme_signal_received_at(void *h)
   XFORM_SKIP_PROC
-/* Ensure that MzScheme wakes up if asleep. */
+/* Ensure that Racket wakes up if asleep. */
 {
 #if defined(FILES_HAVE_FDS)
   int put_ext_event_fd = *(int *)h;

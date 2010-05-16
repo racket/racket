@@ -70,7 +70,7 @@
   (test #f char-ready? r))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Based on the MzScheme manual...
+;; Based on the Racket manual...
 
 ;; A port with no input...
 ;; Easy: \scheme{(open-input-bytes #"")}
@@ -362,7 +362,7 @@
   (go peek-bytes-avail!/enable-break))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Also based on the MzScheme manual...
+;; Also based on the Racket manual...
 
 (define should-be-breakable? #t)
 

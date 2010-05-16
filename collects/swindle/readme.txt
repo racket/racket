@@ -88,7 +88,7 @@ Swindle environment.
 
 * misc.ss (module)
   Lots of useful functionality bits, including everything from
-  frequently useful MzScheme standard libraries (`list.ss', `etc.ss',
+  frequently useful Racket standard libraries (`list.ss', `etc.ss',
   and `string.ss').
 
 * turbo.ss (language module)

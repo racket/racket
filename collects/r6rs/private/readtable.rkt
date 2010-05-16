@@ -456,7 +456,7 @@
       (string->symbol thing)]
      [(regexp-match? (force rx:number) thing)
       (let ([n (string->number 
-                ;; MzScheme doesn't handle mantissa widths, yet, so strip them out:
+                ;; Racket doesn't handle mantissa widths, yet, so strip them out:
                 (regexp-replace* #rx"[|][0-9]+" thing ""))])
         (unless n
           (error 'r6rs-parser "number didn't convert: ~e" thing))

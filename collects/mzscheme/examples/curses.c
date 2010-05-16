@@ -7,7 +7,7 @@
      mzc --3m --ld curses.so curses_3m.o -lcurses
 
   For obvious reasons, this library doesn't interact well
-  with MzScheme's read-eval-print loop. The example file
+  with Racket's read-eval-print loop. The example file
   curses-demo.ss demos this extension.
 */
 

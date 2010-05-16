@@ -8,7 +8,7 @@
 ;;; ---------------------------------------------------------------------------
 ;;; A convenient `defstruct'
 
-;; This makes it possible to create MzScheme structs using Swindle's `make' and
+;; This makes it possible to create Racket structs using Swindle's `make' and
 ;; keyword arguments.
 
 (define struct-to-slot-names (make-hash-table))
@@ -57,7 +57,7 @@
 ;;>   to make this a struct that we can access information on.  Note that in
 ;;>   method specifiers, the `struct:foo' which is defined by
 ;;>   `define-struct' can be used just like `<foo>'.  What all this means is
-;;>   that you can use MzScheme structs if you just want Swindle's generic
+;;>   that you can use Racket structs if you just want Swindle's generic
 ;;>   functions, but use built in structs that are more efficient since they
 ;;>   are part of the implementation.  For example:
 ;;>
@@ -88,7 +88,7 @@
 ;;>     3
 ;;>
 ;;>   The `<struct-name>' identifier *must* be of this form -- enclosed in
-;;>   "<>"s.  This restriction is due to the fact that defining an MzScheme
+;;>   "<>"s.  This restriction is due to the fact that defining a Racket
 ;;>   struct `foo', makes `foo' bound as a syntax object to something that
 ;;>   cannot be used in any other way.
 (defsyntax* (defstruct stx)
@@ -598,7 +598,7 @@
 (*echo-write-handler* write-object)
 
 ;;>> (install-swindle-printer)
-;;>   In MzScheme, output is configurable on a per-port basis.  Use this
+;;>   In Racket, output is configurable on a per-port basis.  Use this
 ;;>   function to install Swindle's `display-object' and `write-object' on
 ;;>   the current output and error ports whenever they are changed
 ;;>   (`swindle' does that on startup).  This makes it possible to see

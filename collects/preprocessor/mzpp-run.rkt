@@ -28,4 +28,4 @@
    #:handlers
    (lambda (_ . files) (run preprocess run-cmd output files))
    '("input-file")
-   (more-help 'mzpp "a MzScheme-based preprocessor")))
+   (more-help 'mzpp "a Racket-based preprocessor")))

@@ -3,7 +3,7 @@ cooperative environment.
 
 The collector is intended mainly for debugging and memory tracing, but
 it can also act as a reasonbaly efficient, general-purpose,
-conservative collector. The standard MzScheme build uses SGC for
+conservative collector. The standard Racket build uses SGC for
 certain platforms where Boehm's GC hasn't been ported, yet (notably,
 OSKit and BeOS).
 

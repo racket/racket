@@ -296,7 +296,7 @@
 
   ;; ----------------------------------------
 
-  ;; MzScheme provides a rough map to unicode:
+  ;; Racket provides a rough map to unicode:
   (define unicode (make-known-char-range-list))
 
   (define (make-standard-set pred?)

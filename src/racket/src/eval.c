@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
  
@@ -8080,7 +8080,7 @@ void scheme_new_mark_segment(Scheme_Thread *p)
   Scheme_Cont_Mark **segs, *seg;
   
   /* Note: we perform allocations before changing p to avoid GC trouble,
-     since MzScheme adjusts a thread's cont_mark_stack_segments on GC. */
+     since Racket adjusts a thread's cont_mark_stack_segments on GC. */
   segs = MALLOC_N(Scheme_Cont_Mark *, c + 1);
   seg = scheme_malloc_allow_interior(sizeof(Scheme_Cont_Mark) * SCHEME_MARK_SEGMENT_SIZE);
   segs[c] = seg;

@@ -2,7 +2,7 @@
 
 ;;> This module provides the forms `setf!', `psetf!', and `setf!-values' for
 ;;> generic setters, much like CL's `setf', and `psetf', and a form similar
-;;> to MzScheme's `set!-values'.  Note that when these are later re-exported
+;;> to Racket's `set!-values'.  Note that when these are later re-exported
 ;;> (by `turbo'), they are renamed as `set!', `pset!', and `set!-values'
 ;;> (overriding the built-in `set!' and `set!-values').  Also, note that
 ;;> this just defines the basic functionality, the `misc' module defines

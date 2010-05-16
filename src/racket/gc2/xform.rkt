@@ -1,11 +1,11 @@
-;; This program reads MzScheme/MrEd C/C++ source and transforms it
+;; This program reads Racket/GRacket C/C++ source and transforms it
 ;; to work with precise garbage collection or(!) PalmOS. The source
 ;; is C-pre-processed first, then run though a `lex'-like lexer,
 ;; ctok.rkt.
 ;;
 ;; It probably won't work for other C/C++ code, because it
 ;; doesn't bother *parsing* the source. Instead, it relies on
-;; various heuristics that work for MzScheme/MrEd code.
+;; various heuristics that work for Racket/GRacket code.
 ;;
 ;; There are also some input hacks, such as START_XFORM_SKIP.
 ;; 
@@ -18,7 +18,7 @@
 ;;
 ;; BUGS: Doesn't check for pointer comparisons where one of the
 ;;       comparees is a function call. This doesn't happen in
-;;       MzScheme/MrEd (or, because of this bug, shouldn't!).
+;;       Racket/GRacket (or, because of this bug, shouldn't!).
 ;;
 ;;       Passing the address of a pointer is dangerous; make sure
 ;;       that the pointer is used afterward, otherwise it pointer
@@ -28,13 +28,13 @@
 ;;       which can break "if (...) return; else ...".
 
 ;; To call for Precise GC:
-;;   mzscheme -qr xform.rkt [--setup] [--precompile] [--precompiled <file>] [--notes] [--depends] [--cgc] <cpp> <src> <dest>
+;;   racket -qr xform.rkt [--setup] [--precompile] [--precompiled <file>] [--notes] [--depends] [--cgc] <cpp> <src> <dest>
 ;;
 ;;   Or: Set the XFORM_PRECOMP=yes environment variable to imply --precompile
 ;;       Set the XFORM_USE_PRECOMP=<file> to imply --precompiled <file>
 ;;
 ;; To call for Palm:
-;;   mzscheme -qr xform.rkt [--setup] [--notes] [--depends] --palm <cpp> <src> <dest> <mapdest>
+;;   racket -qr xform.rkt [--setup] [--notes] [--depends] --palm <cpp> <src> <dest> <mapdest>
 
 ;; General code conventions:
 ;;   e means a list of tokens, often ending in a '|;| token

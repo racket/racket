@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
@@ -4826,7 +4826,7 @@ static void copy_in_mark_stack(Scheme_Thread *p, Scheme_Cont_Mark *cont_mark_sta
       int newcount = needed, oldcount = p->cont_mark_seg_count, npos;
 
       /* Note: we perform allocations before changing p to avoid GC trouble,
-	 since MzScheme adjusts a thread's cont_mark_stack_segments on GC. */
+	 since Racket adjusts a thread's cont_mark_stack_segments on GC. */
       segs = MALLOC_N(Scheme_Cont_Mark *, needed);
 
       for (npos = needed; npos--; ) {

@@ -187,7 +187,7 @@ static void initialize_signal_handler(GCTYPE *gc)
     memset(&act, 0, sizeof(sigaction));
     act.sa_sigaction = fault_handler;
     sigemptyset(&act.sa_mask);
-    /* In MzScheme, SIGCHLD or SIGINT handling may trigger a write barrier: */
+    /* In Racket, SIGCHLD or SIGINT handling may trigger a write barrier: */
     sigaddset(&act.sa_mask, SIGINT);
     sigaddset(&act.sa_mask, SIGCHLD);
     act.sa_flags = SA_SIGINFO;

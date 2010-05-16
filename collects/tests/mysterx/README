@@ -17,7 +17,7 @@ DHTML test code
 
 The file dhtmltests.ss contains a number of tests
 for the Dynamic HTML capabilities of MysterX.
-Simply load the file into MzScheme or DrScheme to run the 
+Simply load the file into Racket or DrRacket to run the 
 tests.  Any errors will be printed in the REPL.
 The behavior that appears in the window that is created
 may be ignored.

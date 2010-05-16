@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 2000-2001 Matthew Flatt
 
@@ -23,7 +23,7 @@
   All rights reserved.
 */
 
-/* This file implements the least platform-specific aspects of MzScheme
+/* This file implements the least platform-specific aspects of Racket
    port types. */
 
 #include "schpriv.h"
@@ -1020,7 +1020,7 @@ user_peeked_read(Scheme_Input_Port *port,
   /* FIXME, if possible: the peeked-read procedure should not
      synchronize target_evt more than once. There doesn't seem to
      be a way to enforce this constraint, however, without extra
-     machinery in MzScheme's synchronization. */
+     machinery in Racket's synchronization. */
 
   a[0] = scheme_make_integer(size);
   a[1] = unless_evt;

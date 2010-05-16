@@ -125,7 +125,7 @@ _jit_epilog(jit_state *jit)
   
    The +32 in frame_size computation is to account for the parameter area of
    a function frame. The +12 is to make room for three local variables (a
-   MzScheme-specific change).
+   Racket-specific change).
 
    On PPC the frame must have space to host the arguments of any callee.
    However, as it currently stands, the argument to jit_trampoline (n) is

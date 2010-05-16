@@ -1,6 +1,6 @@
 
-_texpict_ is a MzScheme/MrEd library for creating pictures using a
-MrEd dc<%> (including post-script-dc% for _PostScript_ output) or
+_texpict_ is a Racket/GRacket library for creating pictures using a
+GRacket dc<%> (including post-script-dc% for _PostScript_ output) or
 _LaTeX_ as the back-end. The two back-ends are incompatible; picts
 must be created for one or the other. The library was originally
 designed for LaTeX output, hence the name.
@@ -132,7 +132,7 @@ auxiliary file when LaTeX evaluates the expression. If you use
 
    * Use the package "mztp.sty" at the start of your LaTeX
      document "X.tex".
-   * In the MzScheme code creating `tex' picts, call
+   * In the Racket code creating `tex' picts, call
      (read-in-sizes "X.mztp") before calling `tex'.
    * Run the texpict-LaTeX cycle twice to get properly
      draw pictures.
@@ -1200,7 +1200,7 @@ The following four are for backward compatibility:
   has no ascent.
 
 > current-keyword-list - a parameter, a list of strings to color as
-  keywords; the default includes the MzScheme syntactic form names
+  keywords; the default includes the Racket syntactic form names
 > current-const-list - a parameter, a list of strings to color as
   constants; the default is empty
 > current-literal-list - a parameter, a list of strings to color as

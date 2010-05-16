@@ -1,5 +1,5 @@
 /* 
-   MzScheme extension example that returns the string "Hello, world!"
+   Racket extension example that returns the string "Hello, world!"
    when loaded.
 
    For the 3m GC (the default), compile with:

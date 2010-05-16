@@ -8,7 +8,7 @@ very little insulation against the issues that C programmer faces
 related to safety and memory management. An FFI programmer must be
 particularly aware of memory management issues for data that spans the
 Racket--C divide. Thus, this manual relies in many ways on the
-information in @|InsideMzScheme|, which defines how Racket
+information in @|InsideRacket|, which defines how Racket
 interacts with C APIs in general.
 
 Since using the FFI entails many safety concerns that Racket

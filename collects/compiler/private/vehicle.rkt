@@ -3,7 +3,7 @@
 ;; (c) 1997-2001 PLT
 
 ; Assign closures to ``vehicles'', and collect information for
-;  MzScheme about the closures.
+;  Racket about the closures.
 ; A vehicle is a C function that implements the body of a
 ;  closure. Multiple closures may be assigned to a single
 ;  vehicle to improve the performance of tail calls.

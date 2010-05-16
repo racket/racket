@@ -1255,7 +1255,7 @@
 
 ;; ------------------------------------------------------------
 ;; Check arity reporting for methods.
-;;  (This is really a MzScheme test, not a class.s test.)
+;;  (This is really a Racket test, not a class.rkt test.)
 
 (map
  (lambda (jit?)

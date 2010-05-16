@@ -5,7 +5,7 @@
   (#%require "stxcase-scheme.rkt" "define.rkt"
              (for-syntax '#%kernel "stx.rkt"))
 
-  ;; So that expansions print the way the MzScheme programmer expects:
+  ;; So that expansions print the way the Racket programmer expects:
   (#%require (rename '#%kernel #%plain-module-begin #%module-begin))
 
   (define-syntax mzscheme-in-stx-module-begin

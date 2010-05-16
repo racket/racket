@@ -1,5 +1,5 @@
 ;;; This file simply tests that all the SRFIs load.  Just
-;;; load it into MzScheme to perform this test.  Remember it
+;;; load it into Racket to perform this test.  Remember it
 ;;; might not be up-to-date, so check before you run it!
 
 

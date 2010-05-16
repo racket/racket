@@ -264,7 +264,7 @@
 
 ;; ---
 ;; documentation stuff --- loaded on demand so that setup/scribble can be
-;; omitted in the MzScheme distribution
+;; omitted in the Racket distribution
 (define-namespace-anchor anchor)
 
 ;; render : path[fully-expanded scribble file path] path[fully expanded directory] boolean? -> xref?

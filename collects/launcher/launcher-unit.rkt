@@ -665,7 +665,7 @@
 (define (racket-launcher-up-to-date? dest [aux null])
   (cond
     ;; When running Setup PLT under Windows, the
-    ;;  launcher process stays running until MzScheme
+    ;;  launcher process stays running until Racket
     ;;  completes, which means that it cannot be
     ;;  overwritten at that time. So we assume
     ;;  that a Setup-PLT-style independent launcher

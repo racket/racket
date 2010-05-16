@@ -151,7 +151,7 @@
 ;;>> (defmacro name body)
 ;;>> (defmacro* name body)
 ;;>> (letmacro ([name body] ...) letbody ...)
-;;>   These are just like MzScheme's define-macro (from mzlib/defmacro) with
+;;>   These are just like Racket's define-macro (from mzlib/defmacro) with
 ;;>   two major extensions:
 ;;>   * If `name' is a simple identifier then a symbol-macro is defined (as
 ;;>     with `defsubst' above).
@@ -584,7 +584,7 @@
 
 ;;>> (some predicate? list ...)
 ;;>> (every predicate? list ...)
-;;>   Similar to MzScheme's `ormap' and `andmap', except that when multiple
+;;>   Similar to Racket's `ormap' and `andmap', except that when multiple
 ;;>   lists are given, the check stops as soon as the shortest list ends.
 
 (define* (some pred? l . rest)          ; taken from slib/comlist.scm,
@@ -622,7 +622,7 @@
 
 ;; ----------------------------------------------------------------------------
 ;;>>... Multi-dimensional hash-tables
-;; Using lists of `eq?' keys, based on MzScheme's hash tables (MzScheme doesn't
+;; Using lists of `eq?' keys, based on Racket's hash tables (MzScheme doesn't
 ;; have custom hashes).  Use weak hash-tables so no space is redundantly
 ;; wasted.
 
@@ -630,7 +630,7 @@
 ;;>> (l-hash-table-get table keys [failure-thunk])
 ;;>> (l-hash-table-put! table keys value)
 ;;>> (set-l-hash-table-get! table key [default] value)
-;;>   These functions are similar to MzScheme's hash-table functions, except
+;;>   These functions are similar to Racket's hash-table functions, except
 ;;>   that they work with a list of keys (compared with `eq?').  If it was
 ;;>   possible to use a custom equality hash-table, then then would use
 ;;>   something like
@@ -1449,7 +1449,7 @@
 
 ;;>> *echo-display-handler* [h]
 ;;>> *echo-write-handler*   [h]
-;;>   Currently, MzScheme's I/O can be customized only on a per port basis.
+;;>   Currently, Racket's I/O can be customized only on a per port basis.
 ;;>   This means that installing the object printing generic later will
 ;;>   change only the standard ports, and for new ports a handleres should
 ;;>   always be installed.  This means that `echos' will not work with

@@ -74,19 +74,19 @@ Slideshow Modules
 The _slideshow.ss_ module acts as a language that includes:
 
  - the Slideshow function for creating slides (defined here)
- - all of MzScheme
+ - all of Racket
  - texpict/mrpict
  - texpict/utils
 
 The _slide.ss_ module is like "slideshow.ss", but it does not
-re-provide MzScheme. Thus, "slide.ss" is a non-language version of
+re-provide Racket. Thus, "slide.ss" is a non-language version of
 "slideshow.ss", and it can be imported with `require' into a module in
 any language.
 
 The _run.ss_ module is the same as "slideshow.ss" for backward
 compatibility.
 
-  [The "slideshow.ss" and "slide.ss" modules also check the MzScheme
+  [The "slideshow.ss" and "slide.ss" modules also check the Racket
    parameter `current-command-line-arguments' to configure the slide
    mode.]
 

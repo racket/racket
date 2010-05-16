@@ -14,7 +14,7 @@ the Thread.Abort() method.
 To use this code, the environment variable `Cor_Enable_Profiling' must
 be set to "1", and the environment variable `Cor_Profiler' must be set
 to "MysterX.DotnetProfiler" before starting the CLR.  (They may be set
-by calling the MzScheme function putenv.)
+by calling the Racket function putenv.)
 
 If correctly set, a message like the following will be printed when
 the CLR is started:

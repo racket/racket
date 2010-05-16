@@ -5,7 +5,7 @@
 ;; Limitations of this test suite:
 ;;  - It doesn't check reader-level parameterization, such as use of quotes
 ;;  - It doesn't check format of printed results
-;;  - It doesn't check the absence of MzScheme forms
+;;  - It doesn't check the absence of Racket forms
 
 ;; Don't try to run other tests from the test suite after loading this
 ;; one into a particular namespace.

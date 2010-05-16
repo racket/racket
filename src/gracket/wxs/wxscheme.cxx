@@ -1507,7 +1507,7 @@ static Scheme_Object *wxSchemeGetPanelBackground(int, Scheme_Object **)
 #ifdef wx_mac
 
 # ifdef OS_X
-/* In MzScheme in Classic, mredmac.cxx in OS X */
+/* In Racket in Classic, mredmac.cxx in OS X */
 extern int scheme_mac_path_to_spec(const char *filename, FSSpec *spec);
 # endif
 
@@ -2290,7 +2290,7 @@ static Scheme_Object *wxInAtomicRegion(int, Scheme_Object **argv)
 {
   if (SCHEME_SEMAP(argv[0])) {
     scheme_wait_sema(argv[0], 0);
-    /* MzScheme promises that no break or kill will happen
+    /* Racket promises that no break or kill will happen
        between receiving the semaphore post and returning to us. */
     scheme_start_atomic();
   } else
@@ -2421,7 +2421,7 @@ static Scheme_Object *wLabelShortcutsVisible(int argc, Scheme_Object **argv)
 
 #ifdef wx_mac
 # ifdef OS_X
-/* In MzScheme in Classic, mredmac.cxx in OS X */
+/* In Racket in Classic, mredmac.cxx in OS X */
 extern char *scheme_mac_spec_to_path(FSSpec *spec);
 # endif
 # ifndef OS_X

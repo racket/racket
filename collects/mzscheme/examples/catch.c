@@ -1,5 +1,5 @@
 /* 
-   MzScheme extension example that catches exceptions and extracts
+   Racket extension example that catches exceptions and extracts
    error messages.
 
    The defined function is `eval-string/catch-error', which takes a

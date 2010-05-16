@@ -6,7 +6,7 @@
      (provide compile-simplified)
 
      ;; The compiler generates references to prim.ss and
-     ;; runtime.ss exports, as well as MzScheme forms
+     ;; runtime.ss exports, as well as Racket forms
      ;; and functions. The `ctx' argument provides
      ;; an appropriate context for those bindings (in
      ;; the form of a syntax object to use with d->s-o).

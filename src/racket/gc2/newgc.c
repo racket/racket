@@ -1,4 +1,4 @@
-/* A new accouting precise GC for MzScheme
+/* A new accouting precise GC for Racket
    Copyright (C) 2001, 2002 Matthew Flatt and Adam Wick
    All rights reserved.
 
@@ -2768,7 +2768,7 @@ void GC_dump_with_traces(int flags,
     }
   }
 
-  GCPRINT(GCOUTF, "Begin MzScheme3m\n");
+  GCPRINT(GCOUTF, "Begin Racket3m\n");
   for (i = 0; i < MAX_DUMP_TAG; i++) {
     if (counts[i]) {
       char *tn, buf[256];
@@ -2783,7 +2783,7 @@ void GC_dump_with_traces(int flags,
       GCPRINT(GCOUTF, "  %20.20s: %10ld %10ld\n", tn, counts[i], gcWORDS_TO_BYTES(sizes[i]));
     }
   }
-  GCPRINT(GCOUTF, "End MzScheme3m\n");
+  GCPRINT(GCOUTF, "End Racket3m\n");
 
   GCWARN((GCOUTF, "Generation 0: %lu of %li bytes used\n", (unsigned long) gen0_size_in_use(gc), gc->gen0.max_size));
 

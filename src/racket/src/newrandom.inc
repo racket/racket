@@ -1,7 +1,7 @@
 /*
   Based on
 
-   Implementation of SRFI-27 core generator in C for MzScheme.
+   Implementation of SRFI-27 core generator in C for Racket.
    dvanhorn@cs.uvm.edu
 
   and

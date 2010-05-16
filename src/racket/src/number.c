@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
@@ -210,7 +210,7 @@ scheme_init_number (Scheme_Env *env)
 #ifdef IGNORE_BY_MS_CONTROL_87
   /* Shouldn't be necessary, because the C library
      should do this, but explictly masking exceptions
-     makes MzScheme work under Bochs 2.1.1 with Win95 */
+     makes Racket work under Bochs 2.1.1 with Win95 */
   _control87(_MCW_EM, _MCW_EM);
 #endif
 #ifdef ALPHA_CONTROL_FP

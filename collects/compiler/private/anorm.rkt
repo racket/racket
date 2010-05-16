@@ -22,7 +22,7 @@
 ;  binding clause for each let-values expression. (Of course, the
 ;  single clause can bind multiple variables.) This linearization does
 ;  not apply to letrec expressions. Technically, it's the source of a bug
-;  compared to bytecode MzScheme: when call/cc is used on the RHS
+;  compared to bytecode Racket: when call/cc is used on the RHS
 ;  where an earlier LHS is mutable, the cell for the mutable LHS is
 ;  allocated too early.
 

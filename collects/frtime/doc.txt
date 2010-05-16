@@ -149,7 +149,7 @@ _Signal Processors_
   
 > (<proc> behavior ...) -> behavior
 
-  FrTime provides "lifted" versions of most of MzScheme.  This means
+  FrTime provides "lifted" versions of most of Racket.  This means
   that these procedures may be applied to behaviors, and the result
   automatically recomputes whenever any of the arguments changes.
 

@@ -112,7 +112,7 @@
     "\"-//W3C//DTD HTML 4.01 Transitional//EN\" "
     "\"http://www.w3.org/TR/html4/loose.dtd\""))
 
-(define *scheme-version* (string-append "MzScheme " (version)))
+(define *scheme-version* (string-append "Racket " (version)))
 
 (define *path-separator* (if (eqv? *operating-system* 'windows) #\; #\:))
 

@@ -28,7 +28,7 @@ typedef void (*GC_collect_end_callback_Proc)(void);
 typedef void (*GC_collect_inform_callback_Proc)(int major_gc, long pre_used, long post_used);
 typedef unsigned long (*GC_get_thread_stack_base_Proc)(void);
 /* 
-   Types of the traversal procs (supplied by MzScheme); see overview in README
+   Types of the traversal procs (supplied by Racket); see overview in README
    for information about traversals. The return value is the size of
    the object in words. */
 
@@ -71,24 +71,24 @@ GC2_EXTERN void GC_set_get_thread_stack_base(unsigned long (*)(void));
 GC2_EXTERN void GC_set_stack_base(void *base);
 GC2_EXTERN unsigned long GC_get_stack_base(void);
 /*
-   Called by MzScheme to set/get value used for stack base when
+   Called by Racket to set/get value used for stack base when
    GC_get_thread_stack_base is null. This is mainly useful for getting
-   MzScheme started, before it has multiple threads. */
+   Racket started, before it has multiple threads. */
 
 GC2_EXTERN void GC_add_roots(void *start, void *end);
 /*
-   Called by MzScheme to install roots. The memory between
+   Called by Racket to install roots. The memory between
    `start' (inclusive) and `end' (exclusive) contains pointers. */
 
 GC2_EXTERN void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, 
                                   int ephemeron, int weakarray, int custbox);
 /*
-   Called by MzScheme to indicate the number of different type tags it
+   Called by Racket to indicate the number of different type tags it
    uses, starting from 0. `count' is always less than 256. The weakbox
    argument is the value to be used for tagging weak box, the
    ephemeron is the value to tagging an ephemeron, etc. (The GC has some
    freedom in the layout of a weak box or ephemeron, so it performs weak
-   box traversals itself, but MzScheme gets to choose the tag.) */
+   box traversals itself, but Racket gets to choose the tag.) */
 
 GC2_EXTERN void GC_register_root_custodian(void *);
 /*
@@ -106,8 +106,8 @@ GC2_EXTERN GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_colle
 GC2_EXTERN GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc);
 GC2_EXTERN void GC_set_collect_inform_callback(GC_collect_inform_callback_Proc);
 /*
-   Sets callbacks called by GC before/after performing a collection.  Used by MzScheme
-   to zero out some data and record collection times. The end
+   Sets callbacks called by GC before/after performing a collection.  Used by
+   Racket to zero out some data and record collection times. The end
    procedure should be called before finalizations are performed. */
 
 GC2_EXTERN void (*GC_out_of_memory)(void);
@@ -156,7 +156,7 @@ GC2_EXTERN void *GC_malloc(size_t size_in_bytes);
 
 GC2_EXTERN void *GC_malloc_one_tagged(size_t);
 /* 
-   Alloc a tagged item, initially zeroed.  MzScheme sets the tag
+   Alloc a tagged item, initially zeroed.  Racket sets the tag
    before a collection. */
 
 GC2_EXTERN void *GC_malloc_one_small_tagged(size_t);
@@ -180,7 +180,7 @@ GC2_EXTERN void *GC_malloc_one_xtagged(size_t);
 /* 
    Alloc an item, initially zeroed. Rather than having a specific tag,
    all objects allocated this way are marked/fixedup via the function
-   in GC_mark_xtagged and GC_fixup_xtagged. MzScheme sets
+   in GC_mark_xtagged and GC_fixup_xtagged. Racket sets
    GC_{mark,fixup}_xtagged. */
 
 GC2_EXTERN void (*GC_mark_xtagged)(void *obj);
@@ -191,7 +191,7 @@ GC2_EXTERN void (*GC_fixup_xtagged)(void *obj);
 
 GC2_EXTERN void *GC_malloc_array_tagged(size_t);
 /* 
-   Alloc an array of tagged items. MzScheme sets the tag in the first
+   Alloc an array of tagged items. Racket sets the tag in the first
    item before a collection, by maybe not all items. When traversing,
    use the first one for size. */
 
@@ -203,7 +203,7 @@ GC2_EXTERN void *GC_malloc_atomic(size_t size_in_bytes);
 #define GC_malloc_small_atomic_tagged GC_malloc_one_small_dirty_tagged
 /*
    Alloc pointer-free tagged memory (not necessarily zeroed).
-   MzScheme sets the tag before a collection. */
+   Racket sets the tag before a collection. */
 
 GC2_EXTERN void *GC_malloc_atomic_uncollectable(size_t size_in_bytes);
 /*

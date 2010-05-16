@@ -19,4 +19,4 @@
    #:handlers
    (lambda (_ . files) (run preprocess run-cmd output files))
    '("input-file")
-   (more-help 'mztext "a MzScheme-based preprocessing language")))
+   (more-help 'mztext "a Racket-based preprocessing language")))

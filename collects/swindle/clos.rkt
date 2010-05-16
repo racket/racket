@@ -195,7 +195,7 @@
 ;;>   itself and the specializers will be used to check the arguments.  This
 ;;>   makes it easy to use `method' instead of `lambda' to get some type
 ;;>   information, but note that the result is going to run slower since the
-;;>   type check only takes time but cannot be used by MzScheme to optimize
+;;>   type check only takes time but cannot be used by Racket to optimize
 ;;>   the code.
 ;;>
 ;;>   Note that the specializer argument are evaluated normally, which means

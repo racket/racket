@@ -178,7 +178,7 @@
 	 case-arities
 	 ;; An integer indicating which
 	 ;; arity record in compiler:case-lambdas
-	 ;; contains MzScheme information for
+	 ;; contains Racket information for
 	 ;; the arity of the case-lambda. For
 	 ;; single-case lambdas, this is #f
 	 ;; because the arity information is
@@ -201,7 +201,7 @@
 			  prim?
 			  ;; application of a known primitive?
 			  prim-name
-			  ;; MzScheme name for the known primitive, or #f
+			  ;; Racket name for the known primitive, or #f
 			  ))
 
       ;;----------------------------------------------------------------------------

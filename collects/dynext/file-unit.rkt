@@ -60,5 +60,5 @@
            (extract-suffix append-object-suffix))
        (mk 'extract-base-filename/ext
            (regexp-quote (subbytes (system-type 'so-suffix) 1) #f)
-           "MzScheme extension"
+           "Racket extension"
            (extract-suffix append-extension-suffix))))))

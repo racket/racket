@@ -139,7 +139,7 @@
     ;; to whenever the value is actually forced
     (~ (parameterize ([param (! val)] ...) (~begin body ...))))
 
-  ;; Multiple values are problematic: MzScheme promises can use multiple
+  ;; Multiple values are problematic: Racket promises can use multiple
   ;; values, but to carry that out `call-with-values' should be used in all
   ;; places that deal with multiple values, which will make the whole thing
   ;; much slower (about twice in tight loops) -- but multiple values are rarely

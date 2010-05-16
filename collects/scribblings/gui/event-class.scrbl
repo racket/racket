@@ -22,7 +22,7 @@ See @method[event% get-time-stamp] for information about
            exact-integer?]{
 
 Returns the time, in milliseconds, when the event occurred. This time
- is compatible with times reported by MzScheme's
+ is compatible with times reported by Racket's
  @scheme[current-milliseconds] procedure.
 
 }
@@ -31,7 +31,7 @@ Returns the time, in milliseconds, when the event occurred. This time
            void?]{
 
 Set the time, in milliseconds, when the event occurred. See also
- MzScheme's @scheme[current-milliseconds].
+ Racket's @scheme[current-milliseconds].
 
 If the supplied value is outside the platform-specific range of time
  values, @|MismatchExn|.

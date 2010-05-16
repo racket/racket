@@ -13,7 +13,7 @@
    of Scheme_Object* values for argv, and returns a Scheme_Object*: */
 static Scheme_Object *sch_fmod(int argc, Scheme_Object **argv)
 {
-  /* Because we'll use scheme_make_prim_w_arity, MzScheme will
+  /* Because we'll use scheme_make_prim_w_arity, Racket will
      have already checked that we're getting the right number of
      arguments. */
   Scheme_Object *a = argv[0], *b = argv[1];

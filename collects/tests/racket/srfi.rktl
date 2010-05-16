@@ -2,8 +2,8 @@
 
 (load-relative "loadtest.rktl")
 
-;; Test that all SRFIs load.  Run this in both DrScheme and
-;; MzScheme for maximum coverage.
+;; Test that all SRFIs load.  Run this in both DrRacket and
+;; Racket for maximum coverage.
 
 ;; We just require all the SRFIs and hope nothing bombs.
 ;; Keep an eye out for error messages!

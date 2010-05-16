@@ -13,7 +13,7 @@
 
 The @schememodname[mzlib/sendevent] library provides a
 @scheme[send-event] function that works only on Mac OS X, and only
-when running in MrEd (though the library can be loaded in MzScheme).
+when running in GRacket (though the library can be loaded in Racket).
 
 @defproc[(send-event [receiver-bytes (lambda (s) (and (bytes? s)
                                                       (= 4 (bytes-length s))))]

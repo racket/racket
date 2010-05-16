@@ -39,7 +39,7 @@ If @scheme[path] is @scheme[#f], then the resulting foreign-library
 value represents all libraries loaded in the current process,
 including libraries previously opened with @scheme[ffi-lib].  In
 particular, use @scheme[#f] to access C-level functionality exported
-by the run-time system (as described in @|InsideMzScheme|).
+by the run-time system (as described in @|InsideRacket|).
 
 Note: @scheme[ffi-lib] tries to look for the library file in a few
 places, inluding the PLT libraries (see @scheme[get-lib-search-dirs]),

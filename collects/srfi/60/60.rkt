@@ -11,7 +11,7 @@
            integer-length)
 
   ;; SRFI 60 defines several procedures which are already provided by
-  ;; MzScheme and thus they are not provided by this module, namely
+  ;; Racket and thus they are not provided by this module, namely
   ;; bitwise-{ior,xor,and,not} and arithmetic-shift. However, SRFI 60
   ;; names aliases for these procedures, which are provided and which
   ;; refer to the Mzscheme primitives, namely log{ior,xor,and,not} and
@@ -24,7 +24,7 @@
 
   ;; The reference implementation follows below and has been changed only
   ;; by adding S-expression comments to definitions which are not needed,
-  ;; such as definitions implemented as MzScheme exact integer primitives.
+  ;; such as definitions implemented as Racket exact integer primitives.
 
 ;;;; "logical.scm", bit access and operations for integers for Scheme
 ;;; Copyright (C) 1991, 1993, 2001, 2003, 2005 Aubrey Jaffer

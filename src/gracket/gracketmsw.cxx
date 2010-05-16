@@ -422,7 +422,7 @@ int wxEventTrampoline(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
 
      For certain kinds of events, the callback queueing is most easily
      implemented in Scheme within mred.ss. For those cases, we put
-     MzScheme into atomic mode while handling the event. The "mred.ss"
+     Racket into atomic mode while handling the event. The "mred.ss"
      implementation promises to run quickly (and not call user code).
 
      Scrolling is a special case. To implement interactive scrolling,

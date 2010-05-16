@@ -359,7 +359,7 @@
     (stepper-syntax-property #'let-counter 'stepper-binding-type 'stepper-temp))
 
 
-  ; syntax-pair-map (using the def'ns of the MzScheme docs):
+  ; syntax-pair-map (using the def'ns of the Racket docs):
 
   (define (syntax-pair-map pair fn)
     (cons (fn (car pair))

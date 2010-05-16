@@ -7,7 +7,7 @@
 (define-struct tid (lid) #:prefab)
 (define (create-tid thr) (make-tid thr))
 
-; We need a mapping from MzScheme's tids to our tids (just for `self')
+; We need a mapping from Racket's tids to our tids (just for `self')
 ; and a mapping from symbols to mailboxes (for local threads).
 
 (define tids (make-weak-hash))

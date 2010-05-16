@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
   All rights reserved.
@@ -12,7 +12,7 @@
 */
 
 /*
-   MzScheme prototypes and declarations for internal consumption.
+   Racket prototypes and declarations for internal consumption.
 */
 
 #ifndef __mzscheme_private__

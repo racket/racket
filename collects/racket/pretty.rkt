@@ -2,10 +2,10 @@
 ;; "genwrite.scm" generic write used by pp.scm
 ;; copyright (c) 1991, marc feeley
 
-;; Pretty-printer for MzScheme
+;; Pretty-printer for Racket
 ;;  Handles structures, cycles, and graphs
 
-;; TO INSTALL this pretty-printer into a MzScheme's read-eval-print loop,
+;; TO INSTALL this pretty-printer into Racket's read-eval-print loop,
 ;; require this module and evaluate:
 ;;      (current-print pretty-print-handler)
 

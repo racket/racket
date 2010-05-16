@@ -90,11 +90,11 @@
        ((,(format "Makes all Scheme sources in specified collection(s)") ""))]
       [("--exe")
        ,(lambda (f name) (exe-output name) 'exe)
-       (,(format "Embed module in MzScheme to create <exe>")
+       (,(format "Embed module in Racket to create <exe>")
         "exe")]
       [("--gui-exe")
        ,(lambda (f name) (exe-output name) 'gui-exe)
-       (,(format "Embed module in MrEd to create <exe>")
+       (,(format "Embed module in GRacket to create <exe>")
         "exe")]
       [("--exe-dir")
        ,(lambda (f name) (exe-dir-output name) 'exe-dir)
@@ -418,7 +418,7 @@
 
 (define (never-embedded action)
   (when (compiler:option:compile-for-embedded)
-    (error 'mzc "cannot ~a an extension for an embedded MzScheme" action)))
+    (error 'mzc "cannot ~a an extension for an embedded Racket" action)))
 
 (if (compiler:option:3m)
   (begin (link-variant '3m)  (compile-variant '3m))

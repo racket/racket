@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
  
@@ -1309,7 +1309,7 @@ static void add_finalizer(void *v, void (*f)(void*,void*), void *data,
   if (oldf) {
     if (oldf != do_next_finalization) {
       /* This happens if an extenal use of GC_ routines conflicts with us. */
-      scheme_warning("warning: non-MzScheme finalization on object dropped!");
+      scheme_warning("warning: non-Racket finalization on object dropped!");
     } else {
       *fns_ptr = *(Finalizations **)olddata;
       save_fns_ptr = (Finalizations **)olddata;
@@ -2106,7 +2106,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
 
     tagged = real_tagged;
 
-    scheme_console_printf("Begin MzScheme\n");
+    scheme_console_printf("Begin Racket\n");
     scheme_console_printf("%30.30s %10s %10s %10s %8s - %8s\n",
 			  "TYPE", "COUNT", "ESTM-SIZE", "TRACE-SIZE", 
 			  "LO-LOC", "HI-LOC");
@@ -2161,7 +2161,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
     scheme_console_printf("%30.30s %10ld %10ld %10ld\n",
 			  "total", total_count, total_size, 
 			  total_actual_size);
-    scheme_console_printf("End MzScheme\n");
+    scheme_console_printf("End Racket\n");
 
     scheme_console_printf("Begin Apps\n");
     for (i = 0; i < NUM_RECORDED_APP_SIZES; i++) {

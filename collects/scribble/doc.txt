@@ -7,7 +7,7 @@ The Scribble @-reader is designed to be a convenient facility for
 using free-form text in Scheme code, where "@" is chosen as one of
 the least-used characters in Scheme code.
 
-You can use the reader via MzScheme's `#reader' form:
+You can use the reader via Racket's `#reader' form:
 
   #reader(lib "reader.ss" "scribble")@{This is free-form text!}
 
@@ -19,7 +19,7 @@ A PLT Scheme manual more likely starts with
   #reader(lib "docreader.ss" "scribble")
 
 which installs a reader, wraps the file content afterward into a
-MzScheme module, and parses the body into a document using
+Racket module, and parses the body into a document using
 "decode.ss".
 
 Another way to use the reader is to use the `use-at-readtable'

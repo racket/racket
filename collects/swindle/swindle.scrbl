@@ -105,7 +105,7 @@ whole Swindle environment.
   macros.}
 
 @item{@scheme[swindle/misc] (module) --- Lots of useful functionality
-  bits, including everything from frequently useful MzScheme legacy
+  bits, including everything from frequently useful Racket legacy
   libraries (@schememodname[mzlib/list], @schememodname[mzlib/etc],
   and @schememodname[mzlib/string]).}
 

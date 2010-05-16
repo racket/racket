@@ -31,7 +31,7 @@
                             ; default = #t
 
    compile-for-embedded     ; #f => make objects to be linked
-                            ; directly with MzScheme, not dynamically
+                            ; directly with Racket, not dynamically
                             ; loaded; default = #f
 
    max-inline-size          ; max size of inlined procedures

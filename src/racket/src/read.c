@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
@@ -23,7 +23,7 @@
   All rights reserved.
 */
 
-/* This file contains the MzScheme reader, including the normal reader
+/* This file contains the Racket reader, including the normal reader
    and the one for .zo files. The normal reader is a recursive-descent
    parser. The really messy part is number parsing, which is in a
    different file, numstr.c. */

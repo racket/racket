@@ -4,7 +4,7 @@
  _ODBC_
  ======
 
- SrPersist is an ODBC library for MzScheme and DrScheme.
+ SrPersist is an ODBC library for Racket and DrRacket.
  Any database management system with an ODBC driver should 
  be usable with SrPersist.
 
@@ -24,7 +24,7 @@
  For example, the hypothetical ODBC name SQLProcedureName would be 
  mapped to the Scheme name procedure-name.  The exceptions are SQLError
  and SQLExecute, which are mapped to sql-error and sql-execute, to 
- avoid confusion with MzScheme procedures.
+ avoid confusion with Racket procedures.
 
  The documentation here may be sufficient to get started with
  SrPersist, but you will certainly want to consult an ODBC reference for 

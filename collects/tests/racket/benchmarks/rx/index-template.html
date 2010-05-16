@@ -15,9 +15,9 @@
    run time, or stack overflow).</p>
 
 <p>Run times are averaged over three runs. All reported times are CPU time (system plus user).
-   The times for MzScheme, Perl, and Python use the language's sime function to record the
+   The times for Racket, Perl, and Python use the language's sime function to record the
    times before and after a loop within the language; the PCRE times are based on calls
-   a timed MzScheme loop using calling PCRE via <tt>(lib "foreign.ss")</tt>.</p>
+   a timed Racket loop using calling PCRE via <tt>(lib "foreign.ss")</tt>.</p>
 
 <p>A benchmark name <tt><i>name</i>/<i>N</i>/<i>M</i></tt> means that the
    input size was roughly 10<sup><i>N</i></sup> and roughly
@@ -49,7 +49,7 @@
      Perl lags significantly only on the <tt>stress-nopeci</tt> benchmarks, which
      require lots of backtracking unless the implementation first
      checks for the existence of a <i>case-insensitive</i> version of a 
-     literal string; MzScheme checks only because the CL-PPCRE benchmark
+     literal string; Racket checks only because the CL-PPCRE benchmark
      suite suggested the test.</dd>
 
 <dt> Python: 2.3.5 <b>(old version!)</b></dt>
@@ -67,7 +67,7 @@
    infrastructure, which is available form the PLT SVN repository:</p>
 
 <p align=center>
-   <a href="http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/rx/">http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/rx/</a></P>
+   <a href="http://git.racket-lang.org/plt/tree/HEAD:/collects/tests/racket/benchmarks/rx">http://git.racket-lang.org/plt/tree/HEAD:/collects/tests/racket/benchmarks/rx</a></P>
 
 <H1>Results</H1>
 

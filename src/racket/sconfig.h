@@ -1054,7 +1054,7 @@
 
  /* SOME_FDS_ARE_NOT_SELECTABLE indicates that select() doesn't work
     for reading on all kinds of file descriptors. Such FDs must never
-    be able to go from no-char-ready to char-ready while MzScheme is
+    be able to go from no-char-ready to char-ready while Racket is
     sleeping. */
 
  /* NEED_RESET_STDOUT_BLOCKING enures that file descriptors 1 and 2
@@ -1115,7 +1115,7 @@
  /* WINDOWS_PROCESSES implements the process functions for Windows. */
 
  /* USE_ITIMER uses setitimer() to implement thread pre-emption (for
-    MzScheme-implemented threads). Define MZ_THREAD_QUANTUM_USEC to
+    Racket-implemented threads). Define MZ_THREAD_QUANTUM_USEC to
     set the base time in usec allocated to each thread. */
 
  /* USE_WIN32_THREAD_TIMER uses a background Windows thread to implement
@@ -1133,10 +1133,10 @@
     (when this flags is not defined) is that a signal handler is NOT
     reset to SIG_DFL after a handler is called to handle a signal. */
 
- /* DONT_IGNORE_FPE_SIGNAL stops MzScheme from ignoring floating-point 
+ /* DONT_IGNORE_FPE_SIGNAL stops Racket from ignoring floating-point 
     exception signals. */
 
- /* DONT_IGNORE_PIPE_SIGNAL stops MzScheme from ignoring SIGPIPE
+ /* DONT_IGNORE_PIPE_SIGNAL stops Racket from ignoring SIGPIPE
     signals. */
 
  /* USE_CREATE_PIPE uses CreatePipe() instead of _pipe() for Windows. */
@@ -1219,8 +1219,8 @@
     
  /* ZERO_MINUS_ZERO_IS_POS_ZERO indicates that something (compiler?
     machine? fp flags?) is broken so that 0.0 - 0.0 = 0.0 instead of
-    -0.0. This flag doesn't fix MzScheme completely, since (- 0.0) is
-    still 0.0, but at least it lets MzScheme read and print 0.0 and
+    -0.0. This flag doesn't fix Racket completely, since (- 0.0) is
+    still 0.0, but at least it lets Racket read and print 0.0 and
     -0.0 accurately. Currently used for HP/UX. */
 
  /* NAN_LT_COMPARISON_WRONG indicates that +nan.0 is not handled correctly
@@ -1334,12 +1334,12 @@
     an extra underscore ("_") must be placed in front of the name passed 
     to dlopen(). */
 
- /* LINK_EXTENSIONS_BY_TABLE specifies that the MzScheme functions
+ /* LINK_EXTENSIONS_BY_TABLE specifies that the Racket functions
     used by an extension must be manually linked via a table of
     function pointers. Windows dynamic linking uses this method. */
 
  /* MZSCHEME_IS_CODEFRAGMENT exploits improved CFM linking when
-    MzScheme is itself a shared library instead of embedded in
+    Racket is itself a shared library instead of embedded in
     an application */
 
   /***********************/
@@ -1366,7 +1366,7 @@
      This will only work if the final application is statically linked. 
      (As an exception, the dynamic-linking library itself can be 
      dynamically linked. This works because loading an extension in 
-     MzScheme automatically turns off image saving.) */
+     Racket automatically turns off image saving.) */
 
   /*****************************/
  /*   Macintosh Standalone    */
@@ -1450,10 +1450,10 @@
     timing info. Used with USE_GETRUSAGE. */
 
  /* NO_SLEEP means that there is no sleep() function. Used only in
-    standalone MzScheme. */
+    standalone Racket. */
 
  /* NO_USLEEP means that there is no usleep() function. Used only in 
-    standalone MzScheme. Used only if NO_SLEEP is undefined. */
+    standalone Racket. Used only if NO_SLEEP is undefined. */
 
  /* NO_STRERROR_AVAILABLE means that strerror() is not available. */
 

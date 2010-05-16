@@ -180,14 +180,14 @@ Evaluating @scheme[(yield 'wait)] is thus similar to
  sensitive to whether the current thread is a handler thread, instead
  of the value of the @scheme[current-eventspace] parameter.
 
-If @scheme[v] is an event in MzScheme's sense (not to be confused with
+If @scheme[v] is an event in Racket's sense (not to be confused with
  a GUI event), @scheme[yield] blocks on @scheme[v] in the same way as
  @scheme[sync], except that it may start a @scheme[sync] on @scheme[v]
  multiple times (but it will complete a @scheme[sync] on @scheme[v] at
  most one time). If the current thread is the current eventspace's
  handler thread, events are dispatched until a @scheme[v] sync
  succeeds on an event boundary. For other threads, calling
- @scheme[yield] with a MzScheme event is equivalent to calling
+ @scheme[yield] with a Racket event is equivalent to calling
  @scheme[sync]. In either case, the result is the same that of
  @scheme[sync]; however, if a wrapper procedure is associated with
  @scheme[v] via @scheme[handle-evt], it is not called in tail position

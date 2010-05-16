@@ -3379,7 +3379,7 @@
                                        (format " (in ~a)" complain-not-in))
                                    (tok-n (car func))))
                       ;; Lift out function calls as arguments. (Can re-order code.
-                      ;; MzScheme source code must live with this change to C's semantics.)
+                      ;; Racket source code must live with this change to C's semantics.)
                       ;; Calls are replaced by varaibles, and setup code generated that
                       ;; assigns to the variables.
                       (let*-values ([(live-vars)

@@ -37,15 +37,15 @@
 ;; INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF 
 ;; MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE. 
 
-;; -- MzScheme implementation
+;; -- Racket implementation
 ;;
-;; The only MzScheme specific features of this implementation is
+;; The only Racket specific features of this implementation is
 ;; CURRENT-SECONDS, the DEFINE-STRUCT procedure (SRFI 9: Defining Record Types
 ;; could be used), and the constants tm:time-at-zero-seconds
 ;; and tm:julian-day-at-zero-seconds, which refer to the '0' of CURRENT-SECONDS.
 ;; 
 ;; SRFI-6, String Ports, and SRFI-8, RECEIVE: Binding Multiple Values, 
-;; are also used. MzScheme has String Ports built-in. The RECEIVE form
+;; are also used. Racket has String Ports built-in. The RECEIVE form
 ;; is copied below.
 ;;
 ; srfi-8: receive
@@ -130,7 +130,7 @@
 (define time-process 'time-process)
 (define time-duration 'time-duration)
 
-;; example of extension (MZScheme specific)
+;; example of extension (Racket specific)
 (define time-gc 'time-gc)
 
 
@@ -316,7 +316,7 @@
 ;;
 ;; -- using GNU gettimeofday() would be useful here -- gets
 ;;    second + millisecond 
-;;    let's pretend we do, using MzScheme's current-seconds & current-milliseconds
+;;    let's pretend we do, using Racket's current-seconds & current-milliseconds
 ;;    this is supposed to return UTC.
 ;; 
 
@@ -726,7 +726,7 @@
     ))
 
 ;; relies on the fact that we named our time zone accessor
-;; differently from MzScheme's....
+;; differently from Racket's....
 ;; This should be written to be OS specific.
 (define (tm:local-tz-offset)
   (date-time-zone-offset (seconds->date (current-seconds))))

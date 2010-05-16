@@ -1,5 +1,5 @@
 /*
-  MzScheme
+  Racket
   Copyright (c) 2004-2010 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
   All rights reserved.
@@ -12,7 +12,7 @@
   All rights reserved.
 */
 
-/* MzScheme function prototypes */
+/* Racket function prototypes */
 /* Macros generally shouldn't go in this file; it is used both to
    prototype functions, and as a parsing source for
    declaring scheme_extension_table */

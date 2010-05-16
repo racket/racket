@@ -15,21 +15,21 @@ _stx.ss_: deconstructing syntax objects
 
 > (stx-pair? v) - returns #t if `v' is either a pair or a syntax
   object representing a pair. See also the definition of "syntax pair"
-  in the MzScheme manual.
+  in the Racket manual.
 
 > (stx-list? v) - returns #t if `v' is a list, or if it is a sequence
   of pairs leading to a syntax object such that `syntax->list' (from
-  MzScheme) would produce a list.
+  Racket) would produce a list.
 
 > (stx->list stx-list) - produces a list by flatting out a trailing
   syntax object using `syntax->list'. The `stx-list' argument must be
   a value for which `stx-list?' would return #t.
 
 > (stx-car v) - takes the car of a "syntax pair". See the definition
-  of "syntax pair" in the MzScheme manual.
+  of "syntax pair" in the Racket manual.
 
 > (stx-cdr v) - takes the cdr of a "syntax pair". See the definition
-  of "syntax pair" in the MzScheme manual.
+  of "syntax pair" in the Racket manual.
 
 > (module-or-top-identifier=? a-id b-id) - returns #t if `a-id' and
   `b-id' are module-identifier=?, or if `a-id' and `b-id' have the
@@ -37,11 +37,11 @@ _stx.ss_: deconstructing syntax objects
   other than at the top level.
 
   This procedure is useful in conjunction with `syntax-case*' to match
-  procedure names that are normally bound by MzScheme. For example,
+  procedure names that are normally bound by Racket. For example,
   the `include' macro uses this procedure to recognize `build-path';
   using `module-identifier=?'  would not work well outside of
   `module', since the top-level `build-path' is a distinct variable
-  from the MzScheme export (though it's bound to the same procedure,
+  from the Racket export (though it's bound to the same procedure,
   initially).
 
 ======================================================================
@@ -50,7 +50,7 @@ _kerncase.ss_: matching fully-expanded expressions
 
 > (kernel-syntax-case stx-expr trans?-expr clause ...) - a syntactic
   form like `syntax-case*', except that the literals are built-in as
-  the names of the primitive MzScheme forms. (The primitive syntactic
+  the names of the primitive Racket forms. (The primitive syntactic
   forms must have their normal bindings in the context of the
   `kernel-syntax-case' expression.)
 
@@ -62,10 +62,10 @@ _kerncase.ss_: matching fully-expanded expressions
 > (kernel-syntax-case* stx-expr trans?-expr (extras ...) clause ...) -
   a syntactic form like `kernel-syntax-case', except that it takes an
   additional list of extra literals that are used as well as the
-  primitive MzScheme forms.
+  primitive Racket forms.
 
 > (kernel-form-identifier-list syntax) - returns a list of identifiers
-  for the names of the primitive MzScheme forms for expressions, with
+  for the names of the primitive Racket forms for expressions, with
   the lexical context of `syntax'. This function is useful for
   generating a list of stopping points to provide to `local-expand'.
 
@@ -189,7 +189,7 @@ _struct.ss_: generating the same names as `define-struct'
 
 > (struct-declaration-info? v) - returns #t if `x' has the shape of
   expansion-time information for structure type declarations, #f
-  otherwise. See also the syntax chapter of the MzScheme manual.
+  otherwise. See also the syntax chapter of the Racket manual.
 
 > (generate-struct-declaration orig-stx name-id super-id-or-false
                                field-id-list current-context
@@ -282,7 +282,7 @@ _docprovide.ss_: attaching documentation to exports
 > (lookup-documentation module-path-v label-sym) - returns
   documentation for the specified module and label. The
   `module-path-v' argument is a quoted module path, like the argument
-  to MzScheme's `dynamic-require'. The `label-sym' identifies a set of
+  to Racket's `dynamic-require'. The `label-sym' identifies a set of
   documentation using the symbol as a label identifier in
   `provide-and-document'.
 
@@ -307,7 +307,7 @@ _modread.ss_: reading module source code
   inspects `stx' to check whether evaluating it will declare a module
   named `expected-module-sym' (plus a prefix, if
   `current-module-name-prefix' is set) --- at least if `module' is
-  bound in the top-level to MzScheme's `module'. The syntax object
+  bound in the top-level to Racket's `module'. The syntax object
   `stx' can contain a compiled expression. Also, `stx' can be an
   end-of-file, on the grounds that `read-syntax' can produce an
   end-of-file.
@@ -332,7 +332,7 @@ _modcode.ss_: getting module compiled code
                    [#:notify notify-proc]) -
   returns a compiled expression for the declaration of the module
   specified by `module-path-v'. The `module-path-v' argument is a
-  quoted module path, as for MzScheme's `dynamic-require' using the
+  quoted module path, as for Racket's `dynamic-require' using the
   default module path resolver.
 
   The `compiled-subdir' argument defaults to "compiled"; it specifies
@@ -389,7 +389,7 @@ _modresolve.ss_: resolving module paths to file paths
 ======================================================================
 
 Interpretations of module paths in this library mimic that of the
-default module path resolver in MzScheme (which means that the library
+default module path resolver in Racket (which means that the library
 is limited, but certainly useful as no other module path resolvers
 currently exist).
 
@@ -398,12 +398,12 @@ currently exist).
   relative to `rel-to-path-string/thunk/#f' if it is a path string
   (assumed to be for a file), to the directory result of calling the
   thunk if it is a thunk, or to the current directory otherwise. The
-  `module-path-v' argument is a quoted module path, as for MzScheme's
+  `module-path-v' argument is a quoted module path, as for Racket's
   `dynamic-require' using the default module path resolver.
 
 > (resolve-module-path-index module-path-index rel-to-path-string/thunk/#f)
   - like `resolve-module-path' but the input is a module path index
-  (see the MzScheme manual for details); in this case, the
+  (see the Racket manual for details); in this case, the
   `rel-to-path-string/thunk/#f' base is used where the module path
   index contains the "self" index.  If `module-path-index' depends on
   the "self" module path index, then an exception is raised unless
@@ -414,7 +414,7 @@ _modcollapse.ss_: simplifying module paths
 ======================================================================
 
 Interpretations of module paths in this library mimic that of the
-default module path resolver in MzScheme (which means that the library
+default module path resolver in Racket (which means that the library
 is limited, but certainly useful as no other module path resolvers
 currently exist).
 
@@ -423,7 +423,7 @@ currently exist).
   `rel-to-module-path', where the latter must have the form '(lib
   ....), '(file <string>), '(path ....) a path, or a thunk to generate
   one of those. The `module-path-v' argument is a quoted module path,
-  as for MzScheme's `dynamic-require' using the default module path
+  as for Racket's `dynamic-require' using the default module path
   resolver.
 
   The result can be a path if `module-path-v' contains a path element
@@ -433,7 +433,7 @@ currently exist).
 
 > (collapse-module-path-index module-path-index rel-to-module-path-v)
   - like `collapse-module-path', but the input is a module path index
-  (see the MzScheme manual for details); in this case, the
+  (see the Racket manual for details); in this case, the
   `rel-to-module-path-v' base is used where the module path index
   contains the "self" index.
 
