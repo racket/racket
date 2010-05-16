@@ -545,7 +545,8 @@ platform-dependent :+= (and (collects: "sgl/")
 dr-extras :+= (package: "syntax-color")
 
 ;; -------------------- plt-help
-dr-extras :+= (package: "plt-help" #:collection "help")
+dr-extras :+= (collects: "help") (bin: "Racket Documentation")
+              (bin: "plt-help") (man: "plt-help")
 
 ;; -------------------- lang
 plt-extras :+= (package: "lang/" #:docs "htdp-langs/")
