@@ -979,6 +979,7 @@ path/s is either such a string or a list of them.
 "collects/macro-debugger/view/warning.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/make" responsible (mflatt)
 "collects/meta" responsible (eli)
+"collects/meta/build" drdr:command-line #f
 "collects/meta/check-dists.rkt" drdr:command-line #f
 "collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
