@@ -657,7 +657,6 @@ path/s is either such a string or a list of them.
 "collects/drscheme/main.rkt" drdr:command-line (mzc *)
 "collects/drscheme/tool-lib.rkt" drdr:command-line (mzc *)
 "collects/dynext" responsible (mflatt)
-"collects/dynext/private/macinc.rkt" drdr:command-line (racket "-f" *)
 "collects/dynext/private/stdio.rkt" drdr:command-line #f
 "collects/embedded-gui" responsible (mflatt)
 "collects/embedded-gui/embedded-gui.rkt" drdr:command-line (gracket-text "-t" *)
