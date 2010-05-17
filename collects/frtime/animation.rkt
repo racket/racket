@@ -18,7 +18,7 @@
   
   (define fresh-anim
     (let ([first #t])
-      (opt-lambda ([x 400] [y 400] [title "Animation - DrScheme"])
+      (opt-lambda ([x 400] [y 400] [title "Animation - DrRacket"])
         (if first
             (set! first #f)
             (begin
@@ -43,7 +43,7 @@
               (set! right-clicks ((viewport-mouse-events window) . =#> . (lambda (ev) (send ev button-down? 'right)))))))))
     
   (define window
-    (open-viewport "Animation - DrScheme" 400 400))
+    (open-viewport "Animation - DrRacket" 400 400))
   
   (define pixmap
     (open-pixmap "" 400 400))

@@ -27,7 +27,7 @@ Befehle bewegt werden:
  @item{@scheme[(turn n)] Dreht die Schildkröte um n Grad im Uhrzeigersinn.}
 ]
 
-Wir stellen jetzt ein Teachpack für DrScheme vor, mit dessen Hilfe
+Wir stellen jetzt ein Teachpack für DrRacket vor, mit dessen Hilfe
 solche Turtle-Grafiken erstellt werden können. 
 
 @section{Tutorial}

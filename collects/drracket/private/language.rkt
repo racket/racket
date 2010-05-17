@@ -10,7 +10,7 @@
          ;; NOTE: this module instantiates stacktrace itself, so we have
          ;; to be careful to not mix that instantiation with the one
          ;; drracket/private/debug.rkt does. errortrace-lib's is for the
-         ;; compilation handling, DrScheme's is for profiling and test coverage
+         ;; compilation handling, DrRacket's is for profiling and test coverage
          ;; (which do not do compilation)
          (prefix-in el: errortrace/errortrace-lib) 
          

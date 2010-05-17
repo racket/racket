@@ -49,7 +49,7 @@
 (define show-all-steps (make-parameter #f))
 
 ;; use this parameter to prevent the stepper from capturing errors
-;; (so that you can take advantage of DrScheme's error reporting)
+;; (so that you can take advantage of DrRacket's error reporting)
 (define disable-stepper-error-handling (make-parameter #f))
 
 
@@ -142,7 +142,7 @@
 
 ;; test-sequence/core : render-settings? boolean? syntax? steps?
 ;; this is a front end for calling the stepper's "go"; the main 
-;; responsibility here is to fake the behavior of DrScheme and collect the
+;; responsibility here is to fake the behavior of DrRacket and collect the
 ;; resulting steps.
 (define (test-sequence/core render-settings show-lambdas-as-lambdas? expanded-thunk expected-steps error-box)
   (let* ([current-error-display-handler (error-display-handler)]

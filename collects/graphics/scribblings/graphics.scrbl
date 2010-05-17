@@ -596,7 +596,7 @@ display the current image in the viewport. (Subsequent drawing to the
 viewport does not affect the snip's image.)
 
 When snips are the results of computations in the interactions window,
-DrScheme shows the snip in the interactions window.}
+DrRacket shows the snip in the interactions window.}
 
 @defproc[(viewport-dc [viewport viewport?]) (is-a?/c dc<%>)]{
 

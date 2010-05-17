@@ -264,7 +264,7 @@ The "MrEd XOR" menu selects a icon:
   - "MrEd XOR" : initial icon, as described above
 
   - "PLT Middle" : middle area of the PLT logo (used when starting
-    DrScheme), same size as the MrEd icon. Make sure scaling works
+    DrRacket), same size as the MrEd icon. Make sure scaling works
     right (i.e., same section shown and scaled).
 
  - "PLT ^ MrEd" : "PLT Middle" masked by the MrEd icon.

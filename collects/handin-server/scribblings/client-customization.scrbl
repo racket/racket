@@ -13,7 +13,7 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
   renamed client collection:
   @itemize[
   @item{For @scheme[name], choose a name for the handin tool as it
-    will appear in DrScheme's interface (e.g., the @onscreen{XXX} for
+    will appear in DrRacket's interface (e.g., the @onscreen{XXX} for
     the @onscreen{Manage XXX Handin Account...}  menu item).  Again,
     make the name specific to the course, in case a student installs
     multiple handin tools.  Do not use @onscreen{Handin} as the last
@@ -33,7 +33,7 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
   the @onscreen{Help} menu that opens a (course-specific) web page.}
 
 @item{Replace @filepath{icon.png} in your renamed directory with a new
-  32x32 icon.  This icon is displayed on startup with DrScheme's
+  32x32 icon.  This icon is displayed on startup with DrRacket's
   splash screen, and it is included at half size on the
   @onscreen{Handin} button.  A school logo is typically useful, as it
   provides a recognizably local visual cue.  If students might use
@@ -69,8 +69,8 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
   existing files instead of throwing an error.}
 
 @item{Distribute @filepath{<name>.plt} to students for installation
-  into their copies of DrScheme.  The students need not have access to
-  the DrScheme installation directory; the tool will be installed on
+  into their copies of DrRacket.  The students need not have access to
+  the DrRacket installation directory; the tool will be installed on
   the filesystem in the student's personal space.  If you want to
   install it once on a shared installation, use setup-plt with the
   @DFlag{all-users} flag.}

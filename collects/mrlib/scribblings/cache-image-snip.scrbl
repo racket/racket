@@ -7,7 +7,7 @@
 @defmodule[mrlib/cache-image-snip]{
 
 The @schememodname[mrlib/cache-image-snip] library provides the core
-data structure for DrScheme's @filepath{image.ss} teachpack. Images in
+data structure for DrRacket's @filepath{image.ss} teachpack. Images in
 the @filepath{image.ss} teachpack are instances of the
 @scheme[cache-image-snip%] class.}
 

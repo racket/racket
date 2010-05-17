@@ -5,7 +5,7 @@
 CHANGES TO MAKE-----------------------------------------------------------------------------
 Ability to add named anchors into code using Special menu in DRS -- use those anchors as tracepoints.
 
-Demo monitoring DrScheme for Robby?
+Demo monitoring DrRacket for Robby?
 
 Bind Stop button to kill-all.
 

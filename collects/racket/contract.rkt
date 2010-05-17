@@ -22,7 +22,7 @@ differences from v3:
 ;; ======================================================================
 ;; The alternate implementation disables contracts. Its useful mainly to
 ;; measure the cost of contracts. It's not necessarily complete, but it
-;;  works well enough for starting DrScheme.
+;;  works well enough for starting DrRacket.
 ;; (last used pre v4)
 
 #;

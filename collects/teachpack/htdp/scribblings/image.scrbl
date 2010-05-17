@@ -47,7 +47,7 @@ A @tech{Color} is a color-symbol (e.g., @scheme['blue]) or a color-string
 @;-----------------------------------------------------------------------------
 @section[#:tag "creational"]{Creating Basic Shapes}
 
-In DrScheme, you can insert images from your file system. Use PNG images
+In DrRacket, you can insert images from your file system. Use PNG images
 instead whenever possible for insertions. In addition, you can create basic
 shapes with the following functions.
 

@@ -982,14 +982,14 @@ Each grammar, reduction relation, and metafunction can be
 saved in a .ps file (as encapsulated postscript), or can be
 turned into a pict. 
 
-Picts are more useful for debugging since DrScheme REPL will
+Picts are more useful for debugging since DrRacket REPL will
 show you the pict directly (albeit with slightly different
 fonts than you'd see in the .ps file). You can also use the
 picts with Slideshow's pict library to build more complex
 arrangements of the figures and add other picts. See
 Slideshow for details.
 
-If you are only using the picts to experiment in DrScheme's
+If you are only using the picts to experiment in DrRacket's
 REPL, be sure your program is in the GUI library, and
 contains this header:
 

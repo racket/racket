@@ -276,7 +276,7 @@ error.}
 
  A parameter that the lexer uses as the source location if it
  raises a @scheme[exn:fail:rad] error.  Setting this parameter allows
- DrScheme, for example, to open the file containing the error.}
+ DrRacket, for example, to open the file containing the error.}
 
 
 @; ----------------------------------------

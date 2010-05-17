@@ -8,7 +8,7 @@ TODO
 
 
 |#
-; =Kernel= means in DrScheme's thread and parameterization
+; =Kernel= means in DrRacket's thread and parameterization
 ; 
 ; =User= means the user's thread and parameterization
 ; 
@@ -1255,7 +1255,7 @@ TODO
             
             ; setup standard parameters
             (let ([snip-classes
-                   ; the snip-classes in the DrScheme eventspace's snip-class-list
+                   ; the snip-classes in the DrRacket eventspace's snip-class-list
                    (drracket:eval:get-snip-classes)]
                   [drs-eventspace (current-eventspace)])
               (queue-user/wait

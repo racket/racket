@@ -556,7 +556,7 @@ The @WEB-LANG language allows you to write server-side Web applications for the 
 For more information about writing Web applications, see:
 @other-manual['(lib "web-server/scribblings/web-server.scrbl")].
 
-When you click on the @onscreen{Run} button in DrScheme, your Web application is launched in the Web server.
+When you click on the @onscreen{Run} button in DrRacket, your Web application is launched in the Web server.
 
 The application is available at @italic{http://localhost:8000/servlets/standalone.ss}. 
 

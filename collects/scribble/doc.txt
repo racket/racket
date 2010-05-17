@@ -155,7 +155,7 @@ text from the "@;" to the end of the line *and* all following spaces
        baz@;
        blah}
 
-Tip: if you're editing in a Scheme-aware editor (like DrScheme or
+Tip: if you're editing in a Scheme-aware editor (like DrRacket or
 Emacs), it is useful to comment out blocks like this:
 
   @;{

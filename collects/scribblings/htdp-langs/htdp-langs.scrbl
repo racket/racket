@@ -4,11 +4,11 @@
 
 @title{@italic{How to Design Programs} Languages}
 
-The languages documented in this manual are provided by DrScheme to be
+The languages documented in this manual are provided by DrRacket to be
 used with the @italic{@link["http://www.htdp.org/"]{How to Design
 Programs}} book.
 
-When programs in these languages are run in DrScheme, any part of the
+When programs in these languages are run in DrRacket, any part of the
 program that was not run is highlighted in orange and black. These
 colors are intended to give the programmer feedback about the parts of
 the program that have not been tested. To avoid seeing these colors,

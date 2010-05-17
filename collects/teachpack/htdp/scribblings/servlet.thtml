@@ -53,7 +53,7 @@ constrained as follows:
 
   <li><code>{(idx send/finish)} : Response -> Void</code> <br />
   sends the response to the browser and terminates the servlet (and the
-  REPL,  when used inside of DrScheme).
+  REPL, when used inside of DrRacket).
 
   <li><code>{(idx initial-request)} : Request</code> <br /> a fictitious request
   that looks like a browser initially requested the servlet's URL.

@@ -596,7 +596,7 @@ Matthew
          (define/augment (on-close)  
            (callback-stop!)
            (custodian-shutdown-all the-play-back-custodian)))
-       (label "DrScheme")
+       (label "DrRacket")
        (stretchable-width #f)
        (stretchable-height #f)
        (style '(no-resize-border metal))))

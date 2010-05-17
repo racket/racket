@@ -488,7 +488,7 @@
                  (format "The ~a tool has been uninstalled. ~a~a"
                          handin-name
                          "The Handin button and associated menu items will"
-                         " not appear after you restart DrScheme.")
+                         " not appear after you restart DrRacket.")
                  this)
                 (send this show #f)))]))
     (send uninstall-button enable (not uninstalled?))

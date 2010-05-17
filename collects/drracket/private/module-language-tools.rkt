@@ -116,7 +116,7 @@
                                  (vector (read-language (open-input-string "#lang racket"))))))])
           
           ; sometimes I get eof here, but I don't know why and can't seem to 
-          ;; make it happen outside of DrScheme
+          ;; make it happen outside of DrRacket
           (when (eof-object? info-result)
             (fprintf (current-error-port) "file ~s produces eof from read-language\n"
                      (send this get-filename))

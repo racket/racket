@@ -17,7 +17,7 @@ new languages can be added through DrRacket plug-ins.
 @section[#:tag "module"]{Language Declared in Source}
 
 The @as-index{@drlang{Use the language declared in the source} mode}
-in DrScheme is a kind of meta-language, where the program itself
+in DrRacket is a kind of meta-language, where the program itself
 specifies its language, usually through a @hash-lang[] line.
 
 More generally, when using the declared-in-source mode, the

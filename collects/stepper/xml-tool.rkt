@@ -118,7 +118,7 @@
       (send (get-the-snip-class-list) add xml-snipclass)
       
       ;; this snipclass overrides the actual one in xml/xml-snipclass
-      ;; as a full-fledged snipclass, for use in DrScheme.
+      ;; as a full-fledged snipclass, for use in DrRacket.
       
       (define lib-xml-snipclass%
         (class snip-class%
@@ -228,7 +228,7 @@
       (send (get-the-snip-class-list) add scheme-snipclass)
       
       ;; this snipclass overrides the one in xml/scheme-snipclass
-      ;; as a full-fledged snipclass, for use in DrScheme.
+      ;; as a full-fledged snipclass, for use in DrRacket.
       (define lib-scheme-snipclass (make-object scheme-snipclass%))
       (send lib-scheme-snipclass set-version 1)
       (send lib-scheme-snipclass set-classname (format "~s" '(lib "scheme-snipclass.ss" "xml")))

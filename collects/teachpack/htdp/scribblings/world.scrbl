@@ -116,7 +116,7 @@ The following picture provides an intuitive overview of the workings of
    generation of images from the animation, including an animated GIF image. }
 
 @defproc[(on-tick-event [tock (-> (unsyntax @tech{World}) (unsyntax @tech{World}))]) true]{
-   Tell DrScheme to call @scheme[tock] on the current world every time the
+   Tell DrRacket to call @scheme[tock] on the current world every time the
    clock ticks. The result of the call becomes the current world.} 
 
 @deftech{KeyEvent} @scheme[(or/c char? symbol?)]
@@ -135,7 +135,7 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
    compares two @tech{KeyEvent} for equality}
 
 @defproc[(on-key-event [change (-> (unsyntax @tech{World}) key-event? (unsyntax @tech{World}))]) true]{
-   Tell DrScheme to call @scheme[change] on the current world and a 
+   Tell DrRacket to call @scheme[change] on the current world and a 
    @tech{KeyEvent} for every keystroke the user of the computer makes. The result
    of the call becomes the current world.
 
@@ -161,17 +161,17 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
    computer's user. 
 
 @defproc[(on-mouse-event [clack (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) (unsyntax @tech{World}))]) true]{
-   Tell DrScheme to call @scheme[clack] on the current world, the current
+   Tell DrRacket to call @scheme[clack] on the current world, the current
    @scheme[x] and @scheme[y] coordinates of the mouse, and and a
    @tech{MouseEvent} for every action of the mouse by the user of the
    computer. The result of the call becomes the current world.}
 
-@defproc[(on-redraw [to-scene (-> (unsyntax @tech{World}) (unsyntax @tech{Scene}))]) true]{ Tell DrScheme to call @scheme[to-scene]
+@defproc[(on-redraw [to-scene (-> (unsyntax @tech{World}) (unsyntax @tech{Scene}))]) true]{ Tell DrRacket to call @scheme[to-scene]
    whenever the canvas must be redrawn. The canvas is usually re-drawn after a tick event, a keyboard
    event, or a mouse event has occurred.  The generated scene is  displayed in the world's canvas.}
 
 @defproc[(stop-when [last-world? (-> (unsyntax @tech{World}) boolean?)]) true]{
-   Tell DrScheme to call @scheme[last-world?] whenever the canvas is
+   Tell DrRacket to call @scheme[last-world?] whenever the canvas is
    drawn. If this call produces @scheme[true], the clock is stopped; no more
    tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
    the respective handlers. As a result, the canvas isn't updated either.} 
@@ -479,5 +479,5 @@ which function takes care of tick events, key events, and redraws:
 (on-redraw render)
 ))
  
-Now it's time for you to collect the pieces and run them in DrScheme to see
+Now it's time for you to collect the pieces and run them in DrRacket to see
 whether it all works. 

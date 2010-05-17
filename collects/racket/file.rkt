@@ -116,7 +116,7 @@
                  [read-accept-quasiquote #t]
                  [read-accept-reader #f]
                  [print-struct #f]
-                 [print-graph #f] ; <--- FIXME: temporary solution to DrScheme-pref problem
+                 [print-graph #f] ; <--- FIXME: temporary solution to DrRacket-pref problem
                  [print-box #t]
                  [print-vector-length #t]
                  [current-readtable #f])

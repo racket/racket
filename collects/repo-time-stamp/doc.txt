@@ -1,6 +1,6 @@
 This collection is used only for the repository.  It is not included
 in normal releases.  (It's existence indicates a checked out tree.)
 
-The stamp.ss module provides one definition: `stamp' that is bound to
-a string representing the current day.  The time-stamp.ss file is a
-tool, used by DrScheme to set the version based on the time stamp.
+The "stamp.rkt" module provides one definition: `stamp' that is bound to
+a string representing the current day.  The "time-stamp.rkt" file is a
+tool, used by DrRacket to set the version based on the time stamp.

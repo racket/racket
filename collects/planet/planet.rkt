@@ -4,7 +4,7 @@ This module contains code that implements the `planet' command-line tool.
   
 PLANNED FEATURES:
 * Disable a package without removing it (disabling meaning
-  that if it's a tool it won't start w/ DrScheme, etc)
+  that if it's a tool it won't start w/ DrRacket, etc)
 |#
   (require mzlib/string
            mzlib/file

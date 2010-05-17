@@ -836,8 +836,8 @@
           (define/override (get-reader-module) reader-module)
           (define/override (get-metadata modname settings)
             (string-append
-             ";; Die ersten drei Zeilen dieser Datei wurden von DrScheme eingefügt. Sie enthalten Metadaten\n"
-             ";; über die Sprachebene dieser Datei in einer Form, die DrScheme verarbeiten kann.\n"
+             ";; Die ersten drei Zeilen dieser Datei wurden von DrRacket eingefügt. Sie enthalten Metadaten\n"
+             ";; über die Sprachebene dieser Datei in einer Form, die DrRacket verarbeiten kann.\n"
              (format "#reader~s~s\n"
                      reader-module
                      `((modname ,modname)

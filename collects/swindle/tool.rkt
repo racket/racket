@@ -1,6 +1,6 @@
 ;;; Written by Eli Barzilay: Maze is Life!  (eli@barzilay.org)
 
-;; Add the Swindle languages to DrScheme
+;; Add the Swindle languages to DrRacket
 #lang mzscheme
 
 (require mzlib/unit

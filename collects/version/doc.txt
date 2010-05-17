@@ -1,13 +1,13 @@
-_version_: PLT version checking
-===============================
+_version_: Racket version checking
+==================================
 
 The version collection contains several version-related pieces that
-are used by PLT Scheme.  First, the "check.ss" module provides a
-single function:
+are used by Racket.  First, the "check.ss" module provides a single
+function:
 
 > (check-version)
 
-This procedure checks the currently available version on the PLT
+This procedure checks the currently available version on the Racket
 website (doanload.racket-lang.org), and returns a value that indicates
 your current state -- one of these:
 
@@ -35,13 +35,13 @@ _patchlevel_ module.  This module provides a single value:
 > patchlevel
 
 which is an integer that indicates the current patch level.  This is
-normally zero, but may be updated by patches to DrScheme.
+normally zero, but may be updated by patches to DrRacket.
 
 
-Finally, the "tool.ss" makes DrScheme use both features:
+Finally, the "tool.rkt" makes DrRacket use both features:
 
-* the patchlevel appears as a version `pN' suffix in DrScheme (but the
+* the patchlevel appears as a version `pN' suffix in DrRacket (but the
   binary version as reported by `(version)' is not changed);
 
-* it is possible to periodically check whether a new PLT Scheme
+* it is possible to periodically check whether a new Racket
   distribution is available for download.

@@ -175,7 +175,7 @@ Every exception or result mismatch during the call to
   Controls how values are printed. The @scheme[proc] must be a
   procedure that expects a Scheme value and returns a string
   representation for it.  The default value printer uses
-  @scheme[pretty-print], with DrScheme-like settings.}
+  @scheme[pretty-print], with DrRacket-like settings.}
 
 @defproc[(reraise-exn-as-submission-problem [thunk (-> any)]) any]{
 

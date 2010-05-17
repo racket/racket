@@ -120,7 +120,7 @@ and height. The @scheme[dc] argument is used for sizing.}
          void?]{
 
 Draws a button label like the one for the @onscreen{(define ...)} and
-filename buttons in the top-left corner of the DrScheme frame. Use
+filename buttons in the top-left corner of the DrRacket frame. Use
 this function to draw similar buttons.
 
 The basic idea is to create a canvas object whose on-paint method is

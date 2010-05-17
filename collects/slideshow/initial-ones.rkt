@@ -73,9 +73,9 @@
     (comment "This window shows comments for each slide. "
              "The comments are typically fill in the details of what "
              "the slide presenter says when giving the talk."))
-   
 
-   (define mytalk.scm (tt "mytalk.ss"))
+
+   (define mytalk.rkt (tt "mytalk.rkt"))
 
 
    (slide
@@ -91,33 +91,33 @@
                 (item "Double-click the" (bt "Slideshow") "executable or run" 
                       (tt "slideshow") "on the command line")
                 (item "Click the" (bt "Open File...") "link and select the"
-                      "Slideshow program file, such as" mytalk.scm))
-          (list (para "Alternately, run a Slideshow program in DrScheme:")
-                (item "Open" mytalk.scm "in DrScheme")
+                      "Slideshow program file, such as" mytalk.rkt))
+          (list (para "Alternately, run a Slideshow program in DrRacket:")
+                (item "Open" mytalk.rkt "in DrRacket")
                 (item #:bullet (blank (+ (pict-width bullet) gap-size) 0)
-                      "DrScheme's language should change automatically to"
+                      "DrRacket's language should change automatically to"
                       (bt "Module"))
-                (item "Click" (bt "Run") "in DrScheme")
-                (colorize (bt "Use DrScheme only if you trust the program") "red"))
+                (item "Click" (bt "Run") "in DrRacket")
+                (colorize (bt "Use DrRacket only if you trust the program") "red"))
           (parameterize ([current-para-width client-w])
             (list (para (colorize (bt "Important security information:") "red"))
                   (para "A slideshow program has access to the"
-                        (it "full") (it "Scheme") (it "language"))
+                        (it "full") (it "Racket") (it "language"))
                   (para "If you don't know the creator of a slide program"
                         "(or if you don't trust them), run the slides through the"
                         (bt "Slideshow") "executable or"
                         (tt "slideshow") "command line")
                   (colorize
                    (para
-                    "When run in" (bt "Slideshow") "instead of DrScheme,"
+                    "When run in" (bt "Slideshow") "instead of DrRacket,"
                     "a slide program cannot write files"
                     "or make network connections")
                    "blue")))
           (list (para "When using a command line, you can specify the program directly:")
-                (hbl-append (tt "slideshow ") mytalk.scm)
+                (hbl-append (tt "slideshow ") mytalk.rkt)
                 (blank)
                 (para "To print the talk:")
-                (hbl-append (tt "slideshow --print ") mytalk.scm)
+                (hbl-append (tt "slideshow --print ") mytalk.rkt)
                 (blank)
                 (colorize
                  (para #:align 'right (it "Run") (tt "slideshow --help") (it "for more options"))

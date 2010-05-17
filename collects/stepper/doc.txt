@@ -1,15 +1,15 @@
 What is the _Stepper_?
 
-DrScheme includes an "algebraic stepper," a tool which proceeds
+DrRacket includes an "algebraic stepper," a tool which proceeds
 through the evaluation of a set of definitions and expressions,
-one step at a time. This evaluation shows the user how DrScheme
+one step at a time. This evaluation shows the user how DrRacket
 evaluates expressions and definitions, and can help in debugging
 programs.  Currently, the Stepper is available in the "Beginning
 Student" and "Intermediate Student" language levels.
 
 How do I use the Stepper?
 
-The Stepper operates on the contents of the frontmost DrScheme
+The Stepper operates on the contents of the frontmost DrRacket
 window.  A click on the "Step" button brings up the stepper
 window.  The stepper window has four panes, arranged as follows:
 
@@ -48,7 +48,7 @@ is, no expressions have yet been evaluated.  The "Previous"
 button returns to the prior step of the evaluation.  The "Next"
 step shows the next step in the evaluation.
 
-For more information on how DrScheme selects a "redex" and how
+For more information on how DrRacket selects a "redex" and how
 the expressions are reduced, please see <A>The Beginner Language
 Semantics</A> which formally specify the set of rules governing
 the language's evaluation.
@@ -58,5 +58,3 @@ in the definitions window, and does not allow the user to enter
 additional expressions.  So, for instance, a definitions buffer
 which contains only procedure definitions will not result in
 any reductions.
-
-

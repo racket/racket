@@ -128,7 +128,7 @@
        (run-save/load-tests pasteboard% pb-insert reset?))
      '(#t #f))
 
-;; Test DrScheme-style format change in `on-save':
+;; Test DrRacket-style format change in `on-save':
 (define (run-on-save-tests editor% insert)
   (let* ([editor+% (if (eq? editor% text%)
 		       (class editor%

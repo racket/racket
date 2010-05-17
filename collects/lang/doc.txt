@@ -15,7 +15,7 @@ languages for other modules (i.e., as the initial import):
 
  * _plt-pretty-big.ss_ - provides plt-pretty-big-text.ss
     plus the GRacket classes. This corresponds to the
-    _Pretty Big Scheme_ language in DrScheme.
+    _Pretty Big Scheme_ language in DrRacket.
 
  * _htdp-beginner.ss_ - provides Beginning Student
 

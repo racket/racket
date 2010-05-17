@@ -20,7 +20,7 @@ include in your client collection a @filepath{version} file that
 contains a single number that is its version. Use a big integer that
 holds the time of this collection in a @tt{YYYYMMDDHHMM} format.
 
-When students install the client, every time DrScheme starts, it will
+When students install the client, every time DrRacket starts, it will
 automatically check the version from the web page (as specified by the
 @scheme[web-address] and @scheme[version-filename] keys), and if that
 contains a bigger number, it will offer the students to download and

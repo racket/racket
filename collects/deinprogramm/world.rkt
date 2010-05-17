@@ -109,7 +109,7 @@
                    ;; shut down the timer when the window is destroyed
                    (send the-time stop)
                    (inner (void) on-close)))
-               (label "DrScheme")
+               (label "DrRacket")
                (stretchable-width #f)
                (stretchable-height #f)
                (style '(no-resize-border metal))))

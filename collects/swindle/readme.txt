@@ -67,7 +67,7 @@ only a subset of the system is needed.
 * A language that can easily create HTML, where the result is
   human-editable.  ("html.ss")
 
-* Customizable syntax: easy to add customized languages to DrScheme.
+* Customizable syntax: easy to add customized languages to DrRacket.
   ("custom.ss")
 
 
@@ -113,8 +113,8 @@ Swindle environment.
   Compilation definitions.
 
 * tool.ss (module)
-  Setup for Swindle in DrScheme -- makes some languages available in
-  DrScheme, including custom Swindle-based languages.
+  Setup for Swindle in DrRacket -- makes some languages available in
+  DrRacket, including custom Swindle-based languages.
 
 * custom.ss (module)
   A sample file that demonstrates how to create a Swindle-based

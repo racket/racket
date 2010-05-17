@@ -1,7 +1,7 @@
 
 _GUI builder_
 
-To run the GUI builder, use DrScheme and select "Insert GUI"
+To run the GUI builder, use DrRacket and select "Insert GUI"
 from the "Special" menu.
 
 Though less recommended, you can also run

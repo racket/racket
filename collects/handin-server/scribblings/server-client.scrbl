@@ -19,7 +19,7 @@ certificates.  A student can install any number of clients at once
 below).
 
 The result, on the student's side, is a @onscreen{Handin} button in
-DrScheme's toolbar.  Clicking the @onscreen{Handin} button allows the
+DrRacket's toolbar.  Clicking the @onscreen{Handin} button allows the
 student to type a password and upload the current content of the
 definitions and interactions window to the course instructor's server.
 The @onscreen{File} menu is also extended with a @onscreen{Manage...}

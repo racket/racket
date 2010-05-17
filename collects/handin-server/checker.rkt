@@ -177,7 +177,7 @@
                            markup-prefix bad-re)
   (define magic #rx#"^(?:#reader[(]lib\"read.ss\"\"wxme\"[)])?WXME")
   (unless (regexp-match? magic submission)
-    (error* "bad submission format, expecting a single DrScheme submission"))
+    (error* "bad submission format, expecting a single DrRacket submission"))
   (let-values ([(defs inters) (unpack-submission submission)])
     (parameterize ([current-input-port
                     (if textualize?

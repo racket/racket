@@ -324,10 +324,10 @@ This directory contains the following files and sub-directories:
   @filepath{ATTEMPT} directory (to be copied by the cleanup process);
   see below for more details on @schememodname[handin-server/checker].
 
-  For submissions from a normal DrScheme frame, a submission file
+  For submissions from a normal DrRacket frame, a submission file
   contains a copy of the student's definitions and interactions
   windows.  The file is in a binary format (to support non-text code),
-  and opening the file directly in DrScheme shows the definitions
+  and opening the file directly in DrRacket shows the definitions
   part.  To get both the definitions and interactions parts, the file
   can be parsed with @scheme[unpack-submission] from
   @schememodname[handin-server/utils].

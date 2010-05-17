@@ -35,7 +35,7 @@
 
 @title{@italic{Essentials of Programming Languages} Language}
 
-The @italic{Essentials of Programming Languages} language in DrScheme
+The @italic{Essentials of Programming Languages} language in DrRacket
 provides a subset of functions and syntactic forms of
 @schememodname[mzscheme]---mostly the ones that correspond to
 @scheme[r5rs] forms. See below for a complete list. The
@@ -150,7 +150,7 @@ The following bindings are re-@scheme[provide]d from
 @defidform[sllgen:list-define-datatypes])]{
 
   Defined in the textbook's Appendix B @cite["EoPL"]. However, the
-  DrScheme versions are syntactic forms, instead of procedures, and
+  DrRacket versions are syntactic forms, instead of procedures, and
   the arguments must be either quoted literal tables or identifiers
   that are defined (at the top level) to quoted literal tables.}
 

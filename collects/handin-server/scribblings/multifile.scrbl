@@ -4,7 +4,7 @@
 @title[#:tag "multi-file"]{Multiple-File Submissions}
 
 By default, the system is set up for submissions of single a single
-file, straight fom DrScheme using the handin-client.  There is some
+file, straight fom DrRacket using the handin-client.  There is some
 limited support for multi-file submissions in
 @schememodname[handin-server/checker] and in the handin-client. It is
 possible to submit multiple files, and have the system generate a
@@ -53,10 +53,10 @@ to submit multiple files.  In this dialog, students choose their
 working directory, and the @scheme[selection-default] entry from the
 @filepath{handin-client/info.ss} file specifies a few patterns that
 can be used to automatically select files.  The dialog provides all
-handin-related functionality that is available in DrScheme.  For
+handin-related functionality that is available in DrRacket.  For
 further convenience, it can be used as a standalone application: in
 the account management dialog, the @onscreen{Un/Install} tab has a
 button that will ask for a directory where it will create an
 executable for the multi-file submission utility---the resulting
-executable can be used outside of DrScheme (but PLT Scheme is still
+executable can be used outside of DrRacket (but Racket is still
 required, so it cannot be uninstalled).

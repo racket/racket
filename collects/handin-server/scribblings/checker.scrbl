@@ -104,7 +104,7 @@ Keywords for configuring @scheme[check:]:
     run student code.}
   @item{@scheme[:create-text?] is off --- allowing submissions that
     contain non-textual objects, but no text file is created so
-    grading and testing must be done using DrScheme (because the saved
+    grading and testing must be done using DrRacket (because the saved
     submission is always in binary format).}
   @item{Both flags are on --- allowing submission with non-textual
     objects and generating text files, but these files will not be
@@ -114,7 +114,7 @@ Keywords for configuring @scheme[check:]:
 @item{@indexed-scheme[:untabify?]---if true, then tabs are converted
   to spaces, assuming a standard tab width of 8 places.  This is
   needed for a correct computation of line lengths, but note that
-  DrScheme does not insert tabs in Scheme mode.  Defaults to
+  DrRacket does not insert tabs in Scheme mode.  Defaults to
   @scheme[#t].  @textoption}
 
 @item{@indexed-scheme[:maxwidth]---a number that specifies maximum
@@ -130,7 +130,7 @@ Keywords for configuring @scheme[check:]:
   file is always stored in GRacket's binary format.}
 
 @item{@indexed-scheme[:multi-file]---by default, this is set to
-  @scheme[#f], which means that only DrScheme is used to send
+  @scheme[#f], which means that only DrRacket is used to send
   submissions as usual.  See @secref{multi-file} for setting up
   multi-file submissions.}
 

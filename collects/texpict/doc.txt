@@ -1213,8 +1213,8 @@ The following four are for backward compatibility:
   coloring; the default is #t
 
 > code-colorize-quote-enabled - a parameter to control whether everything
-  under a quote is colorized as a literal (like DrScheme's Check Syntax,
-  and unlike DrScheme's interactive text coloring); the default is #t
+  under a quote is colorized as a literal (like DrRacket's Check Syntax,
+  and unlike DrRacket's interactive text coloring); the default is #t
 
 > code-italic-underscore-enabled - a boolean parameter to control
   whether underscore-prefixed identifiers are italicized (dropping

@@ -105,7 +105,7 @@
       (or (wait-for-drscheme-frame-pred)
           (begin
             (when print-message?
-              (printf "Select DrScheme frame~n"))
+              (printf "Select DrRacket frame~n"))
             (poll-until wait-for-drscheme-frame-pred)))))
   
   ;; wait-for-new-frame : frame [(listof eventspace) = null] -> frame
@@ -309,7 +309,7 @@
     (wait-for-button button))
   
   ;; set-language-level! : (cons (union regexp string) (listof (union regexp string))) boolean -> void
-  ;; set language level in the frontmost DrScheme frame (resets settings to defaults)
+  ;; set language level in the frontmost DrRacket frame (resets settings to defaults)
   ;; If `close-dialog?' it #t,
   (define set-language-level! 
     (lambda (in-language-spec [close-dialog? #t])

@@ -69,7 +69,7 @@
                     (fprintf sp ")")
                     (let ([sema (make-semaphore)])
                       ;; Disable breaks, so an exn handler can't
-                      ;;  grab the DrScheme eventspacae:
+                      ;;  grab the DrRacket eventspacae:
                       (parameterize-break #f
                                           ;; Queue callback to write trace line ---
                                           ;; low priority, so that infinite loops don't stop the user

@@ -29,5 +29,5 @@ Here are some manual tests to run on MysterX:
 
   - run mxdemo.ss (in the collection) under IE4, IE5, IE5.5
   - check for no context menu in browsers
-  - load mxdemo.ss into DrScheme; hit Execute a second time,
+  - load mxdemo.ss into DrRacket; hit Run a second time,
      the browser windows should disappear

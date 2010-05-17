@@ -15,7 +15,7 @@
                               1)))))]{
 
   This is an assocation list mapping the shortcut strings that
-  DrScheme uses with its @tt{control-\} (or @tt{command-\}) strings to
+  DrRacket uses with its @tt{control-\} (or @tt{command-\}) strings to
   their corresponding unicode characters. For example, it contains
   this mapping:
   @schemeblock[

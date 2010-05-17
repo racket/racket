@@ -44,7 +44,7 @@
   NOTE: The command line arguments are optional, it restricts the
   setup work to the specified collection.}
 
-@item{Start DrScheme, click @onscreen{Handin} to run the client,
+@item{Start DrRacket, click @onscreen{Handin} to run the client,
   submit with username ``@tt{tester}'' and password ``@tt{pw}''.
 
   The submitted file will be @filepath{.../test/tester/handin.scm}.}

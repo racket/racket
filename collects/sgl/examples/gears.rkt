@@ -22,7 +22,7 @@
 ;;     This is a port of the infamous "gears" demo to straight GLX (i.e. no
 ;;     GLUT).  Port by Brian Paul 23 March 2001.
 ;;
-;; To run, evaluate this file in DrScheme in the "module" language level,
+;; To run, evaluate this file in DrRacket in the "module" language level,
 ;; or execute "mred -qu gears.ss" from your OS shell.
 ;;
 ;; Scheme port by Neil W. Van Dyke <neil@neilvandyke.org>, 23 November 2002.

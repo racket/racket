@@ -1,7 +1,7 @@
 #|
 
 This is the semantics of Beginner Scheme, one of the
-languages in DrScheme.
+languages in DrRacket.
 
 The first test case fails because the beginner spec
 is broken for that program (ie, the model faithfully
