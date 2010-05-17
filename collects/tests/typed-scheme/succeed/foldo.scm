@@ -21,7 +21,7 @@
                [_ #f]))))]))
                
   (define-excluder default-excluder 
-    "compiled" ".svn" #;("collects" "drscheme") #;("collects" "framework"))
+    "compiled" ".git")
   
   (define exclude-directory?  (make-parameter default-excluder))
   
@@ -39,7 +39,7 @@
           (let ([extension (filename-extension path)])
             (cond
               [(not extension) acc ]
-              [(regexp-match #rx"(ss|scm)$" extension)
+              [(regexp-match #rx"(rkt|rktl|ss|scm)$" extension)
                (let ([resl (f path)])
                  (if resl
                      (cons resl acc)  
