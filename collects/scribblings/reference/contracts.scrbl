@@ -228,36 +228,57 @@ void, and undefined.}
 Accepts any number of symbols and returns a flat contract that
 recognizes those symbols.}
 
+@defproc[(vectorof [c contract?] 
+                   [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
+                   [#:flat? flat? boolean? #f])
+         contract?]{
+Returns a contract that recognizes vectors. The elements of the vector must
+match @racket[c].
 
-@defproc[(vectorof [c (or/c flat-contract? (any/c . -> . any/c))]) flat-contract?]{
+If the @racket[flat?] argument is @racket[#t], then the resulting contract is
+a flat contract, and the @racket[c] argument must also be a flat contract.  Such
+flat contracts will be unsound if applied to mutable vectors, as they will not
+check future operations on the vector.
 
-Accepts a @tech{flat contract} (or a predicate that is converted to a
-flat contract via @racket[flat-contract]) and returns a flat contract
-that checks for vectors whose elements match the original contract.}
+If the @racket[immutable] argument is @racket[#t] and the @racket[c] argument is
+a flat contract, the result will be a flat contract.  If the @racket[c] argument
+is a chaperone contract, then the result will be a chaperone contract.
 
-
-@defproc[(vector-immutableof [c (or/c contract? (any/c . -> . any/c))]) contract?]{
-
-Like @racket[vectorof], but the contract needs not be a @tech{flat
-contract}. Beware that when this contract is applied to a
-value, the result is not @racket[eq?] to the input.}
-
-
-@defproc[(vector/c [c (or/c flat-contract? (any/c . -> . any/c))] ...) flat-contract?]{
-
-Accepts any number of flat contracts (or predicates that are converted
-to flat contracts via @racket[flat-contract]) and returns a
-flat-contract that recognizes vectors. The number of elements in the
-vector must match the number of arguments supplied to
-@racket[vector/c], and each element of the vector must match the
-corresponding flat contract.}
+When a higher-order @racket[vectorof] contract is applied to a vector, the result
+is not @racket[eq?] to the input.  The result will be a copy for immutable vectors
+and a @tech{chaperone} or @tech{proxy} of the input for mutable vectors.}
 
 
-@defproc[(vector-immutable/c [c (or/c contract? (any/c . -> . any/c))] ...) contract?]{
+@defproc[(vector-immutableof [c contract?]) contract?]{
 
-Like @racket[vector/c], but the individual contracts need not be
-@tech{flat contracts}. Beware that when this contract is applied to a
-value, the result is not @racket[eq?] to the input.}
+Returns the same contract as @racket[(vectorof c #:immutable #t)]. This exists for
+reasons of backwards compatibility, and may be removed in the future.}
+
+@defproc[(vector/c [c contract?] ...
+                   [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
+                   [#:flat? flat? boolean? #f])
+         contract?]{
+Returns a contract that recognizes vectors whose length match the number of
+contracts given. Each element of the vector must match its corresponding contract.
+
+If the @racket[flat?] argument is @racket[#t], then the resulting contract is
+a flat contract, and the @racket[c] arguments must also be flat contracts.  Such
+flat contracts will be unsound if applied to mutable vectors, as they will not
+check future operations on the vector.
+
+If the @racket[immutable] argument is @racket[#t] and the @racket[c] arguments are
+flat contracts, the result will be a flat contract.  If the @racket[c] arguments
+are chaperone contracts, then the result will be a chaperone contract.
+
+When a higher-order @racket[vector/c] contract is applied to a vector, the result
+is not @racket[eq?] to the input.  The result will be a copy for immutable vectors
+and a @tech{chaperone} or @tech{proxy} of the input for mutable vectors.}
+
+
+@defproc[(vector-immutable/c [c contract?] ...) contract?]{
+
+Returns the same contract as @racket[(vector/c c ... #:immutable #t)]. This exists for
+reasons of backwards compatibility, and may be removed in the future.}
 
 
 @defproc[(box/c [c contract?] 
