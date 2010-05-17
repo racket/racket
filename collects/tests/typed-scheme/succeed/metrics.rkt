@@ -6,7 +6,7 @@
 (require/typed apply-to-scheme-files 
                ((Path -> (Listof (Listof (U #f (Listof (U Number #f))))))
                 Path
-                -> (Listof (U #f (Listof  (Listof ( U #f (Listof (U Number #f)))))))) "foldo.scm")
+                -> (Listof (U #f (Listof  (Listof ( U #f (Listof (U Number #f)))))))) "foldo.rkt")
 
 (define-type-alias top Any)
 (define-type-alias str String)
