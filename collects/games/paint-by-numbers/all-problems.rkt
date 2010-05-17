@@ -16,7 +16,7 @@
       [(_)
        (with-syntax
            ([(unit-names ...)
-             (let ([probdir (collection-path "games" "paint-by-numbers") "problems"])
+             (let ([probdir (build-path (collection-path "games" "paint-by-numbers") "problems")])
                (let loop ([files
                            (call-with-input-file (build-path probdir "directory")
                              read)])
