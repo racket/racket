@@ -63,11 +63,24 @@
         (parse-tc-results prop)
         (parse-tc-results/id stx prop)))
   (cond
-    [(syntax-property stx type-ascrip-symbol) => pt]
+    [(syntax-property stx type-ascrip-symbol) 
+     =>
+     (lambda (prop)
+       (if (pair? prop)
+           (pt (car prop))
+           (pt prop)))]
     [else #f]))
 
 (define (remove-ascription stx)
-  (syntax-property stx type-ascrip-symbol #f))
+  (syntax-property stx type-ascrip-symbol 
+                   (cond
+                     [(syntax-property stx type-ascrip-symbol) 
+                      =>
+                      (lambda (prop)
+                        (if (pair? prop)
+                            (cdr prop)
+                            #f))]
+                     [else #f])))
 
 (define (log/ann stx ty)
   (printf/log "Required Annotated Variable: ~a ~a~n" (syntax-e stx) ty))
