@@ -1,13 +1,10 @@
 #reader(lib"read.ss""wxme")WXME0108 ## 
 #|
-   This file uses the PLT Scheme editor format.
-   Open this file in DrScheme version 4.2.2.1 or later to read it.
+   This file uses the GRacket editor format.
+   Open this file in DrRacket, or DrScheme version 4.2.2.1 or later
+   to read it.
 
-   Most likely, it was created by saving a program in DrScheme,
-   and it probably contains a program with non-text elements
-   (such as images or comment boxes).
-
-            http://www.plt-scheme.org
+            http://racket-lang.org/
 |#
  27 7 #"wxtext\0"
 3 1 6 #"wxtab\0"

@@ -1,11 +1,10 @@
 WXME0108 ## 
 #|
-   This file is in PLT Scheme editor format.
-   Most likely, it was created by saving a program in DrScheme,
-   and it probably contains a program with non-text elements (such
-   as pictures, comment boxes, or test-cases boxes).
-   Open this file in DrScheme to read its content.
-                 www.plt-scheme.org
+   This file uses the GRacket editor format.
+   Open this file in DrRacket, or DrScheme version 4 or later
+   to read it.
+
+            http://racket-lang.org/
 |#
  46 7 #"wxtext\0"
 3 1 6 #"wxtab\0"
