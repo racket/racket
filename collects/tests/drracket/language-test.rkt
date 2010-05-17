@@ -14,7 +14,7 @@ the settings above should match r5rs
 |#
 
 
-(require "drracket-test-util.ss"
+(require "drracket-test-util.rkt"
          tests/utils/gui
          mred
          framework
@@ -1098,7 +1098,7 @@ the settings above should match r5rs
                  "expected lines: ~n  ~a~n  ~a~ngot lines:~n  ~a~n  ~a~n" 
                  line0-expect line1-expect
                  line0-got line1-got)
-        (error 'language-test.ss "failed get top of repl test")))))
+        (error 'language-test.rkt "failed get top of repl test")))))
 
 
 ;; teaching-language-fraction-output

@@ -1,5 +1,5 @@
 #lang at-exp scheme/gui
-(require "module-lang-test-utils.ss")
+(require "module-lang-test-utils.rkt")
 (provide run-test)
 
 ;; set up for tests that need external files
@@ -71,16 +71,16 @@
 (test @t{(module m mzscheme (define x 1) (define y 2) (provide y))}
       @t{y}
       "2")
-(test @t{(module m mzscheme (require (lib "list.ss")))}
+(test @t{(module m mzscheme (require mzlib/list))}
       @t{foldl}
       #rx"foldl")
-(test @t{(module m mzscheme (require (rename (lib "list.ss") local-foldl foldl)))}
+(test @t{(module m mzscheme (require (rename mzlib/list local-foldl foldl)))}
       @t{local-foldl}
       #rx"foldl>")
-(test @t{(module m mzscheme (require (all-except (lib "list.ss") foldl)))}
+(test @t{(module m mzscheme (require (all-except mzlib/list foldl)))}
       @t{first}
       #rx"first>")
-(test @t{(module m mzscheme (require (all-except (lib "list.ss") foldl)))}
+(test @t{(module m mzscheme (require (all-except mzlib/list foldl)))}
       @t{foldl}
       ". . reference to an identifier before its definition: foldl")
 (test @t{(module m mzscheme (require (prefix mz: mzscheme)))}
@@ -90,18 +90,18 @@
       @t{+}
       #rx"procedure:[+]")
 (test @t{(module m mzscheme
-           (require (prefix x: (lib "list.ss")) (lib "list.ss")))}
+           (require (prefix x: mzlib/list) mzlib/list))}
       @t{foldl}
       #rx"foldl>")
 (test @t{(module m mzscheme
-           (require (prefix x: (lib "list.ss")) (lib "list.ss")))}
+           (require (prefix x: mzlib/list) mzlib/list))}
       @t{x:foldl}
       #rx"foldl>")
-(test @t{(module m (file @in-here{module-lang-test-tmp1.ss}) x)}
+(test @t{(module m (file @in-here{module-lang-test-tmp1.rkt}) x)}
       @t{x}
       "1")
 ;; + shouldn't be bound in the REPL because it isn't bound in the module.
-(test @t{(module m (file @in-here{module-lang-test-tmp1.ss}) x)}
+(test @t{(module m (file @in-here{module-lang-test-tmp1.rkt}) x)}
       @t{+}
       ". . reference to an identifier before its definition: +")
 (test @t{(module m mzscheme (provide lambda))}
@@ -137,7 +137,7 @@
       @t{a}
       "78")
 (test @t{(module m mzscheme
-           (require-for-syntax (file @in-here{module-lang-test-tmp2.ss}))
+           (require-for-syntax (file @in-here{module-lang-test-tmp2.rkt}))
            (provide s)
            (define-syntax (s stx) e))}
       @t{(require m) s}
@@ -158,7 +158,7 @@
          (eval 'cons)}
       #f
       @rx{. compile: unbound identifier \(and no #%top syntax transformer is bound\) in: cons})
-(test @t{(module m (file @in-here{module-lang-test-tmp1.ss}) 1 2 3)}
+(test @t{(module m (file @in-here{module-lang-test-tmp1.rkt}) 1 2 3)}
       @t{1} ;; just make sure no errors.
       "1")
 
@@ -193,7 +193,7 @@
           Interactions disabled:
           does not support a REPL \(no #%top-interaction\)}
       #t)
-(test @t{(module xx (file @in-here{module-lang-test-tmp4.ss})
+(test @t{(module xx (file @in-here{module-lang-test-tmp4.rkt})
            (define x 1)
            (* x 123))}
       #f
@@ -260,5 +260,5 @@
       "3")
 
 
-(require "drracket-test-util.ss")
+(require "drracket-test-util.rkt")
 (fire-up-drscheme-and-run-tests run-test)

@@ -9,11 +9,11 @@ This produces an ACK message
 
 #lang scheme
 (require scheme/sandbox)
-(make-evaluator '(file "/tmp/foo.ss"))
+(make-evaluator '(file "/tmp/foo.rkt"))
 
 |#
 
-(require "drracket-test-util.ss"
+(require "drracket-test-util.rkt"
          mred
          framework)
 
@@ -61,7 +61,7 @@ This produces an ACK message
    ".*"
    (regexp-quote "tests/drracket/repl-test-tmp")
    "3?"
-   (regexp-quote ".ss")))
+   (regexp-quote ".rkt")))
 
 
 (define (to-strings . args)
@@ -135,10 +135,10 @@ This produces an ACK message
    (mktest "("
            ("{stop-22x22.png} read: expected a `)' to close `('"
             "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('"
             "{stop-22x22.png} read: expected a `)' to close `('"
             "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: expected a `)' to close `('")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: expected a `)' to close `('")
            'definitions
            #f
            void
@@ -148,10 +148,10 @@ This produces an ACK message
            
            ("{stop-22x22.png} read: illegal use of \".\""
             "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of \".\""
             "{stop-22x22.png} read: illegal use of \".\""
             "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: illegal use of \".\"")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: read: illegal use of \".\"")
            'definitions
            #f
            void
@@ -161,10 +161,10 @@ This produces an ACK message
            
            ("{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
-            "{stop-22x22.png} repl-test-tmp3.ss:1:0: lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:0: lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: lambda: bad syntax in: (lambda ())")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: lambda: bad syntax in: (lambda ())")
            'definitions
            #f
            void
@@ -175,10 +175,10 @@ This produces an ACK message
            
            ("{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
-            "{stop-22x22.png} repl-test-tmp3.ss:1:7: lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:7: lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:7: lambda: bad syntax in: (lambda ())")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: lambda: bad syntax in: (lambda ())")
            'definitions
            #f
            void
@@ -188,7 +188,7 @@ This produces an ACK message
            
            ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
@@ -303,7 +303,7 @@ This produces an ACK message
            
            ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:7: reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:7: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
@@ -320,10 +320,10 @@ This produces an ACK message
            
            ("{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
             "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-            "{stop-22x22.png} repl-test-tmp3.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
             "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
             "{stop-multi.png} {stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
            'definitions
            #f
            void
@@ -348,7 +348,7 @@ This produces an ACK message
            
            ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
@@ -415,7 +415,7 @@ This produces an ACK message
            
            ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier: x"
             "reference to undefined identifier: x"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: x"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: x")
@@ -455,7 +455,7 @@ This produces an ACK message
            
            ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
             "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: expt: expected argument of type <number>; given #<void>"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: expt: expected argument of type <number>; given #<void>"
             "expt: expected argument of type <number>; given #<void>"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>")
@@ -469,10 +469,10 @@ This produces an ACK message
            
            ("1\n2\n{stop-22x22.png} read: expected a `)' to close `('"
             "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('"
             "1\n2\n{stop-22x22.png} read: expected a `)' to close `('"
             "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: expected a `)' to close `('")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: expected a `)' to close `('")
            'definitions
            #f
            void
@@ -481,10 +481,10 @@ This produces an ACK message
            
            ("1\n2\n{stop-22x22.png} read: illegal use of \".\""
             "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\""
             "1\n2\n{stop-22x22.png} read: illegal use of \".\""
             "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: illegal use of \".\"")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: read: illegal use of \".\"")
            'definitions
            #f
            void
@@ -493,10 +493,10 @@ This produces an ACK message
            
            ("1\n2\n{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
-            "{stop-22x22.png} repl-test-tmp3.ss:1:4: lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:4: lambda: bad syntax in: (lambda ())"
             "1\n2\n{stop-22x22.png} lambda: bad syntax in: (lambda ())"
             "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: lambda: bad syntax in: (lambda ())")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: lambda: bad syntax in: (lambda ())")
            'definitions
            #f
            void
@@ -505,7 +505,7 @@ This produces an ACK message
            
            ("1\n2\n{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:4: reference to undefined identifier: x"
             "1\n2\nreference to undefined identifier: x"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: x"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: x")
@@ -542,10 +542,10 @@ This produces an ACK message
            
            ("{stop-22x22.png} cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
             "{stop-22x22.png} cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
-            "{stop-22x22.png} repl-test-tmp3.ss:2:7: cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
+            "{stop-22x22.png} repl-test-tmp3.rkt:2:7: cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
             "{stop-multi.png} {stop-22x22.png} cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
             "{stop-multi.png} {stop-22x22.png} cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:7: cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:7: cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4")
            'definitions
            #f
            void
@@ -553,33 +553,33 @@ This produces an ACK message
    
    ;; error across separate files
    (mktest
-    "(load \"repl-test-tmp2.ss\") (define (g) (+ 1 (expt 3 #f))) (f g)"
+    "(load \"repl-test-tmp2.rkt\") (define (g) (+ 1 (expt 3 #f))) (f g)"
     
     ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
      "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:44: expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:45: expt: expected argument of type <number>; given #f"
      "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
      "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:27: expt: expected argument of type <number>; given #f")
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:28: expt: expected argument of type <number>; given #f")
     'definitions
     #f
     (λ ()
-      (call-with-output-file (build-path tmp-load-directory "repl-test-tmp2.ss")
+      (call-with-output-file (build-path tmp-load-directory "repl-test-tmp2.rkt")
         (lambda (port)
           (write '(define (f t) (+ 1 (t)))
                  port))
         #:exists 'truncate))
-    (λ () (delete-file (build-path tmp-load-directory "repl-test-tmp2.ss"))))
+    (λ () (delete-file (build-path tmp-load-directory "repl-test-tmp2.rkt"))))
    
    ;; new namespace test
    (mktest "(current-namespace (make-namespace))\nif"
            
            ("{stop-22x22.png} if: bad syntax in: if"
             "{stop-22x22.png} if: bad syntax in: if"
-            "{stop-22x22.png} repl-test-tmp3.ss:2:0: if: bad syntax in: if"
+            "{stop-22x22.png} repl-test-tmp3.rkt:2:0: if: bad syntax in: if"
             "{stop-22x22.png} if: bad syntax in: if"
             "{stop-multi.png} {stop-22x22.png} if: bad syntax in: if"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: if: bad syntax in: if")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: if: bad syntax in: if")
            'definitions
            #f
            void
@@ -589,10 +589,10 @@ This produces an ACK message
            
            ("{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
             "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-22x22.png} repl-test-tmp3.ss:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
+            "{stop-22x22.png} repl-test-tmp3.rkt:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
             "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
             "{stop-multi.png} {stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction")
            'definitions
            #f
            void
@@ -618,7 +618,7 @@ This produces an ACK message
     
     ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
      "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:5:19: expt: expected argument of type <number>; given #f\n15"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:5:19: expt: expected argument of type <number>; given #f\n15"
      "expt: expected argument of type <number>; given #f\n15"
      #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15"
      #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15")
@@ -644,12 +644,12 @@ This produces an ACK message
    
    ;; should produce a syntax object with a turn-down triangle.
    (mktest "(write (list (syntax x)))" 
-           (#rx"({embedded \".#<syntax:.*repl-test-tmp.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*repl-test-tmp.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*repl-test-tmp3.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*repl-test-tmp.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*repl-test-tmp.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*repl-test-tmp3.ss:1:21.*>\"})")
+           (#rx"({embedded \".#<syntax:.*repl-test-tmp.rkt:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp.rkt:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp3.rkt:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp.rkt:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp.rkt:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp3.rkt:1:21.*>\"})")
            'interactions
            #f
            void
@@ -685,12 +685,12 @@ This produces an ACK message
    
    (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
            
-           (#rx"#<syntax:.*repl-test-tmp.ss:1:96.*>"
-            #rx"#<syntax:.*repl-test-tmp.ss:1:96.*>"
-            #rx"#<syntax:.*repl-test-tmp3.ss:1:96.*>"
-            #rx"#<syntax:.*repl-test-tmp.ss:1:96.*>"
-            #rx"#<syntax:.*repl-test-tmp.ss:1:96.*>"
-            #rx"#<syntax:.*repl-test-tmp3.ss:1:96.*>")
+           (#rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp3.rkt:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp.rkt:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp3.rkt:1:96.*>")
            'interactions
            #f
            void
@@ -717,7 +717,7 @@ This produces an ACK message
     
     ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
      "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
-     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:6:15: expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:6:15: expt: expected argument of type <number>; given #f"
      "expt: expected argument of type <number>; given #f"
      #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f"
      #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f")
@@ -794,7 +794,7 @@ This produces an ACK message
            
            ("{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
             "{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:3:13: procedure application: expected procedure, given: 3; arguments were: 3"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:3:13: procedure application: expected procedure, given: 3; arguments were: 3"
             "procedure application: expected procedure, given: 3; arguments were: 3"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3")
@@ -868,10 +868,10 @@ This produces an ACK message
            
            ("{stop-22x22.png} λ: bad syntax in: (λ ())"
             "{stop-22x22.png} λ: bad syntax in: (λ ())"
-            "{stop-22x22.png} repl-test-tmp3.ss:1:0: λ: bad syntax in: (λ ())"
+            "{stop-22x22.png} repl-test-tmp3.rkt:1:0: λ: bad syntax in: (λ ())"
             "{stop-22x22.png} λ: bad syntax in: (λ ())"
             "{stop-multi.png} {stop-22x22.png} λ: bad syntax in: (λ ())"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: λ: bad syntax in: (λ ())")
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: λ: bad syntax in: (λ ())")
            'definitions
            #f
            void
@@ -882,7 +882,7 @@ This produces an ACK message
            
            ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:26: reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:26: reference to undefined identifier: x"
             "reference to undefined identifier: x"
             "reference to undefined identifier: x"
             "reference to undefined identifier: x")
@@ -896,7 +896,7 @@ This produces an ACK message
            
            ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.rkt:1:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx"
             #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.rkt:[0-9]+:[0-9]+: reference to undefined identifier: xx")
@@ -904,11 +904,11 @@ This produces an ACK message
            #f
            void
            void)
-   
+
    ;; setup of the namespaces for pict printing (from slideshow)
-   
-   (mktest "(require (lib \"utils.ss\" \"texpict\"))(disk 3)"
-           
+
+   (mktest "(require texpict/utils)(disk 3)"
+
            ("{image}"
             "{image}"
             "{image}"
@@ -955,12 +955,12 @@ This produces an ACK message
            #f
            void
            void)
-   
+
    (mktest (string-append
-            "(require (lib \"pretty.ss\"))"
+            "(require mzlib/pretty)"
             "(pretty-print-print-hook (lambda x (expt 3 #f)))"
             "(list 1 2 3)")
-           
+
            ("(1 2 3)"
             "(1 2 3)"
             "(1 2 3)"
@@ -1090,10 +1090,10 @@ This produces an ACK message
    (normalize-path 
     (collection-path "tests" "drracket"))))
 
-(define tmp-load-short-filename "repl-test-tmp.ss")
+(define tmp-load-short-filename "repl-test-tmp.rkt")
 (define tmp-load-filename (build-path tmp-load-directory tmp-load-short-filename))
 
-(define tmp-load3-short-filename "repl-test-tmp3.ss")
+(define tmp-load3-short-filename "repl-test-tmp3.rkt")
 (define tmp-load3-filename (build-path tmp-load-directory tmp-load3-short-filename))
 
 (define (cleanup-tmp-files)
@@ -1143,9 +1143,9 @@ This produces an ACK message
     (type-in-definitions drscheme-frame "(+ ")
     (test:menu-select "Edit" "Paste")
     (type-in-definitions drscheme-frame " 1/3)"))
-  
-  ; given a filename "foo", we perform two operations on the contents 
-  ; of the file "foo.ss".  First, we insert its contents into the REPL
+
+  ; given a filename "foo", we perform two operations on the contents
+  ; of the file "foo.rkt".  First, we insert its contents into the REPL
   ; directly, and second, we use the load command.  We compare the
   ; results of these operations against expected results.
   (define ((run-single-test execute-text-start escape language-cust) in-vector)

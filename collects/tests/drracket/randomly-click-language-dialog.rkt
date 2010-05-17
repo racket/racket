@@ -1,3 +1,3 @@
 #lang scheme
-(require "randomly-click.ss")
+(require "randomly-click.rkt")
 (go 'language-dialog)

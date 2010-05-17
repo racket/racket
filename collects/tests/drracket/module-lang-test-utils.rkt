@@ -1,5 +1,5 @@
 #lang scheme/gui
-(require "drracket-test-util.ss" mzlib/etc framework scheme/string)
+(require "drracket-test-util.rkt" mzlib/etc framework scheme/string)
 
 (provide test t rx run-test in-here write-test-modules)
 
@@ -49,7 +49,7 @@
   (set! init-temp-files
         (let ([old init-temp-files])
           (λ ()
-            (let ([file (build-path (find-system-path 'temp-dir) (format "~a.ss" name))])
+            (let ([file (build-path (find-system-path 'temp-dir) (format "~a.rkt" name))])
               (set! temp-files (cons file temp-files))
               (with-output-to-file file #:exists 'truncate
                 (lambda () (printf "~s\n" code))))

@@ -126,7 +126,7 @@
                             "\nExists/Meets window with no button: Bug? seed ~s\n"
                             the-seed)
                    (apply show-log actions)
-                   (error 'randomly-click.ss "giving up")]))]))]))))
+                   (error 'randomly-click.rkt "giving up")]))]))]))))
 
 (define (show-log . actions)
   (for ((action (in-list actions)))

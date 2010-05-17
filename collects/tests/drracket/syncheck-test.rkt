@@ -7,7 +7,7 @@ trigger runtime errors in check syntax.
 |#
 #lang scheme/base
 
-  (require "drracket-test-util.ss"
+  (require "drracket-test-util.rkt"
            string-constants/string-constant
            tests/utils/gui
            scheme/path
@@ -261,11 +261,11 @@ trigger runtime errors in check syntax.
                   (" "          default-color)
                   ("mzscheme"   error)
                   (")"          default-color)))
-     (build-test "(require (lib \"list.ss\"))"
+     (build-test "(require mzlib/list)"
                 '(("("                   default-color)
                   ("require"             imported-syntax)
                   (" "                   default-color)
-                  ("(lib \"list.ss\")"   error)
+                  ("mzlib/list"          error)
                   (")"                   default-color)))
      (build-test "(module m mzscheme (provide x) (define x 1))"
                 '(("("             default-color)
@@ -296,37 +296,37 @@ trigger runtime errors in check syntax.
                   ("))"            default-color))
                 (list '((10 18) (20 21))))
      
-     (build-test "(module m mzscheme (require (lib \"list.ss\")))"
+     (build-test "(module m mzscheme (require mzlib/list))"
                 '(("("                 default-color)
                   ("module"            imported-syntax)
                   (" m mzscheme ("     default-color)
                   ("require"           imported-syntax)
                   (" "                 default-color)
-                  ("(lib \"list.ss\")" error)
+                  ("mzlib/list"        error)
                   ("))"                default-color))
                 (list '((10 18) (20 27))))
      
-     (build-test "(module m mzscheme (require-for-syntax (lib \"list.ss\")) (define-syntax s foldl))"
+     (build-test "(module m mzscheme (require-for-syntax mzlib/list) (define-syntax s foldl))"
                 '(("("                     default-color)
                   ("module"                imported-syntax)
                   (" m mzscheme ("         default-color)
                   ("require-for-syntax"    imported-syntax)
-                  (" (lib \"list.ss\")) (" default-color)
+                  (" mzlib/list) ("        default-color)
                   ("define-syntax"         imported-syntax)
                   (" "                     default-color)
                   ("s"                     lexically-bound-syntax)
                   (" "                     default-color)
                   ("foldl"                 imported-variable)
                   ("))"                    default-color))
-                (list '((10 18) (20 38) (57 70))
-                      '((39 54) (73 78))))
+                (list '((10 18) (20 38) (52 65))
+                      '((39 49) (68 73))))
      
-     (build-test "(module m mzscheme (require-for-syntax (lib \"etc.ss\")) (define-syntax s (rec f 1)))"
+     (build-test "(module m mzscheme (require-for-syntax mzlib/etc) (define-syntax s (rec f 1)))"
                 '(("("                     default-color)
                   ("module"                imported-syntax)
                   (" m mzscheme ("         default-color)
                   ("require-for-syntax"    imported-syntax)
-                  (" (lib \"etc.ss\")) ("  default-color)
+                  (" mzlib/etc) ("         default-color)
                   ("define-syntax"         imported-syntax)
                   (" "                     default-color)
                   ("s"                     lexically-bound-syntax)
@@ -337,11 +337,10 @@ trigger runtime errors in check syntax.
                   (" "                     default-color)
                   ("1"                     constant)
                   (")))"                   default-color))
-                (list '((10 18) (20 38) (56 69))
-                      '((39 53) (73 76))))
+                (list '((10 18) (20 38) (51 64))
+                      '((39 48) (68 71))))
 
-     
-     
+
      (build-test "(define-for-syntax (f x) x) (define (f x) x) f (define-syntax (m x) (f x))"
                  '(("(" default-color)
                    ("define-for-syntax" imported)
@@ -437,25 +436,25 @@ trigger runtime errors in check syntax.
                   ("))))"          default-color))
                 (list '((26 29) (44 47))))
 
-     (build-test "(require (lib \"list.ss\")) first"
+     (build-test "(require mzlib/list) first"
                 '(("("                    default-color)
                   ("require"              imported-syntax)
-                  (" (lib \"list.ss\")) " default-color)
+                  (" mzlib/list) "        default-color)
                   ("first"                imported-variable))
-                (list '((9 24) (26 31))))
-     
-     (build-test "(require (lib \"etc.ss\")) (rec f 1)"
+                (list '((9 19) (21 26))))
+
+     (build-test "(require mzlib/etc) (rec f 1)"
                 '(("("                    default-color)
                   ("require"              imported-syntax)
-                  (" (lib \"etc.ss\")) (" default-color)
+                  (" mzlib/etc) ("        default-color)
                   ("rec"                  imported-syntax)
                   (" "                    default-color)
                   ("f"                    lexically-bound-variable)
                   (" "                    default-color)
                   ("1"                    constant)
                   (")"                    default-color))
-                (list '((9 23) (26 29))))
-     
+                (list '((9 18) (21 24))))
+
      (build-test "(define-struct s ())"
                 '(("("             default-color)
                   ("define-struct" imported-syntax)
@@ -608,62 +607,62 @@ trigger runtime errors in check syntax.
                   ("this"    imported)
                   (")"       default-color)))
      
-     (build-test "(module m mzscheme (require (lib \"list.ss\")) foldl)"
+     (build-test "(module m mzscheme (require mzlib/list) foldl)"
                 '(("("                    default-color)
                   ("module"               imported-syntax)
                   (" m mzscheme ("        default-color)
                   ("require"              imported-syntax)
-                  (" (lib \"list.ss\")) " default-color)
+                  (" mzlib/list) "        default-color)
                   ("foldl"                imported-variable)
                   (")"                    default-color))
                 (list '((10 18) (20 27))
-                      '((28 43) (45 50))))
-     (build-test "(module m (lib \"htdp-beginner.ss\" \"lang\") empty)"
-                '(("("                                         default-color)
-                  ("module"                                    imported-syntax)
-                  (" m (lib \"htdp-beginner.ss\" \"lang\") "   default-color)
-                  ("empty"                                     imported-variable)
-                  (")"                                         default-color))
-                (list '((10 41) (42 47))))
-     (build-test "(module m mzscheme (require (prefix x: (lib \"list.ss\"))) x:foldl)"
+                      '((28 38) (40 45))))
+     (build-test "(module m lang/htdp-beginner empty)"
+                '(("("                        default-color)
+                  ("module"                   imported-syntax)
+                  (" m lang/htdp-beginner "   default-color)
+                  ("empty"                    imported-variable)
+                  (")"                        default-color))
+                (list '((10 28) (29 34))))
+     (build-test "(module m mzscheme (require (prefix x: mzlib/list)) x:foldl)"
                 '(("("                                default-color)
                   ("module"                           imported-syntax)
                   (" m mzscheme ("                    default-color)
                   ("require"                          imported-syntax)
-                  (" (prefix x: (lib \"list.ss\"))) " default-color)
+                  (" (prefix x: mzlib/list)) "        default-color)
                   ("x:foldl"                          imported-variable)
                   (")"                                default-color))
                 (list '((10 18) (20 27))
-                      '((28 55) (57 64))))
-     
-     (build-test "(module m mzscheme (require (prefix x: (lib \"list.ss\")) (lib \"list.ss\")) x:foldl foldl)"
-                '(("("                                                  default-color)
-                  ("module"                                             imported-syntax)
-                  (" m mzscheme ("                                      default-color)
-                  ("require"                                            imported-syntax)
-                  (" (prefix x: (lib \"list.ss\")) (lib \"list.ss\")) " default-color)
-                  ("x:foldl"                                            imported-variable)
-                  (" "                                                  default-color)
-                  ("foldl"                                              imported-variable)
-                  (")"                                                  default-color))
-                (list '((10 18) (20 27))
-                      '((28 55) (73 80))
-                      '((56 71) (81 86))))
+                      '((28 50) (52 59))))
 
-     (build-test "(module m mzscheme (require (only (lib \"list.ss\") foldr) (only (lib \"list.ss\") foldl)) foldl foldr)"
+     (build-test "(module m mzscheme (require (prefix x: mzlib/list) mzlib/list) x:foldl foldl)"
+                '(("("                                    default-color)
+                  ("module"                               imported-syntax)
+                  (" m mzscheme ("                        default-color)
+                  ("require"                              imported-syntax)
+                  (" (prefix x: mzlib/list) mzlib/list) " default-color)
+                  ("x:foldl"                              imported-variable)
+                  (" "                                    default-color)
+                  ("foldl"                                imported-variable)
+                  (")"                                    default-color))
+                (list '((10 18) (20 27))
+                      '((28 50) (63 70))
+                      '((51 61) (71 76))))
+
+     (build-test "(module m mzscheme (require (only mzlib/list foldr) (only mzlib/list foldl)) foldl foldr)"
                  '(("("                                                  default-color)
                    ("module"                                             imported-syntax)
                    (" m mzscheme ("                                      default-color)
                    ("require"                                            imported-syntax)
-                   (" (only (lib \"list.ss\") foldr) (only (lib \"list.ss\") foldl)) " default-color)
+                   (" (only mzlib/list foldr) (only mzlib/list foldl)) " default-color)
                    ("foldl"                                              imported-variable)
                    (" "                                                  default-color)
                    ("foldr"                                              imported-variable)
                    (")"                                                  default-color))
                  (list '((10 18) (20 27))
-                       '((28 56) (87 92) (93 98))
-                       '((57 85) (87 92) (93 98))))
-     
+                       '((28 51) (77 82) (83 88))
+                       '((52 75) (77 82) (83 88))))
+
      (build-test "(module m mzscheme (require (prefix x: mzscheme)) x:+ +)"
                  '(("("                                                  default-color)
                    ("module"                                             imported-syntax)
@@ -676,13 +675,13 @@ trigger runtime errors in check syntax.
                    (")"                                                  default-color))
                  (list '((10 18) (20 27) (54 55))
                        '((28 48) (50 53))))
-     
-     (build-test "(module m mzscheme (require (lib \"etc.ss\")) (rec f 1))"
+
+     (build-test "(module m mzscheme (require mzlib/etc) (rec f 1))"
                 '(("("                     default-color)
                   ("module"                imported-syntax)
                   (" m mzscheme ("         default-color)
                   ("require"               imported-syntax)
-                  (" (lib \"etc.ss\")) ("  default-color)
+                  (" mzlib/etc) ("         default-color)
                   ("rec"                   imported-syntax)
                   (" "                     default-color)
                   ("f"                     lexically-bound-variable)
@@ -690,24 +689,23 @@ trigger runtime errors in check syntax.
                   ("1"                     constant)
                   ("))"                    default-color))
                 (list '((10 18) (20 27))
-                      '((28 42) (45 48))))
-     
-     (build-test "(module m (lib \"htdp-intermediate.ss\" \"lang\") (local ((define x x)) x))"
-                '(("("                                            default-color)
-                  ("module"                                       imported-syntax)
-                  (" m (lib \"htdp-intermediate.ss\" \"lang\") (" default-color)
-                  ("local"                                        imported-syntax)
-                  (" ((define "                                   default-color)
-                  ("x"                                            lexically-bound-variable)
-                  (" "                                            default-color)
-                  ("x"                                            lexically-bound-variable)
-                  (")) "                                          default-color)
-                  ("x"                                            lexically-bound-variable)
-                  ("))"                                           default-color))
-                (list '((10 45) (47 52))
-                      '((62 63) (64 65) (68 69))))
-     
-     
+                      '((28 37) (40 43))))
+
+     (build-test "(module m lang/htdp-intermediate (local ((define x x)) x))"
+                '(("("                           default-color)
+                  ("module"                      imported-syntax)
+                  (" m lang/htdp-intermediate (" default-color)
+                  ("local"                       imported-syntax)
+                  (" ((define "                  default-color)
+                  ("x"                           lexically-bound-variable)
+                  (" "                           default-color)
+                  ("x"                           lexically-bound-variable)
+                  (")) "                         default-color)
+                  ("x"                           lexically-bound-variable)
+                  ("))"                          default-color))
+                (list '((10 32) (34 39))
+                      '((49 50) (51 52) (55 56))))
+
      (build-test "(module m mzscheme (define-syntax rename #f) (require (rename mzscheme ++ +)))"
                  '(("("                         default-color)
                    ("module"                    imported)
@@ -816,14 +814,14 @@ trigger runtime errors in check syntax.
                        '((77 79) (210 212))
                        '((73 76) (41 44))))
      
-     (make-dir-test "(module m mzscheme (require \"~a/list.ss\") foldl foldl)"
+     (make-dir-test "(module m mzscheme (require \"~a/list.rkt\") foldl foldl)"
                     '(("("             default-color)
                       ("module"        imported-syntax)
                       (" m mzscheme (" default-color)
                       ("require"       imported-syntax)
                       (" \""           default-color)
                       (relative-path   default-color)
-                      ("/list.ss\") "  default-color)
+                      ("/list.rkt\") " default-color)
                       ("foldl"         imported-variable)
                       (" "             default-color)
                       ("foldl"         imported-variable)
@@ -883,7 +881,7 @@ trigger runtime errors in check syntax.
       ;; this isn't right -- seems like there is a race condition because
       ;; wait-for-computation isn't waiting long enough?
       '(when (send defs in-edit-sequence?)
-         (error 'syncheck-test.ss "still in edit sequence for ~s" input))
+         (error 'syncheck-test.rkt "still in edit sequence for ~s" input))
       
       (when (send drs syncheck:error-report-visible?)
         (fprintf (current-error-port)

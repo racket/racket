@@ -27,7 +27,8 @@
          (fprintf (current-error-port) "---- saved file, cut here ----\n")
          (call-with-input-file fn (λ (p) (copy-port p (current-error-port))))
          (fprintf (current-error-port) "---- saved file, cut here ----\n")
-         (error 'save-teaching-lang-file.ss "expected the saved file to contain the word 'metadata' in a comment"))
+         (error 'save-teaching-lang-file.rkt
+                "expected the saved file to contain the word 'metadata' in a comment"))
        (do-execute drs-frame)
        (test:menu-select "File" "Close Tab")
        (use-get/put-dialog 
@@ -42,4 +43,4 @@
          (test:menu-select "File" "Close Tab")
          (delete-file fn)
          (unless (equal? result "1\n> ")
-           (error 'save-teaching-lang-file.ss "expected the program to produce 1 (followed by the prompt), got ~s" result)))))))
+           (error 'save-teaching-lang-file.rkt "expected the program to produce 1 (followed by the prompt), got ~s" result)))))))

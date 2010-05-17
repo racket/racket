@@ -1,6 +1,6 @@
 
 (module sample-solutions-one-window mzscheme
-  (require "drracket-test-util.ss"
+  (require "drracket-test-util.rkt"
            tests/utils/gui
            mzlib/class
            mzlib/list
@@ -222,15 +222,14 @@
     
     (define stupid-internal-definitions-syntax
       (unless (directory-exists? sample-solutions-dir)
-        (error 'sample-solutions.ss "expected directory ~s to exist" sample-solutions-dir)))
+        (error 'sample-solutions.rkt "expected directory ~s to exist" sample-solutions-dir)))
     
     (define stupid-internal-definitions-syntax2
       (set! sample-solutions-dir (normalize-path sample-solutions-dir)))
     
-    (define toc (call-with-input-file (build-path sample-solutions-dir "toc.ss") read))
-    
-    
-  
+    (define toc (call-with-input-file (build-path sample-solutions-dir "toc.rkt") read))
+
+
   (define labels
     (let* ([all-info (call-with-input-file (build-path (collection-path "solutions") 
                                                        'up 'up "proj" "book" "solutions"

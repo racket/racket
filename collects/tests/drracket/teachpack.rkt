@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "drracket-test-util.ss"
+(require "drracket-test-util.rkt"
          scheme/class
          scheme/path
          scheme/gui/base

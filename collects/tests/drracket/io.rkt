@@ -12,7 +12,7 @@ add this test:
 
 |#
 
-(require "drracket-test-util.ss"
+(require "drracket-test-util.rkt"
          tests/utils/gui
          mzlib/class
          mzlib/pretty
@@ -111,11 +111,11 @@ add this test:
       (clear-definitions drs-frame)
       (do-execute drs-frame)
       (unless (equal? "" (fetch-output drs-frame))
-        (error 'io.ss "failed long io / execute test (extra io)"))
+        (error 'io.rkt "failed long io / execute test (extra io)"))
       (unless (whitespace-string=?
                (get-output-string string-port)
                got-output)
-        (error 'io.ss "failed long io / execute test (output doesn't match)")))))
+        (error 'io.rkt "failed long io / execute test (output doesn't match)")))))
 
 
 (define (reading-test)
