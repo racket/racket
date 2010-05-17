@@ -268,7 +268,7 @@
                      ,(if (lc-zero? changed)
                           ""
                           `(div ([class "error"])
-                                  "This result of executing this file has changed since the previous revision."
+                                  "This result of executing this file has changed since the previous push."
                                   " "
                                   (a ([href ,(format "/diff/~a/~a~a" (current-rev) (previous-rev) the-base-path)])
                                      "See the difference")))
@@ -461,24 +461,24 @@
           @div[[(class "help")]]{
             @h1{What is DrDr?}
             @p{DrDr is a server at @a[[(href "http://www.byu.edu")]]{Brigham Young University} that builds
-               and "tests" every revision of the Racket code base.}
+               and "tests" every push to the Racket code base.}
             
             @h1{What kind of server?}
             @p{A 64-bit Linux 2.6.28-15 server running Ubuntu 9.04 with @,(number->string (number-of-cpus)) cores.}
             
             @h1{How is the build run?}
-            @p{Every revision is built from a clean checkout with the standard separate build directory command sequence, except that @code{make}
-               is passed @code{-j} with the number of cores. Each revision also has a fresh home directory and PLaneT cache.}
+            @p{Every push is built from a clean checkout with the standard separate build directory command sequence, except that @code{make}
+               is passed @code{-j} with the number of cores. Each push also has a fresh home directory and PLaneT cache.}
                
             @h1{How long does it take for a build to start after a check-in?}
             @p{Only one build runs at a time and when none is running the git repository is polled every @,(number->string (current-monitoring-interval-seconds)) seconds.}
             
-            @h1{How is the revision "tested"?}
-            @p{Each file's @code{@,PROP:command-line} property is consulted. If it is the empty string, the file is ignored. If it is a string, then a single @code{~s} is replaced with the file's path, @code{mzscheme} and @code{mzc} with their path (for the current revision), and @code{mred} and @code{mred-text} with @code{mred-text}'s path (for the current revision); then the resulting command-line is executed. 
+            @h1{How is the push "tested"?}
+            @p{Each file's @code{@,PROP:command-line} property is consulted. If it is the empty string, the file is ignored. If it is a string, then a single @code{~s} is replaced with the file's path, @code{racket} and @code{mzc} with their path (for the current push), and @code{gracket} and @code{gracket-text} with @code{gracket-text}'s path (for the current push); then the resulting command-line is executed. 
                (Currently no other executables are allowed, so you can't @code{rm -fr /}.)
                If there is no property value, the default (@code{mzscheme -t ~s}) is used if the file's suffix is @code{.ss}, @code{.scm}, or @code{.scrbl}.}
                     
-            @p{The command-line is always executed with a fresh empty current directory which is removed after the run. But all the files share the same home directory and X server, which are both removed after each revision's testing is complete.}
+            @p{The command-line is always executed with a fresh empty current directory which is removed after the run. But all the files share the same home directory and X server, which are both removed after each push's testing is complete.}
             
             @h1{How many files are "tested" concurrently?}
             @p{One per core, or @,(number->string (number-of-cpus)).}
@@ -500,7 +500,7 @@
             @p{At the most basic level, if the bytes are different. However, there are two subtleties. First, DrDr knows to ignore the result of @code{time}. Second, the standard output and standard error streams are compared independently. The difference display pages present changed lines with a @span[([class "difference"])]{unique background}.}
             
             @h1{How is this site organized?}
-            @p{Each file's test results are displayed on a separate page, with a link to the previous revision on changes. All the files in a directory are collated and indexed recursively. On these pages each column is sortable and each row is clickable. The root of a revision also includes the git commit message with links to the test results of the modified files. The top DrDr page displays the summary information for all the tested revisions.}
+            @p{Each file's test results are displayed on a separate page, with a link to the previous push on changes. All the files in a directory are collated and indexed recursively. On these pages each column is sortable and each row is clickable. The root of a push also includes the git commit messages with links to the test results of the modified files. The top DrDr page displays the summary information for all the tested pushes.}
             
             @h1{What is the difference between @code{Duration (Abs)} and @code{Duration (Sum)}?}
             @p{@code{Duration (Abs)} is the difference between the earliest start time and the latest end time in the collection.}
@@ -508,18 +508,18 @@
             @p{The two are often different because of parallelism in the testing process. (Long absolute durations indicate DrDr bugs waiting to get fixed.)}
             
             @h1{What do the graphs mean?}
-            @p{There is a single graph for each file, i.e., graphs are not kept for old revisions.}
-            @p{The X-axis is the revision tested. The Y-axis is the percentage of the time of the slowest revision.}
+            @p{There is a single graph for each file, i.e., graphs are not kept for old pushs.}
+            @p{The X-axis is the tested push. The Y-axis is the percentage of the time of the slowest push.}
             @p{The gray, horizontal lines show where 0%, 25%, 50%, 75%, and 100% are in the graph.}
             @p{The black line shows the times for overall running of the file. The colored lines show the results from @code{time}. For each color, the "real" time is the darkest version of it and the "cpu" and "gc" time are 50% and 25% of the darkness, respectively.}
-            @p{If the number of calls to @code{time} change from one revision to the next, then there is a gray, vertical bar at that point. Also, the scaling to the slowest time is specific to each horizontal chunk.}
-            @p{The graph is split up into panes that each contain approximately 300 revisions. The green arrowheads to the left
+            @p{If the number of calls to @code{time} change from one push to the next, then there is a gray, vertical bar at that point. Also, the scaling to the slowest time is specific to each horizontal chunk.}
+            @p{The graph is split up into panes that each contain approximately 300 pushes. The green arrowheads to the left
                and right of the image move between panes.}
-            @p{The legend at the bottom of the graph shows the current pane, as well as the revision number and any timing information from that revision.}
-            @p{Click on the graph to jump to the DrDr page for a specific revision.}
+            @p{The legend at the bottom of the graph shows the current pane, as well as the push number and any timing information from that push.}
+            @p{Click on the graph to jump to the DrDr page for a specific push.}
 
-            @h1{Why are some revisions missing?}
-            @p{Some revisions are missing because they only modify branches. Only revisions that change @code{/trunk} are tested.}
+            @h1{Why are some pushes missing?}
+            @p{Some pushes are missing because they only modify branches. Only pushes that change the @code{master} branch are tested.}
             
             @h1{How do I make the most use of DrDr?}
             @p{So DrDr can be effective with all testing packages and untested code, it only pays attention to error output and non-zero exit codes. You can make the most of this strategy by ensuring that when your tests are run successfully they have no STDERR output and exit cleanly, but have both when they fail.}
@@ -600,14 +600,14 @@
                       "DrDr"))
           (table ([class "dirlist"])
                  (thead
-                  (tr (td "Revision")
+                  (tr (td "Push#")
                       (td "Duration (Abs)")
                       (td "Duration (Sum)")
                       (td "Timeout?")
                       (td "Unclean Exit?")
                       (td "STDERR Output")
                       (td "Changes")
-                      (td "Committer")))
+                      (td "Pusher")))
                  (tbody
                   ,@(map (match-lambda
                            [(cons 'future rev-pth)
@@ -717,7 +717,7 @@
      (div ([class "content"])
           ,breadcrumb
           (div ([class "error"])
-               "This file does not exist in revision " ,(number->string (current-rev)) " or has not been tested.")
+               "This file does not exist in push #" ,(number->string (current-rev)) " or has not been tested.")
           ,(footer)))))
 (define (dir-not-found dir-pth)
   (define-values (title breadcrumb) (path->breadcrumb dir-pth #t))
@@ -728,7 +728,7 @@
      (div ([class "content"])
           ,breadcrumb
           (div ([class "error"])
-               "This directory does not exist in revision " ,(number->string (current-rev)) " or has not been tested.")
+               "This directory does not exist in push #" ,(number->string (current-rev)) " or has not been tested.")
           ,(footer)))))
 (define (rev-not-found dir-pth path-to-file)
   (define-values (title breadcrumb) (path->breadcrumb dir-pth #t))
@@ -739,7 +739,7 @@
      (div ([class "content"])
           ,breadcrumb
           (div ([class "error"])
-               "The revision " ,(number->string (current-rev)) " does not exist or has not been tested.")
+               "Push #" ,(number->string (current-rev)) " does not exist or has not been tested.")
           ,(footer)))))
 
 (define (find-previous-rev this-rev)
@@ -812,8 +812,8 @@
                          (span ([class "this"]) 
                                "File Difference"))
                    (table ([class "data"])
-                          (tr (td "First Revision:") (td (a ([href ,(format "/~a/~a" r1 f-str)]) ,(number->string r1))))
-                          (tr (td "Second Revision:") (td (a ([href ,(format "/~a/~a" r2 f-str)]) ,(number->string r2))))
+                          (tr (td "First Push:") (td (a ([href ,(format "/~a/~a" r1 f-str)]) ,(number->string r1))))
+                          (tr (td "Second Push:") (td (a ([href ,(format "/~a/~a" r2 f-str)]) ,(number->string r2))))
                           (tr (td "File:") (td "/" ,f-str)))
                    (div ([class "output"])
                         (table ([class "diff"])

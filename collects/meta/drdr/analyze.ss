@@ -161,7 +161,7 @@
                                     responsibles))                             
                        empty empty
                        (flatten
-                        (list (format "DrDr has finished building revision ~a after ~a."
+                        (list (format "DrDr has finished building push #~a after ~a."
                                       cur-rev
                                       (format-duration-ms abs-dur))
                               ""
@@ -171,7 +171,7 @@
                               (if include-committer?
                                   (list
                                    (format "~a:" committer)
-                                   (format "You are receiving this email because the DrDr test of revision ~a (which you committed) contained a NEW condition that may need inspecting." cur-rev)
+                                   (format "You are receiving this email because the DrDr test of push #~a (which you did) contained a NEW condition that may need inspecting." cur-rev)
                                    (let ([diff-smash (responsible-ht->status-ht diff)])
                                      (for/list ([(id paths) (in-hash diff-smash)]
                                                 #:when (not (symbol=? id 'changes)))
