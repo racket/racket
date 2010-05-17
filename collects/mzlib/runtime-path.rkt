@@ -78,7 +78,7 @@
                                             (let ([s (cadr p)])
                                               (if (regexp-match? #rx"[./]" s)
                                                   s
-                                                  (string-append s "/main.ss"))))]
+                                                  (string-append s "/main.rkt"))))]
                         [dir (if (and (null? (cddr p))
                                       (null? (cdr strs)))
                                  (collection-path "mzlib")
