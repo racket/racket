@@ -132,7 +132,9 @@
              #'(or/c . cnts)))]
         [(and t (Function: _)) (t->c/fun t)]
         [(Vector: t)
-         #`(vectorof #,(t->c t #:flat #t))]
+         (if flat?
+             #`(vectorof #,(t->c t #:flat #t) #:flat? #t)
+             #`(vectorof #,(t->c t)))]
         [(Box: t)
          (if flat?
              #`(box/c #,(t->c t #:flat #t) #:flat? #t)

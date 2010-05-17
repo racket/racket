@@ -8985,8 +8985,10 @@ so that propagation occurs.
   (test-flat-contract '(listof boolean?) (list #t #f) (list #f 3 #t))
   (test-flat-contract '(listof any/c) (list #t #f) 3)
   
-  (test-flat-contract '(vectorof boolean?) (vector #t #f) (vector #f 3 #t))
-  (test-flat-contract '(vectorof any/c) (vector #t #f) 3)
+  (test-flat-contract '(vectorof boolean? #:flat? #t) (vector #t #f) (vector #f 3 #t))
+  (test-flat-contract '(vectorof any/c #:flat? #t) (vector #t #f) 3)
+  (test-flat-contract '(vector-immutableof boolean?) (vector-immutable #t #f) (vector-immutable #f 3 #t))
+  (test-flat-contract '(vector-immutableof any/c) (vector-immutable #t #f) 3)
   
   (test-flat-contract '(vector/c boolean? (flat-contract integer?)) (vector #t 1) (vector 1 #f))
   (test-flat-contract '(vector/c boolean? (flat-contract integer?)) (vector #t 1) #f)
@@ -10024,6 +10026,12 @@ so that propagation occurs.
                       (racket/contract:positive-position a)))
   (test-obligations '(box-immutable/c a)
                     '((racket/contract:contract (box-immutable/c) ())
+                      (racket/contract:positive-position a)))
+  (test-obligations '(vectorof a)
+                    '((racket/contract:contract (vectorof) ())
+                      (racket/contract:positive-position a)))
+  (test-obligations '(vector-immutableof a)
+                    '((racket/contract:contract (vector-immutableof) ())
                       (racket/contract:positive-position a)))
   
   

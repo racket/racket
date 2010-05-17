@@ -86,8 +86,7 @@ from @schememodname[scheme/contract]:
  syntax/c
  vector-immutable/c
  vector-immutableof
- vector/c
- vectorof]
+ vector/c]
 
 It also provides the old version of the following forms:
 
@@ -113,3 +112,8 @@ that definition.}
 
 Returns a flat contract that recognizes boxes. The content of the box
 must match @racket[c].}
+
+@defproc[(vectorof [c flat-contract?]) flat-contract?]{
+
+Accepts a flat contract and returns a flat contract
+that checks for vectors whose elements match the original contract.}
