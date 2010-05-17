@@ -35,12 +35,12 @@
   (make-object bitmap% (build-path (collection-path "icons") "trumpet.xbm") 'xbm))
 
 #|
-  cd ~.../plt/collects/icons 
+  cd ~.../plt/collects/icons
   cp where/ever/trumpet.xbm .
-  svn update
-  svn trumpet.xbm
-  svn setprop svn:mime-type image/x-xbitmap
-  svn commit -m "added trumpet image"
+  git pull
+  ...make trumpet.xbm...
+  git commit -m "added trumpet image"
+  git push
   |#
 
 #| ------------------------------------------------------------------------

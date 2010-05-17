@@ -777,7 +777,7 @@ Make sure that all source files, documentation, etc. that you want to
 be a part of the package are in a single directory and its
 subdirectories. Furthermore make sure that nothing else, @italic{e.g.}
 unneeded backup files, is in that directory (with the exception that
-the subdirectories and files CVS or Subversion creates are
+the meta-subdirectories and files Git/Subversion/CVS uses are
 automatically skipped by the packaging tool).
 
 @subsubsection{Create Documentation [Optional]}

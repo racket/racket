@@ -300,11 +300,12 @@ making @filepath{.plt} archives.}
   Old, keywordless variant of @racket[pack-plt] for backward compatibility.}
 
 @defproc[(std-filter (p path-string?)) boolean?]{
-  Returns @racket[#t] unless @racket[p], after stripping its
-  directory path and converting to a byte string, matches one of the
-  following regular expressions: @litchar{^CVS$}, @litchar{^[.]svn$},
-  @litchar{^[.]cvsignore}, @litchar{^compiled$}, @litchar{^doc}, 
-  @litchar{~$}, @litchar{^#.*#$}, @litchar{^[.]#}, or @litchar{[.]plt$}.}
+  Returns @racket[#t] unless @racket[p], after stripping its directory
+  path and converting to a byte string, matches one of the following
+  regular expressions: @litchar{^[.]git}, @litchar{^[.]svn$},
+  @litchar{^CVS$}, @litchar{^[.]cvsignore}, @litchar{^compiled$},
+  @litchar{^doc}, @litchar{~$}, @litchar{^#.*#$}, @litchar{^[.]#}, or
+  @litchar{[.]plt$}.}
 
 @defproc[(mztar (path path-string?)
                 (output output-port?)

@@ -2410,14 +2410,11 @@
 
 (define memory-canvases '())
 (define show-memory-text?
-  (or (with-handlers ([exn:fail:filesystem?
-                       (λ (x) #f)])
+  (or (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
         (directory-exists? (collection-path "repo-time-stamp")))
-      (with-handlers ([exn:fail:filesystem?
-                       (λ (x) #f)])
+      (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
         (let ([fw (collection-path "framework")])
-          (or (directory-exists? (build-path fw ".svn"))
-              (directory-exists? (build-path fw "CVS")))))))
+          (directory-exists? (build-path fw 'up 'up ".git"))))))
 
 (define bday-click-canvas%
   (class canvas%

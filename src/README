@@ -101,8 +101,8 @@ Quick instructions:
 Detailed instructions:
 
  0. If you have an old Racket installation in the target directory,
-    remove it (unless you are using Subversion with an "in-place"
-    build as described below).
+    remove it (unless you are using an "in-place" build from a
+    repository as described below).
 
     Also, make sure that you have libraries and header files for Xft
     and Cairo (v1.23 and up) if you would like support for font
@@ -122,15 +122,15 @@ Detailed instructions:
 
     It's better to run the build in a directory other than the one
     containing `configure', especially if you're getting sources via
-    Subversion.  A common way to start a Subversion-based build is:
+    git.  A common way to start a git-based build is:
 
         cd [here]
         mkdir build
         cd build
 
     where "[here]" is the directory containing this `README' file and
-    the `configure' script.  The Subversion repository is configured
-    to support this convention by ignoring `build' in this directory.
+    the `configure' script.  The git repository is configured to support
+    this convention by ignoring `build' in this directory.
 
     A separate build directory is better in case the Makefile
     organization changes, or in case the Makefiles lack some
@@ -238,18 +238,17 @@ Detailed instructions:
     clean build directory when changing the --prefix value, because
     the path gets wired into shared objects.
 
-    If you build frequently from the Subversion-based sources, beware
-    that you may accumulate user- and version-specific information in
-    your "add-ons" directory, which you can most easily find by
-    evaluating
+    If you build frequently from the git-based sources, beware that
+    you may accumulate user- and version-specific information in your
+    "add-ons" directory, which you can most easily find by evaluating
       (find-system-path 'addon-dir)
     in Racket. In addition, if you configure with --enabled-shared,
     you may accumlate many unused versions of the dynamic libraries in
     your installation target.
 
-After an "in-place" install without Subversion, the racket/src directory
-is no longer needed, and it can be safely deleted. Build information
-is recorded in a "buildinfo" file in the installation.
+After an "in-place" install without git, the racket/src directory is
+no longer needed, and it can be safely deleted. Build information is
+recorded in a "buildinfo" file in the installation.
 
 For a build without --prefix (or with --enable-origtree) and without
 --enable-shared, you can safely move the install tree, because all

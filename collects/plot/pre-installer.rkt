@@ -56,7 +56,6 @@
   (unless (directory-exists? native-dir) (make-directory* native-dir))
   (parameterize ([current-directory src-dir])
     (for ([path (directory-list)])
-      (when (and (directory-exists? path)
-                 (not (member (path->string path) '("CVS" ".svn"))))
+      (when (directory-exists? path)
         (parameterize ([current-directory path])
           (build-library path))))))

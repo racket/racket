@@ -777,7 +777,7 @@
   (let ([p (build-path from name)])
     (cond
       [(directory-exists? p)
-       (unless (member (path->string name) '("CVS" ".svn")) ; yuck
+       (unless (regexp-match? #rx"^(?:[.](?:git.*|svn)|CVS)$" (path->string name)) ; yuck
          (let ([dest (build-path to name)])
            (ensure-directory-shallow dest)
            (for-each (lambda (x) (ensure* p dest x))

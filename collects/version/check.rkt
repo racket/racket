@@ -77,7 +77,7 @@
           [stable (getver 'stable)]
           [recent (getver 'recent)])
       (cond
-        ;; we have the newest version (can be > if we have an svn build)
+        ;; we have the newest version (can be > if we have a build from git)
         [(version<=? recent current) 'ok]
         ;; we're stable, but there's a newer version
         [(version<=? stable current) `(ok-but ,recent)]

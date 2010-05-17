@@ -10,11 +10,11 @@ Instructions:
   up.)
 
   I do this:
-    cd
-    svn co http://svn.plt-scheme.org/plt/tags/<PREV-VER-OR-PATCH> patched
-    cd patched
-    svn merge -r<FIXREV-1>:<FIXREV> http://svn.plt-scheme.org/plt/trunk
+    cd ...git-repo...
+    git checkout -b patch <PREV-VER-OR-PATCH> patched
+    git cherry-pick fix-sha1s...
     ... more merges as needed ...
+  And at the end don't forget to drop a new tag for the patched result.
 
 * Make sure that "collects/version/patchlevel.ss" contains the new patch
   number, and add comments about this patch, with a list of files that are

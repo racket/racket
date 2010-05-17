@@ -471,7 +471,7 @@
                is passed @code{-j} with the number of cores. Each revision also has a fresh home directory and PLaneT cache.}
                
             @h1{How long does it take for a build to start after a check-in?}
-            @p{Only one build runs at a time and when none is running the SVN repository is polled every @,(number->string (current-monitoring-interval-seconds)) seconds.}
+            @p{Only one build runs at a time and when none is running the git repository is polled every @,(number->string (current-monitoring-interval-seconds)) seconds.}
             
             @h1{How is the revision "tested"?}
             @p{Each file's @code{@,PROP:command-line} property is consulted. If it is the empty string, the file is ignored. If it is a string, then a single @code{~s} is replaced with the file's path, @code{mzscheme} and @code{mzc} with their path (for the current revision), and @code{mred} and @code{mred-text} with @code{mred-text}'s path (for the current revision); then the resulting command-line is executed. 
@@ -500,7 +500,7 @@
             @p{At the most basic level, if the bytes are different. However, there are two subtleties. First, DrDr knows to ignore the result of @code{time}. Second, the standard output and standard error streams are compared independently. The difference display pages present changed lines with a @span[([class "difference"])]{unique background}.}
             
             @h1{How is this site organized?}
-            @p{Each file's test results are displayed on a separate page, with a link to the previous revision on changes. All the files in a directory are collated and indexed recursively. On these pages each column is sortable and each row is clickable. The root of a revision also includes the SVN commit message with links to the test results of the modified files. The top DrDr page displays the summary information for all the tested revisions.}
+            @p{Each file's test results are displayed on a separate page, with a link to the previous revision on changes. All the files in a directory are collated and indexed recursively. On these pages each column is sortable and each row is clickable. The root of a revision also includes the git commit message with links to the test results of the modified files. The top DrDr page displays the summary information for all the tested revisions.}
             
             @h1{What is the difference between @code{Duration (Abs)} and @code{Duration (Sum)}?}
             @p{@code{Duration (Abs)} is the difference between the earliest start time and the latest end time in the collection.}

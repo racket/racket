@@ -11,8 +11,8 @@
 ;;     installation in the given paths (used by the shell installers)
 ;;     (interactive, undo-on-error, create-uninstaller)
 ;;   - `copy': similar to `move', but copies instead of moving
-;;   - `make-install-copytree': copies some toplevel directories, skips .svn
-;;     and compiled subdirs, and rewrites config.ss, but no uninstaller (used
+;;   - `make-install-copytree': copies some toplevel directories, skips ".*"
+;;     and compiled subdirs, and rewrites "config.ss", but no uninstaller (used
 ;;     by `make install') (requires an additional `origtree' argument)
 ;;   - `make-install-destdir-fix': fixes paths in binaries, laucnhers, and
 ;;     config.ss (used by `make install' to fix a DESTDIR) (requires exactly
@@ -414,9 +414,8 @@
   (define copytree (move/copy-tree #f))
   (define origtree? (equal? "yes" (get-arg)))
   (current-directory pltdir)
-  (set! skip-filter ; skip all dot-names, CVS and compiled subdirs
-        (lambda (p)
-          (regexp-match #rx"^(?:[.].*|CVS|compiled)$" (basename p))))
+  (set! skip-filter ; skip all dot-names and compiled subdirs
+        (lambda (p) (regexp-match? #rx"^(?:[.].*|compiled)$" (basename p))))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
     (set! yes-to-all? #t) ; non-interactive
     (copytree "collects" 'collects)

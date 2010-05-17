@@ -13,11 +13,11 @@
   (define (repository-tree)
     (define (id x) x)
     (filter-tree-by-pattern
-     (directory->tree (CACHE-DIR)
-                      (lambda (x)
-                        (not (regexp-match #rx"/(CVS|[.]svn)|[.]git$"
-                                           (path->string x))))
-                      4)
+     (directory->tree
+      (CACHE-DIR)
+      (lambda (x)
+        (not (regexp-match? #rx"/(?:[.]git.*|[.]svn|CVS)$" (path->string x))))
+      4)
      (list id id id string->number string->number)))
   
   ;; get-installed-planet-dirs : -> listof (list path[absolute, dir] string string (listof string) nat nat)

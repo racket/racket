@@ -178,10 +178,10 @@
   (define (std-filter path)
     (let-values ([(base name dir?) (split-path path)])
       (let ([name (path->bytes name)])
-	(not (or (regexp-match #rx#"^(?:CVS|[.]svn|[.]git|[.]cvsignore|compiled|doc)$"
-                               name)
-		 (regexp-match #rx#"~$|^#.*#$|^[.]#" name)
-		 (regexp-match #rx#"[.]plt$" name))))))
+	(not (or (regexp-match? #rx#"^(?:[.](?:git.*|svn|cvsignore)|CVS|compiled|doc)$"
+                                name)
+		 (regexp-match? #rx#"~$|^#.*#$|^[.]#" name)
+		 (regexp-match? #rx#"[.]plt$" name))))))
 
   (define (pack-collections output name collections replace? extra-setup-collections
                             [file-filter std-filter] [at-plt-home? #f])

@@ -14,22 +14,18 @@
   (define-syntax (mk-units stx)
     (syntax-case stx ()
       [(_)
-       (with-syntax ([(unit-names ...)
-                      (let loop ([files
-                                  (call-with-input-file
-                                      (build-path (collection-path "games" "paint-by-numbers")
-                                                  "problems" "directory")
-                                    read)])
-                        (cond
-                          [(null? files) null]
-                          [(or (member (car files) '("CVS" ".svn"))
-                               (not (file-exists? (build-path (collection-path "games" "paint-by-numbers")
-                                                              "problems" (car files)))))
-                           (loop (cdr files))]
-                          [else
-                           (cons (car files)
-                                 (loop (cdr files)))]))])
-         (syntax (list (include (build-path "problems" unit-names)) ...)))]))
+       (with-syntax
+           ([(unit-names ...)
+             (let ([probdir (collection-path "games" "paint-by-numbers") "problems"])
+               (let loop ([files
+                           (call-with-input-file (build-path probdir "directory")
+                             read)])
+                 (cond
+                   [(null? files) null]
+                   [(not (file-exists? (build-path probdir (car files))))
+                    (loop (cdr files))]
+                   [else (cons (car files) (loop (cdr files)))])))])
+         #'(list (include (build-path "problems" unit-names)) ...))]))
   
   (define units (mk-units))
   

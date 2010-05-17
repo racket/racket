@@ -149,7 +149,7 @@ compiled-filter := (- (collects: "**/compiled/")
 src-filter      := (src: "")
 docs-filter     := (- (doc: "")   ; all docs,
                       (notes: "") ; excluding basic stuff
-                      std-docs)   ; and things in svn
+                      std-docs)   ; and things in git
 docsrc-filter   := (+ (collects: "setup/scribble.rkt") ; only with doc sources
                       (collects: "**/scribblings/")
                       (srcfile: "*.{scrbl|scribble}")
@@ -162,7 +162,7 @@ gui-filter      := (- (+ (collects: "**/gui/") (srcfile: "gui.rkt"))
                       (srcfile: "racket/gui/dynamic.rkt"))
 tools-filter    := (+ (collects: "**/tools/") (srcfile: "tools.rkt"))
 
-;; these are in the doc directory, but are comitted in svn and should be
+;; these are in the doc directory, but are comitted in git and should be
 ;; considered like sources
 std-docs        := (doc: "doc-license.txt" "*-std/")
 
@@ -170,7 +170,8 @@ std-docs        := (doc: "doc-license.txt" "*-std/")
 ;; Junk
 
 ;; This is removed from the original tree only (*not* from the binary trees)
-junk := (+ "CVS/" "[.#]*" "*~"
+;; (the first line shouldn't be necessary, but be safe)
+junk := (+ ".git*" "/.mailmap" ".svn" "CVS/" "[.#]*" "*~"
            ;; binary stuff should come from the platform directories
            "/plt/bin/" "/plt/lib/" "/plt/src/*build*/")
 

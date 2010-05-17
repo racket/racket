@@ -1,7 +1,7 @@
 
 (define old-dir (current-directory))
 (define new-dir "~/Desktop/gc6.7")
-(define really-svn? #t)
+(define really-git? #t)
 
 (require mzlib/file
 	 mzlib/process)
@@ -22,13 +22,14 @@
 (fill-table new-dir new)
 (fill-table old-dir old)
 
-(hash-table-for-each old (lambda (k v)
-			   (let ([b (path->bytes k)])
-			     (when (or (regexp-match #rx#"CVS" b)
-				       (regexp-match #rx#"[.]svn" b)
-				       (regexp-match #rx#"upgrade[.]ss$" b)
-				       (regexp-match #rx#"gc[.]h$" b))
-			       (hash-table-remove! old k)))))
+(hash-table-for-each
+ old
+ (lambda (k v)
+   (let ([b (path->bytes k)])
+     (when (or (regexp-match? #rx#"^(?:^|/)(?:[.](?:git.*|svn)|CVS)(?:/|$)$" b)
+               (regexp-match? #rx#"upgrade[.]ss$" b)
+               (regexp-match? #rx#"gc[.]h$" b))
+       (hash-table-remove! old k)))))
 
 (define (content f n)
   (with-input-from-file f (lambda () (read-bytes n))))
@@ -66,7 +67,7 @@
 
 (define (go cmd)
   (printf "CMD: ~a~n" cmd)
-  (when really-svn?
+  (when really-git?
     (system cmd)))
 
 (hash-table-for-each new 
@@ -82,13 +83,13 @@
   (go (get-output-string s)))
 
 (let ([s (open-output-string)])
-  (fprintf s "cd ~a; svn add " (path->string old-dir))
+  (fprintf s "cd ~a; git add " (path->string old-dir))
   (hash-table-for-each new (lambda (k v)
 			     (fprintf s "~a " (path->string k))))
   (go (get-output-string s)))
 
 (let ([s (open-output-string)])
-  (fprintf s "cd ~a; svn remove " (path->string old-dir))
+  (fprintf s "cd ~a; git rm " (path->string old-dir))
   (hash-table-for-each old (lambda (k v)
 			     (fprintf s "~a " (path->string k))))
   (go (get-output-string s)))

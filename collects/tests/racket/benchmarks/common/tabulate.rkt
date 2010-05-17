@@ -34,7 +34,7 @@ exec racket -qu "$0" ${1+"$@"}
    (once-each
     [("--graph") "generate graphs instead of tables (unless --multi)"
      (generate-graph #t)]
-    [("--links") "benchmark links to SVN"
+    [("--links") "benchmark links to git"
      (include-links #t)]
     [("--multi") name "generate multiple pages for different views of data"
      (base-link-filename name)]
