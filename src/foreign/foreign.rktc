@@ -1,13 +1,13 @@
 #!/bin/sh
 #| -*- C -*-
-exec racket "$0" > `echo "$0" | sed 's/ssc$/c/'` "$0"
+exec racket "$0" > `echo "$0" | sed 's/rktc$/c/'` "$0"
 |#
 
 #lang scribble/text
 
-@(require "ssc-utils.ss")
+@(require "rktc-utils.ss")
 
-@header{foreign.ssc}
+@header{foreign.rktc}
 
 #include "schpriv.h"
 #include <errno.h>

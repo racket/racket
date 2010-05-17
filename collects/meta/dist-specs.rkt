@@ -386,7 +386,7 @@ mr-src := (src: "gracket/" "mred/" "wxcommon/"
                               "worksp/{png|wxme|wxs|wxutils|wxwin|zlib}/"))
 
 foreign-src := (src: "foreign/{Makefile.in|README}"
-                     "foreign/{foreign.*|ssc-utils.rkt}"
+                     "foreign/{foreign.*|rktc-utils.rkt}"
                      (cond win  => "foreign/libffi_msvc"
                            else => "foreign/gcc"))
 

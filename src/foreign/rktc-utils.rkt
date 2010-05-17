@@ -1,4 +1,4 @@
-;; Preprocessor utilities for the .ssc file.
+;; Preprocessor utilities for the .rktc file.
 
 #lang at-exp scheme/base
 
