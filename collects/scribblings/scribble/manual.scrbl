@@ -1204,7 +1204,7 @@ An alias for @racket[centered] for backward compatibility.}
 Typesets the @racket[pre-flow]s as the content of
 @racket[filename]. For example, the content may be inset on the page
 with @racket[filename] above it. If @racket[filename] is a string, it
-is passed to @racket{filepath} to obtain an @tech{element}.}
+is passed to @racket{filepath} to obtain an @racket[element].}
 
 @; ------------------------------------------------------------------------
 @section[#:tag "index-entries"]{Index-Entry Descriptions}
