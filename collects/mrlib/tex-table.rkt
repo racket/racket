@@ -173,6 +173,9 @@
     ("frownie" "☹")
     
     ("S" "§")
+
+    ("newpage" "\f")
+
     ))
 
 ;; checks to see if there are duplicates
