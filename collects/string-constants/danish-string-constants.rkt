@@ -131,7 +131,6 @@ please adhere to these guidelines:
   ;;; important urls
   (web-materials "Relaterede websites") ;; menu item title
   (tool-web-sites "Tool Web Sites")   ;; menu item title
-  (drscheme-homepage "DrRacket")
   (plt-homepage "Racket")
   (how-to-use-scheme "How to Use Scheme") ;; title of a book.
   (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages

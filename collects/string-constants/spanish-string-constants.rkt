@@ -41,7 +41,6 @@
  ;; important urls
  (web-materials "Sitios de Web Relacionados")
  (tool-web-sites "Sitios de Web de Herramientas")   ;; menu item title
- (drscheme-homepage "DrRacket")
  (plt-homepage "Racket")
  (how-to-use-scheme "Cómo Usar Scheme")
  (teachscheme!-homepage "TeachScheme!")

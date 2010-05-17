@@ -133,7 +133,6 @@ please adhere to these guidelines:
  ;;; important urls
  (web-materials "Пов'язані Web-сайти") ;; menu item title
  (tool-web-sites "Web-сайти встановлених інструментів")   ;; menu item title
- (drscheme-homepage "DrRacket")
  (plt-homepage "Racket")
  (how-to-use-scheme "Як використовувати Scheme") ;; title of a book.
  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages

@@ -35,7 +35,6 @@
 
  (web-materials "Verwandte Web-Seiten")
  (tool-web-sites "Web-Seiten mit Tools")
- (drscheme-homepage "DrRacket")
  (plt-homepage "Racket")
  (how-to-use-scheme "How to Use Scheme")
  (teachscheme!-homepage "TeachScheme!")

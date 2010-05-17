@@ -133,7 +133,6 @@ please adhere to these guidelines:
  ;;; important urls
  (web-materials "関連するウェブサイト") ;; menu item title
  (tool-web-sites "ツールのウェブサイト")   ;; menu item title
- (drscheme-homepage "DrRacket")
  (plt-homepage "Racket")
  (how-to-use-scheme "How to Use Scheme") ;; title of a book.
  (teachscheme!-homepage "TeachScheme!") ;; probably this should be a `word' in all languages
