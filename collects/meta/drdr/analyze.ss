@@ -171,28 +171,28 @@
                               (if include-committer?
                                   (list
                                    (format "~a:" committer)
-                                   (format "You are receiving this email because the DrDr test of push #~a (which you did) contained a NEW condition that may need inspecting." cur-rev)
+                                   (format "You are receiving this email because the DrDr test of push #~a\n(which you did) contained a NEW condition that may need inspecting." cur-rev)
                                    (let ([diff-smash (responsible-ht->status-ht diff)])
                                      (for/list ([(id paths) (in-hash diff-smash)]
                                                 #:when (not (symbol=? id 'changes)))
                                        (if (empty? paths)
                                            empty
-                                           (list (format "\t~a" id)
+                                           (list (format "  ~a" id)
                                                  (for/list ([f (in-list paths)]
                                                             [i (in-range ERROR-LIMIT)])
-                                                   (format "\t\t~a" (path->url f)))
+                                                   (format "    ~a" (path->url f)))
                                                  ""))))
                                    "")
                                   empty)
                               (for/list ([r (in-list responsibles)])
                                 (list* (format "~a:" r)
-                                       "You are receiving this email because a file you are responsible for has a condition that may need inspecting."
+                                       "You are receiving this email because a file you are responsible for\nhas a condition that may need inspecting."
                                        (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
                                                   #:when (not (symbol=? id 'changes)))
-                                         (list (format "\t~a:" id)
+                                         (list (format "  ~a:" id)
                                                (for/list ([f (in-list files)]
                                                           [i (in-range ERROR-LIMIT)])
-                                                 (format "\t\t~a" (path->url f)))
+                                                 (format "    ~a" (path->url f)))
                                                ""))
                                        ""))))))
   
