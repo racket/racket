@@ -228,8 +228,8 @@
          "HTTP://ROBBY@WWW.DRSCHEME.ORG:80/INDEX.HTML;XXX?T=P#YYY")
         => #("http" "ROBBY" "www.drscheme.org" 80 #t (#("INDEX.HTML" "XXX")) ((T . "P")) "YYY"))
 
-  (test-s->u #("mailto" #f #f #f #f (#("robby@plt-scheme.org")) () #f)
-             "mailto:robby@plt-scheme.org")
+  (test-s->u #("mailto" #f #f #f #f (#("robby@racket-lang.org")) () #f)
+             "mailto:robby@racket-lang.org")
 
   (test (string->url/vec "http://www.drscheme.org?bar=馨慧")
         #("http" #f "www.drscheme.org" #f #f () ((bar . "馨慧")) #f))

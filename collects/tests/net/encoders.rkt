@@ -2,7 +2,7 @@
 (require net/base64 net/qp tests/eli-tester)
 
 (define tricky-strings
-  (let ([dir (collection-path "tests" "mzscheme")])
+  (let ([dir (collection-path "tests" "racket")])
     (list (make-bytes 200 32)
           (make-bytes 200 9)
           (make-bytes 200 (char->integer #\x))
@@ -12,12 +12,12 @@
           (make-bytes 204 (char->integer #\x))
           (list->bytes (for/list ([i (in-range 256)]) i))
           ;; Something that doesn't end with a LF:
-          (bytes-append (with-input-from-file (build-path dir "net.ss")
+          (bytes-append (with-input-from-file (build-path dir "net.rktl")
                           (lambda () (read-bytes 500)))
            #"xxx")
           ;; CRLF:
           (regexp-replace #rx#"\r?\n"
-                          (with-input-from-file (build-path dir "net.ss")
+                          (with-input-from-file (build-path dir "net.rktl")
                             (lambda () (read-bytes 500)))
            #"\r\n"))))
 
@@ -55,13 +55,13 @@
                           (open-input-bytes tricky-string)
                           line-rx max-w))
             tricky-strings)
-  (let* ([dir (collection-path "tests" "mzscheme")]
+  (let* ([dir (collection-path "tests" "racket")]
          [files (filter-map
                  (lambda (f)
                    ;; check 1/4 of the files, randomly
                    (let ([p (build-path dir f)])
                      (and (zero? (random 4))
-                          (not (regexp-match #rx"^flat.*\\.ss$"
+                          (not (regexp-match #rx"^flat.*\\.rktl$"
                                              (path-element->string f)))
                           (file-exists? p)
                           p)))

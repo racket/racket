@@ -69,9 +69,9 @@ adjusts the behavior.
 
 An empty string at the end of the @scheme[path] list corresponds to a
 URL that ends in a slash. For example, the result of
-@scheme[(string->url "http://www.drscheme.org/a/")] has a
+@scheme[(string->url "http://racket-lang.org/a/")] has a
 @scheme[path] field with strings @scheme["a"] and @scheme[""], while
-the result of @scheme[(string->url "http://www.drscheme.org/a")] has a
+the result of @scheme[(string->url "http://racket-lang.org/a")] has a
 @scheme[path] field with only the string @scheme["a"].
 
 When a @scheme["file"] URL is represented by a @scheme[url] structure,
