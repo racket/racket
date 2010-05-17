@@ -138,7 +138,7 @@ webdir="web"
 # script for patching files with current version info
 versionpatcher="$scriptdir/versionpatch"
 # DrScheme test script
-drtestscript="$scriptdir/test-drscheme.ss"
+drtestscript="$scriptdir/test-drracket.rkt"
 # bundling script
 bundlescript="$scriptdir/bundle"
 # web build script
@@ -1260,11 +1260,9 @@ DO_BUILD() { # inputs -- releasing
 
   # GRacket-based tests on the main machine, in an Xvnc session
   if [[ "$machine" = "$workmachine" ]]; then
-    separator "${machine}(${platform}) running GRacket tests"
+    separator "${machine}(${platform}) testing DrRacket"
     _start_xvnc
     dont_exit _timeout_run 60 env HOME="$testdir" "$PLTHOME/$drtestscript"
-    dont_exit _timeout_run 300 env HOME="$testdir" \
-                "$PLTHOME/collects/tests/framework/framework-test"
     _end_xvnc
   fi
 

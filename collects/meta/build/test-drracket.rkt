@@ -1,11 +1,9 @@
 #!/bin/sh
 #| -*- scheme -*-
-exec "$PLTHOME/bin/mred" "$0"
+exec "$PLTHOME/bin/gracket" "$0"
 |#
 
-#lang mzscheme
-
-(require (lib "mred.ss" "mred") (lib "class.ss") (lib "port.ss") (lib "file.ss"))
+#lang racket/gui
 
 ;; save the original error port to send messages
 (define stderr (current-error-port))
@@ -23,7 +21,7 @@ exec "$PLTHOME/bin/mred" "$0"
   (die "uncaught exception: ~a\n" (if (exn? e) (exn-message e) e)))
 
 (define-values (in out) (make-pipe))
-(thread
+((compose void thread)
  (lambda ()
    (let* ([bytes (make-bytes 1000)]
           [len/eof (sync (read-bytes-avail!-evt bytes in))])
@@ -39,17 +37,16 @@ exec "$PLTHOME/bin/mred" "$0"
 (define es (make-eventspace))
 
 (current-eventspace es)
-(thread (lambda () (sleep 60) (die "timeout!")))
+(void (thread (lambda () (sleep 60) (die "timeout!"))))
 
 ;; make sure the preferences are such that we don't get the welcome screen
 (cleanup)
 (make-directory (find-system-path 'pref-dir))
-(with-output-to-file (find-system-path 'pref-file)
+(with-output-to-file (find-system-path 'pref-file) #:exists 'truncate
   (lambda ()
     (printf "~s\n" `((plt:framework-prefs
                       ((drscheme:last-version ,(version))
-                       (drscheme:last-language english))))))
-  'truncate)
+                       (drscheme:last-language english)))))))
 
 ;; start drscheme
 (queue-callback
