@@ -109,12 +109,14 @@
                     (if (null? ps) glob (loop 0 ps '())))]))))
 
 (define (glob->pred glob)
-  (let loop ([xs (let* (;; ignore "//"s (otherwise they'd match nothing)
-                        [glob (regexp-replace* #rx#"//+" glob #"/")]
-                        ;; ignore "/" prefix (filter never uses the root path)
-                        [glob (regexp-replace #rx#"^/" glob #"")])
-                   (regexp-split #rx#"(?<=/)(?=.)" glob))])
-    ;; - xs is never null (`regexp-split' never returns null)
+  (let loop (;; split the glob to its parts, ignoring "//"s and a prefix "/"
+             ;; (filter never uses the root path)
+             [xs (let ([xs (regexp-match* #rx#"[^/]+(?:/|$)" glob)])
+                   ;; it's not clear what should the meaning of an empty glob
+                   ;; be: return everything? just the root? nothing? -- throw
+                   ;; an error for now, maybe change it later
+                   (if (null? xs) (error 'glob->pred "bad glob: ~e" glob)
+                       xs))])
     ;; - an element without a trailing slash must be the last one
     ;; - an element with a trailing slash matches non-leaf nodes only, so need
     ;;   to test subs for `*/' and `**/'
@@ -123,39 +125,41 @@
     ;;   predicate result will never be used and it will mess up (eg, a
     ;;   predicate result for a leaf is considered true, but (not: (lambda (t)
     ;;   #t)) is also a predicate) => use #t for `r' in this case
-    (let* ([x  (car xs)]
-           [x* (glob->regexp-or-literal x)]
-           [xs (cdr xs)]
-           [r  (or (null? xs) (loop xs))])
-      (cond
-        [(eq? '*   x*) (lambda (t) #t)] ; it's the last one
-        [(eq? '*/  x*) (lambda (t) (and (tree-subs t) r))]
-        [(eq? '**  x*) (lambda (t) #t)]
-        [(eq? '**/ x*) (letrec ([R (or: r (lambda (t) (and (tree-subs t) R)))])
-                         R)]
-        ;; if it's the last one and it has no "/" suffix then it will match
-        ;; only leaves => in this case, allow matches on non-leaf nodes by
-        ;; adding the "/" (if this is not done then it's very easy to make
-        ;; mistakes)
-        [else
-         (let ([x*/ (cond [(or (pair? xs) (regexp-match? #rx#"/$" x)) #f]
-                          [(bytes? x*) (bytes-append x* #"/")]
-                          [(byte-regexp? x*)
-                           (glob->regexp-or-literal (bytes-append x #"/"))]
-                          [else (error 'glob->pred "bad glob part: ~e" x)])])
-           (cond
-             [(bytes? x*/)
-              (lambda (t)
-                (let ([x (if (tree-subs t) x*/ x*)])
-                  (and (equal? x (tree-name t)) r)))]
-             [(byte-regexp? x*/)
-              (lambda (t)
-                (let ([x (if (tree-subs t) x*/ x*)])
-                  (and (regexp-match? x (tree-name t)) r)))]
-             [(bytes? x*)
-              (lambda (t) (and (tree-subs t) (equal? x* (tree-name t)) r))]
-             [(byte-regexp? x*)
-              (lambda (t) (and (regexp-match? x* (tree-name t)) r))]))]))))
+    (or
+     (null? xs)
+     (let* ([x  (car xs)]
+            [x* (glob->regexp-or-literal x)]
+            [xs (cdr xs)]
+            [r  (loop xs)])
+       (cond
+         [(eq? '*   x*) (lambda (t) #t)] ; it's the last one
+         [(eq? '*/  x*) (lambda (t) (and (tree-subs t) r))]
+         [(eq? '**  x*) (lambda (t) #t)]
+         [(eq? '**/ x*)
+          (letrec ([R (or: r (lambda (t) (and (tree-subs t) R)))]) R)]
+         ;; if it's the last one and it has no "/" suffix then it will match
+         ;; only leaves => in this case, allow matches on non-leaf nodes by
+         ;; adding the "/" (if this is not done then it's very easy to make
+         ;; mistakes)
+         [else
+          (let ([x*/ (cond [(or (pair? xs) (regexp-match? #rx#"/$" x)) #f]
+                           [(bytes? x*) (bytes-append x* #"/")]
+                           [(byte-regexp? x*)
+                            (glob->regexp-or-literal (bytes-append x #"/"))]
+                           [else (error 'glob->pred "bad glob part: ~e" x)])])
+            (cond
+              [(bytes? x*/)
+               (lambda (t)
+                 (let ([x (if (tree-subs t) x*/ x*)])
+                   (and (equal? x (tree-name t)) r)))]
+              [(byte-regexp? x*/)
+               (lambda (t)
+                 (let ([x (if (tree-subs t) x*/ x*)])
+                   (and (regexp-match? x (tree-name t)) r)))]
+              [(bytes? x*)
+               (lambda (t) (and (tree-subs t) (equal? x* (tree-name t)) r))]
+              [(byte-regexp? x*)
+               (lambda (t) (and (regexp-match? x* (tree-name t)) r))]))])))))
 
 (define (pred/glob->pred pred/glob)
   (cond [(string? pred/glob) (glob->pred (string->bytes/utf-8 pred/glob))]

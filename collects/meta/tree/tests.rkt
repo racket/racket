@@ -97,6 +97,8 @@
    => same-as-last-datums
    (e/filter #"*")
    => same-as-last-datums
+   (e/filter #"")
+   =error> "bad glob"
    (e/filter #"A2/")
    => '(-/ -/A2/ -/A2/5)
    (e/filter #"A1/B/")
