@@ -1,7 +1,7 @@
 (module srfi-4-test mzscheme
   
-  (require racunit)
-  (require racunit/text-ui
+  (require rackunit)
+  (require rackunit/text-ui
            srfi/4)
   
   (provide srfi-4-tests)

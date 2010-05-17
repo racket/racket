@@ -34,7 +34,7 @@
 
 (module delete-test
   mzscheme
-  (require racunit)
+  (require rackunit)
   (require (all-except srfi/1/delete member))
 
   (provide delete-tests)

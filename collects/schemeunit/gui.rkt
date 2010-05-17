@@ -1,3 +1,3 @@
 #lang racket
-(require racunit/gui)
-(provide (all-from-out racunit/gui))
+(require rackunit/gui)
+(provide (all-from-out rackunit/gui))

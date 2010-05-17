@@ -1,5 +1,5 @@
 #lang racket/base
-(require racunit
+(require rackunit
          web-server/private/mod-map
          mzlib/serialize
          "../util.rkt")

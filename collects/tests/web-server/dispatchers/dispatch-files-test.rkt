@@ -1,5 +1,5 @@
 #lang racket
-(require racunit
+(require rackunit
          (only-in mzlib/file
                   file-name-from-path
                   make-temporary-file)
@@ -120,5 +120,5 @@
              exn:dispatcher?
              (lambda () (collect (dispatch #f a-dir) (req #t #"HEAD" empty))))))
 
-#;(require (planet schematics/racunit:3/text-ui))
+#;(require (planet schematics/rackunit:3/text-ui))
 #;(run-tests dispatch-files-tests)

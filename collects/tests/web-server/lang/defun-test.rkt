@@ -1,5 +1,5 @@
 #lang racket/base
-(require racunit
+(require rackunit
          web-server/lang/defun
          web-server/lang/util)
 (provide defun-tests)

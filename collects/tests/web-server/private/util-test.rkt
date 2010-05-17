@@ -1,5 +1,5 @@
 #lang racket/base
-(require racunit
+(require rackunit
          net/url
          xml/xml
          mzlib/contract

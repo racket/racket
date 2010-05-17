@@ -35,7 +35,7 @@
 (module search-test
   mzscheme
 
-  (require racunit)
+  (require rackunit)
   (require (all-except srfi/1/search member))
 
   (provide search-tests)

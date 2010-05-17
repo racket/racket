@@ -34,7 +34,7 @@
 
 (module cons-test
   mzscheme
-  (require racunit)
+  (require rackunit)
   (require srfi/1/cons)
 
   (provide cons-tests)

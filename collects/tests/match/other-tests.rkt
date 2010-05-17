@@ -1,5 +1,5 @@
 (module other-tests mzscheme
-  (require mzlib/match racunit)
+  (require mzlib/match rackunit)
     
   (provide other-tests)
 

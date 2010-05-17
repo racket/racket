@@ -15,8 +15,8 @@
  "module-tests.ss" ;; pass
  "contract-tests.ss"
 
- (r:infer infer infer-dummy) 
- racunit racunit/text-ui)
+ (r:infer infer infer-dummy)
+ rackunit rackunit/text-ui)
 
 (provide unit-tests)
 

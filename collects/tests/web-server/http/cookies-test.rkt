@@ -1,5 +1,5 @@
 #lang racket
-(require racunit
+(require rackunit
          net/url
          web-server/http/request-structs
          web-server/http/response-structs
@@ -159,5 +159,5 @@ __utmz=165257760.1272597702.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)\r\
     
     )))
 
-(require racunit/text-ui)
+(require rackunit/text-ui)
 (run-tests cookies-tests)

@@ -1,5 +1,5 @@
 #lang racket/base
-(require racunit
+(require rackunit
          (only-in mzlib/file
                   make-temporary-file)
          net/url

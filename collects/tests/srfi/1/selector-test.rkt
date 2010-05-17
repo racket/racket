@@ -35,7 +35,7 @@
 (module selector-test
   mzscheme
 
-  (require racunit)
+  (require rackunit)
   (require srfi/1/selector)
 
   (provide selector-tests)

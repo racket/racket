@@ -1,6 +1,6 @@
 (module conversion-tests mzscheme
   
-  (require racunit)
+  (require rackunit)
   (require srfi/43/vector-lib)
   
   (provide conversion-tests)

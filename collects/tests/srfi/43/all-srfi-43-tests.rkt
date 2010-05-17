@@ -1,5 +1,5 @@
 (module all-srfi-43-tests mzscheme
-  (require racunit)
+  (require rackunit)
   (require "constructor-tests.ss"
            "predicate-tests.ss"
            "iteration-tests.ss"

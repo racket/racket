@@ -1,7 +1,7 @@
 #lang racket/base
 (require web-server/lang/stuff-url
          web-server/stuffers
-         racunit
+         rackunit
          net/url
          mzlib/serialize
          "../util.rkt")

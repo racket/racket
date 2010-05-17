@@ -2,7 +2,7 @@
 
 (provide all-image-tests)
 
-(require racunit
+(require rackunit
 	 deinprogramm/image
          (only-in lang/private/imageeq image=?)
 	 mred

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require racunit)
+(require rackunit)
 (require macro-debugger/model/debug
          macro-debugger/model/stx-util
          "gentest-framework.ss"

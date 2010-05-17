@@ -1,6 +1,6 @@
 (module other-plt-tests mzscheme
   
-  (require racunit net/uri-codec mzlib/pregexp mzlib/plt-match
+  (require rackunit net/uri-codec mzlib/pregexp mzlib/plt-match
            mzlib/list mzlib/etc)
   
   (define-struct shape (color))

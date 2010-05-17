@@ -1,6 +1,6 @@
 #lang scheme/base
-(require racunit
-         racunit/gui)
+(require rackunit
+         rackunit/gui)
 (require macro-debugger/model/debug
          "gentest-framework.ss"
          "gentests.ss"

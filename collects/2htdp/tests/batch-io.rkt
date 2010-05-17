@@ -1,6 +1,6 @@
 #lang scheme/load 
 
-(require racunit)
+(require rackunit)
 (require 2htdp/batch-io)
 
 (define file "batch-io.txt")

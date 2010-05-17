@@ -1,5 +1,5 @@
 #lang racket
-(require racunit
+(require rackunit
          web-server/private/gzip)
 (provide gzip-tests)
 

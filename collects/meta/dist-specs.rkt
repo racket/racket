@@ -618,8 +618,8 @@ dr-extras :+= (package: "typed-scheme/" ; used in drracket
                         #:docs "ts-{reference|guide}/")
               (- (collects: "typed/")
                  (cond (not plt) => (collects: "typed/test-engine/")
-                                    (collects: "typed/racunit/")
-                                    (srcfile: "typed/racunit.rkt")))
+                                    (collects: "typed/rackunit/")
+                                    (srcfile: "typed/rackunit.rkt")))
 
 ;; -------------------- gui-debugger
 plt-extras :+= (collects: "gui-debugger/")
@@ -669,9 +669,11 @@ mz-extras :+= (- (package: "unstable")
 ;; -------------------- plai
 plt-extras :+= (package: "plai/")
 
-plt-extras :+= (package: "racunit/")
+;; -------------------- rackunit & older schemeunit compatibility
+plt-extras :+= (package: "rackunit/")
 plt-extras :+= (package: "schemeunit/")
 
+;; -------------------- raclog (aka schelog)
 plt-extras :+= (package: "raclog/")
 
 ;; ============================================================================

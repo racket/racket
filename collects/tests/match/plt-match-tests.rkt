@@ -2,7 +2,7 @@
 
 (require (for-syntax scheme/base)
          "match-tests.ss" "other-plt-tests.ss" "other-tests.ss" "examples.ss"
-         racunit racunit/text-ui)
+         rackunit rackunit/text-ui)
 
 (require mzlib/plt-match)
 

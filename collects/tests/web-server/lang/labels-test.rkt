@@ -1,5 +1,5 @@
 #lang racket/base
-(require racunit
+(require rackunit
          web-server/lang/labels)
 (provide labels-tests)
 

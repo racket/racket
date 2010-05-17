@@ -1,5 +1,5 @@
 #lang racket
-(require racunit
+(require rackunit
          web-server/stuffers
          web-server/private/servlet
          web-server/http
@@ -127,6 +127,6 @@
                              (check-not-false (is-url-too-big? (make-bytes 3000 65)))))))))
 
 #|
-(require (planet schematics/racunit:3/text-ui))
+(require (planet schematics/rackunit:3/text-ui))
 (run-tests all-stuffers-tests)
 |#

@@ -1,5 +1,5 @@
 #lang racket/base
-(require racunit
+(require rackunit
          mzlib/etc
          mzlib/list
          web-server/dispatchers/dispatch
@@ -164,6 +164,6 @@
    ))
 
 #|
-(require racunit/text-ui)
+(require rackunit/text-ui)
 (run-tests dispatch-lang-tests)
 |#

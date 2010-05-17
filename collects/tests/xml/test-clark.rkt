@@ -1,6 +1,6 @@
 #lang racket
-(require racunit
-         racunit/text-ui
+(require rackunit
+         rackunit/text-ui
          xml
          racket/runtime-path)
 

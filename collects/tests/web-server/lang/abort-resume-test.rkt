@@ -1,5 +1,5 @@
 #lang racket
-(require racunit
+(require rackunit
          web-server/lang/abort-resume)
 (require/expose web-server/lang/abort-resume (web-prompt))
 (provide abort-resume-tests)
@@ -306,6 +306,6 @@
    ))
 
 #|
-(require racunit/text-ui)
+(require rackunit/text-ui)
 (run-tests abort-resume-tests)
 |#

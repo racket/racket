@@ -7,7 +7,7 @@
 	 (env type-environments  init-envs)
 	 (utils tc-utils)
 	 (rep type-rep filter-rep object-rep)
-         racunit)
+         rackunit)
 
 (provide type-annotation-tests)
 

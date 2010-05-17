@@ -21,7 +21,7 @@
     "plot"
     "profj"
     "r6rs"
-    "racunit"
+    "rackunit"
     "srfi"
     "srpersist"
     "stepper"

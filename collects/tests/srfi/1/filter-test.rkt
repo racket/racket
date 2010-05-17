@@ -34,7 +34,7 @@
 
 (module filter-test
   mzscheme
-  (require racunit)
+  (require rackunit)
   (require (all-except srfi/1/filter member))
 
   (provide filter-tests)

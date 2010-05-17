@@ -1,5 +1,5 @@
 #lang scheme
-(require racunit racunit/text-ui "5.ss")
+(require rackunit rackunit/text-ui "5.ss")
 
 (define s (put (put (initialize (flat-contract integer?) =) 2) 1))
 

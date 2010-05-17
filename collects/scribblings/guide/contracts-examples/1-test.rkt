@@ -1,5 +1,5 @@
 #lang scheme
-(require racunit racunit/text-ui "1.ss" "1b.ss")
+(require rackunit rackunit/text-ui "1.ss" "1b.ss")
 
 (add (make-basic-customer 'mf "matthias" "brookstone"))
 (add (make-basic-customer 'rf "robby" "beverly hills park"))

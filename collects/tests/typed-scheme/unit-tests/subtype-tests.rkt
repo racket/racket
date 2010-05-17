@@ -5,7 +5,7 @@
 	 (rep type-rep)
 	 (env init-envs type-environments)
 	 (r:infer infer infer-dummy)
-         racunit
+         rackunit
          (for-syntax scheme/base))
 
 (provide subtype-tests)

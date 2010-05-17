@@ -1,7 +1,7 @@
 #lang racket
 
 (require raclog
-         racunit)
+         rackunit)
 
 ;The following is the "Biblical" database from "The Art of
 ;Prolog", Sterling & Shapiro, ch. 1.

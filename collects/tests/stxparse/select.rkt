@@ -1,5 +1,5 @@
 #lang scheme
-(require racunit
+(require rackunit
          syntax/parse)
 (require (for-syntax syntax/parse))
 (provide (all-defined-out))
