@@ -113,13 +113,13 @@
                         [glob (regexp-replace* #rx#"//+" glob #"/")]
                         ;; ignore "/" prefix (filter never uses the root path)
                         [glob (regexp-replace #rx#"^/" glob #"")])
-                   (regexp-split #rx#"(?<=/)" glob))])
+                   (regexp-split #rx#"(?<=/)(?=.)" glob))])
     ;; - xs is never null (`regexp-split' never returns null)
     ;; - an element without a trailing slash must be the last one
     ;; - an element with a trailing slash matches non-leaf nodes only, so need
     ;;   to test subs for `*/' and `**/'
     ;; - things usually work out fine, but if it's the last element, then we
-    ;;   better return #t or #f rather a continuation predicate, since a
+    ;;   better return #t or #f rather than a continuation predicate, since a
     ;;   predicate result will never be used and it will mess up (eg, a
     ;;   predicate result for a leaf is considered true, but (not: (lambda (t)
     ;;   #t)) is also a predicate) => use #t for `r' in this case
