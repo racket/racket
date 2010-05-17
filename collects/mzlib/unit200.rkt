@@ -6,8 +6,8 @@
 		      syntax/stx
 		      syntax/name
 		      syntax/context
-		      "list.ss"
-		      "private/unitidmap.ss")
+		      "list.rkt"
+		      "private/unitidmap.rkt")
 
   ;; ----------------------------------------------------------------------
   ;; Structures and helpers

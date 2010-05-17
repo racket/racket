@@ -148,13 +148,13 @@ Errors/exceptions and other kinds of control?
                   (λ () (f 10))))
 
 (define (write-and-try-prog prog)
-  (call-with-output-file "tmp.ss"
+  (call-with-output-file "tmp.rkt"
     (λ (port)
       (display "#lang scheme\n" port)
       (pretty-print '(require scheme/future scheme/flonum) port)
       (pretty-print prog port))
     #:exists 'truncate)
-  (unless (system "./mzscheme3m tmp.ss")
+  (unless (system "./mzscheme3m tmp.rkt")
     (error 'system-failed)))
 
 (define (gen-prog)

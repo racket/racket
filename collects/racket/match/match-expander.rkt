@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base
-                     "patterns.ss"))
+                     "patterns.rkt"))
 
 (provide define-match-expander)
 

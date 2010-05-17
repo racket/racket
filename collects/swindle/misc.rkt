@@ -324,7 +324,7 @@
 ;;>> (set-cddadr! place x)
 ;;>> (set-cdddar! place x)
 ;;>> (set-cddddr! place x)
-;;>   These are all defined so it is possible to use `setf!' from "setf.ss"
+;;>   These are all defined so it is possible to use `setf!' from "setf.rkt"
 ;;>   with these standard and library-provided functions.
 #|
 (define* set-caar!   (lambda (p v) (set-car! (car p) v)))

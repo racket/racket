@@ -1,7 +1,7 @@
 #lang scheme
 
-(require "enter.ss"
-         "help.ss")
+(require "enter.rkt"
+         "help.rkt")
 
 ;; Set the printer:
 (current-print (let ([pretty-printer
@@ -11,7 +11,5 @@
                  pretty-printer))
 
 (provide (all-from-out scheme
-                       "enter.ss"
-                       "help.ss"))
-
-
+                       "enter.rkt"
+                       "help.rkt"))

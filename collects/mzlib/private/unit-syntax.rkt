@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/stx)
-(require (for-template "unit-keywords.ss"))
+(require (for-template "unit-keywords.rkt"))
   
 (provide (all-defined-out))
 

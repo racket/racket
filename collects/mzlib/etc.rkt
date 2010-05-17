@@ -10,13 +10,13 @@
                build-vector
                compose)
          (rename scheme/base base-else else)
-         "kw.ss")
+         "kw.rkt")
 
 (require-for-syntax syntax/kerncase
                     syntax/stx
                     syntax/name
                     setup/main-collects
-                    "private/stxset.ss")
+                    "private/stxset.rkt")
 
 (provide boolean=? symbol=?
          identity

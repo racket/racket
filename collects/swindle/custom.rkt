@@ -9,11 +9,11 @@
 ;;; customizing, but (a) it will make it very verbose, (b) most syntax settings
 ;;; are things that beginners should not know about, (c) it will not allow
 ;;; things like the redefinition of `lambda' which is done below.  To make a
-;;; customization file, it should be some *.ss file in this directory, that
+;;; customization file, it should be some *.rkt file in this directory, that
 ;;; begins in the same way as above commented prefix: beginning with the magic
 ;;; string, and then specifying some parameters for this language.  Specifying
 ;;; the language's name as it appears at the top of the interactions menu
-;;; (defaults to the file name minus the ".ss"), the name as it appears in the
+;;; (defaults to the file name minus the ".rkt"), the name as it appears in the
 ;;; language selection dialog box (defaults to the Name), the one-line
 ;;; description (appears at the bottom of the language dialog), and a URL to
 ;;; jump to when the name in the interactions is clicked.  Remember that since
@@ -52,7 +52,7 @@
 
 ;;; To make things even better, it is best to change preferences so Swindle
 ;;; syntax get indented correctly.  For this, create the default preference
-;;; file "plt/collects/defaults/plt-prefs.ss", and in it you can put any
+;;; file "plt/collects/defaults/plt-prefs.rkt", and in it you can put any
 ;;; specific preferences you want as the defaults for people who run the system
 ;;; for the first time (see the "Preference Files" section in the Help Desk).
 ;;; The two relevant settings are -- make Swindle the default language:

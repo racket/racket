@@ -1,6 +1,6 @@
 #lang scheme/base
-(require "arrow.ss"
-         "guts.ss"
+(require "arrow.rkt"
+         "guts.rkt"
          racket/private/class-internal
          scheme/stxparam)
 

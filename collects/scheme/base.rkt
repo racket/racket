@@ -1,5 +1,5 @@
 #lang scheme/private
-(require "private/namespace.ss")
+(require "private/namespace.rkt")
 
 (provide (except-out (all-from-out racket/base) 
                      struct

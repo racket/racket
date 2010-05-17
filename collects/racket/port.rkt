@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require mzlib/port
-         "private/portlines.ss")
+         "private/portlines.rkt")
 (provide (except-out (all-from-out mzlib/port)
                      strip-shell-command-start)
          port->string

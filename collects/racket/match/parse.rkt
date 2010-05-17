@@ -3,11 +3,11 @@
 (require syntax/boundmap
          syntax/stx
          scheme/struct-info
-         "patterns.ss"
-         "compiler.ss"
-         "parse-helper.ss"
-         "parse-quasi.ss"
-         (for-template (only-in "runtime.ss" matchable?)
+         "patterns.rkt"
+         "compiler.rkt"
+         "parse-helper.rkt"
+         "parse-quasi.rkt"
+         (for-template (only-in "runtime.rkt" matchable?)
                        scheme/base))
 
 (provide parse/cert)

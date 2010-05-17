@@ -17,12 +17,12 @@ it around flattened out.
 
 |#
 
-(require "guts.ss"
-         "opt.ss")
+(require "guts.rkt"
+         "opt.rkt")
 (require (for-syntax scheme/base)
-         (for-syntax "ds-helpers.ss")
-         (for-syntax "helpers.ss")
-         (for-syntax "opt-guts.ss"))
+         (for-syntax "ds-helpers.rkt")
+         (for-syntax "helpers.rkt")
+         (for-syntax "opt-guts.rkt"))
 
 (provide define-contract-struct
          

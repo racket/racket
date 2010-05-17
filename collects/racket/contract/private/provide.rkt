@@ -6,11 +6,11 @@
 (require (for-syntax racket/base
                      racket/list
                      racket/struct-info
-                     (prefix-in a: "helpers.ss"))
-         "arrow.ss"
-         "base.ss"
+                     (prefix-in a: "helpers.rkt"))
+         "arrow.rkt"
+         "base.rkt"
          racket/contract/exists
-         "guts.ss"
+         "guts.rkt"
          unstable/location
          unstable/srcloc)
 
@@ -586,7 +586,7 @@
               (let ([m (regexp-match #rx"^(.*)[?]$" (format "~a" (syntax-e stx)))])
                 (cond
                   [m (cadr m)]
-                  [else (raise-syntax-error 'contract-base.ss
+                  [else (raise-syntax-error 'contract-base.rkt
                                             "unable to cope with a struct supertype whose predicate doesn't end with `?'"
                                             orig-stx)]))))
        

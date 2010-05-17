@@ -1,10 +1,10 @@
 
 (module serialize racket/base
-  (require "private/serialize.ss"
+  (require "private/serialize.rkt"
            (for-syntax racket/base
                        racket/struct-info))
 
-  (provide (all-from-out "private/serialize.ss")
+  (provide (all-from-out "private/serialize.rkt")
            serializable-struct
            serializable-struct/versions
            define-serializable-struct

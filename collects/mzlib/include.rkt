@@ -1,8 +1,8 @@
 
 (module include mzscheme
   (require-for-syntax syntax/stx
-		      "private/increader.ss"
-		      "cm-accomplice.ss")
+		      "private/increader.rkt"
+		      "cm-accomplice.rkt")
   (require mzlib/etc)
 
   (define-for-syntax (resolve-path-spec fn loc stx build-path-stx)

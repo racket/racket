@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
+@(require "common.rkt"
           (for-label mzlib/cmdline))
 
 @(define-syntax-rule (intro id)

@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require "patterns.ss" "compiler.ss"
+(require "patterns.rkt" "compiler.rkt"
          syntax/stx scheme/nest syntax/parse
-         (for-template scheme/base (only-in "runtime.ss" match:error)))
+         (for-template scheme/base (only-in "runtime.rkt" match:error)))
 
 (provide go go/one)
 

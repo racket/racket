@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 
 @title{@bold{MzLib}: Legacy Racket Libraries}
 

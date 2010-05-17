@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "scheme-lexer.ss")
+(require "scheme-lexer.rkt")
 
 (provide scribble-inside-lexer
          scribble-lexer)

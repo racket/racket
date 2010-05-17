@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "patterns.ss")
+(require "patterns.rkt")
 
 (provide split-rows)
 

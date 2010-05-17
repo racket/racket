@@ -4,10 +4,10 @@
          syntax/boundmap
          syntax/stx
          racket/struct-info
-         "patterns.ss"
-         "compiler.ss"
-         "parse-helper.ss"
-         "parse-quasi.ss")
+         "patterns.rkt"
+         "compiler.rkt"
+         "parse-helper.rkt"
+         "parse-quasi.rkt")
 
 (provide parse/legacy/cert)
 

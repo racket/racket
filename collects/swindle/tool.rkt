@@ -126,7 +126,7 @@
       (drscheme:language-configuration:add-language
        (make-object
         ((drscheme:language:get-default-mixin)
-         (swindle-language `(lib ,(string-append module ".ss") "swindle")
+         (swindle-language `(lib ,(string-append module ".rkt") "swindle")
                            name entry-name num one-line url)))))
     (define phase1 void)
     (define (phase2)
@@ -140,12 +140,12 @@
       (parameterize ([current-directory (collection-path "swindle")])
         (define counter 100)
         (define (do-customize file)
-          (when (regexp-match? #rx"\\.ss$" file)
+          (when (regexp-match? #rx"\\.rkt$" file)
             (with-input-from-file file
               (lambda ()
                 (let ([l (read-line)])
                   (when (regexp-match? #rx"^;+ *CustomSwindle *$" l)
-                    (let ([file (regexp-replace #rx"\\.ss$" file "")]
+                    (let ([file (regexp-replace #rx"\\.rkt$" file "")]
                           [name #f] [dname #f] [one-line #f] [url #f])
                       (let loop ([l (read-line)])
                         (cond

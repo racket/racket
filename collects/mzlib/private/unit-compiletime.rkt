@@ -2,11 +2,11 @@
 
 (require scheme/list
          syntax/boundmap
-         "unit-syntax.ss")
+         "unit-syntax.rkt")
 (require (for-syntax scheme/base))
 (require (for-template scheme/base
-                       "unit-keywords.ss"
-                       "unit-runtime.ss"))
+                       "unit-keywords.rkt"
+                       "unit-runtime.rkt"))
 (require racket/private/define-struct)
 
 (provide (struct-out var-info)

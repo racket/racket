@@ -1,14 +1,14 @@
 #lang racket/base
 
-(require (only-in "runtime.ss"
+(require (only-in "runtime.rkt"
                   match-equality-test
                   exn:misc:match?)
-         (only-in "match-expander.ss"
+         (only-in "match-expander.rkt"
                   define-match-expander)
-         "define-forms.ss"
-         (for-syntax "parse-legacy.ss"
-                     "gen-match.ss"
-                     (only-in "patterns.ss" match-...-nesting)))
+         "define-forms.rkt"
+         (for-syntax "parse-legacy.rkt"
+                     "gen-match.rkt"
+                     (only-in "patterns.rkt" match-...-nesting)))
 
 (provide (for-syntax match-...-nesting)
          match-equality-test

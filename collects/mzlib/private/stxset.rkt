@@ -5,7 +5,7 @@
 
 (provide finish-syntax-set)
 
-;; Used in the expansion of `define-syntax-set' from "etc.ss"
+;; Used in the expansion of `define-syntax-set' from "etc.rkt"
 (define-syntax (finish-syntax-set stx)
   (syntax-case stx ()
     [(_ stx)

@@ -1,8 +1,8 @@
 
 (module stxparam-exptime '#%kernel
-  (#%require "private/stx.ss" "private/stxcase-scheme.ss" 
-             "private/small-scheme.ss" 
-             "private/stxloc.ss" "private/stxparamkey.ss")
+  (#%require "private/stx.rkt" "private/stxcase-scheme.rkt"
+             "private/small-scheme.rkt"
+             "private/stxloc.rkt" "private/stxparamkey.rkt")
 
   (#%provide syntax-parameter-value
              make-parameter-rename-transformer)

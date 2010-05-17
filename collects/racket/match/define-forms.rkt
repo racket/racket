@@ -4,10 +4,10 @@
                      unstable/syntax
                      unstable/sequence
                      syntax/parse
-                     "parse.ss"
-                     "parse-helper.ss"
-                     "patterns.ss"
-                     "gen-match.ss"))
+                     "parse.rkt"
+                     "parse-helper.rkt"
+                     "patterns.rkt"
+                     "gen-match.rkt"))
 
 (provide define-forms)
 

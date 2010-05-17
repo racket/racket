@@ -1,11 +1,11 @@
 (module a-signature mzscheme
-  (require-for-syntax "private/unit-compiletime.ss"
-                      "private/unit-syntax.ss")
-  (require "unit.ss")
+  (require-for-syntax "private/unit-compiletime.rkt"
+                      "private/unit-syntax.rkt")
+  (require "unit.rkt")
   
   (provide (rename module-begin #%module-begin)
            (all-from-except mzscheme #%module-begin)
-           (all-from "unit.ss"))
+           (all-from "unit.rkt"))
 
   (define-for-syntax (make-name s)
     (string->symbol

@@ -1,6 +1,6 @@
 
 (module restart scheme/base
-  (require "cmdline.ss")
+  (require "cmdline.rkt")
 
   (provide restart-mzscheme)
 

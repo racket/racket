@@ -1,10 +1,10 @@
 #lang racket/base
 
-(require "guts.ss"
-         "opt.ss"
-         "base.ss")
+(require "guts.rkt"
+         "opt.rkt"
+         "base.rkt")
 (require (for-syntax racket/base
-                     "opt-guts.ss"))
+                     "opt-guts.rkt"))
 
 ;;
 ;; opt/pred helper

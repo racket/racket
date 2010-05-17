@@ -1,15 +1,15 @@
 
 (module sigutil mzscheme
-  ;; Used by unitsig.ss
+  ;; Used by unitsig.rkt
   ;; (needs an overhaul, too)
 
   (require syntax/stx
 	   syntax/struct
 	   syntax/context)
 
-  (require "sigmatch.ss")
-  (require "../unit200.ss")
-  (require "../list.ss")
+  (require "sigmatch.rkt")
+  (require "../unit200.rkt")
+  (require "../list.rkt")
 
   (define-struct signature (name      ; sym
 			    src       ; sym

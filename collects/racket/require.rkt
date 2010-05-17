@@ -2,7 +2,7 @@
 
 (require (for-syntax scheme/base scheme/require-transform scheme/list
                      (only-in unstable/syntax syntax-local-eval))
-         "require-syntax.ss")
+         "require-syntax.rkt")
 
 (provide matching-identifiers-in)
 (define-syntax matching-identifiers-in

@@ -4,13 +4,13 @@
                      syntax/boundmap
                      syntax/name
                      syntax/parse
-                     "unit-compiletime.ss"
-                     "unit-contract-syntax.ss"
-                     "unit-syntax.ss")
+                     "unit-compiletime.rkt"
+                     "unit-contract-syntax.rkt"
+                     "unit-syntax.rkt")
          (for-meta 2 racket/base)
          racket/contract/base
-         "unit-utils.ss"
-         "unit-runtime.ss")
+         "unit-utils.rkt"
+         "unit-runtime.rkt")
 
 (provide (for-syntax unit/c/core) unit/c)
 

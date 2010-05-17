@@ -17,8 +17,8 @@ improve method arity mismatch contract violation error messages?
          racket/stxparam
          unstable/srcloc
          unstable/location
-         "guts.ss"
-         "blame.ss")
+         "guts.rkt"
+         "blame.rkt")
 
 (define-syntax-parameter current-contract-region
   (λ (stx) #'(quote-module-path)))

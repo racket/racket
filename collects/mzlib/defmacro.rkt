@@ -1,7 +1,7 @@
 
 (module defmacro mzscheme
   (require-for-syntax syntax/stx
-		      "private/dmhelp.ss")
+		      "private/dmhelp.rkt")
 
   (provide define-macro
 	   defmacro)

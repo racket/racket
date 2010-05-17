@@ -1,10 +1,10 @@
 
 (module pconvert mzscheme
   
-  (require (only "list.ss" sort)
+  (require (only "list.rkt" sort)
            scheme/mpair
-	   "pconvert-prop.ss"
-           "class.ss")
+	   "pconvert-prop.rkt"
+           "class.rkt")
   
   (provide show-sharing
            constructor-style-printing

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "private/guts.ss")
+(require "private/guts.rkt")
 
 (provide new-∃/c
          ∃?)

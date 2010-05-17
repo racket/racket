@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "patterns.ss"
+(require "patterns.rkt"
          scheme/list
          (for-syntax scheme/base))
 

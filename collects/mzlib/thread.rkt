@@ -1,6 +1,6 @@
 
 (module thread mzscheme
-  (require "kw.ss" "contract.ss")
+  (require "kw.rkt" "contract.rkt")
 
   (provide run-server
            consumer-thread)

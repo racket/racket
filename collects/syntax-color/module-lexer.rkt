@@ -1,9 +1,9 @@
 #lang scheme/base
 (require scheme/port
-         "scheme-lexer.ss")
-  
+         "scheme-lexer.rkt")
+
 (provide module-lexer)
-  
+
 (define (module-lexer in offset mode)
   (cond
    [(not mode)

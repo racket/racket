@@ -5,7 +5,7 @@
          build-enforcer-clauses
          generate-arglists)
 
-(require "opt-guts.ss")
+(require "opt-guts.rkt")
 (require (for-template racket/base))
 
 #|

@@ -1,6 +1,6 @@
 (module serialize racket/base
   (require syntax/modcollapse
-           "serialize-structs.ss")
+           "serialize-structs.rkt")
 
   ;; This module implements the core serializer. The syntactic
   ;; `define-serializable-struct' layer is implemented separately

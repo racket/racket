@@ -1,12 +1,12 @@
 #lang racket/base
-(require "contract-arrow.ss"
+(require "contract-arrow.rkt"
          racket/contract/private/guts
          racket/private/class-internal
-         "contract-arr-checks.ss")
+         "contract-arr-checks.rkt")
 
 (require (for-syntax racket/base
                      racket/contract/private/helpers
-                     "contract-arr-obj-helpers.ss"))
+                     "contract-arr-obj-helpers.rkt"))
 
 (provide mixin-contract
          make-mixin-contract
@@ -26,7 +26,7 @@
     (define (obj->pp-rest/proc stx) (make-/proc #t ->pp-rest/h stx))
     (define (obj-case->/proc stx) (make-case->/proc #t stx stx select/h))
     
-    ;; WARNING: select/h is copied from contract-arrow.ss. I'm not sure how
+    ;; WARNING: select/h is copied from contract-arrow.rkt. I'm not sure how
     ;; I can avoid this duplication -robby
     (define (select/h stx err-name ctxt-stx)
       (syntax-case stx (-> ->* ->d ->d* ->r ->pp ->pp-rest)

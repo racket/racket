@@ -17,33 +17,33 @@ only a subset of the system is needed.
 
 * Some basic syntax extensions, including lambda &-keywords, and
   improved `define' and `let' forms.  (Available separately using
-  "base.ss".)
+  "base.rkt".)
 
 * Generic setters with `set!', additional useful mutation forms:
   `pset!', `shift!', `rotate!', and some simple ones like `inc!', and
-  `push!'.  (Available separately using "setf.ss", where the names
+  `push!'.  (Available separately using "setf.rkt", where the names
   `setf!' and `psetf!' are used to avoid changing the Scheme form.)
 
 * Easy macro-defining macros -- simple syntax-rules macros with
   `defsubst', and a generic `defmacro' utility, all with a local
   `let...' form, and extended to easily create symbol macros.
-  ("misc.ss")
+  ("misc.rkt")
 
 * A `collect' macro that provides very sophisticated list comprehensions
-  and much more.  ("misc.ss")
+  and much more.  ("misc.rkt")
 
 * An `echo' mechanism which is an alternative to using format strings,
   and contains many useful features including a list iteration
-  construct, and is easy to extend.  ("misc.ss")
+  construct, and is easy to extend.  ("misc.rkt")
 
 * A `regexp-case' syntax which is similar to a `case' on strings with
-  easy access to submatches.  ("misc.ss")
+  easy access to submatches.  ("misc.rkt")
 
 * A CLOS-like object system -- based on Tiny CLOS, but with many
   extensions that bring it much closer to CLOS, and heavily optimized.
   Some added features include singleton and struct classes, applicable
   stand-alone methods, method-combination, and some MOP extensions.
-  (Available without syntax bindings in "tiny-clos.ss")
+  (Available without syntax bindings in "tiny-clos.rkt")
 
 * Good integration with the Scheme implementation: primitive values have
   corresponding Swindle classes, and struct types can also be used as
@@ -51,24 +51,24 @@ only a subset of the system is needed.
   will reflect the struct hierarchy.  In addition, structs can be
   defined with a Swindle-line `defstruct' syntax which will also make it
   possible to create these structs with `make' using keyword arguments.
-  ("tiny-clos.ss" and "extra.ss")
+  ("tiny-clos.rkt" and "extra.rkt")
 
 * Many hairy macros that make the object system much more convenient
   (CLOS has also a lot of macro code).  Some of the macros (especially
-  `defclass') can be customized.  ("clos.ss")
+  `defclass') can be customized.  ("clos.rkt")
 
 * Useful generic functions, including `print-object' which is used to
-  display all objects.  ("extra.ss")
+  display all objects.  ("extra.rkt")
 
-* A `match' mechanism with a generic-like interface.  ("extra.ss")
+* A `match' mechanism with a generic-like interface.  ("extra.rkt")
 
-* The fun `amb' toy.  ("extra.ss")
+* The fun `amb' toy.  ("extra.rkt")
 
 * A language that can easily create HTML, where the result is
-  human-editable.  ("html.ss")
+  human-editable.  ("html.rkt")
 
 * Customizable syntax: easy to add customized languages to DrRacket.
-  ("custom.ss")
+  ("custom.rkt")
 
 
 ====< Reference Manual >================================================
@@ -79,52 +79,52 @@ an initial import for other modules.  Most files (and especially all
 language modules) are useful by themselves, even without using the whole
 Swindle environment.
 
-* base.ss (language module)
+* base.rkt (language module)
   Basic syntax extensions, mainly Lisp-like lambda argument &-keywords.
 
-* setf.ss (module)
+* setf.rkt (module)
   Generic setters similar to `setf' in Lisp, and a few more useful
   macros.
 
-* misc.ss (module)
+* misc.rkt (module)
   Lots of useful functionality bits, including everything from
-  frequently useful Racket standard libraries (`list.ss', `etc.ss',
-  and `string.ss').
+  frequently useful Racket standard libraries (`list.rkt', `etc.rkt',
+  and `string.rkt').
 
-* turbo.ss (language module)
+* turbo.rkt (language module)
   A module that packages functionality from `base', `setf' (overriding
   `set!' with `setf!'), and `misc'.
 
-* tiny-clos.ss (module)
+* tiny-clos.rkt (module)
   The core object system, based on Tiny CLOS from Xerox, but heavily
   modified, optimized and extended.
 
-* clos.ss (module)
-  Convenient macro wrappers for "tiny-clos.ss".
+* clos.rkt (module)
+  Convenient macro wrappers for "tiny-clos.rkt".
 
-* extra.ss (module)
+* extra.rkt (module)
   Extra functionality on top of clos.
 
-* swindle.ss (language module)
+* swindle.rkt (language module)
   The main Swindle environment module: packages `tiny-clos', `clos', and
   `extra' on top of `turbo', and some more general definitions.
 
-* info.ss (module)
+* info.rkt (module)
   Compilation definitions.
 
-* tool.ss (module)
+* tool.rkt (module)
   Setup for Swindle in DrRacket -- makes some languages available in
   DrRacket, including custom Swindle-based languages.
 
-* custom.ss (module)
+* custom.rkt (module)
   A sample file that demonstrates how to create a Swindle-based
   customized language -- see the source for instructions.
 
-* html.ss (module)
+* html.rkt (module)
   A language for creating HTML.
 
 * html-doc.txt
-  Documentation file for "html.ss".
+  Documentation file for "html.rkt".
 
 * doc.txt
   Descriptions of user-level functions, macros, generic functions and

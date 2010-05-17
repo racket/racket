@@ -5,23 +5,23 @@
 ;;  provide arrow contracts from our local copy
 ;;
 
-(require "private/contract-arrow.ss")
-(provide (all-from-out "private/contract-arrow.ss"))
+(require "private/contract-arrow.rkt")
+(provide (all-from-out "private/contract-arrow.rkt"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  provide contracts for objects
 ;;
-(require "private/contract-object.ss")
-(provide (all-from-out "private/contract-object.ss"))
+(require "private/contract-object.rkt")
+(provide (all-from-out "private/contract-object.rkt"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; old-style define/contract
 ;;
 
-(require "private/contract-define.ss")
-(provide (all-from-out "private/contract-define.ss"))
+(require "private/contract-define.rkt")
+(provide (all-from-out "private/contract-define.rkt"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -38,7 +38,7 @@
          racket/contract/private/basic-opters)
 
 (provide 
- opt/c define-opt/c ;(all-from "private/contract-opt.ss")
+ opt/c define-opt/c ;(all-from "private/contract-opt.rkt")
  (except-out (all-from-out racket/contract/private/ds)
              lazy-depth-to-look)
  

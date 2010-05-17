@@ -1,8 +1,8 @@
 
 (module boundmap mzscheme
   (require mzlib/contract
-	   "private/boundmap.ss")
-  
+	   "private/boundmap.rkt")
+
   (define-syntax provide/contract*
     (syntax-rules ()
       [(_ [(name0 name ...) contract])

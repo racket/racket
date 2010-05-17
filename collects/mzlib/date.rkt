@@ -1,7 +1,7 @@
 
 (module date mzscheme
 
-  (require "list.ss")
+  (require "list.rkt")
 
   (provide date->string
 	  date-display-format

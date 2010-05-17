@@ -1,6 +1,6 @@
 #lang scribble/doc
-@(require "common.ss"
-          "match-grammar.ss"
+@(require "common.rkt"
+          "match-grammar.rkt"
           (for-label mzlib/match))
 
 @(begin

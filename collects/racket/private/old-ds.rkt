@@ -1,8 +1,8 @@
 
 (module old-ds '#%kernel
-  (#%require "define-struct.ss"
+  (#%require "define-struct.rkt"
              (for-syntax '#%kernel
-                         "stxcase-scheme.ss"))
+                         "stxcase-scheme.rkt"))
 
   (#%provide define-struct let-struct datum)
   

@@ -4,8 +4,8 @@
          syntax/boundmap
          syntax/stx
          scheme/struct-info
-         "patterns.ss"
-         "compiler.ss")
+         "patterns.rkt"
+         "compiler.rkt")
 
 (provide ddk? parse-literal all-vars pattern-var? match:syntax-err
          match-expander-transform trans-match parse-struct

@@ -11,18 +11,18 @@
                      scheme/struct-info
                      syntax/stx
                      unstable/location
-                     "private/unit-contract-syntax.ss"
-                     "private/unit-compiletime.ss"
-                     "private/unit-syntax.ss"))
+                     "private/unit-contract-syntax.rkt"
+                     "private/unit-compiletime.rkt"
+                     "private/unit-syntax.rkt"))
   
 (require mzlib/etc
          racket/contract/base
          scheme/stxparam
          unstable/location
-         "private/unit-contract.ss"
-         "private/unit-keywords.ss"
-         "private/unit-runtime.ss"
-         "private/unit-utils.ss"
+         "private/unit-contract.rkt"
+         "private/unit-keywords.rkt"
+         "private/unit-runtime.rkt"
+         "private/unit-utils.rkt"
          (rename-in racket/private/struct [struct struct~]))
 
 (provide define-signature-form struct struct/ctc open

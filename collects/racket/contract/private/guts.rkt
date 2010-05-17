@@ -1,15 +1,15 @@
 #lang racket/base
 
-(require "helpers.ss"
-         "blame.ss"
-         "prop.ss"
+(require "helpers.rkt"
+         "blame.rkt"
+         "prop.rkt"
          racket/pretty)
 
 (require (for-syntax racket/base
-                     "helpers.ss"))
+                     "helpers.rkt"))
 
-(provide (except-out (all-from-out "blame.ss") make-blame)
-         (all-from-out "prop.ss")
+(provide (except-out (all-from-out "blame.rkt") make-blame)
+         (all-from-out "prop.rkt")
          
          coerce-contract
          coerce-contracts

@@ -2,11 +2,11 @@
 
 (require racket/contract/private/guts
          racket/contract/private/opt
-         "contract-arr-checks.ss")
+         "contract-arr-checks.rkt")
 (require (for-syntax racket/base)
          (for-syntax racket/contract/private/opt-guts)
          (for-syntax racket/contract/private/helpers)
-         (for-syntax "contract-arr-obj-helpers.ss")
+         (for-syntax "contract-arr-obj-helpers.rkt")
          (for-syntax syntax/stx)
          (for-syntax syntax/name))
 

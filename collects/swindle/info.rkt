@@ -6,11 +6,11 @@
 
 (define scribblings '(("swindle.scrbl" ())))
 
-;; This simple interface is not enough, use tool.ss instead
+;; This simple interface is not enough, use tool.rkt instead
 ;; (define drscheme-language-modules
-;;   '(("swindle.ss" "swindle")
-;;     ("turbo.ss" "swindle")
-;;     ("html.ss" "swindle")))
+;;   '(("swindle.rkt" "swindle")
+;;     ("turbo.rkt" "swindle")
+;;     ("html.rkt" "swindle")))
 ;; (define drscheme-language-positions
 ;;   '(("Swindle" "Full Swindle")
 ;;     ("Swindle" "Swindle without CLOS")
@@ -26,7 +26,7 @@
 ;;     "http://www.barzilay.org/Swindle/"
 ;;     "http://www.barzilay.org/Swindle/"))
 
-(define tools      '(("tool.ss")))
+(define tools      '(("tool.rkt")))
 (define tool-names '("Swindle"))
 (define tool-icons '(("swindle-icon.png" "swindle")))
 (define tool-urls  '("http://www.barzilay.org/Swindle/"))

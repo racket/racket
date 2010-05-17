@@ -1,8 +1,8 @@
 
-;; Used by ../shared.ss, and also collects/lang/private/teach.ss
+;; Used by ../shared.rkt, and also collects/lang/private/teach.rkt
 ;; Besides the usual things, this code expects `undefined' and
 ;; `the-cons' to be bound, and it expects `struct-declaration-info?'
-;; from the "struct.ss" library of the "syntax" collection.
+;; from the "struct.rkt" library of the "syntax" collection.
 
 (syntax-case stx ()
   [(_ ([name expr] ...) body1 body ...)

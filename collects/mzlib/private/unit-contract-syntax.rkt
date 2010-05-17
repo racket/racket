@@ -1,9 +1,9 @@
 #lang scheme/base
 
 (require syntax/parse
-         "unit-compiletime.ss"
-         "unit-keywords.ss"
-         (for-template "unit-keywords.ss"))
+         "unit-compiletime.rkt"
+         "unit-keywords.rkt"
+         (for-template "unit-keywords.rkt"))
 
 (provide import-clause/contract export-clause/contract dep-clause
          import-clause/c export-clause/c)

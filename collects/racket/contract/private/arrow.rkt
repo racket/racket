@@ -18,12 +18,12 @@ v4 todo:
 
 |#
 
-(require "guts.ss"
-         "opt.ss"
+(require "guts.rkt"
+         "opt.rkt"
          racket/stxparam)
 (require (for-syntax racket/base)
-         (for-syntax "opt-guts.ss")
-         (for-syntax "helpers.ss")
+         (for-syntax "opt-guts.rkt")
+         (for-syntax "helpers.rkt")
          (for-syntax syntax/stx)
          (for-syntax syntax/name))
 

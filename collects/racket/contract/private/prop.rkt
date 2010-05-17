@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "blame.ss")
+(require "blame.rkt")
 
 (provide prop:contract
          contract-struct?

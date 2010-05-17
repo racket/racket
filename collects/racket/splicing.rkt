@@ -1,9 +1,9 @@
 #lang scheme/base
 (require (for-syntax scheme/base
                      syntax/kerncase)
-         "stxparam.ss"
-         "private/stxparam.ss"
-         "private/local.ss")
+         "stxparam.rkt"
+         "private/stxparam.rkt"
+         "private/local.rkt")
 
 (provide splicing-let-syntax
          splicing-let-syntaxes

@@ -5,7 +5,7 @@
 	   setup/dirs
            scheme/list
            scheme/string
-           (only-in "private/runtime-path-table.ss" table)
+           (only-in "private/runtime-path-table.rkt" table)
            (for-syntax scheme/base))
 
   (provide define-runtime-path

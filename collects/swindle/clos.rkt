@@ -149,7 +149,7 @@
                            :name '#,(if name-e #'name (syntax-local-name))
                            :procedure
                            (lambda (#,cnm . #,arguments)
-                             ;; See "Trick" in tiny-clos.ss
+                             ;; See "Trick" in tiny-clos.rkt
                              ;; -- use a syntax to not do this unless needed
                              (letsyntax
                                  ([#,(datum->syntax-object
@@ -517,10 +517,10 @@
 ;;>   * :auto { #f | #t }
 ;;>     if specified as `#t', then all automatic behavior available above is
 ;;>     turned on.
-;; The following option is added in extra.ss
+;; The following option is added in extra.rkt
 ;;>   * :printer { #f | #t | procedure }
 ;;>     if given, install a printer function.  `#t' means install the
-;;>     `print-object-with-slots' function from "clos.ss", otherwise, it is
+;;>     `print-object-with-slots' function from "clos.rkt", otherwise, it is
 ;;>     expected to be a function that gets an object, an escape boolean
 ;;>     flag an an optional port (i.e, 2 or more arguments), and prints the
 ;;>     object on the class using the escape flag to select `display'-style

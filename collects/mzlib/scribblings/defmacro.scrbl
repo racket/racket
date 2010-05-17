@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss"
+@(require "common.rkt"
           (for-label mzlib/defmacro
                      (only-in scheme/base syntax->datum datum->syntax)))
 

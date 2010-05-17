@@ -8,7 +8,7 @@
                       syntax/kerncase
                       ;; This should be part of a public expand-time API
                       ;;  exported by the class system:
-                      (only "private/classidmap.ss" 
+                      (only "private/classidmap.rkt"
                             generate-class-expand-context))
   
   (provide (rename :trait trait)

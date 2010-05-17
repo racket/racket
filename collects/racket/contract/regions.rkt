@@ -11,13 +11,13 @@
                      syntax/kerncase
                      syntax/parse
                      unstable/syntax
-                     (prefix-in a: "private/helpers.ss"))
+                     (prefix-in a: "private/helpers.rkt"))
          racket/splicing
          racket/stxparam
          unstable/location
-         "private/arrow.ss"
-         "private/base.ss"
-         "private/guts.ss")
+         "private/arrow.rkt"
+         "private/base.rkt"
+         "private/guts.rkt")
 
 ;; These are useful for all below.
 

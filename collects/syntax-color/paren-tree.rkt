@@ -1,6 +1,6 @@
 (module paren-tree mzscheme
   (require mzlib/class
-           "token-tree.ss")
+           "token-tree.rkt")
   
   (provide paren-tree%)
   

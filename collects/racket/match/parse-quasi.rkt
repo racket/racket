@@ -4,9 +4,9 @@
          syntax/boundmap
          syntax/stx
          scheme/struct-info
-         "patterns.ss"
-         "compiler.ss"
-         "parse-helper.ss")
+         "patterns.rkt"
+         "compiler.rkt"
+         "parse-helper.rkt")
 
 (provide parse-quasi)
 

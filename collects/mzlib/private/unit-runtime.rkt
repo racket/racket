@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (for-syntax "unit-syntax.ss" scheme/base))
+(require (for-syntax "unit-syntax.rkt" scheme/base))
 (provide define-syntax/err-param
          undefined (rename-out [make-a-unit make-unit]) unit-import-sigs unit-export-sigs unit-go unit? unit-deps
          check-unit check-no-imports check-sigs check-deps check-helper)

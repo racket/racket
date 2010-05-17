@@ -2,8 +2,8 @@
 
 (require (for-syntax scheme/base
                      syntax/boundmap
-                     "unit-compiletime.ss"
-                     "unit-syntax.ss")
+                     "unit-compiletime.rkt"
+                     "unit-syntax.rkt")
          racket/contract/base)
 
 (provide (for-syntax build-key

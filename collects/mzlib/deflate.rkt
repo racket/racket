@@ -12,7 +12,7 @@
 
   (provide deflate gzip-through-ports gzip)
 
-  (require "unit200.ss")
+  (require "unit200.rkt")
 
   (define (vector-ref* v i)
     (let ([r (vector-ref v i)])

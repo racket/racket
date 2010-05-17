@@ -1,10 +1,10 @@
 (module a-unit mzscheme
-  (require "unit.ss")
+  (require "unit.rkt")
   (require-for-syntax syntax/kerncase)
   
   (provide (rename module-begin #%module-begin)
            (all-from-except mzscheme #%module-begin)
-           (all-from "unit.ss"))
+           (all-from "unit.rkt"))
   
   (define-for-syntax (make-name s)
     (string->symbol

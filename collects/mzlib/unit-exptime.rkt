@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require "private/unit-syntax.ss"
-         "private/unit-compiletime.ss")
+(require "private/unit-syntax.rkt"
+         "private/unit-compiletime.rkt")
 
 (provide unit-static-signatures
          signature-members)

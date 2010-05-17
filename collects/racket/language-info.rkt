@@ -1,4 +1,4 @@
-(module language-info "private/pre-base.ss"
+(module language-info "private/pre-base.rkt"
 
   (provide get-info)
   

@@ -1,8 +1,8 @@
 #lang racket/base
-(require "guts.ss"
+(require "guts.rkt"
          racket/stxparam)
 (require (for-syntax racket/base)
-         (for-syntax "opt-guts.ss")
+         (for-syntax "opt-guts.rkt")
          (for-syntax racket/stxparam))
 
 (provide opt/c define-opt/c define/opter opt-stronger-vars-ref

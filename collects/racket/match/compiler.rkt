@@ -1,11 +1,11 @@
 #lang scheme/base
 
-(require (for-template scheme/base "runtime.ss" scheme/stxparam)
+(require (for-template scheme/base "runtime.rkt" scheme/stxparam)
          syntax/boundmap
          syntax/stx
-         "patterns.ss"
-         "split-rows.ss"
-         "reorder.ss"
+         "patterns.rkt"
+         "split-rows.rkt"
+         "reorder.rkt"
          scheme/struct-info
          scheme/stxparam
          scheme/nest

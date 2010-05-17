@@ -1,6 +1,6 @@
 
 (module class100 mzscheme
-  (require "class.ss")
+  (require "class.rkt")
 
   (require-for-syntax syntax/stx)
 
