@@ -2903,7 +2903,7 @@ static void MrEdOutOfMemory(void)
 #ifdef wx_msw
   wxNoMoreCallbacks();
   MessageBox(NULL, 
-             "PLT Scheme virtual machine is out of memory. Aborting.",
+             "Racket virtual machine is out of memory. Aborting.",
              "Out of Memory",
              MB_OK);
 #endif

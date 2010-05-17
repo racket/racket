@@ -104,7 +104,7 @@
 	   (assoc-pair "CFBundleExecutable"
 		       ,app-name)
 	   (assoc-pair "CFBundleIdentifier"
-		       ,(format "org.plt-scheme.~a" app-name))
+		       ,(format "org.racket-lang.~a" app-name))
 	   ,@(if app?
 		 `((assoc-pair "CFBundleIconFile"
 			       ,app-name))

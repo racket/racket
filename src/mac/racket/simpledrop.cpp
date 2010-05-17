@@ -412,7 +412,7 @@ void wxDrop_GetArgs(int *argc, char ***argv, int *in_terminal)
     {
       CFBundleRef fwBundle;
 
-      fwBundle = CFBundleGetBundleWithIdentifier(CFSTR("org.plt-scheme.PLT_MrEd"));
+      fwBundle = CFBundleGetBundleWithIdentifier(CFSTR("org.racket-lang.GRacket"));
       if (fwBundle) {
 	SInt16 refNum;
 	SInt16 lRefNum;

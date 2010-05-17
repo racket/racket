@@ -319,7 +319,7 @@ extern unsigned long scheme_get_stack_base()
 
 void scheme_out_of_memory_abort()
 {
-  scheme_log_abort("PLT Scheme virtual machine has run out of memory; aborting");
+  scheme_log_abort("Racket virtual machine has run out of memory; aborting");
   if (more_report_out_of_memory)
     more_report_out_of_memory();
   abort();
