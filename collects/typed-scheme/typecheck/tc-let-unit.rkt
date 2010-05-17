@@ -44,7 +44,8 @@
                                            [f+ fs+]
                                            [f- fs-])
                                   (list (make-ImpFilter (-not-filter (-val #f) n) f+)
-                                        (make-ImpFilter (-filter (-val #f) n) f-)))))]))))
+                                        (make-ImpFilter (-filter (-val #f) n) f-)))))]
+                [(tc-results: ts (NoFilter:) _) (values ts null)]))))
      ;; extend the lexical environment for checking the body
   (with-lexical-env/extend/props
    ;; the list of lists of name
