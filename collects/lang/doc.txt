@@ -14,7 +14,7 @@ languages for other modules (i.e., as the initial import):
    functions of Beginning Student.
 
  * _plt-pretty-big.ss_ - provides plt-pretty-big-text.ss
-    plus the MrEd classes. This corresponds to the
+    plus the GRacket classes. This corresponds to the
     _Pretty Big Scheme_ language in DrScheme.
 
  * _htdp-beginner.ss_ - provides Beginning Student

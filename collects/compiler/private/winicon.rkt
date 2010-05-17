@@ -622,7 +622,7 @@
        (lambda () (close-input-port p)))))
 
   ;; The following is useful for bitmap->icon,
-  ;;  but it uses MrEd, and this module is used by
+  ;;  but it uses GRacket, and this module is used by
   ;;  Setup PLT. Probably this code should just be
   ;;  moved somewhere else.
   #;

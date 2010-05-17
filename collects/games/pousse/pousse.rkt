@@ -276,7 +276,7 @@
                                              [(#\L) (push-left! (sub1 p))]
                                              [(#\R) (push-right! (sub1 p))])))))))]
                           [run-player
-                           ;; A wrapper for monitoring the program player in a MrEd thread.
+                           ;; A wrapper for monitoring the program player in a GRacket thread.
                            ;; Also handle the possibility that something goes wrong.
                            (lambda (robot who)
                              (send status set-label (format "~a: running ~a"
@@ -613,7 +613,7 @@
       (send canvas focus)
       
       ; Make a text window for showing the board history to the right.
-      ; Uses the built-in text editor in MrEd, adding a show-moves
+      ; Uses the built-in text editor in GRacket, adding a show-moves
       ; method to refresh the window after a move or rewind.
       (make-object message% "Moves" history-panel)
       (define history-canvas (make-object editor-canvas% history-panel #f '(no-hscroll)))

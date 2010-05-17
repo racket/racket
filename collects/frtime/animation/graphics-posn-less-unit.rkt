@@ -1,5 +1,5 @@
 ; graphics.ss
-; Simple graphics routines for MrEd
+; Simple graphics routines for GRacket
 ; Originally written by Johnathan Franklin
 ;
 ; modified by Gregory Cooper to support FrTime

@@ -7,7 +7,7 @@
   (define variants (available-mred-variants))
   (for ([v variants] #:when (memq v '(3m cgc)))
     (parameterize ([current-launcher-variant v])
-      (create-embedding-executable	 
+      (create-embedding-executable
        (mred-program-launcher-path "MrEd")
        #:cmdline '("-I" "scheme/gui/init")
        #:variant v

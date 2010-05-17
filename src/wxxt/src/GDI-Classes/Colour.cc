@@ -232,7 +232,7 @@ static int alloc_close_color(Display *display, Colormap cmap, XColor *xc)
     if (approxmsg) {
       wxError("Cannot allocate color, using approximate match.\n"
 	      "(Future allocations may be approximate without report.)",
-	      "MrEd Warning");
+	      "GRacket Warning");
       
       approxmsg = 0;
     }

@@ -1,4 +1,4 @@
-;; Load this one with MrEd
+;; Load this one with GRacket
 
 (load-relative "loadtest.rktl")
 (require teachpack/htdp/image

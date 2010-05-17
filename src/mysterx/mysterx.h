@@ -160,7 +160,7 @@ typedef enum _mx_html_where_ {
   insert,append
 } MX_HTML_WHERE;
 
-typedef struct _browser_window_ { // parameters a la MrEd frame% class
+typedef struct _browser_window_ { // parameters a la GRacket frame% class
   const char *label;
   int width;
   int height;

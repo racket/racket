@@ -1,6 +1,6 @@
 /*
  * File:        mredmsw.cc
- * Purpose:     MrEd Windows event loop
+ * Purpose:     GRacket Windows event loop
  * Author:      Matthew Flatt
  * Created:     1996
  * Copyright:   (c) 2004-2010 PLT Scheme Inc.
@@ -354,7 +354,7 @@ void MrEdDispatchEvent(MSG *msg)
 
 void wxCopyData(LPARAM lParam)
 {
-  /* Is this a message from another MrEd? */
+  /* Is this a message from another GRacket? */
   int len;
   COPYDATASTRUCT *cd;
   len = strlen(MRED_GUID);
@@ -400,7 +400,7 @@ void wxCopyData(LPARAM lParam)
 
 int wxEventTrampoline(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam,
 		      LRESULT *res, WNDPROC proc)
-  /* The Windows event dispatcher doesn't like MrEd's thread
+  /* The Windows event dispatcher doesn't like GRacket's thread
      implementation.  In particular, if a message causes a thread
      switch or kill, because it triggers Scheme code, then event
      dispatches don't return in the way that Windows expects.

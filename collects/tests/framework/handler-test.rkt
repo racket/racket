@@ -6,7 +6,7 @@
 
   (test
    'file-opened
-   (lambda (x) (equal? (list filename "MrEd REPL") x))
+   (lambda (x) (equal? (list filename "GRacket REPL") x))
    (lambda ()
      (send-sexp-to-mred
       `(begin (handler:edit-file ,tmp-filename)
@@ -18,7 +18,7 @@
 
   (test
    'files-opened-twice
-   (lambda (x) (equal? (list filename "MrEd REPL") x))
+   (lambda (x) (equal? (list filename "GRacket REPL") x))
    (lambda ()
      (send-sexp-to-mred
       `(begin (handler:edit-file ,tmp-filename)

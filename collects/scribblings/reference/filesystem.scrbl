@@ -113,7 +113,7 @@ by @racket[kind], which must be one of the following:
  executable as provided by the operating system for the current
  invocation.
 
- @margin-note{For MrEd, the executable path is the name of a MrEd
+ @margin-note{For GRacket, the executable path is the name of a GRacket
  executable.}}
 
  @item{@indexed-racket['run-file] --- the path of the current

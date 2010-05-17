@@ -1,6 +1,6 @@
 /*
  * File:        mredmac.cc
- * Purpose:     MrEd MacOS event loop
+ * Purpose:     GRacket MacOS event loop
  * Author:      Matthew Flatt
  * Created:     1996
  * Copyright:   (c) 2004-2010 PLT Scheme Inc.

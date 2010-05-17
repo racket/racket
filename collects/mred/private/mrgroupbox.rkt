@@ -13,7 +13,7 @@
 
   (provide (protect group-box%))
 
-  ;; Not exported from MrEd:
+  ;; Not exported from GRacket:
   (define group-box%
     (class100 basic-control% (label parent [style null] [font #f])
       (override

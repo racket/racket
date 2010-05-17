@@ -8,7 +8,7 @@
 	   define/provide-struct)
 
   ;; If bitmap creation fails, try an explicit GC.
-  ;; (This loop should be built into MrEd, but it wasn't
+  ;; (This loop should be built into GRacket, but it wasn't
   ;; at the time this code was written.)
   (define (make-bitmap w h)
     (let loop ([n 0])

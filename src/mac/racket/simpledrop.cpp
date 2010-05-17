@@ -408,7 +408,7 @@ void wxDrop_GetArgs(int *argc, char ***argv, int *in_terminal)
 
     GetStarterInfo();
 
-    /* Open the PLT_MrEd framework resources: */
+    /* Open the GRacket framework resources: */
     {
       CFBundleRef fwBundle;
 

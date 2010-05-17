@@ -55,7 +55,7 @@
       ;; Create directories for libs, collects, and extensions:
       (let-values ([(lib-dir collects-dir relative-collects-dir exts-dir relative-exts-dir)
 		    (if single-mac-app?
-			;; Special case: single Mac OS X MrEd app:
+			;; Special case: single Mac OS X GRacket app:
 			(let-values ([(base name dir?)
 				      (split-path (car binaries))])
 			  (values
@@ -294,7 +294,7 @@
       [(macosx)
        (if (and (= 1 (length types))
 		(memq (car types) '(mredcgc mred3m)))
-	   ;; Special case for single MrEd app:
+	   ;; Special case for single GRacket app:
 	   (update-framework-path "@executable_path/../Frameworks/"
 				  (car binaries)
 				  #t)

@@ -1,6 +1,6 @@
 /*
  * File:        mredx.cc
- * Purpose:     MrEd X Windows event loop
+ * Purpose:     GRacket X Windows event loop
  * Author:      Matthew Flatt
  * Created:     1996
  * Copyright:   (c) 2004-2010 PLT Scheme Inc.
@@ -177,7 +177,7 @@ static void CheckUngrab(Display *dpy, Check_Ungrab_Record *cur)
 	       &b, &d);
   if ((cur->x < 0) || (cur->y < 0)
       || ((unsigned int)cur->x > w) || ((unsigned int)cur->y > h)) {
-    /* Looks bad, but is it a click in a MrEd window
+    /* Looks bad, but is it a click in a GRacket window
        that we could care about? */
     
     wxWindow *w;

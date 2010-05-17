@@ -9,6 +9,6 @@
         ((gui-dynamic-require 'send-event) who class msg data args)
         (raise
          (make-exn:fail:unsupported
-          "send-event: only supported in MrEd"
+          "send-event: only supported in GRacket"
           (current-continuation-marks))))))
 

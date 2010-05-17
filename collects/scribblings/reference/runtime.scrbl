@@ -110,7 +110,7 @@ Racket.}
 @defproc[(banner) (and/c string? immutable?)]{
 
 Returns an immutable string for Racket's start-up banner text (or the
-banner text for an embedding program, such as MrEd). The banner string
+banner text for an embedding program, such as GRacket). The banner string
 ends with a newline.}
 
 

@@ -245,7 +245,7 @@ information@|details|, even if the editor currently has delayed refreshing (see
                         (bytes->string/latin-1 name))))
   
   (define (res-sym s)
-    (string->symbol (string-append "MrEd:" s)))
+    (string->symbol (string-append "GRacket:" s)))
 
   (define (Resource s)
     @elem{@to-element[`(quote ,(res-sym s))]

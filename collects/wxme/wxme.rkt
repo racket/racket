@@ -664,7 +664,7 @@
 
   (define (do-read port who read)
     (let ([port (if (gui-available?)
-                    ;; GUI mode, since MrEd is available:
+                    ;; GUI mode, since GRacket is available:
                     (let ([text% (dynamic-require 'mred 'text%)]
                           [open-input-text-editor (dynamic-require 'mred 'open-input-text-editor)])
                       (let ([t (new text%)])

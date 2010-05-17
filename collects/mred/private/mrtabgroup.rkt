@@ -12,7 +12,7 @@
 
   (provide (protect tab-group%))
 
-  ;; Not exported from MrEd:
+  ;; Not exported from GRacket:
   (define tab-group%
     (class100 basic-control% (label choices parent callback [style null] [font #f])
       (override

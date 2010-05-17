@@ -7,7 +7,7 @@
   (export framework:application^)
   
   (define current-app-name (make-parameter
-                            "MrEd"
+                            "GRacket"
                             (λ (x)
                               (unless (string? x)
                                 (error 'current-app-name

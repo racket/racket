@@ -14,7 +14,7 @@
          (only-in frtime/lang-core
                   any-nested-reactivity? raise-reactivity)
          
-         ;; MrEd require
+         ;; GRacket require
          (except-in mred send-event))
 
 (define drs-eventspace #f)

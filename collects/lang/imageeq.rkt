@@ -3,7 +3,7 @@
   (define op (current-output-port))
   
   ;; Flag to indicate whether we've tried to load
-  ;;  the MrEd-using image functions
+  ;;  the GRacket-using image functions
   (define tried? #f)
 
   ;; This macro is used once to export all functions
@@ -41,6 +41,6 @@
   ;; Each re-export is the name, formals for the argument,
   ;;  and if the first argument isn't required to be an image,
   ;;  a function to apply when the real version is unavailable
-  ;;  (i.e., because there's no MrEd)
+  ;;  (i.e., because there's no GRacket)
   (re-export (image? (x) (lambda (x) #f))
              (image=? (a b))))

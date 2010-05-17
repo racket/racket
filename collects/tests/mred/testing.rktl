@@ -1,5 +1,5 @@
 
-;; MrEd automatic testing basic functions and macros
+;; GRacket automatic testing basic functions and macros
 
 (require mzlib/class)
 

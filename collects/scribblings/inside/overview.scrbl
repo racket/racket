@@ -320,7 +320,7 @@ To embed Racket CGC in a program, follow these steps:
   @filepath{libmzgc@italic{x}.dll} must be moved to a location in the
   standard DLL search path, or your embedding application must
   ``delayload'' link the DLLs and explicitly load them before
-  use. (@filepath{Racket.exe} and @filepath{MrEd.exe} use the latter
+  use. (@filepath{Racket.exe} and @filepath{GRacket.exe} use the latter
   strategy.)
 
   Under Mac OS X, dynamic libraries are provided by the

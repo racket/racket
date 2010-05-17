@@ -82,7 +82,7 @@
 				   [on-drop-file (lambda (f) (evaluate (format "(load ~s)" (path->string f))))])
 				 (sequence 
 				   (apply super-init args) (accept-drop-files #t)))
-			       "MrEd REPL" #f 500 400))
+			       "GRacket REPL" #f 500 400))
     (define repl-buffer (make-object esq:text%))
     (define repl-display-canvas (new editor-canvas% [parent frame] [style '(no-border auto-hscroll resize-corner)]))
 

@@ -90,7 +90,7 @@ suppress evaluation of test expressions.
 @; FIXME: need to actually list the bindings here, so they're found in
 @; the index
 
-This module requires MrEd and produces an independent window when
+This module requires GRacket and produces an independent window when
 displaying test results.  It provides the same bindings as
 @scheme[test-engine/scheme-tests].
 

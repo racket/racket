@@ -921,8 +921,8 @@
 
 ;;; ---------------------------------------------------------------------------
 ;;>>... Very basic UI - works also in console mode
-;;> The following defines some hacked UI functions that works using MrEd GUI
-;;> if it is available, or the standard error and input ports otherwise.
+;;> The following defines some hacked UI functions that works using GRacket
+;;> GUI if it is available, or the standard error and input ports otherwise.
 ;;> The check is done by looking for a GUI global binding.
 
 ;;>> *dialog-title*

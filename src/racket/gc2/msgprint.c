@@ -36,7 +36,7 @@ static void GC_prim_stringout(char *s, int len)
       /* Since getting the screen buffer info failed, 
 	 we must be in GUI mode. Create a console
 	 window --- and set the handler so that closing
-	 the window doesn't abort MrEd! */
+	 the window doesn't abort GRacket! */
       AllocConsole();
       console = GetStdHandle(STD_ERROR_HANDLE);
       GetConsoleScreenBufferInfo(console, &info);

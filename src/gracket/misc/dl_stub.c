@@ -9,7 +9,7 @@
 void *dlopen(const char *filename, int flags)
 {
   scheme_signal_error("load-extension: can't use with a statically-linked"
-		      " MrEd");
+		      " GRacket");
 
   return NULL;
 }

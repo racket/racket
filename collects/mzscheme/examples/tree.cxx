@@ -90,7 +90,7 @@
    specific to the Tree class. The second part is more generic,
    providing a fairly simple objscheme_ interface to class-specific
    glue, such the Tree glue. The second part can be shared for any
-   number of C++ classes, and it is similar to code used by MrEd.
+   number of C++ classes, and it is similar to code used by GRacket.
 */
 
 #include "escheme.h"
@@ -507,7 +507,7 @@ Scheme_Object *scheme_module_name()
 /**********************************************************/
 
 /* 
-   (This code is mostly the same as code used by MrEd, and duplicating
+   (This code is mostly the same as code used by GRacket, and duplicating
    it is certainly a bad idea in principle, but putting the code in a
    shareable place seems like more work than is worthwhile for now.)
 

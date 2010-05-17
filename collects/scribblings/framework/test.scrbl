@@ -28,7 +28,7 @@ buttons, setting check-boxes and choices, sending keystrokes,
 selecting menu items and clicking the mouse.  Many functions 
 that are also useful in application testing, such as 
 traversing a tree of panels, getting the text from a canvas,
-determining if a window is shown, and so on, exist in MrEd.
+determining if a window is shown, and so on, exist in GRacket.
 
 @section[#:tag "test:actions-completeness"]{Actions and completeness}
 

@@ -1288,7 +1288,7 @@ all of the names in the tools library, for use defining keybindings
    string? 
    . -> . (or/c false/c path?))
   (parent program-filename mode mred? title)
-  @{Calls the MrEd primitive
+  @{Calls the GRacket primitive
     @racket[put-file]
     with arguments appropriate for creating an executable
     from the file @racket[program-filename]. 

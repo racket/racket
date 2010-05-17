@@ -2000,7 +2000,7 @@ void wxPath::Arc(double x, double y, double w, double h, double start, double en
 
   start_open = IsOpen();
 
-  /* The arc below is backwards from the MrEd API.... */
+  /* The arc below is backwards from the GRacket API.... */
   {
     double s;
     s = start;

@@ -34,8 +34,8 @@ picts. However, it also means that a pict cannot be generated before
 its target device is known.
 
 A slightly different set of picture-making function are available for
-MrEd and LaTeX output. For example, the LaTeX set includes `tex',
-which accepts a string of arbitrary LaTeX code, and the MrEd set
+GRacket and LaTeX output. For example, the LaTeX set includes `tex',
+which accepts a string of arbitrary LaTeX code, and the GRacket set
 includes `dc', which accepts an arbitrary Scheme procedure for drawing
 to a dc<%>.
 
@@ -53,25 +53,25 @@ the `slide' function takes any number of picts and assembles them into
 a slide.
 
 If you are using Slideshow, skip the following two sections. In the
-reference below, functions marked "MrEd only" or "MrEd only, in
+reference below, functions marked "GRacket only" or "GRacket only, in
 utils.ss" are available, and functions marked "LaTeX only" are not
 available.
 
 For non-Slideshow users, _utils.ss_ library provides additional
-drawing procedures for MrEd (not LaTeX) output. These are marked below
-with "MrEd only, in utils.ss".
+drawing procedures for GRacket (not LaTeX) output. These are marked below
+with "GRacket only, in utils.ss".
 
 
-MrEd (or PostScript) output
+GRacket (or PostScript) output
 ---------------------------
 
-The MrEd texpict function set is loaded by the _mrpict.ss_ library.
+The GRacket texpict function set is loaded by the _mrpict.ss_ library.
 The library is available in unit form via _mrpict-unit.ss_, which
 exports a `mrpict@' unit that imports mred^ and exports
 `texpict-common^' and `mrpict-extra^'. The _mrpict-sig.ss_ library
 file provides both signatures.
 
-When creating a picture for a MrEd dc<%> that contains text, texpict
+When creating a picture for a GRacket dc<%> that contains text, texpict
 needs a drawing context for measuring the text. Provide a dc<%> before
 constructing pictures via the `dc-for-text-size' parameter. The dc<%>
 should have the same text-measuring results as the destination dc<%>;
@@ -100,7 +100,7 @@ The `draw-pict' function takes a picture, a device context
  (send ps-dc end-doc)
 
 If the output dc<%> has a "user scale", it is not reflected in the
-size information reported for pictures. This is consistent with MrEd's
+size information reported for pictures. This is consistent with GRacket's
 usual policy for reporting size information.
 
 LaTeX output
@@ -113,7 +113,7 @@ provides a `texpict@' unit with no imports and taht exports
 provides both signatures.
 
 Pictures created with this library are incompatible with Slideshow
-and MrEd-based output.
+and GRacket-based output.
 
 To create a LaTeX picture, assemble a pict and then
 call `pict->string'. This string can be `display'ed to obtain the
@@ -184,7 +184,7 @@ Basic Constructors:
    the scale and offset of the dc will be set. The text mode will
    be transparent, but the font and colors are not guaranteed to be
    anything in particular.
-      [MrEd only]
+      [GRacket only]
 
 >  (blank)  -> pict
 >  (blank s)  -> pict   ; s is side length of square
@@ -223,7 +223,7 @@ Basic Constructors:
      disable combining; if both 'combine and 'no-combine
      are specified, the first one takes precedence
     If caps is specified, the angle must be zero.
-      [MrEd only]
+      [GRacket only]
 
 > text-style/c :: contract?
 
@@ -238,7 +238,7 @@ Basic Constructors:
 >  (vline w h) -> pict
 >  (dash-vline w h seg-length) -> pict ; default seg-length is 5
 
-   To draw other kinds of lines, use `dc' [MrEd only] or `picture' or
+   To draw other kinds of lines, use `dc' [GRacket only] or `picture' or
    `cons-picture' [LaTeX].
 
 >  (frame pict) -> pict
@@ -258,38 +258,38 @@ Basic Constructors:
 
    Like `frame' and `dash-frame', but the frame gets a color and
    optional line width
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (round-frame pict radius-w) -> pict
 >  (color-round-frame pict radius-w color-string) -> pict
 >  (color-round-frame pict radius-w color-string line-w) -> pict
 
    Rounded frames, given a radius for the corners
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (circle diameter) -> pict
 >  (disk diameter) -> pict
 
    Unfilled and filled circles; works for all sizes.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (ellipse width height) -> pict
 >  (filled-ellipse width height) -> pict
 
    Unfilled and filled ellipses; works for all sizes.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (rectangle width height) -> pict
 >  (filled-rectangle width height) -> pict
 
    Unfilled and filled rectangle; works for all sizes.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (rounded-rectangle width height [corner]) -> pict
 >  (filled-rounded-rectangle width height [corner]) -> pict
 
    Unfilled and filled rounded rectangle; works for all sizes.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (arrow size radians) -> pict
 >  (arrowhead size radians) -> pict
@@ -297,7 +297,7 @@ Basic Constructors:
    Creates an arrow or arrowhead in the specific direction
     within a size x size pict. (Points on the arrow may
     extend slightly beyond the box.)
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (pip-line dx dy size) -> pict
 >  (pip-arrow-line dx dy size) -> pict
@@ -306,19 +306,19 @@ Basic Constructors:
    Creates a line [with arrowhead(s)] as a 0-sized picture suitable
    for use with `pin-over'. The 0-sized picture contains the starting
    point.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (bitmap filename) -> pict
 >  (bitmap bitmap%-object) -> pict
 
    Loads a bitmap into a pict; if the bitmap is not ok,
     the result is a box containing the words "bitmap failed"
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (cloud w h [color-string "gray"]) -> pict
 
    Fluffy cloud.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (file-icon w h gray [fancy? ...]) -> pict
 
@@ -327,27 +327,27 @@ Basic Constructors:
                          gray = #t -> default color
                          gray = color/string -> uses color
 
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (jack-o-lantern size [pumpkin-color "orange"] [face-color "black"]) -> pict
 
    Creates a jack-o-lantern; use the same pumpkin-color and
    face color to get a plain pumpkin. The size is the width.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (angel-wing w h left?) -> pict
 
    Creates an angel wing, left or right, or any size.
    The color and pen width for drawing the wing outline is the
    current one.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 
 >  (standard-fish w h [direction 'left] [color "blue"] 
                       [eye-color "black"] [open-mouth? #t]) -> pict
 
    Creates a fish, swimming either 'left or 'right.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 > (explode-star small-rad large-rad points line-size line-color)
 
@@ -453,7 +453,7 @@ Drawing Adjusters:
 
    Scales a pict (by adjusting the destination dc<%>'s
    scale while drawing the pict.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (ghost pict) -> pict
 
@@ -463,13 +463,13 @@ Drawing Adjusters:
 >  (thick pict) -> pict
 >  (thin pict) -> pict
 
-   Set the line thickness for a picture. For MrEd output,
+   Set the line thickness for a picture. For GRacket output,
    selects between a pen width of 0 or 1.
 
 >  (linewidth w pict) -> pict
 
    Set a specific pen width for drawing.
-      [MrEd only]
+      [GRacket only]
 
 >  (colorize pict color-string) -> pict
 
@@ -481,13 +481,13 @@ Drawing Adjusters:
 
    Same as above, except uses the color% object instead of a string
    to indicate the color of the pict.
-      [MrEd only]
+      [GRacket only]
 
 >  (colorize pict num-list) -> pict
 
    Same as above, except the list of three numbers indicate the
    red, green, and blue components of the color.
-      [MrEd only]
+      [GRacket only]
 
 >  (cellophane pict opacity) -> pict
 
@@ -499,7 +499,7 @@ Drawing Adjusters:
 >  (clip pict)
 
    Clips a pict to its bounding box.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (scale/improve-new-text pict-expr s-expr)
 >  (scale/improve-new-text pict-expr sx-expr sy-expr)
@@ -507,7 +507,7 @@ Drawing Adjusters:
    Syntax that is like `scale', but also sets
    `current-expected-text-scale' while evaluating
    `pict-expr':
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (inset/clip pict amt)
 >  (inset/clip pict h-amt v-amt)
@@ -515,7 +515,7 @@ Drawing Adjusters:
 
    Insets and clips the pict's drawing to its
    bounding box. (Usually the inset amounts are negative.)
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 
 Bounding-Box Adjusters:
@@ -614,13 +614,13 @@ Other constructors:
    The defaults for line-w, color-string, and lines-under?
    are #f, and the default for solid-head? is #t.
 
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (hyperlinkize pict) -> pict
 
    Adds an underline and blue color. The pict's
     height and descent are extended.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 
 Renderers:
@@ -637,21 +637,21 @@ Renderers:
    the window is at least that size
    and the pict is drawn in the middle of
    the window.
-      [MrEd only]
+      [GRacket only]
 
 >  (draw-pict pict dc x y) -> void
 
    Draw a pict to a dc<%>
-      [MrEd only]
+      [GRacket only]
 
 >  (make-pict-drawer pict) -> ((dc x y) -> void)
 
    Generate a pict-drawer procedure for multiple renderings of a
    pict (much faster than repeated calls to draw-pict)
-      [MrEd only]
+      [GRacket only]
 
 
-MrEd DC Helpers:
+GRacket DC Helpers:
 ----------------
 
 >  (scale-color factor string-or-color%) -> color%
@@ -661,17 +661,17 @@ MrEd DC Helpers:
    the RGB components by the factor. If the factor is > 1,
    the color is lightened by dividing the gap between
    the RGB components and 255 by the factor.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (find-pen string-or-color% [size 1] [style 'solid]) -> pen%
 
    Gets an immutable pen% from the-pen-list
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  (find-brush string-or-color% [style 'solid]) -> brush%
 
    Gets an immutable brush from the-brush-list
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  color-series            ; dc<%> num-steps step-delta
                            ;  start-color-or-string%
@@ -688,7 +688,7 @@ MrEd DC Helpers:
    starting color; for the last call, it matches the
    ending color; and for intermediate calls, the color
    is an intermediate color.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 ------------------------------------------------------------
 Additional LaTex Utilities
@@ -721,14 +721,14 @@ Additional LaTex Utilities
       [LaTeX only]
 
 ------------------------------------------------------------
-MrEd and LaTex Setup
+GRacket and LaTex Setup
 ------------------------------------------------------------
 
 >  dc-for-text-size
 
    Parameter specifying the dc<%> to use for measuring text.
    Default: #f
-      [MrEd only]
+      [GRacket only]
 
 >  current-expected-text-scale ; -> (list num num)
                                ; (list num num) -> void
@@ -736,7 +736,7 @@ MrEd and LaTex Setup
    A parameter used to refine text measurements to better
    match an expected scaling of the image.
    Default: 1
-      [MrEd only]
+      [GRacket only]
 
 >  (read-in-sizes string) -> void
 
@@ -849,7 +849,7 @@ Obsolete functions
 
    Obsolete versions of the `line+arrow[s]' functions,
    where the vertical delta is negated.
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 >  add-line
 >  add-arrow-line
@@ -858,7 +858,7 @@ Obsolete functions
    Obsolete variants of the pin-...line functions
    where the pict-finding functions are like `find-lt' (i.e.,
    the y result is flipped)
-      [MrEd only, in utils.ss]
+      [GRacket only, in utils.ss]
 
 ------------------------------------------------------------
 Obsolete: Commands, Putables, and Drawables
@@ -872,7 +872,7 @@ is (0, 0).
 
 The varieties of `connect' commands are for LaTeX, where
 lines are constrained to a small set of allowed angles.
-For MrEd, all of the commands below act the same, and produce
+For GRacket, all of the commands below act the same, and produce
 lines with precisely the requested angle.
 
 A command is one of the following:

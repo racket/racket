@@ -684,7 +684,7 @@
                   (send message-editor insert bcc-header)
                   (send message-editor insert #\newline)))
               (send message-editor insert (string-crlf->lf other-headers))
-              (send message-editor insert "X-Mailer: SirMail under MrEd ")
+              (send message-editor insert "X-Mailer: SirMail under GRacket ")
               (send message-editor insert (version))
               (send message-editor insert " (")
               (send message-editor insert (path->string (system-library-subpath)))

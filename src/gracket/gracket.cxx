@@ -1,6 +1,6 @@
 /*
  * File:        mred.cc
- * Purpose:     MrEd main file, including a hodge-podge of global stuff
+ * Purpose:     GRacket main file, including a hodge-podge of global stuff
  * Author:      Matthew Flatt
  * Created:     1995
  * Copyright:   (c) 2004-2010 PLT Scheme Inc.
@@ -3642,7 +3642,7 @@ static void wxDo(Scheme_Object *proc, int argc, Scheme_Object **argv)
     return;
   }
 
-  /* wxDo might be called when MrEd is sleeping (i.e.,
+  /* wxDo might be called when GRacket is sleeping (i.e.,
      blocked on WNE in OS X). Since we're hijacking the
      thread, save an restore block information. */
   block_descriptor = thread->block_descriptor;

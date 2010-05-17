@@ -24,7 +24,7 @@ automatically directed to shut down its managed values as well.}
 
 @defproc[(custodian-shutdown-all [cust custodian?]) void?]{
 
-@margin-note{In MrEd, @|eventspaces| managed by @racket[cust] are also
+@margin-note{In GRacket, @|eventspaces| managed by @racket[cust] are also
              shut down.}
 
 Closes all @tech{file-stream ports}, @tech{TCP ports}, @tech{TCP
@@ -40,7 +40,7 @@ thread.}
 
 @defparam[current-custodian cust custodian?]{
 
-@margin-note{In MrEd, custodians also manage @|eventspaces|.}
+@margin-note{In GRacket, custodians also manage @|eventspaces|.}
 
 A parameter that determines a custodian that assumes responsibility
 for newly created threads, @tech{file-stream ports}, TCP ports,

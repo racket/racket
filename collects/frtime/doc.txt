@@ -287,11 +287,11 @@ of the resulting class that gets the result of applying
 FtA provides event-is-val, split-mouse-events/type, and
 split-key-events/type for use as initialization arguments.
 event-is-val can be used for [stream-name]-event-processor
-when the event should just be the value of the first 
+when the event should just be the value of the first
 argument of the callback. split-*-events/type sets up an
 appropriate split (see FrTime docs for split information,
-MrEd docs for key-event codes and mouse-event types).
-                                                    
+GRacket docs for key-event codes and mouse-event types).
+
 
 MIXINS
 ------

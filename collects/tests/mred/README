@@ -24,8 +24,8 @@ A large number of lines (say, 50) indicates a GC problem.
 ---------------------------------------------------------------------------
 
 [Out of date:]
-The "random.ss" test is a randomized test of the MrEd classes that tests
-MrEd's stability. Load "random.ss", and then run
+The "random.ss" test is a randomized test of the GRacket classes that tests
+GRacket's stability. Load "random.ss", and then run
   (init)
 This attempts to create instances of classes using random
 intialization arguments. (init) can be run any number of times. 
@@ -56,7 +56,7 @@ of symbol flags:
      Use a new eventspace; don't run mred:run-exit-callbacks and
      call wx:kill-eventspace instead.
   'console included:
-     Open a MrEd console
+     Open a GRacket console
   'thread included:
      Spawn a sleeping-and-looping thread during each invocation.
      Also tests semaphore-callback (because it has to)

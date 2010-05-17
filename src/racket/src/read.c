@@ -3268,7 +3268,7 @@ read_string(int is_byte, int is_honu_char, Scheme_Object *port,
 }
 
 Scheme_Object *scheme_read_byte_string(Scheme_Object *port)
-/* used by MrEd */
+/* used by GRacket */
 {
   return read_string(1, 0, port,
 		     NULL, 0, 0, 0,

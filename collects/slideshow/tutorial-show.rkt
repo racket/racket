@@ -431,7 +431,7 @@
 (slide
  #:title "Arbitrary Drawing"
  (para "The" (code dc) "function provides an escape hatch to the underlying"
-            "MrEd toolkit")
+            "GRacket toolkit")
  (para "For example," (code (disk 100)) "is the same as")
  (code
   (dc (lambda (dc dx dy)

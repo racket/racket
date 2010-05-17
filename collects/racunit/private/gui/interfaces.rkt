@@ -58,6 +58,6 @@
    queue-for-update))
 
 ;; style-map
-;; Maps symbolic style names ('bold, 'red) to MrEd styles.
+;; Maps symbolic style names ('bold, 'red) to GRacket styles.
 (define-interface style-map<%> ()
   (get-style))

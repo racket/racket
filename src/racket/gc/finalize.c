@@ -167,7 +167,7 @@ int GC_general_register_disappearing_link(void * * link,
     
 #if 1
     /* PLTSCHEME: If wxObjects are sometimes stack-allocated, 
-       MrEd needs this. Keeping it for now just-in-case, though
+       GRacket needs this. Keeping it for now just-in-case, though
        it should be eliminated in the future. */
     if (!GC_base(link))
       return 1;

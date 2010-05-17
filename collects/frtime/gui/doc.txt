@@ -31,7 +31,7 @@ event-is-val can be used for [stream-name]-event-processor
 when the event should just be the value of the first 
 argument of the callback. split-*-events/type sets up an
 appropriate split (see FrTime docs for split information,
-MrEd docs for key-event codes and mouse-event types) over
+GRacket docs for key-event codes and mouse-event types) over
 the type of event occurence.
 
                                                     

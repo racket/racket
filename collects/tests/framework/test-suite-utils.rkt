@@ -88,7 +88,7 @@
         (let-values ([(dir exe _)
                       (split-path (find-system-path 'exec-file))])
           dir)
-        (if (eq? 'windows (system-type)) "MrEd.exe" "mred")))
+        (if (eq? 'windows (system-type)) "GRacket.exe" "mred")))
       (path->string
        (build-path (collection-path "tests" "framework")
                    "framework-test-engine.ss")))))

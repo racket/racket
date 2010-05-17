@@ -155,7 +155,7 @@ included in the basic FrTime language.
 (require (lifted:nonstrict module-spec proc-name ...) ...)
 ]
 
-@section[#:tag "fred"]{Fred: Functional Reactive Wrapper around MrEd}
+@section[#:tag "fred"]{Fred: Functional Reactive Wrapper around GRacket}
 
 @defmodule[frtime/gui/fred]
 

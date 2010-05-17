@@ -1734,7 +1734,7 @@
         
         (define (skip-static-line? e)
           ;; We want to skip the really-big static declaration for
-          ;;  the inlined bytecodes in MrEd
+          ;;  the inlined bytecodes in GRacket
           (let loop ([e e][l '(static unsigned char expr)])
             (cond
               [(null? l) #t]

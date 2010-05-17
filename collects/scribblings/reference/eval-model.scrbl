@@ -766,7 +766,7 @@ created, it is placed under the management of the @deftech{current
 custodian} as determined by the @racket[current-custodian]
 @tech{parameter}.
 
-@margin-note{In MrEd, custodians also manage eventspaces.}
+@margin-note{In GRacket, custodians also manage eventspaces.}
 
 Except for the root custodian, every @tech{custodian} itself it
 managed by a @tech{custodian}, so that custodians form a hierarchy.

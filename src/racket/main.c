@@ -25,7 +25,7 @@
 
 /* This file defines Racket's main(), which is a jumble of
    platform-specific initialization. The included file "cmdline.inc"
-   implements command-line parsing. (MrEd also uses "cmdline.inc".)
+   implements command-line parsing. (GRacket also uses "cmdline.inc".)
 
    The rest of the source code resides in the `src' subdirectory
    (except for the garbage collector, which is in `gc', `sgc', or

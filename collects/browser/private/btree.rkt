@@ -6,7 +6,7 @@
 ;; splines. This allows the usual O(log(n)) operations, plus a
 ;; O(log(n)) shift operation.
 
-;; (This is the same data structure as used for lines by MrEd's text%
+;; (This is the same data structure as used for lines by GRacket's text%
 ;; class, but that one is implemented in C++.)
 (import)
 (export (rename relative-btree^

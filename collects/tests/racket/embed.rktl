@@ -367,7 +367,7 @@
 (extension-test #f)
 (extension-test #t)
 
-;; A MrEd-specific test with mzc:
+;; A GRacket-specific test with mzc:
 (parameterize ([current-directory (find-system-path 'temp-dir)])
   (system* mzc 
 	   "--gui-exe"
@@ -375,7 +375,7 @@
 	   (path->string (build-path (collection-path "tests" "mzscheme") "embed-me5.ss")))
   (try-exe (mk-dest #t) "This is 5: #<class:button%>\n" #t))
 
-;; Another MrEd-specific: try embedding plot, which has extra DLLs and font files:
+;; Another GRacket-specific: try embedding plot, which has extra DLLs and font files:
 (parameterize ([current-directory (find-system-path 'temp-dir)])
   (define direct (build-path (find-system-path 'temp-dir) "direct.ps"))
 
