@@ -88,7 +88,7 @@
         (let-values ([(dir exe _)
                       (split-path (find-system-path 'exec-file))])
           dir)
-        (if (eq? 'windows (system-type)) "GRacket.exe" "mred")))
+        (if (eq? 'windows (system-type)) "GRacket.exe" "gracket")))
       (path->string
        (build-path (collection-path "tests" "framework")
                    "framework-test-engine.ss")))))
@@ -172,15 +172,15 @@
                      (or (not (char-ready? in-port))
                          (not (eof-object? (peek-char in-port))))))
         (restart-mred))
-      (debug-printf messages "  ~a // ~a: sending to mred:\n"
+      (debug-printf messages "  ~a // ~a: sending to gracket:\n"
                     section-name test-name)
       (show-text sexp)
       (with-handlers ([exn:fail?
                        (lambda (x)
                          (cond
-                           ;; this means that mred was closed
+                           ;; this means that gracket was closed
                            ;; so we can restart it and try again.
-                           [(tcp-error? x) 
+                           [(tcp-error? x)
                             (restart-mred)
                             (write sexp out-port)
                             (newline out-port)
@@ -210,21 +210,21 @@
                                                          (cons char (loop))))
                                                    null))))))))])
                (read in-port))])
-        (debug-printf messages "  ~a // ~a: received from mred:\n" section-name test-name)
+        (debug-printf messages "  ~a // ~a: received from gracket:\n" section-name test-name)
         (show-text answer)
         (unless (or (eof-object? answer)
                     (and (list? answer)
                          (= 2 (length answer))
                          (memq (car answer)
                                '(error last-error cant-read normal))))
-          (error 'send-sexp-to-mred "unpected result from mred: ~s\n" answer))
+          (error 'send-sexp-to-mred "unpected result from gracket: ~s\n" answer))
         (if (eof-object? answer)
             (raise (make-eof-result))
             (case (car answer)
               [(error)
-               (error 'send-sexp-to-mred "mred raised \"~a\"" (second answer))]
+               (error 'send-sexp-to-mred "gracket raised \"~a\"" (second answer))]
               [(last-error)
-               (error 'send-sexp-to-mred "mred (last time) raised \"~a\"" (second answer))]
+               (error 'send-sexp-to-mred "gracket (last time) raised \"~a\"" (second answer))]
               [(cant-read) (error 'mred/cant-parse (second answer))]
               [(normal) 
                (eval (second answer))]))))))

@@ -54,8 +54,8 @@
 	 
 	 [_ (unless (mred:get-preference 'mred:autosaving-on?)
 	      (error 'autosave "autosaving preference turned off. Turn back on (with preferences dialog)"))]
-	 [tmp-file (build-path dir "tmp.ss")]
-	 [backup-file (build-path dir "#tmp.ss#1#")]
+	 [tmp-file (build-path dir "tmp.rktd")]
+	 [backup-file (build-path dir "#tmp.rktd#1#")]
 	 [_ (call-with-output-file tmp-file
 	      (lambda (port) (display "12" port))
 	      'truncate)]

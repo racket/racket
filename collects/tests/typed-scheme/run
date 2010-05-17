@@ -1,2 +1,2 @@
-#!/bin/bash
-mred  -e '(begin (require "main.ss") (go))'
+#!/bin/sh
+gracket -e '(begin (require "main.ss") (go))'

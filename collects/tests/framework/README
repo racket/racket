@@ -7,9 +7,9 @@ completion of the engine test suites and the mzscheme test suites.
 
 All of these tests reside in PLTHOME/collects/tests/framework/
 
-There will be a main mzscheme process which will start up a new mred
+There will be a main mzscheme process which will start up a new gracket
 as necessary for the test suites. Since some tests actually require
-mred to exit in order to pass, this governor is required.
+gracket to exit in order to pass, this governor is required.
 
 To run a test use:
 
@@ -22,7 +22,7 @@ Some of the tests in this file are not yet present in the
 testing directory. They are planned future expansions of
 this test suite (and have been for some time....)
 
-OS X: you will have to click on the newly started mred
+OS X: you will have to click on the newly started gracket
 processes in the doc while the test suite runs or it will
 signal failures when there aren't any.
 
@@ -39,7 +39,7 @@ signal failures when there aren't any.
 - preferences: |# prefs.ss #|
 
   | This tests that preferences are saved and restored correctly, both
-  | immediately and across reboots of mred.
+  | immediately and across reboots of gracket.
 
 
 - individual object tests:

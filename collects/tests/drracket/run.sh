@@ -1,8 +1,8 @@
 #!/bin/sh -x
-mred module-lang-test.ss &&
-mred repl-test.ss &&
-mred io.ss &&
-mred language-test.ss &&
-mred syncheck-test.ss &&
-mred teachpack.ss &&
-mred save-teaching-lang-file.ss
+gracket module-lang-test.rkt &&
+gracket repl-test.rkt &&
+gracket io.rkt &&
+gracket language-test.rkt &&
+gracket syncheck-test.rkt &&
+gracket teachpack.rkt &&
+gracket save-teaching-lang-file.rkt

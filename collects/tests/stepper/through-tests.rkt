@@ -1154,7 +1154,7 @@
   ;  ;;;;;;;;;;;;;
   ;
 
-  ; as you can see, many teachpack tests work only in mred:
+  ; as you can see, many teachpack tests work only in gracket:
   ;; (require mred)
 
 

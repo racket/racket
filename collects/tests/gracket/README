@@ -1,17 +1,17 @@
 
-The "item.ss" test (use load/cd) creates a frame to select among
+The "item.rkt" test (use `require') creates a frame to select among
 several types of control-testing frames. Click the `Get Instructions'
 button in the top-left for more information.
 
 ---------------------------------------------------------------------------
 
-The "draw.ss" test (use load/cd) tests drawing commands. Click the
+The "draw.rkt" test (use load/cd) tests drawing commands. Click the
 "What Should I See?" button for further details.
 
 ---------------------------------------------------------------------------
 
-The "mem.ss" test is loaded at startup:
-  mred -r mem.ss
+The "mem.rktl" test is loaded at startup:
+  gracket -r mem.rktl
 Creates a lot of frames and instance of other objects, reporting
 memory information along the way. At the end, before the last memory
 dump, objects that are still allocated are displayed like this:
@@ -24,8 +24,8 @@ A large number of lines (say, 50) indicates a GC problem.
 ---------------------------------------------------------------------------
 
 [Out of date:]
-The "random.ss" test is a randomized test of the GRacket classes that tests
-GRacket's stability. Load "random.ss", and then run
+The "random.rktl" test is a randomized test of the GRacket classes that tests
+GRacket's stability. Load "random.rktl", and then run
   (init)
 This attempts to create instances of classes using random
 intialization arguments. (init) can be run any number of times. 
@@ -37,7 +37,7 @@ arguments.
 
 To avoid testing much of the wxMedia toolbox, which is likely to be
 platform-independent, (define skip-media? #t) before loading
-"random.ss".
+"random.rktl".
 
 
 ==================================================
@@ -46,8 +46,8 @@ Old Stuff
 
 ---------------------------------------------------------------------------
 
-The "imred.ss" test is used to check for memory leaks in a loop
-invoking the mred system. Call the `go' procedure with a list
+The "imred.rktl" test is used to check for memory leaks in a loop
+invoking the gracket system. Call the `go' procedure with a list
 of symbol flags:
   'force not included:
      Use the current eventspaces; expects mred:run-exit-callbacks
@@ -66,22 +66,23 @@ of symbol flags:
 
 ---------------------------------------------------------------------------
 
-"startup" tests the startup flags of mred. run "run.ss" from that directory.
+"startup" tests the startup flags of gracket.
+run "run.rktl" from that directory.
 
 ---------------------------------------------------------------------------
 
-"frame-edit.ss" checks that various frames match with various
+"frame-edit.rktl" checks that various frames match with various
 edits. Under construction.
 
 ---------------------------------------------------------------------------
 
-"gui.ss" tests:
+"gui.rktl" tests:
  - save prompting (before closing unsaved files) and
  - autosaving 
 
-evaluate `(load "gui.ss")' in the console to run.
+evaluate `(load "gui.rktl")' in the console to run.
 
-It also overwrites the file "tmp.ss" in the testing directory.
+It also overwrites the file "tmp.rktd" in the testing directory.
 
 ---------------------------------------------------------------------------
 

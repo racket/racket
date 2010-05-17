@@ -14,7 +14,7 @@
                     (car x)
                     (error 'car* "got a non-pair for ~s" 'x))])))
 
-;; this test uses a new eventspace so that the mred function
+;; this test uses a new eventspace so that the gracket function
 ;; current-eventspace-has-standard-menus? returns #f and thus
 ;; all of the platforms behave the same way.
 (test

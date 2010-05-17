@@ -1,5 +1,5 @@
 
-; run with mred -u -- -f mem.ss
+; run with gracket -u -- -f mem.rktl
 
 (require mzlib/class100)
 

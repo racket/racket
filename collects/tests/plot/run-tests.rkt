@@ -1,6 +1,6 @@
 #!/bin/sh
 #| -*- scheme -*-
-exec mred  "$0" "$@"
+exec gracket "$0" "$@"
 |#
 #lang scheme
 (require plot file/md5 scheme/runtime-path)

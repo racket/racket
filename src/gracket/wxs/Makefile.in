@@ -128,8 +128,8 @@ libwxscheme.@LIBSFX@ : $(OBJECTS)
 	$(RANLIB) libwxscheme.@LIBSFX@
 
 test-file:
-	rm -f $(srcdir)/../../../tests/mred/tests.rkt
-	$(MAKE) $(srcdir)/../../../tests/mred/tests.rkt
+	rm -f $(srcdir)/../../../tests/gracket/tests.rkt
+	$(MAKE) $(srcdir)/../../../tests/gracket/tests.rkt
 
 kernel.rkt : $(srcdir)/../../../collects/mred/private/kernel.rkt 
 

@@ -1405,6 +1405,29 @@ path/s is either such a string or a list of them.
 "collects/tests/frtime/time.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/future" responsible (jamesswaine mflatt robby)
 "collects/tests/future/random-future.rkt" drdr:timeout 240
+"collects/tests/gracket" responsible (mflatt)
+"collects/tests/gracket/auto.rktl" drdr:command-line #f
+"collects/tests/gracket/blits.rkt" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/dc.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/draw.rkt" drdr:command-line (mzc *)
+"collects/tests/gracket/editor.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/gui-main.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/gui.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/item.rkt" drdr:command-line (mzc *)
+"collects/tests/gracket/loadtest.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/mem.rktl" drdr:command-line #f
+"collects/tests/gracket/paramz.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/png.rktl" drdr:command-line #f
+"collects/tests/gracket/random.rktl" drdr:command-line #f
+"collects/tests/gracket/showkey.rktl" drdr:command-line #f
+"collects/tests/gracket/sixlib.rktl" drdr:command-line #f
+"collects/tests/gracket/test-editor-admin.rkt" drdr:command-line (gracket-text "-t" *)
+"collects/tests/gracket/testing.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/text-scale.rktl" drdr:command-line #f
+"collects/tests/gracket/windowing.rktl" drdr:command-line (gracket "-f" *)
+"collects/tests/gracket/wxme-doc-random.rkt" drdr:command-line (mzc *)
+"collects/tests/gracket/wxme-random.rkt" drdr:command-line #f
+"collects/tests/gracket/wxme.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/honu" responsible (rafkind)
 "collects/tests/html" responsible (jay)
 "collects/tests/macro-debugger" responsible (ryanc)
@@ -1412,29 +1435,6 @@ path/s is either such a string or a list of them.
 "collects/tests/macro-debugger/gui-tests.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/macro-debugger/tests/collects.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/match" responsible (samth)
-"collects/tests/mred" responsible (mflatt)
-"collects/tests/mred/auto.rktl" drdr:command-line #f
-"collects/tests/mred/blits.rkt" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/dc.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/draw.rkt" drdr:command-line (mzc *)
-"collects/tests/mred/editor.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/gui-main.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/gui.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/item.rkt" drdr:command-line (mzc *)
-"collects/tests/mred/loadtest.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/mem.rktl" drdr:command-line #f
-"collects/tests/mred/paramz.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/png.rktl" drdr:command-line #f
-"collects/tests/mred/random.rktl" drdr:command-line #f
-"collects/tests/mred/showkey.rktl" drdr:command-line #f
-"collects/tests/mred/sixlib.rktl" drdr:command-line #f
-"collects/tests/mred/test-editor-admin.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/tests/mred/testing.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/text-scale.rktl" drdr:command-line #f
-"collects/tests/mred/windowing.rktl" drdr:command-line (gracket "-f" *)
-"collects/tests/mred/wxme-doc-random.rkt" drdr:command-line (mzc *)
-"collects/tests/mred/wxme-random.rkt" drdr:command-line #f
-"collects/tests/mred/wxme.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/mysterx" responsible (mflatt)
 "collects/tests/mysterx/dhtmltests.rktl" drdr:command-line #f
 "collects/tests/mysterx/mystests.rktl" drdr:command-line #f
