@@ -605,7 +605,7 @@ int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
     a = (char *)malloc(j + l + 50);
     memcpy(a, normalized_path, j);
     memcpy(a + j, b, l);
-    memcpy(a + j + l, "MrEd-" MRED_GUID, strlen(MRED_GUID) + 6);
+    memcpy(a + j + l, "GRacket-" MRED_GUID, strlen(MRED_GUID) + 9);
     mutex = CreateMutex(NULL, FALSE, a);
     alreadyrunning = (GetLastError() == ERROR_ALREADY_EXISTS || 
 		      GetLastError() == ERROR_ACCESS_DENIED);

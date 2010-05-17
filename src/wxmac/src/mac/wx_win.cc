@@ -599,7 +599,7 @@ void wxWindow::CreatePaintControl(int inset, Bool opaque)
       { kEventClassControl, kEventControlHitTest },
       { kEventClassControl, kEventControlGetPartRegion } };
     
-    HIObjectRegisterSubclass(CFSTR("org.plt-scheme.MrEdPaintControl"),
+    HIObjectRegisterSubclass(CFSTR("org.racket-lang.GRacketPaintControl"),
 			     kHIViewClassID, // base class ID
 			     NULL, // option bits
 			     paintControlHandler,
@@ -622,7 +622,7 @@ void wxWindow::CreatePaintControl(int inset, Bool opaque)
   SetEventParameter(constructData, 'Boun', typeQDRectangle,
 		    sizeof(Rect), &boundsRect);
 
-  err = HIObjectCreate(CFSTR("org.plt-scheme.MrEdPaintControl"),
+  err = HIObjectCreate(CFSTR("org.racket-lang.GRacketPaintControl"),
 		       constructData,
 		       (HIObjectRef *)&pane);
   cPaintControl = pane;

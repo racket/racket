@@ -433,7 +433,7 @@ void wxDrop_GetArgs(int *argc, char ***argv, int *in_terminal)
 
 #define BUFSIZE 1000
 #define RSRCNAME "starter-info"
-#define EXECNAME "MrEd"
+#define EXECNAME "GRacket"
 
 static CFPropertyListRef getPropertyList()
 {

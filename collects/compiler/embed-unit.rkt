@@ -216,7 +216,7 @@
                              creator
                              
                              "CFBundleIdentifier" 
-                             (format "org.plt-scheme.~a" (path->string name)))]
+                             (format "org.racket-lang.~a" (path->string name)))]
                  [new-plist (if uti-exports
                                 (plist-replace
                                  new-plist
