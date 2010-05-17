@@ -504,7 +504,7 @@
 			    (printf 
 			     (string-append
 			      " please report the bug using Help Desk~n"
-			      "  or http://bugs.plt-scheme.org/~n"
+			      "  or http://bugs.racket-lang.org/~n"
 			      "  and include a transcript in verbose mode~n")))))
 		      
 		      msgs)

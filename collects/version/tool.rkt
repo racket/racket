@@ -5,7 +5,7 @@
          "patchlevel.ss"
          "check.ss")
 
-(define download-url "http://download.plt-scheme.org/")
+(define download-url "http://download.racket-lang.org/")
 
 ;; either 'yes, 'no, or something else, see `enabled?' below for a reason
 (preferences:set-default 'updates:enabled? 'unset symbol?)

@@ -15,7 +15,7 @@
 
   (provide help-desk:report-bug)
 
-  (define bug-www-server "bugs.plt-scheme.org")
+  (define bug-www-server "bugs.racket-lang.org")
   (define bug-www-server-port 80)
 
   ;; this one should be defined by help desk.

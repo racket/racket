@@ -130,8 +130,8 @@ more-information
 := "More Information" \\
    "----------------" \\
    \\
-   "For further information, use DrScheme's `Help' menu, or run "plt-help*". "
-   "Also, visit http://www.plt-scheme.org/." \\
+   "For further information, use DrRacket's `Help' menu, or run "plt-help*". "
+   "Also, visit http://racket-lang.org/." \\
 
 readme
 := intro \\ main \\ \\ license \\ \\ more-information

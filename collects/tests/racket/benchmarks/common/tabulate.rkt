@@ -376,8 +376,8 @@ exec racket -qu "$0" ${1+"$@"}
                        (lambda (fastest n-fastest c-fastest relative-to
                                         base n-base c-base)
                          `(tr (td ,(if (include-links)
-                                       `(a ((href ,(format (string-append "http://svn.plt-scheme.org/plt/trunk/collects/"
-                                                                          "tests/mzscheme/benchmarks/common/~a.sch")
+                                       `(a ((href ,(format (string-append "http://git.racket-lang.org/plt/tree/HEAD:/collects/"
+                                                                          "tests/racket/benchmarks/common/~a.sch")
                                                            (car bm-run))))
                                            ,(symbol->string (car bm-run)))
                                        (symbol->string (car bm-run))))

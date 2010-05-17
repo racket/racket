@@ -36,7 +36,7 @@ but may be updated by patches to DrRacket.}
 @defproc[(check-version) (or/c symbol? list?)]{
 
 Checks the currently available version on the PLT website
-(@selflink["http://download.plt-scheme.org"]) and returns a value that
+(@selflink["http://download.racket-lang.org"]) and returns a value that
 indicates the current state of the curent installation:
 
   @itemize[

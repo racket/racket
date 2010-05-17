@@ -46,7 +46,7 @@
   (go-to-main-page))
 
 ;; Autoload utilities from help/help-utils; if it does not exists,
-;; suggest using docs.plt-scheme.org.
+;; suggest using docs.racket-lang.org.
 
 (define-namespace-anchor anchor)
 (define get-binding
@@ -65,7 +65,7 @@
                           'help
                           (string-append
                            "documentation system unavailable; "
-                           "try http://docs.plt-scheme.org/")))])
+                           "try http://docs.racket-lang.org/")))])
         (dynamic-require 'help/help-utils sym)))))
 
 (define-syntax-rule (define-help-autoload id)

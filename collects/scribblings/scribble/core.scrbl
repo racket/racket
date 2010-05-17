@@ -332,8 +332,8 @@ The recognized @tech{style properties} are as follows:
         string @tt{id} attribute of the @tt{body} tag; this style can
         be set separately for parts that start different HTML pages,
         otherwise it is effectively inherited by sub-parts; the
-        default is @racket["scribble-plt-scheme.org"], but
-        @exec{setup-plt} installs @racket["doc-plt-scheme.org"] as the
+        default is @racket["scribble-racket-lang.org"], but
+        @exec{setup-plt} installs @racket["doc-racket-lang.org"] as the
         @tt{id} for any document that it builds.}
 
 ]

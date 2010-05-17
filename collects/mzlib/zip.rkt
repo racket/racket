@@ -26,7 +26,7 @@
   (define *spec-version*      62) ; version 6.2
   (define *required-version*  20) ; version 2.0
   (define *compression-level*  8) ; I don't think this is configurable
-  (define *zip-comment* #"packed by PLT Scheme - http://www.plt-scheme.org/")
+  (define *zip-comment* #"packed by Racket - http://racket-lang.org/")
 
   ;; PKZIP specification:
   ;; http://www.pkware.com/company/standards/appnote/

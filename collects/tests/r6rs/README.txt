@@ -59,7 +59,7 @@ that is much larger than in a typical program, which might give some
 compilers trouble.
 
 In any case, reports of bugs (in the tests) and new tests would be
-very much appreciated. File either as a PLT Scheme bug report at
+very much appreciated. File either as a Racket bug report at
 
    http://bugs.plt-scheme.org
 

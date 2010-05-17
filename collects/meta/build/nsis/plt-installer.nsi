@@ -54,8 +54,8 @@ InstallDir "$PROGRAMFILES\${PLTDirName}"
   !define MUI_FINISHPAGE_RUN "$INSTDIR\DrScheme.exe"
   !define MUI_FINISHPAGE_RUN_TEXT "Run DrScheme"
 !endif
-!define MUI_FINISHPAGE_LINK "Visit the PLT Scheme web site"
-!define MUI_FINISHPAGE_LINK_LOCATION "http://www.plt-scheme.org/"
+!define MUI_FINISHPAGE_LINK "Visit the Racket web site"
+!define MUI_FINISHPAGE_LINK_LOCATION "http://racket-lang.org/"
 
 ; !define MUI_UNFINISHPAGE_NOAUTOCLOSE ; to allow users see what was erased
 
@@ -221,8 +221,8 @@ Section ""
       WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "DisplayIcon" "$INSTDIR\DrScheme.exe,0"
       WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "DisplayVersion" "${PLTVersion}"
       ; used to also have "VersionMajor" & "VersionMinor" but looks like it's not needed
-      WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "HelpLink" "http://www.plt-scheme.org/"
-      WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "URLInfoAbout" "http://www.plt-scheme.org/"
+      WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "HelpLink" "http://racket-lang.org/"
+      WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "URLInfoAbout" "http://racket-lang.org/"
       WriteRegStr       HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "Publisher" "PLT Scheme Inc."
       WriteRegDWORD     HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "NoModify" "1"
       WriteRegDWORD     HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PLTRegName}" "NoRepair" "1"

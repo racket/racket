@@ -5,7 +5,7 @@
 
 (define handin-name (#%info-lookup 'name))
 (define web-address (#%info-lookup 'web-address
-                      (lambda () "http://www.plt-scheme.org")))
+                      (lambda () "http://racket-lang.org")))
 (define selection-mode (#%info-lookup 'selection-mode (lambda () 'extended)))
 (define selection-defaults
   (let ([sd (#%info-lookup 'selection-default (lambda () '("*.scm" "*.ss")))])

@@ -39,15 +39,15 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-  (preferences:set-default 'sirmail:mail-from "SirMail User <sirmail@plt-scheme.org>" string?)
+  (preferences:set-default 'sirmail:mail-from "SirMail User <sirmail@racket-lang.org>" string?)
   (preferences:set-default 'sirmail:username "username" string?)
   (preferences:set-default 'sirmail:password #f string-or-false?)
-  (preferences:set-default 'sirmail:default-to-domain "plt-scheme.org" ip-string?)
+  (preferences:set-default 'sirmail:default-to-domain "racket-lang.org" ip-string?)
 
-  (preferences:set-default 'sirmail:imap-server "imap.plt-scheme.org" ip-string?)
+  (preferences:set-default 'sirmail:imap-server "imap.racket-lang.org" ip-string?)
   (preferences:set-default 'sirmail:use-ssl? #f boolean?)
   (preferences:set-default 'sirmail:server-certificate #f abs-path-or-false?)
-  (preferences:set-default 'sirmail:smtp-server "sendmail.plt-scheme.org" ip-string?)
+  (preferences:set-default 'sirmail:smtp-server "sendmail.racket-lang.org" ip-string?)
 
   (preferences:set-default 'sirmail:local-directory 
 			   (build-path (find-system-path 'home-dir)

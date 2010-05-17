@@ -7,4 +7,4 @@ You'll also need the Racket sources to compile
 MzCOM.  See plt/src/worksp/README for more information
 on compiling Racket.
 
-Send questions to Paul Steckler, steck@plt-scheme.org.
+Send questions to Paul Steckler, steck@racket-lang.org.

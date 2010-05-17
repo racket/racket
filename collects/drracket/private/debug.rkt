@@ -360,7 +360,7 @@ profile todo:
     (make-url 
      "http"
      #f
-     "planet.plt-scheme.org"
+     "planet.racket-lang.org"
      #f
      #t
      (list (make-path/param "trac" '())

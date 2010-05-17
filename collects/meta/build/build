@@ -890,7 +890,7 @@ html_begin() { # inputs: title [output-name]
     echo "<table width=\"90%\" align=\"center\" bgcolor=\"#ff9600\""
     echo "       border=\"0\" cellpadding=\"10\"><tr>"
     echo "  <td width=\"10\">"
-    echo "    <img src=\"http://www.plt-scheme.org/plt-orange-med.jpg\">"
+    echo "    <img src=\"http://racket-lang.org/plt-orange-med.jpg\">"
     echo "  </td>"
     echo "  <td align=\"left\">"
     echo "    <div style=\"font-family: Arial, Helvetica, sans-serif\">"

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(define version-url "http://download.plt-scheme.org/version.txt")
+(define version-url "http://download.racket-lang.org/version.txt")
 (define timeout 30)
 
 (require "utils.ss")
