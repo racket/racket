@@ -2,6 +2,7 @@
 (require racunit
          mzlib/etc
          mzlib/list
+         xml
          web-server/http
          web-server/private/cache-table
          web-server/private/web-server-structs
@@ -53,6 +54,13 @@
                         [t0 (simple-xpath* '(p) (call d url0 empty))])
                    t0)
                  "Hello, Web!")
+    (test-equal? "response.rktd - loading"
+                 (parameterize ([xexpr-drop-empty-attributes #t])
+                   (let* ([d (mkd (build-path example-servlets "response.rktd"))])
+                     (call d url0 empty)))
+                 `(html (head (title "Hello"))
+                        (body ([bgcolor "white"])
+                              (p "Hello"))))
     (test-add-two-numbers mkd "add.rkt - send/suspend"
                           (build-path example-servlets "add.rkt"))
     (test-add-two-numbers mkd "add-v2.rkt - send/suspend, version 2"

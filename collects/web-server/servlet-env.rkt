@@ -152,7 +152,7 @@
      (let-values ([(clear-cache! url->servlet)
                    (servlets:make-cached-url->servlet
                     (fsmap:filter-url->path
-                     #rx"\\.(ss|scm|rkt)$"
+                     #rx"\\.(ss|scm|rkt|rktd)$"
                      (fsmap:make-url->valid-path
                       (fsmap:make-url->path servlets-root)))
                     (make-default-path->servlet
