@@ -12,11 +12,11 @@
 
 (define (replay-status s)
   (for-each replay-event (status-output-log s))
-  (when (timeout? s)
+  #;(when (timeout? s)
     (fprintf (current-error-port) "[replay-log] TIMEOUT!~n"))
-  (when (exit? s)
+  #;(when (exit? s)
     (fprintf (current-error-port) "[replay-log] Exit code: ~a~n" (exit-code s)))
-  (printf "[replay-log] Took ~a~n"
+  #;(printf "[replay-log] Took ~a~n"
           (format-duration-ms (status-duration s)))
   (replay-exit-code s))
 
