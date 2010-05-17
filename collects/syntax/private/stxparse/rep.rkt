@@ -524,16 +524,28 @@
        #'name]
       [_
        (wrong-syntax stx "bad ~~var form")]))
-  (define-values (scname args)
+  (define-values (scname args pfx)
     (syntax-case stx (~var)
       [(~var _name)
-       (values #f null)]
-      [(~var _name sc)
-       (identifier? #'sc)
-       (values #'sc null)]
-      [(~var _name (sc arg ...))
-       (identifier? #'sc)
-       (values #'sc (syntax->list #'(arg ...)))]
+       (values #f null #f)]
+      [(~var _name sc/sc+args . rest)
+       (let-values ([(sc args)
+                     (syntax-case #'sc/sc+args ()
+                       [sc
+                        (identifier? #'sc)
+                        (values #'sc null)]
+                       [(sc arg ...)
+                        (identifier? #'sc)
+                        (values #'sc (syntax->list #'(arg ...)))]
+                       [_
+                        (wrong-syntax stx "bad ~~var form")])])
+         (define chunks
+           (parse-keyword-options/eol #'rest var-pattern-directive-table
+                                      #:no-duplicates? #t
+                                      #:context stx))
+         (define sep
+           (options-select-value chunks '#:attr-name-separator #:default #f))
+         (values sc args (if sep (syntax-e sep) ".")))]
       [_
        (wrong-syntax stx "bad ~~var form")]))
   (cond [(and (epsilon? name0) (not scname))
@@ -542,17 +554,18 @@
          (create-pat:any)]
         [scname
          (let ([sc (get-stxclass/check-arg-count scname (length args))])
-           (parse-pat:var* stx allow-head? name0 sc args))]
+           (parse-pat:var* stx allow-head? name0 sc args pfx))]
         [else ;; Just proper name
          (create-pat:var name0 #f null null #t)]))
 
-(define (parse-pat:var* stx allow-head? name sc args)
+(define (parse-pat:var* stx allow-head? name sc args [pfx "."])
   (cond [(stxclass/s? sc)
          (parse-pat:id/s name
                          (stxclass-parser-name sc)
                          args
                          (stxclass-attrs sc)
-                         (stxclass-commit? sc))]
+                         (stxclass-commit? sc)
+                         pfx)]
         [(stxclass/h? sc)
          (unless allow-head?
            (wrong-syntax stx "splicing syntax class not allowed here"))
@@ -560,22 +573,23 @@
                          (stxclass-parser-name sc)
                          args
                          (stxclass-attrs sc)
-                         (stxclass-commit? sc))]))
+                         (stxclass-commit? sc)
+                         pfx)]))
 
-(define (parse-pat:id/s name parser args attrs commit?)
-  (define prefix (name->prefix name))
+(define (parse-pat:id/s name parser args attrs commit? [pfx "."])
+  (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
   (create-pat:var bind parser args (id-pattern-attrs attrs prefix) commit?))
 
-(define (parse-pat:id/h name parser args attrs commit?)
-  (define prefix (name->prefix name))
+(define (parse-pat:id/h name parser args attrs commit? [pfx "."])
+  (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
   (create-hpat:var bind parser args (id-pattern-attrs attrs prefix) commit?))
 
-(define (name->prefix id)
+(define (name->prefix id pfx)
   (cond [(wildcard? id) #f]
         [(epsilon? id) id]
-        [else (format-id id "~a." (syntax-e id))]))
+        [else (format-id id "~a~a" (syntax-e id) pfx)]))
 
 (define (name->bind id)
   (cond [(wildcard? id) #f]
@@ -1199,3 +1213,7 @@
 (define litset-directive-table
   (cons (list '#:at check-identifier)
         phase-directive-table))
+
+;; var-pattern-directive-table
+(define var-pattern-directive-table
+  (list (list '#:attr-name-separator check-stx-string)))
