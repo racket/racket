@@ -2,7 +2,7 @@
 
 (require (only-in racket/contract/private/box box-immutable/c)
          (only-in racket/contract/private/vector
-                  vector/c vector-immutableof vector-immutable/c)
+                  vector-immutableof vector-immutable/c)
          racket/contract/private/blame
          racket/contract/private/guts)
 
@@ -43,4 +43,31 @@
              (raise-blame-error blame val "not a vector"))
            (for ([v (in-vector val)])
              (proj v))
+           val))))))
+
+(define/subexpression-pos-prop (vector/c . ctcs)
+  (let ([ctcs (for/list ([ctc (in-list ctcs)])
+                (coerce-flat-contract 'vector/c ctc))])
+    (make-flat-contract
+     #:name (apply build-compound-type-name 'vector/c ctcs)
+     #:first-order
+     (λ (val)
+       (and (vector? val)
+            (= (vector-length val) (length ctcs))
+            (for/and ([v (in-vector val)]
+                      [c (in-list ctcs)])
+              (contract-first-order-passes? c v))))
+     #:projection
+     (λ (blame)
+       (λ (val)
+         (let ([projs (for/list ([ctc (in-list ctcs)])
+                        ((contract-projection ctc) blame))])
+           (unless (vector? val)
+             (raise-blame-error blame val "not a vector"))
+           (unless (= (vector-length val) (length ctcs))
+             (raise-blame-error blame val "expected vector of length ~a, got length ~a"
+                                (length ctcs) (vector-length val)))
+           (for ([v (in-vector val)]
+                 [p (in-list projs)])
+             (p v))
            val))))))

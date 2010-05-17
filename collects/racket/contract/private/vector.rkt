@@ -3,7 +3,8 @@
 (require (for-syntax racket/base)
          "guts.ss")
 
-(provide vector/c (rename-out [wrap-vectorof vectorof])
+(provide (rename-out [wrap-vectorof vectorof]
+                     [wrap-vector/c vector/c])
          vector-immutable/c vector-immutableof)
 
 (define-struct vectorof (elem immutable))
@@ -150,102 +151,154 @@
 (define/subexpression-pos-prop (vector-immutableof c)
   (build-vectorof c #:immutable #t))
 
-(define/subexpression-pos-prop (vector/c . args)
-  (let* ([ctcs (coerce-flat-contracts 'vector/c args)]
-         [largs (length args)]
-         [procs (map flat-contract-predicate ctcs)])
-    (build-flat-contract
-     (apply build-compound-type-name 'vector/c ctcs)
-     (λ (v)
-       (and (vector? v)
-            (= (vector-length v) largs)
-            (andmap (λ (p? x) (p? x))
-                    procs
-                    (vector->list v)))))))
+(define-struct vector/c (elems immutable))
 
-(define-syntax (*-immutable/c stx)
+(define (vector/c-name c)
+  (let ([immutable (vector/c-immutable c)])
+    (apply build-compound-type-name 'vector/c
+           (append
+            (map contract-name (vector/c-elems c))
+            (if (and (flat-vector/c? c)
+                     (not (eq? immutable #t)))
+                (list '#:flat? #t)
+                null)
+            (if (not (eq? immutable 'dont-care))
+                (list '#:immutable immutable)
+                null)))))
+
+(define (vector/c-first-order c) 
+  (let ([elem-ctcs (vector/c-elems c)]
+        [immutable (vector/c-immutable c)]
+        [flat? (flat-vector/c? c)])
+    (λ (val #:blame [blame #f])
+      (let/ec return
+        (define (fail . args)
+          (if blame
+              (apply raise-blame-error blame val args)
+              (return #f)))
+        (unless (vector? val)
+          (fail "expected a vector, got ~a" val))
+        (cond
+          [(eq? immutable #t)
+           (unless (immutable? val)
+             (fail "expected an immutable vector, got ~a" val))]
+          [(eq? immutable #f)
+           (when (immutable? val)
+             (fail "expected an mutable vector, got ~a" val))]
+          [else (void)])
+        (let ([elem-count (length elem-ctcs)])
+          (unless (= (vector-length val) elem-count)
+            (fail "expected a vector of ~a element~a, got ~a"
+                  elem-count (if (= elem-count 1) "" "s") val)))
+        (when (or flat? (and (immutable? val) (not blame)))
+          (if blame
+              (for ([e (in-vector val)]
+                    [c (in-list elem-ctcs)])
+                (((contract-projection c) blame) e))
+              (for ([e (in-vector val)]
+                    [c (in-list elem-ctcs)])
+                (unless (contract-first-order-passes? c e)
+                  (fail)))))
+        #t))))
+
+(define-struct (flat-vector/c vector/c) ()
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name vector/c-name
+   #:first-order vector/c-first-order
+   #:projection 
+   (λ (ctc) 
+     (λ (blame) 
+       (λ (val)
+         ((vector/c-first-order ctc) val #:blame blame)
+         val)))))
+
+(define (vector/c-ho-projection vector-wrapper)
+  (λ (ctc)
+     (let ([elem-ctcs (vector/c-elems ctc)]
+           [immutable (vector/c-immutable ctc)])
+       (λ (blame)
+         (let ([elem-pos-projs (apply vector-immutable
+                                      (map (λ (c) ((contract-projection c) blame)) elem-ctcs))]
+               [elem-neg-projs (apply vector-immutable
+                                      (map (λ (c) ((contract-projection c) (blame-swap blame))) elem-ctcs))])
+           (λ (val)
+             ((vector/c-first-order ctc) val #:blame blame)
+             (if (immutable? val)
+                 (apply vector-immutable
+                        (for/list ([e (in-vector val)]
+                                   [i (in-naturals)])
+                          ((vector-ref elem-pos-projs i) e)))
+                 (vector-wrapper
+                  val
+                  (λ (vec i val)
+                    ((vector-ref elem-pos-projs i) val))
+                  (λ (vec i val)
+                    ((vector-ref elem-neg-projs i) val))))))))))
+
+(define-struct (chaperone-vector/c vector/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:name vector/c-name
+   #:first-order vector/c-first-order
+   #:projection (vector/c-ho-projection chaperone-vector)))
+
+(define-struct (proxy-vector/c vector/c) ()
+  #:property prop:contract
+  (build-contract-property
+   #:name vector/c-name
+   #:first-order vector/c-first-order
+   #:projection (vector/c-ho-projection proxy-vector)))
+
+(define-syntax (wrap-vector/c stx)
   (syntax-case stx ()
-    [(_ predicate? constructor (arb? selectors ...) type-name name)
-     #'(*-immutable/c predicate? constructor (arb? selectors ...) type-name name #t)]
-    [(_ predicate? constructor (arb? selectors ...) type-name name test-immutable?)
-     (and (eq? #f (syntax->datum (syntax arb?)))
-          (boolean? (syntax->datum #'test-immutable?)))
-     (let ([test-immutable? (syntax->datum #'test-immutable?)])
-       (with-syntax ([(params ...) (generate-temporaries (syntax (selectors ...)))]
-                     [(p-apps ...) (generate-temporaries (syntax (selectors ...)))]
-                     [(ctc-x ...) (generate-temporaries (syntax (selectors ...)))]
-                     [(procs ...) (generate-temporaries (syntax (selectors ...)))]
-                     [(selector-names ...) (generate-temporaries (syntax (selectors ...)))])
-         #`(let ([predicate?-name predicate?]
-                 [constructor-name constructor]
-                 [selector-names selectors] ...)
-             (λ (params ...)
-               (let ([ctc-x (coerce-contract 'name params)] ...)
-                 (if (and (flat-contract? ctc-x) ...)
-                     (let ([p-apps (flat-contract-predicate ctc-x)] ...)
-                       (build-flat-contract
-                        `(name ,(contract-name ctc-x) ...)
-                        (lambda (x)
-                          (and (predicate?-name x)
-                               (p-apps (selector-names x)) 
-                               ...))))
-                     (let ([procs (contract-projection ctc-x)] ...)
-                       (make-contract
-                        #:name (build-compound-type-name 'name ctc-x ...)
-                        #:projection
-                        (λ (blame)
-                          (let ([p-apps (procs blame)] ...)
-                            (λ (v)
-                              (if #,(if test-immutable?
-                                        #'(and (predicate?-name v)
-                                               (immutable? v))
-                                        #'(predicate?-name v))
-                                  (constructor-name (p-apps (selector-names v)) ...)
-                                  (raise-blame-error
-                                   blame
-                                   v
-                                   #,(if test-immutable?
-                                         "expected immutable <~a>, given: ~e"
-                                         "expected <~a>, given: ~e")
-                                   'type-name
-                                   v)))))))))))))]
-    [(_ predicate? constructor (arb? selector) correct-size type-name name)
-     (eq? #t (syntax->datum (syntax arb?)))
-     (syntax
-      (let ([predicate?-name predicate?]
-            [constructor-name constructor]
-            [selector-name selector])
-        (λ params
-          (let ([ctcs (map (λ (param) (coerce-contract 'name param)) params)])
-            (let ([procs (map contract-projection ctcs)])
-              (make-contract
-               #:name (apply build-compound-type-name 'name ctcs)
-               #:projection
-               (λ (blame)
-                 (let ([p-apps (map (λ (proc) (proc blame)) procs)]
-                       [count (length params)])
-                   (λ (v)
-                     (if (and (immutable? v)
-                              (predicate?-name v)
-                              (correct-size count v))
-                         (apply constructor-name 
-                                (let loop ([p-apps p-apps]
-                                           [i 0])
-                                  (cond
-                                    [(null? p-apps) null]
-                                    [else (let ([p-app (car p-apps)])
-                                            (cons (p-app (selector-name v i))
-                                                  (loop (cdr p-apps) (+ i 1))))])))
-                         (raise-blame-error
-                          blame
-                          v
-                          "expected <~a>, given: ~e"
-                          'type-name
-                          v)))))))))))]))
+    [x
+     (identifier? #'x)
+     (syntax-property
+      (syntax/loc stx build-vector/c)
+      'racket/contract:contract
+      (vector (gensym 'ctc) (list #'x) null))]
+    [(vec/c arg ...)
+     (let ([args (syntax->list #'(arg ...))]
+           [this-one (gensym 'ctc)])
+       (define (convert-args args)
+         (let loop ([args args]
+                    [new-args null])
+           (cond
+             [(null? args) (reverse new-args)]
+             [(keyword? (syntax-e (car args)))
+              (if (null? (cdr args))
+                  (reverse (cons (car args) new-args))
+                  (loop (cddr args)
+                        (list* (cadr args) (car args) new-args)))]
+             [else
+              (loop (cdr args)
+                    (cons (syntax-property
+                           (car args)
+                           'racket/contract:positive-position
+                           this-one)
+                          new-args))])))
+       (with-syntax ([(new-arg ...) (convert-args args)]
+                     [app (datum->syntax stx '#%app)])
+         (syntax-property
+          (syntax/loc stx
+            (app build-vector/c new-arg ...))
+          'racket/contract:contract
+          (vector this-one (list #'vec/c) null))))]))
 
-(define vector-immutable/c (*-immutable/c vector?
-                                          vector-immutable
-                                          (#t (λ (v i) (vector-ref v i)))
-                                          (λ (n v) (= n (vector-length v)))
-                                          immutable-vector
-                                          vector-immutable/c))
+(define (build-vector/c #:immutable [immutable 'dont-care] #:flat? [flat? #f] . cs)
+  (let ([ctcs (if flat?
+                  (map (λ (c) (coerce-flat-contract 'vector/c c)) cs)
+                  (map (λ (c) (coerce-contract 'vector/c c)) cs))])
+    (cond
+      [(or flat?
+           (and (eq? immutable #t)
+                (andmap flat-contract? ctcs)))
+       (make-flat-vector/c ctcs immutable)]
+      [(andmap chaperone-contract? ctcs)
+       (make-chaperone-vector/c ctcs immutable)]
+      [else
+       (make-proxy-vector/c ctcs immutable)])))
+
+(define/subexpression-pos-prop (vector-immutable/c . args)
+  (apply build-vector/c args #:immutable #t))
