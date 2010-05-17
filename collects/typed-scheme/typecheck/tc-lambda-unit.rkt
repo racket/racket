@@ -244,7 +244,8 @@
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))
        (tc/plambda form formals bodies expected)]
       [(tc-result1: (Error:)) (tc/mono-lambda/type formals bodies #f)]
-      [_ (int-err "expected not an appropriate tc-result: ~a" expected)]))
+      [(tc-result1: (and v (Values: _))) (maybe-loop form formals bodies (values->tc-results v #f))]
+      [(tc-result1: t) (int-err "expected not an appropriate tc-result: ~a ~a" expected t)]))
   (match expected
     [(tc-result1: (and t (Poly-names: ns expected*)))
      (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])

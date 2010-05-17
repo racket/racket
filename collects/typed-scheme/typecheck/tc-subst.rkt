@@ -143,18 +143,24 @@
    (for-type type)
     #f))
 
+
+
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
 (d/c (values->tc-results tc formals)
-  ((or/c Values? ValuesDots?) (listof identifier?) . -> . tc-results?)
+  ((or/c Values? ValuesDots?) (or/c #f (listof identifier?)) . -> . tc-results?)
   (match tc
-    [(ValuesDots: (list rs ...) dty dbound)
-     (let-values ([(ts fs os) 
-                   (for/lists (ts fs os) ([r (in-list rs)]) 
-                              (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
-       (ret ts fs os
-            (for/fold ([dty dty]) ([(o k) (in-indexed (in-list formals))])
-              (subst-type dty k (make-Path null o) #t))
-            dbound))]
-    [(Values: (list rs ...))
-     (let-values ([(ts fs os) (for/lists (ts fs os) ([r (in-list rs)]) (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
-       (ret ts fs os))]))
+    [(ValuesDots: (list (and rs (Result: ts fs os)) ...) dty dbound)
+     (if formals
+         (let-values ([(ts fs os) 
+                       (for/lists (ts fs os) ([r (in-list rs)]) 
+                         (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
+           (ret ts fs os
+                (for/fold ([dty dty]) ([(o k) (in-indexed (in-list formals))])
+                  (subst-type dty k (make-Path null o) #t))
+                dbound))
+         (ret ts fs os dty dbound))]
+    [(Values: (list (and rs (Result: ts fs os)) ...))
+     (if formals
+         (let-values ([(ts fs os) (for/lists (ts fs os) ([r (in-list rs)]) (open-Result r (map (lambda (i) (make-Path null i)) formals)))])
+           (ret ts fs os))
+         (ret ts fs os))]))
