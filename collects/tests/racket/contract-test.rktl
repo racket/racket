@@ -13,7 +13,8 @@
         (namespace-require 'scheme/contract)
         (namespace-require '(only racket/contract/private/arrow procedure-accepts-and-more?))
         (namespace-require 'scheme/class)
-        (namespace-require 'scheme/promise))
+        (namespace-require 'scheme/promise)
+        (namespace-require 'scheme/match))
       n))
   
   (define (contract-eval x)
@@ -2859,6 +2860,23 @@
                             #:mutable #:transparent
                             #:property prop:custom-write
                             (lambda (a b c) (void))))
+  
+  (test/spec-passed/result
+   'define-struct/contract24
+   '(let ()
+      (define-struct/contract point
+        ([x number?] [y number?])
+        #:transparent)
+      (define-struct/contract (color-point point)
+        ([c symbol?])
+        #:transparent)
+      
+      (match (make-color-point 1 2 'red)
+        [(struct color-point [dx dy color])
+         (list dx dy color)]
+        [(struct point [dx dy]) (list dx dy)]
+        [v (box v)]))
+   (list 1 2 'red))
 ;                                                                                  
 ;                                                                                  
 ;                                                                                  
