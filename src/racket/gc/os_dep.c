@@ -1271,7 +1271,9 @@ ptr_t GC_get_main_stack_base(void)
 
 #if defined(GC_LINUX_THREADS) && !defined(HAVE_GET_STACK_BASE)
 
+#define _GNU_SOURCE
 #include <pthread.h>
+int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr);
 
 #ifdef IA64
   ptr_t GC_greatest_stack_base_below(ptr_t bound);
