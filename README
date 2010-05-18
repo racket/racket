@@ -1,0 +1,38 @@
+The Racket programming language
+===============================
+
+Important executables:
+
+* DrRacket: Racket's integrated development environment (start here!).
+
+* Racket: the main command-line entry point for running racket programs
+  and scripts.
+
+* GRacket: the GUI-enabled Racket executable.
+
+* raco: Racket's command-line toolset.
+
+
+More Information
+----------------
+
+Racket comes with extensive documentation: use DrRacket's `Help' menu,
+or run `raco docs'.  Also, visit us at http://racket-lang.org/ for more
+Racket resources.
+
+Instructions for building Racket from source are in src/README.
+
+
+License
+-------
+
+Racket
+Copyright (c) 2010 PLT Scheme Inc.
+
+Racket is distributed under the GNU Lesser General Public License
+(LGPL).  This means that you can link Racket into proprietary
+applications, provided you follow the rules stated in the LGPL.  You can
+also modify Racket; if you distribute a modified version, you must
+distribute it under the terms of the LGPL, which in particular means
+that you must release the source code for the modified software.  See
+doc/release-notes/COPYING.LIB for more information.

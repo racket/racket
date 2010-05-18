@@ -327,7 +327,7 @@ plt := (+ dr plt-extras)
 ;; ============================================================================
 ;; Packages etc
 
-mz-base := "/plt/readme.txt"          ; generated
+mz-base := "/plt/README"
            (package: "racket") (package: "mzscheme")
            "/plt/include/"
            ;; configuration stuff
@@ -675,5 +675,47 @@ plt-extras :+= (package: "schemeunit/")
 
 ;; -------------------- raclog (aka schelog)
 plt-extras :+= (package: "raclog/")
+
+;; ============================================================================
+;; Readme header
+
+version := (lambda () (version))
+
+platform
+:= (cond i386-linux        => "Linux (i386)"
+         i386-linux-gcc2   => "Linux (i386/gcc2)"
+         i386-linux-fc2    => "Fedora Core 2 (i386)"
+         i386-linux-fc5    => "Fedora Core 5 (i386)"
+         i386-linux-fc6    => "Fedora Core 6 (i386)"
+         i386-linux-f7     => "Fedora 7 (i386)"
+         x86_64-linux-f7   => "Fedora 7 (x86_64)"
+         i386-linux-f9     => "Fedora 9 (i386)"
+         i386-linux-f12    => "Fedora 12 (i386)"
+         i386-linux-debian => "Debian Stable (i386)"
+         i386-linux-debian-testing  => "Debian Testing (i386)"
+         i386-linux-debian-unstable => "Debian Unstable (i386)"
+         i386-linux-ubuntu          => "Ubuntu (i386)"
+         i386-linux-ubuntu-dapper   => "Ubuntu Dapper (i386)"
+         i386-linux-ubuntu-edgy     => "Ubuntu Edgy (i386)"
+         i386-linux-ubuntu-feisty   => "Ubuntu Feisty (i386)"
+         i386-linux-ubuntu-hardy    => "Ubuntu Hardy (i386)"
+         i386-linux-ubuntu-intrepid => "Ubuntu Intrepid (i386)"
+         i386-linux-ubuntu-jaunty   => "Ubuntu Jaunty (i386)"
+         i386-freebsd      => "FreeBSD (i386)"
+         sparc-solaris     => "Solaris"
+         ppc-osx-mac       => "Mac OS X (PPC)"
+         i386-osx-mac      => "Mac OS X (Intel)"
+         ppc-darwin        => "Mac OS X using X11 (PPC)"
+         i386-darwin       => "Mac OS X using X11 (Intel)"
+         i386-win32        => "Windows"
+         ;; generic platforms for source distributions
+         unix => "Unix"
+         mac  => "Macintosh"
+         win  => "Windows")
+
+readme-header
+:= "This is the Racket v"(version)" "(cond src  => "source" else => "binary")
+   " package for "platform".\n"
+   (cond src => "See the build instructions in src/README.\n")
 
 ;; ============================================================================

@@ -4,10 +4,9 @@
 #lang scheme/base
 
 (require scheme/cmdline scheme/runtime-path scheme/match scheme/promise
-         meta/checker (prefix-in dist: meta/dist-specs) meta/specs
-         (for-syntax scheme/base) ; for runtime-path
+         scheme/file (only-in scheme/system system)
          (except-in scheme/mpair mappend)
-         (only-in scheme/system system))
+         meta/checker (prefix-in dist: meta/dist-specs) meta/specs)
 
 (define (/-ify x)
   (regexp-replace #rx"/?$" (if (path? x) (path->string x) x) "/"))
@@ -23,14 +22,14 @@
 (define cd current-directory)
 
 (define *readme-file*
-  (build-path plt/ "readme.txt"))
+  (build-path plt/ "README"))
 (define *info-domain-file*
   (build-path plt/ "collects" "info-domain" "compiled" "cache.rktd"))
 
+(define *readme-cache* #f)
 (define *info-domain-cache* #f)
 
 (define-runtime-path *spec-file* "distribution-specs")
-(define-runtime-path *readme-specs-file* "readme-specs")
 
 (define *verify?*  #t)
 (define *btgz?*    #t)
@@ -110,11 +109,6 @@
           (loop (cons line lines)))))))
 
 ;;; ===========================================================================
-;;; Spec management
-
-(define *readme-specs* (make-parameter #f))
-
-;;; ===========================================================================
 ;;; Start working
 
 (register-macros!)
@@ -165,7 +159,6 @@
   (current-namespace (namespace-anchor->namespace bundle-specs))
   (dprintf "Reading specs...")
   (dist:register-specs!)
-  (read-spec-file *readme-specs-file* *readme-specs*)
   (dprintf " done.\n"))
 
 (define (input-tgz-name? f)
@@ -232,39 +225,12 @@
               (when (null? trees)
                 (error 'binaries "no binaries found for ~s" platform)))
             *platforms* *platform-tree-lists*)
-  ;; Create the readme file so it is included with the plt tree
-  (with-output-to-file *readme-file* newline #:exists 'truncate)
   ;; Get the plt tree, remove junk and binary stuff
   (set-plt-tree! plt-base/ plt/-name *platform-tree-lists*)
   (set-bin-files-delayed-lists!
    (delay (map (lambda (trees)
                  (sort* (mappend tree-flatten (add-trees trees))))
-               *platform-tree-lists*)))
-  ;; Get the plt tree, remove junk and binary stuff
-  (delete-file *readme-file*))
-
-;; works with any newline format, expects text that always ends with a newline,
-;; does not handle tabs, does not handle prefix whitespaces, is not efficient.
-(define (wrap-string str width)
-  (define (wrap-line str nl r)
-    (cond [(<= (string-length str) width) (list* nl str r)]
-          [(or (regexp-match-positions #rx"^.*( +)" str 0 width)
-               ;; no space in limit, go for the first space afterwards
-               (regexp-match-positions #rx"^.*?( +)" str))
-           => (lambda (m)
-                (wrap-line (substring str (cdadr m)) nl
-                           (list* nl (substring str 0 (caadr m)) r)))]
-          [else (list* nl str r)]))
-  (let loop ([str str] [r '()])
-    (let ([m (regexp-match #rx"^(.*?)(\r\n|\r|\n)(.*)$" str)])
-      (if m
-        (loop (cadddr m) (wrap-line (cadr m) (caddr m) r))
-        (apply string-append (reverse (cons str r)))))))
-
-(define (make-readme)
-  (let ([readme (parameterize ([*specs* (*readme-specs*)])
-                  (apply string-append (expand-spec 'readme)))])
-    (display (wrap-string readme 72))))
+               *platform-tree-lists*))))
 
 (define (make-info-domain trees)
   (unless (= 1 (length trees))
@@ -277,6 +243,27 @@
                                                collects))))
                        *info-domain-cache*)])
     (lambda () (write info) (newline))))
+
+(define readme-skeleton
+  (delay (let ([m (regexp-match #rx"^(.*?\n====+\n)\n*(.*)$" *readme-cache*)])
+           ;; title, rest (without generic source reference)
+           (if m
+             (list (cadr m)
+                   (regexp-replace #rx"\nInstructions for building[^\n]*\n"
+                                   (caddr m)
+                                   ""))
+             (error 'readme-skeleton "unexpected toplevel README")))))
+(define (make-readme)
+  (for-each
+   ;; convert to CRLF on Windows
+   (if (memq 'win (*environment*))
+     (lambda (x) (display (regexp-replace* #rx"\r?\n" x "\r\n")))
+     display)
+   `(,(car (force readme-skeleton))
+     "\n"
+     ,@(expand-spec 'readme-header)
+     "\n"
+     ,(cadr (force readme-skeleton)))))
 
 (define (create-binaries platform trees)
   (parameterize ([cd (build-path binaries/ platform)])
@@ -511,17 +498,13 @@
 
 (register-spec! 'verify! (lambda () (when *verify?* (verify!))))
 
-;; make auto-generated files exist
-(define (create-generated-files)
-  ;; no need to create the cache.ss, since it's there, but read it
-  (set! *info-domain-cache*
-        (with-input-from-file *info-domain-file* read))
-  (with-output-to-file *readme-file* newline #:exists 'truncate))
-(define (delete-generated-files)
-  ;; don't delete the cache, but write original unfiltered contents
-  (with-output-to-file *info-domain-file*
-    (lambda () (write *info-domain-cache*) (newline)) #:exists 'truncate)
-  (delete-file *readme-file*))
+(define (read-orig-files)
+  (set! *readme-cache* (file->string *readme-file*))
+  (set! *info-domain-cache* (with-input-from-file *info-domain-file* read)))
+(define (write-orig-files)
+  (display-to-file *readme-file* *readme-cache*)
+  (with-output-to-file *info-domain-file* #:exists 'truncate
+    (lambda () (write *info-domain-cache*) (newline))))
 
 ;; mimic the chown syntax
 (define (chown #:rec [rec #f] who path . paths)
@@ -538,11 +521,10 @@
                              (map (lambda (p) (format " \"~a\"" p)) paths)))))))
 
 (define whoami
-  (delay
-    (parameterize ([current-output-port (open-output-string)])
-      (system "echo \"`id -nu`:`id -ng`\"")
-      (regexp-replace
-       #rx"[ \r\n]*$" (get-output-string (current-output-port)) ""))))
+  (delay (parameterize ([current-output-port (open-output-string)])
+           (system "echo \"`id -nu`:`id -ng`\"")
+           (regexp-replace
+            #rx"[ \r\n]*$" (get-output-string (current-output-port)) ""))))
 
 (define (chown-dirs-to who)
   (when (and *root?* *pack?*)
@@ -556,7 +538,7 @@
 (initialize)
 (for-each create-binaries *platforms* *platform-tree-lists*)
 (dynamic-wind
-  (lambda () (create-generated-files) (chown-dirs-to 'root))
+  (lambda () (read-orig-files) (chown-dirs-to 'root))
   ;; Start the verification and distribution
   (lambda () (expand-spec 'distributions) (void))
-  (lambda () (chown-dirs-to 'me) (delete-generated-files)))
+  (lambda () (chown-dirs-to 'me) (write-orig-files)))
