@@ -1,5 +1,4 @@
-
-This is the source code distribution for Racket. For license
+This is the source code distribution for Racket.  For license
 information, please see the file racket/notes/COPYING.LIB.
 
 Compiled binaries, documentation, and up-to-date information are
@@ -24,55 +23,54 @@ Please report bugs via one of the following:
 ========================================================================
 
 To compile with Microsoft Visual C, read the instructions in
-racket\src\worksp\README.
+"racket\src\worksp\README".
 
-To compile with Cygwin tools, follow the Unix instructions below, and
-be sure to configure with --enable-shared. The result is a Unix-style
-build, not a Windows-style build (e.g., Racket's `system-type'
-procedure returns 'unix, not 'windows, and GRacket uses X11).
+To compile with Cygwin tools, follow the Unix instructions below, and be
+sure to configure with `--enable-shared'.  The result is a Unix-style
+build, not a Windows-style build (e.g., Racket's `system-type' procedure
+returns 'unix, not 'windows, and GRacket uses X11).
 
 ========================================================================
  Compiling for Mac OS X
 ========================================================================
 
-First, install the Mac OS X Developer Tools from Apple. Then, follow
+First, install the Mac OS X Developer Tools from Apple.  Then, follow
 the Unix instructions below, but note the following:
 
- * The Racket build creates a framework, Racket.framework, which is
-   installed into racket/lib. This framework is used by the executable
-   `racket' that goes into racket/bin.
+ * The Racket build creates a framework, "Racket.framework", which is
+   installed into "racket/lib".  This framework is used by the `racket'
+   executable that goes into "racket/bin".
 
- * The GRacket build creates a framework, GRacket.framework, which is
-   installed into racket/lib. This framework is used by the executable
-   bundle GRacket.app that goes into the "racket" directory.
-   Installation creates a script, racket/bin/mred, that runs the
-   bundle.
+ * The GRacket build creates a framework, "GRacket.framework", which is
+   installed into "racket/lib".  This framework is used by the
+   executable bundle GRacket.app that goes into the "racket" directory.
+   The installation creates a script, "racket/bin/gracket", that runs
+   the bundle.
 
- * The --enable-shared flag for `configure' must not be used, because
-   builds create and use frameworks by default. Furthermore,
-   --disable-shared is not supported. (Unless you use
-   --enable-xonx...)
+ * The `--enable-shared' flag for `configure' must not be used, because
+   builds create and use frameworks by default.  Furthermore,
+   `--disable-shared' is not supported.  (Unless you use
+   `--enable-xonx'...)
 
  * To build an X11-based GRacket, run `configure' with the
-   --enable-xonx flag. Frameworks are not used for such builds, so
-   --enable-shared is allowed. The --enable-xonx flag also affects the
-   Racket build, so that `system-type' reports 'unix.
+   `--enable-xonx' flag.  Frameworks are not used for such builds, so
+   --enable-shared is allowed.  The `--enable-xonx' flag also affects
+   the Racket build, so that `system-type' reports 'unix.
 
- * To use --prefix without --enable-xonx, you must also supply
-   --enable-macprefix. BEWARE! The directory structure for a non-xonx
-   build does not fit a typical Unix directory structure. For example,
-   frameworks are written directly to a "lib" subdirectory, and
+ * To use `--prefix' without `--enable-xonx', you must also supply
+   `--enable-macprefix'.  BEWARE!  The directory structure for a
+   non-xonx build does not fit a typical Unix directory structure.  For
+   example, frameworks are written directly to a "lib" subdirectory, and
    executables like "GRacket.app" are written directly to the prefix
-   directory. (Requiring --enable-macprefix with --prefix for a
+   directory.  (Requiring `--enable-macprefix' with `--prefix' for a
    non-xonx build helps prevent accidental installation of a Mac-style
    directory structure on top of an existing Unix-style directory
    structure.)
 
- * Under Mac OS X 10.6 and later, `configure' by default selects
-   32-bit mode for building Racket and GRacket. To build Racket in
-   64-bit mode (GRacket is not support in that mode), use the
-   following arguments to `configure': --enable-mac64, --enable-sgc,
-   and --disable-mred.
+ * Under Mac OS X 10.6 and later, `configure' by default selects 32-bit
+   mode for building Racket and GRacket.  To build Racket in 64-bit mode
+   (GRacket is not support in that mode), use the following arguments to
+   `configure': `--enable-mac64', `--enable-sgc', and `--disable-mred'.
 
 ========================================================================
  Compiling for supported Unix variants (including Linux) or Cygwin
@@ -80,8 +78,8 @@ the Unix instructions below, but note the following:
 
 Quick instructions:
 
- From this directory (where the `README' and `configure' files are),
- run the following commands:
+ From this directory (where the `configure' file is), run the following
+ commands:
 
    mkdir build
    cd build
@@ -90,9 +88,9 @@ Quick instructions:
    make install
 
  This will create an in-place installation of Racket and store the
- results of C/C++ compilation in a separate `build' subdirectory,
- which is useful if you need to update your sources, delete the build,
- and start from scratch.
+ results of C/C++ compilation in a separate "build" subdirectory, which
+ is useful if you need to update your sources, delete the build, and
+ start from scratch.
 
  You can also run the typical `./configure && make && make install' if
  you don't anticipate updating/rebuilding, but it will be harder to
@@ -104,18 +102,18 @@ Detailed instructions:
     remove it (unless you are using an "in-place" build from a
     repository as described below).
 
-    Also, make sure that you have libraries and header files for Xft
-    and Cairo (v1.23 and up) if you would like support for font
-    smoothing (Xft) and graphics smoothing (Cairo). These libraries
-    are not distributed with Racket. The configure process checks
-    automatically whether these libraries are available.
+    Also, make sure that you have libraries and header files for Xft and
+    Cairo (v1.23 and up) if you would like support for font smoothing
+    (Xft) and graphics smoothing (Cairo).  These libraries are not
+    distributed with Racket.  The configure process checks automatically
+    whether these libraries are available.
 
     OpenGL support for GRacket sometimes requires special configuration
-    (though generally not under Linux). See the note at the end of
-    this section if OpenGL fails to work.
+    (though generally not under Linux).  See the note at the end of this
+    section if OpenGL fails to work.
 
     Finally, the content of the "foreign" subdirectory may require GNU
-    `make'. If the build fails with another variant of `make', please
+    `make'.  If the build fails with another variant of `make', please
     try using GNU `make'.
 
  1. Select (or create) a build directory.
@@ -134,188 +132,187 @@ Detailed instructions:
 
     A separate build directory is better in case the Makefile
     organization changes, or in case the Makefiles lack some
-    dependencies. In those cases, when using a "build" subdirectory,
+    dependencies.  In those cases, when using a "build" subdirectory,
     you can just delete and re-create "build" without mangling your
     source tree.
 
  2. From your build directory, run the script `configure' (which is in
     the same directory as this README), with optional command-line
-    arguments --prefix=TARGETDIR or --enable-shared (or both).
+    arguments `--prefix=TARGETDIR' or `--enable-shared' (or both).
 
-    For example, if you want to install into /usr/local/racket using
+    For example, if you want to install into "/usr/local/racket" using
     dynamic libraries, then run:
 
       [here]configure --prefix=/usr/local/racket --enable-shared
 
     Again, "[here]" is the directory path containing the `configure'
     script.  If you follow the convention of running from a "build"
-    subdirectory, "[here]" is just "../".  If you build from the
-    current directory, "[here]" is possibly unnecessary, or possibly
-    just "./", depending on your shell and PATH setting.
+    subdirectory, "[here]" is just "../".  If you build from the current
+    directory, "[here]" is possibly unnecessary, or possibly just "./",
+    depending on your shell and PATH setting.
 
-    If the --prefix flag is omitted, the binaries are built for an
-    in-place installation (i.e., the parent of the directory
-    containing this README will be used directly). Unless
-    --enable-shared is used, the "racket" directory can be moved
-    later; most system administrators would recommend that you use
-    --enable-shared, but the Racket developers distribute binaries
-    built without --enable-shared.
+    If the `--prefix' flag is omitted, the binaries are built for an
+    in-place installation (i.e., the parent of the directory containing
+    this README will be used directly).  Unless `--enable-shared' is
+    used, the "racket" directory can be moved later; most system
+    administrators would recommend that you use `--enable-shared', but
+    the Racket developers distribute binaries built without
+    `--enable-shared'.
 
-    The `configure' script generates the makefiles for building
-    Racket and/or GRacket. The current directory at the time
-    `configure' is run will be used as working space for building the
-    executables (independent of --prefix). This build directory does
-    not have to be in the source tree, even for an "in-place"
-    build. It's ok to run `configure' from its own directory (as in
-    the first example above), but it's better to pick a separate build
-    directory that is otherwise empty (as in the second example).
+    The `configure' script generates the makefiles for building Racket
+    and/or GRacket.  The current directory at the time `configure' is
+    run will be used as working space for building the executables
+    (independent of `--prefix').  This build directory does not have to
+    be in the source tree, even for an "in-place" build.  It's ok to run
+    `configure' from its own directory (as in the first example above),
+    but it's better to pick a separate build directory that is otherwise
+    empty (as in the second example).
 
     The `configure' script accepts many other flags that adjust the
-    build process. Run `configure --help' for more information. In
+    build process.  Run `configure --help' for more information.  In
     addition, a specific compiler can be selected through environment
-    variables. For example, to select the SGI compilers for Irix
+    variables.  For example, to select the SGI compilers for Irix
     instead of gcc, run configure as
 
          env CC=cc CXX=CC [here]configure
 
-    For cross compilation, set the compiler variables to a compiler
-    for the target platform compiler, but also set CC_FOR_BUILD to a
+    For cross compilation, set the compiler variables to a compiler for
+    the target platform compiler, but also set CC_FOR_BUILD to a
     compiler for the host platform (for building binaries to execute
-    during the build process). If the target machine's stack grows up,
-    you'll have to supply --enable-stackup; if the target machine is
-    big-endian, you may have to supply --enable-bigendian.
+    during the build process).  If the target machine's stack grows up,
+    you'll have to supply `--enable-stackup'; if the target machine is
+    big-endian, you may have to supply `--enable-bigendian'.
 
-    If you re-run `configure' after running `make', then products of
-    the `make' may be incorrect due to changes in the compiler command
-    line. To be safe, run `make clean' each time after running
-    `configure'. To be even safer, run `configure' in a fresh build
-    directory every time.
+    If you re-run `configure' after running `make', then products of the
+    `make' may be incorrect due to changes in the compiler command line.
+    To be safe, run `make clean' each time after running `configure'.
+    To be even safer, run `configure' in a fresh build directory every
+    time.
 
     When building for multiple platforms or configurations out of the
     same source directory, beware of cached `configure' information in
-    `config.cache'. Avoid this problem entirely by using a separate
+    "config.cache".  Avoid this problem entirely by using a separate
     build directory (but the same source) for each platform or
     configuration.
 
- 3. Run `make'. [As noted in step 0, this must be GNU `make'.]
+ 3. Run `make'.  [As noted in step 0, this must be GNU `make'.]
 
     With Cygwin, you may need to use `make --unix'.
 
     Binaries and libraries are placed in subdirectories of the build
-    directory. For example, the `racket3m' binary appears in the
-    `racket' directory.
+    directory.  For example, the `racket3m' binary appears in the
+    "racket" directory.
 
  4. Run `make install'.
 
-    This step copies binaries and libraries into place within the
-    target installation. For example, the `racket' binary is copied
-    into the "bin" directory for an in-place build, or into the
-    executable directory for a --prefix build.
+    This step copies binaries and libraries into place within the target
+    installation.  For example, the "racket" binary is copied into the
+    "bin" directory for an in-place build, or into the executable
+    directory for a --prefix build.
 
-    For a --prefix build, this step also creates a "config.rkt" module
-    in a "config" collection, so that various Racket tools and
-    libraries can find the installation directories. At this stage, in
-    case you are packaging an installation instead of installing
-    directly, you can redirect the installation by setting the
-    "DESTDIR" environment variable. For example, `make
-    DESTDIR=/tmp/racket-build install' places the installation into
-    "/tmp/racket-build" instead of the location originally specified
-    with --prefix. The resulting installation will not work, however,
-    until it is moved to the location originally specified with
-    --prefix.
+    For a `--prefix' build, this step also creates a "config.rkt" module
+    in a "config" collection, so that various Racket tools and libraries
+    can find the installation directories.  At this stage, in case you
+    are packaging an installation instead of installing directly, you
+    can redirect the installation by setting the "DESTDIR" environment
+    variable.  For example, `make DESTDIR=/tmp/racket-build install'
+    places the installation into "/tmp/racket-build" instead of the
+    location originally specified with `--prefix'.  The resulting
+    installation will not work, however, until it is moved to the
+    location originally specified with `--prefix'.
 
     Finally, the `make install' step compiles ".zo" bytecode files for
     installed Racket source, and generates launcher programs like
-    DrRacket. Use `make plain-install' to install without compiling
+    DrRacket.  Use `make plain-install' to install without compiling
     ".zo" files or creating launchers.
 
     If the installation fails because the target directory cannot be
-    created, or because the target directory is not the one you
-    want, then you can try repeating step 4 after running `configure'
-    again with a new --prefix value. That is, sometimes it is not
-    necessary to repeat step 3 (so try it and find out). On other
-    platforms and configurations, it is necessary to start with a
-    clean build directory when changing the --prefix value, because
-    the path gets wired into shared objects.
+    created, or because the target directory is not the one you want,
+    then you can try repeating step 4 after running `configure' again
+    with a new `--prefix' value.  That is, sometimes it is not necessary
+    to repeat step 3 (so try it and find out).  On other platforms and
+    configurations, it is necessary to start with a clean build
+    directory when changing the `--prefix' value, because the path gets
+    wired into shared objects.
 
-    If you build frequently from the git-based sources, beware that
-    you may accumulate user- and version-specific information in your
+    If you build frequently from the git-based sources, beware that you
+    may accumulate user- and version-specific information in your
     "add-ons" directory, which you can most easily find by evaluating
       (find-system-path 'addon-dir)
-    in Racket. In addition, if you configure with --enabled-shared,
+    in Racket.  In addition, if you configure with `--enabled-shared',
     you may accumlate many unused versions of the dynamic libraries in
     your installation target.
 
-After an "in-place" install without git, the racket/src directory is
-no longer needed, and it can be safely deleted. Build information is
+After an "in-place" install without git, the "racket/src" directory is
+no longer needed, and it can be safely deleted.  Build information is
 recorded in a "buildinfo" file in the installation.
 
-For a build without --prefix (or with --enable-origtree) and without
---enable-shared, you can safely move the install tree, because all
+For a build without `--prefix' (or with `--enable-origtree') and without
+`--enable-shared', you can safely move the install tree, because all
 file references within the installation are relative.
 
 OpenGL, Unix, and pthreads
 --------------------------
 
 On some Unix systems, programs that use the OpenGL library must also
-link to pthreads. To use GRacket's OpenGL support on these systems, GRacket
-must be configured with the --enable-pthread option. Unfortunately,
-Racket's normal stack handling and use of signals (for its own
-thread scheduling) do not interact well with pthreads. Thus, when
-pthreads are enabled, Racket and GRacket cannot use interupt timers,
-and the stack is limited to 1MB. These restrictions can degrade
+link to pthreads.  To use GRacket's OpenGL support on these systems,
+GRacket must be configured with the `--enable-pthread' option.
+Unfortunately, Racket's normal stack handling and use of signals (for
+its own thread scheduling) do not interact well with pthreads.  Thus,
+when pthreads are enabled, Racket and GRacket cannot use interupt
+timers, and the stack is limited to 1MB.  These restrictions can degrade
 performance and thread-responsiveness.
 
-If `configure' detects that OpenGL requires -lpthread for linking,
-and if --enable-pthread is not specified, `configure' prints a warning
-and disables GL support. On some systems, including at least FreeBSD
-with the MESA GL implementation (but not the NVIDIA implementation,
-which does not need pthreads), `configure' cannot detect the need for
-pthreads. On these platforms, GL support will be included in GRacket,
-but it will not work properly unless --enable-pthread is specified.
+If `configure' detects that OpenGL requires -lpthread for linking, and
+if `--enable-pthread' is not specified, `configure' prints a warning and
+disables GL support.  On some systems, including at least FreeBSD with
+the MESA GL implementation (but not the NVIDIA implementation, which
+does not need pthreads), `configure' cannot detect the need for
+pthreads.  On these platforms, GL support will be included in GRacket,
+but it will not work properly unless `--enable-pthread' is specified.
 
 ========================================================================
  CGC versus 3m
 ========================================================================
 
-Racket and GRacket have two variants: CGC and 3m. The CGC variant is
-older, and it cooperates more easily with extensions written in C.
-The 3m variant is the default, and it usually provides better overall
-performance.
+Racket and GRacket have two variants: CGC and 3m.  The CGC variant is
+older, and it cooperates more easily with extensions written in C.  The
+3m variant is the default: it is more robust and usually provides better
+overall performance.
 
-The default build mode creates 3m binaries only. To create CGC
-binaries in addition, run `make cgc' in addition to `make', or run
-`make both'. To install both variants, use `make install-both' instead
-of just `make install'. Alternately, use just `make cgc' and `make
-install-cgc' to build and install just the CGC variants.
+The default build mode creates 3m binaries only.  To create CGC binaries
+in addition, run `make cgc' in addition to `make', or run `make both'.
+To install both variants, use `make install-both' instead of just `make
+install'.  Alternately, use just `make cgc' and `make install-cgc' to
+build and install just the CGC variants.
 
-CGC variants are installed with a "cgc" suffix. To swap the default
-build and install mode, supply --enable-cgcdefault to `configure'.  In
+CGC variants are installed with a "cgc" suffix.  To swap the default
+build and install mode, supply `--enable-cgcdefault' to `configure'.  In
 that case, CGC variants are built by default, `make 3m' creates 3m
-binaries, and `make install-both' installs CGC variants without a
-suffix and 3m variants with a "3m" suffix.
+binaries, and `make install-both' installs CGC variants without a suffix
+and 3m variants with a "3m" suffix.
 
 ========================================================================
  Embedded Paths in the Executables
 ========================================================================
 
 On all platforms, the Racket and GRacket binaries embed a path to the
-main "collects" directory of library collections. This path can be
-relative to the executable. Multiple paths can be provided, in which
+main "collects" directory of library collections.  This path can be
+relative to the executable.  Multiple paths can be provided, in which
 case the first path is the main "collects" path, and additional paths
 are placed before the main path (but after a user-specific "collects"
 path) in the default collection path list.
 
 The paths are embedded in the binary immediately after a special
-"coLLECTs dIRECTORy:" tag. Each path must be NUL terminated, the
-entire list of paths must end with an additional NUL terminator, and
-the overall list must be less than 1024 bytes long.
+"coLLECTs dIRECTORy:" tag.  Each path must be NUL terminated, the entire
+list of paths must end with an additional NUL terminator, and the
+overall list must be less than 1024 bytes long.
 
 As an alternative to editing an exeuctable directly, the
 `create-embedding-executable' procedure from `compiler/embed' can be
-used to change the embedded path. For example, the following program
-clones the Racket executable to "/tmp/mz" and changes the embedded
-path in the clone to "/tmp/collects":
+used to change the embedded path.  For example, the following program
+clones the Racket executable to "/tmp/mz" and changes the embedded path
+in the clone to "/tmp/collects":
 
  (require compiler/embed)
  (create-embedding-executable "/tmp/mz" #:collects-path "/tmp/collects")
@@ -323,21 +320,20 @@ path in the clone to "/tmp/collects":
 Similarly, `raco exe' mode accepts a `--collects' flag to set the
 collection path in the generated executable.
 
-Under Windows, executables also embed a path to DLLs. For more
-information, see worksp\README.
+Under Windows, executables also embed a path to DLLs.  For more
+information, see "worksp\README".
 
 Paths to all other installation directories are found through the
-"config.rkt" library of the "config" collection. Search the
+"config.rkt" library of the "config" collection.  Search the
 documentation for "config search paths" for more information.
 
 ========================================================================
  Porting to New Platforms
 ========================================================================
 
-At a mininum, to port Racket to a new platform, edit
-racket/sconfig.h to provide a platform-specific compilation
-information. As distributed, racket/sconfig.h contains
-configurations for the following platforms:
+At a mininum, to port Racket to a new platform, edit "racket/sconfig.h"
+to provide a platform-specific compilation information.  As distributed,
+"racket/sconfig.h" contains configurations for the following platforms:
 
               Windows (x86)
               Mac OS X (PPC, x86, x86_64)
@@ -359,22 +355,22 @@ If your platfrom is not supported by the Boehm garbage collector
 Garbage Collector
 -----------------
 
-The conservative garbage collector distributed with Racket (in the
-gc directory) has been modified slightly from Boehm's standard
-distribution. Mostly, the change modify the way that object
+The conservative garbage collector distributed with Racket (in the "gc"
+directory) has been modified slightly from Boehm's standard
+distribution.  Mostly, the change modify the way that object
 finalization is handled.
 
 Configuration Options
 ---------------------
 
 By default, Racket is compiled without support for single-precision
-floating point numbers. This and other options can be modified by
-setting flags in racket/sconfig.h.
+floating point numbers.  This and other options can be modified by
+setting flags in "racket/sconfig.h".
 
 Modifying Racket
-------------------
+----------------
 
-If you modify Racket and change any primitive syntax or the
-collection of built-in identifers, be sure to turn off
-USE_COMPILED_MACROS in schminc.h. Otherwise, Racket won't start.
-See schminc.h for details.
+If you modify Racket and change any primitive syntax or the collection
+of built-in identifers, be sure to turn off USE_COMPILED_MACROS in
+"schminc.h".  Otherwise, Racket won't start.  See "schminc.h" for
+details.

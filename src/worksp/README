@@ -18,14 +18,14 @@ Visual Studio Express is available for free from Microsoft; it can be
 used to build Racket and GRacket, but not MzCOM and MysterX.
 
 Racket and GRacket also compile with Cygwin gcc (a free compiler from
-GNU and Cygnus Solutions), but the result is a Unix-style
-installation, not a Window-style installation. To compile with gcc,
-follow the instructions in racket\src\README (which contains a short
+GNU and Cygnus Solutions), but the result is a Unix-style installation,
+not a Window-style installation.  To compile with gcc, follow the
+instructions in racket\src\README (which contains a short
 Windows-specific section).
 
-With an MSVC-built Racket, compatible extensions can be built with
-other compilers. Build with Cygwin and copy the installed racket\lib\gcc
-to a MSVC-based build to support Cygwin-built extensions. To support
+With an MSVC-built Racket, compatible extensions can be built with other
+compilers.  Build with Cygwin and copy the installed racket\lib\gcc to a
+MSVC-based build to support Cygwin-built extensions.  To support
 Borland-built extensions, cd to racket\src\racket\dynsrc and run
 mkbordyn.bat (which requires bcc23.exe, of course).
 
@@ -37,20 +37,20 @@ As always, please report bugs via one of the following:
 -PLT
  racket@racket-lang.org
 
-----------------------------------------------------------------------
+---------------------------
 Building Racket and GRacket
-----------------------------------------------------------------------
+---------------------------
 
 If you're using MSVC 8.0 (not Express), and if `devenv.exe' is in your
-path, then you can just run 
+path, then you can just run
        racket\src\worksp\build.bat
 from its own directory to perform all steps up to "Versioning",
 including the MzCOM and MysterX steps.
 
-The CGC variants of Racket, MzCOM, GRacket, and MysterX can be built
-via Visual Studio projects. The 3m variants are built by a Racket
-script that runs the MSVC command-line tools. (See "CGC versus 3m"
-in racket\src\README if you don't know about the two variants.)
+The CGC variants of Racket, MzCOM, GRacket, and MysterX can be built via
+Visual Studio projects.  The 3m variants are built by a Racket script
+that runs the MSVC command-line tools.  (See "CGC versus 3m" in
+racket\src\README if you don't know about the two variants.)
 
 The 3m build requires some parts of the CGC build:
        racket\src\worksp\racket
@@ -58,15 +58,14 @@ The 3m build requires some parts of the CGC build:
        racket\src\worksp\jpeg
        racket\src\worksp\png
        racket\src\worksp\zlib
-It's simplest to just build the main CGC solutions, which
-automatically build all of the above projects, and then build
-3m.
+It's simplest to just build the main CGC solutions, which automatically
+build all of the above projects, and then build 3m.
 
 Building RacketCGC and GRacketCGC
---------------------------------
+---------------------------------
 
 The CGC source code for RacketCGC and GRacketCGC is split into several
-projects that are grouped into a few solutions. To build the `X'
+projects that are grouped into a few solutions.  To build the `X'
 solution with Visual Studio, open the file racket\src\worksp\X\X.sln.
 
 To build RacketCGC, build the Racket solution in
@@ -81,37 +80,36 @@ To build GRacketCGC, build the GRacket solution:
    [Again, switch to the "Release" configuration if necessary.]
 
 The build processes for RacketCGC automatically builds
-   libmzgc - makes racket\lib\libmzgcxxxxxxx.dll and
-             racket\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
-   libracket - makes racket\lib\libracketxxxxxxx.dll and
-               racket\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
+   libmzgc    - makes racket\lib\libmzgcxxxxxxx.dll and
+                racket\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
+   libracket  - makes racket\lib\libracketxxxxxxx.dll and
+                racket\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
 
 The build process for GRacketCGC automatically builds
-   libmzgc - as above
-   libracket - as above
+   libmzgc    - as above
+   libracket  - as above
    libgracket - makes racket\lib\libgracketxxxxxxx.dll and
                 racket\src\worksp\libgracket\Release\libgracketxxxxxxx.lib
-   wxutils - makes racket\src\worksp\wxutils\Release\wxutils.lib
-   wxwin - makes racket\src\worksp\wxwin\Release\wxwin.lib
-   wxs  - makes racket\src\worksp\wxs\Release\wxs.lib
-   wxme  - makes racket\src\worksp\wxme\Release\wxme.lib
-   jpeg  - makes racket\src\worksp\jpeg\Release\jpeg.lib
-   png  - makes racket\src\worksp\jpeg\Release\png.lib
-   zlib  - makes racket\src\worksp\jpeg\Release\zlib.lib
+   wxutils    - makes racket\src\worksp\wxutils\Release\wxutils.lib
+   wxwin      - makes racket\src\worksp\wxwin\Release\wxwin.lib
+   wxs        - makes racket\src\worksp\wxs\Release\wxs.lib
+   wxme       - makes racket\src\worksp\wxme\Release\wxme.lib
+   jpeg       - makes racket\src\worksp\jpeg\Release\jpeg.lib
+   png        - makes racket\src\worksp\jpeg\Release\png.lib
+   zlib       - makes racket\src\worksp\jpeg\Release\zlib.lib
 
 In addition, building RacketCGC executes
    racket\src\racket\dynsrc\mkmzdyn.bat
-which copies .exp, .obj, and .lib files into racket\lib\, and also copies
-DLLs from the "extradlls" directory to to racket\lib\.
+which copies .exp, .obj, and .lib files into racket\lib\, and also
+copies DLLs from the "extradlls" directory to to racket\lib\.
 
 Building Racket3m and GRacket3m
-------------------------------
+-------------------------------
 
-After RacketCGC and GRacketCGC are built, you can can build 3m
-binaries:
+After RacketCGC and GRacketCGC are built, you can can build 3m binaries:
 
- 1. Ensure that the Visual Studio command-line tools are in your
-    path. You may need to run "vsvars32.bat" from your Visual Studio
+ 1. Ensure that the Visual Studio command-line tools are in your path.
+    You may need to run "vsvars32.bat" from your Visual Studio
     installation, so that PATH and other environment variables are set.
 
  2. Change directories to racket\src\worksp\gc2 and run
@@ -120,7 +118,7 @@ binaries:
 
 The resulting Racket.exe and GRacket.exe will appear in the top-level
 "racket" directory, along with DLLs libracket3mxxxxxxx.dll and
-libgracket3mxxxxxxx.dll in racket/lib. (There is no corresponding
+libgracket3mxxxxxxx.dll in racket/lib.  (There is no corresponding
 libmzgc3mxxxxxxx.dll.  Instead, it is merged with
 libracket3mxxxxxxx.dll.)
 
@@ -128,7 +126,7 @@ Building Collections and Other Executables
 ------------------------------------------
 
 If you're building from scratch, you'll also want the starter programs
-used by the launcher collection to create "raco.exe". Build the
+used by the launcher collection to create "raco.exe".  Build the
 following solutions:
 
  racket\src\worksp\mzstart - makes racket\collects\launcher\mzstart.exe
@@ -142,8 +140,8 @@ Racket[CGC].exe) by running
 
    racket.exe -l- setup
 
-This last step makes the .zo files, too. To skip compiling .zos, add
--n to the end of the above command.
+This last step makes the .zo files, too.  To skip compiling .zos, add
+`-n' to the end of the above command.
 
 If you've already built before, then this step can be simplied: just
 re-run `raco setup', where "raco.exe" was created the first time.
@@ -152,13 +150,13 @@ Versioning
 ----------
 
 [If you're going to build MzCOM and/or MysterX, do that before running
- the version-changing script. See instructions below.]
+ the version-changing script.  See instructions below.]
 
-The obnoxious "xxxxxxx" in the DLL names is a placeholder for a
-version number. Embedding a version number in a DLL name appears to
-be the simplest and surest way to avoid version confusion.
+The obnoxious "xxxxxxx" in the DLL names is a placeholder for a version
+number.  Embedding a version number in a DLL name appears to be the
+simplest and surest way to avoid version confusion.
 
-For local testing, you can use the "xxxxxxx" libraries directly. For
+For local testing, you can use the "xxxxxxx" libraries directly.  For
 any binaries that will be distributed, however, the placeholder should
 be replaced with a specific version.
 
@@ -169,20 +167,18 @@ To replace the "xxxxxxx" with a specific version, run
 in a shell.
 
 The "winvers.rkt" program will have to make a temporary copy of
-racket.exe and the "lib" sub-directory (into the temporary
-directory), and it will re-launch Racket a couple of times. Every
-".exe", ".dll", ".lib", ".def", ".exp", and ".pdb" file within the
-"racket" tree is updated to replace "xxxxxxxx" with a specific version
-number.
+racket.exe and the "lib" sub-directory (into the temporary directory),
+and it will re-launch Racket a couple of times.  Every ".exe", ".dll",
+".lib", ".def", ".exp", and ".pdb" file within the "racket" tree is
+updated to replace "xxxxxxxx" with a specific version number.
 
-----------------------------------------------------------------------
+--------------------------
 Building MzCOM and MysterX
-----------------------------------------------------------------------
+--------------------------
 
 Beware that MzCOM and MysterX do not build with Express versions of
-Visual Studio. Otherwise, building MzCOMCGC and MysterXCGC is similar
-to building RacketCGC. Building the 3m variants is a little
-different.
+Visual Studio.  Otherwise, building MzCOMCGC and MysterXCGC is similar
+to building RacketCGC.  Building the 3m variants is a little different.
 
 Building MzCOM
 --------------
@@ -192,14 +188,14 @@ To build MzCOMCGC, make the MzCOM solution in
 
 Use the "Release" configuration.
 
-After building MzCOMCGC, you can build the 3m variant by 
+After building MzCOMCGC, you can build the 3m variant by
 
  1. Change directories to racket\src\worksp\mzcom and run
 
       ..\..\..\racketcgc.exe -cu xform.rkt
 
- 2. Switch to the "3m" configuration in the MzCOM solution
-    (in Visual Studio).
+ 2. Switch to the "3m" configuration in the MzCOM solution (in Visual
+    Studio).
 
  3. Build (in Visual Studio).
 
@@ -215,48 +211,47 @@ To build MysterXCGC, make the MysterX solution in
 
 Use the "Release" configuration.
 
-After building MysterXCGC, you can build the 3m variant by 
+After building MysterXCGC, you can build the 3m variant by
 
  1. Change directories to racket\src\worksp\libmysterx and run
 
       ..\..\..\racketcgc.exe -cu xform.rkt
 
- 2. Switch to the "3m" configuration in the libmysterx solution
-    (in Visual Studio).
+ 2. Switch to the "3m" configuration in the libmysterx solution (in
+    Visual Studio).
 
  3. Build (in Visual Studio).
 
 The result is mxmain.dll (no 3m suffix) in
   collects\mysterx\private\compiled\native\win32\i386\3m
 
-----------------------------------------------------------------------
+------------
 Finding DLLs
-----------------------------------------------------------------------
+------------
 
 Since the DLLs libracket3mxxxxxxx.dll (or libmzgcxxxxxxx.dll and
 libracketxxxxxxx.dll) and libgracket3mxxxxxxx.dll (or
 libgracketxxxxxxx.dll) are installed into racket\lib\ instead of just
-racket\, the normal search path for DLLs would not find them when running
-"Racket.exe" or "GRacket.exe". To find the DLLs, the executables are
-"delayload" linked with the DLLs, and the executables explicitly load
-the DLLs from racket\lib\ on start-up.
+racket\, the normal search path for DLLs would not find them when
+running "Racket.exe" or "GRacket.exe".  To find the DLLs, the
+executables are "delayload" linked with the DLLs, and the executables
+explicitly load the DLLs from racket\lib\ on start-up.
 
 The relative DLL path is embedded in each executable, and it can be
-replaced with a path of up to 512 characters. The path is stored in
-the executable in wide-character format, and it is stored immediately
-after the wide-character tag "dLl dIRECTORy:" with a wide NUL
-terminator. The path can be either absolute or relative; in the latter
-case, the relative path is resolved with respect to the
-executable. Replacing the first character of the path with "<"
-disables the explicit DLL load, so that the DLLs must appear in the
-normal DLL search path.
+replaced with a path of up to 512 characters.  The path is stored in the
+executable in wide-character format, and it is stored immediately after
+the wide-character tag "dLl dIRECTORy:" with a wide NUL terminator.  The
+path can be either absolute or relative; in the latter case, the
+relative path is resolved with respect to the executable.  Replacing the
+first character of the path with "<" disables the explicit DLL load, so
+that the DLLs must appear in the normal DLL search path.
 
 See also ..\README for information on the embedded "collects" path in
 the executables.
 
-----------------------------------------------------------------------
+----------------
 Embedding Racket
-----------------------------------------------------------------------
+----------------
 
 The Racket DLLs can be used within an embedding application.
 
@@ -267,14 +262,13 @@ The libraries
     racket\lib\win32\msvc\libmzgcxxxxxxx.lib
 
 which are created by the mzsrc and gc projects, provide linking
-information for using the libracket3mxxxxxxx.dll,
-libracketxxxxxxx.dll, and libmzgcxxxxxxx.dll DLLs. The versioning
-script adjusts the names, as described above.
+information for using the libracket3mxxxxxxx.dll, libracketxxxxxxx.dll,
+and libmzgcxxxxxxx.dll DLLs.  The versioning script adjusts the names,
+as described above.
 
-See the "Inside Racket" manual for more information about using
-these libraries to embed Racket in an application.
-
+See the "Inside Racket" manual for more information about using these
+libraries to embed Racket in an application.
 
 If you need Racket to link to a DLL-based C library (instead of
-statically linking to the C library within the Racket DLL), then
-compile Racket with the /MD flag.
+statically linking to the C library within the Racket DLL), then compile
+Racket with the /MD flag.
