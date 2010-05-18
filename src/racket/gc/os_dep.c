@@ -1215,9 +1215,9 @@ ptr_t GC_get_main_stack_base(void)
 ptr_t GC_get_main_stack_base(void)
 {
 #   if defined(HEURISTIC1) || defined(HEURISTIC2)
-      word dummy;
+      MAYBE_UNUSED word dummy;
 #   endif
-    ptr_t result;
+	MAYBE_UNUSED ptr_t result;
 
 #   define STACKBOTTOM_ALIGNMENT_M1 ((word)STACK_GRAN - 1)
 
@@ -1360,7 +1360,7 @@ ptr_t GC_get_main_stack_base(void)
 /* FIXME - Implement better strategies here.			*/
 int GC_get_stack_base(struct GC_stack_base *b)
 {
-    int dummy;
+    MAYBE_UNUSED int dummy;
 
 #   ifdef NEED_FIND_LIMIT
 #     ifdef STACK_GROWS_DOWN
@@ -2920,9 +2920,8 @@ GC_bool GC_old_segv_handler_used_si;
 # endif /* MSWIN32 || MSWINCE */
 {
 #   if !defined(MSWIN32) && !defined(MSWINCE)
-      int code = si -> si_code;  /* Ignore gcc unused var. warning. */
-      ucontext_t * scp = (ucontext_t *)raw_sc;
-      				/* Ignore gcc unused var. warning. */
+      MAYBE_UNUSED int code = si -> si_code;
+      MAYBE_UNUSED ucontext_t * scp = (ucontext_t *)raw_sc;
       char *addr = si -> si_addr;
 #   endif
 #   if defined(MSWIN32) || defined(MSWINCE)
@@ -3249,7 +3248,7 @@ GC_bool GC_page_was_dirty(struct hblk *h)
  * On other systems, SET_LOCK_HOLDER and friends must be suitably defined.
  */
 
-static GC_bool syscall_acquired_lock = FALSE;	/* Protected by GC lock. */
+MAYBE_UNUSED static GC_bool syscall_acquired_lock = FALSE;	/* Protected by GC lock. */
  
 #if 0
 void GC_begin_syscall(void)

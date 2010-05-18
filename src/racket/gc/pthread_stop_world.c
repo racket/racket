@@ -1,4 +1,5 @@
 #include "private/pthread_support.h"
+#include "private/gc_priv.h"
 
 #if defined(GC_PTHREADS) && !defined(GC_WIN32_THREADS) && \
     !defined(GC_DARWIN_THREADS) && !defined(GC_OPENBSD_THREADS)
@@ -221,8 +222,8 @@ void GC_suspend_handler_inner(ptr_t sig_arg, void *context)
 
 void GC_restart_handler(int sig)
 {
-    pthread_t my_thread = pthread_self();
-    GC_thread me;
+    MAYBE_UNUSED pthread_t my_thread = pthread_self();
+	MAYBE_UNUSED GC_thread me;
 
     if (sig != SIG_THR_RESTART) ABORT("Bad signal in suspend_handler");
 

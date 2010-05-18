@@ -19,6 +19,12 @@
 # ifndef GC_PRIVATE_H
 # define GC_PRIVATE_H
 
+# ifdef __GNUC__
+#  define MAYBE_UNUSED __attribute__((unused))
+# else
+#  define MAYBE_UNUSED
+# endif
+
 # include <stdlib.h>
 # if !(defined( sony_news ) )
 #   include <stddef.h>

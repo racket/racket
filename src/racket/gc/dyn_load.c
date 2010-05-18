@@ -52,7 +52,7 @@
 
 /* A user-supplied routine that is called to determine if a DSO must
    be scanned by the gc.  */
-static int (*GC_has_static_roots)(const char *, void *, size_t);
+MAYBE_UNUSED static int (*GC_has_static_roots)(const char *, void *, size_t);
 
 /* PLTSCHEME: added OPENBSD: */
 #if (defined(DYNAMIC_LOADING) || defined(MSWIN32) || defined(MSWINCE)) \
