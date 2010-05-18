@@ -164,7 +164,8 @@ ptr_t GC_build_fl(struct hblk *h, size_t sz, GC_bool clear, ptr_t list)
    * put p (which is now head of list of objects in *h) as first
    * pointer in the appropriate free list for this size.
    */
-      obj_link(h -> hb_body) = list;
+	  word *tmp = (word *)h->hb_body;
+      obj_link(tmp) = list;
       return ((ptr_t)p);
 }
 
