@@ -40,6 +40,12 @@
                (->acc (list (-pair a b)) b (list -cdr))
                (->* (list (-lst a)) (-lst a))))]
 
+[caar (-poly (a b c)
+             (cl->* [->acc (list (-pair (-pair a b) c)) a (list -car -car)]
+                    [-> (-lst (-lst a)) a]))]
+[cdar (-poly (a b c)
+             (cl->* [->acc (list (-pair (-pair a b) c)) b (list -cdr -car)]
+                    [-> (-lst (-lst a)) (-lst a)]))]
 [cadr (-poly (a b c)
              (cl->* [->acc (list (-pair a (-pair b c))) b (list -car -cdr)]
                     [->  (-lst a) a]))]
@@ -47,6 +53,24 @@
               (cl->* [->acc (list (-pair a (-pair b c))) c (list -cdr -cdr)]
                      [-> (-lst a) (-lst a)]))]
 
+[caaar (-poly (a b c d)
+              (cl->* [->acc (list (-pair (-pair (-pair a b) c) d)) a (list -car -car -car)]
+                     [-> (-lst (-lst (-lst a))) a]))]
+[cdaar (-poly (a b c d)
+              (cl->* [->acc (list (-pair (-pair (-pair a b) c) d)) b (list -cdr -car -car)]
+                     [-> (-lst (-lst (-lst a))) (-lst a)]))]
+[cadar (-poly (a b c d)
+              (cl->* [->acc (list (-pair (-pair a (-pair b c)) d)) b (list -car -cdr -car)]
+                     [-> (-lst (-lst a)) a]))]
+[cddar (-poly (a b c d)
+              (cl->* [->acc (list (-pair (-pair a (-pair b c)) d)) c (list -cdr -cdr -car)]
+                     [-> (-lst (-lst a)) (-lst a)]))]
+[caadr (-poly (a b c d)
+              (cl->* [->acc (list (-pair a (-pair (-pair b c) d))) b (list -car -car -cdr)]
+                     [-> (-lst (-lst a)) a]))]
+[cdadr (-poly (a b c d)
+              (cl->* [->acc (list (-pair a (-pair (-pair b c) d))) c (list -cdr -car -cdr)]
+                     [-> (-lst (-lst a)) (-lst a)]))]
 [caddr  (-poly (a b c d)
               (cl->* [->acc (list (-pair a (-pair b (-pair c d)))) c (list -car -cdr -cdr)]
                      [-> (-lst a) a]))]
