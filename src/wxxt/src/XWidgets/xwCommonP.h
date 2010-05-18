@@ -6,11 +6,12 @@
 #include <X11/CompositeP.h>
 #include <./xwCommon.h>
 _XFUNCPROTOBEGIN
+#ifndef max
 #define max(a, b) ((a )>(b )?(a ):(b ))
-
-
+#endif
+#ifndef min
 #define min(a, b) ((a )<(b )?(a ):(b ))
-
+#endif
 
 typedef void (*compute_inside_Proc)(
 #if NeedFunctionPrototypes
