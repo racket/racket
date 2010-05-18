@@ -37,6 +37,8 @@
 #   undef dlopen
 # endif
 
+  extern GC_bool GC_collection_in_progress();
+
   /* Make sure we're not in the middle of a collection, and make	*/
   /* sure we don't start any.	Returns previous value of GC_dont_gc.	*/
   /* This is invoked prior to a dlopen call to avoid synchronization	*/
