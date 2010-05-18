@@ -38,6 +38,11 @@
  */
 
 #include "xpmP.h"
+#if defined(SYSV) || defined(SVR4) || defined(VMS) || defined(__GNUC__)
+#include <string.h>
+#else
+#include <strings.h>
+#endif
 
 #define MAXPRINTABLE 92			/* number of printable ascii chars
 					 * minus \ and " for string compat
@@ -352,7 +357,7 @@ ScanTransparentColor(color, cpp, attributes)
 		((XpmColor **) attributes->colorTable)[attributes->mask_pixel];
 /* end 3.2 bc */
 	for (key = 1; key <= NKEYS; key++) {
-	    if (s = mask_defaults[key]) {
+	    if ((s = mask_defaults[key])) {
 		defaults[key] = (char *) strdup(s);
 		if (!defaults[key])
 		    return (XpmNoMemory);
@@ -390,10 +395,11 @@ ScanOtherColors(display, colors, ncolors, pixels, mask, cpp, attributes)
     XpmColor *color;
     XColor *xcolors = NULL, *xcolor;
     char *colorname, *s;
-    XpmColor *colorTable, **oldColorTable = NULL;
+    XpmColor *colorTable = NULL;
+	XpmColor **oldColorTable = NULL;
     unsigned int ancolors = 0;
-    Pixel *apixels;
-    unsigned int mask_pixel;
+    Pixel *apixels = NULL;
+    unsigned int mask_pixel = 0;
     Bool found;
 
     /* retrieve information from the XpmAttributes */
@@ -495,7 +501,7 @@ ScanOtherColors(display, colors, ncolors, pixels, mask, cpp, attributes)
 
 		found = True;
 		for (key = 1; key <= NKEYS; key++) {
-		    if (s = adefaults[key])
+		    if ((s = adefaults[key]))
 			defaults[key] = (char *) strdup(s);
 		}
 	    }

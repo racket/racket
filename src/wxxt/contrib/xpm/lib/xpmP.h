@@ -46,11 +46,18 @@
  * lets try to solve include files
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 /* stdio.h doesn't declare popen on a Sequent DYNIX OS */
 #ifdef sequent
 extern FILE *popen();
+#endif
+
+#if defined(__GNUC__)
+# define MAYBE_UNUSED __attribute__((unused))
+#else
+# define MAYBE_UNUSED
 #endif
 
 #if defined(__FreeBSD__) || defined(SYSV) || defined(SVR4) || defined(VMS)
@@ -291,7 +298,7 @@ FUNC(xpmHashSlot, xpmHashAtom *, (xpmHashTable *table, char *s));
 FUNC(xpmHashIntern, int, (xpmHashTable *table, char *tag, void *data));
 
 #define HashAtomData(i) ((void *)i)
-#define HashColorIndex(slot) ((unsigned int)((*slot)->data))
+#define HashColorIndex(slot) ((uintptr_t)((*slot)->data))
 #define USE_HASHTABLE (cpp > 2 && ncolors > 4)
 
 #ifdef NEED_STRDUP

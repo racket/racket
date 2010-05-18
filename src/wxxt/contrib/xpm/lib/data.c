@@ -32,9 +32,6 @@
 *  Developed by Arnaud Le Hors                                                *
 \*****************************************************************************/
 
-/* Official version number */
-static char *RCS_Version = "$XpmVersion: 3.4g $";
-
 /* Internal version number */
 
 #include "xpmP.h"
@@ -45,6 +42,8 @@ static char *RCS_Version = "$XpmVersion: 3.4g $";
 #include <strings.h>
 #endif
 
+/* Official version number */
+MAYBE_UNUSED static char *RCS_Version = "$XpmVersion: 3.4g $";
 
 LFUNC(ParseComment, int, (xpmData * mdata));
 
@@ -386,13 +385,13 @@ xpmGetCmt(mdata, cmt)
 
 xpmDataType xpmDataTypes[] =
 {
-    "", "!", "\n", '\0', '\n', "", "", "", "",	/* Natural type */
-    "C", "/*", "*/", '"', '"', ",\n", "static char *", "[] = {\n", "};\n",
-    "Lisp", ";", "\n", '"', '"', "\n", "(setq ", " '(\n", "))\n",
+    {"", "!", "\n", '\0', '\n', "", "", "", ""},	/* Natural type */
+	{"C", "/*", "*/", '"', '"', ",\n", "static char *", "[] = {\n", "};\n"},
+	{"Lisp", ";", "\n", '"', '"', "\n", "(setq ", " '(\n", "))\n"},
 #ifdef VMS
     NULL
 #else
-    NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL
+    {NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL}
 #endif
 };
 

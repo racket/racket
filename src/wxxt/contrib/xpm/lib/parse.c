@@ -39,6 +39,7 @@
  */
 
 #include "xpmP.h"
+#include <stdint.h>
 #include <ctype.h>
 #if defined(SYSV) || defined(SVR4) || defined(VMS) || defined(__GNUC__)
 #include <string.h>
@@ -179,7 +180,7 @@ xpmParseData(data, image, info)
     /*
      * parse extensions
      */
-    if (info && (info->valuemask & XpmReturnExtensions))
+    if (info && (info->valuemask & XpmReturnExtensions)) {
 	if (extensions) {
 	    ErrorStatus = ParseExtensions(data, &info->extensions,
 					  &info->nextensions);
@@ -188,6 +189,7 @@ xpmParseData(data, image, info)
 	} else {
 	    info->extensions = NULL;
 	    info->nextensions = 0;
+	}
 	}
 
     /*
@@ -333,7 +335,8 @@ ParseColors(data, ncolors, cpp, colorTablePtr, hashtable)
     XpmColor **colorTablePtr;
     xpmHashTable *hashtable;
 {
-    unsigned int key, l, a, b;
+	uintptr_t a;
+    unsigned int key, l, b;
     unsigned int curkey;		/* current color key */
     unsigned int lastwaskey;		/* key read */
     char buf[BUFSIZ];
@@ -383,7 +386,7 @@ ParseColors(data, ncolors, cpp, colorTablePtr, hashtable)
 	    curkey = 0;
 	    lastwaskey = 0;
 	    *curbuf = '\0';		/* init curbuf */
-	    while (l = xpmNextWord(data, buf, BUFSIZ)) {
+	    while ((l = xpmNextWord(data, buf, BUFSIZ))) {
 		if (!lastwaskey) {
 		    for (key = 0, sptr = xpmColorKeys; key < NKEYS; key++,
 			 sptr++)
@@ -463,7 +466,7 @@ ParseColors(data, ncolors, cpp, colorTablePtr, hashtable)
 	     */
 	    xpmNextString(data);	/* get to the next string */
 	    *curbuf = '\0';		/* init curbuf */
-	    while (l = xpmNextWord(data, buf, BUFSIZ)) {
+	    while ((l = xpmNextWord(data, buf, BUFSIZ))) {
 		if (*curbuf != '\0')
 		    strcat(curbuf, " ");/* append space */
 		buf[l] = '\0';
