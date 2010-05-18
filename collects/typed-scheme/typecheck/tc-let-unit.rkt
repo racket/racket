@@ -108,7 +108,7 @@
                   [(begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values))
                    (register-resolved-type-alias #'nm (parse-type #'ty))]
                   [(begin (quote-syntax (:-internal nm ty)) (#%plain-app values))
-                   (register-type/undefined #'nm (parse-type #'ty))]
+                   (register-type-if-undefined #'nm (parse-type #'ty))]
                   [_ (void)]))
               names
               exprs)
