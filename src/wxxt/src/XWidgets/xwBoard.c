@@ -7,6 +7,13 @@
 #include <X11/Shell.h>
 #include <ctype.h>
 #include <./xwBoardP.h>
+
+#ifdef __GNUC__
+#define MAYBE_UNUSED __attribute__((unused))
+#else
+#define MAYBE_UNUSED
+#endif
+
 static void _resolve_inheritance(
 #if NeedFunctionPrototypes
 WidgetClass
@@ -446,7 +453,7 @@ static XtGeometryResult  geometry_manager(Widget  child,XtWidgetGeometry * reque
 #else
 static XtGeometryResult  geometry_manager(child,request,reply)Widget  child;XtWidgetGeometry * request;XtWidgetGeometry * reply;
 #endif
-{ Widget self = XtParent(child); {
+{   MAYBE_UNUSED Widget self = XtParent(child); {
     /* Widget $ = XtParent(child); */
     Dimension wd, ht, bw;
     Position x, y;
