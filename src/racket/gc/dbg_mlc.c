@@ -759,7 +759,7 @@ void * GC_debug_realloc(void * p, size_t lb, GC_EXTRA_PARAMS)
 {
     void * base = GC_base(p);
     ptr_t clobbered;
-    void * result;
+    void * result = NULL;
     size_t copy_sz = lb;
     size_t old_sz;
     hdr * hhdr;

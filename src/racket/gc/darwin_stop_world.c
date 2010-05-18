@@ -32,7 +32,7 @@ typedef struct StackFrame {
 
 unsigned long FindTopOfStack(unsigned long stack_start)
 {
-  StackFrame	*frame;
+  StackFrame	*frame = NULL;
 
   if (stack_start == 0) {
 # ifdef POWERPC

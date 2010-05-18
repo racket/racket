@@ -897,7 +897,7 @@ int GC_invoke_finalizers()
     static int doing = 0; /* PLTSCHEME */
     struct finalizable_object * curr_fo;
     int count = 0;
-    word bytes_freed_before;
+    word bytes_freed_before = 0;
     DCL_LOCK_STATE;
 
     /* PLTSCHEME: don't allow nested finalizations */

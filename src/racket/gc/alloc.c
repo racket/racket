@@ -557,7 +557,7 @@ void GC_set_fl_marks(ptr_t q)
 {
    ptr_t p;
    struct hblk * h, * last_h = 0;
-   hdr *hhdr;  /* gcc "might be uninitialized" warning is bogus. */
+   hdr *hhdr = NULL;
    IF_PER_OBJ(size_t sz;)
    unsigned bit_no;
 
@@ -598,8 +598,8 @@ void GC_clear_fl_marks(ptr_t q)
 {
    ptr_t p;
    struct hblk * h, * last_h = 0;
-   hdr *hhdr;
-   size_t sz;
+   hdr *hhdr = NULL;
+   size_t sz = 0;
    unsigned bit_no;
 
    for (p = q; p != 0; p = obj_link(p)){
