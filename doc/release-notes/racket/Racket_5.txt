@@ -6,13 +6,43 @@ The Racket language is slightly different from the PLT Scheme language
 of v4.x:
 
  * The preferred form for creating new structure types is now
-   `struct', which is like `define-struct', but it does not bind a
-   constructor with a `make-' prefix; instead, the structure-type name
-   doubles as its constructor.
+   `struct', the `struct' form is like `define-struct', but it does
+   not bind a constructor with a `make-' prefix; instead, the
+   structure-type name doubles as its constructor:
 
- * The default printing mode uses `quasiquote' to print values such as
-   lists and vectors. It prints instances of transparent structure
-   types as expressions.
+     > (struct a (x y))
+     > (a 1 2)
+     #<a>
+
+ * The default printing mode now tries print values as expressions
+   that would produce the value, instead of text for which `read'
+   would produce the value.
+
+   For transparent structures, the printed form looks like a use of
+   the constructor. For symbols, lists, vectors, prefab structure
+   types, etc., the printed form uses a quote mark if possible or
+   constructors like `list' otherwise. Opaque values, such as
+   procedures, print using #<...> notation in either quoted or
+   unquoted positions.
+
+     > (list 1 2 3)
+     '(1 2 3)
+     > (lambda (x) x)
+     #<procedure>
+     > (list (lambda (x) x))
+     '(#<procedure>)
+
+     > (struct a (x y))
+     > (a 1 2)
+     #<a>
+     > (list (a 1 2) (a 3 4))
+     '(#<a> #<a>)
+
+     > (struct b (x y) #:transparent)
+     > (b 1 2)
+     (b 1 2)
+     > (list (b 1 2) (b 3 4))
+     (list (b 1 2) (b 3 4))
 
 The old PLT Scheme language is still provided by the libraries
 `scheme', `scheme/base, etc. The new Racket language is provided by
@@ -27,7 +57,7 @@ To improve compatibility between Racket and v4.x programs and libraries,
  * the `define-struct' form of `scheme' binds the type name as a
    constructor, in addition to binding a `make-' prefixed name.
 
-Beware, however, that `scheme/unit' (and, hence, `scheme') exports a
+Beware, however, that `scheme/unit' (and therefore `scheme') exports a
 `struct' form for use in signatures that is different from the
 `struct' now exported by `racket'.
 
