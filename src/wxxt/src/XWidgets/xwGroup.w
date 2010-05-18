@@ -139,7 +139,7 @@ visible.
 assigned to the next child that is a toggle button. The first toggle
 will be number 0.
 
-	@var Cardinal toggle_ord
+	@var uintptr_t toggle_ord
 
 @METHODS
 
@@ -290,7 +290,7 @@ callbacks are called.
 @proc on_cb(Widget toggle, XtPointer client_data, XtPointer call_data)
 {
     Widget $ = XtParent(toggle);
-    Cardinal toggle_ord = (Cardinal) client_data;
+    uintptr_t toggle_ord = (uintptr_t) client_data;
     Cardinal t, i, bits = sizeof($selection) * 8;
 
     switch ($selectionStyle) {
@@ -323,7 +323,7 @@ be turned off, except by turning on another one.
 @proc off_cb(Widget toggle, XtPointer client_data, XtPointer call_data)
 {
     Widget $ = XtParent(toggle);
-    Cardinal toggle_ord = (Cardinal) client_data;
+    uintptr_t toggle_ord = (uintptr_t) client_data;
     Cardinal bits = sizeof($selection) * 8;
 
     switch ($selectionStyle) {
@@ -443,6 +443,7 @@ two resources.
 @IMPORTS
 
 @incl <stdio.h>
+@incl <stdint.h>
 @incl <X11/Xmu/Converters.h>
 @incl <X11/Xmu/CharSet.h>
 @incl <xwToggle.h>

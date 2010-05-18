@@ -5,6 +5,7 @@
 #define ___XWGROUPP_H
 #include <./xwRowColP.h>
 #include <./xwGroup.h>
+#include <stdint.h>
 _XFUNCPROTOBEGIN
 
 typedef struct {
@@ -33,7 +34,7 @@ long  selection;
 XtCallbackList  activate;
 /* private state */
 GC  textgc;
-Cardinal  toggle_ord;
+uintptr_t  toggle_ord;
 } XfwfGroupPart;
 
 typedef struct _XfwfGroupRec {

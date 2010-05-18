@@ -4,6 +4,7 @@
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <X11/Xmu/Converters.h>
 #include <X11/Xmu/CharSet.h>
 #include <xwToggle.h>
@@ -118,7 +119,7 @@ static void on_cb(toggle,client_data,call_data)Widget  toggle;XtPointer  client_
 #endif
 {
     Widget self = XtParent(toggle);
-    Cardinal toggle_ord = (Cardinal) client_data;
+    uintptr_t toggle_ord = (uintptr_t) client_data;
     Cardinal t, i, bits = sizeof(((XfwfGroupWidget)self)->xfwfGroup.selection) * 8;
 
     switch (((XfwfGroupWidget)self)->xfwfGroup.selectionStyle) {
@@ -150,7 +151,7 @@ static void off_cb(toggle,client_data,call_data)Widget  toggle;XtPointer  client
 #endif
 {
     Widget self = XtParent(toggle);
-    Cardinal toggle_ord = (Cardinal) client_data;
+    uintptr_t toggle_ord = (uintptr_t) client_data;
     Cardinal bits = sizeof(((XfwfGroupWidget)self)->xfwfGroup.selection) * 8;
 
     switch (((XfwfGroupWidget)self)->xfwfGroup.selectionStyle) {
