@@ -502,7 +502,7 @@
   (set! *readme-cache* (file->string *readme-file*))
   (set! *info-domain-cache* (with-input-from-file *info-domain-file* read)))
 (define (write-orig-files)
-  (display-to-file *readme-file* *readme-cache*)
+  (display-to-file *readme-cache* *readme-file* #:exists 'truncate)
   (with-output-to-file *info-domain-file* #:exists 'truncate
     (lambda () (write *info-domain-cache*) (newline))))
 
