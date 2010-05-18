@@ -334,7 +334,8 @@ GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback
  */
 GC_bool GC_try_to_collect_inner(GC_stop_func stop_func)
 {
-    CLOCK_TYPE start_time, current_time;
+    CLOCK_TYPE start_time = CLOCK_ZERO;
+	CLOCK_TYPE current_time;
     if (GC_dont_gc) return FALSE;
     /* PLTSCHEME */
     if (GC_collect_start_callback)
@@ -481,7 +482,8 @@ GC_bool GC_stopped_mark(GC_stop_func stop_func)
 {
     unsigned i;
     int dummy;
-    CLOCK_TYPE start_time, current_time;
+    CLOCK_TYPE start_time = CLOCK_ZERO;
+	CLOCK_TYPE current_time;
 	
     if (GC_print_stats)
 	GET_TIME(start_time);
@@ -634,8 +636,8 @@ extern void GC_check_tls(void);
 /* but the world is otherwise running.					*/
 void GC_finish_collection()
 {
-    CLOCK_TYPE start_time;
-    CLOCK_TYPE finalize_time;
+    CLOCK_TYPE start_time = CLOCK_ZERO;
+    CLOCK_TYPE finalize_time = CLOCK_ZERO;
     CLOCK_TYPE done_time;
 	
 #   if defined(GC_ASSERTIONS) && defined(THREADS) \
