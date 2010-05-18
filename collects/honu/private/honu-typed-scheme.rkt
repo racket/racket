@@ -348,6 +348,15 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       [else (raise-syntax-error 'scheme "need a semicolon probably" stx)]
       )))
 
+(define-honu-syntax honu-keywords
+  (lambda (stx ctx)
+    (syntax-parse stx #:literals (semicolon)
+      [(_ word:identifier ... semicolon . rest)
+       (values (lambda () #'(begin
+                              (define-syntax word (lambda (xx) (raise-syntax-error 'word "dont use this")))
+                              ...))
+               #'rest)])))
+
 (define-honu-syntax honu-if
   (lambda (stx ctx)
     (define (parse-complete-block stx)
@@ -474,6 +483,7 @@ if (foo){
                       #'a)]))
   
 (define-syntax (honu-top stx)
+  (printf "Honu ~a\n" (syntax->datum stx))
   (raise-syntax-error #f "interactive use is not yet supported"))
 
 (define-syntax (foobar2000 stx)
@@ -492,9 +502,9 @@ if (foo){
      (begin
        (printf "Body is ~a\n" #'body)
      (let-values ([(code rest) (parse-block-one/2 #'body
-                                                             the-expression-context
-                                                             #;
-                                                             the-top-block-context)])
+                                                  the-expression-context
+                                                  #;
+                                                  the-top-block-context)])
                   ;; (printf "Rest is ~a\n" (syntax->datum rest))
                   (with-syntax ([code code]
                                 [(rest ...) rest])

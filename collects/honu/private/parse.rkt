@@ -19,12 +19,14 @@
 (provide (all-defined-out))
 
 (define-syntax-class block
+                     #:literals (#%braces)
   [pattern (#%braces statement ...)
            #:with result (let-values ([(body rest) (parse-block-one/2 #'(statement ...) the-block-context)])
                            body)])
 
 (define-syntax-class function
-  [pattern (type:id name:id (#%parens args ...) body:block . rest)
+  #:literals (#%parens)
+  [pattern (_ name:id (#%parens args ...) body:block . rest)
            #:with result #'(define (name args ...)
                             body.result)])
 
@@ -133,7 +135,7 @@
   [pattern (~seq (~var call (call context))) #:with result #'call.call]
   [pattern (~seq x:number) #:with result #'x]
   [pattern (~seq x:str) #:with result #'x]
-  [pattern (~seq x:id) #:with result #'x]
+  [pattern (~seq x:identifier) #:with result #'x]
   #;
   [pattern (~seq (~var e (honu-expr context))) #:with result #'e.result]
   )
@@ -342,6 +344,9 @@
       #;
       (printf " no change\n")
       stx]))
+
+(define-splicing-syntax-class expression
+  [pattern (~seq (~var x (expression-1 the-expression-context)))])
 
 (define (parse-an-expr stx)
   (printf "Parse an expr ~a\n" (syntax->datum stx))

@@ -4,6 +4,10 @@
          "literals.ss"
          "parse.ss"
          "syntax.ss"
+         (for-meta -3
+           (only-in "literals.ss" (#%parens literal-parens)))
+         #;
+         (for-template (only-in "literals.ss" (#%parens literal-parens)))
          (for-syntax "debug.ss"
                      "contexts.ss"
                      "parse.ss"
@@ -67,10 +71,18 @@
   (syntax-parse stx #:literals (honu-:)
     [(variable:id honu-: class:id rest ...)
      (with-syntax ([(rest* ...) (fix-template #'(rest ...))])
+       (datum->syntax stx (cons #'(~var variable class)
+                                #'(rest* ...))
+                      stx)
+       #;
        #'((~var variable class) rest* ...))]
     [(one rest ...)
      (with-syntax ([one* (fix-template #'one)]
                    [(rest* ...) (fix-template #'(rest ...))])
+       (datum->syntax stx (cons #'one*
+                                #'(rest* ...))
+                      stx)
+       #;
        #'(one* rest* ...))]
     [else stx]))
 
@@ -411,13 +423,32 @@
                   . rest)
                #:with result
                (list
-                 (with-syntax ([(fixed ...) (fix-template #'(template ...))])
+                 (with-syntax ([(fixed ...) (fix-template #'(template ...))]
+                               [your-parens (datum->syntax #'name '#%parens #'name)])
+
+                   #'(define-honu-syntax name
+                       (lambda (stx ctx)
+                         (syntax-parse stx #:literals (your-parens literals ...)
+                           [(fixed ... rrest (... ...))
+                            (values
+                              #;
+                              (with-syntax ([(real-out (... ...)) #'(code ...)])
+                                (let ([result (honu-unparsed-begin #'(real-out (... ...)))])
+                                  (lambda () result)))
+                              (let ([result (honu-unparsed-begin code ...)])
+                                (lambda () result))
+                              #'(rrest (... ...)))])))
+                   #;
                    (syntax/loc stx
                                (define-honu-syntax name
                                  (lambda (stx ctx)
-                                   (syntax-parse stx #:literals (literals ...)
+                                   (syntax-parse stx #:literals (your-parens literals ...)
                                      [(fixed ... rrest (... ...))
                                       (values
+                                        #;
+                                        (with-syntax ([(real-out (... ...)) #'(code ...)])
+                                          (let ([result (honu-unparsed-begin #'(real-out (... ...)))])
+                                            (lambda () result)))
                                         (let ([result (honu-unparsed-begin code ...)])
                                           (lambda () result))
                                         #'(rrest (... ...)))])))))

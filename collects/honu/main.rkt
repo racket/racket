@@ -9,6 +9,7 @@
          (for-syntax "private/literals.ss")
          (for-syntax "private/honu-typed-scheme.ss")
          (for-syntax "private/parse.ss")
+         (for-syntax syntax/parse)
          "private/literals.ss"
          "private/syntax.ss"
          "private/more.ss"
@@ -22,6 +23,12 @@
     (super-new)))
 
 (define x (new test-x-class [tuna 5]))
+
+(define (sql1) #f)
+(define (sql2) #f)
+(define (sql3) #f)
+(define (sql4) #f)
+(define (sql5) #f)
 
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
                      (honu-top #%top)
@@ -37,7 +44,18 @@
                      (honu-comma |,|)
                      (honu-. |.|)
                      )
+
+         ;; sql nonsense
+         (rename-out 
+           (sql1 SQL_create_insert)
+           (sql2 foo)
+           (sql3 cheese)
+           (sql4 monkeys)
+           (sql5 horse))
+         ;; end sql
+
          #%datum
+         #%top-interaction
          (for-syntax #%datum
                      display
                      with-syntax
@@ -47,6 +65,7 @@
                      ...
                      map
                      syntax->list
+                     identifier expression
                      (rename-out (semicolon \;
                                             )
                                  (parse-an-expr parse)
@@ -76,6 +95,7 @@
            (honu-macro-item macroItem)
            (honu-macro macro)
            (honu-syntax syntax)
+           (honu-keywords keywords)
            #;
            (honu-scheme scheme2)
            (scheme-syntax scheme:syntax)
