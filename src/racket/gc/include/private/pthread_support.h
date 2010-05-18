@@ -75,6 +75,8 @@ GC_thread GC_lookup_thread(pthread_t id);
 
 void GC_stop_init();
 
+void GC_thr_init(void);
+
 extern GC_bool GC_in_thread_creation;
 	/* We may currently be in thread creation or destruction.	*/
 	/* Only set to TRUE while allocation lock is held.		*/
