@@ -343,8 +343,6 @@ void GC_init_explicit_typing(void)
     register int i;
     DCL_LOCK_STATE;
 
-    
-    /* Ignore gcc "no effect" warning.	*/
     GC_STATIC_ASSERT(sizeof(struct LeafDescriptor) % sizeof(word) == 0);
     LOCK();
     if (GC_explicit_typing_initialized) {

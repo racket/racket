@@ -181,7 +181,6 @@ void GC_new_hblk(size_t gran, int kind)
   struct hblk *h;	/* the new heap block			*/
   GC_bool clear = GC_obj_kinds[kind].ok_init;
 
-  /* Ignore gcc "no effect" warning on the following: */
   GC_STATIC_ASSERT((sizeof (struct hblk)) == HBLKSIZE);
   
   if (GC_debugging_started) clear = TRUE;

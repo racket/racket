@@ -888,7 +888,6 @@ void GC_check_heap_block(struct hblk *hbp, word dummy)
 void GC_check_heap_proc(void)
 {
 #   ifndef SMALL_CONFIG
-      /* Ignore gcc no effect warning on the following.		*/
       GC_STATIC_ASSERT((sizeof(oh) & (GRANULE_BYTES - 1)) == 0);
       /* FIXME: Should we check for twice that alignment?	*/
 #   endif

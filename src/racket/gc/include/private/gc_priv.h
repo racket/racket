@@ -1957,7 +1957,7 @@ void GC_err_puts(const char *s);
    This code works correctly (ugliness is to avoid "unused var" warnings) */
 # define GC_STATIC_ASSERT(expr) do { if (0) { char j[(expr)? 1 : -1]; j[0]='\0'; j[0]=j[0]; } } while(0)
 #else
-# define GC_STATIC_ASSERT(expr) sizeof(char[(expr)? 1 : -1])
+# define GC_STATIC_ASSERT(expr) (void) sizeof(char[(expr)? 1 : -1])
 #endif
 
 # if defined(PARALLEL_MARK) || defined(THREAD_LOCAL_ALLOC)
