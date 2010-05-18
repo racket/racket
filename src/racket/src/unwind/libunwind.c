@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 /*                   region-based memory management                   */
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
-static void *rgn_chain = NULL;
+UNUSED static void *rgn_chain = NULL;
 
 static void *malloc_in_rgn(unw_addr_space_t as, long sz)
 {
