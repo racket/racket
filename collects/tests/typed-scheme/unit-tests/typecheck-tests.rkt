@@ -790,7 +790,10 @@
         [tc-e (let ()
                 (define: x : Any 7)
                 (if (box? x) (unbox x) (+ 1)))
-              Univ]
+              Univ]        
+        [tc-e (floor 1/2) -Integer]
+        [tc-e (ceiling 1/2) -Integer]
+        [tc-e (truncate 0.5) -Flonum]
         )
   (test-suite
    "check-type tests"
