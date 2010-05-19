@@ -2335,8 +2335,8 @@ void wxPrintSetupData::SetPrinterMode(int mode)
 {
     printer_mode = PS_FILE;
 
-    if (mode == PS_PREVIEW && preview_command
-    ||  mode == PS_PRINTER && printer_command)
+    if ((mode == PS_PREVIEW && preview_command)
+    ||  (mode == PS_PRINTER && printer_command))
 	printer_mode = mode;
 }
 
