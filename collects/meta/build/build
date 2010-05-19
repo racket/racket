@@ -40,7 +40,7 @@ buildnotifyemail=""
 # repository branches to use -- `master' or other branches
 init_repo_vars() {
   # use this function to initialize these on remote builds too
-  gitbranch="${PLTBRANCH:-master}"
+  gitbranch="${RKTBRANCH:-master}"
   svnipath="${PLTSVNIPATH:-trunk}"
 }
 init_repo_vars
@@ -55,7 +55,7 @@ dmgmachine="kauai"
 nsismachine="pitcairn"
 
 # list of environment variables that should be carried over to ssh jobs
-ssh_vars=(PLTBRANCH PLTSVNIPATH)
+ssh_vars=(RKTBRANCH PLTSVNIPATH)
 
 # Add stuff to be msetted later (when we have the `mset' function)
 declare -a initial_msets machines
