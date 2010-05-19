@@ -40,15 +40,20 @@
                (->acc (list (-pair a b)) b (list -cdr))
                (->* (list (-lst a)) (-lst a))))]
 
+;; these type signatures do not cover all valid uses of these pair accessors
 [caar (-poly (a b c)
              (cl->* [->acc (list (-pair (-pair a b) c)) a (list -car -car)]
+                    [-> (-lst (-pair a b)) a]
+                    [-> (-pair (-lst a) b) a]
                     [-> (-lst (-lst a)) a]))]
 [cdar (-poly (a b c)
              (cl->* [->acc (list (-pair (-pair a b) c)) b (list -cdr -car)]
+                    [-> (-lst (-pair a b)) b]
+                    [-> (-pair (-lst a) b) (-lst a)]
                     [-> (-lst (-lst a)) (-lst a)]))]
 [cadr (-poly (a b c)
              (cl->* [->acc (list (-pair a (-pair b c))) b (list -car -cdr)]
-                    [->  (-lst a) a]))]
+                    [-> (-lst a) a]))]
 [cddr  (-poly (a b c)
               (cl->* [->acc (list (-pair a (-pair b c))) c (list -cdr -cdr)]
                      [-> (-lst a) (-lst a)]))]
