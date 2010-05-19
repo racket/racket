@@ -377,9 +377,8 @@
                                      state))
 			    ((more)
                              (accross state))
-                            ;;(else
-                            ;; (assert #f))
-                            ))
+                            (else
+                             (error "can't happen"))))
                  0
                  (lambda: ((leaf-depth : Integer)
                            (state : Boolean)
@@ -504,9 +503,8 @@
 					    #f)
 					((equal more)
 					    (accross #t))
-					;(else
-					;    (assert #f))
-                                        ))))
+					(else
+                                         (error "can't happen"))))))
 			(lambda ()
 			    (minimal-folder root
                                             edge?
