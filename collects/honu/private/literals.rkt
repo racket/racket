@@ -16,4 +16,5 @@
                 honu-= honu-+= honu--= honu-*= honu-/= honu-%=
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
                 honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
-                honu-? honu-: honu-comma honu-. #%braces #%parens colon)
+                honu-? honu-: honu-comma honu-. #%braces #%parens colon
+                ellipses-comma)

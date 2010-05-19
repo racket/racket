@@ -68,6 +68,8 @@
                      identifier expression
                      (rename-out (semicolon \;
                                             )
+                                 (ellipses-comma ec)
+                                 (expression-comma expression_comma)
                                  (parse-an-expr parse)
                                  (... scheme:...)
                                  (honu-body:class body)

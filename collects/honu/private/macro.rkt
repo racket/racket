@@ -69,9 +69,9 @@
 
 (define-for-syntax (fix-template stx)
   (syntax-parse stx #:literals (honu-:)
-    [(variable:id honu-: class:id rest ...)
+    [(variable:identifier honu-: class:identifier rest ...)
      (with-syntax ([(rest* ...) (fix-template #'(rest ...))])
-       (datum->syntax stx (cons #'(~var variable class)
+       (datum->syntax stx (cons #'(~var variable class #:attr-name-separator "_")
                                 #'(rest* ...))
                       stx)
        #;
@@ -426,6 +426,7 @@
                  (with-syntax ([(fixed ...) (fix-template #'(template ...))]
                                [your-parens (datum->syntax #'name '#%parens #'name)])
 
+                   #;
                    #'(define-honu-syntax name
                        (lambda (stx ctx)
                          (syntax-parse stx #:literals (your-parens literals ...)
@@ -438,7 +439,7 @@
                               (let ([result (honu-unparsed-begin code ...)])
                                 (lambda () result))
                               #'(rrest (... ...)))])))
-                   #;
+                   (printf "Original pattern ~a" (syntax->datum #'(fixed ... rrest (... ...))))
                    (syntax/loc stx
                                (define-honu-syntax name
                                  (lambda (stx ctx)

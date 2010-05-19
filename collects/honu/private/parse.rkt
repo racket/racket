@@ -14,9 +14,18 @@
          syntax/name
          syntax/stx
          (for-syntax "util.ss")
+         (for-syntax syntax/private/stxparse/runtime-prose
+                     syntax/private/stxparse/runtime
+                     )
          (for-template scheme/base))
 
 (provide (all-defined-out))
+
+(begin-for-syntax 
+  (current-failure-handler
+                         (lambda (_ f)
+                           (printf "Failure is ~a\n" (failure->sexpr (simplify-failure f)))
+                           (error 'failed "whatever"))))
 
 (define-syntax-class block
                      #:literals (#%braces)
@@ -110,10 +119,17 @@
 =======
                                    (list rest (syntax-object-position stx rest)
                                          (used))))]
-     
+     #;
+     [x:identifier (list #''() 0 #'x)]
+     #;
+     [else (fail)]
      [else (syntax-parse stx
+             [x:identifier (list #''() 1 #'x)]
+             #;
                         [(f . rest) (list #'rest 1 #'f)]
-                        [x:number (list #''() 0 #'x)]
+                        #;
+                        [x:number (list #''() 1 #'x)]
+                        [else (fail)]
                         )])))
 >>>>>>> allow macros to reparse their input
 
@@ -122,20 +138,42 @@
       [pattern (~seq f ...) #:with result])
     
 (define-splicing-syntax-class (call context)
-  #:literals (honu-comma)
-  [pattern (~seq (~var e (honu-expr context)) (#%parens (~seq (~var arg (ternary context))
-                                                              (~optional honu-comma)) ...))
-           #:with call #'(e.result arg.result ...)])
+  #:literals (honu-comma #%parens)
+
+  #;
+  [pattern (~seq (~var e identifier)
+                 (x (~var arg (expression-1 context)) ...)
+                 #;
+                 (#%parens (~var arg (expression-1 context)) ...))
+           #:with call 
+           (begin
+             (printf "Resulting call is ~a\n" (syntax->datum #'(e arg.result ...)))
+           #'(e arg.result ...))]
+
+  [pattern (~seq (~var e honu-identifier
+                       #;
+                       (honu-expr context))
+                 (x
+                  ;; #%parens
+                       (~seq (~var arg (ternary context))
+                             (~optional honu-comma)) ...))
+           #:with call 
+           (begin
+             (printf "Resulting call is ~a\n" (syntax->datum #'(e arg.result ...)))
+             #'(e arg.result ...))])
+
+(define-splicing-syntax-class honu-identifier
+  [pattern (~seq x:identifier) #:when (not (free-identifier=? #'honu-comma #'x))])
 
 (define-splicing-syntax-class (expression-last context)
                               #:literals (#%parens)
   [pattern (~seq (#%parens (~var e (expression-1 context)))) #:with result #'e.result]
+  #;
   [pattern (~seq (~var e (honu-transformer context))) #:with result #'e.result]
-
   [pattern (~seq (~var call (call context))) #:with result #'call.call]
   [pattern (~seq x:number) #:with result #'x]
   [pattern (~seq x:str) #:with result #'x]
-  [pattern (~seq x:identifier) #:with result #'x]
+  [pattern (~seq x:honu-identifier) #:with result #'x]
   #;
   [pattern (~seq (~var e (honu-expr context))) #:with result #'e.result]
   )
@@ -348,6 +386,10 @@
 (define-splicing-syntax-class expression
   [pattern (~seq (~var x (expression-1 the-expression-context)))])
 
+(define-splicing-syntax-class expression-comma
+  #:literals (honu-comma)
+  [pattern ((~seq (~var expr (expression-1 the-expression-context)) (~optional comma)) ...)])
+
 (define (parse-an-expr stx)
   (printf "Parse an expr ~a\n" (syntax->datum stx))
   (syntax-parse (with-syntax ([s stx])
@@ -363,6 +405,11 @@
 
 (define (parse-block-one/2 stx context)
   (define (parse-one stx context)
+    #;
+    (let-values ([(a b) (debug-parse #'(SQL_create_insert) ((~seq x:expression)))])
+      (printf "debug parse for ~a is ~a and ~a\n" 'SQL_create_insert a b))
+    (let-values ([(a b) (debug-parse stx ((~seq (~var x (expression-top context)))))])
+      (printf "debug parse for ~a is ~a and ~a\n" (syntax->datum stx) a b))
     
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
