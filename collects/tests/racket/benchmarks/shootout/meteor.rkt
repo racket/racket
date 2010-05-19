@@ -1,3 +1,5 @@
+#lang racket/base
+
 ;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 ;;
@@ -7,8 +9,7 @@
 ;;   contributed by Matthew Flatt
 ;;   optimized by Eli Barzilay
 
-#lang scheme/base
-(require scheme/cmdline scheme/list)
+(require racket/cmdline)
 
 (define width 5)
 (define height 10)

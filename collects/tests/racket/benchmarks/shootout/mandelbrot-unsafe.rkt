@@ -1,4 +1,5 @@
-;; ---------------------------------------------------------------------
+#lang racket/base
+
 ;; The Great Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
 ;;
@@ -7,12 +8,11 @@
 ;;
 ;; This version uses unsafe operations
 
-#lang scheme/base
-(require scheme/cmdline
-	 scheme/require (for-syntax scheme/base)
+(require racket/cmdline
+	 racket/require (for-syntax racket/base)
 	 (filtered-in
 	  (lambda (name) (regexp-replace #rx"unsafe-" name ""))
-	  scheme/unsafe/ops))
+	  racket/unsafe/ops))
 
 (define +limit-sqr+ 4.0)
 

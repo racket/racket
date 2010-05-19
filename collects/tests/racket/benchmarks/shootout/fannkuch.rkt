@@ -1,11 +1,12 @@
+#lang racket/base
+
 ;; fannkuch benchmark for The Computer Language Shootout
 ;; Written by Dima Dorfman, 2004
 ;; Slightly improved by Sven Hartrumpf, 2005-2006
 ;; Ever-so-slightly tweaked for MzScheme by Brent Fulgham
 ;; PLT-ized for v4.0 by Matthew
 
-#lang scheme/base
-(require scheme/cmdline)
+(require racket/cmdline)
 
 (define (fannkuch n)
   (let ([pi (list->vector 

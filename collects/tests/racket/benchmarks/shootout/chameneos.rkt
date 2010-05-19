@@ -1,11 +1,12 @@
+#lang racket/base
+
 ;;; The Great Computer Language Shootout
 ;;; http://shootout.alioth.debian.org/
 ;;;
-;;; Uses PLT Scheme threads
+;;; Uses Racket threads
 
-#lang scheme/base
-(require scheme/cmdline
-         scheme/match)
+(require racket/cmdline
+         racket/match)
 
 (define (change c1 c2)
   (case c1
@@ -96,5 +97,3 @@
   (go n '(blue red yellow))
   (go n '(blue red yellow red yellow blue red yellow red blue))
   (newline))
-
-  

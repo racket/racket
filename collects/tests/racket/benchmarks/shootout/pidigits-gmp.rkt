@@ -1,12 +1,13 @@
+#lang racket/base
+
 ;; The Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
 ;; Based on the Perl version of the benchmark
 ;; adapted with a GMP interface by Eli Barzilay
 
-#lang scheme/base
-(require scheme/cmdline)
-(require (for-syntax scheme/base))
-(require scheme/foreign) (unsafe!)
+(require racket/cmdline
+         (for-syntax racket/base)
+         ffi/unsafe)
 
 ;; quick libgmp interface, limited to what we need below
 (define libgmp (ffi-lib "libgmp"))

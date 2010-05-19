@@ -1,4 +1,5 @@
-#!/usr/bin/mzscheme -qu
+#lang racket/base
+
 ;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 ;;
@@ -6,7 +7,7 @@
 ;; Patrick Frankenberger and Juho Snellman, but using only native Scheme
 ;; idioms like 'named let' and 'do' special form.
 ;;
-;; Contributed by Anthony Borla, then converted for mzscheme
+;; Contributed by Anthony Borla, then converted for Racket
 ;; by Matthew Flatt and Brent Fulgham
 
 #|
@@ -16,9 +17,8 @@ Correct output N = 1000 is
 -0.169087605
 |#
 
-#lang scheme/base
-(require scheme/cmdline
-         scheme/flonum)
+(require racket/cmdline
+         racket/flonum)
 
 ;; ------------------------------
 ;; define planetary masses, initial positions & velocity

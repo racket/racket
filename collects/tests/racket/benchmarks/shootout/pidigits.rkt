@@ -1,10 +1,11 @@
+#lang racket/base
+
 ;; The Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
 ;; Based on the MLton version of the benchmark
 ;; contributed by Scott Cruzen
 
-#lang scheme/base
-(require scheme/cmdline)
+(require racket/cmdline)
 
 (define (floor_ev q r s t x)
   (quotient (+ (* q x) r) (+ (* s x) t)))

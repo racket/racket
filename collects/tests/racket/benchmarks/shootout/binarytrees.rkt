@@ -1,22 +1,26 @@
+#lang racket/base
+
 ;;; The Great Computer Language Shootout
 ;;; http://shootout.alioth.debian.org/
 ;;; Derived from the Chicken variant by Sven Hartrumpf
-#lang scheme/base
-(require scheme/cmdline)
 
-(define-struct node (left val right))
+(require racket/cmdline)
+
+(struct node (left val right))
 
 ;; Instead of (define-struct leaf (val)):
-(define (make-leaf val) (make-node #f val #f))
+(define (leaf val) (node #f val #f))
 (define (leaf? l) (not (node-left l)))
 (define (leaf-val l) (node-val l))
 
 (define (make item d)
   (if (= d 0)
-      (make-leaf item)
+      (leaf item)
       (let ((item2 (* item 2))
             (d2 (- d 1)))
-        (make-node (make (- item2 1) d2) item (make item2 d2)))))
+        (node (make (- item2 1) d2) 
+              item 
+              (make item2 d2)))))
 
 (define (check t)
   (if (leaf? t)

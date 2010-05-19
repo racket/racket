@@ -1,13 +1,13 @@
-;; ---------------------------------------------------------------------
+#lang racket/base
+
 ;; The Great Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
 ;;
 ;; Derived from the Chicken variant, which was
 ;; Contributed by Anthony Borla
  
-#lang scheme/base
-(require scheme/cmdline
-         scheme/flonum)
+(require racket/cmdline
+         racket/flonum)
 
 (define +limit-sqr+ 4.0)
 
