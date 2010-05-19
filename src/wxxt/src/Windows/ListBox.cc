@@ -503,11 +503,13 @@ void wxListBox::SetClientData(int n, char *_client_data)
 
 void wxListBox::SetSelection(int n, Bool select)
 {
-  if (0 <= n && n < num_choices)
-    if (select)
-      XfwfMultiListHighlightItem(MULTILIST, n);
-    else
-      XfwfMultiListUnhighlightItem(MULTILIST, n);
+	if (0 <= n && n < num_choices) {
+		if (select) {
+			XfwfMultiListHighlightItem(MULTILIST, n);
+		} else {
+			XfwfMultiListUnhighlightItem(MULTILIST, n);
+		}
+	}
 }
 
 void wxListBox::SetOneSelection(int n)
