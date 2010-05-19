@@ -7,7 +7,7 @@
   (define-syntax (module-begin stx)
     (let ([name (symbol->string (syntax-property stx 'enclosing-module-name))])
       #`(ts:#%module-begin #:optimize
-         (include #,(format "~a.rkt"
+         (include #,(format "~a.rktl"
                             (substring name
                                        0
                                        (caar (regexp-match-positions
