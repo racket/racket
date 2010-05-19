@@ -359,7 +359,23 @@ To embed Racket CGC in a program, follow these steps:
   @cppi{scheme_basic_env} and passing the result to the function
   provided to @cpp{scheme_main_setup}. (The
   @cpp{scheme_main_stack_setup} trampoline registers the C stack with
-  the memory manager without creating a namespace.)}
+  the memory manager without creating a namespace.)
+
+  Under Windows, when support for parallelism is enabled in the Racket
+  build (as is the default), then before calling
+  @cpp{scheme_main_setup}, your embedding application must first call
+  @cppi{scheme_register_tls_space}:
+
+  @verbatim[#:indent 2]{
+   scheme_register_tls_space(&tls_space, 0);
+  }
+
+  where @cpp{tls_space} is declared as a thread-local pointer variable
+  in the main executable (i.e., not in a dynamically linked DLL):
+
+  @verbatim[#:indent 2]{
+   static __declspec(thread) void *tls_space;
+  }}
 
  @item{Configure the namespace by adding module declarations. The
   initial namespace contains declarations only for a few primitive
