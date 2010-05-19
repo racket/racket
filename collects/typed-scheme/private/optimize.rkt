@@ -38,21 +38,38 @@
   (pattern e:opt-expr*
            #:with opt (syntax-recertify #'e.opt this-syntax (current-code-inspector) #f)))
 
+(define *log-optimizations?* #f)
+(define *log-optimizatons-to-log-file?* #f)
+(define *optimization-log-file* "opt-log")
+(define (log-optimization kind stx)
+  (if *log-optimizations?*
+      (printf "~a line ~a col ~a - ~a\n"
+              (syntax-source stx) (syntax-line stx) (syntax-column stx)
+              kind)
+      #t))
+
 (define-syntax-class opt-expr*
   #:literal-sets (kernel-literals)
   #:local-conventions ([#px"^e" opt-expr]
                        [#px"^f\\d*s?$" float-opt-expr]
                        [#px"^p\\d*s?$" pair-opt-expr])
+
+  ;; interesting cases, where something is optimized
   (pattern (#%plain-app op:float-unary-op f)
-           #:with opt #'(op.unsafe f.opt))
+           #:with opt
+           (begin (log-optimization "unary float" #'op)
+                  #'(op.unsafe f.opt)))
   ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
   (pattern (#%plain-app op:float-binary-op f fs ...)
            #:with opt 
-           (for/fold ([o #'f.opt])
-             ([e (syntax->list #'(fs.opt ...))])
-             #`(op.unsafe #,o #,e)))
+           (begin (log-optimization "binary float" #'op)
+                  (for/fold ([o #'f.opt])
+                      ([e (syntax->list #'(fs.opt ...))])
+                    #`(op.unsafe #,o #,e))))
   (pattern (#%plain-app op:pair-unary-op p)
-           #:with opt #'(op.unsafe p.opt))
+           #:with opt
+           (begin (log-optimization "unary pair" #'op)
+                  #'(op.unsafe p.opt)))
 
   ;; boring cases, just recur down
   (pattern (#%plain-lambda formals e ...)
@@ -76,6 +93,17 @@
            #:with opt #'other))
 
 (define (optimize stx)
-  (syntax-parse stx #:literal-sets (kernel-literals)
-    [e:opt-expr
-     (syntax/loc stx e.opt)]))
+  (let ((port (if (and *log-optimizations?*
+                       *log-optimizatons-to-log-file?*)
+                  (open-output-file *optimization-log-file*
+                                    #:exists 'append)
+                  (current-output-port))))
+    (begin0
+          (parameterize ([current-output-port port])
+            (syntax-parse stx #:literal-sets (kernel-literals)
+                          [e:opt-expr
+                           (syntax/loc stx e.opt)]))
+      (if (and *log-optimizations?*
+               *log-optimizatons-to-log-file?*)
+          (close-output-port port)
+          #t))))
