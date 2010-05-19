@@ -504,26 +504,24 @@
 [syntax-source (-> (-Syntax Univ) Univ)]
 [syntax-position (-> (-Syntax Univ) (-opt N))]
 [datum->syntax 
- (-poly 
-  (a)
-  (let* ([Pre Syntax-Sexp]
-         [I (-Syntax Sym)]
-         [A Any-Syntax]
-	 [S (-Syntax Univ)]
-         [ctxt (-opt S)]
-	 [srclist (-Tuple (list
-                           Univ 
-                           (-opt -Integer)
-                           (-opt -Integer)
-                           (-opt -Integer)
-                           (-opt -Integer)))]
-	 [srcloc (Un S (-val #f) srclist)]
-	 [prop (-opt S)]
-	 [cert (-opt S)])
-    (cl->*
-     (->opt ctxt Sym  [srcloc prop cert] I)
-     (->opt ctxt Pre  [srcloc prop cert] A)
-     (->opt ctxt Univ [srcloc prop cert] S))))]
+ (let* ([Pre Syntax-Sexp]
+        [I (-Syntax Sym)]
+        [A Any-Syntax]
+        [S (-Syntax Univ)]
+        [ctxt (-opt S)]
+        [srclist (-Tuple (list
+                          Univ 
+                          (-opt -Integer)
+                          (-opt -Integer)
+                          (-opt -Integer)
+                          (-opt -Integer)))]
+        [srcloc (Un S (-val #f) srclist)]
+        [prop (-opt S)]
+        [cert (-opt S)])
+   (cl->*
+    (->opt ctxt Sym  [srcloc prop cert] I)
+    (->opt ctxt Pre  [srcloc prop cert] A)
+    (->opt ctxt Univ [srcloc prop cert] S)))]
 
 [syntax->datum (cl->* (-> Any-Syntax -Sexp)
                       (-> (-Syntax Univ) Univ))]
