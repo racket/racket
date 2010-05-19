@@ -307,6 +307,14 @@ void wxCanvas::ScrollPercent(double x, double y)
   }
 }
 
+// This could be removed by changing the uses of float_a below to use memcpy
+#ifdef __GNUC__
+# define MAY_ALIAS __attribute__((__may_alias__))
+#else
+# define MAY_ALIAS
+#endif
+typedef float MAY_ALIAS float_a;
+
 void wxCanvas::SetScrollbars(int h_pixels, int v_pixels, int x_len, int y_len,
 			     int x_page, int y_page, int x_pos, int y_pos,
 			     Bool setVirtualSize)
@@ -320,7 +328,7 @@ void wxCanvas::SetScrollbars(int h_pixels, int v_pixels, int x_len, int y_len,
     if (y_len < 0) v_pixels = -1;
 
     if (setVirtualSize) {
-      Arg a[4];
+      MAY_ALIAS Arg a[4];
 
       XtVaSetValues(X->scroll, XtNautoAdjustScrollbars, 1, NULL);
 
@@ -351,11 +359,11 @@ void wxCanvas::SetScrollbars(int h_pixels, int v_pixels, int x_len, int y_len,
       a[0].name = XtNabs_height;
       a[0].value = v_pixels > 0 ? ((Dimension)v_size) : 0;
       a[1].name = XtNrel_height;
-      *(float *)(void *)&(a[1].value) = (float)(v_pixels > 0 ? 0.0 : 1.0);
+      *(float_a *)(void *)&(a[1].value) = (float_a)(v_pixels > 0 ? 0.0 : 1.0);
       a[2].name = XtNabs_width;
       a[2].value = h_pixels > 0 ? ((Dimension)h_size) : 0;
       a[3].name = XtNrel_width;
-      *(float *)(void *)&(a[3].value) = (float)(h_pixels > 0 ? 0.0 : 1.0);
+      *(float_a *)(void *)&(a[3].value) = (float_a)(h_pixels > 0 ? 0.0 : 1.0);
 
       XtSetValues(X->handle, a, 4);
 
@@ -368,26 +376,26 @@ void wxCanvas::SetScrollbars(int h_pixels, int v_pixels, int x_len, int y_len,
 		      NULL);
       }
     } else {
-      Arg a[8];
+      MAY_ALIAS Arg a[8];
 
       XtVaSetValues(X->scroll, XtNautoAdjustScrollbars, 0, NULL);
 
       a[0].name = XtNabs_height;
       a[0].value = 0;
       a[1].name = XtNrel_height;
-      *(float *)(void *)&(a[1].value) = 1.0;
+      *(float_a *)(void *)&(a[1].value) = 1.0;
       a[2].name = XtNabs_width;
       a[2].value = 0;
       a[3].name = XtNrel_width;
-      *(float *)(void *)&(a[3].value) = 1.0;
+      *(float_a *)(void *)&(a[3].value) = 1.0;
       a[4].name = XtNabs_x;
       a[4].value = 0;
       a[5].name = XtNabs_y;
       a[5].value = 0;
       a[6].name = XtNrel_x;
-      *(float *)(void *)&(a[6].value) = 0.0;
+      *(float_a *)(void *)&(a[6].value) = 0.0;
       a[7].name = XtNrel_y;
-      *(float *)(void *)&(a[7].value) = 0.0;
+      *(float_a *)(void *)&(a[7].value) = 0.0;
 
       XtSetValues(X->handle, a, 8);
 
