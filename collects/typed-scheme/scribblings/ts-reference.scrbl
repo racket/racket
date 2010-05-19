@@ -93,6 +93,8 @@ The following base types are parameteric in their type arguments.
   type variables @racket[v ...]}
 @defform[(List t ...)]{is the type of the list with one element, in order, 
   for each type provided to the @racket[List] type constructor.}
+@defform[(Vector t ...)]{is the type of the list with one element, in order, 
+  for each type provided to the @racket[Vector] type constructor.}
 @defform[(values t ...)]{is the type of a sequence of multiple values, with
 types @racket[t ...].  This can only appear as the return type of a
 function.}
