@@ -24,7 +24,10 @@
  * USA.
  */
 
+#ifdef __GNUG__
 #pragma implementation
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
 
 #ifdef wx_xt
 # define  Uses_wxApp

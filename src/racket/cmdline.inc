@@ -1,7 +1,8 @@
-
 /****************************************************************/
 /* This command-line parser is used by both Racket and Gracket. */
 /****************************************************************/
+
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 
 #define SDESC "Set! works on undefined identifiers"
 

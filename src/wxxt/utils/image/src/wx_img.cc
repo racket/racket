@@ -34,7 +34,9 @@
  *
  * This software is provided "as is" without any express or implied warranty.
  */
-
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
 
 #define NEEDSTIME
 

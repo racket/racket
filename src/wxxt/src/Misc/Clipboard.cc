@@ -10,6 +10,7 @@
 
 #ifdef __GNUG__
 #pragma implementation
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 #endif
 
 #define Uses_wxApp

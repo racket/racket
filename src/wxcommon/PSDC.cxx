@@ -10,6 +10,9 @@
 
 /* This file is the same for all three version of wxWindows from
    PLT. */
+#ifdef __GNUG__
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
 
 #if defined(_MSC_VER)
 # include "wx.h"

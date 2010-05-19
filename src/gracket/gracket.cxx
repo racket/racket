@@ -19,6 +19,7 @@
 /* wx_motif, for wxTimer: */
 #ifdef __GNUG__
 # pragma implementation "wx_timer.h"
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 #endif
 
 #include "common.h"

@@ -26,6 +26,7 @@
 
 #ifdef __GNUG__
 #pragma implementation "TypeTree.h"
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 #endif
 
 #define  Uses_wxTypeTree

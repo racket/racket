@@ -29,6 +29,7 @@
 
 #ifdef __GNUG__
 #pragma interface
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 #endif
 
 #ifdef Have_Xt_Types

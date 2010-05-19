@@ -56,7 +56,9 @@
  *    Phone:    (215) 898-8813
  *    EMail:    bradley@cis.upenn.edu
  */
-
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
 
 #include <stdlib.h>
 #include "wx_image.h"

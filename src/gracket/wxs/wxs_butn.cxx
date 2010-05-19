@@ -4,6 +4,7 @@
 
 #if defined(__GNUC__)
 # define MAYBE_UNUSED __attribute__((unused))
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 #else
 # define MAYBE_UNUSED
 #endif
