@@ -10,6 +10,7 @@
 (htdp-syntax-test #'(define x))
 (htdp-syntax-test #'(define x 10 12))
 (htdp-syntax-test #'(define (10 y) 12))
+(htdp-syntax-test #'(define (10) 12))
 (htdp-syntax-test #'(define ("x" y) 12))
 (htdp-syntax-test #'(define (y 10) 12))
 (htdp-syntax-test #'(define (y "x") 12))

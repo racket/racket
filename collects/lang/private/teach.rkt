@@ -1904,6 +1904,8 @@
 	  (syntax/loc stx (define (name) expr))
           (list #'name))]
 	[(_ (name) expr ...)
+         (and (identifier/non-kw? (syntax name))
+	      (ok-definition-context))
 	 (check-single-result-expr (syntax->list (syntax (expr ...)))
 				   #f
 				   stx
