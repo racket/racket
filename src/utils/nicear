@@ -1,0 +1,4 @@
+#!/bin/sh
+
+$* 2>&1 | awk '/^ar: creating / || /^[ar] \-/ { print } ! ( /ar: creating / || /^[ar] \-/ ) { print | "cat 1>&2" }'
+

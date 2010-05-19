@@ -14,6 +14,7 @@ mainsrcdir = @srcdir@/../..
 CC = @CC@
 CPP = @CPP@
 CXX = @CXX@
+NICEAR = $(mainsrcdir)/utils/nicear
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
@@ -379,7 +380,7 @@ EXTRA_OBJS_T = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_U
 EXTRA_OBJS_L = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
 ../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
-	$(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
+	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
 	$(RANLIB) ../libracket3m.@LIBSFX@
 
 ../racket@MMM@@NOT_OSX@: main.@LTO@ ../libracket3m.@LIBSFX@

@@ -21,6 +21,7 @@ NOOP = :
 CC = @CC@
 CPP = @CPP@
 
+NICEAR = $(mainsrcdir)/utils/nicear
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
@@ -108,7 +109,7 @@ sproc-extra-lib:
 	$(MAKE) sproc.@LTO@
 
 gc.@LIBSFX@: 
-	$(AR) $(ARFLAGS) @GCDIR@/gc.@LIBSFX@ @GCDIR@/*.@LTO@
+	$(NICEAR) $(AR) $(ARFLAGS) @GCDIR@/gc.@LIBSFX@ @GCDIR@/*.@LTO@
 
 # Compilation of the foreign libraries (this compiles all of them)
 foreign-stuff:
@@ -127,7 +128,7 @@ FOREIGN_NOT_USED_LIB =
 FOREIGN_NOT_USED_OBJSLIB = 
 
 libracket.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB)
-	$(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBRACKET_DEP@
+	$(NICEAR) $(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBRACKET_DEP@
 	$(RANLIB) libracket.@LIBSFX@
 
 # Irix sproc, only
