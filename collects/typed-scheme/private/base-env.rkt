@@ -142,7 +142,7 @@
 [fifth   (-poly (a) ((-lst a) . -> .  a))]
 [sixth   (-poly (a) ((-lst a) . -> .  a))]
 [seventh (-poly (a) ((-lst a) . -> .  a))]
-[eigth   (-poly (a) ((-lst a) . -> .  a))]
+[eighth  (-poly (a) ((-lst a) . -> .  a))]
 [ninth   (-poly (a) ((-lst a) . -> .  a))]
 [tenth   (-poly (a) ((-lst a) . -> .  a))]
 [rest (-poly (a b) 
