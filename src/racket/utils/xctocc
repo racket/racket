@@ -2974,20 +2974,20 @@ sub PrintSymSet
 
     if ($#syms < 0) {
 	if (!($omit =~ /PRED/)) {
-	    print "static int istype_symset_${name}(Scheme_Object *v, const char *where) {\n";
+	    print "MAYBE_UNUSED static int istype_symset_${name}(Scheme_Object *v, const char *where) {\n";
 	    print "  if SCHEME_NULLP(v) return 1;\n";
 	    print "  if (where) scheme_wrong_type(where, \"$name symbol${lname}\", -1, 0, &v);\n";
 	    print "  return 0;\n";
 	    print "}\n\n";
 	}
 	if (!($omit =~ /UNBUNDLE/)) {
-	    print "static int unbundle_symset_${name}(Scheme_Object *v, const char *where) {\n";
+	    print "MAYBE_UNUSED static int unbundle_symset_${name}(Scheme_Object *v, const char *where) {\n";
 	    print "  istype_symset_${name}(v, where);\n";
 	    print "  return 0;\n";
 	    print "}\n";
 	}
 	if (!($omit =~ /BUNDLE/)) {
-	    print "static Scheme_Object *bundle_symset_${name}(int) {\n";
+	    print "MAYBE_UNUSED static Scheme_Object *bundle_symset_${name}(int) {\n";
 	    print "  return scheme_null;\n";
 	    print "}\n\n";
 	}
@@ -3017,7 +3017,7 @@ sub PrintSymSet
 	}
 
 	if ($dothisone) {
-	    print "static int ${mode}_symset_${name}(Scheme_Object *v, const char *where) {\n";
+	    print "MAYBE_UNUSED static int ${mode}_symset_${name}(Scheme_Object *v, const char *where) {\n";
 	    print "  SETUP_VAR_STACK(1);\n";
 	    print "  VAR_STACK_PUSH(0, v);\n";
 	    print "  if (!${name}_${v}_sym) WITH_VAR_STACK(init_symset_${name}());\n";
@@ -3079,7 +3079,7 @@ sub PrintSymSet
     }
 
     if (!($omit =~ /BUNDLE/)) {
-	print "static Scheme_Object *bundle_symset_${name}(int v) {\n";
+	print "MAYBE_UNUSED static Scheme_Object *bundle_symset_${name}(int v) {\n";
 	if ($multi) {
 	    print "  REMEMBER_VAR_STACK();\n";
 	}

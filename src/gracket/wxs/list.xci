@@ -44,7 +44,7 @@
 
 @MACRO bReturnList[type.cnt] =  WITH_VAR_STACK(__Make<type>List({x}, *x<cnt>));
 
-static Scheme_Object *l_MAKE_LIST(l_TYPE l_POINT *f, l_INTTYPE c)
+MAYBE_UNUSED static Scheme_Object *l_MAKE_LIST(l_TYPE l_POINT *f, l_INTTYPE c)
 {
   Scheme_Object *cdr = scheme_null, *obj = NULL;
   SETUP_VAR_STACK(1);
@@ -60,7 +60,7 @@ static Scheme_Object *l_MAKE_LIST(l_TYPE l_POINT *f, l_INTTYPE c)
   return cdr;
 }
 
-static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, l_INTTYPE *c, char *who)
+MAYBE_UNUSED static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, l_INTTYPE *c, char *who)
 {
   Scheme_Object *orig_l = l;
   int i = 0;
