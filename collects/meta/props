@@ -1153,7 +1153,7 @@ path/s is either such a string or a list of them.
 "collects/racket/gui.rkt" drdr:command-line (gracket "-t" *)
 "collects/racket/match" responsible (samth)
 "collects/racket/match.rkt" responsible (samth)
-"collects/raclog" responsible (jay)
+"collects/racklog" responsible (jay)
 "collects/raco" responsible (mflatt)
 "collects/raco/main.rkt" drdr:command-line #f
 "collects/raco/raco.rkt" drdr:command-line #f
@@ -1674,7 +1674,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/will.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/zo-marshal.rktl" drdr:command-line #f
 "collects/tests/racket/ztest.rktl" drdr:command-line #f
-"collects/tests/raclog" responsible (jay)
+"collects/tests/racklog" responsible (jay)
 "collects/tests/rackunit" responsible (jay noel)
 "collects/tests/run-automated-tests.rkt" drdr:command-line (mzc "-k" *) drdr:timeout 600
 "collects/tests/scribble" responsible (eli mflatt)

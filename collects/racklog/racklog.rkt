@@ -17,11 +17,11 @@
   (syntax-rules ()
     ((%or g ...)
      (lambda (__fk)
-       (let/raclog-cc __sk
-                      (let/raclog-cc __fk
-                                     (__sk ((logic-var-val* g) __fk)))
-                      ...
-                      (__fk 'fail))))))
+       (let/racklog-cc __sk
+         (let/racklog-cc __fk
+           (__sk ((logic-var-val* g) __fk)))
+         ...
+         (__fk 'fail))))))
 
 (define-syntax %and
   (syntax-rules ()
@@ -48,18 +48,18 @@
     ((%rel (v ...) ((a ...) subgoal ...) ...)
      (lambda __fmls
        (lambda (__fk)
-         (let/raclog-cc __sk
-                        (let ((this-! (lambda (fk1) __fk)))
-                          (syntax-parameterize 
-                           ([! (make-rename-transformer #'this-!)])
-                           (%let (v ...)
-                                 (let/raclog-cc __fk
-                                                (let* ((__fk ((%= __fmls (list a ...)) __fk))
-                                                       (__fk ((logic-var-val* subgoal) __fk))
-                                                       ...)
-                                                  (__sk __fk)))
-                                 ...
-                                 (__fk 'fail))))))))))
+         (let/racklog-cc __sk
+           (let ((this-! (lambda (fk1) __fk)))
+             (syntax-parameterize 
+              ([! (make-rename-transformer #'this-!)])
+              (%let (v ...)
+                    (let/racklog-cc __fk
+                      (let* ((__fk ((%= __fmls (list a ...)) __fk))
+                             (__fk ((logic-var-val* subgoal) __fk))
+                             ...)
+                        (__sk __fk)))
+                    ...
+                    (__fk 'fail))))))))))
 
 (define %fail
   (lambda (fk) (fk 'fail)))
@@ -110,8 +110,8 @@
 (define ((make-negation p) . args) 
   ;basically inlined cut-fail
   (lambda (fk)
-    (if (let/raclog-cc k
-                       ((apply p args) (lambda (d) (k #f))))
+    (if (let/racklog-cc k
+          ((apply p args) (lambda (d) (k #f))))
         (fk 'fail)
         fk)))
 
@@ -142,8 +142,8 @@
 
 (define (%not g)
   (lambda (fk)
-    (if (let/raclog-cc k
-                       ((logic-var-val* g) (lambda (d) (k #f))))
+    (if (let/racklog-cc k
+          ((logic-var-val* g) (lambda (d) (k #f))))
         (fk 'fail) fk)))
 
 (define (%empty-rel . args)
@@ -190,15 +190,15 @@
 
 (define (make-bag-of-aux kons fvv lv goal bag)
   (lambda (fk)
-    (let/raclog-cc sk
-                   (let ((lv2 (cons fvv lv)))
-                     (let* ((acc '())
-                            (fk-final
-                             (lambda (d)
-                               (sk ((separate-bags fvv bag acc) fk))))
-                            (fk-retry (goal fk-final)))
-                       (set! acc (kons (logic-var-val* lv2) acc))
-                       (fk-retry 'retry))))))
+    (let/racklog-cc sk
+      (let ((lv2 (cons fvv lv)))
+        (let* ((acc '())
+               (fk-final
+                (lambda (d)
+                  (sk ((separate-bags fvv bag acc) fk))))
+               (fk-retry (goal fk-final)))
+          (set! acc (kons (logic-var-val* lv2) acc))
+          (fk-retry 'retry))))))
 
 (define (separate-bags fvv bag acc)
   (let ((bags (let loop ((acc acc)
@@ -235,30 +235,30 @@
 (define-syntax %which
   (syntax-rules ()
     ((%which (v ...) g)
-     (with-raclog-prompt
-         (%let (v ...)
-               (set-box! *more-fk*
-                         ((logic-var-val* g)
-                          (lambda (d)
-                            (set-box! *more-fk* #f)
-                            (abort-to-raclog-prompt #f))))
-               (abort-to-raclog-prompt
-                (list (cons 'v (logic-var-val* v))
-                      ...)))))))
+     (with-racklog-prompt
+       (%let (v ...)
+         (set-box! *more-fk*
+                   ((logic-var-val* g)
+                    (lambda (d)
+                      (set-box! *more-fk* #f)
+                      (abort-to-racklog-prompt #f))))
+         (abort-to-racklog-prompt
+          (list (cons 'v (logic-var-val* v))
+                ...)))))))
 
 (define (%more)
-  (with-raclog-prompt
-      (if (unbox *more-fk*)
-          ((unbox *more-fk*) 'more)
-          #f)))
+  (with-racklog-prompt
+    (if (unbox *more-fk*)
+        ((unbox *more-fk*) 'more)
+        #f)))
 
-(define raclog-prompt-tag (make-continuation-prompt-tag 'raclog))
-(define (abort-to-raclog-prompt a)
-  (abort-current-continuation raclog-prompt-tag (λ () a)))
-(define-syntax-rule (with-raclog-prompt e ...)
-  (call-with-continuation-prompt (λ () e ...) raclog-prompt-tag))
-(define-syntax-rule (let/raclog-cc k e ...)
-  (call-with-current-continuation (λ (k) e ...) raclog-prompt-tag))
+(define racklog-prompt-tag (make-continuation-prompt-tag 'racklog))
+(define (abort-to-racklog-prompt a)
+  (abort-current-continuation racklog-prompt-tag (λ () a)))
+(define-syntax-rule (with-racklog-prompt e ...)
+  (call-with-continuation-prompt (λ () e ...) racklog-prompt-tag))
+(define-syntax-rule (let/racklog-cc k e ...)
+  (call-with-current-continuation (λ (k) e ...) racklog-prompt-tag))
 
 (define (%member x y)
   (%let (xs z zs)

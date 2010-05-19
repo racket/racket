@@ -1,31 +1,31 @@
 #lang scribble/manual
 @(require scribble/eval
           (for-syntax racket)
-          (for-label raclog
+          (for-label racklog
                      (except-in racket _)))
 
-@(define raclog-eval (make-base-eval))
-@(raclog-eval '(require raclog))
+@(define racklog-eval (make-base-eval))
+@(racklog-eval '(require racklog))
 
-@title{@bold{Raclog}: Prolog-Style Logic Programming in Racket}
+@title{@bold{Racklog}: Prolog-Style Logic Programming in Racket}
 
 @author{Dorai Sitaram}
 
 @margin-note{Adapted from Schelog by Dorai Sitaram for Racket by Dorai Sitaram, John Clements, and Jay McCarthy.}
 
-@defmodule[raclog]
+@defmodule[racklog]
 
-Raclog is an @emph{embedding} of
+Racklog is an @emph{embedding} of
 Prolog-style logic programming in Racket.  ``Embedding''
 means you don't lose Racket: You can use Prolog-style and
 conventional Racket code fragments alongside each other.
-Raclog contains the full repertoire of Prolog features,
+Racklog contains the full repertoire of Prolog features,
 including meta-logical and second-order (``set'')
 predicates, leaving out only those features that could more
 easily and more efficiently be done with Racket
 subexpressions.
 
-The Raclog implementation uses the approach to logic
+The Racklog implementation uses the approach to logic
 programming for Scheme described in Felleisen @cite{mf:prolog} and
 Haynes @cite{logick}.  In contrast to earlier Lisp simulations of
 Prolog @cite{campbell},
@@ -34,18 +34,18 @@ arguments to store failure (backtrack) information, the
 Felleisen and Haynes model uses the implicit reified
 continuations of Scheme. In Racket these are provided by the operator
 @racket[call-with-current-continuation] (aka @racket[call/cc]).  This
-allows Raclog to be an @emph{embedding}, ie, logic
+allows Racklog to be an @emph{embedding}, ie, logic
 programming is not built as a new language on top of Racket,
 but is used alongside Racket's other features.  Both styles
 of programming may be mixed to any extent that a project
 needs.
 
-The Raclog user does not need to know about the
+The Racklog user does not need to know about the
 implementation mechanism or about @racket[call/cc] and
 continuations to get on with the business of
-doing logic programming with Raclog.
+doing logic programming with Racklog.
 
-This text is a gentle introduction to Raclog syntax
+This text is a gentle introduction to Racklog syntax
 and programming.  It assumes a working knowledge of
 Racket and an awareness of, if not actual programming
 experience with, Prolog.  If you need assistance for Prolog,
@@ -57,9 +57,9 @@ online documents available.
 
 @section[#:tag "simple"]{Simple Goals and Queries}
 
-Raclog objects are the same as Racket objects.  However, there
+Racklog objects are the same as Racket objects.  However, there
 are two subsets of these objects that are of special
-interest to Raclog: @emph{goals} and @emph{predicates}.  We
+interest to Racklog: @emph{goals} and @emph{predicates}.  We
 will first look at some simple goals.
 @secref{predicates} will introduce predicates and ways
 of making  complex goals using predicates.
@@ -69,7 +69,7 @@ goal that turns out to be true is said to succeed.
 A goal that turns out to be false is said to
 fail.
 
-Two simple goals that are provided in Raclog are:
+Two simple goals that are provided in Racklog are:
 @racketblock[
 %true
 %fail
@@ -78,13 +78,13 @@ Two simple goals that are provided in Raclog are:
 The  goal @racket[%true] succeeds.  The goal @racket[%fail]
 always fails.
 
-(The names of all Raclog primitive objects
+(The names of all Racklog primitive objects
 start with @litchar{%}.  This is to avoid clashes with the names
 of conventional Racket objects of related meaning.
-User-created objects in Raclog are not required to
+User-created objects in Racklog are not required to
 follow this convention.)
 
-A Raclog user can @emph{query} a goal by wrapping it in a
+A Racklog user can @emph{query} a goal by wrapping it in a
 @racket[%which]-form.
 
 @racketblock[
@@ -110,14 +110,14 @@ Henceforth, we will use the notation:
 
 to say that @racket[E] @emph{evaluates to} @racket[F]. Thus,
 
-@interaction[#:eval raclog-eval (%which () %true)]
+@interaction[#:eval racklog-eval (%which () %true)]
 
 @section[#:tag "predicates"]{Predicates}
 
 More interesting goals are created by applying a special
-kind of Raclog object called a @emph{predicate} (or
+kind of Racklog object called a @emph{predicate} (or
 @emph{relation}) to other
-Raclog objects.  Raclog comes with some primitive
+Racklog objects.  Racklog comes with some primitive
 predicates, such as the arithmetic operators
 @racket[%=:=] and @racket[%<],
 standing for arithmetic ``equal'' and ``less than''
@@ -125,7 +125,7 @@ respectively.  For example, the following are some goals
 involving these predicates:
 
 @interaction[
- #:eval raclog-eval
+ #:eval racklog-eval
  (%which () (%=:= 1 1))
  (%which () (%< 1 2))
  (%which () (%=:= 1 2))
@@ -138,23 +138,23 @@ Other arithmetic predicates are
 @racket[%>=] (``greater than or equal''), and
 @racket[%=/=] (``not equal'').
 
-Raclog predicates are not to be confused with conventional
-Racket predicates (such as @racket[<] and @racket[=]).  Raclog
+Racklog predicates are not to be confused with conventional
+Racket predicates (such as @racket[<] and @racket[=]).  Racklog
 predicates, when applied to arguments, produce goals
 that
 may either succeed or fail.  Racket predicates, when applied
 to arguments, yield a boolean value.  Henceforth, we will
-use the term ``predicate'' to mean Raclog predicates.
+use the term ``predicate'' to mean Racklog predicates.
 Conventional predicates will be explicitly called ``Racket
 predicates''.
 
 @subsection[#:tag "facts"]{Predicates Introducing Facts}
 
-Users can create their own predicates using the Raclog form
+Users can create their own predicates using the Racklog form
 @racket[%rel].  For example, let's
 define the predicate @racket[%knows]:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %knows
   (%rel ()
     [('Odysseus 'TeX)]
@@ -181,7 +181,7 @@ will be true.
 
 We can now get answers for the following types of queries:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which ()
   (%knows 'Odysseus 'TeX))
 (%which ()
@@ -193,7 +193,7 @@ We can now get answers for the following types of queries:
 Predicates can be more complicated than the above bald
 recitation of facts.  The predicate clauses can be @emph{rules}, eg,
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %computer-literate
   (%rel (person)
     [(person)
@@ -218,7 +218,7 @@ can be used within the body of the @racket[%rel].
 
 The following query can now be answered:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which ()
   (%computer-literate 'Penelope))
 ]
@@ -227,13 +227,13 @@ Since Penelope knows TeX and Prolog, she is computer-literate.
 
 @subsection[#:tag "solving-goals"]{Solving Goals}
 
-The above queries are yes/no questions.  Raclog programming
+The above queries are yes/no questions.  Racklog programming
 allows more: We can formulate a goal with @emph{uninstantiated}
 logic variables and then ask the querying process to
 provide, if possible, values for these variables that cause
 the goal to succeed.  For instance, the query:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (what)
   (%knows 'Odysseus what))
 ]
@@ -251,24 +251,24 @@ variable, @racket[_what].  In general, the second subform of
 bindings, one for each logic variable mentioned in its
 second subform.  Thus,
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (what)
   (%knows 'Odysseus what))
 ]
 
-But that is not all that wily Odysseus knows.  Raclog
+But that is not all that wily Odysseus knows.  Racklog
 provides a zero-argument procedure (``thunk'') called
 @racket[%more]
 that @emph{retries} the goal in the last
 @racket[%which]-query for a different solution.
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%more)
 ]
 
 We can keep pumping for more solutions:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%more)
 (%more)
 (%more)
@@ -282,10 +282,10 @@ else.
 @subsection[#:tag "assert"]{Asserting Extra Clauses}
 
 We can add more clauses to a predicate after it has already
-been defined with a @racket[%rel].  Raclog provides the
+been defined with a @racket[%rel].  Racklog provides the
 @racket[%assert!] form for this purpose.  Eg,
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (%assert! %knows ()
   [('Odysseus 'archery)])
 ]
@@ -294,31 +294,31 @@ tacks on a new clause at the end of the existing clauses
 of the @racket[%knows]
 predicate.  Now, the query:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (what)
   (%knows 'Odysseus what))
 ]
 
 gives TeX, Racket, Prolog, and Penelope, as before, but
 a subsequent @racket[(%more)] yields a new result:
-@interaction-eval[#:eval raclog-eval (begin (%more) (%more) (%more))]
-@interaction[#:eval raclog-eval
+@interaction-eval[#:eval racklog-eval (begin (%more) (%more) (%more))]
+@interaction[#:eval racklog-eval
 (%more)
 ]
 
-The Raclog form @racket[%assert-after!] is similar to @racket[%assert!] but
+The Racklog form @racket[%assert-after!] is similar to @racket[%assert!] but
 adds clauses @emph{before} any of the current clauses.
 
 Both @racket[%assert!] and @racket[%assert-after!] assume that the variable
 they are adding to already names a predicate (presumably
 defined using @racket[%rel]).
 In order to allow defining a predicate entirely through
-@racket[%assert!]s,  Raclog provides an empty predicate value
+@racket[%assert!]s,  Racklog provides an empty predicate value
 @racket[%empty-rel].  @racket[%empty-rel] takes any number of arguments
 and always fails.  A typical use of the
 @racket[%empty-rel] and @racket[%assert!] combination:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %parent %empty-rel)
 
 (%assert! %parent ()
@@ -329,7 +329,7 @@ and always fails.  A typical use of the
   [('Penelope 'Telemachus)])
 ]
 
-(Raclog does not provide a predicate for @emph{retracting}
+(Racklog does not provide a predicate for @emph{retracting}
 assertions, since we can keep track of older versions of
 predicates using conventional Racket features (@racket[let] and @racket[set!]).)
 
@@ -337,20 +337,20 @@ predicates using conventional Racket features (@racket[let] and @racket[set!]).)
 
 The local logic variables of @racket[%rel]- and
 @racket[%which]-expressions are in reality introduced by the
-Raclog syntactic form called @racket[%let].  (@racket[%rel] and
+Racklog syntactic form called @racket[%let].  (@racket[%rel] and
 @racket[%which] are macros written using @racket[%let].)
 
 @racket[%let] introduces new lexically scoped logic variables.
 Supposing, instead of
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (what)
   (%knows 'Odysseus what))
 ]
 
 we had asked
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%let (what)
   (%which ()
     (%knows 'Odysseus what)))
@@ -362,9 +362,9 @@ bindings only for the local variables that @emph{it}
 introduces.  Thus, this query emits @racketresult[()] five times before
 @racket[(%more)] finally returns @racket[#f].
 
-@section[#:tag "racket-w-logic"]{Using Conventional Racket Expressions in Raclog}
+@section[#:tag "racket-w-logic"]{Using Conventional Racket Expressions in Racklog}
 
-The arguments of Raclog predicates can be any Racket
+The arguments of Racklog predicates can be any Racket
 objects.  In particular, composite structures such as lists,
 vectors, strings, hash tables, etc can be used, as also Racket expressions
 using the full array of Racket's construction and
@@ -406,7 +406,7 @@ a @racket[%member] goal.
 Note that the variable @racket[y] in the definition of
 @racket[%member] occurs only once in the second clause.  As such,
 it doesn't need you to make the effort of naming it.  (Names
-help only in matching a second occurrence to a first.)  Raclog
+help only in matching a second occurrence to a first.)  Racklog
 lets you use the expression @racket[(_)] to denote an anonymous
 variable.  (Ie, @racket[_] is a thunk that generates a fresh
 anonymous variable at each call.)  The predicate @racket[%member] can be
@@ -423,14 +423,14 @@ rewritten as
 @subsection[#:tag "constructors"]{Constructors}
 
 We can use constructors --- Racket procedures for creating
-structures --- to simulate data types in Raclog.  For
+structures --- to simulate data types in Racklog.  For
 instance, let's define a natural-number data-type where
 @racket[0] denotes zero, and @racket[(succ x)] denotes the natural number
 whose immediate predecessor is @racket[x].   The constructor
 @racket[succ] can
 be defined in Racket as:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define succ
   (lambda (x)
     (vector 'succ x)))
@@ -438,7 +438,7 @@ be defined in Racket as:
 
 Addition and multiplication can be defined as:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %add
   (%rel (x y z)
     [(0 y y)]
@@ -456,7 +456,7 @@ Addition and multiplication can be defined as:
 We can do a lot of arithmetic with this in place.  For
 instance, the factorial predicate looks like:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %factorial
   (%rel (x y y1)
     [(0 (succ 0))]
@@ -471,9 +471,9 @@ The above is a very inefficient way to do arithmetic,
 especially when the underlying language Racket offers
 excellent arithmetic facilities (including a comprehensive
 number ``tower'' and exact rational arithmetic).  One
-problem with using Racket calculations directly in Raclog
+problem with using Racket calculations directly in Racklog
 clauses is that the expressions used may contain logic
-variables that need to be dereferenced.  Raclog provides
+variables that need to be dereferenced.  Racklog provides
 the predicate @racket[%is] that takes care of this.  The goal
 
 @racketblock[
@@ -489,7 +489,7 @@ may not be palatable values to the Racket operators used in
 We can now directly use the numbers of Racket to write a
 more efficient @racket[%factorial] predicate:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %factorial
   (%rel (x y x1 y1)
     [(0 1)]
@@ -505,7 +505,7 @@ constraint.  In fact, given this limitation, there is
 nothing to prevent us from using Racket's factorial
 directly:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %factorial
   (%rel (x y)
     [(x y)
@@ -517,7 +517,7 @@ or better yet, ``in-line'' any calls to @racket[%factorial] with
 @racket[%is]-expressions calling @racket[racket-factorial], where the
 latter is defined in the usual manner:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define racket-factorial
   (lambda (n)
     (if (= n 0) 1
@@ -531,7 +531,7 @@ One can use Racket's lexical scoping to enhance predicate
 definition.  Here is a list-reversal predicate defined using
 a hidden auxiliary predicate:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %reverse
   (letrec
     ([revaux
@@ -557,7 +557,7 @@ contour.  We use @racket[letrec] instead of @racket[let] because
 
 @subsection[#:tag "type-predicates"]{Type Predicates}
 
-Raclog provides a couple of predicates that let the user
+Racklog provides a couple of predicates that let the user
 probe the type of objects.
 
 The goal
@@ -573,7 +573,7 @@ checks if its argument is not an atomic object.
 The above are merely the logic-programming equivalents of
 corresponding Racket predicates.  Users can use the
 predicate @racket[%is] and Racket predicates to write more type
-checks in Raclog.  Thus, to test if @racket[_X] is a string, the
+checks in Racklog.  Thus, to test if @racket[_X] is a string, the
 following goal could be used:
 
 @racketblock[
@@ -589,7 +589,7 @@ It is helpful to go into the following evaluation (@secref{rules})
 in a
 little detail:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (%which ()
   (%computer-literate 'Penelope))
 ]
@@ -605,7 +605,7 @@ G0 = (%computer-literate Penelope)
 (I've taken out the quote because @racketresult[Penelope] is the result
 of evaluating @racket['Penelope].)
 
-Raclog tries to match this with the head of the first
+Racklog tries to match this with the head of the first
 clause of @racket[%computer-literate].  It succeeds, generating a
 binding  @racket[[person . Penelope]].
 
@@ -619,29 +619,29 @@ G1 = (%knows Penelope TeX)
 G2 = (%knows Penelope Racket)
 ]
 
-For @goal{G1}, Raclog attempts matches with the clauses of
+For @goal{G1}, Racklog attempts matches with the clauses of
 @racket[%knows], and succeeds at the fifth try.  (There are no
 subgoals in this case, because the bodies of these ``fact''
 clauses are empty, in contrast to the ``rule'' clauses of
 @racket[%computer-literate].)
-Raclog then tries to solve @goal{G2} against the clauses of
+Racklog then tries to solve @goal{G2} against the clauses of
 @racket[%knows], and since there is no clause stating that
 Penelope knows Racket, it fails.
 
-All is not lost though.  Raclog now @emph{backtracks} to the
+All is not lost though.  Racklog now @emph{backtracks} to the
 goal that was solved just before, viz., @goal{G1}.  It
 @emph{retries} @goal{G1}, ie, tries to solve it in a
 different way.
 This entails searching down the previously unconsidered
 @racket[%knows]
 clauses for @goal{G1}, ie, the sixth onwards.  Obviously,
-Raclog fails again, because the fact that Penelope knows
+Racklog fails again, because the fact that Penelope knows
 TeX occurs only once.
 
-Raclog now backtracks to the goal before @goal{G1}, ie,
+Racklog now backtracks to the goal before @goal{G1}, ie,
 @goal{G0}.  We abandon the current successful match with the
 first clause-head of @racket[%computer-literate], and try the
-next clause-head.  Raclog succeeds, again producing a binding
+next clause-head.  Racklog succeeds, again producing a binding
 @racket[[person . Penelope]], and two new subgoals:
 
 @racketblock[
@@ -649,13 +649,13 @@ G3 = (%knows Penelope TeX)
 G4 = (%knows Penelope Prolog)
 ]
 
-It is now easy to trace that Raclog finds both @goal{G3} and @goal{G4} to be
+It is now easy to trace that Racklog finds both @goal{G3} and @goal{G4} to be
 true.  Since both of @goal{G0}'s subgoals are true, @goal{G0} is
-itself considered true.  And this is what Raclog reports.  The
+itself considered true.  And this is what Racklog reports.  The
 interested reader can now trace  why the
 following query has a different denouement:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which ()
   (%computer-literate 'Telemachus))
 ]
@@ -664,7 +664,7 @@ following query has a different denouement:
 
 When we say that a goal matches with a clause-head, we mean
 that the predicate and argument positions line up.  Before
-making this comparison, Raclog dereferences all already
+making this comparison, Racklog dereferences all already
 bound logic variables.  The resulting structures are then
 compared to see if they are recursively identical.  Thus,
 @racket[1] unifies with @racket[1], and @racket[(list 1 2)] with @racket['(1 2)]; but @racket[1] and
@@ -679,20 +679,20 @@ variable, unifies with @racket['(0 1)], producing the
 binding
 @racket[[_x 0]].
 
-Unification is thus a goal, and Raclog makes the unification predicate
+Unification is thus a goal, and Racklog makes the unification predicate
 available  to the user as @racket[%=].   Eg,
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (x)
   (%= (list x 1) '(0 1)))
 ]
 
-Raclog also provides the predicate @racket[%/=], the @emph{negation} of
+Racklog also provides the predicate @racket[%/=], the @emph{negation} of
 @racket[%=].  @racket[(%/= _X _Y)] succeeds if and only if @racket[_X] does
 @emph{not} unify with @racket[_Y].
 
 Unification goals constitute the basic subgoals that all
-Raclog goals devolve to.  A goal succeeds because all the
+Racklog goals devolve to.  A goal succeeds because all the
 eventual unification subgoals that it decomposes to in at
 least one of its subgoal-branching succeeded.  It fails
 because every possible subgoal-branching was thwarted by the
@@ -722,10 +722,10 @@ other hand, performing the occurs check greatly
 increases the time taken by unification, even in cases
 that wouldn't require the check.
 
-Raclog uses the global parameter
+Racklog uses the global parameter
 @racket[use-occurs-check?] to decide whether to
 use the occurs check.  By default, this variable is 
-@racket[#f], ie, Raclog disables the occurs check.  To
+@racket[#f], ie, Racklog disables the occurs check.  To
 enable the check, 
 
 @racketblock[
@@ -739,7 +739,7 @@ and @racket[%or]
 to form compound goals.  (For @racket[%not], see @secref{not}.)
 Eg,
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (x)
   (%and (%member x '(1 2 3))
         (%< x 3)))
@@ -750,7 +750,7 @@ argument goals of the @racket[%and].
 Ie, @racket[_x] should both be a member of @racket['(1 2 3)]
 @emph{and}  be less than @racket[3]. Typing @racket[(%more)] gives another solution:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%more)
 (%more)
 ]
@@ -760,7 +760,7 @@ the first but not the second goal.
 
 Similarly, the query
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (x)
   (%or (%member x '(1 2 3))
        (%member x '(3 4 5))))
@@ -768,7 +768,7 @@ Similarly, the query
 
 lists all @racket[_x] that are members of either list.
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%more)
 (%more)
 (%more)
@@ -781,7 +781,7 @@ lists all @racket[_x] that are members of either list.
 We can rewrite the predicate @racket[%computer-literate]
 from @secref{rules} using @racket[%and] and @racket[%or]:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %computer-literate
   (%rel (person)
     [(person)
@@ -798,7 +798,7 @@ from @secref{rules} using @racket[%and] and @racket[%or]:
 
 Or,  more succinctly:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %computer-literate
   (%rel (person)
     [(person)
@@ -812,7 +812,7 @@ Or,  more succinctly:
 
 We can even dispense with the @racket[%rel] altogether:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %computer-literate
   (lambda (person)
     (%and (%knows person
@@ -827,9 +827,9 @@ This last looks like a conventional Racket predicate
 definition, and is arguably
 the most readable format for a Racket programmer.
 
-@section[#:tag "lv-manip"]{Manipulating Raclog Variables}
+@section[#:tag "lv-manip"]{Manipulating Racklog Variables}
 
-Raclog provides special predicates for probing logic
+Racklog provides special predicates for probing logic
 variables, without risking their getting bound.
 
 @subsection[#:tag "var"]{Checking for Variables}
@@ -862,7 +862,7 @@ The predicate @racket[%nonvar] is the negation of @racket[%var].
 
 @subsection[#:tag "freeze"]{Preserving Variables}
 
-Raclog lets the user protect a term with variables from
+Racklog lets the user protect a term with variables from
 unification by allowing that term to be treated as a
 (completely) bound object.  The predicates provided for this
 purpose are
@@ -910,19 +910,19 @@ followed by @racket[(%melt-new _F _C)].
 
 The cut (called @racket[!]) is a special goal that is used to
 prune backtracking options.  Like the @racket[%true] goal, the
-cut goal too succeeds, when accosted by the Raclog
+cut goal too succeeds, when accosted by the Racklog
 subgoaling engine.  However, when a further subgoal down the
-line fails, and time comes to retry the cut goal, Raclog
+line fails, and time comes to retry the cut goal, Racklog
 will refuse to try alternate clauses for the predicate in
 whose definition the cut occurs.  In other words, the cut
-causes Raclog to commit to all the decisions made from the
+causes Racklog to commit to all the decisions made from the
 time that the predicate was selected to match a subgoal till
 the time the cut was satisfied.
 
 For example, consider again the @racket[%factorial]
 predicate, as defined in @secref{is}:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %factorial
   (%rel (x y x1 y1)
     [(0 1)]
@@ -933,7 +933,7 @@ predicate, as defined in @secref{is}:
 
 Clearly,
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which ()
   (%factorial 0 1))
 (%which (n)
@@ -963,7 +963,7 @@ Calling @racket[%factorial] with a @emph{negative} number would still cause an
 infinite loop.   To take care of that problem as well, we
 use another cut:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %factorial
   (%rel (x y x1 y1)
     [(0 1) !]
@@ -973,7 +973,7 @@ use another cut:
            (%is y (* y1 x))]))
 ]
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which ()
   (%factorial 0 1))
 (%more)
@@ -991,7 +991,7 @@ are the conditional and negation.
 An ``if ... then ... else ...'' predicate can be defined
 as follows
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %if-then-else
   (%rel (p q r)
     [(p q r) p ! q]
@@ -1030,7 +1030,7 @@ Another common abstraction using the cut is @emph{negation}.
 The negation of goal @goal{G} is defined as @racket[(%not G)], where
 the predicate @racket[%not] is defined as follows:
 
-@racketblock+eval[#:eval raclog-eval
+@racketblock+eval[#:eval racklog-eval
 (define %not
   (%rel ()
     [(g) g ! %fail]
@@ -1055,7 +1055,7 @@ unifies with @racket[_Bag] the list of all instantiations of
 asks for all the things known --- ie, the collection of things
 such that someone knows them:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (things-known)
   (%let (someone x)
     (%bag-of x (%knows someone x)
@@ -1064,7 +1064,7 @@ such that someone knows them:
 
 This is the only solution for this goal:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%more)
 ]
 
@@ -1074,7 +1074,7 @@ TeX.  To remove duplicates, use the predicate
 @racket[%set-of]
 instead of @racket[%bag-of]:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (things-known)
   (%let (someone x)
     (%set-of x (%knows someone x)
@@ -1090,7 +1090,7 @@ set-predicate goal.  We can do it too with some additional
 syntax that identifies the free variable.
 Eg,
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%which (someone things-known)
   (%let (x)
     (%bag-of x
@@ -1104,18 +1104,18 @@ returned.  That someone is Odysseus.  The query can be
 retried for more solutions, each listing the things known by
 a different someone:
 
-@interaction[#:eval raclog-eval
+@interaction[#:eval racklog-eval
 (%more)
 (%more)
 (%more)
 (%more)
 ]
 
-Raclog also provides two variants of these set predicates,
+Racklog also provides two variants of these set predicates,
 viz., @racket[%bag-of-1] and @racket[%set-of-1].  These act like @racket[%bag-of]
 and @racket[%set-of] but fail if the resulting bag or set is empty.
 
-@section[#:tag "glossary"]{Glossary of Raclog Primitives}
+@section[#:tag "glossary"]{Glossary of Racklog Primitives}
 
 @(define-syntax (defpred stx)
    (syntax-case stx ()
@@ -1133,13 +1133,13 @@ and @racket[%set-of] but fail if the resulting bag or set is empty.
 
 @defproc[(atomic-struct? [x any/c]) boolean?]{Identifies structures that the @scheme[(current-inspector)] cannot inspect.}
 
-@defproc[(atom? [x any/c]) boolean?]{Identifies atomic values that may appear in Raclog programs. Equivalent to the contract @racket[(or/c boolean? number? string? bytes? char? symbol? regexp? pregexp? byte-regexp? byte-pregexp? keyword? null? procedure? void? set? atomic-struct?)].}
+@defproc[(atom? [x any/c]) boolean?]{Identifies atomic values that may appear in Racklog programs. Equivalent to the contract @racket[(or/c boolean? number? string? bytes? char? symbol? regexp? pregexp? byte-regexp? byte-pregexp? keyword? null? procedure? void? set? atomic-struct?)].}
 
 @defproc[(compound-struct? [x any/c]) boolean?]{Identifies structures that the @scheme[(current-inspector)] can inspect.}
 
-@defproc[(compound? [x any/c]) boolean?]{Identifies compound values that may appear in Raclog programs. Equivalent to the contract @racket[(or/c pair? vector? mpair? box? hash? compound-struct?)].}
+@defproc[(compound? [x any/c]) boolean?]{Identifies compound values that may appear in Racklog programs. Equivalent to the contract @racket[(or/c pair? vector? mpair? box? hash? compound-struct?)].}
 
-@defproc[(unifiable? [x any/c]) boolean?]{Identifies values that may appear in Raclog programs. Essentialy either an @racket[atom?], @racket[logic-var?], or @racket[compound?] that contains @scheme[unifiable?]s.}
+@defproc[(unifiable? [x any/c]) boolean?]{Identifies values that may appear in Racklog programs. Essentialy either an @racket[atom?], @racket[logic-var?], or @racket[compound?] that contains @scheme[unifiable?]s.}
 
 @defproc[(answer-value? [x any/c]) boolean?]{Identifies values that may appear in @racket[answer?]. Essentially @racket[unifiable?]s that do not contain @racket[logic-var?]s.}
 
@@ -1196,7 +1196,7 @@ local logic variables for @racket[clause], ....}
 Like @racket[%assert!], but adds the new clauses to the @emph{front}
 of the existing predicate.}
                                        
-@subsection{Raclog Variables}
+@subsection{Racklog Variables}
 
 @defproc[(_) logic-var?]{
 A thunk that produces a new logic variable.  Can be
@@ -1217,10 +1217,10 @@ Introduces a cut point. See @secref{cut}.}
 
 @defidform[!]{
 The cut goal, see @secref{cut}.
-                  
+
 May only be used syntactically inside @racket[%cut-delimiter] or @racket[%rel].}
 
-@subsection{Raclogal Operators}
+@subsection{Racklog Operators}
 
 @defgoal[%fail]{
 The goal @racket[%fail] always fails.}
@@ -1277,7 +1277,7 @@ Fails if @racket[E2] contains unbound logic variables.}
 
 @defparam[use-occurs-check? on? boolean?]{
 If this is false (the default), 
-Raclog's unification will not use the occurs check.
+Racklog's unification will not use the occurs check.
 If it is true, the occurs check is enabled.}
 
 @subsection{Numeric Predicates}
@@ -1343,7 +1343,7 @@ the occurrences of the variables @racket[V], ..., in goal
 @racket[G] as free.  It is used to avoid existential quantification
 in calls to set predicates (@racket[%bag-of], @racket[%set-of], &c.).}
 
-@subsection{Raclog Predicates}
+@subsection{Racklog Predicates}
 
 @defpred[(%compound [E unifiable?])]{
 The goal @racket[(%compound E)] succeeds if @racket[E] is a compound
@@ -1363,7 +1363,7 @@ it.}
 The goal @racket[(%nonvar E)] succeeds if @racket[E] is completely
 instantiated, ie, it has no unbound variable in it.}
 
-@subsection{Raclog Variable Manipulation}
+@subsection{Racklog Variable Manipulation}
 
 @defpred[(%freeze [S unifiable?] [F unifiable?])]{
 The goal @racket[(%freeze S F)] unifies with @racket[F] a new frozen

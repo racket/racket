@@ -673,8 +673,8 @@ plt-extras :+= (package: "plai/")
 plt-extras :+= (package: "rackunit/")
 plt-extras :+= (package: "schemeunit/")
 
-;; -------------------- raclog (aka schelog)
-plt-extras :+= (package: "raclog/")
+;; -------------------- racklog (aka schelog)
+plt-extras :+= (package: "racklog/")
 
 ;; ============================================================================
 ;; Readme header

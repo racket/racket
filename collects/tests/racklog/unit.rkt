@@ -1,5 +1,5 @@
 #lang racket
-(require raclog
+(require racklog
          tests/eli-tester)
 
 (test
