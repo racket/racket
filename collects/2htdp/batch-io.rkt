@@ -1,11 +1,16 @@
 #lang scheme
 
-(require (for-syntax syntax/parse) srfi/13 htdp/error "private/csv/csv.ss")
+(require (for-syntax syntax/parse) 
+         srfi/13 htdp/error 
+         (rename-in lang/prim (first-order->higher-order f2h))
+         "private/csv/csv.ss")
 
 ;; todo?
 ;; -- export tokenization? 
 
 ;; -----------------------------------------------------------------------------
+(provide simulate-file) ;; syntax (simulate-file reader string ...)
+
 (provide
  ;; all reader functions consume the name of a file f:
  ;; -- f must be a file name (string) in the same folder as the program 
@@ -83,6 +88,33 @@
   (read-csv-file/func f row))
 
 ;; -----------------------------------------------------------------------------
+;; tester 
+
+(define-syntax (simulate-file stx)
+  (syntax-case stx ()
+    [(simulate-file) 
+     (raise-syntax-error #f "expects a reader function as first argument" stx)]
+    [(simulate-file reader str ...) #'(simulate-file/proc (f2h reader) str ...)]))
+     
+
+(define (simulate-file/proc reader . los)
+  (define _1 (check-proc "simulate-file" reader 1 "reader" "one argument"))
+  (define _2 
+    (andmap 
+     (lambda (f)
+       (check-arg "simulate-file" (string? f) "sequence of strings" "" f))
+     los))
+  (define t (make-temporary-file "drracket-temporary-file-~a"))
+  (dynamic-wind 
+   (lambda ()
+     (with-output-to-file t 
+       (lambda () (for-each displayln los)) #:exists 'replace))
+   (lambda () 
+     (reader (path->string t)))
+   (lambda ()
+     (delete-file t))))
+
+;; -----------------------------------------------------------------------------
 ;; writer 
 
 (define (write-file f str)
@@ -91,8 +123,8 @@
   (let ([result (not (file-exists? f))])
     (with-output-to-file f 
       (lambda () (printf "~a" str))
-      #:exists 'truncate)
-    result))
+      #:exists 'replace)
+    #t))
 
 ;; -----------------------------------------------------------------------------
 ;; auxiliaries 
@@ -115,7 +147,7 @@
 
 ;; [Listof Char] -> [Listof Char]
 (define (drop-last-newline accu)
-  (reverse (if (char=? (car accu) #\newline) (cdr accu) accu)))
+  (reverse (if (and (pair? accu) (char=? (car accu) #\newline)) (cdr accu) accu)))
 
 ;; String[file name] Symbol -> Void
 ;; effect: ensure that f is a file in current directory or report error for t

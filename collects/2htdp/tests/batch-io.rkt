@@ -3,6 +3,36 @@
 (require rackunit)
 (require 2htdp/batch-io)
 
+(check-equal?
+ (simulate-file read-file 
+                "hello world"
+                " good bye"
+                "done")
+ "hello world\n good bye\ndone")
+
+(check-equal? 
+ (simulate-file read-lines
+                "hello world"
+                " good bye"
+                "done")
+ '("hello world" " good bye" "done"))
+
+(check-equal? 
+ (simulate-file read-words
+                "hello world"
+                " good bye"
+                "done")
+ '("hello" "world" "good" "bye" "done"))
+
+(check-equal? 
+ (simulate-file read-words/line
+                "hello world"
+                " good bye"
+                "done")
+ '(("hello" "world") ("good" "bye") ("done")))
+
+(check-equal? (simulate-file read-file) "")
+
 (define file "batch-io.txt")
 
 (define test1 #<<eos
@@ -18,11 +48,11 @@ eos
                (string #\newline)
                (second test2-as-list))))
 
-(write-file file test1)
-(check-true (string=? (read-file file) test1) "read-file 1")
+;(write-file file test1)
+(check-true (string=? (simulate-file read-file test1) test1) "read-file 1")
 
-(write-file file test2)
-(check-true (string=? (read-file file) test2) "read-file 2")
+;(write-file file test2)
+(check-true (string=? (simulate-file read-file test2) test2) "read-file 2")
 
 (write-file file test1)
 (check-equal? (read-lines file) (list test1) "as-lines 1")
@@ -74,6 +104,9 @@ eos
 (check-equal? (read-csv-file/rows file length) '(2 2) 
               "as-csv/rows")
 
+
+(check-exn exn:fail:contract? (lambda () (simulate-file cons)))
+;; (check-exn exn:fail:contract? (lambda () (simulate-file))) ;; <--- figure this out 
 
 (check-exn exn:fail:contract? (lambda () (write-file 0 1)))
 (check-exn exn:fail:contract? (lambda () (write-file '("test") 1)))
