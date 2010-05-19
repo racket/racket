@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt")
 
 (require (rep type-rep object-rep filter-rep rep-utils)
-	 "printer.rkt" "utils.rkt"
+	 "printer.rkt" "utils.rkt" "resolve.rkt"
          (utils tc-utils)
          scheme/list
          scheme/match         
@@ -42,7 +42,7 @@
   (foldr -pair (-val '()) l))
 
 (define (untuple t)
-  (match t
+  (match (resolve t)
     [(Value: '()) null]
     [(Pair: a b) (cond [(untuple b) => (lambda (l) (cons a l))]
                        [else #f])]
