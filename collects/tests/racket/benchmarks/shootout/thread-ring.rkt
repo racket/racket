@@ -1,7 +1,11 @@
-;; Uses PLT Scheme threads
+#lang racket/base
 
-#lang scheme/base
-(require scheme/cmdline)
+;; The Great Computer Language Shootout
+;; http://shootout.alioth.debian.org/
+;;
+;; Uses Racket threads
+
+(require racket/cmdline)
 
 ;; Each thread runs this loop:
 (define (run id next)

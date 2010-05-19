@@ -1,4 +1,5 @@
-;; ---------------------------------------------------------------------
+#lang racket/base
+
 ;; The Great Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
 ;;
@@ -16,8 +17,7 @@
 ;;	 [(> (magnitude z) 2.0) 0]
 ;;	 [else (loop (add1 i) (+ (* z z) c))]))))
  
-#lang scheme/base
-(require scheme/cmdline)
+(require racket/cmdline)
 
 (define +limit-sqr+ 4.0)
 

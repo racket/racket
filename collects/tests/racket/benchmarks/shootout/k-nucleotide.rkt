@@ -1,7 +1,7 @@
+#lang racket/base
+
 ;;   The Computer Language Shootout
 ;;   http://shootout.alioth.debian.org/
-
-#lang scheme/base
 
 (define (all-counts len dna)
   (let ([table (make-hasheq)]
@@ -16,12 +16,10 @@
 (define (write-freqs table)
   (let* ([content (hash-map table cons)]
          [total (exact->inexact (apply + (map cdr content)))])
-    (for-each
-     (lambda (a)
-       (printf "~a ~a\n" 
-               (car a) 
-               (real->decimal-string (* 100 (/ (cdr a) total)) 3)))
-     (sort content (lambda (a b) (> (cdr a) (cdr b)))))))
+    (for ([a (sort content > #:key cdr)])
+      (printf "~a ~a\n" 
+              (car a) 
+              (real->decimal-string (* 100 (/ (cdr a) total)) 3)))))
 
 (define (write-one-freq table key)
   (let ([cnt (hash-ref table key 0)])
@@ -33,9 +31,8 @@
     (regexp-match #rx#"(?m:^>THREE.*$)" in)
     (let ([s (open-output-string)])
       ;; Copy everything but newlines to s:
-      (let loop ()
-        (when (regexp-match #rx#"\n" in 0 #f s)
-          (loop)))
+      (for ([l (in-bytes-lines in)])
+        (write-bytes l s))
       ;; Extract the string from s:
       (string-upcase (get-output-string s)))))
 
@@ -48,8 +45,6 @@
 (newline)
 
 ;; Specific sequences:
-(for-each (lambda (seq)
-            (write-one-freq (all-counts (string-length seq) dna)
-                            (string->symbol seq)))
-          '("GGT" "GGTA" "GGTATT" "GGTATTTTAATT" "GGTATTTTAATTTATAGT"))
-
+(for ([seq '("GGT" "GGTA" "GGTATT" "GGTATTTTAATT" "GGTATTTTAATTTATAGT")]) 
+  (write-one-freq (all-counts (string-length seq) dna)
+                  (string->symbol seq)))
