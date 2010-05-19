@@ -112,9 +112,18 @@
                  (-Real . -> . -ExactRational)
                  (N . -> . N))]
 
-[floor    (-> -Real -Real)]
-[ceiling  (-> -Real -Real)]
-[truncate (-> -Real -Real)]
+[floor    (cl->*
+           (-> -ExactRational -Integer)
+           (-> -Flonum -Flonum)
+           (-> -Real -Real))]
+[ceiling  (cl->*
+           (-> -ExactRational -Integer)
+           (-> -Flonum -Flonum)
+           (-> -Real -Real))]
+[truncate (cl->*
+           (-> -ExactRational -Integer)
+           (-> -Flonum -Flonum)
+           (-> -Real -Real))]
 [make-rectangular (-Real -Real . -> . N)]
 [make-polar (-Real -Real . -> . N)]
 [real-part (N . -> . -Real)]
