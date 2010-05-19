@@ -654,7 +654,8 @@ git_get() { # inputs: git repository, git branch, path in $maindir
     _run git clone "git://git.racket-lang.org/$repo.git" "$dir"
   fi
   _cd "$dir"
-  _run git pull origin "$branch"
+  _run git checkout "$branch"
+  _run git pull --all
   _run git checkout "$branch"
   git status -s > "$tmpdir/git-st" || exit_error "problems running git status"
   if [[ -s "$tmpdir/git-st" ]]; then
@@ -1122,7 +1123,7 @@ DO_AUTO_UPDATES() {
   fi
 
   if [[ "$(git status -s | wc -l)" != 0 ]]; then
-    _run git commit -am "New Racket version."
+    _run git commit -am "New Racket version $version."
     _run git push git@git.racket-lang.org:plt "$gitbranch"
   fi
 
