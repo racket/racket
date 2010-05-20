@@ -77,7 +77,7 @@
   (define lines (read-chunks f read-line (lambda (x) x)))
   (foldl (lambda (f r)
            (define fst (filter (compose not (curry string=? "")) (split f)))
-           (if (empty? fst) r (combine fst r)))
+           (combine fst r))
          '() lines))
 
 (def-reader (read-csv-file f)
@@ -93,10 +93,9 @@
 (define-syntax (simulate-file stx)
   (syntax-case stx ()
     [(simulate-file) 
-     (raise-syntax-error #f "expects a reader function as first argument" stx)]
+     (raise-syntax-error #f "expects at least one sub-expression" stx)]
     [(simulate-file reader str ...) #'(simulate-file/proc (f2h reader) str ...)]))
      
-
 (define (simulate-file/proc reader . los)
   (define _1 (check-proc "simulate-file" reader 1 "reader" "one argument"))
   (define _2 

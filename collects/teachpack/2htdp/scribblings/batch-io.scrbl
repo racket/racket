@@ -93,6 +93,7 @@ a part of the separator that surrounds the word @scheme["good"].
 ]
 The results is similar to the one that @scheme[read-words] produces,
 except that the organization of the file into lines is preserved. 
+In particular, the empty third line is represented as an empty list of words. 
 }
 
 @item{@reading[read-csv-file (listof (listof any/c))]{a list of lists of comma-separated values}
