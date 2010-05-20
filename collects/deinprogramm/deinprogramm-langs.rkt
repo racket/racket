@@ -29,8 +29,8 @@
 	 
 	 (only-in test-engine/scheme-gui make-formatter)
 	 test-engine/scheme-tests
+	 (lib "test-display.scm" "test-engine")
 	 deinprogramm/contract/contract
-	 deinprogramm/contract/contract-test-display
 	 )
 
 
@@ -199,7 +199,7 @@
 		      => (lambda (engine)
 			   (send (send engine get-info) contract-failed
 				 obj contract message blame))))))
-                 (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace contract-test-display%))
+                 (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
                  (test-execute (get-preference 'tests:enable? (lambda () #t)))
                  (test-format (make-formatter (lambda (v o)
 						(render-value/format (if (procedure? v)
