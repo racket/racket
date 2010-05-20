@@ -208,6 +208,19 @@
                                                           identifier?))])))
 
 (define-struct match-expander (match-xform legacy-xform macro-xform certifier)
-  #:property prop:procedure (struct-field-index macro-xform))
+#|  #:property prop:procedure (lambda (me stx)
+                              (define xf (match-expander-macro-xform me))
+                              (define xf* (if (set!-transformer? xf)
+                                              (set!-transformer-procedure xf)
+                                              xf))
+                              (xf* stx))|#
+  #:property prop:set!-transformer (lambda (me stx)
+                                     (define xf (match-expander-macro-xform me))
+                                     (if (set!-transformer? xf)
+                                         ((set!-transformer-procedure xf) stx)
+                                         (syntax-case stx (set!)
+                                           [(set! . _)
+                                            (raise-syntax-error #f "cannot mutate syntax identifier" stx)]
+                                           [_ (xf stx)]))))
 
 (provide (struct-out match-expander))
