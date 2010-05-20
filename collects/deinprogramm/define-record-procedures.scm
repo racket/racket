@@ -137,7 +137,9 @@
 							 (access-record-fields r raw-generic-access number-of-fields)
 							 port write?)))
 			    (cons prop:equal+hash
-				  (list record-equal? void void))
+				  (list record-equal?
+					(make-equal-hash (lambda (r i) (raw-generic-access r i)) number-of-fields) 
+					(make-equal2-hash (lambda (r i) (raw-generic-access r i)) number-of-fields)))
 			    (cons prop:lazy-wrap
 				  (make-lazy-wrap-info constructor-proc
 						       (list raw-accessor-proc ...)
@@ -230,6 +232,29 @@
 	'()
 	(cons (acc rec i)
 	      (recur (+ i 1))))))
+
+(define (make-equal-hash generic-access field-count)
+  (lambda (r recur)
+    (let loop ((i 0)
+	       (factor 1)
+	       (hash 0))
+      (if (= i field-count)
+	  hash
+	  (loop (+ 1 i)
+		(* factor 33)
+		(+ hash (* factor (recur (generic-access r i)))))))))
+
+(define (make-equal2-hash generic-access field-count)
+  (lambda (r recur)
+    (let loop ((i 0)
+	       (factor 1)
+	       (hash 0))
+      (if (= i field-count)
+	  hash
+	  (loop (+ 1 i)
+		(* factor 33)
+		(+ hash (* factor 
+			   (recur (generic-access r (- field-count i 1))))))))))
 
 #|
 (define-record-procedures :pare kons pare? (kar kdr))
