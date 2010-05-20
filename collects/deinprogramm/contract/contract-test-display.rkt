@@ -231,12 +231,12 @@
 	 [(message-error? fail)
 	  (for-each print-formatted (message-error-strings fail))]
          [(not-mem? fail)
-          (print "Tatsächlicher Wert ~F ist keins der Elemente "
+          (print (string-constant test-engine-not-mem-error)
                  (formatter (not-mem-test fail)))
           (for-each (lambda (a) (print " ~F" (formatter a))) (not-mem-set fail))
           (print ".")]
          [(not-range? fail)
-          (print "Tatsächlicher Wert ~F liegt nicht zwischen ~F und ~F (inklusive)."
+          (print (string-constant test-engine-not-range-error)
                  (formatter (not-range-test fail))
                  (formatter (not-range-min fail))
                  (formatter (not-range-max fail)))]
