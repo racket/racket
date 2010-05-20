@@ -24,12 +24,12 @@
 	 lang/stepper-language-interface
 	 lang/debugger-language-interface
 	 lang/run-teaching-program
+	 lang/private/continuation-mark-key
 	 stepper/private/shared
 	 
 	 (only-in test-engine/scheme-gui make-formatter)
-	 (only-in test-engine/scheme-tests scheme-test-data error-handler test-format test-execute)
+	 test-engine/scheme-tests
 	 deinprogramm/contract/contract
-	 deinprogramm/contract/contract-test-engine
 	 deinprogramm/contract/contract-test-display
 	 )
 
@@ -190,7 +190,7 @@
                  (namespace-require scheme-contract-module-name)
 
 		 ;; DeinProgramm hack: the test-engine code knows about the test~object name; we do, too
-		 (namespace-set-variable-value! 'test~object (build-contract-test-engine))
+		 (namespace-set-variable-value! 'test~object (build-test-engine))
 		 ;; record test-case failures with the test engine
 		 (contract-violation-proc
 		  (lambda (obj contract message blame)
@@ -1156,15 +1156,7 @@
       ;                                                               
       ;                                                               
       ;                                                               
-      
-      
-      
-      
-      ;; cm-key : symbol
-      ;; the key used to put information on the continuation
-      ;; DeinProgramm change: contract-test-engine.ss knows about this
-      (define cm-key 'deinprogramm-teaching-languages-continuation-mark-key)
-      
+	      
       (define mf-note
         (let ([bitmap
                (make-object bitmap%
@@ -1194,7 +1186,7 @@
                        [(exn:srclocs? exn) 
                         ((exn:srclocs-accessor exn) exn)]
                        [(exn? exn) 
-                        (let ([cms (continuation-mark-set->list (exn-continuation-marks exn) cm-key)])
+                        (let ([cms (continuation-mark-set->list (exn-continuation-marks exn) teaching-languages-continuation-mark-key)])
 			  (cond
 			   ((not cms) '())
 			   ((findf (lambda (mark)
@@ -1218,7 +1210,7 @@
       
       ;; with-mark : syntax syntax -> syntax
       ;; a member of stacktrace-imports^
-      ;; guarantees that the continuation marks associated with cm-key are
+      ;; guarantees that the continuation marks associated with teaching-languages-continuation-mark-key are
       ;; members of the debug-source type
       (define (with-mark source-stx expr)
         (let ([source (syntax-source source-stx)]
@@ -1231,8 +1223,8 @@
                    (number? span))
               (with-syntax ([expr expr]
                             [mark (list source line col start-position span)]
-                            [cm-key cm-key])
-                #`(with-continuation-mark 'cm-key
+                            [teaching-languages-continuation-mark-key teaching-languages-continuation-mark-key])
+                #`(with-continuation-mark 'teaching-languages-continuation-mark-key
                     'mark
                     expr))
               expr)))

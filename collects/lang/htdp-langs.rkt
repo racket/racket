@@ -23,7 +23,9 @@
          ;; this module is shared between the drscheme's namespace (so loaded here) 
          ;; and the user's namespace in the teaching languages
          "private/set-result.ss"
-         
+
+         "private/continuation-mark-key.rkt"
+
          "stepper-language-interface.ss"           
          "debugger-language-interface.ss"
          "run-teaching-program.ss"
@@ -953,10 +955,6 @@
       
       
       
-      ;; cm-key : symbol
-      ;; the key used to put information on the continuation
-      (define cm-key (gensym 'teaching-languages-continuation-mark-key))
-      
       (define mf-note
         (let ([bitmap
                (make-object bitmap%
@@ -986,7 +984,8 @@
                        [(exn:srclocs? exn) 
                         ((exn:srclocs-accessor exn) exn)]
                        [(exn? exn) 
-                        (let ([cms (continuation-mark-set->list (exn-continuation-marks exn) cm-key)])
+                        (let ([cms (continuation-mark-set->list (exn-continuation-marks exn) 
+								teaching-languages-continuation-mark-key)])
                           (if cms
                               (let loop ([cms cms])
                                 (cond
@@ -1011,7 +1010,7 @@
       
       ;; with-mark : syntax syntax -> syntax
       ;; a member of stacktrace-imports^
-      ;; guarantees that the continuation marks associated with cm-key are
+      ;; guarantees that the continuation marks associated with teaching-languages-continuation-mark-key are
       ;; members of the debug-source type
       (define (with-mark source-stx expr)
         (let ([source (syntax-source source-stx)]
@@ -1022,8 +1021,8 @@
                    (number? span))
               (with-syntax ([expr expr]
                             [mark (list* source start-position span)]
-                            [cm-key cm-key])
-                #`(with-continuation-mark 'cm-key
+                            [teaching-languages-continuation-mark-key teaching-languages-continuation-mark-key])
+                #`(with-continuation-mark 'teaching-languages-continuation-mark-key
                     'mark
                     expr))
               expr)))

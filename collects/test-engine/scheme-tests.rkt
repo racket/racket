@@ -3,7 +3,8 @@
 (require lang/private/teachprims
          scheme/class
          scheme/match
-         (only scheme/base for memf)
+	 lang/private/continuation-mark-key
+         (only scheme/base for memf findf)
          "test-engine.scm"
 	 "test-info.scm"
          )
@@ -340,6 +341,48 @@
 
 (define scheme-test-data (make-parameter (list #f #f #f)))
 
+(define contract-test-info%
+  (class* test-info-base% ()
+	 
+    (define contract-violations '())
+
+    (define/pubment (contract-failed obj contract message blame)
+
+      (let* ((cms
+	      (continuation-mark-set->list (current-continuation-marks)
+					   teaching-languages-continuation-mark-key))
+	     (srcloc
+	      (cond
+	       ((findf (lambda (mark)
+			 (and mark
+			      (or (path? (car mark))
+				  (symbol? (car mark)))))
+		       cms)
+		=> (lambda (mark)
+		     (apply (lambda (source line col pos span)
+			      (make-srcloc source line col pos span))
+			    mark)))
+	       (else #f)))
+	     (message
+	      (or message
+		  (make-contract-got obj (test-format)))))
+		  
+	(set! contract-violations
+	      (cons (make-contract-violation obj contract message srcloc blame)
+		    contract-violations)))
+      (inner (void) contract-failed obj contract message))
+
+    (define/public (failed-contracts) (reverse contract-violations))
+    
+    (inherit add-check-failure)
+    (define/pubment (property-failed result src-info)
+      (add-check-failure (make-property-fail src-info (test-format) result) #f))
+
+    (define/pubment (property-error exn src-info)
+      (add-check-failure (make-property-error src-info (test-format) (exn-message exn) exn) exn))
+
+    (super-instantiate ())))
+
 (define scheme-test%
   (class* test-engine% ()
     (super-instantiate ())
@@ -348,6 +391,8 @@
 
     (field [tests null]
            [test-objs null])
+
+    (define/override (info-class) contract-test-info%)
 
     (define/public (add-test tst)
       (set! tests (cons tst tests)))
@@ -366,4 +411,5 @@
       (test)
       (inner (void) run-test test))))
 
-(provide scheme-test-data test-format test-execute test-silence error-handler)
+(provide scheme-test-data test-format test-execute test-silence error-handler 
+	 contract-test-info% build-test-engine)

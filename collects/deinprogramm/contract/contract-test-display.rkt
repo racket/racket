@@ -13,8 +13,7 @@
          (lib "test-engine/test-info.scm")
          (lib "test-engine/test-engine.scm")
 	 (lib "test-engine/print.ss")
-	 deinprogramm/contract/contract
-	 deinprogramm/contract/contract-test-engine
+	 (except-in deinprogramm/contract/contract contract-violation) ; clashes with test-engine
 	 deinprogramm/quickcheck/quickcheck)
 
 (define contract-test-display%
