@@ -655,8 +655,7 @@ git_get() { # inputs: git repository, git branch, path in $maindir
   fi
   _cd "$dir"
   _run git checkout "$branch"
-  _run git pull --all
-  _run git checkout "$branch"
+  _run git pull --ff-only --all
   git status -s > "$tmpdir/git-st" || exit_error "problems running git status"
   if [[ -s "$tmpdir/git-st" ]]; then
     echo "------------"
