@@ -454,6 +454,12 @@ GC2_EXTERN void GC_set_put_external_event_fd(void *fd);
    Sets the fd that can be passed to scheme_signal_received_at to wake up the place for GC
 */
 
+GC2_EXTERN void GC_allow_master_gc_check();
+/*
+   Signals the GC after spawning a place that the places is sufficiently set up to participate
+   in master gc collections
+*/
+
 # ifdef __cplusplus
 };
 # endif

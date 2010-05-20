@@ -361,6 +361,7 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_places_block_child_signal();
 
   GC_switch_out_master_gc();
+
   scheme_spawn_master_place();
 #endif
   
@@ -462,6 +463,11 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 #endif
 
   scheme_make_thread(stack_base);
+
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  /* each place now has a local symbol table */
+  scheme_init_place_local_symbol_table();
+#endif
 
   {
     Scheme_Object *sym;

@@ -29,6 +29,8 @@
 #include "schmach.h"
 #include "schexpobs.h"
 
+#define MIN(l,o) ((l) < (o) ? (l) : (o))
+
 /* globals */
 SHARED_OK Scheme_Object *(*scheme_module_demand_hook)(int, Scheme_Object **);
 
@@ -127,6 +129,7 @@ static void eval_exptime(Scheme_Object *names, int count,
 static Scheme_Module_Exports *make_module_exports();
 
 static Scheme_Object *scheme_sys_wraps_phase_worker(long p);
+static Scheme_Object *resolved_module_path_value(Scheme_Object *rmp);
 
 #define cons scheme_make_pair
 
@@ -224,6 +227,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *global_shift_cache);
 #endif
 
 #define SCHEME_MODNAMEP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_resolved_module_path_type)
+#define SCHEME_RMP_VAL(obj)  SCHEME_PTR_VAL(obj)
 
 typedef void (*Check_Func)(Scheme_Object *prnt_name, Scheme_Object *name, 
                            Scheme_Object *nominal_modname, Scheme_Object *nominal_export,
@@ -804,6 +808,7 @@ static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv)
   if (argc == 1)
     return scheme_void; /* ignore notify */
 
+  /* if (quote SYMBOL) */
   if (SCHEME_PAIRP(p)
       && SAME_OBJ(SCHEME_CAR(p), quote_symbol)
       && SCHEME_PAIRP(SCHEME_CDR(p))
@@ -2791,7 +2796,7 @@ static Scheme_Object *module_compiled_name(int argc, Scheme_Object *argv[])
   m = scheme_extract_compiled_module(argv[0]);
       
   if (m) {
-    return SCHEME_PTR_VAL(m->modname);
+    return resolved_module_path_value(m->modname);
   }
 
   scheme_wrong_type("module-compiled-name", "compiled module declaration", 0, argc, argv);
@@ -2895,65 +2900,90 @@ void scheme_init_module_path_table()
   modpath_table = scheme_make_weak_equal_table();
 }
 
-Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o)
+static Scheme_Object *make_resolved_module_path_obj(Scheme_Object *o)
 {
   Scheme_Object *rmp;
-  Scheme_Bucket *b;
-  Scheme_Object *return_value;
+  Scheme_Object *newo;
 
-  mzrt_mutex_lock(modpath_table_mutex);
-
-  rmp = scheme_alloc_small_object();
-  rmp->type = scheme_resolved_module_path_type;
-  SCHEME_PTR_VAL(rmp) = o;
-
-  scheme_start_atomic();
-  b = scheme_bucket_from_table(modpath_table, (const char *)rmp);
-  scheme_end_atomic_no_swap();
-  if (!b->val)
-    b->val = scheme_true;
-
-  return_value = (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
-
-  mzrt_mutex_unlock(modpath_table_mutex);
-
-  return return_value;
-}
-
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-static Scheme_Object *scheme_intern_local_resolved_module_path_worker(Scheme_Object *o)
-{
-  Scheme_Object *rmp;
-  Scheme_Bucket *b;
-  Scheme_Object *return_value;
-
-  rmp = scheme_alloc_small_object();
-  rmp->type = scheme_resolved_module_path_type;
-  SCHEME_PTR_VAL(rmp) = o;
-
-  scheme_start_atomic();
-  b = scheme_bucket_from_table(place_local_modpath_table, (const char *)rmp);
-  scheme_end_atomic_no_swap();
-  if (!b->val)
-    b->val = scheme_true;
-
-  return_value = (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
-
-  return return_value;
-}
+#if defined(MZ_USE_PLACES)
+  if (SCHEME_SYMBOLP(o)) {
+    newo = scheme_make_sized_offset_byte_string(SCHEME_SYM_VAL(o), 0, SCHEME_SYM_LEN(o), 1);
+  }
+  else {
+    newo = o;
+  }
+#else
+  newo = o;
 #endif
+  
+  rmp = scheme_alloc_small_object();
+  rmp->type = scheme_resolved_module_path_type;
+  SCHEME_PTR_VAL(rmp) = newo;
+
+  return rmp;
+}
+
+static Scheme_Object *resolved_module_path_value(Scheme_Object *rmp)
+{
+  Scheme_Object *rmp_val;
+  rmp_val = SCHEME_RMP_VAL(rmp);
+
+/*symbols aren't equal across places now*/                                                                                                                                                                                                                                  
+#if defined(MZ_USE_PLACES)
+    if (SCHEME_BYTE_STRINGP(rmp_val))
+      return scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(rmp_val), SCHEME_BYTE_STRLEN_VAL(rmp_val));
+#endif
+
+  return rmp_val;
+}
+
+int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object *o) {
+  Scheme_Object *rmp_val = SCHEME_RMP_VAL(rmp);
+  if (SAME_OBJ(rmp_val, o)) return 1;
+  else if (SCHEME_BYTE_STRINGP(rmp_val) && SCHEME_SYMBOLP(o)) {
+    return !strncmp(SCHEME_BYTE_STR_VAL(rmp_val), SCHEME_SYM_VAL(o), MIN(SCHEME_BYTE_STRLEN_VAL(rmp_val), SCHEME_SYM_LEN(o)));
+  }
+  else {
+    scheme_arg_mismatch("scheme_resolved_module_path_value_matches", 
+        "unknown type of resolved_module_path_value",
+        rmp_val);
+    return 0;
+  }
+}
 
 Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
 {
+  Scheme_Bucket_Table *create_table;
+  Scheme_Object *rmp;
+  Scheme_Bucket *b;
+
+
+  rmp = make_resolved_module_path_obj(o);
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  void *return_payload;
-  if (SCHEME_SYMBOLP(o) && SCHEME_SYM_UNINTERNEDP(o)) {
-    return scheme_intern_local_resolved_module_path_worker(o);
+  if (place_local_modpath_table) {
+    b = scheme_bucket_or_null_from_table(place_local_modpath_table, (const char *)rmp, 0);
+    if (b) {
+      return (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
+    }
   }
-  return_payload = scheme_master_fast_path(1, o);
-  return (Scheme_Object*) return_payload;
 #endif
-  return scheme_intern_resolved_module_path_worker(o);
+  b = scheme_bucket_or_null_from_table(modpath_table, (const char *)rmp, 0);
+  if (b) {
+    return (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
+  }
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  create_table = place_local_modpath_table ? place_local_modpath_table : modpath_table;
+#else
+  create_table = modpath_table;
+#endif
+
+  scheme_start_atomic();
+  b = scheme_bucket_from_table(create_table, (const char *)rmp);
+  scheme_end_atomic_no_swap();
+  if (!b->val)
+    b->val = scheme_true;
+  return(Scheme_Object *)HT_EXTRACT_WEAK(b->key);
 }
 
 static Scheme_Object *resolved_module_path_p(int argc, Scheme_Object *argv[])
@@ -2980,7 +3010,7 @@ static Scheme_Object *resolved_module_path_name(int argc, Scheme_Object *argv[])
   if (!SCHEME_MODNAMEP(argv[0]))
     scheme_wrong_type("resolved-module-path-name", "resolved-module-path", 0, argc, argv);
 
-  return SCHEME_PTR_VAL(argv[0]);
+  return resolved_module_path_value(argv[0]);
 }
 
 
@@ -5991,7 +6021,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, fm);
   }
 
-  fm = scheme_stx_property(fm, module_name_symbol, SCHEME_PTR_VAL(m->modname));
+  fm = scheme_stx_property(fm, module_name_symbol, resolved_module_path_value(m->modname));
 
   /* phase shift to replace self_modidx of previous expansion (if any): */
   fm = scheme_stx_phase_shift(fm, 0, empty_self_modidx, self_modidx, NULL);
@@ -6010,7 +6040,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       mb = scheme_datum_to_syntax(module_begin_symbol, form, scheme_false, 0, 0);
       fm = scheme_make_pair(mb, scheme_make_pair(fm, scheme_null));
       fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
-      fm = scheme_stx_property(fm, module_name_symbol, SCHEME_PTR_VAL(m->modname));
+      fm = scheme_stx_property(fm, module_name_symbol, resolved_module_path_value(m->modname));
       /* Since fm is a newly-created syntax object, we need to re-add renamings: */
       fm = scheme_add_rename(fm, rn_set);
       
@@ -10065,8 +10095,8 @@ static Scheme_Object *write_module(Scheme_Object *obj)
     l = cons(scheme_false, l);
 
   l = cons(m->me->src_modidx, l);
-  l = cons(SCHEME_PTR_VAL(m->modsrc), l);
-  l = cons(SCHEME_PTR_VAL(m->modname), l);
+  l = cons(resolved_module_path_value(m->modsrc), l);
+  l = cons(resolved_module_path_value(m->modname), l);
 
   return l;
 }

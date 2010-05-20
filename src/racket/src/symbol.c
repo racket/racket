@@ -48,17 +48,15 @@ extern MZ_DLLIMPORT void (*GC_custom_finalize)(void);
 extern int GC_is_marked(void *);
 #endif
 
-SHARED_OK Scheme_Hash_Table *scheme_symbol_table = NULL;
-SHARED_OK Scheme_Hash_Table *scheme_keyword_table = NULL;
-SHARED_OK Scheme_Hash_Table *scheme_parallel_symbol_table = NULL;
-
-#ifdef MZ_USE_PLACES
-SHARED_OK static mzrt_rwlock *symbol_table_lock;
-#else
-# define mzrt_rwlock_rdlock(l) /* empty */
-# define mzrt_rwlock_wrlock(l) /* empty */
-# define mzrt_rwlock_unlock(l) /* empty */
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *place_local_symbol_table = NULL;)
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *place_local_keyword_table = NULL;)
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *place_local_parallel_symbol_table = NULL;)
 #endif
+
+SHARED_OK static Scheme_Hash_Table *symbol_table = NULL;
+SHARED_OK static Scheme_Hash_Table *keyword_table = NULL;
+SHARED_OK static Scheme_Hash_Table *parallel_symbol_table = NULL;
 
 SHARED_OK static unsigned long scheme_max_symbol_length;
 
@@ -220,20 +218,20 @@ static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
 }
 
 #ifndef MZ_PRECISE_GC
-static void clean_one_symbol_table(Scheme_Hash_Table *symbol_table)
+static void clean_one_symbol_table(Scheme_Hash_Table *table)
 {
   /* Clean the symbol table by removing pointers to collected
      symbols. The correct way to do this is to install a GC
      finalizer on symbol pointers, but that would be expensive. */
 
-  if (symbol_table) {
-    Scheme_Object **buckets = (Scheme_Object **)symbol_table->keys;
-    int i = symbol_table->size;
+  if (table) {
+    Scheme_Object **buckets = (Scheme_Object **)table->keys;
+    int i = table->size;
     void *b;
 
     while (i--) {
       if (buckets[WEAK_ARRAY_HEADSIZE + i] && !SAME_OBJ(buckets[WEAK_ARRAY_HEADSIZE + i], SYMTAB_LOST_CELL)
-	  && (!(b = GC_base(buckets[WEAK_ARRAY_HEADSIZE + i]))
+          && (!(b = GC_base(buckets[WEAK_ARRAY_HEADSIZE + i]))
 #ifndef USE_SENORA_GC
 	      || !GC_is_marked(b)
 #endif
@@ -246,9 +244,10 @@ static void clean_one_symbol_table(Scheme_Hash_Table *symbol_table)
 
 static void clean_symbol_table(void)
 {
-  clean_one_symbol_table(scheme_symbol_table);
-  clean_one_symbol_table(scheme_keyword_table);
-  clean_one_symbol_table(scheme_parallel_symbol_table);
+  clean_one_symbol_table(symbol_table);
+  clean_one_symbol_table(keyword_table);
+  clean_one_symbol_table(parallel_symbol_table);
+
   scheme_clear_ephemerons();
 # ifdef MZ_USE_JIT
   scheme_clean_native_symtab();
@@ -266,45 +265,55 @@ static void clean_symbol_table(void)
 
 static Scheme_Hash_Table *init_one_symbol_table()
 {
-  Scheme_Hash_Table *symbol_table;
+  Scheme_Hash_Table *table;
   int size;
   Scheme_Object **ba;
 
-  symbol_table = scheme_make_hash_table(SCHEME_hash_ptr);
+  table = scheme_make_hash_table(SCHEME_hash_ptr);
 
-  symbol_table->size = HASH_TABLE_INIT_SIZE;
+  table->size = HASH_TABLE_INIT_SIZE;
   
-  size = symbol_table->size * sizeof(Scheme_Object *);
+  size = table->size * sizeof(Scheme_Object *);
 #ifdef MZ_PRECISE_GC
   ba = (Scheme_Object **)GC_malloc_weak_array(size, SYMTAB_LOST_CELL);
 #else
   ba = MALLOC_N_ATOMIC(Scheme_Object *, size);
   memset((char *)ba, 0, size);
 #endif
-  symbol_table->keys = ba;
+  table->keys = ba;
 
-  return symbol_table;
+  return table;
 }
 
 void
 scheme_init_symbol_table ()
 {
-  REGISTER_SO(scheme_symbol_table);
-  REGISTER_SO(scheme_keyword_table);
-  REGISTER_SO(scheme_parallel_symbol_table);
+  REGISTER_SO(symbol_table);
+  REGISTER_SO(keyword_table);
+  REGISTER_SO(parallel_symbol_table);
 
-  scheme_symbol_table = init_one_symbol_table();
-  scheme_keyword_table = init_one_symbol_table();
-  scheme_parallel_symbol_table = init_one_symbol_table();
-
-#ifdef MZ_USE_PLACES
-  mzrt_rwlock_create(&symbol_table_lock);
-#endif
+  symbol_table = init_one_symbol_table();
+  keyword_table = init_one_symbol_table();
+  parallel_symbol_table = init_one_symbol_table();
 
 #ifndef MZ_PRECISE_GC
   GC_custom_finalize = clean_symbol_table;
 #endif
 }
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+void
+scheme_init_place_local_symbol_table ()
+{
+  REGISTER_SO(place_local_symbol_table);
+  REGISTER_SO(place_local_keyword_table);
+  REGISTER_SO(place_local_parallel_symbol_table);
+
+  place_local_symbol_table = init_one_symbol_table();
+  place_local_keyword_table = init_one_symbol_table();
+  place_local_parallel_symbol_table = init_one_symbol_table();
+}
+#endif
 
 void
 scheme_init_symbol_type (Scheme_Env *env)
@@ -388,56 +397,94 @@ scheme_make_exact_char_symbol(const mzchar *name, unsigned int len)
   return make_a_symbol(bs, blen, 0x1);
 }
 
-Scheme_Object *
-scheme_intern_exact_symbol_in_table_worker(Scheme_Hash_Table *symbol_table, int kind, const char *name, unsigned int len)
+typedef enum {
+  enum_symbol,
+  enum_keyword,
+  enum_parallel_symbol,
+} enum_symbol_table_type;
+
+static Scheme_Object *
+intern_exact_symbol_in_table_worker(enum_symbol_table_type type, int kind, const char *name, unsigned int len)
 {
   Scheme_Object *sym;
+  Scheme_Hash_Table *table;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  Scheme_Hash_Table *place_local_table;
+#endif
 
-  mzrt_rwlock_rdlock(symbol_table_lock);
-  sym = symbol_bucket(symbol_table, name, len, NULL);
-  mzrt_rwlock_unlock(symbol_table_lock);
+  sym = NULL;
 
+  switch(type) {
+    case enum_symbol:
+      table = symbol_table;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+      place_local_table = place_local_symbol_table;
+#endif
+      break;
+    case enum_keyword:
+      table = keyword_table;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+      place_local_table = place_local_keyword_table;
+#endif
+      break;
+    case enum_parallel_symbol:
+      table = parallel_symbol_table;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+      place_local_table = place_local_parallel_symbol_table;
+#endif
+      break;
+    default:
+      printf("Invalid enum_symbol_table_type %i\n", type);
+      abort();
+  }
+
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  if (place_local_table) {
+    sym = symbol_bucket(place_local_table, name, len, NULL);
+  }
+#endif
+  if (!sym && table) {
+    sym = symbol_bucket(table, name, len, NULL);
+  }
   if (!sym) {
+    /* create symbol in symbol table unless a place local symbol table has been created */
+    /* once the first place has been create the symbol_table becomes read-only and
+       shouldn't be modified */
+
     Scheme_Object *newsymbol;
+    Scheme_Hash_Table *create_table;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+    create_table = place_local_table ? place_local_table : table;
+#else
+    create_table = table;
+#endif
     newsymbol = make_a_symbol(name, len, kind);
     
     /* we must return the result of this symbol bucket call because another
      * thread could have inserted the same symbol between the first
-     * :qsymbol_bucket call above and this one */
-    mzrt_rwlock_wrlock(symbol_table_lock);
-    sym = symbol_bucket(symbol_table, name, len, newsymbol);
-    mzrt_rwlock_unlock(symbol_table_lock);
+     * symbol_bucket call above and this one */
+    sym = symbol_bucket(create_table, name, len, newsymbol);
   }
 
   return sym;
 }
 
-Scheme_Object *
-scheme_intern_exact_symbol_in_table(Scheme_Hash_Table *symbol_table, int kind, const char *name, unsigned int len)
+static Scheme_Object *
+intern_exact_symbol_in_table(enum_symbol_table_type type, int kind, const char *name, unsigned int len)
 {
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  void *return_payload;
-  Scheme_Symbol_Parts parts;
-  parts.table = symbol_table;
-  parts.kind = kind;
-  parts.len  = len;
-  parts.name = name;
-  return_payload = scheme_master_fast_path(3, &parts);
-  return (Scheme_Object*) return_payload;
-#endif
-  return scheme_intern_exact_symbol_in_table_worker(symbol_table, kind, name, len);
+  return intern_exact_symbol_in_table_worker(type, kind, name, len);
 }
 
 Scheme_Object *
 scheme_intern_exact_symbol(const char *name, unsigned int len)
 {
-  return scheme_intern_exact_symbol_in_table(scheme_symbol_table, 0, name, len);
+  return intern_exact_symbol_in_table(enum_symbol, 0, name, len);
 }
 
 Scheme_Object *
 scheme_intern_exact_parallel_symbol(const char *name, unsigned int len)
 {
-  return scheme_intern_exact_symbol_in_table(scheme_parallel_symbol_table, 0x2, name, len);
+  return intern_exact_symbol_in_table(enum_parallel_symbol, 0x2, name, len);
 }
 
 Scheme_Object *
@@ -446,14 +493,14 @@ scheme_intern_exact_char_symbol(const mzchar *name, unsigned int len)
   char buf[64], *bs;
   long blen;
   bs = scheme_utf8_encode_to_buffer_len(name, len, buf, 64, &blen);
-  return scheme_intern_exact_symbol_in_table(scheme_symbol_table, 0, bs, blen);
+  return intern_exact_symbol_in_table(enum_symbol, 0, bs, blen);
 }
 
 Scheme_Object *
 scheme_intern_exact_keyword(const char *name, unsigned int len)
 {
   Scheme_Object *s;
-  s = scheme_intern_exact_symbol_in_table(scheme_keyword_table, 0, name, len);
+  s = intern_exact_symbol_in_table(enum_keyword, 0, name, len);
   if (s->type == scheme_symbol_type)
     s->type = scheme_keyword_type;
   return s;
@@ -465,7 +512,7 @@ Scheme_Object *scheme_intern_exact_char_keyword(const mzchar *name, unsigned int
   long blen;
   Scheme_Object *s;
   bs = scheme_utf8_encode_to_buffer_len(name, len, buf, 64, &blen);
-  s = scheme_intern_exact_symbol_in_table(scheme_keyword_table, 0, bs, blen);
+  s = intern_exact_symbol_in_table(enum_keyword, 0, bs, blen);
   if (s->type == scheme_symbol_type)
     s->type = scheme_keyword_type;
   return s;

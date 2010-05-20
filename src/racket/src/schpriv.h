@@ -263,6 +263,7 @@ void scheme_init_variable_references_constants(void);
 void scheme_init_logger(void);
 void scheme_init_file_places(void);
 void scheme_init_foreign_places(void);
+void scheme_init_place_local_symbol_table(void);
 
 Scheme_Logger *scheme_get_main_logger(void);
 void scheme_init_logger_config(void);
@@ -2977,8 +2978,9 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 				   Scheme_Object *shift_from_modidx,
 				   Scheme_Object *shift_to_modidx);
 
+#define SCHEME_RMPP(o) (SAME_TYPE(SCHEME_TYPE((o)), scheme_resolved_module_path_type))
 Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o);
-Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o);
+int scheme_resolved_module_path_value_matches(Scheme_Object *rmp, Scheme_Object *o);
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
@@ -3322,7 +3324,6 @@ void scheme_alloc_global_fdset();
 /*========================================================================*/
 
 #ifdef MEMORY_COUNTING_ON
-extern Scheme_Hash_Table *scheme_symbol_table;
 extern long scheme_type_table_count;
 extern long scheme_misc_count;
 
@@ -3386,7 +3387,6 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void 
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 
-Scheme_Object *scheme_intern_exact_symbol_in_table_worker(Scheme_Hash_Table *symbol_table, int kind, const char *name, unsigned int len);
 Scheme_Object *scheme_intern_exact_parallel_symbol(const char *name, unsigned int len);
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2);
 Scheme_Object *scheme_copy_list(Scheme_Object *l);
@@ -3436,7 +3436,6 @@ typedef struct Scheme_Symbol_Parts {
 } Scheme_Symbol_Parts;
 
 void scheme_spawn_master_place();
-void *scheme_master_fast_path(int msg_type, void *msg_payload);
 void scheme_places_block_child_signal();
 int scheme_get_child_status(int pid, int *status);
 int scheme_places_register_child(int pid, void *signal_fd, int *status);

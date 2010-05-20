@@ -4109,7 +4109,7 @@ static Scheme_Object *do_load_handler(void *data)
       m = scheme_extract_compiled_module(SCHEME_STX_VAL(d));
       if (m) {
         if (check_module_name) {
-          if (!SAME_OBJ(SCHEME_PTR_VAL(m->modname), lhd->expected_module)) {
+          if (!scheme_resolved_module_path_value_matches(m->modname, lhd->expected_module)) {
             other = m->modname;
             d = NULL;
           }
@@ -4139,8 +4139,9 @@ static Scheme_Object *do_load_handler(void *data)
 
       /* If d is NULL, shape was wrong */
       if (!d) {
+        Scheme_Object *err_msg;
 	if (!other || !SCHEME_SYMBOLP(other))
-	  other = scheme_make_byte_string("something else");
+	  err_msg = scheme_make_byte_string("something else");
 	else {
 	  char *s, *t;
 	  long len, slen;
@@ -4155,7 +4156,7 @@ static Scheme_Object *do_load_handler(void *data)
 	  s[len + slen] = '\'';
 	  s[len + slen + 1]= 0;
 
-	  other = scheme_make_sized_byte_string(s, len + slen + 1, 0);
+	  err_msg = scheme_make_sized_byte_string(s, len + slen + 1, 0);
 	}
 
         {
@@ -4164,7 +4165,7 @@ static Scheme_Object *do_load_handler(void *data)
           scheme_raise_exn(MZEXN_FAIL,
                            "default-load-handler: expected a `module' declaration for `%S', found: %T in: %V",
                            lhd->expected_module,
-                           other,
+                           err_msg,
                            ip->name);
         }
 

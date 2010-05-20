@@ -166,7 +166,7 @@ static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[]);
 static void register_traversers(void);
 #endif
 
-SHARED_OK static Scheme_Bucket_Table *prefab_table;
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *prefab_table);
 static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 
 #define cons scheme_make_pair
@@ -632,9 +632,6 @@ scheme_init_struct (Scheme_Env *env)
   REGISTER_SO(prefab_symbol);
   prefab_symbol = scheme_intern_symbol("prefab");
 
-  REGISTER_SO(prefab_table);
-  prefab_table = scheme_make_weak_equal_table();
-  
 
   REGISTER_SO(scheme_source_property);
   {
@@ -3677,10 +3674,12 @@ static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *base,
                                                           char *immutable_array)
 {
 #ifdef MZ_USE_PLACES
+/*
   return scheme_make_prefab_struct_type_in_master
+*/
 #else
-  return scheme_make_prefab_struct_type_raw
 #endif
+  return scheme_make_prefab_struct_type_raw
          (base,
           parent,
           num_fields,
@@ -4056,7 +4055,12 @@ static Scheme_Struct_Type *lookup_prefab(Scheme_Object *key) {
 static Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type)
 {
   Scheme_Object *k, *v;
-  
+ 
+  if (!prefab_table) {
+    REGISTER_SO(prefab_table);
+    prefab_table = scheme_make_weak_equal_table();
+  } 
+
   k = make_prefab_key(type);
   type->prefab_key = k;
   
@@ -4330,7 +4334,19 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
     if (!SCHEME_NULLP(stack))
       key = scheme_make_pair(scheme_make_integer(icnt), key);
 
+/*symbols aren't equal?  across places now*/
+#if defined(MZ_USE_PLACES)
+    if (SCHEME_SYMBOLP(type->name)) {
+      Scheme_Object *newname;
+      newname = scheme_make_sized_offset_byte_string(SCHEME_SYM_VAL(type->name), 0, SCHEME_SYM_LEN(type->name), 1);
+      key = scheme_make_pair(newname, key);
+    }
+    else {
+       scheme_arg_mismatch("make_prefab_key", "unknown type of struct name", type->name);
+    }
+#else
     key = scheme_make_pair(type->name, key);
+#endif
 
     if (SCHEME_PAIRP(stack)) {
       type = (Scheme_Struct_Type *)SCHEME_CAR(stack);
@@ -4390,8 +4406,19 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
   int ucnt, icnt;
   char *immutable_array = NULL;
 
+/*symbols aren't equal?  across places now*/
+#if defined(MZ_USE_PLACES)
+  if (SCHEME_SYMBOLP(key)) {
+    Scheme_Object *newname;
+    newname = scheme_make_sized_offset_byte_string(SCHEME_SYM_VAL(key), 0, SCHEME_SYM_LEN(key), 1);
+    key = scheme_make_pair(newname, scheme_null);
+  }
+  if (SCHEME_BYTE_STRINGP(key))
+    key = scheme_make_pair(key, scheme_null);
+#else
   if (SCHEME_SYMBOLP(key))
     key = scheme_make_pair(key, scheme_null);
+#endif
 
   if (scheme_proper_list_length(key) < 0)
     return NULL;
@@ -4465,9 +4492,21 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
     a = SCHEME_CAR(key);
     key = SCHEME_CDR(key);
 
+/*symbols aren't equal?  across places now*/
+#if defined(MZ_USE_PLACES)
+    if (SCHEME_SYMBOLP(a)) {
+      name = a;
+    }
+    else if (SCHEME_BYTE_STRINGP(a))
+      name = scheme_intern_exact_symbol(SCHEME_BYTE_STR_VAL(a), SCHEME_BYTE_STRLEN_VAL(a));
+    else
+      return NULL;
+#else
     if (!SCHEME_SYMBOLP(a))
       return NULL;
     name = a;
+#endif
+
 
     immutable_array = mutability_data_to_immutability_data(icnt + ucnt, mutables);
 

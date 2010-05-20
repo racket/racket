@@ -1881,6 +1881,16 @@ void GC_write_barrier(void *p)
 #include "sighand.c"
 
 #ifdef MZ_USE_PLACES
+typedef enum {
+  SIGNALED_BUT_NOT_REGISTERED = -3,
+  REAPED_SLOT_AVAILABLE       = -2,
+  CREATED_BUT_NOT_REGISTERED  = -1,
+};
+
+void GC_allow_master_gc_check() {
+  NewGC *gc = GC_get_GC();
+  gc->dont_master_gc_until_child_registers = 0;
+}
 static void NewGCMasterInfo_initialize() {
   int i;
   MASTERGCINFO = ofm_malloc_zero(sizeof(NewGCMasterInfo));
@@ -1889,7 +1899,7 @@ static void NewGCMasterInfo_initialize() {
   MASTERGCINFO->ready = 0;
   MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
   for (i=0; i < 32; i++ ) {
-    MASTERGCINFO->signal_fds[i] = (void *)-2;
+    MASTERGCINFO->signal_fds[i] = (void *)REAPED_SLOT_AVAILABLE;
   }
   mzrt_rwlock_create(&MASTERGCINFO->cangc);
   mzrt_sema_create(&MASTERGCINFO->wait_sema, 0);
@@ -1923,6 +1933,11 @@ static void master_collect_initiate() {
         printf("%i SIGNALED BUT NOT COLLECTED\n", i);
         GCVERBOSEprintf("%i SIGNALED BUT NOT COLLECTED\n", i);
 #endif
+        count++;
+      }
+      else if ( signal_fd == (void*)-1) {
+        /* printf("%i SIGNALED BUT NOT REGISTERED YET\n", i); */
+        MASTERGCINFO->signal_fds[i] = (void*) SIGNALED_BUT_NOT_REGISTERED;
         count++;
       }
       if (count == (MASTERGCINFO->alive -1)) {
@@ -2026,7 +2041,7 @@ static long NewGCMasterInfo_find_free_id() {
     int i;
     int size = MASTERGCINFO->size;
     for (i = 0; i < size; i++) {
-      if (MASTERGCINFO->signal_fds[i] == (void*)-2) {
+      if (MASTERGCINFO->signal_fds[i] == (void*) REAPED_SLOT_AVAILABLE) {
         MASTERGCINFO->alive++;
         return i;
       }
@@ -2042,7 +2057,7 @@ static void NewGCMasterInfo_register_gc(NewGC *newgc) {
   {
     long newid = NewGCMasterInfo_find_free_id();
     newgc->place_id = newid;
-    MASTERGCINFO->signal_fds[newid] = (void *)-1;
+    MASTERGCINFO->signal_fds[newid] = (void *) CREATED_BUT_NOT_REGISTERED;
   }
   GC_LOCK_DEBUG("UNMGCLOCK NewGCMasterInfo_register_gc\n");
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
@@ -2053,6 +2068,10 @@ void GC_set_put_external_event_fd(void *fd) {
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
   GC_LOCK_DEBUG("MGCLOCK GC_set_put_external_event_fd\n");
   {
+    if ( MASTERGCINFO->signal_fds[gc->place_id] == (void*) SIGNALED_BUT_NOT_REGISTERED) {
+      scheme_signal_received_at(fd);
+      /* printf("%i THERE WAITING ON ME\n", gc->place_id); */
+    }
     MASTERGCINFO->signal_fds[gc->place_id] = fd;
   } 
   GC_LOCK_DEBUG("UNMGCLOCK GC_set_put_external_event_fd\n");
@@ -2159,6 +2178,7 @@ void GC_construct_child_gc() {
   NewGC *gc = MASTERGC;
   NewGC *newgc = init_type_tags_worker(gc, 0, 0, 0, gc->weak_box_tag, gc->ephemeron_tag, gc->weak_array_tag, gc->cust_box_tag);
   newgc->primoridal_gc = MASTERGC;
+  newgc->dont_master_gc_until_child_registers = 1;
 }
 
 void GC_destruct_child_gc() {
@@ -2170,12 +2190,13 @@ void GC_destruct_child_gc() {
     GC_LOCK_DEBUG("MGCLOCK GC_destruct_child_gc\n");
     waiting = MASTERGC->major_places_gc;
     if (!waiting) {
-      MASTERGCINFO->signal_fds[gc->place_id] = (void *)-2;
+      MASTERGCINFO->signal_fds[gc->place_id] = (void *) REAPED_SLOT_AVAILABLE;
       gc->place_id = -1;
       MASTERGCINFO->alive--;
     }
     GC_LOCK_DEBUG("UNMGCLOCK GC_destruct_child_gc\n");
     mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+
 
 
     if (waiting) {
@@ -2203,18 +2224,21 @@ void GC_switch_out_master_gc() {
 
   if(!initialized) {
     NewGC *gc = GC_get_GC();
+
     initialized = 1;
     garbage_collect(gc, 1, 1);
 
 #ifdef MZ_USE_PLACES
     GC_gen0_alloc_page_ptr = 2;
     GC_gen0_alloc_page_end = 1;
+    gc->dont_master_gc_until_child_registers = 0;
 #endif
  
     MASTERGC = gc;
     MASTERGC->dumping_avoid_collection = 1;
     save_globals_to_gc(MASTERGC);
     GC_construct_child_gc();
+    GC_allow_master_gc_check();
   }
   else {
     GCPRINT(GCOUTF, "GC_switch_out_master_gc should only be called once!\n");
@@ -3857,7 +3881,7 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {
-    if (gc->gc_full && master_wants_to_collect) { 
+    if (gc->gc_full && master_wants_to_collect && !(gc->dont_master_gc_until_child_registers)) { 
        wait_if_master_in_progress(gc);
     }
   }
