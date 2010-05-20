@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide debug)
+(provide debug debugm)
 
 ;; printf debugging convenience
 (define-syntax debug
@@ -21,3 +21,16 @@
                     (printf "~a results were ~a~n" 'f e))
                 (apply values e))))]
     [(_ f . args) (debug (f . args))]))
+
+(define-syntax debugm
+  (syntax-rules ()
+    [(_ kw . forms)
+     (begin (printf "starting ~a\n" 'kw)
+            (let ([e (with-handlers ([values (lambda (exn)
+                                                 (printf "~a raised exception ~a~n" 'kw exn)
+                                                 (raise exn))])
+                         (call-with-values (lambda () (kw . forms)) list))])
+                (if (and (pair? e) (null? (cdr e)))
+                    (printf "~a result was ~a~n" 'kw (car e))
+                    (printf "~a results were ~a~n" 'kw e))
+                (apply values e)))]))
