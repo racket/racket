@@ -355,7 +355,6 @@ Scheme_Env *scheme_engine_instance_init() {
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign_globals();
 #endif
-  scheme_init_salloc();
   make_kernel_env();
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
@@ -474,10 +473,6 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 
 #ifdef TIME_STARTUP_PROCESS
   printf("process @ %ld\n", scheme_get_process_milliseconds());
-#endif
-
-#ifdef MZ_USE_JIT
-  scheme_init_jit();
 #endif
 
   /* error handling and buffers */

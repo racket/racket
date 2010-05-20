@@ -397,6 +397,26 @@ exec racket -qu "$0" ${1+"$@"}
                 clean-up-zo
                 (append '(nucleic2)
                         mutable-pair-progs))
+     (make-impl 'typed-scheme
+                void
+                mk-racket
+                (lambda (bm)
+                  (system (format "racket -u ~a-typed-non-optimizing.rkt" bm)))
+                extract-racket-times
+                clean-up-zo
+                (append mutable-pair-progs
+                        '(dynamic2 earley maze2 nboyer nucleic2 sboyer
+                          scheme2)))
+     (make-impl 'typed-scheme-optimizing
+                void
+                mk-racket
+                (lambda (bm)
+                  (system (format "racket -u ~a-typed-optimizing.rkt" bm)))
+                extract-racket-times
+                clean-up-zo
+                (append mutable-pair-progs
+                        '(dynamic2 earley maze2 nboyer nucleic2 sboyer
+                          scheme2)))
      (make-impl 'chicken
                 void
                 (run-mk "mk-chicken.rktl")

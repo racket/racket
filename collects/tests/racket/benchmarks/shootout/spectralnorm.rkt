@@ -1,12 +1,13 @@
+#lang racket/base
+
 ;; The Great Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
 
 ;; Translated directly from the C# version, which was:
 ;;   contributed by Isaac Gouy
 
-#lang scheme/base
-(require scheme/cmdline
-         scheme/flonum)
+(require racket/cmdline
+         racket/flonum)
 
 (define (Approximate n)
   (let ([u (make-flvector n 1.0)]

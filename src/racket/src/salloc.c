@@ -100,18 +100,8 @@ struct free_list_entry {
   int count; /* number of items in `elems' */
 };
 
-SHARED_OK static struct free_list_entry *free_list;
-SHARED_OK static int free_list_bucket_count;
-#ifdef MZ_USE_PLACES
-SHARED_OK static mzrt_mutex *free_list_mutex;
-#endif
-
-
-void scheme_init_salloc() {
-#ifdef MZ_USE_PLACES
-  mzrt_mutex_create(&free_list_mutex);
-#endif
-}
+THREAD_LOCAL_DECL(static struct free_list_entry *free_list;)
+THREAD_LOCAL_DECL(static int free_list_bucket_count;)
 
 void scheme_set_stack_base(void *base, int no_auto_statics)
 {
@@ -919,10 +909,6 @@ void *scheme_malloc_code(long size)
   long size2, bucket, sz, page_size;
   void *p, *pg, *prev;
 
-# ifdef MZ_USE_PLACES
-  mzrt_mutex_lock(free_list_mutex);
-# endif
-
   if (size < CODE_HEADER_SIZE) {
     /* ensure CODE_HEADER_SIZE alignment 
        and room for free-list pointers */
@@ -986,10 +972,6 @@ void *scheme_malloc_code(long size)
     LOG_CODE_MALLOC(0, printf("allocated %ld (->%ld / %ld)\n", size, size2, bucket));
   }
 
-# ifdef MZ_USE_PLACES
-  mzrt_mutex_unlock(free_list_mutex);
-# endif
-
   return p;
 #else
   return malloc(size); /* good luck! */
@@ -1002,10 +984,6 @@ void scheme_free_code(void *p)
   long size, size2, bucket, page_size;
   int per_page, n;
   void *prev;
-
-# ifdef MZ_USE_PLACES
-  mzrt_mutex_lock(free_list_mutex);
-# endif
 
   page_size = get_page_size();
 
@@ -1079,9 +1057,6 @@ void scheme_free_code(void *p)
       free_page(CODE_PAGE_OF(p), page_size);
     }
   }
-# ifdef MZ_USE_PLACES
-  mzrt_mutex_unlock(free_list_mutex);
-# endif
 
 #else
   free(p);

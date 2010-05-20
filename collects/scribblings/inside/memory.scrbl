@@ -653,6 +653,12 @@ Like @cpp{scheme_malloc}, but in 3m, the type tag determines how the
 Like @cpp{scheme_malloc}, but in 3m, pointers are allowed to
  reference the middle of the object; see @secref["im:memoryalloc"].}
 
+@function[(void* scheme_malloc_atomic_allow_interior
+           [size_t n])]{
+
+Like @cpp{scheme_malloc_atomic}, but in 3m, pointers are allowed to
+ reference the middle of the object; see @secref["im:memoryalloc"].}
+
 @function[(char* scheme_strdup
            [char* str])]{
 
@@ -806,6 +812,21 @@ base. Note that the 50000-byte margin of error is assumed to cover the
 difference between the actual stack start and the reported stack base,
 in addition to the margin needed for detecting and handling stack
 overflow.}
+
+@function[(void scheme_register_tls_space
+           [void* ptr]
+           [int   tls_index])]{
+
+Only available under Windows; registers @var{ptr} as the address of a
+ thread-local pointer variable that is declared in the main
+ executable. The variable's storage will be used to implement
+ thread-local storage within the Racket run-time. See
+ @secref["embedding"].
+
+The @var{tls_index} argument must be @cpp{0}. It is currently
+ ignored, but a future version may use the argument to allow
+ declaration of the thread-local variable in a dynamically linked
+ DLL.}
 
 @function[(void scheme_register_static
            [void* ptr]

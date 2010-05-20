@@ -1,18 +1,19 @@
+#lang racket/base
+
 ;; The Great Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
 
 ;; Translated directly from the C# version, which was:
 ;;   contributed by Isaac Gouy
 
-#lang scheme/base
-(require scheme/cmdline
-	 scheme/require (for-syntax scheme/base)
+(require racket/cmdline
+	 racket/require (for-syntax racket/base)
 	 (rename-in
           (filtered-in
            (lambda (name) (regexp-replace #rx"unsafe-" name ""))
-           scheme/unsafe/ops)
+           racket/unsafe/ops)
           [fx->fl ->fl])
-         (only-in scheme/flonum make-flvector))
+         (only-in racket/flonum make-flvector))
 
 
 (define (Approximate n)

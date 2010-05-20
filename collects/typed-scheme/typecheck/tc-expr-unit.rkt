@@ -5,7 +5,7 @@
 (require syntax/kerncase mzlib/trace
          scheme/match (prefix-in - scheme/contract)
          "signatures.rkt" "tc-envops.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
-         (types utils convenience union subtype remove-intersect type-table)
+         (types utils convenience union subtype remove-intersect type-table filter-ops)
          (private-in parse-type type-annotation)
          (rep type-rep)
          (only-in (infer infer) restrict)
@@ -170,6 +170,18 @@
 ;;                   (Type Results -> Type)
 ;;                   (Type Type -> Type))
 (define (check-below tr1 expected)     
+  (define (filter-better? f1 f2)
+    (match* (f1 f2)
+      [(f f) #t]
+      [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-))
+       (and (implied-atomic? f2+ f1+)
+            (implied-atomic? f2- f1-))]
+      [(_ _) #f]))
+  (define (object-better? o1 o2)
+    (match* (o1 o2)
+      [(o o) #t]
+      [(o (or (NoObject:) (Empty:))) #t]
+      [(_ _) #f]))
   (define (maybe-abstract r)
     (define l (hash-ref to-be-abstr expected #f))
     (define (sub-one proc i)
@@ -212,12 +224,17 @@
        (cond 
          [(not (subtype t1 t2))
           (tc-error/expr "Expected ~a, but got ~a" t2 t1)]
-         [(and (not (filter-equal? f1 f2))
-               (object-equal? o1 o2))
+         [(and (not (filter-better? f1 f2))
+               (object-better? o1 o2))
           (tc-error/expr "Expected result with filter ~a, got filter ~a" f2 f1)]
-         [(not (and (equal? f1 f2) (equal? o1 o2)))
-          (tc-error/expr "Expected result with filter ~a and ~a, got filter ~a and ~a" f2 (print-object o2) f1 (print-object o1))])
-       expected]
+         [(and (filter-better? f1 f2)
+               (not (object-better? o1 o2)))
+          (tc-error/expr "Expected result with object ~a, got object ~a" o2 o1)]
+         [(and (not (filter-better? f1 f2))
+               (not (object-better? o1 o2)))
+          (tc-error/expr "Expected result with filter ~a and ~a, got filter ~a and ~a" f2 (print-object o2) f1 (print-object o1))]
+         [else
+          expected])]
       [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))
        (unless (andmap subtype t1 t2)
          (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))

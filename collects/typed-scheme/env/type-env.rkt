@@ -26,16 +26,19 @@
   (free-id-table-set! the-mapping id type))
 
 (define (register-type-if-undefined id type)
-  (if (free-id-table-ref the-mapping id (lambda _ #f))
-      (tc-error/stx id "Duplicate type annotation for ~a" (syntax-e id))
-      (register-type id type)))
+  (cond [(free-id-table-ref the-mapping id (lambda _ #f))
+         => (lambda (e)
+              (tc-error/expr #:stx id "Duplicate type annotation for ~a" (syntax-e id))
+              (when (box? e)
+                (free-id-table-set! the-mapping id (unbox e))))]
+        [else (register-type id type)]))
 
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type/undefined id type)
   ;(printf "register-type/undef ~a~n" (syntax-e id))
   (if (free-id-table-ref the-mapping id (lambda _ #f))
-      (tc-error/stx id "Duplicate type annotation for ~a" (syntax-e id))
+      (void (tc-error/expr #:stx id "Duplicate type annotation for ~a" (syntax-e id)))
       (free-id-table-set! the-mapping id (box type))))
 
 ;; add a bunch of types to the mapping
@@ -61,7 +64,8 @@
 
 (define (finish-register-type id)
   (unless (maybe-finish-register-type id)
-    (tc-error/stx id "Duplicate defintion for ~a" (syntax-e id))))
+    (tc-error/expr #:stx id "Duplicate defintion for ~a" (syntax-e id)))
+  (void))
 
 (define (check-all-registered-types)
   (free-id-table-for-each 
@@ -69,11 +73,13 @@
    (lambda (id e) 
      (when (box? e) 
        (let ([bnd (identifier-binding id)])
-         (tc-error/stx id "Declaration for ~a provided, but ~a ~a" 
-                       (syntax-e id) (syntax-e id)
-                       (cond [(eq? bnd 'lexical) "is a lexical binding"] ;; should never happen
-                             [(not bnd) "has no definition"] 
-                             [else "is defined in another module"])))))))
+         (tc-error/expr #:stx id
+                        "Declaration for ~a provided, but ~a ~a" 
+                        (syntax-e id) (syntax-e id)
+                        (cond [(eq? bnd 'lexical) "is a lexical binding"] ;; should never happen
+                              [(not bnd) "has no definition"] 
+                              [else "is defined in another module"]))))
+     (void))))
 
 ;; map over the-mapping, producing a list
 ;; (id type -> T) -> listof[T]  

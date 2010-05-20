@@ -19,7 +19,11 @@ Racket installation.
  you'd like to compile it to bytecode, along with all of its
  dependencies, so that it loads more quickly, then run
 
-   @commandline{raco make take-over-the-world.rkt}}
+   @commandline{raco make take-over-the-world.rkt}
+
+ The bytecode file is written as @filepath{take-over-the-world_rkt.zo}
+ in a @filepath{compiled} subdirectory; @index[".zo"]{@filepath{.zo}}
+ is the file suffix for a bytecode file.}
 
 
  @item{@exec{raco setup} manages a Racket installation, including

@@ -1,32 +1,34 @@
+#lang racket/base
 
-#lang scheme/base
+;; The Computer Language Benchmarks Game
+;; http://shootout.alioth.debian.org/
+
 (require scheme/cmdline)
 
 (define translation (make-vector 128))
 
-(for-each (lambda (from-to)
-            (let ([char (lambda (sym)
-                          (string-ref (symbol->string sym) 0))])
-              (let ([from (char (car from-to))]
-                    [to (char->integer (char-upcase (char (cadr from-to))))])
-                (vector-set! translation (char->integer from) to)
-                (vector-set! translation (char->integer (char-upcase from)) to))))
-          '([a t]
-            [c g]
-            [g c]
-            [t a]
-            [u a]
-            [m k]
-            [r y]
-            [w w]
-            [s s]
-            [y R]
-            [k M]
-            [v b]
-            [h d]
-            [d h]
-            [b v]
-            [n n]))
+(for ([from-to '([a t]
+                 [c g]
+                 [g c]
+                 [t a]
+                 [u a]
+                 [m k]
+                 [r y]
+                 [w w]
+                 [s s]
+                 [y R]
+                 [k M]
+                 [v b]
+                 [h d]
+                 [d h]
+                 [b v]
+                 [n n])])
+  (let ([char (lambda (sym)
+                (string-ref (symbol->string sym) 0))])
+    (let ([from (char (car from-to))]
+          [to (char->integer (char-upcase (char (cadr from-to))))])
+      (vector-set! translation (char->integer from) to)
+      (vector-set! translation (char->integer (char-upcase from)) to))))
 
 (define (output lines)
   (let* ([str (apply bytes-append lines)]

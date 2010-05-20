@@ -1,3 +1,5 @@
+#lang racket/base
+
 ;; The Great Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
 ;;
@@ -6,8 +8,7 @@
 ;; Derived from the Chicken variant, which was
 ;; Contributed by Anthony Borla
 
-#lang scheme/base
-(require scheme/cmdline)
+(require racket/cmdline)
 
 (define +alu+
   (bytes-append
@@ -40,7 +41,7 @@
   (let* ((ia 3877) (ic 29573) (im 139968) (last seed))
     (lambda (max)
       (set! last (modulo (+ ic (* last ia)) im))
-      (/ (* max last) im) )))
+      (/ (* max last) im))))
 
 ;; -------------------------------
 

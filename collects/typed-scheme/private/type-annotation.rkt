@@ -37,7 +37,11 @@
 ;; is let-binding really necessary? - remember to record the bugs!
 (define (type-annotation stx #:infer [let-binding #f])
   (define (pt prop)
-    #;(print-size prop)
+    (when (and (identifier? stx) 
+               let-binding
+               (lookup-type stx (lambda () #f)))
+      (maybe-finish-register-type stx)
+      (tc-error/expr #:stx stx "Duplicate type annotation for ~a" (syntax-e stx)))
     (if (syntax? prop)
         (parse-type prop)
         (parse-type/id stx prop)))
@@ -92,14 +96,14 @@
 ;; get the type annotation of this identifier, otherwise error
 ;; if #:default is provided, return that instead of error
 ;; identifier #:default Type -> Type
-(define (get-type stx #:default [default #f])
+(define (get-type stx #:default [default #f] #:infer [infer #t])
   (parameterize
       ([current-orig-stx stx])
     (cond
-      [(type-annotation stx #:infer #t)]
+      [(type-annotation stx #:infer infer)]
       [default default]
       [(not (syntax-original? stx))
-       (tc-error "untyped var: ~a" (syntax-e stx))]
+       (tc-error "untyped variable: ~a" (syntax-e stx))]
       [else
        (tc-error "no type information on variable ~a" (syntax-e stx))])))
 

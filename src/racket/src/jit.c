@@ -739,41 +739,6 @@ static void emit_indentation(mz_jit_state *jitter)
 #endif
 
 /*========================================================================*/
-/*                            initialization                              */
-/*========================================================================*/
-
-#ifdef MZ_USE_PLACES
-
-THREAD_LOCAL_DECL(static mzrt_mutex *jit_lock);
-THREAD_LOCAL_DECL(static int in_jit_critical_section);
-
-static void BEGIN_JIT_CRITICAL_SECTION()
-{
-  if (!in_jit_critical_section) 
-    mzrt_mutex_lock(jit_lock);
-  in_jit_critical_section++;
-}
-
-static void END_JIT_CRITICAL_SECTION()
-{
-  --in_jit_critical_section;
-  if (!in_jit_critical_section)
-    mzrt_mutex_unlock(jit_lock);
-}
-
-#else
-# define BEGIN_JIT_CRITICAL_SECTION() /* empty */
-# define END_JIT_CRITICAL_SECTION() /* empty */
-#endif
-
-void scheme_init_jit()
-{
-#ifdef MZ_USE_PLACES
-  mzrt_mutex_create(&jit_lock);
-#endif  
-}
-
-/*========================================================================*/
 /*                               run time                                 */
 /*========================================================================*/
 
@@ -8765,11 +8730,7 @@ Scheme_Native_Closure_Data *scheme_generate_case_lambda(Scheme_Case_Lambda *c)
 {
   Scheme_Native_Closure_Data *ndata;
 
-  BEGIN_JIT_CRITICAL_SECTION();
-
   ndata = create_native_case_lambda(c);
-
-  END_JIT_CRITICAL_SECTION();
 
   return ndata;
 }
@@ -12511,11 +12472,7 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
 
 void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
 {
-  BEGIN_JIT_CRITICAL_SECTION();
-  
   on_demand_generate_lambda(nc, argc, argv);
-
-  END_JIT_CRITICAL_SECTION();
 }
 
 static void on_demand_with_args(Scheme_Object **in_argv)
@@ -12582,12 +12539,8 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
 {
   Scheme_Native_Closure_Data *ndata;
 
-  BEGIN_JIT_CRITICAL_SECTION();
-
   ndata = create_native_lambda(data, clear_code_after_jit, case_lam);
 
-  END_JIT_CRITICAL_SECTION();
-  
   return ndata;
 }
 
