@@ -653,5 +653,23 @@
                          (list a))))
             #t]
            [_ #f]))
+   
+   (comp '(2 7)
+         (let ()
+           (define-match-expander foo
+             (syntax-rules () [(_) 1])
+             (syntax-id-rules (set!) 
+               [(set! _ v) v]
+               [(_) 2]))
+           (list (foo)
+                 (set! foo 7))))
+   
+   (comp 0
+         (let ()
+           (define-match-expander foo
+             (syntax-id-rules () [_ 10]))
+           (match 10
+             [(foo) 0]
+             [_ 1])))
 
 ))

@@ -136,7 +136,10 @@
 (define (match-expander-transform parse/cert cert expander stx accessor
                                   error-msg)
   (let* ([expander (syntax-local-value (cert expander))]
-         [transformer (accessor expander)])
+         [transformer (accessor expander)]
+         [transformer (if (set!-transformer? transformer)
+                          (set!-transformer-procedure transformer)
+                          transformer)])
     (unless transformer (raise-syntax-error #f error-msg expander))
     (let* ([introducer (make-syntax-introducer)]
            [certifier (match-expander-certifier expander)]
