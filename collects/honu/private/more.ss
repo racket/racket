@@ -3,6 +3,7 @@
 (require "honu-typed-scheme.ss"
          "literals.ss"
          syntax/parse
+         mzlib/trace
          (for-syntax syntax/parse
                      syntax/stx
                      racket/list
@@ -15,17 +16,45 @@
 
 (provide (all-defined-out))
 
+(define (combine-syntax lexical . all)
+  (define consed (for/fold ([item all])
+                           ([out '()])
+                           (cons item out)))
+  (datum->syntax lexical consed lexical))
+
 (define (replace-commas stuff)
-    (syntax-parse stuff #:literals (ellipses-comma)
-      [((ellipses-comma z) thing blah ...)
-       (with-syntax ([(rest ...) (replace-commas #'(thing blah ...))])
-         #'(z honu-comma rest ...))]
-      [((ellipses-comma z)) #'z]
-      [(z rest ...)
-       (with-syntax ([z* (replace-commas #'z)]
-                     [(rest* ...) (replace-commas #'(rest ...))])
-         #'(z* rest* ...))]
-      [else stuff]))
+  (printf "Replace commas with: ~a\n" (syntax->datum stuff))
+  (syntax-parse stuff #:literals (ellipses-comma)
+    [((ellipses-comma z) thing blah ...)
+     #;
+     (printf "Thing ~a and blah ~a replaced ~a\n" #'thing #'(blah ...) (replace-commas #'(thing blah ...)))
+     (with-syntax ([(rest ...) (replace-commas #'(thing blah ...))])
+       #;
+       (combine-syntax stuff #'z #'honu-comma #'(rest ...))
+       (datum->syntax stuff (cons #'z (cons #'honu-comma #'(rest ...)))
+                      stuff)
+       #;
+       #'(z honu-comma rest ...))]
+    [(front (ellipses-comma z) thing more ...)
+     (with-syntax ([front* (replace-commas #'front)]
+                   [(rest* ...) (replace-commas #'(thing more ...))])
+       (datum->syntax stuff (cons #'front*
+                                  (cons #'z #'(rest* ...)))
+                      stuff))]
+    [((ellipses-comma z)) (datum->syntax stuff #'(z) stuff)]
+    [(z rest ...)
+     (with-syntax ([z* (replace-commas #'z)]
+                   [(rest* ...) (replace-commas #'(rest ...))])
+       #;
+       (combine-syntax stuff #'z #'(rest* ...))
+       (datum->syntax stuff
+                      (cons #'z* #'(rest* ...))
+                      stuff)
+       #;
+       #'(z* rest* ...))]
+    [else stuff]))
+
+(trace replace-commas)
 
 (define-syntax (fix-template stuff)
   (define (fix stuff)
@@ -56,6 +85,14 @@
       [(a ellipses-comma rest ...)
        (with-syntax ([a* (replace #'a)]
                      [(rest* ...) (replace #'(rest ...))])
+         (datum->syntax stuff
+                        (cons
+                          (cons #'ellipses-comma (cons #'a* '()))
+                          (cons
+                            #'(... ...)
+                            #'(rest* ...)))
+                        stuff)
+         #;
          #'((ellipses-comma a*) (... ...) rest* ...))]
       [(z rest ...)
        (with-syntax ([z* (replace #'z)]

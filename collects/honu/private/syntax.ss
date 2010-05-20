@@ -22,6 +22,9 @@
 (define-syntax-rule (scheme-syntax stx)
                     (syntax-property (syntax stx) honu-scheme-syntax #t))
 
+(define (apply-scheme-syntax stx)
+  (syntax-property stx honu-scheme-syntax #t))
+
 #;
 (define-syntax (scheme-syntax stx)
   (syntax-case stx ()

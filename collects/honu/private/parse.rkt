@@ -147,8 +147,8 @@
                  (#%parens (~var arg (expression-1 context)) ...))
            #:with call 
            (begin
-             (printf "Resulting call is ~a\n" (syntax->datum #'(e arg.result ...)))
-           #'(e arg.result ...))]
+             (printf "Resulting call. e is ~a -- ~a\n" #'e (syntax->datum #'(e arg.result ...)))
+           #'(e.x arg.result ...))]
 
   [pattern (~seq (~var e honu-identifier
                        #;
@@ -159,21 +159,22 @@
                              (~optional honu-comma)) ...))
            #:with call 
            (begin
-             (printf "Resulting call is ~a\n" (syntax->datum #'(e arg.result ...)))
-             #'(e arg.result ...))])
+             (printf "Resulting call is ~a\n" (syntax->datum #'(e.x arg.result ...)))
+             #'(e.x arg.result ...))])
 
 (define-splicing-syntax-class honu-identifier
   [pattern (~seq x:identifier) #:when (not (free-identifier=? #'honu-comma #'x))])
 
 (define-splicing-syntax-class (expression-last context)
                               #:literals (#%parens)
+  [pattern (~seq raw:raw-scheme-syntax) #:with result #'raw]
   [pattern (~seq (#%parens (~var e (expression-1 context)))) #:with result #'e.result]
   #;
   [pattern (~seq (~var e (honu-transformer context))) #:with result #'e.result]
   [pattern (~seq (~var call (call context))) #:with result #'call.call]
   [pattern (~seq x:number) #:with result #'x]
   [pattern (~seq x:str) #:with result #'x]
-  [pattern (~seq x:honu-identifier) #:with result #'x]
+  [pattern (~seq x:honu-identifier) #:with result #'x.x]
   #;
   [pattern (~seq (~var e (honu-expr context))) #:with result #'e.result]
   )
@@ -189,7 +190,7 @@
                     (~var right (next context))
 
                     (~var new-right (do-rest context ((attribute op.func) left #'right.result))))
-              #:with result (attribute new-right.result))
+              #:with result (apply-scheme-syntax (attribute new-right.result)))
      (pattern (~seq) #:with result left))
    (define-splicing-syntax-class (name context)
      (pattern (~seq (~var left (next context))
@@ -388,7 +389,22 @@
 
 (define-splicing-syntax-class expression-comma
   #:literals (honu-comma)
-  [pattern ((~seq (~var expr (expression-1 the-expression-context)) (~optional comma)) ...)])
+  #;
+  [pattern ;; ((~seq x) ...)
+           (x ...)
+           #:with (expr ...) (filter (lambda (n)
+                                       (not (free-identifier=? #'honu-comma n)))
+                                     (syntax->list #'(x ...)))]
+  #;
+  [pattern ((~seq (~var expr honu-identifier) (~optional honu-comma)) ...)]
+  
+  #;
+  [pattern (~seq (~var expr honu-identifier) (~optional honu-comma))]
+
+  [pattern (~seq (~var expr (expression-1 the-expression-context)) (~optional honu-comma)) #:with result #'expr.result]
+
+  #;
+  [pattern ((~seq (~var expr (expression-1 the-expression-context)) (~optional honu-comma)) ...)])
 
 (define (parse-an-expr stx)
   (printf "Parse an expr ~a\n" (syntax->datum stx))
@@ -419,7 +435,7 @@
       #;
       [(x:number . rest) (values #'x #'rest)]
       ))
-  (printf "Parsing ~a\n" stx)
+  (printf "Parsing ~a\n" (syntax->datum stx))
   (cond
     [(stx-null? stx) (values stx '())]
     #;
@@ -477,8 +493,6 @@
                                                  [else (values fixed rest)]))
                                              ))]
     [else (parse-one stx context)]))
-
-
 
 (define operator? 
   (let ([sym-chars (string->list "+-_=?:<>.!%^&*/~|")])
