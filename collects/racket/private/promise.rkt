@@ -74,6 +74,7 @@
       ;; follow all sharings (and shortcut directly to the right force)
       [(composable-promise? v) (force/composable v)]
       [(null? v) (values)]
+      [(promise? v) (force v)] ; non composable promise is forced as usual
       [else (error 'force "composable promise with invalid contents: ~e" v)])))
 
 ;; convenient utility for any number of stored values or a raised value.

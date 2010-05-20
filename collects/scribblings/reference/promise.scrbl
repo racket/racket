@@ -75,11 +75,18 @@ Returns @scheme[#t] if @scheme[promise] is currently being forced.
 Creates a ``call-by-name'' promise that is similar to
 @scheme[delay]-promises, except that the resulting value is not
 cached.  This kind of promise is essentially a thunk that is wrapped
-in a way that @scheme[force] recognizes.  
+in a way that @scheme[force] recognizes.
 
 If a @scheme[delay/name] promise forces itself, no exception is
 raised, the promise is never considered ``running'' or ``forced'' in
 the sense of @scheme[promise-running?] and @scheme[promise-forced?].}
+
+@defform[(delay/strict body ...+)]{
+
+Creates a ``strict'' promise: it is evaluated immediately, and the
+result is wrapped in a promise value.  Note that the body can evaluate
+to multiple values, and forcing the resulting promise will return these
+values.}
 
 @defform[(delay/sync body ...+)]{
 
