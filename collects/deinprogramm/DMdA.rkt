@@ -4,7 +4,7 @@
 
 (require test-engine/scheme-tests
 	 (lib "test-info.scm" "test-engine")
-	 (lib "scheme-tests.rkt" "test-engine")
+	 test-engine/scheme-tests
 	 scheme/class)
 
 (require deinprogramm/contract/module-begin
