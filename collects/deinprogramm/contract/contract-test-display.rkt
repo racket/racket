@@ -241,7 +241,7 @@
                  (formatter (not-range-min fail))
                  (formatter (not-range-max fail)))]
 	 [(property-fail? fail)
-	  (print-string "Eigenschaft falsifizierbar mit")
+	  (print-string (string-constant test-engine-property-fail-error))
 	  (for-each (lambda (arguments)
 		      (for-each (lambda (p)
 				  (if (car p)
@@ -250,7 +250,7 @@
 				arguments))
 		    (result-arguments-list (property-fail-result fail)))]
 	 [(property-error? fail)
-	  (print "`check-property' bekam den folgenden Fehler~n:: ~a"
+	  (print (string-constant test-engine-property-error-error)
 		 (property-error-message fail))])
 	(print-string "\n")))
 

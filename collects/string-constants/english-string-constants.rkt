@@ -1433,6 +1433,10 @@ please adhere to these guidelines:
   (test-engine-not-mem-error "Actual value ~F differs from all given members in ")
   (test-engine-not-range-error "Actual value ~F is not between ~F and ~F, inclusive.")
 
+  ;; followed by list of variable bindings
+  (test-engine-property-fail-error "Property falsifiable with")
+  (test-engine-property-error-error "check-property encountered the following error~n:: ~a")
+
   ; section header
   (test-engine-check-failures "Check failures:")
   ; section header

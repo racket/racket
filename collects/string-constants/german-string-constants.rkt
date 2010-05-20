@@ -1333,6 +1333,8 @@
    "check-error erwartete den folgenden Fehler, bekam aber den Wert ~F.~n ~a")
   (test-engine-not-mem-error  "Tatsächlicher Wert ~F ist keins der Elemente ")
   (test-engine-not-range-error "Tatsächlicher Wert ~F liegt nicht zwischen ~F und ~F (inklusive).")
+  (test-engine-property-fail-error "Eigenschaft falsifizierbar mit")
+  (test-engine-property-error-error "`check-property' bekam den folgenden Fehler~n:: ~a")
 
   ; section header
   (test-engine-check-failures "Check-Fehler:")
