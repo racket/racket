@@ -34,45 +34,97 @@
                      [create-immutable-custom-hash make-immutable-custom-hash])
          make-weak-custom-hash)
 
+(define (dict-property-guard v info)
+  (check-dict-vector 'prop:dict "dictionary property" v)
+  v)
+
+(define (check-dict-vector caller desc v)
+  (check-vector*
+   caller desc v
+   (list check-dict-ref
+         check-dict-set!
+         check-dict-set
+         check-dict-remove
+         check-dict-remove!
+         check-dict-count
+         check-dict-iterate-first
+         check-dict-iterate-next
+         check-dict-iterate-key
+         check-dict-iterate-value)))
+
+(define (check-vector* caller desc v checkers)
+  (unless (vector? v)
+    (contract-error
+     "~a: expected ~a to be a vector, but got: ~e"
+     caller desc v))
+  (let* ([expected (length checkers)]
+         [actual (vector-length v)])
+    (unless (= expected actual)
+      (contract-error
+       (string-append
+        "~a: expected ~a to be a vector of ~a elements, "
+        "but got ~a elements in: ~e")
+       caller desc expected actual v)))
+  (for ([elem (in-vector v)] [checker (in-list checkers)] [index (in-naturals)])
+    (checker caller (format "element ~a of ~a" index desc) elem)))
+
+(define (check-dict-ref caller desc v)
+  (check-function/arity caller (describe "ref" desc) v 2 3))
+(define (check-dict-set! caller desc v)
+  (check-optional-function/arity caller (describe "set!" desc) v 3))
+(define (check-dict-set caller desc v)
+  (check-optional-function/arity caller (describe "set" desc) v 3))
+(define (check-dict-remove! caller desc v)
+  (check-optional-function/arity caller (describe "remove!" desc) v 2))
+(define (check-dict-remove caller desc v)
+  (check-optional-function/arity caller (describe "remove" desc) v 2))
+(define (check-dict-count caller desc v)
+  (check-function/arity caller (describe "count" desc) v 1))
+(define (check-dict-iterate-first caller desc v)
+  (check-function/arity caller (describe "iterate-first" desc) v 1))
+(define (check-dict-iterate-next caller desc v)
+  (check-function/arity caller (describe "iterate-next" desc) v 2))
+(define (check-dict-iterate-key caller desc v)
+  (check-function/arity caller (describe "iterate-key" desc) v 2))
+(define (check-dict-iterate-value caller desc v)
+  (check-function/arity caller (describe "iterate-value" desc) v 2))
+
+(define (describe name desc)
+  (format "~a (~a)" name desc))
+
+(define (check-function/arity caller desc v . arities)
+  (unless (procedure? v)
+    (contract-error
+     "~a: expected ~a to be a function, but got: ~e"
+     caller desc v))
+  (for ([arity (in-list arities)])
+    (unless (procedure-arity-includes? v arity)
+      (contract-error
+       "~a: expected ~a to be a function that accepts ~a arguments, but got: ~e"
+       caller desc arity v))))
+
+(define (check-optional-function/arity caller desc v . arities)
+  (when v
+    (unless (procedure? v)
+      (contract-error
+       "~a: expected ~a to be a function or #f, but got: ~e"
+       caller desc v))
+    (for ([arity (in-list arities)])
+      (unless (procedure-arity-includes? v arity)
+        (contract-error
+         (string-append
+          "~a: expected ~a to be a function that accepts ~a arguments,"
+          " but got: ~e")
+         caller desc arity v)))))
+
+(define (contract-error fmt . args)
+  (raise
+   (make-exn:fail:contract
+    (apply format fmt args)
+    (current-continuation-marks))))
+
 (define-values (prop:dict dict-struct? dict-struct-ref)
-  (make-struct-type-property 'dict
-                             (lambda (v info)
-                               (unless (and 
-                                        (vector? v)
-                                        (= 10 (vector-length v))
-                                        (let-values ([(ref set! set remove! remove count
-                                                           iterate-first iterate-next
-                                                           iterate-key iterate-value)
-                                                      (vector->values v)])
-                                          (and (procedure? ref)
-                                               (and (procedure-arity-includes? ref 2)
-                                                    (procedure-arity-includes? ref 3))
-                                               (or (not set!)
-                                                   (and (procedure? set!)
-                                                        (procedure-arity-includes? set! 3)))
-                                               (or (not set)
-                                                   (and (procedure? set)
-                                                        (procedure-arity-includes? set 3)))
-                                               (or (not remove!)
-                                                   (and (procedure? remove!)
-                                                        (procedure-arity-includes? remove! 2)))
-                                               (or (not remove)
-                                                   (and (procedure? remove)
-                                                        (procedure-arity-includes? remove 2)))
-                                               (procedure? count)
-                                               (procedure-arity-includes? count 1)
-                                               (procedure? iterate-first)
-                                               (procedure-arity-includes? iterate-first 1)
-                                               (procedure? iterate-next)
-                                               (procedure-arity-includes? iterate-next 2)
-                                               (procedure? iterate-key)
-                                               (procedure-arity-includes? iterate-key 2)
-                                               (procedure? iterate-value)
-                                               (procedure-arity-includes? iterate-value 2))))
-                                 (raise-type-error 'prop:dict-guard
-                                                   "vector of dict methods"
-                                                   v))
-                               v)))
+  (make-struct-type-property 'dict dict-property-guard))
 
 (define (get-dict-ref v)
   (vector-ref v 0))
