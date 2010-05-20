@@ -111,7 +111,7 @@ by @racket[kind], which must be one of the following:
 
  @item{@indexed-racket['exec-file] --- the path of the Racket
  executable as provided by the operating system for the current
- invocation.
+ invocation. For some operating systems, the path can be relative.
 
  @margin-note{For GRacket, the executable path is the name of a GRacket
  executable.}}
