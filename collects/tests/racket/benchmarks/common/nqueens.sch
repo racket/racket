@@ -31,7 +31,7 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time
-   (let loop ((n 500) (v 0))
+   (let loop ((n 10000) (v 0))
      (if (zero? n)
          v
          (loop (- n 1) (nqueens (if input 8 0)))))))

@@ -237,7 +237,7 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time (let: loop : (U (Matrix (U '_ '*)) 'error)
-              ((n : Integer 500) (v : (U (Matrix (U '_ '*)) 'error) '()))
+              ((n : Integer 10000) (v : (U (Matrix (U '_ '*)) 'error) '()))
               (if (zero? n)
                   v
                   (loop (- n 1)

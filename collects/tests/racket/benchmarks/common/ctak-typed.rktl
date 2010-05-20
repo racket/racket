@@ -58,7 +58,7 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time (let: loop : Integer
-              ((n : Integer 8) (v : Integer 0))
+              ((n : Integer 25) (v : Integer 0))
               (if (zero? n)
                   v
                   (loop (- n 1)

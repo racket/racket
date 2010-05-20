@@ -709,7 +709,7 @@
 (let ((input (with-input-from-file "input.txt" read)))
   (time
    (let: loop : (Listof RDG)
-         ((n : Integer 3) (v : (Listof RDG) '()))
+         ((n : Integer 45) (v : (Listof RDG) '()))
      (if (zero? n)
          v
          (loop (- n 1)

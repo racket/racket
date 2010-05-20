@@ -43,5 +43,10 @@
 ;;; call: (mas 18l 12l 6l)
 
 
-(let ((v (if (with-input-from-file "input.txt" read) l6l '())))
-  (time (mas l18l l12l v)))
+(let ((x (if (with-input-from-file "input.txt" read) l6l '())))
+  (time (let: loop : (Listof Integer)
+              ((n : Integer 20) (v : (Listof Integer) '()))
+          (if (zero? n)
+              v
+              (loop (- n 1)
+                    (mas l18l l12l x))))))

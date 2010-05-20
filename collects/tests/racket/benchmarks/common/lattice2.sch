@@ -202,4 +202,8 @@
     (count-maps l3 l2)
     (count-maps l4 l4)))
 
-(time (run))
+(time (let loop ((n 3) (v 0))
+        (if (zero? n)
+            v
+            (loop (- n 1)
+                  (run)))))

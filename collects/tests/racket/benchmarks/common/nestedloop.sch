@@ -58,7 +58,10 @@
                                         (loop6 (+ i6 1) (+ result 1)))))))))))))))
 
 (let ((cnt (if (with-input-from-file "input.txt" read) 18 1)))
-  (time (list
-         (loops cnt)
-         (func-loops cnt))))
-
+  (time (let loop ((n 20) (v 0))
+          (if (zero? n)
+              v
+              (loop (- n 1)
+                    (list
+                     (loops cnt)
+                     (func-loops cnt)))))))

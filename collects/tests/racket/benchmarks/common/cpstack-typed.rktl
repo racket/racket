@@ -34,4 +34,10 @@
 
 ;;; call: (cpstak 18 12 6)
 
-(time (cpstak 18 12 2))
+(let ((input (with-input-from-file "input.txt" read)))
+  (time (let: loop : Integer
+              ((n : Integer 20) (v : Integer 0))
+              (if (zero? n)
+                  v
+                  (loop (- n 1)
+                        (cpstak 18 12 (if input 2 0)))))))

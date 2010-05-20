@@ -165,6 +165,8 @@
 
 ;;; call:  (start)
 
-(time (start))
-
-
+(time (let loop ((n 50) (v 0))
+        (if (zero? n)
+            v
+            (loop (- n 1)
+                  (start)))))

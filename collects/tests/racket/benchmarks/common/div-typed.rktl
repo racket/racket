@@ -57,8 +57,8 @@
 ;;; for the recursive test call: (test-2 *ll*)
 
 (let ((input (with-input-from-file "input.txt" read)))
-  (time (let: loop : (U Integer (Listof Any))
-              ((n : Integer 10) (v : (U Integer (Listof Any)) 0))
+  (time (let: loop : (Pair Void Void)
+              ((n : Integer 200) (v : (U Integer (Listof Any)) 0))
               (if (zero? n)
                   v
                   (loop (- n 1)

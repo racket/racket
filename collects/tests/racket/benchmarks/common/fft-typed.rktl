@@ -119,7 +119,7 @@
 (define (fft-bench)
   (do: : Null
        ((ntimes : Integer 0 (+ ntimes 1)))
-       ((= ntimes 1000) '())
+       ((= ntimes 5000) '())
        (fft *re* *im*)))
 
 ;;; call:  (fft-bench)

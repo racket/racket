@@ -192,6 +192,8 @@
 
 ;;; call:  (start)
 
-(time (start))
-
-
+(time (let: loop : Void ((n : Integer 50) (v : Void (void)))
+        (if (zero? n)
+            v
+            (loop (- n 1)
+                  (start)))))
