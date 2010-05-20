@@ -136,6 +136,15 @@
           (force p) => 3
           x => 3)))
 
+(define (test-delay/strict)
+  (let* ([x 1] [p (delay/strict (set! x (add1 x)) x)])
+    (test (promise? p)
+          x => 2
+          (force p) => 2
+          x => 2
+          (force (delay/strict (values 1 2 3))) => (values 1 2 3)
+          (promise? (force (delay/strict (delay 1)))))))
+
 (define (test-delay/sync)
   (letrec ([p (delay/sync (force p))])
     (test (force p) =error> "reentrant"))
@@ -179,5 +188,9 @@
         do (test-basic-promise-behavior)
         do (test-printout)
         do (test-delay/name)
+        do (test-delay/strict)
         do (test-delay/sync)
-        do (test-delay/thread)))
+        do (test-delay/thread)
+        ;; misc tests
+        (let ([x (lazy (delay 1))]) (force x) (force x)) => 1
+        ))

@@ -7,10 +7,20 @@
 
 (define-struct (promise/name promise) ()
   #:property prop:force (lambda (p) ((pref p))))
-
 (provide (rename-out [delay/name* delay/name]))
 (define delay/name make-promise/name)
 (define-syntax (delay/name* stx) (make-delayer stx #'delay/name '()))
+
+;; mostly to implement srfi-45's `eager'
+(define-struct (promise/strict promise) ()
+  #:property prop:force (lambda (p) (reify-result (pref p)))) ; never a thunk
+(provide (rename-out [delay/strict* delay/strict]))
+(define (delay/strict thunk)
+  ;; could use `reify-result' here to capture exceptions too, or just create a
+  ;; promise and immediately force it, but no point since if there's an
+  ;; exception then the promise value is never used.
+  (make-promise/strict (call-with-values thunk list)))
+(define-syntax (delay/strict* stx) (make-delayer stx #'delay/strict '()))
 
 ;; utility struct
 (define-struct (running-thread running) (thread))
