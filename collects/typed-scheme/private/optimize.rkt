@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse (for-template scheme/base scheme/unsafe/ops)
+(require syntax/parse (for-template scheme/base scheme/flonum scheme/unsafe/ops)
          "../utils/utils.rkt" unstable/match scheme/match unstable/syntax
          (rep type-rep)
          (types abbrev type-table utils))
@@ -13,14 +13,20 @@
            #:with opt #'e.opt))
 
 (define-syntax-class float-binary-op
-  #:literals (+ - * / = <= < > >= min max)
+  #:literals (+ - * / = <= < > >= min max
+              fl+ fl- fl* fl/ fl= fl<= fl< fl> fl>= flmin flmax)
   (pattern (~and i:id (~or + - * / = <= < > >= min max))
-           #:with unsafe (format-id #'here "unsafe-fl~a" #'i)))
+           #:with unsafe (format-id #'here "unsafe-fl~a" #'i))
+  (pattern (~and i:id (~or fl+ fl- fl* fl/ fl= fl<= fl< fl> fl>= flmin flmax))
+           #:with unsafe (format-id #'here "unsafe-~a" #'i)))
 
 (define-syntax-class float-unary-op
-  #:literals (abs sin cos tan asin acos atan log exp)
-  (pattern (~and i:id (~or abs sin cos tan asin acos atan log exp))
-           #:with unsafe (format-id #'here "unsafe-fl~a" #'i)))
+  #:literals (abs sin cos tan asin acos atan log exp sqrt round floor ceiling truncate
+              flabs flsin flcos fltan flasin flacos flatan fllog flexp flsqrt flround flfloor flceiling fltruncate)
+  (pattern (~and i:id (~or abs sin cos tan asin acos atan log exp sqrt round floor ceiling truncate))
+           #:with unsafe (format-id #'here "unsafe-fl~a" #'i))
+  (pattern (~and i:id (~or flabs flsin flcos fltan flasin flacos flatan fllog flexp flsqrt flround flfloor flceiling fltruncate))
+           #:with unsafe (format-id #'here "unsafe-~a" #'i)))
 
 (define-syntax-class pair-opt-expr
   (pattern e:opt-expr
