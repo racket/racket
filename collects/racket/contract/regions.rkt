@@ -94,6 +94,20 @@
              #:freevars ([fv.var fv.ctc] ...)
              (define name body-expr)))))]))
 
+(begin-for-syntax
+  (define-struct contract-struct-info (si cons)
+    #:omit-define-syntaxes
+    #:property prop:struct-info (λ (s) ((contract-struct-info-si s)))
+    #:property prop:procedure (λ (s stx)
+                                (with-syntax ([orig ((contract-struct-info-cons s))])
+                                  (syntax-case stx ()
+                                    [(_ arg ...)
+                                     (datum->syntax stx
+                                                    (syntax-e (syntax (orig arg ...)))
+                                                    stx
+                                                    stx)]
+                                    [_ #'orig])))))
+
 (define-syntax (define-struct/contract stx)
   (define-struct field-info (stx ctc [mutable? #:mutable] auto?))
   (define-struct s-info (auto-value-stx transparent? def-stxs? def-vals?))
@@ -371,7 +385,7 @@
                                 [(s-info-def-vals? sinfo)
                                  (list
                                   #`(define-syntax struct-name
-                                      (make-struct-info
+                                      (make-contract-struct-info
                                        (λ ()
                                          (list #,(quoter #'struct:)
                                                #,(quoter #'maker)
@@ -380,7 +394,8 @@
                                                       (list #,@(map quoter super-refs)))
                                                (list* #,@(map quoter (syntax->list #'(mut ...)))
                                                       (list #,@(map quoter super-muts)))
-                                               #,(quoter #'super))))))]
+                                               #,(quoter #'super)))
+                                       (λ () #,(quoter #'maker)))))]
                                 [else
                                  (list
                                   #'(define-syntax struct-name

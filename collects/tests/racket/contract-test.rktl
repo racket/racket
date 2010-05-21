@@ -2877,6 +2877,23 @@
         [(struct point [dx dy]) (list dx dy)]
         [v (box v)]))
    (list 1 2 'red))
+  
+  (test/spec-passed
+   'define-struct/contract25
+   '(let ()
+      (define-struct/contract point
+        ([x number?] [y number?])
+        #:transparent)
+      (point 1 2)))
+  
+  (test/spec-failed
+   'define-struct/contract26
+   '(let ()
+      (define-struct/contract point
+        ([x number?] [y number?])
+        #:transparent)
+      (point 1 #t))
+   "top-level")
 ;                                                                                  
 ;                                                                                  
 ;                                                                                  
