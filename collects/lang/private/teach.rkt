@@ -541,13 +541,17 @@
                           (lambda (fn)
                             (with-syntax ([fn fn]
                                           [args (cdr (syntax-e #'name-seq))])
-                              (quasisyntax/loc stx (define fn #,(stepper-syntax-property
-                                                                 (stepper-syntax-property
-                                                                  #`(lambda args expr ...)
-                                                                  'stepper-define-type
-                                                                  'shortened-proc-define)
-                                                                 'stepper-proc-define-name
-                                                                 #`fn))))))])
+                              (quasisyntax/loc stx
+					       (define fn
+						 #,(stepper-syntax-property
+						    (stepper-syntax-property
+						     ;; this is so contract blame can report a
+						     ;; position for the procedure
+						     (syntax/loc stx (lambda args expr ...))
+						     'stepper-define-type
+						     'shortened-proc-define)
+						    'stepper-proc-define-name
+						    #`fn))))))])
              (check-definition-new 
               'define
               stx
