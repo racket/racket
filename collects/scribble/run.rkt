@@ -27,6 +27,7 @@
 (define current-extra-files        (make-parameter null))
 (define current-redirect           (make-parameter #f))
 (define current-redirect-main      (make-parameter #f))
+(define current-quiet              (make-parameter #f))
 
 (define (read-one str)
   (let ([i (open-input-string str)])
@@ -85,6 +86,9 @@
          'scribble "bad procedure identifier for ++ref-in: ~s" proc-id))
       (current-xref-input-modules
        (cons (cons mod id) (current-xref-input-modules))))]
+   #:once-each
+   [("--quiet") "suppress output-file reporting"
+    (current-quiet #t)]
    #:args (file . another-file)
    (let ([files (cons file another-file)])
      (build-docs (map (lambda (file) (dynamic-require `(file ,file) 'doc))
@@ -104,7 +108,8 @@
       (send renderer set-external-tag-path (current-redirect)))
     (when (current-redirect-main)
       (send renderer set-external-root-url (current-redirect-main)))
-    (send renderer report-output!)
+    (unless (current-quiet)
+      (send renderer report-output!))
     (let* ([fns (map (lambda (fn)
                        (let-values ([(base name dir?) (split-path fn)])
                          (let ([fn (path-replace-suffix
