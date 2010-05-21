@@ -159,7 +159,7 @@ value (see @secref["special-comments"]) to cause the consumed
 character to be treated as whitespace, and it might use
 @racket[read/recursive] or @racket[read-syntax/recursive].}
 
-@defproc[(readtable-mapping [readtable readtable?][char character?])
+@defproc[(readtable-mapping [readtable readtable?] [char character?])
          (values (or/c character? 
                        (or/c 'terminating-macro
                              'non-terminating-macro))

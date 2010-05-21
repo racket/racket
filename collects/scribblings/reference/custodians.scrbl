@@ -47,7 +47,7 @@ for newly created threads, @tech{file-stream ports}, TCP ports,
 @tech{TCP listeners}, @tech{UDP sockets}, and @tech{byte converters}.}
 
 
-@defproc[(custodian-managed-list [cust custodian?][super custodian?]) list?]{
+@defproc[(custodian-managed-list [cust custodian?] [super custodian?]) list?]{
 
 Returns a list of immediately managed objects (not including
 @tech{custodian box}es) and subordinate custodians for @racket[cust],
@@ -108,7 +108,7 @@ must be the same as @racket[limit-cust], so that excessively large
 immediate allocations can be rejected with an
 @racket[exn:fail:out-of-memory] exception.}
 
-@defproc[(make-custodian-box [cust custodian?][v any/c]) custodian-box?]{
+@defproc[(make-custodian-box [cust custodian?] [v any/c]) custodian-box?]{
 
 Returns a @tech{custodian box} that contains @racket[v] as long as
 @racket[cust] has not been shut down.}

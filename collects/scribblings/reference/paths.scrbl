@@ -357,7 +357,7 @@ of the path), where @litchar{~} by itself indicates the home directory
 of the current user.}
 
 
-@defproc[(simplify-path [path path-string?][use-filesystem? boolean? #t]) path?]{
+@defproc[(simplify-path [path path-string?] [use-filesystem? boolean? #t]) path?]{
 
 Eliminates redundant path separators (except for a single trailing
 separator), up-directory @litchar{..}, and same-directory @litchar{.}

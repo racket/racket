@@ -208,6 +208,6 @@ used at the beginning of an expression to enable multiple uses of
 
 @interaction[
 (eval:alts @#,(elem @racketmetafont{#reader}@racket["dollar.rkt"]@hspace[1]
-                    @racket[(let ([a @#,tt{$1*2+3$}][b @#,tt{$5/6$}]) $a+b$)])
-           #reader"dollar.rkt" (let ([a $1*2+3$][b $5/6$]) $a+b$))
+                    @racket[(let ([a @#,tt{$1*2+3$}] [b @#,tt{$5/6$}]) $a+b$)])
+           #reader"dollar.rkt" (let ([a $1*2+3$] [b $5/6$]) $a+b$))
 ]

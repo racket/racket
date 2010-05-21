@@ -389,7 +389,7 @@ string.
 @; ----------------------------------------
 @section{Bytes to Bytes Encoding Conversion}
 
-@defproc[(bytes-open-converter [from-name string?][to-name string?])
+@defproc[(bytes-open-converter [from-name string?] [to-name string?])
          bytes-converter?]{
 
 Produces a @deftech{byte converter} to go from the encoding named by

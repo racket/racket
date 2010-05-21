@@ -11,13 +11,13 @@ strings (used as memory blocks), or some additional internal objects
 (@scheme[ffi-obj]s and callbacks, see @secref["foreign:c-only"]).
 Returns @scheme[#f] for other values.}
 
-@defproc[(ptr-equal? [cptr1 cpointer?][cptr2 cpointer?]) boolean?]{
+@defproc[(ptr-equal? [cptr1 cpointer?] [cptr2 cpointer?]) boolean?]{
 
 Compares the values of the two pointers. Two different Racket
 pointer objects can contain the same pointer.}
 
 
-@defproc[(ptr-add [cptr cpointer?][offset exact-integer?][type ctype? _byte]) 
+@defproc[(ptr-add [cptr cpointer?] [offset exact-integer?] [type ctype? _byte]) 
          cpointer?]{
 
 Returns a cpointer that is like @scheme[cptr] offset by
@@ -50,7 +50,7 @@ offset is always in bytes.}
 
 @section{Pointer Dereferencing}
 
-@defproc[(set-ptr-offset! [cptr cpointer?][offset exact-integer?][ctype ctype? _byte]) 
+@defproc[(set-ptr-offset! [cptr cpointer?] [offset exact-integer?] [ctype ctype? _byte]) 
          void?]{
 
 Sets the offset component of an offset pointer.  The arguments are
@@ -58,7 +58,7 @@ used in the same way as @scheme[ptr-add].  If @scheme[cptr] has no
 offset, the @scheme[exn:fail:contract] exception is raised.}
 
 
-@defproc[(ptr-add! [cptr cpointer?][offset exact-integer?][ctype ctype? _byte]) 
+@defproc[(ptr-add! [cptr cpointer?] [offset exact-integer?] [ctype ctype? _byte]) 
          void?]{
 
 Like @scheme[ptr-add], but destructively modifies the offset contained
@@ -193,7 +193,7 @@ Returns the Racket object that is the tag of the given @scheme[cptr]
 pointer.}
 
 
-@defproc[(set-cpointer-tag! [cptr cpointer?][tag any/c]) void?]{
+@defproc[(set-cpointer-tag! [cptr cpointer?] [tag any/c]) void?]{
 
 Sets the tag of the given @scheme[cptr]. The @scheme[tag] argument can
 be any arbitrary value; other pointer operations ignore it.  When a
@@ -295,7 +295,7 @@ or set the cell's value. The cell must be explicitly freed with
 Frees an immobile cell created by @scheme[malloc-immobile-cell].}
 
 
-@defproc[(register-finalizer [obj any/c][finalizer (any/c . -> . any)]) void?]{
+@defproc[(register-finalizer [obj any/c] [finalizer (any/c . -> . any)]) void?]{
 
 Registers a finalizer procedure @scheme[finalizer-proc] with the given
 @scheme[obj], which can be any Racket (GC-able) object.  The finalizer
@@ -354,7 +354,7 @@ debugging message also avoids the problem, since the finalization
 procedure would then not close over @scheme[b].)}
 
 
-@defproc[(make-sized-byte-string [cptr cpointer?][length exact-nonnegative-integer?]) 
+@defproc[(make-sized-byte-string [cptr cpointer?] [length exact-nonnegative-integer?]) 
          bytes?]{
 
 Returns a byte string made of the given pointer and the given length.

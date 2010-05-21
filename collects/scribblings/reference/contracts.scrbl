@@ -177,13 +177,13 @@ flat-contract?]{ Returns a flat contract that requires the
 input to be a between @racket[n] and @racket[m] or equal to
 one of them.}
 
-@defproc[(real-in [n real?][m real?]) flat-contract?]{
+@defproc[(real-in [n real?] [m real?]) flat-contract?]{
 
 Returns a flat contract that requires the input to be a real number
 between @racket[n] and @racket[m], inclusive.}
 
 
-@defproc[(integer-in [j exact-integer?][k exact-integer?]) flat-contract?]{
+@defproc[(integer-in [j exact-integer?] [k exact-integer?]) flat-contract?]{
 
 Returns a flat contract that requires the input to be an exact integer
 between @racket[j] and @racket[k], inclusive.}
@@ -283,7 +283,7 @@ Returns a contract that recognizes non-empty lists whose elements match
 the contract @racket[c]. Beware that when this contract is applied to
 a value, the result is not necessarily @racket[eq?] to the input.}
 
-@defproc[(cons/c [car-c contract?][cdr-c contract?]) contract?]{
+@defproc[(cons/c [car-c contract?] [cdr-c contract?]) contract?]{
 
 Produces a contract the recognizes pairs first and second elements
 match @racket[car-c] and @racket[cdr-c], respectively. Beware that

@@ -87,13 +87,13 @@ Returns a newly allocated @tech{mutable list} with the same elements as
 Returns the number of elements in @racket[mlst].}
 
 
-@defproc[(mlist-ref [mlst mlist?][pos exact-nonnegative-integer?])
+@defproc[(mlist-ref [mlst mlist?] [pos exact-nonnegative-integer?])
          any/c]{
 
 Like @racket[list-ref], but for @tech{mutable lists}.}
 
 
-@defproc[(mlist-tail [mlst mlist?][pos exact-nonnegative-integer?])
+@defproc[(mlist-tail [mlst mlist?] [pos exact-nonnegative-integer?])
          any/c]{
 
 Like @racket[list-tail], but for @tech{mutable lists}.}

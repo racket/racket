@@ -155,7 +155,7 @@ not including the leading @litchar{#:}.}
 Returns a keyword whose @scheme[display]ed form is the same as that of
 @scheme[str], but with a leading @litchar{#:}.}
 
-@defproc[(keyword<? [a-keyword keyword?][b-keyword keyword?] ...+) boolean?]{
+@defproc[(keyword<? [a-keyword keyword?] [b-keyword keyword?] ...+) boolean?]{
 
 Returns @scheme[#t] if the arguments are sorted, where the comparison
 for each pair of keywords is the same as using

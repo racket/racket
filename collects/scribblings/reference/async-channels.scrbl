@@ -48,13 +48,13 @@ returns the first of the values that were put into @scheme[ach]. If
 @scheme[async-channel] is empty, the result is @scheme[#f].}
 
 
-@defproc[(async-channel-put [ach async-channel?][v any/c]) void?]{
+@defproc[(async-channel-put [ach async-channel?] [v any/c]) void?]{
 
 Puts @scheme[v] into @scheme[ach], blocking if @scheme[ach]'s buffer
 is full until space is available.}
 
 
-@defproc[(async-channel-put-evt [async-channel channel?][v any/c]) 
+@defproc[(async-channel-put-evt [async-channel channel?] [v any/c]) 
          evt?]{
 
 Returns a @tech{synchronizable event} that is blocked while

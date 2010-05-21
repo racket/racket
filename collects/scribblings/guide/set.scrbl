@@ -112,7 +112,7 @@ guidelines may help explain when using @racket[set!] is appropriate.
        @as-examples[@t{Ok example:}
        @def+int[
        (define (sum lst)
-         (let loop ([lst lst][s 0])
+         (let loop ([lst lst] [s 0])
            (if (null? lst)
                s
                (loop (cdr lst) (+ s (car lst))))))

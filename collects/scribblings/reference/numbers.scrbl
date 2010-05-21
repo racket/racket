@@ -355,7 +355,7 @@ otherwise.}
 @mz-examples[(denominator 5) (denominator 34/8) (denominator 2.3)]}
 
 
-@defproc[(rationalize [x real?][tolerance real?]) real?]{
+@defproc[(rationalize [x real?] [tolerance real?]) real?]{
 
 Among the real numbers within @racket[(abs tolerance)] of @racket[x],
 returns the one corresponding to an exact number whose
@@ -886,10 +886,10 @@ they are as safe as generic operations like @racket[+].
 @subsection{Flonum Arithmetic}
 
 @deftogether[(
-@defproc[(fl+ [a inexact-real?][b inexact-real?]) inexact-real?]
-@defproc[(fl- [a inexact-real?][b inexact-real?]) inexact-real?]
-@defproc[(fl* [a inexact-real?][b inexact-real?]) inexact-real?]
-@defproc[(fl/ [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(fl+ [a inexact-real?] [b inexact-real?]) inexact-real?]
+@defproc[(fl- [a inexact-real?] [b inexact-real?]) inexact-real?]
+@defproc[(fl* [a inexact-real?] [b inexact-real?]) inexact-real?]
+@defproc[(fl/ [a inexact-real?] [b inexact-real?]) inexact-real?]
 @defproc[(flabs [a inexact-real?]) inexact-real?]
 )]{
 
@@ -898,13 +898,13 @@ but constrained to consume @tech{flonums}. The result is always a
 @tech{flonum}.}
 
 @deftogether[(
-@defproc[(fl= [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(fl< [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(fl> [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(fl<= [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(fl>= [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(flmin [a inexact-real?][b inexact-real?]) inexact-real?]
-@defproc[(flmax [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(fl=   [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(fl<   [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(fl>   [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(fl<=  [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(fl>=  [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(flmin [a inexact-real?] [b inexact-real?]) inexact-real?]
+@defproc[(flmax [a inexact-real?] [b inexact-real?]) inexact-real?]
 )]{
 
 Like @racket[=], @racket[<], @racket[>], @racket[<=], @racket[>=],
@@ -912,9 +912,9 @@ Like @racket[=], @racket[<], @racket[>], @racket[<=], @racket[>=],
 @tech{flonums}.}
 
 @deftogether[(
-@defproc[(flround [a inexact-real?]) inexact-real?]
-@defproc[(flfloor [a inexact-real?]) inexact-real?]
-@defproc[(flceiling [a inexact-real?]) inexact-real?]
+@defproc[(flround    [a inexact-real?]) inexact-real?]
+@defproc[(flfloor    [a inexact-real?]) inexact-real?]
+@defproc[(flceiling  [a inexact-real?]) inexact-real?]
 @defproc[(fltruncate [a inexact-real?]) inexact-real?]
 )]{
 
@@ -922,14 +922,14 @@ Like @racket[round], @racket[floor], @racket[ceiling], and
 @racket[truncate], but constrained to consume @tech{flonums}.}
 
 @deftogether[(
-@defproc[(flsin [a inexact-real?]) inexact-real?]
-@defproc[(flcos [a inexact-real?]) inexact-real?]
-@defproc[(fltan [a inexact-real?]) inexact-real?]
+@defproc[(flsin  [a inexact-real?]) inexact-real?]
+@defproc[(flcos  [a inexact-real?]) inexact-real?]
+@defproc[(fltan  [a inexact-real?]) inexact-real?]
 @defproc[(flasin [a inexact-real?]) inexact-real?]
 @defproc[(flacos [a inexact-real?]) inexact-real?]
 @defproc[(flatan [a inexact-real?]) inexact-real?]
-@defproc[(fllog [a inexact-real?]) inexact-real?]
-@defproc[(flexp [a inexact-real?]) inexact-real?]
+@defproc[(fllog  [a inexact-real?]) inexact-real?]
+@defproc[(flexp  [a inexact-real?]) inexact-real?]
 @defproc[(flsqrt [a inexact-real?]) inexact-real?]
 )]{
 
@@ -1024,13 +1024,13 @@ encountering crashes with code that uses unsafe fixnum operations, use
 the @racketmodname[racket/fixnum] library to help debug the problems.
 
 @deftogether[(
-@defproc[(fx+ [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fx- [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fx* [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fxquotient [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fxremainder [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fxmodulo [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fxabs [a fixnum?]) fixnum?]
+@defproc[(fx+ [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fx- [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fx* [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxquotient  [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxremainder [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxmodulo    [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxabs       [a fixnum?]) fixnum?]
 )]{
 
 Safe versions of @racket[unsafe-fx+], @racket[unsafe-fx-],
@@ -1042,12 +1042,12 @@ result would not be a fixnum.}
 
 
 @deftogether[(
-@defproc[(fxand [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fxior [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fxxor [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxand [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxior [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxxor [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fxnot [a fixnum?]) fixnum?]
-@defproc[(fxlshift [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fxrshift [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxlshift [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxrshift [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
 Safe versions of @racket[unsafe-fxand], @racket[unsafe-fxior],
@@ -1058,13 +1058,13 @@ result would not be a fixnum.}
 
 
 @deftogether[(
-@defproc[(fx= [a fixnum?][b fixnum?]) boolean?]
-@defproc[(fx< [a fixnum?][b fixnum?]) boolean?]
-@defproc[(fx> [a fixnum?][b fixnum?]) boolean?]
-@defproc[(fx<= [a fixnum?][b fixnum?]) boolean?]
-@defproc[(fx>= [a fixnum?][b fixnum?]) boolean?]
-@defproc[(fxmin [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(fxmax [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fx=   [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(fx<   [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(fx>   [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(fx<=  [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(fx>=  [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(fxmin [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxmax [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
 Safe versions of @racket[unsafe-fx=], @racket[unsafe-fx<],

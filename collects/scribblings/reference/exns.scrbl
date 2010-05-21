@@ -26,7 +26,7 @@ particular required arity (e.g., @racket[call-with-input-file],
 @;------------------------------------------------------------------------
 @section[#:tag "errorproc"]{Raising Exceptions}
 
-@defproc[(raise [v any/c][barrier? any/c #t]) any]{
+@defproc[(raise [v any/c] [barrier? any/c #t]) any]{
 
 Raises an exception, where @racket[v] represents the exception being
 raised. The @racket[v] argument can be anything; it is passed to the
@@ -57,8 +57,8 @@ exception handler obtains control, and the handler itself is
 ]}
 
 @defproc*[([(error [sym symbol?]) any]
-           [(error [msg string?][v any/c] ...) any]
-           [(error [src symbol?][frmat string?][v any/c] ...) any])]{
+           [(error [msg string?] [v any/c] ...) any]
+           [(error [src symbol?] [frmat string?] [v any/c] ...) any])]{
 
 Raises the exception @racket[exn:fail], which contains an error
 string. The different forms produce the error string in different
@@ -94,8 +94,8 @@ In all cases, the constructed message string is passed to
 ]}
 
 @defproc*[([(raise-user-error [sym symbol?]) any]
-           [(raise-user-error [msg string?][v any/c] ...) any]
-           [(raise-user-error [src symbol?][format string?][v any/c] ...) any])]{
+           [(raise-user-error [msg string?] [v any/c] ...) any]
+           [(raise-user-error [src symbol?] [format string?] [v any/c] ...) any])]{
 
 Like @racket[error], but constructs an exception with
 @racket[make-exn:fail:user] instead of @racket[make-exn:fail]. The
@@ -111,8 +111,8 @@ for end users.
 ]}
 
 
-@defproc*[([(raise-type-error [name symbol?][expected string?][v any/c]) any]
-           [(raise-type-error [name symbol?][expected string?][bad-pos exact-nonnegative-integer?][v any/c] ...) any])]{
+@defproc*[([(raise-type-error [name symbol?] [expected string?] [v any/c]) any]
+           [(raise-type-error [name symbol?] [expected string?] [bad-pos exact-nonnegative-integer?] [v any/c] ...) any])]{
 
 Creates an @racket[exn:fail:contract] value and @racket[raise]s it as
 an exception.  The @racket[name] argument is used as the source
@@ -142,7 +142,7 @@ message names the bad argument and also lists the other arguments. If
 (feed-animals 'cow 'sheep 'dog 'cat)
 ]}
 
-@defproc[(raise-mismatch-error [name symbol?][message string?][v any/c]) any]{
+@defproc[(raise-mismatch-error [name symbol?] [message string?] [v any/c]) any]{
 
 Creates an @racket[exn:fail:contract] value and @racket[raise]s it as
 an exception.  The @racket[name] is used as the source procedure's
@@ -237,7 +237,7 @@ through a combination of the @racket[name], @racket[expr], and
 @;------------------------------------------------------------------------
 @section{Handling Exceptions}
 
-@defproc[(call-with-exception-handler [f (any/c . -> . any)][thunk (-> any)]) any]{
+@defproc[(call-with-exception-handler [f (any/c . -> . any)] [thunk (-> any)]) any]{
 
 Installs @racket[f] as the @tech{exception handler} for the
 @tech{dynamic extent} of the call to @racket[thunk]. If an exception

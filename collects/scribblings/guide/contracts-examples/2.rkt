@@ -27,7 +27,7 @@
  
  ;; which item is at the given position? 
  [item-at
-  (->d ([s stack?][i (and/c positive? (<=/c (count s)))])
+  (->d ([s stack?] [i (and/c positive? (<=/c (count s)))])
        ()
        [result (stack-p? s)])]
  
@@ -48,7 +48,7 @@
  
  ;; creation 
  [initialize
-  (->d ([p contract?][s (p p . -> . boolean?)])
+  (->d ([p contract?] [s (p p . -> . boolean?)])
        ()
        ;; Mitchel and McKim use (= (count s) 0) here to express
        ;; the post-condition in terms of a primitive query
@@ -56,8 +56,8 @@
  
  ;; commands
  ;; add an item to the top of the stack 
- [push       
-  (->d ([s stack?][x (stack-p? s)]) 
+ [push
+  (->d ([s stack?] [x (stack-p? s)])
        ()
        [sn stack?] ;; result kind 
        #:post-cond

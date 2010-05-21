@@ -311,7 +311,7 @@ OS X, this size excludes the resource-fork size. On error (e.g., if no
 such file exists), the @exnraise[exn:fail:filesystem].}
 
 
-@defproc[(copy-file [src path-string?][dest path-string?]) void?]{
+@defproc[(copy-file [src path-string?] [dest path-string?]) void?]{
 
 Creates the file @racket[dest] as a copy of @racket[src]. If the file
 is not successfully copied, the @exnraise[exn:fail:filesystem]. If
@@ -320,7 +320,7 @@ preserved in the copy. Under Mac OS X, the resource fork is also
 preserved in the copy. If @racket[src] refers to a link, the target of
 the link is copied, rather than the link itself.}
 
-@defproc[(make-file-or-directory-link [to path-string?][path path-string?]) 
+@defproc[(make-file-or-directory-link [to path-string?] [path path-string?]) 
          void?]{
 
 Creates a link @racket[path] to @racket[to] under @|AllUnix|. The
@@ -663,7 +663,7 @@ Displays each element of @racket[lst] to @racket[path], adding
 @racket[exists-flag] arguments are the same as for
 @racket[open-output-file].}
 
-@defproc[(copy-directory/files [src path-string?][dest path-string?]) 
+@defproc[(copy-directory/files [src path-string?] [dest path-string?]) 
          void?]{
 
 Copies the file or directory @racket[src] to @racket[dest], raising

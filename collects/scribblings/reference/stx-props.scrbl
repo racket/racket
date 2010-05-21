@@ -98,9 +98,8 @@ information on properties and byte codes.
 
 @;------------------------------------------------------------------------
 
-@defproc*[([(syntax-property [stx syntax?][key any/c][v any/c])
-            syntax?]
-           [(syntax-property [stx syntax?][key any/c]) any])]{
+@defproc*[([(syntax-property [stx syntax?] [key any/c] [v any/c]) syntax?]
+           [(syntax-property [stx syntax?] [key any/c]) any])]{
 
 The three-argument form extends @racket[stx] by associating an
 arbitrary property value @racket[v] with the key @racket[key]; the
@@ -119,7 +118,7 @@ in @racket[stx]. @tech{Uninterned} symbols (see @secref["symbols"])
 are not included in the result list.}
 
 
-@defproc[(syntax-track-origin [new-stx syntax?][orig-stx syntax?][id-stx syntax?]) 
+@defproc[(syntax-track-origin [new-stx syntax?] [orig-stx syntax?] [id-stx syntax?])
          any]{
 
 Adds properties to @racket[new-stx] in the same way that macro

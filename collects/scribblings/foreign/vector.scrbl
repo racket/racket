@@ -52,8 +52,8 @@ just aliases for byte-string bindings: @scheme[make-u8vector],
                           [(vecr [val number?] (... ...)) ?]
                           [(? [v any/c]) boolean?]
                           [(length [vec ?]) exact-nonnegative-integer?]
-                          [(ref [vec ?][k exact-nonnegative-integer?]) number?]
-                          [(! [vec ?][k exact-nonnegative-integer?][val number?]) void?]
+                          [(ref [vec ?] [k exact-nonnegative-integer?]) number?]
+                          [(! [vec ?] [k exact-nonnegative-integer?] [val number?]) void?]
                           [(list-> [lst (listof number?)]) ?]
                           [(->list [vec ?]) (listof number?)]
                           [(->cpointer [vec ?]) cpointer?])

@@ -26,7 +26,7 @@ values can be imperatively installed into the current thread through
 another call to @scheme[current-preserved-thread-cell-values]. The
 capturing and restoring threads can be different.
 
-@defproc[(make-thread-cell [v any/c][preserved? any/c #f]) thread-cell?]{
+@defproc[(make-thread-cell [v any/c] [preserved? any/c #f]) thread-cell?]{
 
 Creates and returns a new thread cell. Initially, @scheme[v] is the
 cell's value for all threads. If @scheme[preserved?] is true, then the
@@ -43,7 +43,7 @@ Returns @scheme[#t] if @scheme[v] is a thread cell created by
 @defproc[(thread-cell-ref [cell thread-cell?]) any]{Returns the
 current value of @scheme[cell] for the current thread.}
 
-@defproc[(thread-cell-set! [cell thread-cell?][v any/c]) any]{Sets the
+@defproc[(thread-cell-set! [cell thread-cell?] [v any/c]) any]{Sets the
 value in @scheme[cell] to @scheme[v] for the current thread.}
 
  @examples[

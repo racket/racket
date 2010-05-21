@@ -102,7 +102,7 @@ manage @racket[thd] (and none of its subordinates manages
 @racket[thd]), the @exnraise[exn:fail:contract], and the thread is not
 suspended.}
 
-@defproc[(thread-resume [thd thread?][benefactor (or/c thread? custodian? #f) #f]) void?]{
+@defproc[(thread-resume [thd thread?] [benefactor (or/c thread? custodian? #f) #f]) void?]{
 
 Resumes the execution of @racket[thd] if it is suspended and has at
 least one custodian (possibly added through @racket[benefactor], as

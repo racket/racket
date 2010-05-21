@@ -137,9 +137,9 @@ the font and text colors are not guaranteed to be anything in
 particular.}
 
 @defproc*[([(blank [size real? 0]) pict?]
-           [(blank [w real?][h real?]) pict?]
-           [(blank [w real?][a real?][d real?]) pict?]
-           [(blank [w real?][h real?][a real?][d real?]) pict?])]{
+           [(blank [w real?] [h real?]) pict?]
+           [(blank [w real?] [a real?] [d real?]) pict?]
+           [(blank [w real?] [h real?] [a real?] [d real?]) pict?])]{
 
 Creates a pict that draws nothing. The one-argument case supplies a
 value sued for both the width and height. In the one- and two-argument

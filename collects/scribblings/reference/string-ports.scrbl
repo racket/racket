@@ -7,14 +7,14 @@ String input and output ports do not need to be explicitly closed. The
 @scheme[file-position] procedure works for string ports in
 position-setting mode.
 
-@defproc[(open-input-bytes [bstr bytes?][name any/c 'string]) input-port?]{
+@defproc[(open-input-bytes [bstr bytes?] [name any/c 'string]) input-port?]{
 
 Creates an input port that reads characters from @scheme[bstr] (see
 @secref["bytestrings"]). Modifying @scheme[bstr] afterward does not
 affect the byte stream produced by the port. The optional
 @scheme[name] argument is used as the name for the returned port.}
 
-@defproc[(open-input-string [str string?][name any/c 'string]) input-port?]{
+@defproc[(open-input-string [str string?] [name any/c 'string]) input-port?]{
 
 Creates an input port that reads bytes from the UTF-8 encoding (see
 @secref["encodings"]) of @scheme[str]. The optional @scheme[name]

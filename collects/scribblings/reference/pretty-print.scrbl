@@ -44,14 +44,14 @@ tentative recursive prints (e.g., to check the length of the output).}
 Same as @scheme[pretty-print], but @scheme[v] is printed like
 @scheme[write] instead of like @scheme[print].}
 
-@defproc[(pretty-display [v any/c][port output-port? (current-output-port)])
+@defproc[(pretty-display [v any/c] [port output-port? (current-output-port)])
          void?]{
 
 Same as @scheme[pretty-print], but @scheme[v] is printed like
 @scheme[display] instead of like @scheme[print].}
 
 
-@defproc[(pretty-format [v any/c][columns exact-nonnegative-integer? (pretty-print-columns)])
+@defproc[(pretty-format [v any/c] [columns exact-nonnegative-integer? (pretty-print-columns)])
          string?]{
 
 Like @scheme[pretty-print], except that it returns a string containing
@@ -205,7 +205,7 @@ the parameter is consulted.
 
 @section{Line-Output Hook}
 
-@defproc[(pretty-print-newline [port out-port?][width exact-nonnegative-integer?]) void?]{
+@defproc[(pretty-print-newline [port out-port?] [width exact-nonnegative-integer?]) void?]{
 
 Calls the procedure associated with the
 @scheme[pretty-print-print-line] parameter to print a newline to
@@ -366,7 +366,7 @@ hook procedures, etc.  Explicitly cancel the tentative print even when
 
  
 @defproc[(tentative-pretty-print-port-transfer 
-          [tentative-out output-port?][orig-out output-port?])
+          [tentative-out output-port?] [orig-out output-port?])
          void?]{
 
 Causes the data written to @scheme[tentative-out] to be transferred as
