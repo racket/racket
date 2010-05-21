@@ -34,15 +34,18 @@
                              (list->vector 
                               (append
                                extra-cmdline
-                               (list "--dest" (path->string base))
+                               (list "--dest" (path->string base) "--quiet")
                                (list mode (if (path? fn) (path->string fn) fn))))])
                (namespace-attach-module (namespace-anchor->empty-namespace anchor) 'setup/xref)
                (dynamic-require 'scribble/run #f)
                (cond
-                 [(equal? label "HTML")
+                 [(equal? suffix #".html")
                   (send-url/file (path-replace-suffix fn suffix))]
-                 [else (system (format "open ~a" (path-replace-suffix name suffix)))]))
-             (message-box "Scribble" (get-output-string p) drs-frame))
+                 [else
+                  (system (format "open ~s" (path->string (path-replace-suffix fn suffix))))]))
+             (let ([s (get-output-string p)])
+               (unless (equal? s "")
+                 (message-box "Scribble" s drs-frame))))
            (message-box "Not Named" "Cannot render unsaved file"))))))
 
 (define drracket-buttons
