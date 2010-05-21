@@ -477,11 +477,12 @@
           (and precompiled-header
                (open-input-file (change-suffix precompiled-header #".e"))))
         (define re:boring #rx#"^(?:(?:[ \t]*)|(?:# .*)|(?:#line .*)|(?:#pragma implementation.*)|(?:#pragma interface.*)|(?:#pragma once)|(?:#pragma warning.*))$")
+        (define re:uninteresting #rx#"^(?:(?:[ \t]*)|(?:# .*)|(?:#line .*)|(?:#pragma implementation.*)|(?:#pragma interface.*)|(?:#pragma once)|(?:#pragma GCC diagnostic.*)|(?:#pragma warning.*))$")
         (define (skip-to-interesting-line p)
           (let ([l (read-bytes-line p 'any)])
             (cond
               [(eof-object? l) l]
-              [(regexp-match-positions re:boring l) (skip-to-interesting-line p)]
+              [(regexp-match-positions re:uninteresting l) (skip-to-interesting-line p)]
               [else l])))
         
         (when recorded-cpp-in
