@@ -141,12 +141,12 @@
       (-Pos . -> . -Real)
       (N . -> . N))]
 [exp  (N . -> . N)]
-[cos  (N . -> . N)]
-[sin  (N . -> . N)]
-[tan  (N . -> . N)]
-[acos (N . -> . N)]
-[asin (N . -> . N)]
-[atan (cl->* (N . -> . N) (-Real -Real . -> . N))]
+[cos  (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
+[sin  (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
+[tan  (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
+[acos (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
+[asin (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
+[atan (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N) (-Real -Real . -> . N))]
 [gcd  (null -Integer . ->* . -Integer)]
 [lcm  (null -Integer . ->* . -Integer)]
 
