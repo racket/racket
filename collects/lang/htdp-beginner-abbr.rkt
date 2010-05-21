@@ -8,8 +8,8 @@
 
   ;; Implements the forms:
   (require "private/teach.ss"
-	   "private/contract-forms.ss"
-	   "private/teachprims.ss")
+	   "private/teachprims.ss"
+	   "private/contracts/contracts-module-begin.ss")
 
   ;; syntax:
   (provide (rename-out
@@ -29,8 +29,6 @@
             [beginner-dots ....]
             [beginner-dots .....]
             [beginner-dots ......]
-            ;; [beginner-contract contract]
-            ;; [beginner-define-data define-data]
             [intermediate-quote quote]
             [intermediate-quasiquote quasiquote]
             [intermediate-unquote unquote]
@@ -43,7 +41,11 @@
            check-range
 	   #%datum
            #%top-interaction
-	   empty true false)
+	   empty true false
+
+	   contract : -> mixed one-of predicate combined
+	   Number Real Rational Integer Natural Boolean True False String Char Empty-list
+	   property)
 
   ;; procedures:
   (provide-and-document

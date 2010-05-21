@@ -189,7 +189,7 @@
                  (namespace-attach-module drs-namespace scheme-contract-module-name)
                  (namespace-require scheme-contract-module-name)
 
-		 ;; DeinProgramm hack: the test-engine code knows about the test~object name; we do, too
+		 ;; hack: the test-engine code knows about the test~object name; we do, too
 		 (namespace-set-variable-value! 'test~object (build-test-engine))
 		 ;; record test-case failures with the test engine
 		 (contract-violation-proc

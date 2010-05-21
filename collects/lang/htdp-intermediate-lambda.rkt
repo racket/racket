@@ -1,7 +1,7 @@
 
 (module htdp-intermediate-lambda scheme/base
   (require "private/teach.ss"
-	   "private/contract-forms.ss"
+	   "private/contracts/contracts-module-begin.ss"
 	   mzlib/etc
 	   mzlib/list
 	   syntax/docprovide
@@ -37,8 +37,6 @@
             [intermediate-unquote-splicing unquote-splicing]
             [intermediate-time time]
             [intermediate-module-begin #%module-begin]
-            ;; [intermediate-contract contract]
-            ;; [intermediate-define-data define-data]
             )
            check-expect
            check-within
@@ -47,7 +45,11 @@
            check-range
 	   #%datum
            #%top-interaction
-	   empty true false)
+	   empty true false
+
+	   contract : -> mixed one-of predicate combined
+	   Number Real Rational Integer Natural Boolean True False String Char Empty-list
+	   property)
 
   ;; procedures:
   (provide-and-document
