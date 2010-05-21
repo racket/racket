@@ -17,10 +17,16 @@
 
 (define-syntax honu-unparsed-expr (lambda (stx) (raise-syntax-error 'honu-unparsed-expr "dont use this")))
 
+(define honu-scheme-syntax 'honu-scheme-syntax)
+
+#;
 (define honu-scheme-syntax (gensym))
 
 (define-syntax-rule (scheme-syntax stx)
                     (syntax-property (syntax stx) honu-scheme-syntax #t))
+
+(define (raw-scheme? stx)
+  (syntax-property stx honu-scheme-syntax))
 
 (define (apply-scheme-syntax stx)
   (syntax-property stx honu-scheme-syntax #t))

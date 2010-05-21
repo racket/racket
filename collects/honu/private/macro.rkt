@@ -11,6 +11,7 @@
          (for-syntax "debug.ss"
                      "contexts.ss"
                      "parse.ss"
+                     "syntax.ss"
                      "honu-typed-scheme.ss"
                      scheme/base
                      syntax/parse
@@ -439,7 +440,8 @@
                               (let ([result (honu-unparsed-begin code ...)])
                                 (lambda () result))
                               #'(rrest (... ...)))])))
-                   (printf "Original pattern ~a" (syntax->datum #'(fixed ... rrest (... ...))))
+                   (printf "Original pattern ~a\n" (syntax->datum #'(fixed ... rrest (... ...))))
+                   (apply-scheme-syntax
                    (syntax/loc stx
                                (define-honu-syntax name
                                  (lambda (stx ctx)
@@ -452,7 +454,7 @@
                                             (lambda () result)))
                                         (let ([result (honu-unparsed-begin code ...)])
                                           (lambda () result))
-                                        #'(rrest (... ...)))])))))
+                                        #'(rrest (... ...)))]))))))
                  #;
                  (with-syntax ([parsed (let-values ([(out rest*)
                                                      (parse-block-one/2 #'(code ...)

@@ -21,6 +21,7 @@
 
 (provide (all-defined-out))
 
+#;
 (begin-for-syntax 
   (current-failure-handler
                          (lambda (_ f)
@@ -150,13 +151,22 @@
              (printf "Resulting call. e is ~a -- ~a\n" #'e (syntax->datum #'(e arg.result ...)))
            #'(e.x arg.result ...))]
 
+  [pattern (~seq (~var e honu-identifier) (#%parens rest ...)) #:with call #f
+           #:when (begin
+                    (printf "Trying a call on ~a and ~a\n" #'e #'(rest ...))
+                    #f)]
+
   [pattern (~seq (~var e honu-identifier
                        #;
                        (honu-expr context))
+                 (~var d1 (debug-here (format "call 1 ~a\n" #'e)))
                  (x
-                  ;; #%parens
+                   (~var d2 (debug-here (format "call 2 ~a\n" #'x)))
+                  ;;#%parens
                        (~seq (~var arg (ternary context))
-                             (~optional honu-comma)) ...))
+                             (~var d3 (debug-here (format "call 3 ~a\n" #'arg)))
+                             (~optional honu-comma))
+                       ...))
            #:with call 
            (begin
              (printf "Resulting call is ~a\n" (syntax->datum #'(e.x arg.result ...)))
@@ -167,12 +177,23 @@
 
 (define-splicing-syntax-class (expression-last context)
                               #:literals (#%parens)
-  [pattern (~seq raw:raw-scheme-syntax) #:with result #'raw]
+
+                              #;
+  [pattern (~seq a 1 2 3 b 4 5 6)]
+
+  [pattern (~seq x) #:with result #f #:when (begin (printf "Expression last ~a. Raw? ~a\n" #'x (raw-scheme? #'x)) #f)]
+
+  [pattern (~seq raw:raw-scheme-syntax) #:with result #'raw.x
+           #;
+           (begin (printf "raw syntax ~a\n" #'raw)
+                  (if (stx-pair? #'raw)
+                    (stx-car #'raw)
+                    #'raw))]
+
   [pattern (~seq (#%parens (~var e (expression-1 context)))) #:with result #'e.result]
-  #;
   [pattern (~seq (~var e (honu-transformer context))) #:with result #'e.result]
   [pattern (~seq (~var call (call context))) #:with result #'call.call]
-  [pattern (~seq x:number) #:with result #'x]
+  [pattern (~seq x:number) #:with result (begin (printf "got a number ~a\n" #'x) #'x)]
   [pattern (~seq x:str) #:with result #'x]
   [pattern (~seq x:honu-identifier) #:with result #'x.x]
   #;
@@ -189,12 +210,21 @@
      (pattern (~seq (~var op operator-class)
                     (~var right (next context))
 
-                    (~var new-right (do-rest context ((attribute op.func) left #'right.result))))
-              #:with result (apply-scheme-syntax (attribute new-right.result)))
-     (pattern (~seq) #:with result left))
+                    (~var new-right (do-rest context ((attribute op.func) left (attribute right.result)))))
+              #:with result 
+              (begin
+                (printf "Left was ~a\n" left)
+                (attribute new-right.result))
+
+              #;
+              (apply-scheme-syntax (attribute new-right.result)))
+
+     (pattern (~seq) #:with result (begin #;(printf "Left is still ~a\n" left)
+                                          left)))
+
    (define-splicing-syntax-class (name context)
-     (pattern (~seq (~var left (next context))
-                    (~var rest (do-rest context #'left.result)))
+     (pattern (~seq (~var left2 (next context))
+                    (~var rest (do-rest context (attribute left2.result))))
               #:with result
               (attribute rest.result)))
    #;
@@ -283,21 +313,32 @@
 (define-splicing-syntax-class (ternary context)
                               #:literals (honu-? honu-:)
                               [pattern (~seq (~var condition (expression-1 context))
+                                             (~var x1 (debug-here (format "ternary 1 ~a\n" #'condition.result)))
                                              (~optional (~seq honu-? (~var on-true (ternary context))
-                                                              honu-: (~var on-false (ternary context)))))
+                                                              honu-: (~var on-false (ternary context))))
+                                             (~var x2 (debug-here "ternary 2"))
+                                             )
                                        #:with result
                                        (cond [(attribute on-true)
                                               #'(if condition.result on-true.result on-false.result)]
                                              [else #'condition.result])])
 
+(define-splicing-syntax-class (debug-here d)
+  [pattern (~seq) #:when (begin
+                           (printf "Debug parse I got here ~a\n" d)
+                           #t)])
+
 (define-syntax-class (expression-top context)
                      #:literals (semicolon)
-                     [pattern ((~var e (ternary context)) semicolon . rest)
+                     [pattern ((~var e (ternary context))
+                               (~var x1 (debug-here (format "expression top 1 ~a\n" #'e)))
+                               semicolon
+                               (~var x2 (debug-here "2"))
+                               . rest)
                               #:with result #'e.result])
 
-
-(define-syntax-class raw-scheme-syntax
-  [pattern x #:when (syntax-property #'x honu-scheme-syntax)])
+(define-splicing-syntax-class raw-scheme-syntax
+  [pattern (~seq x) #:when (raw-scheme? #'x)])
 
 (define-values (prop:honu-transformer honu-transformer? honu-transformer-ref)
                (make-struct-type-property 'honu-transformer))
@@ -385,7 +426,7 @@
       stx]))
 
 (define-splicing-syntax-class expression
-  [pattern (~seq (~var x (expression-1 the-expression-context)))])
+  [pattern (~seq (~var x (expression-1 the-expression-context))) #:with result (apply-scheme-syntax #'x.result)])
 
 (define-splicing-syntax-class expression-comma
   #:literals (honu-comma)
@@ -424,12 +465,15 @@
     #;
     (let-values ([(a b) (debug-parse #'(SQL_create_insert) ((~seq x:expression)))])
       (printf "debug parse for ~a is ~a and ~a\n" 'SQL_create_insert a b))
+    #;
     (let-values ([(a b) (debug-parse stx ((~seq (~var x (expression-top context)))))])
       (printf "debug parse for ~a is ~a and ~a\n" (syntax->datum stx) a b))
     
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
+      #;
       [(raw:raw-scheme-syntax . rest) (values #'raw #'rest)]
+      #;
       [function:function (values #'function.result #'function.rest)]
       [(~var expr (expression-top context)) (values #'expr.result #'expr.rest)]
       #;
@@ -492,7 +536,11 @@
                                                     (values out rest2))]
                                                  [else (values fixed rest)]))
                                              ))]
-    [else (parse-one stx context)]))
+    [else (parse-one stx context)]
+    #;
+    [else (let-values ([(a b) (parse-one stx context)])
+            (values (apply-scheme-syntax a) b))]
+            ))
 
 (define operator? 
   (let ([sym-chars (string->list "+-_=?:<>.!%^&*/~|")])
