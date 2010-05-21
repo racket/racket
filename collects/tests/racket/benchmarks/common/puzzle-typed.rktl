@@ -89,14 +89,14 @@
                  (+ (vector-ref *piececount* (vector-ref *class* i)) 1))))
 
 
-(: trial (Integer -> Boolean))
+(: trial (Integer -> Any))
 (define (trial j)
   (let: ((k : Integer 0))
     (call-with-current-continuation
      (lambda: ((return : (Boolean -> Nothing)))
-       (do: : Boolean
+       (do: : Any
             ((i : Integer 0 (+ i 1)))
-            ((> i typemax) (set! *kount* (+ *kount* 1)) #f)
+            ((> i typemax) (set! *kount* (+ *kount* 1)) '())
            (cond
             ((not
               (zero?
@@ -123,15 +123,15 @@
 (: definePiece (Integer Integer Integer Integer -> Void))
 (define (definePiece iclass ii jj kk)
   (let: ((index : Integer 0))
-    (do: : Null
+    (do: : Void
          ((i : Integer 0 (+ i 1)))
-         ((> i ii) '())
-        (do: : Null
+         ((> i ii))
+        (do: : Void
              ((j : Integer 0 (+ j 1)))
-             ((> j jj) '())
-            (do: : Null
+             ((> j jj))
+            (do: : Void
                  ((k : Integer 0 (+ k 1)))
-                 ((> k kk) '())
+                 ((> k kk))
                 (set! index (+ i (* *d* (+ j (* *d* k)))))
                 (vector-set! (vector-ref *p* *iii*) index  #t))))
     (vector-set! *class* *iii* iclass)

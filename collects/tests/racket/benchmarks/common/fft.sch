@@ -71,7 +71,7 @@
       (let l6 ()
         (cond ((< k j)
                (set! j (- j k))
-               (set! k (/ k 2))
+               (set! k (quotient k 2))
                (l6))))
       (set! j (+ j k))
       (set! i (+ i 1))

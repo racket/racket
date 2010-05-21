@@ -81,9 +81,9 @@
           (set! i (+ i 1))
           (cond ((< i n)
                  (l3))))
-        (do: : Null
+        (do: : Void
              ((l : Integer 1 (+ l 1)))     ;loop thru stages (syntax converted
-             ((> l m) '())                 ; from old MACLISP style \bs)
+             ((> l m))                     ; from old MACLISP style \bs)
              (set! le (expt 2 l))
              (set! le1 (quotient le 2))
              (set! ur 1.0)
@@ -91,13 +91,13 @@
              (set! wr (cos (/ pi le1)))
              (set! wi (sin (/ pi le1)))
              ;; loop thru butterflies
-             (do: : Null
+             (do: : Void
                   ((j : Integer 1 (+ j 1)))
-                  ((> j le1) '())
+                  ((> j le1))
                   ;; do a butterfly
-                  (do: : Null
+                  (do: : Void
                        ((i : Integer j (+ i le)))
-                       ((> i n) '())
+                       ((> i n))
                        (set! ip (+ i le1))
                        (set! tr (- (* (vector-ref ar ip) ur)
                                    (* (vector-ref ai ip) ui)))
@@ -115,11 +115,11 @@
 
 ;;; the timer which does 10 calls on fft
 
-(: fft-bench ( -> Null))
+(: fft-bench ( -> Void))
 (define (fft-bench)
-  (do: : Null
+  (do: : Void
        ((ntimes : Integer 0 (+ ntimes 1)))
-       ((= ntimes 5000) '())
+       ((= ntimes 5000))
        (fft *re* *im*)))
 
 ;;; call:  (fft-bench)

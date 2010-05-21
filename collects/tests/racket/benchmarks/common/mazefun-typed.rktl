@@ -150,7 +150,7 @@
                (make-matrix n m (lambda: ((i : Integer) (j : Integer))
                                          (if (and (even? i) (even? j))
                                              (cons i j)
-                                             '(0 . 0)))))
+                                             #f))))
               (possible-holes
                (concat
                 (for 0 n (lambda: ((i : Integer))
@@ -166,13 +166,14 @@
   (lambda (cave)
     (matrix-map (lambda (x) (if x '_ '*)) cave)))
 
-(: pierce (Pos (Matrix Pos) -> (Matrix Pos)))
+(: pierce (Pos (Matrix (Option Pos)) -> (Matrix (Option Pos))))
 (define pierce
   (lambda (pos cave)
     (let: ((i : Integer (car pos)) (j : Integer (cdr pos)))
           (matrix-write cave i j pos))))
 
-(: pierce-randomly ((Listof Pos) (Matrix Pos) -> (Matrix Pos)))
+(: pierce-randomly ((Listof Pos) (Matrix (Option Pos))
+                    -> (Matrix (Option Pos))))
 (define pierce-randomly
   (lambda (possible-holes cave)
     (if (null? possible-holes)
@@ -181,7 +182,7 @@
           (pierce-randomly (cdr possible-holes)
                            (try-to-pierce hole cave))))))
 
-(: try-to-pierce (Pos (Matrix Pos) -> (Matrix Pos)))
+(: try-to-pierce (Pos (Matrix (Option Pos)) -> (Matrix (Option Pos))))
 (define try-to-pierce
   (lambda (pos cave)
     (let ((i (car pos)) (j (cdr pos)))
@@ -192,24 +193,25 @@
                   ncs))
             cave
             (pierce pos
-                    (foldl (lambda: ((c : (Matrix Pos)) (nc : Pos))
+                    (foldl (lambda: ((c : (Matrix (Option Pos))) (nc : Pos))
                                     (change-cavity c nc pos))
                            cave
                            ncs)))))))
 
-(: change-cavity ((Matrix Pos) Pos Pos -> (Matrix Pos)))
+(: change-cavity ((Matrix (Option Pos)) Pos Pos -> (Matrix (Option Pos))))
 (define change-cavity
   (lambda (cave pos new-cavity-id)
     (let ((i (car pos)) (j (cdr pos)))
       (change-cavity-aux cave pos new-cavity-id (matrix-read cave i j)))))
 
-(: change-cavity-aux ((Matrix Pos) Pos Pos Pos -> (Matrix Pos)))
+(: change-cavity-aux ((Matrix (Option Pos)) Pos Pos (Option Pos)
+                      -> (Matrix (Option Pos))))
 (define change-cavity-aux
   (lambda (cave pos new-cavity-id old-cavity-id)
     (let ((i (car pos)) (j (cdr pos)))
       (let ((cavity-id (matrix-read cave i j)))
         (if (equal? cavity-id old-cavity-id)
-            (foldl (lambda: ((c : (Matrix Pos)) (nc : Pos))
+            (foldl (lambda: ((c : (Matrix (Option Pos))) (nc : Pos))
                             (change-cavity-aux c nc new-cavity-id old-cavity-id))
                    (matrix-write cave i j new-cavity-id)
                    (neighboring-cavities pos cave))
