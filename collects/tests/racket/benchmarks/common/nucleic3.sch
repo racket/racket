@@ -1,9 +1,10 @@
-; File: "nucleic2.scm"
+; File: "nucleic3.rkt"
 ;
 ; Author: Marc Feeley (feeley@iro.umontreal.ca)
 ; Last modification by Feeley: June 6, 1994.
 ; Modified for R5RS Scheme by William D Clinger: 22 October 1996.
-; Last modification by Clinger: 19 March 1999.
+; Modified for Racket by Vincent St-Amour: 20 May 2010.
+; Last modification by St-Amour 20 May 2010.
 ;
 ; This program is a modified version of the program described in
 ;
@@ -21,14 +22,7 @@
 ; This procedure uses Marc Feeley's run-benchmark procedure to time
 ; the benchmark.
 
-; PORTABILITY.
-;
-; This program should run in any R5RS-conforming implementation of Scheme.
-; To run this program in an implementation that does not support the R5RS
-; macro system, however, you will have to place a single quotation mark (')
-; on the following line and also modify the "SYSTEM DEPENDENT CODE" below.
-
-; ********** R5RS Scheme
+(require racket/flonum)
 
 (begin
 
@@ -44,7 +38,7 @@
 (define-syntax FLOATsin  (syntax-rules () ((FLOATsin  x)  (sin  x))))
 (define-syntax FLOATcos  (syntax-rules () ((FLOATcos  x)  (cos  x))))
 (define-syntax FLOATatan (syntax-rules () ((FLOATatan x)  (atan x))))
-(define-syntax FLOATsqrt (syntax-rules () ((FLOATsqrt x)  (sqrt x))))
+(define-syntax FLOATsqrt (syntax-rules () ((FLOATsqrt x)  (flsqrt x))))
 
 (define-syntax FUTURE    (syntax-rules () ((FUTURE x) x)))
 (define-syntax TOUCH     (syntax-rules () ((TOUCH x)  x)))
@@ -140,137 +134,44 @@
   (tfo-a-set! tfo-b-set! tfo-c-set! tfo-d-set! tfo-e-set! tfo-f-set!
    tfo-g-set! tfo-h-set! tfo-i-set! tfo-tx-set! tfo-ty-set! tfo-tz-set!))
 
-(define-structure nuc? nuc
-  make-nuc make-constant-nuc
-  (nuc-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   nuc-P-O3*-275-tfo ; defines the standard position for the connect function
-   nuc-P-O3*-180-tfo
-   nuc-P-O3*-60-tfo
-   nuc-P nuc-O1P nuc-O2P nuc-O5* nuc-C5*
-   nuc-H5* nuc-H5**
-   nuc-C4* nuc-H4* nuc-O4* nuc-C1* nuc-H1*
-   nuc-C2* nuc-H2**
-   nuc-O2* nuc-H2* nuc-C3* nuc-H3* nuc-O3*
-   nuc-N1 nuc-N3 nuc-C2 nuc-C4 nuc-C5 nuc-C6)
-  (nuc-dgf-base-tfo-set!
-   nuc-P-O3*-275-tfo-set!
-   nuc-P-O3*-180-tfo-set!
-   nuc-P-O3*-60-tfo-set!
-   nuc-P-set! nuc-O1P-set! nuc-O2P-set! nuc-O5*-set! nuc-C5*-set!
-   nuc-H5*-set! nuc-H5**-set!
-   nuc-C4*-set! nuc-H4*-set! nuc-O4*-set! nuc-C1*-set! nuc-H1*-set!
-   nuc-C2*-set! nuc-H2**-set!
-   nuc-O2*-set! nuc-H2*-set! nuc-C3*-set! nuc-H3*-set! nuc-O3*-set!
-   nuc-N1-set! nuc-N3-set! nuc-C2-set! nuc-C4-set! nuc-C5-set! nuc-C6-set!))
+(struct nuc
+  (dgf-base-tfo  ; defines the standard position for wc and wc-dumas
+   P-O3*-275-tfo ; defines the standard position for the connect function
+   P-O3*-180-tfo
+   P-O3*-60-tfo
+   P O1P O2P O5* C5*
+   H5* H5**
+   C4* H4* O4* C1* H1*
+   C2* H2**
+   O2* H2* C3* H3* O3*
+   N1 N3 C2 C4 C5 C6)
+  #:constructor-name make-nuc)
 
-(define-structure rA? rA
-  make-rA make-constant-rA
-  (rA-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   rA-P-O3*-275-tfo ; defines the standard position for the connect function
-   rA-P-O3*-180-tfo
-   rA-P-O3*-60-tfo
-   rA-P rA-O1P rA-O2P rA-O5* rA-C5*
-   rA-H5* rA-H5**
-   rA-C4* rA-H4* rA-O4* rA-C1* rA-H1*
-   rA-C2* rA-H2**
-   rA-O2* rA-H2* rA-C3* rA-H3* rA-O3*
-   rA-N1 rA-N3 rA-C2 rA-C4 rA-C5 rA-C6
-   rA-N6 rA-N7 rA-N9 rA-C8
-   rA-H2 rA-H61 rA-H62 rA-H8)
-  (rA-dgf-base-tfo-set!
-   rA-P-O3*-275-tfo-set!
-   rA-P-O3*-180-tfo-set!
-   rA-P-O3*-60-tfo-set!
-   rA-P-set! rA-O1P-set! rA-O2P-set! rA-O5*-set! rA-C5*-set!
-   rA-H5*-set! rA-H5**-set!
-   rA-C4*-set! rA-H4*-set! rA-O4*-set! rA-C1*-set! rA-H1*-set!
-   rA-C2*-set! rA-H2**-set!
-   rA-O2*-set! rA-H2*-set! rA-C3*-set! rA-H3*-set! rA-O3*-set!
-   rA-N1-set! rA-N3-set! rA-C2-set! rA-C4-set! rA-C5-set! rA-C6-set!
-   rA-N6-set! rA-N7-set! rA-N9-set! rA-C8-set!
-   rA-H2-set! rA-H61-set! rA-H62-set! rA-H8-set!))
+(struct rA nuc
+  (N6 N7 N9 C8
+   H2 H61 H62 H8)
+  #:constructor-name make-rA)
+(define make-constant-rA make-rA)
 
-(define-structure rC? rC
-  make-rC make-constant-rC
-  (rC-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   rC-P-O3*-275-tfo ; defines the standard position for the connect function
-   rC-P-O3*-180-tfo
-   rC-P-O3*-60-tfo
-   rC-P rC-O1P rC-O2P rC-O5* rC-C5*
-   rC-H5* rC-H5**
-   rC-C4* rC-H4* rC-O4* rC-C1* rC-H1*
-   rC-C2* rC-H2**
-   rC-O2* rC-H2* rC-C3* rC-H3* rC-O3*
-   rC-N1 rC-N3 rC-C2 rC-C4 rC-C5 rC-C6
-   rC-N4 rC-O2 rC-H41 rC-H42 rC-H5 rC-H6)
-  (rC-dgf-base-tfo-set!
-   rC-P-O3*-275-tfo-set!
-   rC-P-O3*-180-tfo-set!
-   rC-P-O3*-60-tfo-set!
-   rC-P-set! rC-O1P-set! rC-O2P-set! rC-O5*-set! rC-C5*-set!
-   rC-H5*-set! rC-H5**-set!
-   rC-C4*-set! rC-H4*-set! rC-O4*-set! rC-C1*-set! rC-H1*-set!
-   rC-C2*-set! rC-H2**-set!
-   rC-O2*-set! rC-H2*-set! rC-C3*-set! rC-H3*-set! rC-O3*-set!
-   rC-N1-set! rC-N3-set! rC-C2-set! rC-C4-set! rC-C5-set! rC-C6-set!
-   rC-N4-set! rC-O2-set! rC-H41-set! rC-H42-set! rC-H5-set! rC-H6-set!))
+(struct rC nuc
+  (N4 O2 H41 H42 H5 H6)
+  #:constructor-name make-rC)
+(define make-constant-rC make-rC)
 
-(define-structure rG? rG
-  make-rG make-constant-rG
-  (rG-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   rG-P-O3*-275-tfo ; defines the standard position for the connect function
-   rG-P-O3*-180-tfo
-   rG-P-O3*-60-tfo
-   rG-P rG-O1P rG-O2P rG-O5* rG-C5*
-   rG-H5* rG-H5**
-   rG-C4* rG-H4* rG-O4* rG-C1* rG-H1*
-   rG-C2* rG-H2**
-   rG-O2* rG-H2* rG-C3* rG-H3* rG-O3*
-   rG-N1 rG-N3 rG-C2 rG-C4 rG-C5 rG-C6
-   rG-N2 rG-N7 rG-N9 rG-C8 rG-O6
-   rG-H1 rG-H21 rG-H22 rG-H8)
-  (rG-dgf-base-tfo-set!
-   rG-P-O3*-275-tfo-set!
-   rG-P-O3*-180-tfo-set!
-   rG-P-O3*-60-tfo-set!
-   rG-P-set! rG-O1P-set! rG-O2P-set! rG-O5*-set! rG-C5*-set!
-   rG-H5*-set! rG-H5**-set!
-   rG-C4*-set! rG-H4*-set! rG-O4*-set! rG-C1*-set! rG-H1*-set!
-   rG-C2*-set! rG-H2**-set!
-   rG-O2*-set! rG-H2*-set! rG-C3*-set! rG-H3*-set! rG-O3*-set!
-   rG-N1-set! rG-N3-set! rG-C2-set! rG-C4-set! rG-C5-set! rG-C6-set!
-   rG-N2-set! rG-N7-set! rG-N9-set! rG-C8-set! rG-O6-set!
-   rG-H1-set! rG-H21-set! rG-H22-set! rG-H8-set!))
+(struct rG nuc
+  (N2 N7 N9 C8 O6
+   H1 H21 H22 H8)
+  #:constructor-name make-rG)
+(define make-constant-rG make-rG)
 
-(define-structure rU? rU
-  make-rU make-constant-rU
-  (rU-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   rU-P-O3*-275-tfo ; defines the standard position for the connect function
-   rU-P-O3*-180-tfo
-   rU-P-O3*-60-tfo
-   rU-P rU-O1P rU-O2P rU-O5* rU-C5*
-   rU-H5* rU-H5**
-   rU-C4* rU-H4* rU-O4* rU-C1* rU-H1*
-   rU-C2* rU-H2**
-   rU-O2* rU-H2* rU-C3* rU-H3* rU-O3*
-   rU-N1 rU-N3 rU-C2 rU-C4 rU-C5 rU-C6
-   rU-O2 rU-O4 rU-H3 rU-H5 rU-H6)
-  (rU-dgf-base-tfo-set!
-   rU-P-O3*-275-tfo-set!
-   rU-P-O3*-180-tfo-set!
-   rU-P-O3*-60-tfo-set!
-   rU-P-set! rU-O1P-set! rU-O2P-set! rU-O5*-set! rU-C5*-set!
-   rU-H5*-set! rU-H5**-set!
-   rU-C4*-set! rU-H4*-set! rU-O4*-set! rU-C1*-set! rU-H1*-set!
-   rU-C2*-set! rU-H2**-set!
-   rU-O2*-set! rU-H2*-set! rU-C3*-set! rU-H3*-set! rU-O3*-set!
-   rU-N1-set! rU-N3-set! rU-C2-set! rU-C4-set! rU-C5-set! rU-C6-set!
-   rU-O2-set! rU-O4-set! rU-H3-set! rU-H5-set! rU-H6-set!))
+(struct rU nuc
+  (O2 O4 H3 H5 H6)
+  #:constructor-name make-rU)
+(define make-constant-rU make-rU)
 
-(define-structure #f var
-  make-var make-constant-var
-  (var-id var-tfo var-nuc)
-  (var-id-set! var-tfo-set! var-nuc-set!))
+(struct var
+  (id tfo nuc)
+  #:constructor-name make-var)
 
 ; Comment out the next three syntax definitions if you want
 ; lazy computation.
@@ -540,7 +441,9 @@
 
 ; Database of nucleotide conformations:
 
-(define rA
+; The 0 is not part of the original name, was added to avoid a name clash with
+; the struct name. My apologies to biologists.
+(define rA0
   (make-constant-rA
     #( -0.0018  -0.8207   0.5714  ; dgf-base-tfo
         0.2679  -0.5509  -0.7904
@@ -1126,7 +1029,9 @@
 (define rAs 
   (list rA01 rA02 rA03 rA04 rA05 rA06 rA07 rA08 rA09 rA10))
 
-(define rC
+; The 0 is not part of the original name, was added to avoid a name clash with
+; the struct name. My apologies to biologists.
+(define rC0
   (make-constant-rC
     #( -0.0359  -0.8071   0.5894  ; dgf-base-tfo
        -0.2669   0.5761   0.7726
@@ -1690,7 +1595,9 @@
 (define rCs 
   (list rC01 rC02 rC03 rC04 rC05 rC06 rC07 rC08 rC09 rC10))
 
-(define rG
+; The 0 is not part of the original name, was added to avoid a name clash with
+; the struct name. My apologies to biologists.
+(define rG0
   (make-constant-rG
     #( -0.0018  -0.8207   0.5714  ; dgf-base-tfo
         0.2679  -0.5509  -0.7904
@@ -2287,7 +2194,9 @@
 (define rGs
   (list rG01 rG02 rG03 rG04 rG05 rG06 rG07 rG08 rG09 rG10))
 
-(define rU
+; The 0 is not part of the original name, was added to avoid a name clash with
+; the struct name. My apologies to biologists.
+(define rU0
   (make-constant-rU
     #( -0.0359  -0.8071   0.5894  ; dgf-base-tfo
        -0.2669   0.5761   0.7726
@@ -3317,23 +3226,24 @@
 
 ; Define anticodon problem -- Science 253:1255 Figure 3a, 3b and 3c
 
+; The 0s there are not in the original. See the above note on name clashes.
 (define anticodon-domains
   (list 
-   (reference rC  27   )
-   (helix5*   rC  28 27)
-   (helix5*   rA  29 28)
-   (helix5*   rG  30 29)
-   (helix5*   rA  31 30)
-   (wc        rU  39 31)
-   (helix5*   rC  40 39)
-   (helix5*   rU  41 40)
-   (helix5*   rG  42 41)
-   (helix5*   rG  43 42)
-   (stacked3* rA  38 39)
-   (stacked3* rG  37 38)
-   (stacked3* rA  36 37)
-   (stacked3* rA  35 36)
-   (stacked3* rG  34 35);<-. Distance
+   (reference rC0 27   )
+   (helix5*   rC0 28 27)
+   (helix5*   rA0 29 28)
+   (helix5*   rG0 30 29)
+   (helix5*   rA0 31 30)
+   (wc        rU0 39 31)
+   (helix5*   rC0 40 39)
+   (helix5*   rU0 41 40)
+   (helix5*   rG0 42 41)
+   (helix5*   rG0 43 42)
+   (stacked3* rA0 38 39)
+   (stacked3* rG0 37 38)
+   (stacked3* rA0 36 37)
+   (stacked3* rA0 35 36)
+   (stacked3* rG0 34 35);<-. Distance
    (P-O3*     rCs 32 31);  | Constraint
    (P-O3*     rUs 33 32);<-' 3.0 Angstroms
    ))
@@ -3352,25 +3262,26 @@
 
 ; Define pseudoknot problem -- Science 253:1255 Figure 4a and 4b
 
+; The 0s there are not in the original. See the above note on name clashes.
 (define pseudoknot-domains
   (list
-   (reference rA  23   )
-   (wc-Dumas  rU   8 23)
-   (helix3*   rG  22 23)
-   (wc-Dumas  rC   9 22)
-   (helix3*   rG  21 22)
-   (wc-Dumas  rC  10 21)
-   (helix3*   rC  20 21)
-   (wc-Dumas  rG  11 20)
+   (reference rA0 23   )
+   (wc-Dumas  rU0  8 23)
+   (helix3*   rG0 22 23)
+   (wc-Dumas  rC0  9 22)
+   (helix3*   rG0 21 22)
+   (wc-Dumas  rC0 10 21)
+   (helix3*   rC0 20 21)
+   (wc-Dumas  rG0 11 20)
    (helix3*   rU* 19 20);<-.
-   (wc-Dumas  rA  12 19);  | Distance
+   (wc-Dumas  rA0 12 19);  | Distance
 ;                       ;  | Constraint
 ; Helix 1               ;  | 4.0 Angstroms
-   (helix3*   rC   3 19);  |
-   (wc-Dumas  rG  13  3);  |
-   (helix3*   rC   2  3);  |
-   (wc-Dumas  rG  14  2);  |
-   (helix3*   rC   1  2);  |
+   (helix3*   rC0  3 19);  |
+   (wc-Dumas  rG0 13  3);  |
+   (helix3*   rC0  2  3);  |
+   (wc-Dumas  rG0 14  2);  |
+   (helix3*   rC0  1  2);  |
    (wc-Dumas  rG* 15  1);  |
 ;                       ;  |
 ; L2 LOOP               ;  |
@@ -3379,10 +3290,10 @@
    (P-O3*     rAs 18 17);<-'
 ;
 ; L1 LOOP
-   (helix3*   rU   7  8);<-.
+   (helix3*   rU0  7  8);<-.
    (P-O3*     rCs  4  3);  | Constraint
-   (stacked5* rU   5  4);  | 4.5 Angstroms
-   (stacked5* rC   6  5);<-'
+   (stacked5* rU0  5  4);  | 4.5 Angstroms
+   (stacked5* rC0  6  5);<-'
    ))
   
 ; Pseudoknot constraint

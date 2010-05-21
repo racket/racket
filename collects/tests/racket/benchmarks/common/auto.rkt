@@ -317,6 +317,7 @@ exec racket -qu "$0" ${1+"$@"}
                                peval
                                scheme
                                sort1))
+  (define racket-specific-progs '(nucleic3))
 
   (define impls
     (list
@@ -359,7 +360,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "plt-r5rs ~a.scm" bm)))
                 extract-racket-times
                 clean-up-plt-r5rs
-                null)
+                racket-specific-progs)
      (make-impl 'mzc
                 void
                 mk-mzc
@@ -422,63 +423,69 @@ exec racket -qu "$0" ${1+"$@"}
                 run-exe
                 extract-chicken-times
                 clean-up-bin
-                '(scheme2 takr2))
+                (append '(scheme2 takr2)
+                        racket-specific-progs))
      (make-impl 'bigloo
                 void
                 (run-mk "mk-bigloo.rktl")
                 run-exe
                 extract-bigloo-times
                 clean-up-bin
-                '(cpstack takr2))
+                (append '(cpstack takr2)
+                        racket-specific-progs))
      (make-impl 'gambit
                 void
                 (run-mk "mk-gambit.rktl")
                 run-gambit-exe
                 extract-gambit-times
                 clean-up-o1
-                '(nucleic2))
+                (append '(nucleic2)
+                        racket-specific-progs))
      (make-impl 'larceny
                 setup-larceny
                 mk-larceny
                 run-larceny
                 extract-larceny-times
                 clean-up-fasl
-                '())
+                racket-specific-progs)
      (make-impl 'ikarus
                 setup-ikarus
                 mk-ikarus
                 run-ikarus
                 extract-ikarus-times
                 clean-up-ikarus
-                '(takr))
+                (append '(takr)
+                        racket-specific-progs))
      (make-impl 'mit
                 void
                 mk-mit
                 run-mit
                 extract-mit-times
                 clean-up-mit
-                '(nucleic2 puzzle takr2))
+                (append '(nucleic2 puzzle takr2)
+                        racket-specific-progs))
      (make-impl 'scheme48
                 void
                 void
                 run-scheme48
                 extract-scheme48-times
                 void
-                '())
+                racket-specific-progs)
      (make-impl 'petite
                 void
                 void
                 run-petite
                 extract-petite-times
                 void
-                '())
+                racket-specific-progs)
      (make-impl 'guile
                 void
                 void
                 run-guile
                 extract-guile-times
                 void
-                '(ctak))
+                (append '(ctak)
+                        racket-specific-progs))
 ))
 
   (define obsolte-impls '(racket3m racketcgc racket-j racketcgc-j racketcgc-tl mzc mz-old))
@@ -507,6 +514,7 @@ exec racket -qu "$0" ${1+"$@"}
       nothing
       nqueens
       nucleic2
+      nucleic3
       paraffins
       peval
       puzzle

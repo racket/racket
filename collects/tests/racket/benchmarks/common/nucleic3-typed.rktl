@@ -1,9 +1,11 @@
-; File: "nucleic2.scm"
+; File: "nucleic3-typed.rktl"
 ;
 ; Author: Marc Feeley (feeley@iro.umontreal.ca)
 ; Last modification by Feeley: June 6, 1994.
 ; Modified for R5RS Scheme by William D Clinger: 22 October 1996.
-; Last modification by Clinger: 19 March 1999.
+; Modified for Racket by Vincent St-Amour: 20 May 2010.
+; Modified for Typed Scheme by Vincent St-Amour: 20 May 2010.
+; Last modification by St-Amour 20 May 2010.
 ;
 ; This program is a modified version of the program described in
 ;
@@ -21,14 +23,7 @@
 ; This procedure uses Marc Feeley's run-benchmark procedure to time
 ; the benchmark.
 
-; PORTABILITY.
-;
-; This program should run in any R5RS-conforming implementation of Scheme.
-; To run this program in an implementation that does not support the R5RS
-; macro system, however, you will have to place a single quotation mark (')
-; on the following line and also modify the "SYSTEM DEPENDENT CODE" below.
-
-; ********** R5RS Scheme
+(require racket/flonum)
 
 (begin
 
@@ -44,7 +39,7 @@
 (define-syntax FLOATsin  (syntax-rules () ((FLOATsin  x)  (sin  x))))
 (define-syntax FLOATcos  (syntax-rules () ((FLOATcos  x)  (cos  x))))
 (define-syntax FLOATatan (syntax-rules () ((FLOATatan x)  (atan x))))
-(define-syntax FLOATsqrt (syntax-rules () ((FLOATsqrt x)  (sqrt x))))
+(define-syntax FLOATsqrt (syntax-rules () ((FLOATsqrt x)  (flsqrt x))))
 
 (define-syntax FUTURE    (syntax-rules () ((FUTURE x) x)))
 (define-syntax TOUCH     (syntax-rules () ((TOUCH x)  x)))
@@ -129,148 +124,51 @@
                 ((set v x) (vector-set! v i x))))
             (define-setters (set1 ...) (i1 ...))))))
 
+(define-type Pt (Vectorof Float))
 (define-structure #f pt
   make-pt make-constant-pt
   (pt-x pt-y pt-z)
   (pt-x-set! pt-y-set! pt-z-set!))
 
+(define-type TFO (Vectorof Float))
 (define-structure #f tfo
   make-tfo make-constant-tfo
   (tfo-a tfo-b tfo-c tfo-d tfo-e tfo-f tfo-g tfo-h tfo-i tfo-tx tfo-ty tfo-tz)
   (tfo-a-set! tfo-b-set! tfo-c-set! tfo-d-set! tfo-e-set! tfo-f-set!
    tfo-g-set! tfo-h-set! tfo-i-set! tfo-tx-set! tfo-ty-set! tfo-tz-set!))
 
-(define-structure nuc? nuc
-  make-nuc make-constant-nuc
-  (nuc-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   nuc-P-O3*-275-tfo ; defines the standard position for the connect function
-   nuc-P-O3*-180-tfo
-   nuc-P-O3*-60-tfo
-   nuc-P nuc-O1P nuc-O2P nuc-O5* nuc-C5*
-   nuc-H5* nuc-H5**
-   nuc-C4* nuc-H4* nuc-O4* nuc-C1* nuc-H1*
-   nuc-C2* nuc-H2**
-   nuc-O2* nuc-H2* nuc-C3* nuc-H3* nuc-O3*
-   nuc-N1 nuc-N3 nuc-C2 nuc-C4 nuc-C5 nuc-C6)
-  (nuc-dgf-base-tfo-set!
-   nuc-P-O3*-275-tfo-set!
-   nuc-P-O3*-180-tfo-set!
-   nuc-P-O3*-60-tfo-set!
-   nuc-P-set! nuc-O1P-set! nuc-O2P-set! nuc-O5*-set! nuc-C5*-set!
-   nuc-H5*-set! nuc-H5**-set!
-   nuc-C4*-set! nuc-H4*-set! nuc-O4*-set! nuc-C1*-set! nuc-H1*-set!
-   nuc-C2*-set! nuc-H2**-set!
-   nuc-O2*-set! nuc-H2*-set! nuc-C3*-set! nuc-H3*-set! nuc-O3*-set!
-   nuc-N1-set! nuc-N3-set! nuc-C2-set! nuc-C4-set! nuc-C5-set! nuc-C6-set!))
+(define-struct: nuc
+  ([dgf-base-tfo : TFO]  ; defines the standard position for wc and wc-dumas
+   [P-O3*-275-tfo : TFO] ; defines the standard position for the connect function
+   [P-O3*-180-tfo : TFO]
+   [P-O3*-60-tfo : TFO]
+   [P : Pt] [O1P : Pt] [O2P : Pt] [O5* : Pt] [C5* : Pt]
+   [H5* : Pt] [H5** : Pt]
+   [C4* : Pt] [H4* : Pt] [O4* : Pt] [C1* : Pt] [H1* : Pt]
+   [C2* : Pt] [H2** : Pt]
+   [O2* : Pt] [H2* : Pt] [C3* : Pt] [H3* : Pt] [O3* : Pt]
+   [N1 : Pt] [N3 : Pt] [C2 : Pt] [C4 : Pt] [C5 : Pt] [C6 : Pt]))
 
-(define-structure rA? rA
-  make-rA make-constant-rA
-  (rA-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   rA-P-O3*-275-tfo ; defines the standard position for the connect function
-   rA-P-O3*-180-tfo
-   rA-P-O3*-60-tfo
-   rA-P rA-O1P rA-O2P rA-O5* rA-C5*
-   rA-H5* rA-H5**
-   rA-C4* rA-H4* rA-O4* rA-C1* rA-H1*
-   rA-C2* rA-H2**
-   rA-O2* rA-H2* rA-C3* rA-H3* rA-O3*
-   rA-N1 rA-N3 rA-C2 rA-C4 rA-C5 rA-C6
-   rA-N6 rA-N7 rA-N9 rA-C8
-   rA-H2 rA-H61 rA-H62 rA-H8)
-  (rA-dgf-base-tfo-set!
-   rA-P-O3*-275-tfo-set!
-   rA-P-O3*-180-tfo-set!
-   rA-P-O3*-60-tfo-set!
-   rA-P-set! rA-O1P-set! rA-O2P-set! rA-O5*-set! rA-C5*-set!
-   rA-H5*-set! rA-H5**-set!
-   rA-C4*-set! rA-H4*-set! rA-O4*-set! rA-C1*-set! rA-H1*-set!
-   rA-C2*-set! rA-H2**-set!
-   rA-O2*-set! rA-H2*-set! rA-C3*-set! rA-H3*-set! rA-O3*-set!
-   rA-N1-set! rA-N3-set! rA-C2-set! rA-C4-set! rA-C5-set! rA-C6-set!
-   rA-N6-set! rA-N7-set! rA-N9-set! rA-C8-set!
-   rA-H2-set! rA-H61-set! rA-H62-set! rA-H8-set!))
+(define-struct: (rA nuc)
+  ([N6 : Pt] [N7 : Pt] [N9 : Pt] [C8 : Pt]
+   [H2 : Pt] [H61 : Pt] [H62 : Pt] [H8 : Pt]))
+(define make-constant-rA make-rA)
 
-(define-structure rC? rC
-  make-rC make-constant-rC
-  (rC-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   rC-P-O3*-275-tfo ; defines the standard position for the connect function
-   rC-P-O3*-180-tfo
-   rC-P-O3*-60-tfo
-   rC-P rC-O1P rC-O2P rC-O5* rC-C5*
-   rC-H5* rC-H5**
-   rC-C4* rC-H4* rC-O4* rC-C1* rC-H1*
-   rC-C2* rC-H2**
-   rC-O2* rC-H2* rC-C3* rC-H3* rC-O3*
-   rC-N1 rC-N3 rC-C2 rC-C4 rC-C5 rC-C6
-   rC-N4 rC-O2 rC-H41 rC-H42 rC-H5 rC-H6)
-  (rC-dgf-base-tfo-set!
-   rC-P-O3*-275-tfo-set!
-   rC-P-O3*-180-tfo-set!
-   rC-P-O3*-60-tfo-set!
-   rC-P-set! rC-O1P-set! rC-O2P-set! rC-O5*-set! rC-C5*-set!
-   rC-H5*-set! rC-H5**-set!
-   rC-C4*-set! rC-H4*-set! rC-O4*-set! rC-C1*-set! rC-H1*-set!
-   rC-C2*-set! rC-H2**-set!
-   rC-O2*-set! rC-H2*-set! rC-C3*-set! rC-H3*-set! rC-O3*-set!
-   rC-N1-set! rC-N3-set! rC-C2-set! rC-C4-set! rC-C5-set! rC-C6-set!
-   rC-N4-set! rC-O2-set! rC-H41-set! rC-H42-set! rC-H5-set! rC-H6-set!))
+(define-struct: (rC nuc)
+  ([N4 : Pt] [O2 : Pt] [H41 : Pt] [H42 : Pt] [H5 : Pt] [H6 : Pt]))
+(define make-constant-rC make-rC)
 
-(define-structure rG? rG
-  make-rG make-constant-rG
-  (rG-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   rG-P-O3*-275-tfo ; defines the standard position for the connect function
-   rG-P-O3*-180-tfo
-   rG-P-O3*-60-tfo
-   rG-P rG-O1P rG-O2P rG-O5* rG-C5*
-   rG-H5* rG-H5**
-   rG-C4* rG-H4* rG-O4* rG-C1* rG-H1*
-   rG-C2* rG-H2**
-   rG-O2* rG-H2* rG-C3* rG-H3* rG-O3*
-   rG-N1 rG-N3 rG-C2 rG-C4 rG-C5 rG-C6
-   rG-N2 rG-N7 rG-N9 rG-C8 rG-O6
-   rG-H1 rG-H21 rG-H22 rG-H8)
-  (rG-dgf-base-tfo-set!
-   rG-P-O3*-275-tfo-set!
-   rG-P-O3*-180-tfo-set!
-   rG-P-O3*-60-tfo-set!
-   rG-P-set! rG-O1P-set! rG-O2P-set! rG-O5*-set! rG-C5*-set!
-   rG-H5*-set! rG-H5**-set!
-   rG-C4*-set! rG-H4*-set! rG-O4*-set! rG-C1*-set! rG-H1*-set!
-   rG-C2*-set! rG-H2**-set!
-   rG-O2*-set! rG-H2*-set! rG-C3*-set! rG-H3*-set! rG-O3*-set!
-   rG-N1-set! rG-N3-set! rG-C2-set! rG-C4-set! rG-C5-set! rG-C6-set!
-   rG-N2-set! rG-N7-set! rG-N9-set! rG-C8-set! rG-O6-set!
-   rG-H1-set! rG-H21-set! rG-H22-set! rG-H8-set!))
+(define-struct: (rG nuc)
+  ([N2 : Pt] [N7 : Pt] [N9 : Pt] [C8 : Pt] [O6 : Pt]
+   [H1 : Pt] [H21 : Pt] [H22 : Pt] [H8 : Pt]))
+(define make-constant-rG make-rG)
 
-(define-structure rU? rU
-  make-rU make-constant-rU
-  (rU-dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-   rU-P-O3*-275-tfo ; defines the standard position for the connect function
-   rU-P-O3*-180-tfo
-   rU-P-O3*-60-tfo
-   rU-P rU-O1P rU-O2P rU-O5* rU-C5*
-   rU-H5* rU-H5**
-   rU-C4* rU-H4* rU-O4* rU-C1* rU-H1*
-   rU-C2* rU-H2**
-   rU-O2* rU-H2* rU-C3* rU-H3* rU-O3*
-   rU-N1 rU-N3 rU-C2 rU-C4 rU-C5 rU-C6
-   rU-O2 rU-O4 rU-H3 rU-H5 rU-H6)
-  (rU-dgf-base-tfo-set!
-   rU-P-O3*-275-tfo-set!
-   rU-P-O3*-180-tfo-set!
-   rU-P-O3*-60-tfo-set!
-   rU-P-set! rU-O1P-set! rU-O2P-set! rU-O5*-set! rU-C5*-set!
-   rU-H5*-set! rU-H5**-set!
-   rU-C4*-set! rU-H4*-set! rU-O4*-set! rU-C1*-set! rU-H1*-set!
-   rU-C2*-set! rU-H2**-set!
-   rU-O2*-set! rU-H2*-set! rU-C3*-set! rU-H3*-set! rU-O3*-set!
-   rU-N1-set! rU-N3-set! rU-C2-set! rU-C4-set! rU-C5-set! rU-C6-set!
-   rU-O2-set! rU-O4-set! rU-H3-set! rU-H5-set! rU-H6-set!))
+(define-struct: (rU nuc)
+  ([O2 : Pt] [O4 : Pt] [H3 : Pt] [H5 : Pt] [H6 : Pt]))
+(define make-constant-rU make-rU)
 
-(define-structure #f var
-  make-var make-constant-var
-  (var-id var-tfo var-nuc)
-  (var-id-set! var-tfo-set! var-nuc-set!))
+(define-struct: var
+  ([id : Integer] [tfo : TFO] [nuc : nuc]))
 
 ; Comment out the next three syntax definitions if you want
 ; lazy computation.
@@ -323,6 +221,7 @@
 (define constant-pi/2        1.57079632679489661923)
 (define constant-minus-pi/2 -1.57079632679489661923)
 
+(: math-atan2 (Float Float -> Float))
 (define (math-atan2 y x)
   (cond ((FLOAT> x 0.0)
          (FLOATatan (FLOAT/ y x)))
@@ -337,17 +236,20 @@
 
 ; -- POINTS -------------------------------------------------------------------
 
+(: pt-sub (Pt Pt -> Pt))
 (define (pt-sub p1 p2)
   (make-pt (FLOAT- (pt-x p1) (pt-x p2))
            (FLOAT- (pt-y p1) (pt-y p2))
            (FLOAT- (pt-z p1) (pt-z p2))))
 
+(: pt-dist (Pt Pt -> Float))
 (define (pt-dist p1 p2)
   (let ((dx (FLOAT- (pt-x p1) (pt-x p2)))
         (dy (FLOAT- (pt-y p1) (pt-y p2)))
         (dz (FLOAT- (pt-z p1) (pt-z p2))))
     (FLOATsqrt (FLOAT+ (FLOAT* dx dx) (FLOAT* dy dy) (FLOAT* dz dz)))))
 
+(: pt-phi (Pt -> Float))
 (define (pt-phi p)
   (let* ((x (pt-x p))
          (y (pt-y p))
@@ -355,6 +257,7 @@
          (b (math-atan2 x z)))
     (math-atan2 (FLOAT+ (FLOAT* (FLOATcos b) z) (FLOAT* (FLOATsin b) x)) y)))
 
+(: pt-theta (Pt -> Float))
 (define (pt-theta p)
   (math-atan2 (pt-x p) (pt-z p)))
 
@@ -384,6 +287,7 @@
 ; The function "tfo-apply" multiplies a transformation matrix, tfo, by a
 ; point vector, p.  The result is a new point.
 
+(: tfo-apply (TFO Pt -> Pt))
 (define (tfo-apply tfo p)
   (let ((x (pt-x p))
         (y (pt-y p))
@@ -406,6 +310,7 @@
 ; The result is a new matrix which cumulates the transformations described
 ; by A and B.
 
+(: tfo-combine (TFO TFO -> TFO))
 (define (tfo-combine A B)
   (make-tfo
    (FLOAT+ (FLOAT* (tfo-a A) (tfo-a B))
@@ -451,6 +356,7 @@
 ; The function "tfo-inv-ortho" computes the inverse of a homogeneous
 ; transformation matrix.
 
+(: tfo-inv-ortho (TFO -> TFO))
 (define (tfo-inv-ortho tfo)
   (let* ((tx (tfo-tx tfo))
          (ty (tfo-ty tfo))
@@ -473,6 +379,7 @@
 ; a transformation matrix such that point p1 gets mapped to (0,0,0), p2 gets
 ; mapped to the Y axis and p3 gets mapped to the YZ plane.
 
+(: tfo-align (Pt Pt Pt -> TFO))
 (define (tfo-align p1 p2 p3)
   (let* ((x1 (pt-x p1))       (y1 (pt-y p1))       (z1 (pt-z p1))
          (x3 (pt-x p3))       (y3 (pt-y p3))       (z3 (pt-z p3))
@@ -540,7 +447,9 @@
 
 ; Database of nucleotide conformations:
 
-(define rA
+; The 0 is not part of the original name, was added to avoid a name clash with
+; the struct name. My apologies to biologists.
+(define rA0
   (make-constant-rA
     #( -0.0018  -0.8207   0.5714  ; dgf-base-tfo
         0.2679  -0.5509  -0.7904
@@ -1126,7 +1035,9 @@
 (define rAs 
   (list rA01 rA02 rA03 rA04 rA05 rA06 rA07 rA08 rA09 rA10))
 
-(define rC
+; The 0 is not part of the original name, was added to avoid a name clash with
+; the struct name. My apologies to biologists.
+(define rC0
   (make-constant-rC
     #( -0.0359  -0.8071   0.5894  ; dgf-base-tfo
        -0.2669   0.5761   0.7726
@@ -1690,7 +1601,9 @@
 (define rCs 
   (list rC01 rC02 rC03 rC04 rC05 rC06 rC07 rC08 rC09 rC10))
 
-(define rG
+; The 0 is not part of the original name, was added to avoid a name clash with
+; the struct name. My apologies to biologists.
+(define rG0
   (make-constant-rG
     #( -0.0018  -0.8207   0.5714  ; dgf-base-tfo
         0.2679  -0.5509  -0.7904
@@ -2287,7 +2200,9 @@
 (define rGs
   (list rG01 rG02 rG03 rG04 rG05 rG06 rG07 rG08 rG09 rG10))
 
-(define rU
+; The 0 is not part of the original name, was added to avoid a name clash with
+; the struct name. My apologies to biologists.
+(define rU0
   (make-constant-rU
     #( -0.0359  -0.8071   0.5894  ; dgf-base-tfo
        -0.2669   0.5761   0.7726
@@ -2948,12 +2863,14 @@
 
 ; -- PARTIAL INSTANTIATIONS ---------------------------------------------------
 
+(: get-var (Integer (Listof var) -> var))
 (define (get-var id lst)
   (let ((v (car lst)))
     (if (= id (var-id v))
       v
       (get-var id (cdr lst)))))
 
+(: make-relative-nuc (TFO nuc -> nuc))
 (define (make-relative-nuc tfo n)
   (cond ((rA? n)
          (make-rA
@@ -3071,7 +2988,7 @@
            (lazy-computation-of (tfo-apply tfo (rG-H21   n)))
            (lazy-computation-of (tfo-apply tfo (rG-H22   n)))
            (lazy-computation-of (tfo-apply tfo (rG-H8    n)))))
-        (else
+        ((rU? n)
          (make-rU
            (nuc-dgf-base-tfo  n)
            (nuc-P-O3*-275-tfo n)
@@ -3106,17 +3023,21 @@
            (lazy-computation-of (tfo-apply tfo (rU-O4    n)))
            (lazy-computation-of (tfo-apply tfo (rU-H3    n)))
            (lazy-computation-of (tfo-apply tfo (rU-H5    n)))
-           (lazy-computation-of (tfo-apply tfo (rU-H6    n)))))))
+           (lazy-computation-of (tfo-apply tfo (rU-H6    n)))))
+        (else (error "no such nucleotide"))))
 
 ; -- SEARCH -------------------------------------------------------------------
 
 ; Sequential backtracking algorithm
 
+(: search ((Listof var) (Listof ((Listof var) -> (Listof var))) (var (Listof var) -> Boolean)
+           -> (Listof (Listof var))))
 (define (search partial-inst domains constraint?)
   (if (null? domains)
     (list partial-inst)
     (let ((remaining-domains (cdr domains)))
 
+      (: try-assignments ((Listof var) -> (Listof (Listof var))))
       (define (try-assignments lst)
         (if (null? lst)
           '()
@@ -3176,6 +3097,7 @@
 ; the function "dgf-base" computes the transformation matrix that
 ; places the nucleotide "nuc" in the given relationship to "ref".
 
+(: dgf-base (TFO var nuc -> TFO))
 (define (dgf-base tfo ref nuc)
   (let* ((ref-nuc (var-nuc ref))
          (align
@@ -3192,15 +3114,17 @@
                    (tfo-align (atom-pos nuc-C1* ref)
                               (atom-pos rG-N9   ref)
                               (atom-pos nuc-C4  ref)))
-                  (else
+                  ((rU? ref-nuc)
                    (tfo-align (atom-pos nuc-C1* ref)
                               (atom-pos nuc-N1  ref)
-                              (atom-pos nuc-C2  ref)))))))
+                              (atom-pos nuc-C2  ref)))
+                  (else (error "no such nucleotide"))))))
     (tfo-combine (nuc-dgf-base-tfo nuc)
                  (tfo-combine tfo align))))
 
 ; Placement of first nucleotide.
 
+(: reference (nuc Integer -> ((Listof var) -> (Listof var))))
 (define (reference nuc i)
   (lambda (partial-inst)
     (list (mk-var i tfo-id nuc))))
@@ -3217,6 +3141,7 @@
      -0.0019 -0.9379 -0.3468
      -0.0080  6.0730  8.7208))
 
+(: wc (nuc Integer Integer -> ((Listof var) -> (Listof var))))
 (define (wc nuc i j)
   (lambda (partial-inst)
     (let* ((ref (get-var j partial-inst))
@@ -3228,7 +3153,8 @@
      -0.1779  0.2417 -0.9539
       0.1422 -0.9529 -0.2679
       0.4837  6.2649  8.0285))
-         
+
+(: wc-Dumas (nuc Integer Integer -> ((Listof var) -> (Listof var))))
 (define (wc-Dumas nuc i j)
   (lambda (partial-inst)
     (let* ((ref (get-var j partial-inst))
@@ -3241,6 +3167,7 @@
      -0.0482  0.5258  0.8492
      -3.8737  0.5480  3.8024))
 
+(: helix5* (nuc Integer Integer -> ((Listof var) -> (Listof var))))
 (define (helix5* nuc i j)
   (lambda (partial-inst)
     (let* ((ref (get-var j partial-inst))
@@ -3253,6 +3180,7 @@
       0.1156 -0.5152  0.8492
       3.4426  2.0474 -3.7042))
 
+(: helix3* (nuc Integer Integer -> ((Listof var) -> (Listof var))))
 (define (helix3* nuc i j)
   (lambda (partial-inst)
     (let* ((ref (get-var j partial-inst))
@@ -3265,12 +3193,14 @@
       0.0189  0.6478  0.7615
      -3.3018  0.9975  2.5585))
 
+(: G37-A38 (nuc Integer Integer -> ((Listof var) -> var)))
 (define (G37-A38 nuc i j)
   (lambda (partial-inst)
     (let* ((ref (get-var j partial-inst))
            (tfo (dgf-base G37-A38-tfo ref nuc)))
       (mk-var i tfo nuc))))
 
+(: stacked5* (nuc Integer Integer -> ((Listof var) -> (Listof var))))
 (define (stacked5* nuc i j)
   (lambda (partial-inst)
     (cons ((G37-A38 nuc i j) partial-inst)
@@ -3282,17 +3212,20 @@
      -0.0387 -0.6470  0.7615
       3.3819  0.7718 -2.5321))
 
+(: A38-G37 (nuc Integer Integer -> ((Listof var) -> var)))
 (define (A38-G37 nuc i j)
   (lambda (partial-inst)
     (let* ((ref (get-var j partial-inst))
            (tfo (dgf-base A38-G37-tfo ref nuc)))
       (mk-var i tfo nuc))))
-   
+
+(: stacked3* (nuc Integer Integer -> ((Listof var) -> (Listof var))))
 (define (stacked3* nuc i j)
   (lambda (partial-inst)
     (cons ((A38-G37 nuc i j) partial-inst)
           ((helix3* nuc i j) partial-inst))))
 
+(: P-O3* ((Listof nuc) Integer Integer -> ((Listof var) -> (Listof var))))
 (define (P-O3* nucs i j)
   (lambda (partial-inst)
     (let* ((ref (get-var j partial-inst))
@@ -3301,7 +3234,9 @@
                (tfo-align (atom-pos nuc-O3* ref)
                           (atom-pos nuc-C3* ref)
                           (atom-pos nuc-C4* ref)))))
-      (let loop ((lst nucs) (domains '()))
+      (let: loop : (Listof var)
+            ((lst : (Listof nuc) nucs)
+             (domains : (Listof var) '()))
         (if (null? lst)
           domains
           (let ((nuc (car lst)))
@@ -3317,29 +3252,31 @@
 
 ; Define anticodon problem -- Science 253:1255 Figure 3a, 3b and 3c
 
+; The 0s there are not in the original. See the above note on name clashes.
 (define anticodon-domains
   (list 
-   (reference rC  27   )
-   (helix5*   rC  28 27)
-   (helix5*   rA  29 28)
-   (helix5*   rG  30 29)
-   (helix5*   rA  31 30)
-   (wc        rU  39 31)
-   (helix5*   rC  40 39)
-   (helix5*   rU  41 40)
-   (helix5*   rG  42 41)
-   (helix5*   rG  43 42)
-   (stacked3* rA  38 39)
-   (stacked3* rG  37 38)
-   (stacked3* rA  36 37)
-   (stacked3* rA  35 36)
-   (stacked3* rG  34 35);<-. Distance
+   (reference rC0 27   )
+   (helix5*   rC0 28 27)
+   (helix5*   rA0 29 28)
+   (helix5*   rG0 30 29)
+   (helix5*   rA0 31 30)
+   (wc        rU0 39 31)
+   (helix5*   rC0 40 39)
+   (helix5*   rU0 41 40)
+   (helix5*   rG0 42 41)
+   (helix5*   rG0 43 42)
+   (stacked3* rA0 38 39)
+   (stacked3* rG0 37 38)
+   (stacked3* rA0 36 37)
+   (stacked3* rA0 35 36)
+   (stacked3* rG0 34 35);<-. Distance
    (P-O3*     rCs 32 31);  | Constraint
    (P-O3*     rUs 33 32);<-' 3.0 Angstroms
    ))
 
 ; Anticodon constraint
 
+(: anticodon-constraint? (var (Listof var) -> Boolean))
 (define (anticodon-constraint? v partial-inst)
   (if (= (var-id v) 33)
     (let ((p   (atom-pos nuc-P (get-var 34 partial-inst))) ; P in nucleotide 34
@@ -3347,30 +3284,32 @@
       (FLOAT<= (pt-dist p o3*) 3.0))                       ; check distance
     #t))
 
+(: anticodon ( -> (Listof (Listof var))))
 (define (anticodon)
   (search '() anticodon-domains anticodon-constraint?))
 
 ; Define pseudoknot problem -- Science 253:1255 Figure 4a and 4b
 
+; The 0s there are not in the original. See the above note on name clashes.
 (define pseudoknot-domains
   (list
-   (reference rA  23   )
-   (wc-Dumas  rU   8 23)
-   (helix3*   rG  22 23)
-   (wc-Dumas  rC   9 22)
-   (helix3*   rG  21 22)
-   (wc-Dumas  rC  10 21)
-   (helix3*   rC  20 21)
-   (wc-Dumas  rG  11 20)
+   (reference rA0 23   )
+   (wc-Dumas  rU0  8 23)
+   (helix3*   rG0 22 23)
+   (wc-Dumas  rC0  9 22)
+   (helix3*   rG0 21 22)
+   (wc-Dumas  rC0 10 21)
+   (helix3*   rC0 20 21)
+   (wc-Dumas  rG0 11 20)
    (helix3*   rU* 19 20);<-.
-   (wc-Dumas  rA  12 19);  | Distance
+   (wc-Dumas  rA0 12 19);  | Distance
 ;                       ;  | Constraint
 ; Helix 1               ;  | 4.0 Angstroms
-   (helix3*   rC   3 19);  |
-   (wc-Dumas  rG  13  3);  |
-   (helix3*   rC   2  3);  |
-   (wc-Dumas  rG  14  2);  |
-   (helix3*   rC   1  2);  |
+   (helix3*   rC0  3 19);  |
+   (wc-Dumas  rG0 13  3);  |
+   (helix3*   rC0  2  3);  |
+   (wc-Dumas  rG0 14  2);  |
+   (helix3*   rC0  1  2);  |
    (wc-Dumas  rG* 15  1);  |
 ;                       ;  |
 ; L2 LOOP               ;  |
@@ -3379,14 +3318,15 @@
    (P-O3*     rAs 18 17);<-'
 ;
 ; L1 LOOP
-   (helix3*   rU   7  8);<-.
+   (helix3*   rU0  7  8);<-.
    (P-O3*     rCs  4  3);  | Constraint
-   (stacked5* rU   5  4);  | 4.5 Angstroms
-   (stacked5* rC   6  5);<-'
+   (stacked5* rU0  5  4);  | 4.5 Angstroms
+   (stacked5* rC0  6  5);<-'
    ))
   
 ; Pseudoknot constraint
 
+(: pseudoknot-constraint? (var (Listof var) -> Boolean))
 (define (pseudoknot-constraint? v partial-inst)
   (case (var-id v)
     ((18)
@@ -3400,15 +3340,18 @@
     (else
      #t)))
 
+(: pseudoknot ( -> (Listof (Listof var))))
 (define (pseudoknot)
   (search '() pseudoknot-domains pseudoknot-constraint?))
 
 ; -- TESTING -----------------------------------------------------------------
 
+(: list-of-atoms (nuc -> (Listof Pt)))
 (define (list-of-atoms n)
   (append (list-of-common-atoms n)
           (list-of-specific-atoms n)))
 
+(: list-of-common-atoms (nuc -> (Listof Pt)))
 (define (list-of-common-atoms n)
   (list
     (nuc-P    n)
@@ -3437,6 +3380,7 @@
     (nuc-C5   n)
     (nuc-C6   n)))
 
+(: list-of-specific-atoms (nuc -> (Listof Pt)))
 (define (list-of-specific-atoms n)
   (cond ((rA? n)
          (list
@@ -3467,16 +3411,19 @@
            (rG-H21  n)
            (rG-H22  n)
            (rG-H8   n)))
-        (else
+        ((rU? n)
          (list
            (rU-O2   n)
            (rU-O4   n)
            (rU-H3   n)
            (rU-H5   n)
-           (rU-H6   n)))))
+           (rU-H6   n)))
+        (else (error "no such nucleotide"))))
 
+(: var-most-distant-atom (var -> Float))
 (define (var-most-distant-atom v)
 
+  (: distance (Pt -> Float))
   (define (distance pos)
     (let ((abs-pos (absolute-pos v pos)))
       (let ((x (pt-x abs-pos)) (y (pt-y abs-pos)) (z (pt-z abs-pos)))
@@ -3484,12 +3431,15 @@
 
   (maximum (map distance (list-of-atoms (var-nuc v)))))
 
+(: sol-most-distant-atom ((Listof var) -> Float))
 (define (sol-most-distant-atom s)
   (maximum (map var-most-distant-atom s)))
 
+(: most-distant-atom ((Listof (Listof var)) -> Float))
 (define (most-distant-atom sols)
   (maximum (map sol-most-distant-atom sols)))
 
+(: maximum ((Listof Float) -> Float))
 (define (maximum lst)
   (let loop ((m (car lst)) (l (cdr lst)))
     (if (null? l)
@@ -3505,4 +3455,6 @@
 
 ; To run program, evaluate: (run)
 
-(time (let loop ((i 100)) (if (zero? i) 'done (begin (run) (loop (- i 1))))))
+(time (let: loop : 'done
+            ((i : Integer 100))
+        (if (zero? i) 'done (begin (run) (loop (- i 1))))))
