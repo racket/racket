@@ -20,28 +20,43 @@
          env-keys+vals
          env-props
          replace-props
-         with-dotted-env/extend)
+         with-dotted-env/extend
+         lex-env? make-empty-lex-env)
 
 ;; eq? has the type of equal?, and l is an alist (with conses!)
 ;; props is a list of known propositions
-(r:d-s/c env ([l (and/c (not/c dict-mutable?) dict?)] [props (listof Filter/c)]) #:transparent)
+(r:d-s/c env ([l (and/c (not/c dict-mutable?) dict?)]) #:transparent)
+(r:d-s/c (lex-env env) ([props (listof Filter/c)]) #:transparent)
+
+(define (mk-env orig dict)
+  (match orig
+    [(lex-env _ p) (lex-env dict p)]
+    [_ (env dict)]))
 
 (define (env-filter f e)
   (match e
-    [(struct env (l props))
-     (make-env (for/fold ([h l])
-                 ([(k v) (in-dict l)]
-                  #:when (not (f (cons k v))))
-                 (dict-remove h k))
-               props)]))
+    [(env l)
+     (mk-env e 
+             (for/fold ([h l])
+               ([(k v) (in-dict l)]
+                #:when (not (f (cons k v))))
+               (dict-remove h k)))]))
 
 (r:d/c (make-empty-env dict)
        (dict? . -> . env?)
-       (make-env dict null))
+       (env dict))
+
+(r:d/c (make-empty-lex-env dict)
+       (dict? . -> . lex-env?)
+       (lex-env dict null))
+
+(r:d/c (env-props e)
+       (lex-env? . -> . (listof Filter/c))
+       (lex-env-props e))
 
 (define (env-keys+vals e)
   (match e
-    [(env l _) (for/list ([(k v) (in-dict l)]) (cons k v))]))
+    [(env l) (for/list ([(k v) (in-dict l)]) (cons k v))]))
 
 ;; the initial type variable environment - empty
 ;; this is used in the parsing of types
@@ -55,29 +70,28 @@
 
 (r:d/c (env-map f e)
   ((any/c any/c . -> . any/c) env? . -> . env?)
-  (make-env (dict-map f (env-l e)) (env-props e)))
+  (mk-env e (dict-map f (env-l e))))
 
 ;; extend that works on single arguments
 (define (extend e k v) 
   (match e
-    [(env l p) (make-env (dict-set l k v) p)]
+    [(env l) (mk-env e (dict-set l k v))]
     [_ (int-err "extend: expected environment, got ~a" e)]))
 
 (define (extend-env ks vs e)
   (match e
-    [(env l p) (make-env (for/fold ([h l])
-                           ([k (in-list ks)] [v (in-list vs)]) (dict-set h k v))
-                         p)]
+    [(env l) (mk-env e (for/fold ([h l])
+                         ([k (in-list ks)] [v (in-list vs)]) (dict-set h k v)))]
     [_ (int-err "extend-env: expected environment, got ~a" e)]))
 
 (define (replace-props e props)
   (match e
-    [(env l p)
-     (make-env l props)]))
+    [(lex-env l p)
+     (lex-env l props)]))
 
 (define (lookup e key fail)
   (match e
-    [(env l p) (dict-ref l key (λ () (fail key)))]
+    [(env l) (dict-ref l key (λ () (fail key)))]
     [_ (int-err "lookup: expected environment, got ~a" e)]))
 
 

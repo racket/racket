@@ -13,11 +13,11 @@
 (provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical
          with-lexical-env/extend/props)
 (p/c
- [lookup-type/lexical ((identifier?) (env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
- [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (env?) . ->* . env?)])
+ [lookup-type/lexical ((identifier?) (lex-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
+ [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (lex-env?) . ->* . env?)])
 
 ;; the current lexical environment
-(define lexical-env (make-parameter (make-empty-env (make-immutable-free-id-table))))
+(define lexical-env (make-parameter (make-empty-lex-env (make-immutable-free-id-table))))
 
 ;; run code in a new env
 (define-syntax-rule (with-lexical-env e . b)
