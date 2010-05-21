@@ -26,6 +26,59 @@ new languages.
 
 @; --------------------------------------------------
 
+@section[#:tag "more-hash-lang"]{More Rackets}
+
+``Racket'' is more of an idea about programming languages than a
+language in the usual sense. Macros can extend a base language (as
+described in @secref["macros"]), and alternate parsers can
+construct an entirely new language from the ground up (as described in
+@secref["languages"]).
+
+The @hash-lang[] line that starts a Racket module declares the
+base language of the module. By ``Racket,'' we usually mean
+@hash-lang[] followed by the base language @racketmodname[racket] or
+@racketmodname[racket/base] (of which @racketmodname[racket] is an
+extension). The Racket distribution provides additional languages,
+including the following:
+
+@itemize[
+
+ @item{@racketmodname[typed/racket] --- like
+       @racketmodname[racket], but statically typed; see
+       @other-manual['(lib "typed-scheme/scribblings/ts-guide.scrbl")]}
+
+ @item{@racketmodname[lazy] --- like @racketmodname[racket/base], but
+       avoids evaluating an expression until its value is needed; see
+       @other-manual['(lib "lazy/lazy.scrbl")]}
+
+ @item{@racketmodname[frtime] --- changes evaluation in an even more
+       radical way to support reactive programming; see
+       @other-manual['(lib "frtime/scribblings/frtime.scrbl")]}
+       
+ @item{@racketmodname[scribble/base] --- a language, which looks more
+       like Latex than Racket, for writing documentation; see
+       @other-manual['(lib "scribblings/scribble/scribble.scrbl")]}
+
+]
+
+Each of these languages is used by starting module with the language
+name after @hash-lang[]. For example, this source of this
+document starts with @racket[@#,hash-lang[] scribble/base].
+
+Furthermore, Racket users can define their own languages, as discussed
+in @secref["languages"]. Typically, a language name maps to its
+implementation through a module path by adding
+@racketidfont{/lang/reader}; for example, the language name
+@racketmodname[scribble/base] is expanded to
+@racket[scribble/base/lang/reader], which is the module that
+implements the surface-syntax parser. Some language names act as
+language loaders; for example, @racket[@#,hash-lang[]
+@#,racketmodname[planet] _planet-path] downloads, installs, and uses a
+language via @seclink["top" #:doc '(lib
+"planet/planet.scrbl")]{@|PLaneT|}.
+
+@; --------------------------------------------------
+
 @section[#:tag "standards"]{Standards}
 
 Standard dialects of Scheme include the ones defined by @|r5rs| and
@@ -77,67 +130,6 @@ Racket, and @|r6rs| pairs are mutable pairs.
 
 See @other-manual['(lib "r6rs/scribblings/r6rs.scrbl")] for more
 information about running @|r6rs| programs with Racket.
-
-@; --------------------------------------------------
-
-@section[#:tag "more-hash-lang"]{More Rackets}
-
-Like ``Scheme,'' even ``Racket'' is more of an idea about
-programming languages than a language in the usual sense. Macros can
-extend a base language (as described in @secref["macros"]), but macros
-and alternate parsers can construct an entirely new language from the
-ground up.
-
-The @hash-lang[] line that starts a Racket module declares the
-base language of the module. By ``Racket,'' we usually mean
-@hash-lang[] followed by the base language @racketmodname[racket] or
-@racketmodname[racket/base] (of which @racketmodname[racket] is an
-extension). The Racket distribution provides additional languages,
-including the following:
-
-@itemize[
-
- @item{@racketmodname[typed/racket] --- like
-       @racketmodname[racket], but statically typed; see
-       @other-manual['(lib "typed-scheme/scribblings/ts-guide.scrbl")]}
-
- @item{@racketmodname[lazy] --- like @racketmodname[racket/base], but
-       avoids evaluating an expression until its value is needed; see
-       @other-manual['(lib "lazy/lazy.scrbl")]}
-
- @item{@racketmodname[frtime] --- changes evaluation in an even more
-       radical way to support reactive programming; see
-       @other-manual['(lib "frtime/scribblings/frtime.scrbl")]}
-       
- @item{@racketmodname[scribble/base] --- a language, which looks more
-       like Latex than Racket, for writing documentation; see
-       @other-manual['(lib "scribblings/scribble/scribble.scrbl")]}
-
-]
-
-Each of these languages is used by starting module with the language
-name after @hash-lang[]. For example, this source of this
-document starts with @racket[@#,hash-lang[] scribble/base].
-
-Racket users can define their own languages.  A language name maps
-to its implementation through a module path by adding
-@racketidfont{/lang/reader}. For example, the language name
-@racketmodname[scribble/doc] is expanded to
-@racket[scribble/doc/lang/reader], which is the module that implements
-the surface-syntax parser. The parser, in turn, generates a
-@racket[module] form, which determines the base language at the level
-of syntactic forms an functions.
-
-Some language names act as language loaders. For example,
-@racketmodname[s-exp] as a language uses the usual Racket parser
-for surface-syntax reading, and then it uses the module path after
-@racketmodname[s-exp] for the language's syntactic forms. Thus,
-@racket[@#,hash-lang[] @#,racketmodname[s-exp] "mylang.rkt"] parses
-the module body using the normal Racket reader, by then imports
-the initial syntax and functions for the module body from
-@racket["mylang.rkt"]. Similarly, @racket[@#,hash-lang[]
-@#,racketmodname[planet] _planet-path] loads a language via
-@seclink["top" #:doc '(lib "planet/planet.scrbl")]{@|PLaneT|}.
 
 @; --------------------------------------------------
 

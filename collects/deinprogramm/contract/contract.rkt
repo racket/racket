@@ -21,7 +21,7 @@
 	 procedure-contract-info? 
 	 procedure-contract-info-arg-contracts procedure-contract-info-return-contract
 	 make-lazy-wrap-info lazy-wrap-info-constructor lazy-wrap-info-raw-accessors
-	 prop:lazy-wrap lazy-wrap-ref
+	 prop:lazy-wrap lazy-wrap? lazy-wrap-ref
 	 make-struct-wrap-contract
 	 check-struct-wraps!
 	 contract=? contract<=?)
@@ -393,7 +393,7 @@
    ref-proc set!-proc))
 
 ; value should be a lazy-wrap-info
-(define-values (prop:lazy-wrap lazy-wrap lazy-wrap-ref)
+(define-values (prop:lazy-wrap lazy-wrap? lazy-wrap-ref)
   (make-struct-type-property 'lazy-wrap))
 
 (define (make-struct-wrap-contract name type-descriptor field-contracts syntax)
