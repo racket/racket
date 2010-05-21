@@ -16,7 +16,7 @@
          (types utils abbrev union subtype resolve convenience type-table)
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
-         (except-in (env type-environments) extend)
+         (except-in (env type-env-structs tvar-env) extend)
          (rep type-rep filter-rep object-rep)
          (r:infer infer)
          '#%paramz

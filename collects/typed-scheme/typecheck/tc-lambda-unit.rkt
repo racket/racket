@@ -13,7 +13,7 @@
                     [make-arr* make-arr])
          (private type-annotation)
          (types abbrev utils)
-	 (env type-environments lexical-env)
+	 (env type-env-structs lexical-env dotted-env tvar-env)
 	 (utils tc-utils)
          unstable/debug
          scheme/match)

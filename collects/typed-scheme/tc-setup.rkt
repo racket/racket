@@ -7,7 +7,7 @@
          (private type-contract)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
-         (env type-environments type-name-env type-alias-env)
+         (env tvar-env type-name-env type-alias-env)
          (r:infer infer)
          (utils tc-utils)
          (rep type-rep)

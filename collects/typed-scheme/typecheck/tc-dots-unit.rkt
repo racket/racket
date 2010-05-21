@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt" 
 	 "signatures.rkt"
          (utils tc-utils)
-         (env type-environments)
+         (env type-env-structs dotted-env tvar-env)
          (types utils)
          (rep type-rep)
          syntax/kerncase

@@ -9,7 +9,7 @@
            "env/type-name-env.rkt")
           make-env)
          (except-in (path-up "types/utils.rkt") Dotted)
-         (only-in (path-up "env/type-environments.rkt") lookup current-tvars)
+         (only-in (path-up "env/type-env-structs.rkt" "env/tvar-env.rkt") lookup current-tvars)
          "constraint-structs.rkt"
 	 "signatures.rkt"                  
          scheme/match

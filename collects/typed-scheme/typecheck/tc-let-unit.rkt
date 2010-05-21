@@ -4,7 +4,7 @@
 (require "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
          (types utils convenience)
          (private type-annotation parse-type)
-	 (env lexical-env type-alias-env type-env type-environments)
+	 (env lexical-env type-alias-env global-env type-env-structs)
          (rep type-rep)
          syntax/free-vars
          mzlib/trace unstable/debug

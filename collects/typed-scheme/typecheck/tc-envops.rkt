@@ -9,7 +9,7 @@
          (rep type-rep object-rep)
          (utils tc-utils)
          (types resolve)
-         (only-in (env type-environments lexical-env) env? update-type/lexical env-map env-props replace-props)
+         (only-in (env type-env-structs lexical-env) env? update-type/lexical env-map env-props replace-props)
          scheme/contract scheme/match
          mzlib/trace unstable/debug unstable/struct
          (typecheck tc-metafunctions)

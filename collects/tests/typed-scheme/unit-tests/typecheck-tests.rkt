@@ -17,12 +17,12 @@
                     [-> t:->])
          (utils tc-utils utils)
          unstable/mutated-vars
-         (env type-name-env type-environments init-envs)
+         (env type-name-env type-env-structs init-envs)
          rackunit rackunit/text-ui
          syntax/parse
          (for-syntax (utils tc-utils)
                      (typecheck typechecker)
-	             (env type-env)
+	             (env global-env)
 	             (private base-env base-env-numeric
 			      base-env-indexing))
          (for-template (private base-env base-types base-types-extra

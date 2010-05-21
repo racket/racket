@@ -13,8 +13,8 @@
          (rep type-rep)
          (types utils convenience)
          (private parse-type type-annotation type-contract)
-         (env type-env init-envs type-name-env type-alias-env lexical-env)
-         unstable/mutated-vars syntax/id-table
+         (env global-env init-envs type-name-env type-alias-env lexical-env)
+	 unstable/mutated-vars syntax/id-table
          (utils tc-utils)
          "provide-handling.rkt"
          "def-binding.rkt"

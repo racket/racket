@@ -4,7 +4,7 @@
 	 (except-in (rep type-rep free-variance) Dotted)
          (private parse-type)
 	 (types convenience utils union resolve abbrev)
-	 (env type-env type-environments type-name-env)
+	 (env global-env type-env-structs type-name-env tvar-env)
 	 (utils tc-utils)
          "def-binding.rkt"
          syntax/kerncase

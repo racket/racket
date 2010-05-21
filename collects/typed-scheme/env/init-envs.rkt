@@ -1,7 +1,7 @@
 #lang scheme/base
 (provide (all-defined-out))
 (require "../utils/utils.rkt"
-         "type-env.rkt" 
+         "global-env.rkt" 
 	 "type-name-env.rkt"
 	 "type-alias-env.rkt"
          unstable/struct racket/dict

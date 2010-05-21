@@ -6,7 +6,7 @@
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: scheme/contract)
          syntax/parse
-         (env type-environments type-name-env type-alias-env lexical-env)         
+         (env type-env-structs tvar-env dotted-env type-name-env type-alias-env lexical-env)         
          scheme/match unstable/debug
          (for-template scheme/base "colon.ss")
          ;; needed at this phase for tests

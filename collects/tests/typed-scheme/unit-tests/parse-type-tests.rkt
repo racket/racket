@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "test-utils.ss" (for-syntax scheme/base)
          (utils tc-utils)
-	 (env type-alias-env type-environments type-name-env init-envs)
+	 (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
 	 (rep type-rep)
 	 (rename-in (types comparison subtype union utils convenience)
                     [Un t:Un] [-> t:->])

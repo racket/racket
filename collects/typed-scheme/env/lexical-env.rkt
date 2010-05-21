@@ -1,8 +1,15 @@
 #lang scheme/base
 
+;; this environment maps *lexical* variables to types
+;; it also contains the proposition environment
+
+;; these environments are unified in "Logical Types for Scheme"
+;; but split here for performance
+
 (require "../utils/utils.rkt"
-	 "type-environments.rkt" 
-	 "type-env.rkt"
+	 "type-env-structs.rkt"
+         "global-env.rkt"
+         "dotted-env.rkt"
 	 unstable/mutated-vars syntax/id-table
          (only-in scheme/contract ->* -> or/c any/c listof cons/c)
          (utils tc-utils)
@@ -13,11 +20,11 @@
 (provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical
          with-lexical-env/extend/props)
 (p/c
- [lookup-type/lexical ((identifier?) (lex-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
- [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (lex-env?) . ->* . env?)])
+ [lookup-type/lexical ((identifier?) (prop-env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
+ [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (prop-env?) . ->* . env?)])
 
 ;; the current lexical environment
-(define lexical-env (make-parameter (make-empty-lex-env (make-immutable-free-id-table))))
+(define lexical-env (make-parameter (make-empty-prop-env (make-immutable-free-id-table))))
 
 ;; run code in a new env
 (define-syntax-rule (with-lexical-env e . b)

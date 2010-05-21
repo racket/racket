@@ -6,7 +6,7 @@
          (rep type-rep filter-rep object-rep)
          (rename-in (types convenience subtype union utils comparison remove-intersect abbrev filter-ops)
                     [remove *remove])
-         (env lexical-env type-environments)
+         (env lexical-env type-env-structs)
          (r:infer infer)
 	 (utils tc-utils)
          (typecheck tc-envops tc-metafunctions)

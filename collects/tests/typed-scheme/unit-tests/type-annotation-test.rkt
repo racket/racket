@@ -4,7 +4,7 @@
          typed-scheme/private/type-annotation
          typed-scheme/private/parse-type
          (types abbrev utils)
-	 (env type-environments  init-envs)
+	 (env type-env-structs init-envs)
 	 (utils tc-utils)
 	 (rep type-rep filter-rep object-rep)
          rackunit)

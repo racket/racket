@@ -3,7 +3,7 @@
 (require "test-utils.ss"
          (types subtype convenience union)
 	 (rep type-rep)
-	 (env init-envs type-environments)
+	 (env init-envs type-env-structs)
 	 (r:infer infer infer-dummy)
          rackunit
          (for-syntax scheme/base))
