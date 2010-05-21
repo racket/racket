@@ -3,6 +3,7 @@
 (require "../utils/utils.rkt"
 	 "type-environments.rkt" 
 	 "type-env.rkt"
+	 unstable/mutated-vars syntax/id-table
          (only-in scheme/contract ->* -> or/c any/c listof cons/c)
          (utils tc-utils)
          (only-in (rep type-rep) Type/c)
@@ -16,7 +17,7 @@
  [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (env?) . ->* . env?)])
 
 ;; the current lexical environment
-(define lexical-env (make-parameter (make-empty-env free-identifier=?)))
+(define lexical-env (make-parameter (make-empty-env (make-immutable-free-id-table))))
 
 ;; run code in a new env
 (define-syntax-rule (with-lexical-env e . b)

@@ -1,5 +1,8 @@
 #lang scheme/base
 
+;; Top-level type environment
+;; maps identifiers to their types, updated by mutation
+
 (require "../utils/utils.rkt" 
 	 syntax/id-table
          (utils tc-utils)

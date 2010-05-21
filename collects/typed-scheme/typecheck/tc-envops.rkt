@@ -70,7 +70,7 @@
   (define-values (props atoms) (combine-props fs (env-props env) flag))
   (for/fold ([Γ (replace-props env (append atoms props))]) ([f atoms])
     (match f
-      [(Bot:) (set-box! flag #f) (env-map (lambda (x) (cons (car x) (Un))) Γ)]
+      [(Bot:) (set-box! flag #f) (env-map (lambda (k v) (Un)) Γ)]
       [(or (TypeFilter: _ _ x) (NotTypeFilter: _ _ x))
        (update-type/lexical (lambda (x t) (let ([new-t (update t f)])
                                             (when (type-equal? new-t (Un))

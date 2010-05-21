@@ -239,8 +239,7 @@
                               (syntax-e #'bound))))))]
       [(dom:expr ... rest:expr _:ddd (~and kw t:->) rng)
        (add-type-name-reference #'kw)
-       (let ([bounds (filter (compose Dotted? cdr)
-                             (env-keys+vals (current-tvars)))])
+       (let ([bounds (env-keys+vals (env-filter (compose Dotted? cdr) (current-tvars)))])
          (when (null? bounds)
            (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
          (unless (null? (cdr bounds))
@@ -363,7 +362,7 @@
                               (syntax-e #'bound))))]
       [((~and kw values) tys ... dty _:ddd)
        (add-type-name-reference #'kw)
-       (let ([bounds (filter (compose Dotted? cdr) (env-keys+vals (current-tvars)))])
+       (let ([bounds (env-keys+vals (env-filter (compose Dotted? cdr) (current-tvars)))])
          (when (null? bounds)
            (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
          (unless (null? (cdr bounds))
