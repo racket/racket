@@ -60,11 +60,11 @@
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
   ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
-  (pattern (#%plain-app op:float-binary-op f fs ...)
+  (pattern (#%plain-app op:float-binary-op f1 f2 fs ...)
            #:with opt 
            (begin (log-optimization "binary float" #'op)
-                  (for/fold ([o #'f.opt])
-                      ([e (syntax->list #'(fs.opt ...))])
+                  (for/fold ([o #'f1.opt])
+                      ([e (syntax->list #'(f2.opt fs.opt ...))])
                     #`(op.unsafe #,o #,e))))
   (pattern (#%plain-app op:pair-unary-op p)
            #:with opt
@@ -99,10 +99,10 @@
                                     #:exists 'append)
                   (current-output-port))))
     (begin0
-          (parameterize ([current-output-port port])
-            (syntax-parse stx #:literal-sets (kernel-literals)
-                          [e:opt-expr
-                           (syntax/loc stx e.opt)]))
+      (parameterize ([current-output-port port])
+        (syntax-parse stx #:literal-sets (kernel-literals)
+                      [e:opt-expr
+                       (syntax/loc stx e.opt)]))
       (if (and *log-optimizations?*
                *log-optimizatons-to-log-file?*)
           (close-output-port port)
