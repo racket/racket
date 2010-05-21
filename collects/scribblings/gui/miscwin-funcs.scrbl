@@ -14,8 +14,7 @@
 
 @title{Miscellaneous}
 
-@defproc[(begin-busy-cursor)
-         void?]{
+@defproc[(begin-busy-cursor) void?]{
 
 Changes the cursor to a watch cursor for all windows in the current eventspace.
 Use 
@@ -27,30 +26,15 @@ The cursor installed by
 @scheme[begin-busy-cursor] overrides any window-specific cursors installed with
 @method[window<%> set-cursor].
 
-See also 
-@scheme[is-busy?].
-
-
-
+See also @scheme[is-busy?].
 }
 
-@defproc[(bell)
-         void?]{
-
+@defproc[(bell) void?]{
 Rings the system bell.
-
-
-
 }
 
-@defproc[(end-busy-cursor)
-         void?]{
-
-See
-@scheme[begin-busy-cursor].
-
-
-
+@defproc[(end-busy-cursor) void?]{
+See @scheme[begin-busy-cursor].
 }
 
 @defproc*[([(file-creator-and-type [filename path]
@@ -234,12 +218,9 @@ The keymap for the read-eval-print loop's editor is initialized by
  calling the current keymap initializer procedure, which is determined
  by the
 @scheme[current-text-keymap-initializer] parameter.
-
-
 }
 
-@defproc[(textual-read-eval-print-loop)
-         void?]{
+@defproc[(textual-read-eval-print-loop) void?]{
 
 Similar to @scheme[read-eval-print-loop], except that evaluation uses
  a newly created eventspace.
@@ -259,30 +240,21 @@ break is sent (via @scheme[break-thread]) to the created eventspace's
 @tech{handler thread}.}
 
 
-@defproc[(hide-cursor-until-moved)
-         void?]{
+@defproc[(hide-cursor-until-moved) void?]{
 
 Hides the cursor until the user moves the mouse or clicks the mouse
  button. (For some platforms, the cursor is not hidden if it is over
  a window in a different eventspace or application.)
-
-
-
 }
 
-@defproc[(is-busy?)
-         boolean?]{
+@defproc[(is-busy?) boolean?]{
 
 Returns @scheme[#t] if a busy cursor has been installed with
-@scheme[begin-busy-cursor] and not removed with 
+@scheme[begin-busy-cursor] and not removed with
 @scheme[end-busy-cursor].
-
-
-
 }
 
-@defproc[(label->plain-label [label string])
-         string]{
+@defproc[(label->plain-label [label string]) string?]{
 
 Strips shortcut ampersands from @scheme[label], removes parenthesized
  ampersand--character combinations along with any surrounding space,
@@ -292,15 +264,13 @@ Strips shortcut ampersands from @scheme[label], removes parenthesized
 }
 
 
-@defproc[(make-gui-empty-namespace)
-         namespace?]{
+@defproc[(make-gui-empty-namespace) namespace?]{
 
 Like @scheme[make-base-empty-namespace], but with
 @scheme[scheme/class] and @schememodname[scheme/gui/base] also
 attached to the result namespace.}
 
-@defproc[(make-gui-namespace)
-         namespace?]{
+@defproc[(make-gui-namespace) namespace?]{
 
 Like @scheme[make-base-namespace], but with @scheme[scheme/class] and
 @schememodname[scheme/gui/base] also required into the top-level

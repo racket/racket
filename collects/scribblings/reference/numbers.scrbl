@@ -734,8 +734,8 @@ generator.}
 @section-index["numbers" "little-endian"]
 @section-index["numbers" "converting"]
 
-@defproc[(number->string [z number?]
-                         [radix (or/c 2 8 10 16) 10]) string?]{
+@defproc[(number->string [z number?] [radix (or/c 2 8 10 16) 10])
+         string?]{
  Returns a string that is the printed form of @racket[z]
  in the base specific by @racket[radix]. If @racket[z] is inexact,
  @racket[radix] must be @racket[10], otherwise the
@@ -744,7 +744,7 @@ generator.}
 @mz-examples[(number->string 3.0) (number->string 255 8)]}
 
 
-@defproc[(string->number [s string?] [radix (integer-in 2 16) 10]) 
+@defproc[(string->number [s string?] [radix (integer-in 2 16) 10])
          (or/c number? #f)]{
 
 Reads and returns a number datum from @racket[s] (see
@@ -801,8 +801,7 @@ least-significant eight bits, and so on.}
                                  [size-n (or/c 2 4 8)]
                                  [signed? any/c]
                                  [big-endian? any/c (system-big-endian?)]
-                                 [dest-bstr (and/c bytes? 
-                                                   (not/c immutable?))
+                                 [dest-bstr (and/c bytes? (not/c immutable?))
                                             (make-bytes size-n)]
                                  [start exact-nonnegative-integer? 0])
           bytes?]{
@@ -844,9 +843,8 @@ provides the least-significant eight bits, and so on.}
 @defproc[(real->floating-point-bytes [x real?]
                                      [size-n (or/c 4 8)]
                                      [big-endian? any/c (system-big-endian?)]
-                                     [dest-bstr (and/c bytes? 
-                                                       (not/c immutable?))
-                                                 (make-bytes size-n)]
+                                     [dest-bstr (and/c bytes? (not/c immutable?))
+                                                (make-bytes size-n)]
                                      [start exact-nonnegative-integer? 0])
           bytes?]{
 

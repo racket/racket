@@ -79,7 +79,7 @@ used as an ephemeron key (see @secref["ephemerons"]).
           (symbol-unreadable? (gensym))
           (symbol-unreadable? (string->unreadable-symbol "Apple"))]}
 
-@defproc[(symbol->string [sym symbol?]) symbol?]{Returns a freshly
+@defproc[(symbol->string [sym symbol?]) string?]{Returns a freshly
  allocated mutable string whose characters are the same as in
  @scheme[sym].
 
@@ -98,7 +98,7 @@ used as an ephemeron key (see @secref["ephemerons"]).
  @tech{uninterned} symbol. Calling @scheme[string->uninterned-symbol]
  twice with the same @scheme[str] returns two distinct symbols.
 
-@examples[(string->uninterned-symbol "Apple") 
+@examples[(string->uninterned-symbol "Apple")
           (eq? 'a (string->uninterned-symbol "a"))
           (eq? (string->uninterned-symbol "a")
                (string->uninterned-symbol "a"))]}
@@ -110,7 +110,7 @@ used as an ephemeron key (see @secref["ephemerons"]).
  twice with equivalent @scheme[str]s returns the same symbol, but
  @scheme[read] never produces the symbol.
 
-@examples[(string->unreadable-symbol "Apple") 
+@examples[(string->unreadable-symbol "Apple")
           (eq? 'a (string->unreadable-symbol "a"))
           (eq? (string->unreadable-symbol "a")
                (string->unreadable-symbol "a"))]}
@@ -150,7 +150,7 @@ Returns @scheme[#t] if @scheme[v] is a keyword, @scheme[#f] otherwise.}
 Returns a string for the @scheme[display]ed form of @scheme[keyword],
 not including the leading @litchar{#:}.}
 
-@defproc[(string->keyword [str string?]) keyword]{
+@defproc[(string->keyword [str string?]) keyword?]{
 
 Returns a keyword whose @scheme[display]ed form is the same as that of
 @scheme[str], but with a leading @litchar{#:}.}

@@ -65,10 +65,9 @@ produced by @scheme[define-struct],
 typically, however, @scheme[name] is not used for reporting errors,
 since the procedure name is typically hard-wired into an internal
 check.}
-                    
-@defproc[(procedure->method [proc procedure?])
-         procedure?]{
-                     
+
+@defproc[(procedure->method [proc procedure?]) procedure?]{
+
 Returns a procedure that is like @scheme[proc] except that, when applied
 to the wrong number of arguments, the resulting error hides the first
 argument as if the procedure had been compiled with the

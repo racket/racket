@@ -531,7 +531,7 @@ supplied @racket[v]s, the @exnraise[exn:fail:contract].
 (make-prefab-struct '(clown 1 (1 #f) #(0)) "Binky" "pie")
 ]}
 
-@defproc[(prefab-key->struct-type [key (or/c symbol? list?)] 
+@defproc[(prefab-key->struct-type [key (or/c symbol? list?)]
                                   [field-count (integer-in 0 32768)])
          struct-type?]{
 

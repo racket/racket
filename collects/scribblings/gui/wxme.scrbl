@@ -32,7 +32,7 @@ magic bytes indicating a @tech{WXME}-format stream (see
 @secref["editorfileformat"]), @racket[#f] otherwise.}
 
 
-@defproc[(wxme-port->text-port [in input-port?] [close? any/c #t]) 
+@defproc[(wxme-port->text-port [in input-port?] [close? any/c #t])
          input-port?]{
 
 Takes an input port whose stream starts with @tech{WXME}-format data
@@ -47,11 +47,11 @@ See @secref["snipclassmapping"] for information about the kinds of
 non-text content that can be read.}
 
 
-@defproc[(wxme-port->port [in input-port?] 
+@defproc[(wxme-port->port [in input-port?]
                           [close? any/c #t]
                           [snip-filter (any/c . -> . any/c) (lambda (_x) _x)])
          input-port?]{
-                          
+
 Takes an input port whose stream starts with @tech{WXME}-format data
 and returns an input port that produces text content converted to
 bytes, and non-text content as ``special'' values (see

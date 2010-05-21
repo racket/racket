@@ -415,8 +415,7 @@ The tag @racket[t] refers to the content form of
 The @tech{decode}d @racket[pre-content] is hyperlinked to @racket[t],
 which is normally defined using @racket[elemtag].}
 
-@defproc[(module-path-prefix->string [mod-path module-path?])
-         string?]{
+@defproc[(module-path-prefix->string [mod-path module-path?]) string?]{
 
 Converts a module path to a string by resolving it to a path, and
 using @racket[path->main-collects-relative].}

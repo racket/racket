@@ -38,7 +38,7 @@ bindings such as @scheme[foo-bar] for foreign names like
 ]}
 
 
-@defproc[(list->cblock [lst list?][type ctype?]) any]{
+@defproc[(list->cblock [lst list?] [type ctype?]) any]{
 
 Allocates a memory block of an appropriate size, and initializes it
 using values from @scheme[lst] and the given @scheme[type].  The
@@ -46,7 +46,7 @@ using values from @scheme[lst] and the given @scheme[type].  The
 according to the given @scheme[type].}
 
 
-@defproc[(vector->cblock [vec vector?][type type?]) any]{
+@defproc[(vector->cblock [vec vector?] [type type?]) any]{
 
 Like @scheme[list->cblock], but for Racket vectors.}
 
@@ -75,7 +75,7 @@ symbol. The set of supported symbols is likely to expand in the
 future.}
 
 
-@defproc[(cast [v any/c][from-type ctype?][to-type ctype?]) any/c]{
+@defproc[(cast [v any/c] [from-type ctype?] [to-type ctype?]) any/c]{
 
 Converts @scheme[v] from a value matching @scheme[from-type] to a
 value matching @scheme[to-type], where @scheme[(ctype-sizeof from-type)]
@@ -89,7 +89,7 @@ The conversion is equivalent to
     (ptr-ref p to-type))
 ]}
 
-@defproc[(cblock->list [cblock any/c][type ctype?][length exact-nonnegative-integer?])
+@defproc[(cblock->list [cblock any/c] [type ctype?] [length exact-nonnegative-integer?])
          list?]{
 
 Converts C @scheme[cblock], which is a vector of @scheme[type]s, to a
@@ -98,7 +98,7 @@ Racket list.  The arguments are the same as in the
 there is no way to know where the block ends.}
 
 
-@defproc[(cblock->vector [cblock any/c][type ctype?][length exact-nonnegative-integer?])
+@defproc[(cblock->vector [cblock any/c] [type ctype?] [length exact-nonnegative-integer?])
          vector?]{
 
 Like @scheme[cblock->vector], but for Racket vectors.}

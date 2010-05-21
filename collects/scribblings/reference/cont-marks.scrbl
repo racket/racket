@@ -77,7 +77,7 @@ other words, it produces the same value as
   prompt-tag)
 ]}
 
-@defproc[(continuation-mark-set->list 
+@defproc[(continuation-mark-set->list
           [mark-set continuation-mark-set?]
           [key-v any/c]
           [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)])
@@ -88,7 +88,7 @@ in @racket[mark-set], which is a set of marks returned by
 the first point, if any, where continuation frames were originally
 separated by a prompt tagged with @racket[prompt-tag]..}
 
-@defproc[(continuation-mark-set->list* 
+@defproc[(continuation-mark-set->list*
           [mark-set continuation-mark-set?]
           [key-list (listof any/c)]
           [none-v any/c #f]
@@ -144,8 +144,7 @@ Returns @racket[#t] if @racket[v] is a mark set created by
 @racket[continuation-marks] or @racket[current-continuation-marks],
 @racket[#f] otherwise.}
 
-@defproc[(continuation-mark-set->context
-          [mark-set continuation-mark-set?])
+@defproc[(continuation-mark-set->context [mark-set continuation-mark-set?])
           list?]{
 
 Returns a list representing an approximate ``@index["stack

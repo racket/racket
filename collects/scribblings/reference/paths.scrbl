@@ -70,7 +70,7 @@ single path element.
 See also @racket[string->some-system-path].}
 
 @defproc[(bytes->path [bstr bytes?]
-                      [type (or/c 'unix 'windows) (system-path-convention-type)]) 
+                      [type (or/c 'unix 'windows) (system-path-convention-type)])
          path?]{
 
 Produces a path (for some platform) whose byte-string name is
