@@ -1,5 +1,6 @@
 #lang scheme/base
-(require "scheme-lexer.rkt")
+(require "scheme-lexer.rkt"
+         racket/port)
 
 (provide scribble-inside-lexer
          scribble-lexer)
@@ -30,7 +31,11 @@
                               #f
                               #rx".*?(?:(?=[@\r\n])|$)"
                               #f
-                              #f)))])
+                              #f)))]
+        [in (special-filter-input-port in
+                                       (lambda (v s)
+                                         (bytes-set! s 0 (char->integer #\.))
+                                         1))])
   (let-values ([(line col pos) (port-next-location in)]
                [(l) (car mode)])
 
@@ -61,11 +66,11 @@
     
     (define (enter-@ comment-k)
       (cond
-       [(equal? #\; (peek-char in))
+       [(equal? #\; (peek-char-or-special in))
         ;; Comment
         (read-char in)
-        (if (or (equal? #\{ (peek-char in))
-                (equal? #\| (peek-char in)))
+        (if (or (equal? #\{ (peek-char-or-special in))
+                (equal? #\| (peek-char-or-special in)))
             ;; Bracketed comment:
             (let-values ([(end-line end-col end-pos) (port-next-location in)])
               (comment-k "@;"
@@ -94,7 +99,7 @@
        [else
         (let ([new-mode
                (cond
-                [(equal? #\| (peek-char in))
+                [(equal? #\| (peek-char-or-special in))
                  (read-char in)
                  (list* (make-scheme 'bar (+ offset pos))
                         (no-backup mode))]
@@ -153,7 +158,7 @@
                                    '|}|) ;; Better complex paren?
                         (no-backup mode))))))
 
-    (if (eof-object? (peek-char in))
+    (if (eof-object? (peek-char-or-special in))
         (values eof
                 'eof
                 #f

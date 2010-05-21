@@ -475,12 +475,34 @@ is enabled for the resulting port. The default is @scheme[void].}
 
 Like @scheme[transplant-input-port], but for output ports.}
 
+@defproc[(special-filter-input-port [in input-port?]
+                                    [proc (procedure? bytes? . -> . (or/c exact-nonnegative-integer? 
+                                                                          eof-object?
+                                                                          procedure? 
+                                                                          evt?))]
+                                    [close? any/c #t])
+          input-port?]{
+
+Produces an input port that that is equivalent to @scheme[in], except
+that when @scheme[in] produces a procedure to access a special value,
+@scheme[proc] is applied to the procedure to allow the special value
+to be replaced with an alternative. The @scheme[proc] is called with
+the special-value procedure and the byte string that was given to the
+port's read or peek function (see @racket[make-input-port]), and the
+result is used as te read or peek function's result.  The
+@racket[proc] can modify the byte string to substitute a byte for the
+special value, but the byte string is guaranteed only to hold at least
+one byte.
+
+If @scheme[close?] is true, then closing the resulting input port also
+closes @racket[in].}
+
 @; ----------------------------------------------------------------------
 
 @section{Port Events}
 
 
-@defproc[(eof-evt [in input-port?]) evt?]
+@defproc[(eof-evt [in input-port?]) evt?]{
 
 Returns a @tech{synchronizable event} is that is ready when
 @scheme[in] produces an @scheme[eof]. If @scheme[in] produces a
@@ -516,7 +538,7 @@ a special non-byte value during the read attempt.}
 
 @defproc[(read-bytes!-evt [bstr (and/c bytes? (not/c immutable?))]
                           [in input-port?]) 
-         evt?]
+         evt?]{
 
 Like @scheme[read-bytes-evt], except that the read bytes are placed
 into @scheme[bstr], and the number of bytes to read corresponds to
@@ -595,7 +617,7 @@ cancelled.}
 
 
 @defproc[(regexp-match-evt [pattern (or/c string? bytes? regexp? byte-regexp?)]
-                           [in input-port?]) any]
+                           [in input-port?]) any]{
 
 Returns a @tech{synchronizable event} that is ready when
 @scheme[pattern] matches the stream of bytes/characters from

@@ -839,6 +839,43 @@
          (when close-orig?
            (close-input-port port)))))))
 
+
+
+(define special-filter-input-port
+  (lambda (p filter [close? #t])
+    (unless (input-port? p)
+      (raise-type-error 'special-filter-input-port "input port" p))
+    (unless (and (procedure? filter)
+                 (procedure-arity-includes? filter 2))
+      (raise-type-error 'special-filter-input-port "procedure (arity 2)" filter))
+    (make-input-port
+     (object-name p)
+     (lambda (s)
+       (let ([v (read-bytes-avail!* s p)])
+         (cond
+          [(eq? v 0) (wrap-evt p (lambda (x) 0))]
+          [(procedure? v) (filter v s)]
+          [else v])))
+     (lambda (s skip evt)
+       (let ([v (peek-bytes-avail!* s skip evt p)])
+         (cond
+          [(eq? v 0)
+           (choice-evt
+            (wrap-evt p (lambda (x) 0))
+            (if evt (wrap-evt evt (lambda (x) #f)) never-evt))]
+          [(procedure? v) (filter v s)]
+          [else v])))
+     (lambda ()
+       (when close? (close-input-port p)))
+     (and (port-provides-progress-evts? p)
+          (lambda () (port-progress-evt p)))
+     (and (port-provides-progress-evts? p)
+          (lambda (n evt target-evt) (port-commit-peeked n evt target-evt p)))
+     (lambda () (port-next-location p))
+     (lambda () (port-count-lines! p))
+     (let-values ([(l c p) (port-next-location p)])
+       p))))
+
 ;; ----------------------------------------
 
 (define (poll-or-spawn go)
@@ -1695,6 +1732,7 @@
          peeking-input-port
          relocate-input-port
          transplant-input-port
+         special-filter-input-port
          relocate-output-port
          transplant-output-port
          merge-input
