@@ -55,7 +55,7 @@ order.}
 Returns the length of @racket[vec] (i.e., the number of slots in the
 vector).}
 
-@defproc[(vector-ref [vec vector?][pos exact-nonnegative-integer?]) any/c]{
+@defproc[(vector-ref [vec vector?] [pos exact-nonnegative-integer?]) any/c]{
 
 Returns the element in slot @racket[pos] of @racket[vec]. The first
 slot is position @racket[0], and the last slot is one less than
@@ -69,14 +69,12 @@ slot is position @racket[0], and the last slot is one less than
 Updates the slot @racket[pos] of @racket[vec] to contain @racket[v].}
 
 
-@defproc[(vector->list [vec vector?])
-         list?]{
+@defproc[(vector->list [vec vector?]) list?]{
 
 Returns a list with the same length and elements as @racket[vec].}
 
 
-@defproc[(list->vector [lst list?])
-         vector?]{
+@defproc[(list->vector [lst list?]) vector?]{
 
 Returns a mutable vector with the same length and elements as
 @racket[lst].}

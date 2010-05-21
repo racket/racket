@@ -381,7 +381,7 @@ Like @racket[dynamic-require], but in a @tech{phase} that is @math{1}
 more than the namespace's @tech{base phase}.}
 
 
-@defproc[(module->language-info 
+@defproc[(module->language-info
           [mod (or/c module-path? path? resolved-module-path?)]
           [load? any/c #f])
          (or/c #f (vector/c module-path? symbol? any/c))]{

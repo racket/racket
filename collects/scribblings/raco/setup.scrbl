@@ -1091,7 +1091,6 @@ converted to a path using @racket[bytes->path].}
                              (or/c (listof bytes?) bytes?)))])
          path?]{
 
-
 The inverse of @racket[path->main-collects-relative]: if @racket[rel]
 is a pair that starts with @racket['collects], then it is converted
 back to a path relative to @racket[(find-collects-dir)].

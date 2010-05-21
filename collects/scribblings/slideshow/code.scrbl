@@ -290,4 +290,3 @@ The same as @racket[pict-last], provided for backward compatibility.}
 
 Mainly for backward compatibility: returns @racket[(if bl-pict
 (use-last pict (or (pict-last bl-pict) bl-pict)))].}
-

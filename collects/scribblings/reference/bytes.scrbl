@@ -48,8 +48,7 @@ positions are initialized with the given @scheme[b]s.
 
 
 @defproc[(bytes->immutable-bytes [bstr bytes?])
-         (and/c bytes?
-                immutable?)]{
+         (and/c bytes? immutable?)]{
  Returns an immutable byte string with the same content
  as @scheme[bstr], returning @scheme[bstr] itself if @scheme[bstr] is
  immutable.

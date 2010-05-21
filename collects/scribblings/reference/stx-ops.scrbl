@@ -121,8 +121,7 @@ pair-valued @tech{syntax object} @italic{only} for parentheses in the
 source. See @secref["parse-pair"] for more information.}
 
 
-@defproc[(syntax->list [stx syntax?])
-         (or/c list? #f)]{
+@defproc[(syntax->list [stx syntax?]) (or/c list? #f)]{
 
 Returns a list of @tech{syntax object}s or @scheme[#f]. The result is a list
 of @tech{syntax object}s when @scheme[(syntax->datum stx)] would produce a

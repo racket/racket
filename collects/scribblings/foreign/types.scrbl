@@ -42,9 +42,8 @@ Returns the size or alignment of a given @scheme[type] for the current
 platform.}
 
 
-@defproc[(ctype->layout [type ctype?]) (flat-rec-contract rep
-                                         symbol?
-                                         (listof rep))]{
+@defproc[(ctype->layout [type ctype?])
+         (flat-rec-contract rep symbol? (listof rep))]{
 
 Returns a value to describe the eventual C representation of the
 type. It can be any of the following symbols:

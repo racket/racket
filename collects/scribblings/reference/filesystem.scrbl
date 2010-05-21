@@ -145,7 +145,6 @@ by @racket[kind], which must be one of the following:
 @defproc[(path-list-string->path-list [str (or/c string? bytes?)]
                                       [default-path-list (listof path?)])
          (listof path?)]{
- 
 
 Parses a string or byte string containing a list of paths, and returns
 a list of path strings. Under @|AllUnix|, paths in a path list are
@@ -587,7 +586,7 @@ bound through @racket[define-runtime-module-path].}
 Reads all characters from @racket[path] and returns them as a string.
 The @racket[mode-flag] argument is the same as for
 @racket[open-input-file].}
- 
+
 @defproc[(file->bytes [path path-string?]
                       [#:mode mode-flag (or/c 'binary 'text) 'binary])
          bytes?]{
@@ -598,16 +597,16 @@ for @racket[open-input-file].}
 
 @defproc[(file->value [path path-string?]
                       [#:mode mode-flag (or/c 'binary 'text) 'binary])
-         bytes?]{
+         any]{
 
 Reads a single S-expression from @racket[path] using @racket[read].
 The @racket[mode-flag] argument is the same as for
 @racket[open-input-file].}
 
-@defproc[(file->list [path path-string?] 
-		     [proc (input-port? . -> . any/c) read]
-		     [#:mode mode-flag (or/c 'binary 'text) 'binary])
-		     (listof any/c)]{
+@defproc[(file->list [path path-string?]
+                     [proc (input-port? . -> . any/c) read]
+                     [#:mode mode-flag (or/c 'binary 'text) 'binary])
+         (listof any/c)]{
 Repeatedly calls @racket[proc] to consume the contents of
 @racket[path], until @racket[eof] is produced. The @racket[mode-flag]
 argument is the same as for @racket[open-input-file].  }
@@ -624,8 +623,8 @@ Read all characters from @racket[path], breaking them into lines. The
 @racket[open-input-file].}
 
 @defproc[(file->bytes-lines [path path-string?]
-                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
-                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+                            [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                            [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
          (listof bytes?)]{
 
 Like @racket[file->lines], but reading bytes and collecting them into

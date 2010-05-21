@@ -125,7 +125,7 @@ result is the result of @racket[expr].}
 
 @note-lib-only[racket/date]
 
-@defproc[(date->string [date date?][time? any/c #f]) string?]{
+@defproc[(date->string [date date?] [time? any/c #f]) string?]{
 
 Converts a date to a string. The returned string contains the time of
 day only if @racket[time?]. See also @racket[date-display-format].}
@@ -171,4 +171,3 @@ calculations.}
 
 Converts a Julian number (Scalinger's off-by-one version) into a
 string.}
-

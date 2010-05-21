@@ -115,8 +115,7 @@ The optional @racket[using-render%] argument is as for
 @racket[load-xref].}
 
 
-@defproc[(xref-tag->index-entry [xref xref?]
-                                [tag tag?])
+@defproc[(xref-tag->index-entry [xref xref?] [tag tag?])
          (or/c false/c entry?)]{
 
 Extract an @racket[entry] structure that provides addition information
