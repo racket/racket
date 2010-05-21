@@ -36,6 +36,9 @@ Most bechmarks were obtained from
 
 Files that end in ".sch" are supposed to be standard Scheme plus `time'.
 Files that end in ".rkt" are Racket wrapper modules or helper scripts.
+Files that end in "-typed.rktl" are Typed Scheme versions of the benchmarks.
+Files that end in "-[non-]optimizing.rkt" are Typed Scheme wrappers
+that turn Typed Scheme's optimizer on or off.
 
 To build <benchmark>.sch directly with Gambit, Bigloo, or Chicken:
   racket -f mk-gambit.rktl <benchmark> ; gsi -:m10000 <benchmark>.o1
