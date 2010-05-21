@@ -101,7 +101,7 @@ success. If the process terminated due to a fault or signal, the exit
 code is non-zero.}
 
 
-@defproc[(subprocess-kill [subproc subprocess?][force? any/c]) void?]{
+@defproc[(subprocess-kill [subproc subprocess?] [force? any/c]) void?]{
 
 Terminates the subprocess represented by @racket[subproc] if
 @racket[force?] is true and if the process still running. If an error
@@ -127,7 +127,10 @@ otherwise.}
 
 
 @defproc[(shell-execute [verb (or/c string? #f)]
-                        [target string?][parameters string?][dir path-string?][show-mode symbol?]) 
+                        [target string?]
+                        [parameters string?]
+                        [dir path-string?]
+                        [show-mode symbol?]) 
          #f]
 
 @index['("ShellExecute")]{Performs} the action specified by @racket[verb]
@@ -237,8 +240,8 @@ containing no nul characters. If the command succeeds, the return
 value is @racket[#t], @racket[#f] otherwise.}
 
 
-@defproc*[([(system* [command path-string?][arg string?] ...) boolean?]
-           [(system* [command path-string?][exact 'exact][arg string?]) boolean?])]{
+@defproc*[([(system* [command path-string?] [arg string?] ...) boolean?]
+           [(system* [command path-string?] [exact 'exact] [arg string?]) boolean?])]{
 
 Like @racket[system], except that @racket[command] is a filename that
 is executed directly (instead of through a shell command), and the
@@ -257,8 +260,8 @@ Like @racket[system], except that the result is the exit code returned
 by the subprocess. A @racket[0] result normally indicates success.}
 
 
-@defproc*[([(system*/exit-code [command path-string?][arg string?] ...) (integer-in 0 255)]
-           [(system*/exit-code [command path-string?][exact 'exact][arg string?]) (integer-in 0 255)])]{
+@defproc*[([(system*/exit-code [command path-string?] [arg string?] ...) (integer-in 0 255)]
+           [(system*/exit-code [command path-string?] [exact 'exact] [arg string?]) (integer-in 0 255)])]{
 
 Like @racket[system*], but returns the exit code like
 @racket[system/exit-code].}
@@ -318,8 +321,8 @@ be explicitly closed with @racket[close-input-port] or
 @racket[close-output-port].}
  
 
-@defproc*[([(process* [command path-string?][arg string?] ...) list?]
-           [(process* [command path-string?][exact 'exact][arg string?]) list?])]{
+@defproc*[([(process* [command path-string?] [arg string?] ...) list?]
+           [(process* [command path-string?] [exact 'exact] [arg string?]) list?])]{
 
 Like @racket[process], except that @racket[command] is a filename that
 is executed directly, and the @racket[arg]s are the arguments. Under

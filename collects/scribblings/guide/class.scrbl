@@ -489,7 +489,7 @@ arguments and add none in their @racket[super-new] expressions:
     (define/public (eat food) ....)
     (define/public (grow amt) ....)))
 (define child% (hungry-mixin (picky-mixin person%)))
-(define oliver (new child% [name "Oliver"][age 6]))
+(define oliver (new child% [name "Oliver"] [age 6]))
 ]
 
 Finally, the use of external names for class members (instead of

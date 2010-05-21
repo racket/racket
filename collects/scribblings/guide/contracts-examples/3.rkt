@@ -37,7 +37,7 @@
  ;; how many items are in the dictionary?
  [count       (-> dictionary? natural-number/c)]
  ;; does the dictionary define key k? 
- [has?        (->d ([d dictionary?][k symbol?])
+ [has?        (->d ([d dictionary?] [k symbol?])
                    ()
                    [result boolean?]
                    #:post-cond
@@ -49,7 +49,7 @@
                    [result (dictionary-value? d)])]
  ;; initialization 
  ;; post condition: for all k in symbol, (has? d k) is false. 
- [initialize  (->d ([p contract?][eq (p p . -> . boolean?)]) 
+ [initialize  (->d ([p contract?] [eq (p p . -> . boolean?)]) 
                    ()
                    [result (and/c dictionary? (compose zero? count))])]
  ;; commands 

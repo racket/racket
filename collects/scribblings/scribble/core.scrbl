@@ -1015,7 +1015,7 @@ whether the resulting information originated from an external source
 (i.e., a different document).}
 
 
-@defproc[(resolve-search [dep-key any/c][p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
+@defproc[(resolve-search [dep-key any/c] [p (or/c part? false/c)] [ri resolve-info?] [key info-key?])
          void?]{
 
 Like @racket[resolve-get], but a shared @racket[dep-key] groups

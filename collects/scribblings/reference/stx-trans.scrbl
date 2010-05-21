@@ -503,7 +503,7 @@ within a @scheme[module] form, or if it is not a run-time expression,
 then the @exnraise[exn:fail:contract].}
 
 
-@defproc[(syntax-local-lift-require [raw-require-spec any/c][stx syntax?])
+@defproc[(syntax-local-lift-require [raw-require-spec any/c] [stx syntax?])
          syntax?]{
 
 Lifts a @scheme[#%require] form corresponding to

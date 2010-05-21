@@ -153,7 +153,7 @@ Returns @scheme[#t] if @scheme[v] is a parameter procedure,
 @scheme[#f] otherwise.}
 
 
-@defproc[(parameter-procedure=? [a parameter?][b parameter?]) boolean?]{
+@defproc[(parameter-procedure=? [a parameter?] [b parameter?]) boolean?]{
 
 Returns @scheme[#t] if the parameter procedures @scheme[a] and
 @scheme[b] always modify the same parameter with the same guards

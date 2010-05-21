@@ -118,7 +118,7 @@ coerced to one.
 
 
 @deftogether[(
-@defproc[(make-styled-paragraph [content list?][style any/c]) paragraph?]
+@defproc[(make-styled-paragraph [content list?] [style any/c]) paragraph?]
 @defproc[(styled-paragraph? [v any/c]) boolean?]
 @defproc[(styled-paragraph-style [p paragraph?]) style?]
 )]{
@@ -171,7 +171,7 @@ is an alias for @racket[itemization?], and
 @racket[styled-itemization-style] is an alias for
 @racket[itemization-style].}
 
-@defproc[(make-blockquote [style any/c][blocks (listof block?)])
+@defproc[(make-blockquote [style any/c] [blocks (listof block?)])
          nested-flow?]{
 
 @compat[] Like @racket[make-nested-flow], but @racket[style] is
@@ -199,14 +199,14 @@ formats to the current one.}
 
 @deftogether[(
 @defproc[(make-element [style any/c] [content list?]) element?]
-@defproc[(make-toc-element [style any/c] [content list?][toc-content list?]) toc-element?]
-@defproc[(make-target-element [style any/c] [content list?][tag tag?]) target-element?]
-@defproc[(make-toc-target-element [style any/c] [content list?][tag tag?]) toc-target-element?]
-@defproc[(make-page-target-element [style any/c] [content list?][tag tag?]) page-target-element?]
-@defproc[(make-redirect-target-element [style any/c] [content list?][tag tag?]
+@defproc[(make-toc-element [style any/c] [content list?] [toc-content list?]) toc-element?]
+@defproc[(make-target-element [style any/c] [content list?] [tag tag?]) target-element?]
+@defproc[(make-toc-target-element [style any/c] [content list?] [tag tag?]) toc-target-element?]
+@defproc[(make-page-target-element [style any/c] [content list?] [tag tag?]) page-target-element?]
+@defproc[(make-redirect-target-element [style any/c] [content list?] [tag tag?]
                                        [alt-path path-string?] [alt-anchor string?]) redirect-target-element?]
-@defproc[(make-link-element [style any/c] [content list?][tag tag?]) link-element?]
-@defproc[(make-index-element [style any/c] [content list?][tag tag?]
+@defproc[(make-link-element [style any/c] [content list?] [tag tag?]) link-element?]
+@defproc[(make-index-element [style any/c] [content list?] [tag tag?]
                              [tag tag?] [plain-seq (and/c pair? (listof string?))]
                              [entry-seq list?] [desc any/c]) index-element?]
 )]{

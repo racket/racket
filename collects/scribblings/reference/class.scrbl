@@ -909,7 +909,7 @@ Returns @scheme[#t] for values produced by @scheme[member-name-key]
 and @scheme[generate-member-key], @scheme[#f]
 otherwise.}
 
-@defproc[(member-name-key=? [a-key member-name-key?][b-key member-name-key?]) boolean?]{
+@defproc[(member-name-key=? [a-key member-name-key?] [b-key member-name-key?]) boolean?]{
 
 Produces @scheme[#t] if member-name keys @scheme[a-key] and
 @scheme[b-key] represent the same external name, @scheme[#f]
@@ -1004,7 +1004,7 @@ initialization (unlike objects in C++).
 
 
 
-@defproc[(make-object [class class?][init-v any/c] ...) object?]{
+@defproc[(make-object [class class?] [init-v any/c] ...) object?]{
 
 Creates an instance of @scheme[class]. The @scheme[init-v]s are
 passed as initialization arguments, bound to the initialization
@@ -1908,7 +1908,7 @@ Determines if two objects are the same object, or not; this procedure uses
 @scheme[eq?], but also works properly with contracts.}
 
 
-@defproc[(object->vector [object object?][opaque-v any/c #f]) vector?]{
+@defproc[(object->vector [object object?] [opaque-v any/c #f]) vector?]{
 
 Returns a vector representing @scheme[object] that shows its
 inspectable fields, analogous to @scheme[struct->vector].}
@@ -1925,32 +1925,32 @@ Returns the interface implicitly defined by the class of
 @scheme[object].}
 
  
-@defproc[(is-a? [v any/c][type (or/c interface? class?)]) boolean?]{
+@defproc[(is-a? [v any/c] [type (or/c interface? class?)]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is an instance of a class
 @scheme[type] or a class that implements an interface @scheme[type],
 @scheme[#f] otherwise.}
 
 
-@defproc[(subclass? [v any/c][class class?]) boolean?]{
+@defproc[(subclass? [v any/c] [class class?]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a class derived from (or equal
 to) @scheme[class], @scheme[#f] otherwise.}
 
 
-@defproc[(implementation? [v any/c][interface interface?]) boolean?]{
+@defproc[(implementation? [v any/c] [interface interface?]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a class that implements
 @scheme[interface], @scheme[#f] otherwise.}
 
 
-@defproc[(interface-extension? [v any/c][interface interface?]) boolean?]{
+@defproc[(interface-extension? [v any/c] [interface interface?]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is an interface that extends
 @scheme[interface], @scheme[#f] otherwise.}
 
 
-@defproc[(method-in-interface? [sym symbol?][interface interface?]) boolean?]{
+@defproc[(method-in-interface? [sym symbol?] [interface interface?]) boolean?]{
 
 Returns @scheme[#t] if @scheme[interface] (or any of its ancestor
 interfaces) includes a member with the name @scheme[sym], @scheme[#f]
@@ -1965,7 +1965,7 @@ methods whose names are local (i.e., declared with
 @scheme[define-local-member-names]).}
 
 
-@defproc[(object-method-arity-includes? [object object?][sym symbol?][cnt exact-nonnegative-integer?])
+@defproc[(object-method-arity-includes? [object object?] [sym symbol?] [cnt exact-nonnegative-integer?])
          boolean?]{
 
 Returns @scheme[#t] if @scheme[object] has a method named @scheme[sym]

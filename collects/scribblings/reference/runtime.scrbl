@@ -10,7 +10,7 @@ Gets the value of an operating system environment variable. The
 environment variable named by @racket[name] exists, its value is
 returned (as a string); otherwise, @racket[#f] is returned.}
 
-@defproc[(putenv [name string?][value string?]) boolean?]{
+@defproc[(putenv [name string?] [value string?]) boolean?]{
 
 Sets the value of an operating system environment variable. The
 @racket[name] and @racket[value] arguments are strings that cannot

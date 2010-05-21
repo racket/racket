@@ -62,7 +62,7 @@
                  (and/c queue? (compose null? items)))]
  
  ;; commands
- [put        (->d ([oldq queue?][i (queue-p? oldq)])
+ [put        (->d ([oldq queue?] [i (queue-p? oldq)])
                   ()
                   [result
                    (and/c 

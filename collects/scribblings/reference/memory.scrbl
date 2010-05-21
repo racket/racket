@@ -63,7 +63,7 @@ manager can reclaim key--value pairs even when the value refers to the
 key.
 
 
-@defproc[(make-ephemeron [key any/c][v any/c]) ephemeron?]{
+@defproc[(make-ephemeron [key any/c] [v any/c]) ephemeron?]{
 
 Returns a new @tech{ephemeron} whose key is @racket[key] and whose
 value is initially @racket[v].}
@@ -129,7 +129,7 @@ Returns @racket[#t] if @racket[v] is a will executor, @racket[#f]
 otherwise.}
 
 
-@defproc[(will-register [executor will-executor?][v any/c][proc (any/c . -> . any)])
+@defproc[(will-register [executor will-executor?] [v any/c] [proc (any/c . -> . any)])
          void?]{
 
 Registers the value @racket[v] with the will procedure @racket[proc]

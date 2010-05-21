@@ -417,10 +417,10 @@
     @scheme[keymap:get-search]
   }
 
-  @defmethod[#:mode augment (after-insert [start exact-nonnegative-integer?][len exact-nonnegative-integer?]) void?]{
+  @defmethod[#:mode augment (after-insert [start exact-nonnegative-integer?] [len exact-nonnegative-integer?]) void?]{
     Re-does any search now that the contents of the window have changed.
   }
-  @defmethod[#:mode augment (after-delete [start exact-nonnegative-integer?][len exact-nonnegative-integer?]) void?]{
+  @defmethod[#:mode augment (after-delete [start exact-nonnegative-integer?] [len exact-nonnegative-integer?]) void?]{
     Re-does any search now that the contents of the window have changed.
   }
 

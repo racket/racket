@@ -34,13 +34,13 @@ operations can be prevented by adjusting the code inspector (see
 @section{Unsafe Numeric Operations}
 
 @deftogether[(
-@defproc[(unsafe-fx+ [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fx- [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fx* [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fxquotient [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fxremainder [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fxmodulo [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fxabs [a fixnum?]) fixnum?]
+@defproc[(unsafe-fx+ [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx- [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx* [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxquotient  [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxremainder [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxmodulo    [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxabs       [a fixnum?]) fixnum?]
 )]{
 
 For @tech{fixnums}: Like @scheme[+], @scheme[-], @scheme[*],
@@ -53,12 +53,12 @@ For @tech{fixnums}: Like @scheme[+], @scheme[-], @scheme[*],
 
 
 @deftogether[(
-@defproc[(unsafe-fxand [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fxior [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fxxor [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(unsafe-fxand [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxior [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxxor [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(unsafe-fxnot [a fixnum?]) fixnum?]
-@defproc[(unsafe-fxlshift [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fxrshift [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(unsafe-fxlshift [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxrshift [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
 For @tech{fixnums}: Like @scheme[bitwise-and], @scheme[bitwise-ior],
@@ -76,13 +76,13 @@ bits in the result beyond the the number of bits used to represent a
 
 
 @deftogether[(
-@defproc[(unsafe-fx= [a fixnum?][b fixnum?]) boolean?]
-@defproc[(unsafe-fx< [a fixnum?][b fixnum?]) boolean?]
-@defproc[(unsafe-fx> [a fixnum?][b fixnum?]) boolean?]
-@defproc[(unsafe-fx<= [a fixnum?][b fixnum?]) boolean?]
-@defproc[(unsafe-fx>= [a fixnum?][b fixnum?]) boolean?]
-@defproc[(unsafe-fxmin [a fixnum?][b fixnum?]) fixnum?]
-@defproc[(unsafe-fxmax [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(unsafe-fx=   [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(unsafe-fx<   [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(unsafe-fx>   [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(unsafe-fx<=  [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(unsafe-fx>=  [a fixnum?] [b fixnum?]) boolean?]
+@defproc[(unsafe-fxmin [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxmax [a fixnum?] [b fixnum?]) fixnum?]
 )]{
 
 For @tech{fixnums}: Like @scheme[=], @scheme[<], @scheme[>],
@@ -96,10 +96,10 @@ Unchecked version of @scheme[->fl].
 
 
 @deftogether[(
-@defproc[(unsafe-fl+ [a inexact-real?][b inexact-real?]) inexact-real?]
-@defproc[(unsafe-fl- [a inexact-real?][b inexact-real?]) inexact-real?]
-@defproc[(unsafe-fl* [a inexact-real?][b inexact-real?]) inexact-real?]
-@defproc[(unsafe-fl/ [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(unsafe-fl+   [a inexact-real?] [b inexact-real?]) inexact-real?]
+@defproc[(unsafe-fl-   [a inexact-real?] [b inexact-real?]) inexact-real?]
+@defproc[(unsafe-fl*   [a inexact-real?] [b inexact-real?]) inexact-real?]
+@defproc[(unsafe-fl/   [a inexact-real?] [b inexact-real?]) inexact-real?]
 @defproc[(unsafe-flabs [a inexact-real?]) inexact-real?]
 )]{
 
@@ -108,11 +108,11 @@ For @tech{flonums}: Unchecked versions of @scheme[fl+], @scheme[fl-],
 
 
 @deftogether[(
-@defproc[(unsafe-fl= [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(unsafe-fl< [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(unsafe-fl> [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(unsafe-fl<= [a inexact-real?][b inexact-real?]) boolean?]
-@defproc[(unsafe-fl>= [a inexact-real?][b inexact-real?]) boolean?]
+@defproc[(unsafe-fl=   [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(unsafe-fl<   [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(unsafe-fl>   [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(unsafe-fl<=  [a inexact-real?] [b inexact-real?]) boolean?]
+@defproc[(unsafe-fl>=  [a inexact-real?] [b inexact-real?]) boolean?]
 @defproc[(unsafe-flmin [a inexact-real?]) inexact-real?]
 @defproc[(unsafe-flmax [a inexact-real?]) inexact-real?]
 )]{
@@ -171,9 +171,9 @@ Unsafe variants of @scheme[car], @scheme[cdr], @scheme[mcar],
 
 @deftogether[(
 @defproc[(unsafe-unbox [v (and/c box? (not/c chaperone?))]) any/c]
-@defproc[(unsafe-set-box! [v (and/c box? (not/c chaperone?))][val any/c]) void?]
+@defproc[(unsafe-set-box! [v (and/c box? (not/c chaperone?))] [val any/c]) void?]
 @defproc[(unsafe-unbox* [b box?]) fixnum?]
-@defproc[(unsafe-set-box*! [b box?][k fixnum?]) void?]
+@defproc[(unsafe-set-box*! [b box?] [k fixnum?]) void?]
 )]{
 
 Unsafe versions of @scheme[unbox] and @scheme[set-box!].}
@@ -181,11 +181,11 @@ Unsafe versions of @scheme[unbox] and @scheme[set-box!].}
 
 @deftogether[(
 @defproc[(unsafe-vector-length [v (and/c vector? (not/c chaperone?))]) fixnum?]
-@defproc[(unsafe-vector-ref [v (and/c vector? (not/c chaperone?))][k fixnum?]) any/c]
-@defproc[(unsafe-vector-set! [v (and/c vector? (not/c chaperone?))][k fixnum?][val any/c]) void?]
+@defproc[(unsafe-vector-ref [v (and/c vector? (not/c chaperone?))] [k fixnum?]) any/c]
+@defproc[(unsafe-vector-set! [v (and/c vector? (not/c chaperone?))] [k fixnum?] [val any/c]) void?]
 @defproc[(unsafe-vector*-length [v vector?]) fixnum?]
-@defproc[(unsafe-vector*-ref [v vector?][k fixnum?]) any/c]
-@defproc[(unsafe-vector*-set! [v vector?][k fixnum?][val any/c]) void?]
+@defproc[(unsafe-vector*-ref [v vector?] [k fixnum?]) any/c]
+@defproc[(unsafe-vector*-set! [v vector?] [k fixnum?] [val any/c]) void?]
 )]{
 
 Unsafe versions of @scheme[vector-length], @scheme[vector-ref], and
@@ -196,9 +196,9 @@ fixnum).}
 
 @deftogether[(
 @defproc[(unsafe-string-length [str string?]) fixnum?]
-@defproc[(unsafe-string-ref [str string?][k fixnum?])
+@defproc[(unsafe-string-ref [str string?] [k fixnum?])
          (and/c char? (lambda (ch) (<= 0 (char->integer ch) 255)))]
-@defproc[(unsafe-string-set! [str (and/c string? (not/c immutable?))][k fixnum?][ch char?]) void?]
+@defproc[(unsafe-string-set! [str (and/c string? (not/c immutable?))] [k fixnum?] [ch char?]) void?]
 )]{
 
 Unsafe versions of @scheme[string-length], @scheme[string-ref], and
@@ -210,8 +210,8 @@ always returns a fixnum).}
 
 @deftogether[(
 @defproc[(unsafe-bytes-length [bstr bytes?]) fixnum?]
-@defproc[(unsafe-bytes-ref [bstr bytes?][k fixnum?]) byte?]
-@defproc[(unsafe-bytes-set! [bstr (and/c bytes? (not/c immutable?))][k fixnum?][b byte?]) void?]
+@defproc[(unsafe-bytes-ref [bstr bytes?] [k fixnum?]) byte?]
+@defproc[(unsafe-bytes-set! [bstr (and/c bytes? (not/c immutable?))] [k fixnum?] [b byte?]) void?]
 )]{
 
 Unsafe versions of @scheme[bytes-length], @scheme[bytes-ref], and
@@ -222,8 +222,8 @@ fixnum).}
 
 @deftogether[(
 @defproc[(unsafe-flvector-length [v flvector?]) fixnum?]
-@defproc[(unsafe-flvector-ref [v flvector?][k fixnum?]) any/c]
-@defproc[(unsafe-flvector-set! [v flvector?][k fixnum?][x inexact-real?]) void?]
+@defproc[(unsafe-flvector-ref [v flvector?] [k fixnum?]) any/c]
+@defproc[(unsafe-flvector-set! [v flvector?] [k fixnum?] [x inexact-real?]) void?]
 )]{
 
 Unsafe versions of @scheme[flvector-length], @scheme[flvector-ref], and
@@ -233,8 +233,8 @@ fixnum).}
 
 
 @deftogether[(
-@defproc[(unsafe-f64vector-ref [vec f64vector?][k fixnum?]) inexact-real?]
-@defproc[(unsafe-f64vector-set! [vec f64vector?][k fixnum?][n inexact-real?]) void?]
+@defproc[(unsafe-f64vector-ref [vec f64vector?] [k fixnum?]) inexact-real?]
+@defproc[(unsafe-f64vector-set! [vec f64vector?] [k fixnum?] [n inexact-real?]) void?]
 )]{
 
 Unsafe versions of @scheme[f64vector-ref] and
@@ -242,10 +242,10 @@ Unsafe versions of @scheme[f64vector-ref] and
 
 
 @deftogether[(
-@defproc[(unsafe-struct-ref [v (not/c chaperone?)][k fixnum?]) any/c]
-@defproc[(unsafe-struct-set! [v (not/c chaperone?)][k fixnum?][val any/c]) void?]
-@defproc[(unsafe-struct*-ref [v any/c][k fixnum?]) any/c]
-@defproc[(unsafe-struct*-set! [v any/c][k fixnum?][val any/c]) void?]
+@defproc[(unsafe-struct-ref [v (not/c chaperone?)] [k fixnum?]) any/c]
+@defproc[(unsafe-struct-set! [v (not/c chaperone?)] [k fixnum?] [val any/c]) void?]
+@defproc[(unsafe-struct*-ref [v any/c] [k fixnum?]) any/c]
+@defproc[(unsafe-struct*-set! [v any/c] [k fixnum?] [val any/c]) void?]
 )]{
 
 Unsafe field access and update for an instance of a structure

@@ -3,14 +3,14 @@
 
 @title{Byte and String Output}
 
-@defproc[(write-char [char character?][out output-port? (current-output-port)])
+@defproc[(write-char [char character?] [out output-port? (current-output-port)])
          void?]{
 
 Writes a single character to @racket[out]; more precisely, the bytes
 that are the UTF-8 encoding of @racket[char] are written to
 @racket[out].}
 
-@defproc[(write-byte [byte any/c][out output-port? (current-output-port)]) 
+@defproc[(write-byte [byte any/c] [out output-port? (current-output-port)]) 
          void?]{
 
 Writes a single byte to @racket[out].}
@@ -90,14 +90,14 @@ writing and breaks: if breaking is disabled when
 no bytes will have been written to @racket[out].  See also
 @secref["breakhandler"].}
 
-@defproc[(write-special [v any/c][out output-port? (current-output-port)]) boolean?]{
+@defproc[(write-special [v any/c] [out output-port? (current-output-port)]) boolean?]{
 
 Writes @racket[v] directly to @racket[out] if the port supports
 special writes, or raises @racket[exn:fail:contract] if the port does
 not support special write. The result is always @racket[#t],
 indicating that the write succeeded.}
 
-@defproc[(write-special-avail* [v any/c][out output-port? (current-output-port)]) boolean?]{
+@defproc[(write-special-avail* [v any/c] [out output-port? (current-output-port)]) boolean?]{
 
 Like @racket[write-special], but without blocking. If @racket[v]
 cannot be written immediately, the result is @racket[#f] without
@@ -123,7 +123,7 @@ buffer (if any) is flushed, otherwise the result is a positive exact
 integer. If the event is not selected in a synchronization, then no
 bytes will have been written to @racket[out].}
 
-@defproc[(write-special-evt [v any/c][out output-port? (current-output-port)]) evt?]{
+@defproc[(write-special-evt [v any/c] [out output-port? (current-output-port)]) evt?]{
 
 Similar to @racket[write-special], but instead of writing the special
 value immediately, it returns a synchronizable event (see

@@ -3,7 +3,7 @@
 
 @title[#:tag "stxcmp"]{Syntax Object Bindings}
 
-@defproc[(bound-identifier=? [a-id syntax?][b-id syntax?]
+@defproc[(bound-identifier=? [a-id syntax?] [b-id syntax?]
                              [phase-level (or/c exact-integer? #f)
                                           (syntax-local-phase-level)])
          boolean?]{
@@ -15,7 +15,7 @@ suitable expression context at the @tech{phase level} indicated by
 @scheme[phase-level] corresponds to the @tech{label phase level}.}
 
 
-@defproc[(free-identifier=? [a-id syntax?][b-id syntax?]
+@defproc[(free-identifier=? [a-id syntax?] [b-id syntax?]
                             [phase-level (or/c exact-integer? #f)
                                          (syntax-local-phase-level)])
          boolean?]{
@@ -34,15 +34,15 @@ to a @tech{rename transformer}, the identifiers may return distinct
 results with @scheme[syntax-e].}
 
 
-@defproc[(free-transformer-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
+@defproc[(free-transformer-identifier=? [a-id syntax?] [b-id syntax?]) boolean?]{
 
 Same as @scheme[(free-identifier=? a-id b-id (add1 (syntax-local-phase-level)))].}
 
-@defproc[(free-template-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
+@defproc[(free-template-identifier=? [a-id syntax?] [b-id syntax?]) boolean?]{
 
 Same as @scheme[(free-identifier=? a-id b-id (sub1 (syntax-local-phase-level)))].}
 
-@defproc[(free-label-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
+@defproc[(free-label-identifier=? [a-id syntax?] [b-id syntax?]) boolean?]{
 
 Same as @scheme[(free-identifier=? a-id b-id #f)].}
 

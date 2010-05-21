@@ -41,13 +41,13 @@ Blocks until a sender is ready to provide a value through
 Receives and returns a value from @scheme[ch] if a sender is
 immediately ready, otherwise returns @scheme[#f].}
 
-@defproc[(channel-put [ch channel?][v any/c]) void?]{
+@defproc[(channel-put [ch channel?] [v any/c]) void?]{
 
 Blocks until a receiver is ready to accept the value @scheme[v]
 through @scheme[ch].}
 
 
-@defproc[(channel-put-evt [ch channel?][v any/c]) evt?]{
+@defproc[(channel-put-evt [ch channel?] [v any/c]) evt?]{
 
 Returns a fresh @tech{synchronizable event} for use with
 @scheme[sync]. The event is ready when @scheme[(channel-put ch v)]

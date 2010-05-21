@@ -84,22 +84,22 @@ Equivalent to
               (lambda (p) (parameterize ([current-output-port p])
                             (proc))))]}
 
-@defproc[(call-with-input-string [str string?][proc (input-port? . -> . any)]) any]{
+@defproc[(call-with-input-string [str string?] [proc (input-port? . -> . any)]) any]{
 
 Equivalent to @scheme[(proc (open-input-string str))].}
 
-@defproc[(call-with-input-bytes [bstr bytes?][proc (input-port? . -> . any)]) any]{
+@defproc[(call-with-input-bytes [bstr bytes?] [proc (input-port? . -> . any)]) any]{
 
 Equivalent to @scheme[(proc (open-input-bytes bstr))].}
 
-@defproc[(with-input-from-string [str string?][proc (-> any)]) any]{
+@defproc[(with-input-from-string [str string?] [proc (-> any)]) any]{
 
 Equivalent to
 
 @schemeblock[(parameterize ([current-input-port (open-input-string str)])
                (proc))]}
 
-@defproc[(with-input-from-bytes [bstr bytes?][proc (-> any)]) any]{
+@defproc[(with-input-from-bytes [bstr bytes?] [proc (-> any)]) any]{
 
 Equivalent to
 
@@ -111,7 +111,7 @@ Equivalent to
 
 @section{Creating Ports}
 
-@defproc[(input-port-append [close-at-eof? any/c][in input-port?] ...) input-port?]{
+@defproc[(input-port-append [close-at-eof? any/c] [in input-port?] ...) input-port?]{
 
 Takes any number of input ports and returns an input port. Reading
 from the input port draws bytes (and special non-byte values) from the
@@ -269,7 +269,7 @@ See also @scheme[input-port-append], which concatenates input streams
 instead of interleaving them.}
 
 
-@defproc[(open-output-nowhere [name any/c 'nowhere][special-ok? any/c #t])
+@defproc[(open-output-nowhere [name any/c 'nowhere] [special-ok? any/c #t])
          output-port?]{
 
 Creates and returns an output port that discards all output sent to it
@@ -488,7 +488,7 @@ mid-stream @scheme[eof], the @scheme[eof] is consumed by the event
 only if the event is chosen in a synchronization.}
 
 
-@defproc[(read-bytes-evt [k exact-nonnegative-integer?][in input-port?]) 
+@defproc[(read-bytes-evt [k exact-nonnegative-integer?] [in input-port?]) 
          evt?]{
 
 Returns a @tech{synchronizable event} is that is ready when @scheme[k]
@@ -532,7 +532,7 @@ sensibly used multiple times until a successful choice, but should not
 be used in multiple concurrent synchronizations.}
 
 
-@defproc[(read-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))][in input-port?]) 
+@defproc[(read-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))] [in input-port?]) 
          evt?]{
 
 Like @scheme[read-bytes!-evt], except that the event reads only as
@@ -540,7 +540,7 @@ many bytes as are immediately available, after at least one byte or
 one @scheme[eof] becomes available.}
 
 
-@defproc[(read-string-evt [k exact-nonnegative-integer?][in input-port?]) 
+@defproc[(read-string-evt [k exact-nonnegative-integer?] [in input-port?]) 
          evt?]{
 
 Like @scheme[read-bytes-evt], but for character strings instead of
@@ -577,14 +577,14 @@ bytes in the port's stream.}
 Like @scheme[read-line-evt], but returns a byte string instead of a
 string.}
 
-@defproc*[([(peek-bytes-evt [k exact-nonnegative-integer?][skip exact-nonnegative-integer?]
-                            [progress evt?][in input-port?]) evt?]
-           [(peek-bytes!-evt [bstr (and/c bytes? (not/c immutable?))][skip exact-nonnegative-integer?]
-                             [progress (or/c evt? #f)][in input-port?]) evt?]
-           [(peek-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))][skip exact-nonnegative-integer?]
-                                   [progress (or/c evt? #f)][in input-port?]) evt?]
-           [(peek-string-evt [k exact-nonnegative-integer?][in input-port?]) evt?]
-           [(peek-string!-evt [str (and/c string? (not/c immutable?))][in input-port?]) evt?])]{
+@defproc*[([(peek-bytes-evt [k exact-nonnegative-integer?] [skip exact-nonnegative-integer?]
+                            [progress evt?] [in input-port?]) evt?]
+           [(peek-bytes!-evt [bstr (and/c bytes? (not/c immutable?))] [skip exact-nonnegative-integer?]
+                             [progress (or/c evt? #f)] [in input-port?]) evt?]
+           [(peek-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))] [skip exact-nonnegative-integer?]
+                                   [progress (or/c evt? #f)] [in input-port?]) evt?]
+           [(peek-string-evt [k exact-nonnegative-integer?] [in input-port?]) evt?]
+           [(peek-string!-evt [str (and/c string? (not/c immutable?))] [in input-port?]) evt?])]{
 
 Like the @scheme[read-...-evt] functions, but for peeking. The
 @scheme[skip] argument indicates the number of bytes to skip, and
@@ -643,7 +643,7 @@ a conversion error occurs at any point while reading @scheme[in], then
 @exnraise[exn:fail].}
 
 
-@defproc[(copy-port [in input-port?][out output-port?] ...+) void?]{
+@defproc[(copy-port [in input-port?] [out output-port?] ...+) void?]{
 
 Reads data from @scheme[in] and writes it back out to @scheme[out],
 returning when @scheme[in] produces @scheme[eof].  The copy is

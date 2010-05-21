@@ -22,13 +22,13 @@ the Racket side.  The longer form behaves similarly to the
 @scheme[_cvector] is more efficient; no Racket list or vector is
 needed.}
 
-@defproc[(make-cvector [type ctype?][length exact-nonnegative-integer?]) cvector?]{
+@defproc[(make-cvector [type ctype?] [length exact-nonnegative-integer?]) cvector?]{
 
 Allocates a C vector using the given @scheme[type] and
 @scheme[length].}
 
 
-@defproc[(cvector [type ctype?][val any/c] ...) cvector?]{
+@defproc[(cvector [type ctype?] [val any/c] ...) cvector?]{
 
 Creates a C vector of the given @scheme[type], initialized to the
 given list of @scheme[val]s.}
@@ -60,7 +60,7 @@ References the @scheme[k]th element of the @scheme[cvec] C vector.
 The result has the type that the C vector uses.}
 
 
-@defproc[(cvector-set! [cvec cvector?][k exact-nonnegative-integer?][val any]) void?]{
+@defproc[(cvector-set! [cvec cvector?] [k exact-nonnegative-integer?] [val any]) void?]{
 
 Sets the @scheme[k]th element of the @scheme[cvec] C vector to
 @scheme[val].  The @scheme[val] argument should be a value that can be
@@ -72,7 +72,7 @@ used with the type that the C vector uses.}
 Converts the @scheme[cvec] C vector object to a list of values.}
 
 
-@defproc[(list->cvector [lst list?][type ctype?]) cvector?]{
+@defproc[(list->cvector [lst list?] [type ctype?]) cvector?]{
 
 Converts the list @scheme[lst] to a C vector of the given
 @scheme[type].}
