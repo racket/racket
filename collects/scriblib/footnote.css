@@ -1,0 +1,26 @@
+
+.NoteBox {
+  position: relative;
+  float: right;
+  left: 2em;
+  height: 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
+}
+
+.NoteContent {
+  margin: 0 0 0 0;
+}
+
+.FootnoteContent {
+  display: none;
+}
+
+.FootnoteBlock {
+  border-top: 1px solid black;
+}
+
+.FootnoteBlockContent {
+  padding-left: 1em;
+  text-indent: -0.5em;
+}

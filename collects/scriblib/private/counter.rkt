@@ -4,7 +4,8 @@
 
 (provide new-counter
          counter-target
-         counter-ref)
+         counter-ref
+         counter-collect-value)
 
 (define-struct counter ([n #:mutable] name))
 
@@ -18,20 +19,20 @@
      (list
       (make-collect-element
        #f
-       (if label
-           (list
-            (make-delayed-element
-             (lambda (renderer part ri)
-               (let ([n (resolve-get part ri `(counter (,(counter-name counter) ,tag "value")))])
-                 (list* label 'nbsp (format "~a" n)
-                        content)))
-             (lambda () (if label
-                            (list* label 'nbsp "N" content)
-                            content))
-             (lambda () (if label
-                            (list* label 'nbsp "N" content)
-                            content))))
-           content)
+       (list
+        (make-delayed-element
+         (lambda (renderer part ri)
+           (let ([n (resolve-get part ri `(counter (,(counter-name counter) ,tag "value")))])
+             (let ([l (cons (format "~a" n) content)])
+               (if label
+                   (list* label 'nbsp l)
+                   l))))
+         (lambda () (if label
+                        (list* label 'nbsp "N" content)
+                        (cons "N" content)))
+         (lambda () (if label
+                        (list* label 'nbsp "N" content)
+                        (cons "N" content)))))
        (lambda (ci)
          (let ([n (add1 (counter-n counter))])
            (set-counter-n! counter n)
@@ -49,12 +50,15 @@
             (lambda () (if label
                            (list label 'nbsp "N")
                            (list "N"))))])
-    (if label
-        (make-link-element
-         #f
+    (make-link-element
+     #f
+     (if label
          (list
           label
           'nbsp
           n)
-         `(counter (,(counter-name counter) ,tag)))
-        n)))
+         n)
+     `(counter (,(counter-name counter) ,tag)))))
+
+(define (counter-collect-value counter)
+  (counter-n counter))
