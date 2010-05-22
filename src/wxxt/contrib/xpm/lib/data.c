@@ -385,13 +385,13 @@ xpmGetCmt(mdata, cmt)
 
 xpmDataType xpmDataTypes[] =
 {
-    {"", "!", "\n", '\0', '\n', "", "", "", ""},	/* Natural type */
-	{"C", "/*", "*/", '"', '"', ",\n", "static char *", "[] = {\n", "};\n"},
-	{"Lisp", ";", "\n", '"', '"', "\n", "(setq ", " '(\n", "))\n"},
+  {"", "!", "\n", '\0', '\n', "", "", "", ""},  /* Natural type */
+  {"C", "/*", "*/", '"', '"', ",\n", "static char *", "[] = {\n", "};\n"},
+  {"Lisp", ";", "\n", '"', '"', "\n", "(setq ", " '(\n", "))\n"},
 #ifdef VMS
-    NULL
+  NULL
 #else
-    {NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL}
+  {NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL}
 #endif
 };
 

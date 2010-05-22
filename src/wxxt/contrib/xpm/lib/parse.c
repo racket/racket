@@ -190,7 +190,7 @@ xpmParseData(data, image, info)
 	    info->extensions = NULL;
 	    info->nextensions = 0;
 	}
-	}
+    }
 
     /*
      * store found informations in the XpmImage structure
@@ -335,7 +335,7 @@ ParseColors(data, ncolors, cpp, colorTablePtr, hashtable)
     XpmColor **colorTablePtr;
     xpmHashTable *hashtable;
 {
-	uintptr_t a;
+    uintptr_t a;
     unsigned int key, l, b;
     unsigned int curkey;		/* current color key */
     unsigned int lastwaskey;		/* key read */

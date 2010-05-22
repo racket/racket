@@ -617,11 +617,11 @@ void GC_mark_overflow_recover(void *p)
  */
 mse * GC_mark_from(mse *mark_stack_top, mse *mark_stack, mse *mark_stack_limit)
 {
-  signed_word credit = HBLKSIZE;  /* Remaining credit for marking work	*/
-  ptr_t current_p;	/* Pointer to current candidate ptr.	*/
-  word current;	/* Candidate pointer.			*/
-  ptr_t limit = NULL;	/* (Incl) limit of current candidate 	*/
-						/* range				*/
+  signed_word credit = HBLKSIZE;  /* Remaining credit for marking work */
+  ptr_t current_p;      /* Pointer to current candidate ptr. */
+  word current;         /* Candidate pointer.                */
+  ptr_t limit = NULL;   /* (Incl) limit of current candidate */
+                        /* range                             */
   word descr;
   ptr_t greatest_ha = GC_greatest_plausible_heap_addr;
   ptr_t least_ha = GC_least_plausible_heap_addr;

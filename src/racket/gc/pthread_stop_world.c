@@ -223,7 +223,7 @@ void GC_suspend_handler_inner(ptr_t sig_arg, void *context)
 void GC_restart_handler(int sig)
 {
     MAYBE_UNUSED pthread_t my_thread = pthread_self();
-	MAYBE_UNUSED GC_thread me;
+    MAYBE_UNUSED GC_thread me;
 
     if (sig != SIG_THR_RESTART) ABORT("Bad signal in suspend_handler");
 

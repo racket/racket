@@ -1217,7 +1217,7 @@ ptr_t GC_get_main_stack_base(void)
 #   if defined(HEURISTIC1) || defined(HEURISTIC2)
       MAYBE_UNUSED word dummy;
 #   endif
-	MAYBE_UNUSED ptr_t result;
+      MAYBE_UNUSED ptr_t result;
 
 #   define STACKBOTTOM_ALIGNMENT_M1 ((word)STACK_GRAN - 1)
 

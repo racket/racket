@@ -379,12 +379,12 @@ dlmmap_locked (void *start, size_t length, int prot, int flags, off_t offset)
 	  close (execfd);
 	  goto retry_open;
 	}
-	  if (ftruncate (execfd, offset)) {
-		// FIXME: Should fail "even worse" because the truncate failed
-		return MFAIL;
+      if (ftruncate (execfd, offset)) {
+	// FIXME: Should fail "even worse" because the truncate failed
+	return MFAIL;
       } else {
-	    return MFAIL;
-	  } 
+	return MFAIL;
+      }
     }
   else if (!offset
 	   && open_temp_exec_file_opts[open_temp_exec_file_opts_idx].repeat)
@@ -395,11 +395,11 @@ dlmmap_locked (void *start, size_t length, int prot, int flags, off_t offset)
   if (start == MFAIL)
     {
       munmap (ptr, length);
-	  if (ftruncate (execfd, offset)) {
-	   // FIXME: Should return failure, but how to recover work we've done?
-		  1;
-	  }
-	  return start;
+      if (ftruncate (execfd, offset)) {
+        // FIXME: Should return failure, but how to recover work we've done?
+        1;
+      }
+      return start;
     }
 
   mmap_exec_offset ((char *)start, length) = (char*)ptr - (char*)start;

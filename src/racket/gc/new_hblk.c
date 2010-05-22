@@ -118,55 +118,55 @@ ptr_t GC_build_fl(struct hblk *h, size_t sz, GC_bool clear, ptr_t list)
   /* If we were more serious about it, these should go inside	*/
   /* the loops.  But write prefetches usually don't seem to	*/
   /* matter much.						*/
-    PREFETCH_FOR_WRITE((ptr_t)h);
-    PREFETCH_FOR_WRITE((ptr_t)h + 128);
-    PREFETCH_FOR_WRITE((ptr_t)h + 256);
-    PREFETCH_FOR_WRITE((ptr_t)h + 378);
+  PREFETCH_FOR_WRITE((ptr_t)h);
+  PREFETCH_FOR_WRITE((ptr_t)h + 128);
+  PREFETCH_FOR_WRITE((ptr_t)h + 256);
+  PREFETCH_FOR_WRITE((ptr_t)h + 378);
   /* Handle small objects sizes more efficiently.  For larger objects 	*/
   /* the difference is less significant.				*/
 #  ifndef SMALL_CONFIG
-    switch (sz) {
-        case 2: if (clear) {
-        	    return GC_build_fl_clear2(h, list);
-        	} else {
-        	    return GC_build_fl2(h, list);
-        	}
-        case 4: if (clear) {
-        	    return GC_build_fl_clear4(h, list);
-        	} else {
-        	    return GC_build_fl4(h, list);
-        	}
-        default:
-        	break;
+  switch (sz) {
+  case 2: if (clear) {
+      return GC_build_fl_clear2(h, list);
+    } else {
+      return GC_build_fl2(h, list);
     }
+  case 4: if (clear) {
+      return GC_build_fl_clear4(h, list);
+    } else {
+      return GC_build_fl4(h, list);
+    }
+  default:
+    break;
+  }
 #  endif /* !SMALL_CONFIG */
-    
+
   /* Clear the page if necessary. */
-    if (clear) BZERO(h, HBLKSIZE);
-    
+  if (clear) BZERO(h, HBLKSIZE);
+
   /* Add objects to free list */
-    p = (word *)(h -> hb_body) + sz;	/* second object in *h	*/
-    prev = (word *)(h -> hb_body);       	/* One object behind p	*/
-    last_object = (word *)((char *)h + HBLKSIZE);
-    last_object -= sz;
-			    /* Last place for last object to start */
+  p = (word *)(h -> hb_body) + sz;  /* second object in *h */
+  prev = (word *)(h -> hb_body);    /* One object behind p */
+  last_object = (word *)((char *)h + HBLKSIZE);
+  last_object -= sz;
+                     /* Last place for last object to start */
 
   /* make a list of all objects in *h with head as last object */
-    while (p <= last_object) {
-      /* current object's link points to last object */
-        obj_link(p) = (ptr_t)prev;
-	prev = p;
-	p += sz;
-    }
-    p -= sz;			/* p now points to last object */
+  while (p <= last_object) {
+    /* current object's link points to last object */
+    obj_link(p) = (ptr_t)prev;
+    prev = p;
+    p += sz;
+  }
+  p -= sz;			/* p now points to last object */
 
   /*
    * put p (which is now head of list of objects in *h) as first
    * pointer in the appropriate free list for this size.
    */
-	  word *tmp = (word *)h->hb_body;
-      obj_link(tmp) = list;
-      return ((ptr_t)p);
+  word *tmp = (word *)h->hb_body;
+  obj_link(tmp) = list;
+  return ((ptr_t)p);
 }
 
 

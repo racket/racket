@@ -498,19 +498,19 @@ Bool wxListBox::Selected(int n)
 
 void wxListBox::SetClientData(int n, char *_client_data)
 {
-    if (0 <= n && n < num_choices)
-	client_data[n] = _client_data;
+  if (0 <= n && n < num_choices)
+    client_data[n] = _client_data;
 }
 
 void wxListBox::SetSelection(int n, Bool select)
 {
-	if (0 <= n && n < num_choices) {
-		if (select) {
-			XfwfMultiListHighlightItem(MULTILIST, n);
-		} else {
-			XfwfMultiListUnhighlightItem(MULTILIST, n);
-		}
-	}
+  if (0 <= n && n < num_choices) {
+    if (select) {
+      XfwfMultiListHighlightItem(MULTILIST, n);
+    } else {
+      XfwfMultiListUnhighlightItem(MULTILIST, n);
+    }
+  }
 }
 
 void wxListBox::SetOneSelection(int n)
@@ -524,12 +524,12 @@ void wxListBox::SetOneSelection(int n)
 
 Bool wxListBox::SetStringSelection(char *s)
 {
-    int n;
-    if ((n = FindString(s)) > -1) {
-	SetOneSelection(n);
-	return TRUE;
-    }
-    return FALSE;
+  int n;
+  if ((n = FindString(s)) > -1) {
+    SetOneSelection(n);
+    return TRUE;
+  }
+  return FALSE;
 }
 
 void wxListBox::SetString(int n, char *s)
@@ -537,7 +537,7 @@ void wxListBox::SetString(int n, char *s)
   if (0 <= n && n < num_choices) {
     s = copystring(s);
     choices[n] = s;
-    SetInternalData();    
+    SetInternalData();
   }
 }
 

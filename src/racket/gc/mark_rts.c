@@ -369,7 +369,7 @@ ptr_t GC_approx_sp(void)
 #   ifdef _MSC_VER
 #     pragma warning(disable:4172)
 #   endif
-	ptr_t addr = ((ptr_t)(&dummy));
+    ptr_t addr = ((ptr_t)(&dummy));
     return addr;
 #   ifdef _MSC_VER
 #     pragma warning(default:4172)
