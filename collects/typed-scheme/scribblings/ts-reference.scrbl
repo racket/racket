@@ -26,6 +26,7 @@
 @defidform[Integer]
 @defidform[Natural]
 @defidform[Exact-Positive-Integer]
+@defidform[Exact-Nonnegative-Integer]
 @defidform[Boolean]
 @defidform[True]
 @defidform[False]
