@@ -63,12 +63,23 @@ different root path (indicating that the destination files have
 moved).}
 
 
+@defmethod[(traverse [srcs (listof part?)]
+                     [dests (listof path-string?)])
+           (and/c hash? immutable?)]{
+
+Performs the @techlink{traverse pass}, producing a hash table that
+contains the replacements for and @racket[traverse-block]s and
+@racket[traverse-elements]s. See @method[render% render] for
+information on the @racket[dests] argument.}
+
 @defmethod[(collect [srcs (listof part?)]
-                    [dests (listof path-string?)])
+                    [dests (listof path-string?)]
+                    [fp (and/c hash? immutable?)])
            collect-info?]{
 
 Performs the @techlink{collect pass}. See @method[render% render] for
-information on the @racket[dests] argument.}
+information on the @racket[dests] argument. The @racket[fp] argument
+is a result from the @method[render% traverse] method.}
 
 @defmethod[(resolve [srcs (listof part?)]
                     [dests (listof path-string?)]
@@ -76,14 +87,16 @@ information on the @racket[dests] argument.}
            resolve-info?]{
 
 Performs the @techlink{resolve pass}. See @method[render% render] for
-information on the @racket[dests] argument.}
+information on the @racket[dests] argument.  The @racket[ci] argument
+is a result from the @method[render% collect] method.}
 
 @defmethod[(render [srcs (listof part?)]
                    [dests (listof path-string?)]
                    [ri resolve-info?])
            void?]{
 
-Produces the final output.
+Produces the final output.  The @racket[ri] argument is a result from
+the @method[render% render] method.
 
 The @racket[dests] provide names of files for Latex or single-file
 HTML output, or names of sub-directories for multi-file HTML output.

@@ -9,20 +9,43 @@
 @defmodule[scribble/core]
 
 A document is represented as a @techlink{part}, as described in
- @secref["parts"]. This representation is intended to
+ @secref["parts"]. This representation is intended to be
  independent of its eventual rendering, and it is intended to be
  immutable; rendering extensions and specific data in a document can
  collude arbitrarily, however.
 
-A document is processed in three passes. The first pass is the
- @deftech{collect pass}, which globally collects information in the
- document, such as targets for hyperlinking. The second pass is the
- @deftech{resolve pass}, which matches hyperlink references with
- targets and expands delayed elements (where the expansion should not
- contribute new hyperlink targets). The final pass is the
- @deftech{render pass}, which generates the resulting document. None
- of the passes mutate the document, but instead collect information in
- side @racket[collect-info] and @racket[resolve-info] tables.
+A document is processed in four passes:
+
+@itemlist[
+
+ @item{The @deftech{traverse pass} traverses the document content in
+       document order so that information from one part of a document
+       can be communicated to other parts of the same document. The
+       information is transmitted through a symbol-keyed mapping that
+       can be inspected and extended by @racket[traverse-element]s and
+       @racket[traverse-block]s in the document. The @tech{traverse
+       pass} iterates the traversal until it obtains a fixed point
+       (i.e., the mapping from one iteration is unchanged from the
+       previous iteration).}
+
+ @item{The @deftech{collect pass} globally collects information in the
+       document that can span documents that are built at separate
+       times, such as targets for hyperlinking.}
+
+ @item{The @deftech{resolve pass} matches hyperlink references
+       with targets and expands delayed elements (where the expansion
+       should not contribute new hyperlink targets).}
+
+ @item{The @deftech{render pass} generates the result document.}
+
+]
+
+None of the passes mutate the document representation. Instead, the
+ @tech{traverse pass}, @tech{collect pass}, and @tech{resolve pass}
+ accumulate information in a side hash table, @racket[collect-info]
+ table, and @racket[resolve-info] table. The @tech{collect pass} and
+ @tech{resolve pass} are effectively specialized version of
+ @tech{traverse pass} that work across separately built documents.
 
 @; ------------------------------------------------------------------------
 
@@ -38,8 +61,9 @@ A @deftech{part} is an instance of @racket[part]; among other things,
 A @deftech{flow} is a list of @techlink{blocks}.
 
 A @deftech{block} is either a @techlink{table}, an
- @techlink{itemization}, a @techlink{nested flow}, a @techlink{paragraph},
- a @techlink{compound paragraph}, or a @techlink{delayed block}.
+ @techlink{itemization}, a @techlink{nested flow}, a
+ @techlink{paragraph}, a @techlink{compound paragraph}, a
+ @techlink{traverse block}, or a @techlink{delayed block}.
 
 @itemize[
 
@@ -62,7 +86,7 @@ A @deftech{block} is either a @techlink{table}, an
              @item{An @deftech{content} can be a string, one of a few
                    symbols, an instance of @racket[element] (possibly
                    @racket[link-element], etc.), a @racket[multiarg-element], a
-                   @techlink{part-relative element}, a
+                   a @techlink{traverse element}, @techlink{part-relative element}, a
                    @techlink{delayed element}, or a list of content.
 
                    @itemize[
@@ -124,6 +148,12 @@ A @deftech{block} is either a @techlink{table}, an
                          processing to record information used by
                          later passes.}
 
+                   @item{A @deftech{traverse element} is an instance
+                         of @racket[traverse-element], which
+                         ultimately produces content, but can
+                         accumulate and inspect information in the
+                         @tech{traverse pass}.}
+
                    @item{A @deftech{part-relative element} is an
                          instance of @racket[part-relative-element],
                          which has a procedure that is called in the
@@ -152,6 +182,11 @@ A @deftech{block} is either a @techlink{table}, an
              has list of @tech{blocks}, but the blocks are typeset as
              a single paragraph (e.g., no indentation after the first
              block) instead of inset.}
+
+       @item{A @deftech{traverse block} is an instance of
+             @racket[traverse-block], which ultimately produces
+             another block, but can accumulate and inspect information
+             during the @tech{traverse pass}.}
 
        @item{A @deftech{delayed block} is an instance of
              @racket[delayed-block], which has a procedure that
@@ -306,6 +341,9 @@ The recognized @tech{style properties} are as follows:
 
  @item{@racket['hidden] --- The part title is not shown in rendered
        HTML output.}
+
+ @item{@racket['toc-hidden] --- The part title is not shown in tables
+       of contents.}
 
  @item{@racket['quiet] --- In HTML output and most other output modes,
        hides entries for sub-parts of this part in a
@@ -560,6 +598,19 @@ for Latex output (see @secref["extra-style"]). The following
 ]}
 
 
+@defstruct[traverse-block ([traverse block-traverse-procedure/c])]{
+
+Produces another block during the @tech{traverse pass}, eventually.
+The @scheme[traverse] procedure is called with procedures to get and
+set symbol-keyed information, and it should return either a
+@tech{block} (which effectively takes the @racket[traverse-block]'s
+place) or a procedure like @racket[traverse] to be called in the next
+iteration of the @tech{traverse pass}.
+
+All @racket[traverse-element] and @racket[traverse-block]s that have
+not been replaced are forced in document order relative to each other
+during an iteration of the @tech{traverse pass}.}
+
 @defstruct[delayed-block ([resolve (any/c part? resolve-info? . -> . block?)])]{
 
 The @racket[resolve] procedure is called during the @techlink{resolve
@@ -745,6 +796,12 @@ it corresponds to a Latex command that accepts as many arguments (each
 in curly braces) as elements of @racket[content].}
 
 
+@defstruct[traverse-element ([traverse element-traverse-procedure/c])]{
+
+Like @racket[traverse-block], but the @racket[traverse] procedure must
+eventually produce @tech{content}, rather than a @tech{block}.}
+
+
 @defstruct[delayed-element ([resolve (any/c part? resolve-info? . -> . list?)]
                             [sizer (-> any/c)]
                             [plain (-> any/c)])]{
@@ -876,14 +933,16 @@ for each row in the table. This @tech{style property} is used only when a
 @defproc[(block? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @racket[paragraph],
-@racket[table], @racket[itemization], @racket[nested-flow], or
-@racket[delayed-block], @racket[#f] otherwise.}
+@racket[table], @racket[itemization], @racket[nested-flow],
+@racket[traverse-block], or @racket[delayed-block], @racket[#f]
+otherwise.}
 
 
 @defproc[(content? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a string, symbol,
-@racket[element], @racket[multiarg-element], @racket[delayed-element],
+@racket[element], @racket[multiarg-element],
+@racket[traverse-element], @racket[delayed-element],
 @racket[part-relative-element], or list of @tech{content}, @racket[#f]
 otherwise.}
 
@@ -1064,6 +1123,45 @@ Returns the information collected for @racket[p] as recorded within
 Converts a @racket[generated-tag] value with @racket[t] to a string.
 
 }
+
+
+@defproc[(traverse-block-block [b traverse-block?]
+                               [i (or/c resolve-info? collect-info?)])
+         block?]{
+
+Produces the block that replaces @racket[b].}
+
+
+@defproc[(traverse-element-content [e traverse-element?]
+                                   [i (or/c resolve-info? collect-info?)])
+         content?]{
+
+Produces the content that replaces @racket[e].}
+
+
+@defthing[block-traverse-procedure/c contract?]{
+
+Defined as
+
+@schemeblock[
+  (recursive-contract
+   ((symbol? any/c . -> . any/c)
+    (symbol? any/c . -> . any)
+    . -> . (or/c block-traverse-procedure/c
+                 block?)))
+]}
+
+@defthing[element-traverse-procedure/c contract?]{
+
+Defined as
+
+@schemeblock[
+  (recursive-contract
+   ((symbol? any/c . -> . any/c)
+    (symbol? any/c . -> . any)
+    . -> . (or/c element-traverse-procedure/c
+                 content?)))
+]}
 
 @; ----------------------------------------
 

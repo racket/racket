@@ -106,6 +106,8 @@
         [(delayed-block? p)
          (let ([v ((delayed-block-resolve p) this d ri)])
            (extract-block-style-files v d ri ht pred extract))]
+        [(traverse-block? p)
+         (extract-block-style-files (traverse-block-block p ri) d ri ht pred extract)]
         [else
          (extract-style-style-files (paragraph-style p) ht pred extract)
          (extract-content-style-files (paragraph-content p) d ri ht pred extract)]))
@@ -125,6 +127,8 @@
           (extract-content-style-files e d ri ht pred extract))]
        [(delayed-element? e)
         (extract-content-style-files (delayed-element-content e ri) d ri ht pred extract)]
+       [(traverse-element? e)
+        (extract-content-style-files (traverse-element-content e ri) d ri ht pred extract)]
        [(part-relative-element? e)
         (extract-content-style-files (part-relative-element-content e ri) d ri ht pred extract)]))
 
@@ -230,10 +234,97 @@
           (hash-set! in-ht k v))))
 
     ;; ----------------------------------------
+    ;; document-order traversal
+
+    (define/public (traverse ds fns)
+      (let loop ([fp #hasheq()])
+        (let ([fp2 (start-traverse ds fns fp)])
+          (if (equal? fp fp2)
+              fp
+              (loop fp2)))))
+
+    (define/public (start-traverse ds fns fp)
+      (for/fold ([fp fp]) ([d (in-list ds)])
+        (traverse-part d fp)))
+
+    (define/public (traverse-part d fp)
+      (let* ([fp (if (part-title-content d)
+                     (traverse-content (part-title-content d) fp)
+                     fp)]
+             [fp (traverse-content (part-to-collect d) fp)]
+             [fp (traverse-flow (part-blocks d) fp)])
+        (for/fold ([fp fp]) ([p (in-list (part-parts d))])
+          (traverse-part p fp))))
+
+    (define/public (traverse-paragraph p fp)
+      (traverse-content (paragraph-content p) fp))
+
+    (define/public (traverse-flow p fp)
+      (for/fold ([fp fp]) ([p (in-list p)])
+        (traverse-block p fp)))
+
+    (define/public (traverse-block p fp)
+      (cond [(table? p) (traverse-table p fp)]
+            [(itemization? p) (traverse-itemization p fp)]
+            [(nested-flow? p) (traverse-nested-flow p fp)]
+            [(compound-paragraph? p) (traverse-compound-paragraph p fp)]
+            [(delayed-block? p) fp]
+            [(traverse-block? p) (traverse-force fp p 
+                                                 (traverse-block-traverse p) 
+                                                 (lambda (p fp) (traverse-block p fp)))]
+            [else (traverse-paragraph p fp)]))
+
+    (define/public (traverse-table i fp)
+      (for*/fold ([fp fp]) ([ds (in-list (table-blockss i))]
+                            [d (in-list ds)])
+        (if (eq? d 'cont) 
+            fp
+            (traverse-block d fp))))
+
+    (define/public (traverse-itemization i fp)
+      (for/fold ([fp fp]) ([d (in-list (itemization-blockss i))])
+        (traverse-flow d fp)))
+
+    (define/public (traverse-nested-flow i fp)
+      (for/fold ([fp fp]) ([d (in-list (nested-flow-blocks i))])
+        (traverse-block d fp)))
+
+    (define/public (traverse-compound-paragraph i fp)
+      (for/fold ([fp fp]) ([d (in-list (compound-paragraph-blocks i))])
+        (traverse-block d fp)))
+
+    (define/public (traverse-content i fp)
+      (cond
+       [(traverse-element? i) (traverse-force fp i (traverse-element-traverse i)
+                                              (lambda (i fp) (traverse-content i fp)))]
+       [(element? i) (traverse-content (element-content i) fp)]
+       [(list? i) (for/fold ([fp fp]) ([c (in-list i)])
+                    (traverse-content c fp))]
+       [(multiarg-element? i)
+        (for/fold ([fp fp]) ([c (in-list (multiarg-element-contents i))])
+          (traverse-content c fp))]
+       [else fp]))
+
+    (define (traverse-force fp p proc again)
+      (let ([v (hash-ref fp p (lambda () proc))])
+        (if (procedure? v)
+            (let ([fp fp])
+              (let ([v2 (v (lambda (key default)
+                             (hash-ref fp key default))
+                           (lambda (key val)
+                             (set! fp (hash-set fp key val))))])
+                (let ([fp (hash-set fp p v2)])
+                  (if (procedure? v2)
+                      fp
+                      (again v2 fp)))))
+            fp)))
+    
+    ;; ----------------------------------------
     ;; global-info collection
 
-    (define/public (collect ds fns)
-      (let ([ci (make-collect-info (make-hash)
+    (define/public (collect ds fns fp)
+      (let ([ci (make-collect-info fp
+                                   (make-hash)
                                    (make-hash)
                                    (make-hasheq)
                                    (make-hasheq)
@@ -249,6 +340,7 @@
 
     (define/public (collect-part d parent ci number)
       (let ([p-ci (make-collect-info
+                   (collect-info-fp ci)
                    (make-hash)
                    (collect-info-ext-ht ci)
                    (collect-info-parts ci)
@@ -326,6 +418,7 @@
             [(nested-flow? p) (collect-nested-flow p ci)]
             [(compound-paragraph? p) (collect-compound-paragraph p ci)]
             [(delayed-block? p) (void)]
+            [(traverse-block? p) (collect-block (traverse-block-block p ci) ci)]
             [else (collect-paragraph p ci)]))
 
     (define/public (collect-table i ci)
@@ -409,6 +502,7 @@
          (let ([v ((delayed-block-resolve p) this d ri)])
            (hash-set! (resolve-info-delays ri) p v)
            (resolve-block v d ri))]
+        [(traverse-block? p) (resolve-block (traverse-block-block p ri) d ri)]
         [else (resolve-paragraph p d ri)]))
 
     (define/public (resolve-table i d ri)
@@ -437,6 +531,8 @@
                                 (hash-set! (resolve-info-delays ri) i v)
                                 v))
                           d ri)]
+        [(traverse-element? i)
+         (resolve-content (traverse-element-content i ri) d ri)]
         [(list? i)
          (for ([i (in-list i)])
            (resolve-content i d ri))]
@@ -539,6 +635,8 @@
        [(compound-paragraph? p) (render-compound-paragraph p part ri starting-item?)]
        [(delayed-block? p) 
         (render-block (delayed-block-blocks p ri) part ri starting-item?)]
+       [(traverse-block? p) 
+        (render-block (traverse-block-block p ri) part ri starting-item?)]
        [else (render-paragraph p part ri)]))
 
     (define/public (render-auxiliary-table i part ri)
@@ -575,6 +673,8 @@
          (render-content (multiarg-element-contents i) part ri)]
         [(delayed-element? i)
          (render-content (delayed-element-content i ri) part ri)]
+        [(traverse-element? i)
+         (render-content (traverse-element-content i ri) part ri)]
         [(part-relative-element? i)
          (render-content (part-relative-element-content i ri) part ri)]
         [else (render-other i part ri)]))
@@ -683,7 +783,9 @@
                                    (not (= base-len (sub1 (length number))))))
                        (positive? depth))
                   (apply append (map (lambda (p)
-                                       (generate-toc p ri base-len #f quiet (sub1 depth) prefixes))
+                                       (if (part-style? p 'toc-hidden)
+                                           null
+                                           (generate-toc p ri base-len #f quiet (sub1 depth) prefixes)))
                                      (part-parts part)))
                   null)])
         (if skip?

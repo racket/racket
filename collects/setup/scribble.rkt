@@ -510,7 +510,8 @@
                         (dynamic-require-doc (doc-src-spec doc))
                         (doc-src-spec doc))]
                     [dest-dir (pick-dest latex-dest doc)]
-                    [ci (send renderer collect (list v) (list dest-dir))]
+                    [fp (send renderer traverse (list v) (list dest-dir))]
+                    [ci (send renderer collect (list v) (list dest-dir) fp)]
                     [ri (send renderer resolve (list v) (list dest-dir) ci)]
                     [out-v (and info-out-time
                                 (with-handlers ([exn:fail? (lambda (exn) #f)])
@@ -613,8 +614,10 @@
                                      (dynamic-require-doc (doc-src-spec doc)))
                                     (doc-src-spec doc))]
               [dest-dir (pick-dest latex-dest doc)]
+              [fp (render-time "traverse" 
+                               (send renderer traverse (list v) (list dest-dir)))]
               [ci (render-time "collect" 
-                               (send renderer collect (list v) (list dest-dir)))])
+                               (send renderer collect (list v) (list dest-dir) fp))])
          (render-time
           "deserialize"
           (for ([i (info-deps info)])

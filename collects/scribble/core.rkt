@@ -5,7 +5,7 @@
 
 ;; ----------------------------------------
 
-(define-struct collect-info (ht ext-ht parts tags gen-prefix relatives parents))
+(define-struct collect-info (fp ht ext-ht parts tags gen-prefix relatives parents))
 (define-struct resolve-info (ci delays undef searches))
 
 (define (part-collected-info part ri)
@@ -92,7 +92,8 @@
       (itemization? p)
       (nested-flow? p)
       (compound-paragraph? p)
-      (delayed-block? p)))
+      (delayed-block? p)
+      (traverse-block? p)))
 
 (define content-symbols
   #hasheq([nbsp . #t]
@@ -115,6 +116,7 @@
       (element? v)
       (and (list? v) (andmap content? v))
       (delayed-element? v)
+      (traverse-element? v)
       (part-relative-element? v)
       (multiarg-element? v)
       (hash-ref content-symbols v #f)))
@@ -188,6 +190,104 @@
 
 ;; ----------------------------------------
 
+;; Traverse block has special serialization support:
+(define-struct traverse-block (traverse)
+  #:property
+  prop:serializable
+  (make-serialize-info
+   (lambda (d)
+     (let ([ri (current-serialize-resolve-info)])
+       (unless ri
+         (error 'serialize-traverse-block
+                "current-serialize-resolve-info not set"))
+       (vector (traverse-block-block d ri))))
+   #'deserialize-traverse-block
+   #f
+   (or (current-load-relative-directory) (current-directory))))
+
+(define block-traverse-procedure/c
+  (recursive-contract
+   ((symbol? any/c . -> . any/c)
+    (symbol? any/c . -> . any)
+    . -> . (or/c block-traverse-procedure/c
+                 block?))))
+
+(provide block-traverse-procedure/c)
+(provide/contract
+ (struct traverse-block ([traverse block-traverse-procedure/c])))
+
+(provide deserialize-traverse-block)
+(define deserialize-traverse-block
+  (make-deserialize-info values values))
+
+(define (traverse-block-block b i)
+  (cond
+   [(collect-info? i)
+    (let ([p (hash-ref (collect-info-fp i) b #f)])
+      (if (block? p)
+          p
+          (error 'traverse-block-block
+                 "no block computed for traverse-block: ~e"
+                 b)))]
+   [(resolve-info? i)
+    (traverse-block-block b (resolve-info-ci i))]))
+
+(provide/contract
+ [traverse-block-block (traverse-block?
+                        (or/c resolve-info? collect-info?)
+                        . -> . block?)])
+
+;; ----------------------------------------
+
+;; Traverse element has special serialization support:
+(define-struct traverse-element (traverse)
+  #:property
+  prop:serializable
+  (make-serialize-info
+   (lambda (d)
+     (let ([ri (current-serialize-resolve-info)])
+       (unless ri
+         (error 'serialize-traverse-block
+                "current-serialize-resolve-info not set"))
+       (vector (traverse-element-content d ri))))
+   #'deserialize-traverse-element
+   #f
+   (or (current-load-relative-directory) (current-directory))))
+
+(define element-traverse-procedure/c
+  (recursive-contract
+   ((symbol? any/c . -> . any/c)
+    (symbol? any/c . -> . any)
+    . -> . (or/c element-traverse-procedure/c
+                 content?))))
+
+(provide/contract
+ (struct traverse-element ([traverse element-traverse-procedure/c])))
+
+(provide deserialize-traverse-element)
+(define deserialize-traverse-element
+  (make-deserialize-info values values))
+
+(define (traverse-element-content e i)
+  (cond
+   [(collect-info? i)
+    (let ([c (hash-ref (collect-info-fp i) e #f)])
+      (if (content? c)
+          c
+          (error 'traverse-block-block
+                 "no block computed for traverse-block: ~e"
+                 e)))]
+   [(resolve-info? i)
+    (traverse-element-content e (resolve-info-ci i))]))
+
+(provide element-traverse-procedure/c)
+(provide/contract
+ [traverse-element-content (traverse-element?
+                            (or/c resolve-info? collect-info?)
+                            . -> . content?)])
+
+;; ----------------------------------------
+
 ;; Delayed element has special serialization support:
 (define-struct delayed-element (resolve sizer plain)
   #:property
@@ -203,9 +303,7 @@
                           (error 'serialize-delayed-element
                                  "serialization failed (wrong resolve info? delayed element never rendered?); ~a"
                                  (exn-message exn)))])
-         (vector
-          (let ([l (delayed-element-content d ri)])
-            l)))))
+         (vector (delayed-element-content d ri)))))
    #'deserialize-delayed-element
    #f
    (or (current-load-relative-directory) (current-directory))))

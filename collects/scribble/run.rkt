@@ -117,7 +117,8 @@
                                     (send renderer get-suffix))])
                            (if dir (build-path dir fn) fn))))
                      files)]
-           [info (send renderer collect docs fns)])
+           [fp (send renderer traverse docs fns)]
+           [info (send renderer collect docs fns fp)])
       (for ([file (in-list (reverse (current-info-input-files)))])
         (let ([s (with-input-from-file file read)])
           (send renderer deserialize-info s info)))
