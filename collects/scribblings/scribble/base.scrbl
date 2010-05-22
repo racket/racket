@@ -176,7 +176,7 @@ of inlined.}
 
 @defproc[(margin-note* [pre-content pre-content?] ...) element?]{
 
-Produces an @tech{element} that is typeset in the margin, instead of
+Produces an @racket[element] that is typeset in the margin, instead of
 inlined. Unlike @racket[margin-note], @racket[margin-note*] can be
 used in the middle of a paragraph; at the same time, its content is
 constrained to form a single paragraph in the margin.}
