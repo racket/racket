@@ -183,7 +183,9 @@
      arg]
     [(font-size)
      (check-arg fn-name (and (integer? arg) (<= 1 arg 255)) 'font-size i arg)
-     arg]
+     (if (exact? arg)
+         arg
+         (inexact->exact arg))]
     [(face)
      (check-arg fn-name (or (not arg) (string? arg)) 'face i arg)
      arg]
