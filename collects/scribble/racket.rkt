@@ -663,7 +663,7 @@
            [(hash? (syntax-e c))
             (advance c init-line!)
             (let ([equal-table? (hash-equal? (syntax-e c))]
-                  [eqv-table? (hash-eq? (syntax-e c))]
+                  [eqv-table? (hash-eqv? (syntax-e c))]
                   [quote-depth (to-quoted c expr? quote-depth out color? inc-src-col)])
               (unless (and expr? (zero? quote-depth))
                 (out (if equal-table?

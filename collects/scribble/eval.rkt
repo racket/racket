@@ -215,7 +215,9 @@
                      ph
                      ((if (hash-eq? v)
                           make-hasheq-placeholder
-                          make-hash-placeholder)
+                          (if (hash-eqv? v)
+                              make-hasheqv-placeholder
+                              make-hash-placeholder))
                       a)))
                   ph)]
      [else v]))
