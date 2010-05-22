@@ -168,10 +168,18 @@ address-harvesting robots.}
 Produces a @tech{nested flow} whose content is centered.}
 
 
-@defproc[(margin-note [pre-content pre-content?] ...) blockquote?]{
+@defproc[(margin-note [pre-flow pre-flow?] ...) block?]{
 
 Produces a @tech{nested flow} that is typeset in the margin, instead
 of inlined.}
+
+
+@defproc[(margin-note* [pre-content pre-content?] ...) element?]{
+
+Produces an @tech{element} that is typeset in the margin, instead of
+inlined. Unlike @racket[margin-note], @racket[margin-note*] can be
+used in the middle of a paragraph; at the same time, its content is
+constrained to form a single paragraph in the margin.}
 
 
 @defproc[(itemlist [itm item?] ...

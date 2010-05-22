@@ -495,6 +495,7 @@
                  element?)]
  [url (-> string? element?)]
  [margin-note (->* () () #:rest (listof pre-flow?) block?)]
+ [margin-note* (->* () () #:rest (listof pre-content?) element?)]
  [centered (->* () () #:rest (listof pre-flow?) block?)]
  [verbatim (->* (string?) (#:indent exact-nonnegative-integer?) #:rest (listof string?) block?)])
 
@@ -527,6 +528,15 @@
       (make-nested-flow
        (make-style "refcontent" null)
        (decode-flow c)))))))
+
+(define (margin-note* . c)
+  (make-element
+   (make-style "refelem" null)
+   (make-element
+    (make-style "refcolumn" null)
+    (make-element
+     (make-style "refcontent" null)
+     (decode-content c)))))
 
 (define (verbatim #:indent [i 0] s . more)
   (define indent
