@@ -313,10 +313,35 @@
     (define/public (set-external-root-url p)
       (set! external-root-url p))
 
+    (define (try-relative-to-external-root dest)
+      (cond
+       [(let ([rel (find-relative-path
+                    (find-doc-dir)
+                    (relative->path (dest-path dest)))])
+          (and (relative-path? rel)
+               rel))
+        => (lambda (rel)
+             (cons
+              (url->string
+               (struct-copy
+                url
+                (combine-url/relative
+                 (string->url external-root-url)
+                 (string-join (map path-element->string
+                                   (explode-path rel))
+                              "/"))))
+              (and (not (dest-page? dest))
+                   (anchor-name (dest-anchor dest)))))]
+       [else #f]))
+
     (define/public (tag->path+anchor ri tag)
       ;; Called externally; not used internally
       (let-values ([(dest ext?) (resolve-get/ext? #f ri tag)])
         (cond [(not dest) (values #f #f)]
+              [(and ext? external-root-url
+                    (try-relative-to-external-root dest))
+               => (lambda (p)
+                    (values (car p) (cdr p)))]
               [(and ext? external-tag-path)
                (values (string->url external-tag-path) (format "~a" (serialize tag)))]
               [else (values (relative->path (dest-path dest))

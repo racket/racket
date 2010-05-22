@@ -41,7 +41,8 @@
                    #:render% [render% (html:render-mixin render%)]
                    #:root [root-path #f])
   (let* ([renderer (new render% [dest-dir (find-system-path 'temp-dir)])]
-         [ci (send renderer collect null null)])
+         [fp (send renderer traverse null null)]
+         [ci (send renderer collect null null fp)])
     (for ([src sources])
       (parameterize ([current-namespace
                       (namespace-anchor->empty-namespace here)])
@@ -121,8 +122,12 @@
     tag))
 
 (define (xref-tag->path+anchor xrefs tag
-                               #:render% [render% (html:render-mixin render%)])
-  (send (new render% [dest-dir (find-system-path 'temp-dir)])
+                               #:render% [render% (html:render-mixin render%)]
+                               #:external-root-url [redirect-main #f])
+  (send (let ([r (new render% [dest-dir (find-system-path 'temp-dir)])])
+          (when redirect-main
+            (send r set-external-root-url redirect-main))
+          r)
         tag->path+anchor (xrefs-ri xrefs) tag))
 
 (define (xref-tag->index-entry xrefs tag)
