@@ -647,7 +647,7 @@
                     (-lst a))
                    ((-lst b) b) 
                    . ->... . 
-                   -Integer))]
+                   -Nat))]
 [filter-map (-polydots (c a b)
                        ((list
                          ((list a) (b b) . ->... . (-opt c))
@@ -752,7 +752,7 @@
                            (-vec a))
                           ((-vec b) b)
                           . ->... . 
-                          -Integer))]
+                          -Nat))]
 [vector-filter (-poly (a b) (cl->*
                              ((make-pred-ty (list a) Univ b)
                               (-vec a)
