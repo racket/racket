@@ -45,6 +45,9 @@
 (define (-Tuple l)
   (foldr -pair (-val '()) l))
 
+(define (-Tuple* l b)
+  (foldr -pair b l))
+
 (define (untuple t)
   (match (resolve t)
     [(Value: '()) null]

@@ -6,7 +6,7 @@
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: scheme/contract)
          syntax/parse
-         (env type-env-structs tvar-env dotted-env type-name-env type-alias-env lexical-env)         
+         (env type-env-structs tvar-env type-name-env type-alias-env lexical-env)         
          scheme/match unstable/debug
          (for-template scheme/base "colon.ss")
          ;; needed at this phase for tests
@@ -111,7 +111,7 @@
   (parameterize ([current-orig-stx stx])    
     (syntax-parse
         stx
-      #:literals (t:Class t:Refinement t:Instance t:List cons t:pred t:-> : case-lambda
+      #:literals (t:Class t:Refinement t:Instance t:List t:List* cons t:pred t:-> : case-lambda
                           t:Rec t:U t:All t:Opaque t:Parameter t:Vector quote)
       [t
        #:declare t (3d Type?)
@@ -148,7 +148,10 @@
              (make-Instance v)))]
       [((~and kw t:List) ts ...)
        (add-type-name-reference #'kw)
-       (-Tuple (map parse-type (syntax->list #'(ts ...))))]
+       (parse-list-type stx)]
+      [((~and kw t:List*) ts ... t)
+       (add-type-name-reference #'kw)
+       (-Tuple* (map parse-type (syntax->list #'(ts ...))) (parse-type #'t))]
       [((~and kw t:Vector) ts ...)
        (add-type-name-reference #'kw)
        (make-HeterogenousVector (map parse-type (syntax->list #'(ts ...))))]
@@ -345,6 +348,40 @@
       [t:atom
        (-val (syntax-e #'t))]
       [_ (tc-error "not a valid type: ~a" (syntax->datum stx))])))
+
+(define (parse-list-type stx)
+  (parameterize ([current-orig-stx stx])        
+    (syntax-parse stx #:literals (t:List)
+      [((~and kw t:List) tys ... dty :ddd/bound)
+       (add-type-name-reference #'kw)
+       (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
+         (if (not (Dotted? var))
+             (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." (syntax-e #'bound))             
+             (-Tuple* (map parse-type (syntax->list #'(tys ...)))
+                      (make-ListDots
+                       (parameterize ([current-tvars (extend-env (list (syntax-e #'bound)) 
+                                                                 (list (make-DottedBoth (make-F (syntax-e #'bound))))
+                                                                 (current-tvars))])
+                         (parse-type #'dty))
+                       (syntax-e #'bound)))))]
+      [((~and kw t:List) tys ... dty _:ddd)
+       (add-type-name-reference #'kw)
+       (let ([bounds (env-keys+vals (env-filter (compose Dotted? cdr) (current-tvars)))])
+         (when (null? bounds)
+           (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
+         (unless (null? (cdr bounds))
+           (tc-error/stx stx "Cannot infer bound for ... type"))
+         (match-let ([(cons var (struct Dotted (t))) (car bounds)])
+           (-Tuple* (map parse-type (syntax->list #'(tys ...)))
+                    (make-ListDots
+                     (parameterize ([current-tvars (extend-env (list var) 
+                                                               (list (make-DottedBoth t))
+                                                               (current-tvars))])
+                       (parse-type #'dty))
+                     var))))]
+      [((~and kw t:List) tys ...) 
+       (add-type-name-reference #'kw)
+       (-Tuple (map parse-type (syntax->list #'(tys ...))))])))
 
 (define (parse-values-type stx)
   (parameterize ([current-orig-stx stx])        

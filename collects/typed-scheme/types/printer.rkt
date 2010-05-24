@@ -171,6 +171,8 @@
     [(Channel: e) (fp "(Channelof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
+    [(ListDots: dty dbound) 
+     (fp "(List ~a ...~a~a)" dty (if (special-dots-printing?) "" " ") dbound)]
     [(F: nm) (fp "~a" nm)]   
     ;; FIXME
     [(Values: (list v)) (fp "~a" v)]

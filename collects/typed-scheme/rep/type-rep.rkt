@@ -66,6 +66,11 @@
 ;; left and right are Types
 (dt Pair ([left Type/c] [right Type/c]) [#:key 'pair])
 
+;; dotted list -- after expansion, becomes normal Pair-based list type
+(dt ListDots ([dty Type/c] [dbound (or/c symbol? natural-number/c)])
+    [#:frees (λ (f) (f dty))]
+    [#:fold-rhs (*ListDots (type-rec-id dty) dbound)])
+
 ;; *mutable* pairs - distinct from regular pairs
 ;; left and right are Types
 (dt MPair ([left Type/c] [right Type/c]) [#:key 'mpair])
@@ -442,6 +447,9 @@
               (*ValuesDots (map sb rs)
                            (sb dty)
                            (if (eq? dbound name) (+ count outer) dbound))]
+       [#:ListDots dty dbound
+                   (*ListDots (sb dty)
+                              (if (eq? dbound name) (+ count outer) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body* 
                    (let ([body (remove-scopes n body*)])
@@ -490,6 +498,9 @@
                      (*ValuesDots (map sb rs)
                                   (sb dty)
                                   (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
+       [#:ListDots dty dbound
+                   (*ListDots (sb dty)
+                              (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body* 
                    (let ([body (remove-scopes n body*)])
