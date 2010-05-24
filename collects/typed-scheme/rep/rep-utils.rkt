@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "../utils/utils.rkt")
 
-(require mzlib/struct 
+(require mzlib/struct mzlib/pconvert
          scheme/match
          syntax/boundmap
          "free-variance.rkt"
@@ -266,3 +266,19 @@
 
 (define (replace-syntax rep stx)
   (replace-field rep stx 3))
+
+(define (converter v basic sub)
+  (define (gen-constructor sym)
+    (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
+  (match v
+    [(? (lambda (e) (or (Filter? e)
+                        (Object? e)
+                        (PathElem? e)))
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx vals)))
+     `(,(gen-constructor tag) ,@(map sub vals))]
+    [(? Type?
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq fv fi stx key vals)))
+     `(,(gen-constructor tag) ,@(map sub vals))]
+    [_ (basic v)]))
+
+(current-print-convert-hook converter)

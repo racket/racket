@@ -139,15 +139,12 @@ at least theoretically.
   print-type* print-filter* print-latentfilter* print-object* print-latentobject*
   print-pathelem*)
 
-(define pseudo-printer
-  (lambda (s port mode)
-    (parameterize ([current-output-port port]
-                   [show-sharing #f]
-                   [booleans-as-true/false #f]
-                   [constructor-style-printing #t])
-      (newline)
-      (pretty-print (print-convert s))
-      (newline))))
+(define (pseudo-printer s port mode)
+  (parameterize ([current-output-port port]
+                 [show-sharing #f]
+                 [booleans-as-true/false #f]
+                 [constructor-style-printing #t])
+    (pretty-print (print-convert s))))
 
 (define custom-printer (make-parameter #t))
   
