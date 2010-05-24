@@ -15,7 +15,6 @@ The value of @racket[(current-seconds)] increases as time passes
 seconds can be compared with a time returned by
 @racket[file-or-directory-modify-seconds].}
 
-
 @defproc[(seconds->date [secs-n exact-integer?]) date?]{
 
 Takes @racket[secs-n], a platform-specific time in seconds returned by
@@ -147,6 +146,10 @@ day only if @racket[time?]. See also @racket[date-display-format].}
 Parameter that determines the date string format. The initial format
 is @racket['american].}
 
+@defproc[(date->seconds [date date?]) exact-integer?]{
+Finds the representation of a date in platform-specific seconds.  If
+the platform cannot represent the specified date, an error is
+signaled, otherwise an integer is returned. }
 
 @defproc[(find-seconds [second (integer-in 0 61)]
                        [minute (integer-in 0 59)]

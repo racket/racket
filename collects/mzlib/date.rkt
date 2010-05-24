@@ -7,6 +7,7 @@
 
 (provide/contract
  [current-date (-> date?)]
+ [date->seconds (date? . -> . exact-integer?)]
  [date->string ((date?) (boolean?) . ->* . string?)]
  [date-display-format (parameter/c (symbols 'american 'chinese 'german 'indian 'irish 'julian 'iso-8601 'rfc2822))]
  [find-seconds ((integer-in 0 61)
@@ -250,6 +251,15 @@
   (let ([d (delay (find-extreme-date-seconds (current-seconds) 1))])
     (lambda ()
       (force d))))
+
+(define (date->seconds date)
+  (find-seconds 
+   (date-second date) 
+   (date-minute date) 
+   (date-hour date) 
+   (date-day date) 
+   (date-month date) 
+   (date-year date)))
 
 (define (find-seconds sec min hour day month year)
   (define (signal-error msg)
