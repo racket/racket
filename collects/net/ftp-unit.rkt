@@ -1,10 +1,10 @@
-#lang scheme/unit
+#lang racket/unit
 
 ;; Version 0.2
 ;;   Version 0.1a
 ;;   Micah Flatt
 ;;   06-06-2002
-(require scheme/date scheme/file scheme/port scheme/tcp "ftp-sig.ss")
+(require racket/date racket/file racket/port racket/tcp "ftp-sig.rkt")
 (import)
 (export ftp^)
 
