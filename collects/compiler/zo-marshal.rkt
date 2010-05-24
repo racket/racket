@@ -1,5 +1,6 @@
 #lang scheme/base
 (require compiler/zo-structs
+         unstable/byte-counting-port
          scheme/match
          scheme/contract
          scheme/local
@@ -41,44 +42,48 @@
                  (when (closure? v)
                    (hash-set! shared v (add1 (hash-count shared))))
                  #t))))
+     (define (v-skipping v)
+       (define skip? #t)
+       (lambda (v2)
+         (if (and skip? (eq? v v2))
+             (begin
+               (set! skip? #f)
+               #f)
+             (hash-ref shared v2 #f))))
      (parameterize ([current-wrapped-ht wrapped])
        (traverse-prefix prefix visit)
        (traverse-form form visit))
-     (let* ([s (open-output-bytes)]
-            [out (make-out s (lambda (v) (hash-ref shared v #f)) wrapped)]
-            [offsets
-             (map (lambda (k*v)
-                    (define v (cdr k*v))
-                    (begin0
-                      (file-position s)
-                      (out-anything v (make-out
-                                       s
-                                       (let ([skip? #t])
-                                         (lambda (v2)
-                                           (if (and skip? (eq? v v2))
-                                               (begin
-                                                 (set! skip? #f)
-                                                 #f)
-                                               (hash-ref shared v2 #f))))
-                                       wrapped))))
-                  (sort (hash-map shared (lambda (k v) (cons v k)))
-                        <
-                        #:key car))]
-            [post-shared (file-position s)]
-            [all-short? (post-shared . < . #xFFFF)]
-            [version-bs (string->bytes/latin-1 (version))])
-       (out-data (list* max-let-depth prefix (protect-quote form)) out)
-       (let ([res (get-output-bytes s)])
-         (write-bytes #"#~" outp)
-         (write-bytes (bytes (bytes-length version-bs)) outp)
-         (write-bytes version-bs outp)
-         (write-bytes (int->bytes (add1 (hash-count shared))) outp)
-         (write-bytes (bytes (if all-short? 1 0)) outp)
-         (for ([o (in-list offsets)])
-           (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
-         (write-bytes (int->bytes post-shared) outp)
-         (write-bytes (int->bytes (bytes-length res)) outp)
-         (write-bytes res outp)))]))
+     (local [(define in-order-shareds 
+               (sort (hash-map shared (lambda (k v) (cons v k)))
+                     <
+                     #:key car))
+             (define (write-all outp)
+               (define offsets
+                 (for/list ([k*v (in-list in-order-shareds)])
+                   (define v (cdr k*v))
+                   (begin0
+                     (file-position outp)
+                     (out-anything v (make-out outp (v-skipping v) wrapped)))))
+               (define post-shared (file-position outp))
+               (out-data (list* max-let-depth prefix (protect-quote form)) 
+                         (make-out outp (lambda (v) (hash-ref shared v #f)) wrapped))
+               (values offsets post-shared (file-position outp)))
+             (define counting-p (make-byte-counting-port))
+             (define-values (offsets post-shared all-forms-length)
+               (write-all counting-p))
+             (define all-short? (post-shared . < . #xFFFF))
+             (define version-bs (string->bytes/latin-1 (version)))]
+       (write-bytes #"#~" outp)
+       (write-bytes (bytes (bytes-length version-bs)) outp)
+       (write-bytes version-bs outp)
+       (write-bytes (int->bytes (add1 (hash-count shared))) outp)
+       (write-bytes (bytes (if all-short? 1 0)) outp)
+       (for ([o (in-list offsets)])
+         (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
+       (write-bytes (int->bytes post-shared) outp)
+       (write-bytes (int->bytes all-forms-length) outp)
+       (write-all outp)
+       (void))]))
 
 ;; ----------------------------------------
 
