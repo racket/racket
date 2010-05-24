@@ -21,6 +21,11 @@
 (import tc-expr^)
 (export tc-let^)
 
+(define (erase-filter tc)
+  (match tc
+    [(tc-results: ts _ _)
+     (ret ts (for/list ([f ts]) (make-NoFilter)) (for/list ([f ts]) (make-NoObject)))]))
+
 (d/c (do-check expr->type namess results form exprs body clauses expected #:abstract [abstract null])
      (((syntax? syntax? tc-results? . c:-> . any/c)
        (listof (listof identifier?)) (listof tc-results?)
@@ -66,17 +71,17 @@
                      (for/fold ([s i])
                        ([nm (in-list (apply append abstract namess))])
                        (proc s nm (make-Empty) #t))))])
+     (define (run res)
+       (match res
+         [(tc-results: ts fs os)
+          (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
+         [(tc-results: ts fs os dt db)
+          (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)]))
      (if expected 
-         (begin
-           (hash-update! to-be-abstr expected
-                         (lambda (old-l) (apply append old-l abstract namess))
-                         null)
-           (tc-exprs/check (syntax->list body) expected))
-         (match (tc-exprs (syntax->list body))           
-           [(tc-results: ts fs os)
-            (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os))]
-           [(tc-results: ts fs os dt db)
-            (ret (subber subst-type ts) (subber subst-filter-set fs) (subber subst-object os) dt db)])))))
+         (check-below 
+          (run (tc-exprs/check (syntax->list body) (erase-filter expected)))
+          expected)
+         (run (tc-exprs (syntax->list body)))))))
 
 (define (tc/letrec-values/check namess exprs body form expected)
   (tc/letrec-values/internal namess exprs body form expected))
