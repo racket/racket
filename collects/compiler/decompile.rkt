@@ -1,6 +1,7 @@
 #lang scheme/base
 (require compiler/zo-parse
          syntax/modcollapse
+         scheme/port
          scheme/match)
 
 (provide decompile)
@@ -21,10 +22,10 @@
         [table (make-hash)])
     (for ([b (in-list bindings)])
       (let ([v (and (cdr b)
-                    (zo-parse (let-values ([(in out) (make-pipe)])
-                                (write (cdr b) out)
-                                (close-output-port out)
-                                in)))])
+                    (zo-parse 
+                     (open-input-bytes
+                      (with-output-to-bytes
+                          (λ () (write (cdr b)))))))])
         (let ([n (match v
                    [(struct compilation-top (_ prefix (struct primval (n)))) n]
                    [else #f])])
