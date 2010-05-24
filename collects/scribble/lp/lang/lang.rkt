@@ -41,7 +41,7 @@
       (raise-syntax-error 'scribble/lp "no chunks")))
   (define orig-stx (syntax-case stx () [(_ orig) #'orig]))
   (define (restore nstx d) (datum->syntax orig-stx d nstx nstx))
-  (define (shift nstx) (datum->syntax orig-stx (syntax-e nstx) nstx nstx))
+  (define (shift nstx) (replace-context orig-stx nstx))
   (define body
     (let ([main-id (or main-id first-id)])
       (restore
