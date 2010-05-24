@@ -375,12 +375,17 @@ All @tech{MouseEvent}s are represented via strings:
          #:contracts
 	 ([clack-expr 
            (-> (unsyntax @tech{WorldState}) 
-               natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) 
+               integer? integer? (unsyntax @tech{MouseEvent}) 
                (unsyntax @tech{WorldState}))])]{
  tell DrRacket to call @scheme[clack-expr] on the current world, the current
  @scheme[x] and @scheme[y] coordinates of the mouse, and and a
  @tech{MouseEvent} for every (noticeable) action of the mouse by the
  computer user. The result of the call becomes the current world. 
+
+ For @scheme["leave"] and @scheme["enter"] events, the coordinates of the
+ mouse click may be outside of the (implicitly) rectangle. That is, the
+ coordinates may be negative or larger than the (implicitly) specified
+ width and height.
 
  Note: the computer's software doesn't really notice every single movement
  of the mouse (across the mouse pad). Instead it samples the movements and
@@ -698,7 +703,7 @@ As mentioned, all event handlers may return @tech{WorldState}s or
               #:contracts
               ([clack-expr
                 (-> (unsyntax @tech{WorldState}) 
-                    natural-number/c natural-number/c (unsyntax @tech{MouseEvent})
+                    integer? integer? (unsyntax @tech{MouseEvent})
                     (or/c (unsyntax @tech{WorldState}) package?))])]{
 }
 
