@@ -125,6 +125,10 @@ result is the result of @racket[expr].}
 
 @note-lib-only[racket/date]
 
+@defproc[(current-date) date?]{
+                         
+An abbreviation for @racket[(seconds->date (current-seconds))].}
+
 @defproc[(date->string [date date?] [time? any/c #f]) string?]{
 
 Converts a date to a string. The returned string contains the time of
