@@ -20,7 +20,7 @@ In addition to the parameters defined in this section,
 @scheme[pretty-print] conforms to the @scheme[print-graph],
 @scheme[print-struct], @scheme[print-hash-table],
 @scheme[print-vector-length], @scheme[print-box], and
-@scheme[print-as-quasiquote] parameters.
+@scheme[print-as-expression] parameters.
 
 The pretty printer detects structures that have the
 @scheme[prop:custom-write] property and it calls the corresponding

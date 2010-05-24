@@ -253,8 +253,8 @@ otherwise.}
 @mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (remainder +inf.0 3)]}
 
 
-@defproc[(quotient/remainder [n integer?] [m integer?]) (values number? number?)]{ Returns
- @racket[(values (quotient n m) (remainder n m))], but the combination is computed
+@defproc[(quotient/remainder [n integer?] [m integer?]) (values integer? integer?)]{ Returns
+ @racket[(values (quotient n m) (remainder n m))], but the combination may be computed
  more efficiently than separate calls to @racket[quotient] and @racket[remainder].
 
 @mz-examples[
@@ -262,7 +262,7 @@ otherwise.}
 ]}
 
 
-@defproc[(modulo [n integer?] [m integer?]) number?]{  Returns
+@defproc[(modulo [n integer?] [m integer?]) integer?]{  Returns
  @racket[_q] with the same sign as @racket[m] where
 
 @itemize[
