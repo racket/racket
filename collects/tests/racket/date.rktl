@@ -20,11 +20,14 @@
 (test-find 0 0 0 1 4 2005)
 
 ; date->string
-(let ([d (seconds->date (find-seconds 1 2 3 4 5 2006))])
+(let* ([secs (find-seconds 1 2 3 4 5 2006)]
+       [d (seconds->date secs)])
   (define (test-string fmt time? result)
     (test (parameterize ([date-display-format fmt])
             (date->string d time?))
           fmt result))
+  (test secs date->seconds d)
+  
   (test-string 'american #f "Thursday, May 4th, 2006")
   (test-string 'american #t "Thursday, May 4th, 2006 3:02:01am")
   (test-string 'chinese #f "2006/5/4 星期四")
