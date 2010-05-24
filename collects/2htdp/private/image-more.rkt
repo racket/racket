@@ -352,7 +352,7 @@
 ;; scale : I number -> I
 ;; scales the I by the given factor
 
-;; rotate : I number -> I
+;; rotate : number I -> I
 ;; rotates the I around the top-left corner by the given angle (in degrees)
 (define/chk (rotate angle image)
   (let* ([rotated-shape (rotate-normalized-shape 
