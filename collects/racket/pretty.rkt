@@ -152,7 +152,7 @@
      (make-parameter (lambda (line port offset width)
 		       (when (and (number? width)
 				  (not (eq? 0 line)))
-			     (newline port))
+                         (newline port))
 		       0)
 		     (lambda (x)
 		       (unless (can-accept-n? 4 x)
@@ -653,7 +653,7 @@
 		       (expr-found pport ref))
 		     (n-k)))))))
 
-     (define (write-custom recur obj pport depth display? width qd)
+     (define (write-custom recur obj pport depth display? width qd multi-line?)
        (let-values ([(l c p) (port-next-location pport)])
 	 (let ([p (relocate-output-port pport l c p)])
 	   (port-count-lines! p)
@@ -668,7 +668,7 @@
 	     (port-display-handler p displayer)
 	     (port-print-handler p printer))
 	   (register-printing-port-like p pport)
-	   (parameterize ([pretty-printing #t]
+	   (parameterize ([pretty-printing multi-line?]
 			  [pretty-print-columns (or width 'infinity)])
 	     ((custom-write-accessor obj) obj p (or qd (not display?)))))))
 
@@ -844,7 +844,7 @@
                               (if (memq kind '(self never))
                                   qd
                                   (to-quoted out qd obj)))])
-                    (write-custom wr* obj pport depth display? width qd)))))]
+                    (write-custom wr* obj pport depth display? width qd #f)))))]
 	    [(struct? obj)
 	     (if (and print-struct?
 		      (not (and depth
@@ -1027,7 +1027,7 @@
                                        (if (memq kind '(self never))
                                            qd
                                            (to-quoted out qd obj)))])
-                             (write-custom pp* obj pport depth display? width qd))]
+                             (write-custom pp* obj pport depth display? width qd #t))]
 			  [(struct? obj) ; print-struct is on if we got here
                            (let* ([v (struct->vector obj struct-ellipses)]
                                   [pf? (prefab?! obj v)])

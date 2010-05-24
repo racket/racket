@@ -328,9 +328,10 @@ or @scheme[pretty-display] (or the current output port).}
 @defboolparam[pretty-printing on?]{
 
 A parameter that is set to @scheme[#t] when the pretty printer calls a
-custom-write procedure (see @scheme[prop:custom-write]) for output.
-When pretty printer calls a custom-write procedure merely to detect
-cycles, it sets this parameter to @scheme[#f].}
+custom-write procedure (see @scheme[prop:custom-write]) for output in
+a mode that supports line breaks.  When pretty printer calls a
+custom-write procedure merely to detect cycles or to try to print on a
+single line, it sets this parameter to @scheme[#f].}
 
 
 @defproc[(make-tentative-pretty-print-output-port 
