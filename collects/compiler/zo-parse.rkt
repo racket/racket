@@ -359,12 +359,16 @@
 (define (read-simple-number p)
   (integer-bytes->integer (read-bytes 4 p) #f #f))
 
-
-(define-struct cport ([pos #:mutable] shared-start orig-port size bytes symtab shared-offsets decoded rns mpis))
+(define-struct cport ([pos #:mutable] shared-start orig-port size bytes-start symtab shared-offsets decoded rns mpis))
 (define (cport-get-bytes cp len)
-  (subbytes (cport-bytes cp) (cport-pos cp) (+ (cport-pos cp) len)))
+  (define port (cport-orig-port cp))
+  (define pos (cport-pos cp))
+  (file-position port (+ (cport-bytes-start cp) pos))
+  (read-bytes len port))
 (define (cport-get-byte cp pos)
-  (bytes-ref (cport-bytes cp) pos))
+  (define port (cport-orig-port cp))
+  (file-position port (+ (cport-bytes-start cp) pos))
+  (read-byte port))
 
 (define (cport-rpos cp)
   (+ (cport-pos cp) (cport-shared-start cp)))
@@ -979,17 +983,16 @@
     (when (shared-size . >= . size*) 
       (error 'zo-parse "Non-shared data segment start is not after shared data segment (according to offsets)"))
     
-    (define rst (read-bytes size* port))
+    (define rst-start (file-position port))
+    
+    (file-position port (+ rst-start size*))
     
     (unless (eof-object? (read-byte port))
-      (error 'not-end))
-    
-    (unless (= size* (bytes-length rst))
-      (error "wrong number of bytes"))
+      (error 'zo-parse "File too big"))
     
     (define symtab (make-vector symtabsize (make-not-ready)))
     
-    (define cp (make-cport 0 shared-size port size* rst symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
+    (define cp (make-cport 0 shared-size port size* rst-start symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
     
     (for/list ([i (in-range 1 symtabsize)])
       (define vv (vector-ref symtab i))
