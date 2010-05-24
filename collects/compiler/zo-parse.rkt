@@ -361,6 +361,10 @@
 
 
 (define-struct cport ([pos #:mutable] shared-start orig-port size bytes symtab shared-offsets decoded rns mpis))
+(define (cport-get-bytes cp len)
+  (subbytes (cport-bytes cp) (cport-pos cp) (+ (cport-pos cp) len)))
+(define (cport-get-byte cp pos)
+  (bytes-ref (cport-bytes cp) pos))
 
 (define (cport-rpos cp)
   (+ (cport-pos cp) (cport-shared-start cp)))
@@ -369,8 +373,7 @@
   (begin-with-definitions
     (when ((cport-pos cp) . >= . (cport-size cp))
       (error "off the end"))
-    (define r
-      (bytes-ref (cport-bytes cp) (cport-pos cp)))
+    (define r (cport-get-byte cp (cport-pos cp)))
     (set-cport-pos! cp (add1 (cport-pos cp)))
     r))
 
@@ -436,7 +439,7 @@
 
 (define (read-compact-bytes port c)
   (begin0
-    (subbytes (cport-bytes port) (cport-pos port) (+ (cport-pos port) c))
+    (cport-get-bytes port c)
     (set-cport-pos! port (+ c (cport-pos port)))))
 
 (define (read-compact-chars port c)
@@ -742,7 +745,7 @@
                    v)))]
           [(escape)
            (let* ([len (read-compact-number cp)]
-                  [s (subbytes (cport-bytes cp) (cport-pos cp) (+ (cport-pos cp) len))])
+                  [s (cport-get-bytes cp len)])
              (set-cport-pos! cp (+ (cport-pos cp) len))
              (parameterize ([read-accept-compiled #t]
                             [read-accept-bar-quote #t]
