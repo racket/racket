@@ -422,13 +422,19 @@
 
 [match:error ((list) Univ . ->* . (Un))]
 
-[arithmetic-shift (-Integer -Integer . -> . -Integer)]
-[bitwise-and (null -Integer . ->* . -Integer)]
-[bitwise-ior (null -Integer . ->* . -Integer)]
-[bitwise-not (null -Integer . ->* . -Integer)]
-[bitwise-xor (null -Integer . ->* . -Integer)]
+[arithmetic-shift (cl->* (-Nat -Nat . -> . -Nat)
+                         (-Integer -Integer . -> . -Integer))]
+[bitwise-and (cl->* (null -Nat . ->* . -Nat)
+                    (null -Integer . ->* . -Integer))]
+[bitwise-ior (cl->* (null -Nat . ->* . -Nat)
+                    (null -Integer . ->* . -Integer))]
+[bitwise-not (cl->* (null -Nat . ->* . -Nat)
+                    (null -Integer . ->* . -Integer))]
+[bitwise-xor (cl->* (null -Nat . ->* . -Nat)
+                    (null -Integer . ->* . -Integer))]
 
-[abs (-Real . -> . -Real)]
+[abs (cl->* (-Integer . -> . -Nat)
+            (-Real . -> . -Real))]
 
 [file-exists? (-Pathlike . -> . B)]
 [string->symbol (-String . -> . Sym)]
