@@ -1,11 +1,14 @@
 #lang scheme/base
 (require compiler/zo-structs
          scheme/match
+         scheme/contract
          scheme/local
          scheme/list
          scheme/dict)
 
-(provide zo-marshal)
+(provide/contract
+ [zo-marshal (compilation-top? . -> . bytes?)]
+ [zo-marshal-to (compilation-top? output-port? . -> . void?)])
 
 #| Unresolved Issues
   
@@ -16,6 +19,11 @@
 
 (define current-wrapped-ht (make-parameter #f))
 (define (zo-marshal top)
+  (define bs (open-output-bytes))
+  (zo-marshal-to top bs)
+  (get-output-bytes bs))
+
+(define (zo-marshal-to top outp)
   (match top
     [(struct compilation-top (max-let-depth prefix form))
      (let ([encountered (make-hasheq)]
@@ -61,24 +69,21 @@
          (out-data (list* max-let-depth prefix (protect-quote form)) out)
          (let ([res (get-output-bytes s)]
                [version-bs (string->bytes/latin-1 (version))])
-           (bytes-append #"#~"
-                         (bytes (bytes-length version-bs))
-                         version-bs
-                         (int->bytes (add1 (hash-count shared)))
-                         (bytes (if all-short?
-                                    1
-                                    0))
-                         (apply
-                          bytes-append
-                          (map (lambda (o)
-                                 (integer->integer-bytes o
-                                                         (if all-short? 2 4)
-                                                         #f
-                                                         #f))
-                               offsets))
-                         (int->bytes post-shared)
-                         (int->bytes (bytes-length res))
-                         res))))]))
+           (write-bytes #"#~" outp)
+           (write-bytes (bytes (bytes-length version-bs)) outp)
+           (write-bytes version-bs outp)
+           (write-bytes (int->bytes (add1 (hash-count shared))) outp)
+           (write-bytes (bytes (if all-short?
+                                   1
+                                   0)) outp)
+           (for ([o (in-list offsets)])
+             (write-bytes (integer->integer-bytes o
+                                                  (if all-short? 2 4)
+                                                  #f
+                                                  #f) outp))
+           (write-bytes (int->bytes post-shared) outp)
+           (write-bytes (int->bytes (bytes-length res)) outp)
+           (write-bytes res outp))))]))
 
 ;; ----------------------------------------
 
