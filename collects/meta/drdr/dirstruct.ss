@@ -83,6 +83,8 @@
 (define (path-timing-png-prefix p)
   (path-timing-log p))
 
+(define build? (make-parameter #t))
+
 (provide/contract
  [current-subprocess-timeout-seconds (parameter/c exact-nonnegative-integer?)]
  [number-of-cpus (parameter/c exact-nonnegative-integer?)]
@@ -93,9 +95,10 @@
  [plt-data-directory (-> path?)]
  [plt-future-build-directory (-> path?)]
  [drdr-directory (parameter/c path-string?)]
- [make-path (parameter/c string?)]
- [Xvfb-path (parameter/c string?)]
- [fluxbox-path (parameter/c string?)]
+ [make-path (parameter/c (or/c false/c string?))]
+ [Xvfb-path (parameter/c (or/c false/c string?))]
+ [fluxbox-path (parameter/c (or/c false/c string?))]
+ [build? (parameter/c boolean?)]
  [plt-repository (-> path?)]
  [path-timing-log (path-string? . -> . path?)]
  [path-timing-png (path-string? . -> . path?)]

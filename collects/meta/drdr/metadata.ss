@@ -48,6 +48,7 @@
  [path-timeout (path-string? . -> . (or/c exact-nonnegative-integer? false/c))])
 
 ;;; Property lookup
+(provide props-cache)
 (define props-cache (make-hasheq))
 (define (get-prop a-fs-path prop [def #f] #:as-string? [as-string? #f])
   (define rev (current-rev))

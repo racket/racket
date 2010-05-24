@@ -106,7 +106,7 @@
          [pat subst]
          ...)
         s)
-     (regexp-replace* pat0
+     (regexp-replace* (regexp-quote pat0)
                       (regexp-replace** ([pat subst] ...) s)
                       subst0)]))
 

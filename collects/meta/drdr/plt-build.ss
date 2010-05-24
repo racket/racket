@@ -95,43 +95,45 @@
   (call-with-temporary-home-directory (lambda () e)))
 
 (define (with-running-program command args thunk)
-  (define-values (new-command new-args)
-    (command+args+env->command+args
-     #:env (current-env)
-     command args))
-  (define-values
-    (the-process stdout stdin stderr)
-    (apply subprocess
-           #f #;(current-error-port) 
-           #f
-           #f #;(current-error-port)
-           new-command new-args))
-  ; Die if this program does
-  (define parent
-    (current-thread))
-  (define waiter
-    (thread
-     (lambda ()
-       (subprocess-wait the-process)
-       (printf "Killing parent because wrapper is dead...~n")
-       (kill-thread parent))))
-  
-  ; Run without stdin
-  (close-output-port stdin)
-  
-  (begin0
-    ; Run the thunk
-    (thunk)
-    
-    ; Close the output ports
-    (close-input-port stdout)
-    (close-input-port stderr)
-    
-    ; Kill the guard
-    (kill-thread waiter)
-    
-    ; Kill the process
-    (subprocess-kill the-process #t)))
+  (if command
+      (local [(define-values (new-command new-args)
+                (command+args+env->command+args
+                 #:env (current-env)
+                 command args))
+              (define-values
+                (the-process stdout stdin stderr)
+                (apply subprocess
+                       #f #;(current-error-port) 
+                       #f
+                       #f #;(current-error-port)
+                       new-command new-args))
+              ; Die if this program does
+              (define parent
+                (current-thread))
+              (define waiter
+                (thread
+                 (lambda ()
+                   (subprocess-wait the-process)
+                   (printf "Killing parent because wrapper is dead...~n")
+                   (kill-thread parent))))]
+        
+        ; Run without stdin
+        (close-output-port stdin)
+        
+        (begin0
+          ; Run the thunk
+          (thunk)
+          
+          ; Close the output ports
+          (close-input-port stdout)
+          (close-input-port stderr)
+          
+          ; Kill the guard
+          (kill-thread waiter)
+          
+          ; Kill the process
+          (subprocess-kill the-process #t)))
+      (thunk)))
 
 (define-runtime-path package-list "pkgs")
 (define (planet-packages)
@@ -287,7 +289,8 @@
          (unless (read-cache* (revision-commit-msg rev))
            (write-cache! (revision-commit-msg rev)
                          (get-scm-commit-msg rev (plt-repository))))
-         (build-revision rev)
+         (when (build?)
+           (build-revision rev))
          (recur-many (number-of-cpus)
                      (lambda (j inner)
                        (define i (+ j XSERVER-OFFSET))

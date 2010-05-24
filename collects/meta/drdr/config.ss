@@ -9,6 +9,7 @@
 (drdr-directory "/opt/svn/drdr")
 (git-path "/usr/bin/git")
 (Xvfb-path "/usr/bin/Xvfb")
+(fluxbox-path "/usr/bin/fluxbox"))
 (current-make-install-timeout-seconds (* 90 60))
 (current-make-timeout-seconds (* 90 60))                                       
 (current-subprocess-timeout-seconds 90)
