@@ -135,6 +135,5 @@ Consumes the result of parsing bytecode and returns an S-expression
 @defproc[(zo-marshal [top compilation-top?]) bytes?]{
 
 Consumes a representation of bytecode and generates a byte string for
-the marshaled bytecode. Currently, syntax objects are not supported,
-including in @racket[req] for a top-level @racket[#%require].}
+the marshaled bytecode.}
 
