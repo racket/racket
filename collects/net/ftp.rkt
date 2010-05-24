@@ -1,5 +1,5 @@
-#lang scheme/base
-(require scheme/unit "ftp-sig.ss" "ftp-unit.ss")
+#lang racket/base
+(require racket/unit "ftp-sig.rkt" "ftp-unit.rkt")
 
 (define-values/invoke-unit/infer ftp@)
 

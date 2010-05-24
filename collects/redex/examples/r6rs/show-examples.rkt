@@ -36,26 +36,21 @@
 ;; example uses of the above functions
 ;; if any of the terms in the graph don't 
 ;;    match p*, they will be colored red
-;; #; comments out an entire sexpression.
 ;; 
 
-#;
 (show '(store () (((lambda (x y) (set! x (+ x y)) x) 2 3))))
 
 ;; an infinite, tail-recursive loop
-#;
 (show-expression '((lambda (x) ((call/cc call/cc) x)) (call/cc call/cc)))
 
 ;; two infinite loops, one in left-to-right and one in right-to-left evaluation order
 ;; one goes into a non-tail infinite loop, the other's reduction graph has a cycle
-#;
 (step '(store () 
               ((call/cc call/cc) 
                (call/cc call/cc))))
 
 
 ;; demonstrates sharing
-#;
 (show-expression
  '((lambda (c)
      ((lambda (x y) 

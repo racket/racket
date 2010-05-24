@@ -35,6 +35,9 @@ Local changes:
    git master source at http://github.com/atgreen/libffi/, tree
    997968323ed45a5ea5db1ff83124619ae1949bfb. (r18350)
 
+ * Observing ftruncate result in closures.c to remove warning. (commit 
+   b5ee4ac21b1c4d759659 and c64704742c0963310b49)
+
 Note: recreating "configure" with autoconf 2.61 does not work as is,
 since the scripts require 2.59.  To allow this, the two requirements
 in "libffi/configure.ac" and "config/override.m4" were temporarily
