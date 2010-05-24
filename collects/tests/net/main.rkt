@@ -1,12 +1,12 @@
 #lang scheme/base
 
 (require tests/eli-tester
-         (prefix-in ucodec:   "uri-codec.ss")
-         (prefix-in url:      "url.ss")
-         (prefix-in cgi:      "cgi.ss")
-         (prefix-in head:     "head.ss")
-         (prefix-in cookie:   "cookie.ss")
-         (prefix-in encoders: "encoders.ss"))
+         (prefix-in ucodec:   "uri-codec.rkt")
+         (prefix-in url:      "url.rkt")
+         (prefix-in cgi:      "cgi.rkt")
+         (prefix-in head:     "head.rkt")
+         (prefix-in cookie:   "cookie.rkt")
+         (prefix-in encoders: "encoders.rkt"))
 
 (define (tests)
   (test do (begin (url:tests)
