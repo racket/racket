@@ -61,7 +61,7 @@
   (define (fp . args) (apply fprintf port args))
   (match c
     [(NoObject:) (fp "-")]
-    [(Empty:) (fp "")]
+    [(Empty:) (fp "-")]
     [(Path: pes i) (fp "~a" (append pes (list i)))]    
     [else (fp "(Unknown Object: ~a)" (struct->vector c))]))
 
