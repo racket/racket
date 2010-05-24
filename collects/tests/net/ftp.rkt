@@ -25,5 +25,3 @@
         (delete-directory/files tmp-dir)
         
         (ftp-close-connection conn)))
-
-(tests)
