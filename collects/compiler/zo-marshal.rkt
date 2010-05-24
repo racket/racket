@@ -47,20 +47,20 @@
      (let* ([s (open-output-bytes)]
             [out (make-out s (lambda (v) (hash-ref shared v #f)) wrapped)]
             [offsets
-             (map (lambda (v)
-                    (let ([v (cdr v)])
-                      (begin0
-                        (file-position s)
-                        (out-anything v (make-out
-                                         s
-                                         (let ([skip? #t])
-                                           (lambda (v2)
-                                             (if (and skip? (eq? v v2))
-                                                 (begin
-                                                   (set! skip? #f)
-                                                   #f)
-                                                 (hash-ref shared v2 #f))))
-                                         wrapped)))))
+             (map (lambda (k*v)
+                    (define v (cdr k*v))
+                    (begin0
+                      (file-position s)
+                      (out-anything v (make-out
+                                       s
+                                       (let ([skip? #t])
+                                         (lambda (v2)
+                                           (if (and skip? (eq? v v2))
+                                               (begin
+                                                 (set! skip? #f)
+                                                 #f)
+                                               (hash-ref shared v2 #f))))
+                                       wrapped))))
                   (sort (hash-map shared (lambda (k v) (cons v k)))
                         <
                         #:key car))]
