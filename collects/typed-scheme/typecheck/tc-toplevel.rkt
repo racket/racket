@@ -1,31 +1,33 @@
-#lang scheme/unit
+#lang racket/base
 
-
-(require (rename-in "../utils/utils.rkt" [infer r:infer]))
-(require syntax/kerncase
-	 unstable/list unstable/syntax syntax/parse unstable/debug
+(require (rename-in "../utils/utils.rkt" [infer r:infer])
+         syntax/kerncase
+         unstable/list unstable/syntax syntax/parse unstable/debug
          mzlib/etc
          scheme/match
          "signatures.rkt"
          "tc-structs.rkt"
+         "typechecker.rkt"
          ;; to appease syntax-parse
          "internal-forms.rkt"
          (rep type-rep)
          (types utils convenience)
          (private parse-type type-annotation type-contract)
          (env type-env init-envs type-name-env type-alias-env lexical-env)
-	 unstable/mutated-vars syntax/id-table
+         unstable/mutated-vars syntax/id-table
          (utils tc-utils)
          "provide-handling.rkt"
          "def-binding.rkt"
+         (prefix-in c: racket/contract)
          (for-template
           "internal-forms.rkt"
           unstable/location
           mzlib/contract
           scheme/base))
 
-(import tc-expr^ check-subforms^)
-(export typechecker^)
+(c:provide/contract 
+ [type-check (syntax? . c:-> . syntax?)] 
+ [tc-toplevel-form (syntax? . c:-> . c:any/c)])
 
 (define unann-defs (make-free-id-table))
 
