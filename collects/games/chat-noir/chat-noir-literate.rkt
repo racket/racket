@@ -16,6 +16,9 @@ that space, and the cat responds by taking a step. If the cat is
 completely boxed in and thus unable reach the border, you win. If the
 cat does reach the border, you lose.
 
+To start a new game, hit the ``n'' key (but only after losing or
+winning a game).
+
 @play-margin-note["Chat Noir"]
 
 To get some insight into the cat's behavior, hold down the ``h''
@@ -57,8 +60,8 @@ and some code that builds an initial world and starts the game.
        <drawing-the-cat>
        <drawing>
        <input>
-       <tests>
        <initial-world>
+       <tests>
        <go>]
 
 Each section also comes with a series of test cases that are collected into the 
@@ -1098,6 +1101,7 @@ plus various helper functions.
 
 @chunk[<input>
        <change>
+       <release>
        <clack>
        <update-world-posn>
        <player-moved?>
@@ -1110,6 +1114,7 @@ plus various helper functions.
 
 @chunk[<input-tests>
        <change-tests>
+       <release-tests>
        <point-in-this-circle?-tests>
        <circle-at-point-tests>
        <lt/f-tests>
@@ -1118,22 +1123,41 @@ plus various helper functions.
        <update-world-posn-tests>
        <clack-tests>]
 
-The @scheme[change] function handles keyboard input and merely updates the @tt{h-down?} field
-based on the state of the key event during gameplay. Once the game has ended it resets to the
-initial world when the user presses @litchar{n}.
+The @scheme[change] function handles keyboard input. If the input is @litchar{n} and the
+game is over, then restart the game. If the input is @litchar{h} then turn on the help 
+and otherwise do nothing.
 
 @chunk[<change>
        ;; change : world key-event -> world
        (define (change w ke)
-         (if (and (not (equal? (world-state w) 'playing))
-                  (key=? ke "n"))
-             (make-initial-world)
-             (make-world (world-board w)
-                         (world-cat w)
-                         (world-state w)
-                         (world-size w)
-                         (world-mouse-posn w)
-                         (key=? ke "h"))))]
+         (cond
+           [(key=? ke "n")
+            (if (equal? (world-state w) 'playing)
+                w
+                (make-initial-world))]
+           [(key=? ke "h")
+            (make-world (world-board w)
+                        (world-cat w)
+                        (world-state w)
+                        (world-size w)
+                        (world-mouse-posn w)
+                        #t)]
+           [else w]))]
+
+The @scheme[release] function adjusts the world for a key release event.
+
+@chunk[<release>
+       ;; release : world key-event -> world
+       (define (release w ke)
+         (make-world (world-board w)
+                     (world-cat w)
+                     (world-state w)
+                     (world-size w)
+                     (world-mouse-posn w)
+                     (if (key=? ke "h")
+                         #f
+                         (world-h-down? w))))]
+
 
 The @scheme[clack] function handles mouse input. It has three tasks and each corresponds 
 to a helper function:
@@ -2253,7 +2277,23 @@ and reports the results.
                                  'playing 3 (make-posn 0 0) #f)
                      "h")
              (make-world '() (make-posn 1 1)
-                         'playing 3 (make-posn 0 0) #t))]
+                         'playing 3 (make-posn 0 0) #t))
+       (test (change (make-world '() (make-posn 1 1)
+                                 'playing 3 (make-posn 0 0) #f)
+                     "n")
+             (make-world '() (make-posn 1 1)
+                         'playing 3 (make-posn 0 0) #f))
+       (test (world-state (change (make-world '() (make-posn 1 1)
+                                              'cat-lost 3 (make-posn 0 0) #f)
+                                  "n"))
+             'playing)]
+
+@chunk[<release-tests>
+       (test (release (make-world '() (make-posn 1 1)
+                                  'playing 3 (make-posn 0 0) #t)
+                      "h")
+             (make-world '() (make-posn 1 1)
+                         'playing 3 (make-posn 0 0) #f))]
 
 
 @chunk[<point-in-this-circle?-tests>
@@ -2362,5 +2402,6 @@ by calling @scheme[big-bang] with the appropriate arguments.
                              (world-width board-size)
                              (world-height board-size))
                     (on-key change)
+                    (on-release release)
                     (on-mouse clack)
                     (name "Chat Noir"))))]
