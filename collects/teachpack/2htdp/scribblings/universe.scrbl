@@ -162,7 +162,7 @@ The design of a world program demands that you come up with a data
 		 (on-tick tick-expr rate-expr)
 		 (on-key key-expr)
 		 (on-release release-expr)
-		 (on-mouse key-expr)
+		 (on-mouse mouse-expr)
 		 (to-draw draw-expr)
 		 (to-draw draw-expr width-expr height-expr)
 		 (stop-when stop-expr) (stop-when stop-expr last-scene-expr)	   
@@ -371,7 +371,7 @@ All @tech{MouseEvent}s are represented via strings:
 @defproc[(mouse=? [x mouse-event?][y mouse-event?]) boolean?]{
  compares two @tech{MouseEvent}s for equality}
 
-@defform[(on-mouse clack-expr)
+@defform[(on-mouse mouse-expr)
          #:contracts
 	 ([clack-expr 
            (-> (unsyntax @tech{WorldState}) 
@@ -694,7 +694,7 @@ As mentioned, all event handlers may return @tech{WorldState}s or
 }
 
 @defform/none[#:literals (on-mouse)
-              (on-mouse clack-expr)
+              (on-mouse mouse-expr)
               #:contracts
               ([clack-expr
                 (-> (unsyntax @tech{WorldState}) 
