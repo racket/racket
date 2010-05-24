@@ -219,7 +219,7 @@ variables}, various procedures enable the modification of elements
 within a compound data structure. For example, @racket[vector-set!]
 modifies the content of a vector.
 
-To allow such modifications to data, we must distingiush between
+To allow such modifications to data, we must distinguish between
 @tech{values}, which are the results of expressions, and
 @deftech{objects}, which hold the data referenced by a value.
 
@@ -383,13 +383,13 @@ Given
 
 @verbatim{  f(x) = x + 10}
 
-then an algebra student simplifies @tt{f(1)} as follows:
+then an algebra student simplifies @tt{f(7)} as follows:
 
 @verbatim{  f(7) = 7 + 10 = 17}
 
 The key step in this simplification is take the body of the defined
 function @tt{f}, and then replace each @tt{x} with the actual
-@tech{value} @tt{1}.
+@tech{value} @tt{7}.
 
 Racket procedure application works much the same way. A procedure is
 an @tech{object}, so evaluating @racket[(f 7)] starts with a
@@ -408,7 +408,7 @@ Unlike in algebra, however, the @tech{value} associated with an
 argument can be changed in the body of a procedure by using
 @racket[set!], as in the example @racket[(lambda (x) (begin (set! x 3)
 x))]. Since the @tech{value} associated with @racket[x] can be
-changed, an actual value for cannot be substituted for @racket[x] when
+changed, an actual value cannot be substituted for @racket[x] when
 the procedure is applied.
 
 Instead, a new @deftech{location} is created for each @tech{variable}
@@ -486,7 +486,7 @@ that replaces every instance of @racket[x] in @racket[_expr].
 @;------------------------------------------------------------------------
 @section{Variables and Locations}
 
-A @deftech{variable} is a placeholder for a @tech{value}, and an
+A @deftech{variable} is a placeholder for a @tech{value}, and
 expressions in an initial program refer to @tech{variables}. A
 @deftech{top-level variable} is both a @tech{variable} and a
 @tech{location}. Any other @tech{variable} is always replaced by a
@@ -511,7 +511,7 @@ The replacement of a @tech{variable} with a @tech{location} during
 evaluation implements Racket's @deftech{lexical scoping}. For example,
 when a procedure-argument @tech{variable} @racket[x] is replaced by
 the @tech{location} @racket[xloc], then it is replaced throughout the
-body of the procedure, including with any nested @racket[lambda]
+body of the procedure, including any nested @racket[lambda]
 forms. As a result, future references of the @tech{variable} always
 access the same @tech{location}.
 
@@ -666,7 +666,7 @@ capturing the continuation past the exception point.
 
 A @deftech{escape continuation} is essentially a derived concept. It
 combines a prompt for escape purposes with a continuation for
-mark-gathering purposes. as the name implies, escape continuations are
+mark-gathering purposes. As the name implies, escape continuations are
 used only to abort to the point of capture, which means that
 escape-continuation aborts can cross continuation barriers.
 
@@ -813,7 +813,7 @@ result.  This result determines how much memory is occupied by objects
 that are reachable from the custodian's managed values, especially its
 threads, and including its sub-custodians' managed values. If an
 object is reachable from two custodians where neither is an ancestor
-of the other, an object is arbitrarily charged to one of the other,
+of the other, an object is arbitrarily charged to one or the other,
 and the choice can change after each collection; objects reachable
 from both a custodian and its descendant, however, are reliably
 charged to the custodian and not to the descendants, unless the
