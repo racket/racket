@@ -106,6 +106,8 @@
     (-polydots (a) ((list) [a a] . ->... . N))]
    
    [(Any -> Boolean : Number) (make-pred-ty -Number)]
+   [(Integer -> (All (X) (X -> X)))
+    (t:-> -Integer (-poly (x) (t:-> x x)))]
    
    ))
 
