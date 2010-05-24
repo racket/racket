@@ -197,7 +197,7 @@
                      (path->string (build-path folder "ftptmp"))
                      "~~")
                     "~a"))]
-         [new-file (open-output-file tmpfile 'replace)]
+         [new-file (open-output-file tmpfile #:exists 'replace)]
          [tcpstring (bytes-append #"RETR "
                                   (string->bytes/locale filename)
                                   #"\n")]
