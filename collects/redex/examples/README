@@ -1,0 +1,52 @@
+The examples subcollection contains several small languages 
+to demonstrate various different uses of PLT Redex:
+
+  arithmetic.rkt: an arithmetic language with every
+  possible order of evaluation
+
+  beginner.rkt: a PLT Redex implementation of (much of) the
+  beginning student teaching language.
+
+  church.rkt: Church numerals with call by name
+  normal order evaluation
+
+  combinators.rkt: fills in the gaps in a proof in
+  Barendregt that i and j (defined in the file) are
+  a combinator basis
+
+  compatible-closure.rkt: an example use of compatible
+  closure. Also, one of the first examples from Matthias
+  Felleisen and Matthew Flatt's monograph
+
+  contracts.rkt: A core contract calculus, including blame, 
+  with function contracts, (eager) pair contracts, 
+  and a few numeric predicates
+
+  letrec.rkt: shows how to model letrec with a store and
+  some infinite looping terms
+
+  omega.rkt: the call by value lambda calculus with call/cc.
+  Includes omega and two call/cc-based infinite loops, one of
+  which has an ever-expanding term size and one of which has
+  a bounded term size.
+
+  pi-calculus.rkt: a formulation of the pi calculus, following
+  Milner's 1990 paper, "Functions as Processes"
+
+  racket-machine: an operational semantics for (much of) Racket 
+  bytecode
+
+  r6rs: an implementation of the R6RS Scheme formal semantics
+
+  semaphores.rkt: a simple threaded language with semaphores
+
+  subject-reduction.rkt: demos traces/pred that type checks
+  the term.
+
+  threads.rkt: shows how non-deterministic choice can be
+  modeled in a reduction semantics. Contains an example use
+  of a simple alternative pretty printer.
+
+  types.rkt: shows how the simply-typed lambda calculus's
+  type system can be written as a rewritten system (see
+  Kuan, MacQueen, Findler in ESOP 2007 for more).
