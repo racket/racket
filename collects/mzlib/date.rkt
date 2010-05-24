@@ -6,6 +6,7 @@
          racket/contract)
 
 (provide/contract
+ [current-date (-> date?)]
  [date->string ((date?) (boolean?) . ->* . string?)]
  [date-display-format (parameter/c (symbols 'american 'chinese 'german 'indian 'irish 'julian 'iso-8601 'rfc2822))]
  [find-seconds ((integer-in 0 61)
@@ -18,6 +19,9 @@
                 exact-integer?)]
  [date->julian/scalinger (date? . -> . exact-integer?)]
  [julian/scalinger->string (exact-integer? . -> . string?)])
+
+(define (current-date)
+  (seconds->date (current-seconds)))
 
 ;; Support for Julian calendar added by Shriram;
 ;; current version only works until 2099 CE Gregorian
