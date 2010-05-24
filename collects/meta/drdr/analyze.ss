@@ -150,15 +150,18 @@
               ; XXX But even then it can lead to problems
               (not (path-random? (build-path (revision-trunk-dir cur-rev) (substring (path->string* p) 1)))))
             (not (symbol=? id 'changes))))))
-  (unless (andmap zero? nums)
-    (send-mail-message "drdr@plt-scheme.org"
+  (define mail-recipients
+    (append (if include-committer?
+                (list committer)
+                empty)
+            responsibles)) 
+  (unless (or (andmap zero? nums)
+              (empty? mail-recipients))
+    (send-mail-message "drdr@racket-lang.org"
                        (format "[DrDr] R~a ~a"
                                cur-rev totals)
-                       (map (curry format "~a@plt-scheme.org")
-                            (append (if include-committer?
-                                        (list committer)
-                                        empty)
-                                    responsibles))                             
+                       (map (curry format "~a@racket-lang.org")
+                            mail-recipients)                        
                        empty empty
                        (flatten
                         (list (format "DrDr has finished building push #~a after ~a."
