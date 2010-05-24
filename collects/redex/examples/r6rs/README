@@ -1,4 +1,4 @@
-This directory contains the PLT Redex implementation of the
+This directory a the PLT Redex implementation of the
 R6RS operational semantics and a test suite for the
 semantics.
 
@@ -6,20 +6,20 @@ semantics.
 
 == r6rs-tests.ss: the test suite for the semantics. Use:
 
-   mzscheme -t r6rs-tests.ss -m
+   racket -t r6rs-tests.ss -m
 
    to run the tests and see a single period shown per test
    run (each test that explores more than 100 states shows a
    colon for each 100 states it explores). To see a more
    verbose output (that shows each test), use:
 
-   mzscheme -t r6rs-tests.ss -m #t
+   racket -t r6rs-tests.ss -m #t
 
 == show-examples.ss: use this file to explore particular
    examples in a GUI. Its content shows how to use it and
    gives a few examples. Either run it in DrRacket's module
    language, or like this from the commandline:
 
-   mred show-examples.ss
+   gracket show-examples.ss
 
 == test.ss: test suite infrastructure
