@@ -295,6 +295,9 @@
 	      [((Pair: a d) (Pair: a* d*))
 	       (let ([A1 (subtype* A0 a a*)])
 		 (and A1 (subtype* A1 d d*)))]
+              ;; recur structurally on dotted lists, assuming same bounds
+              [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
+               (subtype* A0 s-dty t-dty)]
 	      ;; quantification over two types preserves subtyping
 	      [((Poly: ns b1) (Poly: ms b2)) 
 	       (=> unmatch)
