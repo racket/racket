@@ -14,4 +14,4 @@
                     get-location))
 
 (provide/contract
- [make-byte-counting-port (any/c . -> . output-port?)])
+ [make-byte-counting-port (() (any/c) . ->* . output-port?)])
