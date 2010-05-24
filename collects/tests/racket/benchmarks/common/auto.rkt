@@ -37,8 +37,7 @@ exec racket -qu "$0" ${1+"$@"}
   (define (clean-up-o1 bm)
     (delete-file (format "~a.o1" bm)))
 
-  (define (mk-racket bm) (void))
-  #;
+  #;(define (mk-racket bm) (void))
   (define (mk-racket bm)
     (unless (directory-exists? "compiled")
       (make-directory "compiled"))
