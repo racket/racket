@@ -26,64 +26,59 @@
 (define (zo-marshal-to top outp)
   (match top
     [(struct compilation-top (max-let-depth prefix form))
-     (let ([encountered (make-hasheq)]
-           [shared (make-hasheq)]
-           [wrapped (make-hasheq)])
-       (let ([visit (lambda (v) 
-                      (if (hash-ref shared v #f)
-                          #f
-                          (if (hash-ref encountered v #f)
-                              (begin
-                                (hash-set! shared v (add1 (hash-count shared)))
-                                #f)
-                              (begin
-                                (hash-set! encountered v #t)
-                                (when (closure? v)
-                                  (hash-set! shared v (add1 (hash-count shared))))
-                                #t))))])
-         (parameterize ([current-wrapped-ht wrapped])
-           (traverse-prefix prefix visit)
-           (traverse-form form visit)))
-       (let* ([s (open-output-bytes)]
-              [out (make-out s (lambda (v) (hash-ref shared v #f)) wrapped)]
-              [offsets
-               (map (lambda (v)
-                      (let ([v (cdr v)])
-                        (begin0
-                          (file-position s)
-                          (out-anything v (make-out
-                                           s
-                                           (let ([skip? #t])
-                                             (lambda (v2)
-                                               (if (and skip? (eq? v v2))
-                                                   (begin
-                                                     (set! skip? #f)
-                                                     #f)
-                                                   (hash-ref shared v2 #f))))
-                                           wrapped)))))
-                    (sort (hash-map shared (lambda (k v) (cons v k)))
-                          <
-                          #:key car))]
-              [post-shared (file-position s)]
-              [all-short? (post-shared . < . #xFFFF)])
-         (out-data (list* max-let-depth prefix (protect-quote form)) out)
-         (let ([res (get-output-bytes s)]
-               [version-bs (string->bytes/latin-1 (version))])
-           (write-bytes #"#~" outp)
-           (write-bytes (bytes (bytes-length version-bs)) outp)
-           (write-bytes version-bs outp)
-           (write-bytes (int->bytes (add1 (hash-count shared))) outp)
-           (write-bytes (bytes (if all-short?
-                                   1
-                                   0)) outp)
-           (for ([o (in-list offsets)])
-             (write-bytes (integer->integer-bytes o
-                                                  (if all-short? 2 4)
-                                                  #f
-                                                  #f) outp))
-           (write-bytes (int->bytes post-shared) outp)
-           (write-bytes (int->bytes (bytes-length res)) outp)
-           (write-bytes res outp))))]))
+     (define encountered (make-hasheq))
+     (define shared (make-hasheq))
+     (define wrapped (make-hasheq))
+     (define (visit v)
+       (if (hash-ref shared v #f)
+           #f
+           (if (hash-ref encountered v #f)
+               (begin
+                 (hash-set! shared v (add1 (hash-count shared)))
+                 #f)
+               (begin
+                 (hash-set! encountered v #t)
+                 (when (closure? v)
+                   (hash-set! shared v (add1 (hash-count shared))))
+                 #t))))
+     (parameterize ([current-wrapped-ht wrapped])
+       (traverse-prefix prefix visit)
+       (traverse-form form visit))
+     (let* ([s (open-output-bytes)]
+            [out (make-out s (lambda (v) (hash-ref shared v #f)) wrapped)]
+            [offsets
+             (map (lambda (v)
+                    (let ([v (cdr v)])
+                      (begin0
+                        (file-position s)
+                        (out-anything v (make-out
+                                         s
+                                         (let ([skip? #t])
+                                           (lambda (v2)
+                                             (if (and skip? (eq? v v2))
+                                                 (begin
+                                                   (set! skip? #f)
+                                                   #f)
+                                                 (hash-ref shared v2 #f))))
+                                         wrapped)))))
+                  (sort (hash-map shared (lambda (k v) (cons v k)))
+                        <
+                        #:key car))]
+            [post-shared (file-position s)]
+            [all-short? (post-shared . < . #xFFFF)]
+            [version-bs (string->bytes/latin-1 (version))])
+       (out-data (list* max-let-depth prefix (protect-quote form)) out)
+       (let ([res (get-output-bytes s)])
+         (write-bytes #"#~" outp)
+         (write-bytes (bytes (bytes-length version-bs)) outp)
+         (write-bytes version-bs outp)
+         (write-bytes (int->bytes (add1 (hash-count shared))) outp)
+         (write-bytes (bytes (if all-short? 1 0)) outp)
+         (for ([o (in-list offsets)])
+           (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
+         (write-bytes (int->bytes post-shared) outp)
+         (write-bytes (int->bytes (bytes-length res)) outp)
+         (write-bytes res outp)))]))
 
 ;; ----------------------------------------
 
