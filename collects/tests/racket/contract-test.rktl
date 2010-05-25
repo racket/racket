@@ -688,6 +688,23 @@
                'pos 'neg)))
   
   (test/spec-passed
+   'contract-arrow-star-optional24
+   '(let ()
+      (define (statement? s)
+        (and (string? s)
+             (> (string-length s) 3)))
+      (define statement/c (flat-contract statement?))
+      
+      (define new-statement
+        (make-keyword-procedure
+         (λ (kws kw-args . statement)
+           (format "kws=~s  kw-args=~s  statement=~s" kws kw-args statement))))
+      
+      (contract (->* (statement/c) (#:s string?) statement/c)
+                new-statement
+                'pos 'neg)))
+  
+  (test/spec-passed
    'contract-arrow-star-keyword-ordering
    '((contract (->* (integer? #:x boolean?) (string? #:y char?) any)
                (λ (x #:x b [s ""] #:y [c #\c])
