@@ -365,8 +365,6 @@
       [((~and kw values) tys ...) 
        (add-type-name-reference #'kw)
        (-values (map parse-type (syntax->list #'(tys ...))))]
-      [(t:All . rest)
-       (parse-all-type stx parse-values-type)]
       [t
        (-values (list (parse-type #'t)))])))
 

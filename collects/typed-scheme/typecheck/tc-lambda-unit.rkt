@@ -41,7 +41,8 @@
         (abstract-results body arg-names)
         #:kws (map make-Keyword kw kw-ty req?)
         #:rest (if rest (second rest) #f)
-        #:drest (if drest (cdr drest) #f)))]))
+        #:drest (if drest (cdr drest) #f)))]
+    [_ (int-err "not a lam-result")]))
 
 (define (expected-str tys-len rest-ty drest arg-len rest)
   (format "Expected function with ~a argument~a~a, but got function with ~a argument~a~a"
@@ -74,11 +75,11 @@
     (define (check-body)
       (with-lexical-env/extend 
        arg-list arg-types
-       (lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null 
-                   (and rest-ty (list (or rest (generate-temporary)) rest-ty))
-                   ;; make up a fake name if none exists, this is an error case anyway
-                   (and drest (cons (or rest (generate-temporary)) drest))
-                   (tc-exprs/check (syntax->list body) ret-ty))))
+       (make-lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null 
+                        (and rest-ty (list (or rest (generate-temporary)) rest-ty))
+                        ;; make up a fake name if none exists, this is an error case anyway
+                        (and drest (cons (or rest (generate-temporary)) drest))
+                        (tc-exprs/check (syntax->list body) ret-ty))))
     (when (or (not (= arg-len tys-len))
               (and (or rest-ty drest) (not rest)))
       (tc-error/delayed (expected-str tys-len rest-ty drest arg-len rest)))
@@ -152,7 +153,7 @@
                (parameterize ([dotted-env (extend-env (list #'rest)
                                                       (list (cons rest-type bound))
                                                       (dotted-env))])
-                 (make lam-result
+                 (make-lam-result
                        (map list arg-list arg-types)
                        null
                        #f
@@ -163,7 +164,7 @@
             (with-lexical-env/extend 
              (cons #'rest arg-list) 
              (cons (make-Listof rest-type) arg-types)
-             (make lam-result
+             (make-lam-result
                    (map list arg-list arg-types)
                    null
                    (list #'rest rest-type)
@@ -245,7 +246,7 @@
        (tc/plambda form formals bodies expected)]
       [(tc-result1: (Error:)) (tc/mono-lambda/type formals bodies #f)]
       [(tc-result1: (and v (Values: _))) (maybe-loop form formals bodies (values->tc-results v #f))]
-      [(tc-result1: t) (int-err "expected not an appropriate tc-result: ~a ~a" expected t)]))
+      [_ (int-err "expected not an appropriate tc-result: ~a" expected)]))
   (match expected
     [(tc-result1: (and t (Poly-names: ns expected*)))
      (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])
@@ -299,7 +300,8 @@
      (unless (check-below (tc/plambda form formals bodies #f) t)
        (tc-error/expr #:return expected
                       "Expected a value of type ~a, but got a polymorphic function." t))
-     t]))
+     t]
+    [_ (int-err "not a good expected value: ~a" expected)]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
 ;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result

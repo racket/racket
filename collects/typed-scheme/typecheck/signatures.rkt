@@ -6,10 +6,6 @@
          (types utils))
 (provide (all-defined-out))
 
-(define-signature typechecker^
-  ([cnt type-check (syntax? . -> . syntax?)] 
-   [cnt tc-toplevel-form (syntax? . -> . any)]))
-
 (define-signature tc-expr^
   ([cnt tc-expr (syntax? . -> . tc-results?)]
    [cnt tc-literal (->* (syntax?) ((or/c #f Type/c)) Type/c)]

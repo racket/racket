@@ -50,10 +50,12 @@
                                            (env-props env-els))]
                     [(tc-results: ts fs2 os2) (with-lexical-env env-thn (tc thn (unbox flag+)))]
                     [(tc-results: us fs3 os3) (with-lexical-env env-els (tc els (unbox flag-)))])
-         ;(printf "old els-props: ~a\n" (env-props (lexical-env)))
+         ;(printf "old props: ~a\n" (env-props (lexical-env)))
+         ;(printf "fs+: ~a~n" fs+)
          ;(printf "fs-: ~a~n" fs-)
-         ;(printf "els-props: ~a~n" (env-props env-els))
          ;(printf "thn-props: ~a~n" (env-props env-thn))
+         ;(printf "els-props: ~a~n" (env-props env-els))
+         ;(printf "new-thn-props: ~a~n" new-thn-props)
          ;(printf "new-els-props: ~a~n" new-els-props)
          ;; if we have the same number of values in both cases
          (cond [(= (length ts) (length us))
@@ -66,6 +68,7 @@
                                      [(_ (NoFilter:))
                                       (-FS -top -top)]
                                      [((FilterSet: f2+ f2-) (FilterSet: f3+ f3-))
+                                      ;(printf "f2- ~a f+ ~a\n" f2- fs+)
                                       (-FS (-or (apply -and fs+ f2+ new-thn-props) (apply -and fs- f3+ new-els-props))
                                            (-or (apply -and fs+ f2- new-thn-props) (apply -and fs- f3- new-els-props)))])]
                                   [type (Un t2 t3)]
