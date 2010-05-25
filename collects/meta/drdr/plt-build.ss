@@ -195,7 +195,10 @@
                                               [(list-rest (or 'mred 'mred-text
                                                               'gracket 'gracket-text)
                                                           rst)
-                                               (lambda () (list* gracket-text-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))]
+                                               (if (on-unix?)
+                                                   (lambda () 
+                                                     (list* gracket-text-path "-display" (format ":~a" (+ XSERVER-OFFSET (current-worker))) rst))
+                                                   #f)]
                                               [_
                                                #f]))]
                                     (if pth-cmd

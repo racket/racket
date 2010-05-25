@@ -85,6 +85,9 @@
 
 (define build? (make-parameter #t))
 
+(define (on-unix?)
+  (symbol=? 'unix (system-type 'os)))
+
 (provide/contract
  [current-subprocess-timeout-seconds (parameter/c exact-nonnegative-integer?)]
  [number-of-cpus (parameter/c exact-nonnegative-integer?)]
@@ -99,6 +102,7 @@
  [Xvfb-path (parameter/c (or/c false/c string?))]
  [fluxbox-path (parameter/c (or/c false/c string?))]
  [build? (parameter/c boolean?)]
+ [on-unix? (-> boolean?)]
  [plt-repository (-> path?)]
  [path-timing-log (path-string? . -> . path?)]
  [path-timing-png (path-string? . -> . path?)]
