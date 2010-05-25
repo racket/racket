@@ -61,7 +61,7 @@ lookfor dirname
 _POSIX2_VERSION=199209
 export _POSIX2_VERSION
 
-origpwd="`pwd`"
+origwd="`pwd`"
 
 echo "This program will extract and install $DISTNAME."
 echo ""
@@ -88,10 +88,10 @@ while test "$unixstyle" = "x"; do
   echon "Enter yes/no (default: no) > "
   read unixstyle
   case "$unixstyle" in
-    [yY]* ) unixstyle="yes" ;;
-    [nN]* ) unixstyle="no"  ;;
-    "" )    unixstyle="no"  ;;
-    * )     unixstyle="x"   ;;
+    [yY]* ) unixstyle="Y" ;;
+    [nN]* ) unixstyle="N" ;;
+    "" )    unixstyle="N" ;;
+    * )     unixstyle="x" ;;
   esac
 done
 
@@ -99,7 +99,7 @@ done
 ## Where do you want it?
 
 echo ""
-if test "$unixstyle" = "yes"; then
+if test "$unixstyle" = "Y"; then
   echo "Where do you want to base your installation of $DISTNAME?"
   echo "  (Use an existing directory.  If you've done such an installation in"
   echo "   the past, either use the same place, or manually run"
@@ -111,9 +111,9 @@ else
 fi
 echo "  1 - /usr/$TARGET1 [default]"
 echo "  2 - /usr/local/$TARGET1"
-echo "  3 - \$HOME/$TARGET1 ($HOME/$TARGET1)"
+echo "  3 - ~/$TARGET1 ($HOME/$TARGET1)"
 echo "  4 - ./$TARGET1 (here)"
-if test "$unixstyle" = "yes"; then
+if test "$unixstyle" = "Y"; then
   echo "  Or enter a different directory prefix to install in."
 else
   echo "  Or enter a different \"racket\" directory to install in."
@@ -121,27 +121,26 @@ fi
 echon "> "
 read where
 case "$where" in
-  "" | "1" ) where="/usr" ;;
-  "2" ) where="/usr/local" ;;
-  "3" ) where="$HOME" ;;
-  "4" | "." ) where="`pwd`" ;;
-  "/"* )
-    if test "$unixstyle" = "no"; then
-      TARGET="`\"$basename\" \"$where\"`"
-      where="`\"$dirname\" \"$where\"`"
-    fi
-    ;;
-  * )
-    if test "$unixstyle" = "no"; then
-      TARGET="`\"$basename\" \"$where\"`"
-      where="`\"$dirname\" \"$where\"`"
-    fi
-    if test -d "$where"; then cd "$where"; where="`pwd`"; cd "$origpwd"
-    else where="`pwd`/$where"; fi
-    ;;
+  "~/"* ) where="$HOME/${where#\~/}" ;;
+  "~"*  ) failwith "cannot use '~user' paths" ;;
+esac
+case "$unixstyle$where" in
+  ? | ?1  ) where="/usr" ;;
+  ?2      ) where="/usr/local" ;;
+  ?3      ) where="$HOME" ;;
+  ?4 | ?. ) where="`pwd`" ;;
+  N/*     ) TARGET="`\"$basename\" \"$where\"`"
+            where="`\"$dirname\" \"$where\"`" ;;
+  Y/*     ) ;;
+  N*      ) TARGET="`\"$basename\" \"$where\"`"
+            where="`\"$dirname\" \"$where\"`"
+            if test -d "$where"; then cd "$where"; where="`pwd`"; cd "$origwd"
+            else where="`pwd`/$where"; fi ;;
+  Y*      ) if test -d "$where"; then cd "$where"; where="`pwd`"; cd "$origwd"
+            else where="`pwd`/$where"; fi ;;
 esac
 
-if test "$unixstyle" = "no"; then
+if test "$unixstyle" = "N"; then
   # can happen when choosing the root
   if test "$TARGET" = "/"; then
     failwith "refusing to remove your root"
@@ -195,11 +194,11 @@ dir_createable() {
 }
 
 show_dir_var() {
-  if   test -f   "$2"; then dir_status="(error: not a directory!)"; err="yes"
+  if   test -f   "$2"; then dir_status="(error: not a directory!)"; err="Y"
   elif test ! -d "$2"; then
     if dir_createable "$2"; then dir_status="(will be created)"
-    else                    dir_status="(error: not writable!)"; err="yes"; fi
-  elif test ! -w "$2"; then dir_status="(error: not writable!)"; err="yes"
+    else                    dir_status="(error: not writable!)"; err="Y"; fi
+  elif test ! -w "$2"; then dir_status="(error: not writable!)"; err="Y"
   else                      dir_status="(exists)"
   fi
   echo "  $1 $2 $dir_status"
@@ -213,14 +212,14 @@ read_dir() {
   esac
 }
 
-if test "$unixstyle" = "yes"; then
+if test "$unixstyle" = "Y"; then
   set_prefix "$where"
   # loop for possible changes
-  done="no"
-  while test ! "$done" = "yes"; do
+  done="N"
+  while test ! "$done" = "Y"; do
     echo ""
     echo "Target Directories:"
-    err="no"
+    err="N"
     show_dir_var "[e] Executables  " "$bindir"
     show_dir_var "[s] Scheme Code  " "$collectsdir"
     show_dir_var "[d] Core Docs    " "$docdir"
@@ -232,7 +231,7 @@ if test "$unixstyle" = "yes"; then
       echo "  (C sources are not kept)"
       # show_dir_var "[r] Source Tree  " "$srcdir"
     fi
-    if test "$err" = "yes"; then echo "*** Errors in some paths ***"; fi
+    if test "$err" = "Y"; then echo "*** Errors in some paths ***"; fi
     echo "Enter a new prefix, a letter to change an entry, enter to continue"
     echon "> "
     read change_what
@@ -250,11 +249,11 @@ if test "$unixstyle" = "yes"; then
       #           echo "Invalid response"
       #         fi ;;
       "/"*  ) set_prefix "$change_what" ;;
-      ""    ) done="yes" ;;
+      ""    ) done="Y" ;;
       *     ) echo "Invalid response" ;;
     esac
   done
-  if test "$err" = "yes"; then failwith "errors in some paths"; fi
+  if test "$err" = "Y"; then failwith "errors in some paths"; fi
 fi
 
 ###############################################################################
@@ -319,7 +318,7 @@ if test -d "bin"; then
     * ) sysdir="" ;;
   esac
 else
-  cd "$origpwd"
+  cd "$origwd"
   echo ""
   echo "If you want to install new system links within the bin, lib, include,"
   echo "  man, and doc subdirectories of a common directory prefix (for"
@@ -478,7 +477,7 @@ cd "$where"
 ###############################################################################
 ## Done
 
-if test "$unixstyle" = "yes"; then unixstyle_install; else wholedir_install; fi
+if test "$unixstyle" = "Y"; then unixstyle_install; else wholedir_install; fi
 
 echo ""
 echo "All done."
