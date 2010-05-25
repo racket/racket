@@ -384,35 +384,49 @@
 ;; uses Knuth-Morris-Pratt from
 ;; Introduction to Algorithms, Cormen, Leiserson, and Rivest, pages 869-876
 ;; discards stop from input
-(define (gen-read-until-string stop)
-  (let* ([len (string-length stop)]
-         [prefix (make-vector len 0)]
-         [fall-back
-          (lambda (k c)
-            (let ([k (let loop ([k k])
-                       (cond
-                         [(and (> k 0) (not (eq? (string-ref stop k) c)))
-                          (loop (vector-ref prefix (sub1 k)))]
-                         [else k]))])
-              (if (eq? (string-ref stop k) c)
-                  (add1 k)
-                  k)))])
-    (let init ([k 0] [q 1])
-      (when (< q len)
-        (let ([k (fall-back k (string-ref stop q))])
-          (vector-set! prefix q k)
-          (init k (add1 q)))))
-    ;; (vector-ref prefix x) = the longest suffix that matches a prefix of stop
-    (lambda (in pos)
-      (list->string
-       (let/ec out
-         (let loop ([matched 0] [out out])
-           (let* ([c (non-eof read-char in pos)]
-                  [matched (fall-back matched c)])
-             (cond
-               [(= matched len) (out null)]
-               [(zero? matched) (cons c (let/ec out (loop matched out)))]
-               [else (cons c (loop matched out))]))))))))
+;; ---
+;; Modified by Jay to look more like the version on Wikipedia after discovering a bug when parsing CDATA
+;; The use of the hasheq table and the purely numeric code trades hash efficiency for stack/ec capture efficiency
+(struct hash-string (port pos ht))
+(define (hash-string-ref hs k)
+  (match-define (hash-string port pos ht) hs)
+  (hash-ref! ht k (lambda () (non-eof read-char port pos))))
+
+(define (gen-read-until-string W)
+  (define Wlen (string-length W))
+  (define T (make-vector Wlen #f))
+  (vector-set! T 0 -1)
+  (vector-set! T 1 0)
+  (let kmp-table ([pos 2] [cnd 0])
+    (when (pos . < . Wlen)
+      (cond
+        [(char=? (string-ref W (sub1 pos)) (string-ref W cnd))
+         (vector-set! T pos (add1 cnd))
+         (kmp-table (add1 pos) (add1 cnd))]
+        [(cnd . > . 0)
+         (kmp-table pos (vector-ref T cnd))]
+        [(zero? cnd)
+         (vector-set! T pos 0)
+         (kmp-table (add1 pos) 0)])))
+  (lambda (S-as-port S-pos)
+    (define S (hash-string S-as-port S-pos (make-hasheq)))
+    (define W-starts-at
+      (let kmp-search ([m 0] [i 0])
+        (if (char=? (string-ref W i) (hash-string-ref S (+ m i)))
+            (let ([i (add1 i)])
+              (if (= i Wlen)
+                  m
+                  (kmp-search m i)))
+            (let* ([Ti (vector-ref T i)]
+                   [m (+ m i (* -1 Ti))])
+              (if (Ti . > . -1)
+                  (let ([i Ti])
+                    (kmp-search m i))
+                  (let ([i 0])
+                    (kmp-search m i)))))))
+    (list->string
+     (for/list ([i (in-range 0 W-starts-at)])
+       (hash-string-ref S i)))))
 
 ;; "-->" makes more sense, but "--" follows the spec.
 (define lex-comment-contents (gen-read-until-string "--"))
