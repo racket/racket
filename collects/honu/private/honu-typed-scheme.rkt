@@ -322,6 +322,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       (syntax/loc stx
                  (define-syntax id (make-honu-transformer rhs))))))
 
+#;
 (define-honu-syntax honu-provide
   (lambda (stx ctx)
     (syntax-parse stx
@@ -355,7 +356,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       [(_ word:identifier ... semicolon . rest)
        (values (lambda () (apply-scheme-syntax
                             #'(begin
-                              (define-syntax word (lambda (xx) (raise-syntax-error 'word "dont use this")))
+                                (define-syntax word (lambda (xx) (raise-syntax-error 'word "dont use this")))
                               ...)))
                #'rest)])))
 
@@ -496,6 +497,54 @@ if (foo){
 (define (display2 x y)
   (printf "~a ~a" x y))
 
+(define-syntax (honu-unparsed-expr stx)
+  (parse-an-expr stx))
+
+(define-honu-syntax honu-provide
+  (lambda (body ctx)
+    (syntax-parse body #:literals (semicolon)
+      [(_ x:id ... semicolon . rest)
+       (values
+         (lambda ()
+           #'(provide x ...))
+         #'rest)])))
+
+(define-honu-syntax honu-require
+  (lambda (body ctx)
+    (define-syntax-class for-syntax-form
+                         #:literals (#%parens honu-for-syntax)
+      [pattern (#%parens honu-for-syntax spec)
+               #:with result
+               (datum->syntax #'spec (cons #'for-syntax (cons #'spec #'()))
+                              #'spec #'spec)
+               #;
+               (datum->syntax body (cons #'for-syntax (cons #'spec #'()))
+                                            body body)])
+    (define-syntax-class normal-form
+      [pattern x:str #:with result #'x])
+    (define-syntax-class form
+      [pattern x:for-syntax-form #:with result #'x.result]
+      [pattern x:normal-form #:with result #'x.result])
+    (syntax-parse body #:literals (semicolon)
+      [(_ form:form ... semicolon . rest)
+       (values
+         (lambda ()
+           (datum->syntax
+             body
+             (cons #'require
+                   #'(form.result ...))
+             body
+             body))
+         #'rest)])
+    #;
+    (syntax-parse body #:literals (#%parens honu-for-syntax semicolon)
+      [(_ (#%parens honu-for-syntax what) semicolon . rest)
+       (values
+         (lambda ()
+           (apply-scheme-syntax
+             #'(require (for-syntax what))))
+         #'rest)])))
+
 (define-syntax (honu-unparsed-begin stx)
   (printf "honu unparsed begin: ~a\n" (syntax->datum stx))
   (syntax-case stx ()
@@ -504,6 +553,8 @@ if (foo){
      (begin
        (printf "Body is ~a\n" #'body)
      (let-values ([(code rest) (parse-block-one/2 #'body
+                                                  the-top-block-context
+                                                  #;
                                                   the-expression-context
                                                   #;
                                                   the-top-block-context)])
@@ -550,4 +601,9 @@ if (foo){
     [(_ forms ...)
      (begin
        (printf "Module begin ~a\n" (syntax->datum #'(forms ...)))
-       #'(#%plain-module-begin (honu-unparsed-begin forms ...)))]))
+       #'(#%plain-module-begin (honu-unparsed-begin forms ...))
+       #;
+       (with-syntax ([all (syntax-local-introduce #'(provide (all-defined-out)))])
+         #'(#%plain-module-begin all (honu-unparsed-begin forms ...))
+         #;
+         #'(#%plain-module-begin (provide (all-defined-out)) (honu-unparsed-begin forms ...))))]))

@@ -15,7 +15,9 @@
                                   (printf "honu syntax ~a\n" stx)
                                   #'(expr ...))))]))
 
-(define-syntax honu-unparsed-expr (lambda (stx) (raise-syntax-error 'honu-unparsed-expr "dont use this")))
+#;
+(define-syntax honu-unparsed-expr
+  (lambda (stx) (raise-syntax-error 'honu-unparsed-expr "dont use this")))
 
 (define honu-scheme-syntax 'honu-scheme-syntax)
 

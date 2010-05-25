@@ -426,7 +426,8 @@
       stx]))
 
 (define-splicing-syntax-class expression
-  [pattern (~seq (~var x (expression-1 the-expression-context))) #:with result (apply-scheme-syntax #'x.result)])
+  [pattern (~seq (~var x (expression-1 the-expression-context)))
+           #:with result (apply-scheme-syntax #'x.result)])
 
 (define-splicing-syntax-class expression-comma
   #:literals (honu-comma)

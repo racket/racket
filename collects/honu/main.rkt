@@ -65,10 +65,13 @@
                      ...
                      map
                      syntax->list
-                     identifier expression
+                     identifier
+                     expression
                      (rename-out (semicolon \;
                                             )
                                  (ellipses-comma ec)
+                                 #;
+                                 (honu-identifier identifier)
                                  (expression-comma expression_comma)
                                  (parse-an-expr parse)
                                  (... scheme:...)
@@ -78,8 +81,7 @@
                                  (honu-scheme scheme2)
                                  (scheme-syntax scheme:syntax)
                                  ))
-         #%braces
-         #%parens
+         #%braces #%parens #%brackets
          x
          true
          false
@@ -96,7 +98,11 @@
            (honu-provide provide)
            (honu-macro-item macroItem)
            (honu-macro macro)
+           (honu-identifier identifier)
+           (honu-require require)
+           (honu-for-syntax forSyntax)
            (honu-syntax syntax)
+           (honu-pattern pattern)
            (honu-keywords keywords)
            #;
            (honu-scheme scheme2)

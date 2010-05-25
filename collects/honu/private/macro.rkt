@@ -4,6 +4,7 @@
          "literals.ss"
          "parse.ss"
          "syntax.ss"
+         syntax/parse
          (for-meta -3
            (only-in "literals.ss" (#%parens literal-parens)))
          #;
@@ -19,7 +20,7 @@
                      scheme/pretty
                      scheme/trace))
 
-(provide honu-macro)
+(provide (all-defined-out))
 
 (define-syntax (ensure-defined stx)
   (syntax-case stx ()
@@ -414,6 +415,20 @@
      (begin
        (with-syntax ([pulled (pull #'(x ...))])
          #'(unpull pulled)))]))
+
+(define-honu-syntax honu-pattern
+  (lambda (stx ctx)
+    (syntax-parse stx #:literals (#%brackets semicolon)
+      [(_ name (#%brackets xpattern ...) semicolon . rest)
+       (define (create-pattern stuff)
+         (with-syntax ([(fixed ...) (fix-template stuff)])
+           #'(pattern (~seq fixed ...))))
+       (values
+         (lambda ()
+           (with-syntax ([final-pattern (create-pattern #'(xpattern ...))])
+             #'(define-splicing-syntax-class name final-pattern)))
+         #'rest)])))
+
 
 (define-honu-syntax honu-macro
   (lambda (stx ctx)

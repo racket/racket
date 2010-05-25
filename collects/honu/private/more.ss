@@ -8,6 +8,7 @@
          (for-syntax syntax/parse
                      syntax/stx
                      racket/list
+                     "contexts.ss"
                      "syntax.ss"
                      (only-in racket (... scheme-ellipses))
                      "literals.ss")
@@ -174,6 +175,14 @@
                [(stx-pair? what) (for-each show-pattern-variables (syntax->list what))]
                [else (printf "~a is *not* a pattern variable\n" what)]))
 
+           (define (make-unparsed code)
+             (with-syntax ([(code ...) code])
+               (cond
+                 [(expression-context? ctx)
+                  (syntax/loc stx (honu-unparsed-expr code ...))]
+                 [else #'(honu-unparsed-begin code ...)])))
+                 
+
            #;
            (printf "Original code is ~a\n" (syntax->datum #'(expr ...)))
            #;
@@ -192,7 +201,10 @@
            (with-syntax ([a #'(fix-template #'(honu-unparsed-begin expr ...))])
              #'a)
 
-           #'(fix-template (honu-unparsed-begin expr ...))
+           (with-syntax ([unparsed (make-unparsed #'(expr ...))])
+             #'(fix-template unparsed))
+             
+           ;; #'(fix-template (honu-unparsed-begin expr ...))
 
            #;
            #'(fix-template (expr ...))
