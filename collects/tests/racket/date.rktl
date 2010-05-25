@@ -21,7 +21,9 @@
 
 ; date->string
 (let* ([secs (find-seconds 1 2 3 4 5 2006)]
-       [d (seconds->date secs)])
+       [d-some-tz (seconds->date secs)]
+       [d (struct-copy date d-some-tz
+                       [time-zone-offset -21600])])
   (define (test-string fmt time? result)
     (test (parameterize ([date-display-format fmt])
             (date->string d time?))

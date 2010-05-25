@@ -8,7 +8,7 @@
 (provide/contract
  [current-date (-> date?)]
  [date->seconds (date? . -> . exact-integer?)]
- [date->string ((date?) (boolean?) . ->* . string?)]
+ [date->string ((date?) (any/c) . ->* . string?)]
  [date-display-format (parameter/c (symbols 'american 'chinese 'german 'indian 'irish 'julian 'iso-8601 'rfc2822))]
  [find-seconds ((integer-in 0 61)
                 (integer-in 0 59)
