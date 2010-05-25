@@ -115,9 +115,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          
          make-color
          make-pen
-         
-         save-image
-         )
+         pen?
+         step-count?
+         save-image)
 
 (provide bitmap)
 
