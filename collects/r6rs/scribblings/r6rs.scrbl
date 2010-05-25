@@ -165,6 +165,11 @@ instead (see @racket[find-collects-dir]):
 
  @commandline{plt-r6rs --install --all-users @nonterm{libraries-file}}
 
+You may as well specify an arbitrary collections directory by using
+the @DFlag{collections} flag:
+
+ @commandline{plt-r6rs --install --collections @nonterm{directory} @nonterm{libraries-file}}
+
 See @secref["libpaths"] for information on how @|r6rs| library names
 are turned into collection-based module paths, which determines where
 the files are written. Libraries installed by @exec{plt-r6rs

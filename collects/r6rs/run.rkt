@@ -12,6 +12,7 @@
 (define install-mode (make-parameter #f))
 (define compile-mode (make-parameter #f))
 (define install-all-users (make-parameter #f))
+(define install-dir (make-parameter #f))
 (define install-force (make-parameter #f))
 (define extra-collection-dirs (make-parameter null))
 
@@ -22,9 +23,11 @@
     (install-mode #t)]
    [("--compile") "compile <file> and all dependencies"
     (compile-mode #t)]
-   #:once-each
+   #:once-any
    [("--all-users") "install into main installation"
     (install-all-users #t)]
+   [("--collections") dir "install into <dir>"
+    (install-dir (path->complete-path dir))]
    [("--force") "overwrite existing libraries"
     (install-force #t)]
    #:multi
@@ -39,9 +42,11 @@
 
 (current-command-line-arguments (apply vector-immutable args))
 
-(unless (null? (extra-collection-dirs))
-    (current-library-collection-paths (append (extra-collection-dirs)
-                                              (current-library-collection-paths))))
+(current-library-collection-paths (append (extra-collection-dirs)
+                                          (if (install-dir)
+                                              (list (install-dir))
+                                              '())
+                                          (current-library-collection-paths)))
 
 (define r6rs-read-syntax
   (case-lambda
@@ -142,9 +147,12 @@
                           (cddr name))]
                   [else name]))])
     (apply build-path
-           (if (install-all-users)
-               (find-collects-dir)
-               (find-user-collects-dir))
+           (cond [(install-dir)
+                  => values]
+                 [(install-all-users)
+                  (find-collects-dir)]
+                 [else
+                  (find-user-collects-dir)])
            (let loop ([name name])
              (cond
               [(and (pair? (cdr name))
