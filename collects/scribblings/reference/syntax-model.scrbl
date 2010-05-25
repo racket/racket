@@ -71,7 +71,7 @@ identifiers are called @tech{unbound} in a module context.
 
 Throughout the documentation, @tech{identifiers} are typeset to
 suggest the way that they are parsed. A black, boldface
-@tech{identifier} like @racket[lambda] indicates as a reference to a
+@tech{identifier} like @racket[lambda] indicates a reference to a
 syntactic form. A plain blue @tech{identifier} like @racketidfont{x}
 is a @tech{variable} or a reference to an unspecified @tech{top-level
 variable}. A hyperlinked @tech{identifier} @racket[cons] is a
@@ -855,7 +855,7 @@ For expansion purposes, a namespace maps each symbol in each
 An ``empty'' namespace maps all symbols to top-level variables.
 Certain evaluations extend a namespace for future expansions;
 importing a module into the top-level adjusts the namespace bindings
-for all of the imported named, and evaluating a top-level
+for all of the imported names, and evaluating a top-level
 @racket[define] form updates the namespace's mapping to refer to a
 variable (in addition to installing a value into the variable).
 
