@@ -203,7 +203,7 @@
                                            path))])
                                changes)))))]
     [else
-     'nbsp]))
+     '" "]))
 
 (define (footer)
   `(div ([id "footer"])
@@ -264,7 +264,7 @@
                             (tr (td "Duration:") (td ,(format-duration-ms dur)))
                             (tr (td "Timeout:") (td ,(if (timeout? log) checkmark-entity "")))
                             (tr (td "Exit Code:") (td ,(if (exit? log) (number->string (exit-code log)) "")))
-                            (tr (td nbsp) (td (a ([href ,scm-url]) "View File"))))
+                            (tr (td " ") (td (a ([href ,scm-url]) "View File"))))
                      ,(if (lc-zero? changed)
                           ""
                           `(div ([class "error"])
@@ -287,14 +287,18 @@
                                                   (img ([src ,png-path])))))])
                         (make-cdata
                          #f #f
-                         (file->string
-                          (path-timing-html (substring (path->string* the-base-path) 1)))))
+                         (local [(define content 
+                                   (file->string
+                                    (path-timing-html (substring (path->string* the-base-path) 1))))]
+                           #;(regexp-replace* #rx"&(?![a-z]+;)" content "\\&amp;\\1")
+                           (regexp-replace* #rx"&gt;" content ">"))
+                         ))
                      ,(footer))))])]))
 
 (define (number->string/zero v)
   (cond 
     [(zero? v)
-     'nbsp]
+     '" "]
     [else
      (number->string v)]))
 
@@ -421,7 +425,7 @@
                                                        ,(if directory?
                                                             (number->string/zero v)
                                                             (if (zero? v)
-                                                                'nbsp
+                                                                '" "
                                                                 checkmark-entity))))
                                                 (list timeout unclean stderr changes))
                                          (td ,responsible-party))])
@@ -444,7 +448,7 @@
                               (td ,(number->string/zero (lc->number tot-unclean)))
                               (td ,(number->string/zero (lc->number tot-stderr)))
                               (td ,(number->string/zero (lc->number tot-changes)))
-                              (td nbsp))))
+                              (td " "))))
                   ,(footer))))]))
 
 (define (show-help req)
@@ -836,6 +840,15 @@
    [("current" (string-arg) ...) show-file/current]
    [((integer-arg) "") show-revision]
    [((integer-arg) (string-arg) ...) show-file]))
+
+#;(define (xml-dispatch req)
+  (define xe (top-dispatch req))
+  (define full
+    (make-xexpr-response xe #:mime-type #"application/xhtml+xml"))
+  (struct-copy response/full full
+               [body (list* 
+                      #"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
+                      (response/full-body full))]))
 
 (date-display-format 'iso-8601)
 (cache/file-mode 'no-cache)
