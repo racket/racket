@@ -10,6 +10,7 @@
    (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-height (text "Hello" 24 "black")) 'val 24)
    (list '(image-baseline (text "Hello" 24 "black")) 'val 18)
+   (list '(image-height (rectangle 10 0 "solid" "purple")) 'val 0)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
@@ -17,6 +18,7 @@
     60)
    (list '(image-height (circle 30 "solid" "orange")) 'val 60)
    (list '(image-height (ellipse 30 40 "solid" "orange")) 'val 40)
+   (list '(image-width (rectangle 0 10 "solid" "purple")) 'val 0)
    (list
     '(image-width
       (beside (circle 20 "solid" "orange") (circle 20 "solid" "purple")))

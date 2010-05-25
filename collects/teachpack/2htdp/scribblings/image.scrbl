@@ -848,22 +848,24 @@ the parts that fit onto @scheme[scene].
 
 @section{Image Properties}
 
-@defproc[(image-width [i image?]) (and/c integer? positive? exact?)]{
+@defproc[(image-width [i image?]) (and/c integer? (not/c negative?) exact?)]{
   Returns the width of @scheme[i].
                        
   @image-examples[(image-width (ellipse 30 40 "solid" "orange"))
                   (image-width (circle 30 "solid" "orange"))
                   (image-width (beside (circle 20 "solid" "orange")
-                                       (circle 20 "solid" "purple")))]
+                                       (circle 20 "solid" "purple")))
+                  (image-width (rectangle 0 10 "solid" "purple"))]
 }
 
-@defproc[(image-height [i image?]) (and/c integer? positive? exact?)]{
+@defproc[(image-height [i image?]) (and/c integer? (not/c negative?) exact?)]{
   Returns the height of @scheme[i].
   
   @image-examples[(image-height (ellipse 30 40 "solid" "orange"))
                   (image-height (circle 30 "solid" "orange"))
                   (image-height (overlay (circle 20 "solid" "orange")
-                                         (circle 30 "solid" "purple")))]
+                                         (circle 30 "solid" "purple")))
+                  (image-height (rectangle 10 0 "solid" "purple"))]
   }
 
 @defproc[(image-baseline [i image?]) (and/c integer? positive? exact?)]{
