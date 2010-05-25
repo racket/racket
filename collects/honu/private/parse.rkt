@@ -56,7 +56,7 @@
   #:attrs (result)
   #:description "honu-expr"
   (lambda (stx fail)
-    (printf "Honu expr from transformer ~a\n" (syntax->datum stx))
+    (printf "Honu expr from transformer ~a in context ~a\n" (syntax->datum stx) context)
     (cond
      [(stx-null? stx) (fail)]
      #;
@@ -191,7 +191,10 @@
                     #'raw))]
 
   [pattern (~seq (#%parens (~var e (expression-1 context)))) #:with result #'e.result]
-  [pattern (~seq (~var e (honu-transformer context))) #:with result #'e.result]
+  [pattern (~seq (~var e (honu-transformer
+                           the-expression-context
+                           #;
+                           context))) #:with result #'e.result]
   [pattern (~seq (~var call (call context))) #:with result #'call.call]
   [pattern (~seq x:number) #:with result (begin (printf "got a number ~a\n" #'x) #'x)]
   [pattern (~seq x:str) #:with result #'x]
@@ -331,7 +334,7 @@
 (define-syntax-class (expression-top context)
                      #:literals (semicolon)
                      [pattern ((~var e (ternary context))
-                               (~var x1 (debug-here (format "expression top 1 ~a\n" #'e)))
+                               (~var x1 (debug-here (format "expression top 1 ~a\n" (syntax->datum #'e))))
                                semicolon
                                (~var x2 (debug-here "2"))
                                . rest)
@@ -450,8 +453,9 @@
 
 (define (parse-an-expr stx)
   (printf "Parse an expr ~a\n" (syntax->datum stx))
-  (syntax-parse (with-syntax ([s stx])
-                  #'(s semicolon))
+  (syntax-parse (with-syntax ([(s ...) stx])
+                  #'(s ... semicolon))
+    #;
     [(raw:raw-scheme-syntax . rest) #'raw]
     [((~var expr (expression-1 the-expression-context)) . rest) #'expr.result]
     [else (raise-syntax-error 'parse-an-expr "cant parse" stx)]

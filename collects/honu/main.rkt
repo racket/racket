@@ -9,6 +9,7 @@
          (for-syntax "private/literals.ss")
          (for-syntax "private/honu-typed-scheme.ss")
          (for-syntax "private/parse.ss")
+         syntax/parse
          (for-syntax syntax/parse)
          "private/literals.ss"
          "private/syntax.ss"
@@ -77,6 +78,7 @@
                                  (... scheme:...)
                                  (honu-body:class body)
                                  (honu-syntax syntax)
+                                 (honu-expression-syntax expressionSyntax)
                                  (honu-+ +)
                                  (honu-scheme scheme2)
                                  (scheme-syntax scheme:syntax)
@@ -93,6 +95,8 @@
          quote
          ...
          foobar2000
+         expression
+         str
          (rename-out
            (honu-if if)
            (honu-provide provide)

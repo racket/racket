@@ -69,6 +69,18 @@
     [(_ x ...)
      |#
 
+#;
+(define-for-syntax (get-attributes stx)
+  (define (attach name attributes)
+    (list))
+  (syntax-parse stx #:literals (honu-:)
+    [(variable:identifier honu-: class:identifier rest ...)
+     (let ([vs (attach #'variable (syntax-class-attributes (attribute class)))])
+       (append vs (get-attributes #'(rest ...))))]
+    [(one rest ...) (append (get-attributes #'one)
+                            (get-attributes #'(rest ...)))]
+    [else (list)]))
+
 (define-for-syntax (fix-template stx)
   (syntax-parse stx #:literals (honu-:)
     [(variable:identifier honu-: class:identifier rest ...)
@@ -418,15 +430,18 @@
 
 (define-honu-syntax honu-pattern
   (lambda (stx ctx)
-    (syntax-parse stx #:literals (#%brackets semicolon)
-      [(_ name (#%brackets xpattern ...) semicolon . rest)
+    (syntax-parse stx #:literals (#%parens #%brackets semicolon)
+      [(_ name (#%parens all-attributes:identifier ...) (#%brackets xpattern ...)
+          semicolon . rest)
        (define (create-pattern stuff)
          (with-syntax ([(fixed ...) (fix-template stuff)])
            #'(pattern (~seq fixed ...))))
        (values
          (lambda ()
            (with-syntax ([final-pattern (create-pattern #'(xpattern ...))])
-             #'(define-splicing-syntax-class name final-pattern)))
+             #'(define-splicing-syntax-class name
+                                             #:attributes (all-attributes ...)
+                                             final-pattern)))
          #'rest)])))
 
 

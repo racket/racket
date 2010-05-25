@@ -39,7 +39,7 @@
                         stx)]))
      (printf "Thing ~a and blah ~a replaced ~a\n" #'thing #'(blah ...) (replace-commas #'(thing blah ...)))
      (with-syntax ([(rest ...) (replace-commas #'(thing blah ...))])
-       (datum->syntax stuff (cons (maybe-apply-raw #'(z ...)) (cons #'honu-comma #'(rest ...)))
+       (datum->syntax stuff (cons #'(z ...) (cons #'honu-comma #'(rest ...)))
                       stuff
                       stuff)
        #;
@@ -78,7 +78,7 @@
      (with-syntax ([front* (replace-commas #'front)]
                    [(rest* ...) (replace-commas #'(thing more ...))])
        (datum->syntax stuff (cons #'front*
-                                  (cons (maybe-apply-raw (datum->syntax stuff #'(z ...) stuff))
+                                  (cons (datum->syntax stuff #'(z ...) stuff stuff)
                                         (cons #'honu-comma #'(rest* ...))))
                       stuff
                       stuff))]
@@ -163,6 +163,67 @@
     #;
     [(_ blah ...) (fix #'(blah ...))]))
 
+(define-syntax-rule (honu-syntax-maker maker unparsed)
+  (define-honu-syntax maker
+    (lambda (stx ctx)
+      (syntax-parse stx #:literals (semicolon #%parens)
+        [(_ (#%parens expr (... ...)) semicolon . rest)
+         (values
+           (lambda ()
+             (define (show-pattern-variables what)
+               (cond
+                 [(syntax-pattern-variable? what) (printf "~a is a pattern variable\n") what]
+                 [(stx-pair? what) (for-each show-pattern-variables (syntax->list what))]
+                 [else (printf "~a is *not* a pattern variable\n" what)]))
+
+             #;
+             (printf "Original code is ~a\n" (syntax->datum #'(expr ...)))
+             #;
+             (printf "Expanded is ~a\n" (syntax->datum (expand-syntax-once #'(expr ...))))
+             #;
+             (for-each show-pattern-variables (syntax->list #'(expr ...)))
+             ;; outer is relative phase 1, inner is relative phase 0
+             #|
+             #'#'(honu-unparsed-begin expr ...)
+             |#
+
+             #;
+             (syntax (fix-template (syntax (honu-unparsed-begin expr ...))))
+
+             #;
+             (with-syntax ([a #'(fix-template #'(honu-unparsed-begin expr ...))])
+               #'a)
+
+             (printf "Making unparsed syntax???\n")
+             #;
+             (with-syntax ([unparsed (make-unparsed #'(expr ...))])
+               #'(fix-template unparsed))
+
+             #'(fix-template (unparsed expr (... ...)))
+
+             #;
+             #'(fix-template (expr ...))
+
+             #;
+             (apply-scheme-syntax #'(fix-template (expr ...)))
+
+             #;
+             (let ([x #'(fix-template (honu-unparsed-begin expr ...))])
+               (printf "Final syntax ~a\n" (syntax->datum x))
+               x)
+
+             #;
+             #'(fix-template 1 2 3)
+
+             #;
+             (with-syntax ([(out ...) (local-expand #'(expr ...) 'expression '())])
+               #'(honu-unparsed-begin out ...)))
+           #'rest)]))))
+
+(honu-syntax-maker honu-syntax honu-unparsed-begin)
+(honu-syntax-maker honu-expression-syntax honu-unparsed-expr)
+
+#;
 (define-honu-syntax honu-syntax
   (lambda (stx ctx)
     (syntax-parse stx #:literals (semicolon #%parens)
@@ -176,12 +237,12 @@
                [else (printf "~a is *not* a pattern variable\n" what)]))
 
            (define (make-unparsed code)
+             (printf "Make unparsed in ~a. expression-context? ~a\n" ctx (expression-context? ctx))
              (with-syntax ([(code ...) code])
                (cond
                  [(expression-context? ctx)
                   (syntax/loc stx (honu-unparsed-expr code ...))]
                  [else #'(honu-unparsed-begin code ...)])))
-                 
 
            #;
            (printf "Original code is ~a\n" (syntax->datum #'(expr ...)))
@@ -201,6 +262,7 @@
            (with-syntax ([a #'(fix-template #'(honu-unparsed-begin expr ...))])
              #'a)
 
+           (printf "Making unparsed syntax???\n")
            (with-syntax ([unparsed (make-unparsed #'(expr ...))])
              #'(fix-template unparsed))
              

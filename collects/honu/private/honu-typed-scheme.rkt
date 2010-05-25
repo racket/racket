@@ -498,7 +498,9 @@ if (foo){
   (printf "~a ~a" x y))
 
 (define-syntax (honu-unparsed-expr stx)
-  (parse-an-expr stx))
+  (syntax-parse stx
+    [(_ expr ...)
+     (parse-an-expr #'(expr ...))]))
 
 (define-honu-syntax honu-provide
   (lambda (body ctx)
