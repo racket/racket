@@ -1,10 +1,10 @@
 #!/bin/sh
 #| -*- scheme -*-
 tmp="/tmp/path-compare-$$"
-if [ -x "$PLTHOME/bin/mzscheme" ]; then
-  "$PLTHOME/bin/mzscheme" -r "$0" "$@"
+if [ -x "$PLTHOME/bin/racket" ]; then
+  "$PLTHOME/bin/racket" -r "$0" "$@"
 else
-  "mzscheme" -r "$0" "$@"
+  "racket" -r "$0" "$@"
 fi > "$tmp" || exit 1
 cd "`dirname \"$0\"`"
 if diff "paths-configure-snapshot" "$tmp"; then
