@@ -75,7 +75,7 @@ The simplest kind of animated @tech{world} program is a time-based
  this function to the teachpack displays the simulation. 
 
 @defproc[(animate [create-image (-> natural-number/c scene?)])
-         true]{
+         natural-number/c]{
 
  opens a canvas and starts a clock that tick 28 times per second.  Every
  time the clock ticks, DrRacket applies @scheme[create-image] to the
