@@ -20,7 +20,7 @@
 # it needs to include C++ flags that we don't want for Racket.
 # hence PREFLAGS, which is initialized to the original CPPFLAGS.
 
-AC_INIT([PLT Scheme])
+AC_INIT([Racket])
 AC_CONFIG_SRCDIR(racket/src/bignum.c)
 AC_CONFIG_HEADERS([racket/mzconfig.h])
 
@@ -234,10 +234,10 @@ else
     # Set prefix explicitly so we can use it during configure
     prefix="${ac_default_prefix}"
   fi
-  libpltdir="${libdir}/plt"
-  collectsdir="${libdir}/plt/collects"
-  includepltdir="${includedir}/plt"
-  docdir="${datadir}/plt/doc"
+  libpltdir="${libdir}/racket"
+  collectsdir="${libdir}/racket/collects"
+  includepltdir="${includedir}/racket"
+  docdir="${datadir}/racket/doc"
   MAKE_COPYTREE=copytree
   COLLECTS_PATH='${collectsdir}'
   INSTALL_ORIG_TREE=no

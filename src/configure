@@ -576,7 +576,7 @@ PACKAGE_VERSION=
 PACKAGE_STRING=
 PACKAGE_BUGREPORT=
 
-ac_unique_file="PLT Scheme"
+ac_unique_file="Racket"
 ac_unique_file="racket/src/bignum.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
@@ -2201,10 +2201,10 @@ else
     # Set prefix explicitly so we can use it during configure
     prefix="${ac_default_prefix}"
   fi
-  libpltdir="${libdir}/plt"
-  collectsdir="${libdir}/plt/collects"
-  includepltdir="${includedir}/plt"
-  docdir="${datadir}/plt/doc"
+  libpltdir="${libdir}/racket"
+  collectsdir="${libdir}/racket/collects"
+  includepltdir="${includedir}/racket"
+  docdir="${datadir}/racket/doc"
   MAKE_COPYTREE=copytree
   COLLECTS_PATH='${collectsdir}'
   INSTALL_ORIG_TREE=no
@@ -5855,6 +5855,7 @@ case $OS in
   FreeBSD)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
+    GC_THREADS_FLAG="-DGC_FREEBSD_THREADS"
     enable_pthread=yes
     ;;
   OpenBSD)
