@@ -172,10 +172,7 @@ v4 todo:
                 (if (->-dom-rest/c ctc)
                   (procedure-accepts-and-more? x l)
                   (procedure-arity-includes? x l))
-                (let-values ([(x-mandatory-keywords x-all-keywords) (procedure-keywords x)])
-                  (and (equal? x-mandatory-keywords (->-mandatory-kwds ctc))
-                       (andmap (λ (optional-keyword) (member optional-keyword x-all-keywords))
-                               (->-mandatory-kwds ctc))))
+                (keywords-match (->-mandatory-kwds ctc) (->-optional-kwds ctc) x)
                 #t))))
    #:stronger
    (λ (this that)
@@ -1541,9 +1538,13 @@ v4 todo:
          (andmap (λ (kwd) (member kwd mandatory-kwds))
                  proc-mandatory)
          ;; proc accepts (but does not require) ctc's optional keywords
-         (andmap (λ (kwd) (and (member kwd proc-all)
-                               (not (member kwd proc-mandatory))))
-                 optional-kwds))))
+         ;;
+         ;; if proc-all is #f, then proc accepts all keywords and thus
+         ;; this is triviably true (e.g. result of make-keyword-procedure)
+         (or (not proc-all)
+             (andmap (λ (kwd) (and (member kwd proc-all)
+                                   (not (member kwd proc-mandatory))))
+                     optional-kwds)))))
 
 (define (keyword-error-text mandatory-keywords optional-keywords)
   (define (format-keywords-error type kwds)
