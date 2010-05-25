@@ -968,6 +968,10 @@ The baseline of an image is the place where the bottoms any letters line up, not
   greater than or equal to @scheme[3].
 }
 
+@defproc[(step-count? [x any/c]) boolean?]{
+  Determines if @racket[x] is an integer greater than or equal to @racket[1].                                           
+}
+
 @defstruct[pen ([color image-color?]
                 [width (and/c real? (<=/c 0 255))]
                 [style pen-style?]
