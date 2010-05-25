@@ -1702,7 +1702,7 @@ do_tgz_to_exe() {
   _tgunzip "$nsistgz"
   _tgunzip "$tmptgz"
   show "Running NSIS to create the installer"
-  "/c/Program Files/NSIS/makensis.exe" /V3 "plt-installer.nsi" | tr -d '\r' \
+  "/c/Program Files/NSIS/makensis.exe" /V3 "installer.nsi" | tr -d '\r' \
   || exit_error "NSIS build failed"
   _mv "installer.exe" "$tmpexe"
   _cd "$savedpwd"
@@ -1710,12 +1710,12 @@ do_tgz_to_exe() {
 }
 tgz_to_exe() {
   local srctgz="$1" tgtexe="$2.exe" pname="$3"; shift 3
-  local nsistgz="$tmpdir/plt-nsis.tgz"
+  local nsistgz="$tmpdir/racket-nsis.tgz"
   local tmptgz="$tmpdir/tgz2exe.tgz"
   local tmpexe="$tmpdir/tgz2exe.exe"
-  _rm "$tmpdir/plt-nsis-$$"
-  _cp -r "$PLTHOME/$nsisdir" "$tmpdir/plt-nsis-$$"
-  _cd "$tmpdir/plt-nsis-$$"
+  _rm "$tmpdir/racket-nsis-$$"
+  _cp -r "$PLTHOME/$nsisdir" "$tmpdir/racket-nsis-$$"
+  _cd "$tmpdir/racket-nsis-$$"
   show "Writing \"racket-defs.nsh\""
   { local def='!define'
     echo "$def RKTVersion \"$version\""
@@ -1749,7 +1749,7 @@ tgz_to_exe() {
   echo "$line" | sed 's/./-/g'
   _tgzip "$nsistgz" *
   _cd "$tmpdir"
-  _rm "$tmpdir/plt-nsis-$$"
+  _rm "$tmpdir/racket-nsis-$$"
   _scp "$nsistgz" "${nsismachine}:$nsistgz"
   _scp "$srctgz" "${nsismachine}:$tmptgz"
   run_part "$nsismachine" \
