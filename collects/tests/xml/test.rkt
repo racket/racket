@@ -324,6 +324,22 @@ END
       "<!-- comment --><br />"
       "read-xml: parse-error: expected root element - received #<comment>")
      
+     (test-read-xml/element
+      "<title><![CDATA[hello world[mp3]]]></title>"
+      '(make-element
+        (make-source (make-location 1 0 1) (make-location 1 43 44))
+        'title
+        (list)
+        (list (make-cdata (make-source (make-location 1 7 8) (make-location 1 35 36)) "<![CDATA[hello world[mp3]]]>"))))
+     
+     (test-read-xml/element
+      "<title><![CDATA[]]]></title>"
+      '(make-element
+        (make-source (make-location 1 0 1) (make-location 1 28 29))
+        'title
+        (list)
+        (list (make-cdata (make-source (make-location 1 7 8) (make-location 1 20 21)) "<![CDATA[]]]>"))))
+     
      ; XXX need more read-xml/element tests
      
      )
