@@ -1,10 +1,10 @@
-#lang scheme
+#lang racket
 
 #|
 
 This is a file from Guillaume that ran very slowly with the 
 htdp/image library; here it is used as a performance test.
-Porting to #lang scheme +2htdp/image consisted of adding requires, 
+Porting to #lang racket +2htdp/image consisted of adding requires, 
 changing overlay/xy to underlay/xy,  defining empty-scene, and
 adding the check-expect macro (and related code).
 Also added the timing code at the end.

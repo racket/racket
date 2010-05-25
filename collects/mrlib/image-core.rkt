@@ -1,8 +1,8 @@
-#lang scheme/base
+#lang racket/base
 #|
 
 This library is the part of the 2htdp/image 
-teachpack that has to be shared between drscheme
+teachpack that has to be shared between drracket
 and the user's program to make copy and paste
 work right.
 
@@ -26,11 +26,11 @@ has been moved out).
 
 |#
 
-(require scheme/class
-         scheme/gui/base
-         scheme/math
+(require racket/class
+         racket/gui/base
+         racket/math
          "private/image-core-bitmap.ss"
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 
 (define-for-syntax id-constructor-pairs '())
 (define-for-syntax (add-id-constructor-pair a b)
@@ -317,7 +317,7 @@ has been moved out).
   (and (= (round (bb-right bb1)) (round (bb-right bb2)))
        (= (round (bb-bottom bb1)) (round (bb-bottom bb2)))
        (= (round (bb-baseline bb1)) (round (bb-baseline bb2)))))
-(define scheme/base:read read)
+(define racket/base:read read)
 
 (define image-snipclass% 
   (class snip-class%
@@ -331,7 +331,7 @@ has been moved out).
               (and str
                    (with-handlers ((exn:fail:read? (λ (x) #f)))
                      (parse 
-                      (scheme/base:read
+                      (racket/base:read
                        (open-input-string
                         str)))))])
         (if lst

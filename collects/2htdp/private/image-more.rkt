@@ -1,15 +1,15 @@
-#lang scheme/base
+#lang racket/base
 
 (require "../../mrlib/image-core.ss"
          "img-err.ss"
-         scheme/match
-         scheme/contract
-         scheme/class
-         scheme/gui/base
+         racket/match
+         racket/contract
+         racket/class
+         racket/gui/base
          htdp/error
-         scheme/math
-         (for-syntax scheme/base
-                     scheme/list)
+         racket/math
+         (for-syntax racket/base
+                     racket/list)
          lang/posn)
 
 (define (show-image arg [extra-space 0])
@@ -92,7 +92,7 @@
                                                                             
 
 ;; bitmap : string -> image
-;; gets one of the bitmaps that comes with drscheme, scales it down by 1/8 or something
+;; gets one of the bitmaps that comes with drracket, scales it down by 1/8 or something
 ;; so that later scaling /translation/whatever will look reasonable.
 ;; (the error message for a bad argument will list all of the currently installed example images;
 ;; we may want to have some way teachers can stick new ones in there)

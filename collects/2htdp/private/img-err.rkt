@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide define/chk 
          to-img 
@@ -16,13 +16,13 @@
          check-mode/color-combination)
 
 (require htdp/error
-         scheme/class
+         racket/class
          lang/posn
-         scheme/gui/base
+         racket/gui/base
          "../../mrlib/image-core.ss"
          (prefix-in cis: "../../mrlib/cache-image-snip.ss")
-         (for-syntax scheme/base
-                     scheme/list))
+         (for-syntax racket/base
+                     racket/list))
 
 ;                                                                                                 
 ;                                                                                                 
