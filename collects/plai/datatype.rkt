@@ -184,7 +184,7 @@
                                                  'variant-field #'field)))
                 ...
                 (define set-variant-field!
-                  (lambda-memocontract (v)
+                  (lambda-memocontract (v nv)
                                        (contract (f:variant? field/c . -> . void)
                                                  set-variant*-field!
                                                  'set-variant-field! 'use
