@@ -300,7 +300,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                     (make-pen "darkslategray" 10 "solid" "projecting" "miter")))]
 }
 
-@defproc[(line [x1 real?] [y1 real?] [color image-color?]) image?]{
+@defproc[(line [x1 real?] [y1 real?] [pen-or-color (or/c pen? image-color?)]) image?]{
   Constructs an image representing a line segment that connects the points
   (0,0) to (x1,y1).
   
@@ -312,7 +312,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 @defproc[(add-line [image image?]
                    [x1 real?] [y1 real?]
                    [x2 real?] [y2 real?]
-                   [color image-color?])
+                   [pen-or-color (or/c pen? image-color?)])
          image?]{
 
   Adds a line to the image @scheme[image], starting from the point (@scheme[x1],@scheme[y1])
@@ -333,7 +333,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 @defproc[(add-curve [image image?] 
                     [x1 real?] [y1 real?] [angle1 angle?] [pull1 real?]
                     [x2 real?] [y2 real?] [angle2 angle?] [pull2 real?]
-                    [color image-color?])
+                    [pen-or-color (or/c pen? image-color?)])
          image?]{
 
 Adds a curve to @scheme[image], starting at the point
