@@ -1716,16 +1716,16 @@ tgz_to_exe() {
   _rm "$tmpdir/plt-nsis-$$"
   _cp -r "$PLTHOME/$nsisdir" "$tmpdir/plt-nsis-$$"
   _cd "$tmpdir/plt-nsis-$$"
-  show "Writing \"plt-defs.nsh\""
+  show "Writing \"racket-defs.nsh\""
   { local def='!define'
-    echo "$def PLTVersion \"$version\""
+    echo "$def RKTVersion \"$version\""
     # this must be four numbers
-    echo "$def PLTVersionLong \"$version1.$version2.$version3.$version4\""
-    echo "$def PLTHumanName \"`name_of_dist_package \"$pname\"` v$version\""
+    echo "$def RKTVersionLong \"$version1.$version2.$version3.$version4\""
+    echo "$def RKTHumanName \"`name_of_dist_package \"$pname\"` v$version\""
     if [[ "$releasing" != "yes" ]]; then
-      echo "$def PLTStartName \"`name_of_dist_package \"$pname\"` v$version\""
+      echo "$def RKTStartName \"`name_of_dist_package \"$pname\"` v$version\""
     else
-      echo "$def PLTStartName \"`name_of_dist_package \"$pname\"`\""
+      echo "$def RKTStartName \"`name_of_dist_package \"$pname\"`\""
     fi
     local dname
     case "$pname" in
@@ -1735,17 +1735,17 @@ tgz_to_exe() {
       ( * ) exit_error "Unknown package name for exe installer: \"$pname\"" ;;
     esac
     if [[ "$releasing" != "yes" ]]; then
-      echo "$def PLTDirName \"$dname-$version\""
+      echo "$def RKTDirName \"$dname-$version\""
     else
-      echo "$def PLTDirName \"$dname\""
+      echo "$def RKTDirName \"$dname\""
     fi
-    echo "$def PLTRegName \"$dname-$version\""
+    echo "$def RKTRegName \"$dname-$version\""
     if [[ "$pname" = "mz" ]]; then echo "$def SimpleInstaller"; fi
-  } > "plt-defs.nsh" \
-    || exit_error "Could not write \"plt-defs.h\""
-  local line="---------- plt-defs.nsh ----------"
+  } > "racket-defs.nsh" \
+    || exit_error "Could not write \"racket-defs.h\""
+  local line="---------- racket-defs.nsh ----------"
   echo "$line"
-  cat "plt-defs.nsh"
+  cat "racket-defs.nsh"
   echo "$line" | sed 's/./-/g'
   _tgzip "$nsistgz" *
   _cd "$tmpdir"
