@@ -28,18 +28,16 @@
 
 (define (replace-commas stuff)
   (printf "Replace commas with: ~a\n" (syntax->datum stuff))
-  (syntax-parse stuff #:literals (ellipses-comma)
-    #;
-    [((ellipses-comma (z ...)) thing blah ...)
-     (define (maybe-apply-raw stx)
-       (syntax-parse stuff #:literals (ellipses-comma)
-                     [((ellipses-comma x) . rest)
-                      (if (raw-scheme? #'x)
-                        (apply-scheme-syntax stx)
-                        stx)]))
+  (syntax-parse stuff #:literals (ellipses-comma ellipses-comma*)
+    [((ellipses-comma* z ...) thing blah ...)
+     #;
      (printf "Thing ~a and blah ~a replaced ~a\n" #'thing #'(blah ...) (replace-commas #'(thing blah ...)))
      (with-syntax ([(rest ...) (replace-commas #'(thing blah ...))])
-       (datum->syntax stuff (cons #'(z ...) (cons #'honu-comma #'(rest ...)))
+       (datum->syntax stuff
+                      #'(z ... honu-comma rest ...)
+                      ;; `(1 ,#'(z ...) ,#'honu-comma ,#'(rest ...))
+                      #;
+                      (append (syntax->list #'(z ...)) (cons #'honu-comma #'(rest ...)))
                       stuff
                       stuff)
        #;
@@ -55,6 +53,14 @@
                       stuff)
        #;
        #'(z honu-comma rest ...))]
+    [(front (ellipses-comma* z ...) thing more ...)
+     (with-syntax ([front* (replace-commas #'front)]
+                   [(rest* ...) (replace-commas #'(thing more ...))])
+       (datum->syntax stuff #'(front z ... honu-comma rest* ...) stuff stuff)
+       #;
+       (datum->syntax stuff (cons #'front* (cons #'(z ...) (cons #'honu-comma #'(rest* ...))))
+                      stuff
+                      stuff))]
     [(front (ellipses-comma z) thing more ...)
      (define (maybe-apply-raw stx)
        (syntax-parse stuff #:literals (ellipses-comma)
@@ -84,6 +90,7 @@
                       stuff))]
     #;
     [((ellipses-comma (z ...))) (datum->syntax stuff #'(z ...) stuff stuff)]
+    [((ellipses-comma* z ...)) (datum->syntax stuff #'(z ...) stuff stuff)]
     [((ellipses-comma z)) (datum->syntax stuff #'(z) stuff stuff)]
     [(z rest ...)
      (with-syntax ([z* (replace-commas #'z)]
@@ -124,17 +131,24 @@
          #'(one* rest* ...))]
       [else stuff]))
   (define (replace stuff)
-    (syntax-parse stuff #:literals (ellipses-comma)
+    (syntax-parse stuff #:literals (ellipses-comma ellipses-repeat #%parens)
+      [(ellipses-repeat (#%parens ellipses-comma things-to-repeat ...) rest ...)
+       (with-syntax ([(rest* ...) (replace #'(rest ...))])
+         (datum->syntax stuff
+                        (cons
+                          (cons #'ellipses-comma* #'(things-to-repeat ...))
+                          (cons
+                            #'(... ...)
+                            #'(rest* ...)))
+                        stuff stuff))
+         #;
+         #'((ellipses-comma a*) (... ...) rest* ...)]
       [(a ellipses-comma rest ...)
        (with-syntax ([a* (replace #'a)]
                      [(rest* ...) (replace #'(rest ...))])
          (datum->syntax stuff
                         (cons
-                          (cons #'ellipses-comma (cons #'a* '())
-                                #;
-                                (if (stx-pair? #'a*)
-                                  #'a*
-                                  (cons #'a* '())))
+                          (cons #'ellipses-comma (cons #'a* '()))
                           (cons
                             #'(... ...)
                             #'(rest* ...)))

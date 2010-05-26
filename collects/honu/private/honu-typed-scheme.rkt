@@ -14,7 +14,6 @@
                      "syntax.ss"
                      "parse.ss"
                      )
-         (for-template scheme/base)
          "literals.ss"
          ;; "typed-utils.ss"
          )

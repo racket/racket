@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (provide (all-defined-out))
 
@@ -17,4 +17,4 @@
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
                 honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
                 honu-? honu-: honu-comma honu-. #%braces #%brackets #%parens colon
-                ellipses-comma honu-for-syntax)
+                ellipses-comma ellipses-comma* ellipses-repeat honu-for-syntax)

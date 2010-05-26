@@ -14,6 +14,7 @@
          "private/literals.ss"
          "private/syntax.ss"
          "private/more.ss"
+         (for-template "private/literals.rkt")
          (for-syntax "private/more.ss")
          (for-syntax "private/syntax.ss")
          "private/macro.ss")
@@ -71,6 +72,7 @@
                      (rename-out (semicolon \;
                                             )
                                  (ellipses-comma ec)
+                                 (ellipses-repeat repeat)
                                  #;
                                  (honu-identifier identifier)
                                  (expression-comma expression_comma)
@@ -97,6 +99,7 @@
          foobar2000
          expression
          str
+         (for-template #%parens)
          (rename-out
            (honu-if if)
            (honu-provide provide)

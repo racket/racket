@@ -1,14 +1,14 @@
 #lang scheme/base
 
 (require "honu-typed-scheme.ss"
-         "literals.ss"
+         "literals.rkt"
          "parse.ss"
          "syntax.ss"
          syntax/parse
          (for-meta -3
-           (only-in "literals.ss" (#%parens literal-parens)))
+           (only-in "literals.rkt" (#%parens literal-parens)))
          #;
-         (for-template (only-in "literals.ss" (#%parens literal-parens)))
+         (for-template (only-in "literals.rkt" (#%parens literal-parens)))
          (for-syntax "debug.ss"
                      "contexts.ss"
                      "parse.ss"
@@ -433,15 +433,21 @@
     (syntax-parse stx #:literals (#%parens #%brackets semicolon)
       [(_ name (#%parens all-attributes:identifier ...) (#%brackets xpattern ...)
           semicolon . rest)
+       (define my-parens (datum->syntax #'name '#%parens #'name #'name))
        (define (create-pattern stuff)
          (with-syntax ([(fixed ...) (fix-template stuff)])
-           #'(pattern (~seq fixed ...))))
+           (syntax/loc stuff (pattern (~seq fixed ...)))))
        (values
          (lambda ()
-           (with-syntax ([final-pattern (create-pattern #'(xpattern ...))])
-             #'(define-splicing-syntax-class name
-                                             #:attributes (all-attributes ...)
-                                             final-pattern)))
+           (with-syntax ([final-pattern (create-pattern #'(xpattern ...))]
+                         #;
+                         [parens (datum->syntax stx '#%parens stx)]
+                         [parens (datum->syntax #'name '#%parens #'name #'name)])
+             (syntax/loc stx
+                         (define-splicing-syntax-class name
+                                                       #:literals (parens)
+                                                       #:attributes (all-attributes ...)
+                                                       final-pattern))))
          #'rest)])))
 
 
