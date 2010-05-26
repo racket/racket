@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/gui/base
          mrlib/cache-image-snip
+         (prefix-in 2htdp/image: mrlib/image-core)
          mzlib/class)
 
 (provide scene? image? image=? 
@@ -13,8 +14,8 @@
       (is-a? a cache-image-snip%)))
 
 (define (image=? a-raw b-raw)
-  (unless (image? a-raw) (raise-type-error 'image=? "image" 0 a-raw b-raw))
-  (unless (image? b-raw) (raise-type-error 'image=? "image" 1 a-raw b-raw))
+  (unless (or (2htdp/image:image? a-raw) (image? a-raw)) (raise-type-error 'image=? "image" 0 a-raw b-raw))
+  (unless (or (2htdp/image:image? b-raw) (image? b-raw)) (raise-type-error 'image=? "image" 1 a-raw b-raw))
   ;; Rely on image-snip% implementing equal<%>:
   (equal? a-raw b-raw))
 
