@@ -1,13 +1,14 @@
 #lang scheme/base
 
 (require "../utils/utils.rkt" scheme/match unstable/list
-         (utils tc-utils) (rep type-rep) (types utils union))
+         (utils tc-utils) (rep type-rep) (types utils union abbrev))
 
 (provide (all-defined-out))
 
 (define (make-printable t)
   (match t
     [(tc-result1: t) t]
+    [(tc-results: ts) (-values ts)]
     [_ t]))
 
 (define (stringify-domain dom rst drst [rng #f])
