@@ -112,3 +112,13 @@
 
 (provide map/values)
 
+;; dvanhorn added:
+
+(define (remf f ls)
+  (cond [(null? ls) '()]
+        [(f (car ls)) (cdr ls)]
+        [else 
+         (cons (car ls)
+               (remf f (cdr ls)))]))
+
+(provide/contract [remf (-> procedure? list? list?)])

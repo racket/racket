@@ -103,3 +103,18 @@ Produces lists of the respective values of @racket[f] applied to the elements in
 
 }
 
+@addition{David Van Horn}
+
+@defproc[(remf [pred procedure?]
+               [lst list?])
+         list?]{
+Returns a list that is like @racket[lst], omitting the first element of @racket[lst] 
+for which @racket[pred] produces a true value.
+
+@defexamples[
+#:eval the-eval
+(remf negative? '(1 -2 3 4 -5))
+]
+
+}
+
