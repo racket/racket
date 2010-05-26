@@ -12,10 +12,10 @@
 ;;     (interactive, undo-on-error, create-uninstaller)
 ;;   - `copy': similar to `move', but copies instead of moving
 ;;   - `make-install-copytree': copies some toplevel directories, skips ".*"
-;;     and "compiled" subdirs, and rewrites "config.ss", but no uninstaller
+;;     and "compiled" subdirs, and rewrites "config.rkt", but no uninstaller
 ;;     (used by `make install') (requires an additional `origtree' argument)
 ;;   - `make-install-destdir-fix': fixes paths in binaries, laucnhers, and
-;;     config.ss (used by `make install' to fix a DESTDIR) (requires exactly
+;;     config.rkt (used by `make install' to fix a DESTDIR) (requires exactly
 ;;     the same args as `make-install-copytree' (prefixed) and requires a
 ;;     DESTDIR setting)
 ;; * rktdir: The source racket directory
@@ -180,7 +180,8 @@
           (write-bytes buf (current-output-port) (cdadr m))))))
   (let ([magic (with-input-from-file file (lambda () (read-bytes 10)))])
     (cond [(or (regexp-match #rx#"^\177ELF" magic)
-               (regexp-match #rx#"^\316\372\355\376" magic))
+               (regexp-match #rx#"^\316\372\355\376" magic)
+               (regexp-match #rx#"^\317\372\355\376" magic))
            (let ([temp (format "~a-temp-for-install"
                                (regexp-replace* #rx"/" file "_"))])
              (with-handlers ([exn? (lambda (e) (delete-file temp) (raise e))])
@@ -194,12 +195,12 @@
            (fix-script file)]
           [else (error (format "unknown executable: ~a" file))])))
 
-(define (fix-executables [binfiles #f])
-  (parameterize ([current-directory (dir: 'bin)])
+(define (fix-executables bindir librktdir [binfiles #f])
+  (parameterize ([current-directory bindir])
     (for ([f (in-list (or binfiles (ls)))] #:when (file-exists? f))
       (fix-executable f)))
   ;; fix the starter executable too
-  (parameterize ([current-directory (dir: 'librkt)])
+  (parameterize ([current-directory librktdir])
     (when (file-exists? "starter") (fix-executable "starter"))))
 
 ;; remove and record all empty dirs
@@ -278,14 +279,14 @@
        (apply make-path collectsdir "config" xs))
      (define (ftime file)
        (and (file-exists? file) (file-or-directory-modify-seconds file)))
-     (let* ([src (cpath "config.ss")]
-            [zo  (cpath "compiled" "config_ss.zo")]
-            ;; [dep (cpath "compiled" "config_ss.dep")] ; not needed
+     (let* ([src (cpath "config.rkt")]
+            [zo  (cpath "compiled" "config_rkt.zo")]
+            ;; [dep (cpath "compiled" "config_rkt.dep")] ; not needed
             [src-time (ftime src)]
             [zo-time  (ftime zo)])
        (printf "Rewriting configuration file at: ~a...\n" src)
        (parameterize ([current-namespace base-ns] ; to compile (see above)
-                      [current-library-collection-paths ; for configtab.ss
+                      [current-library-collection-paths ; for configtab.rkt
                        (list collectsdir)])
          (with-output-to-file src #:exists 'truncate/replace
            (lambda ()
@@ -300,7 +301,7 @@
              (printf "  (define absolute-installation? #t))\n")))
          ;; recompile & set times as if nothing happened (don't remove .dep)
          ;; this requires the file to look the same on all compilations, and
-         ;; configtab.ss generates bindings unhygienically for that reason.
+         ;; configtab.rkt generates bindings unhygienically for that reason.
          (when compile?
            (when src-time (file-or-directory-modify-seconds src src-time))
            (if (not zo-time)
@@ -405,7 +406,7 @@
     (when (and move? (not (null? (ls))))
       (error (format "leftovers in source tree: ~s" (ls))))
     ;; we need to know which files need fixing
-    (fix-executables binfiles)
+    (fix-executables (dir: 'bin) (dir: 'librkt) binfiles)
     (write-uninstaller)
     (write-config))
   (when move?
@@ -433,6 +434,7 @@
   (define origtree? (equal? "yes" (get-arg)))
   ;; grab paths before we change them
   (define bindir      (dir: 'bin))
+  (define librktdir   (dir: 'librkt))
   (define collectsdir (dir: 'collects))
   (define (remove-dest p)
     (let ([pfx (and (< destdirlen (string-length p))
@@ -444,7 +446,7 @@
   ;; no need to send an explicit binfiles argument -- this function is used
   ;; only when DESTDIR is present, so we're installing to a directory that
   ;; has only our binaries
-  (fix-executables)
+  (fix-executables bindir librktdir)
   (unless origtree? (write-config collectsdir)))
 
 ;; --------------------------------------------------------------------------
