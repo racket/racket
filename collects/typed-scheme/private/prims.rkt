@@ -39,7 +39,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
           (private internal)
 	  (except-in (utils utils tc-utils))
           (env type-name-env)
-          "type-contract.rkt"))
+          "type-contract.rkt"
+          "for-clauses.rkt"))
 
 (require (utils require-contract)
          "colon.rkt"
@@ -377,6 +378,35 @@ This file defines two sorts of primitives. All of them are provided into any mod
                 (stop? ret ...)
               c ...)
             ty))]))
+
+(define-for-syntax (define-for-variant name)
+  (lambda (stx)
+    (syntax-parse stx #:literals (:)
+      [(_ : ty
+          (clause:for-clause ...)
+          c:expr ...)
+       (quasisyntax/loc
+           stx
+         (ann (#,name
+               (clause.expand ... ...)
+               c ...)
+              ty))])))
+(define-syntax (define-for-variants stx)
+  (syntax-parse stx
+    [(_ (name untyped-name) ...)
+     (quasisyntax/loc
+         stx
+       (begin (define-syntax name (define-for-variant #'untyped-name)) ...))]))
+(define-for-variants
+  (for: for)
+  (for/list: for/list)
+  (for/hash: for/hash)
+  (for/hasheq: for/hasheq)
+  (for/hasheqv: for/hasheqv)
+  (for/and: for/and)
+  (for/or: for/or)
+  (for/first: for/first)
+  (for/last: for/last))
 
 (define-syntax (provide: stx)
   (syntax-parse stx
