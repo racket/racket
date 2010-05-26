@@ -26,6 +26,8 @@ AC_CONFIG_HEADERS([racket/mzconfig.h])
 
 AC_ARG_ENABLE(gracket, [  --enable-gracket        compile GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
 
+AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
+
 AC_ARG_ENABLE(gl,      [  --enable-gl             use OpenGL when available (enabled by default)])
 AC_ARG_ENABLE(xrender, [  --enable-xrender        use Xrender when available (enabled by default)])
 AC_ARG_ENABLE(xft,     [  --enable-xft            use Xft when available (enabled by default)])
@@ -279,6 +281,8 @@ show_explicitly_enabled()
 
 show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
 
+show_explicitly_disabled "${enable_docs}" "Documentation build"
+
 show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
@@ -381,6 +385,8 @@ CGC=cgc
 CGC_INSTALLED=cgc
 CGC_CAP_INSTALLED=CGC
 MAIN_VARIANT=3m
+
+INSTALL_SETUP_FLAGS=
 
 STRIP_DEBUG=":"
 
@@ -1356,6 +1362,13 @@ if test "${enable_libjpeg}" = "yes" ; then
   fi
 fi
 
+
+############## docs ################
+
+if test "${enable_docs}" = "no" ; then  
+  INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} -D"
+fi
+
 ############## libtool ################
 
 if test "${enable_shared}" = "yes" ; then
@@ -1541,6 +1554,8 @@ AC_SUBST(CGC)
 AC_SUBST(CGC_INSTALLED)
 AC_SUBST(CGC_CAP_INSTALLED)
 AC_SUBST(MAIN_VARIANT)
+
+AC_SUBST(INSTALL_SETUP_FLAGS)
 
 mk_needed_dir()
 {
