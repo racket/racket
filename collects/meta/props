@@ -1802,6 +1802,7 @@ path/s is either such a string or a list of them.
 "collects/tests/units/test-unit.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/unstable/byte-counting-port.rkt" responsible (jay)
 "collects/tests/unstable/generics.rkt" responsible (jay)
+"collects/tests/unstable/list.rkt" responsible (jay)
 "collects/tests/unstable/srcloc.rktl" responsible (cce) drdr:command-line (racket "-f" *)
 "collects/tests/utils" responsible (unknown)
 "collects/tests/utils/gui.rkt" drdr:command-line (gracket-text "-t" *)
