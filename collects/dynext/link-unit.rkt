@@ -140,7 +140,7 @@
 			    (format "-bE:~a/ext.exp" (include-dir))
 			    "-bnoentry")]
 	  [(parisc-hpux) (list "-b")]
-	  [(ppc-macosx ppc-darwin x86_64-macosx x86_86-darwin) mac-link-flags]
+	  [(ppc-macosx ppc-darwin x86_64-macosx x86_64-darwin) mac-link-flags]
           [(i386-macosx i386-darwin) (append mac-link-flags '("-m32"))]
 	  [(i386-cygwin) win-gcc-linker-flags]
 	  [else (list "-fPIC" "-shared")]))
