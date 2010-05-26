@@ -41,7 +41,7 @@ buildnotifyemail=""
 init_repo_vars() {
   # use this function to initialize these on remote builds too
   gitbranch="${RKTBRANCH:-master}"
-  svnipath="${PLTSVNIPATH:-trunk}"
+  svnipath="${RKTSVNIPATH:-trunk}"
 }
 init_repo_vars
 
@@ -55,7 +55,7 @@ dmgmachine="kauai"
 nsismachine="pitcairn"
 
 # list of environment variables that should be carried over to ssh jobs
-ssh_vars=(RKTBRANCH PLTSVNIPATH)
+ssh_vars=(RKTBRANCH RKTSVNIPATH)
 
 # Add stuff to be msetted later (when we have the `mset' function)
 declare -a initial_msets machines
@@ -115,8 +115,8 @@ hostname="${hostname%%.*}"
 # web directory for pre-prelease stuff on $workmachine (relative to $maindir)
 prewebdir="html"
 # directory for installation (relative to $maindir)
-installdir="plt"
-# directory in plt for build-related scripts (includes this script)
+installdir="racket"
+# directory in racket for build-related scripts (includes this script)
 scriptdir="collects/meta/build"
 # directory for internal stuff (relative to $maindir)
 internaldir="iplt"
@@ -148,7 +148,7 @@ htmlpatchscript="$scriptdir/patch-html"
 # sitemap materials
 sitemapdir="$scriptdir/sitemap"
 
-# platform-installer stuff, all relative the the plt tree
+# platform-installer stuff, all relative the the racket tree
 nsisdir="$scriptdir/nsis"
 unixinstallerdir="$scriptdir/unix-installer"
 unixpathcheckscript="$unixinstallerdir/check-install-paths"
@@ -166,15 +166,15 @@ stampfile="stamp"
 # directory for temporary stuff (absolute path) -- on all machines
 tmpdir="/tmp"
 # lockfile for this script
-lockfile="/tmp/plt-build-lock"
+lockfile="/tmp/racket-build-lock"
 # name for running this script remotely
-remotebuildscript="$tmpdir/build-plt"
+remotebuildscript="$tmpdir/build-racket"
 # full name for clean repository tgz file to transfer for distributed builds
 repotgz="$tmpdir/$cleantgz"
 # full name for full tgz file (with binaries etc)
 fulltgz="$tmpdir/$installdir-full.tgz"
 # log file name prefix for background jobs
-bglogfile="$tmpdir/plt-bg-log"
+bglogfile="$tmpdir/racket-bg-log"
 
 last_part() {
   echo "$*" | sed 's/.*[ -]//'
@@ -241,9 +241,9 @@ extra_description_of_platform() {
 }
 name_of_dist_package() {
   case "$1" in
-    ( "mz"   ) echo "MzScheme" ;;
-    ( "plt"  ) echo "PLT Scheme" ;;
-    ( "full" ) echo "PLT Scheme Full" ;;
+    ( "mz"   ) echo "Racket Textual" ;;
+    ( "plt"  ) echo "Racket" ;;
+    ( "full" ) echo "Racket Full" ;;
     ( * ) exit_error "Unknown package name for name_of_dist_package: \"$1\"" ;;
   esac
 }
@@ -305,12 +305,12 @@ explanation_of_installer_type() {
   case "$1" in
     ( "tgz"  ) echo "Unpack this file using" \
                     "\"gunzip <file> | tar xvf -\"." ;;
-    ( "dmg"  ) echo "Mount this disk image and copy the PLT folder to your" \
-                    "disk." ;;
+    ( "dmg"  ) echo "Mount this disk image and copy the Racket folder to" \
+                    "your disk." ;;
     ( "idmg" ) echo "Some browsers will automatically mount & copy the" \
-                    "\"PLT Scheme\" folder to your desktop; if yours" \
-                    "does not, mount the disk and copy it yourself." ;;
-    ( "zip"  ) echo "Use unzip to extract the PLT folder to your disk." ;;
+                    "\"Racket\" folder to your desktop; if yours does not," \
+                    "mount the disk and copy it yourself." ;;
+    ( "zip"  ) echo "Use unzip to extract the Racket folder to your disk." ;;
     ( "sh"   ) echo "Execute this file with \"sh <file>\"," \
                     "and follow the instructions." ;;
     ( "exe"  ) echo "This is a standard Windows installer." ;;
@@ -319,10 +319,10 @@ explanation_of_installer_type() {
   esac
 }
 
-# This is for running mzscheme scripts, unrelated to the build itself
+# This is for running racket scripts, unrelated to the build itself
 export PLTHOME="$maindir/$installdir" \
        PLT_EXTENSION_LIB_PATHS="" \
-       PLTPLANETDIR="/tmp/plt-build-planet"
+       PLTPLANETDIR="/tmp/racket-build-planet"
 export PATH="$PLTHOME/bin:$PATH"
 unset PLTCOLLECTS; export PLTCOLLECTS
 
@@ -801,7 +801,7 @@ _timeout_run() { # first input is the timeout
 Xvncpid=""
 Xwmpid=""
 _start_xvnc() {
-  local xvnclog="$tmpdir/plt-xvnc-log"
+  local xvnclog="$tmpdir/racket-xvnc-log"
   show "Starting Xvnc (logfile at \"$xvnclog\")"
   # Create Xauth cookie
   cookie="`mcookie`"
@@ -811,7 +811,7 @@ _start_xvnc() {
   Xvnc "$DISPLAY" \
     -rfbport 6565 \
     -localhost \
-    -desktop "PLT-Session" \
+    -desktop "Racket-Session" \
     -geometry 1024x768 \
     -depth 16 \
     -httpPort=0 \
@@ -1046,7 +1046,7 @@ MAIN_BUILD() {
     show "Creating archive"
     git archive --format=tar "$gitbranch" | gzip > "$repotgz" \
       || exit_error "Could not create archive"
-    git archive --format=tar --prefix=plt/ "$gitbranch" \
+    git archive --format=tar --prefix=racket/ "$gitbranch" \
     | gzip > "$maindir/$cleantgz" \
       || exit_error "Could not create archive"
     _cd "$maindir"
@@ -1238,7 +1238,7 @@ DO_BUILD() { # inputs -- releasing
   elif [[ "$(( $RANDOM % 2 ))" = "0" ]]; then test_mode="rnd";
   fi;
   separator "${machine}(${platform}) testing Racket ($test_mode)"
-  local testdir="$tmpdir/mztests"
+  local testdir="$tmpdir/racket-tests"
   _rmcd "$testdir"
 
   local _exe _jit exe flags
@@ -1300,7 +1300,7 @@ DO_BUILD() { # inputs -- releasing
       # copy the installation to a backup directory, leaving one
       # backup of the old backup tree if it was there (this is used on
       # the build machine, so there's an updated copy of the tree at
-      # ~scheme/plt); the main work directory is kept the same.
+      # ~scheme/racket); the main work directory is kept the same.
       if [[ -e "$installdir-backup" ]]; then _rm "$installdir-backup"; fi
       if [[ -e "$installdir" ]]; then _mv "$installdir" "$installdir-backup"; fi
       _mv "$installdir-new" "$installdir"
@@ -1328,9 +1328,9 @@ build_w32step() { # inputs: type, name, [args...]
                   ;;
     ( "NMAKE"   ) _run "$NMAKE" "$@"
                   ;;
-    ( "MZCGC"   ) _run "$PLTHOME/RacketCGC.exe" "$@"
+    ( "RKTCGC"  ) _run "$PLTHOME/RacketCGC.exe" "$@"
                   ;;
-    ( "MZ"      ) # prefer using no-suffix, then 3m, and then cgc
+    ( "RKT"     ) # prefer using no-suffix, then 3m, and then cgc
                   # (needed because cgc is used to build 3m)
                   local E="$PLTHOME/Racket"
                   if   [[ -x "${E}.exe"    ]]; then _run "${E}.exe" "$@"
@@ -1387,21 +1387,22 @@ DO_WIN32_BUILD() {
   separator "win32: Full build"
   build_w32step VSNET "racket"
   build_w32step VSNET "gracket"
-  _cd "$PLTHOME/src/worksp/gc2"; build_w32step MZ "3M" make.ss
+  _cd "$PLTHOME/src/worksp/gc2"; build_w32step RKT "3M" make.ss
 
   _cd "$PLTHOME"
   build_w32step VSNET "mzstart"
   build_w32step VSNET "mrstart"
 
   separator "win32: Building libraries"
-  _cd "$PLTHOME"; build_w32step MZ "mzc" -l- setup -Dl compiler
+  _cd "$PLTHOME"
+  build_w32step RKT "compiler" -N raco -l- raco setup -Dl compiler
 
   build_w32step VSNET3M "mzcom"
   build_w32step VSNET3M "libmysterx"
   # _cd "$PLTHOME/src/srpersist"
   # build_w32step NMAKE "srpersist" /f srpersist.mak "install"
 
-  _cd "$PLTHOME"; build_w32step MZ "raco setup" $SETUP_ARGS
+  _cd "$PLTHOME"; build_w32step RKT "raco setup" $SETUP_ARGS
 
   separator "win32: Building Cygwin libreries"
   _mcd "$PLTHOME/src/build"
@@ -1420,7 +1421,7 @@ DO_WIN32_BUILD() {
   # _cp "mzdynb.obj" "mzdynb.def" "$PLTHOME/lib/bcc"
 
   _cd "$PLTHOME"
-  build_w32step MZ "winvers" -l setup/winvers; sleep 240
+  build_w32step RKT "winvers" -l setup/winvers; sleep 240
 
 }
 
@@ -1436,7 +1437,7 @@ BUILD_DOCS_AND_PDFS() {
   html_table_begin
   {
     html_file_row "html" \
-      "html files for on-line browsing (same as plt/collecs/doc)"
+      "html files for on-line browsing (same as racket/collecs/doc)"
     _rm "html"
     _cp -r "$workdir/$installdir/doc" "html"
   }
@@ -1539,7 +1540,7 @@ BUILD_BUNDLES() {
 
 # platform-specific installer makers:
 # $1 is input file, $2 is the output (without suffix)
-# $3 is the package name (mz/plt), $4 is the type (bin/src)
+# $3 is the package name (textual/racket), $4 is the type (bin/src)
 # $5 is the platform name (unix/mac/win for src distributions)
 
 #----------------------------------------
@@ -1729,9 +1730,9 @@ tgz_to_exe() {
     fi
     local dname
     case "$pname" in
-      ( "plt"  ) dname="PLT"      ;;
-      ( "mz"   ) dname="MzScheme" ;;
-      ( "full" ) dname="PLT-FULL" ;;
+      ( "mz"   ) dname="Racket-Textual" ;;
+      ( "plt"  ) dname="Racket"         ;;
+      ( "full" ) dname="Racket-Full"    ;;
       ( * ) exit_error "Unknown package name for exe installer: \"$pname\"" ;;
     esac
     if [[ "$releasing" != "yes" ]]; then
@@ -1786,7 +1787,7 @@ do_installers_page_body() { # input: selector-html table-html
       # another case that matches full-...-src and uses the clean tgz
       file="../$cleantgz"
       fsize="`get_first du -h \"$file\"`"
-      expl="This is a gzipped-tarball of the full PLT sources,"
+      expl="This is a gzipped-tarball of the full Racket sources,"
       expl="$expl for all platforms."
       echo "    else if (/^full-.*-src-*/.test(d))" \
                   "{ t = '$file'; c = '$file ($fsize)\n$expl' }"
@@ -1913,20 +1914,20 @@ BUILD_INSTALLERS() {
 
   _cd "$maindir/$instdir"
   show "Making the distributions page"
-  _rm "$tmpdir/plt-tmp-selector" "$tmpdir/plt-tmp-table"
-  do_installers_page_body "$tmpdir/plt-tmp-selector" "$tmpdir/plt-tmp-table"
+  _rm "$tmpdir/rkt-tmp-selector" "$tmpdir/rkt-tmp-table"
+  do_installers_page_body "$tmpdir/rkt-tmp-selector" "$tmpdir/rkt-tmp-table"
   # selector page
   html_begin "Installers"
   html_content_begin
-  html_show -f "$tmpdir/plt-tmp-selector"
+  html_show -f "$tmpdir/rkt-tmp-selector"
   html_content_end
   html_end
   # static table page
   html_begin "Installers (static)" "table.html"
   html_content_begin
   html_table_begin "all"
-  html_show -f "$tmpdir/plt-tmp-table"
-  _rm "$tmpdir/plt-tmp-selector" "$tmpdir/plt-tmp-table"
+  html_show -f "$tmpdir/rkt-tmp-table"
+  _rm "$tmpdir/rkt-tmp-selector" "$tmpdir/rkt-tmp-table"
   html_table_end
   html_content_end
   html_end
@@ -1986,7 +1987,7 @@ BUILD_WEB() {
 
   _mcd "$maindir/$w"
 
-  html_begin "PLT Nightly Builds"
+  html_begin "Racket Nightly Builds"
   html_content_begin
   html_table_begin
   #----
@@ -2054,7 +2055,7 @@ BUILD_WEB() {
     separator "Creating a site-map"
     _cd "$maindir/$w"
     _run "$PLTHOME/$sitemapdir/sitemap_gen.py" \
-         --config="$PLTHOME/$sitemapdir/plt-pre.xml" \
+         --config="$PLTHOME/$sitemapdir/rkt-pre.xml" \
            > /dev/null
   fi
 
