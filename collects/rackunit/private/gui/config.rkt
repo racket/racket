@@ -14,11 +14,11 @@
 ;; Some of these are obsolete, given the preferences above.
 
 (define DETAILS-CANVAS-INIT-WIDTH 400)
-(define FRAME-LABEL "RacUnit")
+(define FRAME-LABEL "RackUnit")
 (define FRAME-INIT-HEIGHT 400)
 (define TREE-INIT-WIDTH 240)
 (define TREE-COLORIZE-CASES #t)
-(define DIALOG-ERROR-TITLE "RacUnit: Error")
+(define DIALOG-ERROR-TITLE "RackUnit: Error")
 (define STATUS-SUCCESS 'success)
 (define STATUS-FAILURE 'failure)
 (define STATUS-ERROR 'error)

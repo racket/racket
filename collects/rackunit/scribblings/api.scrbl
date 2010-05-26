@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "base.rkt")
 
-@title[#:tag "api"]{RacUnit API}
+@title[#:tag "api"]{RackUnit API}
 
 @defmodule[rackunit
   #:use-sources (rackunit)]

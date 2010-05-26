@@ -1,9 +1,9 @@
 #lang scribble/doc
 @(require "base.rkt")
 
-@title{Overview of RacUnit}
+@title{Overview of RackUnit}
 
-There are three basic data types in RacUnit:
+There are three basic data types in RackUnit:
 
 @itemize[
 

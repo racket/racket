@@ -48,5 +48,5 @@ file.  The after action deletes it.
 This somewhat curious macro evaluates the given tests in a
 context where @racket[current-test-case-around] is
 parameterized to @racket[test-suite-test-case-around].  This
-has been useful in testing RacUnit.  It might be useful
+has been useful in testing RackUnit.  It might be useful
 for you if you create test cases that create test cases.}

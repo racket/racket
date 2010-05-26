@@ -1,10 +1,10 @@
 #lang scribble/doc
 @(require "base.rkt")
 
-@title[#:tag "philosophy"]{The Philosophy of RacUnit}
+@title[#:tag "philosophy"]{The Philosophy of RackUnit}
 
-RacUnit is designed to allow tests to evolve in step with
-the evolution of the program under testing.  RacUnit
+RackUnit is designed to allow tests to evolve in step with
+the evolution of the program under testing.  RackUnit
 scales from the unstructed checks suitable for simple
 programs to the complex structure necessary for large
 projects.
@@ -25,9 +25,9 @@ checking are of the form:
   (equal? (length '(a b)) 2)
 ]
 
-RacUnit directly supports this style of testing.  A check
+RackUnit directly supports this style of testing.  A check
 on its own is a valid test.  So the above examples may be
-written in RacUnit as:
+written in RackUnit as:
 
 @racketblock[
   (check-equal? (length null) 0)
@@ -35,7 +35,7 @@ written in RacUnit as:
   (check-equal? (length '(a b)) 2)
 ]
 
-Simple programs now get all the benefits of RacUnit with
+Simple programs now get all the benefits of RackUnit with
 very little overhead.
 
 There are limitations to this style of testing that more
@@ -45,7 +45,7 @@ it does not make sense to evaluate some expressions if
 earlier ones have failed.  This type of program needs a way
 to group expressions so that a failure in one group causes
 evaluation of that group to stop and immediately proceed to
-the next group.  In RacUnit all that is required is to
+the next group.  In RackUnit all that is required is to
 wrap a @racket[test-begin] expression around a group of
 expressions:
 
@@ -62,7 +62,7 @@ be evaluated.
 
 Notice that all the previous tests written in the simple
 style are still valid.  Introducing grouping is a local
-change only.  This is a key feature of RacUnit's support
+change only.  This is a key feature of RackUnit's support
 for the evolution of the program.
 
 The programmer may wish to name a group of tests.  This is
@@ -79,7 +79,7 @@ Most programs will stick with this style. However,
 programmers writing very complex programs may wish to
 maintain separate groups of tests for different parts of the
 program, or run their tests in different ways to the normal
-RacUnit manner (for example, test results may be logged
+RackUnit manner (for example, test results may be logged
 for the purpose of improving software quality, or they may
 be displayed on a website to indicate service quality). For
 these programmers it is necessary to delay the execution of
@@ -104,15 +104,15 @@ outside the suite continue to evaluate as before.
 @section{Historical Context}
 
 Most testing frameworks, including earlier versions of
-RacUnit, support only the final form of testing. This is
+RackUnit, support only the final form of testing. This is
 likely due to the influence of the SUnit testing framework,
-which is the ancestor of RacUnit and the most widely used
+which is the ancestor of RackUnit and the most widely used
 frameworks in Java, .Net, Python, and Ruby, and many other
 languages. That this is insufficient for all users is
 apparent if one considers the proliferation of ``simpler''
 testing frameworks in Racket such as SRFI-78, or the
 practice of beginner programmers. Unfortunately these
 simpler methods are inadequate for testing larger
-systems. To the best of my knowledge RacUnit is the only
+systems. To the best of my knowledge RackUnit is the only
 testing framework that makes a conscious effort to support
 the testing style of all levels of programmer.

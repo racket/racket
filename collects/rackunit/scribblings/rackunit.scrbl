@@ -1,12 +1,12 @@
 #lang scribble/doc
 @(require "base.rkt")
 
-@title{@bold{RacUnit}: Unit Testing for Racket}
+@title{@bold{RackUnit}: Unit Testing for Racket}
 
 @author[(author+email "Noel Welsh" "noelwelsh@gmail.com")
         (author+email "Ryan Culpepper" "ryan_sml@yahoo.com")]
 
-RacUnit is a unit-testing framework for Racket.  It
+RackUnit is a unit-testing framework for Racket.  It
 is designed to handle the needs of all Racket programmers,
 from novices to experts.
 
