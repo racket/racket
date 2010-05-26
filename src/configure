@@ -749,6 +749,7 @@ CGC
 CGC_INSTALLED
 CGC_CAP_INSTALLED
 MAIN_VARIANT
+INSTALL_SETUP_FLAGS
 subdirs
 LIBOBJS
 LTLIBOBJS'
@@ -1336,6 +1337,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-gracket        compile GRacket as well as Racket (enabled by default)
+  --enable-docs           build docs on install (enabled by default)
   --enable-gl             use OpenGL when available (enabled by default)
   --enable-xrender        use Xrender when available (enabled by default)
   --enable-xft            use Xft when available (enabled by default)
@@ -1829,6 +1831,14 @@ else
 fi
 
 
+# Check whether --enable-docs was given.
+if test "${enable_docs+set}" = set; then
+  enableval=$enable_docs;
+else
+  enable_docs=yes
+fi
+
+
 # Check whether --enable-gl was given.
 if test "${enable_gl+set}" = set; then
   enableval=$enable_gl;
@@ -2246,6 +2256,8 @@ show_explicitly_enabled()
 
 show_explicitly_enabled "${enable_cgcdefault}" "CGC as default"
 
+show_explicitly_disabled "${enable_docs}" "Documentation build"
+
 show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
@@ -2348,6 +2360,8 @@ CGC=cgc
 CGC_INSTALLED=cgc
 CGC_CAP_INSTALLED=CGC
 MAIN_VARIANT=3m
+
+INSTALL_SETUP_FLAGS=
 
 STRIP_DEBUG=":"
 
@@ -11980,6 +11994,13 @@ fi
   fi
 fi
 
+
+############## docs ################
+
+if test "${enable_docs}" = "no" ; then
+  INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} -D"
+fi
+
 ############## libtool ################
 
 if test "${enable_shared}" = "yes" ; then
@@ -12061,6 +12082,8 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
+
 
 
 
@@ -13167,12 +13190,13 @@ CGC!$CGC$ac_delim
 CGC_INSTALLED!$CGC_INSTALLED$ac_delim
 CGC_CAP_INSTALLED!$CGC_CAP_INSTALLED$ac_delim
 MAIN_VARIANT!$MAIN_VARIANT$ac_delim
+INSTALL_SETUP_FLAGS!$INSTALL_SETUP_FLAGS$ac_delim
 subdirs!$subdirs$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 41; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 42; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

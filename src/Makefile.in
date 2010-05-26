@@ -54,7 +54,7 @@ both:
 
 # Install (common) ----------------------------------------
 
-SETUP_ARGS = -X "$(DESTDIR)$(collectsdir)" -N "raco setup" -l setup
+SETUP_ARGS = -X "$(DESTDIR)$(collectsdir)" -N "raco setup" -l- setup @INSTALL_SETUP_FLAGS@
 
 install:
 	$(MAKE) install-@MAIN_VARIANT@
