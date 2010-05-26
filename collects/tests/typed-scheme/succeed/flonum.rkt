@@ -5,7 +5,7 @@
  scheme/unsafe/ops)
 
 (: check (All (a) ((a a -> Boolean) a a -> Boolean)))
-;; Simple check function as RacUnit doesn't work in Typed Scheme (yet)
+;; Simple check function as RackUnit doesn't work in Typed Scheme (yet)
 (define (check f a b)
   (if (f a b)
       #t
