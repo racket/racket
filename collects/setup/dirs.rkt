@@ -180,7 +180,7 @@
                                        (build-path dir r)
                                        r)))
                            p)))]
-              [rel (get/set-dylib-path exe "PLT_M[rz]" #f)])
+              [rel (get/set-dylib-path exe "Racket" #f)])
          (cond
           [(not rel) #f] ; no framework reference found!?
           [(regexp-match
