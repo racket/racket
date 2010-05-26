@@ -152,7 +152,7 @@ sitemapdir="$scriptdir/sitemap"
 nsisdir="$scriptdir/nsis"
 unixinstallerdir="$scriptdir/unix-installer"
 unixpathcheckscript="$unixinstallerdir/check-install-paths"
-unixinstallerscript="$unixinstallerdir/plt-installer-header"
+unixinstallerscript="$unixinstallerdir/installer-header"
 
 # full clean tgz before building anything (relative to $maindir)
 cleantgz="${installdir}-clean-tree.tgz"
