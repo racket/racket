@@ -368,15 +368,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (do: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty 
-        ((var:annotated-name init (~optional step:expr #:defaults ([step #'var]))) ...) 
-        (stop?:expr (~optional (~seq finish0:expr finish:expr ...) #:defaults ([finish0 #'(void)] [(finish 1) '()])))
+        ((var:annotated-name rest ...) ...) 
+        (stop?:expr ret ...)
         c:expr ...)
      (syntax/loc
          stx
-       (let: doloop : ty ([var.name : var.ty init] ...)
-         (if stop?
-             (begin finish0 finish ...)
-             (begin c ... (doloop step ...)))))]))
+       (ann (do ((var.ann-name rest ...) ...)
+                (stop? ret ...)
+              c ...)
+            ty))]))
 
 (define-syntax (provide: stx)
   (syntax-parse stx
