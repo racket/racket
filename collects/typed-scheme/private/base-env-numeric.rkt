@@ -19,6 +19,8 @@
   (define-for-syntax binop 
     (lambda (t [r t])
       (t t . -> . r)))
+  (define-for-syntax rounder 
+    (cl->* (-> -ExactRational -Integer) (-> -Flonum -Flonum) (-> -Real -Real)))
   
   (define-for-syntax (unop t) (-> t t))
   
@@ -112,18 +114,10 @@
                  (-Real . -> . -ExactRational)
                  (N . -> . N))]
 
-[floor    (cl->*
-           (-> -ExactRational -Integer)
-           (-> -Flonum -Flonum)
-           (-> -Real -Real))]
-[ceiling  (cl->*
-           (-> -ExactRational -Integer)
-           (-> -Flonum -Flonum)
-           (-> -Real -Real))]
-[truncate (cl->*
-           (-> -ExactRational -Integer)
-           (-> -Flonum -Flonum)
-           (-> -Real -Real))]
+[floor rounder]
+[ceiling rounder]
+[truncate rounder]
+[round rounder]
 [make-rectangular (-Real -Real . -> . N)]
 [make-polar (-Real -Real . -> . N)]
 [real-part (N . -> . -Real)]
@@ -149,8 +143,6 @@
 [atan (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N) (-Real -Real . -> . N))]
 [gcd  (null -Integer . ->* . -Integer)]
 [lcm  (null -Integer . ->* . -Integer)]
-
-[round (-Real . -> . -Real)]
 
 ;; scheme/math
 
