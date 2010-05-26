@@ -1,13 +1,13 @@
-;; This file is used to move the PLT tree as part of a Unix sh-installer (when
-;; it works in unix-style mode) and similar situations.  When possible (`move'
-;; mode), this is done carefully (undoing changes if there is an error), and a
-;; plt-uninstall script is generated.  It is also used to change an already
-;; existing tree (eg, when DESTDIR is used) and to copy a tree (possibly part
-;; of `make install').  There is no good cmdline interface, since it is
-;; internal, and should be as independent as possible (it moves the collection
-;; tree).  Expects these arguments:
+;; This file is used to move the Racket tree as part of a Unix sh-installer
+;; (when it works in unix-style mode) and similar situations.  When possible
+;; (`move' mode), this is done carefully (undoing changes if there is an
+;; error), and a racket-uninstall script is generated.  It is also used to
+;; change an already existing tree (eg, when DESTDIR is used) and to copy a
+;; tree (possibly part of `make install').  There is no good cmdline interface,
+;; since it is internal, and should be as independent as possible (it moves the
+;; collection tree).  Expects these arguments:
 ;; * An operation name:
-;;   - `move': move a relative installation from `pltdir' to an absolute
+;;   - `move': move a relative installation from `rktdir' to an absolute
 ;;     installation in the given paths (used by the shell installers)
 ;;     (interactive, undo-on-error, create-uninstaller)
 ;;   - `copy': similar to `move', but copies instead of moving
@@ -18,7 +18,7 @@
 ;;     config.ss (used by `make install' to fix a DESTDIR) (requires exactly
 ;;     the same args as `make-install-copytree' (prefixed) and requires a
 ;;     DESTDIR setting)
-;; * pltdir: The source plt directory
+;; * rktdir: The source racket directory
 ;; * Path names that should be moved/copied (bin, collects, doc, lib, ...)
 
 #lang racket/base
@@ -30,9 +30,9 @@
   (begin0 (car args) (set! args (cdr args))))
 
 (define op (string->symbol (get-arg)))
-(define pltdir (get-arg))
+(define rktdir (get-arg))
 (define dirs (map (lambda (name) (list name (get-arg)))
-                  '(bin collects doc lib includeplt libplt man #|src|#)))
+                  '(bin collects doc lib includerkt librkt man #|src|#)))
 
 (define (dir: name)
   (cadr (or (assq name dirs) (error 'getdir "unknown dir name: ~e" name))))
@@ -199,7 +199,7 @@
     (for ([f (in-list (or binfiles (ls)))] #:when (file-exists? f))
       (fix-executable f)))
   ;; fix the starter executable too
-  (parameterize ([current-directory (dir: 'libplt)])
+  (parameterize ([current-directory (dir: 'librkt)])
     (when (file-exists "starter") (fix-executable "starter"))))
 
 ;; remove and record all empty dirs
@@ -239,7 +239,7 @@
    path-changes))
 
 (define (write-uninstaller)
-  (define uninstaller (make-path (dir: 'bin) "plt-uninstall"))
+  (define uninstaller (make-path (dir: 'bin) "racket-uninstall"))
   (printf "Writing uninstaller at: ~a...\n" uninstaller)
   (register-change! 'file uninstaller)
   (with-output-to-file uninstaller #:exists 'replace
@@ -294,8 +294,8 @@
              (printf "  (define doc-dir ~s)\n" (dir: 'doc))
              (when (eq? 'shared (system-type 'link)) ; never true for now
                (printf "  (define dll-dir ~s)\n" (dir: 'lib)))
-             (printf "  (define lib-dir ~s)\n" (dir: 'libplt))
-             (printf "  (define include-dir ~s)\n" (dir: 'includeplt))
+             (printf "  (define lib-dir ~s)\n" (dir: 'librkt))
+             (printf "  (define include-dir ~s)\n" (dir: 'includerkt))
              (printf "  (define bin-dir ~s)\n" (dir: 'bin))
              (printf "  (define absolute-installation? #t))\n")))
          ;; recompile & set times as if nothing happened (don't remove .dep)
@@ -381,7 +381,7 @@
 
 (define (move/copy-distribution move?)
   (define do-tree (move/copy-tree move?))
-  (current-directory pltdir)
+  (current-directory rktdir)
   (when (ormap (lambda (p) (regexp-match #rx"[.]so" p)) (ls "lib"))
     (error "Cannot handle distribution of shared-libraries (yet)"))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
@@ -390,8 +390,8 @@
     (do-tree "collects" 'collects)
     (do-tree "doc"      'doc #:missing 'skip) ; not included in text distros
     ;; (do-tree ??? 'lib) ; shared stuff goes here
-    (do-tree "include"  'includeplt)
-    (do-tree "lib"      'libplt)
+    (do-tree "include"  'includerkt)
+    (do-tree "lib"      'librkt)
     (do-tree "man"      'man)
     ;; (when (and (not (equal? (dir: 'src) "")) (directory-exists? "src"))
     ;;   (do-tree "src" 'src))
@@ -409,13 +409,13 @@
     (write-uninstaller)
     (write-config))
   (when move?
-    (current-directory (dirname pltdir))
-    (delete-directory pltdir)))
+    (current-directory (dirname rktdir))
+    (delete-directory rktdir)))
 
 (define (make-install-copytree)
   (define copytree (move/copy-tree #f))
   (define origtree? (equal? "yes" (get-arg)))
-  (current-directory pltdir)
+  (current-directory rktdir)
   (set! skip-filter ; skip all dot-names and compiled subdirs
         (lambda (p) (regexp-match? #rx"^(?:[.].*|compiled)$" (basename p))))
   (with-handlers ([exn? (lambda (e) (undo-changes) (raise e))])
