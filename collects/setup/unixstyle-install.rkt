@@ -200,7 +200,7 @@
       (fix-executable f)))
   ;; fix the starter executable too
   (parameterize ([current-directory (dir: 'librkt)])
-    (when (file-exists "starter") (fix-executable "starter"))))
+    (when (file-exists? "starter") (fix-executable "starter"))))
 
 ;; remove and record all empty dirs
 (define (remove-empty-dirs dir)
