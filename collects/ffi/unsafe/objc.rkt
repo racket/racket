@@ -83,7 +83,7 @@
   (case (string->symbol (path->string (system-library-subpath #f)))
     [(i386-macosx i386-darwin) '(1 2 4 8)]
     [(ppc-macosx ppc-darwin) '(1 2 3 4)]
-    [(x86_64-macosx x86_86-darwin) 
+    [(x86_64-macosx x86_64-darwin) 
      ;; Do we need more analysis for unaligned fields?
      '(1 2 3 4 5 6 7 8)]))
 
