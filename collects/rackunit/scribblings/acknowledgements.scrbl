@@ -3,7 +3,7 @@
 
 @title{Acknowlegements}
 
-The following people have contributed to RacUnit:
+The following people have contributed to RackUnit:
 
 @itemize[
   @item{Robby Findler pushed me to release version 3}
@@ -12,7 +12,7 @@ The following people have contributed to RacUnit:
   suggested renaming @racket[test/text-ui]}
 
   @item{Dave Gurnell reported a bug in check-not-exn and
-  suggested improvements to RacUnit}
+  suggested improvements to RackUnit}
 
   @item{Danny Yoo reported a bug in and provided a fix for
     trim-current-directory}
@@ -30,7 +30,7 @@ The following people have contributed to RacUnit:
   @item{Jose A. Ortega Ruiz alerted me a problem in the
     packaging system and helped fix it.}
 
-  @item{Sebastian H. Seidel provided help packaging RacUnit
+  @item{Sebastian H. Seidel provided help packaging RackUnit
     into a .plt}
 
   @item{Don Blaheta provided the method for grabbing line number

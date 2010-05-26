@@ -3,7 +3,7 @@
 
 @title[#:tag  "ui"]{User Interfaces}
 
-RacUnit provides a textual and a graphical user interface
+RackUnit provides a textual and a graphical user interface
 
 @section{Textual User Interface}
 
@@ -35,13 +35,13 @@ information.
 
 @defmodule[rackunit/gui]
 
-RacUnit also provides a GUI test runner, available from the
+RackUnit also provides a GUI test runner, available from the
 @racketmodname[rackunit/gui] module.
 
 @defproc[(test/gui [test (or/c test-case? test-suite?)] ...)
          any]{
 
-Creates a new RacUnit GUI window and runs each @racket[test]. The
+Creates a new RackUnit GUI window and runs each @racket[test]. The
 GUI is updated as tests complete.
 
 }
@@ -49,7 +49,7 @@ GUI is updated as tests complete.
 @defproc[(make-gui-runner)
          (-> (or/c test-case? test-suite?) ... any)]{
 
-Creates a new RacUnit GUI window and returns a procedure that, when
+Creates a new RackUnit GUI window and returns a procedure that, when
 applied, runs the given tests and displays the results in the GUI.
 
 }

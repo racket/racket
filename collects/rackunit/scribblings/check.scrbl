@@ -3,7 +3,7 @@
 
 @title{Checks}
 
-Checks are the basic building block of RacUnit.  A check
+Checks are the basic building block of RackUnit.  A check
 checks some condition.  If the condition holds the check
 evaluates to @racket[#t].  If the condition doesn't hold the
 check raises an instance of @racket[exn:test:check] with
@@ -16,7 +16,7 @@ their arguments.  You can use check as first class
 functions, though you will lose precision in the reported
 source locations if you do so.
 
-The following are the basic checks RacUnit provides.  You
+The following are the basic checks RackUnit provides.  You
 can create your own checks using @racket[define-check].
 
 @defproc[(check (op (-> any any any))

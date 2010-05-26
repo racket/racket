@@ -3,14 +3,14 @@
 
 @title[#:tag "running"]{Programmatically Running Tests and Inspecting Results}
 
-RacUnit provides an API for running tests, from which
+RackUnit provides an API for running tests, from which
 custom UIs can be created.
 
 @section{Result Types}
 
 @defstruct[(exn:test exn) ()]{
 
-The base structure for RacUnit exceptions.  You should
+The base structure for RackUnit exceptions.  You should
 never catch instances of this type, only the subtypes
 documented below.}
 
@@ -187,7 +187,7 @@ recorded, and so on.  To do so the functions that run the
 test cases need to know what type the test case has, and
 hence is is necessary to provide this information.
 
-If you've made it this far you truly are a master RacUnit
+If you've made it this far you truly are a master RackUnit
 hacker.  As a bonus prize we'll just mention that the code
 in hash-monad.rkt and monad.rkt might be of interest for
 constructing user interfaces.  The API is still in flux, so
