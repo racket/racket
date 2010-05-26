@@ -12,8 +12,8 @@
 ;;     (interactive, undo-on-error, create-uninstaller)
 ;;   - `copy': similar to `move', but copies instead of moving
 ;;   - `make-install-copytree': copies some toplevel directories, skips ".*"
-;;     and compiled subdirs, and rewrites "config.ss", but no uninstaller (used
-;;     by `make install') (requires an additional `origtree' argument)
+;;     and "compiled" subdirs, and rewrites "config.ss", but no uninstaller
+;;     (used by `make install') (requires an additional `origtree' argument)
 ;;   - `make-install-destdir-fix': fixes paths in binaries, laucnhers, and
 ;;     config.ss (used by `make install' to fix a DESTDIR) (requires exactly
 ;;     the same args as `make-install-copytree' (prefixed) and requires a
@@ -21,7 +21,7 @@
 ;; * pltdir: The source plt directory
 ;; * Path names that should be moved/copied (bin, collects, doc, lib, ...)
 
-#lang scheme/base
+#lang racket/base
 
 (define args (vector->list (current-command-line-arguments)))
 
@@ -101,7 +101,7 @@
 (define skip-filter (lambda (p) #f))
 
 ;; copy a file or a directory (recursively), preserving time stamps
-;; (mzscheme's copy-file preservs permission bits)
+;; (racket's copy-file preservs permission bits)
 (define (cp src dst)
   (let loop ([src src] [dst dst])
     (let ([time! (lambda ()
@@ -179,7 +179,7 @@
                   (regexp-replace* #rx"[\"`'$\\]" (dir: 'bin) "\\\\&"))
           (write-bytes buf (current-output-port) (cdadr m))))))
   (let ([magic (with-input-from-file file (lambda () (read-bytes 10)))])
-    (cond [(or (regexp-match #rx#"^\177ELF" magic) 
+    (cond [(or (regexp-match #rx#"^\177ELF" magic)
                (regexp-match #rx#"^\316\372\355\376" magic))
            (let ([temp (format "~a-temp-for-install"
                                (regexp-replace* #rx"/" file "_"))])
@@ -194,11 +194,13 @@
            (fix-script file)]
           [else (error (format "unknown executable: ~a" file))])))
 
-(define (fix-executables bindir . binfiles)
-  (parameterize ([current-directory bindir])
-    (let ([binfiles (if (pair? binfiles) (car binfiles) (ls))])
-      (for-each (lambda (f) (when (file-exists? f) (fix-executable f)))
-                binfiles))))
+(define (fix-executables [binfiles #f])
+  (parameterize ([current-directory (dir: 'bin)])
+    (for ([f (in-list (or binfiles (ls)))] #:when (file-exists? f))
+      (fix-executable f)))
+  ;; fix the starter executable too
+  (parameterize ([current-directory (dir: 'libplt)])
+    (when (file-exists "starter") (fix-executable "starter"))))
 
 ;; remove and record all empty dirs
 (define (remove-empty-dirs dir)
@@ -386,7 +388,7 @@
     (define binfiles (ls "bin")) ; see below
     (do-tree "bin"      'bin)
     (do-tree "collects" 'collects)
-    (do-tree "doc"      'doc #:missing 'skip) ; not included in mz distros
+    (do-tree "doc"      'doc #:missing 'skip) ; not included in text distros
     ;; (do-tree ??? 'lib) ; shared stuff goes here
     (do-tree "include"  'includeplt)
     (do-tree "lib"      'libplt)
@@ -403,7 +405,7 @@
     (when (and move? (not (null? (ls))))
       (error (format "leftovers in source tree: ~s" (ls))))
     ;; we need to know which files need fixing
-    (fix-executables (dir: 'bin) binfiles)
+    (fix-executables binfiles)
     (write-uninstaller)
     (write-config))
   (when move?
@@ -442,7 +444,7 @@
   ;; no need to send an explicit binfiles argument -- this function is used
   ;; only when DESTDIR is present, so we're installing to a directory that
   ;; has only our binaries
-  (fix-executables bindir)
+  (fix-executables)
   (unless origtree? (write-config collectsdir)))
 
 ;; --------------------------------------------------------------------------
