@@ -621,7 +621,10 @@
                                             ;; Have a relative mapping?
                                             (let-values ([(a) (if rel-to
                                                                   (assq (resolved-module-path-name rel-to) mapping-table)
-                                                                  #f)])
+                                                                  #f)]
+                                                         [(ss->rkt)
+                                                          (lambda (s)
+                                                            (regexp-replace #rx"[.]ss$" s ".rkt"))])
                                               (if a
                                                   (let-values ([(a2) (assoc name (cadr a))])
                                                     (if a2
@@ -639,20 +642,20 @@
                                                                           (if (null? (cddr name))
                                                                               (if (regexp-match #rx"^[^/]*[.]" (cadr name))
                                                                                   ;; mzlib
-                                                                                  (string-append "mzlib/" (cadr name))
+                                                                                  (string-append "mzlib/" (ss->rkt (cadr name)))
                                                                                   ;; new-style
                                                                                   (if (regexp-match #rx"^[^/.]*$" (cadr name))
-                                                                                      (string-append (cadr name) "/main.ss")
+                                                                                      (string-append (cadr name) "/main.rkt")
                                                                                       (if (regexp-match #rx"^[^.]*$" (cadr name))
                                                                                           ;; need a suffix:
-                                                                                          (string-append (cadr name) ".ss")
-                                                                                          (cadr name))))
+                                                                                          (string-append (cadr name) ".rkt")
+                                                                                          (ss->rkt (cadr name)))))
                                                                               ;; old-style multi-string
                                                                               (string-append (apply string-append
                                                                                                     (map (lambda (s)
                                                                                                            (string-append s "/"))
                                                                                                          (cddr name)))
-                                                                                             (cadr name)))
+                                                                                             (ss->rkt (cadr name))))
                                                                           (if (eq? 'planet (car name))
                                                                               (if (null? (cddr name))
                                                                                   ;; need to normalize:
@@ -673,7 +676,7 @@
                                                                                                               (if (suffix-after . <= . 0)
                                                                                                                   (if (regexp-match? #rx"[.]" s)
                                                                                                                       s
-                                                                                                                      (string-append s ".ss"))
+                                                                                                                      (string-append s ".rkt"))
                                                                                                                   s)))))]
                                                                                                     [(last-of)
                                                                                                      (lambda (l)
@@ -689,8 +692,8 @@
                                                                                         (let-values ([(vparts) (split (cadr parts) #rx":" +inf.0)])
                                                                                           (cons 'planet
                                                                                                 (cons (if (null? (cddr parts))
-                                                                                                          "main.ss"
-                                                                                                          (last-of parts))
+                                                                                                          "main.rkt"
+                                                                                                          (ss->rkt (last-of parts)))
                                                                                                       (cons
                                                                                                        (cons 
                                                                                                         (car parts) 
@@ -743,6 +746,19 @@
                                                           ;; Let default handler try:
                                                           (orig name rel-to stx load?))))))))))])])
                (current-module-name-resolver embedded-resolver))))))
+
+    (define (ss<->rkt path)
+      (cond
+       [(regexp-match? #rx#"[.]ss$" path)
+        (ss<->rkt (path-replace-suffix path #".rkt"))]
+       [(regexp-match? #rx#"[.]rkt$" path)
+        (if (file-exists? path)
+            path
+            (let ([p2 (path-replace-suffix path #".ss")])
+              (if (file-exists? path)
+                  p2
+                  path)))]
+       [else path]))
     
     ;; Write a module bundle that can be loaded with 'load' (do not embed it
     ;; into an executable). The bundle is written to the current output port.
@@ -757,7 +773,7 @@
                                    (normalize f)))]
              [files (map resolve-one-path module-paths)]
              [collapse-one (lambda (mp)
-                             (collapse-module-path mp (build-path (current-directory) "dummy.ss")))]
+                             (collapse-module-path mp (build-path (current-directory) "dummy.rkt")))]
              [collapsed-mps (map collapse-one module-paths)]
              [prefix-mapping (map (lambda (f m)
                                     (cons f (let ([p (car m)])
@@ -811,7 +827,7 @@
                 (if (null? runtimes)
                     #f
                     (let* ([table-sym (module-path-index-resolve 
-                                       (module-path-index-join '(lib "runtime-path-table.ss" "mzlib" "private")
+                                       (module-path-index-join '(lib "runtime-path-table.rkt" "mzlib" "private")
                                                                #f))]
                            [table-path (resolved-module-path-name table-sym)])
                       (assoc (normalize table-path) l)))])
@@ -887,14 +903,15 @@
                                                                                            p
                                                                                            (let ([s (regexp-split #rx"/" (cadr p))])
                                                                                              (if (null? (cdr s))
-                                                                                                 `(lib "main.ss" ,(cadr p))
+                                                                                                 `(lib "main.rkt" ,(cadr p))
                                                                                                  (let ([s (reverse s)])
                                                                                                    `(lib ,(car s) ,@(reverse (cdr s)))))))
                                                                                        p)])
-                                                                            (build-path (if (null? (cddr p))
-                                                                                            (collection-path "mzlib")
-                                                                                            (apply collection-path (cddr p)))
-                                                                                        (cadr p)))]
+                                                                            (ss<->rkt
+                                                                             (build-path (if (null? (cddr p))
+                                                                                             (collection-path "mzlib")
+                                                                                             (apply collection-path (cddr p)))
+                                                                                         (cadr p))))]
                                                                          [else p])])
                                                                  (and p
                                                                       (path->bytes 

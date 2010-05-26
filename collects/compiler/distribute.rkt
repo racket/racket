@@ -234,13 +234,13 @@
 	      (build-path exe-dir dll)))))
 
   (define (copy-framework name 3m? lib-dir)
-    (let* ([fw-name (format "PLT_~a.framework" name)]
+    (let* ([fw-name (format "~a.framework" name)]
 	   [sub-dir (build-path fw-name "Versions"
 				(if 3m?
 				    (format "~a_3m" (version))
 				    (version)))])
       (make-directory* (build-path lib-dir sub-dir))
-      (let* ([fw-name (build-path sub-dir (format "PLT_~a" name))]
+      (let* ([fw-name (build-path sub-dir (format "~a" name))]
 	     [dll-dir (find-framework fw-name)])
 	(copy-file* (build-path dll-dir fw-name)
 		    (build-path lib-dir fw-name))
