@@ -1,2 +1,2 @@
 
-(module destruct "wrap.ss")
+(module destruct "wrap.ss" r5rs)

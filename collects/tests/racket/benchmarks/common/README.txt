@@ -29,8 +29,6 @@ benchmark wasn't run due to an implementation limitation. The
 <cpu-msec> and <compile-msec> parts are #f only when the benchmark
 wasn't run.
 
-All benchmarks must be run from the directory containing this file.
-
 Most bechmarks were obtained from
  http://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/lang/scheme/code/bench/gabriel/
  http://www.ccs.neu.edu/home/will/GC/sourcecode.html

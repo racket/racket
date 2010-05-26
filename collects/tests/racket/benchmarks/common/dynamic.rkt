@@ -1,2 +1,2 @@
 
-(module dynamic "wrap.ss")
+(module dynamic "wrap.ss" r5rs)

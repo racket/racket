@@ -1469,94 +1469,30 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/beginner-abbr.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/beginner.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/benchmarks/common/auto.rkt" drdr:command-line (racket * "--" "racket" "ctak")
-"collects/tests/racket/benchmarks/common/conform.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/cpstack-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/cpstack-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/cpstack-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/ctak-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/ctak-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/ctak-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/ctak.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/dderiv-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/dderiv-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/dderiv-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/deriv-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/deriv-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/deriv-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/destruct.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/div-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/div-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/div-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/div.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/dynamic.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/dynamic2.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/fft-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/fft-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/fft-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/graphs-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/graphs-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/graphs-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/graphs.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/lattice.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/lattice2-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/lattice2-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/lattice2-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/maze.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/maze2.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/mazefun-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/mazefun-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/mazefun-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/mazefun.rkt" drdr:command-line (mzc *)
 "collects/tests/racket/benchmarks/common/mk-bigloo.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/mk-chicken.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/mk-gambit.rktl" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nestedloop-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nestedloop-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/nestedloop-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nestedloop.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/nfa-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nfa-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/nfa-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nothing-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nothing-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/nothing-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nqueens-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nqueens-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/nqueens-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/nqueens.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/paraffins-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/paraffins-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/paraffins-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/paraffins.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/peval.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/puzzle-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/puzzle-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/puzzle-typed.rktl" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/r5rs-wrap.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/racket/benchmarks/common/scheme.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/scheme2.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/sort1.rkt" drdr:command-line #f
-"collects/tests/racket/benchmarks/common/tak-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/tak-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/tak-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/tak.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/takl-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/takl-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/takl-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/takl.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/takr-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/takr-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/takr-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/takr.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/takr2-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/takr2-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/takr2-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/takr2.rkt" drdr:command-line (mzc *)
-"collects/tests/racket/benchmarks/common/triangle-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/triangle-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/common/triangle-typed.rktl" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/wrap-typed-non-optimizing.rkt" responsible (stamourv) drdr:command-line #f
-"collects/tests/racket/benchmarks/common/wrap-typed-optimizing.rkt" responsible (stamourv) drdr:command-line #f
 "collects/tests/racket/benchmarks/mz/expand-class.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/benchmarks/mz/parsing.rktl" drdr:command-line (gracket "-f" *)
 "collects/tests/racket/benchmarks/mz/redsem.rktl" drdr:command-line (racket "-f" * "--" "--skip-struct-test")

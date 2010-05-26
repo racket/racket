@@ -1,2 +1,2 @@
 
-(module conform "wrap.ss")
+(module conform "wrap.ss" r5rs)

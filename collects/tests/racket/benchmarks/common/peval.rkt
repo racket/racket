@@ -1,2 +1,2 @@
 
-(module peval "wrap.ss")
+(module peval "wrap.ss" r5rs)
