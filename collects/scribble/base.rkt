@@ -226,7 +226,9 @@
   (case-lambda
    [(doc s)
     (if doc
-        (list (module-path-prefix->string doc) s) 
+        (if (list? s)
+            (cons (module-path-prefix->string doc) s)
+            (list (module-path-prefix->string doc) s))
         s)]
    [(doc prefix s)
     (doc-prefix doc (if prefix

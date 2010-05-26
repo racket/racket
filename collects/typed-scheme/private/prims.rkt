@@ -79,7 +79,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
              #:with opt #'(#:name-exists)))
   (syntax-parse stx
-    [(_ lib (~or sc:simple-clause strc:struct-clause oc:opaque-clause) ...)
+    [(_ lib:expr (~or sc:simple-clause strc:struct-clause oc:opaque-clause) ...)
+     (unless (< 0 (length (syntax->list #'(sc ... strc ... oc ...))))
+       (raise-syntax-error #f "at least one specification is required" stx))
      #'(begin 
 	 (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
 	 (require/typed sc.nm sc.ty lib) ... 

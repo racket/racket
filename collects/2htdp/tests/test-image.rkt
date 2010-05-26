@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 #|
 ;; snippet of code for experimentation
-#lang scheme/gui
+#lang racket/gui
 (require 2htdp/image
          lang/posn
          (only-in lang/htdp-advanced equal~?))
@@ -42,14 +42,14 @@
          ; "../private/img-err.ss"
          "../../mrlib/private/image-core-bitmap.ss"
          lang/posn
-         scheme/math
-         scheme/class
-         scheme/gui/base
+         racket/math
+         racket/class
+         racket/gui/base
          rackunit
          (prefix-in 1: htdp/image)
          (only-in lang/htdp-advanced equal~?))
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 (define-syntax (test stx)
   (syntax-case stx ()
     [(test a => b)

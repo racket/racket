@@ -504,6 +504,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         scheme_log_abort("cannot copy uninterned symbol");
         abort();
       } else
+        scheme_log_abort("NEED SERIALZATION WORK");
         new_so = so;
       break;
     case scheme_pair_type:
@@ -647,6 +648,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   a[0] = scheme_places_deep_copy(place_data->module);
   a[1] = scheme_places_deep_copy(place_data->function);
+  a[1] = scheme_intern_exact_symbol(SCHEME_SYM_VAL(a[1]), SCHEME_SYM_LEN(a[1]));
   if (!SAME_TYPE(SCHEME_TYPE(place_data->channel), scheme_place_bi_channel_type)) {
     channel = scheme_places_deep_copy(place_data->channel);
   }
@@ -657,6 +659,13 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
 
   mzrt_sema_post(place_data->ready);
   place_data = NULL;
+# ifdef MZ_PRECISE_GC
+  /* this prevents a master collection attempt from deadlocking with the 
+     place_data->ready semaphore above */
+  GC_allow_master_gc_check();
+# endif
+
+
   /* at point point, don't refer to place_data or its content
      anymore, because it's allocated in the other place */
 
@@ -689,13 +698,31 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   return (void*) rc;
 }
 
-Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so) {
-# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  void *return_payload;
-  return_payload = scheme_master_fast_path(5, so);
-  return (Scheme_Object*) return_payload;
+# ifdef MZ_PRECISE_GC
+Scheme_Hash_Table *force_hash(Scheme_Object *so);
 # endif
+
+Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so) {
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  Scheme_Object *o;
+  void *original_gc;
+  Scheme_Hash_Table *ht;
+
+  ht = force_hash(so);
+
+# ifdef MZ_PRECISE_GC
+  original_gc = GC_switch_to_master_gc();
+  scheme_start_atomic();
+# endif
+  o = scheme_places_deep_copy_worker(so, ht);
+# ifdef MZ_PRECISE_GC
+  scheme_end_atomic_no_swap();
+  GC_switch_back_from_master(original_gc);
+# endif
+  return o;
+#else
   return so;
+#endif
 }
 
 Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
@@ -823,64 +850,6 @@ void force_hash_worker(Scheme_Object *so, Scheme_Hash_Table *ht)
   }
   return;
 }
-
-static void* scheme_master_place_handlemsg(int msg_type, void *msg_payload)
-{
-  switch(msg_type) {
-    case 1:
-      {
-        Scheme_Object *o;
-        Scheme_Object *copied_o;
-        copied_o = scheme_places_deep_copy((Scheme_Object *)msg_payload);
-        o = scheme_intern_resolved_module_path_worker(copied_o);
-        return o;
-      }
-      break;
-    case 3:
-      {
-        Scheme_Object *o;
-        Scheme_Symbol_Parts *parts;
-        parts = (Scheme_Symbol_Parts *) msg_payload;
-        o = (Scheme_Object *)scheme_intern_exact_symbol_in_table_worker(parts->table, parts->kind, parts->name, parts->len);
-        return o;
-      }
-      break;
-    case 5:
-      { 
-        Scheme_Object *copied_o;
-        copied_o = scheme_places_deep_copy((Scheme_Object *)msg_payload);
-        return copied_o;
-      }
-      break;
-  }
-  return NULL;
-}
-
-void* scheme_master_fast_path(int msg_type, void *msg_payload) {
-  Scheme_Object *o;
-  void *original_gc;
-  Scheme_Hash_Table *ht;
-
-  switch(msg_type) {
-    case 1:
-    case 5:
-      ht = force_hash(msg_payload);
-      break;
-  }
-
-# ifdef MZ_PRECISE_GC
-  original_gc = GC_switch_to_master_gc();
-  scheme_start_atomic();
-# endif
-  o = scheme_master_place_handlemsg(msg_type, msg_payload);
-# ifdef MZ_PRECISE_GC
-  scheme_end_atomic_no_swap();
-  GC_switch_back_from_master(original_gc);
-# endif
-
-  return o;
-}
-
 
 void scheme_spawn_master_place() {
   mzrt_proc_first_thread_init();

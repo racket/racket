@@ -271,8 +271,11 @@ instead of interleaving them.}
 
 @defproc[(open-output-nowhere [name any/c 'nowhere] [special-ok? any/c #t])
          output-port?]{
-
-Creates and returns an output port that discards all output sent to it
+@index*['("discard-output" "null-output" "null-output-port" "dev-null"
+          "/dev/null")
+	'("Opening a null output port")]{
+	
+Creates} and returns an output port that discards all output sent to it
 (without blocking). The @scheme[name] argument is used as the port's
 name. If the @scheme[special-ok?]  argument is true, then the
 resulting port supports @scheme[write-special], otherwise it does not.}

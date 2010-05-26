@@ -178,6 +178,7 @@ typedef struct NewGC {
 #ifdef MZ_USE_PLACES
   int           place_id;
   int           major_places_gc;   /* :1; */
+  int           dont_master_gc_until_child_registers;   /* :1: */
 #endif
 
  struct mpage *thread_local_pages;

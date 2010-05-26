@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang racket/base
 (require scribble/base
          scribble/core
          scribble/manual
-         scribble/scheme
-         (for-syntax scheme/base)
+         scribble/racket
+         (for-syntax racket/base)
          "image-toc.ss")
 
 (provide image-examples)
@@ -15,7 +15,7 @@
        (for-each (λ (exp) (printf "~s\n" (syntax->datum exp)))
                  (syntax->list #'(exp ...))))
      #'(interleave 
-         (list (schemeinput exp) ...)
+         (list (racketinput exp) ...)
          (list 'exp ...))]))
 
 (define (interleave expr-paras val-list+outputs)
@@ -33,10 +33,10 @@
                             (let ([line (exp->line exp)])
                               (case (car line)
                                 [(val)
-                                 (schemeblock #,(schemeresult #,(cadr line)))]
+                                 (racketblock #,(racketresult #,(cadr line)))]
                                 [(image)
                                  (let ([fn (format "2htdp/scribblings/img/~a" (cadr line))])
-                                   (schemeblock #,(image fn)))]
+                                   (racketblock #,(image fn)))]
                                 [(missing)
                                  (make-paragraph
                                   error-color 

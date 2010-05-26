@@ -175,11 +175,17 @@
                    [certifier (sequence-transformer-ref m 2)])
                (let ([xformed (xformer (introducer (syntax-local-introduce clause)))])
                  (if xformed
-                     (expand-clause orig-stx (certify-clause (syntax-case clause ()
+                     (let ([r (expand-clause orig-stx 
+                                             (certify-clause (syntax-case clause ()
                                                                [(_ rhs) #'rhs])
                                                              (syntax-local-introduce (introducer xformed))
                                                              certifier
-                                                             introducer))
+                                                             introducer))])
+                       (syntax-property r
+                                        'disappeared-use
+                                        (cons (syntax-local-introduce #'form)
+                                              (or (syntax-property r 'disappeared-use)
+                                                  null))))
                      (eloop #f)))))]
           [[(id ...) (:do-in . body)]
            (syntax-case #'body ()
@@ -809,8 +815,12 @@
       [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...)
             (clause . rest) . body)
        (with-syntax ([bind (expand-clause #'orig-stx #'clause)])
-         #`(frm [orig-stx nested? nested? (bind . binds)]
-                ([fold-var fold-init] ...) rest . body))]
+         (let ([r #`(frm [orig-stx nested? nested? (bind . binds)]
+                         ([fold-var fold-init] ...) rest . body)]
+               [d (syntax-property #'bind 'disappeared-use)])
+           (if d
+               (syntax-property r 'disappeared-use d)
+               r)))]
       [(_ [orig-stx . _] . _)
        (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 

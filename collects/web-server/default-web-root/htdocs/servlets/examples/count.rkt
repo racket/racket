@@ -4,7 +4,7 @@
 (define interface-version 'v1)
 (define timeout +inf.0)
 (define count 0)
-(define a-date (date->string (seconds->date (current-seconds)) 'time-too))
+(define a-date (date->string (seconds->date (current-seconds)) #t))
 (define (start initial-request)
   (define other-count 0)
   
