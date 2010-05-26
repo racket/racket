@@ -23,15 +23,15 @@ InstallDir "$PROGRAMFILES\${RKTDirName}"
   InstallDirRegKey HKLM "Software\${RKTRegName}" ""
 !endif
 !define MUI_STARTMENUPAGE_DEFAULTFOLDER "${RKTStartName}"
-!define MUI_ICON   "plt-installer.ico"
-!define MUI_UNICON "plt-uninstaller.ico"
+!define MUI_ICON   "installer.ico"
+!define MUI_UNICON "uninstaller.ico"
 !define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_BITMAP     "plt-header.bmp"
-!define MUI_HEADERIMAGE_BITMAP_RTL "plt-header-r.bmp"
+!define MUI_HEADERIMAGE_BITMAP     "header.bmp"
+!define MUI_HEADERIMAGE_BITMAP_RTL "header-r.bmp"
 !define MUI_HEADERIMAGE_RIGHT
 
-!define MUI_WELCOMEFINISHPAGE_BITMAP "plt-welcome.bmp"
-!define MUI_UNWELCOMEFINISHPAGE_BITMAP "plt-welcome.bmp"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "welcome.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "welcome.bmp"
 
 !define MUI_WELCOMEPAGE_TITLE "${RKTHumanName} Setup"
 !define MUI_UNWELCOMEPAGE_TITLE "${RKTHumanName} Uninstall"
