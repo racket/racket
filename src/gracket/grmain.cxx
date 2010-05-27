@@ -113,10 +113,12 @@ extern "C" Scheme_Object *scheme_initialize(Scheme_Env *env);
 #define GET_INIT_FILENAME get_init_filename
 #if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
 # define PRINTF mred_console_printf
+# define CMDLINE_FFLUSH(x) /* nothing */
 static void (*mred_console_printf)(char *str, ...);
 # define NEED_MRED_CONSOLE_PRINTF
 #else
 # define PRINTF printf
+# define CMDLINE_FFLUSH fflush
 #endif
 #define PROGRAM "GRacket"
 #define PROGRAM_LC "gracket"

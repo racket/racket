@@ -2292,6 +2292,7 @@ static void MrEdSchemeMessages(char *msg, ...)
       waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
       SetConsoleCtrlHandler(ConsoleHandler, TRUE);      
 
+
       {
 	HMODULE hm;
 	gcw_proc gcw;
@@ -2336,10 +2337,14 @@ static void MrEdSchemeMessages(char *msg, ...)
 
     WriteConsole(console_out, s XFORM_OK_PLUS d, l, &wrote, NULL);
   } else {
+    long sz, wrt;
     char *buffer;
     DWORD wrote;
-    buffer = (char *)malloc(5 * strlen(msg));
-    vsprintf(buffer, msg, args);
+    /* FIXME: multiplying by 5 and adding 80 works for
+       all the cases where printf mode is currently used 
+       for the function, but it's completely a hack. */
+    buffer = (char *)malloc((5 * strlen(msg)) + 80);
+    wrt = vsprintf(buffer, msg, args);
     WriteConsole(console_out, buffer, strlen(buffer), &wrote, NULL);
     free(buffer);
   }
