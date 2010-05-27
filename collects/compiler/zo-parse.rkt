@@ -794,9 +794,8 @@
                  [len (read-compact-number cp)])
              ((case eq
                 [(0) make-hasheq-placeholder]
-                ; XXX One of these should be eqv
                 [(1) make-hash-placeholder]
-                [(2) make-hash-placeholder])
+                [(2) make-hasheqv-placeholder])
               (for/list ([i (in-range len)])
                 (cons (read-compact cp)
                       (read-compact cp)))))]
