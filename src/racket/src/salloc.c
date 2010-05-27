@@ -103,7 +103,7 @@ struct free_list_entry {
 THREAD_LOCAL_DECL(static struct free_list_entry *free_list;)
 THREAD_LOCAL_DECL(static int free_list_bucket_count;)
 
-void scheme_set_stack_base(void *base, int no_auto_statics)
+void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
 {
 #ifdef MZ_PRECISE_GC
   GC_init_type_tags(_scheme_last_type_, 
@@ -162,7 +162,7 @@ static int call_with_basic(void *data)
   return _main(scheme_basic_env(), ma->argc, ma->argv);
 }
 
-int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char **argv)
+int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char **argv) XFORM_SKIP_PROC
 {
   Scheme_Main_Data d;
   d._main = _main;
@@ -171,7 +171,7 @@ int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char
   return scheme_main_stack_setup(no_auto_statics, call_with_basic, &d);
 }
 
-static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data)
+static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data) 
 {
   void *stack_start;
   int volatile return_code;
@@ -281,7 +281,7 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
   return do_main_stack_setup(no_auto_statics, _main, data);
 }
 
-void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)
+void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics) XFORM_SKIP_PROC
 {
   scheme_set_stack_base(base, no_auto_statics);
 
@@ -292,7 +292,7 @@ void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)
 #endif
 }
 
-extern unsigned long scheme_get_stack_base()
+extern unsigned long scheme_get_stack_base() XFORM_SKIP_PROC
 {
 #if !defined(MZ_PRECISE_GC) && !defined(USE_SENORA_GC)
   if (GC_stackbottom)

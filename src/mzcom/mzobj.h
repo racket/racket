@@ -19,7 +19,6 @@ typedef struct {
 } THREAD_GLOBALS;
 
 extern HINSTANCE globHinst;
-extern DWORD WINAPI evalLoop(LPVOID);
 
 /////////////////////////////////////////////////////////////////////////////
 // CMzObj
@@ -47,7 +46,6 @@ class ATL_NO_VTABLE CMzObj :
     HANDLE evalDoneSems[2];
     BSTR *globInput;
     BSTR globOutput;
-    DWORD threadId;
     HANDLE threadHandle;
     BOOL errorState;
     
