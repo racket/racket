@@ -146,6 +146,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 #endif
 #define GET_INIT_FILENAME get_init_filename
 #define PRINTF printf
+#define CMDLINE_FFLUSH fflush
 #define PROGRAM "Racket"
 #define PROGRAM_LC "racket"
 #define INITIAL_BIN_TYPE "zi"

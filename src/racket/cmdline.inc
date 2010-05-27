@@ -1077,7 +1077,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
 
 #if defined(USE_FD_PORTS) || defined(WINDOWS_FILE_HANDLES)
-   fflush(stdout);
+   CMDLINE_FFLUSH(stdout);
 #endif
   }
 #endif /* DONT_PARSE_COMMAND_LINE */
@@ -1285,7 +1285,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 );
   PRINTF(prog, BANNER);
 #if defined(WINDOWS_FILE_HANDLES)
-  fflush(stdout);
+  CMDLINE_FFLUSH(stdout);
 #endif
   return 0;
  bad_switch:
@@ -1297,7 +1297,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
  show_need_help:
   PRINTF("Use the --help or -h flag for help.\n");
 #if defined(DETECT_WIN32_CONSOLE_STDIN)
-  fflush(stdout);
+  CMDLINE_FFLUSH(stdout);
 #endif
   return 1;
 #endif
