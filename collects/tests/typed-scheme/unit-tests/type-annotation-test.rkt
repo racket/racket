@@ -17,7 +17,7 @@
                                                  [ns (make-base-namespace)])
                                              (parameterize ([current-namespace ns])
                                                (namespace-require 'typed-scheme/private/prims)
-                                               (namespace-require 'typed-scheme/private/base-types)
+                                               (namespace-require 'typed-scheme/private/base-types-new)
                                                (namespace-require 'typed-scheme/private/base-types-extra)
                                                (expand 'ann-stx))))
                           ty))
@@ -26,7 +26,7 @@
   (test-suite 
    "Type Annotation tests"
    ;; FIXME - ask Ryan
-   ;(tat (ann foo : Number) (ret -Number))
+   (tat (ann foo : Number) (ret -Number))
    (tat foo #f)
    (tat (ann foo : 3) (ret (-val 3) (make-NoFilter) (make-NoObject)))))
 

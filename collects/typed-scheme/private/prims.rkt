@@ -47,7 +47,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (except-in mzlib/contract ->)
          (only-in mzlib/contract [-> c->])
          mzlib/struct
-         "base-types.rkt"
+         "base-types-new.rkt"
          "base-types-extra.rkt")
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))

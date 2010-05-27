@@ -8,7 +8,6 @@
 	 "base-env-indexing-old.rkt"
 	 "extra-procs.rkt"
          "prims.rkt"
-         "base-types.rkt"
          racket/contract/regions racket/contract/base
          (for-syntax 
           "base-types-extra.rkt"
