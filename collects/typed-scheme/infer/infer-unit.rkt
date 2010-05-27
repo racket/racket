@@ -409,7 +409,10 @@
              (move-vars-to-dmap new-cset dbound vars))]
           [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
            (when (memq dbound X) (fail! ss ts))          
-           (cgen/list V X (cons s-dty ss) (cons t-dty ts))]          
+           (cgen/list V X (cons s-dty ss) (cons t-dty ts))]
+          [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
+           (when (memq dbound X) (fail! S T))
+           (cgen V X s-dty t-dty)]
           [((Vector: e) (Vector: e*))
            (cset-meet (cg e e*) (cg e* e))]
           [((Box: e) (Box: e*))
