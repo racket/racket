@@ -19,7 +19,7 @@
 (define (has-name? t) 
   (and print-aliases
        (for/first ([(n t*) (in-pairs (in-list ((current-type-names))))]
-                   #:when (type-equal? t t*))
+                   #:when (and (Type? t*) (type-equal? t t*)))
          n)))
 
 (define (print-filter c port write?)
