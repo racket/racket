@@ -36,7 +36,8 @@
 
 
 ;; substitute : Type Name Type -> Type
-(define (substitute image name target #:Un [Un (get-union-maker)])
+(d/c (substitute image name target #:Un [Un (get-union-maker)])
+  ((Type/c symbol? Type?) (#:Un procedure?) . ->* . Type?)
   (define (sb t) (substitute image name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
@@ -58,14 +59,29 @@
                                (begin
                                  (when (eq? name dbound)
                                    (int-err "substitute used on ... variable ~a in type ~a" name target))
-                                 (make-ValuesDots (map sb types) (sb dty) dbound))])
+                                 (make-ValuesDots (map sb types) (sb dty) dbound))]
+                 [#:ListDots dty dbound
+                             (begin
+                               (when (eq? name dbound)
+                                 (int-err "substitute used on ... variable ~a in type ~a" name target))
+                               (make-ListDots (sb dty) dbound))])
       target))
 
+;; implements angle bracket substitution from the formalism
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
-(define (substitute-dots images rimage name target)    
+(d/c (substitute-dots images rimage name target)
+  ((listof Type/c) (or/c #f Type/c) symbol? Type? . -> . Type?)
   (define (sb t) (substitute-dots images rimage name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case (#:Type sb #:Filter (sub-f sb)) target
+                 [#:ListDots dty dbound
+                             (if (eq? name dbound)
+                                 ;; We need to recur first, just to expand out any dotted usages of this.
+                                 (let ([expanded (sb dty)])
+                                   (for/fold ([t (make-Value null)])
+                                     ([img images])
+                                     (make-Pair (substitute img name expanded) t)))
+                                 (make-ListDots (sb dty) dbound))]
                  [#:ValuesDots types dty dbound
                                (if (eq? name dbound)
                                    (make-Values
@@ -98,7 +114,7 @@
                                       (map sb kws)))])
       target))
 
-;; implements sd from the formalism
+;; implements curly brace substitution from the formalism
 ;; substitute-dotted : Type Name Name Type -> Type
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
@@ -109,6 +125,9 @@
                                (make-ValuesDots (map sb types)
                                                 (sb dty)
                                                 (if (eq? name dbound) image-bound dbound))]
+                 [#:ListDots dty dbound
+                             (make-ListDots (sb dty)
+                                            (if (eq? name dbound) image-bound dbound))]
                  [#:F name*
                       (if (eq? name* name)
                           image
