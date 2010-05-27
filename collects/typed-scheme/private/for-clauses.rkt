@@ -4,19 +4,20 @@
          "annotate-classes.rkt"
          (for-template racket/base))
 
-(provide convert-for-clauses)
+(provide convert-for-clauses
+         for-clause)
 
 ;; we need handle #:when clauses manually because we need to annotate
 ;; the type of each nested for
 (define (convert-for-clauses name clauses body ty)
   (let loop ((clauses clauses))
-    (define-splicing-syntax-class for-clause
-    ;; single-valued seq-expr
-    (pattern (var:annotated-name seq-expr:expr)
-             #:with expand #'(var.ann-name seq-expr))
-    ;; multi-valued seq-expr
-    (pattern ((v:annotated-name ...) seq-expr:expr)
-             #:with expand #'((v.ann-name ...) seq-expr)))
+    (define-syntax-class for-clause
+      ;; single-valued seq-expr
+      (pattern (var:annotated-name seq-expr:expr)
+               #:with expand #'(var.ann-name seq-expr))
+      ;; multi-valued seq-expr
+      (pattern ((v:annotated-name ...) seq-expr:expr)
+               #:with expand #'((v.ann-name ...) seq-expr)))
     (syntax-parse clauses
       [(head:for-clause next:for-clause ... #:when rest ...)
        (syntax-property
@@ -42,3 +43,14 @@
        (quasisyntax/loc clauses
          (when guard
            #,(loop #'(rest ...))))])))
+
+(define-splicing-syntax-class for-clause
+    ;; single-valued seq-expr
+    (pattern (var:annotated-name seq-expr:expr)
+             #:with (expand ...) (list #'(var.ann-name seq-expr)))
+    ;; multi-valued seq-expr
+    (pattern ((v:annotated-name ...) seq-expr:expr)
+             #:with (expand ...) (list #'((v.ann-name ...) seq-expr)))
+    ;; when clause
+    (pattern (~seq #:when guard:expr)
+             #:with (expand ...) (list #'#:when #'guard)))

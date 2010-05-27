@@ -403,6 +403,36 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for/first: for/first)
   (for/last: for/last))
 
+;; these 2 don't expand into nested for/X:s, #:when clauses are handled during
+;; the expansion of the untyped versions of these macros
+;; for this reason, uses of these macros with #:when clauses may not typecheck
+(define-syntax (for/lists: stx)
+  (syntax-parse stx #:literals (:)
+    [(_ : ty
+        ((var:annotated-name) ...)
+        (clause:for-clause ...)
+        c:expr ...)
+     (syntax-property
+      (syntax/loc stx
+        (for/lists (var.ann-name ...)
+          (clause.expand ... ...)
+          c ...))
+      'type-ascription
+      #'ty)]))
+(define-syntax (for/fold: stx)
+  (syntax-parse stx #:literals (:)
+    [(_ : ty
+        ((var:annotated-name init:expr) ...)
+        (clause:for-clause ...)
+        c:expr ...)
+     (syntax-property
+      (syntax/loc stx
+        (for/fold ((var.ann-name init) ...)
+          (clause.expand ... ...)
+          c ...))
+      'type-ascription
+      #'ty)]))
+
 (define-syntax (provide: stx)
   (syntax-parse stx
     [(_ [i:id t] ...)
