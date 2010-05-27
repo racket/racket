@@ -13,7 +13,7 @@
                     [make-arr* make-arr])
          (private type-annotation)
          (types abbrev utils)
-	 (env type-env-structs lexical-env dotted-env tvar-env)
+	 (env type-env-structs lexical-env tvar-env)
 	 (utils tc-utils)
          unstable/debug
          scheme/match)
@@ -87,15 +87,15 @@
       [(not rest)
        (check-body)]
       [drest
-       (with-dotted-env/extend
-        rest (car drest) (cdr drest)
+       (with-lexical-env/extend
+        (list rest) (list (make-ListDots (car drest) (cdr drest)))
         (check-body))]
       [(dotted? rest)
        =>
        (lambda (b)
          (let ([dty (get-type rest #:default Univ)])
-           (with-dotted-env/extend
-            rest dty b
+           (with-lexical-env/extend
+            (list rest) (list (make-ListDots dty b))
             (check-body))))]
       [else
        (let ([rest-type (cond
@@ -148,17 +148,14 @@
                                                          (current-tvars))])
                                (get-type #'rest #:default Univ))])
               (with-lexical-env/extend 
-               arg-list
-               arg-types
-               (parameterize ([dotted-env (extend-env (list #'rest)
-                                                      (list (cons rest-type bound))
-                                                      (dotted-env))])
-                 (make-lam-result
-                       (map list arg-list arg-types)
-                       null
-                       #f
-                       (cons #'rest (cons rest-type bound))
-                       (tc-exprs (syntax->list body)))))))]
+               (cons #'rest arg-list)
+               (cons (make-ListDots rest-type bound) arg-types)
+               (make-lam-result
+                (map list arg-list arg-types)
+                null
+                #f
+                (cons #'rest (cons rest-type bound))
+                (tc-exprs (syntax->list body))))))]
          [else
           (let ([rest-type (get-type #'rest #:default Univ)])
             (with-lexical-env/extend 
