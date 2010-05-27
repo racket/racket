@@ -26,10 +26,12 @@
   (test-suite 
    "Type Annotation tests"
    ;; FIXME - ask Ryan
-   (tat (ann foo : Number) (ret -Number))
+   (tat (ann foo : Number) (ret -Number (make-NoFilter) (make-NoObject)))
    (tat foo #f)
    (tat (ann foo : 3) (ret (-val 3) (make-NoFilter) (make-NoObject)))))
 
 (define-go
   type-annotation-tests)
+
+
 
