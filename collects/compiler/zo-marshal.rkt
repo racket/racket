@@ -228,6 +228,11 @@
      (traverse-stx expr visit)]
     [(wrapped? expr)
      (traverse-wrapped expr visit)]
+    [(hash? expr)
+     (when (visit expr)
+       (for ([(k v) (in-hash expr)])
+         (traverse-data k visit)
+         (traverse-data v visit)))]
     [else
      (void)]))
 
@@ -987,16 +992,18 @@
      (for ([v (in-vector expr)])
        (out-data v out))]
     [(hash? expr)
-     (out-byte CPT_HASH_TABLE out)
-     (out-number (cond
-                   [(hash-eqv? expr) 2]
-                   [(hash-eq? expr) 0]
-                   [else 1])
-                 out)
-     (out-number (hash-count expr) out)
-     (for ([(k v) (in-hash expr)])
-       (out-data k out)
-       (out-data v out))]
+     (out-shared expr out
+                 (lambda ()
+                   (out-byte CPT_HASH_TABLE out)
+                   (out-number (cond
+                                 [(hash-eqv? expr) 2]
+                                 [(hash-eq? expr) 0]
+                                 [else 1])
+                               out)
+                   (out-number (hash-count expr) out)
+                   (for ([(k v) (in-hash expr)])
+                     (out-data k out)
+                     (out-data v out))))]
     [(svector? expr)
      (let* ([vec (svector-vec expr)]
             [len (vector-length vec)])
