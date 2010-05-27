@@ -233,7 +233,7 @@
     (get-output-string port)))
 
 (define (string->xexpr str)
-  (xml->xexpr (read-xml/element (open-input-string str))))
+  (xml->xexpr (document-element (read-xml (open-input-string str)))))
 
 ;; bcompose : (a a -> c) (b -> a) -> (b b -> c)
 (define (bcompose f g)
