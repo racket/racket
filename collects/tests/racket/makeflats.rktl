@@ -4,32 +4,32 @@
             (let ([ns (current-namespace)])
               (parameterize ([current-namespace (make-base-namespace)])
                 (set! flat-number (add1 flat-number))
-                (namespace-attach-module ns 'scheme)
-                (namespace-require 'scheme)
+                (namespace-attach-module ns 'racket)
+                (namespace-require 'racket)
                 (eval
                  `(begin
                     (define flat-load ,f)
                     (define flat-number ,(format "-~a" flat-number))
-                    (load-relative "makeflat.ss"))))))
-	  '("basic.ss"
-	    "unicode.ss"
-	    "read.ss"
-	    "macro.ss"
-	    "syntax.ss"
-	    "stx.ss"
-	    "module.ss"
-	    "number.ss"
-	    "object.ss"
-	    "struct.ss"
-	    "unit.ss"
-	    "unitsig.ss"
-	    "thread.ss"
-	    "sync.ss"
-	    "deep.ss"
-	    "contmark.ss"
-            "prompt.ss"
-	    "will.ss"
-	    "namespac.ss"
-	    "port.ss"
-	    "file.ss"
-	    "path.ss"))
+                    (load-relative "makeflat.rktl"))))))
+	  '("basic.rktl"
+	    "unicode.rktl"
+	    "read.rktl"
+	    "macro.rktl"
+	    "syntax.rktl"
+	    "stx.rktl"
+	    "module.rktl"
+	    "number.rktl"
+	    "object.rktl"
+	    "struct.rktl"
+	    "unit.rktl"
+	    "unitsig.rktl"
+	    "thread.rktl"
+	    "sync.rktl"
+	    "deep.rktl"
+	    "contmark.rktl"
+            "prompt.rktl"
+	    "will.rktl"
+	    "namespac.rktl"
+	    "port.rktl"
+	    "file.rktl"
+	    "path.rktl"))
