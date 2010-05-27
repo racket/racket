@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 (require mzlib/pconvert
-         scheme/pretty
+         racket/pretty
          lang/private/set-result)
 
 (provide configure)
@@ -34,8 +34,10 @@
    (lambda (v)
      (unless (void? v)
        (pretty-print (print-convert v)))))
-  (global-port-print-handler
-   (lambda (val port [depth 0])
-     (let ([val (print-convert val)])
-       (parameterize ([pretty-print-columns 'infinity])
-         (pretty-print val port depth))))))
+  (let ([orig (global-port-print-handler)])
+    (global-port-print-handler
+     (lambda (val port [depth 0])
+       (parameterize ([global-port-print-handler orig])
+         (let ([val (print-convert val)])
+           (parameterize ([pretty-print-columns 'infinity])
+             (pretty-print val port depth))))))))
