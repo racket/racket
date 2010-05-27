@@ -4,7 +4,7 @@
 (provide (rename-out [module-begin #%module-begin]))
 
 (define-syntax-rule (module-begin . rest)
-  (#%module-begin 
+  (#%module-begin
    (provide register-specs!)
    (define (register-specs! [param *specs*])
      (process-specs 'rest param))))

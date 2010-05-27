@@ -6,7 +6,7 @@ exec racket -um "$0" "$@"
 
 #|
 
-This file contains "properties" of various files and directories in the PLT
+This file contains "properties" of various files and directories in the Racket
 tree.  Its format is briefly described below, but it is mainly intended to be
 used as a command-line script -- run it with `-h' to find out how to use it.
 In addition, you can make it work as a git command -- put this in a file
@@ -31,7 +31,7 @@ sequence of path and properties for it:
 
   <path> <prop> <val> <prop> <val> ...
 
-where <path> is a "/"-delimited string (relative to the plt tree root), <prop>
+where <path> is a "/"-delimited string (relative to the racket root), <prop>
 is one of a few known property symbols, and <val> is the assigned value.  The
 value is should follow the predicate specification for the property, which is
 defined as `known-props' before the properties data block; note that it is
@@ -46,7 +46,7 @@ are set by running this file as a script).
 Requiring this file builds the data table and provides an interface for
 properties, intended to be used by meta tools.  In these functions, `path' is a
 path argument that is given as a "/"-delimited and normalized path
-string (no ".", "..", "//", or a "/" suffix) relative to the plt tree root, and
+string (no ".", "..", "//", or a "/" suffix) relative to the racket root, and
 path/s is either such a string or a list of them.
 
 * (get-prop path/s prop [default]
@@ -349,14 +349,14 @@ path/s is either such a string or a list of them.
      "This is a utility for manipulating properties in the PLT repository."
      "Each of the following subcommands expects a property name from a set of"
      "known properties.  The given paths are normalized to be relative to the"
-     "plt root for the tree holding this script *if* it is in such a tree"
+     "racket root for the tree holding this script *if* it is in such a tree"
      "(determined by inspecting a few known directories), otherwise an error"
      "is raised."
      ""
      "Note: this script holds the data that it changes, so you need to commit"
      "it after changes are made."
      ""
-     "Note: it does not depend on the plt installation that runs it -- you"
+     "Note: it does not depend on the racket installation that runs it -- you"
      "just need to use the script from the work directory that you want to"
      "deal with; if you add a git alias like:"
      "  prop = \"!$(git rev-parse --show-toplevel)/collects/meta/props\""
@@ -388,7 +388,7 @@ path/s is either such a string or a list of them.
                       p)
                  (if (> n 0)
                    (loop base (sub1 n))
-                   (error* #f "could not find the plt root from ~a"
+                   (error* #f "could not find the racket root from ~a"
                            (path-only this-file))))))))
   (define check-existing-paths? #t)
   (define (paths->list path paths)
@@ -405,7 +405,7 @@ path/s is either such a string or a list of them.
               ""
               (let ([n (path->string n)])
                 (if (regexp-match #rx"^\\.\\.(?:/|$)" n)
-                  (error* #f "path is not in the plt tree: ~s" p)
+                  (error* #f "path is not in the racket tree: ~s" p)
                   n)))))
         (if (null? paths) (norm path) (map norm (cons path paths))))))
   (define (get prop path . paths)

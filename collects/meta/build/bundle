@@ -13,18 +13,18 @@
 (define home/     (/-ify (expand-user-path "~scheme")))
 (define binaries/ (/-ify (build-path home/ "binaries")))
 (define target/   (/-ify (build-path home/ "pre-installers")))
-(define plt/      (/-ify (or (getenv "PLTHOME")
+(define racket/   (/-ify (or (getenv "PLTHOME")
                              (error 'bundle "PLTHOME is not defined"))))
-(define plt-base/ (/-ify (simplify-path (build-path plt/ 'up) #f)))
-(define plt/-name (let-values ([(base name dir?) (split-path plt/)])
-                    (path-element->string name)))
+(define racket-base/ (/-ify (simplify-path (build-path racket/ 'up) #f)))
+(define racket/-name (let-values ([(base name dir?) (split-path racket/)])
+                       (path-element->string name)))
 
 (define cd current-directory)
 
 (define *readme-file*
-  (build-path plt/ "README"))
+  (build-path racket/ "README"))
 (define *info-domain-file*
-  (build-path plt/ "collects" "info-domain" "compiled" "cache.rktd"))
+  (build-path racket/ "collects" "info-domain" "compiled" "cache.rktd"))
 
 (define *readme-cache* #f)
 (define *info-domain-cache* #f)
@@ -177,7 +177,7 @@
   (set! /dev/null-in  (open-input-file  "/dev/null"))
   (unless (directory-exists? target/) (make-directory target/))
   (let ([d (ormap (lambda (x) (and (not (directory-exists? x)) x))
-                  (list home/ plt/ binaries/ target/))])
+                  (list home/ racket/ binaries/ target/))])
     (when d (error 'bundle "directory not found: ~a" d)))
   (set! *platforms*
         (parameterize ([cd binaries/])
@@ -203,10 +203,10 @@
           (map (lambda (platform)
                  (dprintf ".")
                  (parameterize ([cd platform])
-                   ;; if no btgz *and* "plt" already created then use get-tree
-                   ;; (useful when debugging stuff so re-use pre made ones)
-                   ;; should work the same with an old tree
-                   (if (and (directory-exists? "plt") (not *btgz?*))
+                   ;; if no btgz *and* "racket" already created then use
+                   ;; get-tree (useful when debugging stuff so re-use pre made
+                   ;; ones) should work the same with an old tree
+                   (if (and (directory-exists? "racket") (not *btgz?*))
                      (filtered-map
                       (lambda (x) ; only directories contain stuff we need
                         (and (directory-exists? x) (get-tree x)))
@@ -225,8 +225,8 @@
               (when (null? trees)
                 (error 'binaries "no binaries found for ~s" platform)))
             *platforms* *platform-tree-lists*)
-  ;; Get the plt tree, remove junk and binary stuff
-  (set-plt-tree! plt-base/ plt/-name *platform-tree-lists*)
+  ;; Get the racket tree, remove junk and binary stuff
+  (set-racket-tree! racket-base/ racket/-name *platform-tree-lists*)
   (set-bin-files-delayed-lists!
    (delay (map (lambda (trees)
                  (sort* (mappend tree-flatten (add-trees trees))))
@@ -235,11 +235,11 @@
 (define (make-info-domain trees)
   (unless (= 1 (length trees))
     (error 'make-info-domain "got zero or multiple trees: ~e" trees))
-  (let* ([collects (or (tree-filter "/plt/collects/" (car trees))
+  (let* ([collects (or (tree-filter "/racket/collects/" (car trees))
                        (error 'make-info-domain "got no collects in tree"))]
          [info (filter (lambda (x)
                          (let ([x (path->string (bytes->path (car x)))])
-                           (pair? (tree-filter (concat "/plt/collects/" x)
+                           (pair? (tree-filter (concat "/racket/collects/" x)
                                                collects))))
                        *info-domain-cache*)])
     (lambda () (write info) (newline))))
@@ -267,13 +267,14 @@
 
 (define (create-binaries platform trees)
   (parameterize ([cd (build-path binaries/ platform)])
-    (let ([full-tgz (concat "plt-"platform"-full.tgz")]
-          [bin-tgz  (concat "plt-"platform"-binaries.tgz")]
+    (let ([full-tgz (concat "racket-"platform"-full.tgz")]
+          [bin-tgz  (concat "racket-"platform"-binaries.tgz")]
           [all-tgzs (filter input-tgz-name?
                             (map path->string (directory-list)))])
-      (unless (and (directory-exists? "plt") (not *btgz?*))
+      (unless (and (directory-exists? "racket") (not *btgz?*))
         (dprintf "Unpacking binaries in ~s ~a\n" platform all-tgzs)
-        ;; even if a "plt" directory exists, we just overwrite the same stuff
+        ;; even if a "racket" directory exists, we just overwrite the same
+        ;; stuff
         (unless (member full-tgz all-tgzs)
           (error 'create-binaries "~a/~a not found" (cd) full-tgz))
         (for ([tgz all-tgzs]) (unpack tgz trees)))
@@ -285,9 +286,9 @@
                        (current-output-port) /dev/null-in (current-error-port)
                        ;; see below for flag explanations
                        /pax "-w" "-x" "ustar" "-z" "-f" bin-tgz
-                       ;; only pack the plt dir (only exception is Libraries on
-                       ;; OSX, but that has its own dir)
-                       "plt")])
+                       ;; only pack the racket dir (only exception is Libraries
+                       ;; on OSX, but that has its own dir)
+                       "racket")])
           (subprocess-wait p))))))
 
 (define (pack archive trees prefix)
@@ -472,7 +473,7 @@
         (let ([name (format "~a-~a.tgz" name type)])
           (dprintf "Creating ~s: filtering..." name)
           (let ([trees (add-trees
-                        (cons (distribute (get-plt-tree))
+                        (cons (distribute (get-racket-tree))
                               (if bin?
                                 (tag 'in-binary-tree
                                   (map (if full?
@@ -489,8 +490,8 @@
             (chown 'root *readme-file* *info-domain-file*)
             (pack (concat target/ name) trees
                   (if bin?
-                    (format "\\(~a\\|~a~a/\\)" plt-base/ binaries/ type)
-                    plt-base/)))
+                    (format "\\(~a\\|~a~a/\\)" racket-base/ binaries/ type)
+                    racket-base/)))
           (dprintf " done.\n")))))
   '())
 (register-spec! 'distribute!
@@ -529,7 +530,7 @@
 (define (chown-dirs-to who)
   (when (and *root?* *pack?*)
     (dprintf "Changing owner to ~a..." who)
-    (for ([dir (list plt/ binaries/)])
+    (for ([dir (list racket/ binaries/)])
       (parameterize ([cd dir]) (chown #:rec #t who ".")))
     (dprintf " done.\n")))
 
