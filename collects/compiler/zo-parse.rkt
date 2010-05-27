@@ -15,8 +15,6 @@
 
   Lines 628, 630 seem to be only for debugging and should probably throw errors
 
-  unmarshal-stx-get also seems to be for debugging and should probably throw an error
-
   vector and pair cases of decode-wraps seem to do different things from the corresponding C code
 
   Line 816: This should be an eqv placeholder (but they don't exist)
@@ -28,8 +26,6 @@
   I think parse-module-path-index was only used for debugging, so it is short-circuited now
 
  collects/browser/compiled/browser_scrbl.zo (eg) contains a all-from-module that looks like: (#<module-path-index> 0 (1363072) . #f) --- that doesn't seem to match the spec
-
-  We seem to leave placeholders for hash-tables in the structs
 
 |#
 ;; ----------------------------------------
@@ -558,8 +554,6 @@
                       (map loop (cdr (vector->list (struct->vector v)))))))]
               [else (add-wrap v)]))))))
 
-
-
 (define (decode-wraps cp w)
   ; A wraps is either a indirect reference or a list of wrap-elems (from stxobj.c:252)
   (if (integer? w)
@@ -687,16 +681,6 @@
              (make-exported-module-binding module-path-index export-name)]
             [module-path-index 
              (make-simple-module-binding module-path-index)]))))
-
-(define (unmarshal-stx-get/decode cp pos decode-stx)
-  (define v2 (read-sym cp pos))
-  (define decoded? (vector-ref (cport-decoded cp) pos))
-  (if decoded?
-      v2
-      (let ([dv2 (decode-stx cp v2)])
-        (vector-set! (cport-symtab cp) pos dv2)
-        (vector-set! (cport-decoded cp) pos #t)
-        dv2)))
 
 (define (parse-module-path-index cp s)
   s)
@@ -895,7 +879,7 @@
           [(closure)
            (let* ([l (read-compact-number cp)]
                   [ind (make-indirect #f)])
-             (vector-set! (cport-symtab cp) l ind)
+             (placeholder-set! (vector-ref (cport-symtab cp) l) ind)
              (let* ([v (read-compact cp)]
                     [cl (make-closure v (gensym
                                          (let ([s (lam-name v)])
@@ -917,16 +901,35 @@
         [else
          (cons v (loop (sub1 need-car) proper))]))))
 
+(define (unmarshal-stx-get/decode cp pos decode-stx)
+  (define v2 (read-sym cp pos))
+  (define decoded? (vector-ref (cport-decoded cp) pos))
+  (if decoded?
+      v2
+      (let ([dv2 (decode-stx cp v2)])
+        (placeholder-set! (vector-ref (cport-symtab cp) pos) dv2)
+        (vector-set! (cport-decoded cp) pos #t)
+        dv2)))
+
+(require unstable/markparam)
+(define read-sym-mark (mark-parameter))
 (define (read-sym cp i)
   (define symtab (cport-symtab cp))
-  (define vv (vector-ref symtab i))
-  (define save-pos (cport-pos cp))
-  (when (not-ready? vv)
-    (set-cport-pos! cp (vector-ref (cport-shared-offsets cp) (sub1 i)))
-    (let ([v (read-compact cp)])
-      (vector-set! symtab i v))
-    (set-cport-pos! cp save-pos))
-  (vector-ref symtab i))
+  (define ph (vector-ref symtab i))
+  ; We are reading this already, so return the placeholder
+  (if (memq i (mark-parameter-all read-sym-mark))
+      ph
+      ; Otherwise, try to read it and return the real thing
+      (local [(define vv (placeholder-get ph))]
+        (when (not-ready? vv)
+          (local [(define save-pos (cport-pos cp))]
+            (set-cport-pos! cp (vector-ref (cport-shared-offsets cp) (sub1 i)))
+            (mark-parameterize
+             ([read-sym-mark i])
+             (let ([v (read-compact cp)])
+               (placeholder-set! ph v)))
+            (set-cport-pos! cp save-pos)))
+        (placeholder-get ph))))
 
 ;; path -> bytes
 ;; implementes read.c:read_compiled
@@ -964,14 +967,15 @@
     
     (define nr (make-not-ready))
     (define symtab 
-      (make-vector symtabsize nr))
+      (build-vector symtabsize (λ (i) (make-placeholder nr))))
     
     (define cp (make-cport 0 shared-size port size* rst-start symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
     
     (for/list ([i (in-range 1 symtabsize)])
       (read-sym cp i))
     (set-cport-pos! cp shared-size)
-    (read-marshalled 'compilation-top-type cp)))
+    (make-reader-graph
+     (read-marshalled 'compilation-top-type cp))))
 
 ;; ----------------------------------------
 
