@@ -480,7 +480,7 @@
             @h1{How is the push "tested"?}
             @p{Each file's @code{@,PROP:command-line} property is consulted. If it is the empty string, the file is ignored. If it is a string, then a single @code{~s} is replaced with the file's path, @code{racket} and @code{mzc} with their path (for the current push), and @code{gracket} and @code{gracket-text} with @code{gracket-text}'s path (for the current push); then the resulting command-line is executed. 
                (Currently no other executables are allowed, so you can't @code{rm -fr /}.)
-               If there is no property value, the default (@code{mzscheme -t ~s}) is used if the file's suffix is @code{.ss}, @code{.scm}, or @code{.scrbl}.}
+               If there is no property value, the default @code{racket -qt ~s} is used if the file's suffix is @code{.rkt}, @code{.ss}, @code{.scm}, or @code{.scrbl} and @code{racket -f ~s} is used if the file's suffix is @code{.rktl}.}
                     
             @p{The command-line is always executed with a fresh empty current directory which is removed after the run. But all the files share the same home directory and X server, which are both removed after each push's testing is complete.}
             
