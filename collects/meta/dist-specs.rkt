@@ -75,7 +75,7 @@
 distributions := (tag "mz" bin+src+dist)
                  (tag "mr" bin+src-dist)
                  (tag "dr" bin+src-dist)
-                 (tag "racket" bin+src+dist)
+                 (tag "plt" bin+src+dist)
                  (tag ("full" "bin") (distribute!))
 bin+src+dist  := (tag "bin" (verify!) (distribute!))
                  (tag "src" (verify!) (distribute!))

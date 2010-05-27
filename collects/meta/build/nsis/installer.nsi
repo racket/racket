@@ -177,7 +177,7 @@ Section ""
   DetailPrint "Installing Racket..."
   SetDetailsPrint listonly
   SetOutPath "$INSTDIR"
-  File /a /r "plt\*.*"
+  File /a /r "racket\*.*"
   !ifndef SimpleInstaller
     WriteUninstaller "${UNINSTEXE}" ; Create uninstaller
   !endif

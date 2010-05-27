@@ -2055,7 +2055,7 @@ BUILD_WEB() {
     separator "Creating a site-map"
     _cd "$maindir/$w"
     _run "$PLTHOME/$sitemapdir/sitemap_gen.py" \
-         --config="$PLTHOME/$sitemapdir/rkt-pre.xml" \
+         --config="$PLTHOME/$sitemapdir/plt-pre.xml" \
            > /dev/null
   fi
 
