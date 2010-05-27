@@ -6,7 +6,8 @@
 
 @note-lib[racket/pretty]
 
-@defproc[(pretty-print [v any/c] [port output-port? (current-output-port)])
+@defproc[(pretty-print [v any/c] [port output-port? (current-output-port)]
+                       [quote-depth (or/c 0 1) 0])
          void?]{
 
 Pretty-prints the value @scheme[v] using the same printed form as the
