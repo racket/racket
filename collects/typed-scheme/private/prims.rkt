@@ -383,14 +383,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (lambda (stx)
     (syntax-parse stx #:literals (:)
       [(_ : ty
-          (clause:for-clause ...)
+          clauses
           c:expr ...)
-       (quasisyntax/loc
-           stx
-         (ann (#,name
-               (clause.expand ... ...)
-               c ...)
-              ty))])))
+       (convert-for-clauses name #'clauses #'(c ...) #'ty)])))
 (define-syntax (define-for-variants stx)
   (syntax-parse stx
     [(_ (name untyped-name) ...)
