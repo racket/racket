@@ -501,15 +501,9 @@
 
 ;; ----------------------------------------
 ;; Syntax unmarshaling
-
 (define (decode-stx cp v)
   (if (integer? v)
-      (let-values ([(v2 decoded?) (unmarshal-stx-get cp v)])
-        (if decoded?
-            v2
-            (let ([v2 (decode-stx cp v2)])
-              (unmarshal-stx-set! cp v v2)
-              v2)))
+      (unmarshal-stx-get/decode cp v decode-stx)
       (let loop ([v v])
         (let-values ([(cert-marks v encoded-wraps)
                       (match v
@@ -569,24 +563,14 @@
 (define (decode-wraps cp w)
   ; A wraps is either a indirect reference or a list of wrap-elems (from stxobj.c:252)
   (if (integer? w)
-      (let-values ([(w2 decoded?) (unmarshal-stx-get cp w)])
-        (if decoded?
-            w2
-            (let ([w2 (decode-wraps cp w2)])
-              (unmarshal-stx-set! cp w w2)
-              w2)))
+      (unmarshal-stx-get/decode cp w decode-wraps)
       (map (lambda (a)
              (let aloop ([a a])
                ; A wrap-elem is either
                (cond
                  ; A reference 
                  [(integer? a) 
-                  (let-values ([(a2 decoded?) (unmarshal-stx-get cp a)])
-                    (if decoded?
-                        a2
-                        (let ([a2 (aloop a2)])
-                          (unmarshal-stx-set! cp a a2)
-                          a2)))]
+                  (unmarshal-stx-get/decode cp a (lambda (cp v) (aloop v)))]
                  ; A mark (not actually a number as the C says, but a (list <num>)
                  [(and (pair? a) (null? (cdr a)) (number? (car a)))
                   (make-wrap-mark (car a))]
@@ -704,22 +688,15 @@
             [module-path-index 
              (make-simple-module-binding module-path-index)]))))
 
-(define (unmarshal-stx-get cp pos)
-  (if (pos . >= . (vector-length (cport-symtab cp)))
-      (values `(#%bad-index ,pos) #t)
-      (let ([v (vector-ref (cport-symtab cp) pos)])
-        (if (not-ready? v)
-            (let ([save-pos (cport-pos cp)])
-              (set-cport-pos! cp (vector-ref (cport-shared-offsets cp) (sub1 pos)))
-              (let ([v (read-compact cp)])
-                (vector-set! (cport-symtab cp) pos v)
-                (set-cport-pos! cp save-pos)
-                (values v #f)))
-            (values v (vector-ref (cport-decoded cp) pos))))))
-
-(define (unmarshal-stx-set! cp pos v)
-  (vector-set! (cport-symtab cp) pos v)
-  (vector-set! (cport-decoded cp) pos #t))
+(define (unmarshal-stx-get/decode cp pos decode-stx)
+  (define v2 (read-sym cp pos))
+  (define decoded? (vector-ref (cport-decoded cp) pos))
+  (if decoded?
+      v2
+      (let ([dv2 (decode-stx cp v2)])
+        (vector-set! (cport-symtab cp) pos dv2)
+        (vector-set! (cport-decoded cp) pos #t)
+        dv2)))
 
 (define (parse-module-path-index cp s)
   s)
@@ -738,15 +715,7 @@
         (case cpt-tag
           [(delayed)
            (let ([pos (read-compact-number cp)])
-             (let ([v (vector-ref (cport-symtab cp) pos)])
-               (if (not-ready? v)
-                   (let ([save-pos (cport-pos cp)])
-                     (set-cport-pos! cp (vector-ref (cport-shared-offsets cp) (sub1 pos)))
-                     (let ([v (read-compact cp)])
-                       (vector-set! (cport-symtab cp) pos v)
-                       (set-cport-pos! cp save-pos)
-                       v))
-                   v)))]
+             (read-sym cp pos))]
           [(escape)
            (let* ([len (read-compact-number cp)]
                   [s (cport-get-bytes cp len)])
@@ -894,16 +863,8 @@
                                                      (read-compact cp))))])
                 (read (open-input-bytes #"x")))))]
           [(symref)
-           (let* ([l (read-compact-number cp)]
-                  [v (vector-ref (cport-symtab cp) l)])
-             (if (not-ready? v)
-                 (let ([pos (cport-pos cp)])
-                   (set-cport-pos! cp (vector-ref (cport-shared-offsets cp) (sub1 l)))
-                   (let ([v (read-compact cp)])
-                     (set-cport-pos! cp pos)
-                     (vector-set! (cport-symtab cp) l v)
-                     v))
-                 v))]                           
+           (let* ([l (read-compact-number cp)])
+             (read-sym cp l))]                        
           [(weird-symbol)
            (let ([uninterned (read-compact-number cp)]
                  [str (read-compact-chars cp (read-compact-number cp))])
@@ -956,6 +917,17 @@
         [else
          (cons v (loop (sub1 need-car) proper))]))))
 
+(define (read-sym cp i)
+  (define symtab (cport-symtab cp))
+  (define vv (vector-ref symtab i))
+  (define save-pos (cport-pos cp))
+  (when (not-ready? vv)
+    (set-cport-pos! cp (vector-ref (cport-shared-offsets cp) (sub1 i)))
+    (let ([v (read-compact cp)])
+      (vector-set! symtab i v))
+    (set-cport-pos! cp save-pos))
+  (vector-ref symtab i))
+
 ;; path -> bytes
 ;; implementes read.c:read_compiled
 (define (zo-parse port)
@@ -990,16 +962,14 @@
     (unless (eof-object? (read-byte port))
       (error 'zo-parse "File too big"))
     
-    (define symtab (make-vector symtabsize (make-not-ready)))
+    (define nr (make-not-ready))
+    (define symtab 
+      (make-vector symtabsize nr))
     
     (define cp (make-cport 0 shared-size port size* rst-start symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
     
     (for/list ([i (in-range 1 symtabsize)])
-      (define vv (vector-ref symtab i))
-      (when (not-ready? vv)
-        (set-cport-pos! cp (vector-ref so* (sub1 i)))
-        (let ([v (read-compact cp)])
-          (vector-set! symtab i v))))
+      (read-sym cp i))
     (set-cport-pos! cp shared-size)
     (read-marshalled 'compilation-top-type cp)))
 
