@@ -103,10 +103,10 @@
     (prepare dest filename)
     (make-embedding-executable 
      dest mred? #f
-     `((#t (lib ,filename "tests" "mzscheme")))
+     `((#t (lib ,filename "tests" "racket")))
      null
      #f
-     `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
+     `(,(flags "l") ,(string-append "tests/racket/" filename)))
     (try-exe dest expect mred?)
 
     ;; Try explicit prefix:
@@ -116,7 +116,7 @@
 	     (prepare dest filename)
 	     (make-embedding-executable 
 	      dest mred? #f
-	      `((,pfx (lib ,filename "tests" "mzscheme"))
+	      `((,pfx (lib ,filename "tests" "racket"))
                 (#t (lib "scheme/init")))
 	      null
 	      #f
@@ -133,7 +133,7 @@
       ;; Try full path, and use literal S-exp to start
       (printf ">>>literal sexp\n")
       (prepare dest filename)
-      (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
+      (let ([path (build-path (collection-path "tests" "racket") filename)])
         (make-embedding-executable 
          dest mred? #f
          `((#t ,path))
@@ -146,7 +146,7 @@
       ;; Use `file' form:
       (printf ">>>file\n")
       (prepare dest filename)
-      (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
+      (let ([path (build-path (collection-path "tests" "racket") filename)])
         (make-embedding-executable 
          dest mred? #f
          `((#t (file ,(path->string path))))
@@ -159,7 +159,7 @@
       ;; Use relative path
       (printf ">>>relative path\n")
       (prepare dest filename)
-      (parameterize ([current-directory (collection-path "tests" "mzscheme")])
+      (parameterize ([current-directory (collection-path "tests" "racket")])
         (make-embedding-executable 
          dest mred? #f
          `((#f ,filename))
@@ -174,13 +174,13 @@
       (prepare dest filename)
       (make-embedding-executable 
        dest mred? #f
-       `((#t (lib ,filename "tests" "mzscheme"))
-         (#t (lib "embed-me3.ss" "tests" "mzscheme")))
+       `((#t (lib ,filename "tests" "racket"))
+         (#t (lib "embed-me3.rkt" "tests" "racket")))
        null
        (base-compile
         `(begin
-           (namespace-require '(lib "embed-me3.ss" "tests" "mzscheme"))
-           (namespace-require '(lib ,filename "tests" "mzscheme"))))
+           (namespace-require '(lib "embed-me3.rkt" "tests" "racket"))
+           (namespace-require '(lib ,filename "tests" "racket"))))
        `(,(flags "")))
       (try-exe dest (string-append "3 is here, too? #t\n" expect) mred?)
 
@@ -195,14 +195,14 @@
                     '(namespace-require ''#%kernel)))))
         (make-embedding-executable 
          dest mred? #f
-         `((#t (lib ,filename "tests" "mzscheme")))
+         `((#t (lib ,filename "tests" "racket")))
          (list 
           tmp
-          (build-path (collection-path "tests" "mzscheme") "embed-me4.ss"))
+          (build-path (collection-path "tests" "racket") "embed-me4.rktl"))
          `(with-output-to-file "stdout"
             (lambda () (display "... and more!\n"))
             'append)
-         `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
+         `(,(flags "l") ,(string-append "tests/racket/" filename)))
         (delete-file tmp))
       (try-exe dest (string-append 
                      "This is the literal expression 4.\n" 
@@ -210,12 +210,12 @@
                      expect)
                mred?)))
 
-  (one-mz-test "embed-me1.ss" "This is 1\n" #t)
-  (one-mz-test "embed-me1b.ss" "This is 1b\n" #f)
-  (one-mz-test "embed-me1c.ss" "This is 1c\n" #f)
-  (one-mz-test "embed-me1d.ss" "This is 1d\n" #f)
-  (one-mz-test "embed-me1e.ss" "This is 1e\n" #f)
-  (one-mz-test "embed-me2.ss" "This is 1\nThis is 2: #t\n" #t)
+  (one-mz-test "embed-me1.rkt" "This is 1\n" #t)
+  (one-mz-test "embed-me1b.rkt" "This is 1b\n" #f)
+  (one-mz-test "embed-me1c.rkt" "This is 1c\n" #f)
+  (one-mz-test "embed-me1d.rkt" "This is 1d\n" #f)
+  (one-mz-test "embed-me1e.rkt" "This is 1e\n" #f)
+  (one-mz-test "embed-me2.rkt" "This is 1\nThis is 2: #t\n" #t)
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")
@@ -238,13 +238,13 @@
 (mz-tests #t)
 
 (begin
-  (prepare mr-dest "embed-me5.ss")
+  (prepare mr-dest "embed-me5.rkt")
   (make-embedding-executable 
    mr-dest #t #f
-   `((#t (lib "embed-me5.ss" "tests" "mzscheme")))
+   `((#t (lib "embed-me5.rkt" "tests" "racket")))
    null
    #f
-   `("-l" "tests/mzscheme/embed-me5.ss"))
+   `("-l" "tests/racket/embed-me5.rkt"))
   (try-exe mr-dest "This is 5: #<class:button%>\n" #t))
 
 ;; Try the mzc interface:
@@ -260,15 +260,15 @@
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
-	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me1.ss")))
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me1.rkt")))
     (try-exe (mk-dest mred?) "This is 1\n" mred?)
 
-    ;; Check that etc.ss isn't found if it's not included:
+    ;; Check that etc.rkt isn't found if it's not included:
     (printf ">>not included\n")
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
-	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me6.rkt")))
     (try-exe (mk-dest mred?) "This is 6\nno etc.ss\n" mred?)
 
     ;; And it is found if it is included:
@@ -276,8 +276,8 @@
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
-	     "++lib" "mzlib/etc.ss"
-	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
+	     "++lib" "mzlib/etc.rkt"
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me6.rkt")))
     (try-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
     ;; Or, it's found if we set the collection path:
@@ -287,7 +287,7 @@
 	     (path->string (mk-dest mred?))
 	     "--collects-path"
 	     (path->string (find-collects-dir))
-	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me6.rkt")))
     ;; Don't try a distribution for this one:
     (try-one-exe (mk-dest mred?) "This is 6\n#t\n" mred?)
 
@@ -296,10 +296,10 @@
     (system* mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
-	     "++lib" "mzlib/etc.ss"
+	     "++lib" "mzlib/etc.rkt"
 	     "--collects-dest" "cts"
 	     "--collects-path" "cts"
-	     (path->string (build-path (collection-path "tests" "mzscheme") "embed-me6.ss")))
+	     (path->string (build-path (collection-path "tests" "racket") "embed-me6.rkt")))
     (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
     (delete-directory/files "cts")
     (test #f system* (mk-dest mred?))
@@ -326,17 +326,17 @@
                   (system-library-subpath)))
 
     (define ext-file
-      (build-path ext-dir (append-extension-suffix "embed-me8_ss")))
+      (build-path ext-dir (append-extension-suffix "embed-me8_rkt")))
 
     (define ss-file
-      (build-path (find-system-path 'temp-dir) "embed-me9.ss"))
+      (build-path (find-system-path 'temp-dir) "embed-me9.rkt"))
 
     (make-directory* ext-dir)
     
     (system* mzc 
              "--cc"
              "-d" (path->string (path-only obj-file))
-             (path->string (build-path (collection-path "tests" "mzscheme") "embed-me8.c")))
+             (path->string (build-path (collection-path "tests" "racket") "embed-me8.c")))
     (system* mzc 
              "--ld"
              (path->string ext-file)
@@ -344,7 +344,7 @@
 
     (when (file-exists? ss-file)
       (delete-file ss-file))
-    (copy-file (build-path (collection-path "tests" "mzscheme") "embed-me9.ss")
+    (copy-file (build-path (collection-path "tests" "racket") "embed-me9.rkt")
                ss-file)
 
     (system* mzc 
@@ -361,7 +361,7 @@
     (system* mzc 
              (if mred? "--gui-exe" "--exe")
              (path->string (mk-dest mred?))
-             (path->string (build-path (collection-path "tests" "mzscheme") "embed-me10.ss")))
+             (path->string (build-path (collection-path "tests" "racket") "embed-me10.rkt")))
     (try-exe (mk-dest mred?) "#t\n" mred?)))
 
 (extension-test #f)
@@ -372,7 +372,7 @@
   (system* mzc 
 	   "--gui-exe"
 	   (path->string (mk-dest #t))
-	   (path->string (build-path (collection-path "tests" "mzscheme") "embed-me5.ss")))
+	   (path->string (build-path (collection-path "tests" "racket") "embed-me5.rkt")))
   (try-exe (mk-dest #t) "This is 5: #<class:button%>\n" #t))
 
 ;; Another GRacket-specific: try embedding plot, which has extra DLLs and font files:
@@ -382,34 +382,34 @@
   (test #t
         system* (build-path (find-console-bin-dir) "mred")
         "-qu"
-        (path->string (build-path (collection-path "tests" "mzscheme") "embed-me7.ss"))
+        (path->string (build-path (collection-path "tests" "racket") "embed-me7.rkt"))
         (path->string direct))
 
   (system* mzc 
            "--gui-exe"
            (path->string (mk-dest #t))
-           (path->string (build-path (collection-path "tests" "mzscheme") "embed-me7.ss")))
+           (path->string (build-path (collection-path "tests" "racket") "embed-me7.rkt")))
   (try-exe (mk-dest #t) "plotted\n" #t))
 
 ;; Try including source that needs a reader extension
 
 (define (try-reader-test mred?)
   (define dest (mk-dest mred?))
-  (define filename "embed-me11.ss")
+  (define filename "embed-me11.rkt")
   (define (flags s)
     (string-append "-" s))
 
   (create-embedding-executable 
    dest
-   #:modules `((#t (lib ,filename "tests" "mzscheme")))
-   #:cmdline `(,(flags "l") ,(string-append "tests/mzscheme/" filename))
+   #:modules `((#t (lib ,filename "tests" "racket")))
+   #:cmdline `(,(flags "l") ,(string-append "tests/racket/" filename))
    #:src-filter (lambda (f)
                   (let-values ([(base name dir?) (split-path f)])
                     (equal? name (string->path filename))))
    #:get-extra-imports (lambda (f code)
                          (let-values ([(base name dir?) (split-path f)])
                            (if (equal? name (string->path filename))
-                               '((lib "embed-me11-rd.ss" "tests" "mzscheme"))
+                               '((lib "embed-me11-rd.rkt" "tests" "racket"))
                                null)))
    #:mred? mred?)
 

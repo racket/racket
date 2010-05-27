@@ -2,7 +2,7 @@
 
 (require (rename-in "utils/utils.rkt" [infer r:infer]))
 
-(require (private base-types with-types)
+(require (private with-types)
          (for-syntax 
           (except-in syntax/parse id)
           scheme/base

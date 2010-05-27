@@ -282,6 +282,7 @@ unix-install:
 	cd ..; rm -f "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@"
 	cd ..; cp racket/starter "$(DESTDIR)$(libpltdir)/starter"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
+	./racket@CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" @COLLECTS_PATH@
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"

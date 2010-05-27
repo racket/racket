@@ -25,9 +25,9 @@
     ;; check-ready : -> void
     (define/private (check-ready)
       (unless view
-        (error 'racunit "The RacUnit GUI is no longer running."))
+        (error 'rackunit "The RackUnit GUI is no longer running."))
       (when (get-locked?)
-        (error 'racunit "The RacUnit GUI is locked and not accepting tests.")))
+        (error 'rackunit "The RackUnit GUI is locked and not accepting tests.")))
 
     ;; create-model : test suite<%>/#f -> result<%>
     (define/public (create-model test parent)

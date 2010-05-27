@@ -71,7 +71,7 @@
       (let l6 ()
         (cond ((< k j)
                (set! j (- j k))
-               (set! k (/ k 2))
+               (set! k (quotient k 2))
                (l6))))
       (set! j (+ j k))
       (set! i (+ i 1))
@@ -110,7 +110,7 @@
  
 (define (fft-bench)
   (do ((ntimes 0 (+ ntimes 1)))
-      ((= ntimes 1000))
+      ((= ntimes 5000))
       (fft *re* *im*)))
  
 ;;; call:  (fft-bench)

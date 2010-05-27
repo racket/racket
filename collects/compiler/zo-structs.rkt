@@ -22,7 +22,7 @@
 
 (define-syntax-rule (define-form-struct* id id+par ([field-id field-contract] ...))
   (begin
-    (define-struct id+par (field-id ...) #:transparent)
+    (define-struct id+par (field-id ...) #:prefab)
     (provide/contract
      [struct id ([field-id field-contract] ...)])))
 
@@ -57,7 +57,7 @@
 (define-form-struct (expr form) ())
 
 ;; A static closure can refer directly to itself, creating a cycle
-(define-struct indirect ([v #:mutable]) #:transparent)
+(define-struct indirect ([v #:mutable]) #:prefab)
 
 (define-form-struct compilation-top ([max-let-depth exact-nonnegative-integer?] [prefix prefix?] [code (or/c form? indirect? any/c)])) ; compiled code always wrapped with this
 

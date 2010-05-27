@@ -75,7 +75,7 @@
  
 (define (run)
   (do ((i 0 (+ i 1)))
-      ((= i 50000))
+      ((= i 1000000))
     (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))

@@ -7,10 +7,13 @@
                [current-namespace (namespace-anchor->namespace checker-namespace-anchor)])
   (define (/-ify x)
     (regexp-replace #rx"/?$" (if (path? x) (path->string x) x) "/"))
-  (define plt/      (/-ify (simplify-path (build-path (collection-path "scheme") 'up 'up))))
-  (define plt-base/ (/-ify (simplify-path (build-path plt/ 'up) #f)))
-  (define plt/-name (let-values ([(base name dir?) (split-path plt/)])
-                      (path-element->string name)))
+  (define racket/
+    (/-ify (simplify-path (build-path (collection-path "scheme") 'up 'up))))
+  (define racket-base/
+    (/-ify (simplify-path (build-path racket/ 'up) #f)))
+  (define racket/-name
+    (let-values ([(base name dir?) (split-path racket/)])
+      (path-element->string name)))
 
   (register-macros!)
 
@@ -19,11 +22,11 @@
   (register-spec! 'verify! verify!)
   (register-spec! 'distribute! void)
 
-  (set-plt-tree! plt-base/ plt/-name null)
+  (set-racket-tree! racket-base/ racket/-name null)
 
-  (set-bin-files-delayed-lists! 
+  (set-bin-files-delayed-lists!
    ;; FIXME: hard-wired list of binary-specific files
-   '(("plt/collects/sgl/compiled/gl-info_ss.zo")))
+   '(("racket/collects/sgl/compiled/gl-info_ss.zo")))
 
   (expand-spec 'distributions)
 

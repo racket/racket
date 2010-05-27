@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "base.rkt")
 
-@title[#:tag "quick-start"]{Quick Start Guide for RacUnit}
+@title[#:tag "quick-start"]{Quick Start Guide for RackUnit}
 
 Suppose we have code contained in @tt{file.rkt}, which
 implements buggy versions of @racket[+] and @racket[-]
@@ -24,10 +24,10 @@ racket/base
          my-*)
 ]
 
-We want to test this code with RacUnit.  We start by
+We want to test this code with RackUnit.  We start by
 creating a file called @tt{file-test.rkt} to contain our
 tests.  At the top of @tt{file-test.rkt} we import
-RacUnit and @tt{file.rkt}:
+RackUnit and @tt{file.rkt}:
 
 @racketmod[
 racket/base
@@ -43,7 +43,7 @@ Now we add some tests to check our library:
 (check-equal? (my-* 1 2) 2 "Simple multiplication")
 ]
 
-This is all it takes to define tests in RacUnit.  Now
+This is all it takes to define tests in RackUnit.  Now
 evaluate this file and see if the library is correct.
 Here's the result I get:
 
@@ -63,13 +63,13 @@ expected:   2
 The first @racket[#t] indicates the first test passed.  The
 second test failed, as shown by the message.
 
-Requiring RacUnit and writing checks is all you need to
+Requiring RackUnit and writing checks is all you need to
 get started testing, but let's take a little bit more time
 to look at some features beyond the essentials.
 
 Let's say we want to check that a number of properties hold.
 How do we do this?  So far we've only seen checks of a
-single expression.  In RacUnit a check is always a single
+single expression.  In RackUnit a check is always a single
 expression, but we can group checks into units called test
 cases.  Here's a simple test case written using the
 @racket[test-begin] form:
@@ -147,7 +147,7 @@ tests, allowing you to choose how you run your tests.  You
 might, for example, print the results to the screen or log
 them to a file.
 
-Let's run our tests, using RacUnit's simple textual user
+Let's run our tests, using RackUnit's simple textual user
 interface (there are fancier interfaces available but this
 will do for our example).  In @tt{file-test.rkt} add the
 following lines:
@@ -161,6 +161,6 @@ following lines:
 Now evaluate the file and you should see similar output
 again.
 
-These are the basics of RacUnit.  Refer to the
+These are the basics of RackUnit.  Refer to the
 documentation below for more advanced topics, such as
 defining your own checks.  Have fun!

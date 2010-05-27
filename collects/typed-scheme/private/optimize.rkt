@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require syntax/parse (for-template scheme/base scheme/unsafe/ops)
+(require syntax/parse (for-template scheme/base scheme/flonum scheme/unsafe/ops)
          "../utils/utils.rkt" unstable/match scheme/match unstable/syntax
          (rep type-rep)
          (types abbrev type-table utils))
@@ -13,14 +13,20 @@
            #:with opt #'e.opt))
 
 (define-syntax-class float-binary-op
-  #:literals (+ - * / = <= < > >= min max)
+  #:literals (+ - * / = <= < > >= min max
+              fl+ fl- fl* fl/ fl= fl<= fl< fl> fl>= flmin flmax)
   (pattern (~and i:id (~or + - * / = <= < > >= min max))
-           #:with unsafe (format-id #'here "unsafe-fl~a" #'i)))
+           #:with unsafe (format-id #'here "unsafe-fl~a" #'i))
+  (pattern (~and i:id (~or fl+ fl- fl* fl/ fl= fl<= fl< fl> fl>= flmin flmax))
+           #:with unsafe (format-id #'here "unsafe-~a" #'i)))
 
 (define-syntax-class float-unary-op
-  #:literals (abs sin cos tan asin acos atan log exp)
-  (pattern (~and i:id (~or abs sin cos tan asin acos atan log exp))
-           #:with unsafe (format-id #'here "unsafe-fl~a" #'i)))
+  #:literals (abs sin cos tan asin acos atan log exp sqrt round floor ceiling truncate
+              flabs flsin flcos fltan flasin flacos flatan fllog flexp flsqrt flround flfloor flceiling fltruncate)
+  (pattern (~and i:id (~or abs sin cos tan asin acos atan log exp sqrt round floor ceiling truncate))
+           #:with unsafe (format-id #'here "unsafe-fl~a" #'i))
+  (pattern (~and i:id (~or flabs flsin flcos fltan flasin flacos flatan fllog flexp flsqrt flround flfloor flceiling fltruncate))
+           #:with unsafe (format-id #'here "unsafe-~a" #'i)))
 
 (define-syntax-class pair-opt-expr
   (pattern e:opt-expr
@@ -60,11 +66,11 @@
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
   ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
-  (pattern (#%plain-app op:float-binary-op f fs ...)
+  (pattern (#%plain-app op:float-binary-op f1 f2 fs ...)
            #:with opt 
            (begin (log-optimization "binary float" #'op)
-                  (for/fold ([o #'f.opt])
-                      ([e (syntax->list #'(fs.opt ...))])
+                  (for/fold ([o #'f1.opt])
+                      ([e (syntax->list #'(f2.opt fs.opt ...))])
                     #`(op.unsafe #,o #,e))))
   (pattern (#%plain-app op:pair-unary-op p)
            #:with opt
@@ -99,10 +105,10 @@
                                     #:exists 'append)
                   (current-output-port))))
     (begin0
-          (parameterize ([current-output-port port])
-            (syntax-parse stx #:literal-sets (kernel-literals)
-                          [e:opt-expr
-                           (syntax/loc stx e.opt)]))
+      (parameterize ([current-output-port port])
+        (syntax-parse stx #:literal-sets (kernel-literals)
+                      [e:opt-expr
+                       (syntax/loc stx e.opt)]))
       (if (and *log-optimizations?*
                *log-optimizatons-to-log-file?*)
           (close-output-port port)

@@ -184,6 +184,7 @@ extern int GC_is_marked(void *);
 # endif
 #endif
 
+READ_ONLY Scheme_At_Exit_Proc replacement_at_exit;
 
 ROSYM Scheme_Object *scheme_parameterization_key;
 ROSYM Scheme_Object *scheme_exn_handler_key;
@@ -1942,14 +1943,23 @@ static void run_atexit_closers(void)
   scheme_current_thread->error_buf = savebuf;
 }
 
+void scheme_set_atexit(Scheme_At_Exit_Proc p)
+{
+  replacement_at_exit = p;
+}
+
 void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 {
   if (!cust_closers) {
+    if (replacement_at_exit) {
+      replacement_at_exit(run_atexit_closers);
+    } else {
 #ifdef USE_ON_EXIT_FOR_ATEXIT
-    on_exit(run_atexit_closers, NULL);
+      on_exit(run_atexit_closers, NULL);
 #else
-    atexit(run_atexit_closers);
+      atexit(run_atexit_closers);
 #endif
+    }
 
     REGISTER_SO(cust_closers);
     cust_closers = scheme_null;

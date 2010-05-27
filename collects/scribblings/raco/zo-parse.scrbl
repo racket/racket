@@ -5,7 +5,7 @@
                      compiler/zo-parse))
 
 @(define-syntax-rule (defstruct+ id fields . rest)
-   (defstruct id fields #:transparent . rest))
+   (defstruct id fields #:prefab . rest))
 
 @title{API for Parsing Bytecode}
 

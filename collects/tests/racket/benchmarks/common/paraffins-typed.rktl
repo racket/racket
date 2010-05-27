@@ -1,7 +1,5 @@
 ;;; PARAFFINS -- Compute how many paraffins exist with N carbon atoms.
 
-(require/typed scheme/base (collect-garbage ( -> Void)))
-
 (define-type Radical (Rec Radical (U 'C 'H 'BCP 'CCP (Vectorof Radical))))
 
 (: gen (Integer -> (Vectorof (Listof Radical))))
@@ -189,7 +187,7 @@
 (let ((input (with-input-from-file "input.txt" read)))
   (time
    (let: loop : Integer
-         ((n : Integer 100) (v : Integer 0))
+         ((n : Integer 4000) (v : Integer 0))
          (if (zero? n)
              v
              (loop (- n 1) (nb (if input 17 0)))))))

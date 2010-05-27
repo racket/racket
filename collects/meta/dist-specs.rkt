@@ -3,7 +3,7 @@
 ;; -*- scheme -*-
 
 ;; ============================================================================
-;; This file holds the specifications for creating PLT distributions.  These
+;; This file holds the specifications for creating Racket distributions.  These
 ;; specifications are defined by a sequence of <sym> := <spec>... definitions
 ;; (note: no parens), which binds the symbol to a tree specification.  In
 ;; addition, a definition can use `:=tag' which will go into a special space of
@@ -141,11 +141,11 @@ distribution-filters :=
 ;; (note: this rule means that we could avoid specifying docs and just include
 ;; the whole thing -- but this way we make sure that all doc sources are
 ;; included too (since they're specified together).)
-must-be-empty := (cond docs => (- "/plt/doc/" distribution) else => none)
+must-be-empty := (cond docs => (- "/racket/doc/" distribution) else => none)
 
 compiled-filter := (- (collects: "**/compiled/")
                       (cond verifying => "*.dep"))
-                   "/plt/bin/" "/plt/lib/"
+                   "/racket/bin/" "/racket/lib/"
 src-filter      := (src: "")
 docs-filter     := (- (doc: "")   ; all docs,
                       (notes: "") ; excluding basic stuff
@@ -173,7 +173,7 @@ std-docs        := (doc: "doc-license.txt" "*-std/")
 ;; (the first line shouldn't be necessary, but be safe)
 junk := (+ ".git*" "/.mailmap" ".svn" "CVS/" "[.#]*" "*~"
            ;; binary stuff should come from the platform directories
-           "/plt/bin/" "/plt/lib/" "/plt/src/*build*/")
+           "/racket/bin/" "/racket/lib/" "/racket/src/*build*/")
 
 ;; These are handled in a special way by the bundle script: the binary trees
 ;; are scanned for paths that have "<pfx>{3m|cgc}<sfx>" where a "<pfx><sfx>"
@@ -201,13 +201,13 @@ junk := (+ ".git*" "/.mailmap" ".svn" "CVS/" "[.#]*" "*~"
 ;; covered by these templates.
 
 binary-keep/throw-templates :=
-  "/plt/{lib|include}/**/*<!>.*"
-  "/plt/bin/*<!>"
-  (cond win => "/plt/*<!>.exe"
-               "/plt/lib/**/lib*<!>???????.{dll|lib|exp}"
-        mac => "/plt/*<!>.app/"
-               "/plt/lib/*Racket*.framework/Versions/*<_!>/")
-  "/plt/collects/**/compiled/**/<!/>*.*"
+  "/racket/{lib|include}/**/*<!>.*"
+  "/racket/bin/*<!>"
+  (cond win => "/racket/*<!>.exe"
+               "/racket/lib/**/lib*<!>???????.{dll|lib|exp}"
+        mac => "/racket/*<!>.app/"
+               "/racket/lib/*Racket*.framework/Versions/*<_!>/")
+  "/racket/collects/**/compiled/**/<!/>*.*"
 
 binary-keep  := "3[mM]"
 binary-throw := "{cgc|CGC}"
@@ -216,7 +216,7 @@ binary-throw := "{cgc|CGC}"
 ;; don't follow the above (have no 3m or cgc in the name, and no keep version
 ;; of the same name that will make them disappear)
 binary-throw-more :=
-  "/plt/lib/**/libmzgc???????.{dll|lib}"
+  "/racket/lib/**/libmzgc???????.{dll|lib}"
 
 ;; ============================================================================
 ;; Convenient macros
@@ -229,7 +229,7 @@ plt-path: := (lambda (prefix . paths)
                  (when (and (pair? paths) (eq? ': (car paths)))
                    (set! suffix (cadr paths)) (set! paths (cddr paths)))
                  `(+ ,@(map (lambda (path)
-                              (concat "/plt/" prefix
+                              (concat "/racket/" prefix
                                       (regexp-replace #rx"^/" path "")
                                       suffix))
                             paths))))
@@ -282,12 +282,12 @@ srcfile: :=
 
 dll: := (lambda fs
           `(+ ,@(map (lambda (f)
-                       (concat "/plt/lib/" (regexp-replace
-                                            #rx"^/" (expand-spec-1 f) "")
+                       (concat "/racket/lib/"
+                               (regexp-replace #rx"^/" (expand-spec-1 f) "")
                                "{|3[mM]|cgc|CGC}{|???????}.dll"))
                      fs)
               ,@(map (lambda (f)
-                       (concat "/plt/lib/**/"
+                       (concat "/racket/lib/**/"
                                (regexp-replace #rx"^.*/" (expand-spec-1 f) "")
                                "{|3[mM]|cgc|CGC}{|???????}.lib"))
                      fs)))
@@ -327,9 +327,9 @@ plt := (+ dr plt-extras)
 ;; ============================================================================
 ;; Packages etc
 
-mz-base := "/plt/README"
+mz-base := "/racket/README"
            (package: "racket") (package: "mzscheme")
-           "/plt/include/"
+           "/racket/include/"
            ;; configuration stuff
            (cond (not src) => (collects: "info-domain/")) ; filtered
            (package: "config")
@@ -411,19 +411,19 @@ extra-dynlibs := (cond win => (dll: "{ssl|lib}eay32"))
 ;; This filter is used on the full compiled trees to get the binary
 ;; (platform-dependent) portion out.
 
-binaries := (+ "/plt/bin/"
-               "/plt/lib/"
-               "/plt/include/"
-               "/plt/collects/**/compiled/native/"
-               (cond unix => "/plt/bin/{|g}racket*"
-                             "/plt/bin/{mzscheme|mred}*"
-                     win  => "/plt/*.exe"
-                             "/plt/*.dll"
-                             "/plt/collects/launcher/*.exe"
-                     mac  => "/plt/bin/racket*"
-                             "/plt/bin/mzscheme*"
-                             "/plt/*.app"
-                             "/plt/collects/launcher/*.app")
+binaries := (+ "/racket/bin/"
+               "/racket/lib/"
+               "/racket/include/"
+               "/racket/collects/**/compiled/native/"
+               (cond unix => "/racket/bin/{|g}racket*"
+                             "/racket/bin/{mzscheme|mred}*"
+                     win  => "/racket/*.exe"
+                             "/racket/*.dll"
+                             "/racket/collects/launcher/*.exe"
+                     mac  => "/racket/bin/racket*"
+                             "/racket/bin/mzscheme*"
+                             "/racket/*.app"
+                             "/racket/collects/launcher/*.app")
                platform-dependent)
 
 platform-dependent := ; hook for package rules

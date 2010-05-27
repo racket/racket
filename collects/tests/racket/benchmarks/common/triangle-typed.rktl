@@ -89,7 +89,7 @@
  
 ;;; call:  (gogogo 22))
  
-(time (let: loop : 'done ((n : Integer 100000))
+(time (let: loop : 'done ((n : Integer 1000000))
         (if (zero? n)
             'done
             (begin

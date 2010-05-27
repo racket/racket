@@ -449,23 +449,23 @@
                  file v version))))))
 
 (define (add-dependency-contents!)
-  (define (pltpath path)
+  (define (racketpath path)
     (bytes->string/utf-8
      (apply bytes-append (cdr (mappend (lambda (p) (list #"/" p))
-                                       (list* #"plt" #"collects" path))))))
+                                       (list* #"racket" #"collects" path))))))
   (define (read-depfile file)
     (let ([x (with-input-from-file file read)])
       (unless (and (pair? x) (check-version (car x) file))
         (error 'dependencies "bad contents in ~s: ~s" file x))
       (map (lambda (x)
              (match x
-               [`(collects ,(and (? bytes?) s) ...) (pltpath s)]
-               [`(ext collects ,(and (? bytes?) s) ...) (pltpath s)]
+               [`(collects ,(and (? bytes?) s) ...) (racketpath s)]
+               [`(ext collects ,(and (? bytes?) s) ...) (racketpath s)]
                [_ (error 'dependencies "bad dependency item in ~s: ~s"
                          file x)]))
            (cddr x))))
   (dprintf "Reading dependencies...")
-  (let loop ([tree (tree-filter "*.dep" *plt-tree*)])
+  (let loop ([tree (tree-filter "*.dep" *racket-tree*)])
     (if (pair? tree)
       (for-each loop (cdr tree))
       (parameterize ([cd (prop-get tree 'base)])
@@ -490,12 +490,13 @@
 (define (check-dependencies spec distname)
   (add-dependency-contents!)
   (dprintf "Verifying dependencies for ~s..." distname)
-  (let* ([all-files (sort* (add-alts (tree-flatten (tree-filter spec *plt-tree*))))]
-         [deps0 (or (tree-filter `(and ,spec "*.dep") *plt-tree*)
+  (let* ([all-files
+          (sort* (add-alts (tree-flatten (tree-filter spec *racket-tree*))))]
+         [deps0 (or (tree-filter `(and ,spec "*.dep") *racket-tree*)
                     (error 'check-dependencies
                            "got no .dep files for ~s" distname))]
          [deps0 (tree-flatten deps0 #t)])
-    (let* ([missing (tree-filter 'must-be-empty *plt-tree*)]
+    (let* ([missing (tree-filter 'must-be-empty *racket-tree*)]
            [missing (and (pair? missing) (tree-flatten missing #t))])
       (when (pair? missing)
         (dprintf "files missing from distribution:\n")
@@ -538,11 +539,10 @@
 ;;; Start working
 
 (define *platform-tree-lists* null)
-(define *plt-tree* #f)
+(define *racket-tree* #f)
 
-(provide get-plt-tree)
-(define (get-plt-tree)
-  *plt-tree*)
+(provide get-racket-tree)
+(define (get-racket-tree) *racket-tree*)
 
 (provide verify!)
 (define (verify!)
@@ -556,12 +556,13 @@
 (provide checker-namespace-anchor)
 (define-namespace-anchor checker-namespace-anchor)
 
-(provide set-plt-tree!)
-(define (set-plt-tree! plt-base/ plt/-name tree-lists)
+(provide set-racket-tree!)
+(define (set-racket-tree! racket-base/ racket/-name tree-lists)
   (set! *platform-tree-lists* tree-lists)
   (dprintf "Scanning main tree...")
-  (set! *plt-tree*
-        (let loop ([tree  (parameterize ([cd plt-base/]) (get-tree plt/-name))]
+  (set! *racket-tree*
+        (let loop ([tree  (parameterize ([cd racket-base/])
+                            (get-tree racket/-name))]
                    [trees (apply append *platform-tree-lists*)])
           (if (null? trees)
               (tree-filter '(not junk) tree)

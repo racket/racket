@@ -53,6 +53,8 @@ static Scheme_Object *exn_catching_apply;
 static Scheme_Object *exn_p;
 static Scheme_Object *exn_message;
 
+static Scheme_At_Exit_Callback_Proc at_exit_callback;
+
 /* This indirection lets us delayload libmzsch.dll: */
 #define scheme_false (scheme_make_false())
 
@@ -120,8 +122,9 @@ OLECHAR *wideStringFromSchemeObj(Scheme_Object *obj,char *fmt,int fmtlen) {
 }
 
 void exitHandler(int) {
+  if (at_exit_callback) at_exit_callback();
   ReleaseSemaphore(exitSem,1,NULL);
-  ExitThread(0);
+  _endthreadex(0);
 }
 
 void setupSchemeEnv(Scheme_Env *in_env)
@@ -143,7 +146,7 @@ void setupSchemeEnv(Scheme_Env *in_env)
 
   if (env == NULL) {
     ErrorBox("Can't create Scheme environment");
-    ExitThread(0);
+    _endthreadex(0);
   }
 
   // set up collection paths, based on Racket startup
@@ -294,7 +297,16 @@ static int do_evalLoop(Scheme_Env *env, int argc, char **_args)
   return 0;
 }
 
-DWORD WINAPI evalLoop(LPVOID args) {
+static void record_at_exit(Scheme_At_Exit_Callback_Proc p) XFORM_SKIP_PROC
+{
+  at_exit_callback = p;
+}
+
+static __declspec(thread) void *tls_space;
+
+static unsigned WINAPI evalLoop(void *args) XFORM_SKIP_PROC {
+  scheme_register_tls_space(&tls_space, 0);
+  scheme_set_atexit(record_at_exit);
   return scheme_main_setup(1, do_evalLoop, 0, (char **)args);
 }
 
@@ -312,14 +324,13 @@ void CMzObj::startMzThread(void) {
   tg.resetDoneSem = resetDoneSem;
   tg.pErrorState = &errorState;
 
-  threadHandle = CreateThread(NULL,0,evalLoop,(LPVOID)&tg,0,&threadId);
+  threadHandle = (HANDLE)_beginthreadex(NULL, 0, evalLoop, &tg, 0, NULL);
 }
 
 
 CMzObj::CMzObj(void) {
   inputMutex = NULL;
   readSem = NULL;
-  threadId = NULL;
   threadHandle = NULL;
 
   inputMutex = CreateSemaphore(NULL,1,1,NULL);

@@ -14,7 +14,7 @@ Note that @racket[require/expose] can be a bit fragile,
 especially when mixed with compiled code.  Use at your own risk!
 }
 
-This example gets @racket[make-failure-test], which is defined in a RacUnit test:
+This example gets @racket[make-failure-test], which is defined in a RackUnit test:
 
 @racketblock[
 (require/expose rackunit/private/check-test (make-failure-test))

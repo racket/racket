@@ -611,7 +611,7 @@
            (do: : Number ((x : (Listof Number) x (cdr x))
                           (sum : Number 0 (+ sum (car x))))
                 ((null? x) sum)))
-         N]
+         #:ret (ret N (-FS -top -top) (make-NoObject))]
         
         [tc-e/t (if #f 1 'foo) (-val 'foo)]
         

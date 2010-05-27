@@ -519,7 +519,7 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time
-   (let loop ((n 500) (v 0))
+   (let loop ((n 1500) (v 0))
      (if (zero? n)
          v
          (loop (- n 1) (tak0 18 12 (if input 6 0)))))))

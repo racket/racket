@@ -7,9 +7,15 @@
   (define-syntax (module-begin stx)
     (let ([name (symbol->string (syntax-property stx 'enclosing-module-name))])
       #`(ts:#%module-begin
+         (ts:require/typed 
+           "wrap-common.rkt"
+           [copy-input (-> Void)]
+           [remove-input (-> Void)])
+         (copy-input)
          (include #,(format "~a.rktl"
                             (substring name
                                        0
                                        (caar (regexp-match-positions
                                               #rx"-non-optimizing"
-                                              name)))))))))
+                                              name)))))
+         (remove-input)))))

@@ -1,3 +1,9 @@
+Version 5.0, May 2010
+
+Changed the executable from MrEd to GRacket
+
+----------------------------------------------------------------------
+
 Version 4.2.5, March 2010
 
 Changed radio-box% to allow #f as a selection so that no buttons are

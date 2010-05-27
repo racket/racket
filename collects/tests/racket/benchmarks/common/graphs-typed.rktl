@@ -141,7 +141,7 @@
 		state))))
 
 ; Iterate over the integers [0, limit).
-(: gnatural-for-each (Integer (Integer -> Any) -> Null))
+(: gnatural-for-each (Integer (Integer -> Any) -> Void))
 (define gnatural-for-each
     (lambda (limit proc!)
 	'(assert (and (integer? limit)
@@ -150,10 +150,10 @@
 	    limit)
 	'(assert (procedure? proc!)
 	    proc!)
-	(do: : Null
+	(do: : Void
              ((i : Integer 0
                  (+ i 1)))
-             ((= i limit) '())
+             ((= i limit))
 	    (proc! i))))
 
 (: natural-for-all? (Integer (Integer -> Boolean) -> Boolean))
@@ -686,10 +686,8 @@
 					    (lambda: ((t : Integer))
 						(if (vector-ref from-m t)
                                                    (begin ; [wdc - was when]
-						    (vector-set! from-f t #t)
-                                                    #t)
-                                                   #t)))
-                                        #t)
+						    (vector-set! from-f t #t))
+                                                   #t))))
                                        #t)))))))
 	    res)))
 
@@ -709,7 +707,7 @@
 (let ((input (with-input-from-file "input.txt" read)))
   (time
    (let: loop : (Listof RDG)
-         ((n : Integer 3) (v : (Listof RDG) '()))
+         ((n : Integer 45) (v : (Listof RDG) '()))
      (if (zero? n)
          v
          (loop (- n 1)

@@ -574,7 +574,7 @@ exec racket -qu "$0" ${1+"$@"}
 
   ;; Run benchmarks -------------------------------
 
-  (rprintf "; ~a\n" (date->string (seconds->date (current-seconds)) #t))
+  #;(rprintf "; ~a\n" (date->string (seconds->date (current-seconds)) #t))
 
   (parameterize ([current-directory bm-directory])
     (for-each (lambda (impl)

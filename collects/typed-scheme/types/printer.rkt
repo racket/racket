@@ -1,9 +1,8 @@
 #lang scheme/base
 
-(require "../utils/utils.rkt")
-(require (rep type-rep filter-rep object-rep rep-utils)
-	 (utils tc-utils)
-	 scheme/match)
+(require unstable/sequence racket/require racket/match
+         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
+                  "rep/rep-utils.rkt" "utils/utils.rkt" "utils/tc-utils.rkt"))
 
 ;; do we attempt to find instantiations of polymorphic types to print? 
 ;; FIXME - currently broken
@@ -18,16 +17,10 @@
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
 (define (has-name? t) 
-  (define ns ((current-type-names)))
-  (let/ec return
-    (unless print-aliases
-      (return #f))
-    (for-each
-     (lambda (pair)
-       (cond [(eq? t (cdr pair))
-              (return (car pair))]))
-     ns)
-    #f))
+  (and print-aliases
+       (for/first ([(n t*) (in-pairs (in-list ((current-type-names))))]
+                   #:when (and (Type? t*) (type-equal? t t*)))
+         n)))
 
 (define (print-filter c port write?)
   (define (fp . args) (apply fprintf port args))
@@ -126,9 +119,8 @@
     [(Univ:) (fp "Any")]
     ;; special case number until something better happens
     ;;[(Base: 'Number _) (fp "Number")]
-    [(? has-name?) 
-     #;(printf "has a name\n")
-     (fp "~a" (has-name? c))]
+    [(app has-name? (? values name))
+     (fp "~a" name)]
     [(StructTop: st) (fp "~a" st)]
     [(BoxTop:) (fp "Box")]
     [(VectorTop:) (fp "Vector")]

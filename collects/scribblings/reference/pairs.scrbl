@@ -1051,3 +1051,9 @@ for use with @scheme[make-reader-graph].}
 
 Like @scheme[make-immutable-hasheq], but produces a table placeholder
 for use with @scheme[make-reader-graph].}
+
+@defproc[(make-hasheqv-placeholder [assocs (listof pair?)])
+         hash-placeholder?]{
+
+Like @scheme[make-immutable-hasheqv], but produces a table placeholder
+for use with @scheme[make-reader-graph].}

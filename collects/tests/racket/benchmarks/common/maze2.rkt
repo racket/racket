@@ -1,2 +1,2 @@
 
-(module maze2 "wrap.ss")
+(module maze2 "wrap.ss" r5rs)

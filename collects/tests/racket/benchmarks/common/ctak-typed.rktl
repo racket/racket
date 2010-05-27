@@ -23,42 +23,42 @@
 
 (: ctak (Integer Integer Integer -> Integer))
 (define (ctak x y z)
-  ((inst call-with-current-continuation Integer Integer)
-   (lambda (k)
+  (call-with-current-continuation
+   (lambda: ((k : (Integer -> Nothing)))
      (ctak-aux k x y z))))
 
 (: ctak-aux ((Integer -> Integer) Integer Integer Integer -> Integer))
 (define (ctak-aux k x y z)
   (cond ((not (< y x))  ;xy
          (k z))
-        (else ((inst call-with-current-continuation Integer Integer)
-               (lambda (dummy)
-                 (ctak-aux
-                  k
-                  ((inst call-with-current-continuation Integer Integer)
-                   (lambda (k)
-                     (ctak-aux k
-                               (- x 1)
-                               y
-                               z)))
-                  ((inst call-with-current-continuation Integer Integer)
-                   (lambda (k)
-                     (ctak-aux k
-                               (- y 1)
-                               z
-                               x)))
-                  ((inst call-with-current-continuation Integer Integer)
-                   (lambda (k)
-                     (ctak-aux k
-                               (- z 1)
-                               x
-                               y)))))))))
+        (else (call-with-current-continuation
+               (let ([v (ctak-aux
+                         k
+                         (call-with-current-continuation
+                          (lambda: ((k : (Integer -> Nothing)))
+                            (ctak-aux k
+                                      (- x 1)
+                                      y
+                                      z)))
+                         (call-with-current-continuation
+                          (lambda: ((k : (Integer -> Nothing)))
+                            (ctak-aux k
+                                      (- y 1)
+                                      z
+                                      x)))
+                         (call-with-current-continuation
+                          (lambda: ((k : (Integer -> Nothing)))
+                            (ctak-aux k
+                                      (- z 1)
+                                      x
+                                      y))))])
+                 (lambda (dummy) v))))))
 
 ;;; call: (ctak 18 12 6)
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time (let: loop : Integer
-              ((n : Integer 8) (v : Integer 0))
+              ((n : Integer 25) (v : Integer 0))
               (if (zero? n)
                   v
                   (loop (- n 1)

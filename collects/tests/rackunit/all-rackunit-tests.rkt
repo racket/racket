@@ -22,7 +22,7 @@
 
 (define all-rackunit-tests
   (test-suite
-   "All RacUnit Tests"
+   "All RackUnit Tests"
    check-tests
    base-tests
    check-info-tests

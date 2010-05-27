@@ -50,7 +50,7 @@
       'fail))
 
 (time (let ((input (string->list (string-append (make-string 133 #\a) "bc"))))
-        (let: loop : 'done ((n : Integer 150000))
+        (let: loop : 'done ((n : Integer 2000000))
               (if (zero? n)
                   'done
                   (begin

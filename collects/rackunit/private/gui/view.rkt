@@ -308,11 +308,11 @@ still be there, just not visible?
 
     (super-new (width width) (height height))
     (send (get-help-menu) delete)
-    (let ([racunit-menu
+    (let ([rackunit-menu
            (new menu%
-                (label "RacUnit")
+                (label "RackUnit")
                 (parent (get-menu-bar)))])
-      (menu-option/notify-box racunit-menu
+      (menu-option/notify-box rackunit-menu
                               "Lock"
                               (get-field locked? controller)))
 

@@ -33,21 +33,21 @@
   (cond ((null? l) '())
         (else (cons (car l) (recursive-div2 (cddr l))))))
 
-(: test-1 ((Listof Any) -> (Listof Any)))
+(: test-1 ((Listof Any) -> Void))
 (define (test-1 l)
-  (do: : (Listof Any)
+  (do: : Void
        ((i : Integer 3000 (- i 1)))
-       ((= i 0) '())
+       ((= i 0))
        (iterative-div2 l)
        (iterative-div2 l)
        (iterative-div2 l)
        (iterative-div2 l)))
 
-(: test-2 ((Listof Any) -> (Listof Any)))
+(: test-2 ((Listof Any) -> Void))
 (define (test-2 l)
-  (do: : (Listof Any)
+  (do: : Void
        ((i : Integer 3000 (- i 1)))
-       ((= i 0) '())
+       ((= i 0))
        (recursive-div2 l)
        (recursive-div2 l)
        (recursive-div2 l)
@@ -57,8 +57,8 @@
 ;;; for the recursive test call: (test-2 *ll*)
 
 (let ((input (with-input-from-file "input.txt" read)))
-  (time (let: loop : (U Integer (Listof Any))
-              ((n : Integer 10) (v : (U Integer (Listof Any)) 0))
+  (time (let: loop : (Pair Void Void)
+              ((n : Integer 200) (v : (Pair Void Void) (cons (void) (void))))
               (if (zero? n)
                   v
                   (loop (- n 1)

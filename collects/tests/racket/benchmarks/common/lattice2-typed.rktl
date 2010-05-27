@@ -231,4 +231,8 @@
     (count-maps l3 l2)
     (count-maps l4 l4)))
 
-(time (run))
+(time (let: loop : Integer ((n : Integer 3) (v : Integer 0))
+        (if (zero? n)
+            v
+            (loop (- n 1)
+                  (run)))))

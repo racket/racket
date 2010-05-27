@@ -203,7 +203,7 @@
                                            path))])
                                changes)))))]
     [else
-     'nbsp]))
+     '" "]))
 
 (define (footer)
   `(div ([id "footer"])
@@ -264,7 +264,7 @@
                             (tr (td "Duration:") (td ,(format-duration-ms dur)))
                             (tr (td "Timeout:") (td ,(if (timeout? log) checkmark-entity "")))
                             (tr (td "Exit Code:") (td ,(if (exit? log) (number->string (exit-code log)) "")))
-                            (tr (td nbsp) (td (a ([href ,scm-url]) "View File"))))
+                            (tr (td " ") (td (a ([href ,scm-url]) "View File"))))
                      ,(if (lc-zero? changed)
                           ""
                           `(div ([class "error"])
@@ -287,14 +287,18 @@
                                                   (img ([src ,png-path])))))])
                         (make-cdata
                          #f #f
-                         (file->string
-                          (path-timing-html (substring (path->string* the-base-path) 1)))))
+                         (local [(define content 
+                                   (file->string
+                                    (path-timing-html (substring (path->string* the-base-path) 1))))]
+                           #;(regexp-replace* #rx"&(?![a-z]+;)" content "\\&amp;\\1")
+                           (regexp-replace* #rx"&gt;" content ">"))
+                         ))
                      ,(footer))))])]))
 
 (define (number->string/zero v)
   (cond 
     [(zero? v)
-     'nbsp]
+     '" "]
     [else
      (number->string v)]))
 
@@ -421,7 +425,7 @@
                                                        ,(if directory?
                                                             (number->string/zero v)
                                                             (if (zero? v)
-                                                                'nbsp
+                                                                '" "
                                                                 checkmark-entity))))
                                                 (list timeout unclean stderr changes))
                                          (td ,responsible-party))])
@@ -444,7 +448,7 @@
                               (td ,(number->string/zero (lc->number tot-unclean)))
                               (td ,(number->string/zero (lc->number tot-stderr)))
                               (td ,(number->string/zero (lc->number tot-changes)))
-                              (td nbsp))))
+                              (td " "))))
                   ,(footer))))]))
 
 (define (show-help req)
@@ -476,7 +480,7 @@
             @h1{How is the push "tested"?}
             @p{Each file's @code{@,PROP:command-line} property is consulted. If it is the empty string, the file is ignored. If it is a string, then a single @code{~s} is replaced with the file's path, @code{racket} and @code{mzc} with their path (for the current push), and @code{gracket} and @code{gracket-text} with @code{gracket-text}'s path (for the current push); then the resulting command-line is executed. 
                (Currently no other executables are allowed, so you can't @code{rm -fr /}.)
-               If there is no property value, the default (@code{mzscheme -t ~s}) is used if the file's suffix is @code{.ss}, @code{.scm}, or @code{.scrbl}.}
+               If there is no property value, the default @code{racket -qt ~s} is used if the file's suffix is @code{.rkt}, @code{.ss}, @code{.scm}, or @code{.scrbl} and @code{racket -f ~s} is used if the file's suffix is @code{.rktl}.}
                     
             @p{The command-line is always executed with a fresh empty current directory which is removed after the run. But all the files share the same home directory and X server, which are both removed after each push's testing is complete.}
             
@@ -836,6 +840,15 @@
    [("current" (string-arg) ...) show-file/current]
    [((integer-arg) "") show-revision]
    [((integer-arg) (string-arg) ...) show-file]))
+
+#;(define (xml-dispatch req)
+  (define xe (top-dispatch req))
+  (define full
+    (make-xexpr-response xe #:mime-type #"application/xhtml+xml"))
+  (struct-copy response/full full
+               [body (list* 
+                      #"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
+                      (response/full-body full))]))
 
 (date-display-format 'iso-8601)
 (cache/file-mode 'no-cache)

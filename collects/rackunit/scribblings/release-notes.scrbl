@@ -12,7 +12,7 @@ There are also miscellaneous Scribble fixes.
 
 @section{Version 3}
 
-This version of RacUnit is largely backwards compatible
+This version of RackUnit is largely backwards compatible
 with version 2 but there are significant changes to the
 underlying model, justifying incrementing the major version
 number.  These changes are best explained in

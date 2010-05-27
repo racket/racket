@@ -868,7 +868,7 @@ the parts that fit onto @racket[scene].
                   (image-height (rectangle 10 0 "solid" "purple"))]
   }
 
-@defproc[(image-baseline [i image?]) (and/c integer? positive? exact?)]{
+@defproc[(image-baseline [i image?]) (and/c integer? (not/c negative?) exact?)]{
   Returns the distance from the top of the image to its baseline. 
   Unless the image was constructed with @racket[text] or @racket[text/font],
   this will be the same as its height.

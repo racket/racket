@@ -147,7 +147,7 @@ creates test cases within the suite, with the given names and
 body expressions.
 
 As far I know no-one uses this macro, so it might disappear
-in future versions of RacUnit.}
+in future versions of RackUnit.}
 }
 
 
