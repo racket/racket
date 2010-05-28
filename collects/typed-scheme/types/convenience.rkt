@@ -23,9 +23,7 @@
   (apply Un (map tc-result-t args)))
 
 
-;; if t is of the form (Pair t* (Pair t* ... (Listof t*)))
-;; return t*
-;; otherwise, return t
+;; used to produce a more general type for loop variables
 ;; generalize : Type -> Type
 (define (generalize t)
   (let/ec exit
@@ -45,6 +43,7 @@
                             t-new)
                t-new
                (exit t)))]
+        [(ListDots: t bound) (-lst (substitute Univ bound t))]
         [_ (exit t)]))))
 
 

@@ -1,4 +1,3 @@
-
 ;; Change the lang to scheme for untyped version
 #lang typed-scheme
 
