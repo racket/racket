@@ -130,8 +130,8 @@ Most users will want to use the syntactic shorthand for creating @tech{formlet}s
 
 @section{Dynamic Syntactic Shorthand}
 
-@(require (for-label web-server/formlets/new-syntax))
-@defmodule[web-server/formlets/new-syntax]{
+@(require (for-label web-server/formlets/dyn-syntax))
+@defmodule[web-server/formlets/dyn-syntax]{
 
 The @racket[formlet] syntax is too restrictive for some applications because it forces the @racket[_rendering]
 to be @emph{syntactically} an @|xexpr|. You may discover you want to use a more "dynamic" shorthand.

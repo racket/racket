@@ -1,6 +1,5 @@
 #lang racket
 (require web-server/formlets
-         web-server/formlets/new-syntax
          tests/eli-tester
          web-server/http
          net/url)
