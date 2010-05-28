@@ -9,7 +9,6 @@
 (require "../utils/utils.rkt"
 	 "type-env-structs.rkt"
          "global-env.rkt"
-         "dotted-env.rkt"
 	 unstable/mutated-vars syntax/id-table
          (only-in scheme/contract ->* -> or/c any/c listof cons/c)
          (utils tc-utils)
@@ -41,14 +40,7 @@
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
 ;; identifer -> Type
 (define (lookup-type/lexical i [env (lexical-env)] #:fail [fail #f])
-  (lookup env i 
-          (lambda (i) (lookup-type 
-                       i (lambda () 
-                           (cond [(lookup (dotted-env) i (lambda _ #f))
-                                  =>
-                                  (lambda (a)
-                                    (-lst (substitute Univ (cdr a) (car a))))]
-                                 [else ((or fail lookup-fail) i)]))))))
+  (lookup env i (λ (i) (lookup-type i (λ () ((or fail lookup-fail) i))))))
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment
