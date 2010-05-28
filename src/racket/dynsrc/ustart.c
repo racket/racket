@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 {
   char *me = argv[0], *data, **new_argv;
   char *exe_path, *lib_path, *dll_path;
-  int start, prog_end, end, count, fd, v, x11;
+  int start, prog_end, end, count, fd, v, en, x11;
   int argpos, inpos, collcount = 1;
 
   if (config[7] == '[') {
@@ -423,11 +423,19 @@ int main(int argc, char **argv)
   /* Execute the original binary: */
 
   v = execv(exe_path, new_argv);
+  en = errno;
 
   write_str(2, argv[0]);
   write_str(2, ": failed to start ");
   write_str(2, exe_path);
-  write_str(2, "\n");
+  write_str(2, " (");
+  write_str(2, strerror(en));
+  write_str(2, ")\n");
+  if (*lib_path) {
+    write_str(2, " used library path ");
+    write_str(2, lib_path);
+    write_str(2, "\n");
+  }
 
   return v;
 }
