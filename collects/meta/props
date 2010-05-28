@@ -1426,6 +1426,7 @@ path/s is either such a string or a list of them.
 "collects/tests/gracket/wxme.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/honu" responsible (rafkind)
 "collects/tests/html" responsible (jay)
+"collects/tests/jpr" responsible (mflatt)
 "collects/tests/jpr/balle-grav-frot.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/jpr/dessine-arbre.ss" drdr:command-line (mzc "-k" *)
 "collects/tests/jpr/foo.ss" drdr:command-line (mzc "-k" *)
