@@ -248,7 +248,7 @@ SHARED_OK static Native_Get_Arity_Proc get_arity_code;
 static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored);
 static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored,  
                                          Branch_Info *for_branch);
-static int generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int multi_ok, int target,
+static int generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int wcm_may_replace, int multi_ok, int target,
                     Branch_Info *for_branch);
 static int generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
 static void *generate_lambda_simple_arity_check(int num_params, int has_rest, int is_method, int permanent);
@@ -3551,7 +3551,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   }
 
   mz_rs_stxi(num_rands - 1, JIT_R0);
-  generate(rator, jitter, 0, 0, JIT_V1, NULL);
+  generate(rator, jitter, 0, 0, 0, JIT_V1, NULL);
   CHECK_LIMIT();
   mz_rs_sync();
 
@@ -4009,7 +4009,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   if (reorder_ok) {
     if (no_call < 2) {
-      generate(rator, jitter, 0, 0, JIT_V1, NULL); /* sync'd below, or not */
+      generate(rator, jitter, 0, 0, 0, JIT_V1, NULL); /* sync'd below, or not */
     }
     CHECK_LIMIT();
   }
@@ -5117,14 +5117,14 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
       if (simple_rand2) {
         if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type))
-          generate(rand, jitter, 0, 0, JIT_R1, NULL); /* sync'd below */
+          generate(rand, jitter, 0, 0, 0, JIT_R1, NULL); /* sync'd below */
         else {
           generate_non_tail(rand, jitter, 0, 1, 0); /* sync'd below */
           CHECK_LIMIT();
           jit_movr_p(JIT_R1, JIT_R0);
         }
         CHECK_LIMIT();
-        generate(rand2, jitter, 0, 0, JIT_R0, NULL); /* sync'd below */
+        generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL); /* sync'd below */
       } else {
         generate_non_tail(rand2 ? rand2 : rand, jitter, 0, 1, 0); /* sync'd below */
       }
@@ -5799,7 +5799,7 @@ static int extract_nary_arg(int reg, int n, mz_jit_state *jitter, Scheme_App_Rec
       generate_unboxing(jitter, JIT_R0);
   } else if (is_constant_and_avoids_r1(app->args[n+1])) {
     __END_SHORT_JUMPS__(old_short_jumps);
-    generate(app->args[n+1], jitter, 0, 0, reg, NULL);
+    generate(app->args[n+1], jitter, 0, 0, 0, reg, NULL);
     CHECK_LIMIT();
     __START_SHORT_JUMPS__(old_short_jumps);
   } else {
@@ -6901,7 +6901,7 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
       CHECK_LIMIT();
       jit_movr_p(JIT_R1, JIT_R0);
 
-      generate(rand2, jitter, 0, 0, JIT_R0, NULL); /* no sync... */
+      generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
       CHECK_LIMIT();
 
       if (order_matters) {
@@ -6939,7 +6939,7 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
     mz_runstack_skipped(jitter, skipped);
 
     if (simple2) {
-      generate(rand2, jitter, 0, 0, JIT_R1, NULL); /* no sync... */
+      generate(rand2, jitter, 0, 0, 0, JIT_R1, NULL); /* no sync... */
       CHECK_LIMIT();
     } else {
       generate_non_tail(rand2, jitter, 0, 1, 0); /* no sync... */
@@ -6947,7 +6947,7 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
       jit_movr_p(JIT_R1, JIT_R0);
     }
 
-    generate(rand1, jitter, 0, 0, JIT_R0, NULL); /* no sync... */
+    generate(rand1, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
     CHECK_LIMIT();
 
     mz_runstack_unskipped(jitter, skipped);
@@ -8079,7 +8079,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         --jitter->unbox;
       } else {
         if (constval)
-          generate(app->args[3], jitter, 0, 0, JIT_R2, NULL); /* sync'd below */
+          generate(app->args[3], jitter, 0, 0, 0, JIT_R2, NULL); /* sync'd below */
         else {
           generate_non_tail(app->args[3], jitter, 0, 1, 0); /* sync'd below */
           jit_movr_p(JIT_R2, JIT_R0);
@@ -8092,7 +8092,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
          Need to get vec into R0, non-simple index into R1, value into R2. */
 
       if (can_delay_vec) {
-        generate(app->args[1], jitter, 0, 0, JIT_R0, NULL); /* sync'd below */
+        generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL); /* sync'd below */
         CHECK_LIMIT();
       } else if (can_delay_index && constval) {
         jit_movr_p(JIT_R0, JIT_V1);
@@ -8102,7 +8102,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       if (!simple) {
         if (can_delay_index) {
-          generate(app->args[2], jitter, 0, 0, JIT_R1, NULL); /* sync'd below */
+          generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL); /* sync'd below */
           CHECK_LIMIT();
         } else if (!constval) {
           if (can_delay_vec)
@@ -8224,14 +8224,14 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
           generate_app(app, NULL, 2, jitter, 0, 0, 2);
         }
         jitter->unbox++;
-        generate(app->args[3], jitter, 0, 0, JIT_R0, NULL); /* to FP reg */
+        generate(app->args[3], jitter, 0, 0, 0, JIT_R0, NULL); /* to FP reg */
         CHECK_LIMIT();
         --jitter->unbox;
         --jitter->unbox_depth;
         if (!got_two) {
-          generate(app->args[2], jitter, 0, 0, JIT_R1, NULL);
+          generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL);
           CHECK_LIMIT();
-          generate(app->args[1], jitter, 0, 0, JIT_R0, NULL);
+          generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL);
           mz_runstack_unskipped(jitter, 3);
         } else {
           mz_rs_ldr(JIT_R0);
@@ -8839,7 +8839,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
       for_branch->flostack = flostack;
       for_branch->flostack_pos = flostack_pos;
     }
-    v = generate(obj, jitter, 0, multi_ok, ignored ? -1 : JIT_R0, for_branch);
+    v = generate(obj, jitter, 0, 0, multi_ok, ignored ? -1 : JIT_R0, for_branch);
     CHECK_LIMIT();
     mz_flostack_restore(jitter, flostack, flostack_pos, !for_branch, 1);
     FOR_LOG(--jitter->log_depth);
@@ -8889,7 +8889,7 @@ static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitte
     PAUSE_JIT_DATA();
     FOR_LOG(jitter->log_depth++);
 
-    generate(obj, jitter, 0, multi_ok, ignored ? -1 : JIT_R0, for_branch); /* no sync */
+    generate(obj, jitter, 0, 0, multi_ok, ignored ? -1 : JIT_R0, for_branch); /* no sync */
 
     FOR_LOG(--jitter->log_depth);
     RESUME_JIT_DATA();
@@ -8934,7 +8934,7 @@ static int generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inline
 
   if (inlined_ok) {
     if (inlined_ok == 2)
-      return generate(obj, jitter, 0, 1, JIT_R0, NULL);
+      return generate(obj, jitter, 0, 0, 1, JIT_R0, NULL);
     else
       return generate_non_tail(obj, jitter, 0, 1, 0);
   }
@@ -8975,15 +8975,15 @@ static Scheme_Object *generate_k(void)
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  v = generate(obj, jitter, p->ku.k.i1, p->ku.k.i2, p->ku.k.i3, for_branch);
+  v = generate(obj, jitter, p->ku.k.i1, p->ku.k.i4, p->ku.k.i2, p->ku.k.i3, for_branch);
 
   return scheme_make_integer(v);
 }
 
 #define NUM_QUICK_INFO_ADDRS 6
 
-static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int multi_ok, 
-                           int orig_target, int result_ignored, Branch_Info *for_branch)
+static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int wcm_may_replace,
+                           int multi_ok, int orig_target, int result_ignored, Branch_Info *for_branch)
 {
   Scheme_Branch_Rec *branch = (Scheme_Branch_Rec *)obj;
   Branch_Info for_this_branch;
@@ -9087,7 +9087,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
       for_branch->true_needs_jump++;
       for_branch->restore_depth++;
     }
-    g1 = generate(branch->tbranch, jitter, is_tail, multi_ok, orig_target, for_branch);
+    g1 = generate(branch->tbranch, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
     if (for_branch) {
       --for_branch->true_needs_jump;
       --for_branch->restore_depth;
@@ -9147,7 +9147,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
     if (for_branch) {
       for_branch->restore_depth++;
     }
-    g2 = generate(branch->fbranch, jitter, is_tail, multi_ok, orig_target, for_branch);
+    g2 = generate(branch->fbranch, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
     if (for_branch) {
       --for_branch->restore_depth;
     }
@@ -9188,12 +9188,12 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   return 1;
 }
 
-static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int multi_ok, int target,
+static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int wcm_may_replace, int multi_ok, int target,
                     Branch_Info *for_branch)
 /* de-sync's; result goes to target */
 {
   Scheme_Type type;
-  int result_ignored, orig_target, not_wmc_again;
+  int result_ignored, orig_target;
 
 #ifdef DO_STACK_CHECK
 # include "mzstkchk.h"
@@ -9211,6 +9211,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
     p->ku.k.p1 = (void *)obj;
     p->ku.k.p2 = (void *)jitter_copy;
     p->ku.k.i1 = is_tail;
+    p->ku.k.i4 = wcm_may_replace;
     p->ku.k.i2 = multi_ok;
     p->ku.k.i3 = target;
     p->ku.k.p3 = (void *)for_branch;
@@ -9233,8 +9234,6 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       return 1;
     CHECK_LIMIT();
   }
-
-  not_wmc_again = !is_tail;
 
   type = SCHEME_TYPE(obj);
   switch (type) {
@@ -9667,7 +9666,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_R0);
 	  CHECK_LIMIT();
 
-	  generate(p, jitter, is_tail, multi_ok, orig_target, for_branch);
+	  generate(p, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
 
 	  END_JIT_DATA(8);
 	}
@@ -9824,11 +9823,11 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       END_JIT_DATA(11);
 
-      return generate(seq->array[cnt - 1], jitter, is_tail, multi_ok, orig_target, for_branch);
+      return generate(seq->array[cnt - 1], jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
     }
   case scheme_branch_type:
     {
-      return generate_branch(obj, jitter, is_tail, multi_ok, orig_target, result_ignored, for_branch);
+      return generate_branch(obj, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, result_ignored, for_branch);
     }
   case scheme_unclosed_procedure_type:
     {
@@ -9953,7 +9952,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       if (to_unbox)
         jitter->unbox = to_unbox;
 
-      return generate(lv->body, jitter, is_tail, multi_ok, orig_target, for_branch);
+      return generate(lv->body, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
     }
   case scheme_let_void_type:
     {
@@ -9996,7 +9995,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       if (to_unbox)
         jitter->unbox = to_unbox;
 
-      return generate(lv->body, jitter, is_tail, multi_ok, orig_target, for_branch);
+      return generate(lv->body, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
     }
   case scheme_letrec_type:
     {
@@ -10065,7 +10064,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       if (to_unbox)
         jitter->unbox = to_unbox;
 
-      return generate(l->body, jitter, is_tail, multi_ok, orig_target, for_branch);
+      return generate(l->body, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
     }
   case scheme_let_one_type:
     {
@@ -10145,7 +10144,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       if (to_unbox)
         jitter->unbox = to_unbox;
 
-      return generate(lv->body, jitter, is_tail, multi_ok, orig_target, for_branch);
+      return generate(lv->body, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
     }
   case scheme_with_cont_mark_type:
     {
@@ -10165,9 +10164,9 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       /* Key and value are on runstack */
       mz_rs_sync();
-      if (not_wmc_again) {
+      if (!wcm_may_replace) {
         (void)jit_calli(wcm_nontail_code);
-        not_wmc_again = 0;
+        wcm_may_replace = 1;
       } else
         (void)jit_calli(wcm_code);
       
@@ -10178,7 +10177,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("...in\n"));
 	
-      return generate(wcm->body, jitter, is_tail, multi_ok, orig_target, for_branch);
+      return generate(wcm->body, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, for_branch);
     }
   case scheme_quote_syntax_type:
     {
@@ -12364,7 +12363,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   
   /* Generate code for the body: */
   jitter->need_set_rs = 1;
-  r = generate(data->code, jitter, 1, 1, JIT_R0, NULL); /* no need for sync */
+  r = generate(data->code, jitter, 1, 1, 1, JIT_R0, NULL); /* no need for sync */
   /* Result is in JIT_R0 */
 
   CHECK_LIMIT();
