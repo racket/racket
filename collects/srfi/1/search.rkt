@@ -1,3 +1,5 @@
+#lang scheme/base
+
 ;;;
 ;;; <search.ss> ---- List searching functions
 ;;; Time-stamp: <02/02/28 12:11:01 noel>
@@ -32,7 +34,7 @@
 ;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
 ;;     -Olin
 
-#lang scheme/base
+
 
 (require srfi/optional
          "predicate.ss"
@@ -57,11 +59,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (find pred list)
-  (cond ((find-tail pred list) => car)
+  (check-arg procedure? pred 'find)
+  (cond ((find-tail-internal pred list) => car)
         (else #f)))
 
 (define (find-tail pred list)
   (check-arg procedure? pred 'find-tail)
+  (find-tail-internal pred list))
+
+(define (find-tail-internal pred list)
   (let lp ((list list))
     (and (not (null-list? list))
          (if (pred (car list)) list
