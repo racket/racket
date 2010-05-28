@@ -1080,6 +1080,10 @@
      :: 9 false (check-expect {(+ 1 1)} 2) -> 9 false (check-expect {2} 2)
      :: 9 false true (check-expect {(+ 2 2)} 4) -> 9 false true (check-expect {4} 4))
   
+  (t 'simple-check-expect m:beginner
+     (check-expect (+ 3 4) 7)
+     :: (check-expect {(+ 3 4)} 7) -> (check-expect {7} 7))
+  
   (t1 'check-within
       m:upto-int/lam
       "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (check-expect (+ 1 1) 2)(+ 4 5)"
