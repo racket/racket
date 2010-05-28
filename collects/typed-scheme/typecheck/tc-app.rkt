@@ -567,10 +567,10 @@
         (ret -Boolean (make-FilterSet f- f+))])]
     ;; (apply values l) gets special handling
     [(#%plain-app apply values e)
-     (cond [(with-handlers ([exn:fail? (lambda _ #f)])
-              (untuple (tc-expr/t #'e)))
-            => ret]
-           [else (tc/apply #'values #'(e))])]
+     (match (single-value #'e)
+       [(tc-result1: (ListDots: dty dbound)) (values->tc-results (make-ValuesDots null dty dbound) #f)]
+       [(tc-result1: (List: ts)) (ret ts)]
+       [_ (tc/apply #'values #'(e))])]
     ;; rewrite this so that it takes advantages of all the special cases
     [(#%plain-app k:apply . args) (tc/app/internal (syntax/loc form (#%plain-app apply . args)) expected)]
     ;; handle apply specially
