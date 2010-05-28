@@ -1,3 +1,8 @@
+#!/bin/sh
+#|
+exec racket -t "$0" -- -s -t 60 -v -R $*
+|#
+
 #lang scheme
 (require compiler/zo-parse
          compiler/zo-marshal
@@ -5,9 +10,40 @@
          setup/dirs)
 
 ;; Helpers
+(define (bytes->hex-string bs)
+  (apply string-append
+         (for/list ([b bs])
+           (format "~a~x"
+                   (if (b . <= . 15) "0" "")
+                   b))))
+
+(define (show-bytes-side-by-side orig new)
+  (define max-length
+    (max (bytes-length orig) (bytes-length new)))
+  (define BYTES-PER-LINE 38)
+  (define lines
+    (ceiling (/ max-length BYTES-PER-LINE)))
+  (define (subbytes* b s e)
+    (subbytes b (min s (bytes-length b)) (min e (bytes-length b))))
+  (for ([line (in-range lines)])
+    (define start (* line BYTES-PER-LINE))
+    (define end (* (add1 line) BYTES-PER-LINE))
+    (printf "+ ~a\n" (bytes->hex-string (subbytes* orig start end)))
+    (printf "- ~a\n" (bytes->hex-string (subbytes* new start end)))))
+
 (define (bytes-gulp f)
   (with-input-from-file f 
     (λ () (port->bytes (current-input-port)))))
+
+(define (read-compiled-bytes bs)
+  (define ib (open-input-bytes bs))
+  (dynamic-wind void
+                (lambda ()
+                  (parameterize ([read-accept-compiled #t])
+                    (read ib)))
+                (lambda ()
+                  (close-input-port ib))))
+
 (define (zo-parse/bytes bs)
   (define ib (open-input-bytes bs))
   (dynamic-wind void
@@ -245,6 +281,13 @@
             (lambda (file)
               (run/stages* file [stage serious? e] ...)))))
 
+(define debugging? (make-parameter #f))
+
+(define (print-bytes orig new)
+  (when (debugging?)
+    (show-bytes-side-by-side orig new))
+  #t)
+
 (define-stages (stages run!)
   file
   [read-orig 
@@ -279,6 +322,12 @@
   [decompile-parsed 
    #t
    (decompile parse-orig)]
+  [show-orig-and-marshal-parsed
+   #f
+   (print-bytes read-orig marshal-parsed)]
+  [c-parse-marshalled
+   #f
+   (read-compiled-bytes marshal-parsed)]
   [compare-orig-to-marshalled 
    #f
    (bytes-not-equal?-error read-orig marshal-parsed)])
@@ -345,6 +394,9 @@
 #;(current-command-line-arguments #("-s" "/home/bjohn3x/development/plt/collects/browser/compiled/browser_scrbl.zo"))
 (command-line #:program "zo-test" 
               #:once-each
+              [("-D") 
+               "Enable debugging output"
+               (debugging? #t)]
               [("-s" "--stop-on-first-error") 
                "Stop testing when first error is encountered"
                (stop-on-first-error #t)]
