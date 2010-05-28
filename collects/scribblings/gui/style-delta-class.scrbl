@@ -404,8 +404,8 @@ the possible values are:
 @itemize[
 @item{@scheme['change-nothing] --- reset all changes}
 @item{@scheme['change-normal] --- turn off all styles and resizings}
-@item{@scheme['change-toggle-underline] --- underline regions that are currently not underlined, and vice-versa}
-@item{@scheme['change-toggle-size-in-pixels] --- interpret sizes in pixels for regions that are currently interpreted in points, and vice-versa}
+@item{@scheme['change-toggle-underline] --- underline regions that are currently not underlined, and vice versa}
+@item{@scheme['change-toggle-size-in-pixels] --- interpret sizes in pixels for regions that are currently interpreted in points, and vice versa}
 @item{@scheme['change-normal-color] --- change the foreground and background to black and white, respectively}
 @item{@scheme['change-italic] --- change the style of the font to @italic{italic}}
 @item{@scheme['change-bold] --- change the weight of the font to @bold{bold}}

@@ -52,7 +52,7 @@ Returns the secondary @scheme[equal?]-hash key for @var{obj}.}
            [void* cycle_data])]{
 
 Like @cpp{scheme_equal_hash_key}, but accepts an extra value for cycle
-tracking. This procedure is meant to be called by a hasing procedure
+tracking. This procedure is meant to be called by a hashing procedure
 installed with @cpp{scheme_set_type_equality}.}
 
 Returns the primary @scheme[equal?]-hash key for @var{obj}.}

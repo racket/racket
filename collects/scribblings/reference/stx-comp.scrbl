@@ -9,7 +9,7 @@
          boolean?]{
 
 Returns @scheme[#t] if the identifier @scheme[a-id] would bind
-@scheme[b-id] (or vice-versa) if the identifiers were substituted in a
+@scheme[b-id] (or vice versa) if the identifiers were substituted in a
 suitable expression context at the @tech{phase level} indicated by
 @scheme[phase-level], @scheme[#f] otherwise. A @scheme[#f] value for
 @scheme[phase-level] corresponds to the @tech{label phase level}.}

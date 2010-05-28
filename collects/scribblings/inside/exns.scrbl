@@ -73,7 +73,7 @@ stack-allocated @cpp{mz_jmp_buf}, invoke
 and then restore @cpp{scheme_current_thread->error_buf} before
 returning a value. (3m: A stack-allocated @cpp{mz_jmp_buf} instance
 need not be registered with the garbage collector, and a
-heap-allocated @cpp{mz_jmp_buf} should be alloctaed as atomic.)
+heap-allocated @cpp{mz_jmp_buf} should be allocated as atomic.)
 
 However, beware that a prompt abort or the invocation of an escaping
 continuation looks like a primitive error escape. In that case, the
@@ -217,7 +217,7 @@ that occur during while evaluating source code from a string.
 
 When embedding Racket, asynchronous break exceptions are disabled by
 default. Call @cpp{scheme_set_can_break} (which is the same as calling
-the Racket funciton @scheme[break-enabled]) to enable or disable
+the Racket function @scheme[break-enabled]) to enable or disable
 breaks. To enable or disable breaks during the dynamic extent of
 another evaluation (where you would use
 @scheme[with-break-parameterization] in Racket), use

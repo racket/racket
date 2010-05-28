@@ -112,7 +112,7 @@ Otherwise, if any application or evaluation procedure is called, the
 @cpp{scheme_multiple_count} and @cpp{scheme_multiple_array} variables
 may be modified (but the array previously referenced by
 @cpp{scheme_multiple_array} is never re-used if
-@cpp{scheme_detatch_multiple_array} is called).
+@cpp{scheme_detach_multiple_array} is called).
 
 The @cpp{scheme_multiple_count} and
 @cpp{scheme_multiple_array} variables only contain meaningful values
@@ -280,7 +280,7 @@ Applies the procedure as a tail-call.}
 
 Compiles the S-expression @var{form} in the given namespace. The
 returned value can be used with @cpp{scheme_eval_compiled} et al.
-Provide a non-zero value fo @var{writable} if the resulting compiled
+Provide a non-zero value for @var{writable} if the resulting compiled
 object will be marshalled via @scheme[write] instead of evaluated.}
 
 @function[(Scheme_Object* scheme_expand

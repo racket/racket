@@ -31,7 +31,7 @@ parenthesized forms in a vector constant represent symbols and lists.
 Like strings, a vector is either mutable or immutable, and vectors
 written directly as expressions are immutable.
 
-Vector can be converted to lists and vice-versa via
+Vector can be converted to lists and vice versa via
 @racket[list->vector] and @racket[vector->list]; such conversions are
 particularly useful in combination with predefined procedures on
 lists. When allocating extra lists seems too expensive, consider

@@ -323,7 +323,7 @@ balanced by one call to @cpp{MZ_GC_UNREG}.
 Pointer information need not be initialized with
 @cppi{MZ_GC_VAR_IN_REG} and @cppi{MZ_GC_ARRAY_VAR_IN_REG} before
 calling @cpp{MZ_GC_REG}, and the set of registered pointers can change
-at any time---as long as all relevent pointers are registered when a
+at any time---as long as all relevant pointers are registered when a
 collection might occur. The following example recycles slots and
 completely de-registers information when no pointers are relevant. The
 example also illustrates how @cpp{MZ_GC_UNREG} is not needed when
@@ -447,7 +447,7 @@ For each input file @filepath{@italic{name}.c}, the transformed output
 is @filepath{@italic{name}.3m.c}.
 
 The @DFlag{xform} mode for @|mzc| does not change allocation calls,
-nor does it generate size, mark, or fixup predocures. It merely
+nor does it generate size, mark, or fixup procedures. It merely
 converts the code to register local pointers.
 
 Furthermore, the @DFlag{xform} mode for @|mzc| does not handle all of
@@ -485,7 +485,7 @@ Some specific limitations:
        function name, but it must be bound either as an argument or
        local variable with the form @cpp{@var{type} @var{id}}; the
        syntax @cpp{@var{ret_type} (*@var{id})(...)} is not
-       recgoinzed, so bind the function type to a simple name
+       recognized, so bind the function type to a simple name
        with @cpp{typedef}, first: @cpp{typedef @var{ret_type}
        (*@var{type})(...); .... @var{type} @var{id}}.}
 
@@ -807,7 +807,7 @@ under Windows; if this size is greater than 8 MB, then 8 MB is
 assumed, instead; the size is decremented by 50000 bytes to cover a
 large margin of error; finally, the size is subtracted from (for
 stacks that grow down) or added to (for stacks that grow up) the stack
-base in @var{stack_addr} or the auotmatically computed stack
+base in @var{stack_addr} or the automatically computed stack
 base. Note that the 50000-byte margin of error is assumed to cover the
 difference between the actual stack start and the reported stack base,
 in addition to the margin needed for detecting and handling stack
