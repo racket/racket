@@ -1,4 +1,4 @@
-;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname world) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 (require 2htdp/universe)
@@ -28,7 +28,7 @@
 
 (check-expect (key=? "b" "a") false)
 
-(check-error (key=? "a" 0) "key=?: expected <KeyEvent> as second argument, given: 0")
+(check-error (key=? "a" 0) "key=?: expected <KEY-EVTS> as second argument, given: 0")
 
 
 ;; run world run
