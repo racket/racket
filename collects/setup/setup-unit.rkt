@@ -358,7 +358,7 @@
       (let ([deps (with-handlers ([exn:fail? (lambda (x) null)])
                     (with-input-from-file path read))])
         (when (and (pair? deps) (list? deps))
-          (for ([s (cdr deps)])
+          (for ([s (in-list (cddr deps))])
             (unless (and (pair? s)
                          (eq? 'ext (car s)))
               (let ([s (main-collects-relative->path s)])
