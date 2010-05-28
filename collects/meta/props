@@ -570,7 +570,7 @@ path/s is either such a string or a list of them.
 "collects/algol60" responsible (mflatt)
 "collects/algol60/bd-tool.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/algol60/tool.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/at-exp" responsible (eli)
+"collects/at-exp" responsible (eli mflatt)
 "collects/browser" responsible (robby)
 "collects/browser/browser-unit.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/browser/browser.rkt" drdr:command-line (gracket-text "-t" *)
@@ -695,9 +695,9 @@ path/s is either such a string or a list of them.
 "collects/embedded-gui/private/tests/test-show-feature.rkt" drdr:command-line #f
 "collects/embedded-gui/private/tests/unaligned-childless-redux.rkt" drdr:command-line #f
 "collects/embedded-gui/private/verthoriz-alignment.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/eopl" responsible (eli)
 "collects/errortrace" responsible (mflatt)
-"collects/ffi" responsible (eli)
+"collects/ffi" responsible (eli mflatt)
+"collects/ffi/examples" responsible (eli)
 "collects/ffi/examples/c-printf.rkt" drdr:command-line (mzc "-k" *)
 "collects/ffi/examples/esd.rkt" drdr:command-line (mzc *)
 "collects/ffi/examples/magick.rkt" drdr:command-line (mzc *)
@@ -712,8 +712,8 @@ path/s is either such a string or a list of them.
 "collects/ffi/examples/use-xosd.rkt" drdr:command-line (mzc *)
 "collects/ffi/examples/xmmsctrl.rkt" drdr:command-line #f
 "collects/ffi/examples/xosd.rkt" drdr:command-line (mzc *)
-"collects/ffi/objc.rkt" drdr:command-line (mzc *)
-"collects/ffi/unsafe/objc.rkt" drdr:command-line (mzc *)
+"collects/ffi/objc.rkt" responsible (mflatt) drdr:command-line (mzc *)
+"collects/ffi/unsafe/objc.rkt" responsible (mflatt) drdr:command-line (mzc *)
 "collects/file" responsible (mflatt)
 "collects/framework" responsible (robby)
 "collects/framework/collapsed-snipclass.rkt" drdr:command-line (gracket-text "-t" *)
@@ -854,10 +854,9 @@ path/s is either such a string or a list of them.
 "collects/graphics/value-turtles-examples.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/graphics/value-turtles-test.rkt" drdr:command-line (mzc *)
 "collects/graphics/value-turtles.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/gui-debugger" responsible (gmarceau)
+"collects/gui-debugger" responsible (gmarceau mflatt)
 "collects/gui-debugger/debug-tool.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/gui-debugger/load-sandbox.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/guibuilder" responsible (robby)
 "collects/guibuilder/base.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/guibuilder/canvas.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/guibuilder/feature.rkt" drdr:command-line (gracket-text "-t" *)
@@ -936,12 +935,11 @@ path/s is either such a string or a list of them.
 "collects/htdp/tests/world.rkt" drdr:command-line (gracket "-t" *)
 "collects/htdp/world.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/html" responsible (jay)
-"collects/icons" responsible (robby)
 "collects/lang" responsible (mflatt robby matthias)
 "collects/lang/htdp-langs.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/lang/plt-pretty-big.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/lang/private/imageeq.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/launcher" responsible (mflatt eli)
+"collects/launcher" responsible (mflatt)
 "collects/lazy" responsible (eli)
 "collects/macro-debugger" responsible (ryanc)
 "collects/macro-debugger/model/trace-raw.rkt" drdr:command-line (gracket-text "-t" *)
@@ -978,7 +976,7 @@ path/s is either such a string or a list of them.
 "collects/meta/check-dists.rkt" drdr:command-line #f
 "collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
-"collects/mred" responsible (mflatt robby)
+"collects/mred" responsible (mflatt)
 "collects/mred/edit-main.rkt" drdr:command-line (mzc *)
 "collects/mred/edit.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mred/lang/main.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1038,7 +1036,7 @@ path/s is either such a string or a list of them.
 "collects/mred/private/wxtextfield.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mred/private/wxtop.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mred/private/wxwindow.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/mrlib" responsible (robby)
+"collects/mrlib" responsible (mflatt robby)
 "collects/mrlib/aligned-pasteboard.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mrlib/bitmap-label.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/mrlib/cache-image-snip.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1096,7 +1094,6 @@ path/s is either such a string or a list of them.
 "collects/mysterx/private/mxmain.rkt" drdr:command-line (mzc *)
 "collects/mysterx/private/prims.rkt" drdr:command-line (mzc *)
 "collects/mzcom" responsible (mflatt)
-"collects/mzlib" responsible (eli cce robby sstrickl mflatt)
 "collects/mzlib/contract.rkt" responsible (robby)
 "collects/mzlib/foreign.rkt" responsible (eli)
 "collects/mzlib/kw.rkt" responsible (eli)
@@ -1111,13 +1108,13 @@ path/s is either such a string or a list of them.
 "collects/mzscheme/examples/fmod-ez.rkt" drdr:command-line #f
 "collects/mzscheme/examples/msgbox.rkt" drdr:command-line #f
 "collects/mzscheme/examples/tree-finish.rkt" drdr:command-line #f
-"collects/net" responsible (eli jay)
-"collects/openssl" responsible (eli)
-"collects/parser-tools" responsible (sowens)
+"collects/net" responsible (eli jay mflatt)
+"collects/openssl" responsible (mflatt)
+"collects/parser-tools" responsible (mflatt)
 "collects/parser-tools/private-lex/error-tests.rkt" drdr:command-line #f
 "collects/plai" responsible (jay)
 "collects/plai/private/gc-gui.rkt" drdr:command-line (gracket "-t" *)
-"collects/planet" responsible (jacobm)
+"collects/planet" responsible (robby)
 "collects/plot" responsible (eli)
 "collects/plot/demos/demo-1.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/plot/demos/demo-10.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1169,7 +1166,7 @@ path/s is either such a string or a list of them.
 "collects/rackunit/tool.rkt" responsible (ryanc) drdr:command-line (gracket-text "-t" *)
 "collects/reader" responsible (mflatt)
 "collects/readline" responsible (mflatt)
-"collects/redex" responsible (clklein)
+"collects/redex" responsible (clklein robby)
 "collects/redex/examples/arithmetic.rkt" drdr:command-line (gracket-text "-t" * "--" "--no-print")
 "collects/redex/examples/beginner.rkt" drdr:command-line (racket "-t" * "-m")
 "collects/redex/examples/church.rkt" drdr:command-line (mzc *)
@@ -1211,8 +1208,8 @@ path/s is either such a string or a list of them.
 "collects/repo-time-stamp" responsible (eli)
 "collects/repo-time-stamp/time-stamp.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/rnrs" responsible (mflatt)
-"collects/s-exp" responsible (mflatt eli)
-"collects/scheme" responsible (mflatt sstrickl samth robby eli)
+"collects/s-exp" responsible (eli mflatt)
+"collects/scheme" responsible (mflatt)
 "collects/scheme/gui/base.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/scheme/gui/init.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/scheme/gui.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1221,6 +1218,7 @@ path/s is either such a string or a list of them.
 "collects/schemeunit/gui.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/scribble" responsible (mflatt eli)
 "collects/scribble/run.rkt" drdr:command-line (mzc *)
+"collects/scribble/text" responsible (eli)
 "collects/scribble/tools/drracket-buttons.rkt" drdr:command-line (gracket-text *)
 "collects/scribble/tools/private/mk-drs-bitmaps.rkt" drdr:command-line (gracket-text * "skip")
 "collects/scribblings" responsible (mflatt eli robby mathias)
@@ -1234,7 +1232,7 @@ path/s is either such a string or a list of them.
 "collects/setup/setup-go.rkt" drdr:command-line #f
 "collects/setup/unixstyle-install.rkt" drdr:command-line (mzc *)
 "collects/setup/winvers.rkt" drdr:command-line (mzc *)
-"collects/sgl" responsible (jay sowens)
+"collects/sgl" responsible (jay)
 "collects/sgl/bitmap.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/sgl/examples/alpha.rkt" drdr:command-line (mzc *)
 "collects/sgl/examples/gears.rkt" drdr:command-line (mzc "-k" *)
@@ -1280,7 +1278,7 @@ path/s is either such a string or a list of them.
 "collects/slideshow/tool.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/slideshow/tutorial-show.rkt" drdr:command-line (mzc *)
 "collects/slideshow/viewer.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/srfi" responsible (mflatt noel chongkai jay)
+"collects/srfi" responsible (noel chongkai jay)
 "collects/srfi/25/arlib.scm" drdr:command-line #f
 "collects/srfi/25/ix-ctor.scm" drdr:command-line #f
 "collects/srfi/25/op-ctor.scm" drdr:command-line #f
@@ -1304,7 +1302,7 @@ path/s is either such a string or a list of them.
 "collects/swindle" responsible (eli)
 "collects/swindle/tool.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/syntax" responsible (mflatt)
-"collects/syntax-color" responsible (sowens)
+"collects/syntax-color" responsible (mflatt)
 "collects/teachpack" responsible (matthias)
 "collects/teachpack/2htdp/scribblings/image-gen.rkt" responsible (robby) drdr:command-line (gracket-text *)
 "collects/teachpack/2htdp/scribblings/image-toc.rkt" responsible (robby)
@@ -1347,8 +1345,6 @@ path/s is either such a string or a list of them.
 "collects/test-engine/test-coverage.scm" drdr:command-line (gracket-text "-t" *)
 "collects/test-engine/test-display.scm" drdr:command-line (gracket-text "-t" *)
 "collects/test-engine/test-tool.scm" drdr:command-line (gracket-text "-t" *)
-"collects/tests" responsible (eli)
-"collects/tests/aligned-pasteboard" responsible (unknown)
 "collects/tests/aligned-pasteboard/example.rktl" drdr:command-line #f
 "collects/tests/aligned-pasteboard/old-bugs/big-min.rktl" drdr:command-line #f
 "collects/tests/aligned-pasteboard/old-bugs/missing-min.rktl" drdr:command-line #f
@@ -1677,14 +1673,13 @@ path/s is either such a string or a list of them.
 "collects/tests/racklog" responsible (jay)
 "collects/tests/rackunit" responsible (jay noel)
 "collects/tests/run-automated-tests.rkt" drdr:command-line (mzc "-k" *) drdr:timeout 600
-"collects/tests/scribble" responsible (eli mflatt)
+"collects/tests/scribble" responsible (eli)
 "collects/tests/slatex" responsible (jay sstrickl)
 "collects/tests/srfi" responsible (noel chongkai jay)
 "collects/tests/srfi/1/run-tests.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/srfi/40/run-tests.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/srfi/43/run-tests.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/srfi/load-srfis.rktl" drdr:command-line (racket "-f" *)
-"collects/tests/srpersist" responsible (unknown)
 "collects/tests/srpersist/srptests.rktl" drdr:command-line #f
 "collects/tests/stepper" responsible (clements)
 "collects/tests/stepper/already-defined.rktl" drdr:command-line #f
@@ -1721,7 +1716,7 @@ path/s is either such a string or a list of them.
 "collects/tests/stepper/write-display.rktl" drdr:command-line #f
 "collects/tests/stxparse" responsible (ryanc)
 "collects/tests/stxparse/stxclass.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/tests/syntax-color" responsible (sowens mflatt)
+"collects/tests/syntax-color" responsible (mflatt)
 "collects/tests/syntax-color/paren-tree.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/syntax-color/token-tree.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/test-engine" responsible (kathyg)
@@ -1741,7 +1736,6 @@ path/s is either such a string or a list of them.
 "collects/tests/unstable/byte-counting-port.rkt" responsible (jay)
 "collects/tests/unstable/generics.rkt" responsible (jay)
 "collects/tests/unstable/srcloc.rktl" responsible (cce) drdr:command-line (racket "-f" *)
-"collects/tests/utils" responsible (unknown)
 "collects/tests/utils/gui.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/web-server" responsible (jay)
 "collects/tests/web-server/run-all-tests.rkt" drdr:timeout 300
@@ -1752,7 +1746,7 @@ path/s is either such a string or a list of them.
 "collects/tests/xml" responsible (jay)
 "collects/tests/xml/test-clark.rkt" drdr:command-line #f drdr:timeout 300
 "collects/tests/xml/xml-snip-bug.rkt" drdr:command-line (gracket "-t" *)
-"collects/tex2page" responsible (mflatt eli jay)
+"collects/tex2page" responsible (jay)
 "collects/texpict" responsible (mflatt robby)
 "collects/texpict/balloon.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/texpict/code.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1797,7 +1791,6 @@ path/s is either such a string or a list of them.
 "collects/unstable/sequence.rkt" responsible (samth)
 "collects/version" responsible (eli)
 "collects/version/tool.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/waterworld" responsible (eli)
 "collects/waterworld/waterworld.rkt" drdr:command-line (mzc *)
 "collects/web-server" responsible (jay)
 "collects/web-server/default-web-root/configuration-table.rkt" drdr:command-line #f
@@ -1849,21 +1842,7 @@ path/s is either such a string or a list of them.
 "man/man1/plt-help.1" responsible (robby)
 "man/man1/racket.1" responsible (mflatt)
 "man/man1/raco.1" responsible (mflatt)
-"src/Makefile.in" responsible (mflatt)
-"src/README" responsible (mflatt)
-"src/a-list" responsible (mflatt)
-"src/configure" responsible (mflatt)
+"src" responsible (mflatt)
 "src/foreign" responsible (eli)
-"src/gracket" responsible (mflatt)
-"src/lt" responsible (mflatt)
-"src/mac" responsible (mflatt)
-"src/mysterx" responsible (eli)
-"src/mzcom" responsible (eli)
-"src/racket" responsible (mflatt)
-"src/worksp" responsible (mflatt)
-"src/wxcommon" responsible (mflatt)
-"src/wxmac" responsible (mflatt)
-"src/wxwindow" responsible (mflatt)
-"src/wxxt" responsible (mflatt)
 
 #:end-props |#
