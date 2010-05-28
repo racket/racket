@@ -181,7 +181,7 @@ library cannot manipulate the data in the structure except as allowed
 by the library.
 
 @; ------------------------------------------------------------
-@section[#:tag "struct-equal"]{Stricture Comparisons}
+@section[#:tag "struct-equal"]{Structure Comparisons}
 
 A generic @scheme[equal?] comparison automatically recurs on the
 fields of a transparent structure type, but @scheme[equal?] defaults
