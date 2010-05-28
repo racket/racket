@@ -298,6 +298,8 @@
               ;; recur structurally on dotted lists, assuming same bounds
               [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
                (subtype* A0 s-dty t-dty)]
+              [((ListDots: s-dty dbound) (Listof: t-elem))
+               (subtype* A0 (substitute Univ dbound s-dty) t-elem)]
 	      ;; quantification over two types preserves subtyping
 	      [((Poly: ns b1) (Poly: ms b2)) 
 	       (=> unmatch)
