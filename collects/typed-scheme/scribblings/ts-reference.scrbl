@@ -171,6 +171,57 @@ A polymorphic function of multiple arities.}
 
 @subsection{Loops}
 
+@defform/subs[(for: type-ann-maybe (for-clause ...)
+                expr ...+)
+              ([type-ann-maybe code:blank
+                               @code:line[: Void]]
+	       [for:-clause [id : t seq-expr]
+	                    @code:line[#:when guard]])]{
+Like @racket[for], but each @racket[id] having the associated type
+@racket[t]. Since the return type is always @racket[Void], annotating
+the return type of a @racket[for] form is optional. Unlike
+@racket[for], multi-valued @racket[seq-expr]s are not supported.
+}
+
+@deftogether[[
+@defform[(for/list: : u (for:-clause ...) expr ...+)]
+@;@defform[(for/hash: : u (for:-clause ...) expr ...+)] @; the ones that are commented out don't currently work
+@;@defform[(for/hasheq: : u (for:-clause ...) expr ...+)]
+@;@defform[(for/hasheqv: : u (for:-clause ...) expr ...+)]
+@;@defform[(for/and: : u (for:-clause ...) expr ...+)]
+@defform[(for/or:   : u (for:-clause ...) expr ...+)]
+@;@defform[(for/first: : u (for:-clause ...) expr ...+)]
+@;@defform[(for/last: : u (for:-clause ...) expr ...+)]
+]]{
+These behave like their non-annotated counterparts, with the exception
+that @racket[#:when] clauses can only appear as the last
+@racket[for:-clause]. The last @racket[expr] of the body must have
+type @racket[u].
+}
+
+@deftogether[[
+@defform[(for/lists: : u ([id : t] ...)
+           (for:-clause ...)
+	   expr ...+)]
+@defform[(for/fold:  : u ([id : t init-expr] ...)
+	   (for:-clause ...)
+	   expr ...+)]]]{
+These behave like their non-annotated counterparts. Unlike the above,
+@racket[#:when] clauses can be used freely with these.
+}
+
+@deftogether[[
+@defform[(for*: type-ann-maybe (for-clause ...)
+           expr ...+)]
+@defform[(for*/lists: : u ([id : t] ...)
+           (for:-clause ...)
+	   expr ...+)]
+@defform[(for*/fold:  : u ([id : t init-expr] ...)
+	   (for:-clause ...)
+	   expr ...+)]]]{
+These behave like their non-annotated counterparts.
+}
+
 @defform/subs[(do: : u ([id : t init-expr step-expr-maybe] ...)
                        (stop?-expr finish-expr ...)
                 expr ...+)
