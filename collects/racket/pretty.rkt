@@ -957,7 +957,8 @@
 
        (define (pr obj extra pp-pair depth qd)
 	 ;; may have to split on multiple lines
-	 (let* ([can-multi (and width
+	 (let* ([obj (if (hide? obj) (hide-val obj) obj)]
+                [can-multi (and width
                                 (not (size-hook obj display?))
 				(or (pair? obj)
                                     (mpair? obj)
