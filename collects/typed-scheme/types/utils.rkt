@@ -5,6 +5,7 @@
 (require (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (only-in (rep free-variance) combine-frees)
+         (env index-env tvar-env)
          scheme/match
          scheme/list
          mzlib/trace
@@ -25,9 +26,6 @@
          effects-equal?
          tc-result-t
          unfold
-         (struct-out Dotted)
-         (struct-out DottedBoth)
-         just-Dotted?
          tc-error/expr
          lookup-fail
          lookup-type-fail
@@ -48,7 +46,7 @@
                         (begin
                           (when (and (pair? drest)
                                      (eq? name (cdr drest))
-                                     (just-Dotted? name))
+                                     (not (bound-tvar? name)))
                             (int-err "substitute used on ... variable ~a in type ~a" name target))
                           (make-arr (map sb dom)
                                     (sb rng)
@@ -57,12 +55,12 @@
                                     (map sb kws)))]
                  [#:ValuesDots types dty dbound
                                (begin
-                                 (when (eq? name dbound)
+                                 (when (and (eq? name dbound) (not (bound-tvar? name)))
                                    (int-err "substitute used on ... variable ~a in type ~a" name target))
                                  (make-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:ListDots dty dbound
                              (begin
-                               (when (eq? name dbound)
+                               (when (and (eq? name dbound) (not (bound-tvar? name)))
                                  (int-err "substitute used on ... variable ~a in type ~a" name target))
                                (make-ListDots (sb dty) dbound))])
       target))
@@ -298,14 +296,6 @@
 
 ;; fv/list : Listof[Type] -> Listof[Name]
 (define (fv/list ts) (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
-
-;; t is (make-F v)
-(define-struct Dotted (t))
-(define-struct (DottedBoth Dotted) ())
-
-(define (just-Dotted? S)
-    (and (Dotted? S)
-         (not (DottedBoth? S))))
 
 (define (tc-error/expr msg #:return [return (make-Union null)] #:stx [stx (current-orig-stx)] . rest)
   (tc-error/delayed #:stx stx (apply format msg rest))

@@ -16,7 +16,7 @@
          (types utils abbrev union subtype resolve convenience type-table)
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
-         (except-in (env type-env-structs tvar-env) extend)
+         (except-in (env type-env-structs tvar-env index-env) extend)
          (rep type-rep filter-rep object-rep)
          (r:infer infer)
          '#%paramz
@@ -410,11 +410,10 @@
                      (not (eq? tail-bound (cdr (car drests*))))
                      (= (length (car doms*))
                         (length arg-tys))
-                     (parameterize ([current-tvars (extend-env (list tail-bound (cdr (car drests*)))
-                                                               (list (make-DottedBoth (make-F tail-bound))
-                                                                     (make-DottedBoth (make-F (cdr (car drests*)))))
-                                                               (current-tvars))])
-                       (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*)))))
+                     (extend-tvars (list tail-bound (cdr (car drests*)))
+                       (extend-indexes (cdr (car drests*)) 
+                         ;; don't need to add tail-bound - it must already be an index
+                         (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))))
                 => (lambda (substitution) 
                      (define drest-bound (cdr (car drests*)))
                      (do-ret (substitute-dotted (cadr (assq drest-bound substitution))
@@ -636,9 +635,8 @@
      (match (single-value #'arg)
        ;; if the argument is a ListDots
        [(tc-result1: (ListDots: t bound))
-        (match (parameterize ([current-tvars (extend-env (list bound)
-                                                         (list (make-DottedBoth (make-F bound)))
-                                                         (current-tvars))])
+        
+        (match (extend-tvars (list bound)
                  ;; just check that the function applies successfully to the element type
                  (tc/funapp #'f #'(arg) (tc-expr #'f) (list (ret t)) expected))
           [(tc-result1: t) (ret (make-ListDots t bound))]

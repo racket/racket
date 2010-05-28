@@ -10,8 +10,7 @@
          (rep type-rep)
          (only-in (infer infer) restrict)
          (except-in (utils tc-utils stxclass-util))
-         (env lexical-env)
-         (only-in (env type-env-structs tvar-env) lookup current-tvars extend-env)
+         (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal unstable/debug
          (except-in syntax/parse id)
          (only-in srfi/1 split-at))
@@ -118,15 +117,11 @@
                (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
                  (match (syntax-e last-stx)
                    [(cons last-ty-stx (? identifier? last-id-stx))
-                    (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
+                    (unless (bound-index? (syntax-e last-id-stx))
                       (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
                     (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
                         (let* ([last-id (syntax-e last-id-stx)]
-                               [last-ty
-                                (parameterize ([current-tvars (extend-env (list last-id)
-                                                                          (list (make-DottedBoth (make-F last-id)))
-                                                                          (current-tvars))])
-                                  (parse-type last-ty-stx))])
+                               [last-ty (extend-tvars (list last-id) (parse-type last-ty-stx))])
                           (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
                         (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
                                        ty (sub1 (PolyDots-n ty)) (length all-but-last)))]

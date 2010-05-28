@@ -181,10 +181,10 @@
   ;; parse the types
   (define types
     ;; add the type parameters of this structure to the tvar env
-    (parameterize ([current-tvars (extend-env tvars new-tvars (current-tvars))]
-                   [current-poly-struct `#s(poly ,nm ,new-tvars)])
-      ;; parse the field types
-      (map parse-type tys)))
+    (extend-tvars tvars
+      (parameterize ([current-poly-struct `#s(poly ,nm ,new-tvars)])
+        ;; parse the field types
+        (map parse-type tys))))
   ;; instantiate the parent if necessary, with new-tvars
   (define concrete-parent 
     (if (Poly? parent)

@@ -6,7 +6,7 @@
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: scheme/contract)
          syntax/parse
-         (env type-env-structs tvar-env type-name-env type-alias-env lexical-env)         
+         (env type-env-structs tvar-env type-name-env type-alias-env lexical-env index-env)         
          scheme/match unstable/debug
          (for-template scheme/base "colon.ss")
          ;; needed at this phase for tests
@@ -69,17 +69,15 @@
   (syntax-parse stx #:literals (t:All)
     [((~and kw t:All) (vars:id ... v:id dd:ddd) . t)
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
-            [tvars (map make-F vars)]
-            [v (syntax-e #'v)]
-            [tv (make-Dotted (make-F v))])
+            [v (syntax-e #'v)])
        (add-type-name-reference #'kw)
-       (parameterize ([current-tvars (extend-env (cons v vars) (cons tv tvars) (current-tvars))])
-         (make-PolyDots (append vars (list v)) (parse-all-body #'t))))]
+       (extend-indexes v
+         (extend-tvars vars
+           (make-PolyDots (append vars (list v)) (parse-all-body #'t)))))]
     [((~and kw t:All) (vars:id ...) . t) 
-     (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
-            [tvars (map make-F vars)])
+     (let* ([vars (map syntax-e (syntax->list #'(vars ...)))])
        (add-type-name-reference #'kw)
-       (parameterize ([current-tvars (extend-env vars tvars (current-tvars))])
+       (extend-tvars vars
          (make-Poly vars (parse-all-body #'t))))]
     [(t:All (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(t:All . rest) (tc-error "All: bad syntax")]))
@@ -179,10 +177,7 @@
        (let* ([var (syntax-e #'x)]
               [tvar (make-F var)])
          (add-type-name-reference #'kw)
-         (parameterize ([current-tvars (extend-env 
-                                        (list var) 
-                                        (list tvar)
-                                        (current-tvars))])
+         (extend-tvars (list var)
            (let ([t (parse-type #'t)])
              (if (memq var (fv t))
                  (make-Mu var t)
@@ -223,41 +218,27 @@
                #:kws (attribute kws.Keyword))))]
       [(dom:expr ... rest:expr :ddd/bound (~and kw t:->) rng)
        (add-type-name-reference #'kw)
-       (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
-         (if (not (Dotted? var))
-             (tc-error/stx #'bound 
-                           "Used a type variable (~a) not bound with ... as a bound on a ..."
-                           (syntax-e #'bound))
-             (make-Function
-              (list
-               (make-arr-dots (map parse-type (syntax->list #'(dom ...)))
-                              (parse-values-type #'rng)
-                              (parameterize 
-                                  ([current-tvars 
-                                    (extend-env 
-                                     (list (syntax-e #'bound)) 
-                                     (list (make-DottedBoth (make-F (syntax-e #'bound))))
-                                     (current-tvars))])
-                                (parse-type #'rest))
-                              (syntax-e #'bound))))))]
+       (let* ([bnd (syntax-e #'bound)])
+         (unless (bound-index? bnd)
+           (tc-error/stx #'bound 
+                         "Used a type variable (~a) not bound with ... as a bound on a ..."
+                         bnd))
+         (make-Function
+          (list
+           (make-arr-dots (map parse-type (syntax->list #'(dom ...)))
+                          (parse-values-type #'rng)
+                          (extend-tvars (list bnd)
+                            (parse-type #'rest))
+                          bnd))))]
       [(dom:expr ... rest:expr _:ddd (~and kw t:->) rng)
        (add-type-name-reference #'kw)
-       (let ([bounds (env-keys+vals (env-filter (compose Dotted? cdr) (current-tvars)))])
-         (when (null? bounds)
-           (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
-         (unless (null? (cdr bounds))
-           (tc-error/stx stx "Cannot infer bound for ... type"))
-         (match-let ([(cons var (struct Dotted (t))) (car bounds)])
-           (make-Function
-            (list
-             (make-arr-dots (map parse-type (syntax->list #'(dom ...)))
-                            (parse-values-type #'rng)
-                            (parameterize ([current-tvars 
-                                            (extend-env (list var)
-                                                        (list (make-DottedBoth t))
-                                                        (current-tvars))])
-                              (parse-type #'rest))
-                            var)))))]
+       (let ([var (infer-index stx)])
+         (make-Function
+          (list
+           (make-arr-dots (map parse-type (syntax->list #'(dom ...)))
+                          (parse-values-type #'rng)
+                          (extend-tvars (list var) (parse-type #'rest))
+                          var))))]
       #| ;; has to be below the previous one
      [(dom:expr ... (~and kw t:->) rng) 
       (add-type-name-reference #'kw)
@@ -275,14 +256,13 @@
       [id:identifier
        (cond 
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)
-         [(lookup (current-tvars) (syntax-e #'id) (lambda (_) #f))
-          =>
-          (lambda (e) (cond [(DottedBoth? e) (Dotted-t e)]
-                            [(Dotted? e)
-                             (tc-error 
-                              "Type variable ~a must be used with ..."
-                              (syntax-e #'id))]
-                            [else e]))]
+         [(bound-tvar? (syntax-e #'id))
+          (make-F (syntax-e #'id))]
+         ;; if it was in current-indexes, produce a better error msg
+         [(bound-index? (syntax-e #'id))
+          (tc-error
+           "Type variable ~a must be used with ..."
+           (syntax-e #'id))]
          ;; if it's a type alias, we expand it (the expanded type is stored in the HT)
          [(lookup-type-alias #'id parse-type (lambda () #f))
           =>
@@ -354,31 +334,24 @@
     (syntax-parse stx #:literals (t:List)
       [((~and kw t:List) tys ... dty :ddd/bound)
        (add-type-name-reference #'kw)
-       (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
-         (if (not (Dotted? var))
-             (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." (syntax-e #'bound))             
-             (-Tuple* (map parse-type (syntax->list #'(tys ...)))
-                      (make-ListDots
-                       (parameterize ([current-tvars (extend-env (list (syntax-e #'bound)) 
-                                                                 (list (make-DottedBoth (make-F (syntax-e #'bound))))
-                                                                 (current-tvars))])
-                         (parse-type #'dty))
-                       (syntax-e #'bound)))))]
+       (let ([var (syntax-e #'bound)])
+         (unless (bound-index? var)
+           (if (bound-tvar? var)
+               (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." var)
+               (tc-error/stx #'bound "Type variable ~a is unbound" var)))
+         (-Tuple* (map parse-type (syntax->list #'(tys ...)))
+                  (make-ListDots
+                   (extend-tvars (list var)
+                     (parse-type #'dty))
+                   var)))]
       [((~and kw t:List) tys ... dty _:ddd)
        (add-type-name-reference #'kw)
-       (let ([bounds (env-keys+vals (env-filter (compose Dotted? cdr) (current-tvars)))])
-         (when (null? bounds)
-           (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
-         (unless (null? (cdr bounds))
-           (tc-error/stx stx "Cannot infer bound for ... type"))
-         (match-let ([(cons var (struct Dotted (t))) (car bounds)])
-           (-Tuple* (map parse-type (syntax->list #'(tys ...)))
+       (let ([var (infer-index stx)])
+         (-Tuple* (map parse-type (syntax->list #'(tys ...)))
                     (make-ListDots
-                     (parameterize ([current-tvars (extend-env (list var) 
-                                                               (list (make-DottedBoth t))
-                                                               (current-tvars))])
+                     (extend-tvars (list var)
                        (parse-type #'dty))
-                     var))))]
+                     var)))]
       [((~and kw t:List) tys ...) 
        (add-type-name-reference #'kw)
        (-Tuple (map parse-type (syntax->list #'(tys ...))))])))
@@ -388,29 +361,22 @@
     (syntax-parse stx #:literals (values t:All)
       [((~and kw values) tys ... dty :ddd/bound)
        (add-type-name-reference #'kw)
-       (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
-         (if (not (Dotted? var))
-             (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." (syntax-e #'bound))             
-             (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
-                              (parameterize ([current-tvars (extend-env (list (syntax-e #'bound)) 
-                                                                        (list (make-DottedBoth (make-F (syntax-e #'bound))))
-                                                                        (current-tvars))])
-                                (parse-type #'dty))
-                              (syntax-e #'bound))))]
+       (let ([var (syntax-e #'bound)])
+         (unless (bound-index? var)
+           (if (bound-tvar? var)
+               (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." var)
+               (tc-error/stx #'bound "Type variable ~a is unbound" var)))         
+         (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
+                          (extend-tvars (list var)
+                            (parse-type #'dty))
+                          var))]
       [((~and kw values) tys ... dty _:ddd)
        (add-type-name-reference #'kw)
-       (let ([bounds (env-keys+vals (env-filter (compose Dotted? cdr) (current-tvars)))])
-         (when (null? bounds)
-           (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
-         (unless (null? (cdr bounds))
-           (tc-error/stx stx "Cannot infer bound for ... type"))
-         (match-let ([(cons var (struct Dotted (t))) (car bounds)])
-           (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
-                            (parameterize ([current-tvars (extend-env (list var) 
-                                                                      (list (make-DottedBoth t))
-                                                                      (current-tvars))])
+       (let ([var (infer-index stx)])
+         (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
+                          (extend-tvars (list var)
                               (parse-type #'dty))
-                            var)))]
+                            var))]
       [((~and kw values) tys ...) 
        (add-type-name-reference #'kw)
        (-values (map parse-type (syntax->list #'(tys ...))))]

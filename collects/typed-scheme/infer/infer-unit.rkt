@@ -6,10 +6,9 @@
            "utils/utils.rkt" "utils/tc-utils.rkt"
            "rep/free-variance.rkt" "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/rep-utils.rkt"
            "types/convenience.rkt" "types/union.rkt" "types/subtype.rkt" "types/remove-intersect.rkt" "types/resolve.rkt"
-           "env/type-name-env.rkt")
+           "env/type-name-env.rkt" "env/index-env.rkt" "env/tvar-env.rkt")
           make-env)
-         (except-in (path-up "types/utils.rkt") Dotted)
-         (only-in (path-up "env/type-env-structs.rkt" "env/tvar-env.rkt") lookup current-tvars)
+         (path-up "types/utils.rkt")
          "constraint-structs.rkt"
 	 "signatures.rkt"                  
          scheme/match
@@ -272,14 +271,14 @@
           [((F: (? (lambda (e) (memq e X)) v)) S)
            (when (match S
                    [(F: v*)
-                    (just-Dotted? (lookup (current-tvars) v* (lambda _ #f)))]
+                    (and (bound-index? v*) (not (bound-tvar? v*)))]
                    [_ #f])
              (fail! S T))
            (singleton (Un) v (var-demote S V))]
           [(S (F: (? (lambda (e) (memq e X)) v)))
            (when (match S
                    [(F: v*)
-                    (just-Dotted? (lookup (current-tvars) v* (lambda _ #f)))]
+                    (and (bound-index? v*) (not (bound-tvar? v*)))]
                    [_ #f])
              (fail! S T))
            (singleton (var-promote S V) v Univ)]

@@ -71,8 +71,6 @@
                    [infer-param infer]
                    ;; do we report multiple errors
                    [delay-errors? #t]
-                   ;; this parameter is for parsing types
-                   [current-tvars initial-tvar-env]
                    ;; this parameter is just for printing types
                    ;; this is a parameter to avoid dependency issues
                    [current-type-names
