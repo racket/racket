@@ -53,10 +53,10 @@ typedef enum ffi_abi {
 #endif
 
   /* ---- Intel x86 and AMD x86-64 - */
-#if !defined(X86_WIN32) && (defined(__i386__) || defined(__x86_64__))
+#if !defined(X86_WIN32) && (defined(__i386__) || defined(__i386) || defined(__x86_64__))
   FFI_SYSV,
   FFI_UNIX64,   /* Unix variants all use the same ABI for x86-64  */
-#ifdef __i386__
+#if defined(__i386__) || defined(__i386)
   FFI_DEFAULT_ABI = FFI_SYSV,
 #else
   FFI_DEFAULT_ABI = FFI_UNIX64,
