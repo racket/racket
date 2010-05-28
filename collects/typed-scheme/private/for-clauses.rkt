@@ -11,7 +11,8 @@
     (pattern (var:annotated-name seq-expr:expr)
              #:with (expand ...) (list #'(var.ann-name seq-expr)))
     ;; multi-valued seq-expr
-    (pattern ((v:annotated-name ...) seq-expr:expr)
+    ;; currently disabled because it triggers an internal error in the typechecker
+    #;(pattern (((v:annotated-name) ...) seq-expr:expr)
              #:with (expand ...) (list #'((v.ann-name ...) seq-expr)))
     ;; when clause
     (pattern (~seq #:when guard:expr)
@@ -23,7 +24,8 @@
     (pattern (var:annotated-name seq-expr:expr)
              #:with (expand ...) (list #'(var.ann-name seq-expr) #'#:when #'#t))
     ;; multi-valued seq-expr
-    (pattern ((v:annotated-name ...) seq-expr:expr)
+    ;; currently disabled because it triggers an internal error in the typechecker
+    #;(pattern (((v:annotated-name) ...) seq-expr:expr)
              #:with (expand ...) (list #'((v.ann-name ...) seq-expr) #'#:when #'#t))
     ;; when clause
     (pattern (~seq #:when guard:expr)

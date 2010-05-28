@@ -10,6 +10,7 @@
 ;; matter how many #:when clauses we throw at them.
 ;; Of course, for*/list: and co won't work, since they are equivalent
 ;; to for/list: and co with #:when clauses.
+;; These are currently documented as not working.
 (for/list: : (Listof Integer)
            ((i : Exact-Positive-Integer '(1 2 3))
             #:when (odd? i)
@@ -27,8 +28,10 @@
              (j : Exact-Positive-Integer '(10 20 30)))
             (list i j))
 
-;; The right type for the return value would be (values (Listof Integer) (Listof Integer)).
-;; The problem here is with the error message. Somehow, source location information is lost and the whole module is blamed.
+;; The right type for the return value would be:
+;; (values (Listof Integer) (Listof Integer)).
+;; The problem here is with the error message. Somehow, source location
+;; information is lost and the whole module is blamed.
 (for/lists: : (Listof Integer)
             ((x : (Listof Integer))
              (y : (Listof Integer)))
@@ -36,7 +39,10 @@
              (j : Exact-Positive-Integer '(10 20 30)))
             (values i j))
 
-;; This is a legitimate use of multi-valued seq-exprs, but it causes the typechecker to throw an internal error.
+;; This is a legitimate use of multi-valued seq-exprs, but it causes
+;; the typechecker to throw an internal error.
+;; Multi-valued seq-exprs are currently turned off and documented as
+;; not working.
 (for/list: : (Listof Integer)
            ((([i : Exact-Positive-Integer]
               [j : Exact-Positive-Integer])
