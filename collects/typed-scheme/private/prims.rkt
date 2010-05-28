@@ -499,6 +499,67 @@ This file defines two sorts of primitives. All of them are provided into any mod
       'type-ascription
       #'ty)]))
 
+(define-syntax (for*: stx)
+  (syntax-parse stx #:literals (:)
+    [(_ (~seq : Void) ...
+        (clause:for*-clause ...)
+        c:expr ...)
+     (quasisyntax/loc stx
+       (for: (clause.expand ... ...)
+             c ...))]))
+
+;; These expand into code equivalent to the above macros with
+;; interspersed "#:when #t" clauses. As such, they will fail to
+;; typecheck in the same cases. These macros (except for*:) will only
+;; work in very limited cases (usually a single clause), at least
+;; until inference can handle their expansion.
+;; Because of their current very limited usefulness, these are not
+;; currently documented.
+(define-for-syntax (define-for*-variant name)
+  (lambda (stx)
+    (syntax-parse stx #:literals (:)
+      [(_ : ty
+          (clause:for-clause ...)
+          c:expr ...)
+       (syntax-property
+        (quasisyntax/loc stx
+          (#,name (clause.expand ... ...)
+                  c ...))
+        'type-ascription
+        #'ty)])))
+(define-syntax (define-for*-variants stx)
+  (syntax-parse stx
+    [(_ (name no-*-name) ...)
+     (quasisyntax/loc
+         stx
+       (begin (define-syntax name (define-for*-variant #'no-*-name)) ...))]))
+(define-for*-variants
+  (for*/list: for*/list)
+  (for*/hash: for*/hash)
+  (for*/hasheq: for*/hasheq)
+  (for*/hasheqv: for*/hasheqv)
+  (for*/and: for*/and)
+  (for*/or: for*/or)
+  (for*/first: for*/first)
+  (for*/last: for*/last))
+
+(define-for-syntax (define-for*-folding-variant name)
+  (lambda (stx)
+    (syntax-parse stx #:literals (:)
+      [(_ : ty
+          (var ...)
+          (clause:for*-clause ...)
+          c:expr ...)
+       (quasisyntax/loc stx
+         (#,name : ty
+           (var ...)
+           (clause.expand ... ...)
+           c ...))])))
+
+;; Like for/lists: and for/fold:, the inferencer can handle these correctly.
+(define-syntax for*/lists: (define-for*-folding-variant #'for/lists:))
+(define-syntax for*/fold:  (define-for*-folding-variant #'for/fold:))
+
 (define-syntax (provide: stx)
   (syntax-parse stx
     [(_ [i:id t] ...)
