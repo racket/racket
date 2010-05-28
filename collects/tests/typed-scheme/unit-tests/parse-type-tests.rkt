@@ -1,5 +1,6 @@
 #lang scheme/base
 (require "test-utils.ss" (for-syntax scheme/base)
+         racket/set
          (utils tc-utils)
 	 (env type-alias-env type-env-structs tvar-env type-name-env init-envs)
 	 (rep type-rep)
@@ -105,8 +106,7 @@
    
    [(Listof Number) (make-Listof  N)]
    
-   [a (-v a) (extend-env (list 'a) (list (-v a))
-                            initial-tvar-env)]
+   [a (-v a) (set-add initial-tvar-env 'a)]
    [(All (a ...) (a ... -> Number))
     (-polydots (a) ((list) [a a] . ->... . N))]
    
