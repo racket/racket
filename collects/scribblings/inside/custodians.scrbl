@@ -48,7 +48,7 @@ typedef void (*Scheme_Close_Custodian_Client)(Scheme_Object *o,
 If @var{strong} is non-zero, then the newly managed value will
 be remembered until either the custodian shuts it down or
 @cpp{scheme_remove_managed} is called. If @var{strong} is
-zero, the value is allowed to be garbaged collected (and automatically
+zero, the value is allowed to be garbage collected (and automatically
 removed from the custodian).
 
 Independent of whether @var{strong} is zero, the value @var{o} is

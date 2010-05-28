@@ -94,7 +94,7 @@ The @scheme[_struct-id] that appears after @scheme[struct-copy] must
 be a structure type name bound by @scheme[struct] (i.e., the
 name that cannot be used directly as an expression). The
 @scheme[_struct-expr] must produce an instance of the structure type.
-The result is a new instance of the structure tpe that is like the old
+The result is a new instance of the structure type that is like the old
 one, except that the field indicated by each @scheme[_field-id] gets
 the value of the corresponding @scheme[_expr].
 
@@ -144,7 +144,7 @@ p
 ]
 
 @; ------------------------------------------------------------
-@section[#:tag "trans-struct"]{Opaque versus Transparent Stucture Types}
+@section[#:tag "trans-struct"]{Opaque versus Transparent Structure Types}
 
 With a structure type definition like
 
@@ -181,7 +181,7 @@ library cannot manipulate the data in the structure except as allowed
 by the library.
 
 @; ------------------------------------------------------------
-@section[#:tag "struct-equal"]{Stucture Comparisons}
+@section[#:tag "struct-equal"]{Stricture Comparisons}
 
 A generic @scheme[equal?] comparison automatically recurs on the
 fields of a transparent structure type, but @scheme[equal?] defaults
@@ -281,7 +281,7 @@ times.
 ]
 
 @; ------------------------------------------------------------
-@section[#:tag "prefab-struct"]{Prefab Stucture Types}
+@section[#:tag "prefab-struct"]{Prefab Structure Types}
 
 Although a @tech{transparent} structure type prints in a way that
 shows its content, the printed form of the structure cannot be used in
@@ -463,7 +463,7 @@ A @scheme[_struct-option] always starts with a keyword:
   ]}
 
 @;-- FIXME:
-@;-- Explain when to use guards instead of contracts, and vice-versa
+@;-- Explain when to use guards instead of contracts, and vice versa
 
  @specspecsubform[(code:line #:guard guard-expr)]{ Specifies a
   @deftech{constructor guard} procedure to be called whenever an

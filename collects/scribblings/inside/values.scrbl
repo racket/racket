@@ -137,7 +137,7 @@ types:
  a caution about @cppi{SCHEME_SYM_VAL}}
 
  @item{@cppdef{scheme_keyword_type} --- @cppdef{SCHEME_KEYWORD_VAL}
- extracts the keywors's string (without the leading hash colon) as a
+ extracts the keyword's string (without the leading hash colon) as a
  @cpp{char*} UTF-8 encoding (do not modify this string);
  @cppdef{SCHEME_KEYWORD_LEN} extracts the number of bytes in the keyword
  name (not counting the nul terminator); test for this type with

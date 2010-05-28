@@ -184,7 +184,7 @@ See also
 @method[canvas% init-manual-scrollbars] for information about manual scrollbars. The horizontal and vertical
  scrollbars are always either both manual or both automatic, but they
  are independently enabled. Automatic scrollbars can be
- re-initialized as manual, and vice-versa.
+ re-initialized as manual, and vice versa.
 
 If either @scheme[horiz-pixels] or @scheme[vert-pixels] is
  @scheme[#f], the scrollbar is not enabled in the corresponding
@@ -224,7 +224,7 @@ See also
 @method[canvas% init-auto-scrollbars] for information about automatic scrollbars. The horizontal and vertical
  scrollbars are always either both manual or both automatic, but they
  are independently enabled. Automatic scrollbars can be re-initialized
- as manual, and vice-versa.
+ as manual, and vice versa.
 
 The @scheme[h-length] and @scheme[v-length] arguments specify the length of
  each scrollbar in scroll steps (i.e., the maximum value of each

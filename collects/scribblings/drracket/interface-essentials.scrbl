@@ -58,7 +58,7 @@ pathname. Selecting one of the menu entries produces an open-file
 dialog starting in the corresponding directory.
 
 Below the filename button is a @as-index{@onscreen{(define ...)}
-button} for a popup menu of names that are defined in the definitions
+button} for a pop-up menu of names that are defined in the definitions
 window. Selecting an item from the menu moves the blinking caret to
 the corresponding definition.
 
@@ -119,8 +119,8 @@ annotations:
 
        @index['("alpha renaming")]{Additionally}, right-clicking (or
        Control-clicking under Mac OS X) on a variable activates a
-       popup menu that lets you jump from binding location to bound
-       location and vice-versa, @as-index{@"\u03B1"-rename} the
+       pop-up menu that lets you jump from binding location to bound
+       location and vice versa, @as-index{@"\u03B1"-rename} the
        variable, or tack the arrows so they do not disappear.}
 
  @item{@index['("tail calls")]{@bold{Tail Calls:}} Any
@@ -131,7 +131,7 @@ annotations:
 
   @item{@bold{Require Annotations:} Right-clicking (or
         Control-clicking under Mac OS X) on the argument to
-        @racket[require] activates a popup menu that lets you open the
+        @racket[require] activates a pop-up menu that lets you open the
         file that contains the @racket[require]d module.
 
         Passing the mouse cursor over a @racket[require] expression
@@ -219,7 +219,7 @@ Tab.
 @index['("changing a parenthesis as you type")]{@index['("automatic
 parenthesis")]{DrRacket}} also rewrites parenthesis as you type them,
 in order to make them match better. If you type a closing parenthesis
-@litchar{)}, a closing square bracket @litchar{]}, or a closing curley brace
+@litchar{)}, a closing square bracket @litchar{]}, or a closing curly brace
 @litchar["}"], and if DrRacket can match it back to some earlier opening
 parenthesis, bracket, or brace, then DrRacket changes what you type to
 match.  DrRacket also rewrites open square brackets, usually to an
@@ -300,7 +300,7 @@ DrRacket also supports a mode where typing in the search
 editor takes you directly to the next occurrence of the
 search string, without selecting the @onscreen{Find Again}
 menu item. In the preference dialog, in the
-@onscreen{Editing} sectino and then in the
+@onscreen{Editing} section and then in the
 @onscreen{General} section is a checkbox labelled
 @onscreen{Search using anchors}. When it is checked,
 DrRacket shows a little red dot and a red line indicating
@@ -731,7 +731,7 @@ A module browser window contains a square for each
   
   The module browser will also show you the phases that each
   module is loaded in; choose the ``Long, with phases'' menu item
-  in the ``Names'' popup menu. The integers indicate the phases and
+  in the ``Names'' pop-up menu. The integers indicate the phases and
   if @racket[#f] is present, it means the module is loaded @racket[for-label].
 
 @section[#:tag "create-exe"]{Creating Executables}
