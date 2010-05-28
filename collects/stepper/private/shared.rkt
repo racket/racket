@@ -470,7 +470,8 @@
   ;;               (symbols 'rebuild 'discard)
   ;;               (syntax? . -> . syntax?)
   ;; "skips over" part of a tree to find a subtree indicated by the
-  ;; stepper-skipto property.  If the traversal argument is 'rebuild, the
+  ;; stepper-skipto property, and applies the transformer to it.  
+  ;; If the traversal argument is 'rebuild, the
   ;; result of transformation is embedded again in the same tree.  if the
   ;; traversal argument is 'discard, the result of the transformation is the
   ;; result of this function
