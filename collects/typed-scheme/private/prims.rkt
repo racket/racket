@@ -379,21 +379,82 @@ This file defines two sorts of primitives. All of them are provided into any mod
               c ...)
             ty))]))
 
+;; we need handle #:when clauses manually because we need to annotate
+;; the type of each nested for
+(define-syntax (for: stx)
+  (syntax-parse stx #:literals (: Void)
+    ;; the annotation is not necessary (always of Void type), but kept
+    ;; for consistency with the other for: macros
+    [(_ (~seq : Void) ...
+        clauses ; no need to annotate the type, it's always Void
+        c:expr ...)
+     (let ((body (syntax-property #'(c ...) 'type-ascription #'Void)))
+       (let loop ((clauses #'clauses))
+         (define-syntax-class for-clause
+           ;; single-valued seq-expr
+           (pattern (var:annotated-name seq-expr:expr)
+                    #:with expand #'(var.ann-name seq-expr))
+           ;; multi-valued seq-expr
+           (pattern ((v:annotated-name ...) seq-expr:expr)
+                    #:with expand #'((v.ann-name ...) seq-expr)))
+         (syntax-parse clauses
+           [(head:for-clause next:for-clause ... #:when rest ...)
+            (syntax-property
+             (quasisyntax/loc clauses
+               (for
+                (head.expand next.expand ...)
+                #,(loop #'(#:when rest ...))))
+             'type-ascription
+             #'Void)]
+           [(head:for-clause ...) ; we reached the end
+            (syntax-property
+             (quasisyntax/loc clauses
+               (for
+                (head.expand ...)
+                #,@body))
+             'type-ascription
+             #'Void)]
+           [(#:when guard) ; we end on a #:when clause
+            (quasisyntax/loc clauses
+              (when guard
+                #,@body))]
+           [(#:when guard rest ...)
+            (quasisyntax/loc clauses
+              (when guard
+                #,(loop #'(rest ...))))])))]))
+
+;; Handling #:when clauses manually, like we do with for: above breaks
+;; the semantics of for/list and co.
+;; We must leave it to the untyped versions of the macros.
+;; However, this means that some uses of these macros with #:when
+;; clauses won't typecheck.
+;; If the only #:when clause is the last clause, inference should work.
 (define-for-syntax (define-for-variant name)
   (lambda (stx)
     (syntax-parse stx #:literals (:)
       [(_ : ty
-          clauses
+          (clause:for-clause ...)
           c:expr ...)
-       (convert-for-clauses name #'clauses #'(c ...) #'ty)])))
+       (syntax-property
+        (quasisyntax/loc stx
+         (#,name
+          (clause.expand ... ...)
+          #,@(syntax-property
+              #'(c ...)
+              'type-ascription
+              #'ty)))
+        'type-ascription
+        #'ty)])))
 (define-syntax (define-for-variants stx)
   (syntax-parse stx
     [(_ (name untyped-name) ...)
      (quasisyntax/loc
          stx
        (begin (define-syntax name (define-for-variant #'untyped-name)) ...))]))
+;; for/hash{,eq,eqv}:, for/and:, for/first: and for/last:'s expansions
+;; can't currently be handled by the typechecker.
+;; They have been left out of the documentation.
 (define-for-variants
-  (for: for)
   (for/list: for/list)
   (for/hash: for/hash)
   (for/hasheq: for/hasheq)
@@ -403,9 +464,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (for/first: for/first)
   (for/last: for/last))
 
-;; these 2 don't expand into nested for/X:s, #:when clauses are handled during
-;; the expansion of the untyped versions of these macros
-;; for this reason, uses of these macros with #:when clauses may not typecheck
+;; Unlike with the above, the inferencer can handle any number of #:when
+;; clauses with these 2.
 (define-syntax (for/lists: stx)
   (syntax-parse stx #:literals (:)
     [(_ : ty
@@ -413,10 +473,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
         (clause:for-clause ...)
         c:expr ...)
      (syntax-property
-      (syntax/loc stx
+      (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand ... ...)
-          c ...))
+          #,@(syntax-property
+              #'(c ...)
+              'type-ascription
+              #'ty)))
       'type-ascription
       #'ty)]))
 (define-syntax (for/fold: stx)
@@ -426,10 +489,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
         (clause:for-clause ...)
         c:expr ...)
      (syntax-property
-      (syntax/loc stx
+      (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
           (clause.expand ... ...)
-          c ...))
+          #,@(syntax-property
+              #'(c ...)
+              'type-ascription
+              #'ty)))
       'type-ascription
       #'ty)]))
 
