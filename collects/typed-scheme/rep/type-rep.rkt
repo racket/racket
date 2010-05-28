@@ -68,7 +68,12 @@
 
 ;; dotted list -- after expansion, becomes normal Pair-based list type
 (dt ListDots ([dty Type/c] [dbound (or/c symbol? natural-number/c)])
-    [#:frees (λ (f) (f dty))]
+    [#:frees (if (symbol? dbound)
+                 (fix-bound (free-vars* dty) dbound)
+                 (free-vars* dty))
+             (if (number? dbound)
+                 (fix-bound (free-idxs* dty) dbound)
+                 (free-idxs* dty))]
     [#:fold-rhs (*ListDots (type-rec-id dty) dbound)])
 
 ;; *mutable* pairs - distinct from regular pairs
@@ -157,7 +162,12 @@
     [#:fold-rhs (*Values (map type-rec-id rs))])
 
 (dt ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])
-    [#:frees (λ (f) (combine-frees (map f (cons dty rs))))]
+    [#:frees (if (symbol? dbound)
+                 (fix-bound (combine-frees (map free-vars* (cons dty rs))) dbound)
+                 (combine-frees (map free-vars* (cons dty rs))))
+             (if (number? dbound)
+                 (fix-bound (combine-frees (map free-idxs* (cons dty rs))) dbound)
+                 (combine-frees (map free-idxs* (cons dty rs))))]
     [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
 ;; arr is NOT a Type
