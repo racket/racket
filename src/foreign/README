@@ -38,6 +38,8 @@ Local changes:
  * Observing ftruncate result in closures.c to remove warning. (commit 
    b5ee4ac21b1c4d759659 and c64704742c0963310b49)
 
+ * Check for __i368 in addition to __i386__ in ffitarget.h
+
 Note: recreating "configure" with autoconf 2.61 does not work as is,
 since the scripts require 2.59.  To allow this, the two requirements
 in "libffi/configure.ac" and "config/override.m4" were temporarily

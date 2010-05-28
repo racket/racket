@@ -1796,7 +1796,7 @@ static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
     else scheme_signal_error(MYNAME": cannot qualify 'char");
     break;
   case 3: /* void */
-    if (intsize==0 && stars>0) RETSIZE(void);
+    if (intsize==0 && stars>0) RETSIZE(int); /* avoid sizeof(void) */
     else if (stars==0)
       scheme_signal_error(MYNAME": cannot use 'void without a '*");
     else scheme_signal_error(MYNAME": cannot qualify 'void");
