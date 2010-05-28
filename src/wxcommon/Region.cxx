@@ -18,6 +18,7 @@ typedef struct {
 # define PathTargetPath_t CGMutablePathRef
 # define CGXFORM (&current_xform)
 # define PATHPATH ((CGMutablePathRef)target)
+static int path_install_use_xform; /* ugly back-door argument */
 #endif
 
 #ifdef wx_msw
@@ -1654,6 +1655,7 @@ Bool wxPathPathRgn::Install(long target, Bool reverse, Bool align)
     q->Install(target, 0, 0, 0, 0, 1, 1, FALSE, 0, 0);
 #endif
 #ifdef wx_mac
+    path_install_use_xform = 1;
     q->Install((long)CGPATH, 0, 0, 0, 0, 1, 1, FALSE, 0, 0);
 #endif
 #ifdef wx_msw
@@ -2373,6 +2375,15 @@ void wxPath::Install(long target, double dx, double dy,
 {
   int i = 0;
   double lx = 0.0, ly = 0.0, lxx = 0.0, lyy = 0.0;
+#ifdef wx_mac
+  const CGAffineTransform *xform;
+
+  if (path_install_use_xform) {
+    xform = CGXFORM;
+    path_install_use_xform = 0;
+  } else
+    xform = NULL;
+#endif
 
 #ifdef WX_USE_CAIRO
   cairo_new_path(CAIRO_DEV);
@@ -2403,7 +2414,7 @@ void wxPath::Install(long target, double dx, double dy,
       cairo_move_to(CAIRO_DEV, xx, yy);
 #endif
 #ifdef wx_mac
-      CGPathMoveToPoint(PATHPATH, NULL, xx, yy);
+      CGPathMoveToPoint(PATHPATH, xform, xx, yy);
 #endif
 
       lx = cmds[i+1];
@@ -2426,7 +2437,7 @@ void wxPath::Install(long target, double dx, double dy,
 	cairo_line_to(CAIRO_DEV, xx, yy);
 #endif
 #ifdef wx_mac
-	CGPathAddLineToPoint(PATHPATH, NULL, xx, yy);
+	CGPathAddLineToPoint(PATHPATH, xform, xx, yy);
 #endif
 #ifdef wx_msw
 	wxGPathAddLine(PATH_GP, lxx, lyy, xx, yy);
@@ -2457,7 +2468,7 @@ void wxPath::Install(long target, double dx, double dy,
 	cairo_curve_to(CAIRO_DEV, xx1, yy1, xx2, yy2, xx, yy);
 #endif
 #ifdef wx_mac
-	CGPathAddCurveToPoint(PATHPATH, NULL, xx1, yy1, xx2, yy2, xx, yy);
+	CGPathAddCurveToPoint(PATHPATH, xform, xx1, yy1, xx2, yy2, xx, yy);
 #endif
 #ifdef wx_msw
 	wxGPathAddBezier(PATH_GP, lxx, lyy, xx1, yy1, xx2, yy2, xx, yy);
