@@ -705,4 +705,18 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Check a wcm in tail position of a wcm that is not in tail position,
+;; because the JIT avoids checking for wcm mark replacement when it sees
+;; a wcm that can't be in tail position with respect to any other wcm.
+
+(test '(((2 10)))
+      (lambda (x) (list (with-continuation-mark
+                            'x (list 1 (x))
+                          (with-continuation-mark
+                              'x (list 2 (x))
+                            (continuation-mark-set->list (current-continuation-marks) 'x)))))
+      (lambda () 10))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
