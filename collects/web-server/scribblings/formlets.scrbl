@@ -94,30 +94,93 @@ bindings for these names to @racket[formlet-process], the following list is retu
 
 The rest of the manual gives the details of @tech{formlet} usage and extension.
 
-@section{Syntactic Shorthand}
+@section{Static Syntactic Shorthand}
 
 @(require (for-label web-server/formlets/syntax))
 @defmodule[web-server/formlets/syntax]{
 
 Most users will want to use the syntactic shorthand for creating @tech{formlet}s.
 
-@defform[(formlet rendering yields-expr)]{
- Constructs a @tech{formlet} with the specified @racket[rendering] and the processing
- resulting in the @racket[yields-expr] expression. The @racket[rendering] form is a quasiquoted
- @xexpr, with two special caveats:
+@defform[(formlet rendering-xexpr yields-expr)]{
+ Constructs a @tech{formlet} with the specified @racket[rendering-xexpr] and the processing
+ result is the evaluation of the @racket[yields-expr] expression. The @racket[rendering-xexpr] form is a quasiquoted
+ syntactic @xexpr, with three special caveats:
  
  @racket[,{_formlet-expr . => . _name}] embeds the
- @tech{formlet} given by @racket[_formlet-expr]; the result of this processing this formlet is
+ @tech{formlet} given by @racket[_formlet-expr]; the result of processing this formlet is
  available in the @racket[yields-expr] as @racket[_name]. 
  
  @racket[,{_formlet-expr . => . (values _name ...)}] embeds the
- @tech{formlet} given by @racket[_formlet-expr]; the results of this processing this formlet is
+ @tech{formlet} given by @racket[_formlet-expr]; the results of processing this formlet is
  available in the @racket[yields-expr] as @racket[_name ...]. 
  
  @racket[(#%# _xexpr ...)] renders an @xexpr forest.
+ 
+ These forms @emph{may not} appear nested inside @racket[unquote] or @racket[unquote-splicing]. For example, this is illegal:
+ @racketblock[
+  (formlet (div ,@(for/list ([i (in-range 10)])
+                    `(p ,(text-input . => . name))))
+           name)
+  ]
 }
 
-@defidform[#%#]{Only allowed inside @racket[formlet].}
+@defidform[#%#]{Only allowed inside @racket[formlet] and @racket[formlet*].}
+
+}
+
+@section{Dynamic Syntactic Shorthand}
+
+@(require (for-label web-server/formlets/new-syntax))
+@defmodule[web-server/formlets/new-syntax]{
+
+The @racket[formlet] syntax is too restrictive for some applications because it forces the @racket[_rendering]
+to be @emph{syntactically} an @|xexpr|. You may discover you want to use a more "dynamic" shorthand.
+
+@defform[(formlet* rendering-expr yields-expr)]{
+ Constructs a @tech{formlet} where @racket[rendering-expr] is evaluated (with caveats) to construct the rendering
+ and the processing result is the evaluation of the the @racket[yields-expr] expression.
+ The @racket[rendering-expr] should evaluate to an "@xexpr" that may embed the results of the following forms
+ that only have meaning within @racket[formlet*]:
+ 
+ @racket[{_formlet-expr . =>* . _name}] embeds the
+ @tech{formlet} given by @racket[_formlet-expr]; the result of processing this formlet is
+ available in the @racket[yields-expr] as @racket[_name]. 
+ 
+ @racket[{_formlet-expr . =>* . (values _name ...)}] embeds the
+ @tech{formlet} given by @racket[_formlet-expr]; the results of processing this formlet is
+ available in the @racket[yields-expr] as @racket[_name ...]. 
+ 
+ @racket[(#%# _xexpr-expr ...)] renders an @xexpr forest.
+ 
+ Each of these forms evaluates to an opaque value that @racket[rendering-expr] may not manipulate in any way,
+ but if it is returned to @racket[formlet*] as part of an "@xexpr" it will be rendered and the formlets processing
+ stages will be executed, etc.
+ 
+ Because these forms @emph{may} appear anywhere in @racket[rendering-expr], they may be duplicated. Therefore, 
+ the formlet may render (and be processed) multiple times. Thus, in @racket[yields-expr] the formlet result names are
+ bound to lists of results rather than single results as in @racket[formlet]. The result list is ordered according 
+ to the order of the formlets in the result of @racket[rendering-expr]. For example, in 
+ @racketblock[
+  (formlet* `(div ,@(for/list ([i (in-range 1 10)])
+                      `(p ,(number->string i)
+                          ,(text-input . =>* . name))))
+            name)
+  ]
+ @racket[name] is bound to a list of strings, not a single string, where the first element is the string that
+ was inputted next to the string @litchar{1} on the Web page.
+ 
+ In this example, it is clear that this is the desired behavior. However, sometimes the value of a formlet's
+ result may be surprising. For example, in
+ @racketblock[
+  (formlet* `(div (p ,(text-input . =>* . name)))
+            name)
+  ]
+ @racket[name] is bound to a list of strings, because @racket[formlet*] cannot syntactically determine if
+ the formlet whose result is bound to @racket[name] is used many times.
+ 
+}
+
+@defidform[=>*]{Only allowed inside @racket[formlet*].}
 
 }
 

@@ -1,9 +1,12 @@
 #lang racket
-(require (for-syntax racket syntax/parse)
+(require (for-syntax racket 
+                     syntax/parse)
+         racket/stxparam
          "lib.rkt"
          (for-syntax "lib.rkt"))
 
-(define-syntax (#%# stx) (raise-syntax-error '#%# "Only allowed inside formlet" stx))
+(define-syntax-parameter #%# 
+  (λ (stx) (raise-syntax-error '#%# "Only allowed inside formlet or formlet*" stx)))
 
 (define-for-syntax (cross-of stx)
   (syntax-parse 
@@ -57,21 +60,3 @@
               #,(circ-of #'q)))]))
 
 (provide formlet #%#)
-
-(require "input.rkt")
-(define date-formlet
-  (formlet
-   (div
-    "Month:" ,{input-int . => . month}
-    "Day:" ,{input-int . => . day})
-   (values month day)))
-
-(define travel-formlet
-  (formlet
-   (div
-    "Name:" ,{input-string . => . name}
-    (div
-     "Arrive:" ,{date-formlet . => . (values arrive-m arrive-d)}
-     "Depart:" ,{date-formlet . => . (values depart-m depart-d)})
-    ,@(list "1" "2" "3"))
-   (values name arrive-m arrive-d depart-m depart-d)))

@@ -53,7 +53,7 @@
 (define (tag-xexpr t ats f)
   (lambda (i)
     (let-values ([(x p i) (f i)])
-      (values (list (list* t ats x))  p i))))
+      (values (list (list* t ats x)) p i))))
 
 ; Helpers
 (define (formlet-display f)
@@ -87,7 +87,7 @@
  [pure (alpha
         . -> . (formlet/c alpha))]
  [cross ((formlet/c procedure?) formlet*/c . -> . formlet*/c)]
- [cross* (((formlet/c (() () #:rest (listof alpha) . ->* . beta)))
+ [cross* (((formlet/c (unconstrained-domain-> beta)))
           () #:rest (listof (formlet/c alpha))
           . ->* . (formlet/c beta))]
  [xml-forest (xexpr-forest/c . -> . (formlet/c procedure?))]
