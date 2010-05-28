@@ -4,9 +4,9 @@
 #;(require "../list.scm"
          "../etc.ss")
 (require/typed apply-to-scheme-files 
-               ((Path -> (Listof (Listof (U #f (Listof (U Number #f))))))
+               ((Path -> (Listof (Listof (U #f (Listof (U Real #f))))))
                 Path
-                -> (Listof (U #f (Listof  (Listof ( U #f (Listof (U Number #f)))))))) "foldo.rkt")
+                -> (Listof (U #f (Listof  (Listof ( U #f (Listof (U Real #f)))))))) "foldo.rkt")
 
 (define-type-alias top Any)
 (define-type-alias str String)
@@ -26,7 +26,7 @@
          )
 
 (define-type-alias Sexpr Any)
-(define-type-alias number Number)
+(define-type-alias number Real)
 (define-type-alias boolean Boolean)
 (define-type-alias NumF (U number #f))
 (define-type-alias NumFs (Listof NumF))
@@ -55,7 +55,7 @@
 ;; can be explained by chance. Generally speaking, higher absolute
 ;; values of t correspond to higher confidence that an observed difference
 ;; in mean cannot be explained by chance.
-(define: (t-test [seqA : (Listof number)] [seqB : (Listof number)]) : number
+(define: (t-test [seqA : (Listof Real)] [seqB : (Listof Real)]) : Real
   (manual-t-test
    (avg seqA) (avg seqB) 
    (variance seqA) (variance seqB)
@@ -64,7 +64,7 @@
 (define: (manual-t-test [avga : number] [avgb : number] [vara : number]
                         [varb : number] [cta : number] [ctb : number]) : number
   (/ (- avga avgb)
-     (assert (sqrt (+ (/ vara cta) (/ varb ctb))) number?)))
+     (assert (sqrt (+ (/ vara cta) (/ varb ctb))) real?)))
 
 ;; chi-square : (listof [0,1]) (listof [0,1]) -> number
 ;; chi-square is a simple measure of the extent to which the
@@ -267,8 +267,8 @@
                                      [computation : (c -> d)]
                                      [>display : ((Listof d) (Listof d) -> b)]))
 (define-type-alias Metric metric)
-(define-type-alias Table (Listof (Listof Number)))
-(define-type-alias Atom-display (cons Symbol (Listof Number)))
+(define-type-alias Table (Listof (Listof Real)))
+(define-type-alias Atom-display (cons Symbol (Listof Real)))
 
 (define: (standard-display [name : Symbol] 
                            [summarize : ((Listof number) -> number)] 
@@ -493,8 +493,8 @@
              (let ([n (length (car l))])
                (build-list n (lambda: ([i : Natural]) (map (lambda: ([j : (Listof X)]) (list-ref j i)) l))))]))
 
-(define: (sqr [x : number]) : number (* x x))
-(define: (variance [xs : (Listof number)]): number
+(define: (sqr [x : Real]) : Real (* x x))
+(define: (variance [xs : (Listof Real)]): Real
   (let ([avg (/ (apply + xs) (length xs))])
     (/ (apply + (map (lambda: ([x : number]) (sqr (- x avg))) xs))
        (sub1 (length xs)))))

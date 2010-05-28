@@ -24,10 +24,10 @@
                      (typecheck typechecker)
 	             (env type-env)
 	             (private base-env base-env-numeric
-			      base-env-indexing-old))
+			      base-env-indexing))
          (for-template (private base-env base-types-new base-types-extra
 				base-env-numeric
-				base-env-indexing-old))
+				base-env-indexing))
          (for-syntax syntax/kerncase syntax/parse))
 
 (provide typecheck-tests g tc-expr/expand)

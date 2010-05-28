@@ -151,7 +151,7 @@
              [#{m : Integer} 0])
     (cond
       [(zero? i) m]
-      [else (loop (- i 1)
+      [else (loop (sub1 i)
                   (max m (- (send txt paragraph-end-position (- i 1))
                             (send txt paragraph-start-position (- i 1)))))])))
       

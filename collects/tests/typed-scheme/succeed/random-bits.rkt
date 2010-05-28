@@ -528,9 +528,9 @@
 ; If you know more about the floating point number types of the
 ; Scheme system, this can be improved.
 
-(define: (mrg32k3a-random-real-mp [state : State] [unit : Number]) : Number
-  (do: : Number ((k : Integer 1 (+ k 1))
-       (u : Number (- (/ 1 unit) 1) (/ u mrg32k3a-m1)))
+(define: (mrg32k3a-random-real-mp [state : State] [unit : Real]) : Number
+  (do: : Real ((k : Integer 1 (+ k 1))
+       (u : Real (- (/ 1 unit) 1) (/ u mrg32k3a-m1)))
       ((<= u 1)
        (/ (exact->inexact (+ (mrg32k3a-random-power state k) 1))
           (exact->inexact (+ (expt mrg32k3a-m-max k) 1))))))

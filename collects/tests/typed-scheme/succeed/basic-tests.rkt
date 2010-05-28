@@ -65,7 +65,7 @@
 	 (add1 y)))
 
 (define: looping : number
-  (let: loop : number ([a : number 1] [b : number 10]) (if (> a b) 1000 (loop (add1 a) (sub1 b)))))
+  (let: loop : number ([a : Real 1] [b : Real 10]) (if (> a b) 1000 (loop (add1 a) (sub1 b)))))
 
 #;(make-pt 'x 'y)
 

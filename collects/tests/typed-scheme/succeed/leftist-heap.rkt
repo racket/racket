@@ -66,7 +66,7 @@
   (define-typed-struct heap              ([compare : comparator]))
   (define-typed-struct (heap-empty heap) ())
   (define-typed-struct (a) (heap-node heap)  
-    ([rank : number] [elm : a] [left : (Un (heap-node a) heap-empty)] [right : (Un (heap-node a) heap-empty)]))
+    ([rank : Real] [elm : a] [left : (Un (heap-node a) heap-empty)] [right : (Un (heap-node a) heap-empty)]))
   
   (define-type-alias (Heap a) (Un (heap-node a) heap-empty))
   
@@ -81,7 +81,7 @@
   
   (define: empty? : (pred heap-empty) heap-empty?)
   
-  (pdefine: (a) (rank [h : (Heap a)]) : number
+  (pdefine: (a) (rank [h : (Heap a)]) : Real
     (if (empty? h)
         0
         (heap-node-rank h)))
@@ -250,7 +250,7 @@
       [([x : a])     (insert x (#{empty @ a}))]
       [([cmp : comparator] [x : a]) (insert x (make-heap-empty cmp))]))
   
-  (pdefine: (a) (size [h : (Heap a)]) : number
+  (pdefine: (a) (size [h : (Heap a)]) : Real
     ; NOTE: T(size)=O(n)
     (cond
       [(heap-empty? h) 0]

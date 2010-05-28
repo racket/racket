@@ -1,6 +1,6 @@
 #lang typed-scheme
 
-(: sqr (Number -> Number))
+(: sqr (Real -> Real))
 (define (sqr x) (* x x))
 
 (define-type-alias number Number)
@@ -40,7 +40,7 @@
 
 ;; interest: number ->number
 ;; Calculates interest for a given sum
-(define: (interest [sum : number]) : number
+(define: (interest [sum : Real]) : number
   (* sum
      (cond [(<= sum 1000) .04]
 	   [(<= sum 5000) .045]
@@ -58,7 +58,7 @@
 
 ;; how-many: int int int -> int
 ;; Returns the number of roots in the equation
-(define: (how-many [a : number] [b : number] [c : number]) : number
+(define: (how-many [a : Integer] [b : Integer] [c : Integer]) : Integer
   (cond [(> (sqr b) (* 4 a c)) 2]
 	[(< (sqr b) (* 4 a c)) 0]
 	[else 1]))
@@ -73,7 +73,7 @@
 
 ;; what-kind: int int int -> symbol
 ;; Determines the type of the eqation
-(define: (what-kind [a : number] [b : number] [c : number]) : symbol
+(define: (what-kind [a : Integer] [b : Integer] [c : Integer]) : symbol
   (cond [(= a 0) 'degenerate]
 	[(> (sqr b) (* 4 a c)) 'two]
 	[(< (sqr b) (* 4 a c)) 'none]

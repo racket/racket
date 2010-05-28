@@ -7,7 +7,7 @@
 
 (: bar : Number -> Number)
 (define (bar c)
-  (: loop : Number Number -> Number)
+  (: loop : Real Number -> Number)
   (define (loop n acc)
     (if (< 0 n)
 	(loop (- n 1) (+ (foo c n) acc))
