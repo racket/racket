@@ -1,19 +1,19 @@
-#lang typed-scheme
+#lang typed/scheme/base
 
 (require typed/private/utils)
 
-(dt Bitmap% (Class (Number Number Boolean)
+(dt Bitmap% (Class (Real Real Boolean)
                    () 
-                   ([get-width (-> Number)]
-                    [get-height (-> Number)])))
+                   ([get-width (-> Integer)]
+                    [get-height (-> Integer)])))
 (dt Font-List% (Class () () ([find-or-create-font 
 			      (case-lambda
 			       (Integer Symbol Symbol Symbol -> (Instance Font%))
 			       (Integer String Symbol Symbol Symbol -> (Instance Font%)))])))
 (dt Font% (Class () () ([get-face (-> (Option String))]
-                        [get-point-size (-> Number)])))
+                        [get-point-size (-> Integer)])))
 (dt Dialog% (Class () 
-                   ([parent Any] [width Number] [label String]) 
+                   ([parent Any] [width Integer] [label String]) 
                    ([show (Any -> Void)])))
 (dt Text-Field% (Class () 
                        ([parent Any] [callback Any] [label String])
@@ -38,10 +38,10 @@
                             ()))
 (dt Editor-Canvas% (Class ()
                           ([parent Any] [editor Any])
-                          ([set-line-count (Number -> Void)])))
+                          ([set-line-count ((U #f Integer) -> Void)])))
 (dt Bitmap-DC% (Class ((Instance Bitmap%))
                       ()
-                      ([get-text-extent (String (Instance Font%) -> (values Number Number Number Number))]
+                      ([get-text-extent (String (Instance Font%) -> (values Real Real Real Real))]
                        [get-pixel (Number Number (Instance Color%) -> Boolean)]
                        [set-bitmap ((Option (Instance Bitmap%)) -> Void)]
                        [clear (-> Void)]
@@ -57,7 +57,7 @@
 		  [end-edit-sequence (-> Void)]
 		  [lock (Boolean -> Void)]
 		  [last-position (-> Number)]
-		  [last-paragraph (-> Number)]
+		  [last-paragraph (-> Exact-Nonnegative-Integer)]
 		  [delete (Number Number -> Void)]
 		  [auto-wrap (Any -> Void)]
 		  [paragraph-end-position (Number -> Integer)]

@@ -15,7 +15,7 @@
                          [end-edit-sequence (-> Void)]
                          [lock (Boolean -> Void)]
                          [last-position (-> Number)]
-                         [last-paragraph (-> Number)]
+                         [last-paragraph (-> Exact-Nonnegative-Integer)]
                          [delete (Number Number -> Void)]
                          [auto-wrap (Any -> Void)]
                          [paragraph-end-position (Number -> Natural)]
