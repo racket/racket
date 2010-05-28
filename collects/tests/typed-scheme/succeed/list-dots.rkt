@@ -16,3 +16,6 @@
 
 (: h3 (All (a ...) ((Pair String a) ... -> (Listof Any))))
 (define (h3 . x) x)
+
+(: h4 (All (a ...) (a ... -> Number)))
+(define (h4 . x) (length x))

@@ -250,7 +250,7 @@
               (cset-meet* (list arg-mapping darg-mapping ret-mapping)))])]
     [(_ _) (fail! S T)]))
 
-;; determine constraints on the variables in X that would make T a supertype of S
+;; determine constraints on the variables in X that would make S a subtype of T
 ;; the resulting constraints will not mention V
 (define (cgen V X S T)
   (define (cg S T) (cgen V X S T))
@@ -364,6 +364,13 @@
            (cg t t*)]
           [((Hashtable: k v) (Sequence: (list k* v*)))
            (cgen/list V X (list k v) (list k* v*))]
+          ;; must be above mu unfolding
+          [((ListDots: s-dty dbound) (Listof: t-elem))
+           (when (memq dbound X) (fail! S T))
+           (cgen V X (substitute Univ dbound s-dty) t-elem)]
+          [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
+           (when (memq dbound X) (fail! S T))
+           (cgen V X s-dty t-dty)]          
           ;; if we have two mu's, we rename them to have the same variable
           ;; and then compare the bodies
           [((Mu-unsafe: s) (Mu-unsafe: t)) 
@@ -410,9 +417,6 @@
           [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
            (when (memq dbound X) (fail! ss ts))          
            (cgen/list V X (cons s-dty ss) (cons t-dty ts))]
-          [((ListDots: s-dty dbound) (ListDots: t-dty dbound))
-           (when (memq dbound X) (fail! S T))
-           (cgen V X s-dty t-dty)]
           [((Vector: e) (Vector: e*))
            (cset-meet (cg e e*) (cg e* e))]
           [((Box: e) (Box: e*))
