@@ -2,7 +2,7 @@
 @(require scribble/manual
           "../scribble.ss"
           (for-label slideshow
-                     unstable/cce/contract
+                     unstable/contract
                      unstable/cce/slideshow))
 
 @title[#:style 'quiet #:tag "cce-slideshow"]{Slideshow Presentations}

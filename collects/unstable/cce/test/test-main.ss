@@ -2,7 +2,6 @@
 
 (require "checks.ss"
          "test-class.ss"
-         "test-contract.ss"
          "test-debug.ss"
          "test-define.ss"
          "test-dict.ss"
@@ -20,7 +19,6 @@
 (run-tests
  (test-suite "scheme.plt"
    class-suite
-   contract-suite
    debug-suite
    define-suite
    dict-suite

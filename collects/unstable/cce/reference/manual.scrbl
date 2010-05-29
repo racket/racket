@@ -21,8 +21,6 @@
 
 @include-section["class.scrbl"]
 
-@include-section["contract.scrbl"]
-
 @include-section["require-provide.scrbl"]
 @include-section["planet.scrbl"]
 

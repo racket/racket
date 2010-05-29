@@ -8,14 +8,14 @@
          syntax/kerncase
          setup/main-collects
          planet/planet-archives
+         unstable/contract
          unstable/text
          (for-template scheme/base)
          (for-syntax scheme/base)
          (for-label scheme)
          "private/syntax-core.ss"
          "private/define-core.ss"
-         (for-template "private/define-core.ss")
-         "contract.ss")
+         (for-template "private/define-core.ss"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

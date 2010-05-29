@@ -297,4 +297,4 @@ wrapped dictionary during functional update using @scheme[wrap].
 @section{Contracted Dictionaries}
 
 This library re-provides @scheme[dict/c] from
-@schememodname[unstable/cce/contract].
+@schememodname[unstable/contract].

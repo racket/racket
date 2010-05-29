@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "define.ss" "contract.ss")
+(require unstable/contract "define.ss")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
