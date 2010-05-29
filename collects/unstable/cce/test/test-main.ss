@@ -10,7 +10,6 @@
          "test-hash.ss"
          "test-planet.ss"
          "test-port.ss"
-         "test-queue.ss"
          "test-regexp.ss"
          "test-require-provide.ss"
          "test-sandbox.ss"
@@ -29,7 +28,6 @@
    hash-suite
    planet-suite
    port-suite
-   queue-suite
    regexp-suite
    require-provide-suite
    sandbox-suite

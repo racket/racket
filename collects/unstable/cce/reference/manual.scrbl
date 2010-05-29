@@ -15,7 +15,6 @@
 @include-section["set.scrbl"]
 @include-section["dict.scrbl"]
 @include-section["hash.scrbl"]
-@include-section["queue.scrbl"]
 
 @include-section["syntax.scrbl"]
 @include-section["define.scrbl"]

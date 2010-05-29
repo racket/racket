@@ -1,13 +1,11 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme unstable/cce/queue))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket unstable/queue))
 
-@title[#:style 'quiet #:tag "cce-queue"]{Imperative Queues}
+@title{Imperative Queues}
 
-@defmodule[unstable/cce/queue]
+@defmodule[unstable/queue]
+
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides a mutable queue representation.
 
@@ -23,7 +21,7 @@ Adds an element to the back of a queue.
 Removes an element from the front of a nonempty queue, and returns that element.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/queue)
+#:eval (eval/require 'unstable/queue)
 (define q (make-queue))
 (enqueue! q 1)
 (dequeue! q)
@@ -38,7 +36,7 @@ Removes an element from the front of a nonempty queue, and returns that element.
 Recognizes whether a queue is empty or not.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/queue)
+#:eval (eval/require 'unstable/queue)
 (define q (make-queue))
 (queue-empty? q)
 (enqueue! q 1)
@@ -52,7 +50,7 @@ Recognizes whether a queue is empty or not.
 This predicate recognizes queues.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/queue)
+#:eval (eval/require 'unstable/queue)
 (queue? (make-queue))
 (queue? 'not-a-queue)
 ]
