@@ -1,9 +1,9 @@
 #lang racket/base
 
-(provide hash-union)
+(provide simple-hash-union)
 
 ;; map map (key val val -> val) -> map
-(define (hash-union h1 h2 f)
+(define (simple-hash-union h1 h2 f)
   (for/fold ([h* h1])
     ([(k v2) h2])
     (let* ([v1 (hash-ref h1 k #f)]

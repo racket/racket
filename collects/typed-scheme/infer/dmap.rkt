@@ -62,5 +62,5 @@
 
 (define (dmap-meet dm1 dm2)
   (make-dmap
-   (hash-union (dmap-map dm1) (dmap-map dm2)
-               (lambda (k dc1 dc2) (dcon-meet dc1 dc2)))))
+   (simple-hash-union (dmap-map dm1) (dmap-map dm2)
+                      (lambda (k dc1 dc2) (dcon-meet dc1 dc2)))))

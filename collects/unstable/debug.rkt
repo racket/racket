@@ -1,6 +1,9 @@
 #lang racket/base
 
-(provide debug debugm)
+(provide
+ (rename-out
+  [debug debug/call]
+  [debugm debug/macro]))
 
 ;; printf debugging convenience
 (define-syntax debug
