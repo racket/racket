@@ -1,3 +1,12 @@
+v5.0
+
+  * added an optional term-equivalence predicate to the test--> and
+    test-->> forms
+
+  * added R6RS and Racket VM models to examples sub-collection
+
+  * fixed minor bugs
+  
 v4.2.5
 
   * reversed the order in which `where' and `side-condition' clauses
