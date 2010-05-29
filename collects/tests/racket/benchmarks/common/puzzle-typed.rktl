@@ -10,11 +10,11 @@
 ; Status:       Public Domain
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(: iota (Integer -> (Listof Integer)))
+(: iota (Natural -> (Listof Natural)))
 (define (iota n)
-  (do: : (Listof Integer)
-       ((n : Integer n (- n 1))
-        (list : (Listof Integer) '() (cons (- n 1) list)))
+  (do: : (Listof Natural)
+       ((n : Natural n (sub1 n))
+        (list : (Listof Natural) '() (cons (sub1 n) list)))
       ((zero? n) list)))
 
 ;;; PUZZLE -- Forest Baskett's Puzzle benchmark, originally written in Pascal.
@@ -23,17 +23,17 @@
 (define classmax 3)
 (define typemax 12)
 
-(: *iii* Integer)
+(: *iii* Natural)
 (define *iii* 0)
-(: *kount* Integer)
+(: *kount* Natural)
 (define *kount* 0)
 (define *d* 8)
 
 (: *piececount* (Vectorof Integer))
 (define *piececount* (make-vector (+ classmax 1) 0))
-(: *class* (Vectorof Integer))
+(: *class* (Vectorof Natural))
 (define *class* (make-vector (+ typemax 1) 0))
-(: *piecemax* (Vectorof Integer))
+(: *piecemax* (Vectorof Natural))
 (define *piecemax* (make-vector (+ typemax 1) 0))
 (: *puzzle* (Vectorof Boolean))
 (define *puzzle* (make-vector (+ size 1) #f))
@@ -44,13 +44,13 @@
                          (ann (vector #f)
                               (Vectorof Boolean))))
 (define nothing
-  (for-each (lambda: ((i : Integer))
+  (for-each (lambda: ((i : Natural))
               (vector-set! *p* i
                            (ann (make-vector (+ size 1) #f)
                                 (Vectorof Boolean))))
             (iota (+ typemax 1))))
 
-(: fit (Integer Integer -> Boolean))
+(: fit (Natural Natural -> Boolean))
 (define (fit i j)
   (let ((end (vector-ref *piecemax* i)))
     (do ((k 0 (+ k 1)))
@@ -59,7 +59,7 @@
                   (vector-ref *puzzle* (+ j k))))
          (if (> k end) #t #f)))))
 
-(: place (Integer Integer -> Integer))
+(: place (Natural Natural -> Natural))
 (define (place i j)
   (let ((end (vector-ref *piecemax* i)))
     (do ((k 0 (+ k 1)))
@@ -76,7 +76,7 @@
          ;        (display "*Puzzle* filled")
          (if (> k size) 0 k)))))
 
-(: puzzle-remove (Integer Integer -> Void))
+(: puzzle-remove (Natural Natural -> Void))
 (define (puzzle-remove i j)
   (let ((end (vector-ref *piecemax* i)))
     (do ((k 0 (+ k 1)))
@@ -89,13 +89,13 @@
                  (+ (vector-ref *piececount* (vector-ref *class* i)) 1))))
 
 
-(: trial (Integer -> Any))
+(: trial (Natural -> Any))
 (define (trial j)
-  (let: ((k : Integer 0))
+  (let: ((k : Natural 0))
     (call-with-current-continuation
      (lambda: ((return : (Boolean -> Nothing)))
        (do: : Any
-            ((i : Integer 0 (+ i 1)))
+            ((i : Natural 0 (+ i 1)))
             ((> i typemax) (set! *kount* (+ *kount* 1)) '())
            (cond
             ((not
@@ -111,7 +111,7 @@
                  (return #t))
                 (else (puzzle-remove i j))))))))))))
 
-(: trial-output (Integer Integer -> Void))
+(: trial-output (Natural Natural -> Void))
 (define (trial-output x y)
   (newline)
   (display (string-append "Piece "
@@ -120,17 +120,17 @@
                           (number->string y #;'(int))
                           ".")))
 
-(: definePiece (Integer Integer Integer Integer -> Void))
+(: definePiece (Natural Natural Natural Natural -> Void))
 (define (definePiece iclass ii jj kk)
-  (let: ((index : Integer 0))
+  (let: ((index : Natural 0))
     (do: : Void
-         ((i : Integer 0 (+ i 1)))
+         ((i : Natural 0 (+ i 1)))
          ((> i ii))
         (do: : Void
-             ((j : Integer 0 (+ j 1)))
+             ((j : Natural 0 (+ j 1)))
              ((> j jj))
             (do: : Void
-                 ((k : Integer 0 (+ k 1)))
+                 ((k : Natural 0 (+ k 1)))
                  ((> k kk))
                 (set! index (+ i (* *d* (+ j (* *d* k)))))
                 (vector-set! (vector-ref *p* *iii*) index  #t))))
@@ -178,8 +178,8 @@
   (vector-set! *piececount* 1 3)
   (vector-set! *piececount* 2 1)
   (vector-set! *piececount* 3 1)
-  (let: ((m : Integer (+ (* *d* (+ *d* 1)) 1))
-         (n : Integer 0))
+  (let: ((m : Natural (+ (* *d* (+ *d* 1)) 1))
+         (n : Natural 0))
     (cond ((fit 0 m) (set! n (place 0 m)))
           (else (begin (newline) (display "Error."))))
     (cond ((trial n)
@@ -192,8 +192,8 @@
 
 ;;; call:  (start)
 
-(time (let: loop : Void ((n : Integer 50) (v : Void (void)))
+(time (let: loop : Void ((n : Natural 50) (v : Void (void)))
         (if (zero? n)
             v
-            (loop (- n 1)
+            (loop (sub1 n)
                   (start)))))

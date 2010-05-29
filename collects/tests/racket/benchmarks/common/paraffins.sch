@@ -172,4 +172,4 @@
    (let loop ((n 4000) (v 0))
      (if (zero? n)
          v
-         (loop (- n 1) (nb (if input 17 0)))))))
+         (loop (- n 1) (nb (if input 17 1)))))))

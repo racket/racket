@@ -27,16 +27,16 @@
 (define (fft areal aimag)
   (let: ((ar : (Vectorof Complex) (vector))
          (ai : (Vectorof Complex) (vector))
-         (i : Integer 0)
-         (j : Integer 0)
-         (k : Integer 0)
-         (m : Integer 0)
-         (n : Integer 0)
-         (le : Integer 0)
-         (le1 : Integer 0)
-         (ip : Integer 0)
-         (nv2 : Integer 0)
-         (nm1 : Integer 0)
+         (i : Natural 0)
+         (j : Natural 0)
+         (k : Natural 0)
+         (m : Natural 0)
+         (n : Natural 0)
+         (le : Natural 0)
+         (le1 : Natural 0)
+         (ip : Natural 0)
+         (nv2 : Natural 0)
+         (nm1 : Natural 0)
          (ur : Complex 0)
          (ui : Complex 0)
          (wr : Complex 0)
@@ -47,9 +47,9 @@
         (set! ar areal)
         (set! ai aimag)
         (set! n (vector-length ar))
-        (set! n (- n 1))
+        (set! n (abs (- n 1))) ; abs is to appease the typechecker
         (set! nv2 (quotient n 2))
-        (set! nm1 (- n 1))
+        (set! nm1 (abs (- n 1))) ; abs is to appease the typechecker
         (set! m 0)                                  ;compute m = log(n)
         (set! i 1)
         (let loop ()
@@ -74,7 +74,7 @@
           (set! k nv2)
           (let l6 ()
             (cond ((< k j)
-                   (set! j (- j k))
+                   (set! j (abs (- j k))) ; abs is to appease the typechecker
                    (set! k (quotient k 2))
                    (l6))))
           (set! j (+ j k))
@@ -82,7 +82,7 @@
           (cond ((< i n)
                  (l3))))
         (do: : Void
-             ((l : Integer 1 (+ l 1)))     ;loop thru stages (syntax converted
+             ((l : Natural 1 (+ l 1)))     ;loop thru stages (syntax converted
              ((> l m))                     ; from old MACLISP style \bs)
              (set! le (expt 2 l))
              (set! le1 (quotient le 2))
@@ -92,11 +92,11 @@
              (set! wi (sin (/ pi le1)))
              ;; loop thru butterflies
              (do: : Void
-                  ((j : Integer 1 (+ j 1)))
+                  ((j : Natural 1 (+ j 1)))
                   ((> j le1))
                   ;; do a butterfly
                   (do: : Void
-                       ((i : Integer j (+ i le)))
+                       ((i : Natural j (+ i le)))
                        ((> i n))
                        (set! ip (+ i le1))
                        (set! tr (- (* (vector-ref ar ip) ur)
@@ -118,7 +118,7 @@
 (: fft-bench ( -> Void))
 (define (fft-bench)
   (do: : Void
-       ((ntimes : Integer 0 (+ ntimes 1)))
+       ((ntimes : Natural 0 (+ ntimes 1)))
        ((= ntimes 5000))
        (fft *re* *im*)))
 

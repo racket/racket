@@ -642,7 +642,7 @@
      (if (zero? n)
          v
          (loop (- n 1)
-               (fold-over-rdg (if input 6 0)
+               (fold-over-rdg (if input 6 1)
                               2 
                               cons
                               '()))))))

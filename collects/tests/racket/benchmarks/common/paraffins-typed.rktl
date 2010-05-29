@@ -2,16 +2,16 @@
 
 (define-type Radical (Rec Radical (U 'C 'H 'BCP 'CCP (Vectorof Radical))))
 
-(: gen (Integer -> (Vectorof (Listof Radical))))
+(: gen (Exact-Positive-Integer -> (Vectorof (Listof Radical))))
 (define (gen n)
-  (let*: ((n/2 : Integer (quotient n 2))
+  (let*: ((n/2 : Natural (quotient n 2))
           (radicals : (Vectorof (Listof Radical)) (make-vector (+ n/2 1) '(H))))
 
-         (: rads-of-size (Integer -> (Listof Radical)))
+         (: rads-of-size (Exact-Positive-Integer -> (Listof Radical)))
          (define (rads-of-size n)
            (let: loop1 : (Listof Radical)
-                 ((ps : (Listof (Vectorof Integer))
-                      (three-partitions (- n 1)))
+                 ((ps : (Listof (Vectorof Natural))
+                      (three-partitions (sub1 n)))
                   (lst : (Listof Radical)
                        '()))
                  (if (null? ps)
@@ -55,7 +55,7 @@
                                                            (loop4 (cdr rads3)
                                                                   lst))))))))))))
 
-         (: bcp-generator (Integer -> (Listof Radical)))
+         (: bcp-generator (Natural -> (Listof Radical)))
          (define (bcp-generator j)
            (if (odd? j)
                '()
@@ -79,11 +79,11 @@
                                      (loop2 (cdr rads2)
                                             lst))))))))
 
-         (: ccp-generator (Integer -> (Listof Radical)))
+         (: ccp-generator (Exact-Positive-Integer -> (Listof Radical)))
          (define (ccp-generator j)
            (let: loop1 : (Listof Radical)
-                 ((ps : (Listof (Vectorof Integer))
-                      (four-partitions (- j 1)))
+                 ((ps : (Listof (Vectorof Natural))
+                      (four-partitions (sub1 j)))
                   (lst : (Listof Radical)
                        '()))
                  (if (null? ps)
@@ -143,10 +143,10 @@
                  (vector-set! radicals i (rads-of-size i))
                  (loop (+ i 1)))))))
 
-(: three-partitions (Integer -> (Listof (Vectorof Integer))))
+(: three-partitions (Natural -> (Listof (Vectorof Natural))))
 (define (three-partitions m)
-  (let: loop1 : (Listof (Vectorof Integer))
-        ((lst : (Listof (Vectorof Integer)) '())
+  (let: loop1 : (Listof (Vectorof Natural))
+        ((lst : (Listof (Vectorof Natural)) '())
          (nc1 : Integer (quotient m 3)))
         (if (< nc1 0)
             lst
@@ -154,14 +154,17 @@
                         (nc2 (quotient (- m nc1) 2)))
               (if (< nc2 nc1)
                   (loop1 lst
-                         (- nc1 1))
-                  (loop2 (cons (vector nc1 nc2 (- m (+ nc1 nc2))) lst)
-                         (- nc2 1)))))))
+                         (sub1 nc1))
+                  (loop2 (cons (vector (abs nc1)
+                                       (abs nc2)
+                                       (abs (- m (+ nc1 nc2)))) ; abs is to appease the typechecker
+                               lst)
+                         (sub1 nc2)))))))
 
-(: four-partitions (Integer -> (Listof (Vectorof Integer))))
+(: four-partitions (Natural -> (Listof (Vectorof Natural))))
 (define (four-partitions m)
-  (let: loop1 : (Listof (Vectorof Integer))
-        ((lst : (Listof (Vectorof Integer)) '())
+  (let: loop1 : (Listof (Vectorof Natural))
+        ((lst : (Listof (Vectorof Natural)) '())
          (nc1 : Integer (quotient m 4)))
         (if (< nc1 0)
             lst
@@ -169,16 +172,20 @@
                         (nc2 (quotient (- m nc1) 3)))
               (if (< nc2 nc1)
                   (loop1 lst
-                         (- nc1 1))
+                         (sub1 nc1))
                   (let ((start (max nc2 (- (quotient (+ m 1) 2) (+ nc1 nc2)))))
                     (let loop3 ((lst lst)
                                 (nc3 (quotient (- m (+ nc1 nc2)) 2)))
                       (if (< nc3 start)
-                          (loop2 lst (- nc2 1))
-                          (loop3 (cons (vector nc1 nc2 nc3 (- m (+ nc1 (+ nc2 nc3)))) lst)
-                                 (- nc3 1))))))))))
+                          (loop2 lst (sub1 nc2))
+                          (loop3 (cons (vector (abs nc1)
+                                               (abs nc2)
+                                               (abs nc3)
+                                               (abs (- m (+ nc1 (+ nc2 nc3))))) ; abs is to appease the typechecker
+                                       lst)
+                                 (sub1 nc3))))))))))
 
-(: nb (Integer -> Integer))
+(: nb (Exact-Positive-Integer -> Natural))
 (define (nb n)
   (let ((x (gen n)))
     (+ (length (vector-ref x 0))
@@ -186,9 +193,9 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time
-   (let: loop : Integer
-         ((n : Integer 4000) (v : Integer 0))
+   (let: loop : Natural
+         ((n : Natural 4000) (v : Natural 0))
          (if (zero? n)
              v
-             (loop (- n 1) (nb (if input 17 0)))))))
+             (loop (sub1 n) (nb (if input 17 1)))))))
 
