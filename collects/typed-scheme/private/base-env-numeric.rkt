@@ -101,10 +101,12 @@
              (-> -Real -Real)
              (-> N N))]
 
-[quotient (-Integer -Integer . -> . -Integer)]
-[remainder (-Integer -Integer . -> . -Integer)]
-[quotient/remainder 
- (make-Function (list (make-arr (list -Integer -Integer) (-values (list -Integer -Integer)))))]
+[quotient (cl->* (-Nat -Nat . -> . -Nat)
+                 (-Integer -Integer . -> . -Integer))]
+[remainder (cl->* (-Nat -Nat . -> . -Nat)
+                  (-Integer -Integer . -> . -Integer))]
+[quotient/remainder (cl->* (-Nat -Nat . -> . (-values (list -Nat -Nat)))
+                           (-Integer -Integer . -> . (-values (list -Integer -Integer))))]
 
 ;; exactness
 [exact->inexact (cl->* 
@@ -127,7 +129,9 @@
 [numerator   (-Real . -> . -Real)]
 [denominator (-Real . -> . -Real)]
 [rationalize (-Real -Real . -> . N)]
-[expt (cl->* (-Integer -Integer . -> . -Integer) (N N . -> . N))]
+[expt (cl->* (-Nat -Nat . -> . -Nat)
+             (-Integer -Integer . -> . -Integer)
+             (N N . -> . N))]
 [sqrt (cl->*
        (-Nat . -> . -Real)
        (N . -> . N))]

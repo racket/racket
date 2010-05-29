@@ -104,7 +104,7 @@
    [build-vector (-poly (a) (-Nat (-Nat . -> . a) . -> . (-vec a)))]
    [vector-set! (-poly (a) (-> (-vec a) -Nat a -Void))]
    [vector-copy! (-poly (a) ((-vec a) -Nat (-vec a) [-Nat -Nat] . ->opt . -Void))]
-   [make-vector (-poly (a) (cl-> [(-Nat) (-vec -Integer)]
+   [make-vector (-poly (a) (cl-> [(-Nat) (-vec -Nat)]
                                  [(-Nat a) (-vec a)]))]
    
    [peek-char
