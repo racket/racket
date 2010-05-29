@@ -75,7 +75,7 @@
                           [(map2 dmap2) (in-pairs maps2)])
                          (with-handlers ([exn:infer? (lambda (_) #f)])
                            (cons 
-                            (simple-hash-union map1 map2 (lambda (k v1 v2) (c-meet v1 v2)))
+                            (hash-union map1 map2 #:combine c-meet)
                             (dmap-meet dmap1 dmap2)))))])
       (when (null? maps)
         (fail! maps1 maps2))

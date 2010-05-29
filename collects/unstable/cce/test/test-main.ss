@@ -6,7 +6,6 @@
          "test-define.ss"
          "test-dict.ss"
          "test-exn.ss"
-         "test-hash.ss"
          "test-planet.ss"
          "test-port.ss"
          "test-regexp.ss"
@@ -23,7 +22,6 @@
    define-suite
    dict-suite
    exn-suite
-   hash-suite
    planet-suite
    port-suite
    regexp-suite
