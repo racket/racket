@@ -23,8 +23,6 @@
 
 @include-section["exn.scrbl"]
 
-@include-section["port.scrbl"]
-
 @include-section["debug.scrbl"]
 
 @include-section["scribble.scrbl"]

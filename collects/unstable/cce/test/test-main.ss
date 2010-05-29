@@ -7,7 +7,6 @@
          "test-dict.ss"
          "test-exn.ss"
          "test-planet.ss"
-         "test-port.ss"
          "test-require-provide.ss"
          "test-scribble.ss"
          "test-set.ss"
@@ -21,7 +20,6 @@
    dict-suite
    exn-suite
    planet-suite
-   port-suite
    require-provide-suite
    scribble-suite
    set-suite

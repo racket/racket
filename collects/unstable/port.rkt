@@ -1,9 +1,6 @@
-#lang scheme
+#lang racket
 
-(require unstable/function "syntax.ss" "private/define-core.ss")
-
-(define-if-unbound (eprintf fmt . args)
-  (apply fprintf (current-error-port) fmt args))
+(require unstable/srcloc)
 
 (define buffer (make-bytes 1024))
 
@@ -44,9 +41,8 @@
      (define start (port->srcloc port))
      (define terms (read-all reader port))
      (define end (port->srcloc port))
-     (to-syntax #:src (src->list start end) terms)]))
+     (datum->syntax #f terms (build-source-location-list start end))]))
 
-(provide eprintf)
 (provide/contract
  [read-all (->* [] [(-> any/c) input-port?] list?)]
  [read-all-syntax

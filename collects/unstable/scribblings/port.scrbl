@@ -1,26 +1,13 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme unstable/cce/port))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket unstable/port))
 
-@title[#:style 'quiet #:tag "cce-port"]{Ports}
+@title{Ports}
 
-@defmodule[unstable/cce/port]
+@defmodule[unstable/port]
 
 This module provides tools for port I/O.
 
-@defproc[(eprintf [fmt string?] [arg any/c] ...) void?]{
-
-Like @scheme[printf], but prints to @scheme[(current-error-port)].
-
-@defexamples[
-#:eval (evaluator 'unstable/cce/port)
-(eprintf "Danger, ~a!" "Will Robinson")
-]
-
-}
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @defproc[(read-all [reader (-> any/c) read]
                    [port input-port? (current-input-port)])
@@ -31,7 +18,7 @@ This function produces a list of all the values produced by calling
 until it produces @scheme[eof].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/port)
+#:eval (eval/require 'unstable/port)
 (read-all read (open-input-string "1 2 3"))
 (parameterize ([current-input-port (open-input-string "a b c")])
   (read-all))
@@ -49,7 +36,7 @@ is set to @scheme[port], up until it produces @scheme[eof].  The source location
 of the result spans the entire portion of the port that was read.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/port)
+#:eval (eval/require 'unstable/port)
 (define port1 (open-input-string "1 2 3"))
 (port-count-lines! port1)
 (read-all-syntax read-syntax port1)
@@ -72,7 +59,7 @@ missing fields.  This function relies on @scheme[port-next-location], so line
 counting must be enabled for @scheme[port] to get meaningful results.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/port)
+#:eval (eval/require 'unstable/port)
 (define port (open-input-string "1 2 3"))
 (port-count-lines! port)
 (read port)
@@ -92,7 +79,7 @@ available but the port may have more input, it produces an empty byte string.
 This procedure never blocks to wait for input from the port.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/port)
+#:eval (eval/require 'unstable/port)
 (define-values [in out] (make-pipe))
 (parameterize ([current-input-port in]) (read-available-bytes))
 (write-byte (char->integer #\c) out)
