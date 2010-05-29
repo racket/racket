@@ -83,6 +83,7 @@ Keep documentation and tests up to date.
 @include-section["pretty.scrbl"]
 @include-section["queue.scrbl"]
 @include-section["regexp.scrbl"]
+@include-section["sandbox.scrbl"]
 @include-section["srcloc.scrbl"]
 @include-section["string.scrbl"]
 @include-section["struct.scrbl"]

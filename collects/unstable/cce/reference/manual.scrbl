@@ -27,7 +27,6 @@
 
 @include-section["debug.scrbl"]
 
-@include-section["sandbox.scrbl"]
 @include-section["scribble.scrbl"]
 
 @include-section["gui.scrbl"]

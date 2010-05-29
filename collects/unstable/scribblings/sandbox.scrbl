@@ -1,13 +1,10 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme scheme/sandbox unstable/cce/sandbox))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt"
+          (for-label racket racket/sandbox unstable/sandbox))
 
-@title[#:style 'quiet #:tag "cce-sandbox"]{Sandboxed Evaluation}
+@title{Sandboxed Evaluation}
 
-@defmodule[unstable/cce/sandbox]
+@defmodule[unstable/sandbox]
 
 This module provides tools for sandboxed evaluation.
 
@@ -28,9 +25,7 @@ This module provides tools for sandboxed evaluation.
 )]{
 These procedures wrap calls to @scheme[make-evaluator] and
 @scheme[make-module-evaluator], respectively, with
-@scheme[call-with-trusted-sandbox-configuration] (introduced in PLT 4.1.3.6).
-In older versions of PLT Scheme, they simulate the trusted configuration as
-closely as possible.
+@scheme[call-with-trusted-sandbox-configuration].
 }
 
 @deftogether[(

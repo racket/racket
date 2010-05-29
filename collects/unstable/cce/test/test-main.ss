@@ -9,7 +9,6 @@
          "test-planet.ss"
          "test-port.ss"
          "test-require-provide.ss"
-         "test-sandbox.ss"
          "test-scribble.ss"
          "test-set.ss"
          "test-syntax.ss")
@@ -24,7 +23,6 @@
    planet-suite
    port-suite
    require-provide-suite
-   sandbox-suite
    scribble-suite
    set-suite
    syntax-suite))

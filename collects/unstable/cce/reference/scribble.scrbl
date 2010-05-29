@@ -15,7 +15,7 @@ provides @scheme[this-package-version-symbol] from
 @schememodname[unstable/cce/planet], @scheme[this-package-in] from
 @schememodname[unstable/cce/require-provide], and
 @scheme[make-scribble-evaluator] and @scheme[make-scribble-module-evaluator]
-from @schememodname[unstable/cce/sandbox].
+from @schememodname[unstable/sandbox].
 
 @defform*[[
 (defmodule/this-package)

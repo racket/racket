@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scribble/manual "sandbox.ss" "planet.ss"
+(require scribble/manual unstable/sandbox "planet.ss"
          (for-syntax scheme/base "syntax.ss"))
 
 (define-for-syntax (make-planet-paths stx ids)

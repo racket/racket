@@ -1,23 +1,12 @@
-#lang scheme
+#lang racket
 
-(require scheme/sandbox
-         "define.ss")
+(require racket/sandbox)
 
 (provide make-trusted-evaluator
          make-trusted-module-evaluator
          make-scribble-evaluator
          make-scribble-module-evaluator
          make-sandbox-namespace-specs)
-
-;; Needed for legacy versions of scheme/sandbox
-(define-if-unbound (call-with-trusted-sandbox-configuration thunk)
-  (parameterize ([sandbox-propagate-breaks    #t]
-                 [sandbox-override-collection-paths '()]
-                 [sandbox-security-guard      (current-security-guard)]
-                 [sandbox-make-inspector      current-inspector]
-                 [sandbox-make-logger         current-logger]
-                 [sandbox-eval-limits         #f])
-    (thunk)))
 
 (define make-trusted-evaluator
   (make-keyword-procedure
