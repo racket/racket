@@ -7,7 +7,6 @@
          "test-define.ss"
          "test-dict.ss"
          "test-exn.ss"
-         "test-function.ss"
          "test-hash.ss"
          "test-match.ss"
          "test-planet.ss"
@@ -31,7 +30,6 @@
    define-suite
    dict-suite
    exn-suite
-   function-suite
    hash-suite
    match-suite
    planet-suite

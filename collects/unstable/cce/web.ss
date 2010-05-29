@@ -1,7 +1,7 @@
 #lang scheme
 (require xml
+         unstable/function
          "define.ss"
-         "function.ss"
          "text.ss")
 
 ;; css/c : FlatContract

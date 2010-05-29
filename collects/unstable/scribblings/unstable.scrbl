@@ -76,6 +76,7 @@ Keep documentation and tests up to date.
 @include-section["dirs.scrbl"]
 @include-section["exn.scrbl"]
 @include-section["file.scrbl"]
+@include-section["function.scrbl"]
 @include-section["list.scrbl"]
 @include-section["net.scrbl"]
 @include-section["path.scrbl"]

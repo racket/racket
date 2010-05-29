@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "function.ss" "syntax.ss" "private/define-core.ss")
+(require unstable/function "syntax.ss" "private/define-core.ss")
 
 (define-if-unbound (eprintf fmt . args)
   (apply fprintf (current-error-port) fmt args))

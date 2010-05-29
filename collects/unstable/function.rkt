@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/dict scheme/match scheme/function "define.ss"
-         (for-syntax scheme/base scheme/list))
+#lang racket/base
+(require racket/dict racket/match racket/function
+         (for-syntax racket/base racket/list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -92,14 +92,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (identity x) x)
-
-(define-if-unbound (const v)
-  (make-intermediate-procedure
-   'constant-function
-   [(x ... 8) v]
-   [xs v]
-   #:keyword
-   [(ks vs . xs) v]))
 
 (define-syntax (thunk stx)
   (syntax-case stx ()
@@ -374,7 +366,7 @@
 (provide
  ;; functions
  identity
- thunk const
+ thunk
  negate conjoin disjoin
  curryn currynr papply papplyr call
  ;; macros

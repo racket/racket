@@ -2,8 +2,8 @@
 (require
  (for-syntax scheme/match
              scheme/struct-info
+             unstable/function
              "define.ss"
-             "function.ss"
              "syntax.ss"))
 
 (define-syntax-rule (match? e p ...)

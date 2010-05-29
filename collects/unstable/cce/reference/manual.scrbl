@@ -10,8 +10,6 @@
 
 @table-of-contents[]
 
-@include-section["function.scrbl"]
-
 @include-section["values.scrbl"]
 
 @include-section["text.scrbl"]

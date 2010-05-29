@@ -1,8 +1,9 @@
 #lang at-exp racket/base
-(require scribble/base scribble/manual scribble/core)
+(require scribble/base scribble/manual scribble/core scribble/eval)
 (provide unstable
          unstable-header
-         addition)
+         addition
+         eval/require)
 
 (define (unstable . authors)
   (make-compound-paragraph 
@@ -17,3 +18,9 @@
 
 (define (addition name)
   @margin-note{The subsequent bindings were added by @|name|.})
+
+(define (eval/require . paths)
+  (let* ([e (make-base-eval)])
+    (for ([path (in-list paths)])
+      (e `(require ,path)))
+    e))
