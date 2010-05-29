@@ -1,8 +1,8 @@
 #lang scheme
 (require xml
          unstable/function
-         "define.ss"
-         "text.ss")
+         unstable/text
+         "define.ss")
 
 ;; css/c : FlatContract
 ;; Recognizes representations of Cascading Style Sheets.

@@ -1,13 +1,11 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme unstable/cce/text))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket unstable/text))
 
-@title[#:style 'quiet #:tag "cce-text"]{Text Representations}
+@title[#:tag "unstable-text"]{Text Representations}
 
-@defmodule[unstable/cce/text]
+@defmodule[unstable/text]
+
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides tools for manipulating and converting textual data.
 
@@ -22,7 +20,7 @@ This contract and predicate recognize text values: strings, byte strings,
 symbols, and keywords, as well as syntax objects containing them.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/text)
+#:eval (eval/require 'unstable/text)
 (text? "text")
 (text? #"text")
 (text? 'text)
@@ -45,7 +43,7 @@ symbols, and keywords, as well as syntax objects containing them.
 These predicates recognize specific text types stored in syntax objects.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/text)
+#:eval (eval/require 'unstable/text)
 (string-literal? #'"literal")
 (string-literal? "not literal")
 (bytes-literal? #'#"literal")
@@ -82,7 +80,7 @@ These functions convert text values to specific types.  They concatenate each
 and back of the result and @scheme[between] between each argument.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/text)
+#:eval (eval/require 'unstable/text)
 (text->string #"concat" #'enate)
 (text->bytes #:between "-" 'concat #'#:enate)
 (text->symbol #:before "(" #:after ")" '#:concat #'"enate")
@@ -124,7 +122,7 @@ syntax object properties from the @scheme[stx] argument.  They concatenate each
 and back of the result and @scheme[between] between each argument.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/text)
+#:eval (eval/require 'unstable/text)
 (text->string-literal #"concat" #'enate)
 (text->bytes-literal #:between "-" 'concat #'#:enate)
 (text->identifier #:before "(" #:after ")"
@@ -159,7 +157,7 @@ equivalent to:
 ]
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/text)
+#:eval (eval/require 'unstable/text)
 (text=? #"x" #'y)
 (text<? #"x" #'y)
 (text<=? #"x" #'y)

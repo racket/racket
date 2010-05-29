@@ -29,7 +29,8 @@ described by the following grammar:
 [value text]
 ]
 
-Here, @scheme[text] is any of the datatypes described in @secref["cce-text"].
+Here, @scheme[text] is any of the datatypes described in
+@secref["unstable-text"].
 }
 
 @defthing[xexpr/c flat-contract?]{

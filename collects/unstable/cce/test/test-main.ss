@@ -18,7 +18,6 @@
          "test-scribble.ss"
          "test-set.ss"
          "test-syntax.ss"
-         "test-text.ss"
          "test-values.ss"
          "test-web.ss")
 
@@ -41,6 +40,5 @@
    scribble-suite
    set-suite
    syntax-suite
-   text-suite
    values-suite
    web-suite))

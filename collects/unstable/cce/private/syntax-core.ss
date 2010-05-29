@@ -2,8 +2,8 @@
 
 (require scheme/contract
          scheme/match
+         unstable/text
          (only-in unstable/syntax with-syntax*)
-         "../text.ss"
          (for-syntax scheme/base))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

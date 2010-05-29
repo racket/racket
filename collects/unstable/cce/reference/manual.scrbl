@@ -12,7 +12,6 @@
 
 @include-section["values.scrbl"]
 
-@include-section["text.scrbl"]
 @include-section["regexp.scrbl"]
 @include-section["web.scrbl"]
 

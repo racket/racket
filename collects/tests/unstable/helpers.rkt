@@ -2,7 +2,9 @@
 
 (provide test
          test-ok check-ok
-         test-bad check-bad)
+         test-bad check-bad
+         check-not
+         with/c)
 
 (require rackunit racket/pretty)
 
@@ -18,3 +20,18 @@
 (define (pretty-format/write x)
   (with-output-to-string
     (lambda () (pretty-write x))))
+
+(define-syntax-rule (with/c c e)
+  (let () (with-contract value ([value c]) (define value e)) value))
+
+(define-check (check-not compare actual expected)
+  (with-check-info*
+   (list (make-check-info 'comparison compare)
+         (make-check-actual actual)
+         (make-check-expected expected))
+   (lambda ()
+     (let* ([result (compare actual expected)])
+       (when result
+         (with-check-info*
+          (list (make-check-info 'result result))
+          (lambda () (fail-check))))))))
