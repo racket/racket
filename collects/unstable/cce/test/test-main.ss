@@ -8,7 +8,6 @@
          "test-exn.ss"
          "test-planet.ss"
          "test-port.ss"
-         "test-regexp.ss"
          "test-require-provide.ss"
          "test-sandbox.ss"
          "test-scribble.ss"
@@ -24,7 +23,6 @@
    exn-suite
    planet-suite
    port-suite
-   regexp-suite
    require-provide-suite
    sandbox-suite
    scribble-suite

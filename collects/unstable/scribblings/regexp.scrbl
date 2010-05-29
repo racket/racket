@@ -1,13 +1,9 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme unstable/cce/regexp))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket unstable/regexp))
 
-@title[#:style 'quiet #:tag "cce-regexp"]{Regular Expressions}
+@title{Regular Expressions}
 
-@defmodule[unstable/cce/regexp]
+@defmodule[unstable/regexp]
 
 This module provides tools for building strings which can be compiled to regular
 expressions.  In particular, the constructors wrap their arguments in
@@ -23,7 +19,7 @@ Produces a regular expression string that matches @scheme[start], followed by
 each @scheme[re] interleaved with @scheme[between], followed by @scheme[end].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/regexp)
+#:eval (eval/require 'unstable/regexp)
 (define re
   (pregexp
    (regexp-sequence "[0-9]+" "[0-9]+" "[0-9]+"
@@ -42,7 +38,7 @@ each @scheme[re] interleaved with @scheme[between], followed by @scheme[end].
 Produces a regular expression string that matches any of the given @scheme[re]s.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/regexp)
+#:eval (eval/require 'unstable/regexp)
 (define re (pregexp (regexp-or "[0-9]+" "[a-z]")))
 (regexp-match-exact? re "123")
 (regexp-match-exact? re "c")
@@ -57,7 +53,7 @@ Produces a regular expression string that matches either the empty string, or
 the concatenation of all the given @scheme[re]s.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/regexp)
+#:eval (eval/require 'unstable/regexp)
 (define re (pregexp (regexp-maybe "[0-9]+" "[.]" "[0-9]+")))
 (regexp-match-exact? re "123.456")
 (regexp-match-exact? re "")
@@ -72,7 +68,7 @@ Produces a regular expression string that matches zero or more consecutive
 occurrences of the concatenation of the given @scheme[re]s.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/regexp)
+#:eval (eval/require 'unstable/regexp)
 (define re (pregexp (regexp-star "a" "b" "c")))
 (regexp-match-exact? re "")
 (regexp-match-exact? re "abc")
@@ -88,7 +84,7 @@ Produces a regular expression string that matches one or more consecutive
 occurrences of the concatenation of the given @scheme[re]s.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/regexp)
+#:eval (eval/require 'unstable/regexp)
 (define re (pregexp (regexp-plus "a" "b" "c")))
 (regexp-match-exact? re "")
 (regexp-match-exact? re "abc")
@@ -104,7 +100,7 @@ Produces a regular expression string that matches the concatenation of the given
 @scheme[re]s and saves the result.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/regexp)
+#:eval (eval/require 'unstable/regexp)
 (define re
   (pregexp (regexp-sequence (regexp-save "[0-9]+") "\\1")))
 (regexp-match-exact? re "11")
@@ -120,7 +116,7 @@ Produces a regular expression string that matches the concatenation of the given
 @scheme[re]s in multiple-line mode.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/regexp)
+#:eval (eval/require 'unstable/regexp)
 (define re (pregexp (regexp-multi "^abc$")))
 (regexp-match? re "abc")
 (regexp-match? re "xyz\nabc\ndef")

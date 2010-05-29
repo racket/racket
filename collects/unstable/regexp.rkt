@@ -1,6 +1,6 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/list scheme/contract)
+(require racket/list racket/contract)
 
 ;; regexp-or : String ... -> String
 ;; Produces the regexp disjunction of several regexp-strings.

@@ -1,8 +1,6 @@
-#lang scheme
+#lang racket
 
-(require "checks.ss" "../regexp.ss")
-
-(provide regexp-suite)
+(require rackunit rackunit/text-ui unstable/regexp "helpers.rkt")
 
 (define-syntax (regexp-test stx)
   (syntax-case stx ()
@@ -14,7 +12,7 @@
          (test-case "pregexp"
            (check-equal? (regexp-match (pregexp pattern) string) result))))]))
 
-(define regexp-suite
+(run-tests
  (test-suite "regexp.ss"
    (test-suite "regexp-sequence"
      (regexp-test (regexp-sequence) "a cat" (list ""))
