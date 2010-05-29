@@ -17,7 +17,6 @@
          "test-scribble.ss"
          "test-set.ss"
          "test-syntax.ss"
-         "test-values.ss"
          "test-web.ss")
 
 (run-tests
@@ -38,5 +37,4 @@
    scribble-suite
    set-suite
    syntax-suite
-   values-suite
    web-suite))

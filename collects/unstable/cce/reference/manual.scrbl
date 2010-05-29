@@ -10,8 +10,6 @@
 
 @table-of-contents[]
 
-@include-section["values.scrbl"]
-
 @include-section["regexp.scrbl"]
 @include-section["web.scrbl"]
 

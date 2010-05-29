@@ -86,6 +86,7 @@ Keep documentation and tests up to date.
 @include-section["struct.scrbl"]
 @include-section["syntax.scrbl"]
 @include-section["text.scrbl"]
+@include-section["values.scrbl"]
 @include-section["poly-c.scrbl"]
 @include-section["mutated-vars.scrbl"]
 @include-section["find.scrbl"]
