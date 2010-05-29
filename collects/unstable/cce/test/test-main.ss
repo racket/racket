@@ -8,7 +8,6 @@
          "test-dict.ss"
          "test-exn.ss"
          "test-hash.ss"
-         "test-match.ss"
          "test-planet.ss"
          "test-port.ss"
          "test-queue.ss"
@@ -30,7 +29,6 @@
    dict-suite
    exn-suite
    hash-suite
-   match-suite
    planet-suite
    port-suite
    queue-suite

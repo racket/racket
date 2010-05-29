@@ -23,8 +23,6 @@
 @include-section["syntax.scrbl"]
 @include-section["define.scrbl"]
 
-@include-section["match.scrbl"]
-
 @include-section["class.scrbl"]
 
 @include-section["contract.scrbl"]
