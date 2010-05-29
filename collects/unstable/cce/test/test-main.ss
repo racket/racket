@@ -16,8 +16,7 @@
          "test-sandbox.ss"
          "test-scribble.ss"
          "test-set.ss"
-         "test-syntax.ss"
-         "test-web.ss")
+         "test-syntax.ss")
 
 (run-tests
  (test-suite "scheme.plt"
@@ -36,5 +35,4 @@
    sandbox-suite
    scribble-suite
    set-suite
-   syntax-suite
-   web-suite))
+   syntax-suite))

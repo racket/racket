@@ -1,8 +1,7 @@
-#lang scheme
+#lang racket
 (require xml
          unstable/function
-         unstable/text
-         "define.ss")
+         unstable/text)
 
 ;; css/c : FlatContract
 ;; Recognizes representations of Cascading Style Sheets.
@@ -68,10 +67,6 @@
 ;; Writes a property value to a Cascading Style Sheet.
 (define write-prop-val write-text)
 
-(define-if-unbound xexpr/c
-  (flat-named-contract "Xexpr" xexpr?))
-
-(provide xexpr/c)
 (provide/contract
  [write-xexpr (->* [xexpr/c] [output-port?] void?)])
 

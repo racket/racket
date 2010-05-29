@@ -1,13 +1,11 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme xml unstable/cce/web))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket xml unstable/web))
 
-@title[#:style 'quiet #:tag "cce-web"]{XML and CSS}
+@title{XML and CSS}
 
-@defmodule[unstable/cce/web]
+@defmodule[unstable/web]
+
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides tools for programmatic creation of static web pages.  It is
 based on the XML collection; see documentation for @scheme[xexpr?].
