@@ -11758,6 +11758,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Cont_Mark *)0x0)->key);
     ref3 = jit_beqr_p(jit_forward(), JIT_V1, JIT_R1); /* => found right destination */
 
+    /* Assume that we'll find a record and mutate it. (See scheme_set_cont_mark().) */
+    (void)jit_movi_p(JIT_R1, NULL);
+    jit_stxi_p(&((Scheme_Cont_Mark *)0x0)->cache, JIT_R0, JIT_R1);    
+
     CHECK_LIMIT();
     (void)jit_jmpi(refloop); 
 
