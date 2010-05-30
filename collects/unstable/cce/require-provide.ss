@@ -5,7 +5,7 @@
                      scheme/provide-transform
                      syntax/parse
                      unstable/planet-syntax)
-         "define.ss")
+         unstable/define)
 
 (define-syntax (define-planet-package stx)
   (syntax-parse stx

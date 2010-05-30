@@ -12,8 +12,6 @@
 
 @include-section["set.scrbl"]
 
-@include-section["define.scrbl"]
-
 @include-section["require-provide.scrbl"]
 @include-section["planet.scrbl"]
 

@@ -2,7 +2,7 @@
 
 (require slideshow/base slideshow/pict
          scheme/splicing scheme/stxparam scheme/gui/base
-         "define.ss")
+         unstable/define)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

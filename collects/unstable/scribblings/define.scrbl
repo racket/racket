@@ -1,49 +1,13 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme unstable/cce/define))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket unstable/define))
 
-@title[#:style 'quiet #:tag "cce-define"]{Definitions}
+@title{Definitions}
 
-@defmodule[unstable/cce/define]
+@defmodule[unstable/define]
+
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides macros for creating and manipulating definitions.
-
-@section{Interleaving Definitions and Expressions}
-
-@defform[(block def-or-expr ...)]{
-
-This expression establishes a lexically scoped block (i.e. an internal
-definition context) in which definitions and expressions may be interleaved.
-Its result is that of the last term (after @scheme[begin]-splicing), executed in
-tail position, if the term is an expression; if there are no terms, or the last
-term is a definition, its result is @scheme[(void)].
-
-This form is equivalent to @scheme[(begin-with-definitions def-or-expr ...)].
-
-@defexamples[
-#:eval (evaluator 'unstable/cce/define)
-(define (intersection list-one list-two)
-  (block
-
-    (define hash-one (make-hash))
-    (for ([x (in-list list-one)])
-      (hash-set! hash-one x #t))
-
-    (define hash-two (make-hash))
-    (for ([x (in-list list-two)])
-      (hash-set! hash-two x #t))
-
-    (for/list ([x (in-hash-keys hash-one)]
-               #:when (hash-has-key? hash-two x))
-      x)))
-
-(intersection (list 1 2 3) (list 2 3 4))
-]
-
-}
 
 @section{Deferred Evaluation in Modules}
 
@@ -53,13 +17,13 @@ When used at the top level of a module, evaluates @scheme[expr] at the end of
 the module.  This can be useful for calling functions before their definitions.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/define)
+#:eval (eval/require 'unstable/define)
 (module Failure scheme
   (f 5)
   (define (f x) x))
 (require 'Failure)
 (module Success scheme
-  (require unstable/cce/define)
+  (require unstable/define)
   (at-end (f 5))
   (define (f x) x))
 (require 'Success)
@@ -88,7 +52,7 @@ Scheme with different bindings, to provide an implementation of a binding for
 versions that do not have it but use the built-in one in versions that do.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/define)
+#:eval (eval/require 'unstable/define)
 (define-if-unbound x 1)
 x
 (define y 2)
@@ -106,7 +70,7 @@ This form establishes a rename transformer for each @scheme[new] identifier,
 redirecting it to the corresponding @scheme[old] identifier.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/define)
+#:eval (eval/require 'unstable/define)
 (define-renamings [def define] [lam lambda])
 (def plus (lam (x y) (+ x y)))
 (plus 1 2)
@@ -133,7 +97,7 @@ Defines the form @scheme[name] as a shorthand for setting the parameter
 to @scheme[(parameterize ([parameter value]) body ...)].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/define)
+#:eval (eval/require 'unstable/define)
 (define-with-parameter with-input current-input-port)
 (with-input (open-input-string "Tom Dick Harry") (read))
 ]
@@ -148,7 +112,7 @@ definition form with function shorthand like @scheme[define] and
 which works like @scheme[define-values] or @scheme[define-syntaxes].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/define)
+#:eval (eval/require 'unstable/define)
 (define-single-definition define-like define-values)
 (define-like x 0)
 x
