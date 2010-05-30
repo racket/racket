@@ -1,13 +1,11 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme unstable/cce/class))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket unstable/class))
 
-@title[#:style 'quiet #:tag "cce-class"]{Classes and Objects}
+@title{Classes and Objects}
 
-@defmodule[unstable/cce/class]
+@defmodule[unstable/class]
+
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides tools for classes, objects, and mixins.
 
@@ -59,7 +57,7 @@ Returns @scheme[c%] if it implements @scheme[i<%>]; otherwise, returns
 Sends each message (with arguments) to @scheme[obj], then returns @scheme[obj].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/class)
+#:eval (eval/require 'racket/class 'unstable/class)
 (define c%
   (class object%
     (super-new)
@@ -75,7 +73,7 @@ Sends the message to each object in the list @scheme[objs], returning
 @scheme[(void)].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/class)
+#:eval (eval/require 'racket/class 'unstable/class)
 (define c%
   (class object%
     (super-new)

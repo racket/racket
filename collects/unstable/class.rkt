@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/contract scheme/class
-         (for-syntax scheme/base))
+#lang racket/base
+(require racket/contract racket/class
+         (for-syntax racket/base))
 
 (define class-or-interface/c (or/c class? interface?))
 
