@@ -117,7 +117,7 @@ Racket programmers prefer to avoid side-effects, so a definition usually
 has just one expression in its body. It's
 important, though, to understand that multiple expressions are allowed
 in a definition body, because it explains why the following
-@racket[nobake] function fails to return its argument:
+@racket[nobake] function fails to include its argument in its result:
 
 @def+int[
 #:eval ex-eval
