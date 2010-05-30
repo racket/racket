@@ -1,13 +1,12 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
+#lang scribble/manual
+@(require scribble/eval
           scribble/bnf
-          "../scribble.ss"
-          (for-label scheme/base scribble/manual unstable/cce/scribble))
+          "utils.rkt"
+          (for-label racket/base scribble/manual unstable/scribble))
 
-@title[#:tag "cce-scribble"]{Scribble Documentation}
+@title{Scribble Documentation}
 
-@defmodule[unstable/cce/scribble]
+@defmodule[unstable/scribble]
 
 This module provides tools for Scribble documentation; specifically, of
 @|PLaneT| packages.  In addition to the bindings described below, this module

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
-          "../scribble.ss"
+          unstable/scribble
           "eval.ss")
 @(require (for-label scheme unstable/cce/debug unstable/syntax))
 

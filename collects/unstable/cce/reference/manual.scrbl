@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
+          unstable/scribble
           "../../scribblings/utils.rkt"
-          "../scribble.ss"
           (for-label scheme/base))
 
 @title[#:style '(toc)]{@bold{Carl Eastlund's Scheme Utilities}}
@@ -13,5 +13,3 @@
 @include-section["set.scrbl"]
 
 @include-section["debug.scrbl"]
-
-@include-section["scribble.scrbl"]

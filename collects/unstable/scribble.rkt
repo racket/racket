@@ -1,7 +1,7 @@
-#lang scheme/base
+#lang racket/base
 
 (require scribble/manual unstable/sandbox unstable/planet
-         (for-syntax scheme/base unstable/planet-syntax))
+         (for-syntax racket/base unstable/planet-syntax))
 
 (define-for-syntax (make-planet-paths stx ids)
   (map (lambda (id) (make-planet-path stx id)) (syntax->list ids)))
