@@ -1,11 +1,11 @@
-#lang scribble/doc
-@(require scribble/manual
-          "../scribble.ss"
-          (for-label scheme/gui unstable/cce/gui))
+#lang scribble/manual
+@(require "../utils.rkt" (for-label racket/gui unstable/gui/window))
 
-@title[#:style 'quiet #:tag "cce-gui"]{GUI Widgets}
+@title{GUI Widgets}
 
-@defmodule[unstable/cce/gui]
+@defmodule[unstable/gui/window]
+
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @section{Locked Text Fields}
 

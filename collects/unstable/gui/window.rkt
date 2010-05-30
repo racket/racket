@@ -1,4 +1,4 @@
-#lang scheme/gui
+#lang racket/gui
 
 (provide
  locked-text-field-mixin

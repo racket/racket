@@ -9,3 +9,4 @@
 
 @include-section["gui/notify.scrbl"]
 @include-section["gui/prefs.scrbl"]
+@include-section["gui/window.scrbl"]

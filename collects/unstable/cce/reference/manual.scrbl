@@ -25,6 +25,5 @@
 
 @include-section["scribble.scrbl"]
 
-@include-section["gui.scrbl"]
 @include-section["drscheme.scrbl"]
 @include-section["slideshow.scrbl"]
