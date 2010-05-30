@@ -5,7 +5,6 @@
          "test-debug.ss"
          "test-define.ss"
          "test-dict.ss"
-         "test-exn.ss"
          "test-planet.ss"
          "test-require-provide.ss"
          "test-scribble.ss"
@@ -18,7 +17,6 @@
    debug-suite
    define-suite
    dict-suite
-   exn-suite
    planet-suite
    require-provide-suite
    scribble-suite

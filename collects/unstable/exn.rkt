@@ -1,5 +1,6 @@
 #lang racket/base
-(require mzlib/contract)
+(require racket/contract
+         (for-syntax racket/base))
 
 ;; network-error: symbol string . values -> void
 ;; throws a formatted exn:fail:network
@@ -16,6 +17,16 @@
       (format "~s\n" exn)))
 ;; Eli: (or/c exn any)??
 
+(define-syntax (try stx)
+  (syntax-case stx ()
+    [(_ e) #'(#%expression e)]
+    [(_ e0 e ...)
+     (syntax/loc stx
+       (with-handlers* ([exn:fail? (lambda (x) (try e ...))])
+         (#%expression e0)))]))
+
+(provide try)
+
 (provide/contract
- [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
- [exn->string ((or/c exn? any/c) . -> . string?)])
+ [network-error (->* [symbol? string?] [] #:rest list? void?)]
+ [exn->string (-> any/c string?)])
