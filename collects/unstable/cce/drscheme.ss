@@ -2,7 +2,7 @@
 
 (require drscheme/tool
          string-constants
-         "dict.ss"
+         unstable/dict
          (only-in test-engine/scheme-gui make-formatter)
          (only-in test-engine/scheme-tests
                   scheme-test-data test-format test-execute)

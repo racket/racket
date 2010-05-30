@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket/base
 
-(require unstable/contract "define.ss")
+(require racket/dict racket/match racket/contract unstable/contract)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -8,7 +8,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-if-unbound dict-has-key?
+(define dict-has-key?
   (let ()
     (with-contract
      dict-has-key?
@@ -19,7 +19,7 @@
          #t)))
     dict-has-key?))
 
-(define-if-unbound dict-ref!
+(define dict-ref!
   (let ()
     (with-contract
      dict-ref!
@@ -36,7 +36,7 @@
             value)))))
     dict-ref!))
 
-(define-if-unbound (dict-empty? dict)
+(define (dict-empty? dict)
   (= (dict-count dict) 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

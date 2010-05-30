@@ -1,13 +1,11 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme unstable/cce/dict))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket unstable/dict))
 
-@title[#:style 'quiet #:tag "cce-dict"]{Dictionaries}
+@title{Dictionaries}
 
-@defmodule[unstable/cce/dict]
+@defmodule[unstable/dict]
+
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 This module provides tools for manipulating dictionary values.
 
@@ -22,7 +20,7 @@ Constructs an empty hash table based on the behavior specified by
 @scheme[mutable?], @scheme[weak?], and @scheme[compare].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (empty-dict)
 (empty-dict #:mutable? #t)
 (empty-dict #:weak? #t)
@@ -41,7 +39,7 @@ Converts a given dictionary @scheme[d] to a hash table based on the behavior
 specified by @scheme[mutable?], @scheme[weak?], and @scheme[compare].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (make-dict '([1 . one] [2 . two]))
 (make-dict '([1 . one] [2 . two]) #:mutable? #t)
 (make-dict '([1 . one] [2 . two]) #:weak? #t)
@@ -62,7 +60,7 @@ Given no hash functions, the dictionary defaults to a degenerate hash function
 and is thus essentially equivalent to a list-based dictionary.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (define table (custom-dict = add1 sub1 #:mutable? #t))
 (dict-set! table 1 'one)
 (dict-set! table 2 'two)
@@ -85,7 +83,7 @@ for @scheme[k], updates @scheme[d] to map @scheme[k] to the result of
 returns the new mapping.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (define d (make-hash))
 (dict-set! d 1 'one)
 (dict-set! d 2 'two)
@@ -108,7 +106,7 @@ Looks up key @scheme[k] in dictionary @scheme[d].  Raises a contract error if
 except for the specific exception value raised.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-ref/check '([1 . one] [2 . two] [3 . three]) 2)
 ]
 
@@ -121,7 +119,7 @@ Looks up key @scheme[k] in dictionary @scheme[d].  Returns @scheme[k] if
 @scheme[(dict-ref d k (lambda () k))].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-ref/identity '([1 . one] [2 . two] [3 . three]) 2)
 (dict-ref/identity '([1 . one] [2 . two] [3 . three]) 4)
 ]
@@ -135,7 +133,7 @@ Looks up key @scheme[k] in dictionary @scheme[d].  Returns @scheme[v] if
 @scheme[(dict-ref d k (lambda () v))].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-ref/default '([1 . one] [2 . two] [3 . three]) 2 'other)
 (dict-ref/default '([1 . one] [2 . two] [3 . three]) 4 'other)
 ]
@@ -149,7 +147,7 @@ applying @scheme[f] (in tail position) if @scheme[d] has no entry for
 @scheme[k].  Equivalent to @scheme[(dict-ref d k f)].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-ref/failure '([1 . one] [2 . two] [3 . three]) 2 gensym)
 (dict-ref/failure '([1 . one] [2 . two] [3 . three]) 4 gensym)
 ]
@@ -163,7 +161,7 @@ applying @scheme[f] (in tail position) if @scheme[d] has no entry for
 Reports whether @scheme[d] is empty (has no keys).
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-empty? '())
 (dict-empty? '([1 . one] [2 . two]))
 ]
@@ -175,7 +173,7 @@ Reports whether @scheme[d] is empty (has no keys).
 Reports whether @scheme[d] has an entry for @scheme[k].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-has-key? '([1 . one] [2 . two] [3 . three]) 2)
 (dict-has-key? '([1 . one] [2 . two] [3 . three]) 4)
 ]
@@ -187,7 +185,7 @@ Reports whether @scheme[d] has an entry for @scheme[k].
 Produces the domain of a dictionary as a list of keys.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-domain '([1 . one] [2 . two] [3 . three]))
 ]
 
@@ -198,7 +196,7 @@ Produces the domain of a dictionary as a list of keys.
 Produces the range of a dictionary as a list of values.
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-range '([1 . one] [2 . two] [3 . three]))
 ]
 
@@ -223,7 +221,7 @@ key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
 @scheme[(combine/key k v0 v)].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (dict-union '([1 . one]) '([2 . two]) '([3 . three]))
 (dict-union '([1 . (one uno)] [2 . (two dos)])
             '([1 . (ein une)] [2 . (zwei deux)])
@@ -249,7 +247,7 @@ key @scheme[k] and value @scheme[v], if a mapping from @scheme[k] to some value
 @scheme[(combine/key k v0 v)].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (define d (make-hash))
 d
 (dict-union! d '([1 . (one uno)] [2 . (two dos)]))
@@ -279,7 +277,7 @@ will extract a nested dictionary using @scheme[unwrap] and will produce a
 wrapped dictionary during functional update using @scheme[wrap].
 
 @defexamples[
-#:eval (evaluator 'unstable/cce/dict)
+#:eval (eval/require 'racket/dict 'unstable/dict)
 (define-struct table [dict]
   #:transparent
   #:property prop:dict

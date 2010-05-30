@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "dict.ss")
+(require unstable/dict)
 
 ;; A Set is either a Dict or a struct with the prop:set property.
 ;; A SetProperty is:
