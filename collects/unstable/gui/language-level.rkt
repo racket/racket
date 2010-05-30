@@ -1,6 +1,6 @@
-#lang scheme/gui
+#lang racket/gui
 
-(require drscheme/tool
+(require drracket/tool
          string-constants
          unstable/dict
          (only-in test-engine/scheme-gui make-formatter)
@@ -23,7 +23,7 @@
 (define (read-module-body [port (current-input-port)]
                           [source (object-name port)]
                           [reader read-syntax]
-                          [path 'scheme]
+                          [path 'racket]
                           [name 'program])
   (let*-values ([(line-1 col-1 pos-1) (port-next-location port)]
                 [(terms) (read-all-syntax port source reader)]
@@ -48,7 +48,7 @@
    language-level-metadata-mixin))
 
 (define-unit language-level@
-  (import drscheme:tool^)
+  (import drracket:tool^)
   (export language-level^)
 
   (define (make-language-level
@@ -59,7 +59,7 @@
            #:url [url #f]
            #:reader [reader read-syntax]
            . mixins)
-    (let* ([mx-default (drscheme:language:get-default-mixin)]
+    (let* ([mx-default (drracket:language:get-default-mixin)]
            [mx-custom (apply compose (reverse mixins))])
       (new (mx-custom (mx-default simple-language-level%))
            [module path]
@@ -70,12 +70,12 @@
            [reader (make-namespace-syntax-reader reader)])))
 
   (define simple-language-level%
-    (drscheme:language:module-based-language->language-mixin
-     (drscheme:language:simple-module-based-language->module-based-language-mixin
-      drscheme:language:simple-module-based-language%)))
+    (drracket:language:module-based-language->language-mixin
+     (drracket:language:simple-module-based-language->module-based-language-mixin
+      drracket:language:simple-module-based-language%)))
 
   (define (language-level-render-mixin to-sexp show-void?)
-    (mixin (drscheme:language:language<%>) ()
+    (mixin (drracket:language:language<%>) ()
       (super-new)
 
       (define/override (render-value/format value settings port width)
@@ -83,18 +83,18 @@
           (super render-value/format (to-sexp value) settings port width)))))
 
   (define (language-level-capability-mixin dict)
-    (mixin (drscheme:language:language<%>) ()
+    (mixin (drracket:language:language<%>) ()
       (super-new)
 
       (define/augment (capability-value key)
         (dict-ref/failure
          dict key
          (lambda ()
-           (inner (drscheme:language:get-capability-default key)
+           (inner (drracket:language:get-capability-default key)
                   capability-value key))))))
 
   (define language-level-no-executable-mixin
-    (mixin (drscheme:language:language<%>) ()
+    (mixin (drracket:language:language<%>) ()
       (super-new)
       (inherit get-language-name)
 
@@ -106,8 +106,8 @@
          #f '(ok stop)))))
 
   (define language-level-eval-as-module-mixin
-    (mixin (drscheme:language:language<%>
-            drscheme:language:module-based-language<%>) ()
+    (mixin (drracket:language:language<%>
+            drracket:language:module-based-language<%>) ()
       (super-new)
 
       (inherit get-reader get-module)
@@ -134,29 +134,29 @@
       (list (cons 'macro-stepper:enabled #t)))))
 
   (define language-level-check-expect-mixin
-    (mixin (drscheme:language:language<%>) ()
+    (mixin (drracket:language:language<%>) ()
       (super-new)
       (inherit render-value/format)
 
       (define/augment (capability-value key)
         (case key
           [(tests:test-menu tests:dock-menu) #t]
-          [else (inner (drscheme:language:get-capability-default key)
+          [else (inner (drracket:language:get-capability-default key)
                        capability-value
                        key)]))
 
       (define/override (on-execute settings run-in-user-thread)
-        (let* ([drscheme-namespace (current-namespace)]
+        (let* ([drracket-namespace (current-namespace)]
                [test-engine-path
                 ((current-module-name-resolver)
                  'test-engine/scheme-tests #f #f)])
           (run-in-user-thread
            (lambda ()
-             (namespace-attach-module drscheme-namespace test-engine-path)
+             (namespace-attach-module drracket-namespace test-engine-path)
              (namespace-require test-engine-path)
              (scheme-test-data
-              (list (drscheme:rep:current-rep)
-                    drscheme-eventspace
+              (list (drracket:rep:current-rep)
+                    drracket-eventspace
                     test-display%))
              (test-execute (get-preference 'tests:enable? (lambda () #t)))
              (test-format
@@ -168,7 +168,7 @@
                                          meta-lines
                                          meta->settings
                                          settings->meta)
-    (mixin (drscheme:language:language<%>) ()
+    (mixin (drracket:language:language<%>) ()
       (inherit default-settings)
       (super-new)
 
@@ -191,7 +191,7 @@
       (let ([stx (apply reader args)])
         (if (syntax? stx) (namespace-syntax-introduce stx) stx))))
 
-  (define drscheme-eventspace (current-eventspace))
+  (define drracket-eventspace (current-eventspace))
 
   (define experimental-language-hierarchy
     (list (cons (string-constant experimental-languages)
