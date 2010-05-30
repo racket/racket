@@ -1,7 +1,7 @@
-#lang scheme
+#lang racket
 
 (require slideshow/base slideshow/pict
-         scheme/splicing scheme/stxparam scheme/gui/base
+         racket/splicing racket/stxparam racket/gui/base
          unstable/define)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -224,7 +224,7 @@
                  (block body ...)))
              (begin (staged-computation name 'name) ...)))))]))
 
-(define-syntax-rule (slide/stage [name ...] body ...)
+(define-syntax-rule (slide/staged [name ...] body ...)
   (staged [name ...] (slide body ...)))
 
 (define-syntax-rule (before name) (< stage name))
@@ -301,7 +301,7 @@
  [show (->* [pict?] [any/c] pict?)]
  [strike (->* [pict?] [any/c] pict?)]
  [shade (->* [pict?] [any/c #:ratio (real-in 0 1)] pict?)])
-(provide staged slide/stage stage stage-name
+(provide staged slide/staged stage stage-name
          before at after before/at at/after except
          pict-if pict-cond pict-case pict-match
          pict-combine with-pict-combine)

@@ -15,5 +15,3 @@
 @include-section["debug.scrbl"]
 
 @include-section["scribble.scrbl"]
-
-@include-section["slideshow.scrbl"]

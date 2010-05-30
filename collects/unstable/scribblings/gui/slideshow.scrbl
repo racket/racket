@@ -1,13 +1,12 @@
-#lang scribble/doc
-@(require scribble/manual
-          "../scribble.ss"
+#lang scribble/manual
+@(require "../utils.rkt"
           (for-label slideshow
                      unstable/contract
-                     unstable/cce/slideshow))
+                     unstable/gui/slideshow))
 
-@title[#:style 'quiet #:tag "cce-slideshow"]{Slideshow Presentations}
+@title{Slideshow Presentations}
 
-@defmodule[unstable/cce/slideshow]
+@defmodule[unstable/gui/slideshow]
 
 @section{Text Formatting}
 

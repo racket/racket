@@ -10,4 +10,5 @@
 @include-section["gui/language-level.scrbl"]
 @include-section["gui/notify.scrbl"]
 @include-section["gui/prefs.scrbl"]
+@include-section["gui/slideshow.scrbl"]
 @include-section["gui/window.scrbl"]
