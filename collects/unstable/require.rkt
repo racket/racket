@@ -1,8 +1,8 @@
-#lang scheme
+#lang racket
 
-(require (for-syntax scheme/match
-                     scheme/require-transform
-                     scheme/provide-transform
+(require (for-syntax racket/match
+                     racket/require-transform
+                     racket/provide-transform
                      syntax/parse
                      unstable/planet-syntax)
          unstable/define)
@@ -125,35 +125,7 @@
                         src-sym)))
       orig-stx)]))
 
-;; (do-local-require rename spec ...)
-;; Lifts (require spec ...) to the (module) top level, and makes the imported
-;; bindings available in the current context via a renaming macro.
-(define-syntax (do-local-require stx)
-  (syntax-parse stx
-    [(_ rename:id spec:expr ...)
-     (let*-values ([(imports sources)
-                    (expand-import
-                     (datum->syntax
-                      stx
-                      (list* #'only-meta-in 0 (syntax->list #'(spec ...)))
-                      stx))]
-                   [(names) (map import-local-id imports)]
-                   [(reqd-names) 
-                    (let ([ctx (syntax-local-get-shadower (datum->syntax #f (gensym)))])
-                      (map (lambda (n) (datum->syntax ctx (syntax-e n) n)) names))]
-                   [(renamed-imports) (map rename-import imports reqd-names)]
-                   [(raw-specs) (map import->raw-require-spec renamed-imports)]
-                   [(lifts) (map syntax-local-lift-require raw-specs reqd-names)])
-       (with-syntax ([(name ...) names]
-                     [(lifted ...) lifts])
-         (syntax/loc stx (rename [name lifted] ...))))]))
-
-(define-syntax-rule (local-require spec ...)
-  (do-local-require define-renamings spec ...))
-
 (provide require/provide
-         do-local-require
-         local-require
          quote-require
          define-planet-package
          define-collection

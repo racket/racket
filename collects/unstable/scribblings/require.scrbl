@@ -1,15 +1,11 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme unstable/cce/require-provide))
+#lang scribble/manual
+@(require scribble/eval "utils.rkt" (for-label racket unstable/require))
 
-@title[#:style 'quiet #:tag "cce-require-provide"]{Require and Provide}
+@title{Requiring Modules}
 
-@defmodule[unstable/cce/require-provide]
+@defmodule[unstable/require]
 
-This module provides tools for managing the imports and exports of modules.
+This module provides tools for importing from modules.
 
 @defform[(require/provide module-path ...)]{
 
@@ -27,28 +23,9 @@ Re-exports all bindings provided by each @scheme[module-path].  Equivalent to:
 Produces the names exported by the @scheme[require-spec]s as a list of symbols.
 
 @examples[
-#:eval (evaluator 'unstable/cce/require-provide)
-(quote-require scheme/bool scheme/function)
+#:eval (eval/require 'unstable/require)
+(quote-require racket/bool racket/function)
 ]
-
-}
-
-@defform[(local-require require-spec ...)]{
-
-This form performs a require into a local definition context.  It achieves this
-by lifting a @scheme[#%require] form to the top level and introducing the
-bindings locally with rename transformers.  For many purposes this is the same
-as a regular @scheme[require]; however, only bindings for the current phase are
-made available, and all names are introduced as syntax bindings even if the
-exported identifiers included value bindings.
-
-}
-
-@defform[(do-local-require rename require-spec ...)]{
-
-This form generalizes @scheme[do-local-require] to use an arbitrary macro
-@scheme[rename] (of the same syntactic form as @scheme[define-renamings]) to
-introduce local bindings.
 
 }
 

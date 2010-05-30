@@ -2,7 +2,7 @@
 
 (require scheme/pretty
          srfi/67
-         "../require-provide.ss")
+         unstable/require)
 
 (require/provide schemeunit schemeunit/text-ui)
 

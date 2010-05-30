@@ -2,7 +2,7 @@
 
 (require (for-syntax unstable/planet-syntax)
          unstable/planet-syntax
-         "require-provide.ss")
+         unstable/require)
 
 (define-syntax (this-package-version-symbol stx)
   (syntax-case stx ()

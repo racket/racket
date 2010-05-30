@@ -12,7 +12,7 @@
 
 This module provides tools relating to @|PLaneT| packages.  In addition to the
 binding described below, it provides @scheme[define-planet-package] and
-@scheme[this-package-in] from @schememodname[unstable/cce/require-provide], and
+@scheme[this-package-in] from @schememodname[unstable/require], and
 @scheme[make-planet-path], @scheme[syntax-source-planet-package],
 @scheme[syntax-source-planet-package-owner],
 @scheme[syntax-source-planet-package-name],
