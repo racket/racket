@@ -125,7 +125,7 @@ argument. More often, the namespace used by a dynamic operation is the
 @margin-note{See @secref["parameterize"] for an introduction to
 parameters.}
 
-When @racket[eval] is used in a @tech{REPL}, the current is the one
+When @racket[eval] is used in a @tech{REPL}, the current namespace is the one
 that the @tech{REPL} uses for evaluating expressions. That's why the
 following interaction successfully accesses @racket[x] via
 @racket[eval]:
@@ -178,7 +178,7 @@ way to reflect a module into a @tech{namespace}.
 
 The @racket[module->namespace] function takes a quoted @tech{module
 path} and produces a namespace for evaluating expressions and
-definitions as if they appears in the @racket[module] body:
+definitions as if they appeared in the @racket[module] body:
 
 @interaction[
 (module m racket/base
