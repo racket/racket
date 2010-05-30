@@ -83,6 +83,7 @@ Keep documentation and tests up to date.
 @include-section["list.scrbl"]
 @include-section["net.scrbl"]
 @include-section["path.scrbl"]
+@include-section["planet.scrbl"]
 @include-section["port.scrbl"]
 @include-section["pretty.scrbl"]
 @include-section["queue.scrbl"]

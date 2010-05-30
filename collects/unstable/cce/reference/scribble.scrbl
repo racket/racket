@@ -12,7 +12,7 @@
 This module provides tools for Scribble documentation; specifically, of
 @|PLaneT| packages.  In addition to the bindings described below, this module
 provides @scheme[this-package-version-symbol] from
-@schememodname[unstable/cce/planet], @scheme[this-package-in] from
+@schememodname[unstable/planet], @scheme[this-package-in] from
 @schememodname[unstable/require], and
 @scheme[make-scribble-evaluator] and @scheme[make-scribble-module-evaluator]
 from @schememodname[unstable/sandbox].

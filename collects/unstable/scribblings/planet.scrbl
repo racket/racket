@@ -1,14 +1,12 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
+#lang scribble/manual
+@(require scribble/eval
           scribble/bnf
-          "../scribble.ss"
-          "eval.ss")
-@(require (for-label scheme/base scribble/manual unstable/cce/planet))
+          "utils.rkt"
+          (for-label racket/base scribble/manual unstable/planet planet/util))
 
 @title[#:style 'quiet #:tag "cce-planet"]{@|PLaneT| Packages}
 
-@defmodule[unstable/cce/planet]
+@defmodule[unstable/planet]
 
 This module provides tools relating to @|PLaneT| packages.  In addition to the
 binding described below, it provides @scheme[define-planet-package] and

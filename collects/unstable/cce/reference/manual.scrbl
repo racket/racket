@@ -12,8 +12,6 @@
 
 @include-section["set.scrbl"]
 
-@include-section["planet.scrbl"]
-
 @include-section["debug.scrbl"]
 
 @include-section["scribble.scrbl"]
