@@ -1,7 +1,7 @@
 (module config racket/base
   (require "private/define-config.ss") 
   (define-parameters
-    (PLANET-SERVER-NAME       "planet.plt-scheme.org")
+    (PLANET-SERVER-NAME       "planet.racket-lang.org")
     (PLANET-SERVER-PORT       270)
     (PLANET-CODE-VERSION      "300")
     (PLANET-BASE-DIR         (let ([plt-planet-dir-env-var (getenv "PLTPLANETDIR")])
@@ -22,6 +22,6 @@
     (USE-HTTP-DOWNLOADS?       #t)
     (HTTP-DOWNLOAD-SERVLET-URL (let ([plt-planet-url-env-var (getenv "PLTPLANETURL")])
                                  (or plt-planet-url-env-var
-                                     "http://planet.plt-scheme.org/servlets/planet-servlet.ss")))
+                                     "http://planet.racket-lang.org/servlets/planet-servlet.ss")))
     (PLANET-ARCHIVE-FILTER     #f)))
     

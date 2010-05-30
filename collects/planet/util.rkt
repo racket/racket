@@ -605,12 +605,12 @@
                        (λ (b) (and (list? b) (andmap xexpr? b)))
                        (announce "Package blurb: ~s\n" blurb)
                        (unless blurb
-                         (warn "Package's info.rkt does not contain a blurb field. Without a blurb field, the package will have no description on planet.plt-scheme.org."))]
+                         (warn "Package's info.rkt does not contain a blurb field. Without a blurb field, the package will have no description on planet.racket-lang.org."))]
                       [release-notes 
                        (λ (b) (and (list? b) (andmap xexpr? b)))
                        (announce "Release notes: ~s\n" release-notes)
                        (unless release-notes
-                         (warn "Package's info.rkt does not contain a release-notes field. Without a release-notes field, the package will not have any listed release information on planet.plt-scheme.org beyond the contents of the blurb field."))]
+                         (warn "Package's info.rkt does not contain a release-notes field. Without a release-notes field, the package will not have any listed release information on planet.racket-lang.org beyond the contents of the blurb field."))]
                       [categories
                        (λ (s) (and (list? s) (andmap symbol? s)))
                        (cond
@@ -660,7 +660,7 @@
                                               primary-file bad-files))))])
                          (announce "Primary file: ~a\n" primary-file))
                        (unless primary-file
-                         (warn "Package's info.rkt does not contain a primary-file field. The package's listing on planet.plt-scheme.org will not have a valid require line for your package."))]
+                         (warn "Package's info.rkt does not contain a primary-file field. The package's listing on planet.racket-lang.org will not have a valid require line for your package."))]
                       [required-core-version 
                        core-version?
                        (announce "Required mzscheme version: ~a\n" required-core-version)]
