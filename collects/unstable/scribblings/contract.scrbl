@@ -80,6 +80,29 @@ that accept arbitrary truth values that may not be booleans.
 
 }
 
+@section{Syntax Object Contracts}
+
+@defproc[(syntax-datum/c [datum/c any/c]) flat-contract?]{
+
+Recognizes syntax objects @scheme[stx] such that @scheme[(syntax->datum stx)]
+satisfies @scheme[datum/c].
+
+}
+
+@defproc[(syntax-listof/c [elem/c any/c]) flat-contract?]{
+
+Recognizes syntax objects @scheme[stx] such that @scheme[(syntax->list stx)]
+satisfies @scheme[(listof elem/c)].
+
+}
+
+@defproc[(syntax-list/c [elem/c any/c] ...) flat-contract?]{
+
+Recognizes syntax objects @scheme[stx] such that @scheme[(syntax->list stx)]
+satisfies @scheme[(list/c elem/c ...)].
+
+}
+
 @section{Higher-Order Contracts}
 
 @deftogether[(

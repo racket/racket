@@ -3,7 +3,7 @@
 (require "private/define-core.ss"
          (for-syntax scheme/match
                      syntax/kerncase
-                     "syntax.ss"))
+                     unstable/syntax))
 
 (provide
 
@@ -31,7 +31,7 @@
            (syntax-local-lift-module-end-declaration
             (syntax/loc stx (begin e ...)))
            (syntax/loc stx (begin)))]
-       [ctx (syntax-error stx
+       [ctx (wrong-syntax stx
                           "can only be used in module context; got: ~s"
                           ctx)])]))
 
@@ -128,7 +128,7 @@
           (begin
             (define-syntax (macro stx*) (begin e (syntax/loc stx* (begin))))
             (macro)))]
-       ['module-begin (syntax-error stx "cannot be used as module body")])]))
+       ['module-begin (wrong-syntax stx "cannot be used as module body")])]))
 
 (define-syntax (in-phase1/pass2 stx)
   (syntax-case stx []

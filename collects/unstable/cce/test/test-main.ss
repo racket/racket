@@ -6,8 +6,7 @@
          "test-planet.ss"
          "test-require-provide.ss"
          "test-scribble.ss"
-         "test-set.ss"
-         "test-syntax.ss")
+         "test-set.ss")
 
 (run-tests
  (test-suite "scheme.plt"
@@ -16,5 +15,4 @@
    planet-suite
    require-provide-suite
    scribble-suite
-   set-suite
-   syntax-suite))
+   set-suite))

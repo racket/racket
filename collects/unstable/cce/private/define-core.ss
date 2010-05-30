@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base scheme/list "syntax-core.ss"))
+(require (for-syntax scheme/base scheme/list unstable/syntax))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -32,12 +32,12 @@
     [(_ def [name ...] expr)
      (let* ([ids (syntax->list #'(name ...))])
        (for ([bad (in-list ids)] #:when (not (identifier? bad)))
-         (syntax-error bad "expected an identifier"))
+         (wrong-syntax bad "expected an identifier"))
        (let*-values ([(bound unbound) (partition identifier-binding ids)])
          (cond
           [(null? bound) (syntax/loc stx (def [name ...] expr))]
           [(null? unbound) (syntax/loc stx (def [] (values)))]
-          [else (syntax-error
+          [else (wrong-syntax
                  stx
                  "conflicting definitions for ~s; none for ~s"
                  (map syntax-e bound)
@@ -52,17 +52,3 @@
   (define-many-if-unbound define-syntaxes [name ...] expr))
 
 (define-single-definition define-syntax-if-unbound define-syntaxes-if-unbound)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Trampoline Expansion
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(provide #%trampoline)
-
-(define-syntax (#%trampoline stx)
-  (syntax-case stx ()
-    [(_ thunk)
-     (procedure? (syntax-e #'thunk))
-     (#%app (syntax-e #'thunk))]))

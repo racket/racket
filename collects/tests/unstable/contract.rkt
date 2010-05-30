@@ -19,6 +19,33 @@
        (test-ok (with/c truth/c #t))
        (test-ok (with/c truth/c #f))
        (test-ok (with/c truth/c '(x)))))
+
+   (test-suite "Syntax Object Contracts"
+
+     (test-suite "syntax-datum/c"
+       (test-ok (with/c (syntax-datum/c (listof (listof natural-number/c)))
+                        #'((0 1 2) () (3 4) (5))))
+       (test-bad (with/c (syntax-datum/c (listof (listof natural-number/c)))
+                         #'((x y z))))
+       (test-bad (with/c (syntax-datum/c string?) "xyz")))
+
+     (test-suite "syntax-listof/c"
+       (test-ok (with/c (syntax-listof/c identifier?) #'(a b c)))
+       (test-bad (with/c (syntax-listof/c identifier?) #'(1 2 3)))
+       (test-bad (with/c (syntax-listof/c identifier?) #'(a b . c)))
+       (test-bad (with/c (syntax-listof/c identifier?) (list #'a #'b #'c))))
+
+     (test-suite "syntax-list/c"
+       (test-ok (with/c (syntax-list/c identifier? (syntax/c string?))
+                        #'(a "b")))
+       (test-bad (with/c (syntax-list/c identifier? (syntax/c string?))
+                         #'(a "b" #:c)))
+       (test-bad (with/c (syntax-list/c identifier? (syntax/c string?))
+                         #'(a b)))
+       (test-bad (with/c (syntax-list/c identifier? (syntax/c string?))
+                         #'(a "b" . c)))
+       (test-bad (with/c (syntax-list/c identifier? (syntax/c string?))
+                         '(#'a #'"b")))))
    (test-suite "Higher Order Contracts"
      (test-suite "thunk/c"
        (test-ok ([with/c thunk/c gensym]))

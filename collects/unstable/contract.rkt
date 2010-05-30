@@ -79,6 +79,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;  Syntax Contracts
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (syntax-datum/c datum)
+  (let* ([datum/c (coerce-contract datum datum)])
+    (flat-named-contract (build-compound-type-name 'syntax-datum/c datum/c)
+      (lambda (v)
+        (and (syntax? v)
+             ((flat-contract-predicate datum/c)
+              (syntax->datum v)))))))
+
+(define (syntax-listof/c elem)
+  (let* ([elem/c (coerce-contract elem elem)])
+    (flat-named-contract (build-compound-type-name 'syntax-listof/c elem/c)
+      (lambda (v)
+        (and (syntax? v)
+             ((flat-contract-predicate (listof elem/c))
+              (syntax->list v)))))))
+
+(define (syntax-list/c . elems)
+  (let* ([elem/cs (map (lambda (elem) (coerce-contract elem elem)) elems)])
+    (flat-named-contract (apply build-compound-type-name 'syntax-list/c elem/cs)
+      (lambda (v)
+        (and (syntax? v)
+             ((flat-contract-predicate (apply list/c elem/cs))
+              (syntax->list v)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;  Function Contracts
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -327,6 +357,11 @@
  [comparison/c contract?]
  [predicate-like/c contract?]
  [comparison-like/c contract?]
+
+ [syntax-datum/c (-> flat-contract? flat-contract?)]
+ [syntax-listof/c (-> flat-contract? flat-contract?)]
+ [syntax-list/c
+  (->* [] [] #:rest (listof flat-contract?) flat-contract?)]
 
  [sequence/c (->* [] [] #:rest (listof contract?) contract?)]
  [dict/c (-> contract? contract? contract?)])

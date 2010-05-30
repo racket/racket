@@ -1,7 +1,7 @@
 #lang scheme
 
-(require (for-syntax "syntax.ss")
-         "syntax.ss"
+(require (for-syntax unstable/planet-syntax)
+         unstable/planet-syntax
          "require-provide.ss")
 
 (define-syntax (this-package-version-symbol stx)

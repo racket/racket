@@ -19,7 +19,7 @@ binding described below, it provides @scheme[define-planet-package] and
 @scheme[syntax-source-planet-package-major],
 @scheme[syntax-source-planet-package-minor], and
 @scheme[syntax-source-planet-package-symbol] from
-@schememodname[unstable/cce/syntax].
+@schememodname[unstable/planet-syntax].
 
 @defform*[[
 (this-package-version-symbol)

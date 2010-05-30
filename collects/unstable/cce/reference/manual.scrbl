@@ -12,7 +12,6 @@
 
 @include-section["set.scrbl"]
 
-@include-section["syntax.scrbl"]
 @include-section["define.scrbl"]
 
 @include-section["require-provide.scrbl"]

@@ -91,6 +91,7 @@ Keep documentation and tests up to date.
 @include-section["string.scrbl"]
 @include-section["struct.scrbl"]
 @include-section["syntax.scrbl"]
+@include-section["planet-syntax.scrbl"]
 @include-section["text.scrbl"]
 @include-section["values.scrbl"]
 @include-section["web.scrbl"]
