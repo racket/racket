@@ -778,7 +778,8 @@
          this-package-version-name
          this-package-version-owner
          this-package-version-maj
-         this-package-version-min)
+         this-package-version-min
+         (rename-out [this-package-version/proc path->package-version]))
 
 (define-syntax (this-package-version stx)
   (syntax-case stx ()
