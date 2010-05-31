@@ -43,7 +43,7 @@ The @racket[stx-prop-expr] should produce a procedure for recording a
 @racket[id] has such a property. The default is
 @racket[syntax-property].}
 
-@defproc[(to-paragraph [v any/c] [#:qq? qq? any/c #f]) block?]{
+@defproc[(to-paragraph [v any/c] [#:expr? expr? any/c #f]) block?]{
 
 Typesets an S-expression that is represented by a syntax object, where
 source-location information in the syntax object controls the
@@ -63,15 +63,15 @@ In addition, the given @racket[v] can contain @racket[var-id],
 structure type for details), or it can contain @racket[element]
 structures that are used directly in the output.
 
-If @racket[qq?] is true, then @racket[v] is rendered ``quasiquote''
-style, much like @racket[print] with the @racket[print-as-quasiquote]
+If @racket[expr?] is true, then @racket[v] is rendered in expression
+style, much like @racket[print] with the @racket[print-as-expression]
 parameter set to @racket[#t]. In that case, @racket[for-label]
 bindings on identifiers are ignored, since the identifiers are all
-quoted in the output. Typically, @racket[qq?] is set to true for
+quoted in the output. Typically, @racket[expr?] is set to true for
 printing result values.}
 
 
-@defproc[((to-paragraph/prefix [prefix1 any/c] [prefix any/c] [suffix any/c] [#:qq? qq? any/c #f])
+@defproc[((to-paragraph/prefix [prefix1 any/c] [prefix any/c] [suffix any/c] [#:expr? expr? any/c #f])
           [v any/c]) 
           block?]{
 
@@ -83,13 +83,13 @@ first line, @racket[prefix] is prefix to any subsequent line, and
 it is added to the end on its own line.}
 
 
-@defproc[(to-element [v any/c] [#:qq? qq? any/c #f]) element?]{
+@defproc[(to-element [v any/c] [#:expr? expr? any/c #f]) element?]{
 
 Like @racket[to-paragraph], except that source-location information is
 mostly ignored, since the result is meant to be inlined into a
 paragraph.}
 
-@defproc[(to-element/no-color [v any/c] [#:qq? qq? any/c #f]) element?]{
+@defproc[(to-element/no-color [v any/c] [#:expr? expr? any/c #f]) element?]{
 
 Like @racket[to-element], but @racket[for-syntax] bindings are
 ignored, and the generated text is uncolored. This variant is
