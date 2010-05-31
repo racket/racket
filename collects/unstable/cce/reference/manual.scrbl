@@ -10,6 +10,4 @@
 
 @table-of-contents[]
 
-@include-section["set.scrbl"]
-
 @include-section["debug.scrbl"]
