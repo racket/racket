@@ -160,7 +160,7 @@ please adhere to these guidelines:
  (bug-report-submit "送信")
  (bug-report-submit-menu-item "バグ報告の送信") ;; in Help Menu (drs & help desk)
  (error-sending-bug-report "バグ報告の送信エラー")
- (error-sending-bug-report-expln "バグ報告の送信中にエラーが発生しました。もし、インターネット接続が正常であるなら、\n\n    http://bugs.plt-scheme.org/\n\nを開いて、オンラインのウェブフォームからバグ報告を行ってください。お手間をかけて申し訳ありません。\n\nエラーメッセージ:\n~a")
+ (error-sending-bug-report-expln "バグ報告の送信中にエラーが発生しました。もし、インターネット接続が正常であるなら、\n\n    http://bugs.racket-lang.org/\n\nを開いて、オンラインのウェブフォームからバグ報告を行ってください。お手間をかけて申し訳ありません。\n\nエラーメッセージ:\n~a")
  (illegal-bug-report "バグ報告が正しく入力されていません")
  (pls-fill-in-field "フィールド \"~a\" を入力してください。")
  (malformed-email-address "メールアドレスの形式が正しくありません。")

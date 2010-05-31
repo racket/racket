@@ -57,7 +57,7 @@
  (bug-report-show-synthesized-info "Toon systeeminformatie")
  (bug-report-submit "Stuur")
  (error-sending-bug-report "Fout bij het versturen van de defectmelding")
- (error-sending-bug-report-expln "Het versturen van de defectmelding mislukte.  Mocht uw internetverbinding verder goed werken, ga dan naar:\n\n    http://bugs.plt-scheme.org/\n\nen verstuur de melding via het webformulier.  Sorry voor het ongemak.\n\nDe foutmelding is:\n~a")
+ (error-sending-bug-report-expln "Het versturen van de defectmelding mislukte.  Mocht uw internetverbinding verder goed werken, ga dan naar:\n\n    http://bugs.racket-lang.org/\n\nen verstuur de melding via het webformulier.  Sorry voor het ongemak.\n\nDe foutmelding is:\n~a")
  (illegal-bug-report "Ongeldige defectmelding")
  (pls-fill-in-field "Gelieve het \"~a\"-veld in te vullen")
  (malformed-email-address "Onmogelijk emailadres")

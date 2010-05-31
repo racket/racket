@@ -159,7 +159,7 @@ please adhere to these guidelines:
   (bug-report-submit "Send")
   (bug-report-submit-menu-item "Send fejlrapport") ;; in Help Menu (drs & help desk)
   (error-sending-bug-report "Fejl under afsendelse af fejlrapport")
-  (error-sending-bug-report-expln "Der opstod en fejl ved afsendelse af fejlrapporten. Hvis din internetforbindelse ellers er velfungerende, besøg venligst:\n\n    http://bugs.plt-scheme.org/\n\nog send fejlrapporten ved hjælp af vores online fejlrapporteringsside. Vi er kede af besværet.\n\nFejlmeddelelsen er:\n~a")
+  (error-sending-bug-report-expln "Der opstod en fejl ved afsendelse af fejlrapporten. Hvis din internetforbindelse ellers er velfungerende, besøg venligst:\n\n    http://bugs.racket-lang.org/\n\nog send fejlrapporten ved hjælp af vores online fejlrapporteringsside. Vi er kede af besværet.\n\nFejlmeddelelsen er:\n~a")
   (illegal-bug-report "Ugyldig fejlrapport")
   (pls-fill-in-field "Udfyld venligst feltet \"~a\" ")
   (malformed-email-address "Ugyldig e-mail-adresse")

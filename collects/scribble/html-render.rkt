@@ -620,7 +620,7 @@
                                   style-extra-files))
                    ,(scribble-js-contents script-file (lookup-path script-file alt-paths)))
                  (body ([id ,(or (extract-part-body-id d ri)
-                                 "scribble-plt-scheme-org")])
+                                 "scribble-racket-lang-org")])
                    ,@(render-toc-view d ri)
                    (div ([class "maincolumn"])
                      (div ([class "main"])

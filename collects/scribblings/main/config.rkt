@@ -4,7 +4,7 @@
 
 ;; Configuration of various parts of the main pages
 
-(define bug-url "http://bugs.plt-scheme.org/")
+(define bug-url "http://bugs.racket-lang.org/")
 
 ;; Link definitions: (id-sym title root-sym/#f-for-url subpath/url),
 ;; or a `---' for a spacer; the root-sym can be `plt' for standard

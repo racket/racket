@@ -161,7 +161,7 @@ please adhere to these guidelines:
  (bug-report-submit "Відправити")
  (bug-report-submit-menu-item "Відправити звіт про помилку") ;; in Help Menu (drs & help desk)
  (error-sending-bug-report "Збій при відправці звіту про помилку")
- (error-sending-bug-report-expln "При відправці звіту про помилку відбувся збій. При наявності підключення до Internet відвідайте сайт:\n\n    http://bugs.plt-scheme.org/\n\nі відправте звіт про помилку через Web-форму на ньому. Вибачте за незручності.\n\nПовідомлення про помилку:\n~a")
+ (error-sending-bug-report-expln "При відправці звіту про помилку відбувся збій. При наявності підключення до Internet відвідайте сайт:\n\n    http://bugs.racket-lang.org/\n\nі відправте звіт про помилку через Web-форму на ньому. Вибачте за незручності.\n\nПовідомлення про помилку:\n~a")
  (illegal-bug-report "Некоректний звіт про помилку")
  (pls-fill-in-field "Будь-ласка, заповніть поле \"~a\"")
  (malformed-email-address "Некоректна адреса електронної пошти")
