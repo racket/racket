@@ -31,21 +31,21 @@ The other options support further wrapping and configuration:
 
 @itemize[
 
- @item{Before the extracted result is bound as @scheme[id], it is
-      passed to the result of @scheme[wrap-expr], which defaults to
+ @item{Before the extracted result is bound as @scheme[_id], it is
+      passed to the result of @scheme[_wrap-expr], which defaults to
       @scheme[values]. Expressions such as @scheme[(allocator
       _delete)] or @scheme[(deallocator)] are useful as
-      @scheme[wrap-expr]s.}
+      @scheme[_wrap-expr]s.}
 
  @item{The @scheme[#:make-fail] and @scheme[#:fail] options are
-       mutually exclusive; if @scheme[make-fail-expr] is provided, it
-       is applied to @scheme['#,@scheme[id]] to obtain the last
-       argument to @scheme[get-ffi-obj]; if @scheme[fail-expr] is
+       mutually exclusive; if @scheme[_make-fail-expr] is provided, it
+       is applied to @scheme['@#,scheme[_id]] to obtain the last
+       argument to @scheme[get-ffi-obj]; if @scheme[_fail-expr] is
        provided, it is supplied directly as the last argument to
        @scheme[get-ffi-obj]. The @scheme[make-not-available] function
-       is useful as @scheme[make-fail-expr] to cause a use of
-       @scheme[id] to report an error when it is applied if
-       @scheme[c-id] was not found in the foreign library.}
+       is useful as @scheme[_make-fail-expr] to cause a use of
+       @scheme[_id] to report an error when it is applied if
+       @scheme[_c-id] was not found in the foreign library.}
 
 ]
 
