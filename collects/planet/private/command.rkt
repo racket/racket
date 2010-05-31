@@ -35,19 +35,17 @@
   (syntax-case stx ()
     [(_ #:program prog 
         #:argv args
-        #:prefix pfx-e
         general-description
         [name description long-description body ... #:args formals final-expr] ...)
      (with-syntax ([(n ...) (generate-temporaries #'(name ...))])
-       #'(let* ([pfx-x pfx-e]
-                [p prog]
+       #'(let* ([p prog]
                 [a args]
                 [n name] ...
                 [argslist (cond 
                             [(list? a) a]
                             [(vector? a) (vector->list a)]
                             [else (error 'command "expected a vector or list for arguments, received ~e" a)])]
-                [help (λ () (display-help-message p pfx-x general-description `((name description) ...)))])
+                [help (λ () (display-help-message p general-description `((name description) ...)))])
            (let-values ([(the-command remainder)
                          (if (null? argslist)
                              (values "help" '())
@@ -71,9 +69,9 @@
                           [else (help)]))))]))
 
 
-;; display-help-message : string (listof (list string string)) -> void
+;; display-help-message : string string (listof (list string string)) -> void
 ;; prints out the help message
-(define (display-help-message prog prefix general-description commands)
+(define (display-help-message prog general-description commands)
   (let* ([maxlen (apply max (map (λ (p) (string-length (car p))) commands))]
          [message-lines
           `(,(format "Usage: ~a <subcommand> [option ...] <arg ...>" prog)
@@ -81,11 +79,11 @@
             ""
             ,@(wrap-to-count general-description 80)
             ""
-            ,(format "For help on a particular subcommand, type '~aplanet <subcommand> --help'" prefix)
+            ,(format "For help on a particular subcommand, type '~a <subcommand> --help'" prog)
             ,@(map (λ (command) 
                      (let* ([padded-name (pad (car command) maxlen)]
                             [desc        (cadr command)]
-                            [msg         (format "  ~aplanet ~a    ~a" prefix padded-name desc)])
+                            [msg         (format "  ~a ~a    ~a" prog padded-name desc)])
                        msg))
                    commands))])
     (for-each (λ (line) (display line) (newline)) message-lines)))
