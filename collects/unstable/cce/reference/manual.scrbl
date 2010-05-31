@@ -9,5 +9,3 @@
 @unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
 @table-of-contents[]
-
-@include-section["debug.scrbl"]

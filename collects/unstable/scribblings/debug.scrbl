@@ -1,35 +1,79 @@
-#lang scribble/doc
-@(require scribble/base
-          scribble/manual scribble/eval
-          "utils.rkt"
-          (for-label unstable/debug
-                     racket/serialize
-                     racket/contract
-                     racket/base))
+#lang scribble/manual
+@(require "utils.rkt" (for-label racket unstable/debug unstable/syntax))
 
-@title[#:tag "debug"]{Debugging}
-@(define the-eval (make-base-eval))
-@(the-eval '(require unstable/debug racket/match))
+@title{Debugging}
 
 @defmodule[unstable/debug]
 
-@unstable-header[]
+@unstable[@author+email["Carl Eastlund" "cce@racket-lang.org"]]
 
-@defform*[[(debug/call (f args ...))
-          (debug/call f args ...)]]{
-Produce debugging output for the application of @racket[f], including the values of @racket[args].
-@examples[#:eval the-eval
-(debug/call (+ 3 4 (* 5 6)))
-(debug/call + 1 2 3)
-]
+This module provides macros and functions for printing out debugging
+information.
+
+@defform[(debug expr)]{
+
+Logs debugging information before and after the evaluation of expression
+@scheme[expr].
+
 }
 
-@defform*[[(debug/macro f args ...)]]{
-Produce debugging output for the application of @racket[f], but does
-not parse or print args.  Suitable for use debugging macros.
-@examples[#:eval the-eval
-(debug/macro match (list 1 2 3)
-  [(list x y z) (+ x y z)])
-(debug/macro + 1 2 3)
-]
+@defform/subs[
+(with-debugging options ... expr)
+([options (code:line #:name name-expr)
+          (code:line #:source srcloc-expr)])
+]{
+
+Logs debugging information like @scheme[debug], with the option of explicitly
+overriding the name and source location information for the expression.
+
+}
+
+@defproc[(dprintf [fmt string?] [arg any/c] ...) void?]{
+
+Constructs a message in the same manner as @scheme[format], and logs it at the
+debugging priority (like @scheme[log-debug]).
+
+}
+
+@defform/subs[
+(call/debug function-expr argument ...)
+([argument argument-expr (code:line argument-keyword argument-expr)])
+]{
+
+Logs debugging information for @scheme[(#%app function-expr argument ...)],
+including the evaluation and results of the function and each argument.
+
+}
+
+@deftogether[(
+@defform[(begin/debug expr ...)]
+@defform*[[(define/debug id expr)
+           (define/debug (head args) body ...+)]]
+@defform*[[(define/private/debug id expr)
+           (define/private/debug (head args) body ...+)]]
+@defform*[[(define/public/debug id expr)
+           (define/public/debug (head args) body ...+)]]
+@defform*[[(define/override/debug id expr)
+           (define/override/debug (head args) body ...+)]]
+@defform*[[(define/augment/debug id expr)
+           (define/augment/debug (head args) body ...+)]]
+@defform*[[(let/debug ([lhs-id rhs-expr] ...) body ...+)
+           (let/debug loop-id ([lhs-id rhs-expr] ...) body ...+)]]
+@defform[(let*/debug ([lhs-id rhs-expr] ...) body ...+)]
+@defform[(letrec/debug ([lhs-id rhs-expr] ...) body ...+)]
+@defform[(let-values/debug ([(lhs-id ...) rhs-expr] ...) body ...+)]
+@defform[(let*-values/debug ([(lhs-id ...) rhs-expr] ...) body ...+)]
+@defform[(letrec-values/debug ([(lhs-id ...) rhs-expr] ...) body ...+)]
+@defform[(with-syntax/debug ([pattern stx-expr] ...) body ...+)]
+@defform[(with-syntax*/debug ([pattern stx-expr] ...) body ...+)]
+@defform[(parameterize/debug ([param-expr value-expr] ...) body ...+)]
+)]{
+
+These macros add logging based on @scheme[with-debugging] to the evaluation of
+expressions in @scheme[begin], @scheme[define], @scheme[define/private],
+@scheme[define/public], @scheme[define/override], @scheme[define/augment],
+@scheme[let], @scheme[let*], @scheme[letrec], @scheme[let-values],
+@scheme[let*-values], @scheme[letrec-values], @scheme[with-syntax],
+@scheme[with-syntax*], and @scheme[parameterize].
+
 }

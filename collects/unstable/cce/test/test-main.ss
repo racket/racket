@@ -1,8 +1,6 @@
 #lang scheme
 
-(require "checks.ss"
-         "test-debug.ss")
+(require "checks.ss")
 
 (run-tests
- (test-suite "scheme.plt"
-   debug-suite))
+ (test-suite "scheme.plt"))
