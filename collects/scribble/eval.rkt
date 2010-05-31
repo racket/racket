@@ -371,10 +371,10 @@
       [(_ t racketinput* e ...)
        (titled-interaction #:eval (make-base-eval) t racketinput* e ...)]))
 
-    (define-syntax interaction
-      (syntax-rules ()
-        [(_ #:eval ev e ...) (titled-interaction #:eval ev #f racketinput* e ...)]
-        [(_ e ...) (titled-interaction #f racketinput* e ...)]))
+  (define-syntax interaction
+    (syntax-rules ()
+      [(_ #:eval ev e ...) (titled-interaction #:eval ev #f racketinput* e ...)]
+      [(_ e ...) (titled-interaction #f racketinput* e ...)]))
 
   (define-syntax racketblock+eval
     (syntax-rules ()

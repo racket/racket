@@ -140,8 +140,21 @@ without insetting the code.}
 @defform[(RACKETBLOCK0 datum ...)]{Like @racket[RACKETBLOCK], but
 without insetting the code.}
 
-@defform[(racketinput datum ...)]{Like @racket[racketblock], but the
-@racket[datum] are typeset after a prompt representing a REPL.}
+@deftogether[(
+@defform[(racketresultblock datum ...)]
+@defform[(racketresultblock0 datum ...)]
+@defform[(RACKETRESULTBLOCK datum ...)]
+@defform[(RACKETRESULTBLOCK0 datum ...)]
+)]{
+
+Like @racketblock[racketblock], etc., but colors the typeset text as a
+result  (i.e., a single color with no hyperlinks) instead of code.}
+
+@deftogether[(
+@defform[(racketinput datum ...)]
+@defform[(RACKETINPUT datum ...)]
+)]{Like @racket[racketblock] and @racket[RACKETBLOCK], but the
+@racket[datum]s are typeset after a prompt representing a REPL.}
 
 @defform/subs[(racketmod maybe-file lang datum ...)
               ([maybe-file code:blank
@@ -167,7 +180,7 @@ the formatting of @racket[datum].}
 @racket[UNSYNTAX] escape like @racket[racketblock].}
 
 @defform[(racketresult datum ...)]{Like @racket[racket], but typeset
-as a REPL value (i.e., a single color with no hyperlinks).}
+as a result (i.e., a single color with no hyperlinks).}
 
 @defform[(racketid datum ...)]{Like @racket[racket], but typeset
 as an unbound identifier (i.e., no coloring or hyperlinks).}
