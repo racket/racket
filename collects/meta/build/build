@@ -673,7 +673,7 @@ svn_get() { # inputs: svn repository, svn path, path in $maindir
   _cd "$maindir"
   if [[ ! -d "$dir" ]]; then
     _run svn checkout --depth immediates \
-         "http://svn.plt-scheme.org/$repo" "$dir"
+         "http://svn.racket-lang.org/$repo" "$dir"
   fi
   _cd "$dir"
   _run svn update --set-depth infinity "$path"

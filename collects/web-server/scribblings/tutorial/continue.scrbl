@@ -1209,4 +1209,4 @@ The Web Server will start on port 443 (which can be overridden with the @exec{-p
 
 As you move forward on your own applications, you may find many useful packages on PLaneT. There are interfaces to other
 databases. Many tools for generating HTML, XML, and Javascript output. Etc. There is also an active community of
-users on the @racket[plt-scheme] mailing list. We welcome new users!
+users on the Racket mailing list. We welcome new users!

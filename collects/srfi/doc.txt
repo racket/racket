@@ -162,7 +162,7 @@ want them added to this library, please let us know:
 
  + the main PLT Scheme discussion list:
 
-   PLT Scheme <plt-scheme@list.cs.brown.edu>
+   PLT Scheme <users@racket-lang.org>
 
  + the Schematics-people @ sourceforge.net.  We are NOT members
  of the PLT group, the Schematics project is devoted to create

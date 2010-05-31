@@ -61,7 +61,7 @@ compilers trouble.
 In any case, reports of bugs (in the tests) and new tests would be
 very much appreciated. File either as a Racket bug report at
 
-   http://bugs.plt-scheme.org
+   http://bugs.racket-lang.org
 
 ======================================================================
 Hints on running the tests

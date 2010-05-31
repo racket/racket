@@ -7,4 +7,4 @@
 (define url:drracket "http://racket-lang.org/")
 (define url:download-drracket "http://racket-lang.org/")
 
-(define url:planet "http://planet.plt-scheme.org/")
+(define url:planet "http://planet.racket-lang.org/")

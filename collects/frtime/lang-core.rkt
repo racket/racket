@@ -93,7 +93,7 @@
                        (lambda (e)
                          (fprintf
                           (current-error-port)
-                          "you've encountered a bug in frtime.  please send a report to the plt-scheme mailing list.~nexn: ~a~n"
+                          "you've encountered a bug in frtime.  please send a report to the Racket mailing list.~nexn: ~a~n"
                           e) #f)))
         (cond
           [(memq obj mem) #f]

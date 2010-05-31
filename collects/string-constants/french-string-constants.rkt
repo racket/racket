@@ -161,7 +161,7 @@
   (bug-report-submit "Soumettre")
   (bug-report-submit-menu-item "Soumettre un rapport de bogue") ;; in Help Menu (drs & help desk)
   (error-sending-bug-report "Erreur durant la soumission du rapport de bogue.")
-  (error-sending-bug-report-expln "Une erreur s'est produite pendant la soumission de votre rapport de bogue. Si votre connexion Internet fonctionne correctement, veuillez visiter :\n\n    http://bugs.plt-scheme.org/\n\net soumettre votre bogue en utilisant notre formulaire web en ligne. Je suis vraiment profondément désolé pour toutes vos difficultés.\n\nLe message d'erreur est :\n~a")
+  (error-sending-bug-report-expln "Une erreur s'est produite pendant la soumission de votre rapport de bogue. Si votre connexion Internet fonctionne correctement, veuillez visiter :\n\n    http://bugs.racket-lang.org/\n\net soumettre votre bogue en utilisant notre formulaire web en ligne. Je suis vraiment profondément désolé pour toutes vos difficultés.\n\nLe message d'erreur est :\n~a")
   (illegal-bug-report "Formulaire de soumission de bogue incomplet.")
   (pls-fill-in-field "Merci de compléter le champ \"~a\".")
   (malformed-email-address "Adresse email malformée.")

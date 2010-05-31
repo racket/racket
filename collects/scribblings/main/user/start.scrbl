@@ -8,7 +8,7 @@
 
 @margin-note{This is an installation- and user-specific listing,
              including documentation for installed
-             @link["http://planet.plt-scheme.org/"]{@|PLaneT|}
+             @link["http://planet.racket-lang.org/"]{@|PLaneT|}
              packages.}
 
 @(make-start-page #t)

@@ -28,6 +28,6 @@ Run 3 copies of the test suite concurrently in separate threads:
 
 
 Please report bugs using Help Desk, or
-  http://bugs.plt-scheme.org/
+  http://bugs.racket-lang.org/
 or (as a last resort) send mail to
   racket@racket-lang.org

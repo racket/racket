@@ -161,7 +161,7 @@ please adhere to these guidelines:
  (bug-report-submit "Отправить")
  (bug-report-submit-menu-item "Отправить отчет об ошибке") ;; in Help Menu (drs & help desk)
  (error-sending-bug-report "Сбой при отправке отчета об ошибке")
- (error-sending-bug-report-expln "При отправке отчета об ошибке произошел сбой. При наличии работающего подключения к Internet посетите сайт:\n\n    http://bugs.plt-scheme.org/\n\nи отправьте отчет об ошибке через Web-форму на нем. Извините за неудобства.\n\nСообщение об ошибке:\n~a")
+ (error-sending-bug-report-expln "При отправке отчета об ошибке произошел сбой. При наличии работающего подключения к Internet посетите сайт:\n\n    http://bugs.racket-lang.org/\n\nи отправьте отчет об ошибке через Web-форму на нем. Извините за неудобства.\n\nСообщение об ошибке:\n~a")
  (illegal-bug-report "Некорректный отчет об ошибке")
  (pls-fill-in-field "Пожалуйста, заполните поле \"~a\"")
  (malformed-email-address "Некорректный адрес электронной почты")

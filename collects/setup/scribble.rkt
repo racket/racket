@@ -337,7 +337,7 @@
        (let* ([v (style-properties style)]
               [v (if (ormap body-id? v)
                      v
-                     (cons (make-body-id "doc-plt-scheme-org")
+                     (cons (make-body-id "doc-racket-lang-org")
                            v))]
               [v (if (ormap document-version? v)
                      v
