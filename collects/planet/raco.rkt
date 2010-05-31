@@ -5,4 +5,4 @@
                  (lambda (e) 
                    ((error-display-handler) (exn-message e) e)
                    (exit 1))])
-  (start #f))
+  (start #t))
