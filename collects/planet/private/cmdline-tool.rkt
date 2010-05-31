@@ -31,7 +31,6 @@ PLANNED FEATURES:
     (svn-style-command-line
      #:program (short-program+command-name)
      #:argv (current-command-line-arguments)
-     #:prefix (if raco? "raco " "")
      "The Racket command-line tool for manipulating packages installed by PLaneT."
      ["create" "create a PLaneT archive from a directory"
       "\nCreate a PLaneT archive in the current directory whose contents are the directory <path>."
