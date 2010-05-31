@@ -5,8 +5,9 @@
 
 (provide defclass defclass*
          def/public def/public-final def/override def/override-final define/top case-args
+         def/public-unimplemented define-unimplemented
          maybe-box? any? bool? nonnegative-real? make-or-false make-box make-list make-alts 
-         make-literal symbol-in make-procedure
+         make-literal symbol-in integer-in real-in make-procedure
          method-name init-name
          let-boxes
          properties field-properties init-properties
@@ -99,6 +100,17 @@
                          (format "'~s, ~a" (car syms) (loop (cdr syms)))])))))
 (define-syntax-rule (symbol-in sym ...)
   (make-symbol '(sym ...)))
+
+(define (integer-in lo hi)
+  (make-named-pred (lambda (v) (and (exact-integer? v)
+                                    (<= lo v hi)))
+                   (lambda ()
+                     (format "exact integer in [~a, ~a]" lo hi))))
+(define (real-in lo hi)
+  (make-named-pred (lambda (v) (and (real? v)
+                                    (<= lo v hi)))
+                   (lambda ()
+                     (format "real in [~a, ~a]" lo hi))))
 
 (define (make-procedure arity)
   (make-named-pred (lambda (p)
@@ -273,3 +285,15 @@
 
 (define-syntax-rule (assert e) (void))
 ; (define-syntax-rule (assert e) (unless e (error 'assert "failed: ~s" 'e)))
+
+(define (unimplemented c m args) (error (if c (method-name c m) m) "unimplemented; args were ~e"
+                                        args))
+
+(define-syntax (def/public-unimplemented stx)
+  (syntax-case stx ()
+    [(_ id)
+     (with-syntax ([cname (syntax-parameter-value #'class-name)])
+       #'(define/public (id . args) (unimplemented 'cname 'id args)))]))
+
+(define-syntax-rule (define-unimplemented id)
+  (define (id . args) (unimplemented #f 'id args)))
