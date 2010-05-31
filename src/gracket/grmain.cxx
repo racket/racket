@@ -111,7 +111,9 @@ extern "C" Scheme_Object *scheme_initialize(Scheme_Env *env);
 # endif
 #endif
 #define GET_INIT_FILENAME get_init_filename
-#if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
+#if wx_msw
+# define NEED_MRED_EXIT
+static void MrEdExit(int v);
 # define PRINTF mred_console_printf
 # define CMDLINE_FFLUSH(x) /* nothing */
 static void (*mred_console_printf)(char *str, ...);
@@ -459,88 +461,17 @@ static int parse_command_line(char ***_command, char *buf)
   return count;
 }
 
-static char *CreateUniqueName()
-{
-  char desktop[MAX_PATH], session[32], *together;
-  int dlen, slen;
-
-  {
-    // Name should be desktop unique, so add current desktop name
-    HDESK hDesk;
-    ULONG cchDesk = MAX_PATH - 1;
-
-    hDesk = GetThreadDesktop(GetCurrentThreadId());
-    
-    if (!GetUserObjectInformation( hDesk, UOI_NAME, desktop, cchDesk, &cchDesk))
-      desktop[0] = 0;
-    else
-      desktop[MAX_PATH - 1]  = 0;
-  }
-
-  {
-    // Name should be session unique, so add current session id
-    HANDLE hToken = NULL;
-    // Try to open the token (fails on Win9x) and check necessary buffer size
-    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
-      DWORD cbBytes = 0;
-      
-      if(!GetTokenInformation( hToken, TokenStatistics, NULL, cbBytes, &cbBytes ) 
-	 && GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
-	  PTOKEN_STATISTICS pTS;
-
-	  pTS = (PTOKEN_STATISTICS)malloc(cbBytes);
-	  
-	  if(GetTokenInformation(hToken, TokenStatistics, (LPVOID)pTS, cbBytes, &cbBytes)) {
-	    sprintf(session, "-%08x%08x-",
-		    pTS->AuthenticationId.HighPart, 
-		    pTS->AuthenticationId.LowPart);
-	  } else
-	    session[0] = 0;
-	  free(pTS);
-      } else {
-	session[0] = 0;
-      }
-    } else
-      session[0] = 0;
-  }
-
-  dlen = strlen(desktop);
-  slen =  strlen(session);
-  together = (char *)malloc(slen + dlen + 1);
-  memcpy(together, desktop, dlen);
-  memcpy(together + dlen, session, slen);
-  together[dlen + slen] = 0;
-  
-  return together;
-}
-
-/* To propagate args from WinMain to wxWinMain via
-   scheme_main_stack_setup: */
-typedef struct {
-  int wm_is_mred;
-  HINSTANCE hInstance;
-  HINSTANCE hPrevInstance;
-  int argc;
-  char **argv;
-  int nCmdShow;
-} WinMain_Args;
-
-static int WinMain_after_stack(void *_wma)
-{
-  WinMain_Args *wma = (WinMain_Args *)_wma;
-
-  return wxWinMain(wma->wm_is_mred, wma->hInstance, wma->hPrevInstance, 
-                   wma->argc, wma->argv, 
-                   wma->nCmdShow, 
-                   main_after_stack);
-}
-
-int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
   LPWSTR m_lpCmdLine;
-  long argc, j, l;
-  char *a, **argv, *b, *normalized_path = NULL;
-  WinMain_Args wma;
+  int wx_in_terminal = 0;
+
+  /* Order matters: load dependencies first */
+# ifndef MZ_PRECISE_GC
+  load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
+# endif
+  load_delayed_dll(NULL, "libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
+  record_dll_path();
 
   /* Get command line: */
   m_lpCmdLine = GetCommandLineW();

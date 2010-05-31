@@ -43,10 +43,12 @@
 /* globals */
 SHARED_OK scheme_console_printf_t scheme_console_printf;
 scheme_console_printf_t scheme_get_console_printf() { return scheme_console_printf; }
+void scheme_set_console_printf(scheme_console_printf_t p) { scheme_console_printf = p; }
 SHARED_OK Scheme_Exit_Proc scheme_exit;
 void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
 
 HOOK_SHARED_OK void (*scheme_console_output)(char *str, long len);
+void scheme_set_console_output(scheme_console_output_t p) { scheme_console_output = p; }
 
 SHARED_OK static int init_syslog_level = INIT_SYSLOG_LEVEL;
 SHARED_OK static int init_stderr_level = SCHEME_LOG_ERROR;

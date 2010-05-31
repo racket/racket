@@ -26,52 +26,28 @@ NOOP = :
 #      Common Macros      #
 ###########################
 CC = @CC@
-CXX = @CXX@
-LINKER = $(CXX)
+LINKER = $(CC)
 PERL = @PERL@
 RANLIB = @RANLIB@
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 OPTIONS = @OPTIONS@ @MROPTIONS@
-XINCLUDE = @X_CFLAGS@
 XLIB = @X_LIBS@
-LDLIBS = @X_PRE_LIBS@ -lXaw -lXmu -lXt -lX11 -lXext @X_EXTRA_LIBS@ @LIBS@
+LDLIBS = @LIBS@
 GCDIRECTORY = @GCDIR@
 WBUILD = @WBUILD@
 WXVARIANT =  @WXVARIANT@
 
-WXINC_wx_xt = -I$(PLTSRCDIR)/wxxt/src/AIAI-include -I$(PLTSRCDIR)/wxxt/src
-WXINC_wx_mac = -I$(PLTSRCDIR)/wxmac/include/base -I$(PLTSRCDIR)/wxmac/include/mac -I$(PLTSRCDIR)/wxcommon -I$(PLTSRCDIR)/a-list/c-headers/
-
-WXINC = $(WXINC_@WXVARIANT@)
 NOGCINC = $(WXINC) -I$(PLTBUILDDIR)/racket/ -I$(PLTSRCDIR)/racket/include/
 INC = -I$(PLTSRCDIR)/racket/$(GCDIRECTORY) $(NOGCINC)
-CXXFLAGS = $(INC) $(XINCLUDE) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CXXFLAGS@ @PREFLAGS@
-CFLAGS = $(INC) $(XINCLUDE) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@ @PREFLAGS@
-LDFLAGS = @LDFLAGS@ $(XLIB)
+CFLAGS = $(INC) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@ @PREFLAGS@
+LDFLAGS = @LDFLAGS@
 ARLIBFLAGS = $(LDFLAGS) $(LDLIBS)
 ###########################
 
-GRACKETLINKER = @GRACKETLINKER@
+GRACKETLINKER = @MZLINKER@
 
-JPEG_A = ../wxcommon/jpeg/libjpeg.@LIBSFX@
-JPEG_INC = -I../wxcommon/jpeg -I$(srcdir)/../wxcommon/jpeg
-ZLIB_A = ../wxcommon/zlib/libz.@LIBSFX@
-ZLIB_INC = -I$(srcdir)/../wxcommon/zlib
-PNG_A = ../wxcommon/libpng/libpng.@LIBSFX@
-
-EXTRALDFLAGS_wx_xt =
-EXTRALDFLAGS_wx_mac = -framework Carbon -framework Cocoa -framework QuickTime -framework AGL -framework OpenGL -lz
-GRACKETLDFLAGS = $(LDFLAGS) $(EXTRALDFLAGS_@WXVARIANT@)
-WXLIBS_wx_xt = ../wxxt/src/libwx_xt.@LIBSFX@ ../wxxt/contrib/xpm/lib/libXpm.@LIBSFX@ ../wxxt/utils/image/src/libimage_xt.@LIBSFX@ 
-GRACKETX_wx_xt = gracketx.@LTO@
-WXLIBS_wx_mac = ../wxmac/src/libwxmac.@LIBSFX@
-GRACKETX_wx_mac = gracketmac.@LTO@ simpledrop.@LTO@
-WXLIBSNORM = gracket.@LTO@ $(GRACKETX_@WXVARIANT@) wxGC.@LTO@ wxJPEG.@LTO@ wxs/libwxscheme.@LIBSFX@ $(WXLIBS_@WXVARIANT@) @JPEG_A@ @PNG_A@ @ZLIB_A@
-WXLIBSDYN = libgracket.@LIBSFX@
-GUILIBS_wx_xt = $(LDLIBS)
-GUILIBS_wx_mac = @LIBS@
-GRACKETLDLIBS = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(@WXLIBS@) $(GUILIBS_@WXVARIANT@)
+GRACKETLDLIBS = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(LDLIBS)
 
 LOCALFLAGS_wx_xt = @WX_MMD_FLAG@
 LOCALFLAGS_wx_mac = -I$(srcdir)/../mac/racket -MMD -DWX_CARBON
@@ -80,17 +56,11 @@ LOCALFLAGS = $(LOCALFLAGS_@WXVARIANT@)
 GRACKETOBJECTS = grmain.@LTO@
 
 RACKETDEPS = ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@
-WXSCHEME = wxs/libwxscheme.@LIBSFX@
 
 INSTALLDEST=/home/scheme/plt
 
 MRSTATIC = 
 MRSTATIC_STUB =
-
-WXINCDEP_wx_xt = $(WXDIR)/src/Windows/Window.h $(WXDIR)/src/Windows/Frame.h \
-                 $(WXDIR)/src/DataStructures/Object.h
-WXINCDEP_wx_mac = 
-WXINCDEP = $(WXINCDEP_@WXVARIANT@)
 
 MZEXTRAEXPORT='GCDIR=$(GCDIRECTORY)'
 
@@ -102,46 +72,27 @@ bin:
 	$(MAKE) @MAIN_VARIANT@
 
 3m:
-	$(MAKE) ext-libs
-	$(MAKE) @WXVARIANT@-min
-	cd wxs; $(MAKE) ccsources
-	cd gc2; $(MAKE) gen-deps
 	cd gc2; $(MAKE) 3m
 
 cgc:
-	$(MAKE) ext-libs
-	$(MAKE) @WXVARIANT@
-	cd wxs; $(MAKE)
 	$(MAKE) $(LINKRESULT)
 
 both:
 	$(MAKE) cgc
 	$(MAKE) 3m
 
-ext-libs: @JPEG_A@ @PNG_A@ @ZLIB_A@
-	$(NOOP)
-
-gracket@CGC@ : $(RACKETDEPS) grmain.@LTO@ $(GRACKETOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
+gracket@CGC@ : $(RACKETDEPS) grmain.@LTO@ $(GRACKETOBJECTS) $(MRSTATIC_STUB)
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) $(MRSTATIC) -o gracket@CGC@ $(GRACKETOBJECTS) $(GRACKETLDLIBS) $(MRSTATIC_STUB)
 
-libgracket.@LIBSFX@: $(WXLIBSNORM)
-	$(AR) $(ARFLAGS) libgracket.@LIBSFX@ $(WXLIBSNORM) @LIBGRACKET_DEP@
+MRFW = Racket.framework/Versions/$(FWVERSION)/Racket
+MRAPPSKEL = GRacket@CGC@.app/Contents/MacOS
 
-MRFW = GRacket.framework/Versions/$(FWVERSION)/GRacket
-MRFWRES = GRacket.framework/Versions/$(FWVERSION)/Resources/GRacket.rsrc
+GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@: $(MZFW) $(MRAPPSKEL) grmain.@LTO@ 
+	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@ grmain.@LTO@ -Wl,-headerpad_max_install_names -F../racket -framework Racket -framework CoreFoundation @PROFFLAGS@
+	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)/Racket" GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 
-$(MRFW) : $(RACKETDEPS) $(GRACKETOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB) $(MRFWRES)
-	$(GRACKETLINKER) $(GRACKETLDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names ../racket/libracket.@LIBSFX@ ../racket/libmzgc.@LIBSFX@ $(@WXLIBS@) $(GUILIBS_@WXVARIANT@) @X_EXTRA_LIBS@
-
-GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@: $(MRFWRES) $(MRFW) grmain.@LTO@ 
-	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@ grmain.@LTO@ -Wl,-headerpad_max_install_names -F. -framework GRacket -framework Carbon -framework Cocoa @PROFFLAGS@
-	/usr/bin/install_name_tool -change "GRacket.framework/Versions/$(FWVERSION)/GRacket" "@executable_path/../../../GRacket.framework/Versions/$(FWVERSION)/GRacket" GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
-
-$(MRFWRES): $(srcdir)/../mac/osx_appl.rkt $(srcdir)/../mac/cw/GRacket.r
-	rm -rf GRacket.framework/Resources GRacket.framework/GRacket
+$(MRAPPSKEL): $(srcdir)/../mac/osx_appl.rkt
 	env BUILDBASE=.. ../racket/racket@CGC@ -cqu $(srcdir)/../mac/osx_appl.rkt $(srcdir)/.. "@CGC@"
-	ln -s Versions/$(FWVERSION)/GRacket GRacket.framework/GRacket
-	ln -s Versions/$(FWVERSION)/Resources GRacket.framework/Resources
 
 RACKET = ../racket/racket@CGC@
 
@@ -157,99 +108,23 @@ solaris-static:
 linux-static:
 	$(MAKE) gracket MRSTATIC=--static LDNONSTATICLIBS='-ldl'
 
-wx_xt:
-	cd ../wxxt/src/x; $(MAKE)
-
-wx_xt-min:
-	cd ../wxxt/src/x; $(MAKE) min
-
-wx_mac:
-	cd ../wxmac/src; $(MAKE)
-
-wx_mac-min:
-	cd ../wxmac/src; $(MAKE) min
-
-gracket.@LTO@ :  $(srcdir)/gracket.cxx \
-          $(srcdir)/wxs/wxscheme.h $(srcdir)/gracket.h \
-          $(srcdir)/../racket/include/scheme.h \
-          $(srcdir)/wxs/wxsgracket.h $(WXINCDEP) $(srcdir)/../wxcommon/wxGC.h \
-          $(srcdir)/../wxcommon/wx_list.h
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/gracket.cxx -o gracket.@LTO@
-
 DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; pwd`"'"'
 
-grmain.@LTO@ :  $(srcdir)/grmain.cxx $(srcdir)/gracket.h $(srcdir)/wxs/wxsgracket.h \
+grmain.@LTO@ :  $(srcdir)/grmain.c $(srcdir)/../racket/main.c \
             $(srcdir)/../racket/cmdline.inc $(srcdir)/../racket/src/stypes.h \
             $(srcdir)/../racket/include/scheme.h
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) $(DEF_COLLECTS_DIR) -c $(srcdir)/grmain.cxx -o grmain.@LTO@
+	$(CC) $(LOCALFLAGS) $(CFLAGS) $(DEF_COLLECTS_DIR) -c $(srcdir)/grmain.c -o grmain.@LTO@
 
 grmain_ee.@LTO@ : gracket.@LTO@
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION $(DEF_COLLECTS_DIR) -c $(srcdir)/grmain.cxx -o grmain_ee.@LTO@
+	$(CC) $(LOCALFLAGS) $(CFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION $(DEF_COLLECTS_DIR) -c $(srcdir)/grmain.cxx -o grmain_ee.@LTO@
 
 ee-main:
 	$(MAKE) grmain_ee.@LTO@
 
-gracketx.@LTO@ : $(srcdir)/gracketx.cxx $(srcdir)/../racket/include/scheme.h $(srcdir)/gracket.h \
-          $(WXINCDEP) \
-          $(srcdir)/../wxcommon/wxGC.h $(srcdir)/../wxcommon/wx_list.h \
-          $(srcdir)/../racket/src/stypes.h
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/gracketx.cxx -o gracketx.@LTO@
-
-gracketmac.@LTO@ : $(srcdir)/gracketmac.cxx $(srcdir)/../racket/include/scheme.h $(srcdir)/gracket.h \
-          $(srcdir)/../wxcommon/wxGC.h $(srcdir)/../wxcommon/wx_list.h \
-          $(srcdir)/../racket/src/stypes.h
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/gracketmac.cxx -o gracketmac.@LTO@
-
-wxGC.@LTO@ : $(srcdir)/../wxcommon/wxGC.cxx $(srcdir)/../wxcommon/wxGC.h \
-         $(srcdir)/../racket/src/stypes.h
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/../wxcommon/wxGC.cxx -o wxGC.@LTO@
-
-wxJPEG.@LTO@ : $(srcdir)/../wxcommon/wxJPEG.cxx $(srcdir)/../wxcommon/wxGC.h
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) @JPEG_INC@ @ZLIB_INC@ -c $(srcdir)/../wxcommon/wxJPEG.cxx -o wxJPEG.@LTO@
-
-dl_stub.@LTO@: $(srcdir)/misc/dl_stub.c
-	$(CC) $(CFLAGS) $(LOCALFLAGS) -c $(srcdir)/misc/dl_stub.c -o dl_stub.@LTO@
-
-simpledrop.@LTO@ : $(srcdir)/../mac/racket/simpledrop.cpp
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -o simpledrop.@LTO@ -c $(srcdir)/../mac/racket/simpledrop.cpp
-
-sgilinkhack.@LTO@:
-	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/misc/sgilinkhack.cxx -o sgilinkhack.@LTO@
-
-$(WXDIR)/libwx_xt.@LIBSFX@:
-	$(MAKE) wx
-
-../wxcommon/jpeg/libjpeg.@LIBSFX@:
-	cd ../wxcommon/jpeg; $(MAKE) libjpeg.@LIBSFX@ CC="$(CC)" AR="@STATIC_AR@ $(ARFLAGS)" AR2="$(RANLIB)"
-
-../wxcommon/libpng/libpng.@LIBSFX@:
-	cd ../wxcommon/libpng; $(MAKE) libpng.@LIBSFX@
-
-../wxcommon/zlib/libz.@LIBSFX@:
-	cd ../wxcommon/zlib; $(MAKE) libz.@LIBSFX@
-
-CLEANDIR_wx_xt = ../wxxt/src/x
-CLEANDIR_wx_mac = ../wxmac/src
-
 clean:
-	cd $(CLEANDIR_@WXVARIANT@); $(MAKE) clean
 	rm -f *.@LTO@ *.d core gracket gracket3m
 	rm -f gc2/*.@LTO@ gc2/xsrc/* gc2/macxsrc/* gc2/*.d gc2/*.dd
 	rm -rf gc2/xform-collects
-	cd wxs; $(MAKE) clean
-	if [ -f ../wxcommon/jpeg/Makefile ] ; then cd ../wxcommon/jpeg; $(MAKE) clean ; fi
-	if [ -f ../wxcommon/libpng/Makefile ] ; then cd ../wxcommon/libpng; $(MAKE) clean ; fi
-	if [ -f ../wxcommon/zlib/Makefile ] ; then cd ../wxcommon/zlib; $(MAKE) clean ; fi
-	rm -f $(WXLIBS_@WXVARIANT@)
-	$(MAKE) clean_@WXVARIANT@
-
-clean_wx_xt:
-	echo clean done
-
-clean_wx_mac:
-	rm -rf GRacket.framework GRacket@CGC@.app Starter.app GRacket@MMM@.app GRacket.rsrc.OSX
-	rm -rf gc2/GRacket.framework gc2/GRacket.rsrc.OSX gc2/*.pfe gc2/macxsrc/*
-	echo clean done
 
 ICP=@ICP@
 BUILDINFO="$(DESTDIR)$(libpltdir)/buildinfo"
@@ -282,11 +157,7 @@ install-post-collects:
 install-common:
 	cd ..; rm -f "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@"
 	cd ..; rm -f "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@"
-	cd ..; echo 'CXX=@CXX@' >> $(BUILDINFO)
-	cd ..; echo 'CXXFLAGS=@CXXFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> $(BUILDINFO)
 	cd ..; echo 'MROPTIONS=@MROPTIONS@' >> $(BUILDINFO)
-	cd ..; echo 'X_CFLAGS=@X_CFLAGS@' >> $(BUILDINFO)
-	cd ..; echo 'X_LIB=@X_LIBS@' >> $(BUILDINFO)
 	cd ..; echo "MRLIBS=$(GUILIBS_@WXVARIANT@)" >> $(BUILDINFO)
 	cd ..; echo "MRLDFLAGS=$(GRACKETLDFLAGS)" >> $(BUILDINFO)
 
@@ -300,7 +171,7 @@ install-no-lib-cgc-wx_xt:
 	echo "no dynamic libs"
 
 install-lib-cgc-wx_xt:
-	cd ..; $(ICP) gracket/libgracket.@LIBSFX@ "$(DESTDIR)$(libdir)"
+	$(NOOP)
 
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
@@ -314,7 +185,7 @@ install-no-lib-3m-wx_xt:
 	echo "no dynamic libs"
 
 install-lib-3m-wx_xt:
-	cd ..; $(ICP) gracket/libgracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)"
+	$(NOOP)
 
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
@@ -329,46 +200,31 @@ install-wx_xt-post-collects:
 
 # Mac OS X ----------------------------------------
 
-MRFWDIR = @FRAMEWORK_INSTALL_DIR@/GRacket.framework
 FRAMEWORK_REL_PREFIX="@executable_path/../../../lib/"
 
 install-wx_mac:
-	rm -rf $(MRFWDIR)/Versions/$(FWVERSION)
-	rm -rf $(MRFWDIR)/Versions/$(FWVERSION)_3m
-	rm -f $(MRFWDIR)/GRacket
-	rm -rf $(MRFWDIR)/Resources
 	cd ..; rm -rf "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app"
 	cd ..; rm -rf "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app"
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(MRFWDIR) ; fi
-	mkdir -p "@FRAMEWORK_INSTALL_DIR@"
 
 install-wx_mac-cgc:
-	mkdir -p "$(MRFWDIR)/Versions/$(FWVERSION)"
 	cd ..; $(ICP) -r gracket/GRacket@CGC@.app "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app"
 	$(RACKET) -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app" "GRacket@CGC@" "GRacket@CGC_CAP_INSTALLED@"
-	$(ICP) GRacket.framework/Versions/$(FWVERSION)/GRacket $(MRFWDIR)/Versions/$(FWVERSION)/GRacket
-	$(ICP) -r GRacket.framework/Versions/$(FWVERSION)/Resources $(MRFWDIR)/Versions/$(FWVERSION)/Resources
-	/usr/bin/install_name_tool -change "@executable_path/../../../GRacket.framework/Versions/$(FWVERSION)/GRacket" "@FRAMEWORK_PREFIX@GRacket.framework/Versions/$(FWVERSION)/GRacket" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)/Racket" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
 	$(RACKET) -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@" ../../../collects
 	@STRIP_DEBUG@ "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app/Contents/MacOS/GRacket@CGC_CAP_INSTALLED@"
 
 install-wx_mac-cgc-final:
-	ln -s Versions/$(FWVERSION)/GRacket $(MRFWDIR)/
-	ln -s Versions/$(FWVERSION)/Resources $(MRFWDIR)/
+	$(NOOP)
 
 install-wx_mac-3m:
-	mkdir -p "$(MRFWDIR)/Versions/$(FWVERSION)_3m"
 	cd ..; $(ICP) -r "gracket/GRacket@MMM@.app" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app"
 	$(RACKET) -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
-	$(ICP) "GRacket.framework/Versions/$(FWVERSION)_3m/GRacket" "$(MRFWDIR)/Versions/$(FWVERSION)_3m/GRacket"
-	$(ICP) -r "GRacket.framework/Versions/$(FWVERSION)_3m/Resources" "$(MRFWDIR)/Versions/$(FWVERSION)_3m/Resources"
-	/usr/bin/install_name_tool -change "@executable_path/../../../GRacket.framework/Versions/$(FWVERSION)_3m/GRacket" "@FRAMEWORK_PREFIX@GRacket.framework/Versions/$(FWVERSION)_3m/GRacket" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
 	$(RACKET) -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" "../../../collects"
 	@STRIP_DEBUG@ "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
 
 install-wx_mac-3m-final:
-	ln -s Versions/$(FWVERSION)_3m/GRacket $(MRFWDIR)/
-	ln -s Versions/$(FWVERSION)_3m/Resources $(MRFWDIR)/
+	$(NOOP)
 
 install-wx_mac-post-collects:
 	cd ..; rm -rf $(collectsdir)/launcher/Starter.app
@@ -376,8 +232,4 @@ install-wx_mac-post-collects:
 	cd ..; $(ICP) -r gracket/Starter.app $(collectsdir)/launcher/.
 
 
-@INCLUDEDEP@ wxGC.d
-@INCLUDEDEP@ wxJPEG.d
-@INCLUDEDEP@ gracket.d
-@INCLUDEDEP@ gracketmac.d
 @INCLUDEDEP@ grmain.d

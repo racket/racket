@@ -79,24 +79,6 @@
 	       [icns-dest (build-path contents-path "Resources" (path-replace-suffix (file-name-from-path app-name) #".icns"))])
 	  (unless (file-exists? icns-dest)
 	    (copy-file icns-src icns-dest))))))
-  
-  (define (create-fw dest-path fw-name info-plist)
-    (let* ([fw-path (build-path dest-path 
-				(string-append fw-name ".framework")
-				"Versions"
-				(if for-3m?
-				    (format "~a_3m" (version))
-				    (version)))])
-      (make-directory* fw-path)
-      (realize-template fw-path fw-template-tree)
-      (write-info (build-path fw-path "Resources") info-plist)
-      ;; maybe someday we'll have Contents/Resources/English.lproj ?
-      (let* ([rsrc-src (build-path "GRacket.rsrc.OSX")]
-	     [rsrc-dest (build-path fw-path "Resources" (format "~a.rsrc" fw-name))])
-	(when (file-exists? rsrc-dest)
-	  (delete-file rsrc-dest))
-	(printf "Installing ~a~n" rsrc-dest)
-	(copy-file rsrc-src rsrc-dest))))
 
   (define (make-info-plist app-name signature app?)
     `(dict (assoc-pair "CFBundleDevelopmentRegion"
@@ -125,10 +107,6 @@
 		"GRacket"
 		"APPLmReD"
 		(make-info-plist (string-append "GRacket" suffix) "mReD" #t))
-
-    (create-fw (current-directory)
-	       "GRacket"
-		(make-info-plist "GRacket" "GRacket" #f))
 
     (create-app (build-path (current-directory) (if for-3m? 'up 'same))
                 "Starter"

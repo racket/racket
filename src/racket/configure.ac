@@ -6,11 +6,10 @@
 
 # Remember:
 #  CFLAGS - C compilation only
-#  CXXFLAGS - C++ compilation only
-#  CPPFLAGS - C and C++ pre-processing and compilation for configure-time testing ONLY
-#  COMPFLAGS - C and C++ compilation, but not configure-time tests
-#  PREFLAGS - C and C++ preprocessing, but not configure-time tests
-#  OPTIONS - C and C++ flags, not needed for configure-time tests
+#  CPPFLAGS - C pre-processing and compilation for configure-time testing ONLY
+#  COMPFLAGS - C compilation, but not configure-time tests
+#  PREFLAGS - C preprocessing, but not configure-time tests
+#  OPTIONS - C flags, not needed for configure-time tests
 #  MZOPTIONS - Racket-only flags
 #  MROPTIONS - GRacket-only flags
 #  CGCOPTIONS - Boehm-GC-only flags
@@ -25,16 +24,7 @@ AC_CONFIG_SRCDIR(racket/src/bignum.c)
 AC_CONFIG_HEADERS([racket/mzconfig.h])
 
 AC_ARG_ENABLE(gracket, [  --enable-gracket        compile GRacket as well as Racket (enabled by default)], , enable_gracket=yes )
-
 AC_ARG_ENABLE(docs,    [  --enable-docs           build docs on install (enabled by default)], , enable_docs=yes)
-
-AC_ARG_ENABLE(gl,      [  --enable-gl             use OpenGL when available (enabled by default)])
-AC_ARG_ENABLE(xrender, [  --enable-xrender        use Xrender when available (enabled by default)])
-AC_ARG_ENABLE(xft,     [  --enable-xft            use Xft when available (enabled by default)])
-AC_ARG_ENABLE(cairo,   [  --enable-cairo          use Cairo when available (enabled by default)])
-AC_ARG_ENABLE(libpng,  [  --enable-libpng         use libpng instead of building (enabled by default)])
-AC_ARG_ENABLE(libjpeg, [  --enable-libjpeg        use libjpeg instead of building (enabled by default)])
-
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of bundled libtool], LIBTOOLPROG="$enableval", enable_lt=no)
@@ -253,16 +243,6 @@ if test "${enable_gracket}" = "yes" ; then
   fi
 fi
 
-if test "${enable_gracket}" = "no" ; then
-  enable_wbuild=no
-  enable_xrender=no
-  enable_cairo=no
-  enable_libpng=no
-  enable_libjpeg=no
-  enable_gl=no
-  enable_pthread=no
-fi
-
 ###### Tell user what flags we have #######
 
 show_explicitly_disabled()
@@ -287,14 +267,6 @@ show_explicitly_enabled "${enable_xonx}" "X-on-X"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"
 
 show_explicitly_disabled "${enable_gracket}" GRacket
-if test "${enable_gracket}" != "no" ; then
-  show_explicitly_disabled "${enable_gl}" OpenGL
-  show_explicitly_disabled "${enable_xrender}" Xrender
-  show_explicitly_disabled "${enable_xft}" Xft
-  show_explicitly_disabled "${enable_cairo}" Cairo
-  show_explicitly_disabled "${enable_libpng}" "Use-existing-libpng"
-  show_explicitly_disabled "${enable_libjpeg}" "Use-existing-libjpeg"
-fi
 
 if test "$LIBTOOLPROG" != "" ; then
   echo "=== Libtool program: $LIBTOOLPROG"
@@ -358,23 +330,12 @@ MROPTIONS=
 INCLUDEDEP="#"
 WX_MMD_FLAG=
 
-JPEG_A='$(JPEG_A)'
-JPEG_INC='$(JPEG_INC)'
-
-ZLIB_A='$(ZLIB_A)'
-ZLIB_INC='$(ZLIB_INC)'
-
-PNG_A='$(PNG_A)'
-
 PREFLAGS="$CPPFLAGS"
 MZRT_CGC_FLAGS=""
 LIBATOM="LIBATOM_NONE"
 
 ar_libtool_no_undefined=""
 LIBRACKET_DEP=""
-
-XFT_EXTRA_FLAGS=
-XFT_EXTRA_LIBS=
 
 EXE_SUFFIX=
 
@@ -439,15 +400,11 @@ COMPFLAGS=""
 
 ORIG_CC="${CC}"
 ORIG_CPP="${CPP}"
-ORIG_CXX="${CXX}"
-ORIG_CXXCPP="${CXXCPP}"
 SUB_CONFIGURE_EXTRAS=""
 
 if test "${enable_oskit}" = "no" ; then
   AC_PROG_CC
   AC_PROG_CPP
-  AC_PROG_CXX
-  AC_PROG_CXXCPP
   if test "$AS" = '' ; then 
     AS=as
     as_was_set=no
@@ -517,17 +474,6 @@ if test "${enable_gcov}" = "yes" ; then
   PROFFLAGS="$PROFFLAGS -fprofile-arcs -ftest-coverage"
 fi
 
-if test "${enable_wbuild}" = "yes" ; then
-  MAKE_WBUILD=wb
-  WBUILD="x/wbuild/src/wbuild"
-  WBUILD="$WBUILD --no-init-file --no-lines -i \$(srcdir)/XWidgets"
-  WBUILD="$WBUILD -c \$(srcdir)/XWidgets -d \$(srcdir)/XWidgets"
-  WBUILD="$WBUILD -p . \$(srcdir)/x/wbuild/wbuild.cfg"
-else
-  MAKE_WBUILD=
-  WBUILD="sh \$(PLTSRCDIR)/wxxt/src/XWidgets/dummy.wbuild"
-fi
-
 ORIG_CC_FOR_BUILD="${CC_FOR_BUILD}"
 if test "$CC_FOR_BUILD" = "" ; then 
   CC_FOR_BUILD="$CC"
@@ -589,20 +535,13 @@ case $OS in
     DYN_CFLAGS="-fPIC"
     GC_THREADS_FLAG="-DGC_LINUX_THREADS"
     STRIP_DEBUG="strip -S"
-    # PPC: X11 librares are not found
     case `$UNAME -m` in
       #Required for CentOS 4.6
       x86_64)
        enable_futures_by_default=yes
        CGC_X86_64="1"
-       if test -d /usr/X11R6/lib64 ; then
-         X_LIBS="$X_LIBS -L/usr/X11R6/lib64"
-       fi
        ;;
       ppc)
-       if test -d /usr/X11R6/lib ; then
-         X_LIBS="$X_LIBS -L/usr/X11R6/lib"
-       fi
        ;;
       alpha)
        EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
@@ -636,9 +575,6 @@ case $OS in
       MZOPTIONS="$MZOPTIONS +e"
     fi
     LIBS="$LIBS -Wl,-E"
-    # For Xaw and Xmu:
-    X_CFLAGS="-I/usr/contrib/X11R6/include/ $X_CFLAGS"
-    X_LIBS="-L/usr/contrib/X11R6/lib/ $X_LIBS"
     ;;
   CYGWIN*)
     enable_cgcdefault="yes"
@@ -707,7 +643,6 @@ case $OS in
       fi
     else
       # gcc 3.x
-      CXXFLAGS="$CXXFLAGS -fno-rtti"
       if test "${enable_quartz}" = "yes" ; then
 [       gcc_vers_three_one=`${CC} -v 2>&1 | grep "version 3[.]1"` ]
         if test "$gcc_vers_three_one" = "" ; then
@@ -733,14 +668,6 @@ case $OS in
         if test "${ORIG_CPP}" = "" ; then
            CPP="${CPP} -m32"
            SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPP="'"'"${CPP}"'"'
-        fi
-        if test "${ORIG_CXX}" = "" ; then
-           CXX="${CXX} -m32"
-           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CXX="'"'"${CXX}"'"'
-        fi
-        if test "${ORIG_CXXCPP}" = "" ; then
-           CXXCPP="${CXXCPP} -m32"
-           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPCXX="'"'"${CPPCXX}"'"'
         fi
         if test "${ORIG_CC_FOR_BUILD}" = "" ; then
            CC_FOR_BUILD="${CC_FOR_BUILD} -m32"
@@ -776,12 +703,6 @@ case $OS in
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
-      X_EXTRA_LIBS="$X_EXTRA_LIBS -lz"
-      X_LIBS="$X_LIBS -L/usr/X11R6/lib"
-
-      # need help finding fontconfig and freetype headers:
-      XFT_EXTRA_FLAGS="-I/usr/X11R6/include -I/usr/X11R6/include/freetype2"
-      XFT_EXTRA_LIBS="-lfontconfig"
     fi
     ;;
   *)
@@ -1098,97 +1019,11 @@ if test "$check_gcc_dash_e" = "yes" ; then
 
 fi
 
-############## C++ grunge ################
-
-if test "${enable_gracket}" = "yes" ; then
-  CPPFLAGS="$CPPFLAGS $X_CFLAGS"
-  AC_LANG_CPLUSPLUS 
-
-  AC_MSG_CHECKING(whether C++ compiler works)
-  AC_TRY_RUN(int main() { return 0; }, cplusplusworks=yes, cplusplusworks=no, cplusplusworks=yes)
-  AC_MSG_RESULT($cplusplusworks) 
-  if test "$cplusplusworks" = "no" ; then
-    MROPTIONS="$MROPTIONS -DOPERATOR_NEW_ARRAY"
-    echo "***************************************************"
-    echo configure: C++ compiler/linker ${CXX} does not work
-    echo "***************************************************"
-    echo configure aborted
-    exit 1
-  fi 
-
-[ msg="whether new and new[] are different"   ]
-  AC_MSG_CHECKING($msg)
-  AC_TRY_RUN(
-[  #include <stddef.h> ]
-   inline void *operator new(size_t size) { return (void *)0x1; }
-[  inline void *operator new[](size_t size) { return (void *)0x2; }  ]
-   class C { int x; };
-   int main() {
-[    return (new C) == (new C[10]);       ]
-   }, different=yes, different=no, different=yes)
-  if test "$different" = "yes" ; then
-    MROPTIONS="$MROPTIONS -DOPERATOR_NEW_ARRAY"
-  fi
-  AC_MSG_RESULT($different) 
-
-  if test "$enable_quartz" = "no" ; then
-
-  # If we're using gcc and including X11/Intrinsic doesn't work
-  #  then try adding -fpermissive
-  if test "$CC" = "gcc" ; then
-    AC_MSG_CHECKING(whether need to use -fpermissive)
-    AC_TRY_COMPILE([#]include "X11/Intrinsic.h", , addperm=no, addperm=yes)
-    if test "$addperm" = "yes" ; then
-      CXXFLAGS="$CXXFLAGS -fpermissive"
-    fi
-    AC_MSG_RESULT($addperm) 
-  fi
-
-  # X11 headers present?
-  xmissing=""
-  AC_CHECK_HEADER(X11/Xlib.h, :, xmissing="$xmissing X11/Xlib.h")
-  AC_CHECK_HEADER(X11/Intrinsic.h, :, xmissing="$xmissing X11/XIntrinsic.h")
-  AC_CHECK_LIB(X11, XFlush, :, xmissing="$xmissing libX11", $X_LIBS)
-  AC_CHECK_LIB(Xext, XSyncQueryExtension, :, xmissing="$xmissing libXext", $X_LIBS -lX11)
-  AC_CHECK_LIB(Xt, XtDestroyWidget, :, xmissing="$xmissing libXt", $X_LIBS -lX11 -lXext)
-  AC_CHECK_LIB(Xmu, XmuInternAtom, :, xmissing="$xmissing libXmu", $X_LIBS -lXt -lX11 -lXext)
-  AC_CHECK_LIB(Xaw, vendorShellClassRec, :, xmissing="$xmissing libXaw", $X_LIBS -lXmu -lXt -lX11 -lXext)
-  if test "$xmissing" = "" ; then
-     :
-  else
-     echo "******************************************************"
-     echo "configure: cannot find X11 development files that are"
-     echo "           needed to compile GRacket:"
-     echo "$xmissing"
-     echo "******************************************************"
-     echo configure aborted
-     exit 1
-  fi
-
-  # Can we make auto-repeat detectable?
-[ msg="whether X11/XKBlib.h is available"   ]
-  AC_MSG_CHECKING($msg)
-  AC_TRY_RUN(
-[  #include <X11/Intrinsic.h>]
-[  #include <X11/XKBlib.h>]
-   int main() {
-      return 0;
-   }, xkbavail=yes, xkbavail=no, xkbavail=no)
-  if test "$xkbavail" = "no" ; then
-    MROPTIONS="$MROPTIONS -DNO_XKB_LIB_PRESENT"
-  fi
-  AC_MSG_RESULT($xkbavail)
-
- fi # non-quartz
-
-fi
-
 ############## drop optimization flags ################
 
 if test "${enable_noopt}" = "yes" ; then
   AWKPRG='BEGIN { FS = "(^| )-O(0|1|2|3|4|5|6|7|8|9|())( |$)" } /.*/ { for (i = 1; i < NF; i++) printf "%s ", $i; print $NF }'
   CFLAGS=`echo "$CFLAGS" | awk "$AWKPRG"`
-  CXXFLAGS=`echo "$CXXFLAGS" | awk "$AWKPRG"`
 fi
 
 ################### JIT ####################
@@ -1233,154 +1068,6 @@ if test "${enable_gl}" = "yes" ; then
   X_EXTRA_LIBS="$X_EXTRA_LIBS -lGL"
   MROPTIONS="$MROPTIONS -DUSE_GL"
 fi
-
-################ Xrender ##################
-
-if test "${enable_xrender}" = "" ; then  
-  enable_xrender=yes
-fi
-
-if test "${enable_xrender}" = "yes" ; then  
-  AC_CHECK_HEADER(X11/extensions/Xrender.h, enable_xrender=yes, enable_xrender=no)
-  if test "${enable_xrender}" = "yes" ; then  
-    AC_CHECK_LIB(Xrender, XRenderQueryExtension, enable_xrender="yes", enable_xrender="no", $X_LIBS -lX11 -lXext -lXrender)
-    if test "${enable_xrender}" = "yes" ; then  
-      MROPTIONS="$MROPTIONS -DWX_USE_XRENDER"
-      X_EXTRA_LIBS="$X_EXTRA_LIBS -lXrender"
-    else
-      echo "no Xrender libs; Xrender support disabled"
-    fi
-  else
-    echo "no Xrender headers; Xrender support disabled"
-  fi
-fi
-
-################ Xft ##################
-
-if test "${enable_xft}" = "" ; then  
-  if test "${enable_xrender}" = "yes" ; then  
-    enable_xft=yes
-  else
-    enable_xft=no
-  fi
-fi
-
-if test "${enable_xft}" = "yes" ; then  
-  xft_config_prog="pkg-config xft"
-  xft_config_ok=`$xft_config_prog --cflags  2> /dev/null`
-  if test "$?" != 0 ; then
-    xft_config_prog="xft-config"
-    xft_config_ok=`$xft_config_prog --cflags  2> /dev/null`
-  fi
-  if test "$?" != 0 ; then
-    save_cpp_flags="$CPPFLAGS"
-    CPPFLAGS="$CPPFLAGS $XFT_EXTRA_FLAGS $X_CFLAGS"
-    AC_CHECK_HEADER(X11/Xft/Xft.h, enable_xft=yes, enable_xft=no)
-    if test "${enable_xft}" = "yes" ; then  
-      AC_CHECK_LIB(Xft, XftTextExtents8, enable_xft="yes", enable_xft="no", $X_LIBS -lX11 -lXext -Xrender -lXft)
-      if test "${enable_xft}" = "yes" ; then  
-        MROPTIONS="$MROPTIONS $XFT_EXTRA_FLAGS -DWX_USE_XFT"
-        X_EXTRA_LIBS="$X_EXTRA_LIBS $XFT_EXTRA_LIBS -lXft"
-      else
-        echo "no Xft libs; Xft support disabled"
-      fi
-    else
-      echo "no Xft headers; Xft support disabled"
-    fi
-    CPPFLAGS="$save_cpp_flags"
-  else
-    echo "Using $xft_config_prog..."
-    xft_cflags=`$xft_config_prog --cflags`
-    xft_libs=`$xft_config_prog --libs`
-    echo "Xft flags: $xft_cflags"
-    echo "Xft libs: $xft_libs"
-    MROPTIONS="$MROPTIONS -DWX_USE_XFT"
-    X_CFLAGS="$X_CFLAGS $xft_cflags"
-    X_EXTRA_LIBS="$X_EXTRA_LIBS $xft_libs"
-  fi
-fi
-
-################ Cairo ##################
-
-if test "${enable_cairo}" = "" ; then  
-  enable_cairo=yes
-fi
-
-if test "${enable_cairo}" = "yes" ; then  
-  cairo_config_ok=`pkg-config --cflags cairo 2> /dev/null`
-  if test "$?" != 0 ; then
-    echo "no information from pkg-config; Cairo support disabled"
-  else
-    echo "Using pkg-config for Cairo..."
-    cairo_cflags=`pkg-config --cflags cairo`
-    cairo_libs=`pkg-config --libs cairo`
-    echo "Cairo flags: $cairo_cflags"
-    echo "Cairo libs: $cairo_libs"
-    AC_CHECK_LIB(cairo, cairo_create, enable_cairo="yes", enable_xrender="no", $X_LIBS $X_EXTRA_LIBS $cairo_libs)
-    if test "${enable_cairo}" = "yes" ; then  
-      MROPTIONS="$MROPTIONS -DWX_USE_CAIRO"
-      X_CFLAGS="$X_CFLAGS $cairo_cflags"
-      X_EXTRA_LIBS="$X_EXTRA_LIBS $cairo_libs"
-
-      CPPFLAGS="$CPPFLAGS $cairo_cflags"
-      AC_CHECK_HEADER(cairo-xlib.h, havecairoxlib=yes, havecairoxlib=no)
-      if test "${havecairoxlib}" = "no" ; then  
-        MROPTIONS="$MROPTIONS -DWX_CAIRO_NO_XLIBH"
-      fi
-    else
-      echo "no Cairo libs; Cairo support disabled"
-    fi
-  fi
-fi
-
-################ libpng ##################
-
-if test "${enable_libpng}" = "" ; then  
-  enable_libpng=yes
-fi
-
-if test "${enable_libpng}" = "yes" ; then  
-  AC_CHECK_HEADER(png.h, enable_libpng=yes, enable_libpng=no)
-  if test "${enable_libpng}" = "yes" ; then  
-    AC_CHECK_LIB(png, png_read_info, enable_libpng="yes", enable_libpng="no", -lpng -lz)
-    if test "${enable_libpng}" = "yes" ; then  
-      PNG_A=""
-      PNG_INC=""
-      ZLIB_A=""
-      ZLIB_INC=""
-      X_EXTRA_LIBS="$X_EXTRA_LIBS -lpng -lz"
-      MROPTIONS="$MROPTIONS -DWX_USE_LIBPNG"
-    else
-      echo "no libpng installed; building static version"
-    fi
-  else
-    echo "no libpng headers installed; building from PLT copy"
-  fi
-fi
-
-################ libjpeg ##################
-
-if test "${enable_libjpeg}" = "" ; then  
-  enable_libjpeg=yes
-fi
-
-if test "${enable_libjpeg}" = "yes" ; then  
-  AC_CHECK_HEADER(jpeglib.h, enable_libjpeg=yes, enable_libjpeg=no)
-  if test "${enable_libjpeg}" = "yes" ; then  
-    AC_CHECK_LIB(jpeg, jpeg_start_decompress, enable_libjpeg="yes", enable_libjpeg="no", -ljpeg)
-    if test "${enable_libjpeg}" = "yes" ; then  
-      JPEG_A=""
-      JPEG_INC=""
-      X_EXTRA_LIBS="$X_EXTRA_LIBS -ljpeg"
-      MROPTIONS="$MROPTIONS -DWX_USE_LIBJPEG"
-    else
-      echo "no libjpeg installed; building static version"
-    fi
-  else
-    echo "no libjpeg headers installed; building from PLT copy"
-  fi
-fi
-
 
 ############## docs ################
 
@@ -1435,10 +1122,8 @@ if test "${enable_shared}" = "yes" ; then
   ARFLAGS=""
   RANLIB=":"
   MZLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc} -rpath ${abslibdir}"
-  GRACKETLINKER="${LIBTOOLPROG} --mode=link --tag=CXX $CXX${need_gcc_static_libgcc} -rpath ${abslibdir}"
   PLAIN_CC="$CC"
   CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
-  CXX="${LIBTOOLPROG} --mode=compile --tag=CXX $CXX"
   AS="${LIBTOOLPROG} --mode=compile $AS"
   LIBSFX=la
   WXLIBS=WXLIBSDYN
@@ -1452,7 +1137,6 @@ if test "${enable_shared}" = "yes" ; then
   MZOPTIONS="$MZOPTIONS -DMZ_USES_SHARED_LIB"
 else
   LIBSFX=a
-  GRACKETLINKER='$(CXX)'
   WXLIBS=WXLIBSNORM
   ICP=cp
   MRLIBINSTALL="install-no-lib"
@@ -1472,14 +1156,11 @@ LIBS="$LIBS $EXTRALIBS"
 
 AC_SUBST(CC)
 AC_SUBST(CFLAGS)
-AC_SUBST(CXX)
-AC_SUBST(CXXFLAGS)
 AC_SUBST(PREFLAGS)
 AC_SUBST(COMPFLAGS)
 AC_SUBST(PROFFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(CPP)
-AC_SUBST(CXXCPP)
 AC_SUBST(SED)
 AC_SUBST(PERL)
 AC_SUBST(AS)
@@ -1523,7 +1204,6 @@ AC_SUBST(EXE_SUFFIX)
 AC_SUBST(MZRT_CGC_FLAGS)
 AC_SUBST(LIBATOM)
 
-AC_SUBST(GRACKETLINKER)
 AC_SUBST(LIBSFX)
 AC_SUBST(WXLIBS)
 AC_SUBST(WXVARIANT)
@@ -1540,12 +1220,6 @@ AC_SUBST(WXPRECOMP)
 AC_SUBST(USE_WXPRECOMP)
 AC_SUBST(INCLUDEDEP)
 AC_SUBST(WX_MMD_FLAG)
-
-AC_SUBST(JPEG_A)
-AC_SUBST(JPEG_INC)
-AC_SUBST(ZLIB_A)
-AC_SUBST(ZLIB_INC)
-AC_SUBST(PNG_A)
 
 AC_SUBST(OSKHOME)
 AC_SUBST(EXTRA_OSK_LIBS)
@@ -1614,46 +1288,9 @@ makefiles="$makefiles foreign/Makefile"
 ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_gracket}" = "yes" ; then
-  if test "${enable_quartz}" = "yes" ; then
-    mk_needed_dir wxmac
-    mk_needed_dir wxmac/src
-  else
-    mk_needed_dir wxxt
-    mk_needed_dir wxxt/utils
-    mk_needed_dir wxxt/utils/image
-    mk_needed_dir wxxt/contrib
-    mk_needed_dir wxxt/contrib/xpm
-  fi
-
   makefiles="$makefiles
              gracket/Makefile
-               gracket/wxs/Makefile
                gracket/gc2/Makefile"
-
-  if test "${enable_libpng}" != "yes" ; then
-    makefiles="$makefiles 
-               wxcommon/libpng/Makefile wxcommon/zlib/Makefile"
-  fi
-
-  if test "${enable_quartz}" = "yes" ; then
-    makefiles="$makefiles
-               wxmac/src/Makefile"
-  else
-    makefiles="$makefiles
-               wxxt/src/Makefile wxxt/src/x/Makefile
-                 wxxt/utils/image/src/Makefile
-                 wxxt/contrib/xpm/lib/Makefile"
-  fi
-
-  if test "${enable_libjpeg}" = "no" ; then
-    AC_CONFIG_AUX_DIR( wxcommon/jpeg )
-    AC_CONFIG_SUBDIRS( wxcommon/jpeg )
-  fi
-fi
-
-if test "${enable_wbuild}" = "yes" ; then
-  AC_CONFIG_AUX_DIR( wxxt/src/x/wbuild )
-  AC_CONFIG_SUBDIRS( wxxt/src/x/wbuild )
 fi
 
 AC_OUTPUT($makefiles)

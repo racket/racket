@@ -62,6 +62,11 @@ static int _coldir_offset = 19; /* Skip permanent tag */
 #define DLL_RELATIVE_PATH L"lib"
 #include "delayed.inc"
 
+#ifdef NEED_CONSOLE_PRINTF
+static void (*console_printf)(char *str, ...);
+# define PRINTF console_printf
+#endif
+
 extern 
 # ifdef __cplusplus
 "C"
@@ -165,7 +170,7 @@ typedef struct {
   char *init_lib;
 } FinishArgs;
 
-typedef void (*Repl_Proc)(Scheme_Env *);
+typedef void (*Repl_Proc)(Scheme_Env *, FinishArgs *f);
 
 static void configure_environment(Scheme_Object *mod)
 {
@@ -424,7 +429,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     save = p->error_buf;
     p->error_buf = &newbuf;
     if (!scheme_setjmp(newbuf)) {
-      repl(fa->global_env);
+      repl(fa->global_env, fa);
       exit_val = 0;
     } else {
       exit_val = 1;
@@ -581,6 +586,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
   prog = argv[0];
   argv++;
   --argc;
+
+#ifdef NEED_CONSOLE_PRINTF
+  console_printf = scheme_get_console_printf();
+#endif
   
 #ifdef DOS_FILE_SYSTEM
   {

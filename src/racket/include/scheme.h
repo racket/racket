@@ -1670,7 +1670,6 @@ extern void *scheme_malloc_envunbox(size_t);
 # define scheme_malloc_small_atomic_tagged scheme_malloc_atomic_tagged
 #endif
 
-
 #ifdef MZ_PRECISE_GC
 # define MZ_GC_DECL_REG(size) void *__gc_var_stack__[size+2] = { (void *)0, (void *)size };
 # define MZ_GC_VAR_IN_REG(x, v) (__gc_var_stack__[x+2] = (void *)&(v))
@@ -1757,7 +1756,10 @@ MZ_EXTERN void scheme_set_atexit(Scheme_At_Exit_Proc p);
 typedef void (*scheme_console_printf_t)(char *str, ...);
 MZ_EXTERN scheme_console_printf_t scheme_console_printf;
 MZ_EXTERN scheme_console_printf_t scheme_get_console_printf();
-MZ_EXTERN void (*scheme_console_output)(char *str, long len);
+MZ_EXTERN void scheme_set_console_printf(scheme_console_printf_t p);
+typedef void (*scheme_console_output_t)(char *str, long len);
+MZ_EXTERN scheme_console_output_t scheme_console_output;
+MZ_EXTERN void scheme_set_console_output(scheme_console_output_t p);
 MZ_EXTERN void (*scheme_sleep)(float seconds, void *fds);
 MZ_EXTERN void (*scheme_notify_multithread)(int on);
 MZ_EXTERN void (*scheme_wakeup_on_input)(void *fds);
@@ -1776,9 +1778,15 @@ void scheme_restore_nonmain_thread(void);
 extern long scheme_creator_id;
 #endif
 
+typedef Scheme_Object *(*Scheme_Stdio_Maker_Proc)(void);
 MZ_EXTERN Scheme_Object *(*scheme_make_stdin)(void);
 MZ_EXTERN Scheme_Object *(*scheme_make_stdout)(void);
 MZ_EXTERN Scheme_Object *(*scheme_make_stderr)(void);
+
+MZ_EXTERN void scheme_set_stdio_makers(Scheme_Stdio_Maker_Proc in,
+				       Scheme_Stdio_Maker_Proc out,
+				       Scheme_Stdio_Maker_Proc err);
+
 
 MZ_EXTERN void scheme_set_banner(char *s);
 MZ_EXTERN Scheme_Object *scheme_set_exec_cmd(char *s);

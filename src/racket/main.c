@@ -67,16 +67,6 @@ START_XFORM_SUSPEND;
 #ifdef UNISTD_INCLUDE
 # include <unistd.h>
 #endif
-#ifdef MACINTOSH_EVENTS
-# ifndef OS_X
-#  include <Events.h>
-# endif
-#endif
-#ifdef MACINTOSH_EVENTS
-# ifndef OS_X
-#  include "simpledrop.h"
-# endif
-#endif
 
 #ifdef INSTRUMENT_PRIMITIVES 
 extern int g_print_prims;
@@ -135,24 +125,28 @@ static char *get_init_filename(Scheme_Env *env)
 extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 #endif
 
-#ifdef EXPAND_FILENAME_TILDE
-# define INIT_FILENAME "~/.racketrc"
-#else
-# ifdef DOS_FILE_SYSTEM
-#  define INIT_FILENAME "%%HOMEDRIVE%%\\%%HOMEPATH%%\\racketrc.rktl"
+#ifndef INIT_FILENAME
+# ifdef EXPAND_FILENAME_TILDE
+#  define INIT_FILENAME "~/.racketrc"
 # else
-#  define INIT_FILENAME "PREFERENCES:racketrc.rktl"
+#  ifdef DOS_FILE_SYSTEM
+#   define INIT_FILENAME "%%HOMEDRIVE%%\\%%HOMEPATH%%\\racketrc.rktl"
+#  else
+#   define INIT_FILENAME "PREFERENCES:racketrc.rktl"
+#  endif
 # endif
+# define GET_INIT_FILENAME get_init_filename
+# define PRINTF printf
+# define PROGRAM "Racket"
+# define PROGRAM_LC "racket"
+# define INITIAL_BIN_TYPE "zi"
+# define RACKET_CMD_LINE
+# define INITIAL_NAMESPACE_MODULE "racket/init"
 #endif
-#define GET_INIT_FILENAME get_init_filename
-#define PRINTF printf
+
 #define CMDLINE_FFLUSH fflush
-#define PROGRAM "Racket"
-#define PROGRAM_LC "racket"
-#define INITIAL_BIN_TYPE "zi"
+
 #define BANNER scheme_banner()
-#define RACKET_CMD_LINE
-#define INITIAL_NAMESPACE_MODULE "racket/init"
 
 /*========================================================================*/
 /*                        command-line parsing                            */
@@ -202,10 +196,10 @@ static void user_break_hit(int ignore)
 #endif
 
 /* Forward declarations: */
-static void do_scheme_rep(Scheme_Env *);
+static void do_scheme_rep(Scheme_Env *, FinishArgs *f);
 static int cont_run(FinishArgs *f);
 
-#if defined(WINDOWS_UNICODE_SUPPORT) && !defined(__CYGWIN32__)
+#if defined(WINDOWS_UNICODE_SUPPORT) && !defined(__CYGWIN32__) && !defined(MZ_DEFINE_UTF8_MAIN)
 # define MAIN wmain
 # define MAIN_char wchar_t
 # define MAIN_argv wargv
@@ -324,9 +318,11 @@ static int main_after_stack(void *data)
 
   rval = run_from_cmd_line(argc, argv, scheme_basic_env, cont_run);
 
+#ifndef DEFER_EXPLICIT_EXIT
   scheme_immediate_exit(rval);
-  
   /* shouldn't get here */
+#endif
+
   return rval;
 }
 
@@ -341,20 +337,31 @@ static int cont_run(FinishArgs *f)
 /*************************   do_scheme_rep   *****************************/
 /*                  Finally, do a read-eval-print-loop                   */
 
-static void do_scheme_rep(Scheme_Env *env)
+static void do_scheme_rep(Scheme_Env *env, FinishArgs *fa)
 {
   /* enter read-eval-print loop */
-  {
-    Scheme_Object *rep, *a[2];
+  Scheme_Object *rep, *a[2];
+  int ending_newline = 1;
 
-    a[0] = scheme_intern_symbol("scheme/base");
-    a[1] = scheme_intern_symbol("read-eval-print-loop");
-    rep = scheme_dynamic_require(2, a);
+#ifdef GRAPHICAL_REPL
+  if (fa->a->alternate_rep) {
+    a[0] = scheme_intern_symbol("gracket/gracket");
+    a[1] = scheme_intern_symbol("textual-read-eval-print-loop");
+  } else {
+    a[0] = scheme_intern_symbol("gracket/gracket");
+    a[1] = scheme_intern_symbol("graphical-read-eval-print-loop");
+  }
+  ending_newline = 0;
+#else
+  a[0] = scheme_intern_symbol("scheme/base");
+  a[1] = scheme_intern_symbol("read-eval-print-loop");
+#endif
+  rep = scheme_dynamic_require(2, a);
     
-    if (rep) {
-      scheme_apply(rep, 0, NULL);
+  if (rep) {
+    scheme_apply(rep, 0, NULL);
+    if (ending_newline)
       printf("\n");
-    }
   }
 }
 
