@@ -7,6 +7,11 @@
 /*.app
 /*.exe
 
+# Windows linking and debugging
+/*.pdb
+/*.ilk
+/GRacket.exe.manifest
+
 # a common convenient place to set the PLTADDON directory to
 /add-on/
 

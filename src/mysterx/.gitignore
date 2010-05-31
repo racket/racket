@@ -1,0 +1,13 @@
+myspage/myspage.h
+myspage/myspage_i.c
+myspage/myspage_p.c
+myspage/myspage.tlb
+myspage/myspage.res
+myspage/dlldata.c
+
+myssink/myssink.h
+myssink/myssink_i.c
+myssink/myssink_p.c
+myssink/myssink.tlb
+myssink/myssink.res
+myssink/dlldata.c
