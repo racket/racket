@@ -219,7 +219,7 @@ install-wx_mac-cgc-final:
 install-wx_mac-3m:
 	cd ..; $(ICP) -r "gracket/GRacket@MMM@.app" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app"
 	$(RACKET) -cqu "$(srcdir)/../mac/rename-app.rkt" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app" "GRacket@MMM@" "GRacket@MMM_CAP_INSTALLED@"
-	/usr/bin/install_name_tool -change "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
+	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_3m/Racket" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
 	$(RACKET) -cu "$(srcdir)/../racket/collects-path.rkt" "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@" "../../../collects"
 	@STRIP_DEBUG@ "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app/Contents/MacOS/GRacket@MMM_CAP_INSTALLED@"
 
