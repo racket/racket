@@ -30,11 +30,12 @@
              (parameterize ([current-namespace (make-base-namespace)]
                             [current-output-port p]
                             [current-error-port p]
+                            [current-directory base]
                             [current-command-line-arguments
                              (list->vector 
                               (append
                                extra-cmdline
-                               (list "--dest" (path->string base) "--quiet")
+                               (list "--quiet")
                                (list mode (if (path? fn) (path->string fn) fn))))])
                (namespace-attach-module (namespace-anchor->empty-namespace anchor) 'setup/xref)
                (dynamic-require 'scribble/run #f)
