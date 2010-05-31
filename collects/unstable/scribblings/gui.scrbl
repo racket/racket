@@ -5,7 +5,7 @@
 
 @title[#:style '(toc) #:tag "unstable-gui"]{GUI libraries}
 
-@local-table-of-contents[]
+@local-table-of-contents[#:style 'immediate-only]
 
 @include-section["gui/notify.scrbl"]
 @include-section["gui/prefs.scrbl"]

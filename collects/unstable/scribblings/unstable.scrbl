@@ -16,7 +16,7 @@ The name @racketmodname[unstable] is intended as a warning that the @bold{interf
 Developers of unstable libraries must follow the guidelines in
 @secref{guidelines}.
 
-@local-table-of-contents[]
+@local-table-of-contents[#:style 'immediate-only]
 
 @;{--------}
 
