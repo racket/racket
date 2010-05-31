@@ -2,7 +2,7 @@
 
 (define name "PLaneT")
 (define mzscheme-launcher-names '("planet"))
-(define mzscheme-launcher-libraries '("planet.ss"))
+(define mzscheme-launcher-libraries '("planet.rkt"))
 (define scribblings '(("planet.scrbl" (multi-page) (tool))))
 
-(define raco-commands '(("planet" planet/planet "manage Planet package installations" 80)))
+(define raco-commands '(("planet" planet/raco "manage Planet package installations" 80)))
