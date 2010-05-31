@@ -114,9 +114,6 @@ Keep documentation and tests up to date.
 @include-section["debug.scrbl"]
 @include-section["byte-counting-port.scrbl"]
 
-;; This addition is temporary while integrating (planet cce/scheme:7):
-@include-section["../cce/reference/manual.scrbl"]
-
 @;{--------}
 
 @;{
