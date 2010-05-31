@@ -201,21 +201,6 @@
 			       (set! old-x x)
 			       (set! old-y y)
 			       (as-exit (lambda () (send mred on-move x y)))))))))))]
-	[on-set-focus (entry-point
-		       (lambda ()
-					; Windows circumvents the event queue to call on-focus
-					;  when you click on the window's icon in the task bar.
-			 (queue-window-callback
-			  this 
-			  (lambda () (send (get-proxy) on-focus #t)))
-			 (as-exit (lambda () (super on-set-focus)))))]
-	[on-kill-focus (entry-point
-			(lambda ()
-					; see on-set-focus:
-			  (queue-window-callback
-			   this
-			   (lambda () (send (get-proxy) on-focus #f)))
-			  (as-exit (lambda () (super on-kill-focus)))))]
 	[pre-on-char (lambda (w e)
 		       (or (super pre-on-char w e)
                            (if (skip-subwindow-events?)

@@ -357,18 +357,10 @@
 
   (define/override (on-set-focus)
     (super on-set-focus)
-    (if (eq? 'windows (system-type))
-        (queue-window-callback
-         this
-         (lambda () (on-focus #t)))
-        (on-focus #t)))
+    (on-focus #t))
   (define/override (on-kill-focus)
     (super on-kill-focus)
-    (if (eq? 'windows (system-type))
-        (queue-window-callback
-         this
-         (lambda () (on-focus #f)))
-        (on-focus #f)))
+    (on-focus #f))
 
   (define/public (is-focus-on?) focuson?)
 
@@ -391,6 +383,7 @@
       (set! last-x x)
       (set! last-y y)
 
+      #;
       (when (and (eq? 'windows (system-type))
 		 (not focuson?)
 		 (send event button-down?))

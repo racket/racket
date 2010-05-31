@@ -3,11 +3,6 @@
 
 (define the-clipboard (get-the-clipboard))
 (define the-x-selection-clipboard (get-the-x-selection))
-(define the-brush-list (get-the-brush-list))
-(define the-pen-list (get-the-pen-list))
-(define the-font-list (get-the-font-list))
-(define the-color-database (get-the-color-database))
-(define the-font-name-directory (get-the-font-name-directory))
 
 (define (family-symbol? s)
   (memq s '(default decorative roman script

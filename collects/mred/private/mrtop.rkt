@@ -114,7 +114,7 @@
        [wx-panel #f]
        [finish (entry-point
 		(lambda (top-level hide-panel?)
-		  (set! wx-panel (make-object wx-vertical-panel% #f this top-level null))
+		  (set! wx-panel (make-object wx-vertical-panel% #f this top-level null #f))
 		  (send (send wx-panel area-parent) add-child wx-panel)
 		  (send top-level set-container wx-panel)
 		  (when hide-panel?
@@ -228,7 +228,7 @@
 	 (lambda ()
 	   (super-init (lambda (finish) 
 			 (set! wx (finish (make-object wx-dialog% this this
-						       (and parent (mred->wx parent)) label #t
+						       (and parent (mred->wx parent)) label
 						       (or x -11111) (or y -11111) (or width 0) (or height 0)
 						       style)
 					  #f))

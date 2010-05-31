@@ -61,24 +61,13 @@
 		    (lambda (e)
 		      (let ([mred (get-mred)])
 			(if mred
-			    ;; Delay callback for Windows scrollbar 
-			    ;; and Windows/Mac trampoiline
-			    (queue-window-callback
-			     this
-			     (lambda () (send mred on-scroll e)))
+			    (send mred on-scroll e)
 			    (as-exit (lambda () (super on-scroll e)))))))]
 	[on-paint (entry-point
 		   (lambda ()
 		     (let ([mred (get-mred)])
 		       (if mred
-			   (if (and (eq? 'windows (system-type))
-				    (not (eq? (wx:current-eventspace)
-					      (send (get-top-level) get-eventspace))))
-			       ;; Windows circumvented the event queue; delay
-			       (queue-window-callback
-				this
-				(lambda () (clear-and-on-paint mred)))
-			       (as-exit (lambda () (clear-and-on-paint mred))))
+			   (as-exit (lambda () (clear-and-on-paint mred)))
 			   (as-exit (lambda () (clear-margins) (super on-paint)))))))])
       (sequence (apply super-init mred proxy args))))
 
@@ -228,10 +217,5 @@
                                                 0 0 #t #t)))
       (inherit editor-canvas-on-scroll)
       (define/override (on-scroll e)
-        (if (or (eq? 'windows (system-type))
-                (eq? 'macosx (system-type)))
-            (queue-window-callback
-             this
-             (lambda () (editor-canvas-on-scroll)))
-            (editor-canvas-on-scroll)))
+        (editor-canvas-on-scroll))
       (super-new))))

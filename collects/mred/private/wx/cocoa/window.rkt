@@ -1,0 +1,325 @@
+#lang scheme/base
+(require ffi/objc
+         scheme/foreign
+         scheme/class
+         "queue.rkt"
+         "utils.rkt"
+         "const.rkt"
+         "types.rkt"
+         "keycode.rkt"
+         "../common/event.rkt"
+         "../../syntax.rkt"
+         "freeze.rkt")
+(unsafe!)
+(objc-unsafe!)
+
+(provide window%
+         queue-window-event
+         FocusResponder
+         KeyMouseResponder)
+
+(define-local-member-name flip-client)
+
+;; ----------------------------------------
+
+(import-class NSArray)
+
+(define-objc-mixin (FocusResponder Superclass)
+  [wx]
+  [-a _BOOL (acceptsFirstResponder)
+      #t]
+  [-a _BOOL (becomeFirstResponder)
+      (and (super-tell becomeFirstResponder)
+           (queue-window-event wx (lambda ()
+                                    (send wx on-set-focus)))
+           #t)]
+  [-a _BOOL (resignFirstResponder)
+      (and (super-tell resignFirstResponder)
+           (queue-window-event wx (lambda ()
+                                    (send wx on-kill-focus)))
+           #t)])
+
+(define-objc-mixin (KeyMouseResponder Superclass)
+  [wx]
+  [-a _void (mouseDown: [_id event]) 
+      (unless (do-mouse-event wx event 'left-down #t #f #f)
+        (super-tell #:type _void mouseDown: event))]
+  [-a _void (mouseUp: [_id event]) 
+      (unless (do-mouse-event wx event 'left-up #f #f #f)
+        (super-tell #:type _void mouseUp: event))]
+  [-a _void (mouseDragged: [_id event]) 
+      (unless (do-mouse-event wx event 'motion #t #f #f)
+        (super-tell #:type _void mouseDragged: event))]
+  [-a _void (mouseMoved: [_id event]) 
+      (unless (do-mouse-event wx event 'motion #f #f #f)
+        (super-tell #:type _void mouseMoved: event))]
+  [-a _void (mouseEntered: [_id event]) 
+      (unless (do-mouse-event wx event 'enter #f #f #f)
+        (super-tell #:type _void mouseEntered: event))]
+  [-a _void (mouseExited: [_id event]) 
+      (unless (do-mouse-event wx event 'leave #f #f #f)
+        (super-tell #:type _void mouseExited: event))]
+  [-a _void (rightMouseDown: [_id event]) 
+      (unless (do-mouse-event wx event 'right-down #f #f #t)
+        (super-tell #:type _void rightMouseDown: event))]
+  [-a _void (rightMouseUp: [_id event]) 
+      (unless (do-mouse-event wx event 'right-up #f #f #f)
+        (super-tell #:type _void rightMouseUp: event))]
+  [-a _void (rightMouseDragged: [_id event]) 
+      (unless (do-mouse-event wx event 'motion #f #f #t)
+        (super-tell #:type _void rightMouseDragged: event))]
+  [-a _void (otherMouseDown: [_id event]) 
+      (unless (do-mouse-event wx event 'middle-down #f #t #f)
+        (super-tell #:type _void otherMouseDown: event))]
+  [-a _void (otherMouseUp: [_id event]) 
+      (unless (do-mouse-event wx event 'middle-up #f #f #f)
+        (super-tell #:type _void otherMouseUp: event))]
+  [-a _void (otherMouseDragged: [_id event]) 
+      (unless (do-mouse-event wx event 'motion #f #t #f)
+        (super-tell #:type _void otherMouseDragged: event))]
+  
+  [-a _void (keyDown: [_id event])
+      (unless (do-key-event wx event)
+        (super-tell #:type _void keyDown: event))]
+  [-a _void (insertText: [_NSString str])
+      (queue-window-event wx (lambda ()
+                               (send wx key-event-as-string str)))])
+
+(define (do-key-event wx event)
+  (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
+         [bit? (lambda (m b) (positive? (bitwise-and m b)))]
+         [pos (tell #:type _NSPoint event locationInWindow)]
+         [str (tell #:type _NSString event characters)]
+         [k (new key-event%
+                 [key-code (or
+                            (map-key-code (tell #:type _ushort event keyCode))
+                            (if (string=? "" str)
+                                #\nul
+                                (string-ref str 0)))]
+                 [shift-down (bit? modifiers NSShiftKeyMask)]
+                 [control-down (bit? modifiers NSControlKeyMask)]
+                 [meta-down (bit? modifiers NSCommandKeyMask)]
+                 [alt-down (bit? modifiers NSAlternateKeyMask)]
+                 [x (NSPoint-x pos)]
+                 [y (NSPoint-y pos)]
+                 [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                 [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+    (if (send wx wants-all-events?)
+        (begin
+          (queue-window-event wx (lambda ()
+                                   (send wx dispatch-on-char k #f)))
+          #t)
+        (constrained-reply (send wx get-eventspace)
+                           (lambda () (send wx dispatch-on-char k #t))
+                           #t))))
+
+(define (do-mouse-event wx event kind l? m? r?)
+  (let* ([modifiers (tell #:type _NSUInteger event modifierFlags)]
+         [bit? (lambda (m b) (positive? (bitwise-and m b)))]
+         [pos (tell #:type _NSPoint event locationInWindow)]
+         [m (new mouse-event%
+                 [event-type kind]
+                 [left-down l?]
+                 [middle-down m?]
+                 [right-down r?]
+                 [x (->long (NSPoint-x pos))]
+                 [y (->long (send wx flip-client (NSPoint-y pos)))]
+                 [shift-down (bit? modifiers NSShiftKeyMask)]
+                 [control-down (bit? modifiers NSControlKeyMask)]
+                 [meta-down (bit? modifiers NSCommandKeyMask)]
+                 [alt-down (bit? modifiers NSAlternateKeyMask)]
+                 [time-stamp (->long (* (tell #:type _double event timestamp) 1000.0))]
+                 [caps-down (bit? modifiers NSAlphaShiftKeyMask)])])
+    (if (send wx wants-all-events?)
+        (begin
+          (queue-window-event wx (lambda ()
+                                   (send wx dispatch-on-event m #f)))
+          #t)
+        (constrained-reply (send wx get-eventspace)
+                           (lambda () (send wx dispatch-on-event m #t))
+                           #t))))
+
+(define window%
+  (class object%
+    (init-field parent 
+                cocoa
+                [no-show? #f])
+
+    (super-new)
+
+    (define eventspace (if parent
+                           (send parent get-eventspace)
+                           (current-eventspace)))
+
+    (set-ivar! cocoa wx this)
+
+    (unless no-show?
+      (show #t)) 
+
+    (define/public (get-cocoa) cocoa)
+    (define/public (get-cocoa-content) cocoa)
+    (define/public (get-cocoa-window) (send parent get-cocoa-window))
+    (define/public (get-wx-window) (send parent get-wx-window))
+
+    (define/public (make-graphics-context)
+      (and parent
+           (send parent make-graphics-context)))
+
+    (define/public (get-parent)
+      parent)
+
+    (define/public (get-eventspace) eventspace)
+
+    (define/public (show on?)
+      (if on?
+          (tellv (send parent get-cocoa-content) addSubview: cocoa)
+          (tellv cocoa removeFromSuperview)))
+
+    (define/public (is-shown?)
+      (and (tell cocoa superview) #t))
+
+    (define/public (is-shown-to-root?)
+      (and (is-shown?)
+           (send parent is-shown-to-root?)))
+
+    (define enabled? #t)
+    (define/public (is-enabled-to-root?)
+      (and (is-window-enabled?) (is-parent-enabled-to-root?)))
+    (define/public (is-parent-enabled-to-root?)
+      (send parent is-enabled-to-root?))
+    (define/public (is-window-enabled?)
+      enabled?)
+    (define/public (enable on?)
+      (set! enabled? on?))
+
+    (define/private (get-frame)
+      (let ([v (tell #:type _NSRect cocoa frame)])
+        v))
+
+    (define/public (flip y h)
+      (if parent
+          (let ([b (tell #:type _NSRect (send parent get-cocoa-content) bounds)])
+            (- (NSSize-height (NSRect-size b)) (+ y h)))
+          y))
+
+    (define/public (flip-client y)
+      (if (tell #:type _BOOL (get-cocoa-content) isFlipped)
+          y
+          (let ([r (tell #:type _NSRect (get-cocoa-content) bounds)])
+            (- (NSSize-height (NSRect-size r)) 
+               (- y (client-y-offset))))))
+    (define/public (client-y-offset) 0)
+
+    (define/public (get-x)
+      (->long (NSPoint-x (NSRect-origin (get-frame)))))
+    (define/public (get-y)
+      (let ([r (get-frame)])
+        (->long (flip (NSPoint-y (NSRect-origin r))
+                      (NSSize-height (NSRect-size r))))))
+    (define/public (get-width)
+      (->long (NSSize-width (NSRect-size (get-frame)))))
+    (define/public (get-height)
+      (->long (NSSize-height (NSRect-size (get-frame)))))
+    (define/public (get-position x y)
+      (let* ([r (get-frame)]
+             [p (NSRect-origin r)])
+        (set-box! x (->long (NSPoint-x p)))
+        (set-box! y (->long (flip (NSPoint-y p) (NSSize-height (NSRect-size r)))))))
+    (define/public (get-size w h)
+      (let ([s (NSRect-size (get-frame))])
+        (set-box! w (->long (NSSize-width s)))
+        (set-box! h (->long (NSSize-height s)))))
+
+    (define/public (get-client-size w h)
+      (let ([s (NSRect-size (tell #:type _NSRect (get-cocoa-content) bounds))])
+        (set-box! w (->long (NSSize-width s)))
+        (set-box! h (->long (NSSize-height s)))))
+
+    (define/public (set-size x y w h)
+      (tellv cocoa setFrame: #:type _NSRect (make-NSRect (make-NSPoint x (flip y h))
+                                                         (make-NSSize w h))))
+    (define/public (move x y)
+      (set-size x y (get-width) (get-height)))
+
+    (define/public (drag-accept-files on?) 
+      (void))
+
+    (define/public (set-focus)
+      (let ([w (tell cocoa window)])
+        (when w
+          (tellv w makeFirstResponder: cocoa))))
+    (define/public (on-set-focus) (void))
+    (define/public (on-kill-focus) (void))
+
+    (define/public (wants-all-events?) 
+      ;; Called in Cocoa event-handling mode
+      #f)
+
+    (define/public (dispatch-on-char e just-pre?) 
+      (cond
+       [(call-pre-on-char this e) #t]
+       [just-pre? #f]
+       [else (when enabled? (on-char e)) #t]))
+    (define/public (dispatch-on-event e just-pre?) 
+      (cond
+       [(call-pre-on-event this e) #t]
+       [just-pre? #f]
+       [else (when enabled? (on-event e)) #t]))
+
+    (define/public (call-pre-on-event w e)
+      (or (send parent call-pre-on-event w e)
+          (pre-on-event w e)))
+    (define/public (call-pre-on-char w e)
+      (or (send parent call-pre-on-char w e)
+          (pre-on-char w e)))
+    (define/public (pre-on-event w e) #f)
+    (define/public (pre-on-char w e) #f)
+
+    (define/public (key-event-as-string s)
+      (dispatch-on-char (new key-event%
+                             [key-code (string-ref s 0)]
+                             [shift-down #f]
+                             [control-down #f]
+                             [meta-down #f]
+                             [alt-down #f]
+                             [x 0]
+                             [y 0]
+                             [time-stamp (current-milliseconds)] ; FIXME
+                             [caps-down #f])
+                        #f))
+
+    (define/public (on-char s) (void))
+    (define/public (on-event m) (void))
+    (define/public (on-size x y) (void))
+
+    (def/public-unimplemented on-drop-file)
+    (def/public-unimplemented get-handle)
+    (def/public-unimplemented set-phantom-size)
+    (def/public-unimplemented popup-menu)
+    (define/public (center a b) (void))
+    (def/public-unimplemented get-text-extent)
+    (def/public-unimplemented refresh)
+
+    (def/public-unimplemented screen-to-client)
+
+    (define/public (client-to-screen xb yb)
+      (let* ([p (tell #:type _NSPoint (get-cocoa-window)
+                      convertBaseToScreen:
+                      #:type _NSPoint
+                      (tell #:type _NSPoint (get-cocoa-content) 
+                            convertPointToBase: #:type _NSPoint
+                            (make-NSPoint (unbox xb) (flip-client (unbox yb)))))])
+        (let ([new-y (send (get-wx-window) flip-screen (NSPoint-y p))])
+          (set-box! xb (NSPoint-x p))
+          (set-box! yb new-y))))
+      
+    (def/public-unimplemented fit)
+
+    (define/public (set-cursor c) (void))
+
+    (define/public (gets-focus?) #f)
+    
+    (def/public-unimplemented centre)))
+
+(define (queue-window-event win thunk)
+  (queue-event (send win get-eventspace) thunk))

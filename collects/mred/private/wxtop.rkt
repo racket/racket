@@ -69,7 +69,8 @@
   (define (make-top-container% base% dlg?)
     (class100 (wx-make-container% (wx-make-window% base% #t)) (parent . args)
       (inherit get-x get-y get-width get-height set-size
-	       get-client-size is-shown? on-close enforce-size)
+	       get-client-size is-shown? on-close enforce-size
+               get-eventspace)
       (private-field
        ;; have we had any redraw requests while the window has been
        ;; hidden?
@@ -107,13 +108,8 @@
 	 (lambda (b)
 	   (set! enabled? (and b #t))
 	   (super enable b))])
-      (private-field
-       [eventspace (if parent
-		       (send parent get-eventspace)
-		       (wx:current-eventspace))])
 
       (public
-	[get-eventspace (lambda () eventspace)]
 
 	[is-enabled?
 	 (lambda () enabled?)]
@@ -400,7 +396,7 @@
 	[on-size
 	 (lambda (bad-width bad-height)
 	   (unless (and already-trying? (not (eq? 'unix (system-type))))
-	     (parameterize ([wx:current-eventspace eventspace])
+	     (parameterize ([wx:current-eventspace (get-eventspace)])
 	       (wx:queue-callback (lambda () (resized)) #t))))])
 
       (public
@@ -494,7 +490,7 @@
 						   #f)]
 					    [candidates 
 					     (map object->position (container->children panel o #t))]
-					    [dests (filter-overlapping candidates)]
+                                            [dests (filter-overlapping candidates)]
 					    [pos (if o (object->position o) (list 'x 0 0 1 1))]
 					    [o (traverse (cadr pos) (caddr pos) (cadddr pos) (list-ref pos 4)
 							 (case code
@@ -730,7 +726,7 @@
 
   (define wx-dialog%
     (make-top-level-window-glue% 
-     7
+     6
      (class100 (make-top-container% wx:dialog% #t) args
        (sequence
 	 (apply super-init args))))))

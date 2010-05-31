@@ -136,7 +136,7 @@
 			   (cdr r))
 		     r))))])
       (sequence
-	(super-init #f proxy parent (if (memq 'deleted style) '(deleted) null))
+	(super-init #f proxy parent (if (memq 'deleted style) '(deleted) null) #f)
 	(unless (memq 'deleted style)
 	  (send (area-parent) add-child this)))
       (private-field
@@ -148,7 +148,7 @@
        [dy 0]
        [p (if horiz?
 	      this
-	      (let ([p (make-object wx-vertical-pane% #f proxy this null)])
+	      (let ([p (make-object wx-vertical-pane% #f proxy this null #f)])
                 (send p skip-subwindow-events? #t)
 		(send (send p area-parent) add-child p)
 		p))])

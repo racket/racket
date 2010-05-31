@@ -1,0 +1,31 @@
+***************
+*** 38,56 ****
+  	   "private/gdi.ss"
+  	   "private/snipfile.ss"
+  	   "private/repl.ss"
+- 	   "private/afm.ss"
+             "private/helper.ss"
+             "private/dynamic.ss")
+  
+-   ;; Initialize AFM/PS:
+-   (wx:set-ps-procs
+-    afm-draw-text
+-    afm-get-text-extent
+-    afm-expand-name
+-    afm-glyph-exists?
+-    afm-record-font
+-    afm-fonts-string)
+-   
+    ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+    (wx:set-dialogs get-file put-file get-ps-setup-from-user message-box)
+--- 38,46 ----
+  	   "private/gdi.ss"
+  	   "private/snipfile.ss"
+  	   "private/repl.ss"
+             "private/helper.ss"
+             "private/dynamic.ss")
+  
+    ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+    (wx:set-dialogs get-file put-file get-ps-setup-from-user message-box)

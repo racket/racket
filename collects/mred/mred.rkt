@@ -38,20 +38,10 @@
 	   "private/gdi.ss"
 	   "private/snipfile.ss"
 	   "private/repl.ss"
-	   "private/afm.ss"
            "private/helper.ss"
            "private/dynamic.ss"
            "private/check.ss")
 
-  ;; Initialize AFM/PS:
-  (wx:set-ps-procs
-   afm-draw-text
-   afm-get-text-extent
-   afm-expand-name
-   afm-glyph-exists?
-   afm-record-font
-   afm-fonts-string)
-  
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (wx:set-dialogs get-file put-file get-ps-setup-from-user message-box)
@@ -194,17 +184,22 @@
 	     get-panel-background
 	     send-event
 	     gl-context<%>
-	     gl-config%)
+	     gl-config%
 
-  (define the-color-database (wx:get-the-color-database))
-  (define the-font-name-directory (wx:get-the-font-name-directory))
+             the-color-database
+             the-font-name-directory
+             the-font-list
+             the-pen-list
+             the-brush-list
+             the-style-list
+             the-editor-wordbreak-map)
+   
   (define the-clipboard (wx:get-the-clipboard))
   (define the-x-selection-clipboard (wx:get-the-x-selection))
-  (define the-font-list (wx:get-the-font-list))
-  (define the-pen-list (wx:get-the-pen-list))
-  (define the-brush-list (wx:get-the-brush-list))
-  (define the-style-list wx:the-style-list)
-  (define the-editor-wordbreak-map wx:the-editor-wordbreak-map)
+
+  ;; Obsolete
+  (define current-ps-afm-file-paths (make-parameter null))
+  (define current-ps-cmap-file-paths (make-parameter null))
 
   (provide button%
 	   canvas%
@@ -292,13 +287,6 @@
 	   send-message-to-window
 	   the-clipboard
 	   the-x-selection-clipboard
-	   the-editor-wordbreak-map
-	   the-brush-list
-	   the-color-database
-	   the-font-name-directory
-	   the-pen-list
-	   the-font-list
-	   the-style-list
 	   normal-control-font
 	   small-control-font
 	   tiny-control-font
