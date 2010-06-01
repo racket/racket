@@ -284,7 +284,8 @@
                           [dest-dir index-dir]
                           [root-path dest-dir])]
            [doc (dynamic-require `(file ,(path->string src-file)) 'doc)]
-           [ci (send renderer collect (list doc) (list dest-dir))]
+           [fp (send renderer traverse (list doc) (list dest-dir))]
+           [ci (send renderer collect (list doc) (list dest-dir) fp)]
            [xref ((dynamic-require 'setup/xref 'load-collections-xref))]
            [_ ((dynamic-require 'scribble/xref 'xref-transfer-info) renderer ci xref)]
            [ri (send renderer resolve (list doc) (list dest-dir) ci)])
