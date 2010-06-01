@@ -50,6 +50,10 @@ improve method arity mismatch contract violation error messages?
      (syntax
       (make-contract
        #:name '(recursive-contract arg)
+       #:first-order
+       (λ (val)
+         (let ([ctc (coerce-contract 'recursive-contract arg)])
+           (contract-first-order-passes? ctc val)))
        #:projection
        (λ (blame)
           (let ([ctc (coerce-contract 'recursive-contract arg)])
