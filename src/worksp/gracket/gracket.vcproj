@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libgracketxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
 				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\GRacketCGC.exe"
 				LinkIncremental="1"
@@ -154,7 +154,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll /DELAYLOAD:libgracketxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
 				AdditionalDependencies="Unicows.lib WS2_32.lib User32.lib Advapi32.lib delayimp.lib"
 				OutputFile="..\..\..\GRacketCGC.exe"
 				SuppressStartupBanner="true"

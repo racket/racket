@@ -1,5 +1,6 @@
 #lang scheme/base
-(require scheme/foreign
+(require ffi/unsafe
+	 ffi/unsafe/define
          scheme/class
           "../../syntax.rkt"
           "../../lock.rkt"
@@ -9,7 +10,6 @@
          "window.rkt"
          "const.rkt"
          "../common/event.rkt")
-(unsafe!)
 
 (provide list-box%)
 
@@ -38,8 +38,8 @@
 (define-gtk gtk_tree_view_get_selection (_fun _GtkWidget -> _GtkWidget))
 
 (define _GList (_cpointer 'List))
-(define-gdk g_list_foreach (_fun _GList (_fun _pointer -> _void) _pointer -> _void))
-(define-gdk g_list_free (_fun _GList -> _void))
+(define-glib g_list_foreach (_fun _GList (_fun _pointer -> _void) _pointer -> _void))
+(define-glib g_list_free (_fun _GList -> _void))
 (define-gtk gtk_tree_selection_get_selected_rows (_fun _GtkWidget _pointer -> (_or-null _GList)))
 (define-gtk gtk_tree_path_free (_fun _pointer -> _void))
 (define-gtk gtk_tree_path_get_indices (_fun _pointer -> _pointer))

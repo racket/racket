@@ -482,7 +482,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
 # ifndef MZ_PRECISE_GC
   load_delayed_dll(NULL, "libmzgcxxxxxxx.dll");
 # endif
-  load_delayed_dll(NULL, "libmzsch" DLL_3M_SUFFIX "xxxxxxx.dll");
+  load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
   record_dll_path();
 
   {
