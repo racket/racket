@@ -62,6 +62,7 @@
     [(_ e)
      #`(parameterize ([delay-errors? #f]
                       [current-namespace (namespace-anchor->namespace anch)]
+                      [custom-printer #t]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
            (parameterize ([mutated-vars (find-mutated-vars ex)])
@@ -72,6 +73,7 @@
     [(_ e)
      #`(parameterize ([delay-errors? #f]
                       [current-namespace (namespace-anchor->namespace anch)]
+                      [custom-printer #t]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
            (parameterize ([mutated-vars (find-mutated-vars ex)])
