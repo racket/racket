@@ -130,7 +130,7 @@
                      #,(quasisyntax/loc #'nm
                          (defintern (nm.*maker . flds.fs) flds.maker intern?
                            #:extra-args
-                           frees.f1 frees.f2 #:syntax [orig-stx #f] 
+                           frees.f1 frees.f2 #:syntax [orig-stx #f]
                            #,@(if key? (list #'key-expr) null)))))
             provides))])))
 
@@ -247,8 +247,8 @@
                                [Rep-free-idxs free-idxs*]))
 
 (p/c (struct Rep ([seq exact-nonnegative-integer?] 
-                  [free-vars (hash/c symbol? variance?)] 
-                  [free-idxs (hash/c exact-nonnegative-integer? variance?)]
+                  [free-vars (hash/c symbol? variance?)]                   
+                  [free-idxs (hash/c symbol? variance?)]
                   [stx (or/c #f syntax?)]))
      [replace-syntax (Rep? syntax? . -> . Rep?)])
 

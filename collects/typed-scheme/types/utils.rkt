@@ -68,9 +68,9 @@
 ;; implements angle bracket substitution from the formalism
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
 (d/c (substitute-dots images rimage name target)
-  ((listof Type/c) (or/c #f Type/c) symbol? Type? . -> . Type?)
+  ((listof Type/c) (or/c #f (cons/c Type/c symbol?)) symbol? Type? . -> . Type?)
   (define (sb t) (substitute-dots images rimage name t))
-  (if (hash-ref (free-vars* target) name #f)
+  (if (or (hash-ref (free-idxs* target) name #f) (hash-ref (free-vars* target) name #f))
       (type-case (#:Type sb #:Filter (sub-f sb)) target
                  [#:ListDots dty dbound
                              (if (eq? name dbound)
@@ -95,7 +95,7 @@
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:arr dom rng rest drest kws
                         (if (and (pair? drest)
-                                 (eq? name (cdr drest)))                            
+                                 (eq? name (cdr drest)))
                             (make-arr (append 
                                        (map sb dom)
                                        ;; We need to recur first, just to expand out any dotted usages of this.
@@ -116,7 +116,7 @@
 ;; substitute-dotted : Type Name Name Type -> Type
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
-  (if (hash-ref (free-vars* target) name #f)
+  (if (hash-ref (free-idxs* target) name #f)
       (type-case (#:Type sb #:Filter (sub-f sb))
                  target
                  [#:ValuesDots types dty dbound
@@ -135,7 +135,7 @@
                                   (sb rng)
                                   (and rest (sb rest))
                                   (and drest
-                                       (cons (sb (car drest))
+                                       (cons (substitute image (cdr drest) (sb (car drest)))
                                              (if (eq? name (cdr drest)) image-bound (cdr drest))))
                                   (map sb kws))])
        target))

@@ -41,11 +41,12 @@
 ;; this is ONLY used when a type error ocurrs
 (dt Error () [#:frees #f] [#:fold-rhs #:base])
 
+;; de Bruijn indexes - should never appear outside of this file
+;; bound type variables
 ;; i is an nat
-(dt B ([i natural-number/c])
-    [#:frees #hasheq() (make-immutable-hasheq (list (cons i Covariant)))]
-    [#:fold-rhs #:base])
+(dt B ([i natural-number/c]) [#:frees #f] [#:fold-rhs #:base])
 
+;; free type variables
 ;; n is a Name
 (dt F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) #hasheq()] [#:fold-rhs #:base])
 
@@ -57,8 +58,7 @@
 ;; stx is the syntax of the pair of parens
 (dt App ([rator Type/c] [rands (listof Type/c)] [stx (or/c #f syntax?)])
     [#:intern (list rator rands)]
-    [#:frees (combine-frees (map free-vars* (cons rator rands)))
-             (combine-frees (map free-idxs* (cons rator rands)))]
+    [#:frees (λ (f) (combine-frees (map f (cons rator rands))))]
     [#:fold-rhs (*App (type-rec-id rator)
                       (map type-rec-id rands)
                       stx)])
@@ -69,39 +69,44 @@
 ;; dotted list -- after expansion, becomes normal Pair-based list type
 (dt ListDots ([dty Type/c] [dbound (or/c symbol? natural-number/c)])
     [#:frees (if (symbol? dbound)
-                 (fix-bound (free-vars* dty) dbound)
+                 (hash-remove (free-vars* dty) dbound)
                  (free-vars* dty))
-             (if (number? dbound)
-                 (fix-bound (free-idxs* dty) dbound)
+             (if (symbol? dbound)
+                 (hash-set (free-idxs* dty) dbound Covariant)
                  (free-idxs* dty))]
     [#:fold-rhs (*ListDots (type-rec-id dty) dbound)])
 
 ;; *mutable* pairs - distinct from regular pairs
 ;; left and right are Types
-(dt MPair ([left Type/c] [right Type/c]) [#:key 'mpair])
+(dt MPair ([left Type/c] [right Type/c])     
+    [#:frees (λ (f) (make-invariant (combine-frees (list (f left) (f right)))))]
+    [#:key 'mpair])
 
 
 ;; elem is a Type
 (dt Vector ([elem Type/c]) 
-    [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+    [#:frees (λ (f) (make-invariant (f elem)))]
     [#:key 'vector])
 
 ;; elems are all Types
 (dt HeterogenousVector ([elems (listof Type/c)])
-    [#:frees (make-invariant (combine-frees (map free-vars* elems))) (make-invariant (combine-frees (map free-idxs* elems)))]
+    [#:frees (λ (f) (make-invariant (combine-frees (map f elems))))]
     [#:key 'vector]
     [#:fold-rhs (*HeterogenousVector (map type-rec-id elems))])
 
 ;; elem is a Type
-(dt Box ([elem Type/c]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
-    [#:key 'box])
+(dt Box ([elem Type/c]) 
+    [#:frees (λ (f) (make-invariant (f elem)))]
+    [#:key 'box])  
 
 ;; elem is a Type
-(dt Channel ([elem Type/c]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+(dt Channel ([elem Type/c])
+    [#:frees (λ (f) (make-invariant (f elem)))]
     [#:key 'channel])
 
 ;; name is a Symbol (not a Name)
-(dt Base ([name symbol?] [contract syntax?]) [#:frees #f] [#:fold-rhs #:base] [#:intern name]
+(dt Base ([name symbol?] [contract syntax?]) 
+    [#:frees #f] [#:fold-rhs #:base] [#:intern name]
     [#:key (case name
 	     [(Number Integer) 'number]
 	     [(Boolean) 'boolean]
@@ -111,9 +116,9 @@
 	     [else #f])])
 
 ;; body is a Scope
-(dt Mu ([body (scope-depth 1)]) #:no-provide [#:frees (free-vars* body) (without-below 1 (free-idxs* body))]
+(dt Mu ([body (scope-depth 1)]) #:no-provide [#:frees (λ (f) (f body))]
     [#:fold-rhs (*Mu (*Scope (type-rec-id (Scope-t body))))]
-    [#:key (Type-key body)])    
+    [#:key (Type-key body)])
 
 ;; n is how many variables are bound here
 ;; body is a Scope
@@ -122,7 +127,7 @@
                       [body (scope-depth n)])
                      (#:syntax [stx (or/c #f syntax?)])
                      [result Poly?])]
-    [#:frees (free-vars* body) (without-below n (free-idxs* body))]
+    [#:frees (λ (f) (f body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
                   (*Poly n (add-scopes n (type-rec-id body*))))]
     [#:key (Type-key body)])
@@ -136,7 +141,7 @@
                      (#:syntax [stx (or/c #f syntax?)])
                      [result PolyDots?])]
     [#:key (Type-key body)]
-    [#:frees (free-vars* body) (without-below n (free-idxs* body))]
+    [#:frees (λ (f) (f body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
                   (*PolyDots n (add-scopes n (type-rec-id body*))))])
 
@@ -163,10 +168,10 @@
 
 (dt ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])
     [#:frees (if (symbol? dbound)
-                 (fix-bound (combine-frees (map free-vars* (cons dty rs))) dbound)
+                 (hash-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
                  (combine-frees (map free-vars* (cons dty rs))))
-             (if (number? dbound)
-                 (fix-bound (combine-frees (map free-idxs* (cons dty rs))) dbound)
+             (if (symbol? dbound)
+                 (hash-set (combine-frees (map free-idxs* (cons dty rs))) dbound Covariant)
                  (combine-frees (map free-idxs* (cons dty rs))))]
     [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
@@ -184,10 +189,10 @@
                                    dom))
                       (match drest
                         [(cons t (? symbol? bnd))
-                         (list (fix-bound (flip-variances (free-vars* t)) bnd))]                          
-                        [(cons t (? number? bnd)) 
+                         (list (hash-remove (flip-variances (free-vars* t)) bnd))]
+                        [(cons t _)
                          (list (flip-variances (free-vars* t)))]
-                        [#f null])
+                        [_ null])
                       (list (free-vars* rng))))
              (combine-frees 
               (append (map (compose flip-variances free-idxs*) 
@@ -196,10 +201,10 @@
                                    dom))
                       (match drest
                         [(cons t (? symbol? bnd))
+                         (list (hash-set (flip-variances (free-idxs* t)) bnd Contravariant))]
+                        [(cons t _)
                          (list (flip-variances (free-idxs* t)))]
-                        [(cons t (? number? bnd)) 
-                         (list (fix-bound (flip-variances (free-idxs* t)) bnd))]
-                        [#f null])
+                        [_ null])
                       (list (free-idxs* rng))))]
     [#:fold-rhs (*arr (map type-rec-id dom)
                       (type-rec-id rng)
@@ -215,8 +220,7 @@
 ;; arities : Listof[arr]
 (dt Function ([arities (listof arr/c)])
     [#:key 'procedure]
-    [#:frees (combine-frees (map free-vars* arities))
-             (combine-frees (map free-idxs* arities))]
+    [#:frees (λ (f) (combine-frees (map f arities)))]
     [#:fold-rhs (*Function (map type-rec-id arities))])
 
 
@@ -230,8 +234,6 @@
 (dt Struct ([name symbol?] 
             [parent (or/c #f Struct? Name?)] 
             [flds (listof Type/c)]
-            #;
-            [flds (listof (cons/c Type/c boolean?))]
             [proc (or/c #f Function?)]
             [poly? (or/c #f (listof symbol?))]
             [pred-id identifier?]
@@ -239,19 +241,12 @@
             [acc-ids (listof identifier?)]
             [maker-id identifier?])
     [#:intern (list name parent flds proc)]
-    [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null)
-                                                    (if parent (list parent) null) 
-                                                    
-                                                    flds #;(map car flds))))
-             (combine-frees (map free-idxs* (append (if proc (list proc) null)
-                                                    (if parent (list parent) null)
-                                                    flds #;(map car flds))))]
+    [#:frees (λ (f) (combine-frees (map f (append (if proc (list proc) null)
+                                                           (if parent (list parent) null)                                                     
+                                                           flds))))]
     [#:fold-rhs (*Struct name 
                          (and parent (type-rec-id parent))
                          (map type-rec-id flds)
-                         #;
-                         (for/list ([(t m?) (in-pairs (in-list flds))])
-                           (cons (type-rec-id t) m?))
                          (and proc (type-rec-id proc))
                          poly?
                          pred-id
@@ -290,8 +285,7 @@
                                                 (and sorted? (type<? last e))
                                                 e))])
                                  sorted?))))]) 
-    [#:frees (combine-frees (map free-vars* elems))
-             (combine-frees (map free-idxs* elems))]
+    [#:frees (λ (f) (combine-frees (map f elems)))]
     [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
     [#:key (let loop ([res null] [ts elems])
              (if (null? ts) res
@@ -317,8 +311,7 @@
     [#:key (Type-key parent)]
     [#:intern (list parent (hash-id pred))]
     [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]
-    [#:frees (free-vars* parent)
-             (free-idxs* parent)])
+    [#:frees (λ (f) (f parent))])
     
 
 ;; t : Type
@@ -330,14 +323,10 @@
 (dt Class ([pos-flds (listof Type/c)]
            [name-flds (listof (list/c symbol? Type/c boolean?))]
            [methods (listof (list/c symbol? Function?))])
-    [#:frees (combine-frees
-              (map free-vars* (append pos-flds 
-                                      (map cadr name-flds)
-                                      (map cadr methods))))
-             (combine-frees
-              (map free-idxs* (append pos-flds 
-                                      (map cadr name-flds)
-                                      (map cadr methods))))]
+    [#:frees (λ (f) (combine-frees
+                     (map f (append pos-flds 
+                                    (map cadr name-flds)
+                                    (map cadr methods)))))]
     [#:key 'class]
     [#:fold-rhs (match (list pos-flds name-flds methods)
                   [(list
