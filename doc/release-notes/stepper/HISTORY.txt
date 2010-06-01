@@ -1,9 +1,13 @@
 Stepper
 -------
 
-Changse for v4.2.5:
+Changes for v5.0:
 
-Non.
+Bug fixes, computes all steps ahead of time (some time in last few revs)?
+
+Changes for v4.2.5:
+
+None.
 
 Changes for v4.2.4:
 
