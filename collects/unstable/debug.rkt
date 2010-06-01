@@ -17,10 +17,11 @@
          letrec-values/debug
          with-syntax/debug
          with-syntax*/debug
-         parameterize/debug
-         with-debugging)
+         parameterize/debug)
 
-(require unstable/srcloc
+(require racket/block
+         unstable/pretty
+         unstable/srcloc
          unstable/location
          unstable/syntax
          (for-syntax racket/match syntax/parse unstable/syntax))
@@ -28,11 +29,11 @@
 (define-syntax (let/debug stx)
   (syntax-parse stx
     [(_ (~optional loop:id) ([lhs:id rhs:expr] ...) body:expr ...+)
-     #`(with-debugging
+     #`(debug
         #:name '#,(if (attribute loop) #'loop #'let/debug)
         #:source (quote-srcloc #,stx)
         (let #,@(if (attribute loop) (list #'loop) null)
-          ([lhs (with-debugging #:name 'lhs rhs)] ...)
+          ([lhs (debug #:name 'lhs rhs)] ...)
           (debug body) ...))]))
 
 (define-syntaxes
@@ -51,11 +52,11 @@
       (with-syntax ([binder binder-id])
         (syntax-parse stx
           [(binder/debug:id ([lhs rhs:expr] ...) body:expr ...+)
-           #`(with-debugging
+           #`(debug
               #:name 'binder/debug
               #:source (quote-srcloc #,stx)
               (binder
-               ([lhs (with-debugging #:name 'lhs rhs)] ...)
+               ([lhs (debug #:name 'lhs rhs)] ...)
                (debug body) ...))])))
 
     (values (expander #'let*)
@@ -86,13 +87,13 @@
         (syntax-parse stx
           [(definer/debug:id name:id body:expr)
            #`(definer name
-               (with-debugging
+               (debug
                 #:name 'name
                 #:source (quote-srcloc #,stx)
                 body))]
           [(definer/debug:id spec:header body:expr ...+)
            #`(definer spec
-               (with-debugging
+               (debug
                 #:name 'spec.name
                 #:source (quote-srcloc #,stx)
                 (let () body ...)))])))
@@ -106,31 +107,28 @@
 (define-syntax (begin/debug stx)
   (syntax-parse stx
     [(_ term:expr ...)
-     #`(with-debugging
+     #`(debug
         #:name 'begin/debug
         #:source (quote-srcloc #,stx)
         (begin (debug term) ...))]))
 
-(define-syntax (debug stx)
-  (syntax-parse stx
-    [(_ term:expr)
-     (syntax (with-debugging term))]))
-
 (define-syntax (call/debug stx)
 
   (define-splicing-syntax-class argument
-    #:attributes ([debug 1])
-    (pattern arg:expr #:attr [debug 1] #'[(debug arg)])
-    (pattern (~seq kw:keyword arg:expr) #:attr [debug 1] #'[kw (debug arg)]))
+    #:attributes ([debugged 1])
+    (pattern arg:expr
+             #:attr [debugged 1] (list #'(debug arg)))
+    (pattern (~seq kw:keyword arg:expr)
+             #:attr [debugged 1] (list #'kw #'(debug arg))))
 
   (syntax-parse stx
     [(_ f:expr arg:argument ...)
-     #`(with-debugging
+     #`(debug
         #:name 'call/debug
         #:source (quote-srcloc #,stx)
-        (#%app (debug f) arg.debug ... ...))]))
+        (#%app (debug f) arg.debugged ... ...))]))
 
-(define-syntax (with-debugging stx)
+(define-syntax (debug stx)
   (syntax-parse stx
     [(_ (~or (~optional (~seq #:name name:expr))
              (~optional (~seq #:source source:expr)))
@@ -138,39 +136,59 @@
         body:expr)
      (with-syntax* ([name (or (attribute name) #'(quote body))]
                     [source (or (attribute source) #'(quote-srcloc body))])
-       #'(with-debugging/proc
+       #'(debug/proc
           name
           source
-          (quote body)
           (lambda () (#%expression body))))]))
 
-(define (with-debugging/proc name source term thunk)
-  (let* ([src (source-location->prefix source)])
-    (begin
-      (dprintf ">> ~a~s" src name)
-      (begin0
-        (parameterize ([current-debug-depth
-                        (add1 (current-debug-depth))])
+(define (debug/proc name source thunk)
+
+  (define src (source-location->prefix source))
+
+  (define (err e)
+    (if (exn? e)
+      (dprintf "raised exception: ~a" (exn-message e))
+      (dprintf "raised non-exception: ~a" (pretty-format/print e)))
+    (raise e))
+
+  (define depth (current-debug-depth))
+
+  (dynamic-wind
+
+    (lambda ()
+      (parameterize ([current-debug-depth depth])
+        (dprintf ">> ~a~a" src (pretty-format/write name 'infinity))))
+
+    (lambda ()
+      (parameterize ([current-debug-depth (add1 depth)])
+        (with-handlers ([exn:fail? err])
           (call-with-values thunk
-            (lambda results
-              (match results
-                [(list v) (dprintf "~s" v)]
-                [(list vs ...)
-                 (dprintf "(values~a)"
-                          (apply string-append
-                            (for/list ([v (in-list vs)])
-                              (format " ~s" v))))])
-              (apply values results))))
-        (dprintf "<< ~a~s" src name)))))
+            (match-lambda*
+              [(list v)
+               (dprintf "result: ~a"
+                 (pretty-format/print v 'infinity))
+               v]
+              [(list vs ...)
+               (dprintf "results: (values~a)"
+                 (apply string-append
+                   (for/list ([v (in-list vs)])
+                     (string-append " " (pretty-format/print v 'infinity)))))
+               (apply values vs)])))))
+
+    (lambda ()
+      (parameterize ([current-debug-depth depth])
+        (dprintf "<< ~a~a" src (pretty-format/write name 'infinity))))))
 
 (define (dprintf fmt . args)
-  (let* ([message (apply format fmt args)]
-         [prefix (make-string (* debug-indent (current-debug-depth)) #\space)]
-         [indented
-          (string-append
-           prefix
-           (regexp-replace* "\n" message (string-append "\n" prefix)))])
-    (log-debug indented)))
+  (define message (apply format fmt args))
+  (define terminated
+    (if (regexp-match? "\n$" message) message (string-append message "\n")))
+  (define prefix
+    (make-string (* debug-indent (current-debug-depth)) #\space))
+  (define indented
+    (regexp-replace* "(?m:.+)" terminated (string-append prefix "&")))
+  (write-string indented (current-error-port))
+  (void))
 
 (define current-debug-depth (make-parameter 0))
 (define debug-indent 2)

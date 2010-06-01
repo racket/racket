@@ -7,15 +7,8 @@
    (test-suite "dprintf"
      (test
       (let ()
-        (define logger (make-logger))
-        (define receiver (make-log-receiver logger 'debug))
-        (parameterize ([current-logger logger])
-          (dprintf "Danger, ~a!" "Will Robinson"))
-        (check-not-false
-         (member
-          "Danger, Will Robinson!"
-          (let loop ()
-            (match (sync/timeout 0 receiver)
-              [(vector 'debug (? string? message) _)
-               (cons message (loop))]
-              [_ null])))))))))
+        (parameterize ([current-error-port (open-output-string)])
+          (dprintf "Danger, ~a!" "Will Robinson")
+          (check-equal?
+           (get-output-string (current-error-port))
+           "Danger, Will Robinson!\n")))))))
