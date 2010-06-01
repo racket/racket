@@ -47,7 +47,7 @@
   
   (define (combiner f flds)
     (syntax-parse flds
-      [() #'empty-hash-table]
+      [() #'#hasheq()]
       [(e) #`(#,f e)]
       [(e ...) #`(combine-frees (list (#,f e) ...))]))
   (define-splicing-syntax-class frees-pat
@@ -55,8 +55,8 @@
     #:attributes (f1 f2)
     (pattern (~seq f1:expr f2:expr))
     (pattern #f
-             #:with f1 #'empty-hash-table
-             #:with f2 #'empty-hash-table)
+             #:with f1 #'#hasheq()
+             #:with f2 #'#hasheq())
     (pattern e:expr
              #:with f1 #'(e Rep-free-vars)
              #:with f2 #'(e Rep-free-idxs)))

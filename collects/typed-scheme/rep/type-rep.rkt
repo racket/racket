@@ -43,11 +43,11 @@
 
 ;; i is an nat
 (dt B ([i natural-number/c])
-    [#:frees empty-hash-table (make-immutable-hasheq (list (cons i Covariant)))]
+    [#:frees #hasheq() (make-immutable-hasheq (list (cons i Covariant)))]
     [#:fold-rhs #:base])
 
 ;; n is a Name
-(dt F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) empty-hash-table] [#:fold-rhs #:base])
+(dt F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) #hasheq()] [#:fold-rhs #:base])
 
 ;; id is an Identifier
 (dt Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
