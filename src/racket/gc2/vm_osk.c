@@ -9,7 +9,7 @@
 
 #include <oskit/c/malloc.h>
 
-inline static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
+inline static void *os_malloc_pages(MMU *mmu, size_t len, size_t alignment, int dirty_ok)
 {
   void *p;
 
@@ -18,19 +18,15 @@ inline static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int di
   if (!dirty_ok)
   memset(p, 0, len);
 
-  vm_memory_allocated_inc(vm, len);
+  mmu_memory_allocated_inc(mmu, len);
 
   return p;
 }
 
-static void vm_free_pages(VM *vm, void *p, size_t len)
+static void os_free_pages(MMU *mmu, void *p, size_t len)
 {
-  vm_memory_allocated_dec(vm, len);
+  mmu_memory_allocated_dec(mmu, len);
   sfree(p, len);
-}
-
-static void vm_flush_freed_pages(VM *vm)
-{
 }
 
 #ifndef DONT_NEED_MAX_HEAP_SIZE

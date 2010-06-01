@@ -1,66 +1,236 @@
-
 /******************************************************************************/
 /*                     OS-specific low-level allocator                        */
 /******************************************************************************/
+
+/* TODO
+OSKIT and WINDOWS hard code os_pagesize to APAGE_SIZE
+*/
 
 #ifndef GCPRINT
 # define GCPRINT fprintf
 # define GCOUTF stderr
 #endif
 
-static inline size_t vm_round_up_to_page_size(size_t len, size_t page_size) {
-  len += (page_size -1) - (len & (page_size - 1));
-  return len;
+enum {
+  MMU_WRITE_PROTECTED = 0,
+  MMU_WRITABLE        = 1,
 };
 
-#if !( defined(_WIN32) || defined(OSKIT) )
-typedef struct {
-  char *start;
-  long len;
-  short age;
-  short zeroed;
-} FreeBlock;
+#ifdef MZ_USE_PLACES
+#define USE_BLOCK_CACHE
 #endif
 
-typedef struct VM {
-#if !( defined(_WIN32) || defined(OSKIT) )
-  FreeBlock *freeblocks;
+struct BlockCache;
+typedef struct MMU {
+#ifdef USE_BLOCK_CACHE
+  struct BlockCache *block_cache;
+#elif !( defined(_WIN32) || defined(OSKIT) )
+  AllocCacheBlock *alloc_caches[2];
+  Page_Range *page_range;
 #endif
-  size_t memory_allocated;
-} VM;
+  long memory_allocated;
+  size_t os_pagesize;
+  NewGC *gc;
+} MMU;
 
-static VM *vm_create() {
-  VM *vm = ofm_malloc(sizeof(VM));
-  memset(vm, 0, sizeof(VM));
 #if !( defined(_WIN32) || defined(OSKIT) )
-  #define BLOCKFREE_CACHE_SIZE 96
-  vm->freeblocks = ofm_malloc(sizeof(FreeBlock) * BLOCKFREE_CACHE_SIZE);
-  memset(vm->freeblocks, 0, sizeof(FreeBlock) * BLOCKFREE_CACHE_SIZE);
+static void  *os_alloc_pages(size_t len);
+static void   os_free_pages(void *p, size_t len);
+static void   os_protect_pages(void *p, size_t len, int writable);
+#else
+static void  *os_alloc_pages(MMU *mmu, size_t len, size_t alignment, int dirty);
+static void   os_free_pages(MMU *mmu, void *p, size_t len);
+static void   os_protect_pages(void *p, size_t len, int writable);
+static void   os_flush_freed_pages(MMU *mmu);
 #endif
-  return vm;
+
+/* provides */
+static inline size_t mmu_get_os_page_size(MMU *mmu) { return mmu->os_pagesize; }
+static size_t mmu_memory_allocated(MMU *mmu);
+
+static inline size_t align_up(const size_t len, const size_t boundary) {
+  const size_t modulo = (len & (boundary - 1));
+  if (modulo) 
+    return len + (boundary - modulo);
+  return len;
+}
+static inline void* align_up_ptr(const void *p, const size_t boundary) {
+  return (void*) align_up((size_t) p, boundary);
 }
 
-static void vm_free(VM *vm) {
+static inline size_t align_up_to_gc_pagesize(size_t len) {
+  const size_t page_size = APAGE_SIZE;
+  return align_up(len, page_size);
+}
+
+static inline size_t mmu_round_up_to_os_page_size(MMU *mmu, size_t len) {
+  const size_t page_size = mmu->os_pagesize;
+  return align_up(len, page_size);
+}
+
+static inline void mmu_assert_os_page_aligned(MMU *mmu, size_t p) {
+  if (p & (mmu->os_pagesize - 1)) {
+    printf("address or size is not OS PAGE ALIGNED!!!!");
+    abort();
+  }
+}
+
+#ifdef USE_BLOCK_CACHE
+#include "block_cache.c"
+#include "alloc_cache.c"
+#include "page_range.c"
+#include <unistd.h>
+#elif !( defined(_WIN32) || defined(OSKIT) )
+#include "alloc_cache.c"
+#include "page_range.c"
+#include <unistd.h>
+#endif
+
+
+static MMU *mmu_create(NewGC *gc) {
+  MMU *mmu = ofm_malloc_zero(sizeof(MMU));
+  mmu->gc = gc;
+
 #if !( defined(_WIN32) || defined(OSKIT) )
-  free(vm->freeblocks);
+#ifdef USE_BLOCK_CACHE
+  mmu->block_cache = block_cache_create(mmu);
+#else
+  /* initialization of page_range */
+  mmu->page_range = page_range_create();
+
+  /* initialization of alloc_cache */
+  mmu->alloc_caches[0] = alloc_cache_create();
+  mmu->alloc_caches[1] = alloc_cache_create();
 #endif
-  free(vm);
+
+  mmu->os_pagesize = getpagesize();
+#else
+  mmu->os_pagesize = APAGE_SIZE;
+#endif
+  
+  return mmu;
 }
 
-static size_t vm_memory_allocated(VM *vm) {
-  return vm->memory_allocated;
+static void mmu_free(MMU *mmu) {
+#ifdef USE_BLOCK_CACHE
+  block_cache_free(mmu->block_cache);
+#elif !( defined(_WIN32) || defined(OSKIT) )
+  free(mmu->alloc_caches[0]);
+  free(mmu->alloc_caches[1]);
+#endif
+  free(mmu);
 }
 
-static size_t vm_memory_allocated_inc(VM *vm, size_t len) {
-  vm->memory_allocated += len;
-  return vm->memory_allocated;
+static void *mmu_alloc_page(MMU* mmu, size_t len, size_t alignment, int dirty, int type, int expect_mprotect, void **src_block) {
+  mmu_assert_os_page_aligned(mmu, len);
+#ifdef USE_BLOCK_CACHE
+  return block_cache_alloc_page(mmu->block_cache, len, alignment, dirty, type, expect_mprotect, src_block, &mmu->memory_allocated);
+#elif !( defined(_WIN32) || defined(OSKIT) )
+  //len = mmu_round_up_to_os_page_size(mmu, len); 
+  {
+    AllocCacheBlock *alloc_cache = mmu->alloc_caches[!!expect_mprotect];
+    return alloc_cache_alloc_page(alloc_cache, len, alignment, dirty, &mmu->memory_allocated);
+  }
+#else
+  return os_alloc_pages(mmu, len, alignment, dirty);
+#endif
 }
 
-static size_t vm_memory_allocated_dec(VM *vm, size_t len) {
-  vm->memory_allocated -= len;
-  return vm->memory_allocated;
+static void mmu_free_page(MMU* mmu, void *p, size_t len, int type, int expect_mprotect, void **src_block) {
+  mmu_assert_os_page_aligned(mmu, (size_t)p);
+  mmu_assert_os_page_aligned(mmu, len);
+#ifdef USE_BLOCK_CACHE
+  mmu->memory_allocated += block_cache_free_page(mmu->block_cache, p, len, type, expect_mprotect, src_block);
+#elif !( defined(_WIN32) || defined(OSKIT) )
+  //len = mmu_round_up_to_os_page_size(mmu, len); 
+  {
+    AllocCacheBlock *alloc_cache = mmu->alloc_caches[!!expect_mprotect];
+    mmu->memory_allocated += alloc_cache_free_page(alloc_cache, p, len, MMU_DIRTY);
+  }
+#else
+  os_free_pages(mmu, p, len);
+#endif
 }
 
+static void mmu_flush_freed_pages(MMU *mmu) {
+#ifdef USE_BLOCK_CACHE
+  mmu->memory_allocated += block_cache_flush_freed_pages(mmu->block_cache);
+#elif !( defined(_WIN32) || defined(OSKIT) )
+  mmu->memory_allocated += alloc_cache_flush_freed_pages(mmu->alloc_caches[0]);
+  mmu->memory_allocated += alloc_cache_flush_freed_pages(mmu->alloc_caches[1]);
+#elif defined(_WIN32)
+  os_flush_freed_pages(mmu);
+#endif  
+}
+
+static void mmu_prep_for_compaction(MMU *mmu) {
+#ifdef USE_BLOCK_CACHE
+  block_cache_prep_for_compaction(mmu->block_cache);
+#endif
+}
+
+static int mmu_should_compact_page(MMU *mmu, void **src_block) {
+#ifdef USE_BLOCK_CACHE
+  return block_cache_compact(src_block);
+#endif
+  return 0;
+}
+
+static void mmu_write_unprotect_page(MMU *mmu, void *p, size_t len) {
+  mmu_assert_os_page_aligned(mmu, (size_t)p);
+  mmu_assert_os_page_aligned(mmu, len);
+  os_protect_pages(p, len, 1);
+}
+
+static void mmu_queue_protect_range(MMU *mmu, void *p, size_t len, int type, int writeable, void **src_block) {
+  mmu_assert_os_page_aligned(mmu, (size_t)p);
+  mmu_assert_os_page_aligned(mmu, len);
+#ifdef USE_BLOCK_CACHE
+  block_cache_queue_protect_range(mmu->block_cache, p, len, type, writeable, src_block);
+#elif !( defined(_WIN32) || defined(OSKIT) )
+  page_range_add(mmu->page_range, p, len, writeable);
+#else
+  os_protect_pages(p, len, writeable);
+#endif  
+}
+
+static void mmu_queue_write_protect_range(MMU *mmu, void *p, size_t len, int type, void **src_block) {
+  mmu_queue_protect_range(mmu, p, len, type, MMU_WRITE_PROTECTED, src_block);
+}
+    
+static void mmu_queue_write_unprotect_range(MMU *mmu, void *p, size_t len, int type, void **src_block) {
+  mmu_queue_protect_range(mmu, p, len, type, MMU_WRITABLE, src_block);
+}
+
+static void mmu_flush_write_protect_ranges(MMU *mmu) {
+#ifdef USE_BLOCK_CACHE
+  block_cache_flush_protect_ranges(mmu->block_cache, MMU_WRITE_PROTECTED);
+#elif !( defined(_WIN32) || defined(OSKIT) )
+  page_range_flush(mmu->page_range, MMU_WRITE_PROTECTED);
+#endif  
+}
+
+static void mmu_flush_write_unprotect_ranges(MMU *mmu) {
+#ifdef USE_BLOCK_CACHE
+  block_cache_flush_protect_ranges(mmu->block_cache, MMU_WRITABLE);
+#elif !( defined(_WIN32) || defined(OSKIT) )
+  page_range_flush(mmu->page_range, MMU_WRITABLE);
+#endif  
+}
+
+static size_t mmu_memory_allocated(MMU *mmu) {
+  return mmu->memory_allocated;
+}
+
+#if ( defined(_WIN32) || defined(OSKIT) )
+  page_range_flush(mmu->page_range, MMU_WRITABLE);
+static void mmu_memory_allocated_inc(MMU *mmu, long amt) {
+  mmu->memory_allocated += amt;
+}
+static void mmu_memory_allocated_dec(MMU *mmu, long amt) {
+  mmu->memory_allocated -= amt;
+}
+#endif
 
 #if _WIN32            /* Windows */
 # include "vm_win.c"
@@ -68,6 +238,6 @@ static size_t vm_memory_allocated_dec(VM *vm, size_t len) {
 # include "vm_osk.c"
 #elif defined(OS_X)   /* OS X */
 # include "vm_osx.c"
-#else                 /* Default: mmap */
+#else                 /* Default: mmap, linux, unix, freebsd*/
 # include "vm_mmap.c"
 #endif

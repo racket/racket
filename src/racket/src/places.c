@@ -515,7 +515,7 @@ Scheme_Object *scheme_places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
         car = scheme_places_deep_copy_worker(SCHEME_CAR(so), ht);
         cdr = scheme_places_deep_copy_worker(SCHEME_CDR(so), ht);
         pair = scheme_make_pair(car, cdr);
-        return pair;
+        new_so = pair;
       }
       break;
     case scheme_vector_type:

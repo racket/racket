@@ -147,7 +147,7 @@ static mach_port_t task_self = 0;
 static mach_port_t exc_port = 0;
 
 /* the VM subsystem as defined by the GC files */
-static void *os_vm_alloc_pages(size_t len)
+static void *os_alloc_pages(size_t len)
 {
   kern_return_t retval;
   void *r;
@@ -167,7 +167,7 @@ static void *os_vm_alloc_pages(size_t len)
   return r;
 }
 
-static void os_vm_free_pages(void *p, size_t len)
+static void os_free_pages(void *p, size_t len)
 {
   kern_return_t retval;
 
@@ -178,7 +178,7 @@ static void os_vm_free_pages(void *p, size_t len)
   }
 }
 
-static void vm_protect_pages(void *p, size_t len, int writeable)
+static void os_protect_pages(void *p, size_t len, int writeable)
 {
   kern_return_t retval;
 
@@ -194,8 +194,6 @@ static void vm_protect_pages(void *p, size_t len, int writeable)
 	   len, p, mach_error_string(retval));
   }
 }
-
-#include "alloc_cache.c"
 
 #ifndef DONT_NEED_MAX_HEAP_SIZE
 

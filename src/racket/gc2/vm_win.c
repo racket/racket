@@ -20,7 +20,7 @@ typedef struct {
 static alloc_cache_entry cache[2][CACHE_SLOTS];
 #endif
 
-static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
+static void *os_alloc_pages(MMU *mmu, size_t len, size_t alignment, int dirty_ok)
 {
 #if CACHE_SLOTS
   {
@@ -42,7 +42,7 @@ static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
   }
 #endif
 
-  vm_memory_allocated_inc(vm, len);
+  mmu_memory_allocated_inc(mmu, len);
 
   /* VirtualAlloc MEM_COMMIT always zeros memory */
   return (void *)VirtualAlloc(NULL, len, 
@@ -50,7 +50,7 @@ static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
       PAGE_READWRITE);
 }
 
-static void vm_free_pages(VM *vm, void *p, size_t len)
+static void os_free_pages(MMU *mmu, void *p, size_t len)
 {
 
 #if CACHE_SLOTS
@@ -69,11 +69,11 @@ static void vm_free_pages(VM *vm, void *p, size_t len)
   }
 #endif
 
-  vm_memory_allocated_dec(vm, len);
+  mmu_memory_allocated_dec(mmu, len);
   VirtualFree(p, 0, MEM_RELEASE);
 }
 
-static void vm_flush_freed_pages(VM *vm)
+static void os_flush_freed_pages(MMU *mmu)
 {
 #if CACHE_SLOTS
   int i;
@@ -83,7 +83,7 @@ static void vm_flush_freed_pages(VM *vm)
     if (cache[1][i].len) {
       for (p = cache[1][i].page; p; p = next) {
         next = *(void **)p;
-        vm_memory_allocated_dec(vm, cache[i].len);
+        mmu_memory_allocated_dec(mmu, cache[i].len);
         VirtualFree(p, 0, MEM_RELEASE);
       }
     }
@@ -95,7 +95,7 @@ static void vm_flush_freed_pages(VM *vm)
 #endif
 }
 
-static void vm_protect_pages(void *p, size_t len, int writeable)
+static void os_protect_pages(void *p, size_t len, int writeable)
 {
   DWORD old;
   VirtualProtect(p, len, (writeable ? PAGE_READWRITE : PAGE_READONLY), &old);

@@ -14,7 +14,7 @@
 
 static int page_size; /* OS page size */
 
-static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
+static void *os_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
 {
   void *r;
 
@@ -38,17 +38,13 @@ static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
   return r;
 }
 
-static void vm_free_pages(VM *vm, void *p, size_t len)
+static void os_free_pages(VM *vm, void *p, size_t len)
 {
   vm_memory_allocated_dec(vm, len);
   free(p);
 }
 
-static void vm_flush_freed_pages(VM *vm)
-{
-}
-
-static void vm_protect_pages(void *p, size_t len, int writeable)
+static void os_protect_pages(void *p, size_t len, int writeable)
 {
   if (len & (page_size - 1)) {
     len += page_size - (len & (page_size - 1));

@@ -2,7 +2,7 @@
 /*
 static void os_vm_free_pages(void *p, size_t len);
 static void *os_vm_alloc_pages(size_t len);
-static void vm_protect_pages(void *p, size_t len, int writeable);
+static void os_protect_pages(void *p, size_t len, int writeable);
 */
 /* Requires: */
 /* Optional:
@@ -15,16 +15,14 @@ static void vm_protect_pages(void *p, size_t len, int writeable);
 #include <sys/mman.h>
 #include <errno.h>
 
-static long page_size;
-
-static void os_vm_free_pages(void *p, size_t len)
+static void os_free_pages(void *p, size_t len)
 {
   if (munmap(p, len)) {
     GCPRINT(GCOUTF, "Unmap warning: %lx, %ld, %d\n", (long)p, (long)len, errno);
   }
 }
 
-static void *os_vm_alloc_pages(size_t len)
+static void *os_alloc_pages(size_t len)
 {
   void *r;
 
@@ -37,10 +35,6 @@ static void *os_vm_alloc_pages(size_t len)
     fd = open("/dev/zero", O_RDWR);
   }
 #endif
-
-  /* Round up to nearest page: */
-  if (len & (page_size - 1))
-    len += page_size - (len & (page_size - 1));
 
 #ifdef MAP_ANON
   r = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
@@ -55,14 +49,9 @@ static void *os_vm_alloc_pages(size_t len)
 }
 
 
-static void vm_protect_pages(void *p, size_t len, int writeable)
+static void os_protect_pages(void *p, size_t len, int writeable)
 {
-  if (len & (page_size - 1)) {
-    len += page_size - (len & (page_size - 1));
-  }
-
   mprotect(p, len, (writeable ? (PROT_READ | PROT_WRITE) : PROT_READ));
 }
 
-#include "alloc_cache.c"
 #include "rlimit_heapsize.c"
