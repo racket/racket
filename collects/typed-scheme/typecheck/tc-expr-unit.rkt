@@ -238,6 +238,8 @@
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      expected]
+    [((tc-results: ts fs os dty dbound) (tc-results: ts* fs* os* dty* dbound*))
+     (int-err "dotted types in check-below nyi: ~a ~a" dty dty*)]
     [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
 
 (define (tc-expr/check/type form expected)
