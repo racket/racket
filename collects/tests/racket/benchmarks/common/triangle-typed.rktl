@@ -94,4 +94,4 @@
             'done
             (begin
               (gogogo 22)
-              (loop (sub1 n))))))
+              (loop (- n 1))))))

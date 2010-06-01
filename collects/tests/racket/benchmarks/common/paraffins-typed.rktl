@@ -11,7 +11,7 @@
          (define (rads-of-size n)
            (let: loop1 : (Listof Radical)
                  ((ps : (Listof (Vectorof Natural))
-                      (three-partitions (sub1 n)))
+                      (three-partitions (- n 1)))
                   (lst : (Listof Radical)
                        '()))
                  (if (null? ps)
@@ -83,7 +83,7 @@
          (define (ccp-generator j)
            (let: loop1 : (Listof Radical)
                  ((ps : (Listof (Vectorof Natural))
-                      (four-partitions (sub1 j)))
+                      (four-partitions (- j 1)))
                   (lst : (Listof Radical)
                        '()))
                  (if (null? ps)
@@ -154,12 +154,12 @@
                         (nc2 (quotient (- m nc1) 2)))
               (if (< nc2 nc1)
                   (loop1 lst
-                         (sub1 nc1))
+                         (- nc1 1))
                   (loop2 (cons (vector (abs nc1)
                                        (abs nc2)
                                        (abs (- m (+ nc1 nc2)))) ; abs is to appease the typechecker
                                lst)
-                         (sub1 nc2)))))))
+                         (- nc2 1)))))))
 
 (: four-partitions (Natural -> (Listof (Vectorof Natural))))
 (define (four-partitions m)
@@ -172,18 +172,18 @@
                         (nc2 (quotient (- m nc1) 3)))
               (if (< nc2 nc1)
                   (loop1 lst
-                         (sub1 nc1))
+                         (- nc1 1))
                   (let ((start (max nc2 (- (quotient (+ m 1) 2) (+ nc1 nc2)))))
                     (let loop3 ((lst lst)
                                 (nc3 (quotient (- m (+ nc1 nc2)) 2)))
                       (if (< nc3 start)
-                          (loop2 lst (sub1 nc2))
+                          (loop2 lst (- nc2 1))
                           (loop3 (cons (vector (abs nc1)
                                                (abs nc2)
                                                (abs nc3)
                                                (abs (- m (+ nc1 (+ nc2 nc3))))) ; abs is to appease the typechecker
                                        lst)
-                                 (sub1 nc3))))))))))
+                                 (- nc3 1))))))))))
 
 (: nb (Exact-Positive-Integer -> Natural))
 (define (nb n)
@@ -197,5 +197,5 @@
          ((n : Natural 4000) (v : Natural 0))
          (if (zero? n)
              v
-             (loop (sub1 n) (nb (if input 17 1)))))))
+             (loop (- n 1) (nb (if input 17 1)))))))
 

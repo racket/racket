@@ -13,8 +13,8 @@
 (: iota (Natural -> (Listof Natural)))
 (define (iota n)
   (do: : (Listof Natural)
-       ((n : Natural n (sub1 n))
-        (list : (Listof Natural) '() (cons (sub1 n) list)))
+       ((n : Natural n (- n 1))
+        (list : (Listof Natural) '() (cons (- n 1) list)))
       ((zero? n) list)))
 
 ;;; PUZZLE -- Forest Baskett's Puzzle benchmark, originally written in Pascal.
@@ -195,5 +195,5 @@
 (time (let: loop : Void ((n : Natural 50) (v : Void (void)))
         (if (zero? n)
             v
-            (loop (sub1 n)
+            (loop (- n 1)
                   (start)))))

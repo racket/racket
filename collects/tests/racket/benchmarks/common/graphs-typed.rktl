@@ -119,7 +119,7 @@
 	    (if (zero? limit)
 		res
 		(let ((limit
-			    (sub1 limit)))
+			    (- limit 1)))
 		    (_-*- limit
 			(cons limit res)))))))
 
@@ -457,7 +457,7 @@
 	'(assert (procedure? folder)
 	    folder)
 	(let*: ((root : Natural
-		    (sub1 size))
+		    (- size 1))
 		(edge? : Graph
 		    (proc->vector size
 			(lambda: ((from : Natural))
@@ -710,7 +710,7 @@
          ((n : Natural 45) (v : (Listof RDG) '()))
      (if (zero? n)
          v
-         (loop (sub1 n)
+         (loop (- n 1)
                (fold-over-rdg (if input 6 1)
                               2 
                               (ann cons (RDG (Listof RDG) -> (Listof RDG)))
