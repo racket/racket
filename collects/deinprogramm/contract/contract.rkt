@@ -48,10 +48,24 @@
 
 (define-struct contract (name enforcer syntax-promise (arbitrary-promise #:mutable) info-promise <=?-proc =?-proc)
   #:constructor-name really-make-contract
-  #:transparent ; #### for debugging, remove
   #:property prop:equal+hash
   (list (lambda (c1 c2 equal?) (contract=? c1 c2)) ; #### use equal?
-	void void)) ; hash procs
+	(lambda (r recur)
+	  (+ (recur (contract-name r))
+	     (* 33 (recur (contract-enforcer r)))))
+	(lambda (r recur)
+	  (+ (* 33 (recur (contract-name r)))
+	     (recur (contract-enforcer r)))))
+  #:property prop:custom-write
+  (lambda (r port write?)
+    (cond
+     ((contract-name r)
+      => (lambda (name)
+	   (display "#<contract " port)
+	   (display name port)
+	   (display "#>" port)))
+     (else
+      (display "#<contract>" port)))))
 
 (define (make-contract name enforcer syntax-promise
 		       #:arbitrary-promise (arbitrary-promise #f)
