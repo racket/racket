@@ -802,6 +802,11 @@
                              (eq? 'r x)
                              (eq? 's x)))
                 (make-pred-ty (t:Un (-val 'q) (-val 'r) (-val 's)))]
+        [tc-e (let: ([x : Exact-Positive-Integer 1])
+                (vector-ref #("a" "b") x)
+                (vector-ref #("a" "b") (sub1 x))
+                (vector-ref #("a" "b") (- x 1)))
+              -String]
         )
   (test-suite
    "check-type tests"

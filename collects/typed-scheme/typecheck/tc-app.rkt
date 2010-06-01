@@ -508,6 +508,12 @@
         (tc-error/expr "expected ~a, but got ~a" t (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))
         expected]
        [_ (int-err "bad expected: ~a" expected)])]
+    ;; special case for `-' used like `sub1'
+    [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
+     (match-let ([(tc-result1: t) (single-value #'v)])
+       (if (subtype t -ExactPositiveInteger)
+           (ret -Nat)
+           (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)))]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)
      (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
