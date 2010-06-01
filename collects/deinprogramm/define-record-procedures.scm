@@ -118,44 +118,43 @@
 
 				 
 	     (with-syntax
-		 ((defs
-		    #'(begin
-			(define-values (type-descriptor
-					raw-constructor
-					raw-predicate
-					raw-generic-access
-					raw-generic-mutate)
-			  (make-struct-type
-			   '?type-name #f (+ 1 number-of-fields) 0
-			   #f
-			   (list
-			    (cons prop:print-convert-constructor-name
-				  '?constructor)
-			    (cons prop:custom-write
-				  (lambda (r port write?)
-				    (custom-write-record '?type-name 
-							 (access-record-fields r raw-generic-access number-of-fields)
-							 port write?)))
-			    (cons prop:equal+hash
-				  (list record-equal?
-					(make-equal-hash (lambda (r i) (raw-generic-access r i)) number-of-fields) 
-					(make-equal2-hash (lambda (r i) (raw-generic-access r i)) number-of-fields)))
-			    (cons prop:lazy-wrap
-				  (make-lazy-wrap-info constructor-proc
-						       (list raw-accessor-proc ...)
-						       (list raw-mutator-proc ...)
-						       (lambda (r)
-							 (raw-generic-access r number-of-fields))
-						       (lambda (r val)
-							 (raw-generic-mutate r number-of-fields val)))))
-			   (make-inspector)))
-			(define ?constructor constructor-proc)
-			(define-values (?predicate real-predicate) 
-			  (values predicate-proc predicate-proc))
-			(define-values (accessor ... our-accessor ...)
-			  (values accessor-proc ... accessor-proc ...))
-			(define mutator mutator-proc) ...))
-		  (contract
+		 ((struct-type-defs
+		   #'(define-values (type-descriptor
+				     raw-constructor
+				     raw-predicate
+				     raw-generic-access
+				     raw-generic-mutate)
+		       (make-struct-type
+			'?type-name #f (+ 1 number-of-fields) 0
+			#f
+			(list
+			 (cons prop:print-convert-constructor-name
+			       '?constructor)
+			 (cons prop:custom-write
+			       (lambda (r port write?)
+				 (custom-write-record '?type-name 
+						      (access-record-fields r raw-generic-access number-of-fields)
+						      port write?)))
+			 (cons prop:equal+hash
+			       (list record-equal?
+				     (make-equal-hash (lambda (r i) (raw-generic-access r i)) number-of-fields) 
+				     (make-equal2-hash (lambda (r i) (raw-generic-access r i)) number-of-fields)))
+			 (cons prop:lazy-wrap
+			       (make-lazy-wrap-info constructor-proc
+						    (list raw-accessor-proc ...)
+						    (list raw-mutator-proc ...)
+						    (lambda (r)
+						      (raw-generic-access r number-of-fields))
+						    (lambda (r val)
+						      (raw-generic-mutate r number-of-fields val)))))
+			(make-inspector))))
+		  (constructor-def #'(define ?constructor constructor-proc))
+		  (predicate-def #'(define-values (?predicate real-predicate)
+				     (values predicate-proc predicate-proc)))
+		  (accessor-defs #'(define-values (accessor ... our-accessor ...)
+				     (values accessor-proc ... accessor-proc ...)))
+		  (mutator-defs #'(define-values (mutator ...) (values mutator-proc ...)))
+		  (contract-def
 		   (with-syntax (((?param ...) (generate-temporaries #'(?field-spec ...))))
 		     (with-syntax (((component-contract ...)
 				    (map (lambda (accessor param)
@@ -188,15 +187,22 @@
 			     ;; for ?type-name using ?predicate is inadvertently defined
 			     base-contract
 			     constructor-contract))))))
-	       (with-syntax ((defs
-			       (stepper-syntax-property
-				(syntax/loc x defs) 'stepper-skip-completely #t)))
-				 
+	       ;; again, with properties
+	       (with-syntax ((struct-type-defs
+			      (stepper-syntax-property
+			       (syntax/loc x struct-type-defs) 'stepper-skip-completely #t))
+			     (constructor-def
+			      (stepper-syntax-property #'constructor-def 'stepper-skip-completely #t))
+			     (predicate-def
+			      (stepper-syntax-property #'predicate-def 'stepper-skip-completely #t))
+			     (accessor-defs
+			      (stepper-syntax-property #'accessor-defs 'stepper-skip-completely #t))
+			     (mutator-defs
+			      (stepper-syntax-property #'mutator-defs 'stepper-skip-completely #t)))
 		 #'(begin
-		     contract
+		     contract-def
 		     ;; the contract might be used in the definitions, hence this ordering
-		     defs))))))
-
+		     struct-type-defs constructor-def predicate-def accessor-defs mutator-defs))))))
       ((_ ?type-name
 	  ?contract-constructor-name
 	  ?constructor
