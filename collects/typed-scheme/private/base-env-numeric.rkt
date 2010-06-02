@@ -66,8 +66,15 @@
 [=  (->* (list N N) N B)]
 
 [>= real-comp]
-[<  real-comp]
-[<= real-comp]
+[<  (cl->* 
+     (-> -Nat -Integer B : (-FS (-filter -Pos 1) -top))
+     (-> -Integer -Nat B : (-FS -top (-filter -Nat 0)))
+     (-> -Integer (-val 0) B : (-FS -top (-filter -Nat 0)))
+     real-comp)]
+[<= (cl->* 
+     (-> -Nat -Integer B : (-FS (-filter -Nat 1) -top))
+     (-> -Pos -Integer B : (-FS (-filter -Pos 1) -top))
+     real-comp)]
 [>  real-comp]
 
 
