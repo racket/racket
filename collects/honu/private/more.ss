@@ -180,7 +180,7 @@
 (define-syntax-rule (honu-syntax-maker maker unparsed)
   (define-honu-syntax maker
     (lambda (stx ctx)
-      (syntax-parse stx #:literals (semicolon #%parens)
+      (syntax-parse stx #:literal-sets ([cruft #:at unparsed])
         [(_ (#%parens expr (... ...)) semicolon . rest)
          (values
            (lambda ()

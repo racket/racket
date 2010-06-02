@@ -17,6 +17,7 @@
          (for-template "private/literals.rkt")
          (for-syntax "private/more.ss")
          (for-syntax "private/syntax.ss")
+         (for-syntax "private/macro.ss")
          "private/macro.ss")
 
 (define test-x-class
@@ -26,7 +27,7 @@
 
 (define x (new test-x-class [tuna 5]))
 
-(define (sql1) #f)
+(define (sql1 . x) #f)
 (define (sql2) #f)
 (define (sql3) #f)
 (define (sql4) #f)
@@ -63,12 +64,13 @@
                      with-syntax
                      quote
                      #%app
-                     #%parens
+                     #%parens #%brackets #%braces
                      ...
                      map
                      syntax->list
                      identifier
                      expression
+                     statement
                      (rename-out (semicolon \;
                                             )
                                  (ellipses-comma ec)
@@ -76,6 +78,7 @@
                                  #;
                                  (honu-identifier identifier)
                                  (expression-comma expression_comma)
+                                 (honu-macro macro)
                                  (parse-an-expr parse)
                                  (... scheme:...)
                                  (honu-body:class body)
@@ -84,6 +87,7 @@
                                  (honu-+ +)
                                  (honu-scheme scheme2)
                                  (scheme-syntax scheme:syntax)
+                                 (scheme-syntax schemeSyntax)
                                  ))
          #%braces #%parens #%brackets
          x
@@ -92,6 +96,10 @@
          display
          display2
          newline
+         ;; stuff i done want
+         define
+         let
+         ;; end stuff
          else
          #%app
          quote
@@ -99,7 +107,10 @@
          foobar2000
          expression
          str
-         (for-template #%parens)
+         define-struct
+         #;
+         (for-template #%parens #%brackets #%braces)
+         ;; (for-meta 2 (rename-out (honu-syntax syntax)))
          (rename-out
            (honu-if if)
            (honu-provide provide)

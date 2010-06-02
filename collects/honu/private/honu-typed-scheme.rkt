@@ -13,6 +13,7 @@
                      "ops.ss"
                      "syntax.ss"
                      "parse.ss"
+                     "literals.ss"
                      )
          "literals.ss"
          ;; "typed-utils.ss"
@@ -501,6 +502,15 @@ if (foo){
     [(_ expr ...)
      (parse-an-expr #'(expr ...))]))
 
+(define-honu-syntax scheme-syntax
+  (lambda (body ctx)
+    (syntax-parse body
+      [(_ expr . rest)
+       (values
+         (lambda ()
+           (apply-scheme-syntax #'#'expr))
+         #'rest)])))
+
 (define-honu-syntax honu-provide
   (lambda (body ctx)
     (syntax-parse body #:literals (semicolon)
@@ -547,7 +557,7 @@ if (foo){
          #'rest)])))
 
 (define-syntax (honu-unparsed-begin stx)
-  (printf "honu unparsed begin: ~a\n" (syntax->datum stx))
+  (printf "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))
   (syntax-case stx ()
     [(_) #'(void)]
     [(_ . body)

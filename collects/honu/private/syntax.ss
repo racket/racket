@@ -24,6 +24,7 @@
 #;
 (define honu-scheme-syntax (gensym))
 
+#;
 (define-syntax-rule (scheme-syntax stx)
                     (syntax-property (syntax stx) honu-scheme-syntax #t))
 

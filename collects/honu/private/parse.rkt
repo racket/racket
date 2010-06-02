@@ -56,7 +56,7 @@
   #:attrs (result)
   #:description "honu-expr"
   (lambda (stx fail)
-    (printf "Honu expr from transformer ~a in context ~a\n" (syntax->datum stx) context)
+    (printf "Honu expr from transformer `~a' in context ~a transformer ~a\n" (syntax->datum stx) context (get-transformer stx))
     (cond
      [(stx-null? stx) (fail)]
      #;
@@ -336,7 +336,7 @@
                      [pattern ((~var e (ternary context))
                                (~var x1 (debug-here (format "expression top 1 ~a\n" (syntax->datum #'e))))
                                semicolon
-                               (~var x2 (debug-here "2"))
+                               (~var x2 (debug-here "expression top 2"))
                                . rest)
                               #:with result #'e.result])
 
@@ -432,6 +432,27 @@
   [pattern (~seq (~var x (expression-1 the-expression-context)))
            #:with result (apply-scheme-syntax #'x.result)])
 
+(define-splicing-syntax-class (whats-here? hm)
+  [pattern (~seq x)
+           #:when (begin (printf "Whats at `~a': `~a'\n" hm #'x)
+                         #f)])
+
+(define-syntax-class statement
+  [pattern (~var x (expression-top the-top-block-context))
+           #:with result (apply-scheme-syntax (attribute x.result))
+           #:with rest #'x.rest])
+
+#;
+(define-splicing-syntax-class statement
+  [pattern (~seq
+             (~optional (~var zz (whats-here? "statement")))
+             (~var d1 (debug-here (format "statement 1\n")))
+             (~var x (expression-top the-top-block-context))
+             (~var d2 (debug-here (format "statement 2\n")))
+             )
+           #:with result (apply-scheme-syntax #'x.result)
+           #:with rest #'x.rest])
+
 (define-splicing-syntax-class expression-comma
   #:literals (honu-comma)
   #;
@@ -454,7 +475,7 @@
 (define (parse-an-expr stx)
   (printf "Parse an expr ~a\n" (syntax->datum stx))
   (syntax-parse (with-syntax ([(s ...) stx])
-                  #'(s ... semicolon))
+                  #'(s ...))
     #;
     [(raw:raw-scheme-syntax . rest) #'raw]
     [((~var expr (expression-1 the-expression-context)) . rest) #'expr.result]
@@ -555,10 +576,6 @@
              (and (positive? (string-length str))
                   (memq (string-ref str 0) sym-chars)))))))
 
-
-
-
-
 ;; returns a transformer or #f
 (define (get-transformer stx)
   ;; if its an identifier and bound to a transformer return it
@@ -566,7 +583,6 @@
     (and (stx-pair? stx)
          (identifier? (stx-car stx))
          (let ([v (begin
-                    #;
                     (printf "Transformer is ~a. Local value is ~a\n" (stx-car stx) (syntax-local-value (stx-car stx) (lambda () #f)))
                     (syntax-local-value (stx-car stx) (lambda () #f)))])
            (and (honu-transformer? v) v))))
@@ -596,8 +612,9 @@
               (let ([v (syntax-local-value (stx-car first) (lambda () #f))])
                 (and (honu-transformer? v) v))]
              [else #f]))))
-  #;
   (printf "~a bound transformer? ~a\n" stx (bound-transformer stx))
+  (bound-transformer stx)
+  #;
   (or (bound-transformer stx)
       (special-transformer stx)))
 

@@ -13,6 +13,7 @@
                      "contexts.ss"
                      "parse.ss"
                      "syntax.ss"
+                     "literals.rkt"
                      "honu-typed-scheme.ss"
                      scheme/base
                      syntax/parse
@@ -430,7 +431,8 @@
 
 (define-honu-syntax honu-pattern
   (lambda (stx ctx)
-    (syntax-parse stx #:literals (#%parens #%brackets semicolon)
+    (syntax-parse stx #:literal-sets ([cruft #:at stx])
+      ;; #%parens #%brackets semicolon)
       [(_ name (#%parens all-attributes:identifier ...) (#%brackets xpattern ...)
           semicolon . rest)
        (define my-parens (datum->syntax #'name '#%parens #'name #'name))
@@ -445,28 +447,38 @@
                          [parens (datum->syntax #'name '#%parens #'name #'name)])
              (syntax/loc stx
                          (define-splicing-syntax-class name
-                                                       #:literals (parens)
+                                                       #:literal-sets ([cruft #:at name])
                                                        #:attributes (all-attributes ...)
                                                        final-pattern))))
          #'rest)])))
 
+(define foobar 0)
 
 (define-honu-syntax honu-macro
   (lambda (stx ctx)
     (define-syntax-class honu-macro3
-                         #:literals (#%parens #%braces)
+                         ;; #:literals (#%parens #%braces)
+                         #:literal-sets ([cruft ;;#:at stx
+                                           #:phase (syntax-local-phase-level)
+                                           ])
       [pattern (_ name (#%parens literals ...)
                   (#%braces template ...) (#%braces code ...)
                   . rest)
                #:with result
                (list
                  (with-syntax ([(fixed ...) (fix-template #'(template ...))]
+                               [first-pattern (stx-car #'(template ...))]
+                               #;
+                               [your-bracket (datum->syntax #'name '#%brackets #'name)]
+                               #;
+                               [your-braces (datum->syntax #'name '#%braces #'name)]
+                               #;
                                [your-parens (datum->syntax #'name '#%parens #'name)])
 
                    #;
                    #'(define-honu-syntax name
                        (lambda (stx ctx)
-                         (syntax-parse stx #:literals (your-parens literals ...)
+                         (syntax-parse stx #:literals (your-parens your-bracket literals ...)
                            [(fixed ... rrest (... ...))
                             (values
                               #;
@@ -481,7 +493,10 @@
                    (syntax/loc stx
                                (define-honu-syntax name
                                  (lambda (stx ctx)
-                                   (syntax-parse stx #:literals (your-parens literals ...)
+                                   (printf "Executing macro `~a' on input `~a'\n" 'name (syntax->datum stx))
+                                   (syntax-parse stx
+                                     #:literal-sets ([cruft #:at name])
+                                     #:literals (foobar literals ...)
                                      [(fixed ... rrest (... ...))
                                       (values
                                         #;
@@ -595,7 +610,7 @@
                                                          #'rrest))]))))
                                   #'rest))])
     (printf "Executing honu macro\n")
-    (syntax-parse stx #:literals (#%parens #%braces)
+    (syntax-parse stx
       [out:honu-macro1 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
       [out:honu-macro3 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
       [out:honu-macro2 (apply (lambda (a b) (values (lambda () a) b)) (syntax->list (attribute out.result)))]
