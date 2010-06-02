@@ -10,6 +10,7 @@
  "extra-procs.rkt"
  (only-in '#%kernel [apply kernel:apply])
  (only-in racket/private/pre-base new-apply-proc)
+ (for-syntax (only-in racket/private/pre-base new-apply-proc))
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in mzscheme make-namespace)
