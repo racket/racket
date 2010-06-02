@@ -81,19 +81,22 @@
 
 (define sizes-for-direct-struct-results
   (case (string->symbol (path->string (system-library-subpath #f)))
-    [(i386-macosx i386-darwin) '(1 2 4 8)]
-    [(ppc-macosx ppc-darwin) '(1 2 3 4)]
+    [(i386-macosx i386-darwin) (lambda (v) (memq (ctype-sizeof v) '(1 2 4 8)))]
+    [(ppc-macosx ppc-darwin) (lambda (v) (memq (ctype-sizeof v) '(1 2 3 4)))]
     [(x86_64-macosx x86_64-darwin) 
-     ;; Do we need more analysis for unaligned fields?
-     '(1 2 3 4 5 6 7 8)]))
+     (lambda (v)
+       ;; Remarkably complex rules govern sizes > 8 and <= 32.
+       ;; But if we assume no unaligned data and that fancy types
+       ;; like _m256 won't show up with ObjC, it seems to be as
+       ;; simple as this:
+       ((ctype-sizeof v) . <= . 16))]))
 
 (define (lookup-send types msgSends msgSend msgSend_fpret msgSend_stret first-arg-type)
   ;; First type in `types' vector is the result type
   (or (hash-ref msgSends types #f)
       (let ([ret-layout (ctype->layout (vector-ref types 0))])
         (if (and (list? ret-layout)
-                 (not (memq (ctype-sizeof (vector-ref types 0)) 
-                            sizes-for-direct-struct-results)))
+                 (not (sizes-for-direct-struct-results (vector-ref types 0))))
             ;; Structure return type:
             (let* ([pre-m (function-ptr msgSend_stret
                                         (_cprocedure
