@@ -37,32 +37,32 @@
               (test-case
                "with-check-info stores value in lexical order"
                (let ((stack (with-check-info
-                             (('1 1)
-                              ('2 2)
-                              ('3 3))
+                             (('a 1)
+                              ('b 2)
+                              ('c 3))
                              (check-info-stack (current-continuation-marks)))))
                  (for-each (lambda (actual expected)
                              (check-eq? (check-info-name actual)
                                         expected))
                            stack
-                           (list '1 '2 '3))))
+                           (list 'a 'b 'c))))
               
               (test-case
                "Nested uses of with-check-info store values in lexical order"
                (let ((stack (with-check-info
-                             (('1 1)
-                              ('2 2)
-                              ('3 3))
+                             (('a 1)
+                              ('b 2)
+                              ('c 3))
                              (with-check-info
-                              (('4 4)
-                               ('5 5)
-                               ('6 6))
+                              (('d 4)
+                               ('e 5)
+                               ('f 6))
                               (check-info-stack (current-continuation-marks))))))
                  (for-each (lambda (actual expected)
                              (check-eq? (check-info-name actual)
                                         expected))
                            stack
-                           (list '1 '2 '3 '4 '5 '6))))
+                           (list 'a 'b 'c 'd 'e 'f))))
               
               (test-case
                "check-actual? and check-expected? work"
