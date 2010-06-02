@@ -72,7 +72,7 @@
                  (hash-remove (free-vars* dty) dbound)
                  (free-vars* dty))
              (if (symbol? dbound)
-                 (hash-set (free-idxs* dty) dbound Covariant)
+                 (combine-frees (list (make-immutable-hasheq (list (cons dbound Covariant))) (free-idxs* dty)))
                  (free-idxs* dty))]
     [#:fold-rhs (*ListDots (type-rec-id dty) dbound)])
 
@@ -171,7 +171,7 @@
                  (hash-remove (combine-frees (map free-vars* (cons dty rs))) dbound)
                  (combine-frees (map free-vars* (cons dty rs))))
              (if (symbol? dbound)
-                 (hash-set (combine-frees (map free-idxs* (cons dty rs))) dbound Covariant)
+                 (combine-frees (cons (make-immutable-hasheq (list (cons dbound Covariant))) (map free-idxs* (cons dty rs))))
                  (combine-frees (map free-idxs* (cons dty rs))))]
     [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
@@ -201,7 +201,8 @@
                                    dom))
                       (match drest
                         [(cons t (? symbol? bnd))
-                         (list (hash-set (flip-variances (free-idxs* t)) bnd Contravariant))]
+                         (list (make-immutable-hasheq (list (cons bnd Contravariant)))
+                               (flip-variances (free-idxs* t)))]
                         [(cons t _)
                          (list (flip-variances (free-idxs* t)))]
                         [_ null])
