@@ -58,7 +58,7 @@
       [(lib)      1]
       [(man)      #f]
       [(src)      1]
-      [(readme.txt) #f] ; moved last
+      [(README)   #f] ; moved last
       [else (error 'level-of "internal-error -- unknown dir: ~e" dir)])))
 
 (define (make-path . args) ; like build-path but returns a string
