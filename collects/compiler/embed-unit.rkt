@@ -1055,8 +1055,8 @@
                   ((apply +
                           (map (lambda (s)
                                  (+ word-size (bytes-length (string->bytes/utf-8 s))))
-                               cmdline)) . < . 60))
-        (error 'create-embedding-executable "command line too long"))
+                               cmdline)) . < . 80))
+        (error 'create-embedding-executable "command line too long: ~e" cmdline))
       (check-collects-path 'create-embedding-executable collects-path collects-path-bytes)
       (let ([exe (find-exe mred? variant)])
         (when verbose?
