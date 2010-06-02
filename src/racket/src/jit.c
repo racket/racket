@@ -12078,6 +12078,8 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     
     apply_to_list_tail_code = jit_get_ip().ptr;
 
+    __START_SHORT_JUMPS__(1);
+
     /* extract list argument */
     jit_subi_l(JIT_R0, JIT_V1, 1);
     jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
@@ -12087,17 +12089,23 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
 
     /* check that it's a list and get the length */
     refloop = _jit.x.pc;
+    __START_INNER_TINY__(1);
     ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
+    __END_INNER_TINY__(1);
     ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
     jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
     ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
     jit_addi_l(JIT_R1, JIT_R1, 1);
     jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CDR(0x0));
-    jit_jmpi(refloop);
+    __START_INNER_TINY__(1);
+    (void)jit_jmpi(refloop);
+    __END_INNER_TINY__(1);
     CHECK_LIMIT();
 
     /* JIT_R1 is now the length of the argument list */
+    __START_INNER_TINY__(1);
     mz_patch_branch(ref2);
+    __END_INNER_TINY__(1);
 
     /* Check whether we have enough space on the stack: */
     mz_ld_runstack_base_alt(JIT_R2);
@@ -12140,7 +12148,9 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
     jit_addi_l(JIT_R0, JIT_R0, JIT_WORD_SIZE);
     CHECK_LIMIT();
+    __START_INNER_TINY__(1);
     (void)jit_blti_l(refloop, JIT_R0, 0);
+    __END_INNER_TINY__(1);
     jit_subi_l(JIT_R0, JIT_V1, 1); /* drop last arg */
     jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
     jit_subr_l(JIT_R2, JIT_R2, JIT_R0); /* move R2 and RUNSTACK pointers back */
@@ -12156,7 +12166,9 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
     jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
     CHECK_LIMIT();
+    __START_INNER_TINY__(1);
     (void)jit_bgti_l(refloop, JIT_R0, 0);
+    __END_INNER_TINY__(1);
 
     /* original args are in new place; now unpack list arguments; R2
        is still argv (with leading rator), but R1 doesn't have the
@@ -12167,16 +12179,22 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_subi_l(JIT_R1, JIT_V1, 1); /* drop last original arg */
     jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
     refloop = _jit.x.pc;
+    __START_INNER_TINY__(1);
     ref6 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);
+    __END_INNER_TINY__(1);
     CHECK_LIMIT();
     jit_ldxi_p(JIT_V1, JIT_R0, (long)&SCHEME_CAR(0x0));
     jit_stxr_p(JIT_R1, JIT_R2, JIT_V1);
     jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CDR(0x0));
     jit_addi_l(JIT_R1, JIT_R1, JIT_WORD_SIZE);
-    jit_jmpi(refloop);
+    __START_INNER_TINY__(1);
+    (void)jit_jmpi(refloop);
+    __END_INNER_TINY__(1);
     CHECK_LIMIT();
 
+    __START_INNER_TINY__(1);
     mz_patch_branch(ref6);
+    __END_INNER_TINY__(1);
     jit_rshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
     jit_subi_l(JIT_R1, JIT_R1, 1);
     
@@ -12202,7 +12220,9 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
     jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
     CHECK_LIMIT();
+    __START_INNER_TINY__(1);
     (void)jit_bnei_l(refloop, JIT_R0, 0);
+    __END_INNER_TINY__(1);
 
     jit_movr_p(JIT_RUNSTACK, JIT_R2);
 
@@ -12211,6 +12231,8 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_movi_p(JIT_V1, scheme_apply_proc);
 
     mz_patch_ucbranch(ref6);
+
+    __END_SHORT_JUMPS__(1);
     
     generate_tail_call(jitter, -1, 0, 1, 0);
     CHECK_LIMIT();
@@ -12232,6 +12254,8 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
 
       mz_prolog(JIT_R1);
 
+      __START_SHORT_JUMPS__(1);
+
       /* extract list argument */
       jit_subi_l(JIT_R0, JIT_V1, 1);
       jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
@@ -12240,18 +12264,25 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
       CHECK_LIMIT();
 
       /* check that it's a list and get the length */
+      
       refloop = _jit.x.pc;
+      __START_INNER_TINY__(1);
       ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);
+      __END_INNER_TINY__(1);
       ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
       ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
       jit_addi_l(JIT_R1, JIT_R1, 1);
       jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CDR(0x0));
-      jit_jmpi(refloop);
+      __START_INNER_TINY__(1);
+      (void)jit_jmpi(refloop);
+      __END_INNER_TINY__(1);
       CHECK_LIMIT();
 
       /* JIT_R1 is now the length of the argument list */
+      __START_INNER_TINY__(1);
       mz_patch_branch(ref2);
+      __END_INNER_TINY__(1);
 
       /* Check whether we have enough space on the stack: */
       mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
@@ -12274,7 +12305,9 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
       jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
       jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
       CHECK_LIMIT();
+      __START_INNER_TINY__(1);
       (void)jit_bgti_l(refloop, JIT_R0, 0);
+      __END_INNER_TINY__(1);
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_WORD_SIZE); /* restore RUNSTACK */
 
       /* original args are in new place; now unpack list arguments; R2
@@ -12289,16 +12322,22 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
       jit_subi_l(JIT_R1, JIT_V1, 2); /* drop first and last original arg */
       jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
       refloop = _jit.x.pc;
+      __START_INNER_TINY__(1);
       ref6 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);
+      __END_INNER_TINY__(1);
       CHECK_LIMIT();
       jit_ldxi_p(JIT_V1, JIT_R0, (long)&SCHEME_CAR(0x0));
       jit_stxr_p(JIT_R1, JIT_R2, JIT_V1);
       jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CDR(0x0));
       jit_addi_l(JIT_R1, JIT_R1, JIT_WORD_SIZE);
-      jit_jmpi(refloop);
+      __START_INNER_TINY__(1);
+      (void)jit_jmpi(refloop);
+      __END_INNER_TINY__(1);
       CHECK_LIMIT();
 
+      __START_INNER_TINY__(1);
       mz_patch_branch(ref6);
+      __END_INNER_TINY__(1);
     
       /* Set V1 and local2 for arguments to generic call handler: */
       jit_ldr_p(JIT_V1, JIT_RUNSTACK);
@@ -12323,7 +12362,9 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
       jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
       jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
       CHECK_LIMIT();
+      __START_INNER_TINY__(1);
       (void)jit_bnei_l(refloop, JIT_R0, 0);
+      __END_INNER_TINY__(1);
 
       jit_movr_p(JIT_RUNSTACK, JIT_R2);
 
@@ -12332,6 +12373,8 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
       jit_movi_p(JIT_V1, scheme_apply_proc);
 
       mz_patch_ucbranch(ref6);
+
+      __END_SHORT_JUMPS__(1);
     
       generate_non_tail_call(jitter, -1, 0, 1, multi_ok, 0, 1, 0);
 
