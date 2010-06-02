@@ -3,11 +3,22 @@
 (provide add-plt-segment
          get/set-dylib-path)
 
+(define exe-id
+  (if (equal? (path->bytes (system-library-subpath #f)) #"x86_64-macosx")
+      #xFeedFacf
+      #xFeedFace))
+
 (define (read-ulong p)
   (integer-bytes->integer (read-bytes 4 p) #f))
 
+(define (read-xulong p)
+  (integer-bytes->integer (read-bytes 8 p) #f))
+
 (define (write-ulong v out)
   (display (integer->integer-bytes v 4 #f) out))
+
+(define (write-xulong v out)
+  (display (integer->integer-bytes v 8 #f) out))
 
 (define (check-same a b)
   (unless (= a b)
@@ -23,11 +34,6 @@
         (+ n (- 4 m)))))
 
 (define move-link-edit? #t)
-
-(define exe-id
-  (if (equal? (path->bytes (system-library-subpath #f)) #"x86_64-macosx")
-      #xFeedFacf
-      #xFeedFace))
 
 (define (add-plt-segment file segdata)
   (let-values ([(p out) (open-input-output-file file #:exists 'update)])
@@ -45,6 +51,7 @@
                  [sym-tab-pos #f]
                  [dysym-pos #f]
                  [hints-pos #f]
+                 [link-edit-64? #f]
                  [link-edit-pos #f]
                  [link-edit-addr 0]
                  [link-edit-offset 0]
@@ -52,7 +59,9 @@
                  [dyld-info-pos #f]
                  [dyld-info-offs #f])
             ;; (printf "~a cmds, length 0x~x\n" cnt cmdssz)
-            (read-ulong p)
+            (read-ulong p) ; flags
+            (when (equal? exe-id #xFeedFacf)
+              (read-ulong p)) ; extra reserved word for 64-bit header
             (let loop ([cnt cnt])
               (unless (zero? cnt)
                 (let ([pos (file-position p)]
@@ -60,42 +69,48 @@
                       [sz (read-ulong p)])
                   ;; (printf "~x (~a)\n" cmd sz)
                   (case cmd
-                    [(1)
+                    [(1 #x19) ; #x19 is 64-bit variant
                      ;; Segment
-                     (let ([segname (read-bytes 16 p)]
-                           [vmaddr (read-ulong p)]
-                           [vmlen (read-ulong p)]
-                           [offset (read-ulong p)]
-                           [len (read-ulong p)])
-                       ;; (printf "~s\n" segname)
-                       (when (equal? segname #"__LINKEDIT\0\0\0\0\0\0")
-                         (set! link-edit-pos pos)
-                         (set! link-edit-addr vmaddr)
-                         (set! link-edit-offset offset)
-                         (set! link-edit-len len))
-                       ;; (printf "  0x~x 0x~x -> 0x~x 0x~x\n" offset len vmaddr vmlen)
-                       (read-ulong p)
-                       (read-ulong p)
-                       (let ([nsects (read-ulong p)])
+                     (let ([64? (equal? cmd #x19)])
+                       (let ([segname (read-bytes 16 p)]
+                             [vmaddr ((if 64? read-xulong read-ulong) p)]
+                             [vmlen ((if 64? read-xulong read-ulong) p)]
+                             [offset ((if 64? read-xulong read-ulong) p)]
+                             [len ((if 64? read-xulong read-ulong) p)])
+                         ;; (printf "~s\n" segname)
+                         (when (equal? segname #"__LINKEDIT\0\0\0\0\0\0")
+                           (set! link-edit-64? 64?)
+                           (set! link-edit-pos pos)
+                           (set! link-edit-addr vmaddr)
+                           (set! link-edit-offset offset)
+                           (set! link-edit-len len)
+                           (when (link-edit-len . < . 0)
+                             (error "bad LINKEDIT length")))
+                         ;; (printf "  0x~x 0x~x -> 0x~x 0x~x\n" offset len vmaddr vmlen)
                          (read-ulong p)
-                         (let loop ([nsects nsects])
-                           (unless (zero? nsects)
-                             (let ([sect (read-bytes 16 p)]
-                                   [seg (read-bytes 16 p)]
-                                   [vmaddr (read-ulong p)]
-                                   [vmsz (read-ulong p)]
-                                   [offset (read-ulong p)]
-                                   [align (read-ulong p)]
-                                   [reloff (read-ulong p)]
-                                   [nreloc (read-ulong p)]
-                                   [flags (read-ulong p)])
-                               (when ((+ offset vmsz) . > . (+ cmdssz 28))
-                                 (when (offset . < . min-used)
-                                   ;; (printf "   new min!\n")
-                                   (set! min-used offset)))
-                               ;; (printf "    ~s,~s 0x~x 0x~x\n" seg sect offset vmsz)
-                               (read-ulong p) (read-ulong p))
-                             (loop (sub1 nsects))))))]
+                         (read-ulong p)
+                         (let ([nsects (read-ulong p)])
+                           (read-ulong p)
+                           (let loop ([nsects nsects])
+                             (unless (zero? nsects)
+                               (let ([sect (read-bytes 16 p)]
+                                     [seg (read-bytes 16 p)]
+                                     [vmaddr ((if 64? read-xulong read-ulong) p)]
+                                     [vmsz ((if 64? read-xulong read-ulong) p)]
+                                     [offset (read-ulong p)]
+                                     [align (read-ulong p)]
+                                     [reloff (read-ulong p)]
+                                     [nreloc (read-ulong p)]
+                                     [flags (read-ulong p)])
+                                 (when ((+ offset vmsz) . > . (+ cmdssz (if (equal? exe-id #xFeedFacf) 32 28)))
+                                   (when (offset . < . min-used)
+                                     ;; (printf "   new min!\n")
+                                     (set! min-used offset)))
+                                 ;; (printf "    ~s,~s 0x~x 0x~x\n" seg sect offset vmsz)
+                                 (read-ulong p) 
+                                 (read-ulong p)
+                                 (when 64? (read-ulong p)))
+                               (loop (sub1 nsects)))))))]
                     [(2)
                      ;; Symbol table
                      (set! sym-tab-pos pos)]
@@ -124,32 +139,36 @@
                   (file-position p (+ pos sz))
                   (loop (sub1 cnt)))))
             ;; (printf "Start offset: 0x~x\n" min-used)
-            (let ([end-cmd (+ cmdssz 28)]
-                  [new-cmd-sz 56]
+            (let ([end-cmd (+ cmdssz (if (equal? exe-id #xFeedFacf) 32 28))]
+                  [new-cmd-sz (if link-edit-64? 72 56)]
                   [outlen (round-up-page (bytes-length segdata))]
                   [out-offset (if move-link-edit?
                                   link-edit-offset
                                   (+ link-edit-offset (round-up-page link-edit-len)))]
                   [out-addr (+ link-edit-addr (round-up-page link-edit-len))])
               (unless ((+ end-cmd new-cmd-sz) . < . min-used)
-                (error 'check-header "no room for a new section load command"))
-              ;; Shift commands after link-edit segment:
+                (error 'check-header 
+                       "no room for a new section load command (current end is ~a; min used is ~a)"
+                       end-cmd min-used))
+              ;; Shift commands starting with link-edit command:
+              (unless link-edit-pos (error "LINKEDIT not found"))
               (file-position p link-edit-pos)
               (let ([s (read-bytes (- end-cmd link-edit-pos) p)])
-                (file-position out (+ link-edit-pos 56))
+                (file-position out (+ link-edit-pos new-cmd-sz))
                 (display s out))
               (file-position out 16)
-              ;; The segment:
+              ;; Increment the number of load commands:
               (write-ulong (+ cnt 1) out)
               (write-ulong (+ cmdssz new-cmd-sz) out)
+              ;; Write the new command:
               (file-position out link-edit-pos)
-              (write-ulong 1 out) ; LC_SEGMENT
+              (write-ulong (if link-edit-64? #x19 1) out) ; LC_SEGMENT[_64]
               (write-ulong new-cmd-sz out)
               (display #"__PLTSCHEME\0\0\0\0\0" out)
-              (write-ulong out-addr out)
-              (write-ulong outlen out)
-              (write-ulong out-offset out)
-              (write-ulong outlen out)
+              ((if link-edit-64? write-xulong write-ulong) out-addr out)
+              ((if link-edit-64? write-xulong write-ulong) outlen out)
+              ((if link-edit-64? write-xulong write-ulong) out-offset out)
+              ((if link-edit-64? write-xulong write-ulong) outlen out)
               (write-ulong 0 out)
               (write-ulong 0 out)
               (write-ulong 0 out)
@@ -158,22 +177,20 @@
               (unless sym-tab-pos
                 (error 'mach-o "symtab position not found"))
               (when (sym-tab-pos . > . link-edit-pos)
-                (set! sym-tab-pos (+ sym-tab-pos 56)))
+                (set! sym-tab-pos (+ sym-tab-pos new-cmd-sz)))
               (unless dysym-pos
                 (error 'mach-o "dysym position not found"))
               (when (dysym-pos . > . link-edit-pos)
-                (set! dysym-pos (+ dysym-pos 56)))
+                (set! dysym-pos (+ dysym-pos new-cmd-sz)))
               (when hints-pos
                 (when (hints-pos . > . link-edit-pos)
-                  (set! hints-pos (+ hints-pos 56))))
-              (unless link-edit-pos
-                (error 'mach-o "link-edit position not found"))
-              (set! link-edit-pos (+ link-edit-pos 56))
+                  (set! hints-pos (+ hints-pos new-cmd-sz))))
+              (set! link-edit-pos (+ link-edit-pos new-cmd-sz))
               (when move-link-edit?
                 ;; Update link-edit segment entry:
-                (file-position out (+ link-edit-pos 32))
+                (file-position out (+ link-edit-pos (if link-edit-64? 40 32)))
                 ;; (printf "Update to ~a\n" (+ out-offset outlen))
-                (write-ulong (+ out-offset outlen) out)
+                ((if link-edit-64? write-xulong write-ulong) (+ out-offset outlen) out)
                 ;; Read link-edit segment:
                 (file-position p link-edit-offset)
                 (let ([link-edit (read-bytes link-edit-len p)])
@@ -207,7 +224,7 @@
                 (when dyld-info-pos
                   (let ([update (lambda (n)
                                   (unless (< (vector-ref dyld-info-offs n) out-offset)
-                                    (file-position out (+ dyld-info-pos 56 16 (* n 8)))
+                                    (file-position out (+ dyld-info-pos new-cmd-sz 16 (* n 8)))
                                     (write-ulong (+ (vector-ref dyld-info-offs n) outlen) out)))])
                     (update 0)
                     (update 1)
@@ -247,6 +264,8 @@
           (let* ([cnt (read-ulong p)]
                  [cmdssz (read-ulong p)])
             (read-ulong p)
+            (when (equal? exe-id #xFeedFacf)
+              (read-ulong p))
             (let loop ([cnt cnt][base 0][delta 0][result #f])
               (if (zero? cnt)
                   result
