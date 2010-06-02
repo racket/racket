@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(begin
 (require scribble/manual
+         "common.rkt"
          (for-label scheme/gui/base)
          (for-label drracket/tool-lib)
          (for-label scheme/unit scheme/contract scheme/class)
@@ -517,5 +518,38 @@ Check Syntax is a part of the DrRacket collection, but is implemented via the to
 @include-section["modes.scrbl"]
 @include-section["module-language-tools.scrbl"]
 @include-section["module-language.scrbl"]
+
+@section{Backwards compatibility}
+
+This section lists the bindings that begin with @tt{drscheme:} provided by the tools
+library; they are here for backwards compatibility and to provide links to the
+@tt{drracket:} versions of the names.
+
+@(require drracket/private/drsig
+          (for-syntax racket/base
+                      racket/unit-exptime))
+@(define-syntax (drs-compat stx)
+   (let-values ([(drs-parent drs-vars drs-var-defs-in-sig drs-stx-defs-in-sig) (signature-members #'drscheme:tool-cm^ #'here)]
+                [(drr-parent drr-vars drr-var-defs-in-sig drr-stx-defs-in-sig) (signature-members #'drracket:tool-cm^ #'here)])
+     (with-syntax ([(drs-id ...) drs-vars]
+                   [(drr-id ...) drr-vars])
+       #'(begin 
+           (defthing drs-id any/c
+             "This is provided for backwards compatibility; new code should use " (scheme drr-id) " instead.") 
+           ...))))
+@drs-compat[]
+
+@(tools-include/drs "debug")
+@(tools-include/drs "eval")
+@(tools-include/drs "frame")
+@(tools-include/drs "get/extend")
+@(tools-include/drs "help-desk")
+@(tools-include/drs "language-configuration")
+@(tools-include/drs "language")
+@(tools-include/drs "modes")
+@(tools-include/drs "module-language-tools")
+@(tools-include/drs "module-language")
+@(tools-include/drs "rep")
+@(tools-include/drs "unit")
 
 @index-section[]

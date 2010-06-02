@@ -47,8 +47,13 @@
         help-desk@ tracing@ app@
         main@))
 
+(define-signature drscheme/drracket:tool^
+  ((open drracket:tool^)
+   (open drscheme:tool^)))
+
 (define-unit/new-import-export drracket@
-  (import) (export drracket:tool^)
+  (import) 
+  (export drscheme/drracket:tool^)
   (((prefix drracket:debug: drracket:debug^)
     (prefix drracket:unit: drracket:unit^)
     (prefix drracket:rep: drracket:rep^)
@@ -61,5 +66,19 @@
     (prefix drracket:modes: drracket:modes^)
     (prefix drracket:tracing: drracket:tracing^)
     (prefix drracket:module-language: drracket:module-language^)
-    (prefix drracket:module-language-tools: drracket:module-language-tools^))
+    (prefix drracket:module-language-tools: drracket:module-language-tools^)
+    
+    (prefix drscheme:debug: drracket:debug^)
+    (prefix drscheme:unit: drracket:unit^)
+    (prefix drscheme:rep: drracket:rep^)
+    (prefix drscheme:frame: drracket:frame^)
+    (prefix drscheme:get/extend: drracket:get/extend^)
+    (prefix drscheme:language-configuration: drracket:language-configuration^)
+    (prefix drscheme:language: drracket:language^)
+    (prefix drscheme:help-desk: drracket:help-desk^)
+    (prefix drscheme:eval: drracket:eval^)
+    (prefix drscheme:modes: drracket:modes^)
+    (prefix drscheme:tracing: drracket:tracing^)
+    (prefix drscheme:module-language: drracket:module-language^)
+    (prefix drscheme:module-language-tools: drracket:module-language-tools^))
    drracket-unit@))

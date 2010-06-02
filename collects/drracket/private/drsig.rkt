@@ -338,6 +338,7 @@
    (open (prefix language: drracket:language-cm^))
    (open (prefix help-desk: drracket:help-desk-cm^))
    (open (prefix eval: drracket:eval-cm^))
+   (open (prefix font: drracket:font-cm^))
    (open (prefix modes: drracket:modes-cm^))
    (open (prefix tracing: drracket:tracing-cm^))
    (open (prefix module-language: drracket:module-language-cm^))

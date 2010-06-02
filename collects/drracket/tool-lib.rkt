@@ -1,12 +1,11 @@
 #lang at-exp racket/base
 
 #|
-
 This first time this is loaded, it loads all of DrRacket and invokes
 the main unit, starting up DrRacket. After that, it just provides
 all of the names in the tools library, for use defining keybindings
-
 |#
+
 (require racket/class
          racket/gui/base
          (except-in scheme/unit struct)
@@ -36,6 +35,7 @@ all of the names in the tools library, for use defining keybindings
 
 (define-values/invoke-unit/infer drracket@)
 (provide-signature-elements drracket:tool-cm^) ;; provide all of the classes & interfaces
+(provide-signature-elements drscheme:tool-cm^) ;; provide the classes & interfaces w/ drscheme: prefix
 
 (provide drracket:unit:program-editor-mixin)
 (define-syntax (drracket:unit:program-editor-mixin stx)
@@ -54,7 +54,6 @@ all of the names in the tools library, for use defining keybindings
              (string->symbol
               (regexp-replace #rx"^drracket:" (symbol->string (syntax-e stx)) "drscheme:"))
              stx))]
-         [definitions '()]
          [defthings
            (syntax-case stx ()
              [(_ case ...)
@@ -71,14 +70,11 @@ all of the names in the tools library, for use defining keybindings
                                   [_
                                    (raise-syntax-error 'provide/dr/doc "unknown thing" case)])])
                    (with-syntax ([mid (munge-id #'id)])
-                     (set! definitions (cons #`(define mid id) definitions))
                      #'(thing-doc mid ctc ("This is provided for backwards compatibility; new code should use " (scheme id) " instead.")))))
                (syntax->list #'(case ...)))])])
     (syntax-case stx ()
       [(_  rst ...)
-       #`(begin
-           #,@definitions
-           (provide/doc #,@defthings rst ...))])))
+       #`(provide/doc #,@defthings rst ...)])))
 
 (provide/dr/doc
  
