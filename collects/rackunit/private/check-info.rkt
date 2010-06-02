@@ -1,12 +1,21 @@
 #lang racket/base
-
-(provide (all-defined-out))
+(require racket/contract
+         "location.rkt"
+         (for-syntax racket/base
+                     unstable/syntax))
 
 ;; Structures --------------------------------------------------
 
 ;; struct check-info : symbol any
 (define-struct check-info (name value))
 
+(provide/contract
+ [struct check-info ([name symbol?]
+                     [value any/c])]
+ [check-info-mark symbol?]
+ [check-info-stack (continuation-mark-set? . -> . (listof check-info?))]
+ [with-check-info* ((listof check-info?) (-> any) . -> . any)])
+(provide with-check-info)
 
 ;; Infrastructure ----------------------------------------------
 
@@ -22,43 +31,34 @@
   (define current-marks
     (continuation-mark-set-first #f check-info-mark))
   (with-continuation-mark
-   check-info-mark
-   (append (if current-marks current-marks null) info)
-   (thunk)))
+      check-info-mark
+    (append (if current-marks current-marks null) info)
+    (thunk)))
 
 (define-syntax with-check-info
   (syntax-rules ()
     [(_ ((name val) ...) body ...)
      (with-check-info*
-      (list (make-check-info name val) ...)
-      (lambda () body ...))]))
+         (list (make-check-info name val) ...)
+       (lambda () body ...))]))
 
-(define (make-check-name name)
-  (make-check-info 'name name))
-(define (make-check-params params)
-  (make-check-info 'params params))
-(define (make-check-location stx)
-  (make-check-info 'location stx))
-(define (make-check-expression msg)
-  (make-check-info 'expression msg))
-(define (make-check-message msg)
-  (make-check-info 'message msg))
-(define (make-check-actual param)
-  (make-check-info 'actual param))
-(define (make-check-expected param)
-  (make-check-info 'expected param))
+(define-syntax (define-check-type stx)
+  (syntax-case stx ()
+    [(_ id contract)
+     (with-syntax
+         ([make-check-id (format-id #'id "make-check-~a" #'id)]
+          [check-id? (format-id #'id "check-~a?" #'id)])
+       (syntax/loc stx
+         (begin (define (make-check-id a) (make-check-info 'id a))
+                (define (check-id? info) (eq? (check-info-name info) 'id))
+                (provide/contract
+                 [make-check-id (contract . -> . check-info?)]
+                 [check-id? (check-info? . -> . boolean?)]))))]))
 
-(define (check-name? info)
-  (eq? (check-info-name info) 'name))
-(define (check-params? info)
-  (eq? (check-info-name info) 'params))
-(define (check-location? info)
-  (eq? (check-info-name info) 'location))
-(define (check-expression? info)
-  (eq? (check-info-name info) 'expression))
-(define (check-message? info)
-  (eq? (check-info-name info) 'message))
-(define (check-actual? info)
-  (eq? (check-info-name info) 'actual))
-(define (check-expected? info)
-  (eq? (check-info-name info) 'expected))
+(define-check-type name any/c)
+(define-check-type params any/c)
+(define-check-type location location/c)
+(define-check-type expression any/c)
+(define-check-type message any/c)
+(define-check-type actual any/c)
+(define-check-type expected any/c)

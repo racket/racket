@@ -119,7 +119,7 @@
                     (syntax
                      (lambda (formal ...
                                      [message #f]
-                                     #:location [location 'unknown]
+                                     #:location [location (list 'unknown #f #f #f #f)]
                                      #:expression [expression 'unknown])
                        ((current-check-around)
                         (lambda ()

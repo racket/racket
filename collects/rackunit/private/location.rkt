@@ -1,23 +1,26 @@
 #lang racket/base
-
-(require racket/list)
-
-(provide location-source
-         location-line
-         location-column
-         location-position
-         location-span
-         syntax->location
-         location->string)
+(require racket/list
+         racket/contract)
 
 ;; type location = (list any number/#f number/#f number/#f number/#f)
 ;; location : source line column position span
+(define location/c (list/c any/c (or/c number? false/c) (or/c number? false/c) (or/c number? false/c) (or/c number? false/c)))
 
 (define location-source first)
 (define location-line second)
 (define location-column third)
 (define location-position fourth)
 (define location-span fifth)
+
+(provide/contract
+ [location/c contract?]
+ [location-source (location/c . -> . any/c)]
+ [location-line (location/c . -> . (or/c number? false/c))]
+ [location-column (location/c . -> . (or/c number? false/c))]
+ [location-position (location/c . -> . (or/c number? false/c))]
+ [location-span (location/c . -> . (or/c number? false/c))]
+ [syntax->location (syntax? . -> . location/c)]
+ [location->string (location/c . -> . string?)])
 
 ;; syntax->location : syntax -> location
 (define (syntax->location stx)
