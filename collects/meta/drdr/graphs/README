@@ -7,7 +7,7 @@
 
 - to build a script for a particular page, do this:
 
-   mred-text build-graph.ss -l http://drdr.plt-scheme.org/~a/collects/path/to/file.scm \
+   mred-text build-graph.ss -l http://drdr.racket-lang.org/~a/collects/path/to/file.scm \
                             --image-loc /static/data/graph-images/  \
                             file_scm.timing \
                             file_scm_png_file_prefix \

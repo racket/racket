@@ -61,7 +61,7 @@
       "-t"
       (path->string (build-path (drdr-directory) "graphs" "build-graph.ss"))
       "--"
-      "-l" (string-append "http://drdr.plt-scheme.org/~a/" (path->string* filename)) ; XXX
+      "-l" (string-append "http://drdr.racket-lang.org/~a/" (path->string* filename)) ; XXX
       "--image-loc" "/graph-images/"
       (path->string (path-timing-log filename))
       (path->string prefix)

@@ -165,7 +165,7 @@
                 commits))]
      
     [(struct svn-rev-log (num author date msg changes))
-     (define url (format "http://svn.plt-scheme.org/view?view=rev&revision=~a" num))
+     (define url (format "http://svn.racket-lang.org/view?view=rev&revision=~a" num))
      (define cg-id (symbol->string (gensym 'changes)))
      (define ccss-id (symbol->string (gensym 'changes)))
      `(table ([class "data"])
@@ -236,7 +236,7 @@
           (base-path log-pth))
         (define scm-url
           (if ((current-rev) . < . 20000)
-              (format "http://svn.plt-scheme.org/view/trunk/~a?view=markup&pathrev=~a"
+              (format "http://svn.racket-lang.org/view/trunk/~a?view=markup&pathrev=~a"
                       the-base-path
                       (current-rev))
               (local [(define msg (read-cache* (revision-commit-msg (current-rev))))]
@@ -332,7 +332,7 @@
                         (format-commit-msg)
                         "")
                   ,(local [(define (path->url pth)
-                             (format "http://drdr.plt-scheme.org/~a~a" (current-rev) pth))
+                             (format "http://drdr.racket-lang.org/~a~a" (current-rev) pth))
                            
                            (define responsible->problems
                              (rendering->responsible-ht (current-rev) pth-rendering))
