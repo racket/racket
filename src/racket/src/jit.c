@@ -171,6 +171,7 @@ SHARED_OK static void *module_run_start_code, *module_exprun_start_code, *module
 SHARED_OK static void *box_flonum_from_stack_code;
 SHARED_OK static void *fl1_fail_code, *fl2rr_fail_code[2], *fl2fr_fail_code[2], *fl2rf_fail_code[2];
 SHARED_OK static void *wcm_code, *wcm_nontail_code;
+SHARED_OK static void *apply_to_list_tail_code, *apply_to_list_code, *apply_to_list_multi_ok_code;
 
 typedef struct {
   MZTAG_IF_REQUIRED
@@ -3738,7 +3739,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
    If no_call is 2, then rator is not necssarily evaluated. 
    If no_call is 1, then rator is left in V1 and arguments are on runstack. */
 {
-  int i, offset, need_safety = 0;
+  int i, offset, need_safety = 0, apply_to_list = 0;
   int direct_prim = 0, need_non_tail = 0, direct_native = 0, direct_self = 0, nontail_self = 0;
   int proc_already_in_place = 0;
   Scheme_Object *rator, *v, *arg;
@@ -3759,6 +3760,11 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
             /* It's also ok to directly call `values' if multiple values are ok: */
             || (multi_ok && SAME_OBJ(rator, scheme_values_func))))
       direct_prim = 1;
+    else {
+      reorder_ok = 1;
+      if ((num_rands >= 2) && SAME_OBJ(rator, scheme_apply_proc))
+        apply_to_list = 1;
+    }
   } else {
     Scheme_Type t;
     t = SCHEME_TYPE(rator);
@@ -4008,7 +4014,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   }
 
   if (reorder_ok) {
-    if (no_call < 2) {
+    if ((no_call < 2) && !apply_to_list) {
       generate(rator, jitter, 0, 0, 0, JIT_V1, NULL); /* sync'd below, or not */
     }
     CHECK_LIMIT();
@@ -4076,7 +4082,12 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           jit_movi_l(JIT_R2, args_already_in_place);
           mz_set_local_p(JIT_R2, JIT_LOCAL2);
         }
-	(void)jit_jmpi(code);
+        if (apply_to_list) {
+          jit_movi_i(JIT_V1, num_rands);
+          (void)jit_jmpi(apply_to_list_tail_code);
+        } else {
+          (void)jit_jmpi(code);
+        }
       }
     } else {
       int mo = (multi_ok ? 1 : 0);
@@ -4093,7 +4104,15 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
         generate_nontail_self_setup(jitter);
       }
 
-      (void)jit_calli(code);
+      if (apply_to_list) {
+        jit_movi_i(JIT_V1, num_rands);
+        if (multi_ok)
+          (void)jit_calli(apply_to_list_multi_ok_code);
+        else
+          (void)jit_calli(apply_to_list_code);
+      } else {
+        (void)jit_calli(code);
+      }
 
       if (direct_prim) {
         if (num_rands == 1) {
@@ -12050,6 +12069,274 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     CHECK_LIMIT();
 
     register_sub_func(jitter, module_start_start_code, scheme_eof);
+  }
+
+  /* apply_to_list_tail_code */
+  /* argc is in V1 */
+  {
+    GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3, *ref4, *ref5, *ref6, *refloop;
+    
+    apply_to_list_tail_code = jit_get_ip().ptr;
+
+    /* extract list argument */
+    jit_subi_l(JIT_R0, JIT_V1, 1);
+    jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+    jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R0);
+    jit_movi_l(JIT_R1, 0);
+    CHECK_LIMIT();
+
+    /* check that it's a list and get the length */
+    refloop = _jit.x.pc;
+    ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);    
+    ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+    jit_addi_l(JIT_R1, JIT_R1, 1);
+    jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CDR(0x0));
+    jit_jmpi(refloop);
+    CHECK_LIMIT();
+
+    /* JIT_R1 is now the length of the argument list */
+    mz_patch_branch(ref2);
+
+    /* Check whether we have enough space on the stack: */
+    mz_ld_runstack_base_alt(JIT_R2);
+    mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
+    jit_subr_ul(JIT_R0, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), JIT_R0);
+    jit_addr_l(JIT_R2, JIT_R1, JIT_V1);
+    jit_lshi_ul(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);    
+    ref4 = jit_bltr_ul(jit_forward(), JIT_R0, JIT_R2);
+    CHECK_LIMIT();
+
+    /* We have enough space, so copy args into place. Save the list in
+       local2, then move the other arguments into their final place,
+       which may be shifting up or shifting down. */
+    jit_subi_l(JIT_R0, JIT_V1, 1);
+    jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+    jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R0);
+    mz_set_local_p(JIT_R0, JIT_LOCAL2); /* list in now in local2 */
+    CHECK_LIMIT();
+
+    jit_subi_l(JIT_R0, JIT_V1, 1); /* drop last arg */
+    jit_addr_l(JIT_R0, JIT_R0, JIT_R1); /* orig + new argc */
+    jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+    mz_ld_runstack_base_alt(JIT_R2);
+    jit_subr_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), JIT_R0);
+    CHECK_LIMIT();
+    /* JIT_R2 is destination argv. We'll put the eventual rator
+       as the first value there, and then move it into V1 later. */
+    
+    ref6 = jit_bltr_ul(jit_forward(), JIT_RUNSTACK, JIT_R2);
+    
+    /* runstack > new dest, so shift down */
+    mz_patch_branch(ref6);
+    jit_subi_l(JIT_R0, JIT_V1, 1); /* drop last arg */
+    jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+    jit_addr_l(JIT_R2, JIT_R2, JIT_R0); /* move R2 and RUNSTACK pointers to end instead of start */
+    jit_addr_l(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R0);
+    jit_negr_l(JIT_R0, JIT_R0); /* negate counter */
+    refloop = _jit.x.pc;
+    jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
+    jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
+    jit_addi_l(JIT_R0, JIT_R0, JIT_WORD_SIZE);
+    CHECK_LIMIT();
+    (void)jit_blti_l(refloop, JIT_R0, 0);
+    jit_subi_l(JIT_R0, JIT_V1, 1); /* drop last arg */
+    jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+    jit_subr_l(JIT_R2, JIT_R2, JIT_R0); /* move R2 and RUNSTACK pointers back */
+    jit_subr_l(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R0);
+    ref5 = jit_jmpi(jit_forward());
+
+    /* runstack < new dest, so shift up */
+    mz_patch_branch(ref6);
+    jit_subi_l(JIT_R0, JIT_V1, 1); /* drop last arg */
+    jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+    refloop = _jit.x.pc;
+    jit_subi_l(JIT_R0, JIT_R0, JIT_WORD_SIZE);
+    jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
+    jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
+    CHECK_LIMIT();
+    (void)jit_bgti_l(refloop, JIT_R0, 0);
+
+    /* original args are in new place; now unpack list arguments; R2
+       is still argv (with leading rator), but R1 doesn't have the
+       count any more; we re-compute R1 as we traverse the list
+       again. */
+    mz_patch_ucbranch(ref5);
+    mz_get_local_p(JIT_R0, JIT_LOCAL2); /* list in R0 */
+    jit_subi_l(JIT_R1, JIT_V1, 1); /* drop last original arg */
+    jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
+    refloop = _jit.x.pc;
+    ref6 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);
+    CHECK_LIMIT();
+    jit_ldxi_p(JIT_V1, JIT_R0, (long)&SCHEME_CAR(0x0));
+    jit_stxr_p(JIT_R1, JIT_R2, JIT_V1);
+    jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CDR(0x0));
+    jit_addi_l(JIT_R1, JIT_R1, JIT_WORD_SIZE);
+    jit_jmpi(refloop);
+    CHECK_LIMIT();
+
+    mz_patch_branch(ref6);
+    jit_rshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
+    jit_subi_l(JIT_R1, JIT_R1, 1);
+    
+    /* Set V1 and local2 for arguments to generic tail-call handler: */
+    mz_set_local_p(JIT_R1, JIT_LOCAL2);
+    jit_ldr_p(JIT_V1, JIT_R2);
+    jit_addi_p(JIT_RUNSTACK, JIT_R2, JIT_WORD_SIZE);
+    ref6 = jit_jmpi(jit_forward());
+    CHECK_LIMIT();
+
+    /***********************************/
+    /* slow path: */
+    mz_patch_branch(ref1);
+    mz_patch_branch(ref3);
+    mz_patch_branch(ref4);
+
+    /* Move args to below RUNSTACK_BASE: */
+    mz_ld_runstack_base_alt(JIT_R2);
+    jit_lshi_ul(JIT_R0, JIT_V1, JIT_LOG_WORD_SIZE);
+    jit_subr_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), JIT_R0);
+    refloop = _jit.x.pc;
+    jit_subi_l(JIT_R0, JIT_R0, JIT_WORD_SIZE);
+    jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
+    jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
+    CHECK_LIMIT();
+    (void)jit_bnei_l(refloop, JIT_R0, 0);
+
+    jit_movr_p(JIT_RUNSTACK, JIT_R2);
+
+    /* Set V1 and local2 for arguments to generic tail-call handler: */
+    mz_set_local_p(JIT_V1, JIT_LOCAL2);
+    jit_movi_p(JIT_V1, scheme_apply_proc);
+
+    mz_patch_ucbranch(ref6);
+    
+    generate_tail_call(jitter, -1, 0, 1, 0);
+    CHECK_LIMIT();
+  }
+
+  /* apply_to_list_code */
+  /* argc is in V1 */
+  {
+    int multi_ok;
+    GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3, *ref4, *ref6, *refloop;
+    void *code;
+
+    for (multi_ok = 0; multi_ok < 2; multi_ok++) {
+      code = jit_get_ip().ptr;
+      if (multi_ok)
+        apply_to_list_multi_ok_code = code;
+      else
+        apply_to_list_code = code;
+
+      mz_prolog(JIT_R1);
+
+      /* extract list argument */
+      jit_subi_l(JIT_R0, JIT_V1, 1);
+      jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+      jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R0);
+      jit_movi_l(JIT_R1, 0);
+      CHECK_LIMIT();
+
+      /* check that it's a list and get the length */
+      refloop = _jit.x.pc;
+      ref2 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);
+      ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+      ref3 = jit_bnei_i(jit_forward(), JIT_R2, scheme_pair_type);
+      jit_addi_l(JIT_R1, JIT_R1, 1);
+      jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CDR(0x0));
+      jit_jmpi(refloop);
+      CHECK_LIMIT();
+
+      /* JIT_R1 is now the length of the argument list */
+      mz_patch_branch(ref2);
+
+      /* Check whether we have enough space on the stack: */
+      mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
+      jit_subr_ul(JIT_R0, JIT_RUNSTACK, JIT_R0);
+      jit_addr_l(JIT_R2, JIT_R1, JIT_V1);
+      jit_subi_l(JIT_R2, JIT_R2, 2); /* don't need first or last arg */
+      jit_lshi_ul(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);    
+      ref4 = jit_bltr_ul(jit_forward(), JIT_R0, JIT_R2);
+      CHECK_LIMIT();
+
+      /* We have enough space, so copy args into place. */
+      jit_subr_p(JIT_R2, JIT_RUNSTACK, JIT_R2);
+      /* R2 is now destination */
+
+      jit_subi_l(JIT_R0, JIT_V1, 2); /* drop first and last arg */
+      jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_WORD_SIZE); /* skip first arg */
+      refloop = _jit.x.pc;
+      jit_subi_l(JIT_R0, JIT_R0, JIT_WORD_SIZE);
+      jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
+      jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
+      CHECK_LIMIT();
+      (void)jit_bgti_l(refloop, JIT_R0, 0);
+      jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_WORD_SIZE); /* restore RUNSTACK */
+
+      /* original args are in new place; now unpack list arguments; R2
+         is still argv, but R1 doesn't have the count any more; 
+         we re-compute R1 as we traverse the list again. */
+
+      jit_subi_l(JIT_R0, JIT_V1, 1);
+      jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+      jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R0);
+      CHECK_LIMIT();
+    
+      jit_subi_l(JIT_R1, JIT_V1, 2); /* drop first and last original arg */
+      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
+      refloop = _jit.x.pc;
+      ref6 = jit_beqi_p(jit_forward(), JIT_R0, scheme_null);
+      CHECK_LIMIT();
+      jit_ldxi_p(JIT_V1, JIT_R0, (long)&SCHEME_CAR(0x0));
+      jit_stxr_p(JIT_R1, JIT_R2, JIT_V1);
+      jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CDR(0x0));
+      jit_addi_l(JIT_R1, JIT_R1, JIT_WORD_SIZE);
+      jit_jmpi(refloop);
+      CHECK_LIMIT();
+
+      mz_patch_branch(ref6);
+    
+      /* Set V1 and local2 for arguments to generic call handler: */
+      jit_ldr_p(JIT_V1, JIT_RUNSTACK);
+      jit_movr_p(JIT_RUNSTACK, JIT_R2);
+      jit_rshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
+      jit_movr_i(JIT_R0, JIT_R1);
+      ref6 = jit_jmpi(jit_forward());
+      CHECK_LIMIT();
+
+      /***********************************/
+      /* slow path: */
+      mz_patch_branch(ref1);
+      mz_patch_branch(ref3);
+      mz_patch_branch(ref4);
+
+      /* We have to copy the args, because the generic apply
+         wants to pop N arguments. */
+      jit_lshi_ul(JIT_R0, JIT_V1, JIT_LOG_WORD_SIZE);
+      jit_subr_p(JIT_R2, JIT_RUNSTACK, JIT_R0);
+      refloop = _jit.x.pc;
+      jit_subi_l(JIT_R0, JIT_R0, JIT_WORD_SIZE);
+      jit_ldxr_p(JIT_R1, JIT_RUNSTACK, JIT_R0);
+      jit_stxr_p(JIT_R0, JIT_R2, JIT_R1);
+      CHECK_LIMIT();
+      (void)jit_bnei_l(refloop, JIT_R0, 0);
+
+      jit_movr_p(JIT_RUNSTACK, JIT_R2);
+
+      /* Set V1 and local2 for arguments to generic tail-call handler: */
+      jit_movr_p(JIT_R0, JIT_V1);
+      jit_movi_p(JIT_V1, scheme_apply_proc);
+
+      mz_patch_ucbranch(ref6);
+    
+      generate_non_tail_call(jitter, -1, 0, 1, multi_ok, 0, 1, 0);
+
+      register_sub_func(jitter, code, scheme_false);
+    }
   }
 
   return 1;
