@@ -257,6 +257,10 @@ static Scheme_Object *scheme_compile_expand_expr(Scheme_Object *form, Scheme_Com
 
 static Scheme_Object *_eval_compiled_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env);
 
+static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context, int rator_flags);
+static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context, int rator_flags);
+static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context, int rator_flags);
+
 #define cons(x,y) scheme_make_pair(x,y)
 
 typedef void (*DW_PrePost_Proc)(void *);
@@ -3350,13 +3354,105 @@ static Scheme_Object *check_unbox_rotation(Scheme_Object *_app, Scheme_Object *r
   return result;
 }
 
+static Scheme_Object *finish_optimize_app(Scheme_Object *o, Optimize_Info *info, int context, int rator_flags)
+{
+  switch(SCHEME_TYPE(o)) {
+  case scheme_application_type:
+    return finish_optimize_application((Scheme_App_Rec *)o, info, context, rator_flags);
+  case scheme_application2_type:
+    return finish_optimize_application2((Scheme_App2_Rec *)o, info, context, rator_flags);
+  case scheme_application3_type:
+    return finish_optimize_application3((Scheme_App3_Rec *)o, info, context, rator_flags);
+  default:
+    scheme_signal_error("internal error: finish optimize app");
+    return NULL;
+  }
+}
+
+static Scheme_Object *direct_apply(Scheme_Object *expr, Scheme_Object *rator, Scheme_Object *last_rand)
+{
+  if (SAME_OBJ(rator, scheme_apply_proc)) {
+    switch(SCHEME_TYPE(last_rand)) {
+    case scheme_application_type:
+      rator = ((Scheme_App_Rec *)last_rand)->args[0];
+      break;
+    case scheme_application2_type:
+      rator = ((Scheme_App2_Rec *)last_rand)->rator;
+      break;
+    case scheme_application3_type:
+      rator = ((Scheme_App3_Rec *)last_rand)->rator;
+      break;
+    case scheme_pair_type:
+      if (scheme_is_list(last_rand))
+        rator = scheme_list_proc;
+      else
+        rator = NULL;
+      break;
+    case scheme_null_type:
+      rator = scheme_list_proc;
+      break;
+    default:
+      rator = NULL;
+      break;
+    }
+
+    if (rator && SAME_OBJ(rator, scheme_list_proc)) {
+      /* Convert (apply f arg1 ... (list arg2 ...))
+         to (f arg1 ... arg2 ...) */
+      Scheme_Object *l = scheme_null;
+      int i;
+
+      switch(SCHEME_TYPE(last_rand)) {
+      case scheme_application_type:
+        for (i = ((Scheme_App_Rec *)last_rand)->num_args; i--; ) {
+          l = scheme_make_pair(((Scheme_App_Rec *)last_rand)->args[i+1], l);
+        }
+        break;
+      case scheme_application2_type:
+        l = scheme_make_pair(((Scheme_App2_Rec *)last_rand)->rand, l);
+        break;
+      case scheme_application3_type:
+        l = scheme_make_pair(((Scheme_App3_Rec *)last_rand)->rand2, l);
+        l = scheme_make_pair(((Scheme_App3_Rec *)last_rand)->rand1, l);
+        break;
+      case scheme_pair_type:
+        l = last_rand;
+        break;
+      case scheme_null_type:
+        l = scheme_null;
+        break;
+      }
+      
+      switch(SCHEME_TYPE(expr)) {
+      case scheme_application_type:
+        for (i = ((Scheme_App_Rec *)expr)->num_args - 1; i--; ) {
+          l = scheme_make_pair(((Scheme_App_Rec *)expr)->args[i+1], l);
+        }
+        break;
+      default:
+      case scheme_application3_type:
+        l = scheme_make_pair(((Scheme_App3_Rec *)expr)->rand1, l);
+        break;
+      }
+
+      return make_application(l);
+    }
+  }
+
+  return NULL;
+}
+
 static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Object *le;
   Scheme_App_Rec *app;
-  int i, n, all_vals = 1, rator_flags = 0, sub_context = 0;
+  int i, n, rator_flags = 0, sub_context = 0;
 
   app = (Scheme_App_Rec *)o;
+
+  /* Check for (apply ... (list ...)) early: */
+  le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args]);
+  if (le) return scheme_optimize_expr(le, info, context);
 
   le = check_app_let_rator(o, app->args[0], info, app->num_args, context);
   if (le) return le;
@@ -3383,8 +3479,22 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
       if (le)
         return le;
     }
+  }
 
-    if (i && (SCHEME_TYPE(le) < _scheme_compiled_values_types_))
+  /* Check for (apply ... (list ...)) after some optimizations: */
+  le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args]);
+  if (le) return finish_optimize_app(le, info, context, rator_flags);
+
+  return finish_optimize_application(app, info, context, rator_flags);
+}
+
+static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context, int rator_flags)
+{
+  Scheme_Object *le;
+  int all_vals = 1, i;
+  
+  for (i = app->num_args; i--; ) {
+    if (SCHEME_TYPE(app->args[i+1]) < _scheme_compiled_values_types_)
       all_vals = 0;
   }
 
@@ -3492,9 +3602,16 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   le = scheme_optimize_expr(app->rand, info, sub_context);
   app->rand = le;
 
+  return finish_optimize_application2(app, info, context, rator_flags);
+}
+
+static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context, int rator_flags)
+{
+  Scheme_Object *le;
+
   info->size += 1;
 
-  if (SCHEME_TYPE(le) > _scheme_compiled_values_types_) {
+  if (SCHEME_TYPE(app->rand) > _scheme_compiled_values_types_) {
     le = try_optimize_fold(app->rator, (Scheme_Object *)app, info);
     if (le)
       return le;
@@ -3589,10 +3706,13 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 {
   Scheme_App3_Rec *app;
   Scheme_Object *le;
-  int all_vals = 1;
   int rator_flags = 0, sub_context = 0;
 
   app = (Scheme_App3_Rec *)o;
+
+  /* Check for (apply ... (list ...)) early: */
+  le = direct_apply((Scheme_Object *)app, app->rator, app->rand2);
+  if (le) return scheme_optimize_expr(le, info, context);
 
   le = check_app_let_rator(o, app->rator, info, 2, context);
   if (le) return le;
@@ -3619,9 +3739,6 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   le = scheme_optimize_expr(app->rand1, info, sub_context);
   app->rand1 = le;
 
-  if (SCHEME_TYPE(le) < _scheme_compiled_values_types_)
-    all_vals = 0;
-
   /* 2nd arg */
 
   if (scheme_wants_flonum_arguments(app->rator, 1, 0))
@@ -3632,12 +3749,25 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   le = scheme_optimize_expr(app->rand2, info, sub_context);
   app->rand2 = le;
 
-  if (SCHEME_TYPE(le) < _scheme_compiled_values_types_)
-    all_vals = 0;
+  /* Check for (apply ... (list ...)) after some optimizations: */
+  le = direct_apply((Scheme_Object *)app, app->rator, app->rand2);
+  if (le) return finish_optimize_app(le, info, context, rator_flags);
 
-  /* Fold or continue */
+  return finish_optimize_application3(app, info, context, rator_flags);
+}
+
+static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context, int rator_flags)
+{
+  Scheme_Object *le;
+  int all_vals = 1;
 
   info->size += 1;
+
+  if (SCHEME_TYPE(app->rand1) < _scheme_compiled_values_types_)
+    all_vals = 0;
+  if (SCHEME_TYPE(app->rand2) < _scheme_compiled_values_types_)
+    all_vals = 0;
+
 
   if (all_vals) {
     le = try_optimize_fold(app->rator, (Scheme_Object *)app, info);

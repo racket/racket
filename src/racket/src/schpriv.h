@@ -318,6 +318,7 @@ void scheme_init_os_thread_like(void *);
 /*                                constants                               */
 /*========================================================================*/
 
+extern Scheme_Object *scheme_apply_proc;
 extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;

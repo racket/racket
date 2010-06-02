@@ -935,6 +935,31 @@
            '(module m mzscheme
               (printf "pre\n")))
 
+(let ([try-equiv
+       (lambda (extras)
+         (lambda (a b)
+           (test-comp `(module m racket
+                         (define (f x)
+                           (apply x ,@extras ,a)))
+                      `(module m racket
+                         (define (f x)
+                           (x ,@extras ,@b))))))])
+  (map (lambda (try-equiv)
+         (try-equiv '(list) '())
+         (try-equiv '(quote ()) '())
+         (try-equiv '(list 1) '(1))
+         (try-equiv '(quote (1)) '(1))
+         (try-equiv '(list 1 2) '(1 2))
+         (try-equiv '(quote (1 2)) '(1 2))
+         (try-equiv '(list 1 2 3) '(1 2 3))
+         (try-equiv '(quote (1 2 3)) '(1 2 3))
+         (try-equiv '(list 1 2 3 4 5 6) '(1 2 3 4 5 6))
+         (try-equiv '(quote (1 2 3 4 5 6)) '(1 2 3 4 5 6)))
+       (list
+        (try-equiv null)
+        (try-equiv '(0))
+        (try-equiv '(0 1)))))
+         
 (test-comp '(module m mzscheme
               (define (q x)
                 ;; Single-use bindings should be inlined always:

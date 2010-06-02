@@ -84,6 +84,7 @@ READ_ONLY Scheme_Object *scheme_values_func; /* the function bound to `values' *
 READ_ONLY Scheme_Object *scheme_procedure_p_proc;
 READ_ONLY Scheme_Object *scheme_procedure_arity_includes_proc;
 READ_ONLY Scheme_Object *scheme_void_proc;
+READ_ONLY Scheme_Object *scheme_apply_proc;
 READ_ONLY Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
 READ_ONLY Scheme_Object *scheme_tail_call_waiting;
@@ -234,12 +235,12 @@ scheme_init_fun (Scheme_Env *env)
 
   scheme_procedure_p_proc = o;
 
-  scheme_add_global_constant("apply",
-			     scheme_make_prim_w_arity2(apply,
-						       "apply",
-						       2, -1,
-						       0, -1),
-			     env);
+  REGISTER_SO(scheme_apply_proc);
+  scheme_apply_proc = scheme_make_prim_w_arity2(apply,
+                                                "apply",
+                                                2, -1,
+                                                0, -1);
+  scheme_add_global_constant("apply", scheme_apply_proc, env);
   scheme_add_global_constant("map",
 			     scheme_make_noncm_prim(map,
                                                     "map",
