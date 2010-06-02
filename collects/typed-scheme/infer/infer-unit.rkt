@@ -510,10 +510,11 @@
 ;; just return a boolean result
 (define (infer X Y S T R must-vars must-idxs [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])  
-    (let ([cs (cgen/list null X Y S T)])
-      (if (not expected)
-          (subst-gen cs R (append must-vars must-idxs))
-          (subst-gen (cset-meet cs (cgen null X Y R expected)) R must-vars)))))
+    (let* ([cs (cgen/list null (append X Y) S T)]
+           [cs* (if expected 
+                    (cset-meet cs (cgen null (append X Y) R expected))
+                    cs)])
+          (subst-gen cs* R (append must-vars must-idxs)))))
 
 ;; like infer, but T-var is the vararg type:
 (define (infer/vararg X Y S T T-var R must-vars must-idxs [expected #f])

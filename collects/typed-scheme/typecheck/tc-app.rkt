@@ -319,26 +319,28 @@
                      (not tail-bound)
                      (<= (length (car doms*))
                          (length arg-tys))
-                     (infer/vararg vars
+                     (infer/vararg vars null
                                    (cons tail-ty arg-tys) 
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)
                                    (car rngs*)
-                                   (fv (car rngs*))))
+                                   (fv (car rngs*))
+                                   (fi (car rngs*))))
                 => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
                      tail-bound                     
                      (<= (length (car doms*))
                          (length arg-tys))
-                     (infer/vararg vars
+                     (infer/vararg vars null
                                    (cons (make-Listof tail-ty) arg-tys)
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)
                                    (car rngs*)
-                                   (fv (car rngs*))))
+                                   (fv (car rngs*))
+                                   (fi (car rngs*))))
                 => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg
                [(and (car drests*)                     
@@ -346,7 +348,8 @@
                      (eq? tail-bound (cdr (car drests*)))
                      (= (length (car doms*))
                         (length arg-tys))
-                     (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))
+                     (infer vars null (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) 
+                            (car rngs*) (fv (car rngs*)) (fi (car rngs*))))
                 => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
@@ -373,26 +376,26 @@
                      (not tail-bound)
                      (<= (length (car doms*))
                          (length arg-tys))
-                     (infer/vararg vars
+                     (infer/vararg fixed-vars (list dotted-var)
                                    (cons tail-ty arg-tys) 
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)
                                    (car rngs*)
-                                   (fv (car rngs*))))
+                                   (fv (car rngs*)) (fi (car rngs*))))
                 => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
                      tail-bound                     
                      (<= (length (car doms*))
                          (length arg-tys))
-                     (infer/vararg vars
+                     (infer/vararg fixed-vars (list dotted-var)
                                    (cons (make-Listof tail-ty) arg-tys)
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)
                                    (car rngs*)
-                                   (fv (car rngs*))))
+                                   (fv (car rngs*)) (fi (car rngs*))))
                 => (lambda (substitution) 
                      (do-ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg, same bound on ...
@@ -401,7 +404,11 @@
                      (eq? tail-bound (cdr (car drests*)))
                      (= (length (car doms*))
                         (length arg-tys))                     
-                     (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))
+                     (infer fixed-vars (list dotted-var)
+                            (cons tail-ty arg-tys)
+                            (cons (car (car drests*)) (car doms*))
+                            (car rngs*) 
+                            (fv (car rngs*)) (fi (car rngs*))))
                 => (lambda (substitution)
                      (do-ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg, different bound on ...
@@ -413,7 +420,11 @@
                      (extend-tvars (list tail-bound (cdr (car drests*)))
                        (extend-indexes (cdr (car drests*)) 
                          ;; don't need to add tail-bound - it must already be an index
-                         (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))))
+                         (infer fixed-vars (list dotted-var)
+                                (cons tail-ty arg-tys) 
+                                (cons (car (car drests*)) (car doms*)) 
+                                (car rngs*)
+                                (fv (car rngs*)) (fi (car rngs*))))))
                 => (lambda (substitution) 
                      (define drest-bound (cdr (car drests*)))
                      (do-ret (substitute-dotted (cadr (assq drest-bound substitution))
@@ -610,7 +621,7 @@
           (fail))
         (match (map single-value (syntax->list #'pos-args))
           [(list (tc-result1: argtys-t) ...)
-           (let* ([subst (infer vars argtys-t dom rng (fv rng) (and expected (tc-results->values expected)))])
+           (let* ([subst (infer vars null argtys-t dom rng (fv rng) (fi rng) (and expected (tc-results->values expected)))])
              (tc-keywords form (list (subst-all subst ar))
                           (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected))])]
        [(tc-result1: (Function: arities)) 
@@ -843,7 +854,7 @@
                      (lambda (dom _ rest a) ((if rest <= =) (length dom) (length argtys)))
                      ;; only try to infer the free vars of the rng (which includes the vars in filters/objects)
                      ;; note that we have to use argtys-t here, since argtys is a list of tc-results
-                     (lambda (dom rng rest a) (infer/vararg vars argtys-t dom rest rng (fv rng) (and expected (tc-results->values expected))))
+                     (lambda (dom rng rest a) (infer/vararg vars null argtys-t dom rest rng (fv rng) (fi rng) (and expected (tc-results->values expected))))
                      t argtys expected)]
     ;; procedural structs
     [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _ _ _))) _)
