@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 @(tools-title "debug")
 
 @defmixin[drracket:debug:profile-unit-frame-mixin

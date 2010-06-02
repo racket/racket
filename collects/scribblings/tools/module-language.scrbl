@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 @(tools-title "module-language")
 
 @definterface[drracket:language:module-language<%> ()]{

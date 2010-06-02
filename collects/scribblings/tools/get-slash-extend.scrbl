@@ -1,4 +1,4 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 @(tools-title "get/extend")
 @(tools-include "get/extend")

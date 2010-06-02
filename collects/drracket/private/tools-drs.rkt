@@ -55,7 +55,7 @@ This file sets up the right lexical environment to invoke the tools that want to
          (match sexp
            [`((#%module-begin ,body ...))
             (loop body)]
-           [`((provide/doc (,x ,name ,ctc ,other ...) ...) ,rest ...)
+           [`((provide/dr/doc (,x ,name ,ctc ,other ...) ...) ,rest ...)
             #`(let #,(map (λ (orig-name ctc) 
                             (define (rewrite obj)
                               (cond
@@ -80,7 +80,7 @@ This file sets up the right lexical environment to invoke the tools that want to
            [`(,a . ,b) 
             (loop b)]
            [`()
-            (error 'tools-drs.rkt "did not find provide/doc: ~a" full-sexp)])))]))
+            (error 'tools-drs.rkt "did not find provide/dr/doc: ~a" full-sexp)])))]))
 
 ;; these two definitions are a hack. They give bindings for the drracket: based names that
 ;; appear in the source of language-object-contract.rkt.

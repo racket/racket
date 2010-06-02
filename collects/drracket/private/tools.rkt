@@ -337,7 +337,7 @@ string-constants)
          (match sexp
            [`((#%module-begin ,body ...))
             (loop body)]
-           [`((provide/doc (,x ,name ,ctc ,other ...) ...) ,rest ...)
+           [`((provide/dr/doc (,x ,name ,ctc ,other ...) ...) ,rest ...)
             #`(let #,(map (λ (name ctc) 
                             (with-syntax ([name (datum->syntax #'tool-name name)]
                                           [ctc (datum->syntax #'tool-name ctc)])
@@ -353,7 +353,7 @@ string-constants)
            [`(,a . ,b) 
             (loop b)]
            [`()
-            (error 'tools.rkt "did not find provide/doc: ~a" full-sexp)])))]))
+            (error 'tools.rkt "did not find provide/dr/doc: ~a" full-sexp)])))]))
 
 ;; invoke-tool : unit/sig string -> (values (-> void) (-> void))
 ;; invokes the tools and returns the two phase thunks.
