@@ -824,11 +824,11 @@
                              [else (= (length dom) (length argtys))]))
                      ;; only try to infer the free vars of the rng (which includes the vars in filters/objects)
                      ;; note that we have to use argtys-t here, since argtys is a list of tc-results
-                     (lambda (dom rng rest drest a) 
+                     (lambda (dom rng rest drest a)
                        (if drest
                            (infer/dots fixed-vars dotted-var argtys-t dom (car drest) rng (fv rng) 
                                        #:expected (and expected (tc-results->values expected)))
-                           (infer/vararg vars argtys-t dom rest rng (fv rng) 
+                           (infer/vararg fixed-vars (list dotted-var) argtys-t dom rest rng (fv rng) (fi rng)
                                          (and expected (tc-results->values expected)))))
                      t argtys expected)]
     ;; regular polymorphic functions without dotted rest, and without mandatory keyword args

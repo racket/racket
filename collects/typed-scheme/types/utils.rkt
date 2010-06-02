@@ -12,7 +12,7 @@
          scheme/contract
          (for-syntax scheme/base syntax/parse))
 
-(provide fv fv/list
+(provide fv fv/list fi
          substitute
          substitute-dots
          substitute-dotted
@@ -68,7 +68,7 @@
 ;; implements angle bracket substitution from the formalism
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
 (d/c (substitute-dots images rimage name target)
-  ((listof Type/c) (or/c #f (cons/c Type/c symbol?)) symbol? Type? . -> . Type?)
+  ((listof Type/c) (or/c #f Type/c) symbol? Type? . -> . Type?)
   (define (sb t) (substitute-dots images rimage name t))
   (if (or (hash-ref (free-idxs* target) name #f) (hash-ref (free-vars* target) name #f))
       (type-case (#:Type sb #:Filter (sub-f sb)) target
@@ -293,6 +293,7 @@
 
 ;; fv : Type -> Listof[Name]
 (define (fv t) (hash-map (free-vars* t) (lambda (k v) k)))
+(define (fi t) (for/list ([(k v) (in-hash (free-idxs* t))]) k))
 
 ;; fv/list : Listof[Type] -> Listof[Name]
 (define (fv/list ts) (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))

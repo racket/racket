@@ -3,12 +3,11 @@
 (require scheme/require
          (except-in 
           (path-up
-           "utils/utils.rkt" "utils/tc-utils.rkt"
+           "utils/utils.rkt" "utils/tc-utils.rkt" "types/utils.rkt"
            "rep/free-variance.rkt" "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/rep-utils.rkt"
            "types/convenience.rkt" "types/union.rkt" "types/subtype.rkt" "types/remove-intersect.rkt" "types/resolve.rkt"
            "env/type-name-env.rkt" "env/index-env.rkt" "env/tvar-env.rkt")
           make-env)
-         (path-up "types/utils.rkt")
          "constraint-structs.rkt"
 	 "signatures.rkt"                  
          scheme/match
@@ -499,26 +498,28 @@
   (cset-meet* (for/list ([s S] [t T]) (cgen V X s t))))
 
 ;; X : variables to infer
+;; Y : indices to infer
 ;; S : actual argument types
 ;; T : formal argument types
 ;; R : result type
 ;; must-vars : variables that must be in the substitution
+;; must-idxs : index variables that must be in the substitution
 ;; expected : boolean
 ;; returns a substitution
 ;; if R is #f, we don't care about the substituion
 ;; just return a boolean result
-(define (infer X S T R must-vars [expected #f])
+(define (infer X Y S T R must-vars must-idxs [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])  
-    (let ([cs (cgen/list null X S T)])
+    (let ([cs (cgen/list null X Y S T)])
       (if (not expected)
-          (subst-gen cs R must-vars)
-          (subst-gen (cset-meet cs (cgen null X R expected)) R must-vars)))))
+          (subst-gen cs R (append must-vars must-idxs))
+          (subst-gen (cset-meet cs (cgen null X Y R expected)) R must-vars)))))
 
 ;; like infer, but T-var is the vararg type:
-(define (infer/vararg X S T T-var R must-vars [expected #f])
+(define (infer/vararg X Y S T T-var R must-vars must-idxs [expected #f])
   (define new-T (if T-var (extend S T T-var) T))
   (and ((length S) . >= . (length T))
-       (infer X S new-T R must-vars expected)))
+       (infer X Y S new-T R must-vars must-idxs expected)))
 
 ;; like infer, but dotted-var is the bound on the ...
 ;; and T-dotted is the repeated type
@@ -537,11 +538,5 @@
       (if (not expected)
           (subst-gen cs R must-vars)
           (subst-gen (cset-meet cs (cgen null X R expected)) R must-vars)))))
-
-(define (infer/simple S T R)
-  (infer (fv/list T) S T R))
-
-(define (i s t r)
-  (infer/simple (list s) (list t) r))
 
 ;(trace cgen)

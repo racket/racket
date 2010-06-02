@@ -1,6 +1,7 @@
-#lang scheme/base
-(require scheme/unit scheme/contract "constraint-structs.rkt" "../utils/utils.rkt")
-(require (rep type-rep) (utils unit-utils))
+#lang racket/base
+(require racket/unit racket/contract racket/require
+         "constraint-structs.rkt" 
+         (path-up "utils/utils.rkt" "utils/unit-utils.rkt" "rep/type-rep.rkt"))
 (provide (all-defined-out))
 
 (define-signature dmap^
@@ -29,13 +30,40 @@
   ([cnt restrict (Type? Type? . -> . Type?)]))
 
 (define-signature infer^
-  ([cnt infer (((listof symbol?) (listof Type?) (listof Type?) Type? (listof symbol?)) ((or/c #f Type?)) . ->* . any)]
-   [cnt infer/vararg (((listof symbol?) 
+  ([cnt infer ((;; variables from the forall
+                (listof symbol?) 
+                ;; indexes from the forall
+                (listof symbol?) 
+                ;; actual argument types from call site
+                (listof Type?)
+                ;; domain
+                (listof Type?)
+                ;; range
+                Type?
+                ;; free variables                
+                (listof symbol?)
+                ;; free indexes
+                (listof symbol?))
+               ;; optional expected type
+               ((or/c #f Type?)) 
+               . ->* . any)]
+   [cnt infer/vararg ((;; variables from the forall
+                       (listof symbol?) 
+                       ;; indexes from the forall
+                       (listof symbol?) 
+                       ;; actual argument types from call site
                        (listof Type?)
+                       ;; domain
                        (listof Type?)
+                       ;; rest
                        (or/c #f Type?)
+                       ;; range
                        Type?
+                       ;; free variables
+                       (listof symbol?)
+                       ;; free indexes
                        (listof symbol?))
+                      ;; [optional] expected type
                       ((or/c #f Type?)) . ->* . any)]
    [cnt infer/dots (((listof symbol?) 
                      symbol?
