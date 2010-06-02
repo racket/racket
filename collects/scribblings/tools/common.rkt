@@ -27,19 +27,25 @@
                     (all-from-out mrlib/switchable-button)
                     (all-from-out framework)))
 
-(provide tools-title tools-include)
+(provide tools-title tools-include tools-include/drs)
 (define (tools-title name)
   (title (tt (format "drracket:~a" name))))
+
 (define-syntax (tools-include stx)
   (syntax-case stx ()
     [(_ name)
      (string? (syntax-e #'name))
      (let ([name (syntax-e #'name)])
-       (with-syntax ([rx-drr (regexp (format "^~a" (regexp-quote (format "drracket:~a:" name))))]
-                     [rx-drs (regexp (format "^~a" (regexp-quote (format "drscheme:~a:" name))))])
-         #'(begin
-             (include-previously-extracted scribblings/tools/tool-lib-extracts rx-drr)
-             (include-previously-extracted scribblings/tools/tool-lib-extracts rx-drs))))]))
+       (with-syntax ([rx-drr (regexp (format "^~a" (regexp-quote (format "drracket:~a:" name))))])
+         #'(include-previously-extracted scribblings/tools/tool-lib-extracts rx-drr)))]))
+
+(define-syntax (tools-include/drs stx)
+  (syntax-case stx ()
+    [(_ name)
+     (string? (syntax-e #'name))
+     (let ([name (syntax-e #'name)])
+       (with-syntax ([rx-drs (regexp (format "^~a" (regexp-quote (format "drscheme:~a:" name))))])
+         #'(include-previously-extracted scribblings/tools/tool-lib-extracts rx-drs)))]))
 
 (provide docs-get/extend)
 (define-syntax (docs-get/extend stx)
