@@ -13,7 +13,8 @@ all of the names in the tools library, for use defining keybindings
          racket/contract
          racket/class
          
-         ;; these have to be absolute requires for `include-extracted' to work with this file.
+         ;; these have to be absolute requires for `include-extracted'
+         ;; to work with this file.
          drracket/private/link
          drracket/private/drsig
          drracket/private/language-object-contract
@@ -45,7 +46,41 @@ all of the names in the tools library, for use defining keybindings
 
 (language-object-abstraction drracket:language:object/c #t)
 
-(provide/doc
+(define-syntax (provide/dr/doc stx)
+  (let* ([munge-id
+          (λ (stx)
+            (datum->syntax
+             stx
+             (string->symbol
+              (regexp-replace #rx"^drracket:" (symbol->string (syntax-e stx)) "drscheme:"))
+             stx))]
+         [definitions '()]
+         [defthings
+           (syntax-case stx ()
+             [(_ case ...)
+              (map
+               (λ (case)
+                 (with-syntax ([(id ctc)
+                                (syntax-case case (proc-doc/names proc-doc)
+                                  [(proc-doc/names id ctc . stuff)
+                                   (identifier? #'id)
+                                   #'(id ctc)]
+                                  [(proc-doc id ctc . stuff)
+                                   (identifier? #'id)
+                                   #'(id ctc)]
+                                  [_
+                                   (raise-syntax-error 'provide/dr/doc "unknown thing" case)])])
+                   (with-syntax ([mid (munge-id #'id)])
+                     (set! definitions (cons #`(define mid id) definitions))
+                     #'(thing-doc mid ctc ("This is provided for backwards compatibility; new code should use " (scheme id) " instead.")))))
+               (syntax->list #'(case ...)))])])
+    (syntax-case stx ()
+      [(_  rst ...)
+       #`(begin
+           #,@definitions
+           (provide/doc #,@defthings rst ...))])))
+
+(provide/dr/doc
  
  (proc-doc/names
   drracket:module-language-tools:add-opt-out-toolbar-button

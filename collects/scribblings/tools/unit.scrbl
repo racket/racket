@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 @(tools-title "unit")
 
 @definterface[drracket:unit:tab<%> (drracket:rep:context<%>)]{

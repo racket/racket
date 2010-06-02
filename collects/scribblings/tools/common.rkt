@@ -35,8 +35,11 @@
     [(_ name)
      (string? (syntax-e #'name))
      (let ([name (syntax-e #'name)])
-       (with-syntax ([rx (regexp (format "^~a" (regexp-quote (format "drracket:~a:" name))))])
-         #'(include-previously-extracted scribblings/tools/tool-lib-extracts rx)))]))
+       (with-syntax ([rx-drr (regexp (format "^~a" (regexp-quote (format "drracket:~a:" name))))]
+                     [rx-drs (regexp (format "^~a" (regexp-quote (format "drscheme:~a:" name))))])
+         #'(begin
+             (include-previously-extracted scribblings/tools/tool-lib-extracts rx-drr)
+             (include-previously-extracted scribblings/tools/tool-lib-extracts rx-drs))))]))
 
 (provide docs-get/extend)
 (define-syntax (docs-get/extend stx)

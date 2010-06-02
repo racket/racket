@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.rkt")
 @(tools-title "frame")
 
 @defclass[drracket:frame:name-message% canvas% ()]{
