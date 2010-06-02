@@ -2,14 +2,15 @@
 
 (require "../utils/utils.rkt" 
 	 "signatures.rkt" "constraint-structs.rkt"
-	 (utils tc-utils)
+	 (utils tc-utils) racket/contract
 	 unstable/sequence unstable/hash scheme/match)
 
 (import constraints^)
 (export dmap^)
 
 ;; dcon-meet : dcon dcon -> dcon
-(define (dcon-meet dc1 dc2)
+(d/c (dcon-meet dc1 dc2)
+  (dcon? dcon? . -> . dcon?)
   (match* (dc1 dc2)
     [((struct dcon-exact (fixed1 rest1)) (or (struct dcon (fixed2 rest2))
                                              (struct dcon-exact (fixed2 rest2))))
@@ -20,6 +21,7 @@
                  [c2 fixed2])
         (c-meet c1 c2 (c-X c1)))
       (c-meet rest1 rest2 (c-X rest1)))]
+    ;; redo in the other order to call the first case
     [((struct dcon (fixed1 rest1)) (struct dcon-exact (fixed2 rest2)))
      (dcon-meet dc2 dc1)]
     [((struct dcon (fixed1 #f)) (struct dcon (fixed2 #f)))

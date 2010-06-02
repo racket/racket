@@ -39,11 +39,7 @@
                 ;; domain
                 (listof Type?)
                 ;; range
-                Type?
-                ;; free variables                
-                (listof symbol?)
-                ;; free indexes
-                (listof symbol?))
+                (or/c #f Type?))
                ;; optional expected type
                ((or/c #f Type?)) 
                . ->* . any)]
@@ -58,11 +54,7 @@
                        ;; rest
                        (or/c #f Type?)
                        ;; range
-                       Type?
-                       ;; free variables
-                       (listof symbol?)
-                       ;; free indexes
-                       (listof symbol?))
+                       (or/c #f Type?))
                       ;; [optional] expected type
                       ((or/c #f Type?)) . ->* . any)]
    [cnt infer/dots (((listof symbol?) 

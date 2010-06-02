@@ -23,7 +23,7 @@
     [(subtype t1 t2) t1] ;; already a subtype          
     [(match t2
        [(Poly: vars t)
-        (let ([subst (infer vars null (list t1) (list t) t1 (fv t1) (fi t1))])
+        (let ([subst (infer vars null (list t1) (list t) t1)])
           (and subst (restrict* t1 (subst-all subst t1))))]
        [_ #f])]           
     [(Union? t1) (union-map (lambda (e) (restrict* e t2)) t1)]

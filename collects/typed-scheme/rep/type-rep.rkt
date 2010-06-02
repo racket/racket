@@ -227,7 +227,7 @@
 
 ;; name : symbol
 ;; parent : Struct
-;; flds : Listof[Cons[Type,Bool]] type and mutability
+;; flds : Listof[Type]
 ;; proc : Function Type
 ;; poly? : is this a polymorphic type?
 ;; pred-id : identifier for the predicate of the struct
