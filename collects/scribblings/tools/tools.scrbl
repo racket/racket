@@ -304,14 +304,14 @@ Each language is a class that implement the
   @scheme[drracket:language:module-based-language<%>] and
   @scheme[drracket:language:simple-module-based-language<%>],
   and 
-  @scheme[mixins]
+  @scheme[mixin]s
   @scheme[drracket:language:simple-module-based-language->module-based-language-mixin]
   and
   @scheme[drracket:language:module-based-language->language-mixin]
-  that build implementations of @scheme[language^]s from these simpler interfaces.
+  that build implementations of @scheme[drracket:language:language<%>]s from these simpler interfaces.
 
 Once you have an implementation of the
-@scheme[drracket:language:language^] interface, call
+@scheme[drracket:language:language<%>] interface, call
 @scheme[drracket:language-configuration:add-language] to add the language
 to DrRacket.
 
@@ -328,7 +328,7 @@ the current settings for each language.
 @subsection{Language Extensions}
 
 Some tools may require additional functionality from the
-@scheme[drracket:language:language] interface. The
+@scheme[drracket:language:language<%>] interface. The
 @scheme[drracket:language:extend-language-interface]
 function and the
 @scheme[drracket:language:get-default-mixin]
