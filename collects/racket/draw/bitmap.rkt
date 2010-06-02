@@ -8,6 +8,7 @@
          "png.ss"
          "jpeg.ss"
          "xbm.ss"
+         "gif.rkt"
          "local.ss"
          "color.ss")
 
@@ -295,8 +296,15 @@
                           (values s #f)))))
                   (lambda ()
                     (destroy-decompress d))))]
-           [(gif gif/mask gif/alpha
-                 bmp bmp/mask bmp/alpha)
+           [(gif gif/mask gif/alpha)
+            (let-values ([(w h rows) (gif->rgba-rows in)])
+              (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
+                     [alpha? #t]
+                     [pre? #f]
+                     [b&w? #f])
+                (install-from-png-arrays s w h rows b&w? alpha? pre? #f)
+                (values s b&w?)))]
+           [(bmp bmp/mask bmp/alpha)
             (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 10 10)])
               (values s #f))]
            [(xbm xbm/alpha)
