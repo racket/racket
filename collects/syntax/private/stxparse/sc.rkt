@@ -151,11 +151,7 @@
          (with-syntax ([((internal external) ...) lits])
            #`(begin
                (define phase-of-literals
-                 (let ([phase-of-module-instantiation
-                        ;; Hack to get enclosing module's base phase
-                        (variable-reference->phase (#%variable-reference))])
-                   (- phase-of-module-instantiation
-                      '#,(if (zero? phase-of-definition) 0 1))))
+                 (phase-of-enclosing-module))
                (define-syntax name
                  (make-literalset
                   (list (list 'internal (quote-syntax external)) ...)
@@ -165,6 +161,15 @@
                   (unless (identifier-binding x 0)
                     (raise-syntax-error #f "literal is unbound in phase 0"
                                         (quote-syntax #,stx) x))))))))]))
+
+(define-syntax (phase-of-enclosing-module stx)
+  (syntax-case stx ()
+    [(poem)
+     (let ([phase-within-module (syntax-local-phase-level)])
+       #`(let ([phase-of-this-expression
+                (variable-reference->phase (#%variable-reference))])
+           (- phase-of-this-expression
+              #,(if (zero? phase-within-module) 0 1))))]))
 
 #|
 Literal sets: The goal is for literals to refer to their bindings at
