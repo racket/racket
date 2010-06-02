@@ -270,6 +270,10 @@
                     resource-files))
         (build-path dest "Contents" "MacOS" name)))
     
+    ;; The starter-info file is now disabled. The GRacket
+    ;; command line is handled the same as the Racket command
+    ;; line.
+    (define use-starter-info? #f)
     (define (finish-osx-mred dest flags exec-name keep-exe? relative?)
       (call-with-output-file (build-path dest 
                                          "Contents" 
@@ -1064,7 +1068,7 @@
                                    (or (not m)
                                        (not (cdr m))))))
       (define long-cmdline? (or (eq? (system-type) 'windows)
-                                (and mred? (eq? 'macosx (system-type)))
+                                (and use-starter-info? mred? (eq? 'macosx (system-type)))
                                 unix-starter?))
       (define relative? (let ([m (assq 'relative? aux)])
                           (and m (cdr m))))
@@ -1107,7 +1111,7 @@
                            ;; Delete-file isn't enough if the target
                            ;;  is supposed to be a directory. But
                            ;;  currently, that happens only for GRacket 
-                           ;;  on Mac OS X, which is handles above.
+                           ;;  on Mac OS X, which is handled above.
                            (delete-file dest))
                          (copy-file exe dest)
                          (values dest exe #f)])])
@@ -1129,10 +1133,7 @@
                     ;; Check whether we need an absolute path to frameworks:
                     (let ([dest (mac-dest->executable dest mred?)])
                       (when (regexp-match #rx"^@executable_path" 
-                                          (get-current-framework-path dest 
-                                                                      (if mred?
-                                                                          "GRacket"
-                                                                          "Racket")))
+                                          (get-current-framework-path dest "Racket"))
                         (update-framework-path (string-append
                                                 (path->string (find-lib-dir))
                                                 "/")
@@ -1196,7 +1197,7 @@
                         (fprintf (current-error-port) "Setting collection path\n"))
                       (set-collects-path dest-exe collects-path-bytes))
                     (cond
-                      [osx?
+                      [(and use-starter-info? osx?)
                        (finish-osx-mred dest full-cmdline exe keep-exe? relative?)]
                       [unix-starter?
                        (let ([numpos (with-input-from-file dest-exe 
