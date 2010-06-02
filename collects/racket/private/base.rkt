@@ -18,7 +18,8 @@
                               call-with-output-file
                               with-input-from-file
                               with-output-to-file
-                              regexp-replace*)
+                              regexp-replace*
+                              new-apply-proc)
              struct
              (all-from "list.rkt")
              (all-from-except "string.rkt" 

@@ -86,6 +86,7 @@
              (rename new-define define)
              (rename new-app #%app)
              (rename new-apply apply)
+             new-apply-proc ; for access by Typed Racket
              (rename new-prop:procedure prop:procedure)
              (rename #%app #%plain-app)
              (rename lambda #%plain-lambda)

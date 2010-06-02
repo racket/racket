@@ -9,6 +9,7 @@
  '#%paramz
  "extra-procs.rkt"
  (only-in '#%kernel [apply kernel:apply])
+ (only-in racket/private/pre-base new-apply-proc)
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in mzscheme make-namespace)
@@ -346,6 +347,7 @@
                      . -> . (-opt (-pair a b))))]
 
 [apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[new-apply-proc (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [time-apply (-poly (a b c)
                    (cl->*
