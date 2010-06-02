@@ -65,50 +65,49 @@ When DrRacket starts up, it looks for tools by reading
 fields in the @File{info.rkt} file of each collection and the
 newest version of each PLaneT package installed on the
 system.  (Technically, DrRacket looks in a cache of the
-@filepath{info.rkt} files contents created by setup-plt. Be sure to
-re-run setup-plt if you change the contents of
+@filepath{info.rkt} files contents created by @tt{raco setup}. Be sure to
+re-run @tt{raco setup} if you change the contents of
 the @File{info.rkt} files).  DrRacket checks for these
 fields:
 @itemize[
-@item/cap[tools]{
+@item/cap[drracket-tools]{
   @scheme[(listof (listof string[subcollection-name]))]
 }
-@item/cap[tool-names]{@scheme[(listof (union #f string))]}
-@item/cap[tool-icons]{
-@schemeblock[
-(listof (union #f
-               string[relative-pathname] 
-               (cons string[filename] 
-                     (listof string[collection-name]))))]
+@item/cap[drracket-tool-names]{@scheme[(listof (or/c #f string))]}
+@item/cap[drracket-tool-icons]{
+@schemeblock[(listof (or/c #f
+                           string[relative-pathname] 
+                           (cons string[filename] 
+                                 (listof string[collection-name]))))]
 }
-@item/cap[tool-urls]{
-@scheme[(listof (union #f string[url]))]
+@item/cap[drracket-tool-urls]{
+@scheme[(listof (or/c #f string[url]))]
 }]
 
-The @scheme[tools] field names a list of tools in this
+The @scheme[drracket-tools] field names a list of tools in this
 collection. Each tool is specified as a collection path,
 relative to the collection where the @File{info.rkt} file
 resides. As an example, if there is only one tool named
 @File{tool.rkt}, this suffices:
 @schemeblock[
-(define tools (list (list "tool.rkt")))
+(define drracket-tools (list (list "tool.rkt")))
 ]
-If the @scheme[tool-icons] or @scheme[tool-names] fields are
-present, they must be the same length as @scheme[tools]. The
-@scheme[tool-icons] specifies the path to an icon for each
+If the @scheme[drracket-tool-icons] or @scheme[drracket-tool-names] fields are
+present, they must be the same length as @scheme[drracket-tools]. The
+@scheme[drracket-tool-icons] field specifies the path to an icon for each
 tool and the name of each tool. If it is @scheme[#f], no
 tool is shown. If it is a relative pathname, it must refer
 to a bitmap and if it is a list of strings, it is treated
 the same as the arguments to @scheme[lib], inside
 @scheme[require].
 
-This bitmap and the name show up in the about box, Help
-Desk's bug report form, and the splash screen as the tool is
+This bitmap and the name show up in the about box, the
+bug report form, and the splash screen as the tool is
 loaded at DrRacket's startup.
 
 @index{phase1}
 @index{phase2}
-Each of @scheme[tools] files must contain a module that
+Each of the @scheme[drracket-tools] files must contain a module that
 @scheme[provide]s @scheme[tool@], which must be bound to a
 @scheme[unit]. The unit
 must import the @scheme[drracket:tool^] signature, which is
@@ -161,8 +160,8 @@ For example, if the @File{info.rkt} file in a collection
 contains:
 @schememod[
 setup/infotab
-(define name "Tool Name")
-(define tools (list (list "tool.rkt")))
+(define drracket-name "Tool Name")
+(define drracket-tools (list (list "tool.rkt")))
 ]
 then the same collection would be expected to contain a
 @File{tool.rkt} file. It might contain something like this:
@@ -189,12 +188,14 @@ functions have been called.
 
 @subsection{Adding Module-based Languages to DrRacket}
 If a language can be implemented as a module
-(see @scheme[module] for details)
-and the standard language settings are
-sufficient, simply create an
-@File{info.rkt} file in the collection
-where the module is saved. Include these
-definitions:
+(see @scheme[module] for details), then the simplest and
+best way to use the language is via the ``Use the language
+declared the in source'' checkbox in the @onscreen{Language} dialog.
+
+For backwards compatibility, DrRacket also supports
+and 
+@File{info.rkt} file-based method for specifying
+such languages. Include these definitions:
 @itemize[
 @item/cap[drscheme-language-modules]{
   This must be bound to a
@@ -397,7 +398,7 @@ Each of the names:
 @item{@scheme[drracket:get/extend:extend-unit-frame]}
 @item{@scheme[drracket:get/extend:extend-tab]}]
 is bound to an extender function. In order to change the
-behavior of drscheme, you can derive new classes from the
+behavior of DrRacket, you can derive new classes from the
 standard classes for the frame, texts, canvases. Each
 extender accepts a function as input. The function it
 accepts must take a class as it's argument and return a
