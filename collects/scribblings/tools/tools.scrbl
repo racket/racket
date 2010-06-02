@@ -408,9 +408,8 @@ classes derived from that class as its result. For example:
 (drracket:get/extend:extend-interactions-text
   (lambda (super%)
     (class super%
-      (public method1)
-      (define (method1 x) ...)
-      ...)))
+      (define/public (method1 x) ...)
+      (super-new))))
 ]
 extends the interactions text class with a method named @tt{method1}.
 
