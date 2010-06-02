@@ -3364,8 +3364,7 @@ static Scheme_Object *finish_optimize_app(Scheme_Object *o, Optimize_Info *info,
   case scheme_application3_type:
     return finish_optimize_application3((Scheme_App3_Rec *)o, info, context, rator_flags);
   default:
-    scheme_signal_error("internal error: finish optimize app");
-    return NULL;
+    return o; /* may be a constant due to constant-folding */
   }
 }
 
