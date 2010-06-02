@@ -11,7 +11,7 @@
          "drsig.rkt"
          "language-object-contract.rkt"
          mrlib/switchable-button
-string-constants)
+         string-constants)
 
 (require (for-syntax racket/base racket/match
                      compiler/cm-accomplice))
@@ -40,17 +40,8 @@ string-constants)
 ;; installed-tools : (list-of installed-tool)
 (define installed-tools null)
 
-;; successful-tool = (make-successful-tool module-spec 
-;;                                         (union #f (instanceof bitmap%))
-;;                                         (union #f string)
-;;                                         (union #f string))
-(define-struct successful-tool (spec bitmap name url))
-
-;; successful-tools : (listof successful-tool)
-(define successful-tools null)
-
-;; get-successful-tools : -> (listof successful-tool)
-(define (get-successful-tools) successful-tools)
+;; candidate-tools : (listof installed-tool)
+(define candidate-tools null)
 
 ;; successfully-loaded-tool = 
 ;; (make-successfully-loaded-tool 
@@ -63,13 +54,25 @@ string-constants)
 ;; it is updated in load/invoke-tool. 
 (define successfully-loaded-tools null)
 
+;; successful-tool = (make-successful-tool module-spec 
+;;                                         (union #f (instanceof bitmap%))
+;;                                         (union #f string)
+;;                                         (union #f string))
+(define-struct successful-tool (spec bitmap name url))
+
+;; successful-tools : (listof successful-tool)
+(define successful-tools null)
+
+;; get-successful-tools : -> (listof successful-tool)
+(define (get-successful-tools) successful-tools)
+
 ;; load/invoke-all-tools : -> void
 (define (load/invoke-all-tools phase1-extras phase2-extras)
   (rescan-installed-tools!)
   (set! current-phase 'loading-tools)
-  (let ([candidate-tools (filter candidate-tool? installed-tools)])
-    (for-each load/invoke-tool candidate-tools)
-    (run-phases phase1-extras phase2-extras)))
+  (set! candidate-tools (filter candidate-tool? installed-tools))
+  (for-each load/invoke-tool candidate-tools)
+  (run-phases phase1-extras phase2-extras))
 
 ;; rescan-installed-tools! : -> void
 (define (rescan-installed-tools!)
@@ -83,8 +86,9 @@ string-constants)
 
 ;; all-tool-directories : -> (list-of directory-record)
 (define (all-tool-directories)
-  (find-relevant-directory-records '(drracket-tools drracket-tool-icons drracket-tool-names drracket-tool-urls
-                                                    tools tool-icons tool-names tool-urls)))
+  (find-relevant-directory-records
+   '(drracket-tools drracket-tool-icons drracket-tool-names drracket-tool-urls
+     tools tool-icons tool-names tool-urls)))
 
 ;; installed-tools-for-directory : directory-record -> (list-of installed-tool)
 (define (installed-tools-for-directory coll-dir)
@@ -147,22 +151,22 @@ string-constants)
     [(getenv "PLTNOTOOLS")
      (printf "PLTNOTOOLS: skipping tools\n") (flush-output)
      (lambda (it) #f)]
-    [(getenv "PLTONLYTOOL") =>
-                            (lambda (onlys)
-                              (let* ([allowed (let ([exp (read (open-input-string onlys))])
-                                                (cond 
-                                                  [(symbol? exp) (list exp)]
-                                                  [(pair? exp) exp]
-                                                  [else '()]))]
-                                     [directory-ok? (lambda (x) 
-                                                      (let-values ([(base name dir) (split-path x)])
-                                                        (memq (string->symbol (path->string name))
-                                                              allowed)))])
-                                (printf "PLTONLYTOOL: only loading ~s\n" allowed) (flush-output)
-                                (lambda (it)
-                                  (directory-ok?
-                                   (directory-record-path
-                                    (installed-tool-dir it))))))]
+    [(getenv "PLTONLYTOOL")
+     => (lambda (onlys)
+          (let* ([allowed (let ([exp (read (open-input-string onlys))])
+                            (cond 
+                             [(symbol? exp) (list exp)]
+                             [(pair? exp) exp]
+                             [else '()]))]
+                 [directory-ok? (lambda (x) 
+                                  (let-values ([(base name dir) (split-path x)])
+                                    (memq (string->symbol (path->string name))
+                                          allowed)))])
+            (printf "PLTONLYTOOL: only loading ~s\n" allowed) (flush-output)
+            (lambda (it)
+              (directory-ok?
+               (directory-record-path
+                (installed-tool-dir it))))))]
     [else
      (lambda (it)
        (eq? (or (get-tool-configuration it)
@@ -542,7 +546,7 @@ string-constants)
             (parent info)
             (choices (list load-action skip-action #| default-action |#))
             (callback (lambda _ (on-select-policy)))))
-     
+
      (define (populate-listing!)
        (send listing clear)
        (for-each
@@ -558,9 +562,12 @@ string-constants)
        (let ([name (or (installed-tool-name it)
                        (format "unnamed tool ~a"
                                (installed-tool->module-spec it)))])
-         (if (installed-tool-is-loaded? it)
-             (string-append name " (loaded)")
-             name)))
+         (cond [(installed-tool-is-loaded? it)
+                (string-append name " (loaded)")]
+               [(not (memq it candidate-tools))
+                (string-append name " (skipped)")]
+               [else
+                (string-append name " (failed to load)")])))
      (define (on-select-tool)
        (let ([it (get-selected-tool)])
          (send* location-editor
