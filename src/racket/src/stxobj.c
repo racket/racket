@@ -2350,24 +2350,31 @@ static void phase_shift_certs(Scheme_Object *o, Scheme_Object *owner_wraps, int 
     
     /* Clone certs list, phase-shifting each cert */
     for (i = 0; i < 2; i++) {
+      int changed = 0;
+      
       certs = (i ? acerts : icerts);
+
       first = last = NULL;
       while (certs) {
-	a = scheme_modidx_shift(certs->modidx, modidx_shift_from, modidx_shift_to);
-	c = cons_cert(certs->mark, a, certs->insp, certs->key, NULL);
-	c->mapped = certs->mapped;
-	c->depth = certs->depth;
-	if (first)
-	  last->next = c;
-	else
-	  first = c;
-	last = c;
-	certs = certs->next;
+        a = scheme_modidx_shift(certs->modidx, modidx_shift_from, modidx_shift_to);
+        if (!SAME_OBJ(a, certs->modidx)) changed++;
+        c = cons_cert(certs->mark, a, certs->insp, certs->key, NULL);
+        c->mapped = certs->mapped;
+        c->depth = certs->depth;
+        if (first)
+          last->next = c;
+        else
+          first = c;
+        last = c;
+        certs = certs->next;
       }
-      if (i)
-	acerts = first;
-      else
-	icerts = first;
+
+      if (changed) {
+        if (i)
+          acerts = first;
+        else
+          icerts = first;
+      }
     }
 
     /* Even if icerts is NULL, may preserve the pair in ->certs, 
