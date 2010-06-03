@@ -1,11 +1,11 @@
-#lang scheme/base
+#lang racket/base
 
-(require scheme/port
-         scheme/path
-         scheme/list
-         scheme/string
+(require racket/port
+         racket/path
+         racket/list
+         racket/string
          syntax/moddep
-         scheme/gui/dynamic
+         racket/gui/dynamic
          planet/config)
 
 (provide gui?
@@ -53,7 +53,7 @@
 
 (define gui? (gui-available?))
 
-(define-syntax mz/mr ; use a value for mzscheme, or pull a mred binding
+(define-syntax mz/mr ; use a value for mzracket, or pull a mred binding
   (syntax-rules ()
     [(mz/mr mzval mrsym)
      (if gui? (gui-dynamic-require 'mrsym) mzval)]))
@@ -109,10 +109,10 @@
 (define (simplify-path* path)
   (if (symbol? path)
       #f
-      (simplify-path (cleanse-path (path->complete-path
-                                    (cond [(bytes? path) (bytes->path path)]
-                                          [(string? path) (string->path path)]
-                                          [else path]))))))
+      (simple-form-path
+       (cond [(bytes? path) (bytes->path path)]
+             [(string? path) (string->path path)]
+             [else path]))))
 
 ;; 'read-bytecode is special, it's higher than 'read, but not lower than
 ;; 'delete.
@@ -275,7 +275,11 @@
                                                   (if m 
                                                       (module-compiled-imports m)
                                                       null))))))
-               (cons path r)))])))
+               (let ([l (cons path r)])
+                 ;; If we need an .rkt path, also allow access to .ss path
+                 (if (regexp-match? #rx#"[.]rkt$" (path->bytes path))
+                     (cons (path-replace-suffix path #".ss") l)
+                     l))))])))
 
 ;; Resources ----------------------------------------------------------------
 
@@ -475,8 +479,8 @@
          ;; needed to make the test-engine work
          (let ([orig-ns (namespace-anchor->empty-namespace anchor)])
            (parameterize ([current-namespace orig-ns])
-             (dynamic-require 'scheme/class #f))
-           (namespace-attach-module orig-ns 'scheme/class))]))
+             (dynamic-require 'racket/class #f))
+           (namespace-attach-module orig-ns 'racket/class))]))
 
 ;; Returns a single (module ...) or (begin ...) expression (a `begin' list
 ;; will be evaluated one by one -- the language might not have a `begin').
@@ -486,7 +490,7 @@
 ;; A more general solution would be to create a new module that exports
 ;; the given language plus all of the given extra requires.
 ;;
-;; We use `#%requre' because, unlike the `require' of scheme/base,
+;; We use `#%requre' because, unlike the `require' of racket/base,
 ;; it comes from `#%kernel', so it's always present through
 ;; transitive requires.
 (define (build-program language requires input-program)
@@ -541,7 +545,7 @@
 (define (evaluate-program program limit-thunk uncovered!)
   (when uncovered!
     (parameterize ([current-code-inspector orig-code-inspector])
-      (eval `(,#'#%require scheme/private/sandbox-coverage))))
+      (eval `(,#'#%require racket/private/sandbox-coverage))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
                (identifier? #'mod)
@@ -878,7 +882,7 @@
        (if (eq? h default-sandbox-exit-handler)
          (lambda _ (terminate+kill! 'exited #f))
          h))]
-    ;; Note the above definition of `current-eventspace': in MzScheme, it
+    ;; Note the above definition of `current-eventspace': in Racket, it
     ;; is an unused parameter.  Also note that creating an eventspace
     ;; starts a thread that will eventually run the callback code (which
     ;; evaluates the program in `run-in-bg') -- so this parameterization
