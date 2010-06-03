@@ -731,7 +731,8 @@
                                        (list (ss->rkt file)))))))]
                       [(path? s) 
                        (if (absolute-path? s)
-                           (path-ss->rkt s)
+                           ;; Use filesystem-sensitive `simplify-path' here:
+                           (path-ss->rkt (simplify-path s))
                            (list " (a path must be absolute)"))]
                       [(eq? (car s) 'lib)
                        (or (hash-ref -path-cache
@@ -766,7 +767,9 @@
                                                          (ss->rkt file)
                                                          (string-append file ".rkt"))))))))]
                       [(eq? (car s) 'file)
-                       (path-ss->rkt (path->complete-path (expand-user-path (cadr s)) (get-dir)))])])
+                       ;; Use filesystem-sensitive `simplify-path' here:
+                       (path-ss->rkt 
+                        (simplify-path (path->complete-path (expand-user-path (cadr s)) (get-dir))))])])
                 (unless (or (path? s-parsed)			  
                             (vector? s-parsed))
                   (if stx

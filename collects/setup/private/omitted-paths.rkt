@@ -49,7 +49,7 @@
     (let ([omit (info 'compile-omit-paths (lambda () '()))])
       (if (eq? 'all omit)
         'all
-        (map (lambda (e) (explode-path (simplify-path e #f)))
+        (map (lambda (e) (explode-path (simplify-path e)))
              ;; for backward compatibility
              (append omit (info 'compile-omit-files (lambda () '())))))))
   (cond
@@ -86,7 +86,7 @@
   (unless (and (path-string? dir) (complete-path? dir) (directory-exists? dir))
     (raise-type-error 'omitted-paths
                       "complete path to an existing directory" dir))
-  (let* ([dir* (explode-path (simplify-path dir #f))]
+  (let* ([dir* (explode-path (simple-form-path dir))]
          [r (ormap (lambda (root+table)
                      (let ([r (relative-from dir* (car root+table))])
                        (and r (cons (reverse r) root+table))))

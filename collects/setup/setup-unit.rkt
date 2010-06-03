@@ -404,8 +404,8 @@
         (for ([path paths])
           (let ([full-path (build-path (cc-path cc) path)])
             (when (or (file-exists? full-path) (directory-exists? full-path))
-              (let ([path (find-relative-path (simplify-path (cc-path cc) #f)
-                                              (simplify-path full-path #f))])
+              (let ([path (find-relative-path (simple-form-path (cc-path cc))
+                                              (simple-form-path full-path))])
                 (let loop ([path path])
                   (let-values ([(base name dir?) (split-path path)])
                     (cond
@@ -522,7 +522,7 @@
              [doing-path (lambda (path)
                            (unless (verbose)
                              (let ([path (normal-case-path (path-only path))])
-                               (unless (hash-ref dir-table path (lambda () #f))
+                               (unless (hash-ref dir-table path #f)
                                  (hash-set! dir-table path #t)
                                  (print-verbose oop path)))))])
         (parameterize ([current-output-port (if (verbose) (current-output-port) (open-output-nowhere))]
@@ -888,7 +888,7 @@
        '())))
 
   (current-library-collection-paths
-   (map (lambda (p) (simplify-path p #f)) (current-library-collection-paths)))
+   (map simple-form-path (current-library-collection-paths)))
 
   (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))

@@ -31,12 +31,12 @@
   (file-stamp-in-paths p (current-library-collection-paths)))
 
 (define (file-stamp-in-paths p paths)
-  (let ([p-eles (explode-path (simplify-path p))])
+  (let ([p-eles (explode-path (simple-form-path p))])
     (let c-loop ([paths paths])
       (cond
         [(null? paths) #f]
         [else
-         (let i-loop ([collects-eles (explode-path (car paths))]
+         (let i-loop ([collects-eles (explode-path (simple-form-path (car paths)))]
                       [p-eles p-eles])
            (cond
              [(null? collects-eles)
@@ -187,7 +187,7 @@
                               [v (cons (cons (delay v) dep) l)]
                               [must-exist? (error 'cm "cannot find external-dependency file: ~v" p)]
                               [else #f]))]
-                     [(or (hash-ref up-to-date (simplify-path (cleanse-path p)) #f)
+                     [(or (hash-ref up-to-date (simple-form-path p) #f)
                           ;; Use `compiler-root' with `sha1-only?' as #t:
                           (compile-root mode p up-to-date read-src-syntax #t))
                       => (lambda (sh)
@@ -439,7 +439,7 @@
         p)))
 
 (define (compile-root mode path0 up-to-date read-src-syntax sha1-only?)
-  (define orig-path (simplify-path (cleanse-path path0)))
+  (define orig-path (simple-form-path path0))
   (define (read-deps path)
     (with-handlers ([exn:fail:filesystem? (lambda (ex) (list (version) '#f))])
       (call-with-input-file

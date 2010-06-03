@@ -109,10 +109,10 @@
 (define (simplify-path* path)
   (if (symbol? path)
       #f
-      (simplify-path (cleanse-path (path->complete-path
-                                    (cond [(bytes? path) (bytes->path path)]
-                                          [(string? path) (string->path path)]
-                                          [else path]))))))
+      (simple-form-path
+       (cond [(bytes? path) (bytes->path path)]
+             [(string? path) (string->path path)]
+             [else path]))))
 
 ;; 'read-bytecode is special, it's higher than 'read, but not lower than
 ;; 'delete.

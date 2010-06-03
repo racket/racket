@@ -8,6 +8,7 @@ PLANNED FEATURES:
 |#
   (require mzlib/string
            mzlib/file
+           (only racket/path simple-form-path)
            (only mzlib/list sort)
            net/url
            mzlib/match
@@ -178,7 +179,7 @@ This command does not unpack or install the named .plt file."
     
   (define (install-plt-file filestr owner majstr minstr)
     (unless (file-exists? filestr) (fail "File does not exist: ~a" filestr))
-    (let* ([file (normalize-path filestr)]
+    (let* ([file (simple-form-path filestr)]
            [name (let-values ([(base name dir?) (split-path file)]) (path->string name))]
            [fullspec (params->full-pkg-spec owner name majstr minstr)])
       (install-pkg fullspec file (pkg-spec-maj fullspec) (pkg-spec-minor-lo fullspec))))
@@ -186,7 +187,7 @@ This command does not unpack or install the named .plt file."
   (define (do-archive p)
     (unless (directory-exists? p)
       (fail "No such directory: ~a" p))
-    (make-planet-archive (normalize-path p)))
+    (make-planet-archive (simple-form-path p)))
   
   (define (remove owner pkg majstr minstr)
     (let ((maj (string->number majstr))
@@ -273,19 +274,19 @@ This command does not unpack or install the named .plt file."
   (define (do-unpack plt-file target)
     (unless (file-exists? plt-file)
       (fail (format "The specified file (~a) does not exist" plt-file))) 
-    (let ([file (normalize-path plt-file)])
+    (let ([file (simple-form-path plt-file)])
       (unpack-planet-archive file target)))
   
   (define (do-structure plt-file)
     (unless (file-exists? plt-file)
       (fail (format "The specified file (~a) does not exist" plt-file))) 
-    (let ([file (normalize-path plt-file)])
+    (let ([file (simple-form-path plt-file)])
       (display-plt-file-structure file)))
   
   (define (do-display plt-file file-to-print)
     (unless (file-exists? plt-file)
       (fail (format "The specified file (~a) does not exist" plt-file))) 
-    (let ([file (normalize-path plt-file)])
+    (let ([file (simple-form-path plt-file)])
       (display-plt-archived-file file file-to-print)))
   
   ;; ------------------------------------------------------------
