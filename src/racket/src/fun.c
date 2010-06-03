@@ -2647,6 +2647,8 @@ _scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands)
   return X_scheme_apply_to_list(rator, rands, 0, 0);
 }
 
+static Scheme_Object *cert_with_specials_k(void);
+
 static Scheme_Object *
 cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv, 
 		   Scheme_Object *orig_code, Scheme_Object *closest_code,
@@ -2656,6 +2658,28 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 {
   Scheme_Object *prop;
   int next_cadr_deflt = 0;
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      Scheme_Object **args;
+      args = MALLOC_N(Scheme_Object*, 6);
+      args[0] = code;
+      args[1] = mark;
+      args[2] = (Scheme_Object *)menv;
+      args[3] = orig_code;
+      args[4] = closest_code;
+      args[5] = (Scheme_Object *)cenv;
+      p->ku.k.p1 = (void *)args;
+      p->ku.k.i1 = phase;
+      p->ku.k.i2 = deflt;
+      p->ku.k.i3 = cadr_deflt;
+      return scheme_handle_stack_overflow(cert_with_specials_k);
+    }
+  }
+#endif
 
   if (SCHEME_STXP(code)) {
     prop = scheme_stx_property(code, certify_mode_symbol, NULL);
@@ -2767,6 +2791,19 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
     return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
   else
     return scheme_stx_lift_active_certs(code);
+}
+
+static Scheme_Object *cert_with_specials_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object **args = (Scheme_Object **)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return cert_with_specials(args[0], args[1], (Scheme_Env *)args[2],
+                            args[3], args[4],
+                            (Scheme_Comp_Env *)args[5], p->ku.k.i1,
+                            p->ku.k.i2, p->ku.k.i3);
 }
 
 Scheme_Object *scheme_lift_local_stx_certificates(Scheme_Object *code, 
@@ -4064,7 +4101,7 @@ static Scheme_Object *apply_chaperone_k(void)
 
 static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val)
 {
-  #ifdef DO_STACK_CHECK
+#ifdef DO_STACK_CHECK
   {
 # include "mzstkchk.h"
     {
