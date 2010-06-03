@@ -66,7 +66,13 @@
             dmap)))
    cset))
 
-(define (move-vars-to-dmap cset dbound vars)
+;; dbound : index variable
+;; vars : listof[type variable] - temporary variables
+;; cset : the constraints being manipulated
+;; takes the constraints on vars and creates a dmap entry contstraining dbound to be |vars| 
+;; with the constraints that cset places on vars
+(d/c (move-vars-to-dmap cset dbound vars)
+  (cset? symbol? (listof symbol?) . -> . cset?)
   (mover cset dbound vars
          (λ (cmap)
            (make-dcon (for/list ([v vars])
@@ -74,7 +80,11 @@
                                   (λ () (int-err "No constraint for new var ~a" v))))
                       #f))))
 
-(define (move-rest-to-dmap cset dbound #:exact [exact? #f])
+;; dbound : index variable
+;; cset : the constraints being manipulated
+;; 
+(d/c (move-rest-to-dmap cset dbound #:exact [exact? #f])
+  ((cset? symbol?) (#:exact boolean?) . ->* . cset?)
   (mover cset dbound (list dbound)
          (λ (cmap)
            ((if exact? make-dcon-exact make-dcon)
@@ -82,7 +92,8 @@
             (hash-ref cmap dbound
                       (λ () (int-err "No constraint for bound ~a" dbound)))))))
 
-(define (move-vars+rest-to-dmap cset dbound vars #:exact [exact? #f])
+(d/c (move-vars+rest-to-dmap cset dbound vars #:exact [exact? #f])
+  ((cset? symbol? (listof symbol?)) (#:exact boolean?) . ->* . cset?)
   (mover cset dbound vars
          (λ (cmap)
            ((if exact? make-dcon-exact make-dcon)
@@ -91,7 +102,6 @@
             (hash-ref cmap dbound
                       (λ () (int-err "No constraint for bound ~a" dbound)))))))
 
-;; s and t must be *latent* filters
 (define (cgen/filter V X s t)
   (match* (s t)
     [(e e) (empty-cset X)]
@@ -194,6 +204,7 @@
             [ret-mapping (cg s t)])
        (cset-meet* 
         (list arg-mapping darg-mapping ret-mapping)))]
+    ;; * <: ...
     [((arr: ss s s-rest #f                  '())
       (arr: ts t #f     (cons t-dty dbound) '()))
      (unless (memq dbound X)
@@ -460,7 +471,7 @@
     (match v
       [(struct c (S X T))
        ;; fixme - handle free indexes, remove Dotted
-       (let ([var (hash-ref (free-vars* R) (or variable X) Constant)])
+       (let ([var (hash-ref (free-vars* R) (or variable X) (λ () (hash-ref (free-idxs* R) (or variable X) Constant)))])
          ;(printf "variance was: ~a~nR was ~a~nX was ~a~nS T ~a ~a~n" var R (or variable X) S T)
          (evcase var 
                  [Constant S]
