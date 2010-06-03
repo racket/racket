@@ -193,7 +193,9 @@
                       => (lambda (sh)
                            (cons (cons (cdr sh) dep) l))]
                      [must-exist?
-                      (error 'cm "internal error?; cannot find sha1 for module: ~v" p)]
+                      ;; apparently, we're forced to use the source of the module,
+                      ;; so compute a sha1 from it instead of the bytecode
+                      (cons (cons (get-source-sha1 p) dep) l)]
                      [else #f]))))])
     (and l
          (let ([p (open-output-string)]
