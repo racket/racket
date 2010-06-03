@@ -1,6 +1,9 @@
 #lang scribble/doc
 @(require "mz.ss")
 
+@(define stx-eval (make-base-eval))
+@(interaction-eval #:eval stx-eval (require (for-syntax racket/base)))
+
 @title[#:tag "stxcmp"]{Syntax Object Bindings}
 
 @defproc[(bound-identifier=? [a-id syntax?] [b-id syntax?]
@@ -14,7 +17,19 @@ suitable expression context at the @tech{phase level} indicated by
 @scheme[phase-level], @scheme[#f] otherwise. A @scheme[#f] value for
 @scheme[phase-level] corresponds to the @tech{label phase level}.
 
-See @scheme[free-identifier=?] for an example.}
+@examples[
+#:eval stx-eval
+(define-syntax (check stx)
+  (syntax-case stx ()
+    [(_ x y)
+     (if (bound-identifier=? #'x #'y)
+         #'(let ([y 'wrong]) (let ([x 'binds]) y))
+         #'(let ([y 'no-binds]) (let ([x 'wrong]) y)))]))
+(check a a)
+(check a b)
+(define-syntax-rule (check-a x) (check a x))
+(check-a a)
+]}
 
 
 @defproc[(free-identifier=? [a-id syntax?] [b-id syntax?]
@@ -36,20 +51,19 @@ to a @tech{rename transformer}, the identifiers may return distinct
 results with @scheme[syntax-e].
 
 @examples[
-(require (for-syntax racket/base))
-(let ([fred 17])
-  (define-syntax a
-    (lambda (x)
-      (syntax-case x ()
-         [(_ id) #'(b id fred)])))
-  (define-syntax b
-    (lambda (x)
-      (syntax-case x ()
-        [(_ id1 id2)
-         #`(list
-           #,(free-identifier=? #'id1 #'id2)
-           #,(bound-identifier=? #'id1 #'id2))])))
-  (a fred))
+#:eval stx-eval
+(define-syntax (check stx)
+  (syntax-case stx ()
+    [(_ x)
+     (if (free-identifier=? #'car #'x)
+         #'(list 'same: x)
+         #'(list 'different: x))]))
+(check car)
+(check mcar)
+(let ([car list])
+  (check car))
+(require (rename-in racket/base [car kar]))
+(check kar)
 ]}
 
 @defproc[(free-transformer-identifier=? [a-id syntax?] [b-id syntax?]) boolean?]{
@@ -200,3 +214,4 @@ Same as @scheme[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
 
 Same as @scheme[(identifier-binding id-stx #f)].}
 
+@close-eval[stx-eval]
