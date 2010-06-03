@@ -86,7 +86,7 @@
   (unless (and (path-string? dir) (complete-path? dir) (directory-exists? dir))
     (raise-type-error 'omitted-paths
                       "complete path to an existing directory" dir))
-  (let* ([dir* (explode-path (simplify-path dir))]
+  (let* ([dir* (explode-path (simplify-path dir #f))]
          [r (ormap (lambda (root+table)
                      (let ([r (relative-from dir* (car root+table))])
                        (and r (cons (reverse r) root+table))))

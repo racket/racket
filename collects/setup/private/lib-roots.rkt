@@ -31,7 +31,7 @@
                     (reverse r)
                     (let ([x (and (list? x) (= 7 (length x)) (list-ref x 4))])
                       (loop (if (bytes? x)
-                              (cons (cons (normalize-path (bytes->path x)) 0) r)
+                              (cons (cons (simplify-path (bytes->path x) #f) 0) r)
                               r))))))))))))
 
 (define path->library-root
@@ -44,7 +44,7 @@
       (unless (complete-path? path)
         (raise-type-error 'path->library-root "complete-path" path))
       (unless t (init-table))
-      (let loop ([rpath (reverse (explode-path (normalize-path path)))]
+      (let loop ([rpath (reverse (explode-path (simplify-path path #f)))]
                  [subdir '()])
         (let ([x (hash-ref t rpath #f)])
           (cond [(and x ((length subdir) . >= . x))
