@@ -44,6 +44,12 @@
       (let ([s (bytes 255 (color-red c) (color-green c) (color-blue c))])
         (set-argb-pixels x y 1 1 s)))
 
+    (def/public (get-pixel [real? x][real? y][color% c])
+      (let ([b (make-bytes 4)])
+        (get-argb-pixels x y 1 1)
+        (send c set (bytes-ref b 1) (bytes-ref b 2) (bytes-ref b 3))
+        #t))
+
     (def/public (set-argb-pixels [exact-nonnegative-integer? x]
                                  [exact-nonnegative-integer? y]
                                  [exact-nonnegative-integer? w]
