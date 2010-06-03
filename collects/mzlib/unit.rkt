@@ -546,22 +546,30 @@
 
 ;; build-val+macro-defs : sig -> (list syntax-object^3)
 (define-for-syntax (build-val+macro-defs sig)
-  (with-syntax ([(((int-ivar . ext-ivar) ...)
-                  ((((int-vid . ext-vid) ...) . vbody) ...)
-                  ((((int-sid . ext-sid) ...) . sbody) ...)
-                  _
-                  _)
-                 (map-sig (lambda (x) x)
-                          (make-syntax-introducer)
-                          sig)])
-    (list
-     #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
-        (values
-         (make-rename-transformer (quote-syntax int-ivar)) ...
-         (make-rename-transformer (quote-syntax int-vid)) ... ...
-         (make-rename-transformer (quote-syntax int-sid)) ... ...))
-     #'(((int-sid ...) sbody) ...)
-     #'(((int-vid ...) vbody) ...))))
+  (if (and (null? (cadr sig))
+           (null? (caddr sig)))
+      ;; No renames needed; this shortcut avoids
+      ;; an explosion of renamings, especially with chains
+      ;; of `open':
+      (list #'(() (values)) #'() #'())
+      ;; Renames and macros needes:
+      (with-syntax ([(((int-ivar . ext-ivar) ...)
+                      ((((int-vid . ext-vid) ...) . vbody) ...)
+                      ((((int-sid . ext-sid) ...) . sbody) ...)
+                      _
+                      _)
+                     (map-sig (lambda (x) x)
+                              (make-syntax-introducer)
+                              sig)])
+        (list
+         #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
+            (make-rename-transformers
+             (quote-syntax
+              (int-ivar ...
+                        int-vid ... ...
+                        int-sid ... ...))))
+         #'(((int-sid ...) sbody) ...)
+         #'(((int-vid ...) vbody) ...)))))
 
 ;; build-post-val-defs : sig -> (list syntax-object)
 (define-for-syntax (build-post-val-defs sig)
@@ -575,11 +583,23 @@
                           sig)])
     (list
      #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
-        (values
-         (make-rename-transformer (quote-syntax int-ivar)) ...
-         (make-rename-transformer (quote-syntax int-vid)) ... ...
-         (make-rename-transformer (quote-syntax int-sid)) ... ...))
+        (make-rename-transformers
+         (quote-syntax
+          (int-ivar ...
+                    int-vid ... ...
+                    int-sid ... ...))))
      #'(post-rhs ...))))
+
+;; Using `make-rename-transformers' helps improve sharing in
+;; a syntax-quoted list of identifiers, although it risks
+;; losting certificates as the list is broken apart; since the
+;; identifiers are bound at the same point that the rename
+;; transformer is introduced, certificate loss should be ok.
+(define-for-syntax (make-rename-transformers ids)
+  (apply values
+         (map 
+          make-rename-transformer
+          (syntax->list ids))))
 
 (define-signature-form (open stx)
   (define (build-sig-elems sig)
