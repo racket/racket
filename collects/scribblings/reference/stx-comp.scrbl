@@ -12,7 +12,9 @@ Returns @scheme[#t] if the identifier @scheme[a-id] would bind
 @scheme[b-id] (or vice versa) if the identifiers were substituted in a
 suitable expression context at the @tech{phase level} indicated by
 @scheme[phase-level], @scheme[#f] otherwise. A @scheme[#f] value for
-@scheme[phase-level] corresponds to the @tech{label phase level}.}
+@scheme[phase-level] corresponds to the @tech{label phase level}.
+
+See @scheme[free-identifier=?] for an example.}
 
 
 @defproc[(free-identifier=? [a-id syntax?] [b-id syntax?]
@@ -31,8 +33,24 @@ original definition site, and not necessarily to the same
 @scheme[require] or @scheme[provide] site. Due to renaming in
 @scheme[require] and @scheme[provide], or due to a transformer binding
 to a @tech{rename transformer}, the identifiers may return distinct
-results with @scheme[syntax-e].}
+results with @scheme[syntax-e].
 
+@examples[
+(require (for-syntax racket/base))
+(let ([fred 17])
+  (define-syntax a
+    (lambda (x)
+      (syntax-case x ()
+         [(_ id) #'(b id fred)])))
+  (define-syntax b
+    (lambda (x)
+      (syntax-case x ()
+        [(_ id1 id2)
+         #`(list
+           #,(free-identifier=? #'id1 #'id2)
+           #,(bound-identifier=? #'id1 #'id2))])))
+  (a fred))
+]}
 
 @defproc[(free-transformer-identifier=? [a-id syntax?] [b-id syntax?]) boolean?]{
 
