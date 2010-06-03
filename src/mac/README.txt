@@ -3,10 +3,10 @@ Mac OS X GRacket.
 
 Get these packages (or newer, if compatible):
  pkg-config-0.23.tar.gz
- gettext-0.17.tar.gz
  libpng-1.4.0.tar.gz 
  pixman-0.17.14.tar.gz
  cairo-1.9.6.tar.gz
+ gettext-0.17.tar.gz
  glib-2.22.4.tar.gz
  pango-1.28.0.tar.gz
  libjpeg62 (maybe in binary form)
@@ -22,10 +22,10 @@ Patches:
 
 Configures (where <dest> is some temporary area):
   pkg-config: --prefix=<dest>
-  gettext: --prefix=<dest>
   libpng: --prefix=<dest>
   pixman: --prefix=<dest>
   Cairo: PATH=<dest>/bin --disable-xlib --disable-ft --disable-fc --prefix=<dest>
+  gettext: --prefix=<dest>
   glib: PATH=<dest>/bin CFLAGS=-I<dest>/include LDFLAGS=-L<dest>/lib --prefix=<dest>
   Pango: PATH=<dest>/bin --without-x --with-included-modules=yes --with-dynamic-modules=no
 

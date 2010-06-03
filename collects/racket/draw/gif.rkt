@@ -1,6 +1,8 @@
 #lang scheme
 (require "lzw.rkt")
 
+;; FIXME: still need to handle transparency
+
 (provide gif->rgba-rows)
 
 (define-syntax-rule (when-debugging expr ...) 

@@ -154,7 +154,7 @@
                          (for/list ([i (in-range h)])
                            (let ([s (* i bw)])
                              (subbytes bstr s (+ s bw)))))])
-              (install-from-png-arrays s w h rows #t #f #f #t))
+              (install-bytes-rows s w h rows #t #f #f #t))
             (values w h #t #f s #f)))]
        (init-name 'bitmap%)))
 
@@ -256,7 +256,7 @@
                 (destroy-png-reader r)
                 (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
                        [pre? (and alpha? (memq kind '(png/alpha png/mask)))])
-                  (install-from-png-arrays s w h rows b&w? alpha? pre? #f)
+                  (install-bytes-rows s w h rows b&w? alpha? pre? #f)
                   (values s b&w?))))]
            [(jpeg jpeg/alpha)
             (let ([d (create-decompress in)])
@@ -302,7 +302,7 @@
                      [alpha? #t]
                      [pre? #f]
                      [b&w? #f])
-                (install-from-png-arrays s w h rows b&w? alpha? pre? #f)
+                (install-bytes-rows s w h rows b&w? alpha? pre? #f)
                 (values s b&w?)))]
            [(bmp bmp/mask bmp/alpha)
             (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 10 10)])
@@ -311,12 +311,26 @@
             (let-values ([(w h rows) (read-xbm in)])
               (if rows
                   (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)])
-                    (install-from-png-arrays s w h rows #t #f #f #t)
+                    (install-bytes-rows s w h rows #t #f #f #t)
                     (values s #t))
                   (values #f #f)))]
            [else (values #f #f)])))
     
-    (define/private (install-from-png-arrays s w h rows b&w? alpha? pre? backward?)
+    ;; s : Cairo bitmap surface
+    ;; w, h : width and height in pixels
+    ;; rows : a vector of `h' byte strings
+    ;; b&w? : each bit in a byte string is a pixel (so each byte
+    ;;        string in `rows' is `(/ w 8)' bytes long)
+    ;;        if not `backward?': low bit is first and 0 is black
+    ;;        if `backward?': high bit is first and 1 is black
+    ;; alpha? : relevant only if not `b&w?';
+    ;;          if true: each byte string has 4 bytes per pixel, RGBA
+    ;;          if false: each byte string has 3 bytes er pixel, RGB
+    ;; pre? : should be #f if not `alpha?', otherwise a #t value
+    ;;        means that the RGB values should be multiplied by A value
+    ;;        (i.e., the values are not already pre-multiplied)
+    ;; backward? : affects byte interpretation in `b&w?' mode; see above
+    (define/private (install-bytes-rows s w h rows b&w? alpha? pre? backward?)
       (let* ([dest (begin
                      (cairo_surface_flush s)
                      (cairo_image_surface_get_data s))]
