@@ -218,7 +218,7 @@ Returns @scheme[#t] if updating on this administrator's
 }
 @methimpl{
 
-Returns Scheme[#f].
+Returns @scheme[#f].
 
 }}
 

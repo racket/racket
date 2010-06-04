@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 (require rackunit rackunit/text-ui "3.ss")
 
 (define d0 (initialize (flat-contract integer?) =))

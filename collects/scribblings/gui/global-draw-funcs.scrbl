@@ -19,7 +19,7 @@ Returns the depth of the main display (a value of 1 denotes a monochrome display
 
 }
 
-@defproc[(get-display-left-top-inset [avoid-bars? bool @scheme[#f]])
+@defproc[(get-display-left-top-inset [avoid-bars? bool #f])
          (values exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 When the optional argument is @scheme[#f] (the default), this function
@@ -35,7 +35,7 @@ When the optional argument is true, this function returns the amount
 
 }
 
-@defproc[(get-display-size [full-screen? bool @scheme[#f]])
+@defproc[(get-display-size [full-screen? bool #f])
          (values exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 @index["screen resolution"]{Gets} the physical size of the display in
