@@ -238,18 +238,25 @@
 
     (define smoothing 'unsmoothed)
 
+    (define/private (aligned? s)
+      (not (eq? s 'smoothed)))
+
     (def/public (set-smoothing [(symbol-in unsmoothed smoothed aligned) s])
       (set! smoothing s))
     (def/public (get-smoothing)
       smoothing)      
-    (define/private (align-x x)
-      (if (eq? smoothing 'aligned)
-          (/ (- (+ (floor (+ (* x scale-x) origin-x)) x-align-delta) origin-x) scale-x)
+    (define/private (align-x/delta x delta)
+      (if (aligned? smoothing)
+          (/ (- (+ (floor (+ (* x scale-x) origin-x)) delta) origin-x) scale-x)
           x))
-    (define/private (align-y y)
-      (if (eq? smoothing 'aligned)
-          (/ (- (+ (floor (+ (* y scale-y) origin-y)) y-align-delta) origin-y) scale-y)
+    (define/private (align-x x)
+      (align-x/delta x x-align-delta))
+    (define/private (align-y/delta y delta)
+      (if (aligned? smoothing)
+          (/ (- (+ (floor (+ (* y scale-y) origin-y)) delta) origin-y) scale-y)
           y))
+    (define/private (align-y y)
+      (align-y/delta y y-align-delta))
 
     (define (set-font-antialias context smoothing)
       (let ([o (pango_cairo_context_get_font_options context)]
@@ -491,9 +498,13 @@
                              (cairo_save cr)
                              (cairo_translate cr center-x center-y)
                              (cairo_scale cr radius-x radius-y)
+                             (when brush?
+                               (cairo_move_to cr 0 0))
                              (cairo_arc_negative cr 0 0 1
                                                  (- start-radians)
                                                  (- end-radians))
+                             (when brush? 
+                               (cairo_close_path cr))
                              (cairo_restore cr)
                              (draw cr brush? pen?))))])
          (when (brush-draws?)
@@ -515,7 +526,7 @@
          cr
          (cairo_new_path cr)
          (cairo_move_to cr (align-x x1) (align-y y1))
-         (if (eq? smoothing 'unsmoothed)
+         (if #f ; (eq? smoothing 'unsmoothed)
              ;; An unsmoothed line is supposed to hit the pixel to the
              ;; lower right of the ending point. (We've revered the points
              ;; above to ensure that the line goes left to right.)
@@ -643,7 +654,7 @@
                                    CAIRO_FILL_RULE_EVEN_ODD))
        (cairo_new_path cr)
        (cairo_translate cr dx dy)
-       (if (eq? smoothing 'aligned)
+       (if (aligned? smoothing)
            (begin
              (when (brush-draws?)
                (send path do-path cr (lambda (x) x) (lambda (y) y))
@@ -801,15 +812,21 @@
       (with-cr
        (void)
        cr
-       (let ([stamp-pattern
-              (lambda (src)
-                (let ([p (cairo_pattern_create_for_surface (send src get-cairo-alpha-surface))]
-                      [m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
-                  (cairo_matrix_init_translate m (- src-x dest-x) (- src-y dest-y))
-                  (cairo_pattern_set_matrix p m)
-                  (cairo_mask cr p)
-                  (cairo_pattern_destroy p)))]
-             [color (or color black)])
+       (let* ([color (or color black)]
+              [a-dest-x (align-x/delta dest-x 0)]
+              [a-dest-y (align-y/delta dest-y 0)]
+              [a-dest-w (- (align-x/delta (+ dest-x src-w) 0) a-dest-x)]
+              [a-dest-h (- (align-y/delta (+ dest-y src-h) 0) a-dest-y)]
+              [a-src-x (floor src-x)]
+              [a-src-y (floor src-y)]
+              [stamp-pattern
+               (lambda (src)
+                 (let ([p (cairo_pattern_create_for_surface (send src get-cairo-alpha-surface))]
+                       [m (make-cairo_matrix_t 0.0 0.0 0.0 0.0 0.0 0.0)])
+                   (cairo_matrix_init_translate m (- a-src-x a-dest-x) (- a-src-y a-dest-y))
+                   (cairo_pattern_set_matrix p m)
+                   (cairo_mask cr p)
+                   (cairo_pattern_destroy p)))])
          (cond
           [(or (send src is-color?)
                (and (not (eq? style 'opaque))
@@ -818,13 +835,13 @@
              (cairo_pattern_reference s)
              (cairo_set_source_surface cr 
                                        (send src get-cairo-surface)
-                                       (- dest-x src-x)
-                                       (- dest-y src-y))
+                                       (- a-dest-x a-src-x)
+                                       (- a-dest-y a-src-y))
              (if mask
                  (stamp-pattern mask)
                  (begin
                    (cairo_new_path cr)
-                   (cairo_rectangle cr dest-x dest-y src-w src-h)
+                   (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
                    (cairo_fill cr)))
              (cairo_set_source cr s)
              (cairo_pattern_destroy s))]
@@ -832,7 +849,7 @@
            (when (eq? style 'opaque)
              (install-color cr bg alpha)
              (cairo_new_path cr)
-             (cairo_rectangle cr dest-x dest-y src-w src-h)
+             (cairo_rectangle cr a-dest-x a-dest-y a-dest-w a-dest-h)
              (cairo_fill cr))
            (install-color cr color alpha)
            (stamp-pattern src)])

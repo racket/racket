@@ -95,7 +95,7 @@
                                   (vector (vector-ref p 2) (vector-ref p 3)
                                           (vector-ref p 0) (vector-ref p 1))))
                             l))])
-        (set! open-points (map rev-one (s:reverse open-points)))
+        (set! open-points (rev-one (s:reverse open-points)))
         (set! closed-points (map rev-one (map s:reverse closed-points)))))
 
     (def/public (close)
@@ -140,7 +140,7 @@
     (def/public (move-to [real? x] [real? y])
       (when (or (pair? open-points)
                 (pair? rev-open-points))
-        (error (method-name 'dc-path% 'move-to) "path already open"))
+        (close))
       (do-move-to x y))
 
     (define/private (do-move-to x y)
@@ -161,10 +161,10 @@
       (unless (or (pair? open-points)
                   (pair? rev-open-points))
         (error (method-name 'dc-path% 'lines) "path not yet open"))
-      (for ([p (in-lines pts)])
+      (for ([p (in-list pts)])
         (if (pair? p)
-            (do-line-to (car p) (cdr p))
-            (do-line-to (point-x p) (point-y p)))))
+            (do-line-to (+ x (car p)) (+ y (cdr p)))
+            (do-line-to (+ x (point-x p)) (+ y (point-y p))))))
 
     (def/public (curve-to [real? x1] [real? y1] [real? x2] [real? y2] [real? x3] [real? y3])
       (unless (or (pair? open-points)

@@ -722,9 +722,11 @@
 				  (let ([start x])
 				    ;; First three return icons:
 				    (do-one return 'solid black)
+                                    (printf "HERE\n")
 				    (do-one return 'solid red)
+                                    (printf "DONE\n")
 				    (do-one return 'opaque red)
-				    ;; Next three, on a bluew background
+				    ;; Next three, on a blue background
 				    (let ([end x]
 					  [b (send dc get-brush)])
 				      (send dc set-brush (make-object brush% "BLUE" 'solid))
@@ -1088,7 +1090,10 @@
 				 [use-bad? #t]
 				 [use-bitmap? (and (= w (* xscale DRAW-WIDTH)) (= h (* yscale DRAW-HEIGHT)))]
 				 [else (and (= w (* 2 DRAW-WIDTH)) (= h (* 2 DRAW-HEIGHT)))])
-			  (error 'x "wrong size reported by get-size: ~a ~a" w h)))
+			  (error 'x "wrong size reported by get-size: ~a ~a (not ~a)" w h
+                                 (if use-bitmap?
+                                     (list (* xscale DRAW-WIDTH) (* yscale DRAW-HEIGHT))
+                                     (list (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT))))))
 
 		      (send dc set-clipping-region #f)
 
