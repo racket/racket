@@ -1,8 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label scheme/base
-                     test-engine/scheme-tests
-                     (prefix-in gui: test-engine/scheme-gui)))
+          (for-label racket/base
+                     test-engine/racket-tests
+                     (prefix-in gui: test-engine/racket-gui)))
 
 @title{Test Support}
 
@@ -14,7 +14,7 @@
 
 @section{Using Check Forms}
 
-@defmodule[test-engine/scheme-tests]
+@defmodule[test-engine/racket-tests]
 
 This module provides test forms for use in Racket programs, as well
 as parameters to configure the behavior of test reports.
@@ -22,7 +22,7 @@ as parameters to configure the behavior of test reports.
 Each check form may only occur at the top-level; results are collected
 and reported by the test function.  Note that the check forms only
 register checks to be performed.  The checks are actually run by the
-@scheme[test] function.
+@racket[test] function.
 
 @defproc[(check-expect (test any/c) (expected any/c)) void?]{
 
@@ -34,7 +34,7 @@ It is an error to produce a function value or an inexact number.}
 
 @defproc[(check-within (test any/c) (expected any/c) (delta number?)) void?]{
 
-Like @scheme[check-expect], but with an extra expression that produces
+Like @racket[check-expect], but with an extra expression that produces
 a number delta. Every number in the first expression must be within
 delta of the cooresponding number in the second expression.
 
@@ -85,14 +85,14 @@ suppress evaluation of test expressions.
 
 @section{GUI Interface}
 
-@defmodule[test-engine/scheme-gui]
+@defmodule[test-engine/racket-gui]
 
 @; FIXME: need to actually list the bindings here, so they're found in
 @; the index
 
 This module requires GRacket and produces an independent window when
 displaying test results.  It provides the same bindings as
-@scheme[test-engine/scheme-tests].
+@racket[test-engine/racket-tests].
 
 @section{Integrating languages with Test Engine}
 
