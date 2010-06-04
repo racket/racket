@@ -67,7 +67,7 @@ Returns a list of visible top-level frames and dialogs in the current
 }
 
 @defproc[(get-top-level-focus-window)
-         (or/c @scheme[frame%] or @scheme[dialog%] object false/c)]{
+         (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c)]{
 Returns the top level window in the current eventspace that has the
  keyboard focus (or contains the window with the keyboard focus), or
  @scheme[#f] if no window in the current eventspace has the focus.
@@ -75,7 +75,7 @@ Returns the top level window in the current eventspace that has the
 }
 
 @defproc[(get-top-level-edit-target-window)
-         (or/c @scheme[frame%] or @scheme[dialog%] object false/c)]{
+         (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c)]{
 Returns the top level window in the current eventspace that is visible
  and most recently had the keyboard focus (or contains the window that
  had the keyboard focus), or @scheme[#f] if there is no visible window

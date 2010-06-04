@@ -45,7 +45,7 @@ user selects the application @onscreen{About} menu item in Mac OS
 X.  The thunk is always called in the initial eventspace's
 handler thread (as a callback).
 
-The default handler displays a generic PLT Scheme dialog.
+The default handler displays a generic Racket dialog.
 
 If the current eventspace is not the initial eventspace, this
 procedure returns @scheme[void] (when called with zero arguments)
