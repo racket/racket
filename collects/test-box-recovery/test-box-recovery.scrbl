@@ -16,4 +16,4 @@ plain-text @scheme[check-expect] forms.
 If either the test or expected-result expression contains non-text
 (e.g., an image), the converted form is a comment box containing a
 @scheme[check-expect] form. The box should be easy to remove using the
-@menuitem["Scheme" "Uncomment"] menu item in DrRacket.
+@menuitem["Racket" "Uncomment"] menu item in DrRacket.
