@@ -90,7 +90,7 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar["}"]]{matches @litchar["{"] or raises @Exn[exn:fail:read]}
 
   @dispatch[@litchar{"}]{starts a string; see @secref["parse-string"]}
-  @dispatch[@litchar{,}]{starts a quote; see @secref["parse-quote"]}
+  @dispatch[@litchar{'}]{starts a quote; see @secref["parse-quote"]}
   @dispatch[@litchar{`}]{starts a quasiquote; see @secref["parse-quote"]}
   @dispatch[@litchar{,}]{starts an [splicing] unquote; see @secref["parse-quote"]}
 
