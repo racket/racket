@@ -11,5 +11,5 @@
 (define-on-demand scheme-properties
   (let ([abs (lambda (s)
                (path->main-collects-relative (build-path (collection-path "scribble") s)))])
-    (list (make-css-addition (abs "scheme.css"))
-          (make-tex-addition (abs "scheme.tex")))))
+    (list (make-css-addition (abs "racket.css"))
+          (make-tex-addition (abs "racket.tex")))))

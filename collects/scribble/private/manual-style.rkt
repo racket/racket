@@ -217,17 +217,17 @@
 
 (define (filebox filename . inside)
   (make-nested-flow 
-   (make-style "Sfilebox" scheme-properties)
+   (make-style "Rfilebox" scheme-properties)
    (list
     (make-styled-paragraph 
      (list (make-element
-            (make-style "Sfilename" scheme-properties)
+            (make-style "Rfilename" scheme-properties)
             (if (string? filename)
                 (filepath filename)
                 filename)))
-     (make-style "Sfiletitle" scheme-properties))
+     (make-style "Rfiletitle" scheme-properties))
     (make-nested-flow 
-     (make-style "Sfilecontent" scheme-properties)
+     (make-style "Rfilecontent" scheme-properties)
      (decode-flow inside)))))
 
 

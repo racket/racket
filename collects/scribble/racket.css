@@ -2,9 +2,9 @@
 /* See the beginning of "scribble.css". */
 
 /* Monospace: */
-.ScmIn, .ScmRdr, .ScmPn, .ScmMeta,
-.ScmMod, .ScmKw, .ScmVar, .ScmSym,
-.ScmRes, .ScmOut, .ScmCmt, .ScmVal {
+.RktIn, .RktRdr, .RktPn, .RktMeta,
+.RktMod, .RktKw, .RktVar, .RktSym,
+.RktRes, .RktOut, .RktCmt, .RktVal {
   font-family: monospace;
 }
 
@@ -35,84 +35,84 @@
 }
 
 /* ---------------------------------------- */
-/* Scheme text styles */
+/* Racket text styles */
 
-.ScmIn {
+.RktIn {
   color: #cc6633;
   background-color: #eeeeee;
 }
 
-.ScmInBG {
+.RktInBG {
   background-color: #eeeeee;
 }
 
-.ScmRdr {
+.RktRdr {
 }
 
-.ScmPn {
+.RktPn {
   color: #843c24;
 }
 
-.ScmMeta {
+.RktMeta {
   color: black;
 }
 
-.ScmMod {
+.RktMod {
   color: black;
 }
 
-.ScmOpt {
+.RktOpt {
   color: black;
 }
 
-.ScmKw {
+.RktKw {
   color: black;
   font-weight: bold;
 }
 
-.ScmErr {
+.RktErr {
   color: red;
   font-style: italic;
 }
 
-.ScmVar {
+.RktVar {
   color: #262680;
   font-style: italic;
 }
 
-.ScmSym {
+.RktSym {
   color: #262680;
 }
 
-.ScmValLink {
+.RktValLink {
   text-decoration: none;
   color: blue;
 }
 
-.ScmModLink {
+.RktModLink {
   text-decoration: none;
   color: blue;
 }
 
-.ScmStxLink {
+.RktStxLink {
   text-decoration: none;
   color: black;
   font-weight: bold;
 }
 
-.ScmRes {
+.RktRes {
   color: #0000af;
 }
 
-.ScmOut {
+.RktOut {
   color: #960096;
 }
 
-.ScmCmt {
+.RktCmt {
   color: #c2741f;
 }
 
-.ScmVal {
+.RktVal {
   color: #228b22;
 }
 
@@ -130,7 +130,7 @@
   vertical-align: bottom;
 }
 
-.ScmBlk td {
+.RktBlk td {
   vertical-align: baseline;
 }
 
@@ -151,7 +151,7 @@
   float: right;
 }
 
-.SBibliography td {
+.RBibliography td {
   vertical-align: text-top;
 }
 
@@ -165,17 +165,17 @@
  margin-right: 1em;
 }
 
-.Sfilebox {
+.Rfilebox {
   margin-left: 1em;
   margin-right: 1em;
 }
 
-.Sfiletitle {
+.Rfiletitle {
   text-align: right;
   margin: 0em 0em 0em 0em;
 }
 
-.Sfilename {
+.Rfilename {
   border-top: 1px solid #6C8585;
   border-right: 1px solid #6C8585;
   padding-left: 0.5em;
@@ -183,6 +183,6 @@
   background-color: #ECF5F5;
 }
 
-.Sfilecontent {
+.Rfilecontent {
   margin: 0em 0em 0em 0em;
 }

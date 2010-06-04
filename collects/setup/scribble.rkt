@@ -287,7 +287,7 @@
                                                  (format "../~a" s)))])
                            (list (std-path "scribble.css")
                                  (std-path "scribble-style.css")
-                                 (std-path "scheme.css")
+                                 (std-path "racket.css")
                                  (std-path "scribble-common.js")))
                          null)]
         ;; For main-directory, non-start files, up-path is #t, which makes the
