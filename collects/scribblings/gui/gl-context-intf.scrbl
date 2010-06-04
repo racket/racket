@@ -17,10 +17,10 @@ Only canvas @scheme[dc<%>] and @scheme[bitmap-dc%] objects support
  @scheme[gl-context<%>] keeps its identity. Canvas contexts are double
  buffered, and bitmap contexts are single buffered.
 
-The @schememodname[scheme/gui/base] library provides no OpenGL
+The @schememodname[racket/gui/base] library provides no OpenGL
  routines. Instead, they must be obtained from a separate library,
  such as @schememodname[sgl]. The facilities in
- @schememodname[scheme/gui/base] merely manage the current OpenGL
+ @schememodname[racket/gui/base] merely manage the current OpenGL
  context, connecting it to windows and bitmaps.
 
 Only one OpenGL context can be active at a time across all threads and
@@ -31,7 +31,7 @@ Only one OpenGL context can be active at a time across all threads and
  only within a thunk passed to @method[gl-context<%> call-as-current],
  then drawing from the separate threads will not interfere, because
  @method[gl-context<%> call-as-current] uses a lock to serialize
- context selection across all threads in PLT Scheme.
+ context selection across all threads in Racket.
 
 
 @defmethod[(call-as-current [thunk (-> any)]

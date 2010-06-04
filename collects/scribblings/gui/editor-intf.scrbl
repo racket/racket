@@ -1724,7 +1724,7 @@ If @scheme[fit-on-page?] is a true value, then during printing for a
 
 The @scheme[output-mode] setting is used for Windows and Mac OS X. It
  determines whether the output is generated directly as a PostScript
- file (using PLT Scheme's built-in PostScript system) or generated
+ file (using Racket's built-in PostScript system) or generated
  using the platform-specific standard printing mechanism. The possible
  values are
 

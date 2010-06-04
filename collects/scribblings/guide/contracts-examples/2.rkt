@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ;; a contract utility 
 (define (eq/c x) (lambda (y) (eq? x y)))

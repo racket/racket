@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 ;; Note: this queue doesn't implement the capacity restriction
 ;; of McKim and Mitchell's queue but this is easy to add.
