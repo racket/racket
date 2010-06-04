@@ -1857,6 +1857,7 @@ path/s is either such a string or a list of them.
 "collects/web-server/scribblings/tutorial/examples/dummy-3.rkt" drdr:command-line #f
 "collects/web-server/scribblings/tutorial/examples/iteration-1.rkt" drdr:command-line (mzc *)
 "collects/web-server/scribblings/tutorial/examples/iteration-10.rkt" drdr:command-line #f
+"collects/web-server/scribblings/tutorial/examples/iteration-11.rkt" drdr:command-line #f
 "collects/web-server/scribblings/tutorial/examples/iteration-2.rkt" drdr:command-line (mzc *)
 "collects/web-server/scribblings/tutorial/examples/iteration-3.rkt" drdr:command-line (mzc *)
 "collects/web-server/scribblings/tutorial/examples/iteration-4.rkt" drdr:command-line (mzc *)
