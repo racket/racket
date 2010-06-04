@@ -465,20 +465,21 @@
 
 (d/c (subst-gen C R)
   (cset? Type? . -> . (or/c #f list?))
-  ;; fixme - should handle these separately
-  (define must-vars (append (fv R) (fi R)))
-  (define (constraint->type v #:variable [variable #f])
+  (define var-hash (free-vars* R))
+  (define idx-hash (free-idxs* R))
+  ;; v : Symbol - variable for which to check variance
+  ;; h : (Hash Symbol Variance) - hash to check variance in (either var or idx hash)
+  ;; variable: Symbol - variable to use instead, if v was a temp var for idx extension
+  (define (constraint->type v h #:variable [variable #f])
     (match v
       [(struct c (S X T))
-       ;; fixme - handle free indexes, remove Dotted
-       (let ([var (hash-ref (free-vars* R) (or variable X) (λ () (hash-ref (free-idxs* R) (or variable X) Constant)))])
+       (let ([var (hash-ref h (or variable X) Constant)])
          ;(printf "variance was: ~a~nR was ~a~nX was ~a~nS T ~a ~a~n" var R (or variable X) S T)
          (evcase var 
                  [Constant S]
                  [Covariant S]
                  [Contravariant T]
-                 [Invariant S]
-                 [Dotted T]))]))  
+                 [Invariant S]))]))
   (match (car (cset-maps C))
     [(cons cmap (dmap dm))
      (let ([subst (append 
@@ -487,18 +488,27 @@
                        [(dcon fixed rest)
                         (list k
                               (for/list ([f fixed])
-                                (constraint->type f #:variable k))
-                              (and rest (constraint->type rest)))]
+                                (constraint->type f idx-hash #:variable k))
+                              (and rest (constraint->type rest idx-hash)))]
                        [(dcon-exact fixed rest)
                         (list k
                               (for/list ([f fixed])
-                                (constraint->type f #:variable k))
-                              (constraint->type rest))]))
+                                (constraint->type f idx-hash #:variable k))
+                              (constraint->type rest idx-hash))]))
                    (for/list ([(k v) (in-hash cmap)])
-                     (list k (constraint->type v))))])
+                     (list k (constraint->type v var-hash))))])
        ;; verify that we got all the important variables
-       (and (for/and ([v must-vars])
-              (assq v subst))
+       (and (for/and ([v (fv R)])
+              (let ([entry (assq v subst)])
+                ;; Make sure we got a subst entry for a type var
+                ;; (i.e. just a type to substitute)
+                (and entry (= (length entry) 2))))
+            (for/and ([v (fi R)])
+              (let ([entry (assq v subst)])
+                ;; Make sure we got a subst entry for an index var
+                ;; (i.e. a list of types for the fixed portion
+                ;;  and a type for the starred portion)
+                (and entry (= (length entry) 3))))
             subst))]))
 
 ;; V : a set of variables not to mention in the constraints
