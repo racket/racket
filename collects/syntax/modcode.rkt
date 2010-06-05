@@ -107,8 +107,9 @@
                                        (build-path base alt-file)))]
                   [(base) (if (eq? base 'relative) 'same base)]
                   [(mode) (use-compiled-file-paths)])
-      (let* ([main-path-d (file-or-directory-modify-seconds path #f (lambda () #f))]
+      (let* ([main-path-d (file-or-directory-modify-seconds orig-path #f (lambda () #f))]
              [alt-path-d (and alt-path
+                              (not main-path-d)
                               (file-or-directory-modify-seconds alt-path #f (lambda () #f)))]
              [path-d (or main-path-d alt-path-d)]
              [file (if alt-path-d alt-file main-file)]
