@@ -63,3 +63,10 @@ Beware, however, that `scheme/unit' (and therefore `scheme') exports a
 
 The `slideshow' and `scribble/base' languages are now derived from
 `racket' and `racket/base' instead of `scheme' and `scheme/base'.
+
+The preferred file extension for Racket sources is ".rkt". To smooth
+the transition to the new file extension, a ".ss" file extension in a
+module reference is automatically converted to ".rkt". At the same
+time, when loading a module through a path that ends in ".rkt", a
+".ss" file is substituted if it exists while the ".rkt" version
+doesn't exist.
