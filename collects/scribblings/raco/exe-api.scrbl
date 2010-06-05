@@ -43,8 +43,8 @@ parameter is true.
 
 @defproc[(create-embedding-executable [dest path-string?]
                                [#:modules mod-list 
-                                          (listof (list/c (or/c symbol? (one-of/c #t #f)) 
-                                                          module-path?))
+                                          (listof (list/c (or/c symbol? #t #f)
+                                                          (or/c path? module-path?)))
                                           null]
                                [#:configure-via-first-module? config-via-first? 
                                                               any/c 
@@ -64,28 +64,28 @@ parameter is true.
                                                   null]
                                [#:gracket? gracket? any/c #f]
                                [#:mred? mred? any/c #f]
-                               [#:variant variant (one-of/c 'cgc '3m)
+                               [#:variant variant (or/c 'cgc '3m)
                                                   (system-type 'gc)]
                                [#:aux aux (listof (cons/c symbol? any/c)) null]
                                [#:collects-path collects-path
-                                                (or/c false/c 
+                                                (or/c #f
                                                       path-string? 
                                                       (listof path-string?))
                                                 #f]
                                [#:launcher? launcher? any/c #f]
                                [#:verbose? verbose? any/c #f]
+                               [#:expand-namespace expand-namespace namespace? (current-namespace)]
                                [#:compiler compile-proc (any/c . -> . compiled-expression?) 
                                            (lambda (e)
                                              (parameterize ([current-namespace 
                                                              expand-namespace])
                                                (compile e)))]
-                               [#:expand-namespace expand-namespace namespace? (current-namespace)]
                                [#:src-filter src-filter (path? . -> . any) (lambda (p) #t)]
                                [#:on-extension ext-proc
-                                               (or/c false/c (path-string? boolean? . -> . any))
+                                               (or/c #f (path-string? boolean? . -> . any))
                                                #f]
                                [#:get-extra-imports extras-proc 
-                                                    (path? compiled-module? 
+                                                    (path? compiled-module-expression? 
                                                      . -> . (listof module-path?))
                                                     (lambda (p m) null)])
          void?]{
