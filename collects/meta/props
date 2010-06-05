@@ -976,6 +976,7 @@ path/s is either such a string or a list of them.
 "collects/meta/check-dists.rkt" drdr:command-line #f
 "collects/meta/contrib/completion/racket-completion.bash" responsible (samth sstrickl) drdr:command-line #f
 "collects/meta/drdr" responsible (jay) drdr:command-line #f
+"collects/meta/web/build.rkt" drdr:command-line #f
 "collects/mred" responsible (mflatt)
 "collects/mred/edit-main.rkt" drdr:command-line (mzc *)
 "collects/mred/edit.rkt" drdr:command-line (gracket-text "-t" *)
