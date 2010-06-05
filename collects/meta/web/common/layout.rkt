@@ -19,6 +19,15 @@
                        [body #`(lambda () (text #,@xs))])
            #'(layouter id ... x ... body))])))
 
+(define (id->file who id sfx dir)
+  (let* ([f (and id (symbol->string (force id)))]
+         [f (cond [(and f (regexp-match #rx"[.]" f)) f]
+                  [(and f sfx)
+                   (string-append f (regexp-replace #rx"^[.]?" sfx "."))]
+                  [else (error 'who "missing `#:file', or `#:id'~a"
+                               (if sfx "" " and `#:suffix'"))])])
+    (if dir (web-path dir f) f)))
+
 ;; The following are not intended for direct use, see
 ;; `define+provide-context' below (it could be used with #f for the
 ;; directory if this ever gets used for a flat single directory web
@@ -28,12 +37,7 @@
 (define-syntax (plain stx)
   (syntax-case stx () [(_ . xs) (process-contents 'plain #'plain* stx #'xs)]))
 (define (plain* #:id [id #f] #:suffix [suffix #f] #:dir [dir #f]
-                #:file
-                [file (if (and id suffix)
-                        (let ([f (format "~a.~a" (force id) suffix)])
-                          (if dir (web-path dir f) f))
-                        (error 'plain
-                               "missing `#:file', or `#:id' and `#:suffix'"))]
+                #:file [file (id->file 'plain id suffix dir)]
                 #:referrer
                 [referrer (lambda (url)
                             (error 'plain "no referrer for ~e" file))]
@@ -48,15 +52,13 @@
   (syntax-case stx () [(_ . xs) (process-contents 'page #'page* stx #'xs)]))
 (define (page* #:id [id #f]
                #:dir [dir #f]
-               #:file [file (if id
-                              (format "~a.html" (force id))
-                              (error 'page "missing `#:file' or `#:id'"))]
+               #:file [file (id->file 'page id "html" dir)]
                #:title [label (if id
                                 (let* ([id (->string (force id))]
                                        [id (regexp-replace #rx"^.*/" id "")]
                                        [id (regexp-replace #rx"-" id " ")])
                                   (string-titlecase id))
-                                (error 'page "missing `#:file' or `#:title'"))]
+                                (error 'page "missing `#:id' or `#:title'"))]
                #:link-title [linktitle label]
                #:window-title [wintitle @list{Racket: @label}]
                #:full-width [full-width #f]
@@ -79,9 +81,7 @@
              @(if body-attrs
                 (apply body `(,@body-attrs ,content))
                 (body content))}))
-  (define this
-    (resource (if dir (web-path dir file) file)
-              (file-writer output-xml page) referrer))
+  (define this (resource file (file-writer output-xml page) referrer))
   this)
 
 (provide set-navbar!)

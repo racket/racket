@@ -2,22 +2,26 @@
 
 (define-syntax-rule (define* id E) (begin (define id E) (provide id)))
 
+(define ((make-link url . text) . alternate)
+  (a href: url (if (null? alternate) text alternate)))
+
 ;; ----------------------------------------------------------------------------
 ;; Pages that are made outside of this system
 
-(define* -planet @a[href: "http://planet.racket-lang.org/"]{PLaneT})
+(define* -planet @make-link["http://planet.racket-lang.org/"]{PLaneT})
 
 (define doc-url "http://docs.racket-lang.org/")
 
-(define* -docs @a[href: doc-url]{Documentation})
+(define* -docs @make-link[doc-url]{Documentation})
 
 (define-syntax-rule (define-doc-link id desc)
-  (define* id @a[href: `(,doc-url id "/")]{
+  (define* id @make-link[`(,doc-url id "/")]{
                 @strong{@(string-titlecase (symbol->string 'id))}: @desc}))
 
 @define-doc-link[quick]{An Introduction to Racket with Pictures}
 @define-doc-link[more ]{Systems Programming with Racket}
 @define-doc-link[guide]{Racket}
+@define-doc-link[continue]{Continue}
 
 (define* intros (list quick more guide))
 
@@ -25,22 +29,25 @@
 ;; External links
 
 (define* -htdp
-  @a[href: "http://www.htdp.org/"]{@i{How to Design Programs}})
+  @make-link["http://www.htdp.org/"]{@i{How to Design Programs}})
+
+(define* -redex
+  @make-link["http://redex.plt-scheme.org/"]{Redex})
 
 (define* -teachscheme
-  @a[href: "http://www.teach-scheme.org/"]{TeachScheme!})
+  @make-link["http://www.teach-scheme.org/"]{TeachScheme!})
 
 (define* -cookbook
-  @a[href: "http://schemecookbook.org/"]{Schematics Scheme Cookbook})
+  @make-link["http://schemecookbook.org/"]{Schematics Scheme Cookbook})
 
 (define* -schematics
-  @a[href: "http://sourceforge.net/projects/schematics/"]{Schematics})
+  @make-link["http://sourceforge.net/projects/schematics/"]{Schematics})
 
 (define* -schemers
-  @a[href: "http://schemers.org/"]{@tt{schemers.org}})
+  @make-link["http://schemers.org/"]{@tt{schemers.org}})
 
 (define* -plai
-  @a[href: "http://www.plai.org/"]{
+  @make-link["http://www.plai.org/"]{
     @i{Programming Languages: Application and Interpretation}})
 
-(define* -bootstrap @a[href: "http://www.bootstrapworld.org/"]{Bootstrap})
+(define* -bootstrap @make-link["http://www.bootstrapworld.org/"]{Bootstrap})
