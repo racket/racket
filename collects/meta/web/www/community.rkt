@@ -1,6 +1,7 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "../stubs/blog.rkt" "../stubs/git.rkt" "../stubs/pre.rkt")
+(require "../stubs/blog.rkt" "../stubs/git.rkt" "../stubs/pre.rkt"
+         "people.rkt")
 
 (define (TT . xs)
   @tt[style: "background-color: #dde;"]{@xs})
@@ -52,7 +53,7 @@
         the classroom.})
     (parlist @strong{PLT Scheme Inc.}
       @text{@blog @mdash announcements, helpful hints, and thoughtful rants.}
-      ;;TODO @text{@people @mdash the people behind Racket.}
+      @text{@people @mdash the people behind Racket.}
       )
     (parlist @strong{Development}
       @text{@git (also available on
