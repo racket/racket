@@ -38,6 +38,7 @@
                          #:collects-path (or/c #f
                                                path-string?
                                                (listof path-string?))
+                         #:collects-dest (or/c #f path-string?)
                          #:launcher? any/c	 
                          #:verbose? any/c	 
                          #:compiler (-> any/c compiled-expression?)	 

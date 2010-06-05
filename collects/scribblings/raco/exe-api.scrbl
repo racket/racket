@@ -72,6 +72,9 @@ parameter is true.
                                                       path-string? 
                                                       (listof path-string?))
                                                 #f]
+                               [#:collects-dest collects-dest
+                                                (or/c #f path-string?)
+                                                #f]
                                [#:launcher? launcher? any/c #f]
                                [#:verbose? verbose? any/c #f]
                                [#:expand-namespace expand-namespace namespace? (current-namespace)]
@@ -155,6 +158,11 @@ below. When a module declares run-time paths via
 @racket[define-runtime-path], the generated executable records the
 path (for use both by immediate execution and for creating a
 distribution that contains the executable).
+
+If @racket[collects-dest] is a path insteda of @racket[#f], then
+instead of embedding collection-based modules into the executable, the
+modules (in compiled form, only) are copied into collections in the
+@racket[collects-dest] directory.
 
 The optional @racket[#:aux] argument is an association list for
 platform-specific options (i.e., it is a list of pairs where the first
