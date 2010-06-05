@@ -2,4 +2,4 @@
 
 (provide page (all-from-out "../common.rkt"))
 
-(define+provide-context page copyfile "download")
+(define+provide-context "download")

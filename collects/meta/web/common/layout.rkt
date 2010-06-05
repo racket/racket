@@ -19,10 +19,14 @@
                        [body #`(lambda () (text #,@xs))])
            #'(layouter id ... x ... body))])))
 
+;; The following are not intended for direct use, see
+;; `define+provide-context' below (it could be used with #f for the
+;; directory if this ever gets used for a flat single directory web
+;; page.)
+
 ;; for plain text files
 (define-syntax (plain stx)
   (syntax-case stx () [(_ . xs) (process-contents 'plain #'plain* stx #'xs)]))
-(provide plain)
 (define (plain* #:id [id #f] #:suffix [suffix #f] #:dir [dir #f]
                 #:file
                 [file (if (and id suffix)
@@ -40,7 +44,6 @@
             referrer))
 
 ;; page layout function
-;; (not providing `page', see `define+provide-context' below)
 (define-syntax (page stx)
   (syntax-case stx () [(_ . xs) (process-contents 'page #'page* stx #'xs)]))
 (define (page* #:id [id #f]
@@ -154,11 +157,19 @@
 ;; `define+provide-context' should be used in each toplevel directory (= each
 ;; site) to have its own resources (and possibly other customizations).
 (provide define+provide-context)
-(define-syntax-rule (define+provide-context page-id copyfile-id dir)
-  (begin (define resources
-           (make-resources (make-icon dir) (make-logo dir) (make-style dir)))
-         (define-syntax-rule (page-id . xs)
-           (page #:resources resources #:dir dir . xs))
-         (define (copyfile-id source [target #f] [referrer values])
-           (copyfile-resource source target referrer #:dir dir))
-         (provide page-id copyfile-id)))
+(define-syntax (define+provide-context stx)
+  (syntax-case stx ()
+    [(_ dir)
+     (with-syntax ([page-id     (datum->syntax stx 'page)]
+                   [plain-id    (datum->syntax stx 'plain)]
+                   [copyfile-id (datum->syntax stx 'copyfile)])
+       #'(begin
+           (define resources
+             (make-resources (make-icon dir) (make-logo dir) (make-style dir)))
+           (define-syntax-rule (page-id . xs)
+             (page #:resources resources #:dir dir . xs))
+           (define-syntax-rule (plain-id . xs)
+             (plain #:dir dir . xs))
+           (define (copyfile-id source [target #f] [referrer values])
+             (copyfile-resource source target referrer #:dir dir))
+           (provide page-id plain-id copyfile-id)))]))
