@@ -9,7 +9,8 @@ exec "$exe" "$0" "$@"
 
 (require racket/cmdline racket/runtime-path
          racket/string racket/file
-         "html/resource.rkt" "config.rkt" "navbar.rkt")
+         "html/resource.rkt" "common/distribute.rkt"
+         "config.rkt" "navbar.rkt")
 
 (define build-mode #f)
 (define distribute? #f)
@@ -59,12 +60,7 @@ exec "$exe" "$0" "$@"
       (for-each delete-directory/files paths)
       (raise-user-error 'build "Aborting."))))
 
-(printf "Building~a ~a content...\n"
-        (if distribute? " and distributing" "") build-mode)
-(parameterize ([url-roots (and (eq? 'web build-mode)
-                               (map (lambda (site)
-                                      (list (site-dir site)
-                                            (site-url site)))
-                                    sites))])
-  (render-all))
+(printf "Building ~a content...\n" build-mode)
+(parameterize ([url-roots (and (eq? 'web build-mode) sites)]) (render-all))
+(when distribute? (printf "Distributing...\n") (distribute distributions))
 (printf "Done.\n")
