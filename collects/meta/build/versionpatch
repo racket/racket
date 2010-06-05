@@ -8,7 +8,7 @@ exec racket -um "$0" "$@"
 
 (define (patches)
   ;; no grouping parens in regexps
-  (let* ([3parts? (regexp-match? #rx"^[0-9]+\\.[0-9]+\\.[0-9]+$" the-version)]
+  (let* ([parts# (length (regexp-split #rx"[.]" the-version))]
          [concat
           (lambda xs
             (apply bytes-append
@@ -24,14 +24,15 @@ exec racket -um "$0" "$@"
                                  "(?:\\\\0)?\""))])
     `([#t ; only verify that it has the right contents
        "src/racket/src/schvers.h"
-       ,(concat  "\n#define MZSCHEME_VERSION \"<1>.<2>.<3>"
-                 (if 3parts? "" ".<4>") "\"\n")
-       ,@(map (lambda (x+n)
-                (format "\n#define MZSCHEME_VERSION_~a ~a\n"
-                        (car x+n)
-                        (if (and 3parts? (eq? 4 (cadr x+n)))
-                          "0" (format "<~a>" (cadr x+n)))))
-              '([X 1] [Y 2] [Z 3] [W 4]))]
+       ,(concat "\n#define MZSCHEME_VERSION \"<1>.<2>"
+                (if (parts# . >= . 3) ".<3>" "")
+                (if (parts# . >= . 4) ".<4>" "")
+                "\"\n")
+       ,@(for/list ([x+n (in-list '([X 1] [Y 2] [Z 3] [W 4]))])
+           (format "\n#define MZSCHEME_VERSION_~a ~a\n"
+                   (car x+n)
+                   (if ((cadr x+n) . > . parts#)
+                     "0" (format "<~a>" (cadr x+n)))))]
       ["src/worksp/racket/racket.rc"   ,@rc-patch]
       ["src/worksp/gracket/gracket.rc" ,@rc-patch]
       ["src/worksp/starters/start.rc"    ,@rc-patch]
