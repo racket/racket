@@ -94,6 +94,9 @@
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
+(drr:set-default 'drracket:create-executable-gui-type 'stand-alone (λ (x) (memq x '(launcher stand-alone distribution))))
+(drr:set-default 'drracket:create-executable-gui-base 'racket (λ (x) (memq x '(racket gracket))))
+
 (drr:set-default 'drracket:logger-gui-tab-panel-level 0 (λ (x) (and (exact-integer? x) (<= 0 x 5)))) 
 
 (drr:set-default 'drracket:saved-bug-reports 

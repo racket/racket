@@ -670,14 +670,25 @@
                                           (string-constant stand-alone-explanatory-label)
                                           (string-constant distribution-explanatory-label)))
                            (parent type-panel)
-                           (callback (lambda (rb e) (reset-filename-suffix))))))
+                           (callback (lambda (rb e) 
+                                       (preferences:set 'drracket:create-executable-gui-type
+                                                        (case (send rb get-selection)
+                                                          [(0) 'launcher]
+                                                          [(1) 'stand-alone]
+                                                          [(2) 'distribution]))
+                                       (reset-filename-suffix))))))
     (define base-panel (make-object horizontal-panel% type/base-panel))
     (define base-rb (and (boolean? show-base)
                          (instantiate radio-box% ()
                            (label (string-constant executable-base))
                            (choices (list "Racket" "GRacket"))
                            (parent base-panel)
-                           (callback (lambda (rb e) (reset-filename-suffix))))))
+                           (callback (lambda (rb e)
+                                       (preferences:set 'drracket:create-executable-gui-base
+                                                        (case (send rb get-selection)
+                                                          [(0) 'racket]
+                                                          [(1) 'gracket]))
+                                       (reset-filename-suffix))))))
     
     (define (reset-filename-suffix)
       (let ([s (send filename-text-field get-value)])
@@ -778,7 +789,17 @@
            'yes))
     
     (define cancelled? #t)
-    
+    (when type-rb
+      (send type-rb set-selection
+            (case (preferences:get 'drracket:create-executable-gui-type)
+              [(launcher) 0]
+              [(stand-alone) 1]
+              [(distribution) 2])))
+    (when base-rb
+      (send base-rb set-selection
+            (case (preferences:get 'drracket:create-executable-gui-base)
+              [(racket) 0]
+              [(gracket) 1])))
     (reset-filename-suffix)
     (send dlg show #t)
     (cond
