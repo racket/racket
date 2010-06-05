@@ -19,14 +19,12 @@
                        [body #`(lambda () (text #,@xs))])
            #'(layouter id ... x ... body))])))
 
-(define (id->file who id sfx dir)
-  (let* ([f (and id (symbol->string (force id)))]
-         [f (cond [(and f (regexp-match #rx"[.]" f)) f]
-                  [(and f sfx)
-                   (string-append f (regexp-replace #rx"^[.]?" sfx "."))]
-                  [else (error 'who "missing `#:file', or `#:id'~a"
-                               (if sfx "" " and `#:suffix'"))])])
-    (if dir (web-path dir f) f)))
+(define (id->file who id sfx)
+  (let ([f (and id (symbol->string (force id)))])
+    (cond [(and f (regexp-match #rx"[.]" f)) f]
+          [(and f sfx) (string-append f (regexp-replace #rx"^[.]?" sfx "."))]
+          [else (error 'who "missing `#:file', or `#:id'~a"
+                       (if sfx "" " and `#:suffix'"))])))
 
 ;; The following are not intended for direct use, see
 ;; `define+provide-context' below (it could be used with #f for the
@@ -37,13 +35,13 @@
 (define-syntax (plain stx)
   (syntax-case stx () [(_ . xs) (process-contents 'plain #'plain* stx #'xs)]))
 (define (plain* #:id [id #f] #:suffix [suffix #f] #:dir [dir #f]
-                #:file [file (id->file 'plain id suffix dir)]
+                #:file [file (id->file 'plain id suffix)]
                 #:referrer
                 [referrer (lambda (url)
                             (error 'plain "no referrer for ~e" file))]
                 #:newline [newline? #t]
                 . content)
-  (resource file
+  (resource (if dir (web-path dir file) file)
             (file-writer output (list content (and newline? "\n")))
             referrer))
 
@@ -52,7 +50,7 @@
   (syntax-case stx () [(_ . xs) (process-contents 'page #'page* stx #'xs)]))
 (define (page* #:id [id #f]
                #:dir [dir #f]
-               #:file [file (id->file 'page id "html" dir)]
+               #:file [file (id->file 'page id "html")]
                #:title [label (if id
                                 (let* ([id (->string (force id))]
                                        [id (regexp-replace #rx"^.*/" id "")]
@@ -81,7 +79,9 @@
              @(if body-attrs
                 (apply body `(,@body-attrs ,content))
                 (body content))}))
-  (define this (resource file (file-writer output-xml page) referrer))
+  (define this (resource (if dir (web-path dir file) file)
+                         (file-writer output-xml page)
+                         referrer))
   this)
 
 (provide set-navbar!)
