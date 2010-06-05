@@ -13,8 +13,11 @@
        #`(build-path '#,src path paths ...))]))
 
 (provide copyfile-resource)
-(define (copyfile-resource source target [referrer values])
-  (resource target (lambda (file) (copy-file source file)) referrer))
+(define (copyfile-resource source [target #f] [referrer values] #:dir [dir #f])
+  (let ([target (or target (let-values ([(base file dir?) (split-path source)])
+                             (path->string file)))])
+    (resource (if dir (web-path dir target) target)
+              (lambda (file) (copy-file source file)) referrer)))
 
 (provide web-path)
 (define (web-path . xs)

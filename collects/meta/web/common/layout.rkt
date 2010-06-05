@@ -27,7 +27,7 @@
                 #:file
                 [file (if (and id suffix)
                         (let ([f (format "~a.~a" (force id) suffix)])
-                          (if dir (string-append dir "/" f) f))
+                          (if dir (web-path dir f) f))
                         (error 'plain
                                "missing `#:file', or `#:id' and `#:suffix'"))]
                 #:referrer
@@ -40,7 +40,7 @@
             referrer))
 
 ;; page layout function
-;; (not providing `page', see `define-pager' below)
+;; (not providing `page', see `define+provide-context' below)
 (define-syntax (page stx)
   (syntax-case stx () [(_ . xs) (process-contents 'page #'page* stx #'xs)]))
 (define (page* #:id [id #f]
@@ -77,7 +77,7 @@
                 (apply body `(,@body-attrs ,content))
                 (body content))}))
   (define this
-    (resource (if dir (string-append dir "/" file) file)
+    (resource (if dir (web-path dir file) file)
               (file-writer output-xml page) referrer))
   this)
 
@@ -151,11 +151,14 @@
                [else (error 'resources "internal error")])
              more))))
 
-;; `define-pager' should be used in each toplevel directory (= each
+;; `define+provide-context' should be used in each toplevel directory (= each
 ;; site) to have its own resources (and possibly other customizations).
-(provide define-pager)
-(define-syntax-rule (define-pager page-id dir)
+(provide define+provide-context)
+(define-syntax-rule (define+provide-context page-id copyfile-id dir)
   (begin (define resources
            (make-resources (make-icon dir) (make-logo dir) (make-style dir)))
          (define-syntax-rule (page-id . xs)
-           (page #:resources resources #:dir dir . xs))))
+           (page #:resources resources #:dir dir . xs))
+         (define (copyfile-id source [target #f] [referrer values])
+           (copyfile-resource source target referrer #:dir dir))
+         (provide page-id copyfile-id)))
