@@ -403,7 +403,7 @@ format, without the leading quote:
 
 The @filepath{kiddo.rkt} example illustrates how the format for
 printing a result value can depend on the main module of a program
-and the language that is used to implement it.
+instead of the language that is used to implement it.
 
 Unlike the syntax-coloring property of a language (as described in
 @secref["language-get-info"]), the result-value format is a property of a
