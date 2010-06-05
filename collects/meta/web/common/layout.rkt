@@ -57,15 +57,18 @@
                #:link-title [linktitle label]
                #:window-title [wintitle @list{Racket: @label}]
                #:full-width [full-width #f]
+               #:extra-headers [headers #f]
                #:extra-body-attrs [body-attrs #f]
                #:resources resources ; see below
                #:referrer [referrer
                            (lambda (url . more)
                              (a href: url (if (null? more) linktitle more)))]
+               ;; will be used instead of `this' to determine navbar highlights
+               #:part-of [part-of #f]
                content)
   (define (page)
-    (let* ([head    (resources 'head wintitle)]
-           [navbar  (resources 'navbar this)]
+    (let* ([head    (resources 'head wintitle headers)]
+           [navbar  (resources 'navbar (or part-of this))]
            [content (list navbar (if full-width
                                    content
                                    (div class: 'bodycontent content)))])
@@ -136,7 +139,7 @@
           @link[rel: "icon" href: icon type: "image/ico"]
           @link[rel: "shortcut icon" href: icon]
           style))
-  (lambda (title*) (head @title[title*] headers)))
+  (lambda (title* more-headers) (head @title[title*] headers more-headers)))
 
 (define (make-resources icon logo style)
   (let ([make-head   (html-head-maker icon style)]
@@ -155,4 +158,4 @@
   (begin (define resources
            (make-resources (make-icon dir) (make-logo dir) (make-style dir)))
          (define-syntax-rule (page-id . xs)
-           (page #:resources resources #:dir "www" . xs))))
+           (page #:resources resources #:dir dir . xs))))
