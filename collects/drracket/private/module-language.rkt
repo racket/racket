@@ -360,9 +360,9 @@
         (let* ([executable-specs (drracket:language:create-executable-gui
                                   parent program-filename #t #t)])
           (when executable-specs
-            (let ([launcher? (eq? 'launcher (car executable-specs))]
-                  [gui? (eq? 'mred (cadr executable-specs))]
-                  [executable-filename (caddr executable-specs)])
+            (let ([executable-type (list-ref executable-specs 0)]
+                  [gui? (eq? 'mred (list-ref executable-specs 1))]
+                  [executable-filename (list-ref executable-specs 2)])
               (with-handlers ([(λ (x) #f) ;exn:fail?
                                (λ (x)
                                  (message-box
@@ -370,33 +370,36 @@
                                   (if (exn? x)
                                       (format "~a" (exn-message x))
                                       (format "uncaught exception: ~s" x))))])
-                (if (not launcher?)
-                    (let ([short-program-name
-                           (let-values ([(base name dir) (split-path program-filename)])
-                             (path-replace-suffix name #""))])
-                      ((if (eq? 'distribution (car executable-specs))
-                           drracket:language:create-distribution-for-executable
-                           (lambda (executable-filename gui? make)
-                             (make executable-filename)))
-                       executable-filename
-                       gui?
-                       (lambda (exe-name)
-                         (create-embedding-executable
-                          exe-name
-                          #:mred? gui?
-                          #:verbose? #f ;; verbose?
-                          #:modules (list (list #f program-filename))
-                          #:configure-via-first-module? #t
-                          #:literal-expression
-                          (begin
+                (let ([call-create-embedding-executable
+                       (λ (exe-name)
+                         (let ([short-program-name
+                                (let-values ([(base name dir) (split-path program-filename)])
+                                  (path-replace-suffix name #""))])
+                           (create-embedding-executable
+                            exe-name
+                            #:gracket? gui?
+                            #:verbose? #f
+                            #:modules (list (list #f program-filename))
+                            #:configure-via-first-module? #t
+                            #:literal-expression
                             (parameterize ([current-namespace (make-base-empty-namespace)])
                               (namespace-require 'racket/base)
-                              (compile 
-                               `(namespace-require '',(string->symbol (path->string short-program-name))))))
-                          #:cmdline '("-U" "--")))))
-                    (let ([make-launcher (if gui? make-mred-launcher make-mzscheme-launcher)])
-                      (make-launcher (list "-qt-" (path->string program-filename))
-                                     executable-filename))))))))
+                              (compile
+                               `(namespace-require '',(string->symbol (path->string short-program-name)))))
+                            #:cmdline '("-U" "--"))))])
+                  
+                  (case executable-type
+                    [(launcher)
+                     (let ([make-launcher (if gui? make-mred-launcher make-mzscheme-launcher)])
+                       (make-launcher (list "-qt-" (path->string program-filename))
+                                      executable-filename))]
+                    [(distribution)
+                     (drracket:language:create-distribution-for-executable
+                      executable-filename
+                      gui?
+                      call-create-embedding-executable)]
+                    [(stand-alone)
+                     (call-create-embedding-executable executable-filename)])))))))
       
       (super-new
        [module #f]
