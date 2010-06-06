@@ -46,7 +46,7 @@ Constructs a message in the same manner as @scheme[format] and writes it to
 }
 
 @defform/subs[
-(call/debug function-expr argument ...)
+(debugf function-expr argument ...)
 ([argument argument-expr (code:line argument-keyword argument-expr)])
 ]{
 
@@ -54,7 +54,7 @@ Logs debugging information for @scheme[(#%app function-expr argument ...)],
 including the evaluation and results of the function and each argument.
 
 @examples[#:eval (eval/require 'unstable/debug)
-(call/debug + 1 2 3)
+(debugf + 1 2 3)
 ]
 
 }

@@ -2,7 +2,7 @@
 
 (provide debug
          dprintf
-         call/debug
+         debugf
          begin/debug
          define/debug
          define/private/debug
@@ -112,7 +112,7 @@
         #:source (quote-srcloc #,stx)
         (begin (debug term) ...))]))
 
-(define-syntax (call/debug stx)
+(define-syntax (debugf stx)
 
   (define-splicing-syntax-class argument
     #:attributes ([debugged 1])
@@ -124,7 +124,7 @@
   (syntax-parse stx
     [(_ f:expr arg:argument ...)
      #`(debug
-        #:name 'call/debug
+        #:name 'debugf
         #:source (quote-srcloc #,stx)
         (#%app (debug f) arg.debugged ... ...))]))
 
