@@ -10,7 +10,7 @@
 
 (provide index)
 (define index
-  (page #:link-title "Download" #:window-title "Download Racket"
+  (page #:link-title "Downloads"
     @ul{@li{Current @a[href: `(,installers "/recent")]{installers}
             (or @a[href: installers]{all versions}).}
         @li{Current documentation in

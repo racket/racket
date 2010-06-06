@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "code.rkt" "outreach+research.rkt" racket/string)
+(require "code.rkt" "download.rkt" "outreach+research.rkt" racket/string)
 
 (define (doc s)
   (string-append "http://docs.racket-lang.org/" s))
@@ -420,13 +420,13 @@
 ;; TODO
 ;; (define screenshots
 ;;   (let ([image (copyfile (in-here "screenshot.jpg"))])
-;;     @a[href: "http://plt-scheme.org/screenshots/"]{
+;;     @a[href: screenshots]{
 ;;       @img[src: image alt: "[screenshots]" border: 0
 ;;            style: "margin-bottom: 2px;"]@;
 ;;       @|br|@small{Screenshots}}))
 
 ;; (define tour-video
-;;   (page #:title "DrScheme Tour" #:file "tour.html"
+;;   (page #:title "DrRacket Tour" #:file "tour.html"
 ;;     (define (center . body)
 ;;       (table align: 'center style: "margin: 3em 0em;"
 ;;         (tr (td align: 'center body))))
@@ -462,7 +462,7 @@
        }
        setTimeout(init_rollovers, 400);
      }
-     @a[href: "http://download.plt-scheme.org/drscheme/"
+     @a[href: "download/"
         onmouseover: "set_download_image(1);"
         onmouseout: "set_download_image(0);"]{
        @img[id: "download_button" border: "0" src: img1
