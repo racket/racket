@@ -162,7 +162,8 @@
     [(_ dir)
      (with-syntax ([page-id     (datum->syntax stx 'page)]
                    [plain-id    (datum->syntax stx 'plain)]
-                   [copyfile-id (datum->syntax stx 'copyfile)])
+                   [copyfile-id (datum->syntax stx 'copyfile)]
+                   [symlink-id  (datum->syntax stx 'symlink)])
        #`(begin
            (define resources
              (make-resources (make-icon dir) (make-logo dir) (make-style dir)))
@@ -172,8 +173,10 @@
              (plain #:dir dir . xs))
            (define (copyfile-id source [target #f] [referrer values])
              (copyfile-resource source target referrer #:dir dir))
+           (define (symlink-id source [target #f] [referrer values])
+             (symlink-resource source target referrer #:dir dir))
            #,@(if provide?
-                #'((provide page-id plain-id copyfile-id))
+                #'((provide page-id plain-id copyfile-id symlink-id))
                 '())))]))
 (define-syntax (define+provide-context stx)
   (make-define+provide-context stx #t))
