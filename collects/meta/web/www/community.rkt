@@ -11,7 +11,7 @@
 (define (maillist-url name)
   (define url "http://lists.racket-lang.org/")
   @text{@a[href: `(,url ,name "/")]{Subscribe}
-        or @a[href: `(,url ,name "archive/")]{browse}})
+        or @a[href: `(,url ,name "/archive/")]{browse}})
 ;; TODO: Need to finish the setup for gmane and google-groups
 ;; (define (gmane name)
 ;;   @a[href: `("http://dir.gmane.org/gmane.lisp.scheme." ,name)]{Gmane})
