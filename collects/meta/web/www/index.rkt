@@ -468,9 +468,18 @@
        @img[id: "download_button" border: "0" src: img1
             alt: "Download PLT Scheme" title: "Download PLT Scheme"]})))
 
+;; resources that are specific to the front page
+
+(define loud (copyfile (in-here "loud.png")))
+
 (define more.css
   @plain[#:referrer (lambda (url) (link rel: "stylesheet" type: "text/css"
                                         href: url title: "default"))]{
+    .bodycontent {
+      background-image: url('@loud');
+      background-repeat: no-repeat;
+      background-position: center top;
+    }
     .whatpane {
       font-size: medium;
       float: left;
