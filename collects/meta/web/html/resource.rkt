@@ -63,7 +63,8 @@
              (let loop ([r (car root+url)] [p path])
                (if (null? r)
                  `(,(cdr root+url) ,@p ,file*)
-                 (and (pair? p) (loop (cdr r) (cdr p))))))
+                 (and (pair? p) (equal? (car p) (car r))
+                      (loop (cdr r) (cdr p))))))
            roots))
   (define result
     (let loop ([t tgtdir] [c curdir] [pfx '()])

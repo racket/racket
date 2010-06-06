@@ -156,14 +156,14 @@
 
 ;; `define+provide-context' should be used in each toplevel directory (= each
 ;; site) to have its own resources (and possibly other customizations).
-(provide define+provide-context)
-(define-syntax (define+provide-context stx)
+(provide define+provide-context define-context)
+(define-for-syntax (make-define+provide-context stx provide?)
   (syntax-case stx ()
     [(_ dir)
      (with-syntax ([page-id     (datum->syntax stx 'page)]
                    [plain-id    (datum->syntax stx 'plain)]
                    [copyfile-id (datum->syntax stx 'copyfile)])
-       #'(begin
+       #`(begin
            (define resources
              (make-resources (make-icon dir) (make-logo dir) (make-style dir)))
            (define-syntax-rule (page-id . xs)
@@ -172,4 +172,10 @@
              (plain #:dir dir . xs))
            (define (copyfile-id source [target #f] [referrer values])
              (copyfile-resource source target referrer #:dir dir))
-           (provide page-id plain-id copyfile-id)))]))
+           #,@(if provide?
+                #'((provide page-id plain-id copyfile-id))
+                '())))]))
+(define-syntax (define+provide-context stx)
+  (make-define+provide-context stx #t))
+(define-syntax (define-context stx)
+  (make-define+provide-context stx #f))
