@@ -13,4 +13,4 @@
   ;; Each is a "hostname:dest-path", and then a list of directories to
   ;; put in that path.  (Warning: "dest" should not be a top-level
   ;; directory that already exists.)
-  '(("champlain:/www/new" "www" "download")))
+  '(("champlain:/www" "www" "download")))
