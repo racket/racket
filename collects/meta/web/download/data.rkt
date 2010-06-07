@@ -38,11 +38,99 @@
     ["201"   "July 2002"]
     ["200"   "June 2002"]
     ["103p1" "August 2001"]
+    ["103"   "September 2000"]
+    ["053"   "July 1998"]
+    ))
+
+(define -platform-names-
+  `(;; source platforms
+    ["win"  "Windows"]
+    ["mac"  "Macintosh"]
+    ["unix" "Unix"]
+    ;; binary platforms
+    ["i386-win32" "Windows x86"]
+    ["(ppc|i386)-osx-mac"
+     ,(lambda (_ cpu)
+        (format "Macintosh OS X (~a)" (if (equal? cpu "ppc") "PPC" "Intel")))]
+    ["(ppc|68k)-mac-classic"   "Macintosh Classic (\\1)"]
+    ["(ppc|i386)-darwin"
+     ,(lambda (_ cpu)
+        (format "Macintosh Darwin (~a)"
+                (if (equal? cpu "ppc") "PPC" "Intel")))]
+    ["i386-linux(-gcc2)?"            "Linux (i386)"]
+    ["i386-linux-fc([0-9]+)"         "Linux - Fedora Core \\1 (i386)"]
+    ["(i386|x86_64)-linux-f([0-9]+)" "Linux - Fedora \\2 (\\1)"]
+    ["i386-linux-debian"             "Linux - Debian Stable (i386)"]
+    ["i386-linux-debian-(testing|unstable)"  "Linux - Debian \\1 (i386)"]
+    ["i386-linux-ubuntu[0-9]*"       "Linux - Ubuntu (i386)"]
+    ["i386-linux-ubuntu-([a-z]*)"    "Linux - Ubuntu \\1 (i386)"]
+    ["i386-freebsd"                  "FreeBSD (i386)"]
+    ["sparc-solaris"                 "Sparc Solaris (SunOS)"]
+    ["i386-kernel"                   "x86 Standalone Kernel"]
+    ))
+
+(define -file-type-names-
+  '(["sh"  "Self-extracting shell script"]
+    ["exe" "Windows Installer"]
+    ["tgz" "Gzipped TAR Archive"]
+    ["zip" "Zipped Archive"]
+    ["dmg" "Disk Image"]
+    ["plt" "Racket Package"]
+    ["sit" "StuffIt Archive"]))
+
+(define -mirrors-
+  ;; This is a sequence of
+  ;;   (location url reposnisble-name email [techincal-contact])
+  '(("Main download (USA, Massachusetts, Northeastern University)"
+     "http://download.racket-lang.org/installers/"
+     "Eli Barzilay"
+     "eli@barzilay.org")
+    #;
+    ("USA, Illinois (Northwestern University)"
+     "http://www.eecs.northwestern.edu/racket/"
+     "Robby Findler"
+     "robby@eecs.northwestern.edu")
+    #;
+    ("USA, Utah (University of Utah)"
+     "http://www.cs.utah.edu/plt/download/"
+     "Matthew Flatt"
+     "mflatt@cs.utah.edu")
+    #; ; Scheme guy left
+    ("France (Institut Pasteur)"
+     "ftp://ftp.pasteur.fr/pub/computing/Scheme/plt-scheme/"
+     "Marc Badouin"
+     "babafou@pasteur.fr"
+     "Pasteur Institute FTP ftpmain@pasteur.fr")
+    (("Germany (Universität Tübingen)")
+     "http://mirror.informatik.uni-tuebingen.de/mirror/racket/"
+     "Marcus Crestani"
+     "crestani@informatik.uni-tuebingen.de")
+    ("Belgium (Infogroep, Vrije Universiteit Brussel)"
+     "ftp://infogroep.be/pub/racket/installers/"
+     "Infogroep"
+     "research@infogroep.be")
+    #; ; ftp down (permanently?)
+    ("Mexico (Wish Computing)"
+     "ftp://morpheus.wish.com.mx/pub/plt/"
+     "Francisco Solsona"
+     "solsona@acm.org")
+    #;
+    ("Austria (Vienna University of Technology)"
+     "http://gd.tuwien.ac.at/languages/scheme/plt/"
+     "Rudolf Ladner"
+     "ladner@zid.tuwien.ac.at")
+    #;
+    ("Turkey, Istanbul (Bilgi University)"
+     "http://russell.cs.bilgi.edu.tr/plt-bundles/"
+     "Onur Gungor"
+     "onurgu@cs.bilgi.edu.tr")
     ))
 
 ;; ----------------------------------------------------------------------------
 
-(provide versions+dates all-versions current-version)
+(provide versions+dates all-versions current-version version->date
+         (struct-out mirror) mirrors
+         (struct-out installer) all-installers platform->name suffix->name)
 
 (require racket/list racket/file version/utils racket/runtime-path)
 
@@ -50,11 +138,31 @@
 
 (define versions+dates
   (sort -versions+dates- <
-        #:key (compose version->integer car) #:cache-keys? #t))
+        #:key (lambda (vd)
+                (version->integer (regexp-replace #rx"^0+" (car vd) "")))
+        #:cache-keys? #t))
 
 (define all-versions (map car versions+dates))
 
 (define current-version (last all-versions))
+
+(define version->date
+  (let ([t (make-hash)])
+    (for ([vd (in-list versions+dates)])
+      (hash-set! t (car vd) (cadr vd)))
+    (lambda (v)
+      (hash-ref t v (lambda ()
+                      (error 'version->date "unknown version: ~e" v))))))
+
+;; ----------------------------------------------------------------------------
+
+(struct mirror (location url person email))
+
+(define mirrors
+  (map (lambda (m)
+         (mirror (car m) (regexp-replace #rx"/?$" (cadr m) "/")
+                 (caddr m) (cadddr m)))
+       -mirrors-))
 
 ;; ----------------------------------------------------------------------------
 
@@ -62,13 +170,13 @@
 
 (struct installer
         (path     ; path to file from the installers directory
+         file     ; just the file name
          version  ; version of the installer (as a string)
          size     ; human-readable size string
          package  ; package kind symbol 'racket or 'racket-textual
          binary?  ; #t = binary distribution, #f = source distribution
          platform ; platform name string (generic for srcs, cpu-os for bins)
-         suffix   ; string
-         ))
+         suffix)) ; string
 
 (define installer-rx
   (pregexp (string-append
@@ -79,16 +187,17 @@
             "([0-9p.]+)"            ; version
             "/"
             "(racket(?:-textual)?)" ; package
-            "/\\4-\\3-"             ; <package>-<version>-
+            "/("                    ; file
+            "\\4-\\3-"              ; <package>-<version>-
             "(bin|src)-"            ; binary/source
             "([^.]+)"               ; platform
             "\\."
             "([a-z]+)"              ; suffix
-            ")$")))
+            "))$")))
 
-(define (make-installer size path version package type platform suffix)
-  (installer path version size (string->symbol package) (equal? "bin" type)
-             platform suffix))
+(define (make-installer size path version package file type platform suffix)
+  (installer path file version size (string->symbol package)
+             (equal? "bin" type) platform suffix))
 
 (define (parse-installers in)
   (port-count-lines! in)
@@ -98,4 +207,25 @@
                     (error 'installers "bad installer data line#~a: ~s"
                            num line))))))
 
-(define installers (call-with-input-file installers-data parse-installers))
+(define all-installers (call-with-input-file installers-data parse-installers))
+
+(define platform-names
+  (for/list ([pn (in-list -platform-names-)])
+    (list (regexp (string-append "^" (car pn) "$")) (cadr pn))))
+
+(define platform-names-table (make-hash))
+
+(define (platform->name platform)
+  (hash-ref! platform-names-table platform
+    (lambda ()
+      (or (for/or ([pn (in-list platform-names)])
+            ;; find out if a regexp applied by checking if the result is
+            ;; different (relies on regexp-replace returning the same string
+            ;; when fails)
+            (let ([new (regexp-replace (car pn) platform (cadr pn))])
+              (and (not (eq? new platform)) new)))
+          (error 'platform->name "unrecognized platform: ~e" platform)))))
+
+(define (suffix->name suffix)
+  (cond [(assoc suffix -file-type-names-) => cadr]
+        [else (error 'suffix->name "unrecognized suffix: ~e" suffix)]))

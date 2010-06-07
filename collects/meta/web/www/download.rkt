@@ -1,13 +1,13 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "../download/data.rkt")
+(require "../download/installer-pages.rkt")
 
 (provide download-button)
 
 (define download
   (page #:link-title "Download" #:window-title "Download Racket"
         #:file "download/"
-    "Download page comes here."))
+    (ul (map li installer-pages))))
 
 (define download-button
   (let ([img1 (copyfile (in-here "download.png"))]
