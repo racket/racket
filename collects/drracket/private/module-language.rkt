@@ -317,11 +317,11 @@
             (call-with-continuation-prompt
              (λ () (with-stack-checkpoint 
                     (begin
-                      (*do-module-specified-configuration modspec)
+                      (*do-module-specified-configuration)
                       (namespace-require modspec))))))
           (current-namespace (module->namespace modspec))
           (check-interactive-language))
-        (define (*do-module-specified-configuration modspec)
+        (define (*do-module-specified-configuration)
           (let ([info (module->language-info modspec #t)])
             (when info
               (let ([get-info
