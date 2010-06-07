@@ -2,7 +2,7 @@
 
 (require "../download/download-pages.rkt")
 
-(provide download-button)
+(provide download-button download)
 
 (define download
   (page #:link-title "Download" #:window-title "Download Racket"
