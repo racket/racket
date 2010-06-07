@@ -61,7 +61,6 @@ module browser threading seems wrong.
             [prefix drracket:get/extend: drracket:get/extend^]
             [prefix drracket:module-overview: drracket:module-overview^]
             [prefix drracket:tools: drracket:tools^]
-            [prefix drracket:eval: drracket:eval^]
             [prefix drracket:init: drracket:init^]
             [prefix drracket:module-language: drracket:module-language^]
             [prefix drracket:module-language-tools: drracket:module-language-tools^]
