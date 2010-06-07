@@ -40,7 +40,7 @@
                 [referrer (lambda (url)
                             (error 'plain "no referrer for ~e" file))]
                 #:newline [newline? #t]
-                . content)
+                content)
   (resource (if dir (web-path dir file) file)
             (file-writer output (list content (and newline? "\n")))
             referrer))
