@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.rkt" 
-	 (rep type-rep)
+	 (except-in (rep type-rep free-variance) Dotted)
          (private parse-type)
 	 (types convenience utils union resolve abbrev)
 	 (env type-env type-environments type-name-env)
@@ -131,6 +131,16 @@
   (define-values (struct-type-id maker pred getters setters) (struct-names nm flds setters?))
   ;; the type name that is used in all the types
   (define name (type-wrapper (make-Name nm)))
+  ;; is this structure covariant in *all* arguments?
+  (define covariant? (if (and setters? poly?)
+                         #f
+                         (if poly?
+                             (for*/and ([var (in-list poly?)]
+                                        [t (in-list external-fld-types)])
+                               (let ([variance (hash-ref (free-vars* t) var Constant)])
+                                 (or (eq? variance Constant)
+                                     (eq? variance Covariant))))
+                             #t)))
   ;; the list of names w/ types
   (define bindings
     (append 
@@ -140,7 +150,7 @@
       (cons (or maker* maker)
             (wrapper (->* external-fld-types (if cret cret name))))
       (cons (or pred* pred)
-            (make-pred-ty (if (and setters? poly?)
+            (make-pred-ty (if (not covariant?)
                               (make-StructTop sty)
                               (pred-wrapper name)))))
      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])
@@ -190,7 +200,7 @@
                    #:wrapper (lambda (t) (make-Poly tvars t))
                    #:type-wrapper (lambda (t) (make-App t new-tvars #f))
                    #:pred-wrapper (lambda (t) (subst-all (for/list ([t tvars]) (list t Univ)) t))
-                   #:poly? #t))
+                   #:poly? tvars))
 
 
 ;; typecheck a non-polymophic struct and register the approriate types
