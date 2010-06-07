@@ -90,9 +90,8 @@
      "http://www.eecs.northwestern.edu/racket/"
      "Robby Findler"
      "robby@eecs.northwestern.edu")
-    #;
     ("USA, Utah (University of Utah)"
-     "http://www.cs.utah.edu/plt/download/"
+     "http://www.cs.utah.edu/plt/installers/"
      "Matthew Flatt"
      "mflatt@cs.utah.edu")
     #; ; Scheme guy left
@@ -130,7 +129,8 @@
 
 (provide versions+dates all-versions current-version version->date
          (struct-out mirror) mirrors
-         (struct-out installer) all-installers platform->name suffix->name)
+         (struct-out installer) all-installers
+         package->name platform->name suffix->name)
 
 (require racket/list racket/file version/utils racket/runtime-path)
 
@@ -209,22 +209,31 @@
 
 (define all-installers (call-with-input-file installers-data parse-installers))
 
+(define package->name
+  (let ([t (make-hasheq)])
+    (lambda (package)
+      (hash-ref! t package
+        (lambda ()
+          (string-titlecase
+           (regexp-replace #rx"-" (symbol->string package) " ")))))))
+
 (define platform-names
   (for/list ([pn (in-list -platform-names-)])
     (list (regexp (string-append "^" (car pn) "$")) (cadr pn))))
 
-(define platform-names-table (make-hash))
-
-(define (platform->name platform)
-  (hash-ref! platform-names-table platform
-    (lambda ()
-      (or (for/or ([pn (in-list platform-names)])
-            ;; find out if a regexp applied by checking if the result is
-            ;; different (relies on regexp-replace returning the same string
-            ;; when fails)
-            (let ([new (regexp-replace (car pn) platform (cadr pn))])
-              (and (not (eq? new platform)) new)))
-          (error 'platform->name "unrecognized platform: ~e" platform)))))
+(define platform->name
+  (let ([t (make-hash)])
+    (lambda (platform)
+      (hash-ref! t platform
+        (lambda ()
+          (or (for/or ([pn (in-list platform-names)])
+                ;; find out if a regexp applied by checking if the result is
+                ;; different (relies on regexp-replace returning the same
+                ;; string when fails)
+                (let ([new (regexp-replace (car pn) platform (cadr pn))])
+                  (and (not (eq? new platform)) new)))
+              (error 'platform->name "unrecognized platform: ~e"
+                     platform)))))))
 
 (define (suffix->name suffix)
   (cond [(assoc suffix -file-type-names-) => cadr]

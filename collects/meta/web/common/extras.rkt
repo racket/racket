@@ -6,3 +6,10 @@
 (define (parlist first . rest)
   (list (div class: 'parlisttitle first)
         (map (lambda (p) (div class: 'parlistitem p)) rest)))
+
+;; a div that is centered, but the text is still left-justified
+(provide center-div)
+(define (center-div . text)
+  (div align: 'center
+       (div align: 'left style: "display: inline-block;"
+            text)))

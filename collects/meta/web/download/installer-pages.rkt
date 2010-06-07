@@ -8,9 +8,7 @@
   (define html-file (string-append (regexp-replace* #rx"\\." file "-") ".html"))
   (define version (installer-version installer))
   (define date (version->date version))
-  (define package
-    (string-titlecase
-     (regexp-replace #rx"-" (->string (installer-package installer)) " ")))
+  (define package (package->name (installer-package installer)))
   (define size (installer-size installer))
   (define type (if (installer-binary? installer) "" " source"))
   (define platform (platform->name (installer-platform installer)))
@@ -21,13 +19,19 @@
       @td[align: 'right]{@b{@label}:}
       @td{@nbsp}
       @td[align: 'left]{@text}})
-  @page[#:file html-file #:title title]{
+  (define (this url [mode #f])
+    (case mode
+      [(only-platform) (a href: url platform type)]
+      [(render-option) (option value: url platform type)]
+      [(#f) @a[href: url]{@title}]
+      [else (error 'installer-page "unknown mode: ~e" mode)]))
+  @page[#:file html-file #:title title #:referrer this]{
     @table[width: "90%" align: 'center]{
       @tr[valign: 'top]{
         @td[width: "50%"]{
           @table{@(row "Package" package)
                  @(row "Version" @list{@version (@date)})
-                 @(row "Platform" platform)
+                 @(row "Platform" (list platform type))
                  @(row "Type"     suffix-desc)
                  @(row "File"     file)
                  @(row "Size"     size)}}
@@ -47,5 +51,10 @@
     @;div[align: 'right]{(@(link-to 'license))}
     })
 
-(provide installer-pages)
-(define installer-pages (map render-installer-page all-installers))
+(provide installer->page)
+(define installer->page
+  (let ([t (make-hasheq)])
+    (lambda (inst . more)
+      (let ([page (hash-ref! t inst (lambda ()
+                                      (render-installer-page inst)))])
+        (if (null? more) page (apply page more))))))
