@@ -682,6 +682,15 @@ context of a package. The others are convenience macros that
 select out the relevant field, or return @racket[#f] if the expression
 appears outside the context of a PLaneT package.}
 
+@defproc[(path->package-version [p path?])
+         (or/c (list/c string? string? natural-number/c natural-number/c) #f)]{
+
+Given a path that corresponds to a PLaneT package (or some part of one),
+produces a list corresponding to its name and version, exactly like
+@racket[(this-package-version)].  Given any other path, produces @racket[#f].
+
+}
+
 @defproc[(exn:fail:planet? [val any/c]) boolean?]{
   Returns @racket[#t] if @racket[val] is                                                   
 }
