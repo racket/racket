@@ -410,6 +410,13 @@
 (define-values (prop:lazy-wrap lazy-wrap? lazy-wrap-ref)
   (make-struct-type-property 'lazy-wrap))
 
+; The field accessed by ref-proc and set!-proc contains one of these:
+
+(define-struct lazy-wrap-log
+  ;; each contains a list of lists; each element is a list of field contracts
+  (not-checked checked)
+  #:transparent) 
+
 (define (make-struct-wrap-contract name type-descriptor field-contracts syntax)
   (let ((lazy-wrap-info (lazy-wrap-ref type-descriptor))
 	(struct-wrap-info (make-struct-wrap-info type-descriptor field-contracts))
@@ -425,20 +432,24 @@
      name
      (lambda (self thing)
 
-       (cond
-	((not (predicate thing))
-	 (contract-violation thing self #f #f)
-	 thing)
-	((ormap (lambda (wrap-field-contracts)
-		  (andmap contract<=?
-			  wrap-field-contracts
-			  field-contracts))
-		(wrap-ref thing))
-	 thing)
-	(else
-	 (wrap-set! thing
-		    (cons field-contracts (wrap-ref thing)))
-	 thing)))
+       (if (not (predicate thing))
+	   (contract-violation thing self #f #f)
+	   (let ((log (wrap-ref thing)))
+	     (cond
+	      ((not log)
+	       (wrap-set! thing
+			  (make-lazy-wrap-log (list field-contracts) '())))
+	      ((not (let ((check (lambda (wrap-field-contracts)
+				   (andmap contract<=?
+					   wrap-field-contracts
+					   field-contracts))))
+		      (or (ormap check (lazy-wrap-log-not-checked log))
+			  (ormap check (lazy-wrap-log-checked log)))))
+	       (wrap-set! thing
+			  (make-lazy-wrap-log (cons field-contracts (lazy-wrap-log-not-checked log))
+					      (lazy-wrap-log-checked log)))))))
+       
+       thing)
      (delay syntax)
      #:info-promise
      (delay struct-wrap-info)
@@ -471,19 +482,23 @@
 	    (wrap-ref (lazy-wrap-info-ref-proc lazy-wrap-info))
 	    (wrap-set! (lazy-wrap-info-set!-proc lazy-wrap-info)))
 
-	(when (pair? (wrap-ref thing)) ; fast path
-	  (let loop ((field-vals (map (lambda (raw-accessor)
-					(raw-accessor thing))
-				      raw-accessors))
-		     (field-contracts-list (wrap-ref thing)))
-	    (if (null? field-contracts-list)
-		(begin
-		  (for-each (lambda (raw-mutator field-val)
-			      (raw-mutator thing field-val))
-			    raw-mutators field-vals)
-		  (wrap-set! thing '()))
-		(loop (map apply-contract (car field-contracts-list) field-vals)
-		      (cdr field-contracts-list)))))))))
+	(let ((log (wrap-ref thing)))
+	  (when (and log (pair? (lazy-wrap-log-not-checked log)))
+	    (let loop ((field-vals (map (lambda (raw-accessor)
+					  (raw-accessor thing))
+					raw-accessors))
+		       (field-contracts-list (lazy-wrap-log-not-checked log)))
+	      (if (null? field-contracts-list)
+		  (begin
+		    (for-each (lambda (raw-mutator field-val)
+				(raw-mutator thing field-val))
+			      raw-mutators field-vals)
+		    (wrap-set! thing
+			       (make-lazy-wrap-log '()
+						   (append (lazy-wrap-log-not-checked log)
+							   (lazy-wrap-log-checked log)))))
+		  (loop (map apply-contract (car field-contracts-list) field-vals)
+			(cdr field-contracts-list))))))))))
 
 ; like apply-contract, but can track more precise blame into the contract itself
 (define-syntax apply-contract/blame

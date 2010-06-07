@@ -282,6 +282,32 @@
 	(check-equal? (kdr obj) #t)
 	(check-equal? count 1))))
 
+
+   (test-case
+    "record-wrap-2"
+    (let ((count 0))
+      (define counting-integer
+	(make-predicate-contract 'counting-integer 
+				 (lambda (obj)
+				   (set! count (+ 1 count))
+				   (integer? obj))
+				 'integer-marker))
+      (define-record-procedures-parametric pare pare-of kons pare? (kar kdr))
+      (define ctr (contract (pare-of counting-integer boolean)))
+      (let ((obj (apply-contract ctr (apply-contract ctr (kons 1 #t)))))
+	(check-equal? count 0)
+	(check-equal? (kar obj) 1)
+	(check-equal? count 1)
+	(check-equal? (kdr obj) #t)
+	(check-equal? count 1)
+	;; after checking, the system should remember that it did so
+	(let ((obj-2 (apply-contract ctr obj)))
+	  (check-equal? count 1)
+	  (check-equal? (kar obj) 1)
+	  (check-equal? count 1)
+	  (check-equal? (kdr obj) #t)
+	  (check-equal? count 1)))))
+
    (test-case
     "double-wrap"
     (let ((count 0))
