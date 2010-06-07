@@ -39,7 +39,11 @@
 	   mzlib/math
            scheme/match
            "set-result.ss"
-           (only racket/base define-struct))
+           (only racket/base define-struct)
+	   (all-except deinprogramm/contract/contract contract-violation)
+	   (all-except lang/private/contracts/contract-syntax property)
+	   (all-except deinprogramm/quickcheck/quickcheck property)
+	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property))
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
 		      syntax/kerncase
@@ -537,13 +541,17 @@
                           (lambda (fn)
                             (with-syntax ([fn fn]
                                           [args (cdr (syntax-e #'name-seq))])
-                              (quasisyntax/loc stx (define fn #,(stepper-syntax-property
-                                                                 (stepper-syntax-property
-                                                                  #`(lambda args expr ...)
-                                                                  'stepper-define-type
-                                                                  'shortened-proc-define)
-                                                                 'stepper-proc-define-name
-                                                                 #`fn))))))])
+                              (quasisyntax/loc stx
+					       (define fn
+						 #,(stepper-syntax-property
+						    (stepper-syntax-property
+						     ;; this is so contract blame can report a
+						     ;; position for the procedure
+						     (syntax/loc stx (lambda args expr ...))
+						     'stepper-define-type
+						     'shortened-proc-define)
+						    'stepper-proc-define-name
+						    #`fn))))))])
              (check-definition-new 
               'define
               stx
@@ -2453,4 +2461,41 @@
     ;; For expressions (cdr check via `the-cons'):
     (lambda (stx)
       (syntax-case stx ()
-        [(_ a b) (syntax/loc stx (the-cons a b))]))))
+        [(_ a b) (syntax/loc stx (the-cons a b))])))
+
+(provide contract define-contract :
+	 -> mixed one-of predicate combined)
+
+(provide Integer Number Rational Real Natural 
+	 Boolean True False
+	 String Char Symbol Empty-list
+	 Unspecific)
+
+(define Integer (contract/arbitrary arbitrary-integer (predicate integer?)))
+(define Number (contract/arbitrary arbitrary-real (predicate number?)))
+(define Rational (contract/arbitrary arbitrary-rational (predicate rational?)))
+(define Real (contract/arbitrary arbitrary-real (predicate real?)))
+
+(define (natural? x)
+  (and (integer? x)
+       (not (negative? x))))
+
+(define Natural (contract/arbitrary arbitrary-natural (predicate natural?)))
+
+(define Boolean (contract/arbitrary arbitrary-boolean (predicate boolean?)))
+
+(define True (contract (one-of #f)))
+(define False (contract (one-of #f)))
+
+(define String (contract/arbitrary arbitrary-printable-ascii-string (predicate string?)))
+(define Char (contract/arbitrary arbitrary-printable-ascii-string (predicate char?)))
+(define Symbol (contract/arbitrary arbitrary-symbol (predicate symbol?)))
+(define Empty-list (contract (one-of empty)))
+
+(define Unspecific (contract (predicate (lambda (_) #t))))
+
+;; Dummy definition, to be filled in later.
+(provide property)
+(define property "TBD")
+
+)

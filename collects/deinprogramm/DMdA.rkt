@@ -4,11 +4,11 @@
 
 (require test-engine/scheme-tests
 	 (lib "test-info.scm" "test-engine")
+	 test-engine/scheme-tests
 	 scheme/class)
 
 (require deinprogramm/contract/module-begin
-	 deinprogramm/contract/contract
-	 deinprogramm/contract/contract-test-engine
+	 (except-in deinprogramm/contract/contract contract-violation)
 	 (except-in deinprogramm/contract/contract-syntax property))
 
 (require (for-syntax scheme/base)

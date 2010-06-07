@@ -147,28 +147,47 @@
       (when (test-execute)
         (unless test-info (setup-info 'check-base))
         (inner (void) run)))
+
+    (define/private (clear-results event-space)
+      (when event-space
+	(parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
+	  ((dynamic-require 'scheme/gui 'queue-callback)
+	   (lambda () (send test-display report-success))))))
+
     (define/public (summarize-results port)
       (cond
-        [(test-execute)
-         (unless test-display (setup-display #f #f))
-         (let ([result (send test-info summarize-results)])
-           (send test-display install-info test-info)
-           (case result
-             [(no-tests) (display-untested port)]
-             [(all-passed) (display-success port display-event-space
-                                            (+ (send test-info tests-run)
-                                               (send test-info checks-run)))]
-             [(mixed-results)
-              (display-results display-rep display-event-space)]))]
-        [else
-	 (display-disabled port)]))
+       ((test-execute)
+        (unless test-display (setup-display #f #f))
+	(send test-display install-info test-info)
+	(if (pair? (send test-info failed-contracts))
+	    (send this display-results display-rep display-event-space)
+	    (let ((result (send test-info summarize-results)))
+	      (case result
+		[(no-tests)
+		 (clear-results display-event-space)
+		 (display-untested port)]
+		[(all-passed) (display-success port display-event-space
+					       (+ (send test-info tests-run)
+						  (send test-info checks-run)))]
+		[(mixed-results)
+		 (display-results display-rep display-event-space)]))))
+       (else
+	(display-disabled port))))
 
-    (define/private (display-success port event count)
-      (when event
-        (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event])
-          ((dynamic-require 'scheme/gui 'queue-callback)
-            (lambda () (send test-display report-success)))))
+    (define/private (display-success port event-space count)
+      (clear-results event-space)
       (send test-display display-success-summary port count))
+
+    (define/public (display-results rep event-space)
+      (cond
+       [(and rep event-space)
+	(parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
+	  ((dynamic-require 'scheme/gui 'queue-callback)
+	   (lambda () (send rep display-test-results test-display))))]
+       [event-space 
+	(parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
+	  ((dynamic-require 'scheme/gui 'queue-callback) (lambda () (send test-display display-results))))]
+       [else (send test-display display-results)]))
 
     (define/public (display-untested port)
       (unless silent-mode
@@ -176,17 +195,6 @@
 
     (define/public (display-disabled port)
       (send test-display display-disabled-summary port))
-
-    (define/public (display-results rep event-space)
-      (cond
-        [(and rep event-space)
-         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
-           ((dynamic-require 'scheme/gui 'queue-callback)
-            (lambda () (send rep display-test-results test-display))))]
-        [event-space 
-         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
-           ((dynamic-require 'scheme/gui 'queue-callback) (lambda () (send test-display display-results))))]
-        [else (send test-display display-results)]))
 
     (define/pubment (initialize-test test)
       (inner (void) initialize-test test))

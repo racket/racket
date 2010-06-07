@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require scheme/class
+	 deinprogramm/quickcheck/quickcheck
 	 "print.ss")
 
 (provide (all-defined-out))
@@ -24,6 +25,13 @@
 (define-struct (not-mem check-fail) (test set))
 ;; (make-not-range src format scheme-val scheme-val scheme-val)
 (define-struct (not-range check-fail) (test min max))
+
+(define-struct contract-got (value format))
+
+(define-struct contract-violation (obj contract message srcloc blame))
+
+(define-struct (property-fail check-fail) (result))
+(define-struct (property-error check-fail) (message exn))
 
 ;; (make-message-error src format (listof string))
 (define-struct (message-error check-fail) (strings))
@@ -129,6 +137,18 @@
              (formatter (not-range-test fail))
              (formatter (not-range-min fail))
              (formatter (not-range-max fail)))]
-     )
+     [(property-fail? fail)
+      (print-string "Property falsifiable with")
+      (for-each (lambda (arguments)
+		  (for-each (lambda (p)
+			      (if (car p)
+				  (print " ~a = ~F" (car p) (formatter (cdr p)))
+				  (print "~F" (formatter (cdr p)))))
+			    arguments))
+		(result-arguments-list (property-fail-result fail)))]
+     [(property-error? fail)
+      (print "check-property encountered the the following error~n:: ~a"
+	     (property-error-message fail))])
     (print-string "\n")))
+
 

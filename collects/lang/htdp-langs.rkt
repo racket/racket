@@ -23,15 +23,19 @@
          ;; this module is shared between the drscheme's namespace (so loaded here) 
          ;; and the user's namespace in the teaching languages
          "private/set-result.ss"
-         
+
+         "private/continuation-mark-key.rkt"
+
          "stepper-language-interface.ss"           
          "debugger-language-interface.ss"
          "run-teaching-program.ss"
          stepper/private/shared
          
          (only-in test-engine/scheme-gui make-formatter)
-         (only-in test-engine/scheme-tests scheme-test-data error-handler test-format test-execute)
+         (only-in test-engine/scheme-tests 
+		  scheme-test-data error-handler test-format test-execute build-test-engine)
          (lib "test-engine/test-display.scm")
+	 deinprogramm/contract/contract
          )
   
   
@@ -131,7 +135,9 @@
                   [set-result-module-name 
                    ((current-module-name-resolver) '(lib "lang/private/set-result.ss") #f #f)]
                   [scheme-test-module-name
-                   ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)])
+                   ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
+                  [scheme-contract-module-name
+                   ((current-module-name-resolver) '(lib "deinprogramm/contract/contract.ss") #f #f)])
               (run-in-user-thread
                (lambda ()
                  (read-accept-quasiquote (get-accept-quasiquote?))
@@ -145,6 +151,18 @@
                  (read-accept-dot (get-read-accept-dot))
                  (namespace-attach-module drs-namespace scheme-test-module-name)
                  (namespace-require scheme-test-module-name)
+                 (namespace-attach-module drs-namespace scheme-contract-module-name)
+                 (namespace-require scheme-contract-module-name)
+		 ;; hack: the test-engine code knows about the test~object name; we do, too
+		 (namespace-set-variable-value! 'test~object (build-test-engine))
+		 ;; record test-case failures with the test engine
+		 (contract-violation-proc
+		  (lambda (obj contract message blame)
+		    (cond
+		     ((namespace-variable-value 'test~object #f (lambda () #f))
+		      => (lambda (engine)
+			   (send (send engine get-info) contract-failed
+				 obj contract message blame))))))
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
                  (test-execute (get-preference 'tests:enable? (lambda () #t)))
                  (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40)))))))
@@ -953,10 +971,6 @@
       
       
       
-      ;; cm-key : symbol
-      ;; the key used to put information on the continuation
-      (define cm-key (gensym 'teaching-languages-continuation-mark-key))
-      
       (define mf-note
         (let ([bitmap
                (make-object bitmap%
@@ -973,7 +987,7 @@
               (display (exn-message exn) (current-error-port))
               (fprintf (current-error-port) "uncaught exception: ~e" exn))
           (fprintf (current-error-port) "\n")
-          
+
           ;; need to flush here so that error annotations inserted in next line
           ;; don't get erased if this output were to happen after the insertion
           (flush-output (current-error-port))
@@ -986,22 +1000,21 @@
                        [(exn:srclocs? exn) 
                         ((exn:srclocs-accessor exn) exn)]
                        [(exn? exn) 
-                        (let ([cms (continuation-mark-set->list (exn-continuation-marks exn) cm-key)])
-                          (if cms
-                              (let loop ([cms cms])
-                                (cond
-                                  [(null? cms) '()]
-                                  [else (let* ([cms (car cms)]
-                                               [source (car cms)]
-                                               [pos (cadr cms)]
-                                               [span (cddr cms)])
-                                          (if (or (path? source)
-                                                  (symbol? source))
-                                              (list (make-srcloc source #f #f pos span))
-                                              (loop (cdr cms))))]))
-                              '()))]
-                       [else '()])])
-                
+                        (let ([cms (continuation-mark-set->list (exn-continuation-marks exn) teaching-languages-continuation-mark-key)])
+			  (cond
+			   ((not cms) '())
+			   ((findf (lambda (mark)
+				     (and mark
+					  (or (path? (car mark))
+					      (symbol? (car mark)))))
+				   cms)
+			    => (lambda (mark)
+				 (apply (lambda (source line col pos span)
+					  (list (make-srcloc source line col pos span)))
+					mark)))
+			   (else '())))]
+		       [else '()])])
+
                 (parameterize ([current-eventspace drs-eventspace])
                   (queue-callback
                    (lambda ()
@@ -1011,19 +1024,21 @@
       
       ;; with-mark : syntax syntax -> syntax
       ;; a member of stacktrace-imports^
-      ;; guarantees that the continuation marks associated with cm-key are
+      ;; guarantees that the continuation marks associated with teaching-languages-continuation-mark-key are
       ;; members of the debug-source type
       (define (with-mark source-stx expr)
         (let ([source (syntax-source source-stx)]
+              [line (syntax-line source-stx)]
+              [col (syntax-column source-stx)]
               [start-position (syntax-position source-stx)]
               [span (syntax-span source-stx)])
           (if (and (or (symbol? source) (path? source))
                    (number? start-position)
                    (number? span))
               (with-syntax ([expr expr]
-                            [mark (list* source start-position span)]
-                            [cm-key cm-key])
-                #`(with-continuation-mark 'cm-key
+                            [mark (list source line col start-position span)]
+                            [teaching-languages-continuation-mark-key teaching-languages-continuation-mark-key])
+                #`(with-continuation-mark 'teaching-languages-continuation-mark-key
                     'mark
                     expr))
               expr)))

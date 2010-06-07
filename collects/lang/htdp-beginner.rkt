@@ -11,7 +11,7 @@
 
   ;; Implements the forms:
   (require "private/teach.ss"
-	   "private/contract-forms.ss"
+	   "private/contracts/contracts-module-begin.ss"
            test-engine/scheme-tests)
 
   ;; syntax:
@@ -34,8 +34,6 @@
             [beginner-dots ....]
             [beginner-dots .....]
             [beginner-dots ......]
-            ;; [beginner-contract contract]
-            ;; [beginner-define-data define-data]
             )
            check-expect
            check-within
@@ -44,7 +42,11 @@
            check-range
 	   #%datum
            #%top-interaction
-	   empty true false)
+	   empty true false
+
+	   contract : -> mixed one-of predicate combined
+	   Number Real Rational Integer Natural Boolean True False String Char Empty-list
+	   property)
 
   (require (for-syntax "private/firstorder.ss"))
     

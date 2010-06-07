@@ -1429,6 +1429,13 @@ please adhere to these guidelines:
    "check-error encountered the following error instead of the expected ~a~n   :: ~a")
   (test-engine-expected-error-error
    "check-error expected the following error, but instead received the value ~F.~n ~a")
+  ;; members are appended to the message
+  (test-engine-not-mem-error "Actual value ~F differs from all given members in ")
+  (test-engine-not-range-error "Actual value ~F is not between ~F and ~F, inclusive.")
+
+  ;; followed by list of variable bindings
+  (test-engine-property-fail-error "Property falsifiable with")
+  (test-engine-property-error-error "check-property encountered the following error~n:: ~a")
 
   ; section header
   (test-engine-check-failures "Check failures:")
