@@ -38,4 +38,4 @@
          onmouseover: "set_download_image(1);"
          onmouseout: "set_download_image(0);"]{
         @img[id: "download_button" border: "0" src: img1
-             alt: "Download PLT Scheme" title: "Download PLT Scheme"]}}))
+             alt: "Download Racket" title: "Download Racket"]}}))
