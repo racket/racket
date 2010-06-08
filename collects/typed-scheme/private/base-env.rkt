@@ -630,7 +630,13 @@
 
 [list->string ((-lst -Char) . -> . -String)]
 [string->list (-String . -> . (-lst -Char))]
-[sort (-poly (a) ((-lst a) (a a . -> . B) . -> . (-lst a)))]
+[sort (-poly (a b) (cl->* ((-lst a) (a a . -> . B)
+                          #:cache-keys? B #f
+                          . ->key . (-lst a))
+                         ((-lst a) (b b . -> . B)
+                          #:key (a . -> . b) #t
+                          #:cache-keys? B #f
+                          . ->key . (-lst a))))]
 [find-system-path (Sym . -> . -Path)]
 
 [object-name (Univ . -> . Univ)]
