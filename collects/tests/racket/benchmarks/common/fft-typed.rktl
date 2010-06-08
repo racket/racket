@@ -1,4 +1,3 @@
-#lang typed/racket
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; File:         fft.cl
 ; Description:  FFT benchmark from the Gabriel tests.
