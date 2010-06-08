@@ -8,8 +8,6 @@
 ;; ----------------------------------------------------------------------------
 ;; Pages that are made outside of this system
 
-(define* -planet @make-link["http://planet.racket-lang.org/"]{PLaneT})
-
 (define doc-url "http://docs.racket-lang.org/")
 
 (define* -docs @make-link[doc-url]{Documentation})
