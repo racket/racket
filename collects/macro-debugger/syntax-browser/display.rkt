@@ -2,6 +2,7 @@
 (require scheme/class
          scheme/gui
          scheme/list
+         framework
          (rename-in unstable/class-iop
                     [send/i send:]
                     [init-field/i init-field:])
@@ -106,7 +107,7 @@
       (with-unlock text
         (send* text 
           (begin-edit-sequence #f)
-          (change-style unhighlight-d start-position end-position))
+          (change-style (unhighlight-d) start-position end-position))
         (apply-extra-styles)
         (let ([selected-syntax
                (send: controller selection-manager<%>
@@ -157,7 +158,7 @@
           (send delta set-delta-foreground color)
           (send style-list find-or-create-style base-style delta)))
       (define color-styles
-        (list->vector (map color-style (send: config config<%> get-colors))))
+        (list->vector (map color-style (map translate-color (send: config config<%> get-colors)))))
       (define overflow-style (color-style "darkgray"))
       (define color-partition
         (send: controller mark-manager<%> get-primary-partition))
@@ -219,7 +220,7 @@
     ;; draw-secondary-connection : syntax -> void
     (define/private (draw-secondary-connection stx2)
       (for ([r (send: range range<%> get-ranges stx2)])
-        (restyle-range r select-sub-highlight-d)))
+        (restyle-range r (select-sub-highlight-d))))
 
     ;; restyle-range : (cons num num) style-delta% -> void
     (define/private (restyle-range r style)
@@ -258,7 +259,7 @@
 ;; code-style : text<%> number/#f -> style<%>
 (define (code-style text font-size)
   (let* ([style-list (send text get-style-list)]
-         [style (send style-list find-named-style "Standard")])
+         [style (send style-list find-named-style (editor:get-default-color-style-name))])
     (if font-size
         (send style-list find-or-create-style
               style
@@ -274,23 +275,40 @@
 
 ;; Styles
 
-(define (highlight-style-delta color em?)
-  (let ([sd (new style-delta%)])
-    (unless em? (send sd set-delta-background color))
+(define (highlight-style-delta raw-color em? #:translate-color? [translate-color? #t])
+  (let* ([sd (new style-delta%)])
+    (unless em? (send sd set-delta-background (if translate-color? (translate-color raw-color) raw-color)))
     (when em? (send sd set-weight-on 'bold))
     (unless em? (send sd set-underlined-off #t)
       (send sd set-weight-off 'bold))
     sd))
+
+(define (translate-color color)
+  (let ([reversed-color
+         (case (string->symbol (string-downcase color))
+           [(white) "black"]
+           [(black) "white"]
+           [(yellow) "goldenrod"]
+           [else (printf "unknown color ~s\n" color)
+                 color])])
+    (if (preferences:get 'framework:white-on-black?)
+        reversed-color
+        color)))
 
 (define underline-style-delta
   (let ([sd (new style-delta%)])
     (send sd set-underlined-on #t)
     sd))
 
-(define selection-color "yellow")
-(define subselection-color "yellow")
+(define (mk-2-constant-style wob-color bow-color)
+  (let ([wob-version (highlight-style-delta wob-color #f #:translate-color? #f)]
+        [bow-version (highlight-style-delta bow-color #f #:translate-color? #f)])
+    (λ ()
+      (if (preferences:get 'framework:white-on-black?)
+          wob-version
+          bow-version))))
 
-(define select-highlight-d (highlight-style-delta selection-color #t))
-(define select-sub-highlight-d (highlight-style-delta subselection-color #f))
+(define select-highlight-d (mk-2-constant-style "yellow" "darkgoldenrod"))
+(define select-sub-highlight-d select-highlight-d)  ;; can get rid of this definition(?).
 
-(define unhighlight-d (highlight-style-delta "white" #f))
+(define unhighlight-d (mk-2-constant-style "black" "white"))

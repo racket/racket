@@ -33,7 +33,7 @@
       (new panel:horizontal-dragable% (parent -main-panel)))
     (define -text (new browser-text%))
     (define -ecanvas
-      (new editor-canvas% (parent -split-panel) (editor -text)))
+      (new canvas:color% (parent -split-panel) (editor -text)))
     (define -props-panel (new horizontal-panel% (parent -split-panel)))
     (define props
       (new properties-view%
@@ -251,13 +251,20 @@
 ;; Specialized classes for widget
 
 (define browser-text%
-  (class (text:arrows-mixin
-          (text:tacking-mixin
-           (text:hover-drawings-mixin
-            (text:hover-mixin
-             (text:hide-caret/selection-mixin
-              (editor:standard-style-list-mixin text:basic%))))))
-    (inherit set-autowrap-bitmap)
-    (define/override (default-style-name) "Basic")
-    (super-new (auto-wrap #t))
-    (set-autowrap-bitmap #f)))
+  (let ([browser-text-default-style-name "widget.rkt::browser-text% basic"])
+    (class (text:arrows-mixin
+            (text:tacking-mixin
+             (text:hover-drawings-mixin
+              (text:hover-mixin
+               (text:hide-caret/selection-mixin
+                (text:foreground-color-mixin
+                 (editor:standard-style-list-mixin text:basic%)))))))
+      (inherit set-autowrap-bitmap get-style-list)
+      (define/override (default-style-name) browser-text-default-style-name)
+      (super-new (auto-wrap #t))
+      (let* ([sl (get-style-list)]
+             [standard (send sl find-named-style (editor:get-default-color-style-name))]
+             [browser-basic (send sl find-or-create-style standard
+                                  (make-object style-delta% 'change-family 'default))])
+        (send sl new-named-style browser-text-default-style-name browser-basic))
+      (set-autowrap-bitmap #f))))

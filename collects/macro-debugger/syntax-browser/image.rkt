@@ -36,7 +36,7 @@ TODO: tacked arrows
 ;; print-syntax-columns : (parameter-of (U number 'infinity))
 (define print-syntax-columns (make-parameter 40))
 
-(define standard-text% (editor:standard-style-list-mixin text%))
+(define standard-text% (text:foreground-color-mixin (editor:standard-style-list-mixin text:basic%)))
 
 ;; print-syntax-to-png : syntax path -> void
 (define (print-syntax-to-png stx file
@@ -54,7 +54,7 @@ TODO: tacked arrows
   (define dc (new bitmap-dc% (bitmap (make-object bitmap% 1 1))))
   (define char-width
     (let* ([sl (send t get-style-list)]
-           [style (send sl find-named-style "Standard")]
+           [style (send sl find-named-style (editor:get-default-color-style-name))]
            [font (send style get-font)])
       (send dc set-font font)
       (send dc get-char-width)))
@@ -89,7 +89,7 @@ TODO: tacked arrows
 (define (prepare-editor stx columns)
   (define t (new standard-text%))
   (define sl (send t get-style-list))
-  (send t change-style (send sl find-named-style "Standard"))
+  (send t change-style (send sl find-named-style (editor:get-default-color-style-name)))
   (print-syntax-to-editor stx t 
                           (new controller%) (new syntax-prefs/readonly%)
                           columns (send t last-position))
