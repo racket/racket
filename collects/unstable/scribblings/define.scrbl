@@ -47,8 +47,8 @@ do nothing if the name(s) is(are) already bound.  The
 @scheme[define-values-if-unbound] and @scheme[define-syntaxes-if-unbound] forms
 raise a syntax error if some of the given names are bound and some are not.
 
-These are useful for writing programs that are portable across versions of PLT
-Scheme with different bindings, to provide an implementation of a binding for
+These are useful for writing programs that are portable across versions of
+Racket with different bindings, to provide an implementation of a binding for
 versions that do not have it but use the built-in one in versions that do.
 
 @defexamples[
@@ -84,7 +84,7 @@ redirecting it to the corresponding @scheme[old] identifier.
 
 This form provides forward declarations of identifiers to be defined later.  It
 is useful for macros which expand to mutually recursive definitions, including
-forward references, that may be used at the PLT Scheme top level.
+forward references, that may be used at the Racket top level.
 
 }
 
