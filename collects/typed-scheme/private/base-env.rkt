@@ -179,6 +179,7 @@
 		      (-> (Un a (-val #f)) a)))]
 [gensym (->opt [Sym] Sym)]
 [string-append (->* null -String -String)]
+[string-copy! (->opt -String -Nat -String -Nat [-Nat -Nat] -Void)]
 [open-input-string (-> -String -Input-Port)]
 [open-output-file
  (->key -Pathlike
@@ -550,8 +551,11 @@
 #;[hash-table-index (-poly (a b) ((-HT a b) a b . -> . -Void))]
 
 [bytes (->* (list) -Integer -Bytes)]
-[bytes-ref (-> -Bytes -Integer -Integer)]
-[bytes-append (->* (list -Bytes) -Bytes -Bytes)]
+[make-bytes (cl-> [(-Integer -Integer) -Bytes]
+                  [(-Integer) -Bytes])]
+[bytes-ref (-> -Bytes -Integer -Nat)]
+[bytes-set! (-> -Bytes -Integer -Integer -Void)]
+[bytes-append (->* (list) -Bytes -Bytes)]
 [subbytes (cl-> [(-Bytes -Integer) -Bytes] [(-Bytes -Integer -Integer) -Bytes])]
 [bytes-length (-> -Bytes -Nat)]
 [unsafe-bytes-length (-> -Bytes -Nat)]
@@ -562,7 +566,11 @@
 [close-output-port (-> -Output-Port -Void)]
 [read-line  (->opt [-Input-Port Sym] -String)]
 [copy-file (-> -Pathlike -Pathlike -Void)]
+[file-stream-buffer-mode (cl-> [(-Port) (Un (-val 'none) (-val 'line) (-val 'block) (-val #f))]
+                               [(-Port (Un (-val 'none) (-val 'line) (-val 'block))) -Void])]
+[file-position (-> -Port -Nat)]
 [bytes->string/utf-8 (-> -Bytes -String)]
+[string->bytes/utf-8 (-> -String -Bytes)]
 
 [force (-poly (a) (-> (-Promise a) a))]
 [bytes<? (->* (list -Bytes) -Bytes B)]
@@ -574,6 +582,9 @@
 [read-byte
  (cl->* [-> (Un -Byte (-val eof))]
         [-Input-Port . -> . (Un -Byte (-val eof))])]
+[read-string (-Nat [-Input-Port] . ->opt . (Un -String (-val eof)))]
+[read-string! (-String [-Input-Port -Nat -Nat] . ->opt . (Un -Nat (-val eof)))]
+[read-bytes (-Nat [-Input-Port] . ->opt . (Un -Bytes (-val eof)))]
 [make-pipe
  (cl->* [->opt [N] (-values (list -Input-Port -Output-Port))])]
 [open-output-bytes
@@ -713,7 +724,7 @@
 [tcp-close (-TCP-Listener . -> . -Void )]
 [tcp-connect (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
 [tcp-connect/enable-break (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
-[tcp-listen (N . -> . -TCP-Listener)]
+[tcp-listen (-Nat [-Nat Univ (-opt -String)] . ->opt . -TCP-Listener)]
 
 ;; scheme/bool
 [boolean=? (B B . -> . B)]
@@ -729,9 +740,12 @@
 
 ;; scheme/port
 [port->lines (cl->* ([-Input-Port] . ->opt . (-lst -String)))]
+[port->bytes (->opt [-Input-Port] -Bytes)]
 [with-output-to-string
   (-> (-> Univ) -String)]
 [open-output-nowhere (-> -Output-Port)]
+[input-port? (make-pred-ty -Input-Port)]
+[output-port? (make-pred-ty -Output-Port)]
 
 ;; scheme/path
 

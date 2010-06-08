@@ -20,6 +20,8 @@
 [Path-String -Pathlike]
 [Regexp -Regexp]
 [PRegexp -PRegexp]
+[Byte-Regexp -Byte-Regexp]
+[Byte-PRegexp -Byte-PRegexp]
 [Char -Char]
 [Namespace -Namespace]
 [Input-Port -Input-Port]
