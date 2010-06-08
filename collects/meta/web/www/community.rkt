@@ -1,7 +1,7 @@
 #lang at-exp s-exp "shared.rkt"
 
 (require "../stubs/blog.rkt" "../stubs/git.rkt" "../stubs/pre.rkt"
-         "people.rkt")
+         "people.rkt" "irc.rkt")
 
 (define (TT . xs)
   @tt[style: "background-color: #dde;"]{@xs})
@@ -17,10 +17,6 @@
 ;;   @a[href: `("http://dir.gmane.org/gmane.lisp.scheme." ,name)]{Gmane})
 ;; (define google-groups
 ;;   @a[href: "http://groups.google.com/group/plt-scheme"]{Google Groups})
-
-(define (irc-chan name)
-  @text{@TT{#@big{@strong{@name}}} on
-        @a[href: "http://www.freenode.net"]{@tt{freenode.net}}})
 
 (provide community)
 (define community
@@ -40,8 +36,10 @@
         @; @";" also on @gmane{plt.dev}.)
         })
     (parlist @strong{Discussion Channels}
-      @text{@irc-chan{racket} @mdash an informal discussion channel for all
-        things related to Racket.})
+      @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel
+        on @a[href: "http://freenode.net"]{@tt{freenode.net}}
+        @mdash an informal discussion channel for all things related to Racket.
+        @irc-logs{Browse the logs}.})
     (parlist @strong{Resources for Learning}
       (apply parlist @text{Documentation for getting started:} intros)
       @text{@-cookbook @mdash useful recipes, many of which apply to Racket.}
