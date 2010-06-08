@@ -1,3 +1,4 @@
+#lang typed/racket
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; File:         fft.cl
 ; Description:  FFT benchmark from the Gabriel tests.
@@ -47,9 +48,9 @@
         (set! ar areal)
         (set! ai aimag)
         (set! n (vector-length ar))
-        (set! n (abs (- n 1))) ; abs is to appease the typechecker
+        (set! n (assert (- n 1) exact-nonnegative-integer?))
         (set! nv2 (quotient n 2))
-        (set! nm1 (abs (- n 1))) ; abs is to appease the typechecker
+        (set! nm1 (assert (- n 1) exact-nonnegative-integer?))
         (set! m 0)                                  ;compute m = log(n)
         (set! i 1)
         (let loop ()
@@ -74,7 +75,7 @@
           (set! k nv2)
           (let l6 ()
             (cond ((< k j)
-                   (set! j (abs (- j k))) ; abs is to appease the typechecker
+                   (set! j (assert (- j k) exact-nonnegative-integer?)) ; abs is to appease the typechecker
                    (set! k (quotient k 2))
                    (l6))))
           (set! j (+ j k))

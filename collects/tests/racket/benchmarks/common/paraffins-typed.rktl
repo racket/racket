@@ -155,9 +155,9 @@
               (if (< nc2 nc1)
                   (loop1 lst
                          (- nc1 1))
-                  (loop2 (cons (vector (abs nc1)
-                                       (abs nc2)
-                                       (abs (- m (+ nc1 nc2)))) ; abs is to appease the typechecker
+                  (loop2 (cons (vector nc1
+                                       nc2
+                                       (assert (- m (+ nc1 nc2)) exact-nonnegative-integer?))
                                lst)
                          (- nc2 1)))))))
 
@@ -178,10 +178,10 @@
                                 (nc3 (quotient (- m (+ nc1 nc2)) 2)))
                       (if (< nc3 start)
                           (loop2 lst (- nc2 1))
-                          (loop3 (cons (vector (abs nc1)
-                                               (abs nc2)
-                                               (abs nc3)
-                                               (abs (- m (+ nc1 (+ nc2 nc3))))) ; abs is to appease the typechecker
+                          (loop3 (cons (vector nc1
+                                               nc2
+                                               nc3
+                                               (assert (- m (+ nc1 (+ nc2 nc3))) exact-nonnegative-integer?))
                                        lst)
                                  (- nc3 1))))))))))
 
