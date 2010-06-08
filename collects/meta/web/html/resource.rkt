@@ -78,7 +78,7 @@
          ;; then make them relative
          `(,@(map (lambda (_) "..") c) ,@t ,file*)]
         ;; different roots => use the one for the target
-        [(make-rooted t)]
+        [(make-rooted tgtdir)]
         ;; otherwise throw an error
         [else (error 'relativize "target url is not in any known root: ~a"
                      (string-join `(,@tgtdir ,file*) "/"))])))
