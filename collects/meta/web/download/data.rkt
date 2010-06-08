@@ -85,7 +85,6 @@
      "http://download.racket-lang.org/installers/"
      "Eli Barzilay"
      "eli@barzilay.org")
-    #;
     ("USA, Illinois (Northwestern University)"
      "http://www.eecs.northwestern.edu/racket/"
      "Robby Findler"
