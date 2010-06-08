@@ -1,5 +1,5 @@
 (module mred mzscheme
-  (require (only scheme/base
+  (require (only racket/base
                  define-namespace-anchor
                  namespace-anchor->empty-namespace
                  make-base-empty-namespace)
@@ -57,6 +57,9 @@
   (wx:set-dialogs get-file put-file get-ps-setup-from-user message-box)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; These functions are re-implemented in scheme/gui/base
+  ;; and racket/gui/base to attach those names, instead of
+  ;; just 'mred.
 
   (define-namespace-anchor anchor)
 
@@ -74,6 +77,8 @@
         (namespace-require 'mred)
         (namespace-require 'scheme/class))
       ns))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-eventspace)
     (parameterize ([wx:the-snip-class-list (wx:make-the-snip-class-list)]

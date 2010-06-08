@@ -1,24 +1,24 @@
 
-(module common scheme/base
+(module common racket/base
   (require scribble/manual
            scribble/basic
-           scheme/class
-           scheme/contract
+           racket/class
+           racket/contract
            "blurbs.ss"
            (only-in "../reference/mz.ss" AllUnix exnraise))
   (provide (all-from-out scribble/manual)
            (all-from-out scribble/basic)
-           (all-from-out scheme/class)
-           (all-from-out scheme/contract)
+           (all-from-out racket/class)
+           (all-from-out racket/contract)
            (all-from-out "blurbs.ss")
            (all-from-out "../reference/mz.ss"))
 
-  (require (for-label scheme/gui/base
-                      scheme/class
-                      scheme/contract
-                      scheme/base))
-  (provide (for-label (all-from-out scheme/gui/base)
-                      (all-from-out scheme/class)
-                      (all-from-out scheme/contract)
-                      (all-from-out scheme/base))))
+  (require (for-label racket/gui/base
+                      racket/class
+                      racket/contract
+                      racket/base))
+  (provide (for-label (all-from-out racket/gui/base)
+                      (all-from-out racket/class)
+                      (all-from-out racket/contract)
+                      (all-from-out racket/base))))
 

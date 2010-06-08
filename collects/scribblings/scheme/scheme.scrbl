@@ -6,6 +6,7 @@
                      (only-in scheme/class printable<%>)
                      (only-in racket/class writable<%>)
                      (only-in racket/base struct hash hasheq hasheqv in-directory local-require)
+                     (only-in scheme/gui/base make-gui-namespace make-gui-empty-namespace)
                      scheme/gui/base
                      scheme/sandbox))
 
@@ -143,13 +144,36 @@ must occur after all the @scheme[provide*] forms to which it refers.}
 @compat[scheme/function racket/function]
 @compat[scheme/future racket/future]
 @compat[scheme/generator racket/generator]
+
+@; ----------------------------------------------------------------------
+
 @compat-except[scheme/gui racket/gui]{, except that it builds on
+@schememodname[scheme/gui/base] instead of @schememodname[racket/gui/base]}
+
+@compat-except[scheme/gui/base racket/gui/base]{, except that it builds on
 @schememodname[scheme] instead of @schememodname[racket]}
-@compat[scheme/gui/base racket/gui/base]
+
+@defproc[(make-gui-empty-namespace) namespace?]{
+
+Like @racket[make-base-empty-namespace], but with
+@racketmodname[scheme/class] and @racketmodname[scheme/gui/base] also
+attached to the result namespace.}
+
+@defproc[(make-gui-namespace) namespace?]{
+
+Like @racket[make-base-namespace], but with @racketmodname[scheme/class] and
+@racketmodname[scheme/gui/base] also required into the top-level
+environment of the result namespace.}
+
+@; ----------------------------------------------------------------------
+
 @compat[scheme/gui/dynamic racket/gui/dynamic]
 @compat[scheme/help racket/help]
 @compat[scheme/include racket/include]
-@compat[scheme/init racket/init]
+@; ----------------------------------------------------------------------
+
+@compat-except[scheme/init racket/init]{, except that it builds on
+@racketmodname[scheme] instead pf @racketmodname[racket]}
 
 @;------------------------------------------------------------------------
 
@@ -316,6 +340,21 @@ and @|make-module-evaluator-id| from @racketmodname[racket/sandbox].}
 @compat[scheme/unit-exptime racket/unit-exptime]
 @compat[scheme/unsafe/ops racket/unsafe/ops]
 @compat[scheme/vector racket/vector]
+
+@; ----------------------------------------
+
+@section[@schememodname[mred]]
+@defmodule[mred]
+
+The @schememodname[mred] library is like
+@schememodname[scheme/gui/base], except that it provides variants of
+@racket[make-gui-namespace] and @racket[make-gui-empty-namespace] that
+attach @schememodname[mred] instead of
+@schememodname[scheme/gui/base].
+
+Both @schememodname[scheme/gui/base] and
+@schememodname[racket/gui/base] depend on @schememodname[mred], so it
+is attached by all variants of @racket[make-gui-empty-namespace].
 
 @; ----------------------------------------
 

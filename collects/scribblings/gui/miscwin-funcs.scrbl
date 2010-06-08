@@ -267,12 +267,12 @@ Strips shortcut ampersands from @racket[label], removes parenthesized
 @defproc[(make-gui-empty-namespace) namespace?]{
 
 Like @racket[make-base-empty-namespace], but with
-@racket[racket/class] and @racketmodname[racket/gui/base] also
+@racketmodname[racket/class] and @racketmodname[racket/gui/base] also
 attached to the result namespace.}
 
 @defproc[(make-gui-namespace) namespace?]{
 
-Like @racket[make-base-namespace], but with @racket[racket/class] and
+Like @racket[make-base-namespace], but with @racketmodname[racket/class] and
 @racketmodname[racket/gui/base] also required into the top-level
 environment of the result namespace.}
 
