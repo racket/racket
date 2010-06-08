@@ -289,7 +289,7 @@ an expression to get the structure back, unlike the printed form of a
 number, string, symbol, or list.
 
 A @deftech{prefab} (``previously fabricated'') structure type is a
-built-in type that is known to the Scheme printer and expression
+built-in type that is known to the Racket printer and expression
 reader. Infinitely many such types exist, and they are indexed by
 name, field count, supertype, and other such details. The printed form
 of a prefab structure is similar to a vector, but it starts
