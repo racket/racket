@@ -96,6 +96,7 @@
          display
          display2
          newline
+         with-syntax
          ;; stuff i done want
          define
          let

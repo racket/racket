@@ -41,6 +41,8 @@
                             body.result)])
 
 (define (syntax-object-position mstart end)
+  (- (length (syntax->list mstart)) (length (syntax->list end)))
+  #;
   (if (stx-null? end)
       (length (syntax->list mstart))
     (let loop ([start mstart]
@@ -48,7 +50,7 @@
       ;; (printf "Checking ~a vs ~a\n" start end)
       (cond
        [(stx-null? start) (raise-syntax-error 'honu-macro "the `rest' syntax returned by a honu macro did not return objects at the same syntactic nesting level as the head of the pattern. this is probably because it returned syntax from some inner nesting level such as (if (x + 1 2) more-stuff) where `rest' was (+ 1 2) instead of `more-stuff'" end mstart)]
-       [(eq? (stx-car start) (stx-car end)) count]
+       [(equal? (stx-car start) (stx-car end)) count]
        ;; [(equal? start end) count]
        [else (loop (stx-cdr start) (add1 count))]))))
 
@@ -74,12 +76,13 @@
                                (list  0 #''()))]
         )]
      [(get-transformer stx) => (lambda (transformer)
+                                 (define introducer (make-syntax-introducer))
                                  (printf "Transforming honu macro ~a\n" (stx-car stx))
                                  (let-values ([(used rest)
-                                               (transformer stx context)])
-                                   (printf "Result is ~a\n" used)
-                                   (list rest (syntax-object-position stx rest)
-                                         (used))))]
+                                               (transformer (introducer stx) context)])
+                                   (printf "Result is ~a. Object position is ~a\n" used (syntax-object-position stx (introducer rest)))
+                                   (list (introducer rest) (syntax-object-position stx (introducer rest))
+                                         (introducer (used)))))]
      
      [else (fail)])))
 
@@ -108,33 +111,17 @@
                                (printf "Ignoring honu-syntax 2!\n")
                                (list '() 0 exprs))]
      [(get-transformer stx) => (lambda (transformer)
+                                 (define introducer (make-syntax-introducer))
                                  (printf "Transforming honu macro ~a\n" (car stx))
                                  (let-values ([(used rest)
-                                               (transformer stx context)])
-<<<<<<< HEAD
-                                   (list (syntax-object-position stx rest)
-                                         used)))]
+                                               (transformer (introducer stx) context)])
+                                   (list rest (syntax-object-position stx rest)
+                                         (introducer (used)))))]
      
      [else (syntax-case stx ()
                         [(f . rest) (list 1 #'f)])])))
-=======
-                                   (list rest (syntax-object-position stx rest)
-                                         (used))))]
-     #;
-     [x:identifier (list #''() 0 #'x)]
-     #;
-     [else (fail)]
-     [else (syntax-parse stx
-             [x:identifier (list #''() 1 #'x)]
-             #;
-                        [(f . rest) (list #'rest 1 #'f)]
-                        #;
-                        [x:number (list #''() 1 #'x)]
-                        [else (fail)]
-                        )])))
->>>>>>> allow macros to reparse their input
 
-    #;
+         #;
     (define-splicing-syntax-class expr
       [pattern (~seq f ...) #:with result])
     
@@ -333,7 +320,8 @@
 
 (define-syntax-class (expression-top context)
                      #:literals (semicolon)
-                     [pattern ((~var e (ternary context))
+                     [pattern ((~var x0 (debug-here (format "expression top\n")))
+                               (~var e (ternary context))
                                (~var x1 (debug-here (format "expression top 1 ~a\n" (syntax->datum #'e))))
                                semicolon
                                (~var x2 (debug-here "expression top 2"))
@@ -433,12 +421,38 @@
            #:with result (apply-scheme-syntax #'x.result)])
 
 (define-splicing-syntax-class (whats-here? hm)
-  [pattern (~seq x)
-           #:when (begin (printf "Whats at `~a': `~a'\n" hm #'x)
+  [pattern (~seq x ...)
+           #:when (begin (printf "Whats at `~a': `~a'\n" hm (syntax->datum #'(x ...)))
                          #f)])
 
+#;
 (define-syntax-class statement
-  [pattern (~var x (expression-top the-top-block-context))
+  [pattern ((~var f (whats-here? "statement1"))
+            (~var x (expression-top the-top-block-context)))
+           #:with result (apply-scheme-syntax (attribute x.result))
+           #:with rest #'x.rest])
+
+(define-splicing-syntax-class statement
+                              #:literals (semicolon)
+  [pattern (~seq (~var x (ternary the-top-block-context))
+                 (~var q (debug-here "statement 2"))
+                 #;
+                 (~var qq (whats-here? "statement 2.1"))
+                 (~var z (debug-here "statement 3"))
+                 )
+           #:with result (apply-scheme-syntax (attribute x.result))
+           #:with rest #'x.rest]
+                     #;
+  [pattern ((~var f (debug-here "statement1"))
+                 (~var x (expression-top the-top-block-context)))
+           #:with result (apply-scheme-syntax (attribute x.result))
+           #:with rest #'x.rest]
+
+                              #;
+  [pattern (~seq (~var f (whats-here? "statement1"))
+                 (~var f1 (whats-here? "statement2"))
+                 (~seq 
+                 (~var x (expression-top the-top-block-context))))
            #:with result (apply-scheme-syntax (attribute x.result))
            #:with rest #'x.rest])
 
@@ -535,12 +549,19 @@
                    (values out rest2))))
         ]
     [(get-transformer stx) => (lambda (transformer)
+                                (define introducer (make-syntax-introducer))
+                                (define introduce introducer)
+                                (define unintroduce introducer)
+                                #;
+                                (define introduce (compose introducer syntax-local-introduce))
+                                #;
+                                (define unintroduce (compose syntax-local-introduce introducer))
                                 (printf "Parse one: execute transformer ~a ~a\n" (stx-car stx) transformer)
                                 #;
                                 (printf "output of transformer is ~a\n" (let-values ([(a b) (transformer stx context)]) (list a b)))
                                 (let-values ([(output rest)
-                                              (transformer stx context)])
-                                  (values (output) rest))
+                                              (transformer (introduce stx) context)])
+                                  (values (unintroduce (output)) (unintroduce rest)))
                                 #;
                                 (call-values (transformer stx context)
                                              (lambda (reparse rest)
@@ -612,7 +633,14 @@
               (let ([v (syntax-local-value (stx-car first) (lambda () #f))])
                 (and (honu-transformer? v) v))]
              [else #f]))))
-  (printf "~a bound transformer? ~a\n" stx (bound-transformer stx))
+  #;
+  (printf "~a bound transformer? ~a at phase level ~a identifiers: ~a\n" stx (bound-transformer stx) (syntax-local-phase-level)
+          (if (and (stx-pair? stx)
+                   (identifier? (stx-car stx)))
+            (let ([id (stx-car stx)])
+              (for/list ([phase (in-range -2 2)])
+                        (format "~a : ~a." phase (identifier-binding id phase))))
+            'not-an-id))
   (bound-transformer stx)
   #;
   (or (bound-transformer stx)
