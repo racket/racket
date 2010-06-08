@@ -288,9 +288,7 @@
       (string-constant quit-menu-item-others)))
    (define/public (file-menu:quit-help-string) (string-constant quit-info))
    (define/public file-menu:quit-on-demand (λ (menu-item) (void)))
-   (define/public
-    (file-menu:create-quit?)
-    (not (current-eventspace-has-standard-menus?)))
+   (define/public (file-menu:create-quit?) (not (eq? (system-type) 'macosx)))
    (define/public file-menu:after-quit (λ (menu) (void)))
    (define/public
     edit-menu:undo-callback
