@@ -401,7 +401,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system (format "racket -u ~a-typed-non-optimizing.rkt" bm)))
+                  (system (format "racket -u typed/~a-non-optimizing.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
                 (append mutable-pair-progs
@@ -411,7 +411,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system (format "racket -u ~a-typed-optimizing.rkt" bm)))
+                  (system (format "racket -u typed/~a-optimizing.rkt" bm)))
                 extract-racket-times
                 clean-up-zo
                 (append mutable-pair-progs
