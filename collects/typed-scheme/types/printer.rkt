@@ -211,6 +211,10 @@
     [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
     [(Refinement: parent p? _)
      (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
+    [(Sequence: ts)
+     (fp "(Sequenceof")
+     (for ([t ts]) (fp " ~a" t))
+     (fp ")")]
     [(Error:) (fp "Error")]
     [else (fp "(Unknown Type: ~a)" (struct->vector c))]
     ))

@@ -335,6 +335,13 @@
 ;; cls : Class
 (dt Instance ([cls Type/c]) [#:key 'instance])
 
+;; sequences
+;; includes lists, vectors, etc
+;; tys : sequence produces this set of values at each step
+(dt Sequence ([tys (listof Type/c)])
+    [#:frees (λ (f) (combine-frees (map f tys)))]
+    [#:key #f] [#:fold-rhs (*Sequence (map type-rec-id tys))])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Ugly hack - should use units

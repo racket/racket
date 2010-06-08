@@ -27,6 +27,7 @@
 (define -Param make-Param)
 (define -box make-Box)
 (define -vec make-Vector)
+(define (-seq . args) (make-Sequence args))
 
 (define-syntax *Un
   (syntax-rules ()

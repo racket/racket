@@ -160,6 +160,8 @@
                              (-> Univ Univ)
                              (-> a Univ)
                              (-> Univ a Univ))))])
+            (-> Univ (-seq a) (seq-vals))
+            #;
             (cl->* (-> Univ (-lst a) (seq-vals))
                    (-> Univ (-vec a) (seq-vals))
                    (-> Univ -String (seq-vals -Char))

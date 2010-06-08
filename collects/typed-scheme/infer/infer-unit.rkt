@@ -341,6 +341,29 @@
                (fail! S T))]
           [((Pair: a b) (Pair: a* b*))
            (cset-meet (cg a a*) (cg b b*))]
+          ;; sequences are covariant
+          [((Sequence: ts) (Sequence: ts*))
+           (cgen/list V X ts ts*)]
+          [((Listof: t) (Sequence: (list t*)))
+           (cg t t*)]
+          [((List: ts) (Sequence: (list t*)))
+           (cset-meet* (for/list ([t (in-list ts)])
+                         (cg t t*)))]
+          [((HeterogenousVector: ts) (Sequence: (list t*)))
+           (cset-meet* (for/list ([t (in-list ts)])
+                         (cg t t*)))]
+          [((Vector: t) (Sequence: (list t*)))
+           (cg t t*)]
+          [((Base: 'String _) (Sequence: (list t*)))
+           (cg -Char t*)]
+          [((Base: 'Bytes _) (Sequence: (list t*)))
+           (cg -Nat t*)]
+          [((Base: 'Input-Port _) (Sequence: (list t*)))
+           (cg -Nat t*)]
+          [((Vector: t) (Sequence: (list t*)))
+           (cg t t*)]
+          [((Hashtable: k v) (Sequence: (list k* v*)))
+           (cgen/list V X (list k v) (list k* v*))]
           ;; if we have two mu's, we rename them to have the same variable
           ;; and then compare the bodies
           [((Mu-unsafe: s) (Mu-unsafe: t)) 
@@ -386,7 +409,7 @@
              (move-vars-to-dmap new-cset dbound vars))]
           [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
            (when (memq dbound X) (fail! ss ts))          
-           (cgen/list V X (cons s-dty ss) (cons t-dty ts))]
+           (cgen/list V X (cons s-dty ss) (cons t-dty ts))]          
           [((Vector: e) (Vector: e*))
            (cset-meet (cg e e*) (cg e* e))]
           [((Box: e) (Box: e*))

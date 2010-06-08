@@ -256,7 +256,26 @@
 	      [((Value: (? symbol? n)) (Base: 'Symbol _)) A0]
 	      [((Value: (? string? n)) (Base: 'String _)) A0]
 	      ;; tvars are equal if they are the same variable
-	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
+	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]              
+              ;; sequences are covariant
+              [((Sequence: ts) (Sequence: ts*))
+               (subtypes* A0 ts ts*)]
+              [((Listof: t) (Sequence: (list t*)))
+               (subtype* A0 t t*)]
+              [((List: ts) (Sequence: (list t*)))
+               (subtypes* A0 ts (map (λ _ t*) ts))]
+              [((HeterogenousVector: ts) (Sequence: (list t*)))
+               (subtypes* A0 ts (map (λ _ t*) ts))]
+              [((Vector: t) (Sequence: (list t*)))
+               (subtype* A0 t t*)]
+              [((Base: 'String _) (Sequence: (list t*)))
+               (subtype* A0 -Char t*)]
+              [((Base: 'Bytes _) (Sequence: (list t*)))
+               (subtype* A0 -Nat t*)]
+              [((Base: 'Input-Port _) (Sequence: (list t*)))
+               (subtype* A0 -Nat t*)]
+              [((Hashtable: k v) (Sequence: (list k* v*)))
+               (subtypes* A0 (list k v) (list k* v*))]
               ;; special-case for case-lambda/union
               [((Function: arr1) (Function: (list arr2)))
                (when (null? arr1) (fail! s t))
