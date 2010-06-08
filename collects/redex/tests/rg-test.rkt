@@ -862,6 +862,19 @@
      (check-metafunction f (λ (_) #t)))
    4)
   
+  (let ()
+    (define-language L 
+      ((m n) number))
+    (define-metafunction L
+      [(f m_0 m_1 ...)
+       ()
+       (where (n_0 ... n_i ...) (m_0 m_1 ...))
+       (side-condition (null? (term (n_0 ...))))])
+    (test
+     (with-handlers ([exn:fail:redex:generation-failure? (λ (_) #f)])
+       (check-metafunction f (λ (_) #t) #:retries 1 #:print? #f #:attempts 1))
+     #t))
+  
   (test (output (λ () (check-metafunction m (λ (_) #t)))) #rx"no counterexamples")
   (test (output (λ () (check-metafunction m (curry eq? 1))))
         #px"check-metafunction:.*counterexample found after 1 attempt with clause at .*:\\d+:\\d+")

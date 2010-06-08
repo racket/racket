@@ -15,6 +15,9 @@
 # a common convenient place to set the PLTADDON directory to
 /add-on/
 
+# location for cached DrDr report files
+/house-calls/
+
 # common backups, autosaves, lock files, OS meta-files
 *~
 \#*

@@ -259,12 +259,12 @@
                                                           #,rest-body))))
                                           mtchs))]
                                  [(predicate) 
-                                  #`(andmap (λ (mtch)
-                                              (let ([bindings (mtch-bindings mtch)])
-                                                (let ([x (lookup-binding bindings 'names)] ...)
-                                                  (term-let ([names/ellipses x] ...) 
-                                                            #,rest-body))))
-                                            mtchs)]
+                                  #`(ormap (λ (mtch)
+                                             (let ([bindings (mtch-bindings mtch)])
+                                               (let ([x (lookup-binding bindings 'names)] ...)
+                                                 (term-let ([names/ellipses x] ...) 
+                                                           #,rest-body))))
+                                           mtchs)]
                                  [else (error 'unknown-where-mode "~s" where-mode)])
                                #f))))))]
               [((-side-condition s ...) y ...)

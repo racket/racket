@@ -117,7 +117,7 @@
         Does this mean that PLT will no longer implement Scheme?
         }{
 
-        There will be no difference between the current @tt{#lang scheme}
+        There will be little difference between the current @tt{#lang scheme}
         and the new @tt{#lang racket}, but the latter will become the
         preferred form.
 

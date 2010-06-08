@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "code.rkt" "outreach+research.rkt" racket/string)
+(require "code.rkt" "download.rkt" "outreach+research.rkt" racket/string)
 
 (define (doc s)
   (string-append "http://docs.racket-lang.org/" s))
@@ -21,7 +21,7 @@
          @span{@span[class: 'whatb]{Racket} is a programming language.})
     (div class: 'aboutpane
          (div class: 'panetitle "Start Quickly")
-         (div class: 'downloadbutton download-plt)
+         (div class: 'downloadbutton download-button)
          (alts-panel
           @; --- Each example here should be exactly 7 lines long ---
           @; Candidates for initial example: ------------------------
@@ -420,13 +420,13 @@
 ;; TODO
 ;; (define screenshots
 ;;   (let ([image (copyfile (in-here "screenshot.jpg"))])
-;;     @a[href: "http://plt-scheme.org/screenshots/"]{
+;;     @a[href: screenshots]{
 ;;       @img[src: image alt: "[screenshots]" border: 0
 ;;            style: "margin-bottom: 2px;"]@;
 ;;       @|br|@small{Screenshots}}))
 
 ;; (define tour-video
-;;   (page #:title "DrScheme Tour" #:file "tour.html"
+;;   (page #:title "DrRacket Tour" #:file "tour.html"
 ;;     (define (center . body)
 ;;       (table align: 'center style: "margin: 3em 0em;"
 ;;         (tr (td align: 'center body))))
@@ -438,35 +438,6 @@
 ;;               width: (round (* 3/2 425)) height: (round (* 3/2 344))]{
 ;;         @param[name: "movie" value: url]}}))
 
-(define download-plt
-  (let ([img1 (copyfile (in-here "download.png"))]
-        [img2 (copyfile (in-here "download-dark.png"))])
-    (list
-     @script/inline[type: "text/javascript"]{
-       @; Don't load all images here -- it causes a delay when loading the page
-       @; instead, do it only when needed, and also set a timer to do it after
-       @; loading the page.  This makes it so that there's almost never a delay
-       @; when loading the page, and also no delay when switching the image.
-       var rollovers = false, the_download_button = false;
-       function init_rollovers() {
-         if (!rollovers) {
-           rollovers = [ new Image(), new Image() ];
-           rollovers[0].src = "@img1";
-           rollovers[1].src = "@img2";
-           the_download_button = document.getElementById("download_button");
-         }
-       }
-       function set_download_image(n) {
-         if (!rollovers) init_rollovers();
-         the_download_button.src = rollovers[n].src;
-       }
-       setTimeout(init_rollovers, 400);
-     }
-     @a[href: "http://download.plt-scheme.org/drscheme/"
-        onmouseover: "set_download_image(1);"
-        onmouseout: "set_download_image(0);"]{
-       @img[id: "download_button" border: "0" src: img1
-            alt: "Download PLT Scheme" title: "Download PLT Scheme"]})))
 
 ;; resources that are specific to the front page
 

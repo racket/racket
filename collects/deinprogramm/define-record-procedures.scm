@@ -91,7 +91,7 @@
 		  (syntax->list #'(mutator ...))))
 		(constructor-proc
 		 (syntax-property #'(lambda (accessor ...)
-				      (raw-constructor accessor ... '()))
+				      (raw-constructor accessor ... #f))
 				  'inferred-name
 				  (syntax-e #'?constructor)))
 		(predicate-proc

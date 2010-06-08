@@ -567,7 +567,7 @@ that's how a frame manages its children by default.
 @section{Where to Go From Here}
 
 This introduction to Racket purposely avoids many of the
-traditional ways of introducing and distinguishing Lisp or Racket:
+traditional ways of introducing and distinguishing Lisp or Scheme:
 prefix arithmetic notation, symbols, quoting and quasiquoting lists,
 @racket[eval], first-class continuations, and the idea that all syntax
 is really just a @racket[lambda] in disguise. While those are all part
@@ -577,7 +577,7 @@ in Racket.
 Instead, Racket programmers typically program with functions,
 records, objects, exceptions, regular expressions, modules, and
 threads. That is, instead of a ``minimalist'' language---which is the
-way that Racket is often described---Racket offers a rich language
+way that Scheme is often described---Racket offers a rich language
 with an extensive set of libraries and tools.
 
 If you are new to programming or if you have the patience to work
