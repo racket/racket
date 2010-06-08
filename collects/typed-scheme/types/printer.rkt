@@ -123,6 +123,7 @@
      (fp "~a" name)]
     [(StructTop: st) (fp "~a" st)]
     [(BoxTop:) (fp "Box")]
+    [(ChannelTop:) (fp "Channel")]
     [(VectorTop:) (fp "Vector")]
     [(MPairTop:) (fp "MPair")]
     ;; names are just the printed as the original syntax
@@ -165,6 +166,7 @@
                                (fp " ~a" i))
                              (fp ")")]
     [(Box: e) (fp "(Boxof ~a)" e)]
+    [(Channel: e) (fp "(Channelof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
     [(F: nm) (fp "~a" nm)]   
@@ -195,7 +197,8 @@
                               (Mu: var (Union: (list (Value: '()) (Pair: (F: x) (F: var)))))
                               (Mu: y (Union: (list (F: x) (Pair: (F: x) (F: y)))))
                               (Vector: (F: x))
-                              (Box: (F: x))))))
+                              (Box: (F: x))
+                              (Channel: (F: x))))))
      (fp "Syntax")]
     [(Mu-name: name body) (fp "(Rec ~a ~a)" name body)]
     ;; FIXME - this should not be used

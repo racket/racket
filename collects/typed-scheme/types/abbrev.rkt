@@ -26,6 +26,7 @@
 (define -val make-Value)
 (define -Param make-Param)
 (define -box make-Box)
+(define -channel make-Channel)
 (define -vec make-Vector)
 (define (-seq . args) (make-Sequence args))
 

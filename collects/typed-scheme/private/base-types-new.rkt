@@ -43,6 +43,7 @@
 [Promise (-poly (a) (-Promise a))]
 [Pair (-poly (a b) (-pair a b))]
 [Boxof (-poly (a) (make-Box a))]
+[Channelof (-poly (a) (make-Channel a))]
 [Continuation-Mark-Set -Cont-Mark-Set]
 [False (-val #f)]
 [True (-val #t)]

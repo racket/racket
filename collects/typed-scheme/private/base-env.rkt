@@ -16,7 +16,7 @@
  (only-in mzscheme make-namespace)
  (only-in racket/match/runtime match:error matchable? match-equality-test)
  (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
-             (only-in (rep type-rep) make-HashtableTop make-MPairTop make-BoxTop make-VectorTop)))
+             (only-in (rep type-rep) make-HashtableTop make-MPairTop make-BoxTop make-ChannelTop make-VectorTop)))
 
 [raise (Univ . -> . (Un))]
 [raise-syntax-error (cl->* 
@@ -206,6 +206,12 @@
 [pair? (make-pred-ty (-pair Univ Univ))]
 [empty? (make-pred-ty (-val null))]
 [empty (-val null)]
+
+[make-channel (-poly (a) (-> (-channel a)))]
+[channel? (make-pred-ty (make-ChannelTop))]
+[channel-get (-poly (a) ((-channel a) . -> . a))]
+[channel-try-get (-poly (a) ((-channel a) . -> . (Un a (-val #f))))]
+[channel-put (-poly (a) ((-channel a) a . -> . -Void))]
 
 [string? (make-pred-ty -String)]
 [string (->* '() -Char -String)]

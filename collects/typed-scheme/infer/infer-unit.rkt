@@ -414,6 +414,8 @@
            (cset-meet (cg e e*) (cg e* e))]
           [((Box: e) (Box: e*))
            (cset-meet (cg e e*) (cg e* e))]
+          [((Channel: e) (Channel: e*))
+           (cset-meet (cg e e*) (cg e* e))]
           [((Hashtable: s1 s2) (Hashtable: t1 t2))
            ;; for mutable hash tables, both are invariant
            (cset-meet* (list (cg t1 s1) (cg s1 t1) (cg t2 s2) (cg s2 t2)))]

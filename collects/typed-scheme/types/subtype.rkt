@@ -335,6 +335,7 @@
               [((Struct: _ _ _ _ _ _ _ _ _) (StructTop: (? (lambda (s2) (type-equal? s2 s)))))
                A0]
               [((Box: _) (BoxTop:)) A0]
+              [((Channel: _) (ChannelTop:)) A0]
               [((Vector: _) (VectorTop:)) A0]
               [((HeterogenousVector: _) (VectorTop:)) A0]
               [((HeterogenousVector: (list e ...)) (Vector: e*))

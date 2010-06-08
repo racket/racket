@@ -84,7 +84,11 @@
 
 ;; elem is a Type
 (dt Box ([elem Type/c]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
-    [#:key 'box])  
+    [#:key 'box])
+
+;; elem is a Type
+(dt Channel ([elem Type/c]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+    [#:key 'channel])
 
 ;; name is a Symbol (not a Name)
 (dt Base ([name symbol?] [contract syntax?]) [#:frees #f] [#:fold-rhs #:base] [#:intern name]
@@ -247,6 +251,7 @@
 
 ;; the supertype of all of these values
 (dt BoxTop () [#:fold-rhs #:base] [#:key 'box])
+(dt ChannelTop () [#:fold-rhs #:base] [#:key 'channel])
 (dt VectorTop () [#:fold-rhs #:base] [#:key 'vector])
 (dt HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
 (dt MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
