@@ -148,7 +148,7 @@
 			  (when (bound-identifier-mapping-get defined-ids id (lambda () #f))
 			    (raise-syntax-error
 			     #f
-			     "There is already a definition for this name."
+			     "this name was defined previously and cannot be re-defined"
 			     id))
 			  (bound-identifier-mapping-put! defined-ids id #t))
 			(reverse (syntax->list #'(defined-id ...)))))
