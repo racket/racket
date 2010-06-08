@@ -89,7 +89,7 @@
 	  (for/list ([t (list -ExactRational -Flonum -Real N)])
 	    (->* (list t) t t)))]
 
-[max (apply cl->* (for/list ([t all-num-types]) (->* (list t) t t)))]
+[max (apply cl->* (->* (list -Pos) -Integer -Pos) (->* (list -Nat) -Integer -Nat) (for/list ([t all-num-types]) (->* (list t) t t)))]
 [min (apply cl->* (for/list ([t all-num-types]) (->* (list t) t t)))]
 
 
