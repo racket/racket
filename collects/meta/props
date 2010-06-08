@@ -1342,6 +1342,7 @@ path/s is either such a string or a list of them.
 "collects/test-box-recovery" responsible (mflatt)
 "collects/test-box-recovery/tool.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/test-engine" responsible (kathyg)
+"collects/test-engine/racket-gui.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/test-engine/scheme-gui.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/test-engine/test-coverage.scm" drdr:command-line (gracket-text "-t" *)
 "collects/test-engine/test-display.scm" drdr:command-line (gracket-text "-t" *)
