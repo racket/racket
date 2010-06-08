@@ -37,6 +37,7 @@
   (require mzlib/etc
 	   mzlib/list
 	   mzlib/math
+	   mzlib/pconvert-prop
            scheme/match
            "set-result.ss"
            (only racket/base define-struct)
@@ -51,6 +52,7 @@
 		      syntax/struct
 		      syntax/context
 		      mzlib/include
+		      scheme/list
                       stepper/private/shared)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,6 +104,27 @@
   ;; A consistent pattern for stepper-skipto:
   (define-for-syntax (stepper-ignore-checker stx)
     (stepper-syntax-property stx 'stepper-skipto '(syntax-e cdr syntax-e cdr car)))
+
+  (define-for-syntax (map-with-index proc list)
+    (let loop ([i 0] [list list] [rev-result '()])
+      (if (null? list)
+	  (reverse rev-result)
+	  (loop (+ 1 i)
+		(cdr list)
+		(cons (proc i (car list)) rev-result)))))
+
+  ;; build-struct-names is hard to handle
+  (define-for-syntax (make-struct-names name fields stx)
+    (apply (lambda (struct: constructor predicate . rest)
+	     (let loop ([rest rest]
+			[getters '()]
+			[setters '()])
+	       (if (null? rest)
+		   (values struct: constructor predicate (reverse getters) (reverse setters))
+		   (loop (cddr rest)
+			 (cons (car rest) getters)
+			 (cons (cadr rest) setters)))))
+	   (build-struct-names name fields #f #f stx)))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; syntax implementations
@@ -732,58 +755,87 @@
 		(if (null? (cdr rest))
 		    "one"
 		    "at least one"))))
-	   (let* ([to-define-names (let ([l (build-struct-names name fields #f (not setters?) stx)])
-				     (if struct-info-is-useful?
-					 ;; All names:
-					 l
-					 ;; Skip `struct:' name:
-					 (cdr l)))]
+	   (let-values ([(struct: constructor-name predicate-name getter-names setter-names)
+			 (make-struct-names name fields stx)]
+			[(field-count) (length fields)])
+	   (let* ([struct-names (list* struct: constructor-name predicate-name
+				       (if setters?
+					   (append getter-names setter-names)
+					   setter-names))]
+		  [to-define-names (if struct-info-is-useful?
+				       ;; All names:
+				       struct-names
+				       ;; Skip `struct:' name:
+				       (cdr struct-names))]
 		  [proc-names (if struct-info-is-useful?
 				  (cdr to-define-names)
 				  to-define-names)])
-	     (with-syntax ([compile-info (if struct-info-is-useful?
-					     (build-struct-expand-info name fields #f (not setters?) #t null null)
-					     (syntax
-					      (lambda (stx)
-						(raise-syntax-error
-						 #f
-						 "expected an expression, but found a structure name"
-						 stx))))])
-               (let-values ([(defn0 bind-names)
-                             (wrap-func-definitions 
-			      first-order? 
-			      (list* 'constructor 
-				     'predicate
-				     (map (lambda (x) 'selector) (cddr proc-names)))
-			      proc-names
-			      (list* (- (length proc-names) 2)
-				     1
-				     (map (lambda (x) 1) (cddr proc-names)))
-			      (lambda (def-proc-names)
-				(with-syntax ([(def-proc-name ...) def-proc-names]
-					      [(proc-name ...) proc-names])
-				  (stepper-syntax-property 
-                                   #`(define-values (def-proc-name ...)
-                                       (let ()
-                                         (define-struct name_ (field_ ...) 
-                                           #:transparent 
-                                           #:mutable
-                                           #:constructor-name #,(car proc-names))
-                                         (values proc-name ...)))
-                                   'stepper-define-struct-hint
-                                   stx))))])
-                 (let ([defn
-                         (quasisyntax/loc stx
-                           (begin
-                             #,(stepper-syntax-property #`(define-syntaxes (name_) compile-info)
-                                                        'stepper-skip-completely
-                                                        #t)
-                             #,defn0))])
-                   (check-definitions-new 'define-struct
-                                          stx 
-                                          (cons #'name_ to-define-names)
-                                          defn
-                                          (and setters? bind-names)))))))]
+	       (write (list 'getters getter-names 'setters setter-names) (current-error-port))
+	       (newline (current-error-port))
+	       (with-syntax ([compile-info (if struct-info-is-useful?
+					       (build-struct-expand-info name fields #f (not setters?) #t null null)
+					       (syntax
+						(lambda (stx)
+						  (raise-syntax-error
+						   #f
+						   "expected an expression, but found a structure name"
+						   stx))))])
+		 (let-values ([(defn0 bind-names)
+			       (wrap-func-definitions 
+				first-order? 
+				(list* 'constructor 
+				       'predicate
+				       (map (lambda (x) 'selector) (cddr proc-names)))
+				proc-names
+				(list* (- (length proc-names) 2)
+				       1
+				       (map (lambda (x) 1) (cddr proc-names)))
+				(lambda (def-proc-names)
+				  (with-syntax ([(def-proc-name ...) def-proc-names]
+						[(proc-name ...) proc-names])
+				    (stepper-syntax-property 
+				     #`(define-values (def-proc-name ...)
+					 (let ()
+
+					   (define-values (type-descriptor
+							   raw-constructor
+							   raw-predicate
+							   raw-generic-access
+							   raw-generic-mutate)
+					     (make-struct-type 'name_
+							       #f
+							       #,field-count 0
+							       #f ; auto-v
+							       (list
+								(cons prop:print-convert-constructor-name
+								      '#,(car proc-names)))
+							       #f)) ; inspector
+					   #,@(map-with-index (lambda (i name)
+								#`(define (#,name r)
+								    (raw-generic-access r #,i)))
+							      getter-names)
+					   #,@(map-with-index (lambda (i name)
+								#`(define (#,name r v)
+								    (raw-generic-mutate r #,i v)))
+							      setter-names)
+					   (define #,predicate-name raw-predicate)
+					   (define #,constructor-name raw-constructor)
+
+					   (values proc-name ...)))
+				     'stepper-define-struct-hint
+				     stx))))])
+		   (let ([defn
+			   (quasisyntax/loc stx
+					    (begin
+					      #,(stepper-syntax-property #`(define-syntaxes (name_) compile-info)
+									 'stepper-skip-completely
+									 #t)
+					      #,defn0))])
+		     (check-definitions-new 'define-struct
+					    stx 
+					    (cons #'name_ to-define-names)
+					    defn
+					    (and setters? bind-names))))))))]
 	[(_ name_ something . rest)
 	 (teach-syntax-error
 	  'define-struct
