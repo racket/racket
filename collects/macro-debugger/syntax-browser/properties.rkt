@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/gui
+         framework
          (rename-in unstable/class-iop
                     [send/i send:])
          "interfaces.ss"
@@ -8,6 +9,23 @@
          "../util/mpi.ss")
 (provide properties-view%
          properties-snip%)
+
+(define color-text-default-style-name
+  "macro-debugger/syntax-browser/properties color-text% basic")
+
+(define color-text%
+  (class (editor:standard-style-list-mixin text:basic%)
+    (inherit get-style-list)
+    (define/override (default-style-name)
+      color-text-default-style-name)
+    (super-new)
+    (let* ([sl (get-style-list)]
+           [standard
+            (send sl find-named-style (editor:get-default-color-style-name))]
+           [basic
+            (send sl find-or-create-style standard
+                  (make-object style-delta% 'change-family 'default))])
+      (send sl new-named-style color-text-default-style-name basic))))
 
 ;; properties-view-base-mixin
 (define properties-view-base-mixin
@@ -22,7 +40,7 @@
     (define mode 'term)
 
     ;; text : text%
-    (field (text (new text%)))
+    (field (text (new color-text%)))
     (field (pdisplayer (new properties-displayer% (text text))))
 
     (send: controller selection-manager<%> listen-selected-syntax
@@ -122,7 +140,7 @@
            (callback
             (lambda (tp e)
               (set-mode (cdr (list-ref tab-choices (send tp get-selection))))))))
-    (define ecanvas (new editor-canvas% (editor text) (parent tab-panel)))))
+    (define ecanvas (new canvas:color% (editor text) (parent tab-panel)))))
 
 ;; properties-displayer%
 (define properties-displayer%

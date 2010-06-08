@@ -9,6 +9,7 @@
          (only-in mzlib/etc begin-with-definitions)
          "pretty-printer.ss"
          "interfaces.ss"
+         "prefs.ss"
          "util.ss")
 (provide print-syntax-to-editor
          code-style)
@@ -281,7 +282,7 @@
 ;; translate-color : color-string -> color%
 (define (translate-color color-string)
   (let ([c (make-object color% color-string)])
-    (if (preferences:get 'framework:white-on-black?)
+    (if (pref:invert-colors?)
         (let-values ([(r* g* b*)
                       (lightness-invert (send c red) (send c green) (send c blue))])
           #|
@@ -291,19 +292,6 @@
           |#
           (make-object color% r* g* b*))
         c)))
-
-#;
-(define (translate-color color)
-  (let ([reversed-color
-         (case (string->symbol (string-downcase color))
-           [(white) "black"]
-           [(black) "white"]
-           [(yellow) "goldenrod"]
-           [else (printf "unknown color ~s\n" color)
-                 color])])
-    (if (preferences:get 'framework:white-on-black?)
-        reversed-color
-        color)))
 
 ;; lightness-invert : uint8 uint8 uint8 -> (values uint8 uint8 uint8)
 (define (lightness-invert r g b)
@@ -393,7 +381,7 @@
   (let ([wob-version (highlight-style-delta wob-color em? #:translate-color? #f)]
         [bow-version (highlight-style-delta bow-color em? #:translate-color? #f)])
     (λ ()
-      (if (preferences:get 'framework:white-on-black?)
+      (if (pref:invert-colors?)
           wob-version
           bow-version))))
 

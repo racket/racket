@@ -7,7 +7,9 @@
 (provide prefs-base%
          syntax-prefs-base%
          syntax-prefs%
-         syntax-prefs/readonly%)
+         syntax-prefs/readonly%
+
+         pref:invert-colors?)
 
 (preferences:set-default 'SyntaxBrowser:Width 700 number?)
 (preferences:set-default 'SyntaxBrowser:Height 600 number?)
@@ -18,6 +20,8 @@
 (define pref:height (pref:get/set 'SyntaxBrowser:Height))
 (define pref:props-percentage (pref:get/set 'SyntaxBrowser:PropertiesPanelPercentage))
 (define pref:props-shown? (pref:get/set 'SyntaxBrowser:PropertiesPanelShown))
+
+(define pref:invert-colors? (pref:get/set 'framework:white-on-black?))
 
 (define prefs-base%
   (class object%
