@@ -35,22 +35,26 @@
 ;; the currently rendered directory, as a list
 (define rendered-dirpath (make-parameter '()))
 
-;; a mapping from path prefixes to urls (actually, any string) -- when two
+;; A mapping from path prefixes to urls (actually, any string) -- when two
 ;; paths are in the same prefix, links from one to the other are relative, but
 ;; if they're in different prefixes, the url will be used instead; the roots
-;; are expected to be disjoint (= no "/foo" and "/foo/bar" roots)
+;; are expected to be disjoint (= no "/foo" and "/foo/bar" roots).
+;; Additionally, optional symbol flags can appear in each entry, currently only
+;; 'abs is used below for roots that should always use absolute links (needed
+;; for some skeleton pages that are used in nested subdirectories).
 (provide url-roots)
 (define url-roots
-  ;; takes in a (listof (list prefix-string url-string)), and produces an alist
-  ;; with lists of strings for the keys; the prefix-strings are split on "/"s,
-  ;; and the url-strings can be anything at all actually (they are put as-is
-  ;; before the path with a "/" between them)
+  ;; takes in a (listof (list prefix-string url-string . flags)), and produces
+  ;; an alist with lists of strings for the keys; the prefix-strings are split
+  ;; on "/"s, and the url-strings can be anything at all actually (they are put
+  ;; as-is before the path with a "/" between them).
   (make-parameter #f
     (lambda (x)
       (and (list? x) (pair? x)
            (map (lambda (x)
-                  (cons (regexp-match* #rx"[^/]+" (car x))
-                        (regexp-replace #rx"/$" (cadr x) "")))
+                  (list* (regexp-match* #rx"[^/]+" (car x))
+                         (regexp-replace #rx"/$" (cadr x) "")
+                         (cddr x)))
                 x)))))
 
 ;; a utility for relative paths, taking the above `default-file' and
@@ -58,13 +62,17 @@
 (define (relativize file tgtdir curdir)
   (define file* (if (equal? file default-file) "" file))
   (define roots (url-roots))
-  (define (make-rooted path)
-    (ormap (lambda (root+url)
-             (let loop ([r (car root+url)] [p path])
-               (if (null? r)
-                 `(,(cdr root+url) ,@p ,file*)
+  (define (find-root path mode)
+    (ormap (lambda (root+url+flags)
+             (let loop ([r (car root+url+flags)] [p path])
+               (if (pair? r)
                  (and (pair? p) (equal? (car p) (car r))
-                      (loop (cdr r) (cdr p))))))
+                      (loop (cdr r) (cdr p)))
+                 (case mode
+                   [(get-path) `(,(cadr root+url+flags) ,@p ,file*)]
+                   [(get-abs-or-true)
+                    (if (memq 'abs (cddr root+url+flags)) `("" ,@p) #t)]
+                   [else (error 'relativize "internal error: ~e" mode)]))))
            roots))
   (define result
     (let loop ([t tgtdir] [c curdir] [pfx '()])
@@ -73,13 +81,17 @@
         [(and (pair? t) (pair? c) (equal? (car t) (car c)))
          (loop (cdr t) (cdr c) (cons (car t) pfx))]
         ;; done
-        [(or (not roots)                  ; if there are no roots
-             (make-rooted (reverse pfx))) ; or if they share a root
-         ;; then make them relative
-         `(,@(map (lambda (_) "..") c) ,@t ,file*)]
+        ;; no roots => always use a relative path (useful for debugging)
+        [(not roots) `(,@(map (lambda (_) "..") c) ,@t ,file*)]
+        ;; share a root => use a relative path unless its an absolute root
+        [(find-root (reverse pfx) 'get-abs-or-true)
+         => (lambda (abs/true)
+              `(;; rel. => as above
+                ,@(if (list? abs/true) abs/true (map (lambda (_) "..") c))
+                ,@t ,file*))]
         ;; different roots => use the one for the target
-        [(make-rooted tgtdir)]
-        ;; otherwise throw an error
+        [(find-root tgtdir 'get-path)]
+        ;; if there isn't any, throw an error
         [else (error 'relativize "target url is not in any known root: ~a"
                      (string-join `(,@tgtdir ,file*) "/"))])))
   (if (equal? '("") result) "." (string-join result "/")))
@@ -127,7 +139,10 @@
                    (R "index.html" '()        '("x" "y")) =error> "not in any"
                    (R "index.html" '("x")     '("x" "y")) => "../"
                    (R "index.html" '("x" "y") '("x" "y")) => "."
-                   (R "index.html" '("x" "y") '("y" "x")) => "/X/y/"))))
+                   (R "index.html" '("x" "y") '("y" "x")) => "/X/y/"))
+        do (parameterize ([url-roots '(["/x" "/X/"] ["/y" "/Y/" abs])])
+             (test (R "foo.txt" '("x" "1") '("x" "2")) => "../1/foo.txt"
+                   (R "foo.txt" '("y" "1") '("y" "2")) => "/1/foo.txt"))))
 |#
 
 ;; utility for keeping a list of renderer thunks
