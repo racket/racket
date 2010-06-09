@@ -13,16 +13,6 @@
 (define desc div)
 (define (elemcode . strs) (apply tt strs))
 
-(define-values (add-example get-examples)
-  (let ([inits (box '())] [additionals (box '())])
-    (define (add-example code #:maker (maker example) #:initial? [initial? #t]
-                         . desc)
-      (let ([b (if initial? inits additionals)])
-        (set-box! b (cons (maker code desc) (unbox b)))))
-    (define (get-examples)
-      (values (reverse (unbox inits)) (reverse (unbox additionals))))
-    (values add-example get-examples)))
-
 (define (examples)
   @; --- Each example here should at most 7 lines long ---
   (alts-panel
@@ -174,7 +164,64 @@
               (for/list ([n (in-range 100 0 -1)])
                 @item{@(format "~a" n) bottles.}))}|
      @desc{This program uses the @elemcode{scribble/base} language for
-       generating documents using a prose-friendly syntax.}))))
+       generating documents using a prose-friendly syntax.})
+    (graphical-example
+     @code{#lang racket ; draw a graph of cos and deriv^3(cos)
+           (require plot)
+           (define ((deriv f) x)
+             (/ (- (f x) (f (- x 0.001))) 0.001))
+           (define (thrice f) (lambda (x) (f (f (f x)))))
+           (plot (mix (line ((thrice deriv) sin) #:color 'red)
+                      (line cos #:color 'blue)))}
+     @desc{This program uses the @elemcode{plot} library to draw plots of
+       functions.  Note that the plots are actual value, which DrRacket shows
+       in graphical form.})
+    (example
+     @code{#lang racket ; Sending email from racket
+           (require net/sendmail)
+           (sleep (* (- (* 60 4) 15) 60)) ; 4h - 15m
+           (send-mail-message
+            (getenv "EMAIL") "Parking meter alert!"
+            (list (getenv "EMAIL")) null null
+            '("Time to go out and move your car."))}
+     @desc{Racket comes with plenty of libraries.})
+    (example
+     @code{#lang scheme/base ; Simple use of the FFI
+           (require ffi/unsafe)
+           (define mci-send-string
+             (get-ffi-obj "mciSendStringA" "Winmm"
+               (_fun _string [_pointer = #f] [_int = 0]
+                     [_pointer = #f] -> [ret : _int])))
+           (mci-send-string "play sound.wav wait")}
+     @desc{Using the FFI means that you're not limited to using Racket
+       libraries: pulling out a foreign function is easy, and can even be done
+       dynamically on the REPL.})
+    #; ; Is this effective without any highlights?
+    (example
+     @code{#lang planet jaymccarthy/datalog
+           ancestor(A, B) :- parent(A, B).
+           ancestor(A, B) :-
+             parent(A, C), D = C, ancestor(D, B).
+           parent(john, douglas).
+           parent(bob, john).
+           ancestor(A, B)?}
+     @desc{Blah})
+    #; ; Not easy to present something like this.
+    (example
+     @code{#lang racket
+           (provide (except-out (all-from-out racket)
+                                #%top #%app)
+                    (rename-out [top #%top] [app #%app]))
+           (define-syntax-rule (top . x) 'x)
+           (define-syntax-rule (app f . xs)
+             (if (hash? f) (hash-ref f . xs) (f . xs)))
+           }
+     @desc{TODO, and use this example:
+           @pre{#lang s-exp "foo"
+                (define x (make-hasheq))
+                (hash-set! x A B)
+                (x A)}})
+    )))
 
 (provide index)
 (define index
