@@ -368,7 +368,7 @@
             (if translate-color? (translate-color raw-color) raw-color)))
     (when em? (send sd set-weight-on 'bold))
     (unless em?
-      (send sd set-underlined-off #t)
+      ;; (send sd set-underlined-off #t)
       (send sd set-weight-off 'bold))
     sd))
 
