@@ -313,6 +313,7 @@
 	" in a list of pairs"))
 
     ("Posns"
+      (posn contract "contract for posns")
       (make-posn (number number -> posn) "to construct a posn")
       (posn? (anything -> boolean) "to determine if its input is a posn")
       (posn-x (posn -> number) "to extract the x component of a posn")
