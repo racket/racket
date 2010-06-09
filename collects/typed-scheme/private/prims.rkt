@@ -392,11 +392,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
        (let loop ((clauses #'clauses))
          (define-syntax-class for-clause
            ;; single-valued seq-expr
+           ;; unlike the definitions in for-clauses.rkt, this does not include
+           ;; #:when clauses, which are handled separately here
            (pattern (var:annotated-name seq-expr:expr)
-                    #:with expand #'(var.ann-name seq-expr))
+                    #:with expand #`(var.ann-name
+                                     #,(syntax-property #'seq-expr
+                                                        'type-ascription
+                                                        #'(Sequenceof var.ty))))
            ;; multi-valued seq-expr
-           (pattern ((v:annotated-name ...) seq-expr:expr)
-                    #:with expand #'((v.ann-name ...) seq-expr)))
+           ;; currently disabled because it triggers an internal error in the typechecker
+           #;(pattern ((v:annotated-name ...) seq-expr:expr)
+                    #:with expand #`((v.ann-name ...)
+                                     #,(syntax-property #'seq-expr
+                                                        'type-ascription
+                                                        #'(Sequenceof (values v.ty ...))))))
          (syntax-parse clauses
            [(head:for-clause next:for-clause ... #:when rest ...)
             (syntax-property
