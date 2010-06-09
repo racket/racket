@@ -1783,6 +1783,7 @@ path/s is either such a string or a list of them.
 "collects/typed/rackunit" responsible (jay)
 "collects/typed/rackunit/gui.rkt" drdr:command-line (gracket "-t" *)
 "collects/typed-scheme" responsible (samth)
+"collects/typed-scheme/private/optimize.rkt" responsible (stamourv)
 "collects/unstable" responsible (jay samth cce ryanc)
 "collects/unstable/byte-counting-port.rkt" responsible (jay)
 "collects/unstable/debug.rkt" responsible (samth)
