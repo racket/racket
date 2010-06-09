@@ -37,7 +37,6 @@ exec racket -qu "$0" ${1+"$@"}
   (define (clean-up-o1 bm)
     (delete-file (format "~a.o1" bm)))
 
-  #;(define (mk-racket bm) (void))
   (define (mk-racket bm)
     (unless (directory-exists? "compiled")
       (make-directory "compiled"))
@@ -50,6 +49,27 @@ exec racket -qu "$0" ${1+"$@"}
   (define (clean-up-zo bm)
     (when (directory-exists? "compiled")
       (delete-directory/files "compiled")))
+
+  (define (mk-typed-scheme bm)
+    (unless (directory-exists? "typed/compiled")
+      (make-directory "typed/compiled"))
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [read-accept-reader #t])
+      (let ([name (format "~a-non-optimizing.rkt" bm)])
+        (compile-file (format "typed/~a" name)
+                      (build-path "typed/compiled" (path-add-suffix name #".zo"))))))
+  (define (mk-typed-scheme-optimizing bm)
+    (unless (directory-exists? "typed/compiled")
+      (make-directory "typed/compiled"))
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [read-accept-reader #t])
+      (let ([name (format "~a-optimizing.rkt" bm)])
+        (compile-file (format "typed/~a" name)
+                      (build-path "typed/compiled" (path-add-suffix name #".zo"))))))
+
+  (define (clean-up-typed bm)
+    (when (directory-exists? "typed/compiled")
+      (delete-directory/files "typed/compiled")))
 
   (define (clean-up-nothing bm)
     (void))
@@ -399,21 +419,21 @@ exec racket -qu "$0" ${1+"$@"}
                         mutable-pair-progs))
      (make-impl 'typed-scheme
                 void
-                mk-racket
+                mk-typed-scheme
                 (lambda (bm)
                   (system (format "racket -u typed/~a-non-optimizing.rkt" bm)))
                 extract-racket-times
-                clean-up-zo
+                clean-up-typed
                 (append mutable-pair-progs
                         '(dynamic2 earley maze2 nboyer nucleic2 sboyer
                           scheme2)))
      (make-impl 'typed-scheme-optimizing
                 void
-                mk-racket
+                mk-typed-scheme-optimizing
                 (lambda (bm)
                   (system (format "racket -u typed/~a-optimizing.rkt" bm)))
                 extract-racket-times
-                clean-up-zo
+                clean-up-typed
                 (append mutable-pair-progs
                         '(dynamic2 earley maze2 nboyer nucleic2 sboyer
                           scheme2)))
