@@ -48,7 +48,8 @@
 @defidform[Namespace]
 @defidform[EOF]
 @defidform[Continuation-Mark-Set]
-@defidform[Char])]{
+@defidform[Char]
+@defidform[Thread])]{
 These types represent primitive Racket data.  Note that @racket[Integer] represents exact integers.}
 
 @defidform[Any]{Any Racket value. All other types are subtypes of @racket[Any].}
@@ -61,6 +62,7 @@ The following base types are parameteric in their type arguments.
 
 @defform[(Listof t)]{Homogenous @rtech{lists} of @racket[t]}
 @defform[(Boxof t)]{A @rtech{box} of @racket[t]}
+@defform[(Channelof t)]{A @rtech{channel} on which only @racket[t]s can be sent}
 @defform[(Syntaxof t)]{A @rtech{syntax object} containing a @racket[t]}
 @defform[(Vectorof t)]{Homogenous @rtech{vectors} of @racket[t]}
 @defform[(Option t)]{Either @racket[t] of @racket[#f]}
