@@ -60,6 +60,9 @@
         [#:foci1 syntaxish? #:foci2 syntaxish?]
         . ->* . step?)]
  [stumble ([syntaxish? exn?] [#:focus syntaxish?] . ->* . misstep?)]
+ [walk/talk
+  (-> (or/c symbol? string?) (listof (or/c syntax? string? 'arrow))
+      remarkstep?)]
 
  [current-pass-hides? (parameterlike/c boolean?)]
 
@@ -342,6 +345,11 @@
   (make misstep 'error
         (current-state-with stx focus)
         exn))
+
+(define (walk/talk type contents)
+  (make remarkstep type
+        (current-state-with #f null)
+        contents))
 
 (define (foci x)
   (cond [(syntax? x)

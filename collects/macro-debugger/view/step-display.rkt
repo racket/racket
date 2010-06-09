@@ -87,6 +87,8 @@
              (show-step step shift-table)]
             [(misstep? step)
              (show-misstep step shift-table)]
+            [(remarkstep? step)
+             (show-remarkstep step shift-table)]
             [(prestep? step)
              (show-prestep step shift-table)]
             [(poststep? step)
@@ -227,6 +229,22 @@
                  #:binders (or (state-binders state) null)
                  #:definites (or (state-uses state) null)
                  #:shift-table shift-table)))
+      (show-lctx step shift-table))
+
+    (define/private (show-remarkstep step shift-table)
+      (define state (protostep-s1 step))
+      (for ([content (in-list (remarkstep-contents step))])
+        (cond [(string? content)
+               (send*: sbview sb:syntax-browser<%>
+                       (add-text content)
+                       (add-text "\n"))]
+              [(syntax? content)
+               (send*: sbview sb:syntax-browser<%>
+                 (add-syntax content
+                             #:binders (or (state-binders state) null)
+                             #:definites (or (state-uses state) null)
+                             #:shift-table shift-table)
+                 (add-text "\n"))]))
       (show-lctx step shift-table))
 
     ;; insert-syntax/color

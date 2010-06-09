@@ -202,6 +202,8 @@
       (make local-bind $1 $2 $3 #f)]
      [(local-bind rename-list (? BindSyntaxes))
       (make local-bind $1 #f $2 $3)]
+     [(local-remark)
+      (make local-remark $1)]
      ;; -- Not really local actions, but can occur during evaluation
      ;; called 'expand' (not 'local-expand') within transformer
      [(start (? EE)) #f]

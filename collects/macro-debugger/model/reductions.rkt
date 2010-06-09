@@ -419,7 +419,15 @@
      ;; FIXME: add action
      (R [#:do (take-lift!)]
         [#:binders ids]
-        [#:reductions (list (walk expr ids 'local-lift))])]
+        [#:reductions
+         (list
+          (walk/talk 'local-lift
+                     (list "The macro lifted an expression"
+                           ""
+                           "Expression:"
+                           expr
+                           "Identifiers:"
+                           (datum->syntax #f ids))))])]
 
     [(struct local-lift-end (decl))
      ;; (walk/mono decl 'module-lift)
@@ -436,7 +444,9 @@
      [R [! ?1]
         ;; FIXME: use renames
         [#:binders names]
-        [#:when bindrhs => (BindSyntaxes bindrhs)]]]))
+        [#:when bindrhs => (BindSyntaxes bindrhs)]]]
+    [(struct local-remark (contents))
+     (R [#:reductions (list (walk/talk 'remark contents))])]))
 
 ;; List : ListDerivation -> RST
 (define (List ld)

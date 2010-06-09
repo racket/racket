@@ -40,6 +40,8 @@
 (define-struct local-lift-require (req expr mexpr) #:transparent)
 (define-struct local-lift-provide (prov) #:transparent)
 (define-struct local-bind (names ?1 renames bindrhs) #:transparent)
+(define-struct local-remark (contents) #:transparent)
+  ;; contents : (listof (U string syntax))
 
 ;; A PrimDeriv is one of
 (define-struct (prule base) () #:transparent)

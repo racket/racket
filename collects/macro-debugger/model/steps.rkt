@@ -1,10 +1,10 @@
-
 #lang scheme/base
 (require "deriv.ss"
          "deriv-util.ss")
 (provide (struct-out protostep)
          (struct-out step)
          (struct-out misstep)
+         (struct-out remarkstep)
          (struct-out state)
          (struct-out bigframe)
          context-fill
@@ -22,9 +22,11 @@
 ;; A Step is one of
 ;;  - (make-step StepType State State)
 ;;  - (make-misstep StepType State exn)
+;;  - (make-remarkstep StepType State (listof (U string syntax 'arrow)))
 (define-struct protostep (type s1) #:transparent)
 (define-struct (step protostep) (s2) #:transparent)
 (define-struct (misstep protostep) (exn) #:transparent)
+(define-struct (remarkstep protostep) (contents) #:transparent)
 
 ;; A State is
 ;;  (make-state stx stxs Context BigContext (listof id) (listof id) (listof stx) nat/#f)
@@ -88,6 +90,8 @@
     (splice-module    . "Splice module-level begin")
     (splice-lifts     . "Splice definitions from lifted expressions")
     (splice-module-lifts . "Splice lifted module declarations")
+
+    (remark           . "Macro made a remark")
 
     (error            . "Error")))
 

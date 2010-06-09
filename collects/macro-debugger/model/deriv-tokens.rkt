@@ -59,6 +59,8 @@
 
    top-begin            ; identifier
    top-non-begin        ; .
+
+   local-remark         ; (listof (U string syntax))
    ))
 
 (define-tokens renames-tokens
@@ -93,6 +95,7 @@
     (#f  start                   ,token-start)
     (#f  top-begin               ,token-top-begin)
     (#f  top-non-begin           ,token-top-non-begin)
+    (#f  local-remark            ,token-local-remark)
 
     ;; Standard signals
     (0   visit                   ,token-visit)
