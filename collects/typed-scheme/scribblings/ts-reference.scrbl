@@ -8,6 +8,8 @@
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require (except-in typed/racket #%top-interaction #%module-begin)))
+@(define the-top-eval (make-base-eval))
+@(the-top-eval '(require (except-in typed/racket #%module-begin)))
 
 @title[#:tag "top"]{The Typed Racket Reference} 
 
@@ -27,6 +29,7 @@
 @defidform[Natural]
 @defidform[Exact-Positive-Integer]
 @defidform[Exact-Nonnegative-Integer]
+@defidform[Exact-Rational]
 @defidform[Boolean]
 @defidform[True]
 @defidform[False]
@@ -378,6 +381,28 @@ Other libraries can be used with Typed Racket via
                [check-version (-> (U Symbol (Listof Any)))])
 (check-version)
 ]
+
+@section{Utilities}
+
+Typed Racket provides some additional utility functions to facilitate typed programming.
+
+@defproc*[
+([(assert [v (U #f A)]) A]
+ [(assert [v A] [p? (A -> Any : B)]) B])]{
+Verifies that the argument satisfies the constraint.  If no predicate
+is provided, simply checks that the value is not
+@racket[#f].  
+}
+
+@examples[#:eval the-top-eval
+(define: x : (U #f Number) (string->number "7"))
+x
+(assert x)
+(define: y : (U String Number) 0)
+y
+(assert y number?)
+(assert y boolean?)]
+
 
 @section{Typed Racket Syntax Without Type Checking}
 
