@@ -764,9 +764,9 @@
 
 (define vector-immutableof
   (*-immutableof immutable-vector?
-                 (λ (f v) (for-each f (vector->list v)))
-                 (λ (f v) (apply vector-immutable (map f (vector->list v))))
-                 (λ (f v) (andmap f (vector->list v)))
+                 (λ (f v) (for ([e (in-vector v)]) (f e)))
+                 (λ (f v) (apply vector-immutable (for/list ([e (in-vector v)]) (f e))))
+                 (λ (f v) (for/and ([e (in-vector v)]) (f e)))
                  immutable-vector
                  vector-immutableof))
 
