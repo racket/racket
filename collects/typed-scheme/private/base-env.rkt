@@ -180,7 +180,7 @@
 		      (-> (Un a (-val #f)) a)))]
 [gensym (->opt [Sym] Sym)]
 [string-append (->* null -String -String)]
-[string-copy! (->opt -String -Nat -String -Nat [-Nat -Nat] -Void)]
+[string-copy! (->opt -String -Nat -String [-Nat -Nat] -Void)]
 [open-input-string (-> -String -Input-Port)]
 [open-output-file
  (->key -Pathlike
