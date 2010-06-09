@@ -1330,5 +1330,20 @@
           (m))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check keyword & optionals for define-syntax 
+;; and define-syntax-for-values:
+
+(test (list 7 #f)
+      'dfs/kw
+      (eval
+       '(begin
+          (define-for-syntax (kw/f #:x a b)
+            `(list ,a ,b))
+          (define-syntax (kw/g stx #:opt [opt #f])
+            (syntax-case stx ()
+              [(_ v) (datum->syntax stx (kw/f #:x #'v opt))]))
+          (kw/g 7))))
+      
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
