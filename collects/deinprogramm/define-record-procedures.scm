@@ -136,6 +136,10 @@
 				 (custom-write-record '?type-name 
 						      (access-record-fields r raw-generic-access number-of-fields)
 						      port write?)))
+			 (cons prop:print-converter
+			       (lambda (r recur)
+				 (list '?constructor
+				       (recur (raw-accessor-proc r)) ...)))
 			 (cons prop:equal+hash
 			       (list record-equal?
 				     (make-equal-hash (lambda (r i) (raw-generic-access r i)) number-of-fields) 
