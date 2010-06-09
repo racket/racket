@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt")
 
 (require (rep type-rep object-rep filter-rep rep-utils)
-	 "printer.rkt" "utils.rkt" "resolve.rkt"
+	 #;"printer.rkt" "utils.rkt" "resolve.rkt"
          (utils tc-utils)
          scheme/list
          scheme/match         
@@ -75,8 +75,10 @@
 
 ;; basic types
 
+(define promise-str (string->uninterned-symbol "Promise"))
+
 (define make-promise-ty
-  (let ([s (string->uninterned-symbol "Promise")])
+  (let ([s promise-str])
     (lambda (t)
       (make-Struct s #f (list t) #f #f #'promise? values (list #'values) #'values))))
 

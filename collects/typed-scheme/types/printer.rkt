@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require unstable/sequence racket/require racket/match
-         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt"
+         (path-up "rep/type-rep.rkt" "rep/filter-rep.rkt" "rep/object-rep.rkt" "types/abbrev.rkt"
                   "rep/rep-utils.rkt" "utils/utils.rkt" "utils/tc-utils.rkt"))
 
 ;; do we attempt to find instantiations of polymorphic types to print? 
@@ -142,8 +142,8 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt) (fp "~a" n)]      
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: 'Promise par (list fld) proc _ _ _ _ _) (fp "(Promise ~a)" fld)]      
-    [(Struct: nm par flds proc _ _ _ _ _) 
+    [(Struct: (== promise-str eq?) #f  (list fld) _    _ _ _ _ _) (fp "(Promise ~a)" fld)]
+    [(Struct: nm       par flds       proc _ _ _ _ _)
      (fp "#(struct:~a ~a" nm flds)
      (when proc
        (fp " ~a" proc))

@@ -167,8 +167,12 @@ The following base types are parameteric in their type arguments.
 @defform*[[(Parameterof t)
            (Parameterof s t)]]{A @rtech{parameter} of @racket[t].  If two type arguments are supplied, 
                                  the first is the type the parameter accepts, and the second is the type returned.
-@ex[current-input-port]
+@ex[current-input-port
+    current-directory]
 }
+                              
+@defform[(Promise t)]{A @rtech{promise} of @racket[t].
+ @ex[(delay 3)]}
 
 @subsection{Other Type Constructors}
 
@@ -184,8 +188,14 @@ The following base types are parameteric in their type arguments.
   second occurrence of @racket[...] is literal, and @racket[bound]
   must be an identifier denoting a type variable. In the fourth form, 
   there must be only one @racket[dom] and @racket[pred] is the type 
-  checked by the predicate.}
-@defform[(U t ...)]{is the union of the types @racket[t ...]}
+  checked by the predicate.
+  
+  @ex[(λ: ([x : Number]) x)
+      (λ: ([x : Number] . [y : String *]) (length y))
+      ormap
+      string?]}
+@defform[(U t ...)]{is the union of the types @racket[t ...].
+ @ex[(λ: ([x : Real])(if (> 0 x) "yes" 'no))]}
 @defform[(case-lambda fun-ty ...)]{is a function that behaves like all of
   the @racket[fun-ty]s.  The @racket[fun-ty]s must all be function
   types constructed with @racket[->].}
@@ -195,7 +205,8 @@ The following base types are parameteric in their type arguments.
   type variables @racket[v ...]}
 @defform[(values t ...)]{is the type of a sequence of multiple values, with
 types @racket[t ...].  This can only appear as the return type of a
-function.}
+function.
+@ex[(values 1 2 3)]}
 @defform/none[v]{where @racket[v] is a number, boolean or string, is the singleton type containing only that value}
 @defform/none[(quote val)]{where @racket[val] is a Racket value, is the singleton type containing only that value}
 @defform/none[i]{where @racket[i] is an identifier can be a reference to a type
