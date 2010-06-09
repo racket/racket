@@ -46,7 +46,8 @@
 
 	   contract : -> mixed one-of predicate combined
 	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list
-	   property)
+	   Property
+	   check-property for-all ==> expect expect-within expect-member-of expect-range)
 
   (require (for-syntax "private/firstorder.ss"))
     

@@ -46,7 +46,10 @@
 	   (all-except lang/private/contracts/contract-syntax property)
 	   (rename lang/private/contracts/contract-syntax contract:property property)
 	   (all-except deinprogramm/quickcheck/quickcheck property)
-	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property))
+	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
+	   test-engine/scheme-tests
+	   scheme/class
+	   (only lang/private/teachprims beginner-equal? beginner-equal~?))
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
 		      syntax/kerncase
@@ -2635,8 +2638,115 @@
 
 (define Unspecific (contract (predicate (lambda (_) #t))))
 
-;; Dummy definition, to be filled in later.
-(provide property)
-(define property "TBD")
+; QuickCheck
+
+(provide for-all ==>
+	 check-property
+	 expect expect-within expect-member-of expect-range
+	 Property)
+
+(define-syntax (for-all stx)
+  (syntax-case stx ()
+    ((_ (?clause ...) ?body)
+     (with-syntax ((((?id ?arb) ...)
+		    (map (lambda (pr)
+			   (syntax-case pr ()
+			     ((?id ?contract)
+			      (identifier? #'?id)
+			      (with-syntax ((?error-call
+					     (syntax/loc #'?contract (error "Contract does not have a generator"))))
+				#'(?id
+				   (or (contract-arbitrary (contract ?contract))
+				       ?error-call))))
+			     (_
+			      (raise-syntax-error #f "incorrect `for-all' clause - should have form (id contr)"
+						  pr))))
+			 (syntax->list #'(?clause ...)))))
+
+       (stepper-syntax-property #'(quickcheck:property 
+				   ((?id ?arb) ...) ?body)
+				'stepper-skip-completely
+				#t)))
+    ((_ ?something ?body)
+     (raise-syntax-error #f "no clauses of them form (id contr)"
+			 stx))
+    ((_ ?thing1 ?thing2 ?thing3 ?things ...)
+     (raise-syntax-error #f "too many operands"
+			 stx))))
+
+(define-syntax (check-property stx)
+  (unless (memq (syntax-local-context) '(module top-level))
+    (raise-syntax-error
+     #f "`check-property' must be at top level" stx))
+  (syntax-case stx ()
+    ((_ ?prop)
+     (stepper-syntax-property
+      (check-expect-maker stx #'check-property-error #'?prop '() 
+			  'comes-from-check-property)
+      'stepper-replace
+      #'#t))
+    (_ (raise-syntax-error #f "`check-property' expects a single operand"
+			   stx))))
+
+(define (check-property-error test src-info test-info)
+  (let ((info (send test-info get-info)))
+    (send info add-check)
+    (with-handlers ((exn:fail?
+		     (lambda (e)
+		       (send info property-error e src-info)
+		       (raise e))))
+      (call-with-values
+	  (lambda ()
+	    (with-handlers
+		((exn:assertion-violation?
+		  (lambda (e)
+		    ;; minor kludge to produce comprehensible error message
+		    (if (eq? (exn:assertion-violation-who e) 'coerce->result-generator)
+			(raise (make-exn:fail (string-append "Value must be property or boolean: "
+							     ((error-value->string-handler)
+							      (car (exn:assertion-violation-irritants e))
+							      100))
+					      (exn-continuation-marks e)))
+			(raise e)))))
+	      (quickcheck-results (test))))
+	(lambda (ntest stamps result)
+	  (if (check-result? result)
+	      (begin
+		(send info property-failed result src-info)
+		#f)
+	      #t))))))
+
+(define (expect v1 v2)
+  (quickcheck:property () (beginner-equal? v1 v2)))
+
+(define (ensure-real who n val)
+  (unless (real? val)
+    (raise
+     (make-exn:fail:contract
+      (string->immutable-string
+       (format "~a argument ~e for `~a' is not a real number." n val who))
+      (current-continuation-marks)))))
+
+(define (expect-within v1 v2 epsilon)
+  (ensure-real 'expect-within "Third" epsilon)
+  (quickcheck:property () (beginner-equal~? v1 v2 epsilon)))
+
+(define (expect-range val min max)
+  (ensure-real 'expect-range "First" val)
+  (ensure-real 'expect-range "Second" min)
+  (ensure-real 'expect-range "Third" max)
+  (quickcheck:property ()
+		       (and (<= min val)
+			    (<= val max))))
+
+(define (expect-member-of val . candidates)
+  (quickcheck:property () 
+		       (ormap (lambda (cand)
+				(beginner-equal? val cand))
+			      candidates)))
+
+(define Property (contract (predicate (lambda (x)
+					(or (boolean? x)
+					    (property? x))))))
 
 )
