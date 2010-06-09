@@ -142,7 +142,7 @@
 			 [else (format (string-append
 					(if ck?
 					    (string-constant test-engine-m-of-n-checks-failed)
-					    (string-constant test-engine-0-tests-passed))
+					    (string-constant test-engine-m-of-n-tests-failed))
 					"\n\n")
 				       failed total)])))
 		(send editor insert
