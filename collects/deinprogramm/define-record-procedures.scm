@@ -26,7 +26,8 @@
 
     (lambda (x)
       (syntax-case x ()
-	((_ ?type-name
+	((_ ?stx
+	    ?type-name
 	    ?mutable?
 	    ?contract-constructor-name
 	    ?constructor
@@ -190,7 +191,7 @@
 	       ;; again, with properties
 	       (with-syntax ((struct-type-defs
 			      (stepper-syntax-property
-			       (syntax/loc x struct-type-defs) 'stepper-skip-completely #t))
+			       (syntax/loc x struct-type-defs) 'stepper-define-struct-hint #'?stx))
 			     (constructor-def
 			      (stepper-syntax-property #'constructor-def 'stepper-skip-completely #t))
 			     (predicate-def
@@ -347,10 +348,11 @@ prints as:
           (syntax->list (syntax (accessor ...)))
           "Selektor ist kein Bezeichner")
 
-         (with-syntax (((dummy-mutator ...)
+         (with-syntax ((?stx x)
+		       ((dummy-mutator ...)
                         (generate-temporaries (syntax (accessor ...)))))
            (syntax
-            (define-record-procedures* ?type-name #f
+            (define-record-procedures* ?stx ?type-name #f
 	      dummy-contract-constructor-name
               ?constructor
               ?predicate
@@ -414,10 +416,11 @@ prints as:
 	  (syntax->list (syntax (accessor ...)))
 	  "Selektor ist kein Bezeichner")
 
-	 (with-syntax (((dummy-mutator ...)
+	 (with-syntax ((?stx x)
+		       ((dummy-mutator ...)
 			(generate-temporaries (syntax (accessor ...)))))
 	   (syntax
-	    (define-record-procedures* ?type-name #f ?contract-constructor-name
+	    (define-record-procedures* ?stx ?type-name #f ?contract-constructor-name
 	      ?constructor
 	      ?predicate
 	      ((accessor dummy-mutator) ...))))))
@@ -479,11 +482,12 @@ prints as:
 				       "Selektor ist kein Bezeichner"))))
 		   (syntax->list (syntax (?field-spec ...))))
 
-	 #'(define-record-procedures* ?type-name #t
-	     dummy-contract-constructor-name
-	     ?constructor
-	     ?predicate
-	     (?field-spec ...))))
+	 (with-syntax ((?stx x))
+	   #'(define-record-procedures* ?stx ?type-name #t
+	       dummy-contract-constructor-name
+	       ?constructor
+	       ?predicate
+	       (?field-spec ...)))))
       ((_ ?type-name
 	  ?constructor
 	  ?predicate
@@ -541,10 +545,11 @@ prints as:
 				       "Selektor ist kein Bezeichner"))))
 		   (syntax->list (syntax (?field-spec ...))))
 
-	 #'(define-record-procedures* ?type-name #t ?contract-constructor-name
-	     ?constructor
-	     ?predicate
-	     (?field-spec ...))))
+	 (with-syntax ((?stx x))
+	   #'(define-record-procedures* ?stx ?type-name #t ?contract-constructor-name
+	       ?constructor
+	       ?predicate
+	       (?field-spec ...)))))
       ((_ ?type-name
 	  ?contract-constructor-name
 	  ?constructor
