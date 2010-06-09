@@ -48,7 +48,7 @@
 	   empty true false
 
 	   contract : -> mixed one-of predicate combined
-	   Number Real Rational Integer Natural Boolean True False String Char Empty-list
+	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list
 	   property)
 
   ;; procedures:
