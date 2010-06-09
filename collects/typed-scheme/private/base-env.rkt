@@ -280,7 +280,17 @@
 [fprintf (->* (list -Output-Port -String) Univ -Void)]
 [format (->* (list -String) Univ -String)]
 
-[sleep (N . -> . -Void)]
+[thread (-> (-> Univ) -Thread)]
+[thread? (make-pred-ty -Thread)]
+[current-thread (-> -Thread)]
+[thread/suspend-to-kill (-> (-> Univ) -Thread)]
+[thread-suspend (-Thread . -> . -Void)]
+[kill-thread (-Thread . -> . -Void)]
+[break-thread (-Thread . -> . -Void)]
+[sleep ([N] . ->opt . -Void)]
+[thread-running? (-Thread . -> . B)]
+[thread-dead? (-Thread . -> . B)]
+[thread-wait (-Thread . -> . -Void)]
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]

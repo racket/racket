@@ -35,6 +35,7 @@
 [Identifier Ident]
 [Procedure top-func]
 [Keyword -Keyword]
+[Thread -Thread]
 [Listof -Listof]
 [Vectorof (-poly (a) (make-Vector a))]
 [FlVector -FlVector]

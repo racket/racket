@@ -93,6 +93,7 @@
 (define -String (make-Base 'String #'string?))
 (define -Keyword (make-Base 'Keyword #'keyword?))
 (define -Char (make-Base 'Char #'char?))
+(define -Thread (make-Base 'Thread #'thread?))
 (define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag?))
 (define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set?))
 (define -Path (make-Base 'Path #'path?))
