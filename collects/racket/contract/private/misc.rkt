@@ -711,53 +711,49 @@
      (build-compound-type-name 'not/c ctc)
      (λ (x) (not (pred x))))))
 
-(define-syntax (*-immutableof stx)
+(define-syntax (*-listof stx)
   (syntax-case stx ()
-    [(_ predicate? app fill testmap type-name name)
+    [(_ predicate? type-name name)
      (identifier? (syntax predicate?))
      (syntax
-      (let ([fill-name fill]
-            [for-each-name app])
-        (λ (input)
-          (let* ([ctc (coerce-contract 'name input)]
-                 [fo-check 
-                  (λ (x)
-                    (and (predicate? x) 
-                         (testmap (λ (v) (contract-first-order-passes? ctc v)) x)))]
-                 [proj (contract-projection ctc)])
-            (if (flat-contract? ctc)
-                (make-flat-contract
-                 #:name (build-compound-type-name 'name ctc)
-                 #:first-order fo-check
-                 #:projection
-                 (λ (blame)
-                   (let ([p-app (proj blame)])
-                     (λ (val)
-                       (unless (predicate? val)
-                         (raise-blame-error blame val
-                                            "expected <~a>, given: ~e"
-                                            'type-name val))
-                       (for-each-name p-app val)
-                       val))))
-                (make-contract
-                 #:name (build-compound-type-name 'name ctc)
-                 #:first-order fo-check
-                 #:projection
-                 (λ (blame)
-                   (let ([p-app (proj blame)])
-                     (λ (val)
-                       (unless (predicate? val)
-                         (raise-blame-error blame val
-                                            "expected <~a>, given: ~e"
-                                            'type-name val))
-                       (fill-name p-app val))))))))))]))
+      (λ (input)
+        (let* ([ctc (coerce-contract 'name input)]
+               [ctc-name (build-compound-type-name 'name ctc)]
+               [proj (contract-projection ctc)])
+          (define (fo-check x)
+            (and (predicate? x) 
+                 (for/and ([v (in-list x)])
+                   (contract-first-order-passes? ctc v))))
+          (define ((ho-check check-all) blame)
+            (let ([p-app (proj blame)])
+              (λ (val)
+                (unless (predicate? val)
+                  (raise-blame-error blame val
+                                     "expected <~a>, given: ~e"
+                                     'type-name val))
+                (check-all p-app val))))
+          (cond
+            [(flat-contract? ctc)
+             (make-flat-contract
+              #:name ctc-name
+              #:first-order fo-check
+              #:projection (ho-check (λ (p v) (for-each p v) v)))]
+            [(chaperone-contract? ctc)
+             (make-chaperone-contract
+              #:name ctc-name
+              #:first-order fo-check
+              #:projection (ho-check (λ (p v) (map p v))))]
+            [else
+             (make-contract
+              #:name ctc-name
+              #:first-order fo-check
+              #:projection (ho-check (λ (p v) (map p v))))]))))]))
 
-(define listof-func (*-immutableof list? for-each map andmap list listof))
+(define listof-func (*-listof list? list listof))
 (define/subexpression-pos-prop (listof x) (listof-func x))
 
 (define (non-empty-list? x) (and (pair? x) (list? (cdr x))))
-(define non-empty-listof-func
-  (*-immutableof non-empty-list? for-each map andmap non-empty-list non-empty-listof))
+(define non-empty-listof-func (*-listof non-empty-list? non-empty-list non-empty-listof))
 (define/subexpression-pos-prop (non-empty-listof a) (non-empty-listof-func a))
 
 ;;
