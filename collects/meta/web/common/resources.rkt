@@ -82,7 +82,7 @@
     }
     .helpiconcell {
       text-align: right;
-      text-vertical-align: top;
+      vertical-align: top;
     }
     .helpicon {
       font-weight: bold;
