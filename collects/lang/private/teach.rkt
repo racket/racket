@@ -41,8 +41,10 @@
            scheme/match
            "set-result.ss"
            (only racket/base define-struct)
+	   racket/struct-info
 	   (all-except deinprogramm/contract/contract contract-violation)
 	   (all-except lang/private/contracts/contract-syntax property)
+	   (rename lang/private/contracts/contract-syntax contract:property property)
 	   (all-except deinprogramm/quickcheck/quickcheck property)
 	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property))
   (require-for-syntax "teachhelp.ss"
@@ -53,6 +55,9 @@
 		      syntax/context
 		      mzlib/include
 		      scheme/list
+		      (rename racket/base racket:define-struct define-struct)
+		      (only racket/base syntax->datum datum->syntax)
+		      racket/struct-info
                       stepper/private/shared)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -700,7 +705,7 @@
     ;; define-struct (beginner)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
-    (define (do-define-struct stx first-order? setters? struct-info-is-useful?)
+    (define (do-define-struct stx first-order? setters?)
       
       (unless (or (ok-definition-context)
 		  (identifier? stx))
@@ -757,29 +762,19 @@
 		    "at least one"))))
 	   (let-values ([(struct: constructor-name predicate-name getter-names setter-names)
 			 (make-struct-names name fields stx)]
-			[(field-count) (length fields)])
-	   (let* ([struct-names (list* struct: constructor-name predicate-name
-				       (if setters?
-					   (append getter-names setter-names)
-					   setter-names))]
-		  [to-define-names (if struct-info-is-useful?
-				       ;; All names:
-				       struct-names
-				       ;; Skip `struct:' name:
-				       (cdr struct-names))]
-		  [proc-names (if struct-info-is-useful?
-				  (cdr to-define-names)
-				  to-define-names)])
-	       (write (list 'getters getter-names 'setters setter-names) (current-error-port))
-	       (newline (current-error-port))
-	       (with-syntax ([compile-info (if struct-info-is-useful?
-					       (build-struct-expand-info name fields #f (not setters?) #t null null)
-					       (syntax
-						(lambda (stx)
-						  (raise-syntax-error
-						   #f
-						   "expected an expression, but found a structure name"
-						   stx))))])
+			[(field-count) (length fields)]
+			[(contract-name) (gensym (syntax->datum name))]
+			[(parametric-contract-name) 
+			 (datum->syntax name
+					(string->symbol
+					 (string-append (symbol->string (syntax->datum name))
+							"-of")))])
+	     (let* ([to-define-names (list* struct: constructor-name predicate-name
+					    (if setters?
+						(append getter-names setter-names)
+						getter-names))]
+		    [proc-names (cdr to-define-names)])
+	       (with-syntax ([compile-info (build-struct-expand-info name fields #f (not setters?) #t null null)])
 		 (let-values ([(defn0 bind-names)
 			       (wrap-func-definitions 
 				first-order? 
@@ -792,9 +787,10 @@
 				       (map (lambda (x) 1) (cddr proc-names)))
 				(lambda (def-proc-names)
 				  (with-syntax ([(def-proc-name ...) def-proc-names]
-						[(proc-name ...) proc-names])
+						[(proc-name ...) proc-names]
+						[(getter-name ...) getter-names])
 				    (stepper-syntax-property 
-				     #`(define-values (def-proc-name ...)
+				     #`(define-values (#,contract-name #,parametric-contract-name def-proc-name ...)
 					 (let ()
 
 					   (define-values (type-descriptor
@@ -804,14 +800,57 @@
 							   raw-generic-mutate)
 					     (make-struct-type 'name_
 							       #f
-							       #,field-count 0
+							       #,field-count 1
 							       #f ; auto-v
 							       (list
 								(cons prop:print-convert-constructor-name
-								      '#,(car proc-names)))
-							       #f)) ; inspector
+								      '#,constructor-name)
+								(cons prop:print-converter
+								      (lambda (r recur)
+									(list '#,constructor-name
+									      #,@(map-with-index (lambda (i _)
+												   #`(recur (raw-generic-access r #,i)))
+												 fields))))
+								(cons prop:custom-write
+								      (let ((n (string->symbol (string-append "struct:"
+													      (symbol->string 'name_)))))
+									(lambda (r port write?)
+									  (let ((v (vector n
+											   #,@(map-with-index (lambda (i _)
+														#`(raw-generic-access r #,i))
+													      fields))))
+									    (if write?
+										(write v port)
+										(display v port))))))
+								(cons prop:equal+hash
+								      (list
+								       (lambda (r1 r2 equal?)
+									 (and #,@(map-with-index (lambda (i field-spec)
+												   #`(equal? (raw-generic-access r1 #,i)
+													     (raw-generic-access r2 #,i)))
+												 fields)))
+								       (make-equal-hash (lambda (r i) (raw-generic-access r i)) #,field-count) 
+								       (make-equal2-hash (lambda (r i) (raw-generic-access r i)) #,field-count)))
+								(cons prop:lazy-wrap
+								      (make-lazy-wrap-info
+								       #,constructor-name
+								       (list #,@(map-with-index (lambda (i _)
+												  #`(lambda (r) (raw-generic-access r #,i)))
+												fields))
+								       (list #,@(map-with-index (lambda (i _)
+												  #`(lambda (r v) (raw-generic-mutate r #,i v)))
+												fields))
+								       (lambda (r)
+									 (raw-generic-access r #,field-count))
+								       (lambda (r v)
+									 (raw-generic-mutate r #,field-count v)))))
+							       ;; give `check-struct-wraps!' access
+							       (make-inspector)))
+
 					   #,@(map-with-index (lambda (i name)
 								#`(define (#,name r)
+								    (raw-generic-access r #,i) ; error checking
+								    (check-struct-wraps! r)
 								    (raw-generic-access r #,i)))
 							      getter-names)
 					   #,@(map-with-index (lambda (i name)
@@ -821,19 +860,43 @@
 					   (define #,predicate-name raw-predicate)
 					   (define #,constructor-name raw-constructor)
 
-					   (values proc-name ...)))
+					   (define #,contract-name (contract (predicate raw-predicate)))
+
+					   #,(if setters?
+						 #`(define (#,parametric-contract-name field_ ...)
+						     (contract
+						      (combined (at name_ (predicate raw-predicate))
+								(at field_ (contract:property getter-name field_)) ...)))
+						 #`(define (#,parametric-contract-name field_ ...)
+						     (make-struct-wrap-contract 'name_
+										type-descriptor
+										(list field_ ...)
+										#'name_)))
+
+					   (values #,contract-name #,parametric-contract-name proc-name ...)))
 				     'stepper-define-struct-hint
 				     stx))))])
 		   (let ([defn
 			   (quasisyntax/loc stx
 					    (begin
-					      #,(stepper-syntax-property #`(define-syntaxes (name_) compile-info)
-									 'stepper-skip-completely
-									 #t)
+					      #,(stepper-syntax-property
+						 #`(define-syntaxes (name_) 
+						     (let ()
+						       (racket:define-struct info ()
+							 #:super struct:struct-info
+							 ;; support `contract'
+							 #:property 
+							 prop:procedure
+							 (lambda (_ stx)
+							   #'#,contract-name))
+						       ;; support `shared'
+						       (make-info (lambda () compile-info))))
+						 'stepper-skip-completely
+						 #t)
 					      #,defn0))])
 		     (check-definitions-new 'define-struct
 					    stx 
-					    (cons #'name_ to-define-names)
+					    (list* name parametric-contract-name to-define-names)
 					    defn
 					    (and setters? bind-names))))))))]
 	[(_ name_ something . rest)
@@ -860,10 +923,10 @@
 	[_else (bad-use-error 'define-struct stx)]))
 
     (define (beginner-define-struct/proc stx)
-      (do-define-struct stx #t #f #t))
+      (do-define-struct stx #t #f))
 
     (define (intermediate-define-struct/proc stx)
-      (do-define-struct stx #f #f #t))
+      (do-define-struct stx #f #f))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; application (beginner and intermediate)
@@ -2182,7 +2245,7 @@
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (define (advanced-define-struct/proc stx)
-      (do-define-struct stx #f #t #t))
+      (do-define-struct stx #f #t))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; let (advanced)       >> mz errors in named case <<
@@ -2452,6 +2515,32 @@
 
 	   ;; The main implementation
            (shared/proc stx make-check-cdr #'undefined))))))
+
+  ;; ----------------------------------------
+  ;; Utilities for `define-struct':
+
+  (define (make-equal-hash generic-access field-count)
+    (lambda (r recur)
+      (let loop ((i 0)
+		 (factor 1)
+		 (hash 0))
+	(if (= i field-count)
+	    hash
+	    (loop (+ 1 i)
+		  (* factor 33)
+		  (+ hash (* factor (recur (generic-access r i)))))))))
+
+  (define (make-equal2-hash generic-access field-count)
+    (lambda (r recur)
+      (let loop ((i 0)
+		 (factor 1)
+		 (hash 0))
+	(if (= i field-count)
+	    hash
+	    (loop (+ 1 i)
+		  (* factor 33)
+		  (+ hash (* factor 
+			     (recur (generic-access r (- field-count i 1))))))))))
 
   ;; ----------------------------------------
   ;; Extend quote forms to work with `match':
