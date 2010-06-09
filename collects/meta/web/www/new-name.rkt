@@ -52,8 +52,8 @@
     }})
 
 (define new-name
-  (page #:title "From PLT Scheme to Racket"
-    styles
+  @page[#:title "From PLT Scheme to Racket"]{
+    @styles
 
     @div[class: 'nestedheading]{PLT Scheme is a Racket}
 
@@ -188,4 +188,4 @@
         it has a vague connection to the word @|ldquo|scheme.@|rdquo|  Mostly,
         though, we just like it.}
 
-      }))
+      }})

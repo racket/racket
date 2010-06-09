@@ -5,9 +5,9 @@
 (provide download-button download)
 
 (define download
-  (page #:link-title "Download" #:window-title "Download Racket"
-        #:file "download/"
-    (render-download-page)))
+  @page[#:link-title "Download" #:window-title "Download Racket"
+        #:file "download/"]{
+    @(render-download-page)})
 
 (define download-button
   (let ([img1 (copyfile (in-here "download.png"))]

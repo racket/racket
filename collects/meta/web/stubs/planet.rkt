@@ -4,6 +4,6 @@
 
 (provide planet)
 (define planet
-  (page #:file "" #:link-title "PLaneT" #:window-title "{{{TITLE}}}"
-    ;; This is a stub page to get the header for planet
-    "{{{BODY}}}"))
+  @page[#:file "" #:link-title "PLaneT" #:window-title "{{{TITLE}}}"]{
+    @; This is a stub page to get the header for planet
+    {{{BODY}}}})

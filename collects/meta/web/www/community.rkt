@@ -20,8 +20,8 @@
 
 (provide community)
 (define community
-  (page
-    (parlist @strong{Mailing Lists}
+  @page{
+    @parlist[@strong{Mailing Lists}
       @text{@maillist-email{users} @mdash a discussion list for all things
         related to Racket.  Ask your questions here!
         (@maillist-url{users}.)
@@ -34,13 +34,13 @@
         for the people who want to see how the sausages are made and help make
         them.  (@maillist-url{dev}.)
         @; @";" also on @gmane{plt.dev}.)
-        })
-    (parlist @strong{Discussion Channels}
+        }]
+    @parlist[@strong{Discussion Channels}
       @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel
         on @a[href: "http://freenode.net"]{@tt{freenode.net}}
         @mdash an informal discussion channel for all things related to Racket.
-        @irc-logs{Browse the logs}.})
-    (parlist @strong{Resources for Learning}
+        @irc-logs{Browse the logs}.}]
+    @parlist[@strong{Resources for Learning}
       (apply parlist @text{Documentation for getting started:} intros)
       @text{@-cookbook @mdash useful recipes, many of which apply to Racket.}
       @text{@-htdp @mdash a textbook for introductory programming, but also
@@ -48,16 +48,15 @@
         programming.@|rdquo|}
       @text{@-plai @mdash a textbook on programming languages.}
       @text{@-teachscheme @mdash a workshop to train teachers using @-htdp in
-        the classroom.})
-    (parlist @strong{PLT Scheme Inc.}
+        the classroom.}]
+    @parlist[@strong{PLT Scheme Inc.}
       @text{@blog @mdash announcements, helpful hints, and thoughtful rants.}
-      @text{@people @mdash the people behind Racket.}
-      )
-    (parlist @strong{Development}
+      @text{@people @mdash the people behind Racket.}]
+    @parlist[@strong{Development}
       @text{@git (also available on
             @a[href: "http://github.com/plt/racket/"]{GitHub})}
       @text{@pre-installers and @|pre-root|.}
       ;;TODO: proper reference
       @a[href: "http://download.racket-lang.org/chronology/"]{
         Release Announcements}
-      )))
+      ]})

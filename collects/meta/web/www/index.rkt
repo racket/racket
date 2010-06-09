@@ -281,7 +281,7 @@
 
 (define (alts-panel l1 l2)
   (define l (append l1 l2))
-  (apply div class: 'slideshow
+  (div class: 'slideshow
          @script/inline[type: "text/javascript"]{
            var showing = 0;
            var help_showing = false;
@@ -405,17 +405,15 @@
                           after the filename. Alternatively, for a Unix installation, you can
                           add @tt{#!/usr/bin/env racket} at the top and make the
                           file executable, and then you can run the file directly.})))
-         (append
-          (for/list ([elem l]
-                     [pos (in-naturals)])
-            (div class: 'slideshowframe
-                 id: (format "frame~a" pos)
-                 style: (format "display: ~a" (if (zero? pos) "block" "none"))
-                 (example-code elem)))
-          (list
-           @script/inline[type: "text/javascript"]{
-             change_show_to(Math.floor(Math.random()* @(length l1)));
-           }))))
+         (for/list ([elem l]
+                    [pos (in-naturals)])
+           (div class: 'slideshowframe
+                id: (format "frame~a" pos)
+                style: (format "display: ~a" (if (zero? pos) "block" "none"))
+                (example-code elem)))
+          @script/inline[type: "text/javascript"]{
+            change_show_to(Math.floor(Math.random()* @(length l1)));
+          }))
 
 ;; TODO
 ;; (define screenshots

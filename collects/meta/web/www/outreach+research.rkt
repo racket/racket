@@ -15,25 +15,24 @@
 
 (provide outreach+research)
 (define outreach+research
-  (page
-    #:title "Outreach & Research"
-    #:link-title @list{Outreach@|nbsp|&@|nbsp|Research}
-    (parlist
+  @page[#:title "Outreach & Research"
+        #:link-title @list{Outreach@|nbsp|&@|nbsp|Research}]{
+    @parlist[
       @strong{Outreach}
       @text{@-teachscheme @mdash a workshop to train teachers using @-htdp in
             the classroom.}
-      @text{@-bootstrap @mdash a curriculum for middle-school students.})
-    (parlist @strong{Publications}
-             techreports brown-pubs nwu-pubs neu-pubs utah-pubs)
-    (parlist @strong{Graduate Study}
+      @text{@-bootstrap @mdash a curriculum for middle-school students.}]
+    @parlist[@strong{Publications}
+             techreports brown-pubs nwu-pubs neu-pubs utah-pubs]
+    @parlist[@strong{Graduate Study}
              @text{We welcome applications from students interested in
-                   @|graduate-study|.})))
+                   @|graduate-study|.}]})
 
 (define graduate-study
-  (page #:file "common-plt-app.html" #:part-of outreach+research
-    (define (box-style border-width color)
-      @list{border: @|border-width|px solid black; padding: 5px; @;
-            background: @|color|@";"})
+  @page[#:file "common-plt-app.html" #:part-of outreach+research]{
+    @(define (box-style border-width color)
+       @list{border: @|border-width|px solid black; padding: 5px; @;
+             background: @|color|@";"})
     @h1{Graduate Study with PLT}
     @p{An open letter to graduate applicants:}
     @div[style: (box-style 3 "#ddd")]{
@@ -79,12 +78,12 @@
       @a[href: "http://www.eecs.northwestern.edu/~robby/"]{Robby},
       @a[href: "http://www.cs.wpi.edu/~kfisler/"]{Kathi},
       @a[href: "http://www.cs.utah.edu/~mflatt/"]{Matthew},
-      @a[href: "http://www.cs.brown.edu/~sk/"]{Shriram}}))
+      @a[href: "http://www.cs.brown.edu/~sk/"]{Shriram}}})
 
 (define techreports
-  (page #:file "techreports/" #:part-of outreach+research
+  @page[#:file "techreports/" #:part-of outreach+research
         #:title "Technical Reports"
         #:extra-headers
         @meta[http-equiv: "refresh"
-              content: "2;url=http://plt-scheme.org/techreports/"]
-    "TODO"))
+              content: "2;url=http://plt-scheme.org/techreports/"]]{
+    TODO})
