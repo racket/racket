@@ -1,6 +1,6 @@
 #lang s-exp syntax/module-reader
 
-typed-scheme/no-check
+typed/racket/base/no-check
 
 #:read r:read
 #:read-syntax r:read-syntax

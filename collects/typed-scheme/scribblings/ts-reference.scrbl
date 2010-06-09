@@ -406,16 +406,19 @@ y
 
 @section{Typed Racket Syntax Without Type Checking}
 
-@defmodulelang[typed-scheme/no-check]
+@defmodulelang*[(typed/racket/no-check
+                 typed/racket/base/no-check)]
 
 On occasions where the Typed Racket syntax is useful, but actual
-typechecking is not desired, the @racketmodname[typed-scheme/no-check]
-language is useful.  It provides the same bindings and syntax as Typed
-Racket, but does no type checking.
+typechecking is not desired, the @racketmodname[typed/racket/no-check]
+and @racketmodname[typed/racket/base/no-check] languages are useful.
+They provide the same bindings and syntax as
+@racketmodname[typed/racket] and @racketmodname[typed/racket/base],
+but do no type checking.
 
 Examples:
 
-@racketmod[typed-scheme/no-check
+@racketmod[typed/racket/no-check
 (: x Number)
 (define x "not-a-number")]
 
