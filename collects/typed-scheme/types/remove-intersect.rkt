@@ -69,6 +69,9 @@
          [(list (Struct: n p flds _ _ _ _ _ _)
                 (Struct: n* p* flds* _ _ _ _ _ _))
           (and (= (length flds) (length flds*)) (for/and ([f flds] [f* flds*]) (overlap f f*)))]
+         [(list (== (-val eof))
+                (Function: _))
+          #f]
          [else #t])])))
 
 
