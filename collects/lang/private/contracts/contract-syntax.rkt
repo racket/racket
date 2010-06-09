@@ -4,7 +4,7 @@
 	 contract contract/arbitrary
 	 define-contract
 	 define/contract define-values/contract
-	 -> mixed one-of predicate combined property)
+	 -> mixed one-of predicate combined property list-of)
 
 (require deinprogramm/contract/contract
 	 scheme/promise
@@ -20,7 +20,7 @@
 
 (define-for-syntax (parse-contract name stx)
   (syntax-case* stx
-		(mixed one-of predicate list -> combined property reference at contract)
+		(mixed one-of predicate list-of -> combined property reference at contract)
 		module-or-top-identifier=?
     ((mixed ?contract ...)
      (with-syntax ((?stx (phase-lift stx))
@@ -54,14 +54,14 @@
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name))
        #'(make-predicate-contract '?name (delay ?exp) ?stx)))
-    ((list ?contract)
+    ((list-of ?contract)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name)
 		   (?contract-expr (parse-contract #f #'?contract)))
        #'(make-list-contract '?name ?contract-expr ?stx)))
-    ((list ?contract1 ?rest ...)
+    ((list-of ?contract1 ?rest ...)
      (raise-syntax-error #f
-			 "list contract accepts only a single operand"
+			 "list-of contract accepts only a single operand"
 			 (syntax ?contract1)))
     ((?arg-contract ... -> ?return-contract)
      (with-syntax ((?stx (phase-lift stx))
@@ -258,5 +258,4 @@
 (define-syntax predicate within-contract-syntax-transformer)
 (define-syntax combined within-contract-syntax-transformer)
 (define-syntax property within-contract-syntax-transformer)
-; not a good idea:
-; (define-syntax list within-contract-syntax-transformer)
+(define-syntax list-of within-contract-syntax-transformer)
