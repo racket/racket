@@ -337,7 +337,7 @@ exec racket -qu "$0" ${1+"$@"}
                                peval
                                scheme
                                sort1))
-  (define racket-specific-progs '(nucleic3))
+  (define racket-specific-progs '(nucleic3 ray))
 
   (define impls
     (list
@@ -538,6 +538,7 @@ exec racket -qu "$0" ${1+"$@"}
       paraffins
       peval
       puzzle
+      ray
       sboyer
       scheme
       scheme2
