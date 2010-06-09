@@ -197,8 +197,7 @@
                               (Mu: var (Union: (list (Value: '()) (Pair: (F: x) (F: var)))))
                               (Mu: y (Union: (list (F: x) (Pair: (F: x) (F: y)))))
                               (Vector: (F: x))
-                              (Box: (F: x))
-                              (Channel: (F: x))))))
+                              (Box: (F: x))))))
      (fp "Syntax")]
     [(Mu-name: name body) (fp "(Rec ~a ~a)" name body)]
     ;; FIXME - this should not be used
