@@ -3,4 +3,11 @@
 
 * common: specific code for the PLT web pages.
 
-* other stuff: actual content.
+* www: actual content of main site.
+
+* download: content of download site (only installer pages and such)
+
+* minis: smaller sites which are implemented in one-file each.
+
+* stubs: template "sites" that are intended to be hooked into other
+  systems to get the plt look.
