@@ -11,6 +11,9 @@
 @(define the-top-eval (make-base-eval))
 @(the-top-eval '(require (except-in typed/racket #%module-begin)))
 
+@(define-syntax-rule (ex . args)
+   (examples #:eval the-top-eval . args))
+
 @title[#:tag "top"]{The Typed Racket Reference} 
 
 @author["Sam Tobin-Hochstadt"]
@@ -20,16 +23,41 @@
 
 @section[#:tag "type-ref"]{Type Reference}
 
-@subsubsub*section{Base Types}
+@defidform[Any]{Any Racket value. All other types are subtypes of @racket[Any].}
+
+@defidform[Nothing]{The empty type.  No values inhabit this type, and
+any expression of this type will not evaluate to a value.}
+
+@subsection{Base Types}
+
+@subsubsection{Numeric Types}
 @deftogether[(
 @defidform[Number]
 @defidform[Complex]
 @defidform[Real]
+@defidform[Float]
+@defidform[Exact-Rational]
 @defidform[Integer]
 @defidform[Natural]
-@defidform[Exact-Positive-Integer]
 @defidform[Exact-Nonnegative-Integer]
-@defidform[Exact-Rational]
+@defidform[Exact-Positive-Integer]
+@defidform[Zero]
+)]{These types represent the hierarchy of @rtech{numbers} of Racket.
+@racket[Integer] includes only @rtech{integers} that are @rtech{exact
+numbers}, corresponding to the predicate @racket[exact-integer?]. 
+
+@ex[
+7
+8.3
+(/ 8 3)
+0
+-12
+3+4i]
+}
+
+@subsubsection{Other Base Types}
+
+@deftogether[(
 @defidform[Boolean]
 @defidform[True]
 @defidform[False]
@@ -42,39 +70,107 @@
 @defidform[Path]
 @defidform[Regexp]
 @defidform[PRegexp]
-@defidform[Syntax]
-@defidform[Identifier]
 @defidform[Bytes]
 @defidform[Namespace]
 @defidform[EOF]
 @defidform[Continuation-Mark-Set]
 @defidform[Char]
 @defidform[Thread])]{
-These types represent primitive Racket data.  Note that @racket[Integer] represents exact integers.}
+These types represent primitive Racket data.
 
-@defidform[Any]{Any Racket value. All other types are subtypes of @racket[Any].}
+@ex[
+#t
+#f
+"hello"
+(current-input-port)
+(current-output-port)
+(string->path "/")
+#rx"a*b*"
+#px"a*b*"
+'#"bytes"
+(current-namespace)
+#\b
+(thread (lambda () (add1 7)))
+]
+}
 
-@defidform[Nothing]{The empty type.  No values inhabit this type, and
-any expression of this type will not evaluate to a value.}
+@subsection{Singleton Types}
+
+Some kinds of data are given singleton types by default.  In
+particular, @rtech{symbols} and @rtech{keywords} have types which
+consist only of the particular symbol or keyword.  These types are
+subtypes of @racket[Symbol] and @racket[Keyword], respectively.
+
+@ex[
+'#:foo
+'bar
+]
+
+@subsection{Containers}
 
 
 The following base types are parameteric in their type arguments.
 
-@defform[(Listof t)]{Homogenous @rtech{lists} of @racket[t]}
-@defform[(Boxof t)]{A @rtech{box} of @racket[t]}
-@defform[(Channelof t)]{A @rtech{channel} on which only @racket[t]s can be sent}
-@defform[(Syntaxof t)]{A @rtech{syntax object} containing a @racket[t]}
-@defform[(Vectorof t)]{Homogenous @rtech{vectors} of @racket[t]}
-@defform[(Option t)]{Either @racket[t] of @racket[#f]}
-@defform*[[(Parameter t)
-           (Parameter s t)]]{A @rtech{parameter} of @racket[t].  If two type arguments are supplied, 
-                               the first is the type the parameter accepts, and the second is the type returned.}
-@defform[(Pair s t)]{is the pair containing @racket[s] as the @racket[car]
+@defform[(Pair s t)]{is the @rtech{pair} containing @racket[s] as the @racket[car]
   and @racket[t] as the @racket[cdr]}
-@defform[(HashTable k v)]{is the type of a @rtech{hash table} with key type
-   @racket[k] and value type @racket[v].}
 
-@subsubsub*section{Type Constructors}
+@ex[
+(cons 1 2)
+(cons 1 "one")
+]
+
+
+@defform[(Listof t)]{Homogenous @rtech{lists} of @racket[t]}
+@defform[(List t ...)]{is the type of the list with one element, in order, 
+  for each type provided to the @racket[List] type constructor.}
+
+@ex[
+(list 'a 'b 'c)
+(map symbol->string (list 'a 'b 'c))
+]
+
+@defform[(Boxof t)]{A @rtech{box} of @racket[t]}
+
+@ex[(box "hello world")]
+
+@deftogether[(
+ @defform[(Syntaxof t)] 
+ @defidform[Syntax]
+ @defidform[Identifier])]{A @rtech{syntax object} containing a
+ @racket[t]. @racket[Syntax] is the type of any object constructable
+ via @racket[datum->syntax].  @racket[Identifier] is @racket[(Syntaxof
+ Symbol)].
+
+@ex[#'here]
+
+}
+
+@defform[(Vectorof t)]{Homogenous @rtech{vectors} of @racket[t]}
+@defform[(Vector t ...)]{is the type of the list with one element, in order, 
+  for each type provided to the @racket[Vector] type constructor.}
+
+@ex[(vector 1 2 3)
+#(a b c)]
+
+@defform[(HashTable k v)]{is the type of a @rtech{hash table} with key type
+   @racket[k] and value type @racket[v].
+
+@ex[#hash((a . 1) (b . 2))]
+}
+
+@defform[(Channelof t)]{A @rtech{channel} on which only @racket[t]s can be sent.
+@ex[
+(ann (make-channel) (Channelof Symbol))
+]
+}
+
+@defform*[[(Parameterof t)
+           (Parameterof s t)]]{A @rtech{parameter} of @racket[t].  If two type arguments are supplied, 
+                                 the first is the type the parameter accepts, and the second is the type returned.
+@ex[current-input-port]
+}
+
+@subsection{Other Type Constructors}
 
 @defform*[#:id -> #:literals (* ...)
 	       [(dom ... -> rng)
@@ -97,10 +193,6 @@ The following base types are parameteric in their type arguments.
   @racket[t] at types @racket[t1 t2 ...]}
 @defform[(All (v ...) t)]{is a parameterization of type @racket[t], with
   type variables @racket[v ...]}
-@defform[(List t ...)]{is the type of the list with one element, in order, 
-  for each type provided to the @racket[List] type constructor.}
-@defform[(Vector t ...)]{is the type of the list with one element, in order, 
-  for each type provided to the @racket[Vector] type constructor.}
 @defform[(values t ...)]{is the type of a sequence of multiple values, with
 types @racket[t ...].  This can only appear as the return type of a
 function.}
@@ -111,6 +203,11 @@ name or a type variable}
 @defform[(Rec n t)]{is a recursive type where @racket[n] is bound to the
 recursive type in the body @racket[t]}
 
+
+@subsection{Other Types}
+
+@defform[(Option t)]{Either @racket[t] of @racket[#f]}
+
 Other types cannot be written by the programmer, but are used
 internally and may appear in error messages.
 
@@ -119,6 +216,7 @@ internally and may appear in error messages.
 types with the same printed representation.}
 @defform/none[<n>]{is the printed representation of a reference to the
 type variable @racket[n]}
+
 
 @section[#:tag "special-forms"]{Special Form Reference}
 

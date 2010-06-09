@@ -9,6 +9,7 @@
 [Exact-Positive-Integer -ExactPositiveInteger]
 [Exact-Nonnegative-Integer -ExactNonnegativeInteger]
 [Natural -ExactNonnegativeInteger]
+[Zero (-val 0)]
 
 [Void -Void]
 [Boolean -Boolean]
