@@ -78,16 +78,38 @@
 [>  real-comp]
 
 
-[* (apply cl->* (for/list ([t all-num-types]) (->* (list) t t)))]
-[+ (apply cl->* (for/list ([t all-num-types]) (->* (list) t t)))]
+[* (apply cl->*
+          (append (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum)]) (->* (list) t t))
+                  (list (->* (list (Un -Integer -ExactRational -Real -Flonum))
+                             (Un -Integer -ExactRational -Real -Flonum)
+                             -Flonum))
+                  (list (->* (list) -Real -Real))
+                  (list (->* (list) N N))))]
+[+ (apply cl->*
+          (append (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum)]) (->* (list) t t))
+                  (list (->* (list (Un -Integer -ExactRational -Real -Flonum))
+                             (Un -Integer -ExactRational -Real -Flonum)
+                             -Flonum))
+                  (list (->* (list) -Real -Real))
+                  (list (->* (list) N N))))]
 
-[- (apply cl->* 
-            (for/list ([t (list -Integer -ExactRational -Flonum -Real N)])
-              (->* (list t) t t)))]
-[/ (apply cl->* 
-	  (->* (list -Integer) -Integer -ExactRational)
-	  (for/list ([t (list -ExactRational -Flonum -Real N)])
-	    (->* (list t) t t)))]
+[- (apply cl->*
+          (append (for/list ([t (list -Integer -ExactRational -Flonum)])
+                            (->* (list t) t t))
+                  (list (->* (list (Un -Integer -ExactRational -Real -Flonum))
+                             (Un -Integer -ExactRational -Real -Flonum)
+                             -Flonum))
+                  (list (->* (list -Real) -Real -Real))
+                  (list (->* (list N) N N))))]
+[/ (apply cl->*
+          (append (list (->* (list -Integer) -Integer -ExactRational))
+                  (for/list ([t (list -ExactRational -Flonum)])
+                            (->* (list t) t t))
+                  (list (->* (list (Un -Integer -ExactRational -Real -Flonum))
+                             (Un -Integer -ExactRational -Real -Flonum) 
+                             -Flonum))
+                  (list (->* (list -Real) -Real -Real))
+                  (list (->* (list N) N N))))]
 
 [max (apply cl->* (->* (list -Pos) -Integer -Pos) (->* (list -Nat) -Integer -Nat) (for/list ([t all-num-types]) (->* (list t) t t)))]
 [min (apply cl->* (for/list ([t all-num-types]) (->* (list t) t t)))]
@@ -137,7 +159,8 @@
 [denominator (-Real . -> . -Real)]
 [rationalize (-Real -Real . -> . N)]
 [expt (cl->* (-Nat -Nat . -> . -Nat)
-             (-Integer -Integer . -> . -Integer)
+             (-Integer -Nat . -> . -Integer)
+             (-Real -Integer . -> . -Real)
              (N N . -> . N))]
 [sqrt (cl->*
        (-Nat . -> . -Real)
