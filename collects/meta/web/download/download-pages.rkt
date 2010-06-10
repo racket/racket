@@ -10,20 +10,22 @@
                  v@version (@(version->date version))}
     @div[id: "download_panel" style: "display: none;"]{
       Platform:
-      @select[id: "platform_selector"]{
+      @select[id: "platform_selector"
+              onchange: "selection_changed();"
+              onkeypress: "selection_changed();"]{
         @(for/list ([i (in-list all-installers)]
                     #:when (and (equal? version (installer-version i))
                                 (equal? package (installer-package i))))
            (installer->page i 'render-option))}
-      @input[type: 'submit value: "Download" onclick: "do_jump();"]}
-    @script/inline[type: 'text/javascript]{
-      document.getElementById("download_panel").style.display = "block";
-      function do_jump() {
-        var sel = document.getElementById("platform_selector");
-        location.href = sel[sel.selectedIndex].value;
-      }
-      @platform-script
-    }
+      @input[type: 'submit value: "Download" onclick: "do_jump();"]
+      @div[id: "linux_explain"
+           style: '("font-size: 75%; display: none; width: 28em;"
+                    " margin-top: 1ex; text-align: center;")]{
+        @b{Note about the Linux installers:} if you don't see an option for
+        your particular platform, try other Linux installers, starting from
+        similar ones.  Very often, a build on one Linux variant will work on
+        others too.}}
+    @downloader-script
     @noscript{
       Installers are available for the following platforms:
       @ul{@(for/list ([i (in-list all-installers)]
@@ -31,28 +33,88 @@
                                   (equal? package (installer-package i))))
              @li{@(installer->page i 'only-platform)})}}})
 
-(define platform-script
-  @literal{@||
+(define downloader-script
+  @script/inline[type: 'text/javascript]{@||
+    var do_jump, selection_changed;
     (function() {
-    var opts = document.getElementById("platform_selector").options;
-    var len = opts.length;
-    // returns a platform name, doubles as a regexp too
-    function getPlatform() {
+    // show the download panel, since JS is obviously working
+    document.getElementById("download_panel").style.display = "block";
+    //
+    var selector = document.getElementById("platform_selector");
+    // jump to the selected item
+    do_jump = function() {
+      location.href = selector[selector.selectedIndex].value;
+    }
+    // returns an ordering for the platform names, an array of regexps
+    function getPlatformOrder() {
       var p = navigator.platform;
       var l = function(str) { return p.indexOf(str) != -1@";" }
+      var Win      = /Windows/,
+          Mac      = /Macintosh/,
+          MacIntel = /Macintosh.*Intel/,
+          MacPPC   = /Macintosh.*PPC/,
+          Linux    = /Linux/,
+          Linux64  = /Linux.*x86_64/,
+          Linux32  = /Linux.*i386/,
+          Unix     = /Unix/,
+          Solaris  = /Solaris/;
+      var default_order = [Win, Mac, Linux, Unix];
       // The default is the common case
-      return (p == null)  ? "Windows" :
-             l("Linux") ? (l("_64") ? "Linux x86_64" : "Linux i386")   :
-             l("SunOS") ? "Solaris" :
-             l("Mac") ? (l("Intel") ? "Mac OS X Intel" : "Mac OS X PPC") :
-             "Windows";
+      if (p == null) return default_order;
+      else if (l("SunOS")) return [Solaris, Unix, Linux, Mac, Win];
+      else if (l("Win"))   return [Win, Mac, Linux, Unix];
+      else if (l("Mac"))
+      return [(l("Intel")?MacIntel:MacPPC), Mac, Unix, Linux, Win];
+      else if (l("Linux")) {
+        // also show the linux explanation if it's a linux
+        document.getElementById("linux_explain").style.display = "block";
+        return [(l("_64")?Linux64:Linux32), Linux, Unix, Mac, Win];
+      } else return default_order;
     }
-    // convert name to a regexp by splitting on words
-    var rx = new RegExp(getPlatform().replace(/ +/g,".*"));
+    // show the linux explanation on change too (do it with a timeout so it
+    // changes even when the arrow keys are used to move the selection -- since
+    // then onchange is called only on blur)
+    linux_expl_s = document.getElementById("linux_explain").style;
+    selection_changed_timer = false;
+    selection_changed = function() {
+      if (selection_changed_timer) clearTimeout(selection_changed_timer);
+      selection_changed_timer = setTimeout(do_selection_changed, 250);
+    }
+    function do_selection_changed() {
+      linux_expl_s.display =
+        (selector[selector.selectedIndex].text.search(/Linux/) >= 0) ?
+          "block" : "none";
+    }
+    //
+    var opts = selector.options;
+    var len = opts.length;
+    var tmps = new Array(len); // temp array to sort the options
+    // get the order and a make a sorting function
+    var order = getPlatformOrder();
+    function getOrder(str) {
+      for (var i=0@";" i<len@";" i++)
+        if (str.search(order[i]) >= 0) return i * 10;
+      return 999;
+    }
+    function isBetter(opt1,opt2) {
+      var ord1 = getOrder(opt1[0]), ord2 = getOrder(opt2[0]);
+      // prefer non-source
+      if (opt1[0].search("source")>=0) ord1 += 1;
+      if (opt2[0].search("source")>=0) ord2 += 1;
+           if (ord1 < ord2)       return -1;
+      else if (ord1 > ord2)       return +1;
+      else if (opt1[0] < opt2[0]) return -1;
+      else if (opt1[0] > opt2[0]) return +1;
+      else                        return  0;
+    }
+    // sort the options, need to use a temporary array
+    for (var i=0@";" i<len@";" i++)
+      tmps[i]=[opts[i].text,opts[i].value];
+    tmps.sort(isBetter);
     for (var i=0@";" i<len@";" i++) {
-      if (opts[i].text.search(rx) >= 0) {
-        opts.selectedIndex = i; break;
-      }
+      opts[i].text  = tmps[i][0];
+      opts[i].value = tmps[i][1];
     }
+    opts.selectedIndex = 0;
     })();
     @||})
