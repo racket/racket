@@ -56,45 +56,43 @@
 
 (define-syntax-class opt-expr*
   #:literal-sets (kernel-literals)
-  #:local-conventions ([#px"^e" opt-expr]
-                       [#px"^f\\d*s?$" float-opt-expr]
-                       [#px"^p\\d*s?$" pair-opt-expr])
 
   ;; interesting cases, where something is optimized
-  (pattern (#%plain-app op:float-unary-op f)
+  (pattern (#%plain-app op:float-unary-op f:float-opt-expr)
            #:with opt
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
   ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
-  (pattern (#%plain-app op:float-binary-op f1 f2 fs ...)
+  (pattern (#%plain-app op:float-binary-op f1:float-opt-expr f2:float-opt-expr fs:float-opt-expr ...)
            #:with opt 
            (begin (log-optimization "binary float" #'op)
                   (for/fold ([o #'f1.opt])
                       ([e (syntax->list #'(f2.opt fs.opt ...))])
                     #`(op.unsafe #,o #,e))))
-  (pattern (#%plain-app op:pair-unary-op p)
+  (pattern (#%plain-app op:pair-unary-op p:pair-opt-expr)
            #:with opt
            (begin (log-optimization "unary pair" #'op)
                   #'(op.unsafe p.opt)))
 
   ;; boring cases, just recur down
-  (pattern (#%plain-lambda formals e ...)
+  (pattern (#%plain-lambda formals e:opt-expr ...)
            #:with opt #'(#%plain-lambda formals e.opt ...))
-  (pattern (define-values formals e ...)
+  (pattern (define-values formals e:opt-expr ...)
            #:with opt #'(define-values formals e.opt ...))
-  (pattern (case-lambda [formals e ...] ...)
+  (pattern (case-lambda [formals e:opt-expr ...] ...)
            #:with opt #'(case-lambda [formals e.opt ...] ...))
-  (pattern (let-values ([ids e-rhs] ...) e-body ...)
+  (pattern (let-values ([ids e-rhs:opt-expr] ...) e-body:opt-expr ...)
            #:with opt #'(let-values ([ids e-rhs.opt] ...) e-body.opt ...))
-  (pattern (letrec-values ([ids e-rhs] ...) e-body ...)
+  (pattern (letrec-values ([ids e-rhs:opt-expr] ...) e-body:opt-expr ...)
            #:with opt #'(letrec-values ([ids e-rhs.opt] ...) e-body.opt ...))
-  (pattern (letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs] ...) e-body ...)
+  (pattern (letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs:opt-expr] ...) e-body:opt-expr ...)
            #:with opt #'(letrec-syntaxes+values stx-bindings ([(ids ...) e-rhs.opt] ...) e-body.opt ...))
   (pattern (kw:identifier expr ...)
            #:when (ormap (lambda (k) (free-identifier=? k #'kw))
                          (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%app #'#%expression
                                #'#%variable-reference #'with-continuation-mark))
-           #:with opt #'(kw expr.opt ...))
+           #:with (expr*:opt-expr ...) #'(expr ...) ; we don't want to optimize in the cases that don't match the #:when clause
+           #:with opt #'(kw expr*.opt ...))
   (pattern other:expr
            #:with opt #'other))
 

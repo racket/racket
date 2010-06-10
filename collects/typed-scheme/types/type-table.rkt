@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require unstable/debug "../utils/utils.rkt" (rep type-rep) (only-in (types abbrev utils) tc-results?) scheme/contract)
+(require unstable/debug "../utils/utils.rkt" (rep type-rep) (only-in (types abbrev utils) tc-results?) (utils tc-utils) scheme/contract)
 
 (define table (make-hasheq))
 
@@ -10,7 +10,7 @@
   (when (optimize?)
     (hash-set! table e t)))
 
-(define (type-of e) (hash-ref table e))
+(define (type-of e) (hash-ref table e (lambda () (int-err (format "no type for ~a" (syntax->datum e))))))
 
 (p/c [add-typeof-expr (syntax? tc-results? . -> . any/c)]
      [type-of (syntax? . -> . tc-results?)]
