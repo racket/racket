@@ -9,7 +9,7 @@ exec racket -qu "$0" ${1+"$@"}
 (module auto scheme/base
   (require (for-syntax scheme/base)
            mzlib/process
-           "../../common/cmdline.rkt"
+           "../common/cmdline.rkt"
            mzlib/list
            mzlib/compile
            mzlib/inflate
@@ -33,38 +33,38 @@ exec racket -qu "$0" ${1+"$@"}
       (load script)))
 
   (define (mk-racket bm)
-    (unless (directory-exists? "../compiled")
-      (make-directory "../compiled"))
+    (unless (directory-exists? "compiled")
+      (make-directory "compiled"))
     (parameterize ([current-namespace (make-base-namespace)]
                    [read-accept-reader #t])
       (let ([name (format "~a.rkt" bm)])
-        (compile-file (format "../~a" name)
-                      (build-path "../compiled" (path-add-suffix name #".zo"))))))
+        (compile-file name
+                      (build-path "compiled" (path-add-suffix name #".zo"))))))
 
   (define (clean-up-zo bm)
-    (when (directory-exists? "../compiled")
-      (delete-directory/files "../compiled")))
+    (when (directory-exists? "compiled")
+      (delete-directory/files "compiled")))
 
   (define (mk-typed-scheme bm)
-    (unless (directory-exists? "compiled")
-      (make-directory "compiled"))
+    (unless (directory-exists? "typed/compiled")
+      (make-directory "typed/compiled"))
     (parameterize ([current-namespace (make-base-namespace)]
                    [read-accept-reader #t])
       (let ([name (format "~a-non-optimizing.rkt" bm)])
-        (compile-file name
-                      (build-path "compiled" (path-add-suffix name #".zo"))))))
+        (compile-file (format "typed/~a" name)
+                      (build-path "typed/compiled" (path-add-suffix name #".zo"))))))
   (define (mk-typed-scheme-optimizing bm)
-    (unless (directory-exists? "compiled")
-      (make-directory "compiled"))
+    (unless (directory-exists? "typed/compiled")
+      (make-directory "typed/compiled"))
     (parameterize ([current-namespace (make-base-namespace)]
                    [read-accept-reader #t])
       (let ([name (format "~a-optimizing.rkt" bm)])
-        (compile-file name
-                      (build-path "compiled" (path-add-suffix name #".zo"))))))
+        (compile-file (format "typed/~a" name)
+                      (build-path "typed/compiled" (path-add-suffix name #".zo"))))))
 
   (define (clean-up-typed bm)
-    (when (directory-exists? "compiled")
-      (delete-directory/files "compiled")))
+    (when (directory-exists? "typed/compiled")
+      (delete-directory/files "typed/compiled")))
 
   (define (extract-racket-times bm str)
     (let ([m (regexp-match #rx#"cpu time: ([0-9]+) real time: ([0-9]+) gc time: ([0-9]+)" str)])
@@ -136,7 +136,6 @@ exec racket -qu "$0" ${1+"$@"}
       pidigits1
       random
       recursive
-      regexmatch
       regexpdna
       reversecomplement
       reversefile
@@ -148,7 +147,8 @@ exec racket -qu "$0" ${1+"$@"}
       wordfreq))
 
   (define without-input-benchmarks
-    '(spellcheck))
+    '(regexmatch
+      spellcheck))
 
   (define (run-benchmark impl bm)
     (let ([i (ormap (lambda (i)
