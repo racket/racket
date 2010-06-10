@@ -4,6 +4,7 @@
          syntax/boundmap
          syntax/stx
          scheme/struct-info
+         macro-debugger/emit
          "patterns.rkt"
          "compiler.rkt")
 
@@ -135,18 +136,19 @@
 ;; produces a parsed pattern
 (define (match-expander-transform parse/cert cert expander stx accessor
                                   error-msg)
-  (let* ([expander (syntax-local-value (cert expander))]
-         [transformer (accessor expander)]
+  (let* ([expander* (syntax-local-value (cert expander))]
+         [transformer (accessor expander*)]
          [transformer (if (set!-transformer? transformer)
                           (set!-transformer-procedure transformer)
                           transformer)])
-    (unless transformer (raise-syntax-error #f error-msg expander))
+    (unless transformer (raise-syntax-error #f error-msg expander*))
     (let* ([introducer (make-syntax-introducer)]
-           [certifier (match-expander-certifier expander)]
+           [certifier (match-expander-certifier expander*)]
            [mstx (introducer (syntax-local-introduce stx))]
            [mresult (transformer mstx)]
            [result (syntax-local-introduce (introducer mresult))]
            [cert* (lambda (id) (certifier (cert id) #f introducer))])
+      (emit-local-step stx result #:id expander)
       (parse/cert result cert*))))
 
 ;; raise an error, blaming stx
