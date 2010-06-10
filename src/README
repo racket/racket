@@ -70,7 +70,7 @@ the Unix instructions below, but note the following:
  * Under Mac OS X 10.6 and later, `configure' by default selects 32-bit
    mode for building Racket and GRacket.  To build Racket in 64-bit mode
    (GRacket is not support in that mode), use the following arguments to
-   `configure': `--enable-mac64', `--enable-sgc', and `--disable-mred'.
+   `configure': `--enable-mac64', `--enable-sgc', and `--disable-gracket'.
 
 ========================================================================
  Compiling for supported Unix variants (including Linux) or Cygwin
