@@ -62,7 +62,8 @@
 [odd? (-> -Integer B)]
 [even? (-> -Integer B)]
 
-[modulo (cl->* (-Integer -Integer . -> . -Integer))]
+[modulo (cl->* (-Nat -Nat . -> . -Nat)
+               (-Integer -Integer . -> . -Integer))]
 
 [=  (->* (list N N) N B)]
 
@@ -81,34 +82,28 @@
 
 [* (apply cl->*
           (append (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum)]) (->* (list) t t))
-                  (list (->* (list (Un -Integer -ExactRational -Real -Flonum))
-                             (Un -Integer -ExactRational -Real -Flonum)
-                             -Flonum))
                   (list (->* (list) -Real -Real))
                   (list (->* (list) N N))))]
 [+ (apply cl->*
           (append (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum)]) (->* (list) t t))
-                  (list (->* (list (Un -Integer -ExactRational -Real -Flonum))
-                             (Un -Integer -ExactRational -Real -Flonum)
-                             -Flonum))
+                  ;; special cases for promotion to inexact, not exhaustive
+                  ;; valid for + and -, but not for * and /, since (* <float> 0) is exact 0 (i.e. not a float)
+                  (list (->* (list -Flonum) -Real -Flonum))
+                  (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list) -Real -Real))
                   (list (->* (list) N N))))]
 
 [- (apply cl->*
           (append (for/list ([t (list -Integer -ExactRational -Flonum)])
                             (->* (list t) t t))
-                  (list (->* (list (Un -Integer -ExactRational -Real -Flonum))
-                             (Un -Integer -ExactRational -Real -Flonum)
-                             -Flonum))
+                  (list (->* (list -Flonum) -Real -Flonum))
+                  (list (->* (list -Real -Flonum) -Real -Flonum))
                   (list (->* (list -Real) -Real -Real))
                   (list (->* (list N) N N))))]
 [/ (apply cl->*
           (append (list (->* (list -Integer) -Integer -ExactRational))
                   (for/list ([t (list -ExactRational -Flonum)])
                             (->* (list t) t t))
-                  (list (->* (list (Un -Integer -ExactRational -Real -Flonum))
-                             (Un -Integer -ExactRational -Real -Flonum) 
-                             -Flonum))
                   (list (->* (list -Real) -Real -Real))
                   (list (->* (list N) N N))))]
 
@@ -169,7 +164,8 @@
 [log (cl->*
       (-Pos . -> . -Real)
       (N . -> . N))]
-[exp  (N . -> . N)]
+[exp  (cl->* (-Real . -> . -Real)
+             (N . -> . N))]
 [cos  (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
 [sin  (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
 [tan  (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
