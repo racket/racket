@@ -768,22 +768,18 @@ subdirectory.
              (abort (format "Internal error (unknown HTTP response code ~a)"
                             response-code))]))))))
 
-;; formats the pkg-spec back into a string the way the user typed it in.
+;; formats the pkg-spec back into a string the way the user typed it in,
+;; except it never shows the minor version number (since some later one may actually be being used)
 ;; assumes that the pkg-spec comes from the command-line
 (define (pkg-spec->string pkg)
-  (format "~a/~a~a~a"
+  (format "~a/~a~a"
           (if (pair? (pkg-spec-path pkg))
               (car (pkg-spec-path pkg))
               "<<unknown>>") ;; this shouldn't happen
           (regexp-replace #rx"\\.plt$" (pkg-spec-name pkg) "")
           (if (pkg-spec-maj pkg) 
               (format ":~a" (pkg-spec-maj pkg))
-              "")
-          (cond
-            [(and (pkg-spec-maj pkg)
-                  (pkg-spec-minor-lo pkg))
-             (format ".~a" (pkg-spec-minor-lo pkg))]
-            [else ""])))
+              "")))
   
 ;; =============================================================================
 ;; MODULE MANAGEMENT
