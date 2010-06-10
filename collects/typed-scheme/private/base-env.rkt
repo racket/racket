@@ -279,6 +279,7 @@
 [void (->* '() Univ -Void)]
 [void? (make-pred-ty -Void)]
 [printf (->* (list -String) Univ -Void)]
+[eprintf (->* (list -String) Univ -Void)]
 [fprintf (->* (list -Output-Port -String) Univ -Void)]
 [format (->* (list -String) Univ -String)]
 
@@ -319,6 +320,22 @@
 [string<=? (->* (list -String -String) -String B)]
 [string>=? (->* (list -String -String) -String B)]
 
+[char-alphabetic? (-> -Char B)]
+[char-lower-case? (-> -Char B)]
+[char-upper-case? (-> -Char B)]
+[char-title-case? (-> -Char B)]
+[char-numeric? (-> -Char B)]
+[char-symbolic? (-> -Char B)]
+[char-punctuation? (-> -Char B)]
+[char-graphic? (-> -Char B)]
+[char-whitespace? (-> -Char B)]
+[char-blank? (-> -Char B)]
+[char-iso-control? (-> -Char B)]
+[char-general-category (-> -Char (apply Un (map -val
+  '(lu ll lt lm lo mn mc me nd nl no ps pe pi pf pd
+    pc po sc sm sk so zs zp zl cc cf cs co cn))))]
+[make-known-char-range-list (-> (-lst (-Tuple (list -ExactPositiveInteger -ExactPositiveInteger B))))]
+
 [string-ci<? (->* (list -String -String) -String B)]
 [string-ci>? (->* (list -String -String) -String B)]
 [string-ci=? (->* (list -String -String) -String B)]
@@ -335,6 +352,7 @@
 [char-foldcase (-> -Char -Char)]
 [char->integer (-> -Char -Nat)]
 [integer->char (-> -Nat -Char)]
+[char-utf-8-length (-> -Char (apply Un (map -val '(1 2 3 4 5 6))))]
 
 [string-normalize-nfd (-> -String -String)]
 [string-normalize-nfkd (-> -String -String)]
@@ -567,6 +585,7 @@
 [close-output-port (-> -Output-Port -Void)]
 [read-line  (->opt [-Input-Port Sym] -String)]
 [copy-file (-> -Pathlike -Pathlike -Void)]
+[flush-output (->opt [-Output-Port] -Void)]
 [file-stream-buffer-mode (cl-> [(-Port) (Un (-val 'none) (-val 'line) (-val 'block) (-val #f))]
                                [(-Port (Un (-val 'none) (-val 'line) (-val 'block))) -Void])]
 [file-position (-> -Port -Nat)]
@@ -591,6 +610,9 @@
 [open-output-bytes
  (cl->* [[Univ] . ->opt . -Output-Port])]
 [get-output-bytes (-Output-Port [Univ N N] . ->opt . -Bytes)]
+[char-ready? (->opt [-Input-Port] B)]
+[byte-ready? (->opt [-Input-Port] B)]
+
 #;[exn:fail? (-> Univ B)]
 #;[exn:fail:read? (-> Univ B)]
 
@@ -658,6 +680,8 @@
 
 [list->string ((-lst -Char) . -> . -String)]
 [string->list (-String . -> . (-lst -Char))]
+[build-string (-Nat (-Nat . -> . -Char) . -> . -String)]
+
 [sort (-poly (a b) (cl->* ((-lst a) (a a . -> . B)
                           #:cache-keys? B #f
                           . ->key . (-lst a))
@@ -670,6 +694,12 @@
 [object-name (Univ . -> . Univ)]
 
 [path? (make-pred-ty -Path)]
+
+;; scheme/function
+[const (-poly (a) (-> a (->* '() Univ a)))]
+(primitive? (-> Univ B))
+(primitive-closure? (-> Univ B))
+
 
 ;; scheme/cmdline
 
@@ -712,6 +742,8 @@
                      ((-lst b) b) . ->... .(-lst c)))]
 [append*
  (-poly (a) ((-lst (-lst a)) . -> . (-lst a)))]
+[argmin (-poly (a) ((a . -> . -Real) (-lst a) . -> . a))]
+[argmax (-poly (a) ((a . -> . -Real) (-lst a) . -> . a))]
 
 ;; scheme/tcp
 [tcp-listener? (make-pred-ty -TCP-Listener)]
@@ -741,10 +773,15 @@
 
 ;; scheme/port
 [port->lines (cl->* ([-Input-Port] . ->opt . (-lst -String)))]
+[port->bytes-lines (cl->* ([-Input-Port] . ->opt . (-lst -Bytes)))]
+[port->list (-poly (a) (->opt [(-> -Input-Port a) -Input-Port] (-lst a)))]
 [port->bytes (->opt [-Input-Port] -Bytes)]
+[port->string (->opt [-Input-Port] -String)]
 [with-output-to-string
   (-> (-> Univ) -String)]
 [open-output-nowhere (-> -Output-Port)]
+[copy-port (->* (list -Input-Port -Output-Port) -Output-Port -Void)]
+
 [input-port? (make-pred-ty -Input-Port)]
 [output-port? (make-pred-ty -Output-Port)]
 
