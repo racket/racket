@@ -64,8 +64,8 @@
                       [current-namespace (namespace-anchor->namespace anch)]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
-           (find-mutated-vars ex)
-           (values (lambda () (tc-expr ex)) ex)))]))
+           (parameterize ([mutated-vars (find-mutated-vars ex)])
+             (values (lambda () (tc-expr ex)) ex))))]))
 
 (define-syntax (tc-expr/expand stx)
   (syntax-case stx ()
@@ -74,8 +74,8 @@
                       [current-namespace (namespace-anchor->namespace anch)]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
-           (find-mutated-vars ex)
-           (tc-expr ex)))]))
+           (parameterize ([mutated-vars (find-mutated-vars ex)])
+             (tc-expr ex))))]))
 
 ;; check that an expression typechecks correctly
 (define-syntax (tc-e stx)

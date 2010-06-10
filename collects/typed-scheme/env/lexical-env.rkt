@@ -3,7 +3,6 @@
 (require "../utils/utils.rkt"
 	 "type-environments.rkt" 
 	 "type-env.rkt"
-	 unstable/mutated-vars
          (only-in scheme/contract ->* -> or/c any/c listof cons/c)
          (utils tc-utils)
          (only-in (rep type-rep) Type/c)

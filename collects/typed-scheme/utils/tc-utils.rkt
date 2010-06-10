@@ -7,7 +7,7 @@ don't depend on any other portion of the system
 
 (provide (all-defined-out))
 (require "syntax-traversal.rkt"
-	 "utils.rkt"
+	 "utils.rkt" racket/dict
 	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match unstable/debug
          (for-syntax unstable/syntax))
 
@@ -15,6 +15,11 @@ don't depend on any other portion of the system
 (define current-orig-stx (make-parameter #'here))
 (define orig-module-stx (make-parameter #f))
 (define expanded-module-stx (make-parameter #f))
+
+;; a parameter holding the mutated variables for the form currently being checked
+(define mutated-vars (make-parameter #hash()))
+
+(define (is-var-mutated? id) (dict-ref (mutated-vars) id #f))
 
 (define (stringify l [between " "])
   (define (intersperse v l)

@@ -5,6 +5,7 @@
 (require (private with-types)
          (for-syntax 
           (except-in syntax/parse id)
+          unstable/mutated-vars
           scheme/base
           (private type-contract optimize)
           (types utils convenience)
@@ -72,6 +73,7 @@
                                            forms ...))
                                         'module-begin 
                                         null)])]
+           [parameterize ([mutated-vars (find-mutated-vars #'new-mod)])]
            [with-syntax ([(pmb body2 ...) #'new-mod])]
            [begin (do-time "Local Expand Done")]
            [with-syntax ([after-code (parameterize ([orig-module-stx (or (orig-module-stx) stx)]
@@ -121,7 +123,8 @@
           ;; local-expand the module
           [let ([body2 (local-expand #'(#%top-interaction . form) 'top-level null)])]
           [parameterize ([orig-module-stx #'form]
-                         [expanded-module-stx body2])]
+                         [expanded-module-stx body2]
+                         [mutated-vars (find-mutated-vars body2)])]
           ;; typecheck the body, and produce syntax-time code that registers types
           [let ([type (tc-toplevel-form body2)])])
          (define-syntax-class invis-kw

@@ -34,7 +34,6 @@
 (define (tc-toplevel/pass1 form)
   ;(printf "form-top: ~a~n" form)
   ;; first, find the mutated variables:
-  (find-mutated-vars form)
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literals (values define-type-alias-internal define-typed-struct-internal define-type-internal 

@@ -9,7 +9,7 @@
          scheme/match         
          scheme/promise
          scheme/flonum (except-in scheme/contract ->* ->)
-         unstable/syntax unstable/mutated-vars
+         unstable/syntax
          (prefix-in c: scheme/contract)
          (for-syntax scheme/base syntax/parse)
 	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp scheme/flonum))
