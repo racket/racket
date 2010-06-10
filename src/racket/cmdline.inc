@@ -1156,6 +1156,15 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
     sch_argv = create_cmdline_args_vector(argc, argv);
     
+    {
+      Scheme_Object *ps;
+      scheme_set_exec_cmd(prog);
+      if (!sprog)
+        sprog = prog;
+      
+      ps = scheme_set_run_cmd(sprog);
+    }
+
 #ifndef NO_FILE_SYSTEM_UTILS
     scheme_init_collection_paths_post(global_env, l, r);
 #endif
@@ -1163,15 +1172,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
   if (no_compiled)
     scheme_set_param(scheme_current_config(), MZCONFIG_USE_COMPILED_KIND, scheme_make_null());
-
-  {
-    Scheme_Object *ps;
-    scheme_set_exec_cmd(prog);
-    if (!sprog)
-      sprog = prog;
-  
-    ps = scheme_set_run_cmd(sprog);
-  }
 
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "addon" directory: */
