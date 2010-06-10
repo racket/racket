@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
@@ -66,9 +66,14 @@
      [year-day : -Number]
      [dst? : -Boolean]
      [time-zone-offset : -Number]))
+  
+  (define-hierarchy arity-at-least
+    ([value : -Nat]))
 
   (define-hierarchy exn
     ([message : -String] [continuation-marks : -Cont-Mark-Set])
+    
+    (define-hierarchy exn:break ([continuation : top-func]))
 
     (define-hierarchy exn:fail ()
 

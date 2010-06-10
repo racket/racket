@@ -1,16 +1,17 @@
 #lang s-exp "env-lang.rkt"
 
 (require
- scheme/tcp
- scheme
- scheme/unsafe/ops
- scheme/fixnum
+ racket/tcp
+ racket
+ racket/unsafe/ops
+ racket/fixnum
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  "extra-procs.rkt"
  (only-in '#%kernel [apply kernel:apply])
  (only-in racket/private/pre-base new-apply-proc)
- (for-syntax (only-in racket/private/pre-base new-apply-proc))
+ (for-syntax (only-in racket/private/pre-base new-apply-proc)
+             #;racket/string)
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in mzscheme make-namespace)
@@ -826,6 +827,12 @@
 [vector-split-at-right
  (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
 
+
+;; racket/string
+[string-join (-> (-lst -String) -String -String)]
+[string-append*
+ (cl->* (-> (-lst -String) -String)
+        (-> -String (-lst -String) -String))]
 
 ;; scheme/system
 [system (-String . -> . -Boolean)]
