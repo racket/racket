@@ -61,6 +61,7 @@
    top-non-begin        ; .
 
    local-remark         ; (listof (U string syntax))
+   local-artificial-step ; (list syntax syntax syntax syntax)
    ))
 
 (define-tokens renames-tokens
@@ -96,6 +97,7 @@
     (#f  top-begin               ,token-top-begin)
     (#f  top-non-begin           ,token-top-non-begin)
     (#f  local-remark            ,token-local-remark)
+    (#f  local-artificial-step   ,token-local-artificial-step)
 
     ;; Standard signals
     (0   visit                   ,token-visit)

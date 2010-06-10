@@ -142,6 +142,17 @@ transformer returns. Unmarking is suppressed if @scheme[unmark?] is
 
 }
 
+@defproc[(emit-local-step [before syntax?] [after syntax?]
+                          [#:id id identifier?])
+         void?]{
+
+Emits an event that simulates a local expansion step from
+@scheme[before] to @scheme[after].
+
+The @scheme[id] argument acts as the step's ``macro'' for the purposes
+of macro hiding.
+
+}
 
 @section{Macro stepper text interface}
 

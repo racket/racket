@@ -204,6 +204,18 @@
       (make local-bind $1 #f $2 $3)]
      [(local-remark)
       (make local-remark $1)]
+     [(local-artificial-step)
+      (let ([ids (list-ref $1 0)]
+            [before (list-ref $1 1)]
+            [mbefore (list-ref $1 2)]
+            [mafter (list-ref $1 3)]
+            [after (list-ref $1 4)])
+        (make local-expansion
+          before after #f mbefore
+          (make mrule mbefore mafter ids #f
+                before null after #f mafter
+                (make p:stop mafter mafter null #f))
+          #f after #f))]
      ;; -- Not really local actions, but can occur during evaluation
      ;; called 'expand' (not 'local-expand') within transformer
      [(start (? EE)) #f]
