@@ -8,8 +8,8 @@
 ;; Contributed by Anthony Borla
 ;; ---------------------------------------------------------------------
 
-#lang scheme/base
-(require scheme/cmdline)
+#lang racket/base
+(require racket/cmdline)
 
 (let ((n (exact->inexact
           (string->number

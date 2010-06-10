@@ -8,9 +8,9 @@
 ;; Contributed by Anthony Borla
 ;; ---------------------------------------------------------------------
 
-#lang scheme/base
-(require scheme/cmdline
-         scheme/flonum)
+#lang racket/base
+(require racket/cmdline
+         racket/flonum)
 
 ;; -------------------------------
 

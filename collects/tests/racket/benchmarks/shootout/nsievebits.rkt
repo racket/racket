@@ -1,12 +1,11 @@
-#!/usr/bin/mzscheme -qu
 ;;; The Great Computer Language Shootout
 ;;; http://shootout.alioth.debian.org/
 ;;
 ;; Adapted from CMUCL code by Dima Dorfman; bit-vector stuff by Alex Shinn;
 ;; cobbled together by felix, converted to MzScheme by Brent Fulgham
 
-#lang scheme/base
-(require scheme/cmdline)
+#lang racket/base
+(require racket/cmdline)
 
 (define (make-bit-vector size)
   (let* ((len (quotient (+ size 7) 8))

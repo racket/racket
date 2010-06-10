@@ -3,7 +3,7 @@
 ;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 
-(require scheme/cmdline)
+(require racket/cmdline)
 
 (define translation (make-vector 128))
 

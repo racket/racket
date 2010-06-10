@@ -1,18 +1,19 @@
-(module nestedloop mzscheme
-  (require mzlib/defmacro)
+#lang racket
 
-  (define-macro (nest n expr)
-    (if (> n 0)
-	`(let loop ([i 1]) (unless (> i n)
-			     (nest ,(- n 1) ,expr)
-			     (loop (add1 i))))
-	expr))
+(require mzlib/defmacro)
+
+(define-macro (nest n expr)
+  (if (> n 0)
+      `(let loop ([i 1]) (unless (> i n)
+                           (nest ,(- n 1) ,expr)
+                           (loop (add1 i))))
+      expr))
 
 
-  (define (main argv)
-    (let* ([n (string->number (vector-ref argv 0))]
-	   [x 0])
-      (nest 6 (set! x (+ x 1)))
-      (printf "~s~n" x)))
+(define (main argv)
+  (let* ([n (string->number (vector-ref argv 0))]
+         [x 0])
+    (nest 6 (set! x (+ x 1)))
+    (printf "~s~n" x)))
 
-  (main (current-command-line-arguments)))
+(main (current-command-line-arguments))

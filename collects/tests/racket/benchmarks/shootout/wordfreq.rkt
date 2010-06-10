@@ -4,29 +4,30 @@
 ;  Updated and corrected by Brent Fulgham
 ;  Re-written by Matthew Flatt with some inspriation from the Python example
 
-(module wordfreq mzscheme
-  (require mzlib/list)
+#lang racket
 
-  (define t (make-hash-table 'equal))
+(require mzlib/list)
 
-  (define (register-word! s)
-    (let ([s (string-downcase (bytes->string/utf-8 s))])
-      (hash-table-put! t s (add1 (hash-table-get t s (lambda () 0))))))
+(define t (make-hash))
 
-  (let ([in (current-input-port)])
-    (let loop ()
-      (let ([m (regexp-match #rx#"[a-zA-Z]+" in)])
-	(when m
-	  (register-word! (car m))
-	  (loop)))))
+(define (register-word! s)
+  (let ([s (string-downcase (bytes->string/utf-8 s))])
+    (hash-set! t s (add1 (hash-ref t s (lambda () 0))))))
 
-  (for-each display
-	    (sort (hash-table-map
-		   t
-		   (lambda (word count)
-		     (let ((count (number->string count)))
-		       (format"~a~a ~a~%"
-			      (make-string (- 7 (string-length count)) #\space)
-			      count
-			      word))))
-		  string>?)))
+(let ([in (current-input-port)])
+  (let loop ()
+    (let ([m (regexp-match #rx#"[a-zA-Z]+" in)])
+      (when m
+        (register-word! (car m))
+        (loop)))))
+
+(for-each display
+          (sort (hash-map
+                 t
+                 (lambda (word count)
+                   (let ((count (number->string count)))
+                     (format"~a~a ~a~%"
+                            (make-string (- 7 (string-length count)) #\space)
+                            count
+                            word))))
+                string>?))

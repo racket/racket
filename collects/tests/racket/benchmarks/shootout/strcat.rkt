@@ -19,17 +19,18 @@
 ;  s should be a string, string buffer, or character array.
 ;  The program should not construct a list of strings and join it.
 
-(module strcat mzscheme
-  (define p (open-output-bytes))
+#lang racket/base
 
-  (define hello #"hello\n")
+(define p (open-output-bytes))
 
-  (let loop ([n (string->number
-		 (vector-ref (current-command-line-arguments) 0))])
-    (unless (zero? n)
-      (display hello p)
-      ;; At this point, (get-output-bytes p) would
-      ;; return the byte string accumulated so far.
-      (loop (sub1 n))))
+(define hello #"hello\n")
 
-  (printf "~a\n" (file-position p)))
+(let loop ([n (string->number
+               (vector-ref (current-command-line-arguments) 0))])
+  (unless (zero? n)
+    (display hello p)
+    ;; At this point, (get-output-bytes p) would
+    ;; return the byte string accumulated so far.
+    (loop (sub1 n))))
+
+(printf "~a\n" (file-position p))
