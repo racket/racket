@@ -168,8 +168,7 @@
                                (callback-stop! 'frame-stop)
                                (custodian-shutdown-all play-back:cust)))
                            (label (if name (format "~a" name) "World"))
-                           (stretchable-width #f)
-                           (stretchable-height #f)
+                           (alignment '(center center))
                            (style '(no-resize-border metal))))
         (define editor-canvas 
           (new (class editor-canvas%
@@ -191,6 +190,8 @@
                        [else (void)]))))
                (parent frame)
                (editor visible)
+               (stretchable-width #f)
+               (stretchable-height #f)
                (style '(no-hscroll no-vscroll))
                (horizontal-inset INSET)
                (vertical-inset INSET)))
