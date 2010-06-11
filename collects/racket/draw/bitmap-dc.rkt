@@ -40,13 +40,14 @@
       (values (exact->inexact (send bm get-width))
               (exact->inexact (send bm get-height))))
 
+    (define last-y -1)
     (def/public (set-pixel [real? x][real? y][color% c])
       (let ([s (bytes 255 (color-red c) (color-green c) (color-blue c))])
         (set-argb-pixels x y 1 1 s)))
 
     (def/public (get-pixel [real? x][real? y][color% c])
       (let ([b (make-bytes 4)])
-        (get-argb-pixels x y 1 1)
+        (get-argb-pixels x y 1 1 b)
         (send c set (bytes-ref b 1) (bytes-ref b 2) (bytes-ref b 3))
         #t))
 

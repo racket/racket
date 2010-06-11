@@ -657,11 +657,11 @@
 				  (case mask-ex-mode
 				    [(plt plt-mask plt^plt mred^plt)
 				     (let* ([plt (get-plt)]
-					    [tmp-bm (make-object bitmap% 
-								 (send mred-icon get-width)
-								 (send mred-icon get-height)
-								 #f)]
-					    [tmp-dc (make-object bitmap-dc% tmp-bm)])
+					    [ww (send mred-icon get-width)]
+                                            [hh (send mred-icon get-height)]
+					    [tmp-bm (make-object bitmap% ww hh #f)]
+					    [tmp-dc (make-object bitmap-dc% tmp-bm)]
+                                            [mask-bm tmp-bm])
 				       (send tmp-dc draw-bitmap plt
 					     (/ (- (send mred-icon get-width)
 						   (send plt get-width))
@@ -669,16 +669,33 @@
 					     (/ (- (send mred-icon get-height)
 						   (send plt get-height))
 						2))
+                                       (when (memq mask-ex-mode '(plt^plt mred^plt))
+                                         ;; Convert to grayscale
+                                         (let ([s (make-bytes (* 4 ww hh))])
+                                           (send tmp-bm get-argb-pixels 0 0 ww hh s)
+                                           (for* ([i (in-range 0 ww)]
+                                                  [j (in-range 0 hh)])
+                                             (let* ([p (* 4 (+ (* j ww) i))]
+                                                    [v (quotient (+ (bytes-ref s (+ p 1))
+                                                                    (bytes-ref s (+ p 2))
+                                                                    (bytes-ref s (+ p 3)))
+                                                                 3)])
+                                               (bytes-set! s (+ p 1) v)
+                                               (bytes-set! s (+ p 2) v)
+                                               (bytes-set! s (+ p 3) v)))
+                                           (set! mask-bm (make-object bitmap% ww hh #f))
+                                           (send tmp-dc set-bitmap mask-bm)
+                                           (send tmp-dc set-argb-pixels 0 0 ww hh s)))
 				       (if (eq? mask-ex-mode 'mred^plt)
 					   (send dc draw-bitmap mred-icon x y
 						 'solid
 						 (send the-color-database find-color "BLACK")
-						 tmp-bm)
+						 mask-bm)
 					   (send dc draw-bitmap tmp-bm x y 'solid 
 						 (send the-color-database find-color "BLACK")
 						 (cond
 						  [(eq? mask-ex-mode 'plt-mask) mred-icon]
-						  [(eq? mask-ex-mode 'plt^plt) tmp-bm]
+						  [(eq? mask-ex-mode 'plt^plt) mask-bm]
 						  [else #f]))))]
                                     [(mred^mred)
                                      (send dc draw-bitmap mred-icon x y
@@ -722,9 +739,7 @@
 				  (let ([start x])
 				    ;; First three return icons:
 				    (do-one return 'solid black)
-                                    (printf "HERE\n")
 				    (do-one return 'solid red)
-                                    (printf "DONE\n")
 				    (do-one return 'opaque red)
 				    ;; Next three, on a blue background
 				    (let ([end x]

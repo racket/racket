@@ -457,7 +457,7 @@
                                [else 0])))
             (cairo_set_line_cap cr
                                 (case (if ((send pen get-width) . <= . 1.0)
-                                          'butt
+                                          'round
                                           (send pen get-cap))
                                   [(butt) CAIRO_LINE_CAP_BUTT]
                                   [(round) CAIRO_LINE_CAP_ROUND]
@@ -516,24 +516,15 @@
       (draw-arc x y width height 0 2pi))
 
     (def/public (draw-line [real? x1] [real? y1] [real? x2] [real? y2])
-      (let-values ([(x1 y1 x2 y2)
-                    (if (and (eq? smoothing 'unsmoothed)
-                             (x2 . < . x1))
-                        (values x2 y2 x1 y1)
-                        (values x1 y1 x2 y2))])
+      (let ([dot (if (and (= x1 x2) (= y1 y2))
+                     0.1
+                     0)])
         (with-cr
          (void)
          cr
          (cairo_new_path cr)
          (cairo_move_to cr (align-x x1) (align-y y1))
-         (if #f ; (eq? smoothing 'unsmoothed)
-             ;; An unsmoothed line is supposed to hit the pixel to the
-             ;; lower right of the ending point. (We've revered the points
-             ;; above to ensure that the line goes left to right.)
-             (if ((abs (- x2 x1)) . > . (abs (- y2 y1)))
-                 (cairo_line_to cr (+ (align-x x2) (sgn (- x2 x1))) (align-y y2))
-                 (cairo_line_to cr (align-x x2) (+ (align-y y2) (sgn (- y2 y1)))))
-             (cairo_line_to cr (align-x x2) (align-y y2)))
+         (cairo_line_to cr (+ (align-x x2) dot) (+ (align-y y2) dot))
          (draw cr #f #t))))
     
     (def/public (draw-point [real? x] [real? y])
@@ -544,7 +535,7 @@
        (let ([x (align-x x)]
              [y (align-y y)])
          (cairo_move_to cr x y)
-         (cairo_line_to cr x y)         
+         (cairo_line_to cr (+ 0.1 x) (+ 0.1 y))
        (draw cr #f #t))))
 
     (def/public (draw-lines [(make-alts (make-list point%) list-of-pair-of-real?) pts]

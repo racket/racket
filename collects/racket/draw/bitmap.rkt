@@ -113,6 +113,7 @@
           (let ([mask-bm
                  (and s
                       (not alpha?)
+                      (not b&w?)
                       (let ([w (cairo_image_surface_get_width s)]
                             [h (cairo_image_surface_get_height s)]
                             [row-width (cairo_image_surface_get_stride s)]
@@ -522,13 +523,13 @@
           (cairo_surface_flush s)
           (let ([data (cairo_image_surface_get_data s)]
                 [row-width (cairo_image_surface_get_stride s)])
-            (let ([w (min (- width x) w)])
+            (let ([w2 (+ x (min (- width x) w))])
               (for* ([j (in-range y (min (+ y h) height))])
                 (let ([row (* j row-width)]
-                      [p (* 4 (+ x (* j w)))])
-                  (for ([i (in-range x w)])
+                      [p (* 4 (* (- j y) w))])
+                  (for ([i (in-range x w2)])
                     (let* ([4i (* 4 i)]
-                           [pi (+ p 4i)]
+                           [pi (+ p (* 4 (- i x)))]
                            [ri (+ row 4i)]
                            [a (bytes-ref data (+ ri A))]
                            [unmult (lambda (a v)
@@ -554,9 +555,9 @@
         (get-alphas-as-mask x y w h bstr)]
        [(and (not get-alpha?) (not alpha-channel?))
         ;; For non-alpha mode or no mask; fill in 255s:
-        (for ([j (in-range y (min (+ y h) height))])
+        (for ([j (in-range 0 (min h (- height y)))])
           (let ([row (* j (* 4 w))])
-            (for ([i (in-range x (min (+ x w) width))])
+            (for ([i (in-range 0 (min w (- width x)))])
               (let ([p (+ (* 4 i) row)])
                 (bytes-set! bstr p 255)))))]))
 
@@ -576,14 +577,14 @@
           (cairo_surface_flush s)
           (let ([data (cairo_image_surface_get_data s)]
                 [row-width (cairo_image_surface_get_stride s)])
-            (let ([w (min (- width x) w)])
+            (let ([w2 (+ x (min (- width x) w))])
               (for ([j (in-range y (min (+ y h) height))]
                     [dj (in-naturals)])
                 (let ([row (* j row-width)]
                       [p (* 4 (* dj w))])
-                  (for ([i (in-range x w)])
+                  (for ([i (in-range x w2)])
                     (let* ([4i (* 4 i)]
-                           [pi (+ p 4i)]
+                           [pi (+ p (* 4 (- i x)))]
                            [ri (+ row 4i)])
                       (if b&w?
                           (let ([v (if (and (= (bytes-ref bstr (+ pi 1)) 255)
@@ -592,8 +593,8 @@
                                        255
                                        0)])
                             (bytes-set! data (+ ri A) (- 255 v))
-                            (bytes-set! data (+ ri R) v)
-                            (bytes-set! data (+ ri G) v)
+                            (bytes-set! data (+ ri 1) v)
+                            (bytes-set! data (+ ri 2) v)
                             (bytes-set! data (+ ri B) v))
                           (begin
                             (when alpha-channel? 
@@ -647,14 +648,13 @@
               (let ([row (* j row-width)])
                 (for ([i (in-range width)])
                   (let ([q (+ row (* i 4))])
-                    (bytes-set! alpha-data 
-                                (+ q A)
-                                (- 255
-                                   (quotient
-                                    (+ (+ (bytes-ref data (+ q 1))
-                                          (bytes-ref data (+ q 2)))
-                                       (bytes-ref data (+ q B)))
-                                    3))))))))
+                    (let ([v (quotient
+                              (+ (+ (bytes-ref data (+ q 1))
+                                    (bytes-ref data (+ q 2)))
+                                 (bytes-ref data (+ q B)))
+                              3)])
+                      (bytes-set! alpha-data (+ q A) (- 255 v))))))))
+          (cairo_surface_mark_dirty alpha-s)
           (set! alpha-s-up-to-date? #t))))
 
     (define/public (transparent-white! s width height)
