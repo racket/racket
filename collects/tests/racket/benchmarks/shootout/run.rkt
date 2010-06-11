@@ -56,8 +56,9 @@
         (printf "Building FASTA ~a output for input: ~a\n" n f)
         (with-output-to-file f
           (lambda ()
-            (parameterize ([current-command-line-arguments (vector n)])
-              (dynreq "fasta.rkt")))))
+            (parameterize ([current-command-line-arguments (vector n)]
+                           [current-load-relative-directory here])
+              (dynamic-require "fasta.rkt" #f)))))
       f))
 
   (define (mk-revcomp-input)
