@@ -4,7 +4,7 @@
          (except-in syntax/parse id)
          unstable/mutated-vars
          scheme/base
-         (private type-contract optimize)
+         (private type-contract)
          (types utils convenience)
          (typecheck typechecker provide-handling tc-toplevel)
          (env type-environments type-name-env type-alias-env)
@@ -13,9 +13,7 @@
          (rep type-rep)
          (except-in (utils utils) infer)
          (only-in (r:infer infer-dummy) infer-param)
-         scheme/nest
-         syntax/kerncase
-         scheme/match
+         racket/match
          (for-syntax racket/base)
          (for-template racket/base))
 

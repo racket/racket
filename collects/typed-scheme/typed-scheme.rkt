@@ -1,10 +1,10 @@
-#lang scheme/base
+#lang racket/base
 
 (require (rename-in "utils/utils.rkt" [infer r:infer])
          (private with-types)
          (for-syntax 
           (except-in syntax/parse id)
-          unstable/syntax racket/base unstable/match
+          racket/match unstable/syntax racket/base unstable/match
           (private type-contract optimize)
           (types utils convenience)
 	  (typecheck typechecker provide-handling tc-toplevel)
@@ -13,8 +13,7 @@
 	  (utils tc-utils)
 	  (rep type-rep)
 	  (except-in (utils utils) infer)
-          (only-in (r:infer infer-dummy) infer-param)
-          scheme/match
+          (only-in (r:infer infer-dummy) infer-param)          
           "tc-setup.rkt"))
 
 (provide (rename-out [module-begin #%module-begin]
@@ -28,28 +27,29 @@
   (syntax-parse stx
      [(mb (~optional (~and #:optimize (~bind [opt? #'#t]))) forms ...)
       (let ([pmb-form (syntax/loc stx (#%plain-module-begin forms ...))])
-      (tc-setup 
-       stx pmb-form 'module-begin new-mod tc-module after-code
-       (with-syntax*
-        (;; pmb = #%plain-module-begin    
-         [(pmb . body2) new-mod]
-         ;; add in syntax property on useless expression to draw check-syntax arrows
-         [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))]
-         ;; perform the provide transformation from [Culpepper 07]
-         [transformed-body (remove-provides #'body2)]
-         ;; add the real definitions of contracts on requires
-         [transformed-body (change-contract-fixups #'transformed-body)]
-         ;; potentially optimize the code based on the type information
-         [(optimized-body ...)
-          ;; do we optimize?
-          (if (or (attribute opt?) (optimize?))
-              (begin (printf "optimizing ...\n")
-                     (begin0 (map optimize (syntax->list #'transformed-body))
-                             (do-time "Optimized")))
-              #'transformed-body)])
-        ;; reconstruct the module with the extra code
-        ;; use the regular %#module-begin from `racket/base' for top-level printing
-        #`(#%module-begin optimized-body ... #,after-code check-syntax-help))))]))
+        (parameterize ([optimize? (or (optimize?) (attribute opt?))])
+          (tc-setup 
+           stx pmb-form 'module-begin new-mod tc-module after-code
+           (with-syntax*
+            (;; pmb = #%plain-module-begin    
+             [(pmb . body2) new-mod]
+             ;; add in syntax property on useless expression to draw check-syntax arrows
+             [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))]
+             ;; perform the provide transformation from [Culpepper 07]
+             [transformed-body (remove-provides #'body2)]
+             ;; add the real definitions of contracts on requires
+             [transformed-body (change-contract-fixups #'transformed-body)]
+             ;; potentially optimize the code based on the type information
+             [(optimized-body ...)
+              ;; do we optimize?
+              (if (optimize?)
+                  (begin (printf "optimizing ...\n")
+                         (begin0 (map optimize (syntax->list #'transformed-body))
+                                 (do-time "Optimized")))
+                  #'transformed-body)])
+            ;; reconstruct the module with the extra code
+            ;; use the regular %#module-begin from `racket/base' for top-level printing
+            #`(#%module-begin optimized-body ... #,after-code check-syntax-help)))))]))
 
 (define-syntax (top-interaction stx)
   (syntax-parse stx 
