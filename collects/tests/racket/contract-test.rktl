@@ -9935,6 +9935,14 @@ so that propagation occurs.
     (test ctc value-contract (contract ctc (λ (x) 3) 'pos 'neg)))
   (let ([ctc (case-> (-> number? number? number?) (-> number? number?))])
     (test ctc value-contract (contract ctc (case-lambda [(x) 3] [(x y) (+ x y)]) 'pos 'neg)))
+  (let ([ctc (box/c number?)])
+    (test ctc value-contract (contract ctc (box 3) 'pos 'neg)))
+  (let ([ctc (hash/c number? number?)])
+    (test ctc value-contract (contract ctc (make-hash) 'pos 'neg)))
+  (let ([ctc (vectorof number?)])
+    (test ctc value-contract (contract ctc (vector 1 2 3) 'pos 'neg)))
+  (let ([ctc (vector/c number? number?)])
+    (test ctc value-contract (contract ctc (vector 4 5) 'pos 'neg)))
   
 ;                             
 ;                             

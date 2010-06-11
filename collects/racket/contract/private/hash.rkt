@@ -180,7 +180,8 @@
                  (λ (h k)
                    (neg-dom-proj k))
                  (λ (h k)
-                   (pos-dom-proj k))))))))))
+                   (pos-dom-proj k))
+                 proxy-prop:contracted ctc))))))))
 
 (define-struct (chaperone-hash/c hash/c) ()
   #:omit-define-syntaxes

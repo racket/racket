@@ -80,7 +80,8 @@
                 (box-immutable (pos-elem-proj (unbox val)))
                 (box-wrapper val
                              (λ (b v) (pos-elem-proj v))
-                             (λ (b v) (neg-elem-proj v))))))))))
+                             (λ (b v) (neg-elem-proj v))
+                             proxy-prop:contracted ctc))))))))
 
 (define-struct (chaperone-box/c box/c) ()
   #:property prop:chaperone-contract

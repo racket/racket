@@ -84,7 +84,8 @@
                   (λ (vec i val)
                     (elem-pos-proj val))
                   (λ (vec i val)
-                    (elem-neg-proj val))))))))))
+                    (elem-neg-proj val))
+                  proxy-prop:contracted ctc))))))))
 
 (define-struct (chaperone-vectorof vectorof) ()
   #:property prop:chaperone-contract
@@ -237,7 +238,8 @@
                   (λ (vec i val)
                     ((vector-ref elem-pos-projs i) val))
                   (λ (vec i val)
-                    ((vector-ref elem-neg-projs i) val))))))))))
+                    ((vector-ref elem-neg-projs i) val))
+                  proxy-prop:contracted ctc))))))))
 
 (define-struct (chaperone-vector/c vector/c) ()
   #:property prop:chaperone-contract
