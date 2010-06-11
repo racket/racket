@@ -6,7 +6,7 @@
 
 ;; do we attempt to find instantiations of polymorphic types to print? 
 ;; FIXME - currently broken
-(define print-poly-types? #f)
+(define print-poly-types? #t)
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
@@ -117,8 +117,8 @@
     [(? Rep-stx a)
      (fp "~a" (syntax->datum (Rep-stx a)))]
     [(Univ:) (fp "Any")]
-    ;; special case number until something better happens
-    ;;[(Base: 'Number _) (fp "Number")]
+    ;; names are just the printed as the original syntax
+    [(Name: stx) (fp "~a" (syntax-e stx))]
     [(app has-name? (? values name))
      (fp "~a" name)]
     [(StructTop: st) (fp "~a" st)]
@@ -126,8 +126,6 @@
     [(ChannelTop:) (fp "Channel")]
     [(VectorTop:) (fp "Vector")]
     [(MPairTop:) (fp "MPair")]
-    ;; names are just the printed as the original syntax
-    [(Name: stx) (fp "~a" (syntax-e stx))]
     [(App: rator rands stx) 
      (fp "~a" (list* rator rands))]
     ;; special cases for lists
