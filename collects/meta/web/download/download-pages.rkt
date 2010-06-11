@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "data.rkt" "installer-pages.rkt")
+(require "data.rkt" "installer-pages.rkt" "../stubs/pre.rkt")
 
 (provide render-download-page)
 
@@ -18,6 +18,10 @@
                                 (equal? package (installer-package i))))
            (installer->page i 'render-option))}
       @input[type: 'submit value: "Download" onclick: "do_jump();"]
+      @|br hr|
+      @div[align: "center"]{
+        @small{@license @nbsp @bull @nbsp @pre-installers}}
+      @hr
       @div[id: "linux_explain"
            style: '("font-size: 75%; display: none; width: 28em;"
                     " margin-top: 1ex; text-align: center;")]{
@@ -32,6 +36,18 @@
                       #:when (and (equal? version (installer-version i))
                                   (equal? package (installer-package i))))
              @li{@(installer->page i 'only-platform)})}}})
+
+(define license
+  @page[#:title "Software License"]{
+    @p{Racket is distributed under the
+       @a[href: "http://www.gnu.org/copyleft/lesser.html"]{
+         GNU Lesser General Public License (LGPL)}.
+       This means that you can link parts of Racket (such as racket or gracket)
+       into proprietary applications, provided that you follow the specific
+       rules stated in the LGPL.  You can also modify Racket software; if you
+       distribute a modified version, you must distribute it under the terms of
+       the LGPL, which in particular means that you must release the source
+       code for the modified Racket software.}})
 
 (define downloader-script
   @script/inline[type: 'text/javascript]{@||
