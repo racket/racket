@@ -13,3 +13,8 @@
   (div align: 'center
        (div align: 'left style: "display: inline-block;"
             text)))
+
+;; a grayish tt text
+(provide TT)
+(define (TT . xs)
+  @tt[style: "background-color: #dde;"]{@xs})

@@ -1,40 +1,13 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "../stubs/blog.rkt" "../stubs/git.rkt" "../stubs/pre.rkt"
-         "people.rkt" "irc.rkt")
-
-(define (TT . xs)
-  @tt[style: "background-color: #dde;"]{@xs})
-
-(define (maillist-email name)
-  @TT{@big{@strong{@name}}@"@"racket-lang.org})
-(define (maillist-url name)
-  (define url "http://lists.racket-lang.org/")
-  @text{@a[href: `(,url ,name "/")]{Subscribe}
-        or @a[href: `(,url ,name "/archive/")]{browse}})
-;; TODO: Need to finish the setup for gmane and google-groups
-;; (define (gmane name)
-;;   @a[href: `("http://dir.gmane.org/gmane.lisp.scheme." ,name)]{Gmane})
-;; (define google-groups
-;;   @a[href: "http://groups.google.com/group/plt-scheme"]{Google Groups})
+(require "people.rkt" "irc.rkt"
+         "../minis/lists.rkt"
+         "../stubs/blog.rkt" "../stubs/git.rkt" "../stubs/pre.rkt")
 
 (provide community)
 (define community
   @page{
-    @parlist[@strong{Mailing Lists}
-      @text{@maillist-email{users} @mdash a discussion list for all things
-        related to Racket.  Ask your questions here!
-        (@maillist-url{users}.)
-        @; These are not set up yet
-        @; also via @gmane{racket} and @|google-groups|).
-        }
-      @text{@maillist-email{announce} @mdash a low-volume, moderated list
-        for announcements, only.  (@maillist-url{announce}.)}
-      @text{@maillist-email{dev} @mdash a mailing list for Racket development,
-        for the people who want to see how the sausages are made and help make
-        them.  (@maillist-url{dev}.)
-        @; @";" also on @gmane{plt.dev}.)
-        }]
+    @mailing-lists-quick
     @parlist[@strong{Discussion Channels}
       @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel
         on @a[href: "http://freenode.net"]{@tt{freenode.net}}
