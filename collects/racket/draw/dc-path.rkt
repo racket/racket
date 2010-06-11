@@ -342,11 +342,11 @@
       (when (open?) (close))
       (let ([dx (min (/ w 2)
                      (if (negative? radius)
-                         (* w (- radius))
+                         (* (min w h) (- radius))
                          radius))]
             [dy (min (/ h 2)
                      (if (negative? radius)
-                         (* h (- radius))
+                         (* (min w h) (- radius))
                          radius))])
         (move-to (+ x (- w dx)) y)
         (arc (+ x (- w (* 2 dx))) y (* 2 dx) (* 2 dy) pi/2 0.0 #f)

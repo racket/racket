@@ -188,8 +188,8 @@
               (set! x-align-delta 0.5)
               (set! y-align-delta 0.5))
             (begin
-              (set! x-align-delta (/ (bitwise-and 1 (inexact->exact (floor (* scale-x w)))) 2.0))
-              (set! y-align-delta (/ (bitwise-and 1 (inexact->exact (floor (* scale-y w)))) 2.0))))))
+              (set! x-align-delta (/ (bitwise-and 1 (max 1 (inexact->exact (floor (* scale-x w))))) 2.0))
+              (set! y-align-delta (/ (bitwise-and 1 (max 1 (inexact->exact (floor (* scale-y w))))) 2.0))))))
 
     (def/public (set-font [font% f])
       (set! font f))
@@ -431,24 +431,33 @@
                   (install-color cr 
                                  (if (eq? s 'hilite) hilite-color col)
                                  (if (eq? s 'hilite) hilite-alpha alpha))))
-            (cairo_set_line_width cr (let ([v (send pen get-width)])
+            (cairo_set_line_width cr (let* ([v (send pen get-width)]
+                                            [v (if (aligned? smoothing)
+                                                   (/ (floor (* scale-x v)) scale-x)
+                                                   v)])
                                        (if (zero? v)
                                            1
                                            v)))
             (unless (or (eq? s 'solid)
                         (eq? s 'xor))
               (cairo_set_dash cr
-                              (cond
-                               [(eq? s 'long-dash)
-                                #(4.0 2.0)]
-                               [(eq? s 'short-dash)
-                                #(2.0 2.0)]
-                               [(eq? s 'dot)
-                                #(1.0 1.0)]
-                               [(eq? s 'dot-dash)
-                                #(1.0 2.0 4.0 2.0)]
-                               [else
-                                #()])
+                              (let ([vec (cond
+                                          [(eq? s 'long-dash)
+                                           #(4.0 2.0)]
+                                          [(eq? s 'short-dash)
+                                           #(2.0 2.0)]
+                                          [(eq? s 'dot)
+                                           #(1.0 2.0)]
+                                          [(eq? s 'dot-dash)
+                                           #(1.0 2.0 4.0 2.0)]
+                                          [else
+                                           #()])])
+                                (let ([w (send pen get-width)])
+                                  (if (w . > . 1.0)
+                                      (list->vector
+                                       (for/list ([a (in-vector vec)])
+                                         (* a w)))
+                                      vec)))
                               (cond
                                [(eq? s 'long-dash) 2]
                                [(eq? s 'short-dash) 2]
@@ -592,23 +601,19 @@
        cr
        ;; have to do pen separate from brush for 
        ;; both alignment and height/width adjustment
-       (let ([ax (align-x x)]
-             [ay (align-y y)])
-         (let ([rounded-rect
-                (lambda (x y w h align-x align-y)
-                  (let ([p (new dc-path%)])
-                    (send p rounded-rectangle x y w h radius)
-                    (cairo_new_path cr)
-                    (send p do-path cr align-x align-y)))])
-           (when (brush-draws?)
-             (rounded-rect x y width height (lambda (x) x) (lambda (y) y))
-             (draw cr #t #f))
-           (when (pen-draws?)
-             (rounded-rect ax ay
-                           (- (align-x (+ x (sub1 width))) ax)
-                           (- (align-y (+ y (sub1 height))) ay)
-                           (lambda (x) (align-x x)) (lambda (y) (align-y y)))
-             (draw cr #f #t))))))
+       (let ([rounded-rect
+              (lambda (x y w h align-x align-y)
+                (let ([p (new dc-path%)])
+                  (send p rounded-rectangle x y w h radius)
+                  (cairo_new_path cr)
+                  (send p do-path cr align-x align-y)))])
+         (when (brush-draws?)
+           (rounded-rect x y width height (lambda (x) x) (lambda (y) y))
+           (draw cr #t #f))
+         (when (pen-draws?)
+           (rounded-rect x y (sub1 width) (sub1 height)
+                         (lambda (x) (align-x x)) (lambda (y) (align-y y)))
+           (draw cr #f #t)))))
 
     (def/public (draw-spline [real? x1] [real? y1] [real? x2] [real? y2] [real? x3] [real? y3])
       (with-cr
