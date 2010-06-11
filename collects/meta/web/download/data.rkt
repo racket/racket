@@ -93,12 +93,6 @@
      "http://www.cs.utah.edu/plt/installers/"
      "Matthew Flatt"
      "mflatt@cs.utah.edu")
-    #; ; Scheme guy left
-    ("France (Institut Pasteur)"
-     "ftp://ftp.pasteur.fr/pub/computing/Scheme/plt-scheme/"
-     "Marc Badouin"
-     "babafou@pasteur.fr"
-     "Pasteur Institute FTP ftpmain@pasteur.fr")
     (("Germany (Universität Tübingen)")
      "http://mirror.informatik.uni-tuebingen.de/mirror/racket/"
      "Marcus Crestani"
@@ -107,21 +101,26 @@
      "ftp://infogroep.be/pub/racket/installers/"
      "Infogroep"
      "research@infogroep.be")
-    #; ; ftp down (permanently?)
-    ("Mexico (Wish Computing)"
-     "ftp://morpheus.wish.com.mx/pub/plt/"
-     "Francisco Solsona"
-     "solsona@acm.org")
+    ("Turkey, Istanbul (Bilgi University)"
+     "http://russell.cs.bilgi.edu.tr/racket-installers/"
+     "Onur Gungor"
+     "onurgu@cs.bilgi.edu.tr")
     #;
     ("Austria (Vienna University of Technology)"
      "http://gd.tuwien.ac.at/languages/scheme/plt/"
      "Rudolf Ladner"
      "ladner@zid.tuwien.ac.at")
-    #;
-    ("Turkey, Istanbul (Bilgi University)"
-     "http://russell.cs.bilgi.edu.tr/plt-bundles/"
-     "Onur Gungor"
-     "onurgu@cs.bilgi.edu.tr")
+    #; ; Scheme guy left
+    ("France (Institut Pasteur)"
+     "ftp://ftp.pasteur.fr/pub/computing/Scheme/plt-scheme/"
+     "Marc Badouin"
+     "babafou@pasteur.fr"
+     "Pasteur Institute FTP ftpmain@pasteur.fr")
+    #; ; ftp down (permanently?)
+    ("Mexico (Wish Computing)"
+     "ftp://morpheus.wish.com.mx/pub/plt/"
+     "Francisco Solsona"
+     "solsona@acm.org")
     ))
 
 ;; ----------------------------------------------------------------------------
