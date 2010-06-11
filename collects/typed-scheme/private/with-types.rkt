@@ -1,63 +1,57 @@
-#lang scheme/base
+#lang racket/base
 
-(require (for-syntax scheme/base syntax/parse mzlib/etc scheme/match)
-         scheme/require 
-         "base-env.rkt" 
-	 "base-special-env.rkt"
-	 "base-env-numeric.rkt"
-	 "base-env-indexing.rkt"
-	 "extra-procs.rkt"
-         "prims.rkt"
-         racket/contract/regions racket/contract/base
+(require racket/require racket/contract/regions racket/contract/base
+         "base-env.rkt" "base-special-env.rkt" "base-env-numeric.rkt"
+	 "base-env-indexing.rkt" "extra-procs.rkt" "prims.rkt"         
          (for-syntax 
-          "base-types-extra.rkt"
-          unstable/debug
-          (path-up "env/type-name-env.rkt"
-                   "env/type-alias-env.rkt"
-                   "infer/infer-dummy.rkt"
-                   "private/parse-type.rkt"
-                   "private/type-contract.rkt"
-                   "typecheck/typechecker.rkt"
-                   "env/type-environments.rkt" 
-                   "env/type-env.rkt"
-                   "infer/infer.rkt"
-                   "utils/tc-utils.rkt"
-                   "types/utils.rkt")
-          (except-in (path-up "utils/utils.rkt" "types/convenience.rkt" "types/abbrev.rkt") infer ->)))
+          scheme/base syntax/parse racket/block racket/match
+          unstable/sequence unstable/debug "base-types-extra.rkt"
+         (except-in (path-up "env/type-name-env.rkt"
+                             "env/type-alias-env.rkt"
+                             "infer/infer-dummy.rkt"
+                             "private/parse-type.rkt"
+                             "private/type-contract.rkt"
+                             "typecheck/typechecker.rkt"
+                             "env/type-environments.rkt" 
+                             "env/type-env.rkt"
+                             "infer/infer.rkt"
+                             "utils/tc-utils.rkt"
+                             "types/utils.rkt"
+                             "types/convenience.rkt"
+                             "types/abbrev.rkt")
+                    ->)
+         (except-in (path-up "utils/utils.rkt") infer)))
 
 (provide with-type)
 
 (define-for-syntax (with-type-helper stx body fvids fvtys exids extys resty expr? ctx)
-  (begin-with-definitions
+  (block
     (define old-context (unbox typed-context?))
+    (define ((no-contract t [stx stx]))
+      (tc-error/stx stx "Type ~a could not be converted to a contract." t))
     (set-box! typed-context? #t)
     (define fv-types (for/list ([t (in-list (syntax->list fvtys))])
                        (parse-type t)))
     (define fv-cnts (for/list ([t (in-list fv-types)]
                                [stx (in-list (syntax->list fvtys))])
-                      (type->contract t #:typed-side #f 
-                                      (lambda () (tc-error/stx stx "Type ~a could not be converted to a contract." t)))))
+                      (type->contract t #:typed-side #f (no-contract t))))
     (define ex-types (for/list ([t (syntax->list extys)])
                        (parse-type t)))
     (define ex-cnts (for/list ([t (in-list ex-types)]
                                [stx (in-list (syntax->list extys))])
-                      (type->contract t #:typed-side #t
-                                      (lambda () (tc-error/stx stx "Type ~a could not be converted to a contract." t)))))
+                      (type->contract t #:typed-side #t (no-contract t))))
     (define region-tc-result 
       (and expr? (parse-tc-results resty)))
     (define region-cnts 
       (if region-tc-result
           (match region-tc-result 
             [(tc-result1: t)
-             (list (type->contract 
-                    t 
-                    #:typed-side #t
-                    (lambda () (tc-error/stx #'region-ty-stx "Type ~a could not be converted to a contract." t))))]
+             (list (type->contract t #:typed-side #t (no-contract t #'region-ty-stx)))]
             [(tc-results: ts)
              (for/list ([t (in-list ts)])
                (type->contract
                 t #:typed-side #t
-                (lambda () (tc-error/stx #'region-ty-stx "Type ~a could not be converted to a contract." t))))])
+                (no-contract t #'region-ty-stx)))])
           null))
     (for ([i (in-list (syntax->list fvids))]
           [ty (in-list fv-types)])
@@ -91,10 +85,8 @@
                    [type-name-references null]
                    ;; for error reporting
                    [orig-module-stx stx]
-                   [expanded-module-stx expanded-body])
-      (if expr?
-          (tc-expr/check expanded-body region-tc-result)
-          (tc-expr/check expanded-body (ret ex-types))))
+                   [expanded-module-stx expanded-body])     
+          (tc-expr/check expanded-body (if expr? region-tc-result (ret ex-types))))
     (report-all-errors)
     (set-box! typed-context? old-context)
     ;; then clear the new entries from the env ht
