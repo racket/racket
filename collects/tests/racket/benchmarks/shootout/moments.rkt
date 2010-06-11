@@ -3,7 +3,8 @@
 #lang racket/base
 
 (require (only-in mzlib/list sort)
-         (only-in mzlib/string real->decimal-string))
+         (only-in mzlib/string real->decimal-string)
+         racket/flonum)
 
 (define (to-str n) (real->decimal-string n 6))
 
@@ -29,15 +30,15 @@
               (begin
                 (set! deviation (- (car nums) mean))
                 (set! average_deviation (+ average_deviation (abs deviation)))
-                (set! variance (+ variance (expt deviation 2.0)))
-                (set! skew (+ skew (expt deviation 3.0)))
+                (set! variance (+ variance (expt deviation 2)))
+                (set! skew (+ skew (expt deviation 3)))
                 (set! kurtosis (+ kurtosis (expt deviation 4)))
                 (loop (cdr nums)))
               #t))
 
         (set! average_deviation (/ average_deviation (exact->inexact n)))
         (set! variance (/ variance (- n 1)))
-        (set! standard_deviation (sqrt variance))
+        (set! standard_deviation (flsqrt variance))
 
         (cond ((> variance 0.0)
                (set! skew (/ skew (* n variance standard_deviation)))

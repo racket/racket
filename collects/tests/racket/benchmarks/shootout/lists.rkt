@@ -33,7 +33,7 @@
           (else           (mlength L1)))))
 
 (define (main args)
-  (let ((result #f))
+  (let ((result 0))
     (let loop ((counter (if (= (vector-length args) 0)
                             1
                             (string->number (vector-ref args 0)))))
