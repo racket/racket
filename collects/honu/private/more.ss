@@ -208,7 +208,8 @@
              (with-syntax ([a #'(fix-template #'(honu-unparsed-begin expr ...))])
                #'a)
 
-             (printf "Making unparsed syntax???\n")
+             (printf "Making unparsed syntax with `~a'\n" (syntax->datum #'(expr (... ...))))
+
              #;
              (with-syntax ([unparsed (make-unparsed #'(expr ...))])
                #'(fix-template unparsed))
@@ -232,7 +233,9 @@
              #;
              (with-syntax ([(out ...) (local-expand #'(expr ...) 'expression '())])
                #'(honu-unparsed-begin out ...)))
-           #'rest)]))))
+           #'rest)]
+        [else (raise-syntax-error 'maker "you have used this incorrectly")]
+        ))))
 
 (honu-syntax-maker honu-syntax honu-unparsed-begin)
 (honu-syntax-maker honu-expression-syntax honu-unparsed-expr)

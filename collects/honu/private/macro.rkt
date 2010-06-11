@@ -503,6 +503,7 @@
                                         (with-syntax ([(real-out (... ...)) #'(code ...)])
                                           (let ([result (honu-unparsed-begin #'(real-out (... ...)))])
                                             (lambda () result)))
+                                        (printf "Macro transformer `~a'\n" (syntax->datum #'(code ...)))
                                         (let ([result (honu-unparsed-begin code ...)])
                                           (lambda () result))
                                         #'(rrest (... ...)))]))))))

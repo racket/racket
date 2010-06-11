@@ -15,6 +15,7 @@
                      "parse.ss"
                      "literals.ss"
                      )
+         syntax/parse
          "literals.ss"
          ;; "typed-utils.ss"
          )
@@ -555,6 +556,10 @@ if (foo){
            (apply-scheme-syntax
              #'(require (for-syntax what))))
          #'rest)])))
+
+#;
+(define-splicing-syntax-class unparsed
+  [pattern (~seq x ...) #:with result #'(honu-unparsed-begin x ...)])
 
 (define-syntax (honu-unparsed-begin stx)
   (printf "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))

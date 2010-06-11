@@ -496,6 +496,11 @@
     [else (raise-syntax-error 'parse-an-expr "cant parse" stx)]
     ))
 
+(define-syntax (invoke-transformer stx)
+  (syntax-parse stx
+    [(_ all ...)
+     (parse #'(all ...))]))
+
 (define-splicing-syntax-class honu-body:class
                      #:literals (#%braces)
   [pattern (~seq (#%braces code ...))])
@@ -548,7 +553,14 @@
                                  (parse-block-one/2 #'(stuff ... more ...) context))])
                    (values out rest2))))
         ]
-    [(get-transformer stx) => (lambda (transformer)
+    [(get-transformer stx) => 
+                           (lambda (transformer)
+                             (values
+                               (with-syntax ([(all ...) stx])
+                                 #'(invoke-transformer all ...))
+                               #'()))
+                           #;
+                           (lambda (transformer)
                                 (define introducer (make-syntax-introducer))
                                 (define introduce introducer)
                                 (define unintroduce introducer)

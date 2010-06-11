@@ -113,6 +113,7 @@
          (for-template #%parens #%brackets #%braces)
          ;; (for-meta 2 (rename-out (honu-syntax syntax)))
          (rename-out
+           (syntax real-syntax)
            (honu-if if)
            (honu-provide provide)
            (honu-macro-item macroItem)
