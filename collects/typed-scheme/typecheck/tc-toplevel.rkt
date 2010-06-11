@@ -26,7 +26,8 @@
           scheme/base))
 
 (c:provide/contract 
- [type-check (syntax? . c:-> . syntax?)] 
+ [type-check (syntax? . c:-> . syntax?)]
+ [tc-module (syntax? . c:-> . syntax?)]
  [tc-toplevel-form (syntax? . c:-> . c:any/c)])
 
 (define unann-defs (make-free-id-table))
@@ -276,6 +277,12 @@
            #,(tname-env-init-code)
            #,(talias-env-init-code)
            (begin new-provs ... ...)))))
+
+;; typecheck a whole module
+;; syntax -> syntax
+(define (tc-module stx)
+  (syntax-parse stx
+    [(pmb . forms) (type-check #'forms)]))
 
 ;; typecheck a top-level form
 ;; used only from #%top-interaction
