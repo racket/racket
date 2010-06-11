@@ -17,7 +17,7 @@
 (: gen_random (Float -> Float))
 (define (gen_random max)
   (set! LAST (modulo (+ (* LAST IA) IC) IM))
-  (/ (* max LAST) IM))
+  (/ (* max (exact->inexact LAST)) IM))
 
 (: heapsort (Natural (Vectorof Float) -> (U Void True)))
 (define (heapsort n ra)
