@@ -60,29 +60,33 @@ v4 todo:
                    [(res-x ...) (generate-temporaries #'(rngs ...))])
        #'(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
            (let ([proj-x (contract-projection rngs-x)] ...)
+             (define name
+               (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...))
+             (define (projection wrapper)
+               (λ (blame)
+                 (let* ([p-app-x (proj-x blame)] ...
+                        [res-checker (λ (res-x ...) (values (p-app-x res-x) ...))])
+                   (λ (val)
+                     (unless (procedure? val)
+                       (raise-blame-error blame val "expected a procedure, got ~v" val))
+                     (wrapper
+                      val
+                      (make-keyword-procedure
+                       (λ (kwds kwd-vals . args)
+                         (apply values res-checker kwd-vals args))
+                       (λ args
+                         (apply values res-checker args)))
+                      proxy-prop:contracted ctc)))))
              (define ctc
-               (make-contract
-                #:name
-                (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...)
-                #:projection
-                (λ (blame)
-                  (let ([p-app-x (proj-x blame)] ...)
-                    (λ (val)
-                      (if (procedure? val)
-                          (make-contracted-function
-                           (make-keyword-procedure
-                            (λ (kwds kwd-vals . args)
-                              (let-values ([(res-x ...) (keyword-apply val kwds kwd-vals args)])
-                                (values (p-app-x res-x) ...)))
-                            (λ args
-                              (let-values ([(res-x ...) (apply val args)])
-                                (values (p-app-x res-x) ...))))
-                           ctc)
-                          (raise-blame-error blame
-                                             val
-                                             "expected a procedure")))))
-                #:first-order
-                procedure?))
+               (if (and (chaperone-contract? rngs-x) ...)
+                   (make-chaperone-contract
+                    #:name name
+                    #:projection (projection chaperone-procedure)
+                    #:first-order procedure?)
+                   (make-contract
+                    #:name name
+                    #:projection (projection proxy-procedure)
+                    #:first-order procedure?)))
              ctc)))]))
 
 

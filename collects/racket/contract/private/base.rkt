@@ -51,6 +51,7 @@ improve method arity mismatch contract violation error messages?
       (if (and name 
                (not (parameter? new-val))  ;; when PR 11221 is fixed, remove this line
                (procedure? new-val)
+               (not (proxy-of? new-val v)) ;; proxies/chaperones handle this fine
                (not (eq? name (object-name new-val))))
           (let ([name (if (symbol? name)
                           name
