@@ -2997,7 +2997,7 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
           || (rotate_mode && IS_NAMED_PRIM(rator, "unsafe-flvector-ref"))
           || (rotate_mode && IS_NAMED_PRIM(rator, "unsafe-fx->fl")))
         return 1;
-    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED) {
+    } else if (SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
       if (!rotate_mode) {
         if (IS_NAMED_PRIM(rator, "flabs")
             || IS_NAMED_PRIM(rator, "flsqrt")
@@ -3015,7 +3015,7 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
             || IS_NAMED_PRIM(rator, "flexp"))
           return 1;
       }
-    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED) {
+    } else if (SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
       if (!rotate_mode) {
         if (IS_NAMED_PRIM(rator, "fl+")
             || IS_NAMED_PRIM(rator, "fl-")
@@ -3029,7 +3029,7 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
             || IS_NAMED_PRIM(rator, "flmax"))
           return 1;
       }
-    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED) {
+    } else if (SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
       if ((rotate_mode || (argpos == 2))
           && IS_NAMED_PRIM(rator, "unsafe-flvector-set!")) 
         return 1;
@@ -3068,7 +3068,7 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, in
         if (non_fl_args) *non_fl_args = 1;
         return 1;
       }
-    } else if ((argc == 1) && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
+    } else if ((argc == 1) && SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
       if (IS_NAMED_PRIM(rator, "flabs")
           || IS_NAMED_PRIM(rator, "flsqrt")
           || IS_NAMED_PRIM(rator, "fltruncate")
@@ -3088,7 +3088,7 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, in
         if (non_fl_args) *non_fl_args = 1;
         return 1;
       }
-    } else if ((argc ==2) && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
+    } else if ((argc ==2) && SCHEME_PRIM_IS_SOMETIMES_INLINED(rator)) {
       if (IS_NAMED_PRIM(rator, "flabs")
           || IS_NAMED_PRIM(rator, "flsqrt")
           || IS_NAMED_PRIM(rator, "fl+")
