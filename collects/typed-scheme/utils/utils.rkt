@@ -23,7 +23,7 @@ at least theoretically.
  ;; struct printing
  custom-printer define-struct/printer
  ;; provide macros
- rep utils typecheck infer env private)
+ rep utils typecheck infer env private types)
 
 (define optimize? (make-parameter #f))
 
