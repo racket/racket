@@ -44,6 +44,7 @@
          contract-first-order-passes?
          
          prop:contracted
+         proxy-prop:contracted
          has-contract?
          value-contract
          
@@ -56,7 +57,19 @@
          define/final-prop
          define/subexpression-pos-prop)
 
-(define-values (prop:contracted has-contract? value-contract)
+(define (has-contract? v)
+  (or (has-prop:contracted? v)
+      (has-proxy-prop:contracted? v)))
+
+(define (value-contract v)
+  (cond
+    [(has-prop:contracted? v)
+     (get-prop:contracted v)]
+    [(has-proxy-prop:contracted? v)
+     (get-proxy-prop:contracted v)]
+    [else #f]))
+
+(define-values (prop:contracted has-prop:contracted? get-prop:contracted)
   (let-values ([(prop pred get)
                 (make-struct-type-property
                  'prop:contracted
@@ -65,7 +78,10 @@
                        (let ([ref (cadddr si)])
                          (lambda (s) (ref s v)))
                        (lambda (s) v))))])
-    (values prop pred (λ (v) (if (pred v) ((get v) v) #f)))))
+    (values prop pred (λ (v) ((get v) v)))))
+
+(define-values (proxy-prop:contracted has-proxy-prop:contracted? get-proxy-prop:contracted)
+  (make-proxy-property 'proxy-prop:contracted))
 
 (define-syntax (any stx)
   (raise-syntax-error 'any "use of 'any' outside the range of an arrow contract" stx))
