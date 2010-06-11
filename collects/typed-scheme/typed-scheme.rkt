@@ -43,9 +43,8 @@
              [(optimized-body ...)
               ;; do we optimize?
               (if (optimize?)
-                  (begin (printf "optimizing ...\n")
-                         (begin0 (map optimize (syntax->list #'transformed-body))
-                                 (do-time "Optimized")))
+                  (begin0 (map optimize (syntax->list #'transformed-body))
+                    (do-time "Optimized"))
                   #'transformed-body)])
             ;; reconstruct the module with the extra code
             ;; use the regular %#module-begin from `racket/base' for top-level printing
