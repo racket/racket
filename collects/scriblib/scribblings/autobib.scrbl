@@ -31,11 +31,11 @@ space. It has the contract
 ]
 
 The function bound to @scheme[citet-id] generates an element suitable
-for use as a noun---referring to a document or its author---for a
-single bibliography entry. It has the contract
+for use as a noun---referring to a document or its author---for one
+or more bibliography entries which share an author. It has the contract
 
 @schemeblock[
-(bib? . -> . element?)
+((bib?) () (listof bib?) . ->* . element?)
 ]
 
 The function bound to @scheme[generate-bibliography-id] generates the
