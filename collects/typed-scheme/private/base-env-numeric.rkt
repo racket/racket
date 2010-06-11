@@ -41,7 +41,8 @@
   )
 
 ;; numeric predicates
-[zero? (make-pred-ty (list N) B -Zero)]
+[zero? (asym-pred N B (-FS (-filter (Un -Flonum -Zero) 0)
+                           (-not-filter -Zero 0)))]
 [number? (make-pred-ty N)]
 [integer? (asym-pred Univ B (-FS (-filter (Un -Integer -Flonum) 0)
 				     (-not-filter -Integer 0)))]

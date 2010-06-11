@@ -807,6 +807,7 @@
                 (vector-ref #("a" "b") (sub1 x))
                 (vector-ref #("a" "b") (- x 1)))
               -String]
+        [tc-err (string-append "bar" (if (zero? (ann 0.0 Float)) #f "foo"))]
         )
   (test-suite
    "check-type tests"
