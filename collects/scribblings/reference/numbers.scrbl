@@ -201,46 +201,58 @@ otherwise.}
 @; ----------------------------------------
 @section{Arithmetic}
 
-@defproc[(+ [z number?] ...) number?]{ Returns the sum of the
- @racket[z]s, adding pairwise from left to right. If no arguments are
- provided, the result is @racket[0].
+@defproc[(+ [z number?] ...) number?]{
+
+Returns the sum of the @racket[z]s, adding pairwise from left to
+ right. If no arguments are provided, the result is @racket[0].
 
 @mz-examples[(+ 1 2) (+ 1.0 2+3i 5) (+)]}
 
 
 @defproc*[([(- [z number?]) number?]
            [(- [z number?] [w number?] ...+) number?])]{
- When no @racket[w]s are supplied, returns @racket[(- 0 z)].
+
+When no @racket[w]s are supplied, returns @racket[(- 0 z)].
  Otherwise, returns the subtraction of the @racket[w]s from @racket[z]
  working pairwise from left to right.}
 
 @mz-examples[(- 5 3.0) (- 1) (- 2+7i 1 3)]
 
 
-@defproc[(* [z number?] ...) number?]{ Returns the product of the
- @racket[z]s, multiplying pairwise from left to right. If no arguments are
- provided, the result is @racket[1].}
+@defproc[(* [z number?] ...) number?]{
 
-@mz-examples[(* 2 3) (* 8.0 9) (* 1+2i 3+4i)]
+Returns the product of the @racket[z]s, multiplying pairwise from left
+ to right. If no arguments are provided, the result is
+ @racket[1]. Multiplying any number by exact @racket[0] produces exact
+ @racket[0].
+
+@mz-examples[(* 2 3) (* 8.0 9) (* 1+2i 3+4i)]}
 
 
 @defproc*[([(/ [z number?]) number?]
            [(/ [z number?] [w number?] ...+) number?])]{
- When no @racket[w]s are supplied, returns @racket[(/ 1 z)].
- Otherwise, returns the division @racket[z] by the var[w]s
- working pairwise from left to right.}
 
-@mz-examples[(/ 3 4) (/ 81 3 3) (/ 10.0) (/ 1+2i 3+4i)]
+When no @racket[w]s are supplied, returns @racket[(/ 1 z)].
+ Otherwise, returns the division @racket[z] by the @racket[w]s working
+ pairwise from left to right.
+
+If @racket[z] is exact @racket[0] and no @racket[w] is exact
+ @racket[0], then the result is exact @racket[0]. If any @racket[w] is
+ exact @racket[0], the @exnraise[exn:fail:contract:divide-by-zero].
+
+@mz-examples[(/ 3 4) (/ 81 3 3) (/ 10.0) (/ 1+2i 3+4i)]}
 
 
-@defproc[(quotient [n integer?] [m integer?]) integer?]{ Returns
- @racket[(truncate (/ n m))].}
+@defproc[(quotient [n integer?] [m integer?]) integer?]{
 
-@mz-examples[(quotient 10 3) (quotient -10.0 3) (quotient +inf.0 3)]
+Returns @racket[(truncate (/ n m))].
+
+@mz-examples[(quotient 10 3) (quotient -10.0 3) (quotient +inf.0 3)]}
 
 
-@defproc[(remainder [n integer?] [m integer?]) integer?]{ Returns
- @racket[_q] with the same sign as @racket[n] such that
+@defproc[(remainder [n integer?] [m integer?]) integer?]{
+
+Returns @racket[_q] with the same sign as @racket[n] such that
 
 @itemize[
 
@@ -250,20 +262,26 @@ otherwise.}
 
 ]
 
+If @racket[m] is exact @racket[0], the
+ @exnraise[exn:fail:contract:divide-by-zero].
+
 @mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (remainder +inf.0 3)]}
 
 
-@defproc[(quotient/remainder [n integer?] [m integer?]) (values integer? integer?)]{ Returns
- @racket[(values (quotient n m) (remainder n m))], but the combination may be computed
- more efficiently than separate calls to @racket[quotient] and @racket[remainder].
+@defproc[(quotient/remainder [n integer?] [m integer?]) (values integer? integer?)]{
+
+Returns @racket[(values (quotient n m) (remainder n m))], but the
+ combination may be computed more efficiently than separate calls to
+ @racket[quotient] and @racket[remainder].
 
 @mz-examples[
 (quotient/remainder 10 3)
 ]}
 
 
-@defproc[(modulo [n integer?] [m integer?]) integer?]{  Returns
- @racket[_q] with the same sign as @racket[m] where
+@defproc[(modulo [n integer?] [m integer?]) integer?]{ 
+
+Returns @racket[_q] with the same sign as @racket[m] where
 
 @itemize[
 
@@ -272,6 +290,9 @@ otherwise.}
  @item{the difference between @racket[_q] and @racket[(- n (* m (quotient n m)))] is a multiple of @racket[m].}
 
 ]
+
+If @racket[m] is exact @racket[0], the
+ @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(modulo 10 3) (modulo -10.0 3)  (modulo 10.0 -3) (modulo -10 -3) (modulo +inf.0 3)]}
 
@@ -285,72 +306,88 @@ otherwise.}
 
 @mz-examples[(abs 1.0) (abs -1)]}
 
-@defproc[(max [x real?] ...+) real?]{ Returns the largest of the
- @racket[x]s, or @racket[+nan.0] if any @racket[x] is @racket[+nan.0].
- If any @racket[x] is inexact, the result is coerced to inexact.
+@defproc[(max [x real?] ...+) real?]{
+
+Returns the largest of the @racket[x]s, or @racket[+nan.0] if any
+ @racket[x] is @racket[+nan.0].  If any @racket[x] is inexact, the
+ result is coerced to inexact.
 
 @mz-examples[(max 1 3 2) (max 1 3 2.0)]}
 
 
-@defproc[(min [x real?] ...+) real?]{ Returns the smallest of the
- @racket[x]s, or @racket[+nan.0] if any @racket[x] is @racket[+nan.0].
- If any @racket[x] is inexact, the result is coerced to inexact.
+@defproc[(min [x real?] ...+) real?]{
+
+Returns the smallest of the @racket[x]s, or @racket[+nan.0] if any
+ @racket[x] is @racket[+nan.0].  If any @racket[x] is inexact, the
+ result is coerced to inexact.
 
 @mz-examples[(min 1 3 2) (min 1 3 2.0)]}
 
 
-@defproc[(gcd [n integer?] ...) integer?]{ Returns the
- @as-index{greatest common divisor} (a non-negative number) of the
- @racket[n]s. If no arguments are provided, the result is
- @racket[0]. If all arguments are zero, the result is zero.
+@defproc[(gcd [n integer?] ...) integer?]{
+
+Returns the @as-index{greatest common divisor} (a non-negative
+ number) of the @racket[n]s. If no arguments are provided, the result
+ is @racket[0]. If all arguments are zero, the result is zero.
 
 @mz-examples[(gcd 10) (gcd 12 81.0)]}
 
 
-@defproc[(lcm [n integer?] ...) integer?]{ Returns the @as-index{least
- common multiple} (a non-negative number) of the @racket[n]s. If no
- arguments are provided, the result is @racket[1]. If any argument is
- zero, the result is zero.
+@defproc[(lcm [n integer?] ...) integer?]{
+
+Returns the @as-index{least common multiple} (a non-negative number)
+ of the @racket[n]s. If no arguments are provided, the result is
+ @racket[1]. If any argument is zero, the result is zero; furthermore,
+ if any argument is exact @racket[0], the result is exact @racket[0].
 
 @mz-examples[(lcm 10) (lcm 3 4.0)]}
 
 
-@defproc[(round [x real?]) integer?]{ Returns the integer closest to
- @racket[x], resolving ties in favor of an even number.
+@defproc[(round [x real?]) integer?]{
+
+Returns the integer closest to @racket[x], resolving ties in favor of
+ an even number.
 
 @mz-examples[(round 17/4) (round -17/4) (round 2.5) (round -2.5)]}
 
 
-@defproc[(floor [x real?]) integer?]{ Returns the largest integer is that
- is no more than @racket[x].
+@defproc[(floor [x real?]) integer?]{
+
+Returns the largest integer is that is no more than @racket[x].
 
 @mz-examples[(floor 17/4) (floor -17/4) (floor 2.5) (floor -2.5)]}
 
 
-@defproc[(ceiling [x real?]) integer?]{ Returns the smallest integer is
- that is at least as large as @racket[x].
+@defproc[(ceiling [x real?]) integer?]{
+
+Returns the smallest integer is that is at least as large as
+ @racket[x].
 
 @mz-examples[(ceiling 17/4) (ceiling -17/4) (ceiling 2.5) (ceiling -2.5)]}
 
 
-@defproc[(truncate [x real?]) integer?]{ Returns the integer farthest
- from @racket[0] that is no closer to @racket[0] than @racket[x].
+@defproc[(truncate [x real?]) integer?]{
+
+Returns the integer farthest from @racket[0] that is no closer to
+ @racket[0] than @racket[x].
 
 @mz-examples[(truncate 17/4) (truncate -17/4) (truncate 2.5) (truncate -2.5)]}
 
 
 @defproc[(numerator [q rational?]) integer?]{
- Coreces @racket[q] to an exact number, finds the numerator of the number
- expressed in its simplest fractional form, and returns this number
- coerced to the exactness of @racket[q].
+
+Coreces @racket[q] to an exact number, finds the numerator of the
+ number expressed in its simplest fractional form, and returns this
+ number coerced to the exactness of @racket[q].
 
 @mz-examples[(numerator 5) (numerator 34/8) (numerator 2.3)]}
 
 
 @defproc[(denominator [q rational?]) integer?]{
- Coreces @racket[q] to an exact number, finds the numerator of the number
- expressed in its simplest fractional form, and returns this number
- coerced to the exactness of @racket[q].
+
+Coreces @racket[q] to an exact number, finds the numerator of the
+ number expressed in its simplest fractional form, and returns this
+ number coerced to the exactness of @racket[q].
 
 @mz-examples[(denominator 5) (denominator 34/8) (denominator 2.3)]}
 
@@ -358,10 +395,10 @@ otherwise.}
 @defproc[(rationalize [x real?] [tolerance real?]) real?]{
 
 Among the real numbers within @racket[(abs tolerance)] of @racket[x],
-returns the one corresponding to an exact number whose
-@racket[denominator] is smallest.  If multiple integers are within
-@racket[tolerance] of @racket[x], the one closest to @racket[0] is
-used.
+ returns the one corresponding to an exact number whose
+ @racket[denominator] is smallest.  If multiple integers are within
+ @racket[tolerance] of @racket[x], the one closest to @racket[0] is
+ used.
 
 @mz-examples[
 (rationalize 1/4 1/10)
@@ -414,46 +451,58 @@ used.
 @; ------------------------------------------------------------------------
 @section{Powers and Roots}
 
-@defproc[(sqrt [z number?]) number?]{ Returns the principal
- @as-index{square root} of @racket[z].  The result is exact if
- @racket[z] is exact and @racket[z]'s square root is rational. See
- also @racket[integer-sqrt].
+@defproc[(sqrt [z number?]) number?]{
+
+Returns the principal @as-index{square root} of @racket[z].  The
+ result is exact if @racket[z] is exact and @racket[z]'s square root
+ is rational. See also @racket[integer-sqrt].
 
 @mz-examples[(sqrt 4/9) (sqrt 2) (sqrt -1)]}
 
 
-@defproc[(integer-sqrt [n integer?]) complex?]{ Returns @racket[(floor
- (sqrt n))] for positive @racket[n]. For negative @racket[n], the result is
- @racket[(* (integer-sqrt (- n)) 0+i)].
+@defproc[(integer-sqrt [n integer?]) complex?]{
+
+Returns @racket[(floor (sqrt n))] for positive @racket[n]. For
+ negative @racket[n], the result is @racket[(* (integer-sqrt (- n))
+ 0+i)].
 
 @mz-examples[(integer-sqrt 4.0) (integer-sqrt 5)]}
 
 
 @defproc[(integer-sqrt/remainder [n integer?])
          (values integer? integer?)]{
- Returns @racket[(integer-sqrt n)] and @racket[(- n (expt
+
+Returns @racket[(integer-sqrt n)] and @racket[(- n (expt
  (integer-sqrt n) 2))].
 
 @mz-examples[(integer-sqrt/remainder 4.0) (integer-sqrt/remainder 5)]}
 
-@defproc[(expt [z number?] [w number?]) number?]{ Returns @racket[z]
- raised to the power of @racket[w]. If @racket[w] is exact @racket[0],
- the result is @racket[1]. If @racket[z] is exact @racket[0] and
- @racket[w] is negative, the @exnraise[exn:fail:contract].
+
+@defproc[(expt [z number?] [w number?]) number?]{
+
+Returns @racket[z] raised to the power of @racket[w]. If @racket[w] is
+ exact @racket[0], the result is exact @racket[1]. If @racket[z] is
+ exact @racket[0] and @racket[w] is negative, the
+ @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(expt 2 3) (expt 4 0.5) (expt +inf.0 0)]}
 
-@defproc[(exp [z number?]) number?]{ Returns Euler's number raised to the
- power of @racket[z]. The result is normally inexact, but it is
- @racket[1] when @racket[z] is an exact @racket[0].
+
+@defproc[(exp [z number?]) number?]{
+
+Returns Euler's number raised to the power of @racket[z]. The result
+ is normally inexact, but it is exact @racket[1] when @racket[z] is an
+ exact @racket[0].
 
 @mz-examples[(exp 1) (exp 2+3i) (exp 0)]}
 
 
-@defproc[(log [z number?]) number?]{ Returns the natural logarithm of
- @racket[z].  The result is normally inexact, but it is
- @racket[0] when @racket[z] is an exact @racket[1]. When @racket[z]
- is exact @racket[0], @exnraise[exn:fail:contract:divide-by-zero].
+@defproc[(log [z number?]) number?]{
+
+Returns the natural logarithm of @racket[z].  The result is normally
+ inexact, but it is exact @racket[0] when @racket[z] is an exact
+ @racket[1]. When @racket[z] is exact @racket[0],
+ @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(log (exp 1)) (log 2+3i) (log 1)]}
 
@@ -461,31 +510,42 @@ used.
 @; ------------------------------------------------------------------------
 @section{Trignometric Functions}
 
-@defproc[(sin [z number?]) number?]{ Returns the sine of @racket[z], where
- @racket[z] is in radians.
+@defproc[(sin [z number?]) number?]{
+
+Returns the sine of @racket[z], where @racket[z] is in radians. The
+ result is normally inexact, but it is exact @racket[0] if @racket[z]
+ is exact @scheme[0].
 
 @mz-examples[(sin 3.14159) (sin 1+05.i)]}
 
 
-@defproc[(cos [z number?]) number?]{ Returns the cosine of @racket[z],
- where @racket[z] is in radians.
+@defproc[(cos [z number?]) number?]{
+
+Returns the cosine of @racket[z], where @racket[z] is in radians.
 
 @mz-examples[(cos 3.14159) (cos 1+05.i)]}
 
 
-@defproc[(tan [z number?]) number?]{ Returns the tangent of @racket[z],
- where @racket[z] is in radians.
+@defproc[(tan [z number?]) number?]{
+
+Returns the tangent of @racket[z], where @racket[z] is in radians. The
+ result is normally inexact, but it is exact @racket[0] if @racket[z]
+ is exact @scheme[0].
 
 @mz-examples[(tan 0.7854) (tan 1+05.i)]}
 
 
-@defproc[(asin [z number?]) number?]{ Returns the arcsin in radians of @racket[z].
+@defproc[(asin [z number?]) number?]{
+
+Returns the arcsin in radians of @racket[z]. The result is normally
+ inexact, but it is exact @racket[0] if @racket[z] is exact @scheme[0].
 
 @mz-examples[(asin 0.25) (asin 1+05.i)]}
 
 
-@defproc[(acos [z number?]) number?]{ Returns the arccosine in radians
- of @racket[z].
+@defproc[(acos [z number?]) number?]{
+
+Returns the arccosine in radians of @racket[z].
 
 @mz-examples[(acos 0.25) (acos 1+05.i)]}
 
@@ -494,48 +554,59 @@ used.
            [(atan [y real?] [x real?]) number?])]{
 
 In the one-argument case, returns the arctangent of the inexact
-approximation of @racket[z], except that the result is an exact
-@racket[0] for an exact @racket[0] argument.
+ approximation of @racket[z], except that the result is an exact
+ @racket[0] for an exact @racket[0] argument.
 
 In the two-argument case, the result is roughly the same as @racket[(/
-(exact->inexact y) (exact->inexact x))], but the signs of @racket[y]
-and @racket[x] determine the quadrant of the result. Moreover, a
-suitable angle is returned when @racket[y] divided by @racket[x]
-produces @racket[+nan.0] in the case that neither @racket[y] nor
-@racket[x] is @racket[+nan.0].
+ (exact->inexact y) (exact->inexact x))], but the signs of @racket[y]
+ and @racket[x] determine the quadrant of the result. Moreover, a
+ suitable angle is returned when @racket[y] divided by @racket[x]
+ produces @racket[+nan.0] in the case that neither @racket[y] nor
+ @racket[x] is @racket[+nan.0]. Finally, if @racket[x] is exact
+ @racket[0] and @racket[y] is an exact positive number, the result is
+ exact @racket[0]. If both @racket[x] and @racket[y] are exact
+ @racket[0], the @exnraise[exn:fail:contract:divide-by-zero].
 
 @mz-examples[(atan 0.5) (atan 2 1) (atan -2 -1) (atan 1+05.i) (atan +inf.0 -inf.0)]}
 
 @; ------------------------------------------------------------------------
 @section{Complex Numbers}
 
-@defproc[(make-rectangular [x real?] [y real?]) number?]{ Returns
- @racket[(+ x (* y 0+1i))].
+@defproc[(make-rectangular [x real?] [y real?]) number?]{
+
+Returns @racket[(+ x (* y 0+1i))].
 
 @mz-examples[(make-rectangular 3 4.0)]}
 
 
-@defproc[(make-polar [magnitude real?] [angle real?]) number?]{ Returns
- @racket[(+ (* magnitude (cos angle)) (* magnitude (sin angle) 0+1i))].
+@defproc[(make-polar [magnitude real?] [angle real?]) number?]{
+
+Returns @racket[(+ (* magnitude (cos angle)) (* magnitude (sin angle)
+ 0+1i))].
 
 @mz-examples[#:eval math-eval
                     (make-polar 10 (* pi 1/2))
                     (make-polar 10 (* pi 1/4))]}
 
 
-@defproc[(real-part [z number?]) real?]{ Returns the real part of
- the complex number @racket[z] in rectangle coordinates.
+@defproc[(real-part [z number?]) real?]{
+
+Returns the real part of the complex number @racket[z] in rectangle
+ coordinates.
 
 @mz-examples[(real-part 3+4i) (real-part 5.0)]}
 
 
-@defproc[(imag-part [z number?]) real?]{ Returns the imaginary part of
- the complex number @racket[z] in rectangle coordinates.
+@defproc[(imag-part [z number?]) real?]{
+
+Returns the imaginary part of the complex number @racket[z] in
+ rectangle coordinates.
 
 @mz-examples[(imag-part 3+4i) (imag-part 5.0) (imag-part 5.0+0.0i)]}
 
 
 @defproc[(magnitude [z number?]) (and/c real? (not/c negative?))]{
+
  Returns the magnitude of the complex number @racket[z] in polar
  coordinates.
 

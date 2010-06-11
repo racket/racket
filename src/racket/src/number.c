@@ -2024,10 +2024,15 @@ atan_prim (int argc, Scheme_Object *argv[])
     
     n2 = argv[1];
 
-    if ((n1 == zeroi) && (n2 == zeroi)) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
-		       "atan: undefined for 0 and 0");
-      ESCAPED_BEFORE_HERE;
+    if (n1 == zeroi) {
+      if (n2 == zeroi) {
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
+                         "atan: undefined for 0 and 0");
+        ESCAPED_BEFORE_HERE;
+      }
+      if ((SCHEME_INTP(n2) && (SCHEME_INT_VAL(n2) > 0))
+          || (SCHEME_BIGNUMP(n2) && (SCHEME_BIGPOS(n2))))
+        return zeroi;
     }
 
     if (SCHEME_INTP(n2))
