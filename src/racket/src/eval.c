@@ -12138,8 +12138,10 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
         if (stack[p] != VALID_FLONUM)
           scheme_ill_formed_code(port);
       } else if ((stack[p] != VALID_VAL) && (stack[p] != VALID_VAL_NOCLEAR)) {
-        if (result_ignored && ((stack[p] == VALID_BOX) || (stack[p] == VALID_BOX_NOCLEAR))) {
-          /* ok to look up and ignore box */
+        if (result_ignored && ((stack[p] == VALID_BOX) 
+                               || (stack[p] == VALID_BOX_NOCLEAR)
+                               || (stack[p] == VALID_FLONUM))) {
+          /* ok to look up and ignore box or flonum */
         } else if ((proc_with_refs_ok >= 2) 
                    && ((stack[p] == VALID_BOX) || (stack[p] == VALID_BOX_NOCLEAR))
                    && scheme_validate_rator_wants_box(app_rator, proc_with_refs_ok - 2, 1,
