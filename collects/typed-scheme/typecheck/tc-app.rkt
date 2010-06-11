@@ -399,8 +399,8 @@
                      (= (length (car doms*))
                         (length arg-tys))                     
                      (infer fixed-vars (list dotted-var)
-                            (cons tail-ty arg-tys)
-                            (cons (car (car drests*)) (car doms*))
+                            (cons (make-ListDots tail-ty tail-bound) arg-tys)
+                            (cons (make-ListDots (car (car drests*)) (cdr (car drests*))) (car doms*))
                             (car rngs*)))
                 => (lambda (substitution)
                      (do-ret (subst-all substitution (car rngs*))))]
@@ -414,16 +414,19 @@
                        (extend-indexes (cdr (car drests*)) 
                          ;; don't need to add tail-bound - it must already be an index
                          (infer fixed-vars (list dotted-var)
-                                (cons tail-ty arg-tys) 
-                                (cons (car (car drests*)) (car doms*)) 
+                                (cons (make-ListDots tail-ty tail-bound) arg-tys)
+                                (cons (make-ListDots (car (car drests*)) (cdr (car drests*))) (car doms*))
                                 (car rngs*)))))
                 => (lambda (substitution) 
                      (define drest-bound (cdr (car drests*)))
-                     (do-ret (substitute-dotted (cadr (assq drest-bound substitution))
-                                                tail-bound
-                                                drest-bound
-                                                (subst-all (alist-delete drest-bound substitution eq?)
-                                                           (car rngs*)))))]
+                     (let ([dots-subst (assq drest-bound substitution)])
+                       (unless dots-subst
+                         (int-err "expected dotted substitution for ~a" drest-bound))
+                       (do-ret (substitute-dotted (cadr dots-subst)
+                                                  tail-bound
+                                                  drest-bound
+                                                  (subst-all (alist-delete drest-bound substitution eq?)
+                                                             (car rngs*))))))]
                ;; ... function, (List A B C etc) arg
                [(and (car drests*)
                      (not tail-bound)

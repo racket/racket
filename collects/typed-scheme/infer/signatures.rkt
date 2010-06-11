@@ -21,7 +21,7 @@
    [cnt cset-meet (cset? cset? . -> . cset?)]
    [cnt cset-meet* ((listof cset?) . -> . cset?)]
    no-constraint
-   [cnt empty-cset ((listof symbol?) . -> . cset?)]
+   [cnt empty-cset ((listof symbol?) (listof symbol?) . -> . cset?)]
    [cnt insert (cset? symbol? Type? Type? . -> . cset?)]
    [cnt cset-combine ((listof cset?) . -> . cset?)]
    [cnt c-meet ((c? c?) (symbol?) . ->* . c?)]))
