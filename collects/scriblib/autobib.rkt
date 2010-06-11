@@ -189,7 +189,7 @@
   (if (author-element? a)
       a
       (let* ([s (content->string a)]
-             [m (regexp-match #px"^(.*) (\\p{L}+)$" s)])
+             [m (regexp-match #px"^(.*) (([\\-]|\\p{L})+)$" s)])
         (make-author-element
          #f
          (list a)

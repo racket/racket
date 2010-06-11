@@ -70,9 +70,9 @@ standard format.
 An element produced by a function like @scheme[author-name] tracks
 first, last names, and name suffixes separately, so that names can be
 ordered and rendered correctly. When a string is provided as an author
-name, the last non-empty sequence of ASCII alphabetic characters after
-a space is treated as the author name, and the rest is treated as the
-first name.}
+name, the last non-empty sequence of alphabetic characters or
+@litchar["-"] after a space is treated as the author name, and the
+rest is treated as the first name.}
 
 @defproc[(in-bib [orig bib?] [where string?]) bib?]{
 
