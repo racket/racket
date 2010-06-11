@@ -22,16 +22,21 @@ Binds @scheme[~cite-id], @scheme[citet-id], and
 @scheme[generate-bibliography-id], which share state to accumulate and
 render citations.
 
-The function bound to @scheme[~cite-id] produces a citation with a
-preceding non-breaking space. It has the contract
+The function bound to @scheme[~cite-id] produces a citation referring
+to one or more bibliography entries with a preceding non-breaking
+space. It has the contract
 
 @schemeblock[
 ((bib?) () (listof bib?) . ->* . element?)
 ]
 
-The function bound to @scheme[citet-id] has the same contract as the
-function for @scheme[~cite-id], but it generates an element suitable
-for use as a noun refering to the document or its author.
+The function bound to @scheme[citet-id] generates an element suitable
+for use as a noun---referring to a document or its author---for a
+single bibliography entry. It has the contract
+
+@schemeblock[
+(bib? . -> . element?)
+]
 
 The function bound to @scheme[generate-bibliography-id] generates the
 section for the bibliography. It has the contract
