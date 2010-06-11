@@ -238,9 +238,10 @@
     [_     
      (let ([ts (for/list ([ac (syntax->list actuals)]
                           [f (syntax->list args)])
-                 (or 
-                  (type-annotation f #:infer #t)
-                  (generalize (tc-expr/t ac))))])
+                 (let ([infer-t (type-annotation f #:infer #t)])
+                   (if infer-t
+                       (check-below (tc-expr/t ac) infer-t)
+                       (generalize (tc-expr/t ac)))))])
        (tc/rec-lambda/check form args body lp ts expected)
        expected)]))
 

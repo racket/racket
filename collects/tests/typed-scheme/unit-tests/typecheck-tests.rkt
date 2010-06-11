@@ -808,7 +808,10 @@
                 (vector-ref #("a" "b") (- x 1)))
               -String]
         [tc-err (string-append "bar" (if (zero? (ann 0.0 Float)) #f "foo"))]
-        )
+        [tc-err (do: : Void
+                     ([j : Natural (+ i 'a) (+ j i)])
+                     ((>= j 10))
+                     #f)])
   (test-suite
    "check-type tests"
    (test-exn "Fails correctly" exn:fail:syntax? (lambda () (parameterize ([orig-module-stx #'here])
