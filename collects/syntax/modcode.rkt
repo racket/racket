@@ -139,22 +139,34 @@
                     (or (date>=? zo path-d)
                         (and try-alt?
                              (date>=? alt-zo path-d)))))
-           (notify zo)
-           (read-one path zo #f read-syntax)]
+           (let ([zo (if (date>=? zo path-d)
+                         zo
+                         (if (and try-alt?
+                                  (date>=? alt-zo path-d))
+                             alt-zo
+                             zo))])
+             (notify zo)
+             (read-one path zo #f read-syntax))]
           ;; Maybe there's an .so? Use it only if we don't prefer source.
           [(or (eq? prefer 'so)
                (and (not prefer)
                     (or (date>=? so path-d)
                         (and try-alt?
                              (date>=? alt-so path-d)))))
-           (if extension-handler
-               (begin
-                 (notify so)
-                 (extension-handler so #f))
-               (raise (make-exn:get-module-code
-                       (format "get-module-code: cannot use extension file; ~e" so)
-                       (current-continuation-marks)
-                       so)))]
+           (let ([so (if (date>=? so path-d)
+                         so
+                         (if (and try-alt?
+                                  (date>=? alt-so path-d))
+                             alt-so
+                             so))])
+             (if extension-handler
+                 (begin
+                   (notify so)
+                   (extension-handler so #f))
+                 (raise (make-exn:get-module-code
+                         (format "get-module-code: cannot use extension file; ~e" so)
+                         (current-continuation-marks)
+                         so))))]
           ;; Use source if it exists
           [(or (eq? prefer 'src)
                path-d)
