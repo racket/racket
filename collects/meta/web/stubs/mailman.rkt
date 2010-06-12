@@ -52,11 +52,13 @@
     @; This is the mail-archive search box
     @form[action: "http://www.mail-archive.com/search" method: 'get]{@subp{
       @input[type: 'hidden name: 'l value: @MM{Posting-Addr}]
-      Archives are also available on
+      Archives are also available at
       @a[href: @list{http://www.mail-archive.com/@MM{Posting-Addr}/}]{
-        @tt{mail-archive.com}}
-      which you can use for searching:
-      @input[type: 'text name: 'q value: "" size: 20]}}
+        @tt{mail-archive}},
+      search it here:
+      @input[type: 'text name: 'q value: "" size: 16]}}
+    @subp{(@a[href: "/"]{More information} on other ways to use this list and
+      other public Racket lists.)}
     @; --------------------
     @h2{Using @MM{List-Name}}
     @subp{To post a message to all the list members, send email to
