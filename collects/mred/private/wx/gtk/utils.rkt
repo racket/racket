@@ -99,10 +99,7 @@
 (define (set-gtk-object-flags! gtk v)
   (set-GtkObject-flags! (cast gtk _pointer _GtkObject-pointer) v))
 
-(define-gtk gtk_rc_parse (_fun _path -> _void))
-(define-gmodule g_module_open (_fun _path _int -> _pointer)) 
-(when (eq? 'windows (system-type))
-  (gtk_rc_parse (build-path (collection-path "scheme") 'up 'up "lib" "gtkrc")))
+(define-gmodule g_module_open (_fun _path _int -> _pointer))
 
 (define-syntax-rule (define-signal-handler 
                       connect-name

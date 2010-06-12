@@ -85,19 +85,26 @@
            ;; Must be EOF
            (void)])))))
 
+(define (unixize p)
+  (let-values ([(base name dir?) (split-path p)])
+    (if (path? base)
+	(string-append (unixize base) "/" (path->string name))
+	(path->string name))))
+
 (define (download-if-needed dest-dir file)
   (let ([dest (build-path dest-dir file)]
         [tmp (build-path dest-dir (format "~a.download" file))])
     (if (file-exists? dest)
         (printf " ~a is ready\n" file)
-        (let ([src (format "~a~a/~a"
-                           url-path
-                           (system-library-subpath #f)
-                           file)])
+        (let* ([sub (unixize (system-library-subpath #f))]
+	       [src (format "~a~a/~a"
+			    url-path
+			    sub
+			    file)])
           (unless explained?
             (set! explained? #t)
-            (printf ">> Downloading files from\n>>  ~a~a\n" url-base (system-library-subpath #f))
-            (printf ">> If you don't want automatic download, downlaod each file\n")
+            (printf ">> Downloading files from\n>>  ~a~a\n" url-base sub)
+            (printf ">> If you don't want automatic download, download each file\n")
             (printf ">> yourself from there to\n")
             (printf ">>  ~a\n" (path->complete-path dest-dir)))
           (printf " ~a downloading..." file)
