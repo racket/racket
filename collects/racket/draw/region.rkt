@@ -128,7 +128,7 @@
                          [real? end-radians])
       (modifying 'set-arc)
       (let ([p (new dc-path%)])
-        (send p move-to x y)
+        (send p move-to (+ x (/ width 2)) (+ y (/ height 2)))
         (send p arc x y width height start-radians end-radians)
         (send p close)
         (set! paths (list (cons p 'any)))))

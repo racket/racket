@@ -269,7 +269,8 @@
     (def/public (ellipse [real? x] [real? y] 
                          [nonnegative-real? w] [nonnegative-real? h])
       (when (open?) (close))
-      (do-arc x y w h 0 2pi #t))
+      (do-arc x y w h 0 2pi #f)
+      (close))
 
     (def/public (scale [real? x][real? y])
       (unless (and (= x 1.0) (= y 1.0))

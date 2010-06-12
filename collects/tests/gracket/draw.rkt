@@ -191,6 +191,11 @@
     (send dc set-bitmap #f)
     bm))
 
+(define (show-error . args)
+  (with-handlers ([exn? (lambda (exn)
+                          (printf "~a\n" (exn-message exn)))])
+    (apply error args)))
+
 (define DRAW-WIDTH 550)
 (define DRAW-HEIGHT 375)
 
@@ -1005,7 +1010,7 @@
 				       (send dc set-clipping-region r))]
 			      [(rect+poly) (let ([r (mk-poly 'winding)])
 					     (send r union (mk-rect))
-						(send dc set-clipping-region r))]
+                                             (send dc set-clipping-region r))]
 			      [(rect+circle) (let ([r (mk-circle)])
 					       (send r union (mk-rect))
 					       (send dc set-clipping-region r))]
@@ -1071,9 +1076,9 @@
 
 		      (unless clock-clip?
 			(let ([r (send dc get-clipping-region)])
-			  (if (eq? clip 'none)
+                          (if (eq? clip 'none)
 			      (when r
-				(error 'draw-test "shouldn't have been a clipping region"))
+				(show-error 'draw-test "shouldn't have been a clipping region"))
 			      (let*-values ([(x y w h) (send r get-bounding-box)]
 					    [(l) (list x y w h)]
 					    [(=~) (lambda (x y)
@@ -1097,7 +1102,7 @@
 							    (- (/ (caddr l) xscale) offset)
 							    (- (/ (cadddr l) yscale) offset))
 						      l)))
-				  (error 'draw-test "clipping region changed badly: ~a" l))))))
+				  (show-error 'draw-test "clipping region changed badly: ~a" l))))))
 
 		      (let-values ([(w h) (send dc get-size)])
 			(unless (cond
@@ -1105,10 +1110,10 @@
 				 [use-bad? #t]
 				 [use-bitmap? (and (= w (* xscale DRAW-WIDTH)) (= h (* yscale DRAW-HEIGHT)))]
 				 [else (and (= w (* 2 DRAW-WIDTH)) (= h (* 2 DRAW-HEIGHT)))])
-			  (error 'x "wrong size reported by get-size: ~a ~a (not ~a)" w h
-                                 (if use-bitmap?
-                                     (list (* xscale DRAW-WIDTH) (* yscale DRAW-HEIGHT))
-                                     (list (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT))))))
+			  (show-error 'x "wrong size reported by get-size: ~a ~a (not ~a)" w h
+                                      (if use-bitmap?
+                                          (list (* xscale DRAW-WIDTH) (* yscale DRAW-HEIGHT))
+                                          (list (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT))))))
 
 		      (send dc set-clipping-region #f)
 
