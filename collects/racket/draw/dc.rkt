@@ -263,7 +263,7 @@
             [o2 (cairo_font_options_create)])
         (when o
           (cairo_font_options_copy o2 o))
-        (cairo_font_options_set_antialias 
+        (cairo_font_options_set_antialias
          o2 
          (case (dc-adjust-smoothing smoothing)
            [(default) CAIRO_ANTIALIAS_SUBPIXEL] ; should be DEFAULT?

@@ -20,6 +20,8 @@
 
 (define-gtk gtk_drawing_area_new (_fun -> _GtkWidget))
 
+(define-gtk gtk_widget_queue_draw (_fun _GtkWidget -> _void))
+
 (define-gtk gtk_hbox_new (_fun _gboolean _int -> _GtkWidget))
 (define-gtk gtk_hscrollbar_new (_fun _pointer -> _GtkWidget))
 (define-gtk gtk_vscrollbar_new (_fun _pointer -> _GtkWidget))
@@ -168,6 +170,9 @@
     (define/override (handles-events?) #t)
 
     (define/public (on-paint) (void))
+
+    (define/override (refresh)
+      (gtk_widget_queue_draw client-gtk))
 
     (define/override (internal-on-client-size w h)
       (send dc reset-dc-size))
