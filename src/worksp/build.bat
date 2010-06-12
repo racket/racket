@@ -8,6 +8,8 @@ cd gc2
 ..\..\..\racketcgc -cu make.rkt
 cd ..
 
+..\..\..\racketcgc -cu ..\gracket\get-libs.rkt ..\gracket ..\..\lib
+
 cd mzcom
 devenv mzcom.sln /Build Release
 cd ..\libmysterx

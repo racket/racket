@@ -103,6 +103,16 @@ In addition, building RacketCGC executes
 which copies .exp, .obj, and .lib files into racket\lib\, and also
 copies DLLs from the "extradlls" directory to to racket\lib\.
 
+Finally, you must install pre-build DLLs that GRacket needs to run.
+The DLLs are available from
+
+ http://github.com/mflatt/gracket-libs/tree/master/win32/i386/?raw=true
+
+and they must be installed into
+
+ racket\lib
+
+
 Building Racket3m and GRacket3m
 -------------------------------
 
@@ -118,7 +128,7 @@ After RacketCGC and GRacketCGC are built, you can can build 3m binaries:
 
 The resulting Racket.exe and GRacket.exe will appear in the top-level
 "racket" directory, along with DLLs libracket3mxxxxxxx.dll and
-libgracket3mxxxxxxx.dll in racket/lib.  (There is no corresponding
+libgracket3mxxxxxxx.dll in racket\lib.  (There is no corresponding
 libmzgc3mxxxxxxx.dll.  Instead, it is merged with
 libracket3mxxxxxxx.dll.)
 

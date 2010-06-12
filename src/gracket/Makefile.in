@@ -72,9 +72,11 @@ bin:
 	$(MAKE) @MAIN_VARIANT@
 
 3m:
+	$(MAKE) libs/ready
 	cd gc2; $(MAKE) 3m
 
 cgc:
+	$(MAKE) libs/ready
 	$(MAKE) $(LINKRESULT)
 
 both:
@@ -121,6 +123,9 @@ grmain_ee.@LTO@ : gracket.@LTO@
 ee-main:
 	$(MAKE) grmain_ee.@LTO@
 
+libs/ready:
+	$(RACKET) -c "$(srcdir)/get-libs.rkt" --ready "$(srcdir)" libs
+
 clean:
 	rm -f *.@LTO@ *.d core gracket gracket3m
 	rm -f gc2/*.@LTO@ gc2/xsrc/* gc2/macxsrc/* gc2/*.d gc2/*.dd
@@ -155,16 +160,17 @@ install-post-collects:
 	$(MAKE) install-@WXVARIANT@-post-collects
 
 install-common:
-	cd ..; rm -f "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@"
-	cd ..; rm -f "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@"
-	cd ..; echo 'MROPTIONS=@MROPTIONS@' >> $(BUILDINFO)
-	cd ..; echo "MRLIBS=$(GUILIBS_@WXVARIANT@)" >> $(BUILDINFO)
-	cd ..; echo "MRLDFLAGS=$(GRACKETLDFLAGS)" >> $(BUILDINFO)
+	$(RACKET) -c "$(srcdir)/get-libs.rkt" --install . "$(DESTDIR)$(libpltdir)"
 
 # X11 ----------------------------------------
 
 install-wx_xt:
 	$(MAKE) install-common
+	cd ..; rm -f "$(DESTDIR)$(bindir)/gracket@CGC_INSTALLED@"
+	cd ..; rm -f "$(DESTDIR)$(bindir)/gracket@MMM_INSTALLED@"
+	cd ..; echo 'MROPTIONS=@MROPTIONS@' >> $(BUILDINFO)
+	cd ..; echo "MRLIBS=$(GUILIBS_@WXVARIANT@)" >> $(BUILDINFO)
+	cd ..; echo "MRLDFLAGS=$(GRACKETLDFLAGS)" >> $(BUILDINFO)
 	cd ..; mkdir -p "$(DESTDIR)$(bindir)"
 
 install-no-lib-cgc-wx_xt:
@@ -203,6 +209,7 @@ install-wx_xt-post-collects:
 FRAMEWORK_REL_PREFIX="@executable_path/../../../lib/"
 
 install-wx_mac:
+	$(MAKE) install-common
 	cd ..; rm -rf "$(prefix)/GRacket@CGC_CAP_INSTALLED@.app"
 	cd ..; rm -rf "$(prefix)/GRacket@MMM_CAP_INSTALLED@.app"
 
