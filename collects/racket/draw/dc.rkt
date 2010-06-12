@@ -375,6 +375,26 @@
        (install-color cr bg 1.0)
        (cairo_paint cr)))
 
+
+    (define/private (make-pattern-surface cr col draw)
+      (let* ([s (cairo_surface_create_similar (cairo_get_target cr)
+                                              CAIRO_CONTENT_COLOR_ALPHA
+                                              12 12)]
+             [cr2 (cairo_create s)])
+        (install-color cr2 col 1.0)
+        (cairo_set_line_width cr2 1)
+        (cairo_set_line_cap cr CAIRO_LINE_CAP_ROUND)
+        (cairo_set_antialias cr2 (case (dc-adjust-smoothing smoothing)
+                                   [(unsmoothed) CAIRO_ANTIALIAS_NONE]
+                                   [else CAIRO_ANTIALIAS_GRAY]))
+        (draw cr2)
+        (cairo_stroke cr2)
+        (cairo_destroy cr2)
+        (let* ([p (cairo_pattern_create_for_surface s)])
+          (cairo_pattern_set_extend p CAIRO_EXTEND_REPEAT)
+          (cairo_set_source cr p)
+          (cairo_pattern_destroy p))))
+
     ;; Stroke, fill, and flush the current path
     (define/private (draw cr brush? pen?)
       (define (install-stipple st col mode get put)
@@ -415,9 +435,60 @@
                   (install-stipple st col s 
                                    (lambda () brush-stipple-s)
                                    (lambda (v) (set! brush-stipple-s v) v))
-                  (install-color cr 
-                                 (if (eq? s 'hilite) hilite-color col)
-                                 (if (eq? s 'hilite) hilite-alpha alpha))))
+                  (let ([horiz (lambda (cr2)
+                                 (cairo_move_to cr2 0 3.5)
+                                 (cairo_line_to cr2 12 3.5)
+                                 (cairo_move_to cr2 0 7.5)
+                                 (cairo_line_to cr2 12 7.5)
+                                 (cairo_move_to cr2 0 11.5)
+                                 (cairo_line_to cr2 12 11.5))]
+                        [vert (lambda (cr2)
+                                (cairo_move_to cr2 3.5 0)
+                                (cairo_line_to cr2 3.5 12)
+                                (cairo_move_to cr2 7.5 0)
+                                (cairo_line_to cr2 7.5 12)
+                                (cairo_move_to cr2 11.5 0)
+                                (cairo_line_to cr2 11.5 12))]
+                        [bdiag (lambda (cr2)
+                                 (for ([i (in-range -2 3)])
+                                   (let ([y (* i 6)])
+                                     (cairo_move_to cr2 -1 (+ -1 y))
+                                     (cairo_line_to cr2 13 (+ 13 y)))))]
+                        [fdiag (lambda (cr2)
+                                 (for ([i (in-range -2 3)])
+                                   (let ([y (* i 6)])
+                                     (cairo_move_to cr2 13 (+ -1 y))
+                                     (cairo_line_to cr2 -1 (+ 13 y)))))])
+                                 
+                    (case s
+                      [(horizontal-hatch)
+                       (make-pattern-surface
+                        cr col
+                        horiz)]
+                      [(vertical-hatch)
+                       (make-pattern-surface
+                        cr col
+                        vert)]
+                      [(cross-hatch)
+                       (make-pattern-surface
+                        cr col
+                        (lambda (cr) (horiz cr) (vert cr)))]
+                      [(bdiagonal-hatch)
+                       (make-pattern-surface
+                        cr col
+                        bdiag)]
+                      [(fdiagonal-hatch)
+                       (make-pattern-surface
+                        cr col
+                        fdiag)]
+                      [(crossdiag-hatch)
+                       (make-pattern-surface
+                        cr col
+                        (lambda (cr) (bdiag cr) (fdiag cr)))]
+                      [else
+                       (install-color cr 
+                                      (if (eq? s 'hilite) hilite-color col)
+                                      (if (eq? s 'hilite) hilite-alpha alpha))]))))
             (cairo_fill_preserve cr))))
       (when pen?
         (let ([s (send pen get-style)])
@@ -699,6 +770,7 @@
               (cairo_new_path cr)
               (cairo_rectangle cr x y w h)
               (cairo_fill cr)))
+          (cairo_new_path cr) ; important for underline mode
           (install-color cr text-fg alpha))
         (let ([desc (get-pango font)]
               [attrs (send font get-pango-attrs)]
@@ -879,7 +951,7 @@
     (define/private (bitmap-to-argb-bitmap src src-x src-y src-w src-h style color) 
       (let* ([bm-w (inexact->exact (ceiling src-w))]
              [bm-h (inexact->exact (ceiling src-h))]
-             [tmp-bm (make-object bitmap% src-w src-h #f)]
+             [tmp-bm (make-object bitmap% src-w src-h #f #t)]
              [tmp-dc (make-object -bitmap-dc% tmp-bm)])
         (send tmp-dc set-background bg)
         (send tmp-dc draw-bitmap-section src 0 0 src-x src-y src-w src-h style color)

@@ -60,6 +60,8 @@
   (_fun _pointer -> _cairo_surface_t)
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
+(define-cairo cairo_surface_create_similar
+  (_fun _cairo_surface_t _int _int _int -> _cairo_surface_t))
 
 (define-cairo cairo_create (_fun _cairo_surface_t -> _cairo_t)
   #:wrap (allocator cairo_destroy))
@@ -246,3 +248,4 @@
   CAIRO_EXTEND_REFLECT
   CAIRO_EXTEND_PAD)
 
+(define/provide CAIRO_CONTENT_COLOR_ALPHA #x3000)
