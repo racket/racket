@@ -8,6 +8,7 @@
          "window.rkt"
          "const.rkt"
          "pixbuf.rkt"
+         "message.rkt"
          "../common/event.rkt")
 (unsafe!)
 
@@ -16,7 +17,7 @@
 
 ;; ----------------------------------------
 
-(define-gtk gtk_button_new_with_label (_fun _string -> _GtkWidget))
+(define-gtk gtk_button_new_with_mnemonic (_fun _string -> _GtkWidget))
 (define-gtk gtk_button_new (_fun -> _GtkWidget))
 (define-gtk gtk_window_set_default (_fun _GtkWidget (_or-null _GtkWidget) -> _void))
 
@@ -28,7 +29,7 @@
 
 (defclass button-core% item%
   (init parent cb label x y w h style font
-        [gtk_new_with_label gtk_button_new_with_label]
+        [gtk_new_with_mnemonic gtk_button_new_with_mnemonic]
         [gtk_new gtk_button_new])
   (init-field [event-type 'button])
   (inherit get-gtk set-auto-size is-window-enabled?
@@ -37,7 +38,7 @@
   (super-new [parent parent]
              [gtk (cond
                    [(or (string? label) (not label))
-                    (gtk_new_with_label (or label ""))]
+                    (gtk_new_with_mnemonic (or (mnemonic-string label) ""))]
                    [(send label ok?)
                     (let ([gtk (gtk_new)]
                           [image-gtk (gtk_image_new_from_pixbuf 
@@ -46,7 +47,7 @@
                       (gtk_widget_show image-gtk)
                       gtk)]
                    [else
-                    (gtk_new_with_label "<bad>")])]
+                    (gtk_new_with_mnemonic "<bad>")])]
              [no-show? (memq 'deleted style)])
   (define gtk (get-gtk))
   

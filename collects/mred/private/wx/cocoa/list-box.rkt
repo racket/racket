@@ -122,9 +122,10 @@
     (tellv content-cocoa scrollRowToVisible: #:type _NSInteger i))
 
   (define/public (set-string i s)
-    (append (take items i)
-            (list s)
-            (drop items (add1 i)))
+    (set! items
+          (append (take items i)
+                  (list s)
+                  (drop items (add1 i))))
     (reset))
 
   (define/public (number)

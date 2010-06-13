@@ -135,7 +135,8 @@
 	  (check-font cwho font))
 	(super-init parent (if (memq 'deleted style)
 			       '(deleted)
-			       null)))
+			       null))
+        (send (mred->wx this) set-callback callback))
 
       (public
 	[get-number (lambda () (length save-choices))]

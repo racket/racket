@@ -8,12 +8,35 @@
          "pixbuf.rkt")
 (unsafe!)
 
-(provide message%)
+(provide message%
+
+         gtk_label_new_with_mnemonic
+         gtk_label_set_text_with_mnemonic
+         mnemonic-string)
 
 ;; ----------------------------------------
 
 (define-gtk gtk_label_new (_fun _string -> _GtkWidget))
 (define-gtk gtk_label_set_text (_fun _GtkWidget _string -> _void))
+(define-gtk gtk_label_set_text_with_mnemonic (_fun _GtkWidget _string -> _void))
+
+(define (mnemonic-string s)
+  (if (regexp-match? #rx"&" s)
+      (regexp-replace*
+       #rx"_&"
+       (regexp-replace*
+        #rx"&(.)"
+        (regexp-replace* #rx"_" s "__")
+        "_\\1")
+       "\\&")
+      (regexp-replace* #rx"_" s "__")))
+
+(define (gtk_label_new_with_mnemonic s)
+  (let ([l (gtk_label_new s)])
+    (when (regexp-match? #rx"&" s)
+      (let ([s (mnemonic-string s)])
+        (gtk_label_set_text_with_mnemonic l s)))
+    l))
 
 (defclass message% item%
   (init parent label
@@ -24,7 +47,7 @@
   (super-new [parent parent]
              [gtk (if (or (string? label)
                           (not label))
-                      (gtk_label_new (or label ""))
+                      (gtk_label_new_with_mnemonic (or label ""))
                       (if (symbol? label)
                           (gtk_label_new (format "<~a>" label))
                           (gtk_image_new_from_pixbuf 
@@ -34,6 +57,6 @@
   (set-auto-size)
 
   (define/override (set-label s)
-    (gtk_label_set_text (get-gtk) s))
+    (gtk_label_set_text_with_mnemonic (get-gtk) (mnemonic-string s)))
 
   (def/public-unimplemented get-font))

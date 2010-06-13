@@ -90,9 +90,9 @@
                         (begin
                           (tellv button setTitle: #:type _NSString "")
                           (set-ivar! button img (bitmap->image label)))
-                        (tellv button setTitle: #:type _NSString (if (string? label)
-                                                                     label
-                                                                     "<bad>")))
+                        (tellv button setTitleWithMnemonic: #:type _NSString (if (string? label)
+                                                                                 label
+                                                                                 "<bad>")))
                     (tellv button setButtonType: #:type _int NSRadioButton)))
                 (tellv cocoa sizeToFit)
                 (tellv cocoa setTarget: cocoa)

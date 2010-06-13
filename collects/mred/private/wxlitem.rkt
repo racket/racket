@@ -177,7 +177,7 @@
        (get-data i)
        (selected? i)
        (delete i)
-       (clear i)
+       (clear)
        (set choices)
        (reset))
       (define/public select 

@@ -2,6 +2,7 @@
 (require ffi/unsafe
 	 ffi/unsafe/define
          scheme/class
+         (only-in racket/list take drop)
           "../../syntax.rkt"
           "../../lock.rkt"
          "item.rkt"
@@ -28,6 +29,7 @@
 (define-gtk gtk_scrolled_window_set_policy (_fun _GtkWidget _int _int -> _void))
 
 (define-gtk gtk_list_store_new (_fun _int _int -> _GtkListStore))
+(define-gtk gtk_list_store_clear (_fun _GtkListStore -> _void))
 (define-gtk gtk_list_store_append (_fun _GtkListStore _GtkTreeIter-pointer _pointer -> _void))
 (define-gtk gtk_list_store_set (_fun _GtkListStore _GtkTreeIter-pointer _int _string _int -> _void))
 (define-gtk gtk_tree_view_new_with_model (_fun _GtkListStore -> _GtkWidget))
@@ -36,11 +38,19 @@
 (define-gtk gtk_tree_view_column_new_with_attributes (_fun _string _GtkCellRenderer _string _int _pointer -> _GtkTreeViewColumn))
 (define-gtk gtk_tree_view_append_column (_fun _GtkWidget _GtkTreeViewColumn -> _void))
 (define-gtk gtk_tree_view_get_selection (_fun _GtkWidget -> _GtkWidget))
+(define-gtk gtk_list_store_remove (_fun _GtkListStore _GtkTreeIter-pointer -> _gboolean))
+(define-gtk gtk_tree_model_get_iter (_fun _GtkListStore _GtkTreeIter-pointer _pointer -> _gboolean))
+(define-gtk gtk_tree_view_scroll_to_cell (_fun _GtkWidget _pointer _pointer _gboolean _gfloat _gfloat -> _void))
 
 (define _GList (_cpointer 'List))
 (define-glib g_list_foreach (_fun _GList (_fun _pointer -> _void) _pointer -> _void))
 (define-glib g_list_free (_fun _GList -> _void))
 (define-gtk gtk_tree_selection_get_selected_rows (_fun _GtkWidget _pointer -> (_or-null _GList)))
+(define-gtk gtk_tree_selection_path_is_selected (_fun _GtkWidget _pointer -> _gboolean))
+(define-gtk gtk_tree_selection_unselect_all (_fun  _GtkWidget -> _void))
+(define-gtk gtk_tree_selection_select_path (_fun  _GtkWidget _pointer -> _void))
+(define-gtk gtk_tree_selection_unselect_path (_fun  _GtkWidget _pointer -> _void))
+(define-gtk gtk_tree_path_new_from_indices (_fun _int _int -> _pointer))
 (define-gtk gtk_tree_path_free (_fun _pointer -> _void))
 (define-gtk gtk_tree_path_get_indices (_fun _pointer -> _pointer))
 
@@ -65,10 +75,12 @@
   (define data (map (lambda (c) (box #f)) choices))
 
   (define store (gtk_list_store_new 1 G_TYPE_STRING))
-  (let ([iter (make-GtkTreeIter 0 #f #f #f)])
-    (for ([s (in-list choices)])
-      (gtk_list_store_append store iter #f)
-      (gtk_list_store_set store iter 0 s -1)))
+  (define (reset-content)
+    (let ([iter (make-GtkTreeIter 0 #f #f #f)])
+      (for ([s (in-list items)])
+        (gtk_list_store_append store iter #f)
+        (gtk_list_store_set store iter 0 s -1))))
+  (reset-content)
 
   (define column
     (let ([renderer (gtk_cell_renderer_text_new)])
@@ -111,14 +123,37 @@
     (queue-window-event
      this
      (lambda ()
-       (callback this (new control-event%
-                           [event-type 'list-box]
-                           [time-stamp (current-milliseconds)])))))
+       (unless (null? items)
+         (callback this (new control-event%
+                             [event-type 'list-box]
+                             [time-stamp (current-milliseconds)]))))))
+
+  (define/private (get-iter i)
+    (let ([iter (make-GtkTreeIter 0 #f #f #f)]
+          [p (gtk_tree_path_new_from_indices i -1)])
+      (gtk_tree_model_get_iter store iter p)
+      (gtk_tree_path_free p)
+      iter))
 
   (def/public-unimplemented get-label-font)
-  (def/public-unimplemented set-string)
-  (def/public-unimplemented set-first-visible-item)
-  (def/public-unimplemented set)
+
+  (define/public (set-string i s)
+    (set! items
+          (append (take items i)
+                  (list s)
+                  (drop items (add1 i))))
+    (gtk_list_store_set store (get-iter i) 0 s -1))
+
+  (define/public (set-first-visible-item i)
+    (let ([p (gtk_tree_path_new_from_indices i -1)])
+      (gtk_tree_view_scroll_to_cell client-gtk p #f #t 0.0 0.0)
+      (gtk_tree_path_free p)))
+
+  (define/public (set choices)
+    (clear)
+    (set! items choices)
+    (set! data (map (lambda (x) (box #f)) choices))
+    (reset-content))
 
   (define/public (get-selections)
     (as-entry
@@ -163,11 +198,35 @@
   (define/public (set-data i v) (set-box! (list-ref data i) v))
   (define/public (get-data i) (unbox (list-ref data i)))
 
-  (def/public-unimplemented selected?)
-  (def/public-unimplemented set-selection)
-  (def/public-unimplemented select)
-  (def/public-unimplemented delete)
-  (def/public-unimplemented clear)
+  (define/public (selected? i)
+    (let ([p (gtk_tree_path_new_from_indices i -1)])
+      (begin0
+       (gtk_tree_selection_path_is_selected selection p)
+       (gtk_tree_path_free p))))
+
+  (define/public (select i [on? #t] [extend? #t])
+    (let ([p (gtk_tree_path_new_from_indices i -1)])
+      (if on?
+          (begin
+            (unless extend?
+              (gtk_tree_selection_unselect_all selection))
+            (gtk_tree_selection_select_path selection p))
+          (gtk_tree_selection_unselect_path selection p))
+      (gtk_tree_path_free p)))
+
+  (define/public (set-selection i)
+    (select i #t #f))
+
+  (define/public (delete i)
+    (set! items (append (take items i) (drop items (add1 i))))
+    (set! data (append (take data i) (drop data (add1 i))))
+    (gtk_list_store_remove store (get-iter i))
+    (void))
+
+  (define/public (clear)
+    (set! items null)
+    (set! data null)
+    (gtk_list_store_clear store))
 
   (public [append* append])
   (define (append* s [v #f])

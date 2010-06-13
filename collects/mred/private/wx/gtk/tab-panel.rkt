@@ -7,7 +7,9 @@
          "utils.rkt"
          "panel.rkt"
          "types.rkt"
-         "widget.rkt")
+         "widget.rkt"
+         "message.rkt"
+         "../common/event.rkt")
 (unsafe!)
 
 (provide tab-panel%)
@@ -15,10 +17,10 @@
 (define-gtk gtk_notebook_new (_fun -> _GtkWidget))
 (define-gtk gtk_fixed_new (_fun -> _GtkWidget))
 (define-gtk gtk_hbox_new (_fun _gboolean _int -> _GtkWidget))
-(define-gtk gtk_label_new (_fun _string -> _GtkWidget))
-(define-gtk gtk_label_set_text (_fun _GtkWidget _string -> _void))
 
 (define-gtk gtk_notebook_append_page (_fun _GtkWidget _GtkWidget (_or-null _GtkWidget) -> _void))
+(define-gtk gtk_notebook_remove_page (_fun _GtkWidget _int -> _void))
+(define-gtk gtk_notebook_get_current_page (_fun _GtkWidget -> _int))
 (define-gtk gtk_notebook_set_current_page (_fun _GtkWidget _int -> _void))
 
 (define-gtk gtk_fixed_move (_fun _GtkWidget _GtkWidget _int _int -> _void))
@@ -59,16 +61,19 @@
     (define pages
       (for/list ([lbl labels])
         (let ([bin-gtk (gtk_hbox_new #f 0)]
-              [label-gtk (gtk_label_new lbl)])
+              [label-gtk (gtk_label_new_with_mnemonic lbl)])
           (gtk_notebook_append_page gtk bin-gtk label-gtk)
           (gtk_widget_show bin-gtk)
           (make-page bin-gtk label-gtk))))
 
+    (define/private (install-empty-page)
+      (gtk_notebook_append_page gtk empty-bin-gtk #f)
+      (gtk_widget_show empty-bin-gtk))
+
     (if (null? pages)
         (begin
           (select-bin empty-bin-gtk)
-          (gtk_notebook_append_page gtk empty-bin-gtk #f)
-          (gtk_widget_show empty-bin-gtk))
+          (install-empty-page))
         (begin
           (select-bin (page-bin-gtk (car pages)))))
     (gtk_widget_show client-gtk)
@@ -81,21 +86,71 @@
 
     (set-auto-size)
 
+    (define callback void)
+    (define/public (set-callback cb) (set! callback cb))
+    (define/private (do-callback)
+      (callback this (new control-event%
+                          [event-type 'tab-panel]
+                          [time-stamp (current-milliseconds)])))
+
+    (define/public (swap-in bin-gtk)
+      (gtk_widget_ref client-gtk)
+      (gtk_container_remove current-bin-gtk client-gtk)
+      (select-bin bin-gtk)
+      (gtk_widget_unref client-gtk))
+
     (define/public (page-changed i)
-      (let ([bin-gtk (page-bin-gtk (list-ref pages i))])
-        (gtk_widget_ref client-gtk)
-        (gtk_container_remove current-bin-gtk client-gtk)
-        (select-bin bin-gtk)
-        (gtk_widget_unref client-gtk)))
+      (unless (null? pages)
+        (swap-in (page-bin-gtk (list-ref pages i)))
+        (queue-window-event this (lambda () (do-callback)))))
     (connect-changed gtk)
     
     (define/override (get-client-gtk) client-gtk)
 
+    (public [append* append])
+    (define (append* lbl)
+      (let ([page
+             (let ([bin-gtk (gtk_hbox_new #f 0)]
+                   [label-gtk (gtk_label_new_with_mnemonic lbl)])
+               (gtk_notebook_append_page gtk bin-gtk label-gtk)
+               (gtk_widget_show bin-gtk)
+               (make-page bin-gtk label-gtk))])
+        (set! pages (append pages (list page)))
+        (when (null? (cdr pages))
+          (swap-in (page-bin-gtk (car pages)))
+          (g_object_ref empty-bin-gtk)
+          (gtk_notebook_remove_page gtk 0))))
+
+    (define/public (delete i)
+      (let ([page (list-ref pages i)])
+        (when (ptr-equal? current-bin-gtk (page-bin-gtk page))
+          (let ([cnt (length pages)])
+            (if (= i (sub1 cnt))
+                (if (null? (cdr pages))
+                    (begin
+                      (install-empty-page)
+                      (set! pages null)
+                      (gtk_notebook_set_current_page gtk 1)
+                      (swap-in empty-bin-gtk))
+                    (gtk_notebook_set_current_page gtk (sub1 i)))
+                (gtk_notebook_set_current_page gtk (add1 i)))))
+        (gtk_notebook_remove_page gtk i)
+        (set! pages (remq page pages))))
+
+    (define/public (set choices)
+      (for ([page (in-list pages)])
+        (delete 0))
+      (for ([lbl (in-list choices)])
+        (append* lbl)))
+
     (define/public (set-label i str)
-      (gtk_label_set_text (page-label-gtk (list-ref pages i)) str))
+      (gtk_label_set_text_with_mnemonic (page-label-gtk (list-ref pages i)) 
+                                        (mnemonic-string str)))
 
     (define/public (set-selection i)
       (gtk_notebook_set_current_page gtk i))
+    (define/public (get-selection)
+      (gtk_notebook_get_current_page gtk))
 
     (define/override (set-child-size child-gtk x y w h)
       (gtk_fixed_move client-gtk child-gtk x y)

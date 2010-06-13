@@ -46,7 +46,7 @@
                                                     NSRoundedBezelStyle)))
       (cond
        [(string? label)
-        (tellv cocoa setTitle: #:type _NSString label)]
+        (tellv cocoa setTitleWithMnemonic: #:type _NSString label)]
        [(send label ok?)
         (if button-type
             (tellv cocoa setTitle: #:type _NSString "")
