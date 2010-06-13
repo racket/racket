@@ -18,6 +18,7 @@
 
 (provide (rename-out [All ∀]
                      [U Un]
+		     [-> →]
                      [List Tuple]
                      [Rec mu]
                      [Parameterof Parameter]))
