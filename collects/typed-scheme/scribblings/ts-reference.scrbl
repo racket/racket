@@ -267,7 +267,8 @@ Type-annotated versions of
 
 @defform/subs[(lambda: formals . body)
 ([formals ([v : t] ...) 
-	  ([v : t] ... . [v : t])])]{
+	  ([v : t] ... . [v : t *])
+	  ([v : t] ... . [v : t ...])])]{
 A function of the formal arguments @racket[v], where each formal
 argument has the associated type.  If a rest argument is present, then
 it has type @racket[(Listof t)].}
