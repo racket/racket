@@ -51,23 +51,36 @@
            #:attr bound (datum->syntax #'i (string->symbol (substring (attribute s) 3)) #'i #'i))
   (pattern (~seq _:ddd bound:id)))
 
+(define (parse-all-body s)
+  (syntax-parse s
+    [(ty)
+     (parse-type #'ty)]
+    [(x ...)
+     #:fail-unless (= 1 (length 
+			 (for/list ([i (syntax->list #'(x ...))]
+				    #:when (and (identifier? i)
+						(free-identifier=? i #'t:->)))
+				   i))) 
+     #f
+     (parse-type s)]))
+
 (define (parse-all-type stx parse-type)
   ;(printf "parse-all-type: ~a ~n" (syntax->datum stx))
   (syntax-parse stx #:literals (t:All)
-    [((~and kw t:All) (vars:id ... v:id dd:ddd) t)
+    [((~and kw t:All) (vars:id ... v:id dd:ddd) . t)
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
             [tvars (map make-F vars)]
             [v (syntax-e #'v)]
             [tv (make-Dotted (make-F v))])
        (add-type-name-reference #'kw)
        (parameterize ([current-tvars (extend-env (cons v vars) (cons tv tvars) (current-tvars))])
-         (make-PolyDots (append vars (list v)) (parse-type #'t))))]
-    [((~and kw t:All) (vars:id ...) t) 
+         (make-PolyDots (append vars (list v)) (parse-all-body #'t))))]
+    [((~and kw t:All) (vars:id ...) . t) 
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
             [tvars (map make-F vars)])
        (add-type-name-reference #'kw)
        (parameterize ([current-tvars (extend-env vars tvars (current-tvars))])
-         (make-Poly vars (parse-type #'t))))]
+         (make-Poly vars (parse-all-body #'t))))]
     [(t:All (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(t:All . rest) (tc-error "All: bad syntax")]))
 

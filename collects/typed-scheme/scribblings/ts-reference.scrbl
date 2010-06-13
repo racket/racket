@@ -202,7 +202,9 @@ The following base types are parameteric in their type arguments.
 @defform/none[(t t1 t2 ...)]{is the instantiation of the parametric type
   @racket[t] at types @racket[t1 t2 ...]}
 @defform[(All (v ...) t)]{is a parameterization of type @racket[t], with
-  type variables @racket[v ...]}
+  type variables @racket[v ...].  If @racket[t] is a function type
+      constructed with @racket[->], the outer pair of parentheses
+      around the function type may be omitted.}
 @defform[(values t ...)]{is the type of a sequence of multiple values, with
 types @racket[t ...].  This can only appear as the return type of a
 function.
