@@ -6,6 +6,7 @@
 	   "lock.ss"
 	   "check.ss"
 	   "wx.ss"
+           "te.rkt"
 	   "mrtop.ss"
 	   "mrcanvas.ss")
 
@@ -179,21 +180,14 @@
 	     (as-exit (lambda () (super-init p)))))))))
 
   (define get-window-text-extent
-    (let ([bm #f][dc #f])
-      (case-lambda
-       [(string font) (get-window-text-extent string font #f)]
-       [(string font combine?)
-	(check-string 'get-window-text-extent string)
-	(check-instance 'get-window-text-extent wx:font% 'font% #f font)
-	(unless bm
-	  (set! bm (make-object wx:bitmap% 2 2))
-	  (set! dc (make-object wx:bitmap-dc%))
-	  (send dc set-bitmap bm))
-	(unless (send bm ok?)
-	  (error 'get-window-text-extent "couldn't allocate sizing bitmap"))
-	(let-values ([(w h d a) (send dc get-text-extent string font combine?)])
-	  (values (inexact->exact w) (inexact->exact h)))])))
-
+    (case-lambda
+     [(string font)
+      (get-window-text-extent string font #f)]
+     [(string font combine?)
+      (check-string 'get-window-text-extent string)
+      (check-instance 'get-window-text-extent wx:font% 'font% #f font)
+      (let-values ([(w h d a) (get-window-text-extent* string font combine?)])
+        (values (inexact->exact (ceiling w)) (inexact->exact (ceiling h))))]))
   
   (define ugly?
     (lambda (a)

@@ -11,6 +11,7 @@
 	   "helper.ss"
 	   "wx.ss"
 	   "wxitem.ss"
+           "wxlitem.ss"
 	   "mrwindow.ss"
 	   "mrcontainer.ss")
 

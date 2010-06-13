@@ -220,7 +220,7 @@
 	      (set! dy (- dy (unbox ybox))))
 	    
 	    ;; Subtract ascent of label
-	    (send l get-text-extent "hi" wbox hbox ybox abox)
+	    (send l get-text-extent "hi" wbox hbox ybox abox font)
 	    (set! dy (- dy (- (unbox hbox) (unbox ybox))))
 	    
 	    ;; Subtract space above label

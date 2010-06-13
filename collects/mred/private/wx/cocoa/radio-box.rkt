@@ -65,6 +65,8 @@
         font)
   (inherit get-cocoa set-focus)
 
+  (define horiz? (and (memq 'horizontal style) #t))
+
   (super-new [parent parent]
              [cocoa
               (let ([cocoa
@@ -76,13 +78,13 @@
                             cellClass: (if (andmap string? labels)
                                            NSButtonCell
                                            MyImageButtonCell)
-                            numberOfRows: #:type _NSInteger (length labels)
-                            numberOfColumns: #:type _NSInteger 1))])
+                            numberOfRows: #:type _NSInteger (if horiz? 1 (length labels))
+                            numberOfColumns: #:type _NSInteger (if horiz? (length labels) 1)))])
                 (for ([label (in-list labels)]
                       [i (in-naturals)])
                   (let ([button (tell cocoa 
-                                      cellAtRow: #:type _NSInteger i 
-                                      column: #:type _NSInteger 0)])
+                                      cellAtRow: #:type _NSInteger (if horiz? 0 i)
+                                      column: #:type _NSInteger (if horiz? i 0))])
                     (if (and (not (string? label))
                              (send label ok?))
                         (begin
@@ -112,7 +114,10 @@
         (set-focus)))
 
   (define/public (set-selection i)
-    (tellv (get-cocoa) selectCellAtRow: #:type _NSInteger i column: #:type _NSInteger 0))
+    (tellv (get-cocoa) selectCellAtRow: #:type _NSInteger (if horiz? 0 i)
+           column: #:type _NSInteger (if horiz? i 0)))
   (define/public (get-selection)
-    (tell #:type _NSInteger (get-cocoa) selectedRow))
+    (if horiz?
+        (tell #:type _NSInteger (get-cocoa) selectedColumn)
+        (tell #:type _NSInteger (get-cocoa) selectedRow)))
   (define/public (number) count))

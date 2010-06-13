@@ -21,7 +21,6 @@
   (def/public-unimplemented get-height)
   (def/public-unimplemented popup-menu)
   (def/public-unimplemented center)
-  (def/public-unimplemented get-text-extent)
   (def/public-unimplemented get-parent)
   (def/public-unimplemented refresh)
   (def/public-unimplemented screen-to-client)

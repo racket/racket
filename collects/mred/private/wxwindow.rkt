@@ -2,6 +2,7 @@
   (require mzlib/class
 	   mzlib/class100
 	   (prefix wx: "kernel.ss")
+           "te.rkt"
 	   "lock.ss"
 	   "helper.ss"
 	   "wx.ss")
@@ -39,6 +40,14 @@
             [() skip-sub-events?]
             [(skip?) (set! skip-sub-events? skip?)])])
 	(public
+          [get-text-extent (lambda (s wb hb db ab font)
+                             (let-values ([(w h d a) (get-window-text-extent* s font #t)])
+                               (let ([set (lambda (b v)
+                                            (when b (set-box! b (inexact->exact (ceiling v)))))])
+                                 (set wb w)
+                                 (set hb h)
+                                 (set db d)
+                                 (set ab a))))]
 	  [on-active
 	   (lambda ()
 	     (let ([act? (is-enabled-to-root?)])

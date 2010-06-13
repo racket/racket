@@ -16,7 +16,7 @@
 
 (define (panel-mixin %)
   (class %
-    (define lbl-pos 'vertical)
+    (define lbl-pos 'horizontal)
     (super-new)
     
     (define/public (get-label-position) lbl-pos)

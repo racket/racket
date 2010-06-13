@@ -299,7 +299,6 @@
     (def/public-unimplemented set-phantom-size)
     (def/public-unimplemented popup-menu)
     (define/public (center a b) (void))
-    (def/public-unimplemented get-text-extent)
     (define/public (refresh) (void))
 
     (define/public (screen-to-client x y)
