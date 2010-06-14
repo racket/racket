@@ -27,6 +27,7 @@ exec racket -qu "$0" ${1+"$@"}
   (define subtract-nothing (make-parameter #f))
   (define generate-graph (make-parameter #f))
   (define no-compile-time (make-parameter #f))
+  (define coefficient-of-variation (make-parameter #f))
 
   (command-line
    "tabulate"
@@ -45,8 +46,10 @@ exec racket -qu "$0" ${1+"$@"}
     [("--index") "generate full page with an index.html link"
      (full-page-mode #t)]
     [("--nothing") "subtract compilation time of nothing benchmark"
-     (subtract-nothing #t)]))
-  
+     (subtract-nothing #t)]
+    [("--coefficient-of-variation") "show coefficient of variation"
+     (coefficient-of-variation #t)]))
+
   (define bm-table (make-hash-table))
   (define impls (make-hash-table))
 
@@ -66,9 +69,14 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define bm-runs (hash-table-map bm-table cons))
 
-  (define (average sel l)
+  (define (average/coefficient-of-variation sel l)
     (if (andmap sel l)
-        (round (/ (apply + (map sel l)) (length l)))
+        (let ((avg (round (/ (apply + (map sel l)) (length l)))))
+          (list avg
+                (/ (round (sqrt (/ (apply + (map (lambda (x) (expt (- (sel x) avg) 2)) l))
+                                   (length l)
+                                   (if (zero? avg) 1.0 avg)))) ; no division by 0
+                   100)))
         (if (ormap sel l)
             (error 'tabulate "inconsistent average info")
             #f)))
@@ -80,9 +88,9 @@ exec racket -qu "$0" ${1+"$@"}
               (car bm-run)
               (map (lambda (runs)
                      (list (car runs)
-                           (list (average caar (cdr runs))
-                                 (average cadar (cdr runs))
-                                 (average caddar (cdr runs)))
+                           (list (average/coefficient-of-variation caar (cdr runs))
+                                 (average/coefficient-of-variation cadar (cdr runs))
+                                 (average/coefficient-of-variation caddar (cdr runs)))
                            (let ([nothing-compile-time
                                   (if (subtract-nothing)
                                       (let ([a (hash-table-get
@@ -176,7 +184,7 @@ exec racket -qu "$0" ${1+"$@"}
   (define forever 1000000000)
 
   (define (ntime v)
-    (and (caadr v) (- (caadr v) (or (caddr (cadr v)) 0))))
+    (and (caadr v) (- (caaadr v) (or (caaddr (cadr v)) 0))))
 
   (define (grouping->suffix grouping)
     (if (eq? grouping 'impl)
@@ -205,7 +213,7 @@ exec racket -qu "$0" ${1+"$@"}
     (if (string? relative-to)
         ;; Find fastest among entries matching `relative-to':
         (car (argmin (lambda (run)
-                       (or (caadr run) forever))
+                       (or (caaadr run) forever))
                      (cons (list #f (list #f #f #f) #f)
                            (filter (lambda (run)
                                      (equal? relative-to (extract-column (car run) grouping)))
@@ -248,7 +256,7 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define (call-with-bm-info bm-run relative-to grouping proc)
     (let ([fastest (apply min (map (lambda (run)
-                                     (or (caadr run) forever))
+                                     (or (and (caadr run) (caaadr run)) forever))
                                    (cdr bm-run)))]
           [n-fastest (apply min (map (lambda (run)
                                        (or (ntime run) forever))
@@ -339,7 +347,7 @@ exec racket -qu "$0" ${1+"$@"}
                                  ,(if (eq? grouping 'mode)
                                       "impl"
                                       "mode")))))
-                 (td ((colspan ,(if (no-compile-time) "1" "2")) (align "right")) 
+                 (td ((colspan ,(if (no-compile-time) "1" "2")) (align "right"))
                      ,(if (and (base-link-filename)
                                relative-to)
                           `(a ((href ,(fixup-filename
@@ -349,7 +357,7 @@ exec racket -qu "$0" ${1+"$@"}
                               "fastest")
                           "fastest"))
                  ,@(map (lambda (impl)
-                          `(td ((colspan ,(if (no-compile-time) "1" "2")) (align "right")) 
+                          `(td ((colspan ,(if (no-compile-time) "1" "2")) (align "right"))
                                (b ,(let ([s (extract-column impl (opposite grouping))])
                                      (if (and (base-link-filename)
                                               (not (eq? impl relative-to)))
@@ -396,7 +404,8 @@ exec racket -qu "$0" ${1+"$@"}
                                  append
                                  (map (lambda (impl)
                                         (let* ([a (assq impl (cdr bm-run))]
-                                               [n (and a (caadr a))]
+                                               [n (and a (caadr a) (caaadr a))]
+                                               [coeff-var (and a (caadr a) (cadr (caadr a)))]
                                                [n2 (and a (ntime a))])
                                           `(,@(if (no-compile-time)
                                                   null
@@ -437,6 +446,12 @@ exec racket -qu "$0" ${1+"$@"}
                                                                    `(font ((color "forestgreen")) (b ,s))
                                                                    s))
                                                              "-"))
+                                                      null)
+                                                ,@(if (and coeff-var (coefficient-of-variation))
+                                                      `(,(small (let ([s (format " ~a" coeff-var)])
+                                                                  (if (>= coeff-var 0.10) ; unreliability threshold, arbitrary
+                                                                      `(font ((color "red")) (b ,s))
+                                                                      s))))
                                                       null)
                                                 nbsp))))
                                       (if (eq? grouping 'mode)
