@@ -1,19 +1,18 @@
-#lang scheme
+#lang racket
 
 (require
  "../utils/utils.rkt"
- scheme/tcp 
- scheme/unsafe/ops
+ racket/tcp 
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  "extra-procs.rkt"
  (utils tc-utils )
  (types  union convenience)
  (only-in '#%kernel [apply kernel:apply])
- scheme/promise scheme/system
+ racket/promise racket/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in racket/match/runtime match:error matchable? match-equality-test)
- (for-template scheme) 
+ (for-template racket racket/unsafe/ops)
  (rename-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Nat -Nat*]))
 
 (provide indexing)
@@ -28,6 +27,36 @@
    [substring (->opt -String -Nat [-Nat] -String)]
    [make-string (cl-> [(-Nat) -String] [(-Nat -Char) -String])]
    [string-set! (-String -Nat -Char . -> . -Void)]
+   [string-copy! (-String -Nat -String [-Nat -Nat] . ->opt . -Void)]
+
+   [read-string (-Nat [-Input-Port] . ->opt . (Un -String (-val eof)))]
+   [read-string! (-String [-Input-Port -Nat -Nat] . ->opt . (Un -Nat* (-val eof)))]
+   [read-bytes (-Nat [-Input-Port] . ->opt . (Un -Bytes (-val eof)))]
+
+   [write-byte (cl-> [(-Nat) -Void]
+                     [(-Nat -Output-Port) -Void])]
+   [write-string (cl-> [(-String) -Nat*]
+                       [(-String -Output-Port) -Nat*]
+                       [(-String -Output-Port -Nat) -Nat*]
+                       [(-String -Output-Port -Nat -Nat) -Nat*])]
+   [write-bytes  (cl-> [(-Bytes) -Nat*]
+                       [(-Bytes -Output-Port) -Nat*]
+                       [(-Bytes -Output-Port -Nat) -Nat*]
+                       [(-Bytes -Output-Port -Nat -Nat) -Nat*])]
+   [write-bytes-avail  (cl-> [(-Bytes) -Nat*]
+                             [(-Bytes -Output-Port) -Nat*]
+                             [(-Bytes -Output-Port -Nat) -Nat*]
+                             [(-Bytes -Output-Port -Nat -Nat) -Nat*])]
+   [write-bytes-avail*  (cl-> [(-Bytes) (-opt -Nat*)]
+                              [(-Bytes -Output-Port) (-opt -Nat*)]
+                              [(-Bytes -Output-Port -Nat) (-opt -Nat*)]
+                              [(-Bytes -Output-Port -Nat -Nat) (-opt -Nat*)])]
+   [write-bytes-avail/enable-break (cl-> [(-Bytes) -Nat*]
+                                         [(-Bytes -Output-Port) -Nat*]
+                                         [(-Bytes -Output-Port -Nat) -Nat*]
+                                         [(-Bytes -Output-Port -Nat -Nat) -Nat*])]
+
+
    
    [list-ref  (-poly (a) ((-lst a) -Nat . -> . a))]
    [list-tail (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
@@ -101,6 +130,8 @@
     (-poly (a) ((list (-lst a)) -Nat . ->* . (-values (list (-lst a) (-lst a)))))]
    
    [vector-ref (-poly (a) ((-vec a) -Nat . -> . a))]
+   [unsafe-vector-ref (-poly (a) ((-vec a) -Nat . -> . a))]
+   [unsafe-vector*-ref (-poly (a) ((-vec a) -Nat . -> . a))]
    [build-vector (-poly (a) (-Nat (-Nat . -> . a) . -> . (-vec a)))]
    [vector-set! (-poly (a) (-> (-vec a) -Nat a -Void))]
    [vector-copy! (-poly (a) ((-vec a) -Nat (-vec a) [-Nat -Nat] . ->opt . -Void))]

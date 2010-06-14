@@ -181,7 +181,6 @@
 		      (-> (Un a (-val #f)) a)))]
 [gensym (->opt [Sym] Sym)]
 [string-append (->* null -String -String)]
-[string-copy! (->opt -String -Nat -String [-Nat -Nat] -Void)]
 [open-input-string (-> -String -Input-Port)]
 [open-output-file
  (->key -Pathlike
@@ -602,9 +601,6 @@
 [read-byte
  (cl->* [-> (Un -Byte (-val eof))]
         [-Input-Port . -> . (Un -Byte (-val eof))])]
-[read-string (-Nat [-Input-Port] . ->opt . (Un -String (-val eof)))]
-[read-string! (-String [-Input-Port -Nat -Nat] . ->opt . (Un -Nat (-val eof)))]
-[read-bytes (-Nat [-Input-Port] . ->opt . (Un -Bytes (-val eof)))]
 [make-pipe
  (cl->* [->opt [N] (-values (list -Input-Port -Output-Port))])]
 [open-output-bytes
@@ -754,7 +750,7 @@
 [tcp-close (-TCP-Listener . -> . -Void )]
 [tcp-connect (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
 [tcp-connect/enable-break (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
-[tcp-listen (-Nat [-Nat Univ (-opt -String)] . ->opt . -TCP-Listener)]
+[tcp-listen (-Integer [-Integer Univ (-opt -String)] . ->opt . -TCP-Listener)]
 
 ;; scheme/bool
 [boolean=? (B B . -> . B)]
@@ -814,8 +810,6 @@
 
 ;; unsafe
 
-[unsafe-vector-ref (-poly (a) ((-vec a) -Nat . -> . a))]
-[unsafe-vector*-ref (-poly (a) ((-vec a) -Nat . -> . a))]
 [unsafe-vector-length (-poly (a) ((-vec a) . -> . -Nat))]
 [unsafe-vector*-length (-poly (a) ((-vec a) . -> . -Nat))]
 [unsafe-car (-poly (a b) 
@@ -875,32 +869,11 @@
 [system*/exit-code ((list -Pathlike) -String . ->* . -Integer)]
 
 ;; Byte and String Output (Section 12.3 of the Reference)
+;; some are now in base-env-indexing-abs.rkt
 [write-char (cl-> [(-Char) -Void]
                   [(-Char -Output-Port) -Void])]
-[write-byte (cl-> [(-Nat) -Void]
-                  [(-Nat -Output-Port) -Void])]
 [newline (cl-> [() -Void]
                [(-Output-Port) -Void])]
-[write-string (cl-> [(-String) -Nat]
-                    [(-String -Output-Port) -Nat]
-                    [(-String -Output-Port -Nat) -Nat]
-                    [(-String -Output-Port -Nat -Nat) -Nat])]
-[write-bytes  (cl-> [(-Bytes) -Nat]
-                    [(-Bytes -Output-Port) -Nat]
-                    [(-Bytes -Output-Port -Nat) -Nat]
-                    [(-Bytes -Output-Port -Nat -Nat) -Nat])]
-[write-bytes-avail  (cl-> [(-Bytes) -Nat]
-                          [(-Bytes -Output-Port) -Nat]
-                          [(-Bytes -Output-Port -Nat) -Nat]
-                          [(-Bytes -Output-Port -Nat -Nat) -Nat])]
-[write-bytes-avail*  (cl-> [(-Bytes) (-opt -Nat)]
-                           [(-Bytes -Output-Port) (-opt -Nat)]
-                           [(-Bytes -Output-Port -Nat) (-opt -Nat)]
-                           [(-Bytes -Output-Port -Nat -Nat) (-opt -Nat)])]
-[write-bytes-avail/enable-break (cl-> [(-Bytes) -Nat]
-                                      [(-Bytes -Output-Port) -Nat]
-                                      [(-Bytes -Output-Port -Nat) -Nat]
-                                      [(-Bytes -Output-Port -Nat -Nat) -Nat])]
 [write-special (cl-> [(Univ) -Boolean]
                      [(Univ -Output-Port) -Boolean])]
 ;; Need event type before we can include these
