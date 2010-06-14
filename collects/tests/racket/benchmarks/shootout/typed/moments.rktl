@@ -19,7 +19,7 @@
                            (loop (read-line) (cons num numlist))))))))
   (unless (null? numlist)
     (let ((n (length numlist)))
-      (let: ((mean : Float (/ sum n))
+      (let: ((mean : Float (/ sum (exact->inexact n)))
              (average_deviation : Float 0.0)
              (standard_deviation : Float 0.0)
              (variance : Float 0.0)
@@ -43,7 +43,7 @@
         (set! standard_deviation (flsqrt variance))
 
         (cond ((> variance 0.0)
-               (set! skew (/ skew (* n variance standard_deviation)))
+               (set! skew (exact->inexact (/ skew (* n variance standard_deviation))))
                (set! kurtosis (- (/ kurtosis (* n variance variance))
                                  3.0))))
 
@@ -58,8 +58,8 @@
               (set! median (car (list-tail numlist mid)))))
 
 
-        (set! standard_deviation (/ (round (* standard_deviation 1000000))
-                                    1000000))
+        (set! standard_deviation (exact->inexact (/ (round (* standard_deviation 1000000))
+                                                 1000000)))
 
         (for-each display
                   `("n:                  " ,n                   "\n"

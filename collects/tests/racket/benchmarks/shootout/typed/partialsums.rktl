@@ -14,9 +14,9 @@
 (let ((n (exact->inexact (assert (string->number (command-line #:args (n) (assert n string?)))))))
   
   (let: loop : Void
-        ([d : Float 0.0]
-         (alt : Float 1.0) (d2 : Float 0.0) (d3 : Float 0.0)
-         (ds : Float 0.0) (dc : Float 0.0)
+        ([d : Integer 0]
+         (alt : Float 1.0) (d2 : Integer 0) (d3 : Integer 0)
+         (ds : Real 0.0) (dc : Real 0.0)
          (s0 : Float 0.0) (s1 : Float 0.0) (s2 : Float 0.0)
          (s3 : Float 0.0) (s4 : Float 0.0) (s5 : Float 0.0)
          (s6 : Float 0.0) (s7 : Float 0.0) (s8 : Float 0.0))
@@ -35,14 +35,14 @@
           (format-result "~a\tAlternating Harmonic\n" s7)
           (format-result "~a\tGregory\n" s8))
         
-        (let*: ((d : Float (+ d 1))
-                (d2 : Float (* d d))
-                (d3 : Float (* d2 d))
-                (ds : Float (sin d))
-                (dc : Float (cos d))
+        (let*: ((d : Integer (+ d 1))
+                (d2 : Integer (* d d))
+                (d3 : Integer (* d2 d))
+                (ds : Real (sin d))
+                (dc : Real (cos d))
                 
-                (s0 : Float (+ s0 (assert (expt (/ 2.0 3) (- d 1)) real?)))
-                (s1 : Float (+ s1 (/ 1 (flsqrt d))))
+                (s0 : Float (+ s0 (exact->inexact (expt (/ 2.0 3.0) (- d 1)))))
+                (s1 : Float (+ s1 (/ 1 (flsqrt (exact->inexact d)))))
                 (s2 : Float (+ s2 (/ 1 (* d (+ d 1)))))
                 (s3 : Float (+ s3 (/ 1 (* d3 (* ds ds)))))
                 (s4 : Float (+ s4 (/ 1 (* d3 (* dc dc)))))
