@@ -27,7 +27,7 @@
 
 ;; -------------------------------
 
-(: match-count (Bytes Byte-Regexp Natural Natural -> Natural))
+(: match-count (Bytes Byte-Regexp Integer Integer -> Integer))
 (define (match-count str rx offset cnt)
   (let ([m (regexp-match-positions rx str offset)])
     (if m

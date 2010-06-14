@@ -54,7 +54,7 @@
 
 (: string-pad (String Natural -> String))
 (define (string-pad s len)
-  (string-append (make-string (assert (- len (string-length s)) exact-nonnegative-integer?) #\space)
+  (string-append (make-string (- len (string-length s)) #\space)
                  s))
 
 (: test (Natural -> Void))

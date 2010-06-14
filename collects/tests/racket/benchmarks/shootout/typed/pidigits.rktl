@@ -45,7 +45,7 @@
             (let-values ([(q r s t) (mk q r s t k)])
               (digit (add1 k) q r s t n row col))))
       (printf "~a\t:~a\n"
-              (make-string (assert (- 10 col) exact-nonnegative-integer?) #\space)
+              (make-string (- 10 col) #\space)
               (+ row col))))
 
 (: digits (Integer -> Void))

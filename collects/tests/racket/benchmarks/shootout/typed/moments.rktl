@@ -46,7 +46,7 @@
                              (let* ((mid (quotient n 2))
                                     (median (if (zero? (modulo n 2))
                                                 (/ (+ (car (list-tail numlist mid))
-                                                      (car (list-tail numlist (assert (- mid 1) exact-nonnegative-integer?))))
+                                                      (car (list-tail numlist (- mid 1))))
                                                    2.0)
                                                 (car (list-tail numlist mid))))
                                     (standard_deviation (exact->inexact (/ (round (* standard_deviation 1000000))

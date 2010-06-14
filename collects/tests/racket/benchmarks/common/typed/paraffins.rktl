@@ -4,13 +4,13 @@
 
 (: gen (Exact-Positive-Integer -> (Vectorof (Listof Radical))))
 (define (gen n)
-  (let*: ((n/2 : Natural (quotient n 2))
+  (let*: ((n/2 : Integer (quotient n 2))
           (radicals : (Vectorof (Listof Radical)) (make-vector (+ n/2 1) '(H))))
 
          (: rads-of-size (Exact-Positive-Integer -> (Listof Radical)))
          (define (rads-of-size n)
            (let: loop1 : (Listof Radical)
-                 ((ps : (Listof (Vectorof Natural))
+                 ((ps : (Listof (Vectorof Integer))
                       (three-partitions (- n 1)))
                   (lst : (Listof Radical)
                        '()))
@@ -55,7 +55,7 @@
                                                            (loop4 (cdr rads3)
                                                                   lst))))))))))))
 
-         (: bcp-generator (Natural -> (Listof Radical)))
+         (: bcp-generator (Integer -> (Listof Radical)))
          (define (bcp-generator j)
            (if (odd? j)
                '()
@@ -82,7 +82,7 @@
          (: ccp-generator (Exact-Positive-Integer -> (Listof Radical)))
          (define (ccp-generator j)
            (let: loop1 : (Listof Radical)
-                 ((ps : (Listof (Vectorof Natural))
+                 ((ps : (Listof (Vectorof Integer))
                       (four-partitions (- j 1)))
                   (lst : (Listof Radical)
                        '()))
@@ -143,10 +143,10 @@
                  (vector-set! radicals i (rads-of-size i))
                  (loop (+ i 1)))))))
 
-(: three-partitions (Natural -> (Listof (Vectorof Natural))))
+(: three-partitions (Integer -> (Listof (Vectorof Integer))))
 (define (three-partitions m)
-  (let: loop1 : (Listof (Vectorof Natural))
-        ((lst : (Listof (Vectorof Natural)) '())
+  (let: loop1 : (Listof (Vectorof Integer))
+        ((lst : (Listof (Vectorof Integer)) '())
          (nc1 : Integer (quotient m 3)))
         (if (< nc1 0)
             lst
@@ -157,14 +157,14 @@
                          (- nc1 1))
                   (loop2 (cons (vector nc1
                                        nc2
-                                       (assert (- m (+ nc1 nc2)) exact-nonnegative-integer?))
+                                       (- m (+ nc1 nc2)))
                                lst)
                          (- nc2 1)))))))
 
-(: four-partitions (Natural -> (Listof (Vectorof Natural))))
+(: four-partitions (Integer -> (Listof (Vectorof Integer))))
 (define (four-partitions m)
-  (let: loop1 : (Listof (Vectorof Natural))
-        ((lst : (Listof (Vectorof Natural)) '())
+  (let: loop1 : (Listof (Vectorof Integer))
+        ((lst : (Listof (Vectorof Integer)) '())
          (nc1 : Integer (quotient m 4)))
         (if (< nc1 0)
             lst
@@ -181,11 +181,11 @@
                           (loop3 (cons (vector nc1
                                                nc2
                                                nc3
-                                               (assert (- m (+ nc1 (+ nc2 nc3))) exact-nonnegative-integer?))
+                                               (- m (+ nc1 (+ nc2 nc3))))
                                        lst)
                                  (- nc3 1))))))))))
 
-(: nb (Exact-Positive-Integer -> Natural))
+(: nb (Exact-Positive-Integer -> Integer))
 (define (nb n)
   (let ((x (gen n)))
     (+ (length (vector-ref x 0))
@@ -193,8 +193,8 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time
-   (let: loop : Natural
-         ((n : Natural 4000) (v : Natural 0))
+   (let: loop : Integer
+         ((n : Integer 4000) (v : Integer 0))
          (if (zero? n)
              v
              (loop (- n 1) (nb (if input 17 1)))))))

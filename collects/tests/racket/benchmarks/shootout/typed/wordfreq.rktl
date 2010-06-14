@@ -29,7 +29,7 @@
             (lambda: ((word : String) (count : Natural))
                      (let ((count (number->string count)))
                        (format"~a~a ~a~%"
-                              (make-string (assert (- 7 (string-length count)) exact-nonnegative-integer?) #\space)
+                              (make-string (- 7 (string-length count)) #\space)
                               count
                               word))))
            string>?))

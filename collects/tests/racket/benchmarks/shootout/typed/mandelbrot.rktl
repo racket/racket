@@ -57,7 +57,7 @@
                 (begin
                   (when (positive? bitnum)
                     (write-byte (arithmetic-shift byteacc 
-                                                  (assert (- 8 (bitwise-and n #x7)) exact-nonnegative-integer?))
+                                                  (- 8 (bitwise-and n #x7)))
                                 out))
 
                   (loop-y (add1 y))))))))))
