@@ -123,9 +123,9 @@
                           n))
                   the-scene))))
 
-(: pixel : Float Float -> Natural)
+(: pixel : Float Float -> Integer)
 (define (pixel x y)
-  (assert (round (inexact->exact (* 255.0 (/ (g x y) (* ss ss))))) exact-nonnegative-integer?))
+  (round (inexact->exact (* 255.0 (/ (g x y) (* ss ss))))))
 
 (time (for*: ([y : Natural (in-range n)])
         (for*: ([x : Natural (in-range n)])
