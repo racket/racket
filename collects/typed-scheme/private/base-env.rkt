@@ -190,7 +190,7 @@
                            'must-truncate 'truncate/replace)
         #f
         -Output-Port)]
-[read (->opt [-Input-Port] -Sexp)]
+[read (->opt [-Input-Port] (Un -Sexp (-val eof)))]
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
 [andmap (-polydots (a c d b) (cl->*
                               ;; 1 means predicate on second argument
@@ -567,7 +567,6 @@
                            ((-HT a b) -Integer . -> . a))]
 [hash-iterate-value (-poly (a b)
                            ((-HT a b) -Integer . -> . b))]
-#;[hash-table-index (-poly (a b) ((-HT a b) a b . -> . -Void))]
 
 [bytes (->* (list) -Integer -Bytes)]
 [make-bytes (cl-> [(-Integer -Integer) -Bytes]
@@ -579,11 +578,11 @@
 [bytes-length (-> -Bytes -Nat)]
 [unsafe-bytes-length (-> -Bytes -Nat)]
 
-[read-bytes-line (->opt [-Input-Port Sym] -Bytes)]
+[read-bytes-line (->opt [-Input-Port Sym] (Un -Bytes (-val eof)))]
 [open-input-file (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -Input-Port)]
 [close-input-port (-> -Input-Port -Void)]
 [close-output-port (-> -Output-Port -Void)]
-[read-line  (->opt [-Input-Port Sym] -String)]
+[read-line  (->opt [-Input-Port Sym] (Un -String (-val eof)))]
 [copy-file (-> -Pathlike -Pathlike -Void)]
 [flush-output (->opt [-Output-Port] -Void)]
 [file-stream-buffer-mode (cl-> [(-Port) (Un (-val 'none) (-val 'line) (-val 'block) (-val #f))]
@@ -613,11 +612,8 @@
 [char-ready? (->opt [-Input-Port] B)]
 [byte-ready? (->opt [-Input-Port] B)]
 
-#;[exn:fail? (-> Univ B)]
-#;[exn:fail:read? (-> Univ B)]
-
 [open-output-string (-> -Output-Port)]
-;; FIXME - wrong
+;; FIXME - this is too general
 [get-output-string (-> -Output-Port -String)]
 
 [make-directory (-> -Path -Void)]
