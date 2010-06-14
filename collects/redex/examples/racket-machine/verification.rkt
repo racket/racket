@@ -108,7 +108,7 @@
    (verify (lam (τ ...) () e) s n_l b γ η f)]
   
   ; case-lam
-  [(verify (case-lam l ...) s n_l b γ η f)
+  [(verify (case-lam (name l (lam (val ...) (n ...) e)) ...) s n_l b γ η f)
    (s γ η)
    (side-condition (term (AND (verify-lam l s ?) ...)))]
   
