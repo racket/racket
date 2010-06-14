@@ -912,3 +912,8 @@
 ;;write-special-evt
 [port-writes-atomic? (-Output-Port . -> . -Boolean)]
 [port-writes-special? (-Output-Port . -> . -Boolean)]
+
+;; probably the most useful cases
+[curry (-poly (a b c) 
+	      (cl->* ((a b . -> . c) a . -> . (b . -> . c))
+		     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
