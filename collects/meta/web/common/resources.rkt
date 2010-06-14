@@ -8,7 +8,7 @@
 
 (require "utils.ss")
 
-(provide make-logo make-icon make-style)
+(provide make-logo make-icon make-style navbar-style)
 
 (define ((make-file-copier file) dir)
   (copyfile-resource (in-here file) (web-path dir file)))
@@ -18,10 +18,73 @@
 
 (define (make-style dir)
   (resource (web-path dir "plt.css")
-            (file-writer output (list the-style "\n"))
+            (file-writer output (list racket-style "\n"))
             (lambda (url) (link rel: "stylesheet" type: "text/css"
                                 href: url title: "default"))))
-(define the-style
+
+(define page-style
+  @text{
+    margin-left: auto;
+    margin-right: auto;
+    width: 45em;
+  })
+(define font-style
+  @text{
+    font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
+  })
+
+(define navbar-style
+  ;; All of these are made to apply only inside `racketnav', so the styles can
+  ;; be used in places with their own CSS (eg, blog.racket-lang.org)
+  @text{
+    .racketnav {
+      background-color: #000;
+      color: #fff;
+      margin-bottom: 1em;
+      padding: 0.5em 0em;
+      white-space: nowrap;
+    }
+    .racketnav a {
+      color: #fff;
+      text-decoration: none;
+    }
+    .racketnav .navcontent {
+      @page-style
+      @font-style
+    }
+    .racketnav .navtitle {
+      font-size: xx-large;
+      font-weight: bold;
+    }
+    .racketnav .navitem {
+      text-decoration: none;
+      font-size: 88%;
+    }
+    .racketnav .navlink a {
+      padding: 0em 1em;
+    }
+    .racketnav .navcurlink a {
+      padding: 0em 1em;
+      background-color: #555;
+    }
+    .racketnav .navlink    a:hover,
+    .racketnav .navcurlink a:hover {
+      background-color: #888;
+    }
+    .racketnav .navlinkcell {
+      text-align: center;
+    }
+    .racketnav .helpiconcell {
+      text-align: right;
+      vertical-align: top;
+    }
+    .racketnav .helpicon {
+      font-weight: bold;
+      font-size: 88%;
+    }
+  })
+
+(define racket-style
   @text{
     @; ---- generic styles ----
     html {
@@ -30,7 +93,7 @@
     body {
       color: black;
       background-color: white;
-      font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
+      @font-style
       margin: 0px;
       padding: 0px;
     }
@@ -41,53 +104,11 @@
       text-decoration: underline;
     }
     @; ---- content styles ----
-    .titlecontent, .bodycontent {
-      margin-left: auto;
-      margin-right: auto;
-      width: 45em;
+    .bodycontent {
+      @page-style
     }
     @; ---- styles for the navbar ----
-    .navbar {
-      background-color: #000;
-      color: #fff;
-      margin-bottom: 1em;
-      padding: 0.5em 0em;
-      white-space: nowrap;
-    }
-    .navbar a {
-      color: #fff;
-      text-decoration: none;
-    }
-    .navtitle {
-      font-size: xx-large;
-      font-weight: bold;
-    }
-    .navitem {
-      text-decoration: none;
-      font-size: 88%;
-    }
-    .navlink a {
-      padding: 0em 1em;
-    }
-    .navcurlink a {
-      padding: 0em 1em;
-      background-color: #555;
-    }
-    .navlink    a:hover,
-    .navcurlink a:hover {
-      background-color: #888;
-    }
-    .navlinkcell {
-      text-align: center;
-    }
-    .helpiconcell {
-      text-align: right;
-      vertical-align: top;
-    }
-    .helpicon {
-      font-weight: bold;
-      font-size: 88%;
-    }
+    @navbar-style
     @; ---- styles for extras ----
     .parlisttitle {
       margin-bottom: 0.5em;
