@@ -13,58 +13,58 @@
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in racket/match/runtime match:error matchable? match-equality-test)
  (for-template racket racket/unsafe/ops)
- (rename-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Nat -Nat*]))
+ (rename-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym]))
 
 (provide indexing)
 
-(define-syntax-rule (indexing -Nat)
+(define-syntax-rule (indexing index-type)
   (make-env
    
-   [build-list (-poly (a) (-Nat (-Nat* . -> . a) . -> . (-lst a)))]
-   [make-list (-poly (a) (-Nat a . -> . (-lst a)))]
+   [build-list (-poly (a) (index-type (-Nat . -> . a) . -> . (-lst a)))]
+   [make-list (-poly (a) (index-type a . -> . (-lst a)))]
    
-   [string-ref (-> -String -Nat -Char)]
-   [substring (->opt -String -Nat [-Nat] -String)]
-   [make-string (cl-> [(-Nat) -String] [(-Nat -Char) -String])]
-   [string-set! (-String -Nat -Char . -> . -Void)]
-   [string-copy! (-String -Nat -String [-Nat -Nat] . ->opt . -Void)]
+   [string-ref (-> -String index-type -Char)]
+   [substring (->opt -String index-type [index-type] -String)]
+   [make-string (cl-> [(index-type) -String] [(index-type -Char) -String])]
+   [string-set! (-String index-type -Char . -> . -Void)]
+   [string-copy! (-String index-type -String [index-type index-type] . ->opt . -Void)]
 
-   [read-string (-Nat [-Input-Port] . ->opt . (Un -String (-val eof)))]
-   [read-string! (-String [-Input-Port -Nat -Nat] . ->opt . (Un -Nat* (-val eof)))]
-   [read-bytes (-Nat [-Input-Port] . ->opt . (Un -Bytes (-val eof)))]
+   [read-string (index-type [-Input-Port] . ->opt . (Un -String (-val eof)))]
+   [read-string! (-String [-Input-Port index-type index-type] . ->opt . (Un -Nat (-val eof)))]
+   [read-bytes (index-type [-Input-Port] . ->opt . (Un -Bytes (-val eof)))]
 
-   [write-byte (cl-> [(-Nat) -Void]
-                     [(-Nat -Output-Port) -Void])]
-   [write-string (cl-> [(-String) -Nat*]
-                       [(-String -Output-Port) -Nat*]
-                       [(-String -Output-Port -Nat) -Nat*]
-                       [(-String -Output-Port -Nat -Nat) -Nat*])]
-   [write-bytes  (cl-> [(-Bytes) -Nat*]
-                       [(-Bytes -Output-Port) -Nat*]
-                       [(-Bytes -Output-Port -Nat) -Nat*]
-                       [(-Bytes -Output-Port -Nat -Nat) -Nat*])]
-   [write-bytes-avail  (cl-> [(-Bytes) -Nat*]
-                             [(-Bytes -Output-Port) -Nat*]
-                             [(-Bytes -Output-Port -Nat) -Nat*]
-                             [(-Bytes -Output-Port -Nat -Nat) -Nat*])]
-   [write-bytes-avail*  (cl-> [(-Bytes) (-opt -Nat*)]
-                              [(-Bytes -Output-Port) (-opt -Nat*)]
-                              [(-Bytes -Output-Port -Nat) (-opt -Nat*)]
-                              [(-Bytes -Output-Port -Nat -Nat) (-opt -Nat*)])]
-   [write-bytes-avail/enable-break (cl-> [(-Bytes) -Nat*]
-                                         [(-Bytes -Output-Port) -Nat*]
-                                         [(-Bytes -Output-Port -Nat) -Nat*]
-                                         [(-Bytes -Output-Port -Nat -Nat) -Nat*])]
+   [write-byte (cl-> [(index-type) -Void]
+                     [(index-type -Output-Port) -Void])]
+   [write-string (cl-> [(-String) -Nat]
+                       [(-String -Output-Port) -Nat]
+                       [(-String -Output-Port index-type) -Nat]
+                       [(-String -Output-Port index-type index-type) -Nat])]
+   [write-bytes  (cl-> [(-Bytes) -Nat]
+                       [(-Bytes -Output-Port) -Nat]
+                       [(-Bytes -Output-Port index-type) -Nat]
+                       [(-Bytes -Output-Port index-type index-type) -Nat])]
+   [write-bytes-avail  (cl-> [(-Bytes) -Nat]
+                             [(-Bytes -Output-Port) -Nat]
+                             [(-Bytes -Output-Port index-type) -Nat]
+                             [(-Bytes -Output-Port index-type index-type) -Nat])]
+   [write-bytes-avail*  (cl-> [(-Bytes) (-opt -Nat)]
+                              [(-Bytes -Output-Port) (-opt -Nat)]
+                              [(-Bytes -Output-Port index-type) (-opt -Nat)]
+                              [(-Bytes -Output-Port index-type index-type) (-opt -Nat)])]
+   [write-bytes-avail/enable-break (cl-> [(-Bytes) -Nat]
+                                         [(-Bytes -Output-Port) -Nat]
+                                         [(-Bytes -Output-Port index-type) -Nat]
+                                         [(-Bytes -Output-Port index-type index-type) -Nat])]
 
 
    
-   [list-ref  (-poly (a) ((-lst a) -Nat . -> . a))]
-   [list-tail (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
+   [list-ref  (-poly (a) ((-lst a) index-type . -> . a))]
+   [list-tail (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
    
    [regexp-match
     (let ([?outp   (-opt -Output-Port)]
-          [N       -Nat]
-          [?N      (-opt -Nat)]
+          [N       index-type]
+          [?N      (-opt index-type)]
           [optlist (lambda (t) (-opt (-lst (-opt t))))]
           [-StrRx  (Un -String -Regexp -PRegexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
@@ -75,8 +75,8 @@
        (-Pattern -InpBts [N ?N ?outp] . ->opt . (optlist -Bytes))))]
    [regexp-match?
     (let ([?outp   (-opt -Output-Port)]
-          [N       -Nat]
-          [?N      (-opt -Nat)]
+          [N       index-type]
+          [?N      (-opt index-type)]
           [optlist (lambda (t) (-opt (-lst (-opt t))))]
           [-StrRx  (Un -String -Regexp -PRegexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
@@ -86,8 +86,8 @@
        (-BtsRx   -String [N ?N ?outp] . ->opt . -Boolean)
        (-Pattern -InpBts [N ?N ?outp] . ->opt . -Boolean)))]
    [regexp-match*
-    (let ([N       -Nat]
-          [?N      (-opt -Nat)]
+    (let ([N       index-type]
+          [?N      (-opt index-type)]
           [-StrRx  (Un -String -Regexp -PRegexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
           [-InpBts (Un -Input-Port -Bytes)])
@@ -97,14 +97,14 @@
        (-Pattern -InpBts [N ?N] . ->opt . (-lst -Bytes))))]
    [regexp-try-match
     (let ([?outp   (-opt -Output-Port)]
-          [?N      (-opt -Nat)]
+          [?N      (-opt index-type)]
           [optlist (lambda (t) (-opt (-lst (-opt t))))])
-      (->opt -Pattern -Input-Port [-Nat ?N ?outp] (optlist -Bytes)))]
+      (->opt -Pattern -Input-Port [index-type ?N ?outp] (optlist -Bytes)))]
    
    [regexp-match-positions
     (let ([?outp   (-opt -Output-Port)]
-          [N       -Nat]
-          [?N      (-opt -Nat)]
+          [N       index-type]
+          [?N      (-opt index-type)]
           [optlist (lambda (t) (-opt (-lst (-opt t))))]
           [-StrRx  (Un -String -Regexp -PRegexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
@@ -112,46 +112,46 @@
       (->opt -Pattern (Un -String -InpBts) [N ?N ?outp] (optlist (-pair -Nat -Nat))))]
    [regexp-match-positions*
     (let ([?outp   (-opt -Output-Port)]
-          [?N      (-opt -Nat)]
+          [?N      (-opt index-type)]
           [optlist (lambda (t) (-opt (-lst (-opt t))))]
           [-StrRx  (Un -String -Regexp -PRegexp)]
           [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
           [-InpBts (Un -Input-Port -Bytes)])
-      (->opt -Pattern (Un -String -InpBts) [-Nat ?N ?outp] (-lst (-pair -Nat -Nat))))]
+      (->opt -Pattern (Un -String -InpBts) [index-type ?N ?outp] (-lst (-pair -Nat -Nat))))]
    
    
-   [take   (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
-   [drop   (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
-   [take-right   (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
-   [drop-right   (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
+   [take   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
+   [drop   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
+   [take-right   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
+   [drop-right   (-poly (a) ((-lst a) index-type . -> . (-lst a)))]
    [split-at
-    (-poly (a) ((list (-lst a)) -Nat . ->* . (-values (list (-lst a) (-lst a)))))]
+    (-poly (a) ((list (-lst a)) index-type . ->* . (-values (list (-lst a) (-lst a)))))]
    [split-at-right
-    (-poly (a) ((list (-lst a)) -Nat . ->* . (-values (list (-lst a) (-lst a)))))]
+    (-poly (a) ((list (-lst a)) index-type . ->* . (-values (list (-lst a) (-lst a)))))]
    
-   [vector-ref (-poly (a) ((-vec a) -Nat . -> . a))]
-   [unsafe-vector-ref (-poly (a) ((-vec a) -Nat . -> . a))]
-   [unsafe-vector*-ref (-poly (a) ((-vec a) -Nat . -> . a))]
-   [build-vector (-poly (a) (-Nat (-Nat . -> . a) . -> . (-vec a)))]
-   [vector-set! (-poly (a) (-> (-vec a) -Nat a -Void))]
-   [vector-copy! (-poly (a) ((-vec a) -Nat (-vec a) [-Nat -Nat] . ->opt . -Void))]
-   [make-vector (-poly (a) (cl-> [(-Nat) (-vec -Nat)]
-                                 [(-Nat a) (-vec a)]))]
+   [vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
+   [unsafe-vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
+   [unsafe-vector*-ref (-poly (a) ((-vec a) index-type . -> . a))]
+   [build-vector (-poly (a) (index-type (index-type . -> . a) . -> . (-vec a)))]
+   [vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
+   [vector-copy! (-poly (a) ((-vec a) index-type (-vec a) [index-type index-type] . ->opt . -Void))]
+   [make-vector (-poly (a) (cl-> [(index-type) (-vec index-type)]
+                                 [(index-type a) (-vec a)]))]
    
    [peek-char
-    (cl->* [->opt [-Input-Port -Nat] (Un -Char (-val eof))])]
+    (cl->* [->opt [-Input-Port index-type] (Un -Char (-val eof))])]
    [peek-byte
-    (cl->* [->opt [-Input-Port -Nat] (Un -Byte (-val eof))])]
+    (cl->* [->opt [-Input-Port index-type] (Un -Byte (-val eof))])]
    
    ;; string.rkt
-   [real->decimal-string (N [-Nat] . ->opt .  -String)]
+   [real->decimal-string (N [index-type] . ->opt .  -String)]
    
-   [random (cl-> [(-Nat) -Nat*] [() -Real])]
+   [random (cl-> [(index-type) -Nat] [() -Real])]
    
    [raise-type-error
     (cl->
      [(Sym -String Univ) (Un)]
-     [(Sym -String -Nat (-lst Univ)) (Un)])]
+     [(Sym -String index-type (-lst Univ)) (Un)])]
    
    ))
    
