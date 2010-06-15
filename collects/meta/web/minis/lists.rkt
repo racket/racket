@@ -37,7 +37,7 @@
         @span[style: "font-size: 82.5%;"]{@at-domain}}}
     @p{@ML-description[ml]}
     @form[action: (list name "/subscribe") method: 'post]{
-      @span[style: "white-space: nowrap;"]{
+      @p[style: "white-space: nowrap;"]{
         Quick subscribe: @input[type: 'text name: 'email size: 20 value: ""]}}
     @(cond [(ML-google-name ml)
             => (lambda (g)
@@ -48,8 +48,8 @@
     @(let* ([gmane @list{gmane.comp.lang.racket.@(ML-gmane-name ml)}]
             [G "gmane.org"])
        @form[action: @`{http://search.@,|G|/} method: 'get]{
-         @input[type: 'hidden name: 'group value: gmane]
-         @p{Mirrord as the
+         @p{@input[type: 'hidden name: 'group value: gmane]
+           Mirrord as the
            @a[href: @`{http://dir.@,|G|/@,gmane}]{@TT{@gmane}}
            newsgroup on Gmane:
            Browse using
@@ -70,8 +70,8 @@
     @(let ([url @list{http://www.mail-archive.com/@|email|/}])
        @form[action: "http://www.mail-archive.com/search" method: 'get
              style: "display: inline; clear: none;"]{
-         @input[type: 'hidden name: 'l value: email]
-         @p{@a[href: (list url "info.html")]{Archived}
+         @p{@input[type: 'hidden name: 'l value: email]
+           @a[href: (list url "info.html")]{Archived}
            at @tt{mail-archive.com}:
            @a[href: url]{Browse},
            @a[href: (list url "maillist.xml")]{RSS},

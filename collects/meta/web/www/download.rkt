@@ -37,5 +37,5 @@
       @a[href: "download/"
          onmouseover: "set_download_image(1);"
          onmouseout: "set_download_image(0);"]{
-        @img[id: "download_button" border: "0" src: img1
+        @img[id: "download_button" src: img1 style: "border-width: 0;"
              alt: "Download Racket" title: "Download Racket"]}}))
