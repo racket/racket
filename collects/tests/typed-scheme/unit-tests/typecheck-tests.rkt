@@ -811,7 +811,14 @@
         [tc-err (do: : Void
                      ([j : Natural (+ i 'a) (+ j i)])
                      ((>= j 10))
-                     #f)])
+                     #f)]
+        [tc-e/t
+         (let ([x eof])
+           (if (procedure? x)
+               x
+               (lambda (z) (eq? x z))))
+         (make-pred-ty (-val eof))]
+        )
   (test-suite
    "check-type tests"
    (test-exn "Fails correctly" exn:fail:syntax? (lambda () (parameterize ([orig-module-stx #'here])
