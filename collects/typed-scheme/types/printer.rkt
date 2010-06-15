@@ -209,6 +209,7 @@
     [(Result: t (FilterSet: (Top:) (Top:)) (Empty:)) (fp "~a" t)]
     [(Result: t fs (Empty:)) (fp "(~a : ~a)" t fs)]
     [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
+    [(MPair: s t) (fp "(MPairof ~a ~a)" s t)]
     [(Refinement: parent p? _)
      (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
     [(Sequence: ts)

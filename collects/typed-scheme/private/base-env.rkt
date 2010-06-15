@@ -918,4 +918,6 @@
 [mcons (-poly (a b) (-> a b (-mpair a b)))]
 [mcar (-poly (a b) (-> (-mpair a b) a))]
 [mcdr (-poly (a b) (-> (-mpair a b) b))]
+[set-mcar! (-poly (a b) (-> (-mpair a b) a -Void))]
+[set-mcdr! (-poly (a b) (-> (-mpair a b) b -Void))]
 [mpair? (make-pred-ty (make-MPairTop))]

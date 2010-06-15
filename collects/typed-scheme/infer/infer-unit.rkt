@@ -414,6 +414,8 @@
            (cset-meet (cg e e*) (cg e* e))]
           [((Box: e) (Box: e*))
            (cset-meet (cg e e*) (cg e* e))]
+          [((MPair: s t) (MPair: s* t*))
+           (cset-meet* (list (cg s s*) (cg s* s) (cg t t*) (cg t* t)))]
           [((Channel: e) (Channel: e*))
            (cset-meet (cg e e*) (cg e* e))]
           [((Hashtable: s1 s2) (Hashtable: t1 t2))
