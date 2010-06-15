@@ -26,11 +26,13 @@
     @navbar-style
   })
 
-(define (racket-navbar)
+(define (xml->string content)
   (regexp-replace* #rx"&nbsp;"
-                   (with-output-to-string
-                     (lambda () (output-xml (www:the-resources 'navbar #f))))
+                   (with-output-to-string (lambda () (output-xml content)))
                    "\\&#160;"))
+
+(define (racket-navbar)  (xml->string (www:the-resources 'navbar #f)))
+(define (racket-favicon) (xml->string (www:the-resources 'favicon-headers)))
 
 (provide blog)
 (define blog
@@ -480,6 +482,9 @@ body#layout #header {
 /*** Racket CSS end ***/
 
 ]]></b:skin>
+
+@racket-favicon
+
 </head>
 
 <body>

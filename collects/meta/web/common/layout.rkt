@@ -135,22 +135,29 @@
                     (span class: 'helpicon (if (eq? this help) nbsp help)))))
           (tr (td colspan: 2 (links-table this))))))))
 
-(define (html-head-maker icon style)
+(define (html-favicon-maker icon)
+  (define headers
+    (list @link[rel: "icon" href: icon type: "image/ico"]
+          @link[rel: "shortcut icon" href: icon]))
+  (lambda () headers))
+
+(define (html-head-maker style favicon)
   (define headers
     (list @meta[name: "generator" content: "Racket"]
           @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
-          @link[rel: "icon" href: icon type: "image/ico"]
-          @link[rel: "shortcut icon" href: icon]
+          favicon
           style))
   (lambda (title* more-headers) (head @title[title*] headers more-headers)))
 
 (define (make-resources icon logo style)
-  (let ([make-head   (html-head-maker icon style)]
-        [make-navbar (navbar-maker logo)])
+  (let* ([favicon     (html-favicon-maker icon)]
+         [make-head   (html-head-maker style favicon)]
+         [make-navbar (navbar-maker logo)])
     (lambda (what . more)
       (apply (case what
                [(head)   make-head]
                [(navbar) make-navbar]
+               [(favicon-headers) favicon]
                [else (error 'resources "internal error")])
              more))))
 
