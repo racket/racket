@@ -18,5 +18,4 @@
   ;; Each is a "hostname:dest-path", and then a list of directories to
   ;; put in that path.  (Warning: "dest" should not be a top-level
   ;; directory that already exists.)
-  '(["champlain:/www" "www" "download" "lists" "stubs/mailman"]
-    ["winooski:~wwwplanet/html-template/" "stubs/planet/"])) ; note "/"s
+  '(["champlain:/www" "www" "download" "lists" "stubs"]))

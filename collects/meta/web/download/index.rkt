@@ -5,8 +5,9 @@
 (define (in-ftp . paths)
   (string-join (cons "/var/ftp/pub/racket" paths) "/"))
 
-(define docs       (symlink  (in-ftp "docs")))
-(define installers (symlink  (in-ftp "installers")))
+(define docs       (symlink (in-ftp "docs")))
+(define installers (symlink (in-ftp "installers")))
+(define stubs      (symlink "/www/stubs"))
 
 (provide index)
 (define index
