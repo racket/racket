@@ -13,6 +13,7 @@
  (for-syntax (only-in racket/private/pre-base new-apply-proc)
              #;racket/string)
  scheme/promise scheme/system
+ racket/mpair
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in mzscheme make-namespace)
  (only-in racket/match/runtime match:error matchable? match-equality-test)
@@ -913,3 +914,8 @@
 [curry (-poly (a b c) 
 	      (cl->* ((a b . -> . c) a . -> . (b . -> . c))
 		     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
+;; mutable pairs
+[mcons (-poly (a b) (-> a b (-mpair a b)))]
+[mcar (-poly (a b) (-> (-mpair a b) a))]
+[mcdr (-poly (a b) (-> (-mpair a b) b))]
+[mpair? (make-pred-ty (make-MPairTop))]
