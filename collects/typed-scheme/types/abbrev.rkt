@@ -15,7 +15,8 @@
 	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp scheme/flonum))
 
 (provide (all-defined-out)
-         (rename-out [make-Listof -lst]))
+         (rename-out [make-Listof -lst]
+                     [make-MListof -mlst]))
 
 ;; convenient constructors
 
@@ -36,6 +37,7 @@
 
 
 (define (make-Listof elem) (-mu list-rec (*Un (-val null) (-pair elem list-rec))))
+(define (make-MListof elem) (-mu mlist-rec (*Un (-val null) (-mpair elem mlist-rec))))
 
 (define (-lst* #:tail [tail (-val null)] . args)
   (for/fold ([tl tail]) ([a (reverse args)]) (-pair a tl)))
@@ -61,6 +63,12 @@
     (syntax-parse stx
       [(_ elem-pats)
        #'(app untuple (? values elem-pats))])))
+
+(define-match-expander MListof:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ elem-pat)
+       #'(Mu: var (Union: (list (Value: '()) (MPair: elem-pat (F: var)))))])))
 
 
 (d/c (-result t [f -no-filter] [o -no-obj])

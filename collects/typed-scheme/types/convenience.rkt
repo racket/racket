@@ -35,9 +35,14 @@
 	[(Value: 0) -Nat]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 (Value: '())) (-lst t1)]
-        [(Pair: t1 t2)
+        [(MPair: t1 (Value: '())) (-mlst t1)]
+        [(or (Pair: t1 t2) (MPair: t1 t2))
          (let ([t-new (loop t2)])
-           (if (type-equal? (-lst t1) t-new)
+           (if (type-equal? ((match t*
+                               [(Pair: _ _) -lst]
+                               [(MPair: _ _) -mlst])
+                             t1)
+                            t-new)
                t-new
                (exit t)))]
         [_ (exit t)]))))

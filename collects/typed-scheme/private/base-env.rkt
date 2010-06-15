@@ -889,8 +889,20 @@
 		     ((a b . -> . c) . -> . (a . -> . (b . -> . c)))))]
 ;; mutable pairs
 [mcons (-poly (a b) (-> a b (-mpair a b)))]
-[mcar (-poly (a b) (-> (-mpair a b) a))]
-[mcdr (-poly (a b) (-> (-mpair a b) b))]
-[set-mcar! (-poly (a b) (-> (-mpair a b) a -Void))]
-[set-mcdr! (-poly (a b) (-> (-mpair a b) b -Void))]
+[mcar (-poly (a b)
+             (cl->* (-> (-mpair a b) a)
+                    (-> (-mlst a) a)))]
+[mcdr (-poly (a b)
+             (cl->* (-> (-mpair a b) b)
+                    (-> (-mlst a) (-mlst a))))]
+[set-mcar! (-poly (a b)
+                  (cl->* (-> (-mpair a b) a -Void)
+                         (-> (-mlst a) a -Void)))]
+[set-mcdr! (-poly (a b)
+                  (cl->* (-> (-mpair a b) b -Void)
+                         (-> (-mlst a) (-mlst a) -Void)))]
 [mpair? (make-pred-ty (make-MPairTop))]
+[mlist (-poly (a) (->* (list) a (-mlst a)))]
+[mlength (-poly (a) (-> (-mlst a) -Nat))]
+[mreverse! (-poly (a) (-> (-mlst a) (-mlst a)))]
+[mappend (-poly (a) (->* (list) (-mlst a) (-mlst a)))]

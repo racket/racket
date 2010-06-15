@@ -55,5 +55,6 @@
 [Nothing (Un)]
 [Pairof (-poly (a b) (-pair a b))]
 [MPairof (-poly (a b) (-mpair a b))]
+[MListof (-poly (a) (-mlst a))]
 [Sequenceof (-poly (a) (-seq a))]
 

@@ -133,6 +133,10 @@
      (fp "(Listof ~a)" elem-ty)]
     [(Mu: var (Union: (list (Pair: elem-ty (F: var)) (Value: '()))))
      (fp "(Listof ~a)" elem-ty)]
+    [(Mu: var (Union: (list (Value: '()) (MPair: elem-ty (F: var)))))
+     (fp "(MListof ~a)" elem-ty)]
+    [(Mu: var (Union: (list (MPair: elem-ty (F: var)) (Value: '()))))
+     (fp "(MListof ~a)" elem-ty)]
     [(Value: v) (cond [(or (symbol? v) (null? v))
                        (fp "'~a" v)]
                       [else (fp "~a" v)])]
