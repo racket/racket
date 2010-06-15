@@ -8,7 +8,8 @@
 
 (require "utils.ss")
 
-(provide make-logo make-icon make-style navbar-style)
+(provide make-logo make-icon make-style
+         navbar-style page-sizes font-family) ; needed for the blog template
 
 (define ((make-file-copier file) dir)
   (copyfile-resource (in-here file) (web-path dir file)))
@@ -22,13 +23,13 @@
             (lambda (url) (link rel: "stylesheet" type: "text/css"
                                 href: url title: "default"))))
 
-(define page-style
+(define page-sizes
   @text{
     margin-left: auto;
     margin-right: auto;
     width: 45em;
   })
-(define font-style
+(define font-family
   @text{
     font-family: Optima, Arial, Verdana, Helvetica, sans-serif;
   })
@@ -49,8 +50,8 @@
       text-decoration: none;
     }
     .racketnav .navcontent {
-      @page-style
-      @font-style
+      @page-sizes
+      @font-family
     }
     .racketnav .navtitle {
       font-size: xx-large;
@@ -93,7 +94,7 @@
     body {
       color: black;
       background-color: white;
-      @font-style
+      @font-family
       margin: 0px;
       padding: 0px;
     }
@@ -105,7 +106,7 @@
     }
     @; ---- content styles ----
     .bodycontent {
-      @page-style
+      @page-sizes
     }
     @; ---- styles for the navbar ----
     @navbar-style

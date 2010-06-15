@@ -16,7 +16,7 @@
     ;}
     #navbar-iframe {
       position: absolute;
-      top: 154px; right: 0px;
+      top: 160px; right: 0px;
       opacity: 0.33; filter: alpha(opacity=33);
     }
     #navbar-iframe:hover {
@@ -27,8 +27,10 @@
   })
 
 (define (racket-navbar)
-  (with-output-to-string
-    (lambda () (output-xml (www:the-resources 'navbar #f)))))
+  (regexp-replace* #rx"&nbsp;"
+                   (with-output-to-string
+                     (lambda () (output-xml (www:the-resources 'navbar #f))))
+                   "\\&#160;"))
 
 (provide blog)
 (define blog
@@ -36,8 +38,8 @@
          #:referrer (lambda (u) @a[href: u]{Blog})
          ;; #:part-of community  <-- TODO: is doing this a good idea
          ]{
-@; This is the blogger style template file a little customized by soegaard and
-@; then by eli, with one hole for the CSS, and one for the navbar
+@; This is the blogger style template file, with one hole for the CSS and one
+@; for the navbar, and a few more tweaks (first by soegaard and then by eli).
 @;
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -111,27 +113,27 @@ Updated by: Blogger Team
              description="Text Font"
              type="font"
              default="normal normal 100% Georgia, Serif"
-             value="normal normal 100% Georgia, Serif">
+             value="normal normal 100% @font-family">
    <Variable name="headerfont"
              description="Sidebar Title Font"
              type="font"
              default="normal normal 78% 'Trebuchet MS',Trebuchet,Arial,Verdana,Sans-serif"
-             value="normal normal 78% 'Trebuchet MS',Trebuchet,Arial,Verdana,Sans-serif">
+             value="normal normal 78% @font-family">
    <Variable name="pagetitlefont"
              description="Blog Title Font"
              type="font"
              default="normal normal 200% Georgia, Serif"
-             value="normal normal 256% Verdana, sans-serif">
+             value="normal normal 256% @font-family">
    <Variable name="descriptionfont"
              description="Blog Description Font"
              type="font"
              default="normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif"
-             value="normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif">
+             value="normal normal 78% @font-family">
    <Variable name="postfooterfont"
              description="Post Footer Font"
              type="font"
              default="normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif"
-             value="normal normal 78% 'Trebuchet MS', Trebuchet, Arial, Verdana, Sans-serif">
+             value="normal normal 78% @font-family">
 */
 
 /* Use this with templates/template-twocol.html */
@@ -140,10 +142,11 @@ body {
   background: $bgcolor;
   margin: 0;
   color: $textcolor;
-  font: x-small Georgia Serif;
-  font-size/* */:/**/small;
-  font-size: /**/small;
-  text-align: center;
+  // ELI: I don't know why this was here, it was butchering the whole layout
+  // font: x-small Georgia Serif;
+  // font-size/* */:/**/small;
+  // font-size: /**/small;
+  // text-align: center;
   }
 a:link {
   color: $linkcolor;
@@ -162,11 +165,12 @@ a img {
 }
 
 /* Header
------------------------------------------------
-*/
+----------------------------------------------- */
+
+/* ELI: seems like this has no effect on anything */
 
 #header-wrapper {
-  width: 800px;        /* this used to be 660 [soegaard,eli] */
+  width: 800px;        /* this used to be 660 [soegaard] */
   margin: 0 auto 10px;
   border: 1px solid $bordercolor;
 }
@@ -218,30 +222,36 @@ a img {
   margin-right: auto;
 }
 
-/* Outer-Wrapper
+/* Wrappers
 ----------------------------------------------- */
+
+/* The whole main area */
 #outer-wrapper {
-  width: 800px;          /* used to be 660 [soegaard] */
-  margin: 0 auto;
+  // ELI:
+  margin-top: 0;
+  margin-bottom: 0;
+  @page-sizes
   padding: 10px;
   text-align: left;
   font: $bodyfont;
   }
 
+/* The text area */
 #main-wrapper {
-  width: 550px;          /* used to be 410 [soegaard] */
+  width: 63%;            /* used to be 410px [soegaard,ELI] */
   float: left;
   word-wrap: break-word; /* fix for long text breaking sidebar float in IE */
-  overflow: hidden;     /* fix for long non-text content breaking IE sidebar float */
+  overflow: hidden;      /* fix for long non-text content breaking IE sidebar float */
   }
 
+/* Sidebar stuff */
 #sidebar-wrapper {
-  width: 220px;
+  width: 33%;            /* used to be 220px [ELI] */
+  font-size: 87.5%;      /* ELI */
   float: right;
   word-wrap: break-word; /* fix for long text breaking sidebar float in IE */
   overflow: hidden;      /* fix for long non-text content breaking IE sidebar float */
 }
-
 
 /* Headings
 ----------------------------------------------- */
@@ -257,8 +267,7 @@ h2 {
 
 
 /* Posts
------------------------------------------------
- */
+----------------------------------------------- */
 h2.date-header {
   margin: 1.5em 0 .5em;
 }
