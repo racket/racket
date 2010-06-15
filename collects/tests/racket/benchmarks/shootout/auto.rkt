@@ -129,6 +129,7 @@ exec racket -qu "$0" ${1+"$@"}
       moments
       nbody
       nestedloop
+      nothing
       nsieve
       nsievebits
       partialsums

@@ -22,6 +22,7 @@
       ("moments" #f ,(lambda () (mk-sumcol-input)))
       ("nbody" "20000000")
       ("nestedloop" "18")
+      ("nothing" "")
       ("nsieve" "9")
       ("nsievebits" "11")
       ("partialsums" "2500000")
