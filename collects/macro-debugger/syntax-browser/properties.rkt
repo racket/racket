@@ -6,7 +6,8 @@
                     [send/i send:])
          "interfaces.ss"
          "util.ss"
-         "../util/mpi.ss")
+         "../util/mpi.ss"
+         "../util/stxobj.rkt")
 (provide properties-view%
          properties-snip%)
 
@@ -206,7 +207,8 @@
     (define/public (display-stxobj-info stx)
       (display-source-info stx)
       (display-extra-source-info stx)
-      (display-symbol-property-info stx))
+      (display-symbol-property-info stx)
+      (display-marks stx))
 
     ;; display-source-info : syntax -> void
     (define/private (display-source-info stx)
@@ -244,7 +246,13 @@
           (display "No additional properties available.\n" n/a-sd))
         (when (pair? keys)
           (for-each (lambda (k) (display-subkv/value k (syntax-property stx k)))
-                    keys))))
+                    keys))
+        (display "\n" #f)))
+
+    ;; display-marks : syntax -> void
+    (define/private (display-marks stx)
+      (display "Marks: " key-sd)
+      (display (format "~s\n" (simplify-marks (get-marks stx))) #f))
 
     ;; display-kv : any any -> void
     (define/private (display-kv key value)
