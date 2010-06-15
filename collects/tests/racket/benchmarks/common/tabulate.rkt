@@ -25,6 +25,7 @@ exec racket -qu "$0" ${1+"$@"}
   (define include-links (make-parameter #f))
   (define nongc (make-parameter #f))
   (define subtract-nothing (make-parameter #f))
+  (define subtract-nothing-run (make-parameter #f))
   (define generate-graph (make-parameter #f))
   (define no-compile-time (make-parameter #f))
   (define coefficient-of-variation (make-parameter #f))
@@ -47,6 +48,8 @@ exec racket -qu "$0" ${1+"$@"}
      (full-page-mode #t)]
     [("--nothing") "subtract compilation time of nothing benchmark"
      (subtract-nothing #t)]
+    [("--nothing-run") "subtract the run time of nothing benchmark"
+     (subtract-nothing-run #t)]
     [("--coefficient-of-variation") "show coefficient of variation"
      (coefficient-of-variation #t)]))
 
@@ -69,11 +72,12 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define bm-runs (hash-table-map bm-table cons))
 
-  (define (average/coefficient-of-variation sel l)
+  (define (average/coefficient-of-variation sel value-to-subtract l)
     (if (andmap sel l)
-        (let ((avg (round (/ (apply + (map sel l)) (length l)))))
+        (let* ((l (map (lambda (x) (max (- (sel x) value-to-subtract) 0)) l))
+               (avg (round (/ (apply + l) (length l)))))
           (list avg
-                (/ (round (sqrt (/ (apply + (map (lambda (x) (expt (- (sel x) avg) 2)) l))
+                (/ (round (sqrt (/ (apply + (map (lambda (x) (expt (- x avg) 2)) l))
                                    (length l)
                                    (if (zero? avg) 1.0 avg)))) ; no division by 0
                    100)))
@@ -87,25 +91,40 @@ exec racket -qu "$0" ${1+"$@"}
              (cons
               (car bm-run)
               (map (lambda (runs)
-                     (list (car runs)
-                           (list (average/coefficient-of-variation caar (cdr runs))
-                                 (average/coefficient-of-variation cadar (cdr runs))
-                                 (average/coefficient-of-variation caddar (cdr runs)))
-                           (let ([nothing-compile-time
-                                  (if (subtract-nothing)
-                                      (let ([a (hash-table-get
-                                                (hash-table-get bm-table 'nothing #hash())
-                                                (car runs)
-                                                #f)])
-                                        (if a
-                                            (cadar a)
-                                            0))
-                                      0)])
-                             (max (- (or (cadadr runs) 0)
-                                     nothing-compile-time)
-                                  0))))
+                     (let ([nothing-run-times
+                            (if (subtract-nothing-run)
+                                (let ([a (hash-table-get
+                                          (hash-table-get bm-table 'nothing #hash())
+                                          (car runs)
+                                          #f)])
+                                  (if a
+                                      ;; compute cpu, real and gc average time for the nothing benchmark
+                                      (let ([nothing-runs (map car a)])
+                                        (map (lambda (x) (exact->inexact (/ x (length nothing-runs))))
+                                             (foldl (lambda (x y) (map + x y))
+                                                    '(0 0 0)
+                                                    nothing-runs)))
+                                      '(0 0 0)))
+                                '(0 0 0))])
+                       (list (car runs)
+                             (list (average/coefficient-of-variation caar (car nothing-run-times) (cdr runs))
+                                   (average/coefficient-of-variation cadar (cadr nothing-run-times) (cdr runs))
+                                   (average/coefficient-of-variation caddar (caddr nothing-run-times) (cdr runs)))
+                             (let ([nothing-compile-time
+                                    (if (subtract-nothing)
+                                        (let ([a (hash-table-get
+                                                  (hash-table-get bm-table 'nothing #hash())
+                                                  (car runs)
+                                                  #f)])
+                                          (if a
+                                              (cadar a)
+                                              0))
+                                        0)])
+                               (max (- (or (cadadr runs) 0)
+                                       nothing-compile-time)
+                                    0)))))
                    runss))))
-         (if (subtract-nothing)
+         (if (or (subtract-nothing) (subtract-nothing-run))
              (filter (lambda (v)
                        (not (eq? (car v) 'nothing)))
                      bm-runs)
