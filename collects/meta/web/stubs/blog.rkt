@@ -26,13 +26,14 @@
     @navbar-style
   })
 
-(define (xml->string content)
-  (regexp-replace* #rx"&nbsp;"
-                   (with-output-to-string (lambda () (output-xml content)))
-                   "\\&#160;"))
+(define (get-resource-text . args)
+  (let ([str (xml->string (apply www:the-resources args))])
+    ;; due to some obscure xml issue the `nbsp' entity is not recognized
+    ;; in blogger pages
+    (regexp-replace* #rx"&nbsp;" str "\\&#160;")))
 
-(define (racket-navbar)  (xml->string (www:the-resources 'navbar #f)))
-(define (racket-favicon) (xml->string (www:the-resources 'favicon-headers)))
+(define (racket-navbar)  (get-resource-text 'navbar #f))
+(define (racket-favicon) (get-resource-text 'favicon-headers))
 
 (provide blog)
 (define blog

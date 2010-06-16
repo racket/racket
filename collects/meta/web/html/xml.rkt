@@ -2,7 +2,7 @@
 
 ;; XML-like objects and functions, with rendering
 
-(require scribble/text)
+(require scribble/text racket/port)
 
 ;; ----------------------------------------------------------------------------
 ;; Represent attribute names as `foo:' symbols.  They are made self-quoting in
@@ -60,6 +60,10 @@
 (provide output-xml)
 (define (output-xml content [p (current-output-port)])
   (output (disable-prefix (with-writer (xml-writer) content)) p))
+
+(provide xml->string)
+(define (xml->string content)
+  (with-output-to-string (lambda () (output-xml content))))
 
 ;; ----------------------------------------------------------------------------
 ;; Structs for xml data: elements, literals, entities
