@@ -23,7 +23,7 @@
   (let ([f (and id (symbol->string (force id)))])
     (cond [(and f (regexp-match #rx"[.]" f)) f]
           [(and f sfx) (string-append f (regexp-replace #rx"^[.]?" sfx "."))]
-          [else (error 'who "missing `#:file', or `#:id'~a"
+          [else (error who "missing `#:file', or `#:id'~a"
                        (if sfx "" " and `#:suffix'"))])))
 
 ;; The following are not intended for direct use, see
