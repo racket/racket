@@ -223,7 +223,6 @@ static size_t mmu_memory_allocated(MMU *mmu) {
 }
 
 #if ( defined(_WIN32) || defined(OSKIT) )
-  page_range_flush(mmu->page_range, MMU_WRITABLE);
 static void mmu_memory_allocated_inc(MMU *mmu, long amt) {
   mmu->memory_allocated += amt;
 }
