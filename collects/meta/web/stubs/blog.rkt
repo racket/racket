@@ -1,10 +1,10 @@
 #lang at-exp s-exp "../common.rkt"
 
-(define-context "stubs/blog" #:resources "icon" "logo" "style")
-
 (require "../common/resources.rkt"
          (prefix-in www: (only-in "../www/shared.rkt" the-resources))
          racket/port)
+
+(define-context "stubs/blog" #:resources www:the-resources)
 
 (define racket-css
   @text{

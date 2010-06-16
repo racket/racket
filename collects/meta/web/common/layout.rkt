@@ -172,22 +172,23 @@
 ;; site) to have its own resources (and possibly other customizations).
 (provide define+provide-context define-context)
 (define-for-syntax (make-define+provide-context stx provide?)
-  (define (make-it dir [icon #f] [logo #f] [style #f])
+  (define (make-it dir [resources #f])
     (with-syntax ([dir dir]
                   [page-id      (datum->syntax stx 'page)]
                   [plain-id     (datum->syntax stx 'plain)]
                   [copyfile-id  (datum->syntax stx 'copyfile)]
                   [symlink-id   (datum->syntax stx 'symlink)]
                   [resources-id (datum->syntax stx 'the-resources)])
-      (with-syntax
-          ([icon  (or icon #'(make-icon dir))]
-           [logo  (or logo #`(make-logo dir))]
-           [style (or style #`(make-style dir))]
-           [provides (if provide?
-                       #'(provide page-id plain-id copyfile-id symlink-id)
-                       #'(begin))])
+      (with-syntax ([resources (or resources
+                                   #'(make-resources (make-icon dir)
+                                                     (make-logo dir)
+                                                     (make-style dir)))]
+                    [provides (if provide?
+                                #'(provide page-id plain-id copyfile-id
+                                           symlink-id)
+                                #'(begin))])
         #'(begin
-            (define resources-id (make-resources icon logo style))
+            (define resources-id resources)
             (define-syntax-rule (page-id . xs)
               (page #:resources resources-id #:dir dir . xs))
             (define-syntax-rule (plain-id . xs)
@@ -198,10 +199,8 @@
               (symlink-resource source target referrer #:dir dir))
             provides))))
   (syntax-case stx ()
-    [(_ dir)
-     (make-it #'dir)]
-    [(_ dir #:resources icon logo style)
-     (make-it #'dir #'icon #'logo #'style)]))
+    [(_ dir) (make-it #'dir)]
+    [(_ dir #:resources resources) (make-it #'dir #'resources)]))
 (define-syntax (define+provide-context stx)
   (make-define+provide-context stx #t))
 (define-syntax (define-context stx)
