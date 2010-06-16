@@ -552,7 +552,13 @@ has been moved out).
         [font (send dc get-font)]
         [fg (send dc get-text-foreground)]
         [smoothing (send dc get-smoothing)])
-    (render-normalized-shape (send image get-normalized-shape) dc dx dy)
+    (cond
+      [(is-a? image bitmap%)
+       (send dc draw-bitmap image dx dy)]
+      [(is-a? image image-snip%)
+       (send dc draw-bitmap (send image get-bitmap) dx dy)]
+      [else
+       (render-normalized-shape (send image get-normalized-shape) dc dx dy)])
     (send dc set-pen pen)
     (send dc set-brush brush)
     (send dc set-font font)
