@@ -13,15 +13,6 @@
         on @a[href: "http://freenode.net"]{@tt{freenode.net}}
         @mdash an informal discussion channel for all things related to Racket.
         @irc-logs{Browse the logs}.}]
-    @parlist[@strong{Resources for Learning}
-      (apply parlist @text{Documentation for getting started:} intros)
-      @text{@-cookbook @mdash useful recipes, many of which apply to Racket.}
-      @text{@-htdp @mdash a textbook for introductory programming, but also
-        worthwhile for experience programmers who are new to @|ldquo|functional
-        programming.@|rdquo|}
-      @text{@-plai @mdash a textbook on programming languages.}
-      @text{@-teachscheme @mdash a workshop to train teachers using @-htdp in
-        the classroom.}]
     @parlist[@strong{PLT Scheme Inc.}
       @text{@blog @mdash announcements, helpful hints, and thoughtful rants.}
       @text{@people @mdash the people behind Racket.}]

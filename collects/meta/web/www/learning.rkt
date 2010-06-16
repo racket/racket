@@ -13,10 +13,18 @@
   @a[href: "http://www.cs.utah.edu/plt/publications/"]{Utah PLT Publications})
 ;; TODO: add calpoly & byu?
 
-(provide outreach+research)
-(define outreach+research
-  @page[#:title "Outreach & Research"
-        #:link-title @list{Outreach@|nbsp|&@|nbsp|Research}]{
+(provide learning)
+(define learning
+  @page{
+    @parlist[@strong{Resources for Learning}
+      (apply parlist @text{Documentation for getting started:} intros)
+      @text{@-cookbook @mdash useful recipes, many of which apply to Racket.}
+      @text{@-htdp @mdash a textbook for introductory programming, but also
+        worthwhile for experience programmers who are new to @|ldquo|functional
+        programming.@|rdquo|}
+      @text{@-plai @mdash a textbook on programming languages.}
+      @text{@-teachscheme @mdash a workshop to train teachers using @-htdp in
+        the classroom.}]
     @parlist[
       @strong{Outreach}
       @text{@-teachscheme @mdash a workshop to train teachers using @-htdp in
@@ -29,7 +37,7 @@
                    @|graduate-study|.}]})
 
 (define graduate-study
-  @page[#:file "common-plt-app.html" #:part-of outreach+research]{
+  @page[#:file "common-plt-app.html" #:part-of learning]{
     @(define (box-style border-width color)
        @list{border: @|border-width|px solid black; padding: 5px; @;
              background: @|color|@";"})
@@ -81,9 +89,18 @@
       @a[href: "http://www.cs.brown.edu/~sk/"]{Shriram}}})
 
 (define techreports
-  @page[#:file "techreports/" #:part-of outreach+research
+  @page[#:file "techreports/" #:part-of learning
         #:title "Technical Reports"
         #:extra-headers
         @meta[http-equiv: "refresh"
               content: "0;url=http://plt-scheme.org/techreports/"]]{
     TODO})
+
+;; redirection page for the previous name of this page
+(define outreach+research
+  @page[#:part-of learning
+        #:title "Outreach & Research"
+        #:link-title @list{Outreach@|nbsp|&@|nbsp|Research}
+        #:extra-headers
+        @meta[http-equiv: "refresh" content: "0;url=learning.html"]]{
+    Moved.})

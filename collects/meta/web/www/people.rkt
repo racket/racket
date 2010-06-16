@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-;;TODO: combine the info in outreach+research.rkt into a list of structs here
+;;TODO: combine the info in learning.rkt into a list of structs here
 (define places
   (ul (map (lambda (p)
              (let-values ([(place-name place-url person-name person-url)

@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "code.rkt" "download.rkt" "outreach+research.rkt" racket/string)
+(require "code.rkt" "download.rkt" "learning.rkt" racket/string)
 
 (define (doc s)
   (string-append "http://docs.racket-lang.org/" s))
@@ -262,8 +262,8 @@
         @p{Whether you're just @-htdp{starting out}, want to know more about
            programming language @-plai{applications} or @-redex{models},
            looking to @continue{expand your horizons}, or ready to dive into
-           @outreach+research{research}, Racket can help you become a better
-           programmer and system builder.}))))
+           @learning{research}, Racket can help you become a better programmer
+           and system builder.}))))
 
 (define (alts-panel l1 l2)
   (define l (append l1 l2))
