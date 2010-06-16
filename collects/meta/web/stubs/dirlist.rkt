@@ -2,7 +2,9 @@
 
 ;; This stub is to generate fancy directory listings with the Racket style
 
-(define-context "stubs/dirlist")
+(require (prefix-in www: (only-in "../www/shared.rkt" the-resources)))
+
+(define-context "stubs/dirlist" #:resources www:the-resources)
 
 (require racket/port)
 (define (xml->string content)
