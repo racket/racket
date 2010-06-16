@@ -11,7 +11,7 @@
 
 (provide index)
 (define index
-  @page[#:link-title "Downloads"]{
+  @page[#:link-title "Downloads" #:part-of 'download]{
     @div[style: "float: right;"]{@download-button}
     Use these links to browse the download directories directly:
     @ul{@li{Current @a[href: `(,installers "/recent")]{installers}

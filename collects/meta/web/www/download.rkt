@@ -6,7 +6,7 @@
 
 (define download
   @page[#:link-title "Download" #:window-title "Download Racket"
-        #:file "download/"]{
+        #:file "download/" #:part-of 'download]{
     @(render-download-page)})
 
 (define download-button

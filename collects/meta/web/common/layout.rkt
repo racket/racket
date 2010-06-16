@@ -89,7 +89,14 @@
                     (resource (get-path 'plain id file "html" dir)
                               (file-writer output-xml page)
                               referrer)))
-  (if html-only? page this))
+  (when this (pages->part-of this (or part-of this)))
+  (or this page))
+
+;; maps pages to their parts, so symbolic values can be used to determine it
+(define pages->part-of
+  (let ([t (make-hasheq)])
+    (case-lambda [(page) (hash-ref t page page)]
+                 [(page part-of) (hash-set! t page part-of)])))
 
 (provide set-navbar!)
 (define-syntax-rule (set-navbar! pages help)
@@ -100,9 +107,13 @@
 
 (define navbar-info (box #f))
 (define (navbar-maker logo)
-  (define pages-promise (lazy (car (or (unbox navbar-info)
-                                       (error 'navbar "no navbar info set")))))
-  (define help-promise (lazy (cadr (unbox navbar-info))))
+  (define pages-promise
+    (lazy (car (or (unbox navbar-info)
+                   (error 'navbar "no navbar info set")))))
+  (define help-promise
+    (lazy (cadr (unbox navbar-info))))
+  (define pages-parts-of-promise
+    (lazy (map pages->part-of (force pages-promise))))
   (define (middle-text size x)
     (span style: `("font-size: ",size"px; vertical-align: middle;")
           class: 'navtitle
@@ -126,12 +137,14 @@
         CLOSE))
   (define (links-table this)
     (table width: "100%"
-      (tr (map (lambda (nav)
+      (tr (map (lambda (nav navpart)
                  (td class: 'navlinkcell
                    (span class: 'navitem
-                     (span class: (if (eq? this nav) 'navcurlink 'navlink)
+                     (span class: (if (eq? (pages->part-of this) navpart)
+                                    'navcurlink 'navlink)
                        nav))))
-               (force pages-promise)))))
+               (force pages-promise)
+               (force pages-parts-of-promise)))))
   (lambda (this)
     (div class: 'racketnav
       (div class: 'navcontent

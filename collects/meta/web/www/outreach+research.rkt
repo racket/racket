@@ -85,5 +85,5 @@
         #:title "Technical Reports"
         #:extra-headers
         @meta[http-equiv: "refresh"
-              content: "2;url=http://plt-scheme.org/techreports/"]]{
+              content: "0;url=http://plt-scheme.org/techreports/"]]{
     TODO})

@@ -32,7 +32,7 @@
 
 (define listinfo
   @page[#:title @list{Mailing lists: @MM{List-Name}}
-        #:extra-headers style-header]{
+        #:extra-headers style-header #:part-of 'community]{
     @; --------------------
     @comment{@||
       Based on the Mailman file "listinfo.html", revision: 5865

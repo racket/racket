@@ -32,15 +32,13 @@
     ;; in blogger pages
     (regexp-replace* #rx"&nbsp;" str "\\&#160;")))
 
-(define (racket-navbar)  (get-resource-text 'navbar #f))
+(define (racket-navbar)  (get-resource-text 'navbar 'community))
 (define (racket-favicon) (get-resource-text 'favicon-headers))
 
 (provide blog)
 (define blog
   @plain[#:file ""
-         #:referrer (lambda (u) @a[href: u]{Blog})
-         ;; #:part-of community  <-- TODO: is doing this a good idea
-         ]{
+         #:referrer (lambda (u) @a[href: u]{Blog})]{
 @; This is the blogger style template file, with one hole for the CSS and one
 @; for the navbar, and a few more tweaks (first by soegaard and then by eli).
 @;

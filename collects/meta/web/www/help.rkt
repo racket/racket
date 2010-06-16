@@ -17,7 +17,7 @@
                   installed.  As a second line of defense, the documentation
                   for the core of the most recent version of Racket is
                   available
-                  @a[href: "http://docs.plt-scheme.org"]{from this web site}.}
+                  @a[href: "http://docs.plt-scheme.org/"]{from this web site}.}
             @text{Not sure what to search for?  The documentation includes a
                   @a[href: "http://docs.plt-scheme.org/guide/"]{guide} (also
                   located in your local copy of the documentation) that

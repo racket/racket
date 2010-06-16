@@ -17,7 +17,7 @@
                   see how the sausages are made @mdash and help make them.})))
 
 (define lists
-  @page[#:title "Mailing Lists" #:file ""]{
+  @page[#:title "Mailing Lists" #:file "" #:part-of 'community]{
     @p{This is the Racket mailing list server.  We have three public mailing
        lists listed below, with several mirrors for each one.}
     @(map show-list MLs)})

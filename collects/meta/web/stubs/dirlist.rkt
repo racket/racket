@@ -10,6 +10,7 @@
   (delay (regexp-split #rx"{{{BODY}}}"
                        (xml->string @page[#:id 'browse-downloads
                                           #:html-only #t
+                                          #:part-of 'download
                                           "{{{BODY}}}"]))))
 
 (define header @plain[#:file "header.html" (car  (force header+footer))])

@@ -6,7 +6,7 @@
 
 (provide community)
 (define community
-  @page{
+  @page[#:part-of 'community]{
     @mailing-lists-quick
     @parlist[@strong{Discussion Channels}
       @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel

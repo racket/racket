@@ -37,7 +37,7 @@
 
 (provide people)
 (define people
-  @page{
+  @page[#:part-of 'community]{
     @p{@|ldquo|PLT@|rdquo| refers to the group that is the core of the Racket
        development team.  PLT consists of numerous people distributed across
        several different universities in the USA: @places}
