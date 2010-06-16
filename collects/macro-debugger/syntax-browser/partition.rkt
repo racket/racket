@@ -83,22 +83,16 @@
     ;; simplified : hash[(listof nat) => nat]
     (define simplified (make-hash))
 
-    ;; unsimplified : hash[(listof nat) => nat]
-    (define unsimplified (make-hash))
-
     ;; next-number : nat
     (define next-number 0)
 
     (define/public (get-partition stx)
-      (let ([umarks (get-marks stx)])
-        (or (hash-ref unsimplified umarks #f)
-            (let ([smarks (simplify-marks umarks)])
-              (or (hash-ref simplified smarks #f)
-                  (let ([n next-number])
-                    (hash-set! simplified smarks n)
-                    (hash-set! unsimplified umarks n)
-                    (set! next-number (add1 n))
-                    n))))))
+      (let ([marks (simplify-marks (get-marks stx))])
+        (or (hash-ref simplified marks #f)
+            (let ([n next-number])
+              (hash-set! simplified marks n)
+              (set! next-number (add1 n))
+              n))))
 
     (define/public (same-partition? a b)
       (= (get-partition a) (get-partition b)))
