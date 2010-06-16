@@ -185,7 +185,7 @@
                                                      (make-style dir)))]
                     [provides (if provide?
                                 #'(provide page-id plain-id copyfile-id
-                                           symlink-id)
+                                           symlink-id resources-id)
                                 #'(begin))])
         #'(begin
             (define resources-id resources)
