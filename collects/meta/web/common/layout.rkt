@@ -53,6 +53,10 @@
 (define-syntax (page stx)
   (syntax-case stx () [(_ . xs) (process-contents 'page #'page* stx #'xs)]))
 (define (page* #:id [id #f] #:dir [dir #f] #:file [file #f]
+               ;; if this is true, return only the html -- don't create
+               ;; a resource -- therefore no file is made, and no links
+               ;; to it can be made (useful only for stub templates)
+               #:html-only [html-only? #f]
                #:title [label (if id
                                 (let* ([id (->string (force id))]
                                        [id (regexp-replace #rx"^.*/" id "")]
@@ -81,10 +85,11 @@
              @(if body-attrs
                 (apply body `(,@body-attrs ,content))
                 (body content))}))
-  (define this (resource (get-path 'plain id file "html" dir)
-                         (file-writer output-xml page)
-                         referrer))
-  this)
+  (define this (and (not html-only?)
+                    (resource (get-path 'plain id file "html" dir)
+                              (file-writer output-xml page)
+                              referrer)))
+  (if html-only? page this))
 
 (provide set-navbar!)
 (define-syntax-rule (set-navbar! pages help)
