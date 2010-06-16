@@ -131,8 +131,6 @@
          #`(vectorof #,(t->c t))]
         [(Box: t)
          #`(box/c #,(t->c t))]
-        [(Channel: t)
-         #`(channel/c #,(t->c t))]
         [(Pair: t1 t2)
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
