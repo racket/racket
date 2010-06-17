@@ -5,7 +5,8 @@
           (combine-in
            (utils tc-utils)
            (rep free-variance type-rep filter-rep rep-utils)
-           (types utils convenience union subtype remove-intersect resolve)
+           (types utils convenience union subtype remove-intersect resolve
+                  substitute)
            (env type-name-env index-env tvar-env))
           make-env -> ->* one-of/c)
          "constraint-structs.rkt"
@@ -509,7 +510,7 @@
           (cond
             [(not no-entry) no-entry]
             [(not entry) (cons v no-entry)]
-            [(= (length entry) 3) no-entry]
+            [(or (i-subst? entry) (i-subst/starred? entry) (i-subst/dotted? entry)) no-entry]
             [else #f]))))
     (and absent-entries
          (append
@@ -518,7 +519,7 @@
               (evcase var
                       [Constant (int-err "attempted to demote dotted variable")]
                       [Covariant (int-err "attempted to demote dotted variable")]
-                      [Contravariant (list missing null Univ)]
+                      [Contravariant (i-subst/starred missing null Univ)]
                       [Invariant (int-err "attempted to demote dotted variable")])))
           S)))
   (match (car (cset-maps C))
@@ -526,24 +527,29 @@
      (let ([subst (append 
                    (for/list ([(k dc) (in-hash dm)])
                      (match dc
+                       [(dcon fixed #f)
+                        (i-subst k
+                                 (for/list ([f fixed])
+                                   (constraint->type f idx-hash #:variable k)))]
                        [(dcon fixed rest)
-                        (list k
-                              (for/list ([f fixed])
-                                (constraint->type f idx-hash #:variable k))
-                              (and rest (constraint->type rest idx-hash)))]
+                        (i-subst/starred k
+                                         (for/list ([f fixed])
+                                           (constraint->type f idx-hash #:variable k))
+                                         (constraint->type rest idx-hash))]
                        [(dcon-exact fixed rest)
-                        (list k
-                              (for/list ([f fixed])
-                                (constraint->type f idx-hash #:variable k))
-                              (constraint->type rest idx-hash))]))
+                        (i-subst/starred
+                         k
+                         (for/list ([f fixed])
+                           (constraint->type f idx-hash #:variable k))
+                         (constraint->type rest idx-hash))]))
                    (for/list ([(k v) (in-hash cmap)])
-                     (list k (constraint->type v var-hash))))])
+                     (t-subst k (constraint->type v var-hash))))])
        ;; verify that we got all the important variables
        (and (for/and ([v (fv R)])
               (let ([entry (assq v subst)])
                 ;; Make sure we got a subst entry for a type var
                 ;; (i.e. just a type to substitute)
-                (and entry (= (length entry) 2))))
+                (and entry (t-subst? entry))))
             (extend-idxs subst)))]))
 
 ;; V : a set of variables not to mention in the constraints

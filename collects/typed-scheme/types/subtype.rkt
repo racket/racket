@@ -2,7 +2,7 @@
 (require "../utils/utils.rkt"
          (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-	 (types utils comparison resolve abbrev)
+	 (types utils comparison resolve abbrev substitute)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          scheme/match unstable/match
@@ -305,8 +305,7 @@
 	       (=> unmatch)
 	       (unless (= (length ns) (length ms)) 
 		       (unmatch))
-					;(printf "Poly: ~n~a ~n~a~n" b1 (subst-all (map list ms (map make-F ns)) b2))
-	       (subtype* A0 b1 (subst-all (map list ms (map make-F ns)) b2))]
+	       (subtype* A0 b1 (subst-all (map t-subst ms (map make-F ns)) b2))]
 	      [((Refinement: par _ _) t)
                (subtype* A0 par t)]
 	      ;; use unification to see if we can use the polytype here

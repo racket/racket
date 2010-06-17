@@ -62,13 +62,6 @@
          (fail! S T))
        (make-c S (or var X) T))]))
 
-(define (subst-all/c sub -c)
-  (match -c
-    [(struct c (S X T))
-     (make-c (subst-all sub S)
-             (F-n (subst-all sub (make-F X)))
-             (subst-all sub T))]))
-
 (define (cset-meet x y)
   (match* (x y)
    [((struct cset (maps1)) (struct cset (maps2)))

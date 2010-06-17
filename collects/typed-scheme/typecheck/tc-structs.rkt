@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt" 
 	 (except-in (rep type-rep free-variance) Dotted)
          (private parse-type)
-	 (types convenience utils union resolve abbrev)
+	 (types convenience utils union resolve abbrev substitute)
 	 (env global-env type-env-structs type-name-env tvar-env)
 	 (utils tc-utils)
          "def-binding.rkt"
@@ -199,7 +199,7 @@
                    ;; wrap everything in the approriate forall
                    #:wrapper (lambda (t) (make-Poly tvars t))
                    #:type-wrapper (lambda (t) (make-App t new-tvars #f))
-                   #:pred-wrapper (lambda (t) (subst-all (for/list ([t tvars]) (list t Univ)) t))
+                   #:pred-wrapper (lambda (t) (subst-all (for/list ([t tvars]) (t-subst t Univ)) t))
                    #:poly? tvars))
 
 

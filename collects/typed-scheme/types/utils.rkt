@@ -4,6 +4,7 @@
 
 (require (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
+         "substitute.rkt"
          (only-in (rep free-variance) combine-frees)
          (env index-env tvar-env)
          scheme/match
@@ -13,12 +14,6 @@
          (for-syntax scheme/base syntax/parse))
 
 (provide fv fv/list fi
-         substitute
-         substitute-dots
-         substitute-dotted
-         subst-all
-         subst 
-         ;ret
          instantiate-poly
          instantiate-poly-dotted
          tc-result?
@@ -33,125 +28,6 @@
          current-poly-struct)
 
 
-;; substitute : Type Name Type -> Type
-(d/c (substitute image name target #:Un [Un (get-union-maker)])
-  ((Type/c symbol? Type?) (#:Un procedure?) . ->* . Type?)
-  (define (sb t) (substitute image name t))
-  (if (hash-ref (free-vars* target) name #f)
-      (type-case (#:Type sb #:Filter (sub-f sb) #:Object (sub-o sb))
-                 target
-                 [#:Union tys (Un (map sb tys))]
-                 [#:F name* (if (eq? name* name) image target)]
-                 [#:arr dom rng rest drest kws
-                        (begin
-                          (when (and (pair? drest)
-                                     (eq? name (cdr drest))
-                                     (not (bound-tvar? name)))
-                            (int-err "substitute used on ... variable ~a in type ~a" name target))
-                          (make-arr (map sb dom)
-                                    (sb rng)
-                                    (and rest (sb rest))
-                                    (and drest (cons (sb (car drest)) (cdr drest)))
-                                    (map sb kws)))]
-                 [#:ValuesDots types dty dbound
-                               (begin
-                                 (when (and (eq? name dbound) (not (bound-tvar? name)))
-                                   (int-err "substitute used on ... variable ~a in type ~a" name target))
-                                 (make-ValuesDots (map sb types) (sb dty) dbound))]
-                 [#:ListDots dty dbound
-                             (begin
-                               (when (and (eq? name dbound) (not (bound-tvar? name)))
-                                 (int-err "substitute used on ... variable ~a in type ~a" name target))
-                               (make-ListDots (sb dty) dbound))])
-      target))
-
-;; implements angle bracket substitution from the formalism
-;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
-(d/c (substitute-dots images rimage name target)
-  ((listof Type/c) (or/c #f Type/c) symbol? Type? . -> . Type?)
-  (define (sb t) (substitute-dots images rimage name t))
-  (if (or (hash-ref (free-idxs* target) name #f) (hash-ref (free-vars* target) name #f))
-      (type-case (#:Type sb #:Filter (sub-f sb)) target
-                 [#:ListDots dty dbound
-                             (if (eq? name dbound)
-                                 ;; We need to recur first, just to expand out any dotted usages of this.
-                                 (let ([expanded (sb dty)])
-                                   (for/fold ([t (make-Value null)])
-                                     ([img images])
-                                     (make-Pair (substitute img name expanded) t)))
-                                 (make-ListDots (sb dty) dbound))]
-                 [#:ValuesDots types dty dbound
-                               (if (eq? name dbound)
-                                   (make-Values
-                                    (append 
-                                     (map sb types)
-                                     ;; We need to recur first, just to expand out any dotted usages of this.
-                                     (let ([expanded (sb dty)])
-                                       (for/list ([img images])
-                                         (make-Result
-                                          (substitute img name expanded)
-                                          (make-FilterSet (make-Top) (make-Top))
-                                          (make-Empty))))))
-                                   (make-ValuesDots (map sb types) (sb dty) dbound))]
-                 [#:arr dom rng rest drest kws
-                        (if (and (pair? drest)
-                                 (eq? name (cdr drest)))
-                            (make-arr (append 
-                                       (map sb dom)
-                                       ;; We need to recur first, just to expand out any dotted usages of this.
-                                       (let ([expanded (sb (car drest))])
-                                         (map (lambda (img) (substitute img name expanded)) images)))
-                                      (sb rng)
-                                      rimage
-                                      #f
-                                      (map sb kws))
-                            (make-arr (map sb dom)
-                                      (sb rng)
-                                      (and rest (sb rest))
-                                      (and drest (cons (sb (car drest)) (cdr drest)))
-                                      (map sb kws)))])
-      target))
-
-;; implements curly brace substitution from the formalism
-;; substitute-dotted : Type Name Name Type -> Type
-(define (substitute-dotted image image-bound name target)
-  (define (sb t) (substitute-dotted image image-bound name t))
-  (if (hash-ref (free-idxs* target) name #f)
-      (type-case (#:Type sb #:Filter (sub-f sb))
-                 target
-                 [#:ValuesDots types dty dbound
-                               (make-ValuesDots (map sb types)
-                                                (sb dty)
-                                                (if (eq? name dbound) image-bound dbound))]
-                 [#:ListDots dty dbound
-                             (make-ListDots (sb dty)
-                                            (if (eq? name dbound) image-bound dbound))]
-                 [#:F name*
-                      (if (eq? name* name)
-                          image
-                          target)]
-                 [#:arr dom rng rest drest kws
-                        (make-arr (map sb dom)
-                                  (sb rng)
-                                  (and rest (sb rest))
-                                  (and drest
-                                       (cons (substitute image (cdr drest) (sb (car drest)))
-                                             (if (eq? name (cdr drest)) image-bound (cdr drest))))
-                                  (map sb kws))])
-       target))
-
-;; substitute many variables
-;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
-;; subst-all : substitution Type -> Type
-(define (subst-all s t)
-  (for/fold ([t t]) ([e s])
-    (match e
-      [(list v (list imgs ...) starred)
-       (substitute-dots imgs starred v t)]
-      [(list v img)
-       (substitute img v t)])))
-
-
 ;; unfold : Type -> Type
 ;; must be applied to a Mu
 (define (unfold t)
@@ -164,13 +40,13 @@
     [(Poly: ns body) 
      (unless (= (length types) (length ns))
        (int-err "instantiate-poly: wrong number of types: expected ~a, got ~a" (length ns) (length types)))
-     (subst-all (map list ns types) body)]
+     (subst-all (map t-subst ns types) body)]
     [(PolyDots: (list fixed ... dotted) body)
      (unless (>= (length types) (length fixed))
        (int-err "instantiate-poly: wrong number of types: expected at least ~a, got ~a" (length fixed) (length types)))
      (let* ([fixed-tys (take types (length fixed))]
             [rest-tys (drop types (length fixed))]
-            [body* (subst-all (map list fixed fixed-tys) body)])
+            [body* (subst-all (map t-subst fixed fixed-tys) body)])
        (substitute-dots rest-tys #f dotted body*))]
     [_ (int-err "instantiate-poly: requires Poly type, got ~a" t)]))
 
@@ -180,7 +56,7 @@
      (unless (= (length fixed) (length types))
        (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a, types were ~a" 
                 (length fixed) (length types) types))
-     (let ([body* (subst-all (map list fixed types) body)])
+     (let ([body* (subst-all (map t-subst fixed types) body)])
        (substitute-dotted image var dotted body*))]
     [_ (int-err "instantiate-poly-dotted: requires PolyDots type, got ~a" t)]))
 
@@ -276,8 +152,6 @@
   (match tcs
     [(list (tc-result1: t f o) ...)
      (ret t f o)]))
-
-(define (subst v t e) (substitute t v e))
 
 
 ;; type comparison

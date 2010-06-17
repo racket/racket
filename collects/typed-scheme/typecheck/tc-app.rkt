@@ -13,7 +13,7 @@
          ;; end fixme
          (for-syntax syntax/parse scheme/base (utils tc-utils))
          (private type-annotation)
-         (types utils abbrev union subtype resolve convenience type-table)
+         (types utils abbrev union subtype resolve convenience type-table substitute)
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
          (except-in (env type-env-structs tvar-env index-env) extend)
@@ -417,16 +417,7 @@
                                 (cons (make-ListDots tail-ty tail-bound) arg-tys)
                                 (cons (make-ListDots (car (car drests*)) (cdr (car drests*))) (car doms*))
                                 (car rngs*)))))
-                => (lambda (substitution) 
-                     (define drest-bound (cdr (car drests*)))
-                     (let ([dots-subst (assq drest-bound substitution)])
-                       (unless dots-subst
-                         (int-err "expected dotted substitution for ~a" drest-bound))
-                       (do-ret (substitute-dotted (cadr dots-subst)
-                                                  tail-bound
-                                                  drest-bound
-                                                  (subst-all (alist-delete drest-bound substitution eq?)
-                                                             (car rngs*))))))]
+                => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; ... function, (List A B C etc) arg
                [(and (car drests*)
                      (not tail-bound)
@@ -436,8 +427,7 @@
                      (untuple tail-ty)
                      (infer/dots fixed-vars dotted-var (append arg-tys (untuple tail-ty)) (car doms*)
                                  (car (car drests*)) (car rngs*) (fv (car rngs*))))
-                => (lambda (substitution) 
-                     (define drest-bound (cdr (car drests*)))
+                => (lambda (substitution)                      
                      (do-ret (subst-all substitution (car rngs*))))]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]

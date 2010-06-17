@@ -2,7 +2,7 @@
 
 (require "../utils/utils.rkt")
 (require (rep type-rep)
-	 (types utils union subtype remove-intersect resolve)
+	 (types utils union subtype remove-intersect resolve substitute)
          "signatures.rkt"
          scheme/match mzlib/trace)
 
