@@ -812,6 +812,7 @@
                      ([j : Natural (+ i 'a) (+ j i)])
                      ((>= j 10))
                      #f)]
+        [tc-err (apply +)]
         [tc-e/t
          (let ([x eof])
            (if (procedure? x)

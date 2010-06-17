@@ -257,7 +257,11 @@
   ;; produces the first n-1 elements of the list, and the last element
   (define (split l) (let-values ([(f r) (split-at l (sub1 (length l)))])
                       (values f (car r))))
-  (define-values (fixed-args tail) (split (syntax->list args)))
+  (define-values (fixed-args tail)
+    (let ([args* (syntax->list args)])
+      (if (null? args*)
+          (tc-error "apply requires a final list argument, given only a function argument of type ~a" (match f-ty [(tc-result1: t) t]))
+          (split args*))))
 
   (match f-ty
     [(tc-result1: (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ...)))
