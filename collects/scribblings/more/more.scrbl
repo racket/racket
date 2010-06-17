@@ -60,11 +60,12 @@ you may want to skip to @|guide|.
 To get into the spirit of this tutorial, we suggest that you set
 DrRacket aside for a moment, and switch to raw @exec{racket} in a
 terminal. You'll also need a text editor, such as @exec{emacs} or
-@exec{vi}. Finally, you'll need a web client, perhaps @exec{lynx} or
-@exec{firefox}.
+@exec{vi}, but any editor will do. Finally, you'll need a web client,
+perhaps @exec{lynx} or @exec{firefox}.
 
-@margin-note{Of course, if you're already spoiled, you can keep using
-DrRacket.}
+Of course, if you're already spoiled, you can keep using DrRacket.  If
+you're on Windows, this is might also make things more convenient than
+using a ``DOS box''.
 
 @; ----------------------------------------------------------------------
 @section{Ready...}
@@ -83,7 +84,8 @@ on your system, and if you'd like Readline support in @exec{racket},
 then evaluate @racket[(require readline)]. If you also evaluate
 @racket[(install-readline!)], then your @filepath{~/.racketrc} is
 updated to load Readline whenever you start @exec{racket} for
-interactive evaluation.
+interactive evaluation.  This is not needed if you're running a shell
+inside Emacs, or if you're on Windows and use a @exec{cmd} window.
 
 @margin-note{Unfortunately, for legal reasons related to GPL vs. LGPL,
              @exec{racket} cannot provide Readline automatically.}
@@ -126,7 +128,7 @@ Try modifying @filepath{serve.rkt}, and then run @racket[(enter!
 @section{``Hello World'' Server}
 
 We'll implement the web server through a @racket[serve] function that
-takes a IP port number for client connections:
+takes an IP port number for client connections:
 
 @racketblock[
 (define (serve port-no)
@@ -136,8 +138,8 @@ takes a IP port number for client connections:
 The server accepts TCP connections through a @defterm{listener}, which
 we create with @racket[tcp-listen]. To make interactive development
 easier, we supply @racket[#t] as the third argument to
-@racket[tcp-listen], which lets us re-use the port number without
-waiting on TCP timeouts.
+@racket[tcp-listen], which lets us re-use the port number immediately,
+without waiting for a TCP timeout.
 
 @racketblock[
 (define (serve port-no)
