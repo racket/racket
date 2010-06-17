@@ -1368,6 +1368,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;  flipping
+;;
+
+(test (flip-horizontal (rotate -30 (rectangle 100 10 'solid 'red)))
+      =>
+      (rotate 30 (rectangle 100 10 'solid 'red)))
+
+(test (flip-vertical (rotate -30 (rectangle 100 10 'solid 'red)))
+      =>
+      (rotate 30 (rectangle 100 10 'solid 'red)))
+(test (flip-vertical
+       (rotate
+        -30
+        (overlay (rectangle 100 10 'solid 'red)
+                 (ellipse 10 100 'solid 'blue))))
+      =>
+      (rotate
+       30
+       (overlay (rectangle 100 10 'solid 'red)
+                (ellipse 10 100 'solid 'blue))))
+(test (flip-horizontal (overlay/xy (rectangle 100 10 'solid 'red)
+                                   10 10
+                                   (ellipse 10 100 'solid 'blue)))
+      =>
+      (overlay/xy (rectangle 100 10 'solid 'red)
+                  80 10
+                  (ellipse 10 100 'solid 'blue)))
+(test (flip-vertical (overlay/xy (rectangle 100 10 'solid 'red)
+                                 10 10
+                                 (ellipse 10 100 'solid 'blue)))
+      =>
+      (overlay/xy (rectangle 100 10 'solid 'red)
+                  10 -100
+                  (ellipse 10 100 'solid 'blue)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; pen arguments
 ;;
 

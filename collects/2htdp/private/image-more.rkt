@@ -261,18 +261,22 @@
                (cdr rst)))])))
 
 
-;                                                                                   
-;                               ;;      ;;                   ;;                     
-;                               ;;      ;;                  ;;;                     
-;    ;;;;    ;;;;   ;;;;;; ;;;  ;;;;;   ;;  ;; ;;;   ;;;;  ;;;;;  ;;;;   ;;;; ;;;;; 
-;   ;;;;;;  ;;;;;;  ;;;;;;;;;;  ;;;;;;  ;;  ;;;;;;  ;;  ;;  ;;;; ;;;;;;  ;;;; ;; ;; 
-;  ;;;     ;;;  ;;; ;;  ;;  ;;  ;;  ;;; ;;  ;;  ;;    ;;;;  ;;; ;;;  ;;; ;;   ;;;;; 
-;  ;;;     ;;;  ;;; ;;  ;;  ;;  ;;  ;;; ;;  ;;  ;;  ;;; ;;  ;;; ;;;  ;;; ;;     ;;;;
-;   ;;;;;;  ;;;;;;  ;;  ;;  ;;  ;;;;;;  ;;  ;;  ;; ;;;  ;;  ;;;; ;;;;;;  ;;   ;; ;;;
-;    ;;;;    ;;;;   ;;  ;;  ;;  ;; ;;   ;;  ;;  ;;  ;;;;;;   ;;;  ;;;;   ;;   ;;;;; 
-;                                                                                   
-;                                                                                   
-;       
+;                                                                                                  
+;                                                                                                  
+;                                                                                                  
+;                                 ;;;;        ;;                        ;                          
+;                                 ;;;;        ;;                       ;;                          
+;    ;;;;;   ;;;;   ;;;;;;; ;;;;  ;;;;;;;        ;;;; ;;;  ;;;;;;;   ;;;;;   ;;;;   ;;; ;;;  ;;;;; 
+;   ;;;;;;  ;;;;;;  ;;;;;;;;;;;;; ;;;;;;;;  ;;;; ;;;;;;;;; ;;;;;;;; ;;;;;;  ;;;;;;  ;;;;;;; ;;;;;; 
+;  ;;;;;;; ;;;;;;;; ;;;; ;;; ;;;; ;;;;;;;;; ;;;; ;;;; ;;;;     ;;;;  ;;;;  ;;;;;;;; ;;;; ;; ;;;;   
+;  ;;;;    ;;;; ;;; ;;;; ;;; ;;;; ;;;; ;;;; ;;;; ;;;; ;;;;  ;;;;;;;  ;;;;  ;;;; ;;; ;;;;     ;;;;  
+;  ;;;;;;; ;;;;;;;; ;;;; ;;; ;;;; ;;;;;;;;; ;;;; ;;;; ;;;; ;;  ;;;;  ;;;;; ;;;;;;;; ;;;;      ;;;; 
+;   ;;;;;;  ;;;;;;  ;;;; ;;; ;;;; ;;;;;;;;  ;;;; ;;;; ;;;; ;;;;;;;;  ;;;;;  ;;;;;;  ;;;;    ;;;;;; 
+;    ;;;;;   ;;;;   ;;;; ;;; ;;;; ;;;;;;;   ;;;; ;;;; ;;;;  ;; ;;;;   ;;;;   ;;;;   ;;;;    ;;;;;  
+;                                                                                                  
+;                                                                                                  
+;                                                                                                  
+    
 
 ;; crop : number number number number image -> image
 ;; crops an image to be w x h from (x,y)
@@ -385,7 +389,7 @@
      (rotate-simple angle shape)]))
 
 ;; rotate-simple : angle simple-shape -> simple-shape
-(define (rotate-simple θ simple-shape)
+(define/contract (rotate-simple θ simple-shape)
   (-> number? simple-shape? simple-shape?)
   (cond
     [(line-segment? simple-shape)
@@ -488,7 +492,7 @@
   (let-values ([(left top right bottom) (points->ltrb-values points)])
     (make-ltrb left top right bottom)))
 
-(define (np-atomic-bb atomic-shape)
+(define/contract (np-atomic-bb atomic-shape)
   (-> np-atomic-shape? (values number? number? number? number?))
   (cond
     [(ellipse? atomic-shape)
@@ -638,6 +642,115 @@
        x]
       [else
        (loop (- x upper-bound))])))
+
+(define/chk (flip-horizontal image)
+  (rotate 90 (flip-vertical (rotate -90 image))))
+
+(define/chk (flip-vertical image)
+  (let* ([flipped-shape (flip-normalized-shape 
+                         (send image get-normalized-shape))]
+        [ltrb (normalized-shape-bb flipped-shape)])
+    (make-image (make-translate (- (ltrb-left ltrb)) (- (ltrb-top ltrb)) flipped-shape)
+                (make-bb (- (ltrb-right ltrb) (ltrb-left ltrb))
+                         (- (ltrb-bottom ltrb) (ltrb-top ltrb))
+                         (- (ltrb-bottom ltrb) (ltrb-top ltrb)))
+                #f)))
+
+(define/contract (flip-normalized-shape shape)
+  (-> normalized-shape? normalized-shape?)
+  (cond
+    [(overlay? shape)
+     (let ([top-shape (flip-normalized-shape (overlay-top shape))]
+           [bottom-shape (flip-cn-or-simple-shape (overlay-bottom shape))])
+       (make-overlay top-shape bottom-shape))]
+    [else 
+     (flip-cn-or-simple-shape shape)]))
+
+(define/contract (flip-cn-or-simple-shape shape)
+  (-> cn-or-simple-shape? cn-or-simple-shape?)
+  (cond
+    [(crop? shape)
+     (make-crop (flip-points (crop-points shape))
+                (flip-normalized-shape (crop-shape shape)))]
+    [else
+     (flip-simple shape)]))
+
+(define/contract (flip-simple simple-shape)
+  (-> simple-shape? simple-shape?)
+  (cond
+    [(line-segment? simple-shape)
+     (make-line-segment (flip-point (line-segment-start simple-shape))
+                        (flip-point (line-segment-end simple-shape))
+                        (line-segment-color simple-shape))]
+    [(curve-segment? simple-shape)
+     (make-curve-segment (flip-point (curve-segment-start simple-shape))
+                         (curve-segment-s-angle simple-shape)
+                         (curve-segment-s-pull simple-shape)
+                         (flip-point (curve-segment-end simple-shape))
+                         (curve-segment-e-angle simple-shape)
+                         (curve-segment-e-pull simple-shape)
+                         (curve-segment-color simple-shape))]
+    [(polygon? simple-shape)
+     (make-polygon (flip-points (polygon-points simple-shape))
+                   (polygon-mode simple-shape)
+                   (polygon-color simple-shape))]
+    [else
+     (make-translate (translate-dx simple-shape) 
+                     (- (translate-dy simple-shape))
+                     (flip-atomic (translate-shape simple-shape)))]))
+
+(define/contract (flip-atomic atomic-shape)
+  (-> np-atomic-shape? np-atomic-shape?)
+  (cond
+    [(ellipse? atomic-shape)
+     (cond
+       [(= (ellipse-width atomic-shape)
+           (ellipse-height atomic-shape))
+        atomic-shape]
+       [else
+        (let ([new-angle (bring-between (- 180 (ellipse-angle atomic-shape)) 180)])
+          (cond
+            [(< new-angle 90)
+             (make-ellipse (ellipse-width atomic-shape)
+                           (ellipse-height atomic-shape)
+                           new-angle
+                           (ellipse-mode atomic-shape)
+                           (ellipse-color atomic-shape))]
+            [else
+             (make-ellipse (ellipse-height atomic-shape)
+                           (ellipse-width atomic-shape)
+                           (- new-angle 90)
+                           (ellipse-mode atomic-shape)
+                           (ellipse-color atomic-shape))]))])]
+    [(text? atomic-shape)
+     (error 'flip "cannot flip shapes that contain text")]
+    [(bitmap? atomic-shape)
+     atomic-shape
+     #;(make-bitmap (bitmap-raw-bitmap atomic-shape)
+                  (bitmap-raw-mask atomic-shape)
+                  (bring-between (+ θ (bitmap-angle atomic-shape)) 360)
+                  (bitmap-x-scale atomic-shape)
+                  (bitmap-y-scale atomic-shape)
+                  #f
+                  #f)]))
+
+(define (flip-point point) (make-point (point-x point) (- (point-y point))))
+(define (flip-points points) (map flip-point points))
+;                                                                                                 
+;                                                                                                 
+;                                                                                                 
+;  ;;;;                        ;;               ;;                                                
+;  ;;;;                        ;;               ;;                                                
+;  ;;;;;;;   ;;;;;;;   ;;;;;        ;;;;;          ;;;;;;; ;;;;  ;;;;;;;   ;;;;;;;   ;;;    ;;;;; 
+;  ;;;;;;;;  ;;;;;;;; ;;;;;; ;;;;  ;;;;;;     ;;;; ;;;;;;;;;;;;; ;;;;;;;; ;;;;;;;;  ;;;;;  ;;;;;; 
+;  ;;;;;;;;;     ;;;; ;;;;   ;;;; ;;;;;;;     ;;;; ;;;; ;;; ;;;;     ;;;; ;;; ;;;; ;;;; ;; ;;;;   
+;  ;;;; ;;;;  ;;;;;;;  ;;;;  ;;;; ;;;;        ;;;; ;;;; ;;; ;;;;  ;;;;;;; ;;;;;;;; ;;;;;;;  ;;;;  
+;  ;;;;;;;;; ;;  ;;;;   ;;;; ;;;; ;;;;;;;     ;;;; ;;;; ;;; ;;;; ;;  ;;;;  ;;;;;;; ;;;;;     ;;;; 
+;  ;;;;;;;;  ;;;;;;;; ;;;;;; ;;;;  ;;;;;;     ;;;; ;;;; ;;; ;;;; ;;;;;;;; ;   ;;;;  ;;;;;; ;;;;;; 
+;  ;;;;;;;    ;; ;;;; ;;;;;  ;;;;   ;;;;;     ;;;; ;;;; ;;; ;;;;  ;; ;;;; ;;;;;;;;   ;;;;  ;;;;;  
+;                                                                         ;;;;;;;;                
+;                                                                          ;;;;;;                 
+;                                                                                                 
 
 
 (define/chk (polygon posns mode color)
@@ -939,6 +1052,8 @@
          
          rotate
          crop
+         flip-vertical
+         flip-horizontal
          frame
 
          place-image
