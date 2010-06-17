@@ -465,20 +465,6 @@
 
 [match:error ((list) Univ . ->* . (Un))]
 
-[arithmetic-shift (cl->* (-Nat -Nat . -> . -Nat)
-                         (-Integer -Integer . -> . -Integer))]
-[bitwise-and (cl->* (null -Nat . ->* . -Nat)
-                    (null -Integer . ->* . -Integer))]
-[bitwise-ior (cl->* (null -Nat . ->* . -Nat)
-                    (null -Integer . ->* . -Integer))]
-[bitwise-not (cl->* (null -Nat . ->* . -Nat)
-                    (null -Integer . ->* . -Integer))]
-[bitwise-xor (cl->* (null -Nat . ->* . -Nat)
-                    (null -Integer . ->* . -Integer))]
-
-[abs (cl->* (-Integer . -> . -Nat)
-            (-Real . -> . -Real))]
-
 [file-exists? (-Pathlike . -> . B)]
 [string->symbol (-String . -> . Sym)]
 [symbol->string (Sym . -> . -String)]

@@ -133,6 +133,23 @@
 [quotient/remainder (cl->* (-Nat -Nat . -> . (-values (list -Nat -Nat)))
                            (-Integer -Integer . -> . (-values (list -Integer -Integer))))]
 
+[arithmetic-shift (cl->* (-Nat -Nat . -> . -Nat)
+                         (-Integer -Integer . -> . -Integer))]
+[bitwise-and (cl->* (null -Nat . ->* . -Nat)
+                    (null -Integer . ->* . -Integer))]
+[bitwise-ior (cl->* (null -Nat . ->* . -Nat)
+                    (null -Integer . ->* . -Integer))]
+[bitwise-not (cl->* (null -Nat . ->* . -Nat)
+                    (null -Integer . ->* . -Integer))]
+[bitwise-xor (cl->* (null -Nat . ->* . -Nat)
+                    (null -Integer . ->* . -Integer))]
+[bitwise-bit-set? (-> -Integer -Integer B)]
+[bitwise-bit-field (-> -Integer -Integer -Integer -Integer)]
+[integer-length (-> -Integer -Nat)]
+
+[abs (cl->* (-Integer . -> . -Nat)
+            (-Real . -> . -Real))]
+
 ;; exactness
 [exact->inexact (cl->* 
                  (-Real . -> . -Flonum)
