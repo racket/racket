@@ -294,6 +294,10 @@
 [thread-running? (-Thread . -> . B)]
 [thread-dead? (-Thread . -> . B)]
 [thread-wait (-Thread . -> . -Void)]
+[thread-send (-poly (a) (-Thread Univ [(-> a)] . ->opt . (Un -Void (-val #f) a)))]
+[thread-receive (-> Univ)]
+[thread-try-receive (-> Univ)]
+[thread-rewind-receive (-> (-lst Univ) -Void)]
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
