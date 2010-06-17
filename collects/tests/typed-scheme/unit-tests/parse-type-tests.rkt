@@ -5,8 +5,8 @@
 	 (rep type-rep)
 	 (rename-in (types comparison subtype union utils convenience)
                     [Un t:Un] [-> t:->])
-         (private base-types-new base-types-extra colon)
-         (for-template (private base-types-new base-types-extra base-env colon))
+         (private base-types base-types-extra colon)
+         (for-template (private base-types base-types-extra base-env colon))
          (private parse-type)
          rackunit)
 

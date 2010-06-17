@@ -4,7 +4,7 @@
 
 (providing (libs (except racket/base #%module-begin #%top-interaction with-handlers lambda #%app define-struct)
                  (except typed-scheme/private/prims)
-                 (except typed-scheme/private/base-types-new)
+                 (except typed-scheme/private/base-types)
                  (except typed-scheme/private/base-types-extra))
 	   (basics #%module-begin		   		   		   
 		   #%top-interaction

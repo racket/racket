@@ -17,7 +17,7 @@
                                                  [ns (make-base-namespace)])
                                              (parameterize ([current-namespace ns])
                                                (namespace-require 'typed-scheme/private/prims)
-                                               (namespace-require 'typed-scheme/private/base-types-new)
+                                               (namespace-require 'typed-scheme/private/base-types)
                                                (namespace-require 'typed-scheme/private/base-types-extra)
                                                (expand 'ann-stx))))
                           ty))

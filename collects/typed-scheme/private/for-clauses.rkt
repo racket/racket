@@ -3,7 +3,7 @@
 (require syntax/parse
          "annotate-classes.rkt"
          (for-template racket/base
-                       "base-types-new.rkt"))
+                       "base-types.rkt"))
 
 (provide (all-defined-out))
 

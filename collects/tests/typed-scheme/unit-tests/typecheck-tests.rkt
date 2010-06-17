@@ -25,7 +25,7 @@
 	             (env type-env)
 	             (private base-env base-env-numeric
 			      base-env-indexing))
-         (for-template (private base-env base-types-new base-types-extra
+         (for-template (private base-env base-types base-types-extra
 				base-env-numeric
 				base-env-indexing))
          (for-syntax syntax/kerncase syntax/parse))

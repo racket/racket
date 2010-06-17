@@ -4,7 +4,7 @@
 
 (providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers lambda #%app)
                  (except "private/prims.rkt")
-                 (except "private/base-types-new.rkt")
+                 (except "private/base-types.rkt")
                  (except "private/base-types-extra.rkt"))
 	   (basics #%module-begin		   		   		   
 		   #%top-interaction
