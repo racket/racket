@@ -17,7 +17,7 @@
    ;; inference failure - masked before it gets to the user program
    (define-syntaxes (fail!)
      (syntax-rules ()
-       [(_ s t) (raise fail-sym)]))
+       [(_ s t) (raise (list fail-sym s t))]))
    [cnt cset-meet (cset? cset? . -> . cset?)]
    [cnt cset-meet* ((listof cset?) . -> . cset?)]
    no-constraint

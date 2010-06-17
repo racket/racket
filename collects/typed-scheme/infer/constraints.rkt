@@ -14,13 +14,13 @@
 
 (define-values (fail-sym exn:infer?)
   (let ([sym (gensym 'infer-fail)])
-    (values sym (lambda (s) (eq? s sym)))))
+    (values sym (λ (s) (and (pair? s) (eq? (car s) sym))))))
 
 ;; why does this have to be duplicated?
 ;; inference failure - masked before it gets to the user program
 (define-syntaxes (fail!)
   (syntax-rules ()
-    [(_ s t) (raise fail-sym)]))
+    [(_ s t) (raise (list fail-sym s t))]))
 
 ;; Widest constraint possible
 (define (no-constraint v)
