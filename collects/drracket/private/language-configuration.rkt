@@ -27,7 +27,8 @@
                             [(meta) "meta-"]
                             [(control) "ctl-"]
                             [(shift) "shift-"]
-                            [(option) "opt-"]))
+                            [(option) "opt-"]
+                            [else (error 'language-configuration.rkt "unknown result from get-default-shortcut-prefix: ~s" x)]))
                         shortcut-prefix))])
       (define (mouse-event-uses-shortcut-prefix? evt)
         (andmap (λ (prefix)
