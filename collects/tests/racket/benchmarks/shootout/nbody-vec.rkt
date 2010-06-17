@@ -26,7 +26,7 @@ Correct output N = 1000 is
 (define +pi+ 3.141592653589793)
 (define +days-per-year+ 365.24)
 
-(define +solar-mass+ (* 4 +pi+ +pi+))
+(define +solar-mass+ (* 4.0 +pi+ +pi+))
 
 (define +dt+ 0.01)
 

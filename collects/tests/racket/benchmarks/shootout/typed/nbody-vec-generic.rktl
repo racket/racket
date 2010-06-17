@@ -1,5 +1,3 @@
-#lang racket/base
-
 ;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 ;;
@@ -31,8 +29,8 @@ Correct output N = 1000 is
 
 (define make-body vector)
 (define-syntax-rule (deffield n getter setter)
-  (begin (define (getter b) (vector-ref b n))
-         (define (setter b x) (vector-set! b n x))))
+  (begin (define: (getter (b : (Vectorof Float))) : Float (vector-ref b n))
+         (define: (setter (b : (Vectorof Float)) (x : Float)) : Void (vector-set! b n x))))
 (deffield 0 body-x set-body-x!)
 (deffield 1 body-y set-body-y!)
 (deffield 2 body-z set-body-z!)
@@ -83,6 +81,7 @@ Correct output N = 1000 is
 (define *system* (list *sun* *jupiter* *saturn* *uranus* *neptune*))
 
 ;; -------------------------------
+(: offset-momentum ( -> Void))
 (define (offset-momentum)
   (let loop-i ([i *system*] [px 0.0] [py 0.0] [pz 0.0])
     (if (null? i)
@@ -97,6 +96,7 @@ Correct output N = 1000 is
                 (+ pz (* (body-vz i1) (body-mass i1))))))))
 
 ;; -------------------------------
+(: energy ( -> Float))
 (define (energy)
   (let loop-o ([o *system*] [e 0.0])
     (if (null? o)
@@ -114,11 +114,12 @@ Correct output N = 1000 is
                    [dx   (- (body-x o1) (body-x i1))]
                    [dy   (- (body-y o1) (body-y i1))]
                    [dz   (- (body-z o1) (body-z i1))]
-                   [dist (sqrt (+ (* dx dx) (* dy dy) (* dz dz)))]
+                   [dist (assert (sqrt (+ (* dx dx) (* dy dy) (* dz dz))) inexact-real?)]
                    [e    (- e (/ (* (body-mass o1) (body-mass i1)) dist))])
               (loop-i (cdr i) e))))))))
 
 ;; -------------------------------
+(: advance ( -> Void))
 (define (advance)
   (let loop-o ([o *system*])
     (when (pair? o)
@@ -137,7 +138,7 @@ Correct output N = 1000 is
                    [dy    (- o1y (body-y i1))]
                    [dz    (- o1z (body-z i1))]
                    [dist2 (+ (* dx dx) (* dy dy) (* dz dz))]
-                   [mag   (/ +dt+ (* dist2 (sqrt dist2)))]
+                   [mag   (assert (/ +dt+ (* dist2 (sqrt dist2))) inexact-real?)]
                    [dxmag (* dx mag)]
                    [dymag (* dy mag)]
                    [dzmag (* dz mag)]
@@ -159,7 +160,7 @@ Correct output N = 1000 is
 
 ;; -------------------------------
 
-(let ([n (command-line #:args (n) (string->number n))])
+(let ([n (command-line #:args (n) (assert (string->number (assert n string?)) exact-integer?))])
   (offset-momentum)
   (printf "~a\n" (real->decimal-string (energy) 9))
   (for ([i (in-range n)]) (advance))

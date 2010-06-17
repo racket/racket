@@ -74,12 +74,6 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define-struct impl (name setup make run extract-result clean-up skips))
 
-  (define untypeable-benchmarks
-    '(binarytrees
-      lists
-      regexmatch
-      k-nucleotide))
-  
   (define impls
     (list
      (make-impl 'racket
@@ -97,7 +91,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "racket run.rkt ~a typed-scheme" bm)))
                 extract-racket-times
                 clean-up-typed
-                untypeable-benchmarks)
+                '())
      (make-impl 'typed-scheme-optimizing
                 void
                 mk-typed-scheme-optimizing
@@ -105,7 +99,7 @@ exec racket -qu "$0" ${1+"$@"}
                   (system (format "racket run.rkt ~a typed-scheme-optimizing" bm)))
                 extract-racket-times
                 clean-up-typed
-                untypeable-benchmarks)
+                '())
      ))
 
   (define benchmarks
@@ -123,12 +117,20 @@ exec racket -qu "$0" ${1+"$@"}
       hash
       hash2
       heapsort
+      hello
       k-nucleotide
       lists
       mandelbrot
+      mandelbrot-generic
+      mandelbrot-unsafe
       matrix
+      meteor
       moments
       nbody
+      nbody-generic
+      nbody-vec
+      nbody-vec-generic
+      nbody-vec-unsafe
       nestedloop
       nothing
       nsieve
@@ -143,8 +145,11 @@ exec racket -qu "$0" ${1+"$@"}
       reversefile
       sieve
       spectralnorm
+      spectralnorm-generic
+      spectralnorm-unsafe
       strcat
       sumcol
+      thread-ring
       wc
       wordfreq))
 

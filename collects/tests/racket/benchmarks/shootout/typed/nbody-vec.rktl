@@ -1,5 +1,3 @@
-#lang racket/base
-
 ;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 ;;
@@ -17,7 +15,8 @@ Correct output N = 1000 is
 -0.169087605
 |#
 
-(require racket/cmdline)
+(require racket/cmdline
+         racket/flonum)
 
 ;; ------------------------------
 ;; define planetary masses, initial positions & velocity
@@ -29,10 +28,10 @@ Correct output N = 1000 is
 
 (define +dt+ 0.01)
 
-(define make-body vector)
+(define make-body flvector)
 (define-syntax-rule (deffield n getter setter)
-  (begin (define (getter b) (vector-ref b n))
-         (define (setter b x) (vector-set! b n x))))
+  (begin (define: (getter (b : FlVector)) : Float (flvector-ref b n))
+         (define: (setter (b : FlVector) (x : Float)) : Void (flvector-set! b n x))))
 (deffield 0 body-x set-body-x!)
 (deffield 1 body-y set-body-y!)
 (deffield 2 body-z set-body-z!)
@@ -83,42 +82,45 @@ Correct output N = 1000 is
 (define *system* (list *sun* *jupiter* *saturn* *uranus* *neptune*))
 
 ;; -------------------------------
+(: offset-momentum ( -> Void))
 (define (offset-momentum)
   (let loop-i ([i *system*] [px 0.0] [py 0.0] [pz 0.0])
     (if (null? i)
       (begin
-        (set-body-vx! (car *system*) (/ (- px) +solar-mass+))
-        (set-body-vy! (car *system*) (/ (- py) +solar-mass+))
-        (set-body-vz! (car *system*) (/ (- pz) +solar-mass+)))
+        (set-body-vx! (car *system*) (fl/ (fl- 0.0 px) +solar-mass+))
+        (set-body-vy! (car *system*) (fl/ (fl- 0.0 py) +solar-mass+))
+        (set-body-vz! (car *system*) (fl/ (fl- 0.0 pz) +solar-mass+)))
       (let ([i1 (car i)])
         (loop-i (cdr i)
-                (+ px (* (body-vx i1) (body-mass i1)))
-                (+ py (* (body-vy i1) (body-mass i1)))
-                (+ pz (* (body-vz i1) (body-mass i1))))))))
+                (fl+ px (fl* (body-vx i1) (body-mass i1)))
+                (fl+ py (fl* (body-vy i1) (body-mass i1)))
+                (fl+ pz (fl* (body-vz i1) (body-mass i1))))))))
 
 ;; -------------------------------
+(: energy ( -> Float))
 (define (energy)
   (let loop-o ([o *system*] [e 0.0])
     (if (null? o)
       e
       (let* ([o1 (car o)]
-             [e (+ e (* 0.5 
-                        (body-mass o1)
-                        (+ (* (body-vx o1) (body-vx o1))
-                           (* (body-vy o1) (body-vy o1))
-                           (* (body-vz o1) (body-vz o1)))))])
+             [e (+ e (fl* 0.5 
+                          (fl* (body-mass o1)
+                               (fl+ (fl+ (fl* (body-vx o1) (body-vx o1))
+                                         (fl* (body-vy o1) (body-vy o1)))
+                                    (fl* (body-vz o1) (body-vz o1))))))])
         (let loop-i ([i (cdr o)] [e e])
           (if (null? i)
             (loop-o (cdr o) e)
             (let* ([i1   (car i)]
-                   [dx   (- (body-x o1) (body-x i1))]
-                   [dy   (- (body-y o1) (body-y i1))]
-                   [dz   (- (body-z o1) (body-z i1))]
-                   [dist (sqrt (+ (* dx dx) (* dy dy) (* dz dz)))]
-                   [e    (- e (/ (* (body-mass o1) (body-mass i1)) dist))])
+                   [dx   (fl- (body-x o1) (body-x i1))]
+                   [dy   (fl- (body-y o1) (body-y i1))]
+                   [dz   (fl- (body-z o1) (body-z i1))]
+                   [dist (flsqrt (fl+ (fl+ (fl* dx dx) (fl* dy dy)) (fl* dz dz)))]
+                   [e    (fl- e (fl/ (fl* (body-mass o1) (body-mass i1)) dist))])
               (loop-i (cdr i) e))))))))
 
 ;; -------------------------------
+(: advance ( -> Void))
 (define (advance)
   (let loop-o ([o *system*])
     (when (pair? o)
@@ -133,33 +135,33 @@ Correct output N = 1000 is
                      [vz (body-vz o1)])
           (if (pair? i)
             (let* ([i1    (car i)]
-                   [dx    (- o1x (body-x i1))]
-                   [dy    (- o1y (body-y i1))]
-                   [dz    (- o1z (body-z i1))]
-                   [dist2 (+ (* dx dx) (* dy dy) (* dz dz))]
-                   [mag   (/ +dt+ (* dist2 (sqrt dist2)))]
-                   [dxmag (* dx mag)]
-                   [dymag (* dy mag)]
-                   [dzmag (* dz mag)]
+                   [dx    (fl- o1x (body-x i1))]
+                   [dy    (fl- o1y (body-y i1))]
+                   [dz    (fl- o1z (body-z i1))]
+                   [dist2 (fl+ (fl+ (fl* dx dx) (fl* dy dy)) (fl* dz dz))]
+                   [mag   (fl/ +dt+ (fl* dist2 (flsqrt dist2)))]
+                   [dxmag (fl* dx mag)]
+                   [dymag (fl* dy mag)]
+                   [dzmag (fl* dz mag)]
                    [im    (body-mass i1)])
-              (set-body-vx! i1 (+ (body-vx i1) (* dxmag om)))
-              (set-body-vy! i1 (+ (body-vy i1) (* dymag om)))
-              (set-body-vz! i1 (+ (body-vz i1) (* dzmag om)))
+              (set-body-vx! i1 (fl+ (body-vx i1) (fl* dxmag om)))
+              (set-body-vy! i1 (fl+ (body-vy i1) (fl* dymag om)))
+              (set-body-vz! i1 (fl+ (body-vz i1) (fl* dzmag om)))
               (loop-i (cdr i)
-                      (- vx (* dxmag im))
-                      (- vy (* dymag im))
-                      (- vz (* dzmag im))))
+                      (fl- vx (fl* dxmag im))
+                      (fl- vy (fl* dymag im))
+                      (fl- vz (fl* dzmag im))))
             (begin (set-body-vx! o1 vx)
                    (set-body-vy! o1 vy)
                    (set-body-vz! o1 vz)
-                   (set-body-x! o1 (+ o1x (* +dt+ vx)))
-                   (set-body-y! o1 (+ o1y (* +dt+ vy)))
-                   (set-body-z! o1 (+ o1z (* +dt+ vz)))))))
+                   (set-body-x! o1 (fl+ o1x (fl* +dt+ vx)))
+                   (set-body-y! o1 (fl+ o1y (fl* +dt+ vy)))
+                   (set-body-z! o1 (fl+ o1z (fl* +dt+ vz)))))))
       (loop-o (cdr o)))))
 
 ;; -------------------------------
 
-(let ([n (command-line #:args (n) (string->number n))])
+(let ([n (command-line #:args (n) (assert (string->number (assert n string?)) exact-integer?))])
   (offset-momentum)
   (printf "~a\n" (real->decimal-string (energy) 9))
   (for ([i (in-range n)]) (advance))

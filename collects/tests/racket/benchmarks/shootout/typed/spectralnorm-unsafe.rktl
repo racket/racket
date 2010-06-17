@@ -5,20 +5,27 @@
 ;;   contributed by Isaac Gouy
 
 (require racket/cmdline
-         racket/flonum)
+	 racket/require (for-syntax racket/base)
+	 (rename-in
+          (filtered-in
+           (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+           racket/unsafe/ops)
+          [fx->fl ->fl])
+         (only-in racket/flonum make-flvector))
+
 
 (: Approximate (Natural -> Float))
 (define (Approximate n)
   (let ([u (make-flvector n 1.0)]
         [v (make-flvector n 0.0)])
     ;; 20 steps of the power method
-    (for: : Void ([i : Natural (in-range 10)])
+    (for ([i (in-range 10)])
       (MultiplyAtAv n u v)
       (MultiplyAtAv n v u))
     
     ;; B=AtA         A multiplied by A transposed
     ;; v.Bv /(v.v)   eigenvalue of v
-    (let loop ([i 0][vBv 0.0][vv 0.0])
+    (let: loop : Float ([i : Natural 0][vBv : Float 0.0][vv : Float 0.0])
       (if (= i n)
           (flsqrt (fl/ vBv vv))
           (let ([vi (flvector-ref v i)])
@@ -36,7 +43,7 @@
 ;; multiply vector v by matrix A
 (: MultiplyAv (Natural FlVector FlVector -> Void))
 (define (MultiplyAv n v Av)
-  (for: : Void ([i : Natural (in-range n)])
+  (for ([i (in-range n)])
     (flvector-set! Av i 
                    (for/fold ([r 0.0])
                        ([j (in-range n)])
@@ -45,13 +52,13 @@
 ;; multiply vector v by matrix A transposed
 (: MultiplyAtv (Natural FlVector FlVector -> Void))
 (define (MultiplyAtv n v Atv)
-  (for: : Void ([i : Natural (in-range n)])
+  (for ([i (in-range n)])
     (flvector-set! Atv i
                    (for/fold ([r 0.0])
                        ([j (in-range n)])
                      (fl+ r (fl* (A j i) (flvector-ref v j)))))))
 
-;; multiply vector v by matrix A and then by matrix A transposed
+;; multiply vector v by matrix A and then by matrix A transposed 
 (: MultiplyAtAv (Natural FlVector FlVector -> Void))
 (define (MultiplyAtAv n v AtAv)
   (let ([u (make-flvector n 0.0)])
@@ -62,4 +69,3 @@
         (real->decimal-string
          (Approximate (command-line #:args (n) (assert (string->number (assert n string?)) exact-nonnegative-integer?)))
          9))
-
