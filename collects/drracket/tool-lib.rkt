@@ -1103,7 +1103,9 @@ all of the names in the tools library, for use defining keybindings
     drracket:language-configuration:language-settings?)
    ((or/c false/c (is-a?/c top-level-window<%>))
     (-> symbol? void?))
-   drracket:language-configuration:language-settings?)
+   (values (-> (is-a?/c drracket:language:language<%>))
+           (-> any/c)
+           (-> any/c (is-a?/c mouse-event%) any)))
   ((panel button-panel language-setting)
    ((re-center #f)
     (ok-handler void)))
@@ -1130,7 +1132,14 @@ all of the names in the tools library, for use defining keybindings
     button. It should accept a symbol message: @racket['enable] and
     @racket['disable] to toggle the button, and @racket['execute] to run
     the desired operation. (The language selection dialog also uses an
-    internal @racket['enable-sync] message.)})
+    internal @racket['enable-sync] message.)
+    
+    The first two results of the function return a language object
+    and a settings for that language, as chosen by the user using the dialog.
+    The final function should be called when keystrokes are typed in the
+    enclosing frame. It is used to implement the shortcuts that choose the
+    two radio buttons in the language dialog.
+    })
  
  (proc-doc
   drracket:language:register-capability

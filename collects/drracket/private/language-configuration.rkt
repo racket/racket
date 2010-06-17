@@ -16,8 +16,37 @@
   (define original-output (current-output-port))
   (define (printfo . args) (apply fprintf original-output args))
   
-  (define sc-use-language-in-source (string-constant use-language-in-source))
-  (define sc-choose-a-language (string-constant choose-a-language))
+  (define-values (sc-use-language-in-source sc-choose-a-language mouse-event-uses-shortcut-prefix?)
+    (let* ([shortcut-prefix (get-default-shortcut-prefix)]
+           [menukey-string 
+            (apply string-append
+                   (map (λ (x)
+                          (case x
+                            [(alt) "alt-"]
+                            [(cmd) "⌘"]
+                            [(meta) "meta-"]
+                            [(control) "ctl-"]
+                            [(shift) "shift-"]
+                            [(option) "opt-"]))
+                        shortcut-prefix))])
+      (define (mouse-event-uses-shortcut-prefix? evt)
+        (andmap (λ (prefix)
+                  (case prefix
+                    [(alt) (case (system-type)
+                             [(windows) (send evt get-meta-down)]
+                             [else (send evt get-alt-down)])]
+                    [(cmd) (send evt get-meta-down)]
+                    [(meta) (send evt get-meta-down)]
+                    [(control) (send evt get-control-down)]
+                    [(shift) (send evt get-shiftdown)]
+                    [(option) (send evt get-alt-down)]))
+                shortcut-prefix))
+    (values (string-append (string-constant use-language-in-source)
+                           (format " (~aM)" menukey-string))
+            (string-append (string-constant choose-a-language)
+                           (format " (~aL)" menukey-string))
+            mouse-event-uses-shortcut-prefix?)))
+  
   (define sc-lang-in-source-discussion (string-constant lang-in-source-discussion))
 
   (provide language-configuration@)
@@ -141,7 +170,9 @@
               (case (send evt get-key-code)
                 [(escape) (cancel-callback)]
                 [(#\return numpad-enter) (enter-callback)]
-                [else (super on-subwindow-char receiver evt)]))
+                [else
+                 (or (key-pressed receiver evt)
+                     (super on-subwindow-char receiver evt))]))
             (super-instantiate ())))
         
         (define dialog (instantiate ret-dialog% ()
@@ -208,7 +239,7 @@
                 [(execute)     (enter-callback) (void)]
                 [else (error 'ok-handler "internal error (~e)" msg)]))))
         
-        (define-values (get-selected-language get-selected-language-settings)
+        (define-values (get-selected-language get-selected-language-settings key-pressed)
           (fill-language-dialog language-dialog-meat-panel
                                 button-panel
                                 language-settings-to-show
@@ -365,7 +396,7 @@
             (on-click-always #t)
             (allow-deselect #t)))
         
-        (define outermost-panel (make-object horizontal-pane% parent))
+        (define outermost-panel (new vertical-panel% [parent parent]))
         (define languages-choice-panel (new vertical-panel%
                                             [parent outermost-panel]
                                             [alignment '(left top)]))
@@ -377,8 +408,10 @@
                [parent languages-choice-panel]
                [callback
                 (λ (rb evt)
-                  (module-language-selected)
-                  (send use-chosen-language-rb set-selection #f))]))
+                  (use-language-in-source-rb-callback))]))
+        (define (use-language-in-source-rb-callback)
+          (module-language-selected)
+          (send use-chosen-language-rb set-selection #f))
         (define in-source-discussion-panel (new horizontal-panel% 
                                                 [parent languages-choice-panel]
                                                 [stretchable-height #f]))
@@ -395,10 +428,12 @@
                [parent languages-choice-panel]
                [callback
                 (λ (this-rb evt)
-                  (when most-recent-languages-hier-list-selection
-                    (send languages-hier-list select 
-                          most-recent-languages-hier-list-selection))
-                  (send use-language-in-source-rb set-selection #f))]))
+                  (use-chosen-language-rb-callback))]))
+        (define (use-chosen-language-rb-callback)
+          (when most-recent-languages-hier-list-selection
+            (send languages-hier-list select 
+                  most-recent-languages-hier-list-selection))
+          (send use-language-in-source-rb set-selection #f))
         (define languages-hier-list-panel (new horizontal-panel% [parent languages-choice-panel]))
         (define languages-hier-list-spacer (new horizontal-panel% 
                                                 [parent languages-hier-list-panel]
@@ -906,6 +941,7 @@
         (send languages-hier-list allow-tab-exit #t)
         (send parent reflow-container)
         (close-all-languages)
+        (send outermost-panel focus) ;; make sure it gets keyboard events
         (open-current-language)
         (send languages-hier-list min-client-width (text-width (send languages-hier-list get-editor)))
         (send languages-hier-list min-client-height (text-height (send languages-hier-list get-editor)))
@@ -915,11 +951,28 @@
           (do-construct-details))
         (update-show/hide-details)
         (size-discussion-canvas in-source-discussion-editor-canvas)
+        (send outermost-panel focus) ;; make sure it gets keyboard events
         (values
          (λ () selected-language)
          (λ () 
            (and get/set-selected-language-settings
-                (get/set-selected-language-settings))))))
+                (get/set-selected-language-settings)))
+         (λ (receiver evt)
+           (case (send evt get-key-code)
+             [(#\m) 
+              (if (mouse-event-uses-shortcut-prefix? evt)
+                  (begin (send use-language-in-source-rb set-selection 0)
+                         (use-language-in-source-rb-callback)
+                         #t)
+                  #f)]
+             [(#\l)
+              (if (mouse-event-uses-shortcut-prefix? evt)
+                  (begin 
+                    (send use-chosen-language-rb set-selection 0)
+                    (use-chosen-language-rb-callback)
+                    #t)
+                  #f)]
+             [else #f])))))
     
     (define (add-discussion p)
       (let* ([t (new text:standard-style-list%)]
