@@ -189,12 +189,12 @@
         "let-void")
    (--> (V S ((x_0 h_0) ...) T ((let-void-box n e) i ...))
         (V (push ((box x_n) ...) S) ((x_n undefined) ... (x_0 h_0) ...) T (e i ...))
-        (where (x_n ...) (n-gensyms n))
+        (where (x_n ...) (n-freshes n x_0 ... T))
         "let-void-box")))
 
 (define-metafunction runtime
-  [(n-gensyms n)
-   ,(build-list (term n) (λ (_) (gensym 'x)))])
+  [(n-freshes n x ... T)
+   ,(variables-not-in (term (x ... T)) (build-list (term n) (λ (_) 'x)))])
 
 (define miscellaneous-rules
   (reduction-relation
@@ -249,119 +249,149 @@
   concat : (any ...) ... -> (any ...)
   [(concat any ...) ,(apply append (term (any ...)))])
 
+; load : e T -> (e H T)
+; load’ : e φ (x ...) -> (e H T (x ...))
+; load’* : ((e φ) ...) (x ...) -> ((e ...) H T (x ...))
+
 (define-metafunction loader
   [(load e ((x_0 e_0) ...))
-   (uninit 
-    (((ε))) 
-    (concat H H_0 ...)
-    (concat T ((x_0 e_0*) ...) T_0 ...)
-    (e_*))
-   (where (e_* H T) (load* e -))
-   (where ((e_0* H_0 T_0) ...) ((load* e_0 -) ...))])
+   (uninit (((ε))) H (concat ((x_0 e_0*) ...) T) (e_*))
+   (where ((e_* e_0* ...) H T (y ...))
+          (load’* ((e -) (e_0 -) ...) (x_0 ...)))])
 
 (define-metafunction loader
   [(φ+ - n) -]
   [(φ+ (n_p n_a x) n) (,(+ (term n) (term n_p)) n_a x)])
 
 (define-metafunction loader
-  [(load-lam-rec (lam (τ_0 ...) (n_0 ... n_i n_i+1 ...) e) n_i)
+  [(load-lam-rec (lam (τ_0 ...) (n_0 ... n_i n_i+1 ...) e) n_i (y ...))
    ; When a closure captures itself multiple times, only the last 
    ; occurrence is considered a self-reference.
-   ((lam n (n_0 ... n_i n_i+1 ...) x) H ((x e_*) (x_0 e_0) ...))
+   ((lam n (n_0 ... n_i n_i+1 ...) x) H (concat ((x e_*)) T) (y_* ...))
    (where n ,(length (term (τ_0 ...))))
-   (where x ,(gensym 'x))
-   (where (e_* H ((x_0 e_0) ...))
-          (load* e (,(length (term (n_0 ...))) n x)))
+   (where x (fresh-in (y ...)))
+   (where (e_* H T (y_* ...))
+          (load’ e (,(length (term (n_0 ...))) n x) (x y ...)))
    (side-condition (not (memq (term n_i) (term (n_i+1 ...)))))]
-  [(load-lam-rec l n_j) (load* l -)])
+  [(load-lam-rec l n_j (y ...)) (load’ l - (y ...))])
 
 (define-metafunction loader
-  [(load* (application (loc-noclr n) e_1 ...) (n_p n_a x))
-   ((self-app x (loc-noclr n) e_1* ...)
-    (concat H_1 ...)
-    (concat T_1 ...))
+  [(load-lam-rec* () (y ...)) (() () () (y ...))]
+  [(load-lam-rec* ((l_0 n_0) (l_1 n_1) ...) (y ...))
+   ((l_0* l_1* ...) (concat H_0 H_1) (concat T_0 T_1) (y_** ...))
+   (where (l_0* H_0 T_0 (y_* ...))
+          (load-lam-rec l_0 n_0 (y ...)))
+   (where ((l_1* ...) H_1 T_1 (y_** ...))
+          (load-lam-rec* ((l_1 n_1) ...) (y_* ...)))])
+
+(define-metafunction loader
+  [(load’ (application (loc-noclr n) e_1 ...) (n_p n_a x) (y ...))
+   ((self-app x (loc-noclr n) e_1* ...) H T (y_* ...))
    (side-condition (= (term n) (+ (term n_p) (length (term (e_1 ...))))))
    (side-condition (= (term n_a) (length (term (e_1 ...)))))
-   (where ((e_1* H_1 T_1) ...) ((load* e_1 -) ...))]
+   (where ((e_1* ...) H T (y_* ...)) (load’* ((e_1 -) ...) (y ...)))]
   
-  [(load* (let-rec (l_0 ...) e) φ)
+  [(load’ (let-rec (l_0 ...) e) φ (y ...))
    ((let-rec (l_0* ...) e_*)
-    (concat H H_0 ...)
-    (concat T T_0 ...))
-   (where (e_* H T) (load* e φ))
+    (concat H_0 H_1)
+    (concat T_0 T_1)
+    (y_** ...))
+   (where (e_* H_0 T_0 (y_* ...)) (load’ e φ (y ...)))
    (where (n_0 ...) (count-up ,(length (term (l_0 ...)))))
-   (where ((l_0* H_0 T_0) ...) ((load-lam-rec l_0 n_0) ...))]
+   (where ((l_0* ...) H_1 T_1 (y_** ...)) 
+          (load-lam-rec* ((l_0 n_0) ...) (y_* ...)))]
   
-  [(load* (application e_0 e_1 ...) φ)
-   ((application e_0* ...)
-    (concat H_0 ...)
-    (concat T_0 ...))
-   (where ((e_0* H_0 T_0) ...) ((load* e_0 -) (load* e_1 -) ...))]
+  [(load’ (application e_0 e_1 ...) φ (y ...))
+   ((application e_0* e_1* ...) H T (y_* ...))
+   (where ((e_0* e_1* ...) H T (y_* ...))
+          (load’* ((e_0 -) (e_1 -) ...) (y ...)))]
   
-  [(load* (let-one e_r e_b) φ)
-   ((let-one e_r* e_b*) (concat H_r H_b) (concat T_r T_b))
-   (where (e_r* H_r T_r) (load* e_r -))
-   (where (e_b* H_b T_b) (load* e_b (φ+ φ 1)))]
+  [(load’ (let-one e_r e_b) φ (y ...))
+   ((let-one e_r* e_b*) (concat H_r H_b) (concat T_r T_b) (y_** ...))
+   (where (e_r* H_r T_r (y_* ...)) (load’ e_r - (y ...)))
+   (where (e_b* H_b T_b (y_** ...)) (load’ e_b (φ+ φ 1) (y_* ...)))]
   
-  [(load* (let-void n e) φ)
-   ((let-void n e_*) H T)
-   (where (e_* H T) (load* e (φ+ φ n)))]
-  [(load* (let-void-box n e) φ)
-   ((let-void-box n e_*) H T)
-   (where (e_* H T) (load* e (φ+ φ n)))]
+  [(load’ (let-void n e) φ (y ...))
+   ((let-void n e_*) H T (y_* ...))
+   (where (e_* H T (y_* ...)) (load’ e (φ+ φ n) (y ...)))]
+  [(load’ (let-void-box n e) φ (y ...))
+   ((let-void-box n e_*) H T (y_* ...))
+   (where (e_* H T (y_* ...)) (load’ e (φ+ φ n) (y ...)))]
   
-  [(load* (boxenv n e) φ)
-   ((boxenv n e_*) H T)
-   (where (e_* H T) (load* e φ))]
+  [(load’ (boxenv n e) φ (y ...))
+   ((boxenv n e_*) H T (y_* ...))
+   (where (e_* H T (y_* ...)) (load’ e φ (y ...)))]
   
-  [(load* (install-value n e_r e_b) φ)
+  [(load’ (install-value n e_r e_b) φ (y ...))
    ((install-value n e_r* e_b*)
     (concat H_r H_b)
-    (concat T_r T_b))
-   (where (e_r* H_r T_r) (load* e_r -))
-   (where (e_b* H_b T_b) (load* e_b φ))]
-  [(load* (install-value-box n e_r e_b) φ)
+    (concat T_r T_b)
+    (y_* ...))
+   (where (e_r* H_r T_r (y_* ...)) (load’ e_r - (y ...)))
+   (where (e_b* H_b T_b (y_** ...)) (load’ e_b φ (y_* ...)))]
+  [(load’ (install-value-box n e_r e_b) φ (y ...))
    ((install-value-box n e_r* e_b*)
     (concat H_r H_b) 
-    (concat T_r T_b))
-   (where (e_r* H_r T_r) (load* e_r -))
-   (where (e_b* H_b T_b) (load* e_b φ))]
+    (concat T_r T_b)
+    (y_** ...))
+   (where (e_r* H_r T_r (y_* ...)) (load’ e_r - (y ...)))
+   (where (e_b* H_b T_b (y_** ...)) (load’ e_b φ (y_* ...)))]
   
-  [(load* (seq e_0 ... e_n) φ)
+  [(load’ (seq e_0 ... e_n) φ (y ...))
    ((seq e_0* ... e_n*) 
-    (concat H_0 ... H_n)
-    (concat T_0 ... T_n))
-   (where ((e_0* H_0 T_0) ...) ((load* e_0 -) ...))
-   (where (e_n* H_n T_n) (load* e_n φ))]
+    (concat H_0 H_1)
+    (concat T_0 T_1)
+    (y_** ...))
+   (where ((e_0* ...) H_0 T_0 (y_* ...)) (load’* ((e_0 -) ...) (y ...)))
+   (where (e_n* H_1 T_1 (y_** ...)) (load’ e_n φ (y_* ...)))]
   
-  [(load* (branch e_c e_t e_f) φ)
+  [(load’ (branch e_c e_t e_f) φ (y ...))
    ((branch e_c* e_t* e_f*)
     (concat H_c H_t H_f)
-    (concat T_c T_t T_f ))
-   (where (e_c* H_c T_c) (load* e_c -))
-   (where (e_t* H_t T_t) (load* e_t φ))
-   (where (e_f* H_f T_f) (load* e_f φ))]
+    (concat T_c T_t T_f )
+    (y_*** ...))
+   (where (e_c* H_c T_c (y_* ...)) (load’ e_c - (y ...)))
+   (where (e_t* H_t T_t (y_** ...)) (load’ e_t φ (y_* ...)))
+   (where (e_f* H_f T_f (y_*** ...)) (load’ e_f φ (y_** ...)))]
   
-  [(load* (lam (τ_0 ...) (n_0 ...) e) φ)
-   ((lam n (n_0 ...) x) H ((x e_*) (x_0 e_0) ...))
-   (where x ,(gensym 'x))
+  [(load’ (lam (τ_0 ...) (n_0 ...) e) φ (y ...))
+   ((lam n (n_0 ...) x) H (concat ((x e_*)) T) (y_* ...))
+   (where x (fresh-in (y ...)))
    (where n ,(length (term (τ_0 ...))))
-   (where (e_* H ((x_0 e_0) ...)) (load* e -))]
+   (where (e_* H T (y_* ...)) (load’ e - (x y ...)))]
   
-  [(load* (proc-const (τ_0 ...) e) φ)
+  [(load’ (proc-const (τ_0 ...) e) φ (y ...))
    ((clos x) 
-    ((x ((clos n () x_*))) (x_0 h_0) ...)
-    ((x_* e_*) (x_i e_i) ...))
-   (where x ,(gensym 'x))
-   (where x_* ,(gensym 'x))
+    (concat ((x ((clos n () x_*)))) H)
+    (concat ((x_* e_*)) T)
+    (y_* ...))
+   (where x (fresh-in (y ...)))
+   (where x_* (fresh-in (x y ...)))
    (where n ,(length (term (τ_0 ...))))
-   (where (e_* ((x_0 h_0) ...) ((x_i e_i) ...)) (load* e -))]
+   (where (e_* H T (y_* ...)) (load’ e - (x x_* y ...)))]
   
-  [(load* (case-lam l_0 ...) φ)
-   ((case-lam l_0* ...) (concat H_0 ...) (concat T_0 ...))
-   (where ((l_0* H_0 T_0) ...) ((load* l_0 φ) ...))]
+  [(load’ (case-lam l_0 ...) φ (y ...))
+   ((case-lam l_0* ...) H T (y_* ...))
+   (where ((l_0* ...) H T (y_* ...))
+          (load’* ((l_0 φ) ...) (y ...)))]
   
-  [(load* e φ) (e () ())])
+  [(load’ e φ (y ...)) (e () () (y ...))])
+
+(define-metafunction loader
+  [(load’* () (y ...)) (() () () (y ...))]
+  [(load’* ((e_0 φ_0) (e_1 φ_1) ...) (y ...))
+   ((e_0* e_1* ...) 
+    (concat H_0 H_1)
+    (concat T_0 T_1)
+    (y_** ...))
+   (where (e_0* H_0 T_0 (y_* ...)) 
+          (load’ e_0 φ_0 (y ...)))
+   (where ((e_1* ...) H_1 T_1 (y_** ...))
+          (load’* ((e_1 φ_1) ...) (y_* ...)))])
+
+(define-metafunction loader
+  [(fresh-in (x ...))
+   ,(variable-not-in (term (x ...)) 'x)])
 
 (define-metafunction
   runtime
