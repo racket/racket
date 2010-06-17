@@ -803,11 +803,14 @@
 [unsafe-vector-length (-poly (a) ((-vec a) . -> . -Nat))]
 [unsafe-vector*-length (-poly (a) ((-vec a) . -> . -Nat))]
 [unsafe-car (-poly (a b) 
-              (cl->*
-               (->acc (list (-pair a b)) a (list -car))))]
+                   (cl->*
+                    (->acc (list (-pair a b)) a (list -car))
+                    (->* (list (-lst a)) a)))]
 [unsafe-cdr (-poly (a b) 
-              (cl->*
-               (->acc (list (-pair a b)) b (list -cdr))))]
+                   (cl->*
+                    (->acc (list (-pair a b)) b (list -cdr))
+                    (->* (list (-lst a)) (-lst a))))]
+
 
 ;; scheme/vector
 [vector-count (-polydots (a b)
