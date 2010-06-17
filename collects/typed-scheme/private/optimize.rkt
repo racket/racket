@@ -3,10 +3,24 @@
 (require syntax/parse (for-template scheme/base scheme/flonum scheme/unsafe/ops)
          "../utils/utils.rkt" unstable/match scheme/match unstable/syntax
          (rep type-rep)
-         (types abbrev type-table utils))
+         (types abbrev type-table utils subtype))
 (provide optimize)
 
 (define-syntax-class float-opt-expr
+  (pattern e:opt-expr
+           #:when (match (type-of #'e)
+                    [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
+           #:with opt #'e.opt))
+
+;; if the result of an operation is of type float, its non float arguments
+;; can be promoted, and we can use unsafe float operations
+;; note: none of the unary operations have types where non-float arguments
+;;  can result in float (as opposed to real) results
+(define-syntax-class float-arg-expr
+  (pattern e:opt-expr
+           #:when (match (type-of #'e)
+                    [(tc-result1: (== -Integer (lambda (x y) (subtype y x)))) #t] [_ #f])
+           #:with opt #'(->fl e.opt))
   (pattern e:opt-expr
            #:when (match (type-of #'e)
                     [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
@@ -63,8 +77,10 @@
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
   ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
-  (pattern (#%plain-app op:float-binary-op f1:float-opt-expr f2:float-opt-expr fs:float-opt-expr ...)
-           #:with opt 
+  (pattern (~and res (#%plain-app op:float-binary-op f1:float-arg-expr f2:float-arg-expr fs:float-arg-expr ...))
+           #:when (match (type-of #'res)
+                    [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
+           #:with opt
            (begin (log-optimization "binary float" #'op)
                   (for/fold ([o #'f1.opt])
                       ([e (syntax->list #'(f2.opt fs.opt ...))])
