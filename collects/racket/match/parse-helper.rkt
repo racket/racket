@@ -4,7 +4,7 @@
          syntax/boundmap
          syntax/stx
          scheme/struct-info
-         macro-debugger/emit
+         ;macro-debugger/emit
          "patterns.rkt"
          "compiler.rkt")
 
@@ -148,7 +148,7 @@
            [mresult (transformer mstx)]
            [result (syntax-local-introduce (introducer mresult))]
            [cert* (lambda (id) (certifier (cert id) #f introducer))])
-      (emit-local-step stx result #:id expander)
+      ;(emit-local-step stx result #:id expander)
       (parse/cert result cert*))))
 
 ;; raise an error, blaming stx
