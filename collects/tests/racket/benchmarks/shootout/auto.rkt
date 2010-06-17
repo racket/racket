@@ -117,6 +117,7 @@ exec racket -qu "$0" ${1+"$@"}
       echo
       except
       fannkuch
+      fannkuch-redux
       fasta
       fibo
       hash

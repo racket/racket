@@ -11,6 +11,7 @@
       ("echo" "200000")
       ("except" "2000000")
       ("fannkuch" "10")
+      ("fannkuch-redux" "10")
       ("fasta" "1000000")
       ("fibo" "40")
       ("hash" "2000000")
