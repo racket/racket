@@ -218,7 +218,7 @@
             #;
             [flds (listof (cons/c Type/c boolean?))]
             [proc (or/c #f Function?)]
-            [poly? boolean?] 
+            [poly? (or/c #f (listof symbol?))]
             [pred-id identifier?]
             [cert procedure?]
             [acc-ids (listof identifier?)]
