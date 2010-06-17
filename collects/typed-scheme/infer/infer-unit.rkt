@@ -58,12 +58,12 @@
 (define (mover cset dbound vars f)
   (map/cset
    (lambda (cmap dmap)
-     (cons (hash-remove* cmap vars)           
+     (cons (hash-remove* cmap (cons dbound vars))           
            (dmap-meet 
             (singleton-dmap 
              dbound
              (f cmap dmap))
-            dmap)))
+            (make-dmap (hash-remove (dmap-map dmap) dbound)))))
    cset))
 
 ;; dbound : index variable
@@ -85,7 +85,7 @@
 ;; 
 (d/c (move-rest-to-dmap cset dbound #:exact [exact? #f])
   ((cset? symbol?) (#:exact boolean?) . ->* . cset?)
-  (mover cset dbound (list dbound)
+  (mover cset dbound null
          (λ (cmap dmap)
            ((if exact? make-dcon-exact make-dcon)
             null
