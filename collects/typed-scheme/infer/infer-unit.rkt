@@ -157,16 +157,16 @@
               [(and s-rest (not t-rest) (<= (length ss) (length ts)))
                (cgen/list V X Y ts (extend ts ss s-rest))]
               ;; no rest arg on the left, or wrong number = fail
-              [else (fail! S T)])]
+              [else (fail! s-arr t-arr)])]
            [ret-mapping (cg s t)])
        (cset-meet* (list arg-mapping ret-mapping)))]
     ;; dotted on the left, nothing on the right
     [((arr: ss s #f (cons dty dbound) '())
       (arr: ts t #f #f                '()))
      (unless (memq dbound Y)
-       (fail! S T))
+       (fail! s-arr t-arr))
      (unless (<= (length ss) (length ts))
-       (fail! S T))
+       (fail! ss ts))
      (let* ([vars      (for/list ([n (in-range (- (length ts) (length ss)))])
                          (gensym dbound))]
             [new-tys   (for/list ([var vars])
@@ -178,9 +178,9 @@
     [((arr: ss s #f #f                '())
       (arr: ts t #f (cons dty dbound) '()))
      (unless (memq dbound Y)
-       (fail! S T))
+       (fail! s-arr t-arr))
      (unless (<= (length ts) (length ss))
-       (fail! S T))
+       (fail! ss ts))
      (let* ([vars     (for/list ([n (in-range (- (length ss) (length ts)))])
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
@@ -192,10 +192,10 @@
     [((arr: ss s #f (cons s-dty dbound) '())
       (arr: ts t #f (cons t-dty dbound) '()))
      (unless (= (length ss) (length ts))
-       (fail! S T))
+       (fail! ss ts))
      ;; If we want to infer the dotted bound, then why is it in both types?
      (when (memq dbound Y)
-       (fail! S T))
+       (fail! s-arr t-arr))
      (let* ([arg-mapping (cgen/list V X Y ts ss)]
             [darg-mapping (cgen V X Y t-dty s-dty)]
             [ret-mapping (cg s t)])
@@ -205,7 +205,7 @@
     [((arr: ss s #f (cons s-dty dbound)  '())
       (arr: ts t #f (cons t-dty dbound*) '()))
      (unless (= (length ss) (length ts))
-       (fail! S T))
+       (fail! ss ts))
      (let* ([arg-mapping (cgen/list V X Y ts ss)]
             ;; just add dbound as something that can be constrained
             [darg-mapping (cgen V (cons dbound X) Y t-dty s-dty)]
@@ -216,7 +216,7 @@
     [((arr: ss s s-rest #f                  '())
       (arr: ts t #f     (cons t-dty dbound) '()))
      (unless (memq dbound Y)
-       (fail! S T))
+       (fail! s-arr t-arr))
      (if (<= (length ss) (length ts))
          ;; the simple case
          (let* ([arg-mapping (cgen/list V X Y ts (extend ts ss s-rest))]
@@ -235,7 +235,7 @@
     [((arr: ss s #f     (cons s-dty dbound) '())
       (arr: ts t t-rest #f                  '()))
      (unless (memq dbound Y)
-       (fail! S T))
+       (fail! s-arr t-arr))
      (cond [(< (length ss) (length ts))
             ;; the hard case
             (let* ([vars     (for/list ([n (in-range (- (length ts) (length ss)))])
@@ -251,7 +251,7 @@
                    [darg-mapping (move-rest-to-dmap (cgen V (cons dbound X) Y t-rest s-dty) dbound #:exact #t)]
                    [ret-mapping (cg s t)])
               (cset-meet* (list arg-mapping darg-mapping ret-mapping)))])]
-    [(_ _) (fail! S T)]))
+    [(_ _) (fail! s-arr t-arr)]))
 
 ;; V : a set of variables not to mention in the constraints
 ;; X : the set of type variables to be constrained
