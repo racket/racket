@@ -45,13 +45,19 @@
 
 ;; expr id -> type or #f
 ;; if there is a binding in stx of the form:
-;; (let ([x (reverse name)]) e)
+;; (let ([x (reverse name)]) e) or
+;; (let ([x name]) e)
 ;; where x has a type annotation, return that annotation, otherwise #f
 (define (find-annotation stx name)
   (define (find s) (find-annotation s name))
   (define (match? b)
     (syntax-parse b
       #:literals (#%plain-app reverse)
+      [c:lv-clause
+       #:with n:id #'c.e
+       #:with (v) #'(c.v ...)
+       #:fail-unless (free-identifier=? name #'n) #f
+       (or (type-annotation #'v) (lookup-type/lexical #'v #:fail (lambda _ #f)))]
       [c:lv-clause
        #:with (#%plain-app reverse n:id) #'c.e
        #:with (v) #'(c.v ...) 

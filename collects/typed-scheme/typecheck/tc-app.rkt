@@ -235,12 +235,14 @@
        (tc/rec-lambda/check form args body lp (cons acc-ty ts) expected)
        expected)]
     ;; special case when argument needs inference
-    [_     
+    [(_ (body*) _)
      (let ([ts (for/list ([ac (syntax->list actuals)]
                           [f (syntax->list args)])
-                 (let ([infer-t (type-annotation f #:infer #t)])
+                 (let* ([infer-t (or (type-annotation f #:infer #t)
+                                     (find-annotation #'body* f))])
                    (if infer-t
-                       (check-below (tc-expr/t ac) infer-t)
+                       (begin (check-below (tc-expr/t ac) infer-t)
+                              infer-t)
                        (generalize (tc-expr/t ac)))))])
        (tc/rec-lambda/check form args body lp ts expected)
        expected)]))
