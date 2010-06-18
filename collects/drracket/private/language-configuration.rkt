@@ -392,7 +392,7 @@
             (on-click-always #t)
             (allow-deselect #t)))
         
-        (define outermost-panel (new vertical-panel% [parent parent]))
+        (define outermost-panel (new horizontal-pane% [parent parent]))
         (define languages-choice-panel (new vertical-panel%
                                             [parent outermost-panel]
                                             [alignment '(left top)]))
@@ -937,7 +937,6 @@
         (send languages-hier-list allow-tab-exit #t)
         (send parent reflow-container)
         (close-all-languages)
-        (send outermost-panel focus) ;; make sure it gets keyboard events
         (open-current-language)
         (send languages-hier-list min-client-width (text-width (send languages-hier-list get-editor)))
         (send languages-hier-list min-client-height (text-height (send languages-hier-list get-editor)))
@@ -947,7 +946,6 @@
           (do-construct-details))
         (update-show/hide-details)
         (size-discussion-canvas in-source-discussion-editor-canvas)
-        (send outermost-panel focus) ;; make sure it gets keyboard events
         (values
          (λ () selected-language)
          (λ () 
