@@ -51,7 +51,7 @@
       ("spectralnorm-unsafe" "1000")
       ("strcat" "50000000")
       ("sumcol" #f ,(lambda () (mk-sumcol-input)))
-      ("thread-ring" "1000000")
+      ("thread-ring" "1000000") ; calls exit, so won't display running time
       ("wc" #f ,(lambda () (mk-wc-input)))
       ("wordfreq" #f ,(lambda () (mk-wordfreq-input)))
       ))

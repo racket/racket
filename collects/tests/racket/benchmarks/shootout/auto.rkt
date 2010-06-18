@@ -149,7 +149,7 @@ exec racket -qu "$0" ${1+"$@"}
       spectralnorm-unsafe
       strcat
       sumcol
-      thread-ring
+      ;; thread-ring ; calls exit, so won't display running time
       wc
       wordfreq))
 
