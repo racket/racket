@@ -1403,6 +1403,16 @@
                   10 -100
                   (ellipse 10 100 'solid 'blue)))
 
+(test (flip-vertical (add-curve (rectangle 200 100 'solid 'black)
+                                20 20 0 1
+                                180 80 -90 1/3
+                                "white"))
+      =>
+      (add-curve (rectangle 200 100 'solid 'black)
+                 20 80 0 1
+                 180 20 90 1/3
+                 "white"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; pen arguments

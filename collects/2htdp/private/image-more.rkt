@@ -684,10 +684,10 @@
                         (line-segment-color simple-shape))]
     [(curve-segment? simple-shape)
      (make-curve-segment (flip-point (curve-segment-start simple-shape))
-                         (curve-segment-s-angle simple-shape)
+                         (bring-between (- 360 (curve-segment-s-angle simple-shape)) 360)
                          (curve-segment-s-pull simple-shape)
                          (flip-point (curve-segment-end simple-shape))
-                         (curve-segment-e-angle simple-shape)
+                         (bring-between (- 360 (curve-segment-e-angle simple-shape)) 360)
                          (curve-segment-e-pull simple-shape)
                          (curve-segment-color simple-shape))]
     [(polygon? simple-shape)
