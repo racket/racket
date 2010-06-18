@@ -360,6 +360,7 @@
                                             (values tail-ty tail-bound)]
                                            [t (values t #f)])])
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
+         (define (finish substitution) (do-ret (subst-all substitution (car rngs*))))
          (cond [(null? doms*)
                 (match f-ty 
                   [(tc-result1: (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
@@ -378,7 +379,7 @@
                                          (car doms*))
                                    (car rests*)
                                    (car rngs*)))
-                => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
+                => finish]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
                      tail-bound                     
@@ -390,8 +391,7 @@
                                          (car doms*))
                                    (car rests*)
                                    (car rngs*)))
-                => (lambda (substitution) 
-                     (do-ret (subst-all substitution (car rngs*))))]
+                => finish]
                ;; ... function, ... arg, same bound on ...
                [(and (car drests*)
                      tail-bound
@@ -402,8 +402,7 @@
                             (cons (make-ListDots tail-ty tail-bound) arg-tys)
                             (cons (make-ListDots (car (car drests*)) (cdr (car drests*))) (car doms*))
                             (car rngs*)))
-                => (lambda (substitution)
-                     (do-ret (subst-all substitution (car rngs*))))]
+                => finish]
                ;; ... function, ... arg, different bound on ...
                [(and (car drests*)
                      tail-bound
@@ -417,7 +416,7 @@
                                 (cons (make-ListDots tail-ty tail-bound) arg-tys)
                                 (cons (make-ListDots (car (car drests*)) (cdr (car drests*))) (car doms*))
                                 (car rngs*)))))
-                => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
+                => finish]
                ;; ... function, (List A B C etc) arg
                [(and (car drests*)
                      (not tail-bound)
@@ -427,8 +426,7 @@
                      (untuple tail-ty)
                      (infer/dots fixed-vars dotted-var (append arg-tys (untuple tail-ty)) (car doms*)
                                  (car (car drests*)) (car rngs*) (fv (car rngs*))))
-                => (lambda (substitution)                      
-                     (do-ret (subst-all substitution (car rngs*))))]
+                => finish]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result1: (PolyDots: vars (Function: '())))

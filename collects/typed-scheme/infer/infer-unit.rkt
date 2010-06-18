@@ -14,7 +14,7 @@
          scheme/match
          mzlib/etc
          mzlib/trace racket/contract
-	 unstable/sequence unstable/list unstable/debug
+	 unstable/sequence unstable/list unstable/debug unstable/hash
          scheme/list)
 
 (import dmap^ constraints^ promote-demote^)
@@ -478,7 +478,7 @@
 ;; Y : (listof symbol?) - index variables that must have entries
 ;; R : Type? - result type into which we will be substituting
 (d/c (subst-gen C Y R)
-  (cset? (listof symbol?) Type? . -> . (or/c #f list?))
+  (cset? (listof symbol?) Type? . -> . (or/c #f substitution/c))
   (define var-hash (free-vars* R))
   (define idx-hash (free-idxs* R))
   ;; v : Symbol - variable for which to check variance
@@ -499,11 +499,20 @@
   ;; was found.  If we're at this point and had no other constraints, then adding the
   ;; equivalent of the constraint (dcon null (c Bot X Top)) is okay.
   (define (extend-idxs S)
+    (define fi-R (fi R))
+    ;; If the index variable v is not used in the type, then
+    ;; we allow it to be replaced with the empty list of types;
+    ;; otherwise we error, as we do not yet know what an appropriate
+    ;; lower bound is.
+    (define (demote/check-free v)
+      (if (memq v fi-R)
+          (int-err "attempted to demote dotted variable")
+          (i-subst null)))
     ;; absent-entries is #f if there's an error in the substitution, otherwise
     ;; it's a list of variables that don't appear in the substitution
     (define absent-entries
       (for/fold ([no-entry null]) ([v (in-list Y)])
-        (let ([entry (assq v S)])
+        (let ([entry (hash-ref S v #f)])
           ;; Make sure we got a subst entry for an index var
           ;; (i.e. a list of types for the fixed portion
           ;;  and a type for the starred portion)
@@ -513,40 +522,42 @@
             [(or (i-subst? entry) (i-subst/starred? entry) (i-subst/dotted? entry)) no-entry]
             [else #f]))))
     (and absent-entries
-         (append
-          (for/list ([missing (in-list absent-entries)])
+         (hash-union
+          (for/hash ([missing (in-list absent-entries)])
             (let ([var (hash-ref idx-hash missing Constant)])
-              (evcase var
-                      [Constant (int-err "attempted to demote dotted variable")]
-                      [Covariant (int-err "attempted to demote dotted variable")]
-                      [Contravariant (i-subst/starred missing null Univ)]
-                      [Invariant (int-err "attempted to demote dotted variable")])))
+              (values missing
+                      (evcase var
+                              [Constant (demote/check-free missing)]
+                              [Covariant (demote/check-free missing)]
+                              [Contravariant (i-subst/starred null Univ)]
+                              [Invariant (demote/check-free missing)]))))
           S)))
   (match (car (cset-maps C))
     [(cons cmap (dmap dm))
-     (let ([subst (append 
-                   (for/list ([(k dc) (in-hash dm)])
+     (let ([subst (hash-union 
+                   (for/hash ([(k dc) (in-hash dm)])
                      (match dc
                        [(dcon fixed #f)
-                        (i-subst k
+                        (values k
+                                (i-subst
                                  (for/list ([f fixed])
-                                   (constraint->type f idx-hash #:variable k)))]
+                                   (constraint->type f idx-hash #:variable k))))]
                        [(dcon fixed rest)
-                        (i-subst/starred k
-                                         (for/list ([f fixed])
-                                           (constraint->type f idx-hash #:variable k))
-                                         (constraint->type rest idx-hash))]
+                        (values k
+                                (i-subst/starred (for/list ([f fixed])
+                                                   (constraint->type f idx-hash #:variable k))
+                                                 (constraint->type rest idx-hash)))]
                        [(dcon-exact fixed rest)
-                        (i-subst/starred
-                         k
-                         (for/list ([f fixed])
-                           (constraint->type f idx-hash #:variable k))
-                         (constraint->type rest idx-hash))]))
-                   (for/list ([(k v) (in-hash cmap)])
-                     (t-subst k (constraint->type v var-hash))))])
+                        (values k
+                                (i-subst/starred
+                                 (for/list ([f fixed])
+                                   (constraint->type f idx-hash #:variable k))
+                                 (constraint->type rest idx-hash)))]))
+                   (for/hash ([(k v) (in-hash cmap)])
+                     (values k (t-subst (constraint->type v var-hash)))))])
        ;; verify that we got all the important variables
        (and (for/and ([v (fv R)])
-              (let ([entry (assq v subst)])
+              (let ([entry (hash-ref subst v #f)])
                 ;; Make sure we got a subst entry for a type var
                 ;; (i.e. just a type to substitute)
                 (and entry (t-subst? entry))))

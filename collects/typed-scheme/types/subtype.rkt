@@ -305,7 +305,7 @@
 	       (=> unmatch)
 	       (unless (= (length ns) (length ms)) 
 		       (unmatch))
-	       (subtype* A0 b1 (subst-all (map t-subst ms (map make-F ns)) b2))]
+	       (subtype* A0 b1 (subst-all (make-simple-substitution ms (map make-F ns)) b2))]
 	      [((Refinement: par _ _) t)
                (subtype* A0 par t)]
 	      ;; use unification to see if we can use the polytype here

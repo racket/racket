@@ -40,13 +40,13 @@
     [(Poly: ns body) 
      (unless (= (length types) (length ns))
        (int-err "instantiate-poly: wrong number of types: expected ~a, got ~a" (length ns) (length types)))
-     (subst-all (map t-subst ns types) body)]
+     (subst-all (make-simple-substitution ns types) body)]
     [(PolyDots: (list fixed ... dotted) body)
      (unless (>= (length types) (length fixed))
        (int-err "instantiate-poly: wrong number of types: expected at least ~a, got ~a" (length fixed) (length types)))
      (let* ([fixed-tys (take types (length fixed))]
             [rest-tys (drop types (length fixed))]
-            [body* (subst-all (map t-subst fixed fixed-tys) body)])
+            [body* (subst-all (make-simple-substitution fixed fixed-tys) body)])
        (substitute-dots rest-tys #f dotted body*))]
     [_ (int-err "instantiate-poly: requires Poly type, got ~a" t)]))
 
@@ -56,7 +56,7 @@
      (unless (= (length fixed) (length types))
        (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a, types were ~a" 
                 (length fixed) (length types) types))
-     (let ([body* (subst-all (map t-subst fixed types) body)])
+     (let ([body* (subst-all (make-simple-substitution fixed types) body)])
        (substitute-dotted image var dotted body*))]
     [_ (int-err "instantiate-poly-dotted: requires PolyDots type, got ~a" t)]))
 

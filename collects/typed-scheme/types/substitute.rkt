@@ -9,15 +9,23 @@
          scheme/contract)
 
 (provide subst-all substitute substitute-dots substitute-dotted subst
-         (struct-out t-subst) (struct-out i-subst) (struct-out i-subst/starred) (struct-out i-subst/dotted))
+         (struct-out t-subst) (struct-out i-subst) (struct-out i-subst/starred) (struct-out i-subst/dotted)
+         substitution/c make-simple-substitution)
 
 (define (subst v t e) (substitute t v e))
 
-(d-s/c substitution ([name symbol?]))
-(d-s/c (t-subst substitution) ([type Type/c]))
-(d-s/c (i-subst substitution) ([types (listof Type/c)]))
-(d-s/c (i-subst/starred substitution) ([types (listof Type/c)] [starred Type/c]))
-(d-s/c (i-subst/dotted substitution) ([types (listof Type/c)] [dty Type/c] [dbound symbol?]))
+(d/c (make-simple-substitution vs ts)
+  (([vs (listof symbol?)] [ts (listof Type/c)]) () #:pre-cond (= (length vs) (length ts)) . ->d . [_ substitution/c])
+  (for/hash ([v (in-list vs)] [t (in-list ts)])
+    (values v (t-subst t))))
+
+(d-s/c subst-rhs ())
+(d-s/c (t-subst subst-rhs) ([type Type/c]))
+(d-s/c (i-subst subst-rhs) ([types (listof Type/c)]))
+(d-s/c (i-subst/starred subst-rhs) ([types (listof Type/c)] [starred Type/c]))
+(d-s/c (i-subst/dotted subst-rhs) ([types (listof Type/c)] [dty Type/c] [dbound symbol?]))
+
+(define substitution/c (hash/c symbol? subst-rhs? #:immutable #t))
 
 ;; substitute : Type Name Type -> Type
 (d/c (substitute image name target #:Un [Un (get-union-maker)])
@@ -130,16 +138,16 @@
 ;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
 ;; subst-all : substitution Type -> Type
 (d/c (subst-all s t)
-  ((listof substitution?) Type/c . -> . Type/c)
-  (for/fold ([t t]) ([e s])
-    (match e
-      [(t-subst v img)
+  (substitution/c Type? . -> . Type?)
+  (for/fold ([t t]) ([(v r) s])
+    (match r
+      [(t-subst img)
        (substitute img v t)]
-      [(i-subst v imgs)
+      [(i-subst imgs)
        (substitute-dots imgs #f v t)]
-      [(i-subst/starred v imgs rest)
+      [(i-subst/starred imgs rest)
        (substitute-dots imgs rest v t)]     
-      [(i-subst/dotted v imgs dty dbound)
+      [(i-subst/dotted imgs dty dbound)
        (int-err "i-subst/dotted nyi")
        #;
        (substitute-dotted imgs rest v t)])))

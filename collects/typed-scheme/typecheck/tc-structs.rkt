@@ -11,6 +11,7 @@
          syntax/struct
          mzlib/trace      
          unstable/debug
+         racket/function
          scheme/match
          (for-syntax scheme/base))
 
@@ -197,9 +198,9 @@
   ;; then register them
   (mk/register-sty nm flds parent-name parent-field-types types
                    ;; wrap everything in the approriate forall
-                   #:wrapper (lambda (t) (make-Poly tvars t))
-                   #:type-wrapper (lambda (t) (make-App t new-tvars #f))
-                   #:pred-wrapper (lambda (t) (subst-all (for/list ([t tvars]) (t-subst t Univ)) t))
+                   #:wrapper (λ (t) (make-Poly tvars t))
+                   #:type-wrapper (λ (t) (make-App t new-tvars #f))
+                   #:pred-wrapper (λ (t) (subst-all (make-simple-substitution tvars (map (const Univ) tvars)) t))
                    #:poly? tvars))
 
 
