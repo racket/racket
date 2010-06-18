@@ -140,6 +140,7 @@ exec racket -qu "$0" ${1+"$@"}
       pidigits1
       random
       recursive
+      regexmatch
       regexpdna
       reversecomplement
       reversefile
@@ -154,8 +155,7 @@ exec racket -qu "$0" ${1+"$@"}
       wordfreq))
 
   (define without-input-benchmarks
-    '(regexmatch
-      spellcheck))
+    '(spellcheck))
 
   (define (run-benchmark impl bm)
     (let ([i (ormap (lambda (i)

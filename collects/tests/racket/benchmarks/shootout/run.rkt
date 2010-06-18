@@ -24,7 +24,7 @@
       ("mandelbrot-unsafe" "3000")
       ("matrix" "12000")
       ("meteor" "25000")
-      ("moments" #f ,(lambda () (mk-moments-input)))
+      ("moments" #f ,(lambda () (mk-sumcol-input 2000)))
       ("nbody" "3000000")
       ("nbody-generic" "3000000")
       ("nbody-vec" "3000000")
@@ -39,21 +39,21 @@
       ("pidigits1" "4000")
       ("random" "40000000")
       ("recursive" "12")
-      ("regexmatch")
-      ("regexpdna" #f ,(lambda () (mk-regexpdna-input)))
-      ("reversecomplement" #f ,(lambda () (mk-revcomp-input)))
-      ("k-nucleotide" #f ,(lambda () (mk-knuc-input)))
-      ("reversefile" #f ,(lambda () (mk-reversefile-input)))
+      ("regexmatch" #f ,(lambda () (mk-regexmatch-input 500000)))
+      ("regexpdna" #f ,(lambda () (mk-fasta-input 1000000)))
+      ("reversecomplement" #f ,(lambda () (mk-fasta-input 5000000)))
+      ("k-nucleotide" #f ,(lambda () (mk-fasta-input 500000)))
+      ("reversefile" #f ,(lambda () (mk-sumcol-input 3000)))
       ("sieve" "25000")
       ("spellcheck")
       ("spectralnorm" "1000")
       ("spectralnorm-generic" "1000")
       ("spectralnorm-unsafe" "1000")
       ("strcat" "50000000")
-      ("sumcol" #f ,(lambda () (mk-sumcol-input)))
+      ("sumcol" #f ,(lambda () (mk-sumcol-input 10000)))
       ("thread-ring" "1000000") ; calls exit, so won't display running time
-      ("wc" #f ,(lambda () (mk-wc-input)))
-      ("wordfreq" #f ,(lambda () (mk-wordfreq-input)))
+      ("wc" #f ,(lambda () (mk-sumcol-input 20000)))
+      ("wordfreq" #f ,(lambda () (mk-sumcol-input 10000)))
       ))
 
   (define-runtime-path here ".")
@@ -63,8 +63,31 @@
                    [current-output-port (open-output-nowhere)])
       (dynamic-require f #f)))
 
-  (define (mk-fasta n suffix)
-    (let ([f (build-path (find-system-path 'temp-dir) (string-append "fasta-" suffix))])
+  (define (mk-regexmatch-input n)
+    (let ([f (build-path (find-system-path 'temp-dir) (string-append "regexmatch-" (number->string n)))])
+      (unless (file-exists? f)
+        (printf "Building regexmatch ~a output for input: ~a\n" n f)
+        (with-output-to-file f
+          (lambda ()
+            ;; taken from heapsort.rkt
+            (define IM   139968)
+            (define IA     3877)
+            (define IC    29573)
+            (define LAST 42)
+            (define (gen_random max)
+              (set! LAST (modulo (+ (* LAST IA) IC) IM))
+              (/ (* max LAST) IM))
+            (define (random-int max) (inexact->exact (round (gen_random max))))
+            ;; this can generate malformed phone numbers (with a 1 or 2 number area
+            ;; code, for instance) but that's fine, the regex just won't match
+            (let loop ((n n))
+              (unless (zero? n)
+                (printf (format "(~a) ~a-~a\n" (random-int 1000) (random-int 1000) (random-int 10000)))
+                (loop (sub1 n)))))))
+      f))
+  
+  (define (mk-fasta-input n)
+    (let ([f (build-path (find-system-path 'temp-dir) (string-append "fasta-" (number->string suffix)))])
       (unless (file-exists? f)
         (printf "Building FASTA ~a output for input: ~a\n" n f)
         (with-output-to-file f
@@ -74,17 +97,8 @@
               (dynamic-require "fasta.rkt" #f)))))
       f))
 
-  (define (mk-revcomp-input)
-    (mk-fasta "5000000" "5m"))
-
-  (define (mk-knuc-input)
-    (mk-fasta "500000" "500k"))
-
-  (define (mk-regexpdna-input)
-    (mk-fasta "1000000" "1m"))
-
-  (define (mk-sumcol n suffix)
-    (let ([f (build-path (find-system-path 'temp-dir) (string-append "sumcol-" suffix))])
+  (define (mk-sumcol-input n)
+    (let ([f (build-path (find-system-path 'temp-dir) (string-append "sumcol-" (number->string suffix)))])
       (unless (file-exists? f)
         (printf "Building sumcol ~a input: ~a\n" n f)
         (let ([c (with-input-from-file (build-path (collection-path "tests")
@@ -101,21 +115,6 @@
                   (printf "~a" c)
                   (loop (sub1 n))))))))
       f))
-
-  (define (mk-moments-input)
-    (mk-sumcol 2000 "2k"))
-
-  (define (mk-reversefile-input)
-    (mk-sumcol 3000 "3k"))
-
-  (define (mk-sumcol-input)
-    (mk-sumcol 10000 "10k"))
-
-  (define (mk-wc-input)
-    (mk-sumcol 20000 "20k"))
-
-  (define (mk-wordfreq-input)
-    (mk-sumcol 10000 "10k"))
 
   (define iters
     (let ([len (vector-length (current-command-line-arguments))])

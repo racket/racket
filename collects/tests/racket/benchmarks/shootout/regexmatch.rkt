@@ -11,6 +11,8 @@
 
 #lang racket/base
 
+(require racket/match)
+
 (define rx
   (string-append
    "(?:^|[^0-9\\(])"                    ; (1) preceding non-digit or bol
@@ -48,7 +50,7 @@
             count
             (let ([m (regexp-match rx (car phones))])
               (if m
-                  (let-values ([(a1 a2 a3 exch numb) (apply values (cdr m))])
+                  (match-let ([(list a1 a2 a3 exch numb) (cdr m)])
                     (let* ([area (and a1 (or a2 a3))]
                            [num (bytes-append #"(" area #") " exch #"-" numb)]
                            [count (add1 count)])
