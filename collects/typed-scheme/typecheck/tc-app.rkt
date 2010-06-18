@@ -548,7 +548,7 @@
        [_ (int-err "bad expected: ~a" expected)])]
     ;; special case for `-' used like `sub1'
     [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
-     (add-typeof-expr #'arg2 -Nat)
+     (add-typeof-expr #'arg2 (ret -Nat))
      (match-let ([(tc-result1: t) (single-value #'v)])
        (if (subtype t -ExactPositiveInteger)
            (ret -Nat)
