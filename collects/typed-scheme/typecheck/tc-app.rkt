@@ -13,7 +13,7 @@
          ;; end fixme
          (for-syntax syntax/parse scheme/base (utils tc-utils))
          (private type-annotation)
-         (types utils abbrev union subtype resolve convenience)
+         (types utils abbrev union subtype resolve convenience type-table)
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
          (except-in (env type-environments) extend)
@@ -544,6 +544,7 @@
        [_ (int-err "bad expected: ~a" expected)])]
     ;; special case for `-' used like `sub1'
     [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
+     (add-typeof-expr #'arg2 -Nat)
      (match-let ([(tc-result1: t) (single-value #'v)])
        (if (subtype t -ExactPositiveInteger)
            (ret -Nat)

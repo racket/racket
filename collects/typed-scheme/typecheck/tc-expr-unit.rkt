@@ -384,7 +384,7 @@
          (and (identifier? #'name*) (free-identifier=? #'name #'name*))
          (match expected
            [(tc-result1: t)
-            (with-lexical-env/extend (list #'name) (list t) (tc-expr/check/internal #'expr expected))]
+            (with-lexical-env/extend (list #'name) (list t) (tc-expr/check #'expr expected))]
            [(tc-results: ts) 
             (tc-error/expr #:return (ret (Un)) "Expected ~a values, but got only 1" (length ts))])]
         [(letrec-values ([(name ...) expr] ...) . body)
