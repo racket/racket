@@ -147,6 +147,8 @@
        (substitute-dots imgs #f v t)]
       [(i-subst/starred imgs rest)
        (substitute-dots imgs rest v t)]     
+      [(i-subst/dotted null dty dbound)
+       (substitute-dotted dty dbound v t)]
       [(i-subst/dotted imgs dty dbound)
        (int-err "i-subst/dotted nyi")
        #;
