@@ -29,23 +29,6 @@
 (define (seen? s t) (member (seen-before s t) (current-seen)))
 
 
-(define (dmap-constraint dmap dbound v)
-  (let ([dc (hash-ref dmap dbound #f)])
-    (match dc
-      [(struct dcon (fixed #f))
-       (if (eq? dbound v)
-           (no-constraint v)
-           (hash-ref fixed v (no-constraint v)))]
-      [(struct dcon (fixed rest))
-       (if (eq? dbound v)
-           rest
-           (hash-ref fixed v (no-constraint v)))]
-      [(struct dcon-dotted (type bound))
-       (if (eq? bound v)
-           type
-           (no-constraint v))]
-      [_ (no-constraint v)])))
-
 (define (map/cset f cset)
   (make-cset (for/list ([(cmap dmap) (in-pairs (cset-maps cset))])
                (f cmap dmap))))

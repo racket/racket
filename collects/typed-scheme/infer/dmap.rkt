@@ -52,10 +52,13 @@
                    [c2 (in-sequence-forever shorter srest)])
           (c-meet c1 c2 (c-X c1)))
         (c-meet lrest srest (c-X lrest))))]
-    [((struct dcon-dotted (c1 bound1)) (struct dcon-dotted (c2 bound2)))
-     (unless (eq? bound1 bound2)
+    [((struct dcon-dotted (fixed1 c1 bound1)) (struct dcon-dotted (fixed2 c2 bound2)))
+     (unless (and (= (length fixed1) (length fixed2))
+                  (eq? bound1 bound2))
        (fail! bound1 bound2))
-     (make-dcon-dotted (c-meet c1 c2 bound1) bound1)]
+     (make-dcon-dotted (for/list ([c1 fixed1] [c2 fixed2])
+                         (c-meet c1 c2 (c-X c1)))
+                       (c-meet c1 c2 bound1) bound1)]
     [((struct dcon _) (struct dcon-dotted _))
      (fail! dc1 dc2)]
     [((struct dcon-dotted _) (struct dcon _))

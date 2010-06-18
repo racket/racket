@@ -18,9 +18,10 @@
 ;; rest : c
 (d-s/c dcon-exact ([fixed (listof c?)] [rest c?]) #:transparent)
 
+;; fixed : Listof[c]
 ;; type : c
 ;; bound : var
-(d-s/c dcon-dotted ([type c?] [bound symbol?]) #:transparent)
+(d-s/c dcon-dotted ([fixed (listof c?)] [type c?] [bound symbol?]) #:transparent)
 
 (define dcon/c (or/c dcon? dcon-exact? dcon-dotted?))
 
