@@ -535,7 +535,14 @@
                                 (i-subst/starred
                                  (for/list ([f fixed])
                                    (constraint->type f idx-hash #:variable k))
-                                 (constraint->type rest idx-hash)))]))
+                                 (constraint->type rest idx-hash)))]
+                       [(dcon-dotted fixed dc dbound)
+                        (values k
+                                (i-subst/dotted
+                                 (for/list ([f fixed])
+                                   (constraint->type f idx-hash #:variable k))
+                                 (constraint->type dc idx-hash #:variable k)
+                                 dbound))]))
                    (for/hash ([(k v) (in-hash cmap)])
                      (values k (t-subst (constraint->type v var-hash)))))])
        ;; verify that we got all the important variables
