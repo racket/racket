@@ -4,6 +4,7 @@
 
 
 (provide rotate-bytes ;; : bytes int[width] int[height] radians[radians] -> bytes
+         flip-bytes ;; : bytes int[width] int[height] -> bytes
          bitmap->bytes
          bytes->bitmap)
 ;; rotate-bitmap : (-> bytes? natural-number/c natural-number/c real? bytes?)
@@ -75,6 +76,14 @@ instead of this scaling code, we use the dc<%>'s scaling code.
     (send bdc set-bitmap #f)
     (send bm set-loaded-mask mask)
     bm))
+
+(define (flip-bytes bmbytes w h)
+  (build-bmbytes 
+   w h 
+   (λ (x y)
+     (let ([new-x x]
+           [new-y (- h y 1)])
+       (bmbytes-ref/safe bmbytes w h new-x new-y)))))
 
 (define (rotate-bytes bmbytes w h theta)
   (let* {[theta-rotation (exp (* i theta))]

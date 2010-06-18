@@ -34,11 +34,12 @@
                   make-point
                   make-crop
                   crop?
-                  normalized-shape?)
+                  normalized-shape?
+                  image-snip->image
+                  to-img)
          (only-in "../private/image-more.ss" 
                   bring-between
                   swizzle)
-         (only-in "../private/img-err.ss" image-snip->image)
          ; "../private/img-err.ss"
          "../../mrlib/private/image-core-bitmap.ss"
          lang/posn
@@ -1412,6 +1413,26 @@
                  20 80 0 1
                  180 20 90 1/3
                  "white"))
+
+(let* ([bdc (make-object bitmap-dc%)]
+       [bm-ul (make-object bitmap% 10 10)]
+       [bm-ur (make-object bitmap% 10 10)]
+       [bm-ll (make-object bitmap% 10 10)])
+  (send bdc set-bitmap bm-ul)
+  (send bdc set-pen "red" 1 'transparent)
+  (send bdc set-brush "red" 'solid)
+  (send bdc clear)
+  (send bdc draw-rectangle 0 0 5 5)
+  (send bdc set-bitmap bm-ur)
+  (send bdc set-pen "red" 1 'solid)
+  (send bdc clear)
+  (send bdc draw-rectangle 5 0 5 5)
+  (send bdc set-bitmap bm-ll)
+  (send bdc clear)
+  (send bdc draw-rectangle 0 5 5 5)
+  (send bdc set-bitmap #f)
+  (test (flip-vertical bm-ul) => (to-img bm-ll))
+  (test (flip-horizontal bm-ul) => (to-img bm-ur)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

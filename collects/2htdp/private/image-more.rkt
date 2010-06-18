@@ -510,12 +510,13 @@
                                    (text-string atomic-shape) 
                                    (text->font atomic-shape))])
        (rotated-rectangular-bounding-box w h (text-angle atomic-shape)))]
-    [(bitmap? atomic-shape)
-     (let ([bb (bitmap-raw-bitmap atomic-shape)])
+    [(flip? atomic-shape)
+     (let* ([bitmap (flip-shape atomic-shape)]
+            [bb (bitmap-raw-bitmap bitmap)])
        (let-values ([(l t r b)
-                     (rotated-rectangular-bounding-box (* (send bb get-width) (bitmap-x-scale atomic-shape))
-                                                       (* (send bb get-height) (bitmap-y-scale atomic-shape))
-                                                       (bitmap-angle atomic-shape))])
+                     (rotated-rectangular-bounding-box (* (send bb get-width) (bitmap-x-scale bitmap))
+                                                       (* (send bb get-height) (bitmap-y-scale bitmap))
+                                                       (bitmap-angle bitmap))])
          (values l t r b)))]
     [else
      (fprintf (current-error-port) "using bad bounding box for ~s\n" atomic-shape)
@@ -597,14 +598,20 @@
                 (text-style atomic-shape)
                 (text-weight  atomic-shape)
                 (text-underline atomic-shape))]
-    [(bitmap? atomic-shape)
-     (make-bitmap (bitmap-raw-bitmap atomic-shape)
-                  (bitmap-raw-mask atomic-shape)
-                  (bring-between (+ θ (bitmap-angle atomic-shape)) 360)
-                  (bitmap-x-scale atomic-shape)
-                  (bitmap-y-scale atomic-shape)
-                  #f
-                  #f)]))
+    [(flip? atomic-shape)
+     (let ([bitmap (flip-shape atomic-shape)]
+           [flipped? (flip-flipped? atomic-shape)])
+       (make-flip flipped?
+                  (make-bitmap (bitmap-raw-bitmap bitmap)
+                               (bitmap-raw-mask bitmap)
+                               (bring-between (if flipped? 
+                                                  (+ θ (bitmap-angle bitmap))
+                                                  (- (+ θ (bitmap-angle bitmap))))
+                                              360)
+                               (bitmap-x-scale bitmap)
+                               (bitmap-y-scale bitmap)
+                               #f
+                               #f)))]))
 
 ;; rotate-point : point angle -> point
 (define (rotate-point p θ)
@@ -684,10 +691,10 @@
                         (line-segment-color simple-shape))]
     [(curve-segment? simple-shape)
      (make-curve-segment (flip-point (curve-segment-start simple-shape))
-                         (bring-between (- 360 (curve-segment-s-angle simple-shape)) 360)
+                         (bring-between (- (curve-segment-s-angle simple-shape)) 360)
                          (curve-segment-s-pull simple-shape)
                          (flip-point (curve-segment-end simple-shape))
-                         (bring-between (- 360 (curve-segment-e-angle simple-shape)) 360)
+                         (bring-between (- (curve-segment-e-angle simple-shape)) 360)
                          (curve-segment-e-pull simple-shape)
                          (curve-segment-color simple-shape))]
     [(polygon? simple-shape)
@@ -724,15 +731,9 @@
                            (ellipse-color atomic-shape))]))])]
     [(text? atomic-shape)
      (error 'flip "cannot flip shapes that contain text")]
-    [(bitmap? atomic-shape)
-     atomic-shape
-     #;(make-bitmap (bitmap-raw-bitmap atomic-shape)
-                  (bitmap-raw-mask atomic-shape)
-                  (bring-between (+ θ (bitmap-angle atomic-shape)) 360)
-                  (bitmap-x-scale atomic-shape)
-                  (bitmap-y-scale atomic-shape)
-                  #f
-                  #f)]))
+    [(flip? atomic-shape)
+     (make-flip (not (flip-flipped? atomic-shape))
+                (flip-shape atomic-shape))]))
 
 (define (flip-point point) (make-point (point-x point) (- (point-y point))))
 (define (flip-points points) (map flip-point points))
