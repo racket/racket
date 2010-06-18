@@ -22,13 +22,8 @@
             (apply string-append
                    (map (λ (x)
                           (case x
-                            [(alt) "alt-"]
                             [(cmd) "⌘"]
-                            [(meta) "meta-"]
-                            [(control) "ctl-"]
-                            [(shift) "shift-"]
-                            [(option) "opt-"]
-                            [else (error 'language-configuration.rkt "unknown result from get-default-shortcut-prefix: ~s" x)]))
+                            [else (format "~a-" x)]))
                         shortcut-prefix))])
       (define (mouse-event-uses-shortcut-prefix? evt)
         (andmap (λ (prefix)
@@ -38,7 +33,7 @@
                              [else (send evt get-alt-down)])]
                     [(cmd) (send evt get-meta-down)]
                     [(meta) (send evt get-meta-down)]
-                    [(control) (send evt get-control-down)]
+                    [(ctl) (send evt get-control-down)]
                     [(shift) (send evt get-shiftdown)]
                     [(option) (send evt get-alt-down)]))
                 shortcut-prefix))
