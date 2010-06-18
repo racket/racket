@@ -429,9 +429,7 @@ has been moved out).
       (text? shape)
       (and (flip? shape)
            (boolean? (flip-flipped? shape))
-           (bitmap? (flip-shape shape)))
-      (point? shape))) ;; does this belong here?
-
+           (bitmap? (flip-shape shape)))))
 
 ;; normalize-shape : shape (atomic-shape -> atomic-shape) -> normalized-shape
 ;; normalizes 'shape', calling 'f' on each atomic shape in the normalized shape.
