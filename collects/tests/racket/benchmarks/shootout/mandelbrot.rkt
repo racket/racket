@@ -2,66 +2,55 @@
 
 ;; The Great Computer Language Shootout
 ;; http://shootout.alioth.debian.org/
-;;
-;; Derived from the Chicken variant, which was
-;; Contributed by Anthony Borla
- 
-(require racket/cmdline
-         racket/flonum)
 
-(define +limit-sqr+ 4.0)
+(require racket/require racket/require-syntax (for-syntax racket/base))
+(define-require-syntax overriding-in
+  (syntax-rules () [(_ R1 R2) (combine-in R2 (subtract-in R1 R2))]))
+(require (overriding-in
+          racket/flonum
+          (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+                       racket/unsafe/ops))
+         racket/cmdline)
 
-(define +iterations+ 50)
+(define O (current-output-port))
 
-;; -------------------------------
+(define LIMIT-SQR 4.0)
+(define ITERATIONS 50)
+(define N (command-line #:args (n) (string->number n)))
+(define N.0 (fx->fl N))
+(define 2/N (fl/ 2.0 N.0))
+(define Crs
+  (let ([v (make-flvector N)])
+    (for ([x (in-range N)])
+      (flvector-set! v x (fl- (fl/ (fx->fl (fx* 2 x)) N.0) 1.5)))
+    v))
 
-(define (mandelbrot x y n ci)
-  (let ((cr (fl- (fl/ (fl* 2.0 (->fl x)) (->fl n)) 1.5)))
-    (let loop ((i 0) (zr 0.0) (zi 0.0))
-      (if (> i +iterations+)
-          1
-          (cond
-           ((fl> (fl+ (fl* zr zr) (fl* zi zi)) +limit-sqr+) 0)
-           (else (loop (+ 1 i) 
-                       (fl+ (fl- (fl* zr zr) (fl* zi zi)) cr) 
-                       (fl+ (fl* 2.0 (fl* zr zi)) ci))))))))
+(define-syntax (let-n stx)
+  (syntax-case stx ()
+    [(_ N bindings E)
+     (let loop ([N (syntax-e #'N)] [E #'E])
+       (if (zero? N) E (loop (sub1 N) #`(let bindings #,E))))]))
 
-;; -------------------------------
+(define-syntax-rule (mandelbrot Cr Ci)
+  (let loop ([i 0] [Zr 0.0] [Zi 0.0])
+    (cond [(fl> (fl+ (fl* Zr Zr) (fl* Zi Zi)) LIMIT-SQR) 0]
+          [(fx= i ITERATIONS) 1]
+          [else (let-n 5 ([Zr (fl+ (fl- (fl* Zr Zr) (fl* Zi Zi)) Cr)]
+                          [Zi (fl+ (fl* 2.0 (fl* Zr Zi)) Ci)])
+                  (loop (fx+ i 5) Zr Zi))])))
 
-(define (main n)
-  (let ((out (current-output-port)))
-
-    (fprintf out "P4\n~a ~a\n" n n)
-
-    (let loop-y ((y 0))
-
-      (when (< y n)
-        
-        (let ([ci (fl- (fl/ (fl* 2.0 (->fl y)) (->fl n)) 1.0)])
-          
-          (let loop-x ((x 0) (bitnum 0) (byteacc 0))
-
-            (if (< x n)
-                (let ([bitnum (+ 1 bitnum)]
-                      [byteacc (+ (arithmetic-shift byteacc 1) 
-                                  (mandelbrot x y n ci))])
-
-                  (cond
-                   ((= bitnum 8)
-                    (write-byte byteacc out)
-                    (loop-x (+ 1 x) 0 0))
-                   
-                   [else (loop-x (+ 1 x) bitnum byteacc)]))
-
-                (begin
-                  (when (positive? bitnum)
-                    (write-byte (arithmetic-shift byteacc 
-                                                  (- 8 (bitwise-and n #x7))) 
-                                out))
-
-                  (loop-y (add1 y))))))))))
-
-;; -------------------------------
-
-(command-line #:args (n)
-              (main (string->number n)))
+(fprintf O "P4\n~a ~a\n" N N)
+(let loop-y ([y N])
+  (let ([Ci (fl- (fl* 2/N (fx->fl y)) 1.0)])
+    (let loop-x ([x 0] [bitnum 0] [byteacc 0])
+      (if (fx< x N)
+        (let* ([Cr (flvector-ref Crs x)]
+               [bitnum (fx+ bitnum 1)]
+               [byteacc (fx+ (fxlshift byteacc 1) (mandelbrot Cr Ci))])
+          (cond [(fx= bitnum 8)
+                 (write-byte byteacc O)
+                 (loop-x (fx+ x 1) 0 0)]
+                [else (loop-x (fx+ x 1) bitnum byteacc)]))
+        (begin (when (fx> bitnum 0)
+                 (write-byte (fxlshift byteacc (fx- 8 (fxand N #x7))) O))
+               (when (fx> y 1) (loop-y (fx- y 1))))))))
