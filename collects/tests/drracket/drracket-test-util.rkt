@@ -386,7 +386,7 @@
     (let ([drs-frame (get-top-level-focus-window)])
       (fw:test:menu-select "Language" "Choose Language...")
       (let* ([language-dialog (wait-for-new-frame drs-frame)])
-        (fw:test:set-radio-box-item! "Use the language declared in the source")
+        (fw:test:set-radio-box-item! #rx"Use the language declared in the source")
         
         (with-handlers ([exn:fail? (lambda (x) (void))])
           (fw:test:button-push "Show Details"))
