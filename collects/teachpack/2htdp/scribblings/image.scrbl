@@ -764,7 +764,7 @@ the parts that fit onto @racket[scene].
 }
 
                 
-@section{Rotating, Scaling, Cropping, and Framing Images}
+@section{Rotating, Scaling, Flipping, Cropping, and Framing Images}
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
   Rotates @racket[image] by @racket[angle] degrees in a counter-clockwise direction.
@@ -807,6 +807,23 @@ the parts that fit onto @racket[scene].
                             2 
                             (ellipse 20 30 "solid" "blue")) 
                   (ellipse 60 60 "solid" "blue")]
+}
+
+@defproc[(flip-horizontal [image image?]) image?]{
+   Flips @scheme[image] left to right.
+         
+         @image-examples[(beside
+                          (rotate 30 (square 50 "solid" "red"))
+                          (flip-horizontal
+                           (rotate 30 (square 50 "solid" "blue"))))]
+}
+
+@defproc[(flip-vertical [image image?]) image?]{
+   Flips @scheme[image] top to bottom.
+         
+         @image-examples[(above 
+                          (star 40 "solid" "firebrick")
+                          (scale/xy 1 1/2 (flip-vertical (star 40 "solid" "gray"))))]
 }
 
 @defproc[(crop [x real?] [y real?] 
