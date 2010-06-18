@@ -812,6 +812,9 @@ the parts that fit onto @racket[scene].
 @defproc[(flip-horizontal [image image?]) image?]{
    Flips @scheme[image] left to right.
          
+         Flipping images with text is not supported (so passing @scheme[flip-horizontal] an image
+         that contains a @scheme[text] or @scheme[text/font] image inside somewhere signals an error).
+         
          @image-examples[(beside
                           (rotate 30 (square 50 "solid" "red"))
                           (flip-horizontal
@@ -821,6 +824,9 @@ the parts that fit onto @racket[scene].
 @defproc[(flip-vertical [image image?]) image?]{
    Flips @scheme[image] top to bottom.
          
+         Flipping images with text is not supported (so passing @scheme[flip-horizontal] an image
+         that contains a @scheme[text] or @scheme[text/font] image inside somewhere signals an error).
+
          @image-examples[(above 
                           (star 40 "solid" "firebrick")
                           (scale/xy 1 1/2 (flip-vertical (star 40 "solid" "gray"))))]
