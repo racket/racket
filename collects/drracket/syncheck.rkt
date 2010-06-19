@@ -18,11 +18,11 @@ If the namespace does not, they are colored the unbound color.
 
 
 (require string-constants
-         scheme/unit
-         scheme/contract
-         scheme/class
-         scheme/list
-         scheme/promise
+         racket/unit
+         racket/contract
+         racket/class
+         racket/list
+         racket/promise
          drracket/tool
          syntax/toplevel
          syntax/boundmap
@@ -37,7 +37,7 @@ If the namespace does not, they are colored the unbound color.
          net/url
          net/uri-codec
          browser/external
-         (for-syntax scheme/base)
+         (for-syntax racket/base)
          "syncheck-drracket-button.rkt")
 (provide tool@)
 

@@ -1,7 +1,7 @@
 #lang racket/base
 
   (require mred
-           scheme/unit
+           racket/unit
            racket/port
            racket/class
            syntax/toplevel

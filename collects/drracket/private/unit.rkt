@@ -12,7 +12,7 @@ module browser threading seems wrong.
 |#
 
   (require racket/contract
-           scheme/unit
+           racket/unit
            racket/class
            racket/path
            racket/port
@@ -575,7 +575,7 @@ module browser threading seems wrong.
                                module-language-settings)])
                   (when matching-language
                     (set-next-settings
-                     (drracket:language-configuration:make-language-settings 
+                     (drracket:language-configuration:language-settings 
                       matching-language
                       settings)
                      #f))))
@@ -834,17 +834,18 @@ module browser threading seems wrong.
     
     ;; test cases for is-lang-line?
     #;
-    (list (is-lang-line? "#lang x")
-          (is-lang-line? "#lang scheme")
-          (is-lang-line? "#lang scheme ")
-          (not (is-lang-line? "#lang schemeα"))
-          (not (is-lang-line? "#lang scheme/ "))
-          (not (is-lang-line? "#lang /scheme "))
-          (is-lang-line? "#lang sch/eme ")
-          (is-lang-line? "#lang r6rs")
-          (is-lang-line? "#!r6rs")
-          (is-lang-line? "#!r6rs ")
-          (not (is-lang-line? "#!/bin/sh")))
+    (printf "~s\n"
+            (list (is-lang-line? "#lang x")
+                  (is-lang-line? "#lang racket")
+                  (is-lang-line? "#lang racket ")
+                  (not (is-lang-line? "#lang racketα"))
+                  (not (is-lang-line? "#lang racket/ "))
+                  (not (is-lang-line? "#lang /racket "))
+                  (is-lang-line? "#lang rac/ket ")
+                  (is-lang-line? "#lang r6rs")
+                  (is-lang-line? "#!r6rs")
+                  (is-lang-line? "#!r6rs ")
+                  (not (is-lang-line? "#!/bin/sh"))))
     
     (define (get-module-language/settings)
       (let* ([module-language
@@ -2690,7 +2691,7 @@ module browser threading seems wrong.
                   (let-values ([(module-language module-language-settings) (get-module-language/settings)])
                     (when (and module-language module-language-settings)
                       (send definitions-text set-next-settings 
-                            (drracket:language-configuration:make-language-settings
+                            (drracket:language-configuration:language-settings
                              module-language
                              module-language-settings)))))))
             
@@ -3600,7 +3601,7 @@ module browser threading seems wrong.
                       [update-settings
                        (λ (settings)
                          (send (get-definitions-text) set-next-settings 
-                               (drracket:language-configuration:make-language-settings language settings))
+                               (drracket:language-configuration:language-settings language settings))
                          (send (get-definitions-text) teachpack-changed))])
                  (set! teachpack-items
                        (list*
@@ -4438,7 +4439,7 @@ module browser threading seems wrong.
                              (λ (x y)
                                (send (send frame get-definitions-text)
                                      set-next-settings
-                                     (drracket:language-configuration:make-language-settings
+                                     (drracket:language-configuration:language-settings
                                       lang
                                       settings)))]))))))
              (preferences:get 'drracket:recent-language-names))

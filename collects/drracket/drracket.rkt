@@ -1,5 +1,5 @@
 #lang racket/base
-(require scheme/gui/base "private/key.rkt")
+(require racket/gui/base "private/key.rkt")
 
 (define debugging? (getenv "PLTDRDEBUG"))
 (define profiling? (getenv "PLTDRPROFILE"))

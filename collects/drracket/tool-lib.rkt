@@ -8,7 +8,7 @@ all of the names in the tools library, for use defining keybindings
 
 (require racket/class
          racket/gui/base
-         (except-in scheme/unit struct)
+         racket/unit 
          racket/contract
          racket/class
          
@@ -24,13 +24,13 @@ all of the names in the tools library, for use defining keybindings
          mrlib/switchable-button
          scribble/srcdoc)
 
-(require (for-syntax scheme/base))
+(require (for-syntax racket/base))
 
 (require/doc drracket/private/ts ;; probably this also has to be an absolute require
-             scheme/base scribble/manual)
+             racket/base scribble/manual)
 
 (require/doc (for-label errortrace/errortrace-key
-                        scheme/pretty 
+                        racket/pretty 
                         mzlib/pconvert))
 
 (define-values/invoke-unit/infer drracket@)
@@ -310,7 +310,7 @@ all of the names in the tools library, for use defining keybindings
     
     The @racket[language-settings] argument is the current
     language and its settings. See
-    @racket[drracket:language-configuration:make-language-settings]
+    @racket[drracket:language-configuration:language-settings]
     for details on that structure.
     
     If the program is associated with a DrRacket
@@ -1023,7 +1023,7 @@ all of the names in the tools library, for use defining keybindings
     @racket[preferences:set].})
  
  (proc-doc/names
-  drracket:language-configuration:make-language-settings
+  drracket:language-configuration:language-settings
   ((or/c (is-a?/c drracket:language:language<%>) drracket:language:object/c)
    any/c
    . -> .
@@ -1041,6 +1041,17 @@ all of the names in the tools library, for use defining keybindings
     and 
     @racket[drracket:language-configuration:language-settings-settings], and a predicate,
     @racket[drracket:language-configuration:language-settings?]})
+ 
+ #;
+ (proc-doc/names
+  drracket:language-configuration:make-language-settings
+  ((or/c (is-a?/c drracket:language:language<%>) drracket:language:object/c)
+   any/c
+   . -> .
+   drracket:language-configuration:language-settings?)
+  (language settings)
+  
+  @{This is an alias for @racket[drrracket:language-configuration:language-settings]})
  
  (proc-doc/names
   drracket:language-configuration:language-settings-settings
@@ -1529,13 +1540,22 @@ all of the names in the tools library, for use defining keybindings
             otherwise.})
  
  (proc-doc/names
-  drracket:language:make-text/pos
+  drracket:language:text/pos
   ((is-a?/c text%) number? number?
                    . -> .
                    drracket:language:text/pos?)
   (text start end)
   
   @{Constructs a text/pos.})
+ 
+ (proc-doc/names
+  drracket:language:make-text/pos
+  ((is-a?/c text%) number? number?
+                   . -> .
+                   drracket:language:text/pos?)
+  (text start end)
+  
+  @{An alias for @racket[drracket:language:text/pos]})
  
  (proc-doc/names
   drracket:language:simple-settings-case-sensitive 
@@ -1600,7 +1620,7 @@ all of the names in the tools library, for use defining keybindings
   @{Determines if @racket[val] is a simple-settings.})
  
  (proc-doc/names
-  drracket:language:make-simple-settings
+  drracket:language:simple-settings
   (-> boolean?
       (symbols 'constructor 'quasiquote 'write 'trad-write 'print)
       (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
@@ -1616,6 +1636,24 @@ all of the names in the tools library, for use defining keybindings
    annotations)
   
   @{Constructs a simple settings.})
+ 
+ (proc-doc/names
+  drracket:language:make-simple-settings
+  (-> boolean?
+      (symbols 'constructor 'quasiquote 'write 'trad-write 'print)
+      (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
+      boolean?
+      boolean?
+      (symbols 'none 'debug 'debug/profile 'test-coverage)
+      drracket:language:simple-settings?)
+  (case-sensitive
+   printing-style
+   fraction-style
+   show-sharing
+   insert-newlines
+   annotations)
+  
+  @{An alias for @racket[drracket:language:simple-settings].})
  
  (proc-doc/names
   drracket:language:simple-settings->vector

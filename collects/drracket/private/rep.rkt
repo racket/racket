@@ -23,7 +23,7 @@ TODO
 (require racket/class
          racket/path
          racket/pretty
-         scheme/unit
+         racket/unit
          racket/list
          
          string-constants

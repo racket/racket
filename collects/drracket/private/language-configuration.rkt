@@ -1,5 +1,5 @@
 #lang racket/base
-  (require scheme/unit
+  (require racket/unit
            mrlib/hierlist
            racket/class
            racket/contract
@@ -127,9 +127,9 @@
                                     x))
                              (get-languages))
                       (list-ref (get-languages) 0))])
-        (make-language-settings lang (send lang default-settings))))
+        (language-settings lang (send lang default-settings))))
     
-    ;; type language-settings = (make-language-settings (instanceof language<%>) settings)
+    ;; type language-settings = (language-settings (instanceof language<%>) settings)
     (define-struct language-settings (language settings))
     
     
@@ -262,7 +262,7 @@
         (send dialog show #t)
         (if cancelled?
             #f
-            (make-language-settings
+            (language-settings
              (get-selected-language)
              (get-selected-language-settings)))))
     
@@ -1977,8 +1977,8 @@
           
           (let ([new-lang
                  (language-dialog #f
-                                  (make-language-settings lang
-                                                          (send lang default-settings))
+                                  (language-settings lang
+                                                     (send lang default-settings))
                                   drs-frame)])
             (when new-lang
               (set! language-chosen? #t)

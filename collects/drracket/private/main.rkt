@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require string-constants
          mzlib/contract
@@ -487,7 +487,7 @@
                       (drracket:language-configuration:get-languages))])
           (and lang
                (let ([settings (send lang unmarshall-settings marshalled-settings)])
-                 (drracket:language-configuration:make-language-settings
+                 (drracket:language-configuration:language-settings
                   lang
                   (or settings (send lang default-settings)))))))))
 

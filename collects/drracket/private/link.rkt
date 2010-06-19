@@ -1,5 +1,5 @@
 #lang racket/base
-(require scheme/unit
+(require racket/unit
          "modes.rkt"
          "font.rkt"
          "eval.rkt"

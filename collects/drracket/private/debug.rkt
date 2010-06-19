@@ -9,7 +9,7 @@ profile todo:
 |#
 
 (require errortrace/errortrace-key
-         scheme/unit
+         racket/unit
          racket/contract
          errortrace/stacktrace
          racket/class
