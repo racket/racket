@@ -87,7 +87,7 @@
       f))
   
   (define (mk-fasta-input n)
-    (let ([f (build-path (find-system-path 'temp-dir) (string-append "fasta-" (number->string suffix)))])
+    (let ([f (build-path (find-system-path 'temp-dir) (string-append "fasta-" (number->string n)))])
       (unless (file-exists? f)
         (printf "Building FASTA ~a output for input: ~a\n" n f)
         (with-output-to-file f
@@ -98,7 +98,7 @@
       f))
 
   (define (mk-sumcol-input n)
-    (let ([f (build-path (find-system-path 'temp-dir) (string-append "sumcol-" (number->string suffix)))])
+    (let ([f (build-path (find-system-path 'temp-dir) (string-append "sumcol-" (number->string n)))])
       (unless (file-exists? f)
         (printf "Building sumcol ~a input: ~a\n" n f)
         (let ([c (with-input-from-file (build-path (collection-path "tests")
