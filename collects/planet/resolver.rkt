@@ -550,51 +550,52 @@ subdirectory.
 ;; install the given pkg to the planet cache and return a PKG representing the
 ;; installed file
 (define (install-pkg pkg path maj min)
-  (unless (install?)
-    (raise (make-exn:fail:planet
-            (format
-             "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
-             (list (car (pkg-spec-path pkg)) (pkg-spec-name pkg) maj min))
-            (current-continuation-marks))))
-  (let* ([owner (car (pkg-spec-path pkg))]
-         [extra-path (cdr (pkg-spec-path pkg))]
-         [the-dir
-          (apply build-path (CACHE-DIR)
-                 (append (pkg-spec-path pkg) (list (pkg-spec-name pkg)
-                                                   (number->string maj)
-                                                   (number->string min))))]
-         [was-nested? (planet-nested-install)])
-    (if (directory-exists? the-dir)
-      (raise (make-exn:fail
-              "Internal PLaneT error: trying to install already-installed package"
-              (current-continuation-marks)))
-      (parameterize ([planet-nested-install #t])
-        (planet-terse-log 'install (pkg-spec->string pkg))
-        (with-logging
-         (LOG-FILE)
-         (lambda ()
-           (printf "\n============= Installing ~a on ~a =============\n"
-                   (pkg-spec-name pkg)
-                   (current-time))
-           ;; oh man is this a bad hack!
-           (parameterize ([current-namespace (make-namespace)])
-             (printf "new namespace\n")
-             (let ([ipp (dynamic-require 'setup/plt-single-installer
-                                         'install-planet-package)]
-                   [rud (dynamic-require 'setup/plt-single-installer
-                                         'reindex-user-documentation)]
-                   [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
-               (printf "starting setup-plt ~s ~s\n" (manager-skip-file-handler) (msfh))
-               (parameterize ([msfh (manager-skip-file-handler)])
-                 (printf "starting setup-plt.2 ~s ~s\n" (manager-skip-file-handler) (msfh))
-                 (ipp path the-dir (list owner (pkg-spec-name pkg)
-                                         extra-path maj min))
-                 (unless was-nested?
-                   (printf "------------- Rebuilding documentation index -------------\n")
-                   (rud)))))))
-        (planet-terse-log 'finish (pkg-spec->string pkg))
-        (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg)
-                  maj min the-dir 'normal)))))
+  (printf "~s\n" (list 'install-pkg pkg path maj min))
+  (let ([pkg-path (pkg-spec-path pkg)]
+        [pkg-name (pkg-spec-name pkg)]
+        [pkg-string (pkg-spec->string pkg)])
+    (unless (install?)
+      (raise (make-exn:fail:planet
+              (format
+               "PLaneT error: cannot install package ~s since the install? parameter is set to #f"
+               (list (car pkg-path) pkg-name maj min))
+              (current-continuation-marks))))
+    (let* ([owner (car pkg-path)]
+           [extra-path (cdr pkg-path)]
+           [the-dir
+            (apply build-path (CACHE-DIR)
+                   (append pkg-path (list pkg-name
+                                          (number->string maj)
+                                          (number->string min))))]
+           [was-nested? (planet-nested-install)])
+      (if (directory-exists? the-dir)
+          (raise (make-exn:fail
+                  "PLaneT error: trying to install already-installed package"
+                  (current-continuation-marks)))
+          (parameterize ([planet-nested-install #t])
+            (planet-terse-log 'install pkg-string)
+            (with-logging
+             (LOG-FILE)
+             (lambda ()
+               (printf "\n============= Installing ~a on ~a =============\n"
+                       pkg-name
+                       (current-time))
+               ;; oh man is this a bad hack!
+               (parameterize ([current-namespace (make-namespace)])
+                 (let ([ipp (dynamic-require 'setup/plt-single-installer
+                                             'install-planet-package)]
+                       [rud (dynamic-require 'setup/plt-single-installer
+                                             'reindex-user-documentation)]
+                       [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
+                   (parameterize ([msfh (manager-skip-file-handler)])
+                     (ipp path the-dir (list owner pkg-name
+                                             extra-path maj min))
+                     (unless was-nested?
+                       (printf "------------- Rebuilding documentation index -------------\n")
+                       (rud)))))))
+            (planet-terse-log 'finish pkg-string)
+            (make-pkg pkg-name pkg-path
+                      maj min the-dir 'normal))))))
 
 ;; download-package : FULL-PKG-SPEC -> RESPONSE
 ;; RESPONSE ::= (list #f string) | (list #t path[file] Nat Nat)

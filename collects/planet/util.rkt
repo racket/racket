@@ -44,10 +44,10 @@
  display-plt-file-structure
  display-plt-archived-file
  get-package-from-cache
- install-pkg
  pkg->download-url
  exn:fail:planet?
- make-exn:fail:planet)
+ make-exn:fail:planet
+ pkg-spec?)
 
 (provide/contract
  [get-package-spec
@@ -55,10 +55,12 @@
  [download-package 
   (-> pkg-spec? 
       (or/c string?
-            (list/c (λ (x) (eq? x #t)) path? natural-number/c natural-number/c)
-            (list/c false/c string?)))]
+            (list/c #t path? natural-number/c natural-number/c)
+            (list/c #f string?)))]
  [download/install-pkg
-  (-> string? string? natural-number/c any/c (or/c pkg? false/c))]
+  (-> string? string? natural-number/c any/c (or/c pkg? #f))]
+ [install-pkg
+  (-> pkg-spec? string? natural-number/c any/c (or/c pkg? #f))]
  [add-hard-link 
   (-> string? string? natural-number/c natural-number/c path? void?)]
  [remove-hard-link 

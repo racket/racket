@@ -576,6 +576,32 @@ package name, major and minor version number. Returns false if no such
 package is available; otherwise returns a package structure for the
 installed package.}
 
+@defproc[(install-pkg [pkg pkg-spec?]
+                      [file path-string?]
+                      [maj natural-number/c]
+                      [min natural-number/c])
+         (or/c pkg? #f)]{
+ Installs the package represented by the arguments, using
+ only the @scheme[pkg-spec-path] and @racket[pkg-spec-name]
+ fields of @scheme[pkg].
+ 
+ Returns a new @racket[pkg-spec?] corresponding to the package
+ that was actually installed.
+}
+
+@defproc[(get-package-spec [owner string?]
+                           [pkg string?]
+                           [maj (or/c #f natural-number/c) #f]
+                           [min (or/c #f natural-number/c) #f])
+         pkg-spec?]{
+  Builds a @racket[pkg-spec?] corresponding to the package specified by 
+  @racket[owner], @racket[pkg], @scheme[maj], and @scheme[min].
+}
+
+@defproc[(pkg-spec? [v any/c]) boolean?]{
+  Recognizes the result of @racket[get-package-spec].                                        
+}
+                   
 @defparam[current-cache-contents contents
           (listof
            (list/c string? 
