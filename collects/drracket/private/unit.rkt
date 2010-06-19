@@ -2048,13 +2048,13 @@ module browser threading seems wrong.
                                            (drracket:language-configuration:language-settings-settings settings))
                                      ""
                                      (string-append " " (string-constant custom)))))
-            (when (is-a? scheme-menu menu%)
-              (let ([label (send scheme-menu get-label)]
+            (when (is-a? language-specific-menu menu%)
+              (let ([label (send language-specific-menu get-label)]
                     [new-label (send language capability-value 'drscheme:language-menu-title)])
                 (unless (equal? label new-label)
-                  (send scheme-menu set-label new-label))))))
+                  (send language-specific-menu set-label new-label))))))
         
-        (define/public (get-language-menu) scheme-menu)
+        (define/public (get-language-menu) language-specific-menu)
         
         ;; update-save-message : -> void
         ;; sets the save message. If input is #f, uses the frame's
@@ -3573,7 +3573,7 @@ module browser threading seems wrong.
             (send new-language capability-value key)))
         
         (define language-menu 'uninited-language-menu)
-        (define scheme-menu 'scheme-menu-not-yet-init)
+        (define language-specific-menu 'language-specific-menu-not-yet-init)
         (define insert-menu 'insert-menu-not-yet-init)
         (define/public (get-insert-menu) insert-menu)
         (define/public (get-special-menu) insert-menu)
@@ -3658,10 +3658,10 @@ module browser threading seems wrong.
                                           mb
                                           #f
                                           language-menu-on-demand))]
-                 [_ (set! scheme-menu (new (get-menu%) 
-                                           [label (drracket:language:get-capability-default
-                                                   'drscheme:language-menu-title)]
-                                           [parent mb]))]
+                 [_ (set! language-specific-menu (new (get-menu%) 
+                                                      [label (drracket:language:get-capability-default
+                                                              'drscheme:language-menu-title)]
+                                                      [parent mb]))]
                  [send-method
                   (λ (method)
                     (λ (_1 _2)
@@ -3682,26 +3682,26 @@ module browser threading seems wrong.
             (set! execute-menu-item
                   (make-object menu:can-restore-menu-item%
                     (string-constant execute-menu-item-label)
-                    scheme-menu
+                    language-specific-menu
                     (λ (_1 _2) (execute-callback))
                     #\t
                     (string-constant execute-menu-item-help-string)))
             (make-object menu:can-restore-menu-item%
               (string-constant ask-quit-menu-item-label)
-              scheme-menu
+              language-specific-menu
               (λ (_1 _2) (send current-tab break-callback))
               #\b
               (string-constant ask-quit-menu-item-help-string))
             (make-object menu:can-restore-menu-item%
               (string-constant force-quit-menu-item-label)
-              scheme-menu
+              language-specific-menu
               (λ (_1 _2) (send interactions-text kill-evaluation))
               #\k
               (string-constant force-quit-menu-item-help-string))
             (when (custodian-memory-accounting-available?)
               (new menu-item%
                    [label (string-constant limit-memory-menu-item-label)]
-                   [parent scheme-menu]
+                   [parent language-specific-menu]
                    [callback
                     (λ (item b)
                       (let ([num (get-mbytes this 
@@ -3720,7 +3720,7 @@ module browser threading seems wrong.
                                    (* 1024 1024 num))]))))]))
             (new menu:can-restore-menu-item%
                  (label (string-constant clear-error-highlight-menu-item-label))
-                 (parent scheme-menu)
+                 (parent language-specific-menu)
                  (callback
                   (λ (_1 _2) 
                     (let ([ints (send (get-current-tab) get-ints)])
@@ -3730,16 +3730,16 @@ module browser threading seems wrong.
                   (λ (item)
                     (let ([ints (send (get-current-tab) get-ints)])
                       (send item enable (send ints get-error-ranges))))))
-            (make-object separator-menu-item% scheme-menu)
+            (make-object separator-menu-item% language-specific-menu)
             (make-object menu:can-restore-menu-item%
               (string-constant create-executable-menu-item-label)
-              scheme-menu
+              language-specific-menu
               (λ (x y) (create-executable this)))
             (make-object menu:can-restore-menu-item%
               (string-constant module-browser...)
-              scheme-menu
+              language-specific-menu
               (λ (x y) (drracket:module-overview:module-overview this)))
-            (make-object separator-menu-item% scheme-menu)
+            (make-object separator-menu-item% language-specific-menu)
             
             (let ([cap-val
                    (λ ()
@@ -3750,7 +3750,7 @@ module browser threading seems wrong.
                        (send language capability-value 'drscheme:tabify-menu-callback)))])
               (new menu:can-restore-menu-item%
                    [label (string-constant reindent-menu-item-label)]
-                   [parent scheme-menu]
+                   [parent language-specific-menu]
                    [demand-callback (λ (m) (send m enable (cap-val)))]
                    [callback (send-method 
                               (λ (x)
@@ -3762,7 +3762,7 @@ module browser threading seems wrong.
               
               (new menu:can-restore-menu-item%
                    [label (string-constant reindent-all-menu-item-label)]
-                   [parent scheme-menu]
+                   [parent language-specific-menu]
                    [callback 
                     (send-method 
                      (λ (x)
@@ -3774,15 +3774,15 @@ module browser threading seems wrong.
             
             (make-object menu:can-restore-menu-item%
               (string-constant box-comment-out-menu-item-label)
-              scheme-menu
+              language-specific-menu
               (send-method (λ (x) (send x box-comment-out-selection))))
             (make-object menu:can-restore-menu-item%
               (string-constant semicolon-comment-out-menu-item-label)
-              scheme-menu
+              language-specific-menu
               (send-method (λ (x) (send x comment-out-selection))))
             (make-object menu:can-restore-menu-item%
               (string-constant uncomment-menu-item-label)
-              scheme-menu
+              language-specific-menu
               (λ (x y)
                 (let ([text (get-focus-object)])
                   (when (is-a? text text%)
