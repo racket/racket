@@ -119,6 +119,7 @@
    system-custodian
    system-eventspace
    system-namespace
+   system-security-guard
    first-dir))
 
 (define-signature drracket:language-configuration-cm^

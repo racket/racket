@@ -993,8 +993,22 @@ TODO
             (send key get-control-down)
             (send key get-alt-down)
             (and prompt-position
-                 (only-whitespace-after-insertion-point)
-                 (submit-predicate this prompt-position))))
+                 (let ([lang (drracket:language-configuration:language-settings-language user-language-settings)])
+                   (cond
+                     [(is-a? lang drracket:module-language:module-language<%>)
+                      (let ([pred 
+                             (send lang get-language-info 
+                                   'drracket:submit-predicate
+                                   (λ (editor prompt-position)
+                                     (and (only-whitespace-after-insertion-point)
+                                          (submit-predicate this prompt-position))))])
+                        (pred 
+                         ;; no good! giving away the farm here. need to hand over a proxy that is limited to just read access
+                         this
+                         prompt-position))]
+                     [else
+                      (and (only-whitespace-after-insertion-point)
+                           (submit-predicate this prompt-position))])))))
       
       (define/private (only-whitespace-after-insertion-point)
         (let ([start (get-start-position)]

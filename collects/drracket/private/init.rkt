@@ -28,6 +28,8 @@
   (define error-display-handler-message-box-title
     (make-parameter (string-constant drscheme-internal-error)))
   
+  (define system-security-guard (current-security-guard))
+  
   ;; override error-display-handler to duplicate the error
   ;; message in both the standard place (as defined by the
   ;; current error-display-handler) and in a message box

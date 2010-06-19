@@ -465,6 +465,25 @@ uses Racket mode.
 
 @section{Language-specific capabilities}
 
+@subsection{Customizing DrRacket's behavior}
+
+When using the language declared in the source, DrRacket queries  that
+language via @racket[module-compiled-language-info] to determine
+if an expression in the interactions window is ready to be submitted
+to the evaluator (when the user types return).
+The info procedure is passed @racket['drracket:submit-predicate] 
+and should return a function with this contract:
+@racketblock[(-> (is-a?/c text%)
+                 number?
+                 boolean?)]
+This function is called with the interactions window's editor object
+the first position in the editor after the prompt and should return
+a boolean indicating if the expression should be evaluated.
+This function is called in sandbox, but with no filesystem or networking 
+limits.
+
+@subsection{Customizing DrRacket's GUI}
+
 DrRacket's capability interface provides a mechanism for
 tools to allow languages to hide their GUI interface, if the
 tool does not apply to the language. Tools register
