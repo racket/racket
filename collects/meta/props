@@ -1512,6 +1512,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/chameneos.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/cheapconcurrency.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/fannkuch-redux.rkt" drdr:command-line (racket "-t" * "--" "4")
 "collects/tests/racket/benchmarks/shootout/fannkuch.rkt" drdr:command-line (racket "-t" * "--" "4")
 "collects/tests/racket/benchmarks/shootout/fasta.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/hash.rkt" drdr:command-line (racket "-t" * "--" "10")
