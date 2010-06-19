@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket/base
 
 (require "config.rkt"
          "planet-archives.rkt"
@@ -14,9 +14,9 @@
          mzlib/list
          mzlib/etc
          
-         scheme/contract
-         scheme/port
-         scheme/path
+         racket/contract
+         racket/port
+         racket/path
          
          setup/pack
          setup/plt-single-installer 
@@ -630,10 +630,10 @@
                        string?
                        (announce "doc.txt file: ~a\n" doc.txt)
                        (when doc.txt
-                         (warn "Package's info.rkt contains a doc.txt entry, which is now considered deprecated. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the PLT Scheme distribution for more information)."))]
+                         (warn "Package's info.rkt contains a doc.txt entry, which is now considered deprecated. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the Racket distribution for more information)."))]
                       [html-docs
                        (lambda (s) (and (list? s) (andmap string? s)))
-                       (warn "Package specifies an html-docs entry. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the PLT Scheme distribution for more information).")]
+                       (warn "Package specifies an html-docs entry. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the Racket distribution for more information).")]
                       [scribblings
                        (lambda (s) 
                          (and (list? s) 
@@ -666,7 +666,7 @@
                          (warn "Package's info.rkt does not contain a primary-file field. The package's listing on planet.racket-lang.org will not have a valid require line for your package."))]
                       [required-core-version 
                        core-version?
-                       (announce "Required mzscheme version: ~a\n" required-core-version)]
+                       (announce "Required racket version: ~a\n" required-core-version)]
                       [repositories
                        (λ (x) (and (list? x) 
                                    (srfi1:lset<= equal? x '("3xx" "4.x"))))

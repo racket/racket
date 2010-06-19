@@ -582,8 +582,8 @@ installed package.}
                       [min natural-number/c])
          (or/c pkg? #f)]{
  Installs the package represented by the arguments, using
- only the @scheme[pkg-spec-path] and @racket[pkg-spec-name]
- fields of @scheme[pkg].
+ only the @racket[pkg-spec-path] and @racket[pkg-spec-name]
+ fields of @racket[pkg].
  
  Returns a new @racket[pkg-spec?] corresponding to the package
  that was actually installed.
@@ -595,7 +595,7 @@ installed package.}
                            [min (or/c #f natural-number/c) #f])
          pkg-spec?]{
   Builds a @racket[pkg-spec?] corresponding to the package specified by 
-  @racket[owner], @racket[pkg], @scheme[maj], and @scheme[min].
+  @racket[owner], @racket[pkg], @racket[maj], and @racket[min].
 }
 
 @defproc[(pkg-spec? [v any/c]) boolean?]{
