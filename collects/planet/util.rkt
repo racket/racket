@@ -17,12 +17,15 @@
          racket/contract
          racket/port
          racket/path
+         racket/class
+         racket/match
          
          setup/pack
          setup/plt-single-installer 
          setup/getinfo
          setup/unpack
          
+         (for-syntax racket/base)
          (prefix-in srfi1: srfi/1)
          )
 
