@@ -1534,7 +1534,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/pidigits.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/random.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/recursive.rkt" drdr:command-line (racket "-t" * "--" "2")
-"collects/tests/racket/benchmarks/shootout/run.rkt" drdr:command-line (racket "-t" * "--" "nsieve.rkt" "1")
+"collects/tests/racket/benchmarks/shootout/run.rkt" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/spectralnorm-generic.rkt" drdr:command-line (racket "-t" * "--" "25")
 "collects/tests/racket/benchmarks/shootout/spectralnorm-unsafe.rkt" drdr:command-line (racket * "5")
 "collects/tests/racket/benchmarks/shootout/spectralnorm.rkt" drdr:command-line (racket "-t" * "--" "25")
