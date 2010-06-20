@@ -81,7 +81,7 @@
                          (or (not date)
                              (zo-date . > . date)))
                     (cons zo-date
-                          (delay (get-compiled-file-sha1 (get-zo-path) mode)))]
+                          (delay (get-compiled-file-sha1 (get-zo-path))))]
                    [date
                     (cons date
                           (delay (get-source-sha1 (get-path))))]
