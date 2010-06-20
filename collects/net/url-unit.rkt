@@ -28,16 +28,14 @@
   (make-parameter null
     (lambda (v)
       (unless (and (list? v)
-                   (andmap
-                    (lambda (v)
-                      (and (list? v)
-                           (= 3 (length v))
-                           (equal? (car v) "http")
-                           (string? (car v))
-                           (number? (caddr v))
-                           (integer? (caddr v))
-                           (<= 1 (caddr v) 65535)))
-                    v))
+                   (andmap (lambda (v)
+                             (and (list? v)
+                                  (= 3 (length v))
+                                  (equal? (car v) "http")
+                                  (string? (car v))
+                                  (exact-integer? (caddr v))
+                                  (<= 1 (caddr v) 65535)))
+                           v))
         (raise-type-error
          'current-proxy-servers
          "list of list of scheme, string, and exact integer in [1,65535]"
