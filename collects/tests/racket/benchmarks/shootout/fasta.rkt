@@ -7,8 +7,11 @@
 ;;
 ;; Very loosely based on the Chicken variant by Anthony Borla, some
 ;; optimizations taken from the GCC version by Petr Prokhorenkov, and
-;; additional optimizations by Eli Barzilay (not really related to the
-;; above two now).
+;; additional heavy optimizations by Eli Barzilay (not really related to
+;; the above two now).
+;;
+;; If you use some of these optimizations in other solutions, please
+;; include a proper attribution to this Racket code.
 
 (define +alu+
   (bytes-append #"GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGG"
@@ -59,7 +62,14 @@
 (define IM 139968)
 (define IM.0 (fx->fl IM))
 
-(define (random-next cur) (fxmodulo (fx+ IC (fx* cur IA)) IM))
+(define-syntax-rule (define/IM (name id) E)
+  (begin (define V
+           (let ([v (make-vector IM)])
+             (for ([id (in-range IM)]) (vector-set! v id E))
+             v))
+         (define-syntax-rule (name id) (vector-ref V id))))
+
+(define/IM (random-next cur) (fxmodulo (fx+ IC (fx* cur IA)) IM))
 
 (define (make-lookup-table frequency-table)
   (define v (make-bytes IM))
