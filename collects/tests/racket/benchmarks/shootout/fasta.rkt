@@ -92,15 +92,27 @@
           (bytes-set! buf n (bytes-ref lookup-byte R))
           (loop (fx+ n 1) R))
         (begin (write-bytes buf out 0 (fx+ to 1)) R))))
-  (define buf (make-bytes (add1 line-length)))
+  (define (make-line R)
+    (let ([buf (make-bytes (fx+ line-length 1))])
+      (bytes-set! buf line-length LF)
+      (let loop ([n 0] [R R])
+        (if (fx< n line-length)
+          (let ([R (random-next R)])
+            (bytes-set! buf n (bytes-ref lookup-byte R))
+            (loop (fx+ n 1) R))
+          (cons buf R)))))
   (define LF (char->integer #\newline))
+  (define buf (make-bytes (fx+ line-length 1)))
+  (define-values (full-lines last) (quotient/remainder N line-length))
+  (define/IM (chunk r) (make-line r))
   (bytes-set! buf line-length LF)
   (display header out)
-  (let-values ([(full-lines last) (quotient/remainder N line-length)])
-    (let loop ([i full-lines] [R R])
-      (cond [(fx> i 0) (loop (fx- i 1) (n-randoms line-length R))]
-            [(fx> last 0) (bytes-set! buf last LF) (n-randoms last R)]
-            [else R]))))
+  (let loop ([i full-lines] [R R])
+    (cond [(fx> i 0) (let ([c (chunk R)])
+                       (write-bytes (car c))
+                       (loop (fx- i 1) (cdr c)))]
+          [(fx> last 0) (bytes-set! buf last LF) (n-randoms last R)]
+          [else R])))
 
 ;; ----------------------------------------
 
