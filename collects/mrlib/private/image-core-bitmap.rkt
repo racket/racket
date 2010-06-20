@@ -6,7 +6,8 @@
 (provide rotate-bytes ;; : bytes int[width] int[height] radians[radians] -> bytes
          flip-bytes ;; : bytes int[width] int[height] -> bytes
          bitmap->bytes
-         bytes->bitmap)
+         bytes->bitmap
+         linear-transform)
 ;; rotate-bitmap : (-> bytes? natural-number/c natural-number/c real? bytes?)
 ;; avoid a dependency on scheme/contract, which pulls in too much
 
@@ -85,6 +86,7 @@ instead of this scaling code, we use the dc<%>'s scaling code.
            [new-y (- h y 1)])
        (bmbytes-ref/safe bmbytes w h new-x new-y)))))
 
+#;
 (define (rotate-bytes bmbytes w h theta)
   (let* {[theta-rotation (exp (* i theta))]
          [theta-unrotation (make-rectangular (real-part theta-rotation)
@@ -113,7 +115,90 @@ instead of this scaling code, we use the dc<%>'s scaling code.
                                             (real-part pre-image)
                                             (- (imag-part pre-image))))))
             new-w
-            new-h)))                               
+            new-h)))
+
+;; linear transform: bytes width height <matrix coodinates> -> (values bytes width height)
+;; The matrix is read like this:
+;;  +-   -+
+;;  | a b |
+;;  | c d |
+;;  +-   -+
+;; The ai, bi, ci, and di are the coordinates of the inverse matrix
+(define (linear-transform bmbytes w h a b c d)
+  (let-values ([(ai bi ci di)
+                (let ([k (/ (- (* a d) (* b c)))])
+                  (values (* k d) (* k (- b))
+                          (* k (- c)) (* k a)))])
+    ;; mapp : <matrix> complex -> complex
+    ;; applies the matrix represented by abcd(as in the picture above) to p
+    (define (mapp a b c d p)
+      (let ([x (real-part p)]
+            [y (imag-part p)])
+        (make-rectangular (+ (* a x) (* b y))
+                          (+ (* c x) (* d y)))))
+    (let* {[f-rotation (λ (p) (mapp a b c d p))]
+           [f-unrotation (λ (p) (mapp ai bi ci di p))]
+           [ne (f-rotation w)]
+           [sw (f-rotation (* i (- h)))]
+           [se (f-rotation (make-rectangular w (- h)))]
+           [nw 0]
+           [pts (list ne sw se nw)]
+           [longitudes (map real-part pts)]
+           [latitudes  (map imag-part pts)]
+           [east (apply max longitudes)]
+           [west (apply min longitudes)]
+           [nrth (apply max latitudes)]
+           [sth  (apply min latitudes)]
+           [new-w (round/e (- east west))]
+           [new-h (round/e (- nrth sth))]}
+      (values (build-bmbytes new-w
+                             new-h
+                             (λ (x y)
+                               (let* {[pre-image (f-unrotation (make-rectangular (+ west x 1/2) (- nrth y 1/2)))]}
+                                 (interpolate bmbytes w h
+                                              (real-part pre-image)
+                                              (- (imag-part pre-image))))))
+              new-w
+              new-h))))
+
+(define (rotate-bytes bmbytes w h theta)
+  (let* ([theta-rotation (exp (* i theta))]
+         [x (real-part theta-rotation)]
+         [y (imag-part theta-rotation)])
+    (linear-transform 
+     bmbytes w h 
+     x (- y) y x)))
+
+#;
+(define (rotate-bytes bmbytes w h theta)
+  (let* {[theta-rotation (exp (* i theta))]
+         [theta-unrotation (make-rectangular (real-part theta-rotation)
+                                             (- (imag-part theta-rotation)))]
+         [f-rotation (λ (p) (* theta-rotation p))]
+         [f-unrotation (λ (p) (* theta-unrotation p))]
+         [ne (f-rotation w)]
+         [sw (f-rotation (* i (- h)))]
+         [se (f-rotation (make-rectangular w (- h)))]
+         [nw 0]
+         [pts (list ne sw se nw)]
+         [longitudes (map real-part pts)]
+         [latitudes  (map imag-part pts)]
+         [east (apply max longitudes)]
+         [west (apply min longitudes)]
+         [nrth (apply max latitudes)]
+         [sth  (apply min latitudes)]
+         [new-w (round/e (- east west))]
+         [new-h (round/e (- nrth sth))]}
+    (values (build-bmbytes new-w
+                           new-h
+                           (λ (x y)
+                             (let* {[pre-image (f-unrotation (make-rectangular (+ west x 1/2) (- nrth y 1/2)))]}
+                               (interpolate bmbytes w h
+                                            (real-part pre-image)
+                                            (- (imag-part pre-image))))))
+            new-w
+            new-h)))
+
 ;; Why the offsets of 1/2 in `rotate-bytes` and `interpolate`?
 ;; We consider a pixel's RGB as a point-sample taken from the 'true' image,
 ;; where the RGB is the sample at the *center* of the square covered by the pixel.
