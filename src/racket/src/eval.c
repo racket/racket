@@ -5390,7 +5390,7 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
 
   et = scheme_get_eval_type(lo->value);
   SCHEME_LET_EVAL_TYPE(lo) = (et 
-                              | (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) 
+                              | (unused ? 0 : (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM))
                               | (unused ? LET_ONE_UNUSED : 0));
 
   return o;
