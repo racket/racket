@@ -586,7 +586,8 @@ subdirectory.
                        [rud (dynamic-require 'setup/plt-single-installer
                                              'reindex-user-documentation)]
                        [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
-                   (parameterize ([msfh (manager-skip-file-handler)])
+                   (parameterize ([msfh (manager-skip-file-handler)]
+                                  [use-compiled-file-paths (list (string->path "compiled"))])
                      (ipp path the-dir (list owner pkg-name
                                              extra-path maj min))
                      (unless was-nested?
