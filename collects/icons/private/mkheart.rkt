@@ -1,13 +1,11 @@
 #lang racket/gui
 (require mrlib/private/image-core-bitmap)
-(define img (make-object bitmap% "/Users/robby/git/plt/collects/icons/plt-logo-red-shiny.png"))
-;(define img (make-object bitmap% "/Users/robby/git/plt/collects/icons/foot.png"))
-(define-values (bmbytes bm-w bm-h) (bitmap->bytes img))
-(printf "transforming\n")
+(define img (make-object bitmap% (build-path (collection-path "icons") "plt-logo-red-shiny.png")))
 
 (define amount .5)
 (define remove-margin 50)
 
+(define-values (bmbytes bm-w bm-h) (bitmap->bytes img))
 (define-values (left-bytes left-w left-h) (linear-transform bmbytes bm-w bm-h 1 0 (- amount) 1))
 (define-values (right-bytes right-w right-h) (linear-transform bmbytes bm-w bm-h 1 0 amount 1))
 (define left-bm (bytes->bitmap left-bytes left-w left-h))
@@ -53,4 +51,5 @@
 (send heart-bdc clear)
 (draw-heart heart-bdc)
 (send heart-bdc set-bitmap #f)
-(send heart-bm save-file (build-path (collection-path "icons") "heart.png") 'png)
+;; uncomment the next line to actually save the icon in the collects dir
+;;(send heart-bm save-file (build-path (collection-path "icons") "heart.png") 'png)
