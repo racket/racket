@@ -5,9 +5,10 @@
 ;;
 ;; fasta - benchmark
 ;;
-;; Very loosely based on the Chicken variant by Anthony Borla,
-;; some optimizations taken from the GCC version by Petr Prokhorenkov,
-;; and some more optimizations added by Eli Barzilay.
+;; Very loosely based on the Chicken variant by Anthony Borla, some
+;; optimizations taken from the GCC version by Petr Prokhorenkov, and
+;; additional optimizations by Eli Barzilay (not really related to the
+;; above two now).
 
 (define +alu+
   (bytes-append #"GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGG"
@@ -31,14 +32,9 @@
 
 ;; ----------------------------------------
 
-(require racket/require racket/require-syntax (for-syntax racket/base))
-(define-require-syntax overriding-in
-  (syntax-rules () [(_ R1 R2) (combine-in R2 (subtract-in R1 R2))]))
-(require (overriding-in
-          racket/flonum
-          (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+(require racket/cmdline racket/require (for-syntax racket/base)
+         (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
                        racket/unsafe/ops))
-         racket/cmdline)
 
 ;; ----------------------------------------
 
@@ -58,57 +54,48 @@
 
 ;; ----------------------------------------
 
-(define (fl->fx f) (inexact->exact (flfloor f)))
-
 (define IA 3877)
 (define IC 29573)
 (define IM 139968)
 (define IM.0 (fx->fl IM))
-(define random-state 42)
 
-(define (random-next)
-  (set! random-state (fxmodulo (fx+ IC (fx* random-state IA)) IM))
-  random-state)
+(define (random-next cur) (fxmodulo (fx+ IC (fx* cur IA)) IM))
 
-(define (make-lookup-vectors frequency-table)
-  (define byte-vec (make-bytes IM))
-  (define cumu-vec (make-flvector IM))
-  (define (set-range from to b)
-    (for ([i (in-range (fl->fx from) (fl->fx (flround to)))])
-      (bytes-set! byte-vec i b)
-      (flvector-set! cumu-vec i from)))
-  (let loop ([t frequency-table] [c 0.0])
+(define (make-lookup-table frequency-table)
+  (define v (make-bytes IM))
+  (let loop ([t frequency-table] [c 0] [c. 0.0])
     (unless (null? t)
-      (let ([c1 (fl+ c (fl* IM.0 (cadar t)))])
-        (set-range c c1 (char->integer (caar t)))
-        (loop (cdr t) c1))))
-  (values byte-vec cumu-vec))
+      (let* ([c1. (fl+ c. (fl* IM.0 (cadar t)))]
+             [c1 (inexact->exact (flceiling c1.))]
+             [b (char->integer (caar t))])
+        (for ([i (in-range c c1)]) (bytes-set! v i b))
+        (loop (cdr t) c1 c1.))))
+  v)
 
-(define (random-fasta header N table)
+(define (random-fasta header N table R)
   (define out (current-output-port))
-  (define-values (lookup-byte lookup-cumu) (make-lookup-vectors table))
-  (define (n-randoms to)
-    (let loop ([n 0])
-      (when (fx< n to)
-        (let* ([i (random-next)]
-               [i (if (fl< (fx->fl i) (flvector-ref lookup-cumu i))
-                    (fx- i 1) i)]
-               [b (bytes-ref lookup-byte i)])
-          (bytes-set! buf n b)
-          (loop (fx+ n 1)))))
-    (write-bytes buf out 0 (fx+ to 1)))
+  (define lookup-byte (make-lookup-table table))
+  (define (n-randoms to R)
+    (let loop ([n 0] [R R])
+      (if (fx< n to)
+        (let ([R (random-next R)])
+          (bytes-set! buf n (bytes-ref lookup-byte R))
+          (loop (fx+ n 1) R))
+        (begin (write-bytes buf out 0 (fx+ to 1)) R))))
   (define buf (make-bytes (add1 line-length)))
   (define LF (char->integer #\newline))
   (bytes-set! buf line-length LF)
   (display header out)
-  (for ([n (in-range (quotient N line-length))]) (n-randoms line-length))
-  (let ([n (remainder N line-length)])
-    (unless (zero? n) (bytes-set! buf n LF) (n-randoms n)))
-  (void))
+  (let-values ([(full-lines last) (quotient/remainder N line-length)])
+    (let loop ([i full-lines] [R R])
+      (cond [(fx> i 0) (loop (fx- i 1) (n-randoms line-length R))]
+            [(fx> last 0) (bytes-set! buf last LF) (n-randoms last R)]
+            [else R]))))
 
 ;; ----------------------------------------
 
 (let ([n (command-line #:args (n) (string->number n))])
   (repeat-fasta ">ONE Homo sapiens alu\n" (* n 2) +alu+)
-  (random-fasta ">TWO IUB ambiguity codes\n" (* n 3) IUB)
-  (random-fasta ">THREE Homo sapiens frequency\n" (* n 5) HOMOSAPIEN))
+  (random-fasta ">THREE Homo sapiens frequency\n" (* n 5) HOMOSAPIEN
+                (random-fasta ">TWO IUB ambiguity codes\n" (* n 3) IUB 42))
+  (void))
