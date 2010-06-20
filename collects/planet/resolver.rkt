@@ -550,7 +550,6 @@ subdirectory.
 ;; install the given pkg to the planet cache and return a PKG representing the
 ;; installed file
 (define (install-pkg pkg path maj min)
-  (printf "~s\n" (list 'install-pkg pkg path maj min))
   (let ([pkg-path (pkg-spec-path pkg)]
         [pkg-name (pkg-spec-name pkg)]
         [pkg-string (pkg-spec->string pkg)])
