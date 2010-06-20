@@ -6,7 +6,8 @@
 ;; fasta - benchmark
 ;;
 ;; Very loosely based on the Chicken variant by Anthony Borla,
-;; some optimizations taken from the GCC version by Petr Prokhorenkov.
+;; some optimizations taken from the GCC version by Petr Prokhorenkov,
+;; and some more optimizations added by Eli Barzilay.
 
 (define +alu+
   (bytes-append #"GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGG"
@@ -57,10 +58,6 @@
 
 ;; ----------------------------------------
 
-(define lookup-size 4096)
-
-(define lookup-size.0 (fx->fl lookup-size))
-
 (define (fl->fx f) (inexact->exact (flfloor f)))
 
 (define IA 3877)
@@ -71,18 +68,18 @@
 
 (define (random-next)
   (set! random-state (fxmodulo (fx+ IC (fx* random-state IA)) IM))
-  (fl/ (fl* lookup-size.0 (fx->fl random-state)) IM.0))
+  random-state)
 
 (define (make-lookup-vectors frequency-table)
-  (define byte-vec (make-bytes lookup-size))
-  (define cumu-vec (make-flvector lookup-size))
+  (define byte-vec (make-bytes IM))
+  (define cumu-vec (make-flvector IM))
   (define (set-range from to b)
     (for ([i (in-range (fl->fx from) (fl->fx (flround to)))])
       (bytes-set! byte-vec i b)
       (flvector-set! cumu-vec i from)))
   (let loop ([t frequency-table] [c 0.0])
     (unless (null? t)
-      (let ([c1 (fl+ c (fl* lookup-size.0 (cadar t)))])
+      (let ([c1 (fl+ c (fl* IM.0 (cadar t)))])
         (set-range c c1 (char->integer (caar t)))
         (loop (cdr t) c1))))
   (values byte-vec cumu-vec))
@@ -93,9 +90,9 @@
   (define (n-randoms to)
     (let loop ([n 0])
       (when (fx< n to)
-        (let* ([rnd (random-next)]
-               [i (fl->fx rnd)]
-               [i (if (fl< rnd (flvector-ref lookup-cumu i)) (fx- i 1) i)]
+        (let* ([i (random-next)]
+               [i (if (fl< (fx->fl i) (flvector-ref lookup-cumu i))
+                    (fx- i 1) i)]
                [b (bytes-ref lookup-byte i)])
           (bytes-set! buf n b)
           (loop (fx+ n 1)))))
