@@ -185,7 +185,7 @@ static void fprintf_debug(NewGC *gc, mpage *page, const char *msg, objhead *info
 # endif
 #else
 # define GCVERBOSEPAGE(gc, msg, page) /* EMPTY */
-static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
+MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 }
 #endif
 
