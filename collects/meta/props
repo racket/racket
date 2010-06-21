@@ -936,6 +936,7 @@ path/s is either such a string or a list of them.
 "collects/htdp/tests/world.rkt" drdr:command-line (gracket "-t" *)
 "collects/htdp/world.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/html" responsible (jay)
+"collects/icons/private/mkheart.rkt" drdr:command-line #f
 "collects/lang" responsible (mflatt robby matthias)
 "collects/lang/htdp-langs.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/lang/plt-pretty-big.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1510,6 +1511,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/mz/ssax.rktl" drdr:command-line (racket "-f" *)
 "collects/tests/racket/benchmarks/rx/auto.rkt" drdr:command-line (racket "-t" * "--" "racket" "simple") drdr:timeout 600
 "collects/tests/racket/benchmarks/shootout/ackermann.rkt" drdr:command-line (racket "-t" * "--" "10")
+"collects/tests/racket/benchmarks/shootout/auto.rkt" drdr:command-line (racket "-qt" * "--" "hello")
 "collects/tests/racket/benchmarks/shootout/binarytrees.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/chameneos.rkt" drdr:command-line (racket "-t" * "--" "10")
 "collects/tests/racket/benchmarks/shootout/cheapconcurrency.rkt" drdr:command-line (racket "-t" * "--" "10")
