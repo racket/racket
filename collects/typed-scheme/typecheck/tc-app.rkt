@@ -8,6 +8,7 @@
 	 unstable/sequence unstable/debug
          ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
          scheme/bool
+         racket/unsafe/ops
          (only-in racket/private/class-internal make-object do-make-object)
          (only-in '#%kernel [apply k:apply])
          ;; end fixme
@@ -20,7 +21,8 @@
          (rep type-rep filter-rep object-rep)
          (r:infer infer)
          '#%paramz
-         (for-template 
+         (for-template
+          racket/unsafe/ops
           (only-in '#%kernel [apply k:apply])
           "internal-forms.rkt" scheme/base scheme/bool '#%paramz
           (only-in racket/private/class-internal make-object do-make-object)))
@@ -441,7 +443,9 @@
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
                 values apply k:apply not list list* call-with-values do-make-object make-object cons
-                map andmap ormap reverse extend-parameterization vector-ref)
+                map andmap ormap reverse extend-parameterization
+                vector-ref unsafe-vector-ref unsafe-vector*-ref
+                vector-set! unsafe-vector-set! unsafe-vector*-set!)
     [(#%plain-app extend-parameterization pmz args ...)
      (let loop ([args (syntax->list #'(args ...))])
        (if (null? args) (ret Univ)
@@ -457,7 +461,7 @@
                 (tc-error/expr #:return (or expected (ret Univ)) "expected Parameter, but got ~a" t)
                 (loop (cddr args))]))))]
     ;; vector-ref on het vectors
-    [(#%plain-app (~and op (~literal vector-ref)) v e:expr)
+    [(#%plain-app (~and op (~or (~literal vector-ref) (~literal unsafe-vector-ref) (~literal unsafe-vector*-ref))) v e:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'v)
          [(tc-result1: (and t (HeterogenousVector: es)))
@@ -483,7 +487,7 @@
          [v-ty
           (let ([arg-tys (list v-ty e-t)])
             (tc/funapp #'op #'(v e) (single-value #'op) arg-tys expected))]))]
-    [(#%plain-app (~and op (~literal vector-set!)) v e:expr val:expr)
+    [(#%plain-app (~and op (~or (~literal vector-set!) (~literal unsafe-vector-set!) (~literal unsafe-vector*-set!))) v e:expr val:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'v)
          [(tc-result1: (and t (HeterogenousVector: es)))
