@@ -318,13 +318,14 @@
 
 [flvector? (make-pred-ty -FlVector)]
 [flvector (->* (list) -Flonum -FlVector)]
-[make-flvector (-> -Nat -Flonum -FlVector)]
+[make-flvector (cl->* (-> -Integer -FlVector)
+                      (-> -Integer -Flonum -FlVector))]
 [flvector-length (-> -FlVector -Nat)]
-[flvector-ref (-> -FlVector -Nat -Flonum)]
-[flvector-set! (-> -FlVector -Nat -Flonum -Void)]
+[flvector-ref (-> -FlVector -Integer -Flonum)]
+[flvector-set! (-> -FlVector -Integer -Flonum -Void)]
 
 ;; unsafe flvector ops
 
 [unsafe-flvector-length (-> -FlVector -Nat)]
-[unsafe-flvector-ref (-> -FlVector -Nat -Flonum)]
-[unsafe-flvector-set! (-> -FlVector -Nat -Flonum -Void)]
+[unsafe-flvector-ref (-> -FlVector -Integer -Flonum)]
+[unsafe-flvector-set! (-> -FlVector -Integer -Flonum -Void)]
