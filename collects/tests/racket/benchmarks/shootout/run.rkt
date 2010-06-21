@@ -1,6 +1,8 @@
 (module run mzscheme
   (require (only scheme/runtime-path define-runtime-path)
-           racket/port)
+           racket/port
+           mzlib/kw
+           unstable/port)
   (define input-map
     `(
       ("ackermann" "12")
@@ -23,7 +25,7 @@
       ("mandelbrot-generic" "3000")
       ("matrix" "12000")
       ("meteor" "25000")
-      ("moments" #f ,(lambda () (mk-sumcol-input 2000)))
+      ("moments" #f ,(lambda () (mk-moments-input 2000)))
       ("nbody" "3000000")
       ("nbody-generic" "3000000")
       ("nbody-vec" "3000000")
@@ -96,17 +98,22 @@
               (dynamic-require "fasta.rkt" #f)))))
       f))
 
-  (define (mk-sumcol-input n)
-    (let ([f (build-path (find-system-path 'temp-dir) (string-append "sumcol-" (number->string n)))])
+  (define/kw (mk-sumcol-input n #:optional moments?)
+    (let ([f (build-path (find-system-path 'temp-dir) (string-append (if moments? "moments-" "sumcol-")
+                                                                     (number->string n)))])
       (unless (file-exists? f)
-        (printf "Building sumcol ~a input: ~a\n" n f)
+        (printf "Building ~a ~a input: ~a\n" (if moments? "moments" "sumcol") n f)
         (let ([c (with-input-from-file (build-path (collection-path "tests")
                                                    "racket"
                                                    "benchmarks"
                                                    "shootout"
                                                    "sumcol-input.txt")
                    (lambda ()
-                     (read-bytes 10000)))])
+                     (if moments?
+                         (apply string-append ; like sumcol, but with floats
+                                (map (lambda (x) (string-append (number->string (exact->inexact x)) "\n"))
+                                     (read-all)))
+                         (read-bytes 10000))))])
           (with-output-to-file f
             (lambda ()
               (let loop ([n n])
@@ -114,6 +121,9 @@
                   (printf "~a" c)
                   (loop (sub1 n))))))))
       f))
+
+  (define (mk-moments-input n)
+    (mk-sumcol-input n #t))
 
   (define iters
     (let ([len (vector-length (current-command-line-arguments))])

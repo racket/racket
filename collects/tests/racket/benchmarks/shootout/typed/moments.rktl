@@ -12,7 +12,7 @@
        (numlist : (Listof Float) '())
        (sum : Float 0.0))
       (cond ((not (eof-object? line))
-             (let ((num (exact->inexact (assert (string->number line) real?))))
+             (let ((num (assert (string->number line) inexact-real?)))
                (loop (read-line) (cons num numlist) (+ num sum))))
             (else
              (unless (null? numlist)
