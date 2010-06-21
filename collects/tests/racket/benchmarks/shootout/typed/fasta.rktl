@@ -3,113 +3,139 @@
 ;;
 ;; fasta - benchmark
 ;;
-;; Derived from the Chicken variant, which was
-;; Contributed by Anthony Borla
-
-(require racket/cmdline)
-
-(define-type CumulativeTable (Listof (Pair Natural Float)))
+;; Very loosely based on the Chicken variant by Anthony Borla, some
+;; optimizations taken from the GCC version by Petr Prokhorenkov, and
+;; additional heavy optimizations by Eli Barzilay (not really related to
+;; the above two now).
+;;
+;; If you use some of these optimizations in other solutions, please
+;; include a proper attribution to this Racket code.
 
 (define +alu+
-  (bytes-append
-   #"GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGG"
-   #"GAGGCCGAGGCGGGCGGATCACCTGAGGTCAGGAGTTCGAGA"
-   #"CCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACTAAAAAT"
-   #"ACAAAAATTAGCCGGGCGTGGTGGCGCGCGCCTGTAATCCCA"
-   #"GCTACTCGGGAGGCTGAGGCAGGAGAATCGCTTGAACCCGGG"
-   #"AGGCGGAGGTTGCAGTGAGCCGAGATCGCGCCACTGCACTCC"
-   #"AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA"))
+  (bytes-append #"GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGG"
+                #"GAGGCCGAGGCGGGCGGATCACCTGAGGTCAGGAGTTCGAGA"
+                #"CCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACTAAAAAT"
+                #"ACAAAAATTAGCCGGGCGTGGTGGCGCGCGCCTGTAATCCCA"
+                #"GCTACTCGGGAGGCTGAGGCAGGAGAATCGCTTGAACCCGGG"
+                #"AGGCGGAGGTTGCAGTGAGCCGAGATCGCGCCACTGCACTCC"
+                #"AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA"))
 
-(define +iub+
-  (list
-   '(#\a . 0.27) '(#\c . 0.12) '(#\g . 0.12) '(#\t . 0.27) '(#\B . 0.02)
-   '(#\D . 0.02) '(#\H . 0.02) '(#\K . 0.02) '(#\M . 0.02) '(#\N . 0.02)
-   '(#\R . 0.02) '(#\S . 0.02) '(#\V . 0.02) '(#\W . 0.02) '(#\Y . 0.02)))
+(define-type Table (Listof (List Char Float)))
 
-(define +homosapien+
-  (list
-   '(#\a . 0.3029549426680) '(#\c . 0.1979883004921)
-   '(#\g . 0.1975473066391) '(#\t . 0.3015094502008)))
+(define IUB
+  '([#\a 0.27] [#\c 0.12] [#\g 0.12] [#\t 0.27] [#\B 0.02]
+    [#\D 0.02] [#\H 0.02] [#\K 0.02] [#\M 0.02] [#\N 0.02]
+    [#\R 0.02] [#\S 0.02] [#\V 0.02] [#\W 0.02] [#\Y 0.02]))
 
-;; -------------
+(define HOMOSAPIEN
+  '([#\a 0.3029549426680] [#\c 0.1979883004921]
+    [#\g 0.1975473066391] [#\t 0.3015094502008]))
 
-(define +line-size+ 60)
+(define line-length 60)
 
-;; -------------------------------
+;; ----------------------------------------
 
-(: make-random (Integer -> (Real -> Real)))
-(define (make-random seed)
-  (let* ((ia 3877) (ic 29573) (im 139968) (last seed))
-    (lambda: ((max : Real))
-      (set! last (modulo (+ ic (* last ia)) im))
-      (/ (* max last) im))))
+(require racket/cmdline racket/require (for-syntax racket/base)
+         (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+                       racket/unsafe/ops))
 
-;; -------------------------------
+;; ----------------------------------------
 
-(: make-cumulative-table ((Listof (Pair Char Float)) -> CumulativeTable))
-(define (make-cumulative-table frequency-table)
-  (let ([cumulative 0.0])
-    (for/list: : CumulativeTable
-               ([x : (Pair Char Float) frequency-table])
-      (set! cumulative (+ cumulative (cdr x))) 
-      (cons (char->integer (car x)) cumulative))))
+(: repeat-fasta (String Integer Bytes -> Void))
+(define (repeat-fasta header N sequence)
+  (define out (current-output-port))
+  (define len (bytes-length sequence))
+  (define buf (make-bytes (+ len line-length)))
+  (bytes-copy! buf 0 sequence)
+  (bytes-copy! buf len sequence 0 line-length)
+  (display header out)
+  (let: loop : Void ([n : Integer N] [start : Integer 0])
+    (when (fx> n 0)
+      (let ([end (fx+ start (fxmin n line-length))])
+        (write-bytes buf out start end)
+        (newline)
+        (loop (fx- n line-length) (if (fx> end len) (fx- end len) end))))))
 
-;; -------------
+;; ----------------------------------------
 
-(define random-next (make-random 42))
-(define +segmarker+ ">")
+(define IA 3877)
+(define IC 29573)
+(define IM 139968)
+(define IM.0 (fx->fl IM))
 
-;; -------------
+(define-syntax-rule (define/IM (name id) E)
+  (begin (define V
+           (let: ([v : (Vectorof Integer) (make-vector IM)])
+             (for ([id (in-range IM)]) (vector-set! v id E))
+             v))
+         (define-syntax-rule (name id) (vector-ref V id))))
 
-(: select-random (CumulativeTable -> Natural))
-(define (select-random cumulative-table)
-  (let ((rvalue (random-next 1.0)))
-    (let select-over-threshold ([table cumulative-table])
-      (if (<= rvalue (cdar table))
-          (caar table)
-          (select-over-threshold (cdr table))))))
+(define/IM (random-next cur) (fxmodulo (fx+ IC (fx* cur IA)) IM))
 
-;; -------------
+(: make-lookup-table (Table -> Bytes))
+(define (make-lookup-table frequency-table)
+  (define v (make-bytes IM))
+  (let: loop : Void ([t : Table frequency-table] [c : Integer 0] [c. : Float 0.0])
+    (unless (null? t)
+      (let* ([c1. (fl+ c. (fl* IM.0 (cadar t)))]
+             [c1 (assert (inexact->exact (flceiling c1.)) exact-integer?)]
+             [b (char->integer (caar t))])
+        (for ([i (in-range c c1)]) (bytes-set! v i b))
+        (loop (cdr t) c1 c1.))))
+  v)
 
-(: repeat-fasta (String String Integer Bytes Integer -> Void))
-(define (repeat-fasta id desc n_ sequence line-length)
-  (let ((seqlen (bytes-length sequence))
-        (out (current-output-port)))
-    (display (string-append +segmarker+ id " " desc "\n") out)
-    (let: loop-o : Void
-          ((n : Integer n_) (k : Integer 0))
-      (unless (<= n 0) 
-        (let ((m (min n line-length)))
-          (let loop-i ((i 0) (k k))
-            (if (>= i m) 
-                (begin
-                  (newline out)
-                  (loop-o (- n line-length) k))
-                (let ([k (if (= k seqlen) 0 k)])
-                  (write-byte (bytes-ref sequence k) out)
-                  (loop-i (add1 i) (add1 k))))))))))
+(: random-fasta (String Integer Table Integer -> Integer))
+(define (random-fasta header N table R)
+  (define out (current-output-port))
+  (define lookup-byte (make-lookup-table table))
+  (: n-randoms (Integer Integer -> Integer))
+  (define (n-randoms to R)
+    (let loop ([n 0] [R R])
+      (if (fx< n to)
+        (let ([R (random-next R)])
+          (bytes-set! buf n (bytes-ref lookup-byte R))
+          (loop (fx+ n 1) R))
+        (begin (write-bytes buf out 0 (fx+ to 1)) R))))
+  (: make-line! (Bytes Integer Integer -> Integer))
+  (define (make-line! buf start R)
+    (let ([end (fx+ start line-length)])
+      (bytes-set! buf end LF)
+      (let loop ([n start] [R R])
+        (if (fx< n end)
+          (let ([R (random-next R)])
+            (bytes-set! buf n (bytes-ref lookup-byte R))
+            (loop (fx+ n 1) R))
+          R))))
+  (: LF Integer)
+  (define LF (char->integer #\newline))
+  (: buf Bytes)
+  (define buf (make-bytes (fx+ line-length 1)))
+  (: full-lines Integer)
+  (: last Integer)
+  (define-values (full-lines last) (quotient/remainder N line-length))
+  (: C Bytes)
+  (define C
+    (let* ([len+1 (fx+ line-length 1)]
+           [buflen (fx* len+1 IM)]
+           [buf (make-bytes buflen)])
+      (let loop ([R R] [i 0])
+        (if (fx< i buflen)
+          (loop (make-line! buf i R) (fx+ i len+1))
+          buf))))
+  (bytes-set! buf line-length LF)
+  (display header out)
+  (let loop ([i full-lines] [R R])
+    (if (fx> i IM)
+      (begin (display C out) (loop (fx- i IM) R))
+      (let loop ([i i] [R R])
+        (cond [(fx> i 0) (loop (fx- i 1) (n-randoms line-length R))]
+              [(fx> last 0) (bytes-set! buf last LF) (n-randoms last R)]
+              [else R])))))
 
-;; -------------
+;; ----------------------------------------
 
-(: random-fasta (String String Integer CumulativeTable Integer -> Void))
-(define (random-fasta id desc n_ cumulative-table line-length)
-  (let ((out (current-output-port)))
-    (display (string-append +segmarker+ id " " desc "\n") out)
-    (let: loop-o : Void ((n : Integer n_))
-      (unless (<= n 0)
-        (for ([i (in-range (min n line-length))])
-          (write-byte (select-random cumulative-table) out))
-        (newline out)
-        (loop-o (- n line-length))))))
-
-;; -------------------------------
-  
-(let ((n (command-line #:args (n) (assert (string->number (assert n string?)) exact-integer?))))
-    
-  (repeat-fasta "ONE" "Homo sapiens alu" (* n 2) +alu+ +line-size+)
-  
-  (random-fasta "TWO" "IUB ambiguity codes" (* n 3)
-                (make-cumulative-table +iub+) +line-size+)
-  
-  (random-fasta "THREE" "Homo sapiens frequency" (* n 5)
-                (make-cumulative-table +homosapien+) +line-size+))
+(let ([n (command-line #:args (n) (assert (string->number (assert n string?)) exact-integer?))])
+  (repeat-fasta ">ONE Homo sapiens alu\n" (* n 2) +alu+)
+  (random-fasta ">THREE Homo sapiens frequency\n" (* n 5) HOMOSAPIEN
+                (random-fasta ">TWO IUB ambiguity codes\n" (* n 3) IUB 42))
+  (void))
