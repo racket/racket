@@ -1,5 +1,5 @@
 ;; $Id: nsieve-mzscheme.code,v 1.6 2006/06/10 23:38:29 bfulgham Exp $
-;; The Great Computer Language Shootout
+;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 ;;
 ;; nsieve benchmark for The Computer Language Shootout

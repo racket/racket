@@ -1,6 +1,6 @@
 #lang racket/base
 
-;;; The Great Computer Language Shootout
+;;; The Computer Language Benchmarks Game
 ;;; http://shootout.alioth.debian.org/
 ;;; Derived from the Chicken variant by Sven Hartrumpf
 

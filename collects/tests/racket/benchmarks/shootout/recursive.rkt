@@ -1,5 +1,5 @@
 ;; ---------------------------------------------------------------------
-;; The Great Computer Language Shootout
+;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 ;;
 ;; Code based on / inspired by existing, relevant Shootout submissions
