@@ -1,10 +1,11 @@
 #lang racket
 (require "structures.rkt")
 (provide/contract
- [eliminate-whitespace ((listof symbol?) (boolean? . -> . boolean?) . -> . (element? . -> . element?))])
+ [eliminate-whitespace (() ((listof symbol?) (boolean? . -> . boolean?)) . ->* . (element? . -> . element?))])
 
 ;; eliminate-whitespace : (listof Symbol) (Bool -> Bool) -> Element -> Element
-(define (eliminate-whitespace special eliminate-special?)
+(define (eliminate-whitespace [special empty]
+                              [eliminate-special? (λ (x) x)])
   (letrec ([blank-it
             (lambda (el)
               (let ([name (element-name el)]

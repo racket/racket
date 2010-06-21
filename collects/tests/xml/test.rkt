@@ -550,6 +550,12 @@ END
         (test-suite             
          "eliminate-whitespace"
          
+         (test-equal? "Defaults"
+                      (with-output-to-string 
+                          (lambda () 
+                            (write-xml/content ((eliminate-whitespace) (read-xml/element (open-input-string "<html>\n<p>Hey</p></html>"))))))
+                      "<html>\n<p>Hey</p></html>")
+         
          (test-eliminate-whitespace empty identity "<html>\n<p>Hey</p></html>" "<html>\n<p>Hey</p></html>")
          (test-eliminate-whitespace/exn empty not "<html>\n<p>Hey</p></html>" "not allowed to contain text")
          (test-eliminate-whitespace/exn empty truer "<html>\n<p>Hey</p></html>" "not allowed to contain text")

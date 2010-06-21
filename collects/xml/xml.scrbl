@@ -269,8 +269,8 @@ Converts an @tech{X-expression} into a string containing XML.}
 
 Converts XML represented with a string into an @tech{X-expression}.}
 
-@defproc[((eliminate-whitespace [tags (listof symbol?)]
-                                [choose (boolean? . -> . boolean?)])
+@defproc[((eliminate-whitespace [tags (listof symbol?) empty]
+                                [choose (boolean? . -> . boolean?) (λ (x) x)])
           [elem element?])
          element?]{
 
