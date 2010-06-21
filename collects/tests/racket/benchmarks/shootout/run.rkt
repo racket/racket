@@ -93,7 +93,7 @@
         (printf "Building FASTA ~a output for input: ~a\n" n f)
         (with-output-to-file f
           (lambda ()
-            (parameterize ([current-command-line-arguments (vector n)]
+            (parameterize ([current-command-line-arguments (vector (number->string n))]
                            [current-load-relative-directory here])
               (dynamic-require "fasta.rkt" #f)))))
       f))
