@@ -28,10 +28,10 @@
 (define (check t)
   (let loop ([t t] [acc 0])
     (let ([acc (fx+ (leaf-val t) acc)])
-      (if (leaf? t)
-        acc
-        (loop (node-right t)
-              (fx+ acc (loop (node-left t) 0)))))))
+      (if (node? t)
+        (loop (node-left t)
+              (fx- acc (loop (node-right t) 0)))
+        acc))))
 
 (define min-depth 4)
 
@@ -54,4 +54,4 @@
               max-depth
               (check long-lived-tree)))))
 
-(command-line #:args (n) (time (main (string->number n))))
+(command-line #:args (n) (main (string->number n)))
