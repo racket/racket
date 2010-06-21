@@ -625,21 +625,28 @@
      (check-do-make-object #'cl #'args #'() #'())]
     [(#%plain-app do-make-object cl (#%plain-app list . pos-args) (#%plain-app list (#%plain-app cons 'names named-args) ...))
      (check-do-make-object #'cl #'pos-args #'(names ...) #'(named-args ...))]
-    [(#%plain-app (~literal map) f arg)
-     (match (single-value #'arg)
+    [(#%plain-app (~literal map) f arg0 arg ...)
+     (match* ((single-value #'arg0) (map single-value (syntax->list #'(arg ...))))
        ;; if the argument is a ListDots
-       [(tc-result1: (ListDots: t bound))
-        
-        (match (extend-tvars (list bound)
+       [((tc-result1: (ListDots: t0 bound0)) 
+         (list (tc-result1: (or (and (ListDots: t bound) (app (λ _ #f) var))
+                                ;; a devious hack - just generate #f so the test below succeeds
+                                ;; have to explicitly bind `var' since otherwise `var' appears on only one side of the or
+                                ;; NOTE: safe to include these, `map' will error if any list is not the same length as all the others
+                                (and (Listof: t var) (app (λ _ #f) bound))))
+               ...))
+        (=> fail)
+        (unless (for/and ([b bound]) (or (not b) (eq? bound0 b))) (fail))
+        (match (extend-tvars (list bound0)
                  ;; just check that the function applies successfully to the element type
-                 (tc/funapp #'f #'(arg) (tc-expr #'f) (list (ret t)) expected))
-          [(tc-result1: t) (ret (make-ListDots t bound))]
+                 (tc/funapp #'f #'(arg0 arg ...) (tc-expr #'f) (cons (ret t0) (map ret t)) expected))
+          [(tc-result1: t) (ret (make-ListDots t bound0))]
           [(tc-results: ts)
            (tc-error/expr #:return (ret (Un))
                           "Expected one value, but got ~a" (-values ts))])]
        ;; otherwise, if it's not a ListDots, defer to the regular function typechecking
-       [res
-        (tc/funapp #'map #'(f arg) (single-value #'map) (list (tc-expr #'f) res) expected)])]
+       [(res0 res)
+        (tc/funapp #'map #'(f arg0 arg ...) (single-value #'map) (list* (tc-expr #'f) res0 res) expected)])]
     ;; ormap/andmap of ... argument
     [(#%plain-app (~and fun (~or (~literal andmap) (~literal ormap))) f arg)
      ;; check the arguments
