@@ -135,7 +135,7 @@
    [build-vector (-poly (a) (index-type (index-type . -> . a) . -> . (-vec a)))]
    [vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [vector-copy! (-poly (a) ((-vec a) index-type (-vec a) [index-type index-type] . ->opt . -Void))]
-   [make-vector (-poly (a) (cl-> [(index-type) (-vec -Nat)]
+   [make-vector (-poly (a) (cl-> [(index-type) (-vec (Un -Nat a))]
                                  [(index-type a) (-vec a)]))]
    
    [peek-char

@@ -9,10 +9,11 @@
 
 (: fannkuch (Integer -> Integer))
 (define (fannkuch n)
-  (let ([pi (list->vector 
-             (for/list: : (Listof Integer) ([i : Integer (in-range n)]) i))]
-        [tmp (make-vector n)]
-        [count (make-vector n)])
+  (let: ([pi : (Vectorof Integer)
+             (list->vector
+              (for/list: : (Listof Integer) ([i : Integer (in-range n)]) i))]
+        [tmp : (Vectorof Integer) (make-vector n)]
+        [count : (Vectorof Integer) (make-vector n)])
     (let: loop : Integer
           ([flips : Integer 0]
            [perms : Integer 0]

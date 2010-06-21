@@ -25,7 +25,7 @@
 
 (: mover ((Integer Integer -> (values Integer Integer)) -> (Vectorof Integer)))
 (define (mover fun)
-  (let ([t (make-vector size)])
+  (let: ([t : (Vectorof Integer) (make-vector size)])
     (for ([p (in-range size)])
       (vector-set! t p (let*-values ([(y x) (quotient/remainder p width)]
                                      [(x y) (fun x y)])
