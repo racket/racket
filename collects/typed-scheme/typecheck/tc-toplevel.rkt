@@ -19,6 +19,7 @@
          "provide-handling.rkt"
          "def-binding.rkt"
          (prefix-in c: racket/contract)
+         racket/dict
          (for-template
           "internal-forms.rkt"
           unstable/location
@@ -259,24 +260,47 @@
     ;; do pass 1, and collect the defintions
     (define defs (apply append (filter list? (map tc-toplevel/pass1 forms))))
     ;; separate the definitions into structures we'll handle for provides    
-    (define stx-defs (filter def-stx-binding? defs))
-    (define val-defs (filter def-binding? defs))
+    (define def-tbl
+      (for/fold ([h (make-immutable-free-id-table)])
+        ([def (in-list defs)])
+        (dict-set h (binding-name def) def)))
     ;; typecheck the expressions and the rhss of defintions
     (for-each tc-toplevel/pass2 forms)
     ;; check that declarations correspond to definitions
     (check-all-registered-types)
     ;; report delayed errors
     (report-all-errors)
+    (define syntax-provide? #f)
+    (define provide-tbl
+      (for/fold ([h (make-immutable-free-id-table)]) ([p (in-list provs)])
+        (syntax-parse p #:literals (#%provide)
+          [(#%provide form ...)
+           (for/fold ([h h]) ([f (syntax->list #'(form ...))])
+             (parameterize ([current-orig-stx f])
+               (syntax-parse f
+                 [i:id 
+                  (when (def-stx-binding? (dict-ref def-tbl #'i #f))
+                    (set! syntax-provide? #t))
+                  (dict-set h #'i #'i)]
+                 [((~datum rename) in out)
+                  (when (def-stx-binding? (dict-ref def-tbl #'in #f))
+                    (set! syntax-provide? #t))
+                  (dict-set h #'in #'out)]
+                 [((~datum protect) . _)
+                  (tc-error "provide: protect not supported by Typed Scheme")]
+                 [_ (int-err "unknown provide form")])))]
+          [_ (int-err "non-provide form! ~a" (syntax->datum p))])))
     ;; compute the new provides
     (with-syntax*
         ([the-variable-reference (generate-temporary #'blame)]
-         [((new-provs ...) ...) (map (generate-prov stx-defs val-defs #'the-variable-reference) provs)])
+         [(new-provs ...) 
+          (generate-prov def-tbl provide-tbl #'the-variable-reference)])
       #`(begin
           (define the-variable-reference (quote-module-path))
-           #,(env-init-code)
+           #,(env-init-code syntax-provide? provide-tbl def-tbl)
            #,(tname-env-init-code)
            #,(talias-env-init-code)
-           (begin new-provs ... ...)))))
+           (begin new-provs ...)))))
 
 ;; typecheck a whole module
 ;; syntax -> syntax

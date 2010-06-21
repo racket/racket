@@ -4,7 +4,7 @@
          "type-env.rkt" 
 	 "type-name-env.rkt"
 	 "type-alias-env.rkt"
-         unstable/struct
+         unstable/struct racket/dict
          (rep type-rep object-rep filter-rep rep-utils)
 	 (for-template (rep type-rep object-rep filter-rep) 
 		       (types union)
@@ -80,7 +80,7 @@
                  (show-sharing #f)
                  (booleans-as-true/false #f))                   
     (with-syntax ([registers (filter (lambda (x) x) (type-name-env-map f))])
-      #'(begin (begin-for-syntax  . registers)))))
+      #'(begin-for-syntax  . registers))))
 
 (define (talias-env-init-code)    
   (define (f id ty)
@@ -91,18 +91,20 @@
                  (show-sharing #f)
                  (booleans-as-true/false #f))                   
     (with-syntax ([registers (filter (lambda (x) x) (type-alias-env-map f))])
-      #'(begin (begin-for-syntax  . registers)))))
+      #'(begin-for-syntax  . registers))))
 
-(define (env-init-code)    
+(define (env-init-code syntax-provide? provide-tbl def-tbl)
   (define (f id ty)
-    (if (bound-in-this-module id)
+    (if (and (bound-in-this-module id)
+             ;; if there are no syntax provides, then we only need this identifier if it's provided
+             #;(or syntax-provide? (dict-ref provide-tbl id #f)))     
         #`(register-type #'#,id #,(datum->syntax #'here (print-convert ty)))
         #f))
   (parameterize ((current-print-convert-hook converter)
                  (show-sharing #f)
                  (booleans-as-true/false #f))                   
-    (with-syntax ([registers (filter (lambda (x) x) (type-env-map f))])
-      #'(begin (begin-for-syntax  . registers)))))
+    (with-syntax ([registers (filter values (type-env-map f))])
+      #'(begin-for-syntax . registers))))
 
 
 
