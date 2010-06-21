@@ -137,6 +137,25 @@
    [vector-copy! (-poly (a) ((-vec a) index-type (-vec a) [index-type index-type] . ->opt . -Void))]
    [make-vector (-poly (a) (cl-> [(index-type) (-vec (Un -Nat a))]
                                  [(index-type a) (-vec a)]))]
+
+   [bytes-ref (-> -Bytes index-type -Nat)]
+   [unsafe-bytes-ref (-> -Bytes index-type -Nat)]
+   [bytes-set! (-> -Bytes index-type index-type -Void)]
+   [unsafe-bytes-set! (-> -Bytes index-type index-type -Void)]
+   [subbytes (cl-> [(-Bytes index-type) -Bytes] [(-Bytes index-type index-type) -Bytes])]
+   [bytes-copy! (-Bytes index-type -Bytes [index-type index-type] . ->opt . -Void)]
+   [bytes-fill! (-> -Bytes index-type -Void)]
+   [bytes->string/utf-8 (-Bytes [(Un (-val #f) -Char) index-type index-type] . ->opt . -String)]
+   [bytes->string/locale (-Bytes [(Un (-val #f) -Char) index-type index-type] . ->opt . -String)]
+   [bytes->string/latin-1 (-Bytes [(Un (-val #f) -Char) index-type index-type] . ->opt . -String)]
+   [string->bytes/utf-8 (-String [(Un (-val #f) index-type) index-type index-type] . ->opt . -Bytes)]
+   [string->bytes/locale (-String [(Un (-val #f) index-type) index-type index-type] . ->opt . -Bytes)]
+   [string->bytes/latin-1 (-String [(Un (-val #f) index-type) index-type index-type] . ->opt . -Bytes)]
+   [string-utf-8-length (-String [index-type index-type] . ->opt . -Nat)]
+   [bytes-utf-8-length (-Bytes [(Un (-val #f) -Char) index-type index-type] . ->opt . -Nat)]
+   [bytes-utf-8-ref (-Bytes [index-type (Un (-val #f) -Char) index-type index-type] . ->opt . -Char)]
+   [bytes-utf-8-index (-Bytes [index-type (Un (-val #f) -Char) index-type index-type] . ->opt . -Nat)]
+
    
    [peek-char
     (cl->* [->opt [-Input-Port index-type] (Un -Char (-val eof))])]
