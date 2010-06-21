@@ -1449,7 +1449,7 @@ before the pattern compiler is invoked.
       [`(variable-prefix ,vars) ribs]
       [`variable-not-otherwise-mentioned ribs]
       
-      [`hole (error 'match-pattern "cannot have a hole inside an ellipses")]
+      [`hole ribs]
       [(? symbol?) 
        (cond
          [(regexp-match #rx"_!_" (symbol->string pattern))

@@ -185,6 +185,7 @@
     (test-empty '((name x a) ...) '() (list (make-test-mtch (make-bindings (list (make-bind 'x '()))) '() none)))
     (test-empty '((name x a) ...) '(a) (list (make-test-mtch (make-bindings (list (make-bind 'x '(a)))) '(a) none)))
     (test-empty '((name x a) ...) '(a a) (list (make-test-mtch (make-bindings (list (make-bind 'x '(a a)))) '(a a) none)))
+    (test-empty '(hole ...) '() (list (make-test-mtch (make-bindings empty) '() none)))
     
     (test-empty '(b ... a ...) '() (list (make-test-mtch (make-bindings empty) '() none)))
     (test-empty '(b ... a ...) '(a) (list (make-test-mtch (make-bindings empty) '(a) none)))
