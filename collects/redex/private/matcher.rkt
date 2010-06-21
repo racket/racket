@@ -1318,7 +1318,8 @@ before the pattern compiler is invoked.
                                       [`(,(struct mismatch-bind (name sing-exp)) ,(struct mismatch-bind (name mult-exp)))
                                        (make-mismatch-bind name (cons sing-exp mult-exp))]
                                       [else 
-                                       (error 'collapse-single-multiples "expected matches' bindings in same order; got ~e ~e"
+                                       (error 'collapse-single-multiples
+                                              "internal error: expected matches' bindings in same order; got ~e ~e"
                                               single-bindings
                                               multiple-bindings)])
                                     (bindings-table single-bindings)
@@ -1462,7 +1463,7 @@ before the pattern compiler is invoked.
                  (make-mismatch-bind name '())
                  (make-bind name '()))
              (loop pat ribs))]
-      [`(in-hole ,context ,contractum) (loop context (loop contractum ribs))]
+      [`(in-hole ,context ,contractum) (loop contractum (loop context ribs))]
       [`(hide-hole ,p) (loop p ribs)]
       [`(side-condition ,pat ,test ,expr) (loop pat ribs)]
       [(? list?)
