@@ -195,7 +195,7 @@ END
       "~n<a <a>" "read-xml: lex-error: at position 2.4/6: expected / or > to close tag `a'")
      
      (test-read-xml/exn "" "read-xml: parse-error: expected root element - received #<eof>")
-     (test-read-xml/exn "<br /><br />" "read-xml: parse-error: extra stuff at end of document #<element>")
+     (test-read-xml/exn "<br /><br />" "read-xml: parse-error: extra stuff at end of document (element ")
      
      (test-read-xml 
       "<doc><bold>hi</bold> there!</doc>"
@@ -322,7 +322,7 @@ END
      
      (test-read-xml/element/exn
       "<!-- comment --><br />"
-      "read-xml: parse-error: expected root element - received #<comment>")
+      "read-xml: parse-error: expected root element - received (comment ")
      
      (test-read-xml/element
       "<title><![CDATA[hello world[mp3]]]></title>"
@@ -363,7 +363,7 @@ END
       "~n<a <a>" "read-xml: lex-error: at position 2.4/6: expected / or > to close tag `a'")
      
      (test-syntax:read-xml/exn "" "read-xml: parse-error: expected root element - received #<eof>")
-     (test-syntax:read-xml/exn "<br /><br />" "read-xml: parse-error: extra stuff at end of document #<element>")
+     (test-syntax:read-xml/exn "<br /><br />" "read-xml: parse-error: extra stuff at end of document (element ")
      
      (test-syntax:read-xml 
       "<doc><bold>hi</bold> there!</doc>"
@@ -430,7 +430,7 @@ END
      
      (test-syntax:read-xml/element/exn
       "<!-- comment --><br />"
-      "read-xml: parse-error: expected root element - received #<comment>")
+      "read-xml: parse-error: expected root element - received (comment ")
      
      ; XXX need more syntax:read-xml/element tests
      

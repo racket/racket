@@ -1,39 +1,39 @@
 #lang racket
 
 ; Location = (make-location Nat Nat Nat) | Symbol
-(define-struct location (line char offset))
+(define-struct location (line char offset) #:transparent)
 
 ; Source = (make-source Location Location)
-(define-struct source (start stop))
+(define-struct source (start stop) #:transparent)
 
 ; Document = (make-document Prolog Element (listof Misc))
-(define-struct document (prolog element misc))
+(define-struct document (prolog element misc) #:transparent)
 
 ; Prolog = (make-prolog (listof Misc) Document-type (listof Misc))
-(define-struct prolog (misc dtd misc2))
+(define-struct prolog (misc dtd misc2) #:transparent)
 
 ; Document-type = (make-document-type sym External-dtd #f)
 ;               | #f
-(define-struct document-type (name external inlined))
+(define-struct document-type (name external inlined) #:transparent)
 
 ; External-dtd = (make-external-dtd/public str str)
 ;              | (make-external-dtd/system str)
 ;              | #f
-(define-struct external-dtd (system))
-(define-struct (external-dtd/public external-dtd) (public))
-(define-struct (external-dtd/system external-dtd) ())
+(define-struct external-dtd (system) #:transparent)
+(define-struct (external-dtd/public external-dtd) (public) #:transparent)
+(define-struct (external-dtd/system external-dtd) () #:transparent)
 
 ; Element = (make-element Location Location Symbol (listof Attribute) (listof Content))
-(define-struct (element source) (name attributes content))
+(define-struct (element source) (name attributes content) #:transparent)
 
 ; Attribute = (make-attribute Location Location Symbol String)
-(define-struct (attribute source) (name value))
+(define-struct (attribute source) (name value) #:transparent)
 
 ; Pcdata = (make-pcdata Location Location String)
-(define-struct (pcdata source) (string))
+(define-struct (pcdata source) (string) #:transparent)
 
 ; Cdata = (make-cdata Location Location String)
-(define-struct (cdata source) (string))
+(define-struct (cdata source) (string) #:transparent)
 
 ; Content = Pcdata  
 ;         |  Element
@@ -45,14 +45,14 @@
 ;      |  Processing-instruction
 
 ; Entity = (make-entity Location Location (U Nat Symbol))
-(define-struct (entity source) (text))
+(define-struct (entity source) (text) #:transparent)
 
 ; Processing-instruction = (make-p-i Location Location String String)
 ; also represents XMLDecl
-(define-struct (p-i source) (target-name instruction))
+(define-struct (p-i source) (target-name instruction) #:transparent)
 
 ; Comment = (make-comment String)
-(define-struct comment (text))
+(define-struct comment (text) #:transparent)
 
 ; permissive-xexprs : parameter bool
 (define permissive-xexprs (make-parameter #f))
