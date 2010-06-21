@@ -127,26 +127,37 @@ _raco_help()
 
 _racket_collects_dirs=()
 
+_complete_collects()
+{
+  local cur=$1
+  if [ ${#_racket_collects_dirs[@]} -eq 0 ]; then
+    _racket_collects_dirs=( $( for x in `${_racket_cmd} -e '(for-each displayln (map path->string (current-library-collection-paths)))'`; do echo "${x}/" ; done ) )
+  fi
+  local wordlist=""
+  for dir in ${_racket_collects_dirs[@]}; do
+    wordlist="$wordlist "$( for x in $(compgen -d "${dir}"); do basename "${x}"; done )
+  done
+  COMPREPLY=( $(compgen -W "${wordlist}" -- ${cur}) )
+}
+
 _raco_setup()
 {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    case "${prev}" in
-      -l) # specifying a particular collection
-        if [ ${#_racket_collects_dirs[@]} -eq 0 ]; then
-          _racket_collects_dirs=( $( for x in `${_racket_cmd} -e '(for-each displayln (map path->string (current-library-collection-paths)))'`; do echo "${x}/" ; done ) )
-        fi
-        local wordlist=""
-        for dir in ${_racket_collects_dirs[@]}; do
-          wordlist="$wordlist "$( for x in $(compgen -d "${dir}"); do basename "${x}"; done )
-        done
-        COMPREPLY=( $(compgen -W "${wordlist}" -- ${cur}) )
-        ;;
-      *)
-        _filedir
-        ;;
-    esac
+    if [ $COMP_CWORD -eq 2 ]
+    then
+      _complete_collects ${cur}
+    else
+      case "${prev}" in
+        -l) # specifying a particular collection
+          _complete_collects ${cur}
+          ;;
+        *)
+          _filedir
+          ;;
+      esac
+    fi
 }
 
 _raco()
