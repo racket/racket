@@ -58,8 +58,8 @@
 (define-match-expander Listof:
   (lambda (stx)
     (syntax-parse stx
-      [(_ elem-pat)
-       #'(Mu: var (Union: (list (Value: '()) (Pair: elem-pat (F: var)))))])))
+      [(_ elem-pat (~optional var-pat #:defaults ([var-pat #'var])))
+       (syntax/loc stx (Mu: var-pat (Union: (list (Value: '()) (Pair: elem-pat (F: var-pat))))))])))
 
 (define-match-expander List:
   (lambda (stx)
