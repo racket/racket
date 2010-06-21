@@ -473,12 +473,14 @@ if an expression in the interactions window is ready to be submitted
 to the evaluator (when the user types return).
 The info procedure is passed @racket['drracket:submit-predicate] 
 and should return a function with this contract:
-@racketblock[(-> (is-a?/c text%)
-                 number?
+@racketblock[(-> input-port?
+                 boolean?
                  boolean?)]
-This function is called with the interactions window's editor object
-the first position in the editor after the prompt and should return
-a boolean indicating if the expression should be evaluated.
+This function's first argument is a port that contains the interactions window's
+data, starting from the prompt position to the end of the editor.
+The second argument is a boolean indicating if the insertion point is
+followed only by whitespace. The results should be a 
+boolean indicating if the expression should be evaluated.
 This function is called in sandbox, but with no filesystem or networking 
 limits.
 

@@ -999,13 +999,13 @@ TODO
                       (let ([pred 
                              (send lang get-language-info 
                                    'drracket:submit-predicate
-                                   (λ (editor prompt-position)
-                                     (and (only-whitespace-after-insertion-point)
+                                   (λ (port only-whitespace-afterwards?)
+                                     (and only-whitespace-afterwards?
                                           (submit-predicate this prompt-position))))])
                         (pred 
                          ;; no good! giving away the farm here. need to hand over a proxy that is limited to just read access
-                         this
-                         prompt-position))]
+                         (open-input-text-editor this prompt-position)
+                         (only-whitespace-after-insertion-point)))]
                      [else
                       (and (only-whitespace-after-insertion-point)
                            (submit-predicate this prompt-position))])))))
