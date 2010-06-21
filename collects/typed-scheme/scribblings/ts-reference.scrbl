@@ -123,6 +123,10 @@ The following base types are parameteric in their type arguments.
 @defform[(Listof t)]{Homogenous @rtech{lists} of @racket[t]}
 @defform[(List t ...)]{is the type of the list with one element, in order, 
   for each type provided to the @racket[List] type constructor.}
+@defform/none[(#,(racket List) t ... trest #,(racket ...) bound)]{is the type of a list with
+one element for each of the @racket[t]s, plus a sequence of elements
+corresponding to @racket[trest], where @racket[bound]
+  must be an identifier denoting a type variable bound with @racket[...].}
 
 @ex[
 (list 'a 'b 'c)
@@ -179,7 +183,7 @@ The following base types are parameteric in their type arguments.
 @defform*[#:id -> #:literals (* ...)
 	       [(dom ... -> rng)
 	        (dom ... rest * -> rng)
-		(dom ... rest ... bound -> rng)
+		(dom ... rest #,(racket ...) bound -> rng)
                 (dom -> rng : pred)]]{is the type of functions from the (possibly-empty)
   sequence @racket[dom ...] to the @racket[rng] type.  The second form
   specifies a uniform rest argument of type @racket[rest], and the
