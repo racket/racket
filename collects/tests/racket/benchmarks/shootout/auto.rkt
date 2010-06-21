@@ -122,7 +122,6 @@ exec racket -qu "$0" ${1+"$@"}
       lists
       mandelbrot
       mandelbrot-generic
-      mandelbrot-unsafe
       matrix
       meteor
       moments

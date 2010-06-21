@@ -21,7 +21,6 @@
       ("lists" "2000")
       ("mandelbrot" "3000")
       ("mandelbrot-generic" "3000")
-      ("mandelbrot-unsafe" "3000")
       ("matrix" "12000")
       ("meteor" "25000")
       ("moments" #f ,(lambda () (mk-sumcol-input 2000)))
