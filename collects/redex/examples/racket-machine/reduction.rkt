@@ -326,7 +326,7 @@
    ((install-value n e_r* e_b*)
     (concat H_r H_b)
     (concat T_r T_b)
-    (y_* ...))
+    (y_** ...))
    (where (e_r* H_r T_r (y_* ...)) (load’ e_r - (y ...)))
    (where (e_b* H_b T_b (y_** ...)) (load’ e_b φ (y_* ...)))]
   [(load’ (install-value-box n e_r e_b) φ (y ...))
