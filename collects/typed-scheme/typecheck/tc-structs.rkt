@@ -173,7 +173,7 @@
 
 ;; check and register types for a polymorphic define struct
 ;; tc/poly-struct : Listof[identifier] (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
-(define (tc/poly-struct vars nm/par flds tys)
+(define (tc/poly-struct vars nm/par flds tys #:maker [maker #f])
   ;; parent field types can't actually be determined here
   (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
   ;; create type variables for the new type parameters
@@ -197,6 +197,7 @@
   ;; that the outside world will see
   ;; then register them
   (mk/register-sty nm flds parent-name parent-field-types types
+                   #:maker maker
                    ;; wrap everything in the approriate forall
                    #:wrapper (λ (t) (make-Poly tvars t))
                    #:type-wrapper (λ (t) (make-App t new-tvars #f))

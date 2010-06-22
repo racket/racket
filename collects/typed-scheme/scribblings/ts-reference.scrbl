@@ -367,14 +367,26 @@ types.  In most cases, use of @racket[:] is preferred to use of @racket[define:]
 
 @subsection{Structure Definitions}
 @defform/subs[
-(define-struct: maybe-type-vars name-spec ([f : t] ...))
+(struct: maybe-type-vars name-spec ([f : t] ...) options ...)
 ([maybe-type-vars code:blank (v ...)]
- [name-spec name (name parent)])]{
+ [name-spec name (code:line name parent)]
+ [options #:transparent #:mutable])]{
  Defines a @rtech{structure} with the name @racket[name], where the
- fields @racket[f] have types @racket[t].  When @racket[parent], the
+ fields @racket[f] have types @racket[t], similar to the behavior of @racket[struct].
+  When @racket[parent] is present, the
 structure is a substructure of @racket[parent].  When
 @racket[maybe-type-vars] is present, the structure is polymorphic in the type
- variables @racket[v].}
+ variables @racket[v].
+
+Options provided have the same meaning as for the @racket[struct] form.}
+
+
+@defform/subs[
+(define-struct: maybe-type-vars name-spec ([f : t] ...) options ...)
+([maybe-type-vars code:blank (v ...)]
+ [name-spec name (name parent)]
+ [options #:transparent #:mutable])]{Legacy version of @racket[struct:], 
+corresponding to @racket[define-struct].}
                                  
 @defform/subs[
 (define-struct/exec: name-spec ([f : t] ...) [e : proc-t])
