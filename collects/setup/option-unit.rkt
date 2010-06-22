@@ -1,5 +1,7 @@
 #lang scheme/base
-(require scheme/unit "option-sig.ss")
+(require scheme/unit
+         racket/future
+         "option-sig.ss")
 
 (provide setup:option@ set-flag-params)
 
@@ -25,6 +27,8 @@
 
   (define setup-program-name (make-parameter "setup-plt"))
 
+  (define-flag-param parallel-build #f)
+  (define-flag-param parallel-workers (processor-count))
   (define-flag-param verbose #f)
   (define-flag-param make-verbose #f)
   (define-flag-param compiler-verbose #f)

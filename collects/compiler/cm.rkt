@@ -140,6 +140,10 @@
   (with-handlers ([exn:fail:filesystem? void])
     (trace-printf "deleting: ~a" path)
     (delete-file path)))
+(define (silent-try-delete-file path)
+  ;; Attempt to delete, but give up if it doesn't work:
+  (with-handlers ([exn:fail:filesystem? void])
+    (delete-file path)))
 
 (define (compilation-failure mode path zo-name date-path reason)
   (try-delete-file zo-name)
@@ -478,7 +482,7 @@
 (define (compile-root mode raw-path up-to-date read-src-syntax)
   (let ([actual-path (actual-source-path (simple-form-path raw-path))])
     (define (compile-it deps path zo-name src-sha1 update-cache-with-zo-time zo-exists?)
-      (when zo-exists? (delete-file zo-name))
+      (when zo-exists? (silent-try-delete-file zo-name))
       ((manager-compile-notify-handler) actual-path)
       (trace-printf "compiling: ~a" actual-path)
       (parameterize ([depth (+ (depth) 1)]

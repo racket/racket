@@ -229,5 +229,6 @@
                        #:skip-doc-sources? skip-docs?))
 
   (define compile-directory-zos compile-directory)
+  (define compile-directory-srcs get-compile-directory-srcs)
 
   )
