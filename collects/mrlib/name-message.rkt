@@ -7,7 +7,8 @@
 
 (provide/contract
  [get-left-side-padding (-> number?)]
- [pad-xywh (number? number? (>=/c 0) (>=/c 0) . -> . (values number? number? (>=/c 0) (>=/c 0)))]
+ [pad-xywh (-> number? number? (>=/c 0) (>=/c 0)
+               (values number? number? (>=/c 0) (>=/c 0)))]
  [draw-button-label
   (->d ([dc (is-a?/c dc<%>)]
         [label (or/c false/c string?)]
@@ -23,8 +24,8 @@
        [result void?])]
  
  [calc-button-min-sizes
-  (->* ((is-a?/c dc<%>) string? (is-a?/c font%))
-       ()
+  (->* ((is-a?/c dc<%>) string?)
+       ((is-a?/c font%))
        (values number? number?))])
 
 (provide name-message%)
@@ -241,7 +242,7 @@
 (define mouse-grabbed-color (make-object color% 100 100 100))
 (define grabbed-fg-color (make-object color% 220 220 220))
 
-(define (calc-button-min-sizes dc label button-label-font)
+(define (calc-button-min-sizes dc label [button-label-font (send dc get-font)])
   (let-values ([(w h a d) (send dc get-text-extent label button-label-font)])
     (let-values ([(px py pw ph) (pad-xywh 0 0 w h)])
       (values pw ph))))
