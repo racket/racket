@@ -560,18 +560,7 @@
    (drracket:frame:create-root-menubar)
    (preferences:set 'framework:exit-when-no-frames #f)]
   [else
-   (preferences:set 'framework:exit-when-no-frames #t)])
-
-
-;; is this used anywhere?
-(let* ([sl (editor:get-standard-style-list)]
-       [sd (make-object style-delta%)])
-  (send sd set-delta-foreground (make-object color% 255 0 0))
-  (send sl new-named-style 
-        "drscheme:text:ports err"
-        (send sl find-or-create-style
-              (send sl find-named-style "text:ports err")
-              sd)))  
+   (preferences:set 'framework:exit-when-no-frames #t)]) 
 
 
 (define repl-error-pref 'drracket:read-eval-print-loop:error-color)
