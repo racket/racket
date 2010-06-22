@@ -7,11 +7,9 @@
          "loc-wrapper.ss"
 	 "error.ss"
          mzlib/trace
-         racket/set
          (lib "list.ss")
          (lib "etc.ss")
-         (for-syntax syntax/parse)
-         (for-syntax racket/set))
+         (for-syntax syntax/parse))
 
 (require (for-syntax (lib "name.ss" "syntax")
                      "loc-wrapper-ct.ss"
@@ -225,32 +223,45 @@
        (syntax/loc stx (do-reduction-relation orig-stx extend-reduction-relation orig-reduction-relation #t lang args ...)))]))
 
 ;; the withs, freshs, and side-conditions come in backwards order
-(define-for-syntax bind-withs
-  (λ (orig-name main lang lang-nts stx where-mode body [lhs-bound #'()])
-    (let loop ([stx stx]
-               [to-not-be-in main]
-               [bound (apply set lhs-bound)])
-      (syntax-case stx (fresh)
-        [() body]
-        [((-where x e) y ...)
-         (or (free-identifier=? #'-where #'where)
-             (free-identifier=? #'-where #'where/hidden))
-         (let-values ([(names names/ellipses) (extract-names lang-nts 'reduction-relation #t #'x)])
+(define-for-syntax (bind-withs orig-name main lang lang-nts stx where-mode body names w/ellipses)
+  (let loop ([stx stx]
+             [to-not-be-in main]
+             [env (make-immutable-hash
+                   (map (λ (x e) (cons (syntax-e x) e))
+                        names w/ellipses))])
+    (syntax-case stx (fresh)
+      [() body]
+      [((-where x e) y ...)
+       (or (free-identifier=? #'-where #'where)
+           (free-identifier=? #'-where #'where/hidden))
+       (let-values ([(names names/ellipses) (extract-names lang-nts 'reduction-relation #t #'x)])
+         (let ([env+ (for/fold ([env env])
+                               ([name names] 
+                                [w/ellipses names/ellipses])
+                               (hash-set env (syntax-e name) w/ellipses))])
            (with-syntax ([side-conditions-rewritten (rewrite-side-conditions/check-errs
                                                      lang-nts
                                                      'reduction-relation
                                                      #f
                                                      #'x)]
                          [(names ...) names]
-                         [(names/ellipses ...) names/ellipses])
-             (with-syntax ([(x ...) (generate-temporaries #'(names ...))])
-               (let ([rest-body (loop #'(y ...) #`(list x ... #,to-not-be-in) bound)])
+                         [(names/ellipses ...) names/ellipses]
+                         [(x ...) (generate-temporaries names)])
+             (with-syntax ([(binding-constraints ...)
+                            (for/fold ([cs '()])
+                                      ([n (syntax->list #'(names ...))]
+                                       [x (syntax->list #'(x ...))])
+                                      (cond [(hash-ref env (syntax-e n) #f)
+                                             => (λ (b) (cons #`(equal? #,x (term #,b)) cs))]
+                                            [else cs]))])
+               (let ([rest-body (loop #'(y ...) #`(list x ... #,to-not-be-in) env+)])
                  #`(let* ([mtchs (match-pattern (compile-pattern #,lang `side-conditions-rewritten #t) (term e))]
                           [result (λ (mtch)
                                     (let ([bindings (mtch-bindings mtch)])
                                       (let ([x (lookup-binding bindings 'names)] ...)
-                                        (term-let ([names/ellipses x] ...) 
-                                                  #,rest-body))))])
+                                        (and binding-constraints ...
+                                             (term-let ([names/ellipses x] ...) 
+                                                       #,rest-body)))))])
                      (if mtchs
                          #,
                          (case where-mode
@@ -259,34 +270,34 @@
                            [(predicate) 
                             #`(ormap result mtchs)]
                            [else (error 'unknown-where-mode "~s" where-mode)])
-                         #f))))))]
-        [((-side-condition s ...) y ...)
-         (or (free-identifier=? #'-side-condition #'side-condition)
-             (free-identifier=? #'-side-condition #'side-condition/hidden))
-         #`(and s ... #,(loop #'(y ...) to-not-be-in bound))]
-        [((fresh x) y ...)
-         (identifier? #'x)
-         #`(term-let ([x (variable-not-in #,to-not-be-in 'x)]) 
-                     #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) bound))]
-        [((fresh x name) y ...)
-         (identifier? #'x)
-         #`(term-let ([x (let ([the-name (term name)])
-                           (verify-name-ok '#,orig-name the-name)
-                           (variable-not-in #,to-not-be-in the-name))])
-                     #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) bound))]
-        [((fresh (y) (x ...)) z ...)
-         #`(term-let ([(y #,'...)
-                       (variables-not-in #,to-not-be-in 
-                                         (map (λ (_ignore_) 'y)
-                                              (term (x ...))))])
-                     #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) bound))]
-        [((fresh (y) (x ...) names) z ...)
-         #`(term-let ([(y #,'...)
-                       (let ([the-names (term names)]
-                             [len-counter (term (x ...))])
-                         (verify-names-ok '#,orig-name the-names len-counter)
-                         (variables-not-in #,to-not-be-in the-names))])
-                     #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) bound))]))))
+                         #f)))))))]
+      [((-side-condition s ...) y ...)
+       (or (free-identifier=? #'-side-condition #'side-condition)
+           (free-identifier=? #'-side-condition #'side-condition/hidden))
+       #`(and s ... #,(loop #'(y ...) to-not-be-in env))]
+      [((fresh x) y ...)
+       (identifier? #'x)
+       #`(term-let ([x (variable-not-in #,to-not-be-in 'x)]) 
+                   #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
+      [((fresh x name) y ...)
+       (identifier? #'x)
+       #`(term-let ([x (let ([the-name (term name)])
+                         (verify-name-ok '#,orig-name the-name)
+                         (variable-not-in #,to-not-be-in the-name))])
+                   #,(loop #'(y ...) #`(list (term x) #,to-not-be-in) env))]
+      [((fresh (y) (x ...)) z ...)
+       #`(term-let ([(y #,'...)
+                     (variables-not-in #,to-not-be-in 
+                                       (map (λ (_ignore_) 'y)
+                                            (term (x ...))))])
+                   #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))]
+      [((fresh (y) (x ...) names) z ...)
+       #`(term-let ([(y #,'...)
+                     (let ([the-names (term names)]
+                           [len-counter (term (x ...))])
+                       (verify-names-ok '#,orig-name the-names len-counter)
+                       (variables-not-in #,to-not-be-in the-names))])
+                   #,(loop #'(z ...) #`(list (term (y #,'...)) #,to-not-be-in) env))])))
 
 (define-syntax-set (do-reduction-relation)
   (define (do-reduction-relation/proc stx)
@@ -702,7 +713,7 @@
                                    sides/withs/freshs
                                    'flatten
                                    #`(list (term #,to))
-                                   names/ellipses)]
+                                   names names/ellipses)]
                       [(test-case-body-code)
                        ;; this contains some redundant code
                        (bind-withs orig-name
@@ -712,7 +723,7 @@
                                    sides/withs/freshs
                                    'predicate
                                    #'#t
-                                   names/ellipses)])
+                                   names names/ellipses)])
           (with-syntax ([side-conditions-rewritten (rw-sc from)]
                         [lhs-w/extras (rw-sc #`(side-condition #,from #,test-case-body-code))]
                         [lhs-source (format "~a:~a:~a"
@@ -1153,38 +1164,38 @@
                   (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
                     (raise-syntax-error syn-error-name "the extended and extending metafunctions cannot share a name" orig-stx prev-metafunction))
                   (parse-extras #'((stuff ...) ...))
-                  (let-values ([(lhs-namess lhs-namess/ellipsess)
-                                (let loop ([lhss (syntax->list (syntax (lhs ...)))])
-                                  (if (null? lhss)
-                                      (values null null)
-                                      (let-values ([(namess namess/ellipsess)
-                                                    (loop (cdr lhss))]
-                                                   [(names names/ellipses)
-                                                    (extract-names lang-nts syn-error-name #t (car lhss))])
-                                        (values (cons names namess)
-                                                (cons names/ellipses namess/ellipsess)))))])
+                  (let*-values ([(lhs-namess lhs-namess/ellipsess)
+                                 (let loop ([lhss (syntax->list (syntax (lhs ...)))])
+                                   (if (null? lhss)
+                                       (values null null)
+                                       (let-values ([(namess namess/ellipsess)
+                                                     (loop (cdr lhss))]
+                                                    [(names names/ellipses)
+                                                     (extract-names lang-nts syn-error-name #t (car lhss))])
+                                         (values (cons names namess)
+                                                 (cons names/ellipses namess/ellipsess)))))])
                     (with-syntax ([(rhs/wheres ...)
-                                   (map (λ (sc/b rhs names/ellipses)
+                                   (map (λ (sc/b rhs names names/ellipses)
                                           (bind-withs
                                            syn-error-name '()  
                                            #'lang lang-nts
                                            sc/b 'flatten
                                            #`(list (term #,rhs))
-                                           names/ellipses))
+                                           names names/ellipses))
                                         (syntax->list #'((stuff ...) ...))
                                         (syntax->list #'(rhs ...))
-                                        lhs-namess/ellipsess)]
+                                        lhs-namess lhs-namess/ellipsess)]
                                   [(rg-rhs/wheres ...)
-                                   (map (λ (sc/b rhs names/ellipses) 
+                                   (map (λ (sc/b rhs names names/ellipses) 
                                           (bind-withs
                                            syn-error-name '()  
                                            #'lang lang-nts
                                            sc/b 'predicate
                                            #`#t
-                                           names/ellipses))
+                                           names names/ellipses))
                                         (syntax->list #'((stuff ...) ...))
                                         (syntax->list #'(rhs ...))
-                                        lhs-namess/ellipsess)])
+                                        lhs-namess lhs-namess/ellipsess)])
                       (with-syntax ([(side-conditions-rewritten ...) 
                                      (map (λ (x) (rewrite-side-conditions/check-errs
                                                   lang-nts

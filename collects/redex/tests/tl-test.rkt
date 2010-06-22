@@ -704,6 +704,23 @@
     
     (test (term (f 8)) 12345))
   
+  (let ()
+    (define-metafunction empty-language
+      [(f number_1 number_2 ... (number_s ...) ...)
+       yes
+       (where number_1 1)
+       (where (number_3 ...) ,(cdr (term (number_2 ...))))
+       (where (number_3 ...) (3 4 5))
+       (where (number_1 (number_s ...) ...)
+              ,(if (null? (term ((number_s ...) ...)))
+                   (term (number_1))
+                   (term (number_1 () (6) (7 8) (9 10 11)))))]
+      [(f any ...)
+       no])
+    (test (term (f 1 2 3 4 5)) 'yes)
+    (test (term (f 1 2 3 4)) 'no)
+    (test (term (f 0 2 3 4 5)) 'no)
+    (test (term (f 1 2 3 4 5 () (6) (7 8) (9 10 11))) 'yes))
   
   (let ()
     (test-syn-err
@@ -1071,6 +1088,22 @@
            (reduction-relation n-lang [--> any ,(length (redex-match n-lang n 1))])
            11)
           '(1)))
+  
+  (let ([R (reduction-relation
+            grammar
+            (--> (number_1 number_2 ... (number_s ...) ...)
+                 yes
+                 (where number_1 1)
+                 (where (number_3 ...) ,(cdr (term (number_2 ...))))
+                 (where (number_3 ...) (3 4 5))
+                 (where (number_1 (number_s ...) ...)
+                        ,(if (null? (term ((number_s ...) ...)))
+                             (term (number_1))
+                             (term (number_1 () (6) (7 8) (9 10 11)))))))])
+    (test (apply-reduction-relation R (term (1 2 3 4 5))) '(yes))
+    (test (apply-reduction-relation R (term (1 2 3 4))) '())
+    (test (apply-reduction-relation R (term (0 2 3 4 5))) '())
+    (test (apply-reduction-relation R (term (1 2 3 4 5 () (6) (7 8) (9 10 11)))) '(yes)))
   
   (test-syn-err (reduction-relation 
                  grammar

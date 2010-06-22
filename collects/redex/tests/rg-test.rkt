@@ -787,6 +787,23 @@
             generated)
           (reverse '((+ (+)) 0))))
   
+  (test (let* ([generated null]
+               [R (reduction-relation
+                   L
+                   (--> (name t (number_1 number_3))
+                        dontcare
+                        (side-condition (set! generated (cons (term t) generated)))
+                        (where number_1 4)
+                        (where number_2 number_1)
+                        (where number_3 number_2)))])
+          (parameterize ([generation-decisions 
+                          (decisions #:num (list (λ _ 3) (λ _ 4) 
+                                                 (λ _ 4) (λ _ 3)
+                                                 (λ _ 4) (λ _ 4)))])
+            (check-reduction-relation R (λ (_) #t) #:attempts 1 #:print? #f))
+          generated)
+        '((4 4) (4 3) (3 4)))
+  
   (let ([S (reduction-relation L (--> 1 2 name) (--> 3 4))])
     (test (output (λ () (check-reduction-relation S (λ (x) #t) #:attempts 1)))
           #rx"check-reduction-relation:.*no counterexamples")
@@ -874,6 +891,23 @@
      (with-handlers ([exn:fail:redex:generation-failure? (λ (_) #f)])
        (check-metafunction f (λ (_) #t) #:retries 1 #:print? #f #:attempts 1))
      #t))
+  
+  (test (let ([generated null])
+          (define-language L)
+          (define-metafunction L
+            [(f (name t (number_1 number_3)))
+             dontcare
+             (side-condition (set! generated (cons (term t) generated)))
+             (where number_1 4)
+             (where number_2 number_1)
+             (where number_3 number_2)])
+          (parameterize ([generation-decisions 
+                          (decisions #:num (list (λ _ 3) (λ _ 4) 
+                                                 (λ _ 4) (λ _ 3)
+                                                 (λ _ 4) (λ _ 4)))])
+            (check-metafunction f (λ (_) #t) #:attempts 1 #:print? #f))
+          generated)
+        '((4 4) (4 3) (3 4)))
   
   (test (output (λ () (check-metafunction m (λ (_) #t)))) #rx"no counterexamples")
   (test (output (λ () (check-metafunction m (curry eq? 1))))
