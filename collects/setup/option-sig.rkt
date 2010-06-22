@@ -21,6 +21,8 @@
      call-install
      call-post-install
      pause-on-errors
+     parallel-build
+     parallel-workers
      force-unpacks
      doc-pdf-dest
      specific-collections

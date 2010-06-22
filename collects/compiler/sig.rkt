@@ -79,6 +79,7 @@
 
    compile-collection-zos
    compile-directory-zos
+   compile-directory-srcs
 
    current-compiler-dynamic-require-wrapper
    compile-notify-handler))
