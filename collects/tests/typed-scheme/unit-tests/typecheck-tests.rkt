@@ -15,7 +15,8 @@
                     [true-lfilter -true-lfilter]
                     [true-filter -true-filter]
                     [-> t:->])
-         (utils tc-utils utils)
+         (except-in (utils tc-utils utils) infer)
+         typed-scheme/infer/infer-dummy typed-scheme/infer/infer
          unstable/mutated-vars
          (env type-name-env type-env-structs init-envs)
          rackunit rackunit/text-ui
@@ -63,6 +64,7 @@
      #`(parameterize ([delay-errors? #f]
                       [current-namespace (namespace-anchor->namespace anch)]
                       [custom-printer #t]
+                      [infer-param infer]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
            (parameterize ([mutated-vars (find-mutated-vars ex)])
@@ -74,6 +76,7 @@
      #`(parameterize ([delay-errors? #f]
                       [current-namespace (namespace-anchor->namespace anch)]
                       [custom-printer #t]
+                      [infer-param infer]
                       [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
            (parameterize ([mutated-vars (find-mutated-vars ex)])
