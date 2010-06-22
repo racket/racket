@@ -844,6 +844,18 @@
         (list '((2 3) 20)
               '(6 (4 5))))
   
+  ; The scope of a `where' clause includes the left-hand sides
+  ; of subsequent `where' clauses.
+  (test (apply-reduction-relation
+         (reduction-relation
+          grammar
+          (--> any
+               1
+               (where number_1 2)
+               (where (side-condition any (number? (term number_1))) dontcare)))
+         'dontcare)
+        '(1))
+  
   ; shortcuts like this fail if compilation fails to preserve
   ; lexical context for side-conditions expressions.
   (test (let ([x #t])
