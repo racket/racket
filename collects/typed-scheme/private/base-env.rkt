@@ -411,6 +411,11 @@
 [call-with-escape-continuation (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 
 [struct->vector (Univ . -> . (-vec Univ))]
+[unsafe-struct-ref top-func]
+[unsafe-struct*-ref top-func]
+[unsafe-struct-set! top-func]
+[unsafe-struct*-set! top-func]
+
 ;; parameter stuff
 
 [parameterization-key Sym]

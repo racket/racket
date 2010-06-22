@@ -445,7 +445,8 @@
                 values apply k:apply not list list* call-with-values do-make-object make-object cons
                 map andmap ormap reverse extend-parameterization
                 vector-ref unsafe-vector-ref unsafe-vector*-ref
-                vector-set! unsafe-vector-set! unsafe-vector*-set!)
+                vector-set! unsafe-vector-set! unsafe-vector*-set!
+                unsafe-struct-ref unsafe-struct*-ref unsafe-struct-set! unsafe-struct*-set!)
     [(#%plain-app extend-parameterization pmz args ...)
      (let loop ([args (syntax->list #'(args ...))])
        (if (null? args) (ret Univ)
@@ -460,6 +461,64 @@
                [(tc-result1: t) 
                 (tc-error/expr #:return (or expected (ret Univ)) "expected Parameter, but got ~a" t)
                 (loop (cddr args))]))))]
+    ;; unsafe struct operations
+    [(#%plain-app (~and op (~or (~literal unsafe-struct-ref) (~literal unsafe-struct*-ref))) s e:expr)
+     (let ([e-t (single-value #'e)])
+       (match (single-value #'s)
+         [(tc-result1: (and t (or (Struct: _ _ flds _ _ _ _ _ _)
+                                  (? needs-resolving? (app resolve-once (Struct: _ _ flds _ _ _ _ _ _))))))
+          (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
+                          (match e-t
+                            [(tc-result1: (Value: (? number? i))) i]
+                            [_ #f]))])
+            (cond [(not ival)
+                   (check-below e-t -Nat)
+                   (if expected
+                       (check-below (ret (apply Un flds)) expected)
+                       (ret (apply Un flds)))]
+                  [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length flds))))
+                   (if expected
+                       (check-below (ret (list-ref flds ival)) expected)
+                       (ret (list-ref flds ival)))]
+                  [(not (and (integer? ival) (exact? ival)))
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for struct index, but got ~a" ival)]
+                  [(< ival 0)
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too small for struct ~a" ival t)]
+                  [(not (<= ival (sub1 (length flds))))
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for struct ~a" ival t)]))]
+         [s-ty
+          (let ([arg-tys (list s-ty e-t)])
+            (tc/funapp #'op #'(s e) (single-value #'op) arg-tys expected))]))]
+    [(#%plain-app (~and op (~or (~literal unsafe-struct-set!) (~literal unsafe-struct*-set!))) s e:expr val:expr)
+     (let ([e-t (single-value #'e)])
+       (match (single-value #'s)
+         [(tc-result1: (and t (or (Struct: _ _ flds _ _ _ _ _ _)
+                                  (? needs-resolving? (app resolve-once (Struct: _ _ flds _ _ _ _ _ _))))))
+          (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
+                          (match e-t
+                            [(tc-result1: (Value: (? number? i))) i]
+                            [_ #f]))])
+            (cond [(not ival)
+                   (tc-error/expr #:stx #'e
+                                  #:return (or expected (ret -Void))
+                                  "expected statically known index for unsafe struct mutation, but got ~a" (match e-t [(tc-result1: t) t]))]
+                  [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length flds))))
+                   (tc-expr/check #'val (ret (list-ref flds ival)))
+                   (if expected
+                       (check-below (ret -Void) expected)
+                       (ret -Void))]
+                  [(not (and (integer? ival) (exact? ival)))
+                   (single-value #'val)
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for unsafe struct mutation, but got ~a" ival)]
+                  [(< ival 0)
+                   (single-value #'val)
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too small for struct ~a" ival t)]
+                  [(not (<= ival (sub1 (length flds))))
+                   (single-value #'val)
+                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for struct ~a" ival t)]))]
+         [s-ty
+          (let ([arg-tys (list s-ty e-t (single-value #'val))])
+            (tc/funapp #'op #'(s e val) (single-value #'op) arg-tys expected))]))]
     ;; vector-ref on het vectors
     [(#%plain-app (~and op (~or (~literal vector-ref) (~literal unsafe-vector-ref) (~literal unsafe-vector*-ref))) v e:expr)
      (let ([e-t (single-value #'e)])
