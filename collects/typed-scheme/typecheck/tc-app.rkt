@@ -472,7 +472,7 @@
                             [(tc-result1: (Value: (? number? i))) i]
                             [_ #f]))])
             (cond [(not ival)
-                   (check-below e-t -Nat)
+                   (check-below e-t -Integer)
                    (if expected
                        (check-below (ret (apply Un flds)) expected)
                        (ret (apply Un flds)))]
@@ -529,7 +529,7 @@
                             [(tc-result1: (Value: (? number? i))) i]
                             [_ #f]))])
             (cond [(not ival)
-                   (check-below e-t -Nat)
+                   (check-below e-t -Integer)
                    (if expected 
                        (check-below (ret (apply Un es)) expected)
                        (ret (apply Un es)))]
