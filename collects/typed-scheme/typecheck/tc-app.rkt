@@ -625,7 +625,7 @@
      (check-do-make-object #'cl #'args #'() #'())]
     [(#%plain-app do-make-object cl (#%plain-app list . pos-args) (#%plain-app list (#%plain-app cons 'names named-args) ...))
      (check-do-make-object #'cl #'pos-args #'(names ...) #'(named-args ...))]
-    [(#%plain-app (~literal map) f arg0 arg ...)
+    [(#%plain-app (~and map-expr (~literal map)) f arg0 arg ...)
      (match* ((single-value #'arg0) (map single-value (syntax->list #'(arg ...))))
        ;; if the argument is a ListDots
        [((tc-result1: (ListDots: t0 bound0)) 
@@ -646,7 +646,7 @@
                           "Expected one value, but got ~a" (-values ts))])]
        ;; otherwise, if it's not a ListDots, defer to the regular function typechecking
        [(res0 res)
-        (tc/funapp #'map #'(f arg0 arg ...) (single-value #'map) (list* (tc-expr #'f) res0 res) expected)])]
+        (tc/funapp #'map-expr #'(f arg0 arg ...) (single-value #'map-expr) (list* (tc-expr #'f) res0 res) expected)])]
     ;; ormap/andmap of ... argument
     [(#%plain-app (~and fun (~or (~literal andmap) (~literal ormap))) f arg)
      ;; check the arguments

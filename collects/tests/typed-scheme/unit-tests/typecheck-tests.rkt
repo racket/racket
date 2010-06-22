@@ -824,6 +824,8 @@
                x
                (lambda (z) (eq? x z))))
          (make-pred-ty (-val eof))]
+        [tc-e ((inst map Number (Pairof Number Number)) car (ann (list (cons 1 2) (cons 2 3) (cons 4 5)) (Listof (Pairof Number Number))))
+              (-lst -Number)]
         )
   (test-suite
    "check-type tests"
