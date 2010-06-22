@@ -1657,6 +1657,8 @@ module browser threading seems wrong.
                         (format (string-constant planet-downloading) package)]
                        [(install)
                         (format (string-constant planet-installing) package)]
+                       [(docs-build)
+                        (format (string-constant planet-docs-building) package)]
                        [(finish)
                         (format (string-constant planet-finished) package)]
                        [else

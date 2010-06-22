@@ -734,7 +734,7 @@ is saved in the namespace, making the listening and information producing
 namespace-specific.
 
 @defproc[(planet-terse-register
-          [proc (-> (or/c 'download 'install 'finish) string? any/c)]
+          [proc (-> (or/c 'download 'install 'docs-build 'finish) string? any/c)]
           [namespace namespace? (current-namespace)]) void?]{
 Registers @racket[proc] as a function to be called when
 @racket[planet-terse-log] is called with a matching namespace argument.

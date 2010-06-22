@@ -591,6 +591,7 @@ subdirectory.
                      (ipp path the-dir (list owner pkg-name
                                              extra-path maj min))
                      (unless was-nested?
+                       (planet-terse-log 'docs-build pkg-string)
                        (printf "------------- Rebuilding documentation index -------------\n")
                        (rud)))))))
             (planet-terse-log 'finish pkg-string)
