@@ -92,6 +92,7 @@ Keep documentation and tests up to date.
 @include-section["sandbox.scrbl"]
 @include-section["scribble.scrbl"]
 @include-section["set.scrbl"]
+@include-section["sexp-diff.scrbl"]
 @include-section["srcloc.scrbl"]
 @include-section["string.scrbl"]
 @include-section["struct.scrbl"]
