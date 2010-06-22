@@ -1,4 +1,4 @@
-#lang scheme/gui
+#lang racket/gui
 
 ;; min-w, min-h : number -> contract
 ;; determines if the widths and heights are suitable
