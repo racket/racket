@@ -5,6 +5,7 @@
   '(("www"           "http://racket-lang.org/")
     ("download"      "http://download.racket-lang.org/")
     ("lists"         "http://lists.racket-lang.org/")
+    ("bugs"          "http://bugs.racket-lang.org/")
     ;; stubs usually use absolute paths for resources, since they're
     ;; templates that often get used in sub-dir pages too
     ("stubs/planet"  "http://planet.racket-lang.org/"   abs)
