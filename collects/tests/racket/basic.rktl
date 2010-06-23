@@ -2351,6 +2351,9 @@
 (let ()
   (define ht (make-hash))
   (define ht2 (make-hash))
+  (define wht (make-weak-hash))
+  (define wht2 (make-weak-hash))
+  (define keys (make-hash))
 
   (struct a (x) #:transparent)
   
@@ -2373,19 +2376,31 @@
               i))
   
   (define l2 (shuffle 7 l))
+
+  (define (reg v)
+    (hash-set! keys v #t)
+    v)
   
   (for ([i (in-list l)])
     (hash-set! ht (a i) (a (a i))))
   (for ([i (in-list l2)])
     (hash-set! ht2 (a i) (a (a i))))
   
+  (for ([i (in-list l)])
+    (hash-set! wht (reg (a i)) (a (a i))))
+  (for ([i (in-list l2)])
+    (hash-set! wht2 (reg (a i)) (a (a i))))
+  
   (test (equal-hash-code ht) values (equal-hash-code ht2))
+  (test (equal-hash-code wht) values (equal-hash-code wht2))
+  (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2))
 
   (let ([ht (for/hash ([i (in-list l)])
               (values (a i) (a (a i))))]
         [ht2 (for/hash ([i (in-list l2)])
                (values (a i) (a (a i))))])
-    (test (equal-hash-code ht) values (equal-hash-code ht2))))
+    (test (equal-hash-code ht) values (equal-hash-code ht2))
+    (test (equal-secondary-hash-code ht) values (equal-secondary-hash-code ht2))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc
