@@ -726,7 +726,7 @@ static void *generate_one(mz_jit_state *old_jitter,
 
 #if 0
 # define FOR_LOG(x) x
-# define LOG_IT(args) if (jitter->retain_start) { emit_indentation(jitter); printf args; }
+# define LOG_IT(args) if (jitter->retain_start) { if (getenv("JITLOG")) { START_XFORM_SKIP; emit_indentation(jitter); printf args; END_XFORM_SKIP; } }
 static void emit_indentation(mz_jit_state *jitter)
 {
   int i = jitter->log_depth;
@@ -4886,7 +4886,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   int has_fixnum_fast = 1, has_flonum_fast = 1;
   int inlined_flonum1, inlined_flonum2;
 
-  LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
+  LOG_IT(("inlined %s\n", rator ? ((Scheme_Primitive_Proc *)rator)->name : "???"));
 
   if (unsafe_fx < 0) {
     unsafe_fx = 0;
