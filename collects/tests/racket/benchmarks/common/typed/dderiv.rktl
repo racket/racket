@@ -42,10 +42,9 @@
 (: put (Symbol Symbol ((Listof Deriv) -> Deriv) -> Void))
 (define (put sym d what)
   (set! pg-alist (cons (cons sym what) pg-alist)))
-(: get (Symbol Symbol -> (U ((Listof Deriv) -> Deriv) #f)))
+(: get (Symbol Symbol -> ((Listof Deriv) -> Deriv)))
 (define (get sym d)
-  (cond ((assq sym pg-alist) => cdr)
-        (else #f)))
+  (cdr (assert (assq sym pg-alist))))
 
 (define-type Deriv (Rec Deriv (U Number
                                  Symbol
