@@ -6,8 +6,8 @@
          (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
                       racket/unsafe/ops))
 
-(struct: (X) *leaf ((val : X)))
-(struct: (X) *node *leaf ((left : (*leaf X)) (right : (*leaf X))))
+(struct: *leaf ((val : Integer)))
+(struct: *node *leaf ((left : *leaf) (right : *leaf)))
 
 (define-syntax leaf  (make-rename-transformer #'*leaf))
 (define-syntax leaf? (make-rename-transformer #'*leaf?))
@@ -17,21 +17,21 @@
 (define-syntax-rule (node-left n)  (struct-ref n 1))
 (define-syntax-rule (node-right n) (struct-ref n 2))
 
-(: make (Integer Integer -> (*leaf Integer)))
+(: make (Integer Integer -> *leaf))
 (define (make item d)
   (if (fx= d 0)
     (leaf item)
     (let ([item2 (fx* item 2)] [d2 (fx- d 1)])
       (node item (make (fx- item2 1) d2) (make item2 d2)))))
 
-(: check ((*leaf Integer) -> Integer))
+(: check (*leaf -> Integer))
 (define (check t)
   (let loop ([t t] [acc 0])
     (let ([acc (fx+ (leaf-val t) acc)])
-      (if (leaf? t)
-        acc
-        (loop (node-right t)
-              (fx+ acc (loop (node-left t) 0)))))))
+      (if (node? t)
+        (loop (node-left t)
+              (fx- acc (loop (node-right t) 0)))
+        acc))))
 
 (define min-depth 4)
 
@@ -56,4 +56,4 @@
               max-depth
               (check long-lived-tree)))))
 
-(command-line #:args (n) (time (main (assert (string->number (assert n string?)) exact-integer?))))
+(command-line #:args (n) (main (assert (string->number (assert n string?)) exact-integer?)))
