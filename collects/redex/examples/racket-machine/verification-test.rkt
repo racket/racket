@@ -77,6 +77,10 @@
  (negate bytecode-ok?)
  '(let-one (loc 0) 'z))
 
+(test-predicate
+ (negate bytecode-ok?)
+ '(let-one (install-value 0 'x 'y) 'z))
+
 ;; application
 (test-predicate
  bytecode-ok?

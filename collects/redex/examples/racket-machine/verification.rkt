@@ -67,10 +67,9 @@
   ; let-one
   [(verify (let-one e_r e_b) (ṽ_1 ...) n_l b γ η f)
    (verify e_b (imm ṽ_1* ...) ,(add1 (term n_l)) b γ η (shift 1 f))
-   (where (s_1 γ_1 η_1) (verify e_r (uninit ṽ_1 ...) ,(add1 (term n_l)) #f γ η ∅))
-   (side-condition (term (valid? s_1)))
-   ;; MRF: the Racket implementation checks that s_1 starts with uninit
-   (where (ṽ_1* ...) (trim s_1 (ṽ_1 ...)))]
+   (where s_0 (uninit ṽ_1 ...))
+   (where (s_1 γ_1 η_1) (verify e_r s_0 ,(add1 (term n_l)) #f γ η ∅))
+   (where (uninit ṽ_1* ...) (trim s_1 s_0))]
   
   ; seq
   [(verify (seq e_0 ... e_n) s n_l b γ η f)
