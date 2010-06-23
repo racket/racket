@@ -1,2 +1,2 @@
 
-(module mandelbrot-optimizing "wrap-typed-optimizing.ss")
+(module mandelbrot-generic-optimizing "wrap-typed-optimizing.ss")

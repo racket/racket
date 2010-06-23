@@ -1,2 +1,2 @@
 
-(module mandelbrot-non-optimizing "wrap-typed-non-optimizing.ss")
+(module mandelbrot-generic-non-optimizing "wrap-typed-non-optimizing.ss")
