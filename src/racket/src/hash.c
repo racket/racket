@@ -1207,12 +1207,13 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
       Scheme_Hash_Table *ht = (Scheme_Hash_Table *)o;
       Scheme_Object **vals, **keys;
       int i;
-      long vk;
+      long vk, old_depth;
 
 #     include "mzhashchk.inc"
 
       k = (k << 1) + 3;
       hi->depth += 2;
+      old_depth = hi->depth;
       
       keys = ht->keys;
       vals = ht->vals;
@@ -1223,6 +1224,7 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
 	  vk += equal_hash_key(vals[i], 0, hi);
           MZ_MIX(vk);
           k += vk;  /* can't mix k, because the key order shouldn't matter */
+          hi->depth = old_depth; /* also needed to avoid order-sensitivity */
 	}
       }
       
@@ -1233,13 +1235,14 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
       Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)o;
       Scheme_Object *ik, *iv;
       int i;
-      long vk;
+      long vk, old_depth;
 
 #     include "mzhashchk.inc"
 
       k = (k << 1) + 3;
       hi->depth += 2;
-      
+      old_depth = hi->depth;
+
       for (i = ht->count; i--; ) {
         scheme_hash_tree_index(ht, i, &ik, &iv);
         vk = equal_hash_key(ik, 0, hi);
@@ -1247,6 +1250,7 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
         vk += equal_hash_key(iv, 0, hi);
         MZ_MIX(vk);
         k += vk;  /* can't mix k, because the key order shouldn't matter */
+        hi->depth = old_depth; /* also needed to avoid order-sensitivity */
       }
       
       return k;

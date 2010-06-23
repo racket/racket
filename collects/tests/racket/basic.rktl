@@ -2346,6 +2346,47 @@
 (arity-test hash-eq? 1 1)
 (arity-test hash-weak? 1 1)
 
+;; Ensure that hash-table hashing is not sensitive to the
+;; order of key+value additions
+(let ()
+  (define ht (make-hash))
+  (define ht2 (make-hash))
+
+  (struct a (x) #:transparent)
+  
+  (define (shuffle c l)
+    (if (zero? c)
+        l
+        (shuffle
+         (sub1 c)
+         (let ([n (quotient (length l) 2)])
+           (let loop ([a (take l n)][b (drop l n)])
+             (cond
+              [(null? a) b]
+              [(null? b) a]
+              [(zero? (random 2))
+               (cons (car a) (loop (cdr a) b))]
+              [else
+               (cons (car b) (loop a (cdr b)))]))))))
+  
+  (define l (for/list ([i (in-range 1000)]) 
+              i))
+  
+  (define l2 (shuffle 7 l))
+  
+  (for ([i (in-list l)])
+    (hash-set! ht (a i) (a (a i))))
+  (for ([i (in-list l2)])
+    (hash-set! ht2 (a i) (a (a i))))
+  
+  (test (equal-hash-code ht) values (equal-hash-code ht2))
+
+  (let ([ht (for/hash ([i (in-list l)])
+              (values (a i) (a (a i))))]
+        [ht2 (for/hash ([i (in-list l2)])
+               (values (a i) (a (a i))))])
+    (test (equal-hash-code ht) values (equal-hash-code ht2))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc
 
