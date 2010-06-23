@@ -1635,6 +1635,8 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/shootout/typed/recursive.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/regexmatch.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/regexpdna.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/shootout/typed/reversecomplement-non-optimizing.rkt" drdr:command-line #f
+"collects/tests/racket/benchmarks/shootout/typed/reversecomplement-optimizing.rkt" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/reversecomplement.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/reversefile.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/shootout/typed/sieve.rktl" drdr:command-line #f
