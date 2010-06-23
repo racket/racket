@@ -38,9 +38,9 @@
                     [(option) (send evt get-alt-down)]))
                 shortcut-prefix))
     (values (string-append (string-constant use-language-in-source)
-                           (format " (~aM)" menukey-string))
+                           (format " (~aU)" menukey-string))
             (string-append (string-constant choose-a-language)
-                           (format " (~aL)" menukey-string))
+                           (format " (~aC)" menukey-string))
             mouse-event-uses-shortcut-prefix?)))
   
   (define sc-lang-in-source-discussion (string-constant lang-in-source-discussion))
@@ -953,13 +953,13 @@
                 (get/set-selected-language-settings)))
          (λ (receiver evt)
            (case (send evt get-key-code)
-             [(#\m) 
+             [(#\u) 
               (if (mouse-event-uses-shortcut-prefix? evt)
                   (begin (send use-language-in-source-rb set-selection 0)
                          (use-language-in-source-rb-callback)
                          #t)
                   #f)]
-             [(#\l)
+             [(#\c)
               (if (mouse-event-uses-shortcut-prefix? evt)
                   (begin 
                     (send use-chosen-language-rb set-selection 0)
