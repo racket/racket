@@ -403,6 +403,7 @@
 (write-char #\x out-p)
 (close-output-port out-p)
 (test 'hx with-input-from-file tempfilename read)
+(delete-file tempfilename)
 
 (arity-test call-with-input-file 2 2)
 (arity-test call-with-output-file 2 2)
