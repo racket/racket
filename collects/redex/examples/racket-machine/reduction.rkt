@@ -249,12 +249,8 @@
   concat : (any ...) ... -> (any ...)
   [(concat any ...) ,(apply append (term (any ...)))])
 
-; load : e T -> (e H T)
-; load’ : e φ (x ...) -> (e H T (x ...))
-; load’* : ((e φ) ...) (x ...) -> ((e ...) H T (x ...))
-
 (define-metafunction loader
-  [(load e ((x_0 e_0) ...))
+  [(load e ((x_0 (name e_0 (proc-const (τ ...) e_b))) ...))
    (uninit (((ε))) H (concat ((x_0 e_0*) ...) T) (e_*))
    (where ((e_* e_0* ...) H T (y ...))
           (load’* ((e -) (e_0 -) ...) (x_0 ...)))])
