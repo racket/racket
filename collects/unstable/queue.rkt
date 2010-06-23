@@ -17,6 +17,7 @@
 (define (nonempty-queue? v) (and (queue? v) (queue-head v) #t))
 
 (define (enqueue! q v)
+  (unless (queue? q) (raise-type-error enqueue! "queue" 0 q))
   (let ([new (link v #f)])
     (if (queue-head q)
       (set-link-tail! (queue-tail q) new)
@@ -24,7 +25,9 @@
     (set-queue-tail! q new)))
 
 (define (dequeue! q)
+  (unless (queue? q) (raise-type-error dequeue! "queue" 0 q))
   (let ([old (queue-head q)])
+    (unless old (error 'dequeue! "empty queue"))
     (set-queue-head! q (link-tail old))
     (link-value old)))
 
@@ -38,11 +41,13 @@
 (define nonempty-queue/c
   (flat-named-contract "nonempty-queue" nonempty-queue?))
 
+;; ELI: Are these needed?  (vs just providing `queue?', `make-queue' and
+;; `queue-empty?'.)
 (provide/contract
  [queue/c flat-contract?]
  [nonempty-queue/c flat-contract?]
  [queue? (-> any/c boolean?)]
  [make-queue (-> queue/c)]
- [queue-empty? (-> queue/c boolean?)]
- [enqueue! (-> queue/c any/c void?)]
- [dequeue! (-> nonempty-queue/c any/c)])
+ [queue-empty? (-> queue/c boolean?)])
+
+(provide enqueue! dequeue!)
