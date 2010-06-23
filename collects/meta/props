@@ -716,7 +716,6 @@ path/s is either such a string or a list of them.
 "collects/ffi/objc.rkt" responsible (mflatt) drdr:command-line (mzc *)
 "collects/ffi/unsafe/objc.rkt" responsible (mflatt) drdr:command-line (mzc *)
 "collects/file" responsible (mflatt)
-"collects/file/xpm.rkt" responsible (jay) drdr:command-line (gracket "-t" *)
 "collects/framework" responsible (robby)
 "collects/framework/collapsed-snipclass.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/framework/comment-snip.rkt" drdr:command-line (gracket-text "-t" *)
@@ -1381,8 +1380,6 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/syncheck-test.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/teachpack.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/time-keystrokes.rkt" drdr:command-line (gracket-text "-t" *)
-"collects/tests/file/xpm-show.rkt" responsible (jay) drdr:command-line #f
-"collects/tests/file/xpm.rkt" responsible (jay) drdr:command-line (gracket "-t" *)
 "collects/tests/framework" responsible (robby)
 "collects/tests/framework/canvas.rkt" drdr:command-line (mzc "-k" *)
 "collects/tests/framework/debug.rkt" drdr:command-line (mzc "-k" *)

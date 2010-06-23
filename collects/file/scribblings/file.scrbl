@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt")
+@(require "common.ss")
 
 @title{@bold{File}: Racket File Format Libraries}
 
@@ -11,7 +11,6 @@
 @include-section["tar.scrbl"]
 @include-section["md5.scrbl"]
 @include-section["gif.scrbl"]
-@include-section["xpm.scrbl"]
 
 @(bibliography
   (bib-entry #:key "Gervautz1990"
