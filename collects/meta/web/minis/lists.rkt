@@ -17,88 +17,139 @@
                   see how the sausages are made @mdash and help make them.})))
 
 (define lists
-  @page[#:title "Mailing Lists" #:file "" #:part-of 'community]{
+  @page[#:title "Mailing Lists" #:file "" #:part-of 'community
+    (define (list-cells what) (map (lambda (r) (r what)) list-renderers))
+    ]{
     @p{This is the Racket mailing list server.  We have three public mailing
        lists listed below, with several mirrors for each one.}
-    @(map show-list MLs)})
+    @(define gap1
+       (tr (map (lambda (_) @td{@div[style: "height: 1ex;"]{}}) MLs)))
+    @(define gap2
+       (tr (map (lambda (_) @td{}) MLs)))
+    @(define (sec . text)
+       @list{@gap1
+             @tr{@td[style: '("background-color: #ddd; font-weight: bold;"
+                              " padding: 0;")
+                     colspan: (length MLs)]{@text}}
+             @gap2})
+    @table[style: "width: 100%; margin: auto; text-align: center;"
+           frame: 'box rules: 'cols cellpadding: 5]{
+      @tr[style: "border-bottom: 1px solid; background-color: #ccf;"]{
+        @(list-cells 'header-cell)}
+      @tr[valign: 'top style: "text-align: left;"]{@(list-cells 'description)}
+      @tr{@(list-cells 'main-page-cell)}
+      @sec{Subscription: enter your email here to subscribe to a mailing list}
+      @tr{@(list-cells 'subscribe-cell)}
+      @sec{Gmane Mirror}
+      @tr{@(list-cells 'gmane-cell)}
+      @sec{Archive at mail-archive.com}
+      @tr{@(list-cells 'mail-archive-cell)}
+      @sec{Google group mirror}
+      @tr{@(list-cells 'google-cell)}}})
 
-(define (show-list ml)
-  @text{
-    @(define name (ML-name ml))
-    @(define at-domain "@racket-lang.org")
-    @(define email (list name at-domain))
-    @; the mixed styles will help against some spam harvesting too
-    @h1[style: '("margin-top: 2.5ex;"
-                 " font-family: monospace;"
-                 " text-decoration: underline;")]{
-      @a[href: (list name "/")]{
-        @span[style: "background-color: #dde; text-decoration: underline;"]{
-          @name}@;
-        @span[style: "font-size: 82.5%;"]{@at-domain}}}
-    @p{@ML-description[ml]}
-    @form[action: (list name "/subscribe") method: 'post]{
-      @p[style: "white-space: nowrap;"]{
-        Quick subscribe: @input[type: 'text name: 'email size: 20 value: ""]}}
-    @(cond [(ML-google-name ml)
-            => (lambda (g)
-                 @p{Mirrord on Google Groups as the
-                    @a[href: @text{http://groups.google.com/group/@|g|/}]{
-                      @(string-titlecase (regexp-replace* #rx"-" g " "))
-                      group.}})])
-    @(let* ([gmane @list{gmane.comp.lang.racket.@(ML-gmane-name ml)}]
-            [G "gmane.org"])
-       @form[action: @`{http://search.@,|G|/} method: 'get]{
-         @p{@input[type: 'hidden name: 'group value: gmane]
-           Mirrord as the
-           @a[href: @`{http://dir.@,|G|/@,gmane}]{@TT{@gmane}}
-           newsgroup on Gmane:
-           Browse using
-           @a[href: @`{http://news.@,|G|/@,gmane}]{a threaded interface},
-           @a[href: @`{http://blog.@,|G|/@,gmane}]{a blog-like interface},
-           or
-           @a[href: @`{nntp://news.@,|G|/@,gmane}]{as a newsgroup};
-           RSS of complete
-           @a[href: @`{http://rss.@,|G|/messages/complete/@,gmane}]{messages}
-           or
-           @a[href: @`{http://rss.@,|G|/topics/complete/@,gmane}]{topics},
-           and RSS of excerpted
-           @a[href: @`{http://rss.@,|G|/messages/excerpts/@,gmane}]{messages}
-           or
-           @a[href: @`{http://rss.@,|G|/topics/excerpts/@,gmane}]{topics};
+(define (list-renderer ml)
+  (define name (ML-name ml))
+  (define at-domain "@racket-lang.org")
+  (define email (list name at-domain))
+  (define description (ML-description ml))
+  (define gmane
+    (let ([gm (ML-gmane-name ml)])
+      (and gm @list{gmane.comp.lang.racket.@(ML-gmane-name ml)})))
+  (define (gmane-link base . body)
+    (unless gmane
+      (error 'list-renderer "internal error: no gmane info for ~a" name))
+    (let* ([path (if (pair? base) (list "/" (cdr base) "/") "/")]
+           [base (if (pair? base) (car base) base)]
+           [pfx (if (regexp-match? #rx"://" base) base (list "http://" base))])
+      @a[href: (list pfx ".gmane.org" path gmane)]{@body}))
+  (define (mail-archive-link suffix . body)
+    @a[href: (list "http://www.mail-archive.com/" email "/" suffix)]{@body})
+  (define google-groups-url
+    (let ([g (ML-google-name ml)])
+      (and g (list "http://groups.google.com/group/" g "/"))))
+  (define (form-cell url #:method [method 'get] . body)
+    @td{@form[action: url method: method
+              style: "display: inline; clear: none;"]{
+          @div{@body}}})
+  (lambda (what)
+    (case what
+      [(header-cell)
+       @th[style: "width: 33%;"]{
+         @; the mixed styles will help against some spam harvesting too
+         @span[style: '("font-size: x-large;"
+                        " font-family: monospace; font-weight: bold;")]{
+           @TT{@name}@;
+           @span[style: "font-size: small;"]{@at-domain}}}]
+      [(description) @td{@description}]
+      [(main-page-cell)
+       @td{@big{@b{@TT{@name}}}
+           @a[href: (list name "/")]{page}
+           @bull
+           @a[href: (list name "/archive/")]{archive}}]
+      [(subscribe-cell)
+       @form-cell[(list name "/subscribe") #:method 'post]{
+         @input[type: 'text name: 'email size: 20 value: ""]}]
+      [(google-cell)
+       (if google-groups-url
+         @form-cell[(list google-groups-url "search")]{
+           @a[href: google-groups-url]{
+             @(string-titlecase
+               (regexp-replace* #rx"-" (ML-google-name ml) " "))}
+           @br
            @span[style: "white-space: nowrap;"]{
-             Search: @input[type: 'text name: 'query value: "" size: 20].}}})
-    @(let ([url @list{http://www.mail-archive.com/@|email|/}])
-       @form[action: "http://www.mail-archive.com/search" method: 'get
-             style: "display: inline; clear: none;"]{
-         @p{@input[type: 'hidden name: 'l value: email]
-           @a[href: (list url "info.html")]{Archived}
-           at @tt{mail-archive.com}:
-           @a[href: url]{Browse},
-           @a[href: (list url "maillist.xml")]{RSS},
-           @span[style: "white-space: nowrap;"]{
-             Search: @input[type: 'text name: 'q value: "" size: 20].}}})})
+             Search: @input[type: 'text name: 'q value: "" size: 20].}}
+         @td{@small{@|mdash|none@mdash}})]
+      [(mail-archive-cell)
+       @form-cell["http://www.mail-archive.com/search"]{
+         @input[type: 'hidden name: 'l value: email]
+         @mail-archive-link["info.html"]{Archive}
+         @bull
+         @mail-archive-link[""]{Browse}
+         @bull
+         @mail-archive-link["maillist.xml"]{RSS}
+         @br
+         @span[style: "white-space: nowrap;"]{
+           Search: @input[type: 'text name: 'q value: "" size: 20].}}]
+      [(gmane-cell)
+       @form-cell[(list "http://search.gmane.org/")]{
+         @input[type: 'hidden name: 'group value: gmane]
+         @gmane-link["dir"]{@TT{@gmane}}
+         @br
+         @gmane-link["news"]{threaded}
+         @bull
+         @gmane-link["blog"]{blog}
+         @bull
+         @gmane-link["nntp://news"]{newsgroup}
+         @br
+         Feed:
+         @gmane-link['("rss" "messages/complete")]{messages}
+         @bull
+         @gmane-link['("rss" "topics/complete")]{topics}
+         @br
+         @;Excerpt feed:
+         @;@gmane-link['("rss" "messages/excerpts")]{messages}
+         @;@bull
+         @;@gmane-link['("rss" "topics/excerpts")]{topics}
+         @;@br
+         @span[style: "white-space: nowrap;"]{
+           Search: @input[type: 'text name: 'query value: "" size: 20].}}]
+      [(quick)
+       @text{
+         @big{@TT{@b{@name}}@small{@tt{@at-domain}}}
+         @div[style: "margin-left: 2em;"]{
+           @description
+           @br
+           [@a[href: (list name "/")]{list page},
+            @gmane-link["dir"]{gmane mirror},
+            @mail-archive-link[""]{mail-archive}@;
+            @(and google-groups-url
+                  @text{,
+                        @a[href: google-groups-url]{google group mirror}})]}}]
+      [else (error 'list-cell "internal error")])))
 
-;; TODO: improve this using the above, *and* link to the above
-
-(define (maillist-email name)
-  @TT{@big{@strong{@name}}@"@"racket-lang.org})
-(define (maillist-url name)
-  (define url "http://lists.racket-lang.org/")
-  @text{@a[href: `(,url ,name "/")]{Subscribe}
-        or @a[href: `(,url ,name "/archive/")]{browse}})
+(define list-renderers (map list-renderer MLs))
 
 (define (mailing-lists-quick)
-  @parlist[@strong{Mailing Lists}
-    @text{@maillist-email{users} @mdash a discussion list for all things
-      related to Racket.  Ask your questions here!
-      (@maillist-url{users}.)
-      @; These are not set up yet
-      @; also via @gmane{racket} and @|google-groups|).
-      }
-    @text{@maillist-email{announce} @mdash a low-volume, moderated list
-      for announcements, only.  (@maillist-url{announce}.)}
-    @text{@maillist-email{dev} @mdash a mailing list for Racket development,
-      for the people who want to see how the sausages are made and help make
-      them.  (@maillist-url{dev}.)
-      @; @";" also on @gmane{plt.dev}.)
-      }])
+  @text{@(apply parlist @strong{Mailing Lists}
+                (map (lambda (r) (r 'quick)) list-renderers))
+        @p{See the @lists{mailing list server} for more details.}})

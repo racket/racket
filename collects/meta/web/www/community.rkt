@@ -8,11 +8,7 @@
 (define community
   @page[#:part-of 'community]{
     @mailing-lists-quick
-    @parlist[@strong{Discussion Channels}
-      @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel
-        on @a[href: "http://freenode.net"]{@tt{freenode.net}}
-        @mdash an informal discussion channel for all things related to Racket.
-        @irc-logs{Browse the logs}.}]
+    @irc-quick
     @parlist[@strong{PLT Scheme Inc.}
       @text{@blog @mdash announcements, helpful hints, and thoughtful rants.}
       @text{@people @mdash the people behind Racket.}]

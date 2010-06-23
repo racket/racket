@@ -54,7 +54,7 @@
       @input[type: 'hidden name: 'l value: @MM{Posting-Addr}]
       Archives are also available at
       @a[href: @list{http://www.mail-archive.com/@MM{Posting-Addr}/}]{
-        @tt{mail-archive}},
+        mail-archive.com},
       search it here:
       @input[type: 'text name: 'q value: "" size: 16]}}
     @subp{(@a[href: "/"]{More information} on other ways to use this list and

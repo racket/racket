@@ -1,6 +1,6 @@
 #lang at-exp s-exp "shared.rkt"
 
-(provide irc-chat irc-logs)
+(provide irc-quick)
 
 (define webchat-link
   "http://webchat.freenode.net?channels=racket&uio=OT10cnVlJjExPTIzNg6b")
@@ -11,3 +11,10 @@
 
 (define irc-logs-symlink (symlink "/home/scheme/irc-logs/racket/"))
 (define (irc-logs text) @a[href: irc-logs-symlink]{@text})
+
+(define (irc-quick)
+  @parlist[@strong{Discussion Channel}
+    @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel on
+      @a[href: "http://freenode.net"]{@tt{freenode.net}} @mdash an informal
+      discussion channel for all things related to Racket.
+      @irc-logs{Browse the logs}.}])
