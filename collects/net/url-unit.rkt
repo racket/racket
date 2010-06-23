@@ -197,11 +197,7 @@
                (string=? scheme "https"))
            (let ([port (http://getpost-impure-port
                         get? url post-data strings)])
-             (with-handlers ([void (lambda (exn)
-                                     (close-input-port port)
-                                     (raise exn))])
-               (purify-port port))
-             port)]
+             (purify-http-port port))]
           [(string=? scheme "file")
            (file://get-pure-port url)]
           [else (url-error "Scheme ~a unsupported" scheme)])))
@@ -321,6 +317,51 @@
   (let ([m (regexp-match-peek-positions
             #rx"^HTTP/.*?(?:\r\n\r\n|\n\n|\r\r)" port)])
     (if m (read-string (cdar m) port) "")))
+
+;; purify-http-port : in-port -> in-port
+(define (purify-http-port in-port)
+  (define-values (in-pipe out-pipe) (make-pipe))
+  (thread
+   (λ ()
+     (define status (http-read-status in-port))
+     (define chunked? (http-read-headers in-port))
+     (http-pipe-data chunked? in-port out-pipe)))
+  in-pipe)
+
+(define (http-read-status ip)
+  (read-line ip 'return-linefeed))
+
+(define (http-read-headers ip)
+  (define l (read-line ip 'return-linefeed))
+  (when (eof-object? l)
+    (error 'purify-http-port "Connection ended before headers ended"))
+  (if (string=? l "")
+      #f
+      (if (string=? l "Transfer-Encoding: chunked")
+          (begin (http-read-headers ip)
+                 #t)
+          (http-read-headers ip))))
+
+(define (http-pipe-data chunked? ip op)
+  (if chunked?
+      (http-pipe-chunk ip op)
+      (begin
+        (copy-port ip op)
+        (flush-output op)
+        (close-output-port op))))
+
+(define (http-pipe-chunk ip op)
+  (define size-str (read-line ip 'return-linefeed))
+  (define chunk-size (string->number size-str 16))
+  (unless chunk-size
+    (error 'http-pipe-chunk "Could not parse ~S as hexadecimal number" size-str))
+  (if (zero? chunk-size)
+      (begin (flush-output op)
+             (close-output-port op))
+      (let* ([bs (read-bytes chunk-size ip)]
+             [crlf (read-bytes 2 ip)])
+        (write-bytes bs op)
+        (http-pipe-chunk ip op))))
 
 (define character-set-size 256)
 
@@ -528,11 +569,7 @@
           [(or (string=? scheme "http") (string=? scheme "https"))
            (let ([port (http://method-impure-port
                         method url data strings)])
-             (with-handlers ([void (lambda (exn)
-                                     (close-input-port port)
-                                     (raise exn))])
-               (purify-port port))
-             port)]
+             (purify-http-port port))]
           [(string=? scheme "file")
            (file://get-pure-port url)]
           [else (url-error "Scheme ~a unsupported" scheme)])))
