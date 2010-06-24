@@ -11,7 +11,7 @@
          ;; to appease syntax-parse
          "internal-forms.rkt"
          (rep type-rep)
-         (types utils convenience)
+         (types utils convenience type-table)
          (private parse-type type-annotation type-contract)
          (env global-env init-envs type-name-env type-alias-env lexical-env)
 	 unstable/mutated-vars syntax/id-table
@@ -19,7 +19,7 @@
          "provide-handling.rkt"
          "def-binding.rkt"
          (prefix-in c: racket/contract)
-         racket/dict
+         racket/dict         
          (for-template
           "internal-forms.rkt"
           unstable/location
@@ -306,10 +306,13 @@
          [(new-provs ...) 
           (generate-prov def-tbl provide-tbl #'the-variable-reference)])
       #`(begin
-          (define the-variable-reference (quote-module-path))
+          #,(if (null? (syntax-e #'(new-provs ...)))
+                #'(begin)
+                #'(define the-variable-reference (quote-module-path)))
            #,(env-init-code syntax-provide? provide-tbl def-tbl)
            #,(tname-env-init-code)
            #,(talias-env-init-code)
+           (begin-for-syntax #,(make-struct-table-code))
            (begin new-provs ...)))))
 
 ;; typecheck a whole module

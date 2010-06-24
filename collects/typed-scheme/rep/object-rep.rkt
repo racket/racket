@@ -6,6 +6,7 @@
 (dpe CarPE () [#:fold-rhs #:base])
 (dpe CdrPE () [#:fold-rhs #:base])
 (dpe SyntaxPE () [#:fold-rhs #:base])
+;; t is always a Name (can't put that into the contract b/c of circularity)
 (dpe StructPE ([t Type?] [idx natural-number/c])     
     [#:frees (free-vars* t) (free-idxs* t)]
     [#:fold-rhs (*StructPE (type-rec-id t) idx)])
