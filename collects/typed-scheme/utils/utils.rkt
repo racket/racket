@@ -152,9 +152,10 @@ at least theoretically.
   (syntax-parse stx
     [(form name (flds ...) printer:expr)
      #`(define-struct name (flds ...) 
+         #:property prop:custom-print-quotable 'never
          #:property prop:custom-write 
          (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))
-         #:inspector #f)]))
+         #:transparent)]))
 
 
 ;; turn contracts on and off - off by default for performance.
