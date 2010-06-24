@@ -599,11 +599,12 @@
        [_ (int-err "bad expected: ~a" expected)])]
     ;; special case for `-' used like `sub1'
     [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
-     (add-typeof-expr #'arg2 (ret -Nat))
+     (add-typeof-expr #'arg2 (ret -PositiveFixnum))
      (match-let ([(tc-result1: t) (single-value #'v)])
-       (if (subtype t -ExactPositiveInteger)
-           (ret -Nat)
-           (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)))]
+       (cond 
+        [(subtype t (Un -Zero -PositiveFixnum)) (ret -Fixnum)]
+        [(subtype t -ExactPositiveInteger) (ret -Nat)]
+        [else (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)]))]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)
      (match (tc/funapp #'prod #'() (single-value #'prod) null #f)

@@ -53,7 +53,7 @@
 [rational? (make-pred-ty -Real)]
 [exact? (asym-pred N B (-FS -top (-not-filter -ExactRational 0)))]
 [inexact? (asym-pred N B  (-FS -top (-not-filter -Flonum 0)))]
-[fixnum? (asym-pred Univ B (-FS (-filter -Integer 0) -top))]
+[fixnum? (make-pred-ty -Fixnum)]
 [positive? (-> -Real B)]
 [negative? (-> -Real B)]
 [exact-positive-integer? (make-pred-ty -Pos)]
