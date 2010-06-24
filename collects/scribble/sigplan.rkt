@@ -1,5 +1,6 @@
 #lang scheme/base
 (require setup/main-collects
+         scheme/contract
          scribble/core
          scribble/base
          scribble/decode
@@ -7,11 +8,35 @@
          scribble/latex-properties
          (for-syntax scheme/base))
 
+(provide/contract
+ [abstract 
+  (->* () () #:rest (listof pre-content?)
+       block?)]
+ [authorinfo
+  (-> pre-content? pre-content? pre-content?
+      block?)]
+ [conferenceinfo
+  (-> pre-content? pre-content?
+      block?)]
+ [copyrightyear
+  (->* () () #:rest (listof pre-content?)
+       block?)]
+ [copyrightdata
+  (->* () () #:rest (listof pre-content?)
+       block?)]
+ [category
+  (->* (pre-content? pre-content? pre-content?)
+       ((or/c false/c pre-content?))
+       block?)]
+ [terms
+  (->* () () #:rest (listof pre-content?)
+       block?)]
+ [keywords
+  (->* () () #:rest (listof pre-content?)
+       block?)])
+
 (provide preprint 10pt
-         abstract include-abstract
-         authorinfo
-         conferenceinfo copyrightyear copyrightdata
-         category terms keywords)
+         include-abstract)
 
 (define-syntax (preprint stx)
   (raise-syntax-error #f
