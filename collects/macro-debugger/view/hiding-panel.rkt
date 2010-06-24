@@ -16,6 +16,15 @@
 (define mode:standard "Standard")
 (define mode:custom "Custom ...")
 
+#|
+
+TODO
+
+ - allow entry of more policies
+ - visual feedback on rules applying to selected identifier
+   (need to switch from list to editor)
+
+|#
 
 ;; macro-hiding-prefs-widget%
 (define macro-hiding-prefs-widget%
@@ -255,11 +264,13 @@
   (match condition
     [`(free=? ,id)
      (let ([b (identifier-binding id)])
-       (or #;(identifier->string id)
+       (or #| (identifier->string id) |#
            (cond [(list? b)
                   (let ([mod (caddr b)]
                         [name (cadddr b)])
-                    (format "'~s' from ~a" name (mpi->string mod)))]
+                    (if (self-mpi? mod)
+                        (format "'~a' defined in this module" name)
+                        (format "'~s' imported from ~a" name (mpi->string mod))))]
                  [else
                   (symbol->string (syntax-e id))])))]
     [_

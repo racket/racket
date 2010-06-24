@@ -1,9 +1,12 @@
 #lang scheme/base
-(require scheme/match)
+(require scheme/match
+         scheme/string)
 
 (provide mpi->list
-         mpi->string)
+         mpi->string
+         self-mpi?)
 
+;; mpi->list : module-path-index -> list
 (define (mpi->list mpi)
   (cond [(module-path-index? mpi)
          (let-values ([(path relto) (module-path-index-split mpi)])
@@ -18,11 +21,15 @@
   (if (module-path-index? mpi)
       (let ([mps (mpi->list mpi)])
         (cond [(pair? mps)
-               (apply string-append
-                      (format "~s" (car mps))
-                      (map (lambda (x) (format " <= ~s" x)) (cdr mps)))]
+               (string-join (map (lambda (x) (format "~s" x)) mps)
+                            " <= ")]
               [(null? mps) "this module"]))
       (format "~s" mpi)))
+
+;; self-mpi? : module-path-index -> bool
+(define (self-mpi? mpi)
+  (let-values ([(path relto) (module-path-index-split mpi)])
+    (eq? path #f)))
 
 ;; --
 
