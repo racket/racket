@@ -46,11 +46,10 @@ parent(ebbon, bob).
 ancestor(A, B)?
 END
             )
-          (pretty-print
-           (format-program
+          (format-program
             (parse-program
              (open-input-string
-              example-program))))
+              example-program)))
           (void
            (eval-program/fresh
             (parse-program
@@ -549,8 +548,8 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @tech{datum}.
          
  @examples[#:eval the-eval
-  (pretty-print (format-datum 'sym))
-  (pretty-print (format-datum "str"))]
+  (format-datum 'sym)
+  (format-datum "str")]
 }
               
 @defproc[(format-variable [v variable?])
@@ -558,7 +557,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @racket[variable].
          
  @examples[#:eval the-eval
-  (pretty-print (format-variable (make-variable #f 'Ancestor)))]
+  (format-variable (make-variable #f 'Ancestor))]
 }
 
 @defproc[(format-constant [c constant?])
@@ -566,8 +565,8 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @racket[constant].
 
  @examples[#:eval the-eval
-  (pretty-print (format-constant (make-constant #f 'joseph)))
-  (pretty-print (format-constant (make-constant #f "whom")))]
+  (format-constant (make-constant #f 'joseph))
+  (format-constant (make-constant #f "whom"))]
 }
  
 @defproc[(format-term [t term/c])
@@ -575,9 +574,9 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @tech{term}.
 
  @examples[#:eval the-eval
-  (pretty-print (format-term (make-variable #f 'Ancestor)))
-  (pretty-print (format-term (make-constant #f 'joseph)))
-  (pretty-print (format-term (make-constant #f "whom")))]
+  (format-term (make-variable #f 'Ancestor))
+  (format-term (make-constant #f 'joseph))
+  (format-term (make-constant #f "whom"))]
 }
 
 @defproc[(format-literal [l literal?])
@@ -585,15 +584,13 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @racket[literal].
          
  @examples[#:eval the-eval
-  (pretty-print (format-literal (make-literal #f 'true (list))))
-  (pretty-print 
-   (format-literal
+  (format-literal (make-literal #f 'true (list)))
+  (format-literal
     (make-literal #f 'ancestor
-     (list (make-variable #f 'A) (make-constant #f 'jay)))))
-  (pretty-print 
-   (format-literal
+     (list (make-variable #f 'A) (make-constant #f 'jay))))
+  (format-literal
     (make-literal #f '=
-     (list (make-constant #f 'joseph) (make-constant #f 'jay)))))]
+     (list (make-constant #f 'joseph) (make-constant #f 'jay))))]
 }
               
 @defproc[(format-literals [ls (listof literal?)])
@@ -601,14 +598,13 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a list of @racket[literal]s as @racket[assertion]s for formatting @racket[prove] results.
          
  @examples[#:eval the-eval
-  (pretty-print 
-   (format-literals
+  (format-literals
     (list 
      (make-literal #f 'true (list))
      (make-literal #f 'ancestor
       (list (make-constant #f 'joseph) (make-constant #f 'jay)))
      (make-literal #f '=
-      (list (make-constant #f 'joseph) (make-constant #f 'jay))))))]
+      (list (make-constant #f 'joseph) (make-constant #f 'jay)))))]
 }
 
 @defproc[(format-clause [c clause?])
@@ -616,24 +612,21 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @racket[clause].
          
  @examples[#:eval the-eval
-  (pretty-print
-   (format-clause
+  ((format-clause
     (make-clause
      #f (make-literal #f 'ancestor
          (list (make-constant #f 'joseph) 
                (make-constant #f 'jay)))
-     (list))))
-  (pretty-print
-   (format-clause
+     (list)))
+  (format-clause
     (make-clause
      #f (make-literal 
          #f 'ancestor 
          (list (make-constant #f 'A) (make-constant #f 'B)))
      (list (make-literal 
             #f 'parent
-            (list (make-constant #f 'A) (make-constant #f 'B)))))))
-  (pretty-print
-   (format-clause
+            (list (make-constant #f 'A) (make-constant #f 'B))))))
+  (format-clause
     (make-clause
      #f (make-literal 
          #f 'ancestor 
@@ -643,7 +636,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
             (list (make-constant #f 'A) (make-constant #f 'C)))
            (make-literal
             #f 'ancestor
-            (list (make-constant #f 'C) (make-constant #f 'B)))))))]
+            (list (make-constant #f 'C) (make-constant #f 'B))))))]
 }
               
 @defproc[(format-assertion [a assertion?])
@@ -651,14 +644,13 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @racket[assertion].
 
  @examples[#:eval the-eval
-  (pretty-print
-   (format-assertion
+  (format-assertion
     (make-assertion
      #f (make-clause
       #f (make-literal #f 'ancestor
           (list (make-constant #f 'joseph) 
                 (make-constant #f 'jay)))
-      (list)))))]
+      (list))))]
 }
 
 @defproc[(format-retraction [r retraction?])
@@ -666,14 +658,13 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @racket[retraction].
 
  @examples[#:eval the-eval
-  (pretty-print
-   (format-retraction
+  (format-retraction
     (make-retraction
      #f (make-clause
       #f (make-literal #f 'ancestor
           (list (make-constant #f 'joseph) 
                 (make-constant #f 'jay)))
-      (list)))))]
+      (list))))]
 }
               
 @defproc[(format-query [q query?])
@@ -681,12 +672,11 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @racket[query].
 
  @examples[#:eval the-eval
-  (pretty-print
-   (format-query
+  (format-query
     (make-query
      #f (make-literal #f 'ancestor
          (list (make-constant #f 'joseph) 
-               (make-constant #f 'jay))))))]
+               (make-constant #f 'jay)))))]
 }
 
 @defproc[(format-statement [s statement/c])
@@ -694,12 +684,11 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @tech{statement}.
 
  @examples[#:eval the-eval
-  (pretty-print
-   (format-statement
+  (format-statement
     (make-query
      #f (make-literal #f 'ancestor
          (list (make-constant #f 'joseph) 
-               (make-constant #f 'jay))))))]
+               (make-constant #f 'jay)))))]
 }
 
 @defproc[(format-program [p program/c])
@@ -707,8 +696,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @tech{program}.
 
  @examples[#:eval the-eval
-  (pretty-print
-   (format-program
+  (format-program
     (list
      (make-assertion
       #f (make-clause
@@ -719,7 +707,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
      (make-query
       #f (make-literal #f 'ancestor
           (list (make-constant #f 'joseph) 
-                (make-constant #f 'jay)))))))]
+                (make-constant #f 'jay))))))]
 }
 
 @section{Runtime System}
@@ -797,16 +785,14 @@ This library implements the Datalog runtime system. It can be required via:
  the results of the query.
  
  @examples[#:eval the-eval
-  (pretty-print
-   (format-literals
+  (format-literals
     (prove 
      (assume 
       (make-immutable-theory)
       (parse-clause (open-input-string "parent(joseph1,joseph2)")))
      (parse-literal 
-      (open-input-string "parent(joseph1,joseph2)")))))
-  (pretty-print
-   (format-literals
+      (open-input-string "parent(joseph1,joseph2)"))))
+  (format-literals
     (prove
      (retract
       (assume
@@ -815,14 +801,13 @@ This library implements the Datalog runtime system. It can be required via:
         (open-input-string "parent(joseph1,joseph2)")))
       (parse-clause (open-input-string "parent(joseph1,joseph2)")))
      (parse-literal 
-      (open-input-string "parent(joseph1,joseph2)")))))
-  (pretty-print
-   (format-literals
+      (open-input-string "parent(joseph1,joseph2)"))))
+  (format-literals
     (prove
      (assume
       (make-immutable-theory)
       (parse-clause (open-input-string "parent(joseph1,joseph2)")))
-     (parse-literal (open-input-string "parent(A,B)")))))]
+     (parse-literal (open-input-string "parent(A,B)"))))]
 }
 
 @section{Evaluation}

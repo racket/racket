@@ -1,6 +1,5 @@
 #lang racket
 (require rackunit
-         "../private/pprint.rkt"
          "../parse.rkt"
          "../pretty.rkt")
 (provide pretty-tests)
@@ -10,7 +9,6 @@
    "Pretty"
    
    (test-equal? "program"
-                (pretty-format
  (format-program
   (parse-program
    (open-input-string #<<END
@@ -31,7 +29,7 @@ parent(bob, john)~
 parent(A,B)?
 ancestor(A,B)?
 END
-                      ))))
+                      )))
                 #<<END
 parent(john, douglas).
 parent(john, douglas)?

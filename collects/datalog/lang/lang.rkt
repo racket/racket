@@ -1,13 +1,12 @@
 #lang racket/base
 (require (for-syntax racket/base
                      "../private/compiler.rkt")
-         "../pretty.rkt"
-         "../private/pprint.rkt")
+         "../pretty.rkt")
 
 (define (print-result value)
   (if (void? value)
       (void)
-      (pretty-print (format-literals value))))
+      (displayln (format-literals value))))
 
 (define-syntax (module-begin stx)
   (syntax-case stx ()

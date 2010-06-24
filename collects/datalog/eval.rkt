@@ -1,6 +1,5 @@
 #lang racket
 (require racket/list
-         "private/pprint.rkt"
          "ast.rkt"
          "pretty.rkt"
          "runtime.rkt")
@@ -13,10 +12,10 @@
         (assume thy c)
         (raise-syntax-error 'datalog
                             "Unsafe clause in assertion"
-                            (datum->syntax #f (pretty-format (format-statement s)) (assertion-srcloc s))))))
+                            (datum->syntax #f (format-statement s) (assertion-srcloc s))))))
 
 (define (print-literals ls)
-  (pretty-print 
+  (displayln 
    (format-literals ls)))
 
 (define (eval-program p)
