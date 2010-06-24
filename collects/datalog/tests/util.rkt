@@ -1,5 +1,5 @@
 #lang racket
-(require racketunit
+(require rackunit
          "../ast.rkt")
 
 (provide test-literal test-clause)

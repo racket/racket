@@ -1,5 +1,5 @@
 #lang racket
-(require racketunit
+(require rackunit
          "../../tool/syntax-color.rkt")
 
 (provide syntax-color-tests)

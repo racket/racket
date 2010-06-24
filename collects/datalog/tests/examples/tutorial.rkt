@@ -1,4 +1,4 @@
-#lang palsdatalog
+#lang datalog
 
 parent(john,douglas).
 parent(john,douglas)?

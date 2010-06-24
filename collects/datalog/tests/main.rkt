@@ -1,6 +1,6 @@
 #lang racket
-(require racketunit
-         racketunit/text-ui
+(require rackunit
+         rackunit/text-ui
          "ast.rkt"
          
          "private/lex.rkt"

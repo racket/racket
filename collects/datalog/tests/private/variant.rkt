@@ -1,5 +1,5 @@
 #lang racket
-(require racketunit
+(require rackunit
          "../../ast.rkt"
          "../../private/variant.rkt")
 (require/expose "../../private/variant.rkt" (variant-terms variant-term variant-var variant? term-hash mk-literal-hash))
