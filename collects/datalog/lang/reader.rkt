@@ -12,6 +12,6 @@
            ; XXX repl submit
            (case key
              [(color-lexer)
-              (dynamic-require `datalog/tool/syntax-color) 'get-syntax-token)]
+              (dynamic-require `datalog/tool/syntax-color 'get-syntax-token)]
              [else (default key defval)]))
   (require "../parse.rkt"))
