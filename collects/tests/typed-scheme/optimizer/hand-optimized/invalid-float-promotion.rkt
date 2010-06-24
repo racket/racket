@@ -1,3 +1,2 @@
 (module float-promotion typed/scheme #:optimize
-  (require racket/unsafe/ops)
-  (/ 1 2.0))
+  (/ 1 2.0)) ; result is not a float, can't optimize
