@@ -1,4 +1,4 @@
-#lang planet jaymccarthy/datalog
+#lang datalog
 % Laps Test
 contains(ca, store, rams_couch, rams).
 contains(rams, fetch, rams_couch, will).

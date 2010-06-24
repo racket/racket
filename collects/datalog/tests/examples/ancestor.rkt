@@ -1,4 +1,4 @@
-#lang planet jaymccarthy/datalog
+#lang eudatalog
 % Equality test
 ancestor(A, B) :-
     parent(A, B).

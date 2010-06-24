@@ -91,9 +91,9 @@
         (define/public (get-language-numbers) (list 1000 42))
         (define/public (get-teachpack-names) null)
         (define/public (on-execute settings run-in-user-thread)
-          (let ([module-forms `(planet ,(this-package-version-symbol drracket/module-forms))]
-                [runtime `(planet ,(this-package-version-symbol eval))]
-                [lang `(planet ,(this-package-version-symbol lang/lang))])
+          (let ([module-forms `datalog/tool/module-forms]
+                [runtime `datalog/eval]
+                [lang `datalog/lang/lang])
             (dynamic-require module-forms #f)
             (dynamic-require runtime #f)
             (dynamic-require lang #f)

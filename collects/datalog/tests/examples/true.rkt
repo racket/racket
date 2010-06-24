@@ -1,3 +1,3 @@
-#lang planet jaymccarthy/datalog
+#lang datalog
 true.
 true?
