@@ -6,24 +6,26 @@
 
 (provide eval-tests)
 
-(define-runtime-path examples-dir "examples")
-(define (test-example t)
-  (define test-ss (build-path examples-dir (format "~a.rkt" t)))
-  (define test-txt (build-path examples-dir (format "~a.txt" t)))
-  (test-equal? t
-               (filter (lambda (l)
-                         (not (string=? l "")))
-                       (file->lines test-txt))
-               (filter (lambda (l)
-                         (not (string=? l "")))
-                       (with-input-from-string
-                        (with-output-to-string
-                         (lambda () (dynamic-require test-ss #f)))
-                        port->lines))))
+(define-runtime-path here ".")
 
-(define eval-tests
+(define (test-examples examples-dir)
+  
+  (define (test-example t)
+    (define test-rkt (build-path examples-dir (format "~a.rkt" t)))
+    (define test-txt (build-path examples-dir (format "~a.txt" t)))
+    (test-equal? t
+                 (filter (lambda (l)
+                           (not (string=? l "")))
+                         (file->lines test-txt))
+                 (filter (lambda (l)
+                           (not (string=? l "")))
+                         (with-input-from-string
+                             (with-output-to-string
+                                 (lambda () (dynamic-require test-rkt #f)))
+                           port->lines))))
+  
   (test-suite
-   "eval"
+   (path->string examples-dir)
    
    (test-example "ancestor")
    (test-example "bidipath")
@@ -34,6 +36,11 @@
    (test-example "revpath")
    (test-example "says")
    (test-example "true")
-   (test-example "tutorial")
+   (test-example "tutorial")))
+
+(define eval-tests
+  (test-suite
+   "eval"
    
-   ))
+   (test-examples (build-path here "examples"))
+   (test-examples (build-path here "paren-examples"))))
