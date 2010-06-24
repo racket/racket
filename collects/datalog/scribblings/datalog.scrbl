@@ -8,7 +8,7 @@
                      "../main.rkt")
           "utils.rkt")
 
-@title[#:tag "top"]{@bold{Datalog} for PLT Scheme}
+@title[#:tag "top"]{@bold{Datalog}: Deductive database programming}
 @author[(author+email "Jay McCarthy" "jay@racket-lang.org")]
 
 This package contains a lightweight deductive database system. Queries and database updates are expressed
@@ -544,7 +544,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 @defmodule[datalog/pretty]
 
 @defproc[(format-datum [d datum/c])
-         doc?]{
+         string?]{
  Formats a @tech{datum}.
          
  @examples[#:eval the-eval
@@ -553,7 +553,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
               
 @defproc[(format-variable [v variable?])
-         doc?]{
+         string?]{
  Formats a @racket[variable].
          
  @examples[#:eval the-eval
@@ -561,7 +561,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
 
 @defproc[(format-constant [c constant?])
-         doc?]{
+         string?]{
  Formats a @racket[constant].
 
  @examples[#:eval the-eval
@@ -570,7 +570,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
  
 @defproc[(format-term [t term/c])
-         doc?]{
+         string?]{
  Formats a @tech{term}.
 
  @examples[#:eval the-eval
@@ -580,7 +580,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
 
 @defproc[(format-literal [l literal?])
-         doc?]{
+         string?]{
  Formats a @racket[literal].
          
  @examples[#:eval the-eval
@@ -594,7 +594,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
               
 @defproc[(format-literals [ls (listof literal?)])
-         doc?]{
+         string?]{
  Formats a list of @racket[literal]s as @racket[assertion]s for formatting @racket[prove] results.
          
  @examples[#:eval the-eval
@@ -608,7 +608,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
 
 @defproc[(format-clause [c clause?])
-         doc?]{
+         string?]{
  Formats a @racket[clause].
          
  @examples[#:eval the-eval
@@ -640,7 +640,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
               
 @defproc[(format-assertion [a assertion?])
-         doc?]{
+         string?]{
  Formats a @racket[assertion].
 
  @examples[#:eval the-eval
@@ -654,7 +654,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
 
 @defproc[(format-retraction [r retraction?])
-         doc?]{
+         string?]{
  Formats a @racket[retraction].
 
  @examples[#:eval the-eval
@@ -668,7 +668,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
               
 @defproc[(format-query [q query?])
-         doc?]{
+         string?]{
  Formats a @racket[query].
 
  @examples[#:eval the-eval
@@ -680,7 +680,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
 
 @defproc[(format-statement [s statement/c])
-         doc?]{
+         string?]{
  Formats a @tech{statement}.
 
  @examples[#:eval the-eval
@@ -692,7 +692,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 }
 
 @defproc[(format-program [p program/c])
-         doc?]{
+         string?]{
  Formats a @tech{program}.
 
  @examples[#:eval the-eval
