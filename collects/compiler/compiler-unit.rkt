@@ -144,7 +144,7 @@
         (let ([zo (append-zo-suffix b)])
           (compile-to-zo f zo n prefix verbose? mod?)))))
 
-  (define (compile-directory dir info 
+  (define (compile-directory-visitor dir info worker
                              #:verbose [verbose? #t] 
                              #:skip-path [orig-skip-path #f]
                              #:skip-doc-sources? [skip-docs? #f])
@@ -156,7 +156,7 @@
                                                               orig-skip-path)
                                                           #f))))
     (unless (eq? 'all omit-paths)
-      (parameterize ([current-directory dir]
+      (let ([init (parameterize ([current-directory dir]
                      [current-load-relative-directory dir]
                      ;; Verbose compilation manager:
                      [manager-trace-handler (if verbose?
@@ -180,18 +180,43 @@
                           null
                           (map car (info* 'scribblings (lambda () null)))))]
                [sses (remove* omit-paths sses)])
-          (for-each (make-caching-managed-compile-zo) sses)))
-      (when (compile-subcollections)
-        (when (info* 'compile-subcollections (lambda () #f))
-          (printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
-                  dir))
-        (for ([p (directory-list dir)])
-          (let ([p* (build-path dir p)])
-            (when (and (directory-exists? p*) (not (member p omit-paths)))
-              (compile-directory p* (c-get-info/full p*) 
-                                 #:verbose verbose?
-                                 #:skip-path skip-path
-                                 #:skip-doc-sources? skip-docs?)))))))
+          (worker null sses)))])
+      
+      (if (compile-subcollections)
+        (begin 
+          (when (info* 'compile-subcollections (lambda () #f))
+            (printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
+                    dir))
+          (for/fold ([init init]) ([p (directory-list dir)])
+            (let ([p* (build-path dir p)])
+              (worker 
+                (if (and (directory-exists? p*) (not (member p omit-paths)))
+                  (compile-directory-visitor p* (c-get-info/full p*) worker
+                                   #:verbose verbose?
+                                   #:skip-path skip-path
+                                   #:skip-doc-sources? skip-docs?)
+                  null)
+                 init))))
+        init))))
+  (define (compile-directory dir info 
+                             #:verbose [verbose? #t] 
+                             #:skip-path [orig-skip-path #f]
+                             #:skip-doc-sources? [skip-docs? #f])
+    (define (worker prev sses)
+      (for-each (make-caching-managed-compile-zo) sses))
+    (compile-directory-visitor dir info worker 
+                             #:verbose verbose?
+                             #:skip-path orig-skip-path
+                             #:skip-doc-sources? skip-docs?))
+
+  (define (get-compile-directory-srcs dir info 
+                             #:verbose [verbose? #t] 
+                             #:skip-path [orig-skip-path #f]
+                             #:skip-doc-sources? [skip-docs? #f])
+    (compile-directory-visitor dir info append
+                             #:verbose verbose?
+                             #:skip-path orig-skip-path
+                             #:skip-doc-sources? skip-docs?))
 
   (define (compile-collection-zos collection 
                                   #:skip-path [skip-path #f]
