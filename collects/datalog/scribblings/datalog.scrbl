@@ -612,7 +612,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
  Formats a @racket[clause].
          
  @examples[#:eval the-eval
-  ((format-clause
+  (format-clause
     (make-clause
      #f (make-literal #f 'ancestor
          (list (make-constant #f 'joseph) 
