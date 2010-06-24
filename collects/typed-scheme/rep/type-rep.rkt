@@ -18,8 +18,7 @@
           (not (ValuesDots? e))
           (not (Result? e)))))
 
-(define Type/c
-  (flat-named-contract 'Type Type/c?))
+(define Type/c (flat-named-contract 'Type Type/c?))
 
 ;; Name = Symbol
 

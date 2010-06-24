@@ -3,7 +3,7 @@
 (require "../utils/utils.rkt" 
 	 (except-in (rep type-rep free-variance) Dotted)
          (private parse-type)
-	 (types convenience utils union resolve abbrev substitute)
+	 (types convenience utils union resolve abbrev substitute type-table)
 	 (env global-env type-env-structs type-name-env tvar-env)
 	 (utils tc-utils)
          "def-binding.rkt"
@@ -142,26 +142,31 @@
                                  (or (eq? variance Constant)
                                      (eq? variance Covariant))))
                              #t)))
+  (define parent-count (- (length external-fld-types) (length external-fld-types/no-parent)))
   ;; the list of names w/ types
   (define bindings
-    (append 
-     (list 
-      (cons struct-type-id
-            (make-StructType sty))
-      (cons (or maker* maker)
-            (wrapper (->* external-fld-types (if cret cret name))))
-      (cons (or pred* pred)
-            (make-pred-ty (if (not covariant?)
-                              (make-StructTop sty)
-                              (pred-wrapper name)))))
-     (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])
-       (let ([func (if setters? 
-                       (->* (list name) t)
-		       (->acc (list name) t (list (make-StructPE name i))))])
-         (cons g (wrapper func))))
-     (if setters?
-         (map (lambda (g t) (cons g (wrapper (->* (list name t) -Void)))) setters external-fld-types/no-parent)
-         null)))
+    (list* 
+     (cons struct-type-id
+           (make-StructType sty))
+     (cons (or maker* maker)
+           (wrapper (->* external-fld-types (if cret cret name))))
+     (cons (or pred* pred)
+           (make-pred-ty (if (not covariant?)
+                             (make-StructTop sty)
+                             (pred-wrapper name))))
+     (append
+      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals parent-count)])
+        (let* ([path (make-StructPE name i)]
+               [func (if setters? 
+                         (->* (list name) t)
+                         (->acc (list name) t (list path)))])
+          (add-struct-fn! g path #f)
+          (cons g (wrapper func))))
+      (if setters?
+          (for/list ([g (in-list setters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals parent-count)])
+            (add-struct-fn! g (make-StructPE name i) #t)        
+            (cons g (wrapper (->* (list name t) -Void))))
+          null))))
   (register-type-name nm (wrapper sty))
   (cons
    (make-def-struct-stx-binding nm si)

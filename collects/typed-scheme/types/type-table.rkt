@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require unstable/debug "../utils/utils.rkt" (rep type-rep) (only-in (types abbrev utils) tc-results?) (utils tc-utils) scheme/contract)
+(require unstable/debug scheme/contract "../utils/utils.rkt" syntax/id-table racket/dict racket/match
+         (rep type-rep object-rep) (only-in (types abbrev utils) tc-results?) (utils tc-utils))
 
 (define table (make-hasheq))
 
@@ -12,6 +13,21 @@
 
 (define (type-of e) (hash-ref table e (lambda () (int-err (format "no type for ~a" (syntax->datum e))))))
 
+(define struct-fn-table (make-free-id-table))
+
+(define (add-struct-fn! id pe mut?) (dict-set! struct-fn-table id (list pe mut?)))
+
+(define-values (struct-accessor? struct-mutator?) 
+  (let ()
+    (define ((mk mut?) id)
+      (cond [(dict-ref struct-fn-table id #f)
+              => (match-lambda [(list pe #f) pe] [_ #f])]
+            [else #f]))
+    (values (mk #f) (mk #t))))
+
 (p/c [add-typeof-expr (syntax? tc-results? . -> . any/c)]
      [type-of (syntax? . -> . tc-results?)]
-     [reset-type-table (-> any/c)])
+     [reset-type-table (-> any/c)]
+     [add-struct-fn! (identifier? StructPE? boolean? . -> . any/c)]
+     [struct-accessor? (identifier? . -> . (or/c #f StructPE?))]
+     [struct-mutator? (identifier? . -> . (or/c #f StructPE?))])
