@@ -17,8 +17,14 @@ Correct output N = 1000 is
 -0.169087605
 |#
 
-(require racket/cmdline
-         racket/flonum)
+(require racket/require racket/require-syntax (for-syntax racket/base))
+(define-require-syntax overriding-in
+  (syntax-rules () [(_ R1 R2) (combine-in R2 (subtract-in R1 R2))]))
+(require (overriding-in
+          racket/flonum
+          (filtered-in (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+                       racket/unsafe/ops))
+         racket/cmdline)
 
 ;; ------------------------------
 ;; define planetary masses, initial positions & velocity
