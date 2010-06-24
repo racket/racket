@@ -1860,8 +1860,8 @@ path/s is either such a string or a list of them.
 "collects/tests/typed-scheme" responsible (samth)
 "collects/tests/typed-scheme/fail" drdr:command-line #f
 "collects/tests/typed-scheme/fail/with-type3.rkt" responsible (sstrickl)
-"collects/tests/typed-scheme/nightly-run.rkt" drdr:timeout 1200
-"collects/tests/typed-scheme/run.rkt" drdr:command-line #f drdr:timeout 600
+"collects/tests/typed-scheme/nightly-run.rkt" drdr:command-line #f
+"collects/tests/typed-scheme/run.rkt" drdr:command-line (racket "-t" * "--" "--nightly-run") drdr:timeout 1200
 "collects/tests/typed-scheme/xfail" drdr:command-line #f
 "collects/tests/units" responsible (sstrickl)
 "collects/tests/units/multi-mod-sigs.rktl" drdr:command-line (racket "-f" *)

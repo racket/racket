@@ -86,8 +86,14 @@
   (test-suite "Typed Scheme Tests"
               unit-tests int-tests))
 
-(define (go [unit? #f]) (test/gui (if unit? unit-tests tests)))
-(define (go/text [unit? #f]) (run-tests (if unit? unit-tests tests) 'verbose))
+(define (go [unit? #f] [int? #f]) (test/gui (cond [unit? unit-tests]
+                                                  [int? int-tests]
+                                                  [else tests])))
+(define (go/text [unit? #f] [int? #f]) (run-tests 
+                                        (cond [unit? unit-tests]
+                                              [int? int-tests]
+                                              [else tests])
+                                        'verbose))
 
 (provide go go/text)
 
