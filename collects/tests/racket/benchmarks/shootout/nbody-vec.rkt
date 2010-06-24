@@ -32,8 +32,8 @@ Correct output N = 1000 is
 
 (define make-body flvector)
 (define-syntax-rule (deffield n getter setter)
-  (begin (define (getter b) (flvector-ref b n))
-         (define (setter b x) (flvector-set! b n x))))
+  (begin (define-syntax-rule (getter b) (flvector-ref b n))
+         (define-syntax-rule (setter b x) (flvector-set! b n x))))
 (deffield 0 body-x set-body-x!)
 (deffield 1 body-y set-body-y!)
 (deffield 2 body-z set-body-z!)
@@ -81,59 +81,60 @@ Correct output N = 1000 is
              (* -9.51592254519715870e-05 +days-per-year+)
              (* 5.15138902046611451e-05 +solar-mass+)))
 
-(define *system* (list *sun* *jupiter* *saturn* *uranus* *neptune*))
+(define *system* (vector *sun* *jupiter* *saturn* *uranus* *neptune*))
+(define *system-size* 5)
 
 ;; -------------------------------
 (define (offset-momentum)
-  (let loop-i ([i *system*] [px 0.0] [py 0.0] [pz 0.0])
-    (if (null? i)
+  (let loop-i ([i 0] [px 0.0] [py 0.0] [pz 0.0])
+    (if (= i *system-size*)
       (begin
-        (set-body-vx! (car *system*) (fl/ (fl- 0.0 px) +solar-mass+))
-        (set-body-vy! (car *system*) (fl/ (fl- 0.0 py) +solar-mass+))
-        (set-body-vz! (car *system*) (fl/ (fl- 0.0 pz) +solar-mass+)))
-      (let ([i1 (car i)])
-        (loop-i (cdr i)
+        (set-body-vx! (vector-ref *system* 0) (fl/ (fl- 0.0 px) +solar-mass+))
+        (set-body-vy! (vector-ref *system* 0) (fl/ (fl- 0.0 py) +solar-mass+))
+        (set-body-vz! (vector-ref *system* 0) (fl/ (fl- 0.0 pz) +solar-mass+)))
+      (let ([i1 (vector-ref *system* i)])
+        (loop-i (add1 i)
                 (fl+ px (fl* (body-vx i1) (body-mass i1)))
                 (fl+ py (fl* (body-vy i1) (body-mass i1)))
                 (fl+ pz (fl* (body-vz i1) (body-mass i1))))))))
 
 ;; -------------------------------
 (define (energy)
-  (let loop-o ([o *system*] [e 0.0])
-    (if (null? o)
+  (let loop-o ([o 0] [e 0.0])
+    (if (= o *system-size*)
       e
-      (let* ([o1 (car o)]
+      (let* ([o1 (vector-ref *system* o)]
              [e (+ e (fl* 0.5 
                           (fl* (body-mass o1)
                                (fl+ (fl+ (fl* (body-vx o1) (body-vx o1))
                                          (fl* (body-vy o1) (body-vy o1)))
                                     (fl* (body-vz o1) (body-vz o1))))))])
-        (let loop-i ([i (cdr o)] [e e])
-          (if (null? i)
-            (loop-o (cdr o) e)
-            (let* ([i1   (car i)]
+        (let loop-i ([i (add1 o)] [e e])
+          (if (= i *system-size*)
+            (loop-o (add1 o) e)
+            (let* ([i1   (vector-ref *system* i)]
                    [dx   (fl- (body-x o1) (body-x i1))]
                    [dy   (fl- (body-y o1) (body-y i1))]
                    [dz   (fl- (body-z o1) (body-z i1))]
                    [dist (flsqrt (fl+ (fl+ (fl* dx dx) (fl* dy dy)) (fl* dz dz)))]
                    [e    (fl- e (fl/ (fl* (body-mass o1) (body-mass i1)) dist))])
-              (loop-i (cdr i) e))))))))
+              (loop-i (add1 i) e))))))))
 
 ;; -------------------------------
 (define (advance)
-  (let loop-o ([o *system*])
-    (when (pair? o)
-      (let* ([o1  (car o)]
+  (let loop-o ([o 0])
+    (unless (= o *system-size*)
+      (let* ([o1  (vector-ref *system* o)]
              [o1x (body-x o1)]
              [o1y (body-y o1)]
              [o1z (body-z o1)]
              [om  (body-mass o1)])
-        (let loop-i ([i  (cdr o)]
+        (let loop-i ([i  (add1 o)]
                      [vx (body-vx o1)]
                      [vy (body-vy o1)]
                      [vz (body-vz o1)])
-          (if (pair? i)
-            (let* ([i1    (car i)]
+          (if (< i *system-size*)
+            (let* ([i1    (vector-ref *system* i)]
                    [dx    (fl- o1x (body-x i1))]
                    [dy    (fl- o1y (body-y i1))]
                    [dz    (fl- o1z (body-z i1))]
@@ -146,7 +147,7 @@ Correct output N = 1000 is
               (set-body-vx! i1 (fl+ (body-vx i1) (fl* dxmag om)))
               (set-body-vy! i1 (fl+ (body-vy i1) (fl* dymag om)))
               (set-body-vz! i1 (fl+ (body-vz i1) (fl* dzmag om)))
-              (loop-i (cdr i)
+              (loop-i (add1 i)
                       (fl- vx (fl* dxmag im))
                       (fl- vy (fl* dymag im))
                       (fl- vz (fl* dzmag im))))
@@ -156,7 +157,7 @@ Correct output N = 1000 is
                    (set-body-x! o1 (fl+ o1x (fl* +dt+ vx)))
                    (set-body-y! o1 (fl+ o1y (fl* +dt+ vy)))
                    (set-body-z! o1 (fl+ o1z (fl* +dt+ vz)))))))
-      (loop-o (cdr o)))))
+      (loop-o (add1 o)))))
 
 ;; -------------------------------
 
