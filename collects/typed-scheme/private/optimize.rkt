@@ -34,7 +34,9 @@
       (dict-set (dict-set h g u) f u))))
 
 (define binary-float-ops 
-  (mk-float-tbl (list #'+ #'- #'* #'/ #'= #'<= #'< #'> #'>= #'min #'max)))
+  (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max)))
+(define binary-float-comps
+  (mk-float-tbl (list #'= #'<= #'< #'> #'>=)))
 
 (define unary-float-ops
   (mk-float-tbl (list #'abs #'sin #'cos #'tan #'asin #'acos #'atan #'log #'exp
@@ -94,9 +96,18 @@
   ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
   (pattern (~and res (#%plain-app (~var op (float-op binary-float-ops)) f1:float-arg-expr f2:float-arg-expr fs:float-arg-expr ...))
            #:when (match (type-of #'res)
+                    ;; if the result is a float, we can coerce integers to floats and optimize
                     [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
            #:with opt
            (begin (log-optimization "binary float" #'op)
+                  (for/fold ([o #'f1.opt])
+                      ([e (syntax->list #'(f2.opt fs.opt ...))])
+                    #`(op.unsafe #,o #,e))))
+  (pattern (~and res (#%plain-app (~var op (float-op binary-float-comps)) f1:float-opt-expr f2:float-opt-expr fs:float-opt-expr ...))
+           #:when (match (type-of #'res)
+                    [(tc-result1: (== -Boolean type-equal?)) #t] [_ #f])
+           #:with opt
+           (begin (log-optimization "binary float comp" #'op)
                   (for/fold ([o #'f1.opt])
                       ([e (syntax->list #'(f2.opt fs.opt ...))])
                     #`(op.unsafe #,o #,e))))
