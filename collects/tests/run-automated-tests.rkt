@@ -24,24 +24,21 @@
 ;;   `compile-omit-paths' in your test's info file.
 
 ;; Tests to run:
-;;   Each should be a list with a mode symbol (`load' or `require'),
-;;   the path to the test file (relative to this script) and module
-;;   specifications for things to require into the initial namespace
-;;   for the test before the test is loaded.  ('no-handler is a
-;;   special flag that means that errors raised by the test suite are
-;;   ignored, and should only be used by the racket tests.)
-(define tests
-  '([no-handler load "racket/quiet.rktl" (lib "racket/init")]
-    ;; [require "planet/lang.rkt"]
-    [require "typed-scheme/nightly-run.rkt"]
-    [require "match/plt-match-tests.rkt"]
-    ;; [require "stepper/automatic-tests.rkt" (lib "scheme/base")]
-    [require "lazy/main.rkt"]
-    [require "scribble/main.rkt"]
-    [require "net/main.rkt"]
-    [require "file/main.rkt"]
-    [require "profile/main.rkt"]
-    ))
+;; - Each should be a `test' call, with the path to the test file to
+;;   require (relative to this script).
+(define (all-tests)
+  (test "racket/quiet.rktl" #:load? #t #:handler? #f
+        #:additional-modules '(racket/init))
+  ;; (test "planet/lang.rkt")
+  (test "typed-scheme/nightly-run.rkt" #:timeout 25)
+  (test "match/plt-match-tests.rkt")
+  ;; (test "stepper/automatic-tests.rkt" #:additional-modules (scheme/base))
+  (test "lazy/main.rkt")
+  (test "scribble/main.rkt")
+  (test "net/main.rkt")
+  (test "file/main.rkt")
+  (test "profile/main.rkt")
+  )
 
 (require racket/runtime-path)
 
@@ -49,14 +46,15 @@
 
 (define exit-code 0)
 
-(for ([t tests])
-  (define no-handler? (and (eq? 'no-handler (car t)) (set! t (cdr t))))
-  (define name (cadr t))
+(define (test path
+              #:load? [load? #f] #:handler? [handler? #t]
+              #:timeout [timeout 10] ; in minutes
+              #:additional-modules [additional-modules '()])
   (define stderr (current-error-port))
   (define (echo fmt . args)
     (flush-output (current-output-port))
     (flush-output (current-error-port))
-    (fprintf stderr ">>> ~a: ~a\n" name (apply format fmt args)))
+    (fprintf stderr ">>> ~a: ~a\n" path (apply format fmt args)))
   (newline stderr)
   (echo "running...")
   (let/ec break
@@ -68,20 +66,24 @@
         (break)))
     (define timeout-thread
       (thread (let ([th (current-thread)])
-                (lambda () (sleep 1200) (echo "Timeout!") (break-thread th)))))
+                (lambda ()
+                  (sleep (* 60 timeout))
+                  (echo "Timeout!")
+                  (break-thread th)))))
     (parameterize* ([exit-handler
                      (lambda (n) (abort n "exit with error code ~a" n))]
                     [current-namespace (make-base-empty-namespace)])
-      (for-each namespace-require (cddr t))
-      (let ([thunk (lambda ()
-                     ((case (car t) [(load) load] [(require) namespace-require])
-                      (build-path here name)))])
-        (if no-handler?
-          (thunk)
+      (for-each namespace-require additional-modules)
+      (let ([thunk (lambda () ((if load? load namespace-require)
+                               (build-path here path)))])
+        (if handler?
           (with-handlers ([void (lambda (exn)
                                   (abort 1 "error: ~a" (exn-message exn)))])
-            (thunk))))
+            (thunk))
+          (thunk)))
       (kill-thread timeout-thread)
-      (echo "no failures found."))))
+      (echo "no failures."))))
+
+(all-tests)
 
 (exit exit-code)
