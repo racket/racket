@@ -18,16 +18,12 @@
        #'(#%module-begin
           (begin (print-result rs) ...)))]))
 
-(define-syntax (script-begin stx)
-  (syntax-case stx ()
-    [(script-begin ast ...)
-     (compile-module (syntax->datum #'(ast ...)))]))
+#;(compile-module (syntax->datum #'(ast ...)))
+#;(compile-stmt (syntax->datum #'ast))
 
-(define-syntax (interaction-begin stx)
-  (syntax-case stx ()
-    [(interaction-begin ast)
-     (compile-stmt (syntax->datum #'ast))]))
+(define-syntax (top-interaction stx)
+  (printf "~S\n" stx)
+  #'(void))
 
 (provide module-begin
-         script-begin
-         interaction-begin)
+         top-interaction)

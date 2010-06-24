@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require parser-tools/lex
          (prefix-in : parser-tools/lex-sre)
          "../private/lex.rkt")
@@ -26,11 +26,11 @@
    [comment-re
     (syn-val lexeme 'comment #f start-pos end-pos)]
    [variable-re
-    (syn-val lexeme 'identifier #f start-pos end-pos)]
+    (syn-val lexeme 'symbol #f start-pos end-pos)]
    [identifier-re
-    (syn-val lexeme 'keyword #f start-pos end-pos)]
+    (syn-val lexeme 'identifier #f start-pos end-pos)]
    [(:or #\) #\() (syn-val lexeme 'parenthesis #f start-pos end-pos)]
-   [(:or #\= #\? #\~ #\. #\, ":-") (syn-val lexeme 'default #f start-pos end-pos)]
+   [(:or #\= #\? #\~ #\. #\, ":-") (syn-val lexeme 'parenthesis #f start-pos end-pos)]
    [(eof) (syn-val lexeme 'eof #f start-pos end-pos)]
    [#\" ((colorize-string start-pos) input-port)]
    [any-char (syn-val lexeme 'error #f start-pos end-pos)]))

@@ -6,11 +6,12 @@
   #:read-syntax (lambda ([source-name #f] [in (current-input-port)])
                   (let ([ast (parse-program in)])
                     (list `(#%module-begin ,@ast))))
-  #:whole-body-readers? #t
+  #:whole-body-readers? #t  
   #:info (lambda (key defval default)
-           ; XXX Should have comment character key
-           ; XXX repl submit
+           ; XXX Should have different comment character key
            (case key
+             [(drracket:submit-predicate)
+              (dynamic-require `datalog/tool/submit 'repl-submit?)]
              [(color-lexer)
               (dynamic-require `datalog/tool/syntax-color 'get-syntax-token)]
              [else (default key defval)]))
