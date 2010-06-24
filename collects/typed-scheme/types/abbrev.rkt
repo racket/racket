@@ -158,12 +158,18 @@
 (define -ExactPositiveInteger
   (make-Base 'Exact-Positive-Integer #'exact-positive-integer?))
 
+(define -PositiveFixnum
+  (make-Base 'Positive-Fixnum #'(and/c number? fixnum? positive?)))
+(define -NegativeFixnum
+  (make-Base 'Negative-Fixnum #'(and/c number? fixnum? negative?)))
+
 (define -Zero (-val 0))
 (define -Real (*Un -Flonum -ExactRational))
+(define -Fixnum (*Un -PositiveFixnum -NegativeFixnum -Zero))
 (define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))
 (define -Nat -ExactNonnegativeInteger)
 
-(define -Byte -Number)
+(define -Byte -Integer)
 
 
 

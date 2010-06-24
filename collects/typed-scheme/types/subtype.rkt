@@ -237,11 +237,27 @@
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (== -Nat =t)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Integer _)) A0]
+
+              [((Base: 'Positive-Fixnum _) (Base: 'Exact-Positive-Integer _)) A0]
+	      [((Base: 'Positive-Fixnum _) (Base: 'Exact-Rational _)) A0]
+	      [((Base: 'Positive-Fixnum _) (Base: 'Number _)) A0]
+	      [((Base: 'Positive-Fixnum _) (== -Nat =t)) A0]
+	      [((Base: 'Positive-Fixnum _) (Base: 'Integer _)) A0]
+
+	      [((Base: 'Negative-Fixnum _) (Base: 'Exact-Rational _)) A0]
+	      [((Base: 'Negative-Fixnum _) (Base: 'Number _)) A0]
+	      [((Base: 'Negative-Fixnum _) (Base: 'Integer _)) A0]
+              
 	      [((== -Nat =t) (Base: 'Number _)) A0]
 	      [((== -Nat =t) (Base: 'Exact-Rational _)) A0]
 	      [((== -Nat =t) (Base: 'Integer _)) A0]
 
-	      ;; values are subtypes of their "type"
+	      [((== -Fixnum =t) (Base: 'Number _)) A0]
+	      [((== -Fixnum =t) (Base: 'Exact-Rational _)) A0]
+	      [((== -Fixnum =t) (Base: 'Integer _)) A0]
+
+              
+              ;; values are subtypes of their "type"
 	      [((Value: (? exact-integer? n)) (Base: 'Integer _)) A0]
 	      [((Value: (and n (? number?) (? exact?) (? rational?))) (Base: 'Exact-Rational _)) A0]
 	      [((Value: (? exact-nonnegative-integer? n)) (== -Nat =t)) A0]

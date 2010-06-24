@@ -31,6 +31,8 @@
       (match t*
         [(Value: '()) (-lst Univ)]
 	[(Value: 0) -Nat]
+        [(? (lambda (t) (subtype t -Nat))) -Nat]
+        [(? (lambda (t) (subtype t -Integer))) -Integer]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 (Value: '())) (-lst t1)]
         [(MPair: t1 (Value: '())) (-mlst t1)]

@@ -13,6 +13,7 @@
          (env lexical-env type-env-structs tvar-env index-env)
          racket/private/class-internal unstable/debug
          (except-in syntax/parse id)
+         unstable/function
          (only-in srfi/1 split-at))
 
 (require (for-template scheme/base racket/private/class-internal))
@@ -33,10 +34,13 @@
     [i:boolean (-val (syntax-e #'i))]
     [i:identifier (-val (syntax-e #'i))]
     [0 -Zero]
+    [(~var i (3d (conjoin number? fixnum? positive?))) -PositiveFixnum]
+    [(~var i (3d (conjoin number? fixnum? negative?))) -NegativeFixnum]
+    [(~var i (3d (conjoin number? fixnum?))) -Fixnum]
     [(~var i (3d exact-positive-integer?)) -ExactPositiveInteger]
     [(~var i (3d exact-nonnegative-integer?)) -ExactNonnegativeInteger]
     [(~var i (3d exact-integer?)) -Integer]
-    [(~var i (3d (lambda (e) (and (number? e) (exact? e) (rational? e))))) -ExactRational]
+    [(~var i (3d (conjoin number? exact? rational?))) -ExactRational]
     [(~var i (3d inexact-real?)) -Flonum]
     [(~var i (3d real?)) -Real]
     [(~var i (3d number?)) -Number]

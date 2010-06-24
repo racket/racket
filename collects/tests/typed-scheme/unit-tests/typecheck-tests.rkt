@@ -141,24 +141,24 @@
                    (+ 1 (car x))
                    5))
          N]
-        (tc-e/t (if (let ([y 12]) y) 3 4) -Pos)
-        (tc-e/t 3 -Pos)
+        (tc-e/t (if (let ([y 12]) y) 3 4) -PositiveFixnum)
+        (tc-e/t 3 -PositiveFixnum)
         (tc-e/t "foo" -String)
         (tc-e (+ 3 4) -Pos)
-        [tc-e/t (lambda: () 3) (t:-> -Pos : -true-lfilter)]
-        [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -Pos : -true-lfilter)]
-        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -Pos : -true-lfilter)]
-        [tc-e/t (lambda () 3) (t:-> -Pos : -true-lfilter)]
-        [tc-e (values 3 4) #:ret (ret (list -Pos -Pos) (list -true-filter -true-filter))]
-        [tc-e (cons 3 4) (-pair -Pos -Pos)]
+        [tc-e/t (lambda: () 3) (t:-> -PositiveFixnum : -true-lfilter)]
+        [tc-e/t (lambda: ([x : Number]) 3) (t:-> N -PositiveFixnum : -true-lfilter)]
+        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (t:-> N B -PositiveFixnum : -true-lfilter)]
+        [tc-e/t (lambda () 3) (t:-> -PositiveFixnum : -true-lfilter)]
+        [tc-e (values 3 4) #:ret (ret (list -PositiveFixnum -PositiveFixnum) (list -true-filter -true-filter))]
+        [tc-e (cons 3 4) (-pair -PositiveFixnum -PositiveFixnum)]
         [tc-e (cons 3 (ann '() : (Listof Integer))) (make-Listof -Integer)]
         [tc-e (void) -Void]
         [tc-e (void 3 4) -Void]
         [tc-e (void #t #f '(1 2 3)) -Void]
-        [tc-e/t #(3 4 5) (make-Vector -Pos)]
-        [tc-e/t '(2 3 4) (-lst* -Pos -Pos -Pos)]
-        [tc-e/t '(2 3 #t) (-lst* -Pos -Pos (-val #t))]
-        [tc-e/t #(2 3 #t) (make-Vector (t:Un -Pos (-val #t)))]
+        [tc-e/t #(3 4 5) (make-Vector -PositiveFixnum)]
+        [tc-e/t '(2 3 4) (-lst* -PositiveFixnum -PositiveFixnum -PositiveFixnum)]
+        [tc-e/t '(2 3 #t) (-lst* -PositiveFixnum -PositiveFixnum (-val #t))]
+        [tc-e/t #(2 3 #t) (make-Vector (t:Un -PositiveFixnum (-val #t)))]
         [tc-e/t '(#t #f) (-lst* (-val #t) (-val #f))]
         [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
                 (make-Poly '(a) (t:-> (make-Listof (-v a)) (-v a)))]
@@ -169,9 +169,9 @@
         [tc-e (let-values ([(x) 4]) (+ x 1)) -Pos]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y))) 
               #:proc (syntax-parser [(_ ([(_ y) . _]) . _) (ret -Boolean (-FS -top -top))])]
-        [tc-e/t (values 3) -Pos]
+        [tc-e/t (values 3) -PositiveFixnum]
         [tc-e (values) #:ret (ret null)]
-        [tc-e (values 3 #f) #:ret (ret (list -Pos (-val #f)) (list (-FS -top -bot) (-FS -bot -top)))]
+        [tc-e (values 3 #f) #:ret (ret (list -PositiveFixnum (-val #f)) (list (-FS -top -bot) (-FS -bot -top)))]
         [tc-e (map #{values @ Symbol} '(a b c)) (-pair Sym (make-Listof  Sym))]
         [tc-e (letrec: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                        (fact 20))
@@ -201,8 +201,8 @@
 			'bc))
 	      N]
         [tc-e/t (let: ((x : Number 3)) (if (boolean? x) (not x) #t)) (-val #t)]
-        [tc-e/t (begin 3) -Pos]
-        [tc-e/t (begin #f 3) -Pos]
+        [tc-e/t (begin 3) -PositiveFixnum]
+        [tc-e/t (begin #f 3) -PositiveFixnum]
         [tc-e/t (begin #t) (-val #t)]
         [tc-e/t (begin0 #t) (-val #t)]
         [tc-e/t (begin0 #t 3) (-val #t)]
@@ -210,14 +210,14 @@
         [tc-e #f #:ret (ret (-val #f) (-FS -bot -top))]
         [tc-e/t '#t (-val #t)]
         [tc-e '#f #:ret (ret (-val #f) (-FS -bot -top))]
-        [tc-e/t (if #f 'a 3) -Pos]
+        [tc-e/t (if #f 'a 3) -PositiveFixnum]
         [tc-e/t (if #f #f #t) (t:Un (-val #t))]
         [tc-e (when #f 3) -Void]
         [tc-e/t '() (-val '())]
         [tc-e/t (let: ([x : (Listof Number) '(1)]) 
                       (cond [(pair? x) 1]
                             [(null? x) 1]))
-              -Pos]
+              -PositiveFixnum]
         [tc-e/t (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list N) N N)]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3) N]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) N]
@@ -241,7 +241,7 @@
                     (if (list? x)
                         (begin (car x) 1)
                         2))
-              -Pos]
+              -PositiveFixnum]
         
         
         [tc-e (let: ([x : (U Number Boolean) 3])
@@ -250,7 +250,7 @@
                         3))
               N]
         
-        [tc-e (let ([x 1]) x) -Pos]
+        [tc-e (let ([x 1]) x) -PositiveFixnum]
         [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS -bot -top))]
         [tc-e (boolean? number?) #:ret (ret -Boolean (-FS -bot -top))]
         
@@ -271,9 +271,9 @@
                 (if (eq? x 1)
                     12
                     14))
-              -Pos]
+              -PositiveFixnum]
         
-        [tc-e (car (append (list 1 2) (list 3 4))) -Pos]
+        [tc-e (car (append (list 1 2) (list 3 4))) -PositiveFixnum]
         
         [tc-e 
          (let-syntax ([a 
@@ -283,8 +283,8 @@
                  (string-append "foo" (a v))))
          -String]
         
-        [tc-e (apply (plambda: (a) [x : a *] x) '(5)) (-lst -Pos)]
-        [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst -Pos)]
+        [tc-e (apply (plambda: (a) [x : a *] x) '(5)) (-lst -PositiveFixnum)]
+        [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst -PositiveFixnum)]
         
         [tc-err ((case-lambda: [([x : Number]) x]
                                [([y : Number] [x : Number]) x])
@@ -320,9 +320,9 @@
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 x)
-              (t:Un (-val 'squarf) -Pos)]
+              (t:Un (-val 'squarf) -PositiveFixnum)]
         
-        [tc-e/t (if #t 1 2) -Pos]
+        [tc-e/t (if #t 1 2) -PositiveFixnum]
         
         
         ;; eq? as predicate
@@ -347,12 +347,12 @@
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? x sym) 3 x))
               #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                     (ret -Pos (-FS -top -top))])]
+                                     (ret -PositiveFixnum (-FS -top -top))])]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? sym x) 3 x))
                #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                      (ret -Pos (-FS -top -top))])]
+                                      (ret -PositiveFixnum (-FS -top -top))])]
         ;; equal? as predicate for symbols
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
                     (if (equal? x 'foo) 3 x))
@@ -365,22 +365,22 @@
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? x sym) 3 x))
                #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                      (ret -Pos (-FS -top -top))])]
+                                      (ret -PositiveFixnum (-FS -top -top))])]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? sym x) 3 x))
               #:proc (syntax-parser [(_ _ (_ ([(x) _]) _))
-                                     (ret -Pos (-FS -top -top))])]
+                                     (ret -PositiveFixnum (-FS -top -top))])]
         
         [tc-e (let: ([x : (Listof Symbol)'(a b c)])
                     (cond [(memq 'a x) => car]
                           [else 'foo]))
               Sym]
         
-        [tc-e (list 1 2 3) (-lst* -Pos -Pos -Pos)]
-        [tc-e (list 1 2 3 'a) (-lst* -Pos -Pos -Pos (-val 'a))]
+        [tc-e (list 1 2 3) (-lst* -PositiveFixnum -PositiveFixnum -PositiveFixnum)]
+        [tc-e (list 1 2 3 'a) (-lst* -PositiveFixnum -PositiveFixnum -PositiveFixnum (-val 'a))]
         
-        [tc-e `(1 2 ,(+ 3 4)) (-lst* -Pos -Pos -Pos)]
+        [tc-e `(1 2 ,(+ 3 4)) (-lst* -PositiveFixnum -PositiveFixnum -Pos)]
         
         [tc-e (let: ([x : Any 1])
                     (when (and (list? x) (not (null? x)))
@@ -399,7 +399,7 @@
                       'foo))
                 (t:Un (-val 'foo) (-pair Univ (-lst Univ)))]
         
-        [tc-e (cadr (cadr (list 1 (list 1 2 3) 3))) -Pos]
+        [tc-e (cadr (cadr (list 1 (list 1 2 3) 3))) -PositiveFixnum]
         
         
         
@@ -414,7 +414,7 @@
         [tc-e/t (let: ([x : Any 3])
                       (if (and (list? x) (not (null? x)))
                           (begin (car x) 1) 2))
-              -Pos]
+              -PositiveFixnum]
         
         ;; set! tests
         [tc-e (let: ([x : Any 3])
@@ -471,7 +471,7 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) 11 12)))
-                (t:-> Univ -Pos : -true-lfilter)]
+                (t:-> Univ -PositiveFixnum : -true-lfilter)]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -484,7 +484,7 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (t:-> Univ -Pos : -true-lfilter)]
+                (t:-> Univ -PositiveFixnum : -true-lfilter)]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) z)])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -515,7 +515,7 @@
         ;; w-c-m
         [tc-e/t (with-continuation-mark 'key 'mark 
                 3)
-              -Pos]
+              -PositiveFixnum]
         [tc-err (with-continuation-mark (5 4) 1
                   3)]
         [tc-err (with-continuation-mark 1 (5 4) 
@@ -544,14 +544,14 @@
         [tc-err (call-with-values (lambda () (values 2 1))
                                   (lambda: ([x : String] [y : Number]) (+ x y)))]
         ;; quote-syntax
-        [tc-e/t #'3 (-Syntax -Pos)]
-        [tc-e/t #'(1 2 3) (-Syntax (-lst* -Pos -Pos -Pos))]
+        [tc-e/t #'3 (-Syntax -PositiveFixnum)]
+        [tc-e/t #'(1 2 3) (-Syntax (-lst* -PositiveFixnum -PositiveFixnum -PositiveFixnum))]
         
         ;; testing some primitives
         [tc-e (let ([app apply]
                     [f (lambda: [x : Number *] 3)])
                 (app f (list 1 2 3)))
-              -Pos]
+              -PositiveFixnum]
         [tc-e ((lambda () (call/cc (lambda: ([k : (Number -> (U))]) (if (read) 5 (k 10))))))
               N]
         
@@ -589,7 +589,7 @@
                         (+ z w)))
                     (g 4))
                   5)
-                -Pos]
+                -PositiveFixnum]
         
         [tc-err (let ()
                   (define x x)
@@ -620,11 +620,11 @@
         
         [tc-e/t (if #f 1 'foo) (-val 'foo)]
         
-        [tc-e (list* 1 2 3) (-pair -Pos (-pair -Pos -Pos))]
+        [tc-e (list* 1 2 3) (-pair -PositiveFixnum (-pair -PositiveFixnum -PositiveFixnum))]
         
         [tc-err (apply append (list 1) (list 2) (list 3) (list (list 1) "foo"))]
-        [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -Pos)]
-        [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo"))) (-lst (t:Un -String -Pos))]
+        [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -PositiveFixnum)]
+        [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo"))) (-lst (t:Un -String -PositiveFixnum))]
         [tc-err (plambda: (b ...) [y : b ... b] (apply append (map list y)))]
         [tc-e/t (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
                 (-polydots (b) (->... (list) ((-lst -Integer) b) (-lst -Integer)))]
@@ -652,12 +652,12 @@
         
         ;; instantiating dotted terms
         [tc-e/t (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)
-                (-Integer B -Integer . t:-> . -Pos : -true-lfilter)]
+                (-Integer B -Integer . t:-> . -PositiveFixnum : -true-lfilter)]
         [tc-e/t (inst (plambda: (a ...) [xs : (a ... a -> Integer) ... a] 3) Integer Boolean Integer)
                 ((-Integer B -Integer . t:-> . -Integer)
                  (-Integer B -Integer . t:-> . -Integer)
                  (-Integer B -Integer . t:-> . -Integer)
-                 . t:-> . -Pos : -true-filter)]
+                 . t:-> . -PositiveFixnum : -true-filter)]
         
         [tc-e/t (plambda: (z x y ...) () (inst map z x y ... y))
               (-polydots (z x y) (t:-> (cl->*
@@ -744,7 +744,7 @@
         
         [tc-e/t (ann (lambda (x) x) (All (a) (a -> a)))
                 (-poly (a) (a . t:-> . a))]
-        [tc-e (apply values (list 1 2 3)) #:ret (ret (list -Pos -Pos -Pos))]
+        [tc-e (apply values (list 1 2 3)) #:ret (ret (list -PositiveFixnum -PositiveFixnum -PositiveFixnum))]
         
         [tc-e/t (ann (if #t 3 "foo") Integer) -Integer]
         
@@ -784,7 +784,7 @@
         (tc-e (or (string->number "7") 7) 
               #:ret (ret -Number -true-filter))
         [tc-e (let ([x 1]) (if x x (add1 x))) 
-              #:ret (ret -Pos (-FS -top -top))]
+              #:ret (ret -PositiveFixnum (-FS -top -top))]
         [tc-e (let: ([x : (U (Vectorof Number) String) (vector 1 2 3)])
                 (if (vector? x) (vector-ref x 0) (string-length x)))
          -Number]
@@ -835,7 +835,10 @@
    (test-not-exn "Doesn't fail on equal types" (lambda () (check-type #'here N N))))
   (test-suite
    "tc-literal tests"
-   (tc-l 5 -ExactPositiveInteger)
+   (tc-l 5 -PositiveFixnum)
+   (tc-l -5 -NegativeFixnum)
+   (tc-l 0 -Zero)
+   (tc-l 0.0 -Flonum)
    (tc-l 5# -Flonum)
    (tc-l 5.0 -Flonum)
    (tc-l 5.1 -Flonum)
@@ -846,8 +849,8 @@
    (tc-l #f (-val #f))
    (tc-l #"foo" -Bytes)
    [tc-l () (-val null)]
-   [tc-l (3 . 4) (-pair -Pos -Pos)]
-   [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -Pos -Pos)])
+   [tc-l (3 . 4) (-pair -PositiveFixnum -PositiveFixnum)]
+   [tc-l #hash((1 . 2) (3 . 4)) (make-Hashtable -PositiveFixnum -PositiveFixnum)])
   ))
 
 
