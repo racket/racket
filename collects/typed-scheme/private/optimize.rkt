@@ -12,18 +12,20 @@
                     [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
            #:with opt #'e.opt))
 
+(define-syntax-class int-opt-expr
+  (pattern e:opt-expr
+           #:when (match (type-of #'e)
+                    [(tc-result1: (== -Integer (lambda (x y) (subtype y x)))) #t] [_ #f])
+           #:with opt #'e.opt))
+
 ;; if the result of an operation is of type float, its non float arguments
 ;; can be promoted, and we can use unsafe float operations
 ;; note: none of the unary operations have types where non-float arguments
 ;;  can result in float (as opposed to real) results
 (define-syntax-class float-arg-expr
-  (pattern e:opt-expr
-           #:when (match (type-of #'e)
-                    [(tc-result1: (== -Integer (lambda (x y) (subtype y x)))) #t] [_ #f])
+  (pattern e:int-opt-expr
            #:with opt #'(->fl e.opt))
-  (pattern e:opt-expr
-           #:when (match (type-of #'e)
-                    [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
+  (pattern e:float-opt-expr
            #:with opt #'e.opt))
 
 (define (mk-float-tbl generic)
@@ -98,19 +100,27 @@
                   (for/fold ([o #'f1.opt])
                       ([e (syntax->list #'(f2.opt fs.opt ...))])
                     #`(op.unsafe #,o #,e))))
+
+  ;; we can optimize exact->inexact if we know we're giving it an Integer
+  (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-opt-expr)
+           #:with opt
+           (begin (log-optimization "int to float" #'op)
+                  #'(->fl n.opt)))
+
   (pattern (#%plain-app op:pair-unary-op p:pair-opt-expr)
            #:with opt
            (begin (log-optimization "unary pair" #'op)
                   #'(op.unsafe p.opt)))
+
   ;; we can optimize vector-length on all vectors.
   ;; since the program typechecked, we know the arg is a vector.
   ;; we can optimize no matter what.
-  (pattern (#%plain-app (~literal vector-length) v:opt-expr)
+  (pattern (#%plain-app (~and op (~literal vector-length)) v:opt-expr)
            #:with opt
            (begin (log-optimization "vector" #'op)
                   #'(unsafe-vector*-length v.opt)))
   ;; same for flvector-length
-  (pattern (#%plain-app (~literal flvector-length) v:opt-expr)
+  (pattern (#%plain-app (~and op (~literal flvector-length)) v:opt-expr)
            #:with opt
            (begin (log-optimization "flvector" #'op)
                   #'(unsafe-flvector-length v.opt)))
