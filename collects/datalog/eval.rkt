@@ -1,6 +1,6 @@
 #lang racket
 (require racket/list
-         (except-in (planet dherman/pprint:4) empty)
+         "private/pprint.rkt"
          "ast.rkt"
          "pretty.rkt"
          "runtime.rkt")

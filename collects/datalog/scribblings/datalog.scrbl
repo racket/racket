@@ -3,8 +3,7 @@
           scribble/eval
           scribble/basic
           scribble/bnf
-          (for-label (planet dherman/pprint:4)
-                     racket/base
+          (for-label racket/base
                      racket/contract
                      "../main.rkt")
           "utils.rkt")
@@ -26,7 +25,7 @@ on tabling intermediate results ensures that all queries terminate.
 
 The easiest way to get started using Datalog for PLT Scheme is with the main module:
 
-@defmodule/this-package[]
+@defmodule[datalog]
 
 This module provides everything in the entire package. Subsequent sections of this
 manual describe the functionality of the individual libraries included, which can also be
@@ -47,7 +46,6 @@ parent(ebbon, bob).
 ancestor(A, B)?
 END
             )
-          (require (planet dherman/pprint))
           (pretty-print
            (format-program
             (parse-program
@@ -68,7 +66,7 @@ the REPL.
 
 Datalog is also available as a module language. This can be used by beginning a Datalog source file with the line:
 
-@(racket #,(hash-lang) planet #,(this-package-version-symbol))
+@defmodulelang[datalog]
 
 You can omit the PLaneT version numbers if you prefer. Programs without the version number
 do not need to be updated when this PLaneT package is upgraded. However, it is then the
@@ -176,7 +174,7 @@ Unlike Prolog, the order in which clauses are asserted is irrelevant. All querie
 
 This library provides the structures that represent Datalog syntax. It can be required via:
 
-@defmodule/this-package[ast]
+@defmodule[datalog/ast]
 
 @defthing[srcloc/c contract?]{
  Contract for the third argument to @racket[datum->syntax].
@@ -327,7 +325,7 @@ This library provides the structures that represent Datalog syntax. It can be re
 
 This library provides facilities for parsing Datalog source. It can be required via:
 
-@defmodule/this-package[parse]
+@defmodule[datalog/parse]
 
 @subsection{Datalog Syntax}
 
@@ -488,7 +486,7 @@ The following BNF describes the syntax of Datalog.
 
 This package recognizes an alternative, Scheme-like front-end syntax for Datalog. It can be required via:
 
-@defmodule/this-package[sexp]
+@defmodule[datalog/sexp]
 
 @subsection{Parenthetical Datalog Syntax}
 
@@ -544,13 +542,7 @@ This package recognizes an alternative, Scheme-like front-end syntax for Datalog
 
 This library provides facilities for pretty-printing Datalog source. It can be required via:
 
-@defmodule/this-package[pretty]
-
-This library depends on the @tt{pprint} PLaneT package, which can be required via:
-
-@racketblock[(require (planet dherman/pprint:4))]
-
-See the documentation for @tt{pprint} for information on how to use it.
+@defmodule[datalog/pretty]
 
 @defproc[(format-datum [d datum/c])
          doc?]{
@@ -734,7 +726,7 @@ See the documentation for @tt{pprint} for information on how to use it.
 
 This library implements the Datalog runtime system. It can be required via:
 
-@defmodule/this-package[runtime]
+@defmodule[datalog/runtime]
 
 @defthing[theory/c contract?]{
  A contract for @deftech{theories}.
@@ -837,7 +829,7 @@ This library implements the Datalog runtime system. It can be required via:
 
 This library provides facilities for evaluating Datalog. It can be required via:
 
-@defmodule/this-package[eval]
+@defmodule[datalog/eval]
 
 @defthing[current-theory (parameter/c mutable-theory/c)]{
  The @tech{theory} used by @racket[eval-program] and @racket[eval-stmt].

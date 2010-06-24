@@ -1,0 +1,23 @@
+#lang racket
+(provide (all-defined-out))
+
+(define (pretty-print s) (display s) (newline))
+(define (pretty-format s) s)
+
+(define (text s) s)
+(define (h-append . ss) (apply string-append ss))
+(define (v-concat/s ss)
+  (apply string-append (add-between ss "\n")))
+(define (v-concat ss)
+  (v-concat/s ss))
+(define (apply-infix d ds)
+  (add-between ds d))
+(define line "\n")
+(define comma ",")
+(define space " ")
+(define lparen "(")
+(define rparen ")")
+(define dot ".")
+(define (nest n d) d)
+(define char string)
+(define doc? string?)

@@ -2,8 +2,7 @@
 (require (for-syntax racket/base
                      "../private/compiler.rkt")
          "../pretty.rkt"
-         (only-in (planet dherman/pprint:4)
-                  pretty-print))
+         "../private/pprint.rkt")
 
 (define (print-result value)
   (if (void? value)

@@ -1,5 +1,5 @@
 #lang racket
-(require (planet dherman/pprint:4)
+(require "private/pprint.rkt"
          "ast.rkt")
 
 (define (format-datum s)

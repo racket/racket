@@ -12,8 +12,7 @@
          "../pretty.rkt"
          "../eval.rkt"
          "../runtime.rkt"
-         (only-in (planet dherman/pprint:4)
-                  pretty-print)
+         "../private/pprint.rkt"
          (for-template "../lang/lang.rkt"))
 (provide tool@)
 

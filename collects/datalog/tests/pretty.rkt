@@ -1,6 +1,6 @@
 #lang racket
 (require rackunit
-         (planet dherman/pprint:4)
+         "../private/pprint.rkt"
          "../parse.rkt"
          "../pretty.rkt")
 (provide pretty-tests)
