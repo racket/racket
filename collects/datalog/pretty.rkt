@@ -27,7 +27,7 @@
     [(struct literal (_ pred terms))
      (h-append (format-datum pred)
                lparen
-               (v-concat/s (apply-infix comma (map format-term terms)))
+               (v-concat/s (apply-infix ", " (map format-term terms)))
                rparen)]))
 (define (format-literals ls)
   (v-concat
@@ -40,8 +40,8 @@
       (format-literal (clause-head c))
       (nest 4
             (v-concat/s
-             (list* (h-append (format-literal (clause-head c)) space (text ":-"))
-                    (apply-infix comma (map format-literal (clause-body c))))))))
+             (list* (h-append (format-literal (clause-head c)) space (text ":-") space)
+                    (apply-infix ", " (map format-literal (clause-body c))))))))
 (define (format-assertion a)
   (h-append (format-clause (assertion-clause a))
             dot))
