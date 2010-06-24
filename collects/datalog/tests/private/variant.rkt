@@ -1,8 +1,8 @@
-#lang scheme
-(require schemeunit
-         "../../ast.ss"
-         "../../private/variant.ss")
-(require/expose "../../private/variant.ss" (variant-terms variant-term variant-var variant? term-hash mk-literal-hash))
+#lang racket
+(require racketunit
+         "../../ast.rkt"
+         "../../private/variant.rkt")
+(require/expose "../../private/variant.rkt" (variant-terms variant-term variant-var variant? term-hash mk-literal-hash))
 
 (provide variant-tests)
 

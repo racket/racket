@@ -1,4 +1,4 @@
-#lang scheme
+#lang racket
 
 (define srcloc/c
   (or/c syntax?

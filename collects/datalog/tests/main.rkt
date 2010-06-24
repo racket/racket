@@ -1,23 +1,23 @@
-#lang scheme
-(require schemeunit
-         schemeunit/text-ui
-         "ast.ss"
+#lang racket
+(require racketunit
+         racketunit/text-ui
+         "ast.rkt"
          
-         "private/lex.ss"
-         "drscheme/syntax-color.ss"
-         "parse.ss"
-         "sexp.ss"
+         "private/lex.rkt"
+         "tool/syntax-color.rkt"
+         "parse.rkt"
+         "sexp.rkt"
          
-         "pretty.ss"
+         "pretty.rkt"
          
-         "private/env.ss"
-         "private/subst.ss"
-         "private/unify.ss"
-         "private/variant.ss"
+         "private/env.rkt"
+         "private/subst.rkt"
+         "private/unify.rkt"
+         "private/variant.rkt"
          
-         "runtime.ss"
-         "eval.ss"         
-         "private/compiler.ss")
+         "runtime.rkt"
+         "eval.rkt"         
+         "private/compiler.rkt")
 
 (run-tests
  (test-suite

@@ -1,6 +1,6 @@
-#lang scheme
+#lang racket
 (require (planet dherman/pprint:4)
-         "ast.ss")
+         "ast.rkt")
 
 (define (format-datum s)
   (cond

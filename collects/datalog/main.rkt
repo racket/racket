@@ -1,13 +1,13 @@
-#lang scheme
-(require "ast.ss"
-         "parse.ss"
-         "sexp.ss"
-         "pretty.ss"
-         "runtime.ss"
-         "eval.ss")
-(provide (all-from-out "ast.ss"
-                       "parse.ss"
-                       "sexp.ss"
-                       "pretty.ss"
-                       "runtime.ss"
-                       "eval.ss"))
+#lang racket
+(require "ast.rkt"
+         "parse.rkt"
+         "sexp.rkt"
+         "pretty.rkt"
+         "runtime.rkt"
+         "eval.rkt")
+(provide (all-from-out "ast.rkt"
+                       "parse.rkt"
+                       "sexp.rkt"
+                       "pretty.rkt"
+                       "runtime.rkt"
+                       "eval.rkt"))

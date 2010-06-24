@@ -3,16 +3,14 @@
           scribble/eval
           scribble/basic
           scribble/bnf
-          (planet cce/scheme:6/planet)
-          (planet cce/scheme:6/scribble)
           (for-label (planet dherman/pprint:4)
-                     scheme/base
-                     scheme/contract
-                     "../main.ss")
-          "utils.ss")
+                     racket/base
+                     racket/contract
+                     "../main.rkt")
+          "utils.rkt")
 
 @title[#:tag "top"]{@bold{Datalog} for PLT Scheme}
-@author[(author+email "Jay McCarthy" "jay@plt-scheme.org")]
+@author[(author+email "Jay McCarthy" "jay@racket-lang.org")]
 
 This package contains a lightweight deductive database system. Queries and database updates are expressed
 using @link["http://en.wikipedia.org/wiki/Datalog"]{Datalog}---a declarative logic language in which each
@@ -70,7 +68,7 @@ the REPL.
 
 Datalog is also available as a module language. This can be used by beginning a Datalog source file with the line:
 
-@(scheme #,(hash-lang) planet #,(this-package-version-symbol))
+@(racket #,(hash-lang) planet #,(this-package-version-symbol))
 
 You can omit the PLaneT version numbers if you prefer. Programs without the version number
 do not need to be updated when this PLaneT package is upgraded. However, it is then the
@@ -83,61 +81,61 @@ Start DrScheme and choose the @tt{Datalog} language from DrScheme's
 @tt{Language} menu under @tt{Experimental Languages}. Click @onscreen{Run}, then
 click in the REPL.
 
-@schemeinput[]
+@racketinput[]
 
 @tech{Facts} are stored in tables. If the name of the table is @litchar["parent"], and 
 @litchar["john"] is the parent of @litchar["douglas"], store the fact in the database with
 this:
 
-@schemeinput[#,(tt "parent(john, douglas).")]
+@racketinput[#,(tt "parent(john, douglas).")]
 
 Each item in the parenthesized list following the name of the table is called a @tech{term}.
-A term can be either a logical @scheme[variable] or a @scheme[constant].
+A term can be either a logical @racket[variable] or a @racket[constant].
 Thus far, all the terms shown have been constant terms.
 
 A query can be used to see if a particular row is in a table. Type this to see if @litchar["john"]
 is the parent of @litchar["douglas"]:
 
-@schemeinput[#,(tt "parent(john, douglas)?")]
-@schemeblock[#,(schemeresultfont (tt "parent(john, douglas)."))]
+@racketinput[#,(tt "parent(john, douglas)?")]
+@racketblock[#,(racketresultfont (tt "parent(john, douglas)."))]
 
 Type this to see if @litchar["john"] is the parent of @litchar["ebbon"]:
 
-@schemeinput[#,(tt "parent(john, ebbon)?")]
+@racketinput[#,(tt "parent(john, ebbon)?")]
 
 The query produced no results because @litchar["john"] is not the parent of @litchar["ebbon"]. Let's add more rows.
 
-@schemeinput[#,(tt "parent(bob, john).")]
-@schemeinput[#,(tt "parent(ebbon, bob).")]
+@racketinput[#,(tt "parent(bob, john).")]
+@racketinput[#,(tt "parent(ebbon, bob).")]
 
 Type the following to list all rows in the @litchar["parent"] table:
 
-@schemeinput[#,(tt "parent(A, B)?")]
-@schemeblock[#,(schemeresultfont (tt "parent(john, douglas)."))]
-@schemeblock[#,(schemeresultfont (tt "parent(bob, john)."))]
-@schemeblock[#,(schemeresultfont (tt "parent(ebbon, bob)."))]
+@racketinput[#,(tt "parent(A, B)?")]
+@racketblock[#,(racketresultfont (tt "parent(john, douglas)."))]
+@racketblock[#,(racketresultfont (tt "parent(bob, john)."))]
+@racketblock[#,(racketresultfont (tt "parent(ebbon, bob)."))]
 
 Type the following to list all the children of @litchar["john"]:
 
-@schemeinput[#,(tt "parent(john, B)?")]
-@schemeblock[#,(schemeresultfont (tt "parent(john, douglas)."))]
+@racketinput[#,(tt "parent(john, B)?")]
+@racketblock[#,(racketresultfont (tt "parent(john, douglas)."))]
 
 A term that begins with a capital letter is a logical variable.When producing a set of answers, the
 Datalog interpreter lists all rows that match the query when each variable in the query is substituted
 for a constant. The following example produces no answers, as there are no substitutions for the variable
 @litchar["A"] that produce a fact in the database. This is because no one is the parent of oneself.
 
-@schemeinput[#,(tt "parent(A, A)?")]
+@racketinput[#,(tt "parent(A, A)?")]
 
 A deductive database can use rules of inference to derive new facts. Consider the following rule:
 
-@schemeinput[#,(tt "ancestor(A, B) :- parent(A, B).")]
+@racketinput[#,(tt "ancestor(A, B) :- parent(A, B).")]
 
 The rule says that if A is the parent of B, then A is an ancestor of B.
 The other rule defining an ancestor says that if A is the parent of C,
 C is an ancestor of B, then A is an ancestor of B.
 
-@schemeinput[#,(tt "ancestor(A, B) :-")
+@racketinput[#,(tt "ancestor(A, B) :-")
              #,(tt "  parent(A, C),")
              #,(tt "  ancestor(C, B).")]
 
@@ -145,34 +143,34 @@ In the interpreter, DrScheme knows that the clause is not complete, so by pressi
 
 Rules are used to answer queries just as is done for facts.
 
-@schemeinput[#,(tt "ancestor(A, B)?")]
-@schemeblock[#,(schemeresultfont (tt "ancestor(ebbon, bob)."))]
-@schemeblock[#,(schemeresultfont (tt "ancestor(bob, john)."))]
-@schemeblock[#,(schemeresultfont (tt "ancestor(john, douglas)."))]
-@schemeblock[#,(schemeresultfont (tt "ancestor(bob, douglas)."))]
-@schemeblock[#,(schemeresultfont (tt "ancestor(ebbon, john)."))]
-@schemeblock[#,(schemeresultfont (tt "ancestor(ebbon, douglas)."))]
-@schemeinput[#,(tt "ancestor(X,john)?")]
-@schemeblock[#,(schemeresultfont (tt "ancestor(bob, john)."))]
-@schemeblock[#,(schemeresultfont (tt "ancestor(ebbon, john)."))]
+@racketinput[#,(tt "ancestor(A, B)?")]
+@racketblock[#,(racketresultfont (tt "ancestor(ebbon, bob)."))]
+@racketblock[#,(racketresultfont (tt "ancestor(bob, john)."))]
+@racketblock[#,(racketresultfont (tt "ancestor(john, douglas)."))]
+@racketblock[#,(racketresultfont (tt "ancestor(bob, douglas)."))]
+@racketblock[#,(racketresultfont (tt "ancestor(ebbon, john)."))]
+@racketblock[#,(racketresultfont (tt "ancestor(ebbon, douglas)."))]
+@racketinput[#,(tt "ancestor(X,john)?")]
+@racketblock[#,(racketresultfont (tt "ancestor(bob, john)."))]
+@racketblock[#,(racketresultfont (tt "ancestor(ebbon, john)."))]
 
 A fact or a rule can be retracted from the database using tilde syntax:
 
-@schemeinput[#,(tt "parent(bob, john)~")]
-@schemeinput[#,(tt "parent(A, B)?")]
-@schemeblock[#,(schemeresultfont (tt "parent(john, douglas)."))]
-@schemeblock[#,(schemeresultfont (tt "parent(ebbon, bob)."))]
-@schemeinput[#,(tt "ancestor(A, B)?")]
-@schemeblock[#,(schemeresultfont (tt "ancestor(ebbon, bob)."))]
-@schemeblock[#,(schemeresultfont (tt "ancestor(john, douglas)."))]
+@racketinput[#,(tt "parent(bob, john)~")]
+@racketinput[#,(tt "parent(A, B)?")]
+@racketblock[#,(racketresultfont (tt "parent(john, douglas)."))]
+@racketblock[#,(racketresultfont (tt "parent(ebbon, bob)."))]
+@racketinput[#,(tt "ancestor(A, B)?")]
+@racketblock[#,(racketresultfont (tt "ancestor(ebbon, bob)."))]
+@racketblock[#,(racketresultfont (tt "ancestor(john, douglas)."))]
 
 Unlike Prolog, the order in which clauses are asserted is irrelevant. All queries terminate, and every possible answer is derived.
 
-@schemeinput[#,(tt "q(X) :- p(X).")]
-@schemeinput[#,(tt "q(a).")]
-@schemeinput[#,(tt "p(X) :- q(X).")]
-@schemeinput[#,(tt "q(X)?")]
-@schemeblock[#,(schemeresultfont (tt "q(a)."))]
+@racketinput[#,(tt "q(X) :- p(X).")]
+@racketinput[#,(tt "q(a).")]
+@racketinput[#,(tt "p(X) :- q(X).")]
+@racketinput[#,(tt "q(X)?")]
+@racketblock[#,(racketresultfont (tt "q(a)."))]
 
 @section{Abstract Syntax}
 
@@ -181,10 +179,10 @@ This library provides the structures that represent Datalog syntax. It can be re
 @defmodule/this-package[ast]
 
 @defthing[srcloc/c contract?]{
- Contract for the third argument to @scheme[datum->syntax].
+ Contract for the third argument to @racket[datum->syntax].
  
  Equivalent to
- @schemeblock[
+ @racketblock[
  (or/c syntax?
        false/c
        (list/c any/c
@@ -197,12 +195,12 @@ This library provides the structures that represent Datalog syntax. It can be re
 
 @defthing[datum/c contract?]{
  Contract for @deftech{datum}s.
- Equivalent to @scheme[(or/c string? symbol?)].
+ Equivalent to @racket[(or/c string? symbol?)].
 }
 
 @defproc[(datum-equal? [d1 datum/c] [d2 datum/c])
          boolean?]{
- Equivalent to @scheme[(equal? d1 d2)].
+ Equivalent to @racket[(equal? d1 d2)].
             
  @examples[#:eval the-eval
            (datum-equal? 'sym1 'sym2)
@@ -220,7 +218,7 @@ This library provides the structures that represent Datalog syntax. It can be re
                                       
 @defproc[(variable-equal? [v1 variable?] [v2 variable?])
          boolean?]{
- Equivalent to @scheme[(equal? v1 v2)] modulo source location.
+ Equivalent to @racket[(equal? v1 v2)] modulo source location.
             
  @examples[#:eval the-eval
            (variable-equal? (make-variable #f 'sym) 
@@ -238,7 +236,7 @@ This library provides the structures that represent Datalog syntax. It can be re
                                       
 @defproc[(constant-equal? [c1 constant?] [c2 constant?])
          boolean?]{
- Equivalent to @scheme[(equal? c1 c2)] modulo source location.
+ Equivalent to @racket[(equal? c1 c2)] modulo source location.
             
  @examples[#:eval the-eval
            (constant-equal? (make-constant #f 'sym)
@@ -248,12 +246,12 @@ This library provides the structures that represent Datalog syntax. It can be re
 }
                                       
 @defthing[term/c contract?]{
- Contract for @deftech{term}s. Equivalent to @scheme[(or/c variable? constant?)].
+ Contract for @deftech{term}s. Equivalent to @racket[(or/c variable? constant?)].
 }
 
 @defproc[(term-equal? [t1 term/c] [t2 term/c])
          boolean?]{
- Equivalent to @scheme[(equal? t1 t2)] modulo source location.
+ Equivalent to @racket[(equal? t1 t2)] modulo source location.
             
  @examples[#:eval the-eval
            (term-equal? (make-constant #f 'sym) (make-constant #'sym 'sym))
@@ -268,7 +266,7 @@ This library provides the structures that represent Datalog syntax. It can be re
                                              
 @defproc[(literal-equal? [l1 literal?] [l2 literal?])
          boolean?]{
- Equivalent to @scheme[(equal? l1 l2)] modulo source location.
+ Equivalent to @racket[(equal? l1 l2)] modulo source location.
 
  @examples[#:eval the-eval
   (literal-equal? (make-literal #f 'ancestor (list))
@@ -288,7 +286,7 @@ This library provides the structures that represent Datalog syntax. It can be re
                                              
 @defproc[(clause-equal? [c1 clause?] [c2 clause?])
          boolean?]{
- Equivalent to @scheme[(equal? c1 c2)] modulo source location.
+ Equivalent to @racket[(equal? c1 c2)] modulo source location.
             
  @examples[#:eval the-eval
   (clause-equal? 
@@ -317,12 +315,12 @@ This library provides the structures that represent Datalog syntax. It can be re
 
 @defthing[statement/c contract?]{
  Contract for @deftech{statement}s.
- Equivalent to @scheme[(or/c assertion? retraction? query?)].
+ Equivalent to @racket[(or/c assertion? retraction? query?)].
 }
 
 @defthing[program/c contract?]{
  Contract for @deftech{program}s.
- Equivalent to @scheme[(listof statement/c)].
+ Equivalent to @racket[(listof statement/c)].
 }
                                  
 @section{Lexing and Parsing}
@@ -432,7 +430,7 @@ The following BNF describes the syntax of Datalog.
 
 @defproc[(parse-literal [ip input-port?])
          literal?]{
- Parses a @scheme[literal] from @scheme[ip].
+ Parses a @racket[literal] from @racket[ip].
         
  @examples[#:eval the-eval
   (parse-literal (open-input-string "parent(john,douglas)"))
@@ -445,7 +443,7 @@ The following BNF describes the syntax of Datalog.
                   
 @defproc[(parse-clause [ip input-port?])
          clause?]{
- Parses a @scheme[clause] from @scheme[ip].
+ Parses a @racket[clause] from @racket[ip].
         
  @examples[#:eval the-eval
   (parse-clause
@@ -460,7 +458,7 @@ The following BNF describes the syntax of Datalog.
                  
 @defproc[(parse-statement [ip input-port?])
          statement/c]{
- Parses a @tech{statement} from @scheme[ip].
+ Parses a @tech{statement} from @racket[ip].
         
  @examples[#:eval the-eval
   (parse-statement
@@ -473,7 +471,7 @@ The following BNF describes the syntax of Datalog.
                      
 @defproc[(parse-program [ip input-port?])
          program/c]{
- Parses a @tech{program} from @scheme[ip].
+ Parses a @tech{program} from @racket[ip].
         
  @examples[#:eval the-eval
   (parse-program
@@ -494,7 +492,7 @@ This package recognizes an alternative, Scheme-like front-end syntax for Datalog
 
 @subsection{Parenthetical Datalog Syntax}
 
-@schemegrammar*[
+@racketgrammar*[
  #:literals (:- ! ~ ?)
  [program (begin statement ...)]
  [statement assertion
@@ -517,30 +515,30 @@ This package recognizes an alternative, Scheme-like front-end syntax for Datalog
 
 @defproc[(stx->term [stx syntax?])
          term/c]{
- Parses @scheme[stx] as a @tech{term}.
+ Parses @racket[stx] as a @tech{term}.
 }
 @defproc[(stx->literal [stx syntax?])
          literal?]{
- Parses @scheme[stx] as a @scheme[literal].
+ Parses @racket[stx] as a @racket[literal].
 }
 @defproc[(stx->clause [stx syntax?])
          clause?]{
- Parses @scheme[stx] as a @scheme[clause].
+ Parses @racket[stx] as a @racket[clause].
 }
 @defproc[(stx->statement [stx syntax?])
          statement/c]{
- Parses @scheme[stx] as a @tech{statement}.
+ Parses @racket[stx] as a @tech{statement}.
 }
 @defproc[(stx->program [stx syntax?])
          program/c]{
- Parses @scheme[stx] as a @tech{program}.
+ Parses @racket[stx] as a @tech{program}.
 }
                 
-@defproc[(sexp->term [sexp sexpr?]) term/c]{@scheme[stx->term] composed with @scheme[datum->syntax].}
-@defproc[(sexp->literal [sexp sexpr?]) literal?]{@scheme[stx->literal] composed with @scheme[datum->syntax].}
-@defproc[(sexp->clause [sexp sexpr?]) clause?]{@scheme[stx->clause] composed with @scheme[datum->syntax].}
-@defproc[(sexp->statement [sexp sexpr?]) statement/c]{@scheme[stx->statement] composed with @scheme[datum->syntax].}
-@defproc[(sexp->program [sexp sexpr?]) program/c]{@scheme[stx->program] composed with @scheme[datum->syntax].}
+@defproc[(sexp->term [sexp sexpr?]) term/c]{@racket[stx->term] composed with @racket[datum->syntax].}
+@defproc[(sexp->literal [sexp sexpr?]) literal?]{@racket[stx->literal] composed with @racket[datum->syntax].}
+@defproc[(sexp->clause [sexp sexpr?]) clause?]{@racket[stx->clause] composed with @racket[datum->syntax].}
+@defproc[(sexp->statement [sexp sexpr?]) statement/c]{@racket[stx->statement] composed with @racket[datum->syntax].}
+@defproc[(sexp->program [sexp sexpr?]) program/c]{@racket[stx->program] composed with @racket[datum->syntax].}
 
 @section{Pretty-Printing}
 
@@ -550,7 +548,7 @@ This library provides facilities for pretty-printing Datalog source. It can be r
 
 This library depends on the @tt{pprint} PLaneT package, which can be required via:
 
-@schemeblock[(require (planet dherman/pprint:4))]
+@racketblock[(require (planet dherman/pprint:4))]
 
 See the documentation for @tt{pprint} for information on how to use it.
 
@@ -565,7 +563,7 @@ See the documentation for @tt{pprint} for information on how to use it.
               
 @defproc[(format-variable [v variable?])
          doc?]{
- Formats a @scheme[variable].
+ Formats a @racket[variable].
          
  @examples[#:eval the-eval
   (pretty-print (format-variable (make-variable #f 'Ancestor)))]
@@ -573,7 +571,7 @@ See the documentation for @tt{pprint} for information on how to use it.
 
 @defproc[(format-constant [c constant?])
          doc?]{
- Formats a @scheme[constant].
+ Formats a @racket[constant].
 
  @examples[#:eval the-eval
   (pretty-print (format-constant (make-constant #f 'joseph)))
@@ -592,7 +590,7 @@ See the documentation for @tt{pprint} for information on how to use it.
 
 @defproc[(format-literal [l literal?])
          doc?]{
- Formats a @scheme[literal].
+ Formats a @racket[literal].
          
  @examples[#:eval the-eval
   (pretty-print (format-literal (make-literal #f 'true (list))))
@@ -608,7 +606,7 @@ See the documentation for @tt{pprint} for information on how to use it.
               
 @defproc[(format-literals [ls (listof literal?)])
          doc?]{
- Formats a list of @scheme[literal]s as @scheme[assertion]s for formatting @scheme[prove] results.
+ Formats a list of @racket[literal]s as @racket[assertion]s for formatting @racket[prove] results.
          
  @examples[#:eval the-eval
   (pretty-print 
@@ -623,7 +621,7 @@ See the documentation for @tt{pprint} for information on how to use it.
 
 @defproc[(format-clause [c clause?])
          doc?]{
- Formats a @scheme[clause].
+ Formats a @racket[clause].
          
  @examples[#:eval the-eval
   (pretty-print
@@ -658,7 +656,7 @@ See the documentation for @tt{pprint} for information on how to use it.
               
 @defproc[(format-assertion [a assertion?])
          doc?]{
- Formats a @scheme[assertion].
+ Formats a @racket[assertion].
 
  @examples[#:eval the-eval
   (pretty-print
@@ -673,7 +671,7 @@ See the documentation for @tt{pprint} for information on how to use it.
 
 @defproc[(format-retraction [r retraction?])
          doc?]{
- Formats a @scheme[retraction].
+ Formats a @racket[retraction].
 
  @examples[#:eval the-eval
   (pretty-print
@@ -688,7 +686,7 @@ See the documentation for @tt{pprint} for information on how to use it.
               
 @defproc[(format-query [q query?])
          doc?]{
- Formats a @scheme[query].
+ Formats a @racket[query].
 
  @examples[#:eval the-eval
   (pretty-print
@@ -762,8 +760,8 @@ This library implements the Datalog runtime system. It can be required via:
                           
 @defproc[(safe-clause? [c clause?])
          boolean?]{
- Determines if a @scheme[clause] is safe.
- A @scheme[clause] is safe if every @scheme[variable] in its head occurs in some @scheme[literal] in its body.
+ Determines if a @racket[clause] is safe.
+ A @racket[clause] is safe if every @racket[variable] in its head occurs in some @racket[literal] in its body.
  
  @examples[#:eval the-eval
   (safe-clause? 
@@ -779,31 +777,31 @@ This library implements the Datalog runtime system. It can be required via:
 @defproc[(assume [thy immutable-theory/c]
                  [c safe-clause?])
          immutable-theory/c]{
- Adds @scheme[c] to @scheme[thy] in a persistent way.
+ Adds @racket[c] to @racket[thy] in a persistent way.
 }
 
 @defproc[(retract [thy immutable-theory/c]
                   [c clause?])
          immutable-theory/c]{
- Removes @scheme[c] from @scheme[thy] in a persistent way.
+ Removes @racket[c] from @racket[thy] in a persistent way.
 }
 
 @defproc[(assume! [thy mutable-theory/c]
                   [c safe-clause?])
          mutable-theory/c]{
- Adds @scheme[c] to @scheme[thy].
+ Adds @racket[c] to @racket[thy].
 }
 
 @defproc[(retract! [thy mutable-theory/c]
                    [c clause?])
          mutable-theory/c]{
- Removes @scheme[c] from @scheme[thy].
+ Removes @racket[c] from @racket[thy].
 }
 
 @defproc[(prove [thy theory/c]
                 [l literal?])
          (listof literal?)]{
- Attempts to prove @scheme[l] using the @tech{theory} @scheme[thy], returning all
+ Attempts to prove @racket[l] using the @tech{theory} @racket[thy], returning all
  the results of the query.
  
  @examples[#:eval the-eval
@@ -842,14 +840,14 @@ This library provides facilities for evaluating Datalog. It can be required via:
 @defmodule/this-package[eval]
 
 @defthing[current-theory (parameter/c mutable-theory/c)]{
- The @tech{theory} used by @scheme[eval-program] and @scheme[eval-stmt].
+ The @tech{theory} used by @racket[eval-program] and @racket[eval-stmt].
 }
 
 @defproc[(eval-program [p program/c])
          void]{
- Evaluates @scheme[p] using @scheme[(current-theory)] as the @tech{theory}, printing query answers as it goes.
+ Evaluates @racket[p] using @racket[(current-theory)] as the @tech{theory}, printing query answers as it goes.
            
- This will raise a syntax error if given an @scheme[assertion] of a @scheme[clause] that is not a @scheme[safe-clause?].
+ This will raise a syntax error if given an @racket[assertion] of a @racket[clause] that is not a @racket[safe-clause?].
  
  @examples[#:eval the-eval
   (parameterize ([current-theory (make-mutable-theory)])
@@ -869,9 +867,9 @@ This library provides facilities for evaluating Datalog. It can be required via:
               
 @defproc[(eval-statement [s statement/c])
          (or/c void (listof literal?))]{
- Evaluates @scheme[s] using @scheme[(current-theory)] as the @tech{theory}.
+ Evaluates @racket[s] using @racket[(current-theory)] as the @tech{theory}.
            
- This will raise a syntax error if given an @scheme[assertion] of a @scheme[clause] that is not a @scheme[safe-clause?].
+ This will raise a syntax error if given an @racket[assertion] of a @racket[clause] that is not a @racket[safe-clause?].
 
  @examples[#:eval the-eval
   (parameterize ([current-theory (make-mutable-theory)])
@@ -895,9 +893,9 @@ This library provides facilities for evaluating Datalog. It can be required via:
                                        
 @defproc[(eval-program/fresh [p program/c])
          immutable-theory/c]{
- Evaluates @scheme[p] in a fresh @tech{theory} and returns the final @tech{theory}, printing query answers as it goes.
+ Evaluates @racket[p] in a fresh @tech{theory} and returns the final @tech{theory}, printing query answers as it goes.
 
- This will raise a syntax error if given an @scheme[assertion] of a @scheme[clause] that is not a @scheme[safe-clause?].
+ This will raise a syntax error if given an @racket[assertion] of a @racket[clause] that is not a @racket[safe-clause?].
 
  @examples[#:eval the-eval
   (void
@@ -919,7 +917,7 @@ This library provides facilities for evaluating Datalog. It can be required via:
 
 @section{Acknowledgments}
 
-This package is based on Dave Herman's @schememodname[(planet dherman/javascript)] library and
+This package is based on Dave Herman's @racketmodname[(planet dherman/javascript)] library and
 John Ramsdell's @link["http://www.ccs.neu.edu/home/ramsdell/tools/datalog/datalog.html"]{Datalog library}. 
 
 The package uses the tabled logic programming algorithm described in

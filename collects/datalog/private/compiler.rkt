@@ -1,9 +1,9 @@
-#lang scheme/base
-(require scheme/contract
-         "../ast.ss"
-         (for-syntax scheme/base))
-(require (for-template scheme/base
-                       "../eval.ss"))
+#lang racket/base
+(require racket/contract
+         "../ast.rkt"
+         (for-syntax racket/base))
+(require (for-template racket/base
+                       "../eval.rkt"))
 
 (define (compile-module asts)
   (with-syntax ([(s ...) asts])

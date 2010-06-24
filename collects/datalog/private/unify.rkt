@@ -1,6 +1,6 @@
-#lang scheme
-(require "../ast.ss"
-         "env.ss")
+#lang racket
+(require "../ast.rkt"
+         "env.rkt")
 
 (define (chase env t)
   (match t

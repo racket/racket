@@ -1,8 +1,8 @@
-#lang scheme
+#lang racket
 (require parser-tools/lex
          parser-tools/yacc
-         "private/lex.ss"
-         "ast.ss")
+         "private/lex.rkt"
+         "ast.rkt")
 
 #|
 5.1 Literals

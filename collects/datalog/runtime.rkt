@@ -1,9 +1,9 @@
-#lang scheme
-(require "ast.ss"
-         "private/env.ss"
-         "private/subst.ss"
-         "private/unify.ss"
-         "private/variant.ss")
+#lang racket
+(require "ast.rkt"
+         "private/env.rkt"
+         "private/subst.rkt"
+         "private/unify.rkt"
+         "private/variant.rkt")
 
 ; A clause is safe if every variable in its head occurs in some literal in its body.
 (define (safe-clause? c)

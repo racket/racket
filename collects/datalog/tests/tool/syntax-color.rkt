@@ -1,6 +1,6 @@
-#lang scheme
-(require schemeunit
-         "../../drscheme/syntax-color.ss")
+#lang racket
+(require racketunit
+         "../../tool/syntax-color.rkt")
 
 (provide syntax-color-tests)
 

@@ -1,7 +1,7 @@
-#lang scheme/base
-(require (for-syntax scheme/base
-                     "../private/compiler.ss")
-         "../pretty.ss"
+#lang racket/base
+(require (for-syntax racket/base
+                     "../private/compiler.rkt")
+         "../pretty.rkt"
          (only-in (planet dherman/pprint:4)
                   pretty-print))
 

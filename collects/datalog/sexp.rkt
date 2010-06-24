@@ -1,5 +1,5 @@
-#lang scheme
-(require "ast.ss")
+#lang racket
+(require "ast.rkt")
 
 (define sexpr? any/c)
 

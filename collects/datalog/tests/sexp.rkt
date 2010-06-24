@@ -1,8 +1,8 @@
-#lang scheme
-(require schemeunit
-         "../ast.ss"
-         "util.ss"
-         "../sexp.ss")
+#lang racket
+(require racketunit
+         "../ast.rkt"
+         "util.rkt"
+         "../sexp.rkt")
 
 (provide sexp-tests)
 

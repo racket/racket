@@ -1,9 +1,9 @@
-#lang scheme
-(require schemeunit
-         "../../private/subst.ss"
-         "../../ast.ss"
-         "../../private/env.ss")
-(require/expose "../../private/subst.ss" (subst-literal shuffle))
+#lang racket
+(require racketunit
+         "../../private/subst.rkt"
+         "../../ast.rkt"
+         "../../private/env.rkt")
+(require/expose "../../private/subst.rkt" (subst-literal shuffle))
 
 (provide subst-tests)
 

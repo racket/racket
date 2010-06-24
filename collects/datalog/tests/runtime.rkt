@@ -1,8 +1,8 @@
-#lang scheme
-(require schemeunit
-         "../parse.ss"
-         "util.ss"
-         "../runtime.ss")
+#lang racket
+(require racketunit
+         "../parse.rkt"
+         "util.rkt"
+         "../runtime.rkt")
 
 (provide runtime-tests)
 

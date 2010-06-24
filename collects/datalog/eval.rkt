@@ -1,9 +1,9 @@
-#lang scheme
-(require scheme/list
+#lang racket
+(require racket/list
          (except-in (planet dherman/pprint:4) empty)
-         "ast.ss"
-         "pretty.ss"
-         "runtime.ss")
+         "ast.rkt"
+         "pretty.rkt"
+         "runtime.rkt")
 
 (define current-theory (make-parameter (make-mutable-theory)))
 

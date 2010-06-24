@@ -1,7 +1,7 @@
-#lang scheme
-(require schemeunit
+#lang racket
+(require racketunit
          parser-tools/lex
-         "../../private/lex.ss")
+         "../../private/lex.rkt")
 
 (provide lex-tests)
 

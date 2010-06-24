@@ -1,4 +1,4 @@
-#lang planet jaymccarthy/datalog
+#lang palsdatalog
 
 parent(john,douglas).
 parent(john,douglas)?

@@ -1,14 +1,14 @@
-#lang scheme
-(require schemeunit
-         scheme/runtime-path
-         "../parse.ss"
-         "../eval.ss")
+#lang racket
+(require racketunit
+         racket/runtime-path
+         "../parse.rkt"
+         "../eval.rkt")
 
 (provide eval-tests)
 
 (define-runtime-path examples-dir "examples")
 (define (test-example t)
-  (define test-ss (build-path examples-dir (format "~a.ss" t)))
+  (define test-ss (build-path examples-dir (format "~a.rkt" t)))
   (define test-txt (build-path examples-dir (format "~a.txt" t)))
   (test-equal? t
                (filter (lambda (l)

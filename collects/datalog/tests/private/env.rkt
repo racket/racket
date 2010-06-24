@@ -1,7 +1,7 @@
-#lang scheme
-(require schemeunit
-         "../../ast.ss"
-         "../../private/env.ss")
+#lang racket
+(require racketunit
+         "../../ast.rkt"
+         "../../private/env.rkt")
 
 (provide env-tests)
 

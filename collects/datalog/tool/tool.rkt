@@ -1,36 +1,35 @@
-#lang scheme
-(require (planet cce/scheme:6/planet))
-(require scheme/gui/base
+#lang racket
+(require racket/gui/base
          framework
-         drscheme/tool
-         scheme/match
-         scheme/unit
-         scheme/class
+         drracket/tool
+         racket/match
+         racket/unit
+         racket/class
          string-constants
-         "syntax-color.ss"
-         "../private/compiler.ss"
-         "../parse.ss"
-         "../pretty.ss"
-         "../eval.ss"
-         "../runtime.ss"
+         "syntax-color.rkt"
+         "../private/compiler.rkt"
+         "../parse.rkt"
+         "../pretty.rkt"
+         "../eval.rkt"
+         "../runtime.rkt"
          (only-in (planet dherman/pprint:4)
                   pretty-print)
-         (for-template "../lang/lang.ss"))
+         (for-template "../lang/lang.rkt"))
 (provide tool@)
 
 (define tool@
   (unit 
-    (import drscheme:tool^)
-    (export drscheme:tool-exports^)
+    (import drracket:tool^)
+    (export drracket:tool-exports^)
     
     (define (phase1) (void))    
     (define (phase2) 
-      (drscheme:language-configuration:add-language
-       (make-object ((drscheme:language:get-default-mixin)
+      (drracket:language-configuration:add-language
+       (make-object ((drracket:language:get-default-mixin)
                      (datalog-lang-mixin)))))
     
     (define (datalog-lang-mixin)
-      (class* object% (drscheme:language:language<%>)
+      (class* object% (drracket:language:language<%>)
         (define/public (default-settings) #f)
         (define/public (default-settings? x) (false? x))
         (define/public (marshall-settings x) x)
@@ -41,19 +40,19 @@
         (define/public (get-metadata-lines) #f)
         (define/public (capability-value capability)
           (case capability
-            [(drscheme:check-syntax-button) #t]
-            [(drscheme:language-menu-title) "Datalog"]
-            [(drscheme:define-popup) #f]
-            [(drscheme:special:insert-fraction) #f]
-            [(drscheme:special:insert-lambda) #f]
-            [(drscheme:special:insert-large-letters) #t]
-            [(drscheme:special:insert-image) #f]
-            [(drscheme:special:insert-comment-box) #f]
-            [(drscheme:special:insert-gui-tool) #f]
-            [(drscheme:special:slideshow-menu-item) #f]
-            [(drscheme:special:insert-text-box) #f]
-            [(drscheme:special:xml-menus) #f]
-            [else (drscheme:language:get-capability-default capability)]))
+            [(drracket:check-syntax-button) #t]
+            [(drracket:language-menu-title) "Datalog"]
+            [(drracket:define-popup) #f]
+            [(drracket:special:insert-fraction) #f]
+            [(drracket:special:insert-lambda) #f]
+            [(drracket:special:insert-large-letters) #t]
+            [(drracket:special:insert-image) #f]
+            [(drracket:special:insert-comment-box) #f]
+            [(drracket:special:insert-gui-tool) #f]
+            [(drracket:special:slideshow-menu-item) #f]
+            [(drracket:special:insert-text-box) #f]
+            [(drracket:special:xml-menus) #f]
+            [else (drracket:language:get-capability-default capability)]))
         (define/public (first-opened) (void))
         (define/public (get-comment-character) (values "%" #\*))
         (define/public (config-panel parent)
@@ -92,7 +91,7 @@
         (define/public (get-language-numbers) (list 1000 42))
         (define/public (get-teachpack-names) null)
         (define/public (on-execute settings run-in-user-thread)
-          (let ([module-forms `(planet ,(this-package-version-symbol drscheme/module-forms))]
+          (let ([module-forms `(planet ,(this-package-version-symbol drracket/module-forms))]
                 [runtime `(planet ,(this-package-version-symbol eval))]
                 [lang `(planet ,(this-package-version-symbol lang/lang))])
             (dynamic-require module-forms #f)
@@ -104,7 +103,7 @@
                   [n (current-namespace)])
               (run-in-user-thread
                (lambda ()
-                 (let ([previous-eval (drscheme:debug:make-debug-eval-handler (current-eval))])
+                 (let ([previous-eval (drracket:debug:make-debug-eval-handler (current-eval))])
                    (current-eval
                     (lambda (exp)
                       (previous-eval (if (syntax? exp)
@@ -140,7 +139,7 @@
     ;; short-sym->style-name : symbol->string
     ;; converts the short name (from the table above) into a name in the editor list
     ;; (they are added in by `color-prefs:register-color-pref', called below)
-    (define (short-sym->style-name sym) (format "datalog:syntax-colors:scheme:~a" sym))
+    (define (short-sym->style-name sym) (format "datalog:syntax-colors:racket:~a" sym))
     
     (define color-prefs-table
       `((keyword     ,(make-object color% 38 38 128)      "keyword")
@@ -192,7 +191,7 @@
     (define (delimiter-pair? x y)
       (and (char=? x #\() (char=? y #\))))
     
-    ;; repl-submit? : drscheme:rep:text<%> nat -> boolean?
+    ;; repl-submit? : drracket:rep:text<%> nat -> boolean?
     (define (repl-submit? text prompt-position)
       (let loop ([i prompt-position]
                  [blank? #t]
@@ -242,7 +241,7 @@
                    delimiter-stack
                    closed?)]))))
     
-    (drscheme:modes:add-mode "Datalog mode" mode-surrogate repl-submit? matches-language?)
+    (drracket:modes:add-mode "Datalog mode" mode-surrogate repl-submit? matches-language?)
     (color-prefs:add-to-preferences-panel "Datalog" extend-preferences-panel)
     
     (for ([line color-prefs-table])

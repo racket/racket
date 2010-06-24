@@ -1,8 +1,8 @@
-#lang scheme
-(require schemeunit
+#lang racket
+(require racketunit
          (planet dherman/pprint:4)
-         "../parse.ss"
-         "../pretty.ss")
+         "../parse.rkt"
+         "../pretty.rkt")
 (provide pretty-tests)
 
 (define pretty-tests

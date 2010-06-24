@@ -1,6 +1,6 @@
-#lang scheme
-(require "../ast.ss"
-         "env.ss")
+#lang racket
+(require "../ast.rkt"
+         "env.rkt")
 
 ; Variants
 (define (variant-terms env1 env2 ts1 ts2)

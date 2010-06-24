@@ -1,9 +1,9 @@
-#lang scheme
-(require schemeunit
-         "../../ast.ss"
-         "../../private/env.ss"
-         "../../private/unify.ss")
-(require/expose "../../private/unify.ss" (chase unify-terms))
+#lang racket
+(require racketunit
+         "../../ast.rkt"
+         "../../private/env.rkt"
+         "../../private/unify.rkt")
+(require/expose "../../private/unify.rkt" (chase unify-terms))
 
 (provide unify-tests)
 

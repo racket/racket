@@ -1,5 +1,5 @@
 (module reader syntax/module-reader
-  #:language `(planet ,(this-package-version-symbol lang/module))
+  #:language 'datalog/lang/module
   #:read (lambda ([in (current-input-port)])
            (let ([ast (parse-program in)])
              (list `(#%module-begin ,@ast))))
@@ -12,7 +12,6 @@
            ; XXX repl submit
            (case key
              [(color-lexer)
-              (dynamic-require `(planet ,(this-package-version-symbol drscheme/syntax-color)) 'get-syntax-token)]
+              (dynamic-require `datalog/tool/syntax-color) 'get-syntax-token)]
              [else (default key defval)]))
-  (require (planet cce/scheme:6/planet)
-           "../parse.ss"))
+  (require "../parse.rkt"))

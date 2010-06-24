@@ -1,8 +1,8 @@
-#lang scheme
-(require schemeunit
-         (for-template "../../eval.ss")
-         "../../parse.ss"
-         "../../private/compiler.ss")
+#lang racket
+(require racketunit
+         (for-template "../../eval.rkt")
+         "../../parse.rkt"
+         "../../private/compiler.rkt")
 
 (provide compiler-tests)
 

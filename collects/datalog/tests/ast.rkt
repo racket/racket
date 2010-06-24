@@ -1,6 +1,6 @@
-#lang scheme
-(require schemeunit
-         "../ast.ss")
+#lang racket
+(require racketunit
+         "../ast.rkt")
 
 (provide ast-tests)
 
