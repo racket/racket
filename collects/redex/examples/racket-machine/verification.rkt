@@ -140,7 +140,7 @@
    (side-condition (< (term n_p) (term n_l)))]
   
   ; let-rec
-  [(verify (let-rec ((name l (lam ((name v val) ...) (n_0 ...) e_0)) ...) e) (ṽ_0 ... ṽ_n ...) n_l b γ η f)
+  [(verify (let-rec ((name l (lam ((name v val) ...) (n_0 n_1 ...) e_0)) ...) e) (ṽ_0 ... ṽ_n ...) n_l b γ η f)
    (verify e s_1 n_l b γ η f)
    (where n ,(length (term (l ...))))
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))

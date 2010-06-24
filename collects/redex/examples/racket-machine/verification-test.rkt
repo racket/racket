@@ -390,6 +390,10 @@
  (negate bytecode-ok?)
  '(let-void 1 (branch #f (let-rec ((lam () (0) 'x)) 'y) (loc-noclr 0))))
 
+(test-predicate
+ (negate bytecode-ok?)
+ '(let-void 1 (let-rec ((lam () () 'x)) 'y)))
+
 ;; ignored? properly maintained
 (test-predicate
  (negate bytecode-ok?)
