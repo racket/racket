@@ -65,9 +65,9 @@ Declares information that is collected into the copyright region of the paper.}
 @defproc[(category [CR-number pre-content?] 
                    [subcategory pre-content?]
                    [third-level pre-content?]
-                   [fourth-level (or/c #f pre-content?) #f]) block?]
-@defproc[(terms [content pre-content?] ...) block?]
-@defproc[(keywords [content pre-content?] ...) block?]
+                   [fourth-level (or/c #f pre-content?) #f]) content?]
+@defproc[(terms [content pre-content?] ...) content?]
+@defproc[(keywords [content pre-content?] ...) content?]
 )]{
 
 Typesets category, term, and keyword information for the paper, which

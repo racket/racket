@@ -27,13 +27,13 @@
  [category
   (->* (pre-content? pre-content? pre-content?)
        ((or/c false/c pre-content?))
-       block?)]
+       content?)]
  [terms
   (->* () () #:rest (listof pre-content?)
-       block?)]
+       content?)]
  [keywords
   (->* () () #:rest (listof pre-content?)
-       block?)])
+       content?)])
 
 (provide preprint 10pt
          include-abstract)
@@ -122,11 +122,10 @@
 (define (category sec title sub [more #f])
   (make-multiarg-element
    (make-style (format "SCategory~a" (if more "Plus" "")) sigplan-extras)
-   (append
-    (list
-     (make-element #f (decode-content (list sec)))
-     (make-element #f (decode-content (list title)))
-     (make-element #f (decode-content (list sub))))
+   (list*
+    (make-element #f (decode-content (list sec)))
+    (make-element #f (decode-content (list title)))
+    (make-element #f (decode-content (list sub)))
     (if more
         (list (make-element #f (decode-content (list more))))
         null))))
