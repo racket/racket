@@ -2,6 +2,7 @@
 
 (define PORT 8888)
 (define DATA "Hello there sailor\n")
+(: n Integer)
 (define n 10)
 
 (: server ( -> Void))

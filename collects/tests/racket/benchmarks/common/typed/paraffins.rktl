@@ -2,12 +2,12 @@
 
 (define-type Radical (Rec Radical (U 'C 'H 'BCP 'CCP (Vectorof Radical))))
 
-(: gen (Exact-Positive-Integer -> (Vectorof (Listof Radical))))
+(: gen (Integer -> (Vectorof (Listof Radical))))
 (define (gen n)
   (let*: ((n/2 : Integer (quotient n 2))
           (radicals : (Vectorof (Listof Radical)) (make-vector (+ n/2 1) '(H))))
 
-         (: rads-of-size (Exact-Positive-Integer -> (Listof Radical)))
+         (: rads-of-size (Integer -> (Listof Radical)))
          (define (rads-of-size n)
            (let: loop1 : (Listof Radical)
                  ((ps : (Listof (Vectorof Integer))
@@ -79,7 +79,7 @@
                                      (loop2 (cdr rads2)
                                             lst))))))))
 
-         (: ccp-generator (Exact-Positive-Integer -> (Listof Radical)))
+         (: ccp-generator (Integer -> (Listof Radical)))
          (define (ccp-generator j)
            (let: loop1 : (Listof Radical)
                  ((ps : (Listof (Vectorof Integer))
@@ -185,7 +185,7 @@
                                        lst)
                                  (- nc3 1))))))))))
 
-(: nb (Exact-Positive-Integer -> Integer))
+(: nb (Integer -> Integer))
 (define (nb n)
   (let ((x (gen n)))
     (+ (length (vector-ref x 0))
