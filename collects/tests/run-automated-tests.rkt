@@ -28,7 +28,10 @@
 ;;   require (relative to this script).
 (define (all-tests)
   (test "racket/quiet.rktl" #:load? #t #:handler? #f
-        #:additional-modules '(racket/init))
+        ;; this *must* be in (lib ...) form, since that's the way that racket
+        ;; uses the -I value to initialize the namespace, and there are tests
+        ;; that expect to get (lib "racket/init") as a result.
+        #:additional-modules '((lib "racket/init")))
   ;; (test "planet/lang.rkt")
   (test "typed-scheme/nightly-run.rkt" #:timeout 25)
   (test "match/plt-match-tests.rkt")
