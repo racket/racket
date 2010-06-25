@@ -89,6 +89,7 @@ END_XFORM_ARITH;
 #define MAX_TRY_SHIFT 30
 
 #define JIT_LOG_DOUBLE_SIZE 3
+#define JIT_DOUBLE_SIZE (1 << JIT_LOG_DOUBLE_SIZE)
 
 /* a mzchar is an int: */
 #define LOG_MZCHAR_SIZE 2
@@ -622,7 +623,7 @@ static void *generate_one(mz_jit_state *old_jitter,
       size_pre_retained = size;
       size_pre_retained_double = size;
     }
-      
+    
     (void)jit_set_ip(buffer).ptr;
     jitter->limit = (char *)buffer + size_pre_retained_double - padding;
     if (known_size) {
@@ -696,6 +697,11 @@ static void *generate_one(mz_jit_state *old_jitter,
 	if (known_size & (JIT_WORD_SIZE - 1)) {
 	  known_size += (JIT_WORD_SIZE - (known_size & (JIT_WORD_SIZE - 1)));
 	}
+        if (jitter->retained_double) {
+          if (known_size & (JIT_DOUBLE_SIZE - 1)) {
+            known_size += (JIT_DOUBLE_SIZE - (known_size & (JIT_DOUBLE_SIZE - 1)));
+          } 
+        }
 	num_retained = jitter->retained;
         if (num_retained == 1) num_retained = 0;
 	num_retained_double = jitter->retained_double;
@@ -1411,18 +1417,17 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_get_local_p(x, l) jit_ldxi_p((x), JIT_FP, (l))
 # define mz_patch_branch_at(a, v) jit_patch_branch_at(a, v)
 # define mz_patch_ucbranch_at(a, v) jit_patch_ucbranch_at(a, v)
-# ifdef _CALL_DARWIN
-#  define X86_ALIGN_STACK
-#  ifndef JIT_X86_64
-#   define STACK_ALIGN_WORDS 3
-#  endif
-# endif
-# ifdef JIT_X86_64
-#  define X86_ALIGN_STACK
-#  define STACK_ALIGN_WORDS 1
-# endif
+  /* The ABI for _CALL_DARWIN or JIT_X86_64 requires alignment. Even
+     when it's not required, it's better for performance when flonums
+     are stored on the stack. */
+# define X86_ALIGN_STACK 1
 # ifdef X86_ALIGN_STACK
    /* Maintain 16-byte stack alignment. */
+#  ifdef JIT_X86_64
+#   define STACK_ALIGN_WORDS 1
+#  else
+#   define STACK_ALIGN_WORDS 3
+#  endif
 #  define mz_prolog(x) (ADDQiBr(-(STACK_ALIGN_WORDS * JIT_WORD_SIZE), JIT_SP))
 #  define mz_epilog_without_jmp() ADDQiBr((STACK_ALIGN_WORDS + 1) * JIT_WORD_SIZE, JIT_SP)
 #  define mz_epilog(x) (ADDQiBr(STACK_ALIGN_WORDS * JIT_WORD_SIZE, JIT_SP), RET_())
