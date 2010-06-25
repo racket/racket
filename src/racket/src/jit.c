@@ -12233,7 +12233,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
 
     /* Set V1 and local2 for arguments to generic tail-call handler: */
     mz_set_local_p(JIT_V1, JIT_LOCAL2);
-    jit_movi_p(JIT_V1, scheme_apply_proc);
+    (void)jit_movi_p(JIT_V1, scheme_apply_proc);
 
     mz_patch_ucbranch(ref6);
 
@@ -12375,7 +12375,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
 
       /* Set V1 and local2 for arguments to generic tail-call handler: */
       jit_movr_p(JIT_R0, JIT_V1);
-      jit_movi_p(JIT_V1, scheme_apply_proc);
+      (void)jit_movi_p(JIT_V1, scheme_apply_proc);
 
       mz_patch_ucbranch(ref6);
 
