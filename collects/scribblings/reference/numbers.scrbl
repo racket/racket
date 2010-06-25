@@ -353,14 +353,14 @@ Returns the integer closest to @racket[x], resolving ties in favor of
 
 @defproc[(floor [x real?]) integer?]{
 
-Returns the largest integer is that is no more than @racket[x].
+Returns the largest integer that is no more than @racket[x].
 
 @mz-examples[(floor 17/4) (floor -17/4) (floor 2.5) (floor -2.5)]}
 
 
 @defproc[(ceiling [x real?]) integer?]{
 
-Returns the smallest integer is that is at least as large as
+Returns the smallest integer that is at least as large as
  @racket[x].
 
 @mz-examples[(ceiling 17/4) (ceiling -17/4) (ceiling 2.5) (ceiling -2.5)]}
