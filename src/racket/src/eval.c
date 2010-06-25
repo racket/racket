@@ -12403,9 +12403,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 					   || ((stack[p] != VALID_BOX)
                                                && (stack[p] != VALID_BOX_NOCLEAR))))
 	    || (!SCHEME_LET_AUTOBOX(lv) && ((p >= letlimit)
-					    || (WHEN_CAN_RESET_STACK_SLOT(stack[p] != VALID_VAL) 
-                                                && WHEN_CAN_RESET_STACK_SLOT(stack[p] != VALID_VAL_NOCLEAR) 
-                                                && (stack[p] != VALID_UNINIT)))))
+					    || !(WHEN_CAN_RESET_STACK_SLOT(stack[p] == VALID_VAL) 
+                                                 || WHEN_CAN_RESET_STACK_SLOT(stack[p] == VALID_VAL_NOCLEAR) 
+                                                 || (stack[p] == VALID_UNINIT)))))
 	  scheme_ill_formed_code(port);
 
 	if (!SCHEME_LET_AUTOBOX(lv)) {
