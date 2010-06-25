@@ -3,18 +3,21 @@
           scribble/eval
           scribble/basic
           scribble/bnf
-          (for-label racket/base
-                     racket/contract
-                     "../main.rkt")
           "utils.rkt")
 
 @title[#:tag "top"]{@bold{Datalog}: Deductive database programming}
 @author[(author+email "Jay McCarthy" "jay@racket-lang.org")]
 
-This package contains a lightweight deductive database system. Queries and database updates are expressed
-using @link["http://en.wikipedia.org/wiki/Datalog"]{Datalog}---a declarative logic language in which each
+@link["http://en.wikipedia.org/wiki/Datalog"]{Datalog} is 
+@itemize[
+ @item{a declarative logic language in which each
 formula is a function-free Horn clause, and every variable
-in the head of a clause must appear in the body of the clause. The use of Datalog syntax and an implementation based
+in the head of a clause must appear in the body of the clause.}
+ @item{a lightweight deductive database system where queries and database updates are expressed
+       in the logic language.}
+]
+
+The use of Datalog syntax and an implementation based
 on tabling intermediate results ensures that all queries terminate.
 
 @table-of-contents[]
@@ -22,10 +25,6 @@ on tabling intermediate results ensures that all queries terminate.
 @section{Datalog Module Language}
 
 @defmodulelang[datalog]
-
-XXX Progress
-
-@subsection{Datalog Syntax}
 
 In Datalog input, whitespace characters are ignored except when they separate adjacent tokens or when they occur in strings.
 Comments are also considered to be whitespace. The character @litchar["%"] introduces a comment, which extends to the next line break.
@@ -70,17 +69,7 @@ END
 
 A program is a sequence of zero or more statements. A statement is an assertion, a retraction, or a query. An assertion is a clause followed by
 a period, and it adds the clause to the database if it is safe. A retraction is a clause followed by a tilde, and it removes the clause from
-the database. A query is a literal followed by a question mark. The effect of reading a Datalog program is to modify the database as directed
-by its statements, and then to return the literal designated as the query. If no query is specified, a reader returns a literal know to have no
-answers. The following is a program:
-
-@verbatim[#:indent 4 #<<END
-     edge(a, b). edge(b, c). edge(c, d). edge(d, a).
-     path(X, Y) :- edge(X, Y).
-     path(X, Y) :- edge(X, Z), path(Z, Y).
-     path(X, Y)?
-END
-]
+the database. A query is a literal followed by a question mark. 
 
 The following BNF describes the syntax of Datalog.
 
@@ -122,38 +111,66 @@ The following BNF describes the syntax of Datalog.
        (nonterm "STRING"))                
 ]
 
+The effect of running a Datalog program is to modify the database as directed
+by its statements, and then to return the literals designated by the query.
+
+The following is a program:
+
+@verbatim[#:indent 4 #<<END
+     #lang datalog
+     edge(a, b). edge(b, c). edge(c, d). edge(d, a).
+     path(X, Y) :- edge(X, Y).
+     path(X, Y) :- edge(X, Z), path(Z, Y).
+     path(X, Y)?
+END
+]
+
+Currently, REPL interaction is not supported.
+
 @section{Parenthetical Datalog Module Language}
+@(require (for-label datalog/sexp/lang))
 
 @defmodulelang[datalog/sexp]
 
-XXX Progress
+The semantics of this language is the same as the normal Datalog language, except it uses a @secref["parenstx"].
 
-@subsection{Parenthetical Datalog Syntax}
+Literals are represented as S-expressions with identifiers for constant symbols, strings for constant strings, and @racket[,id] for variable symbols.
 
-@racketgrammar*[
- #:literals (:- ! ~ ? unquote)
- [program (begin statement ...)]
- [statement assertion
-            retraction
-            query]
- [assertion (! clause)]
- [retraction (~ clause)]
- [query (? literal)]
- [clause (:- literal literal ...)
-         literal]
- [literal (datum term ...)]
- [term variable
-       constant]
- [variable ,symbol]
- [constant datum]
- [datum symbol
-        string]]
+@racket[unquote], top-level identifiers, and strings are not otherwise allowed in the program.
+
+The following is a program:
+@racketmod[datalog/sexp
+           
+(! (edge a b))
+(! (edge b c))
+(! (edge c d))
+(! (edge d a))
+(! (:- (path ,X ,Y)
+       (edge ,X ,Y)))
+(! (:- (path ,X ,Y)
+       (edge ,X ,Z)
+       (path ,Z ,Y)))
+(? (path ,X ,Y))]
+
+@subsection[#:tag "parenstx"]{Parenthetical Syntax}
+
+@defmodule[datalog/sexp/lang]
+
+@defform[(! clause)]{ Asserts the clause. }
+@defform[(~ clause)]{ Retracts the literal. }
+@defform[(? literal)]{ Queries the literal and prints the result literals. }
+
+@defform[(:- literal literal ...)]{ A conditional clause. }
+
+@defform[(= term term)]{ An equality literal. }
+
+@defform[(unquote symbol)]{ A variable symbol. }
 
 @include-section["racket.scrbl"]
 
 @section{Acknowledgments}
 
-This package is structurally based on Dave Herman's @racketmodname[(planet dherman/javascript)] library and
+This package was once structurally based on Dave Herman's @racketmodname[(planet dherman/javascript)] library and
 John Ramsdell's @link["http://www.ccs.neu.edu/home/ramsdell/tools/datalog/datalog.html"]{Datalog library}. 
 
 The package uses the tabled logic programming algorithm described in

@@ -12,6 +12,8 @@
 
 @defmodule[datalog]
 
+The Datalog database can be directly used by Racket programs through this API.
+
 @examples[#:eval the-eval
           (define example-program
             #<<END
@@ -588,6 +590,13 @@ This library provides facilities for evaluating Datalog. It can be required via:
     (open-input-string
      "path(X, Y) :- edge(X, a).")))]
 }
+
+@defproc[(eval-top-level-statement [s statement/c])
+         void]{
+ Evaluates @racket[s] using @racket[(current-theory)] as the @tech{theory}, printing query answers if @racket[s] is a query.
+           
+ This will raise a syntax error if given an @racket[assertion] of a @racket[clause] that is not a @racket[safe-clause?].
+ }
               
 @defproc[(eval-statement [s statement/c])
          (or/c void (listof literal?))]{

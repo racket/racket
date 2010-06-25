@@ -12,11 +12,11 @@
 
 (? (parent ,A ,A))
 
-(:- (ancestor ,A ,B)
-    (parent ,A ,B))
-(:- (ancestor ,A ,B)
-    (parent ,A ,C)
-    (ancestor ,C ,B))
+(! (:- (ancestor ,A ,B)
+       (parent ,A ,B)))
+(! (:- (ancestor ,A ,B)
+       (parent ,A ,C)
+       (ancestor ,C ,B)))
 (? (ancestor ,A ,B))
 
 (? (ancestor ,X john))
