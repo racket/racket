@@ -166,6 +166,7 @@
 (define -Zero (-val 0))
 (define -Real (*Un -Flonum -ExactRational))
 (define -Fixnum (*Un -PositiveFixnum -NegativeFixnum -Zero))
+(define -NonnegativeFixnum (*Un -PositiveFixnum -Zero))
 (define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))
 (define -Nat -ExactNonnegativeInteger)
 

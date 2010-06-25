@@ -217,8 +217,8 @@
 
 [string? (make-pred-ty -String)]
 [string (->* '() -Char -String)]
-[string-length (-String . -> . -PositiveFixnum)]
-[unsafe-string-length (-String . -> . -PositiveFixnum)]
+[string-length (-String . -> . -NonnegativeFixnum)]
+[unsafe-string-length (-String . -> . -NonnegativeFixnum)]
 
 [symbol? (make-pred-ty Sym)]
 [keyword? (make-pred-ty -Keyword)]
@@ -301,7 +301,7 @@
 
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
-[length (-poly (a) (-> (-lst a) -PositiveFixnum))]
+[length (-poly (a) (-> (-lst a) -NonnegativeFixnum))]
 [memq (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
 [memv (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
 [memf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt (-lst a))))]
@@ -354,8 +354,8 @@
 [char-downcase (-> -Char -Char)]
 [char-titlecase (-> -Char -Char)]
 [char-foldcase (-> -Char -Char)]
-[char->integer (-> -Char -PositiveFixnum)]
-[integer->char (-> -Nat -Char)]
+[char->integer (-> -Char -NonnegativeFixnum)]
+[integer->char (-> -Integer -Char)]
 [char-utf-8-length (-> -Char (apply Un (map -val '(1 2 3 4 5 6))))]
 
 [string-normalize-nfd (-> -String -String)]
@@ -481,16 +481,16 @@
 
 [vector->list (-poly (a) (-> (-vec a) (-lst a)))]
 [list->vector (-poly (a) (-> (-lst a) (-vec a)))]
-[vector-length ((make-VectorTop) . -> . -PositiveFixnum)]
+[vector-length ((make-VectorTop) . -> . -NonnegativeFixnum)]
 [vector (-poly (a) (->* (list) a (-vec a)))]
 [vector-immutable (-poly (a) (->* (list) a (-vec a)))]
 [vector->immutable-vector (-poly (a) (-> (-vec a) (-vec a)))]
 [vector-fill! (-poly (a) (-> (-vec a) a -Void))]
 [vector-argmax (-poly (a) (-> (-> a -Real) (-vec a) a))]
 [vector-argmin (-poly (a) (-> (-> a -Real) (-vec a) a))]
-[vector-memq (-poly (a) (-> a (-vec a) (-opt -PositiveFixnum)))]
-[vector-memv (-poly (a) (-> a (-vec a) (-opt -PositiveFixnum)))]
-[vector-member (-poly (a) (a (-vec a) . -> . (-opt -PositiveFixnum)))]
+[vector-memq (-poly (a) (-> a (-vec a) (-opt -NonnegativeFixnum)))]
+[vector-memv (-poly (a) (-> a (-vec a) (-opt -NonnegativeFixnum)))]
+[vector-member (-poly (a) (a (-vec a) . -> . (-opt -NonnegativeFixnum)))]
 ;; [vector->values no good type here]
 
 
@@ -548,7 +548,7 @@
 [hash-remove! (-poly (a b) ((-HT a b) a . -> . -Void))]
 [hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
 [hash-for-each (-poly (a b c) (-> (-HT a b) (-> a b c) -Void))]
-[hash-count (-poly (a b) (-> (-HT a b) -PositiveFixnum))]
+[hash-count (-poly (a b) (-> (-HT a b) -NonnegativeFixnum))]
 [hash-copy (-poly (a b) (-> (-HT a b) (-HT a b)))]
 [eq-hash-code (-poly (a) (-> a -Integer))]
 [eqv-hash-code (-poly (a) (-> a -Integer))]
@@ -568,12 +568,12 @@
 [make-bytes (cl-> [(-Integer -Integer) -Bytes]
                   [(-Integer) -Bytes])]
 [bytes->immutable-bytes (-> -Bytes -Bytes)]
-[byte? (make-pred-ty -Nat)]
+[byte? (make-pred-ty -NonnegativeFixnum)]
 [bytes-append (->* (list) -Bytes -Bytes)]
-[bytes-length (-> -Bytes -PositiveFixnum)]
-[unsafe-bytes-length (-> -Bytes -PositiveFixnum)]
+[bytes-length (-> -Bytes -NonnegativeFixnum)]
+[unsafe-bytes-length (-> -Bytes -NonnegativeFixnum)]
 [bytes-copy (-> -Bytes -Bytes)]
-[bytes->list (-> -Bytes (-lst -Nat))]
+[bytes->list (-> -Bytes (-lst -NonnegativeFixnum))]
 [list->bytes (-> (-lst -Integer) -Bytes)]
 [bytes<? (->* (list -Bytes) -Bytes B)]
 [bytes>? (->* (list -Bytes) -Bytes B)]
@@ -671,7 +671,7 @@
 
 [list->string ((-lst -Char) . -> . -String)]
 [string->list (-String . -> . (-lst -Char))]
-[build-string (-Nat (-Nat . -> . -Char) . -> . -String)]
+[build-string (-Nat (-Integer . -> . -Char) . -> . -String)]
 
 [sort (-poly (a b) (cl->* ((-lst a) (a a . -> . B)
                           #:cache-keys? B #f
@@ -711,7 +711,7 @@
                     (-lst a))
                    ((-lst b) b) 
                    . ->... . 
-                   -PositiveFixnum))]
+                   -NonnegativeFixnum))]
 [filter-map (-polydots (c a b)
                        ((list
                          ((list a) (b b) . ->... . (-opt c))
@@ -744,7 +744,7 @@
 [tcp-accept-ready? (-TCP-Listener . -> . B )]
 [tcp-addresses (cl->*
 		(-Port [(-val #f)] . ->opt . (-values (list -String -String)))
-		(-Port (-val #t) . -> . (-values (list -String -Nat -String -Nat))))]
+		(-Port (-val #t) . -> . (-values (list -String -NonnegativeFixnum -String -NonnegativeFixnum))))]
 [tcp-close (-TCP-Listener . -> . -Void )]
 [tcp-connect (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
 [tcp-connect/enable-break (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
@@ -808,8 +808,8 @@
 
 ;; unsafe
 
-[unsafe-vector-length (-poly (a) ((-vec a) . -> . -PositiveFixnum))]
-[unsafe-vector*-length (-poly (a) ((-vec a) . -> . -PositiveFixnum))]
+[unsafe-vector-length (-poly (a) ((-vec a) . -> . -NonnegativeFixnum))]
+[unsafe-vector*-length (-poly (a) ((-vec a) . -> . -NonnegativeFixnum))]
 [unsafe-car (-poly (a b) 
                    (cl->*
                     (->acc (list (-pair a b)) a (list -car))
@@ -827,7 +827,7 @@
                            (-vec a))
                           ((-vec b) b)
                           . ->... . 
-                          -PositiveFixnum))]
+                          -NonnegativeFixnum))]
 [vector-filter (-poly (a b) (cl->*
                              ((make-pred-ty (list a) Univ b)
                               (-vec a)
@@ -904,6 +904,6 @@
                          (-> (-mlst a) (-mlst a) -Void)))]
 [mpair? (make-pred-ty (make-MPairTop))]
 [mlist (-poly (a) (->* (list) a (-mlst a)))]
-[mlength (-poly (a) (-> (-mlst a) -PositiveFixnum))]
+[mlength (-poly (a) (-> (-mlst a) -NonnegativeFixnum))]
 [mreverse! (-poly (a) (-> (-mlst a) (-mlst a)))]
 [mappend (-poly (a) (->* (list) (-mlst a) (-mlst a)))]

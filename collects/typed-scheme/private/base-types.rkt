@@ -9,6 +9,7 @@
 [Exact-Positive-Integer -ExactPositiveInteger]
 [Exact-Nonnegative-Integer -ExactNonnegativeInteger]
 [Positive-Fixnum -PositiveFixnum]
+[Nonnegative-Fixnum -NonnegativeFixnum]
 [Fixnum -Fixnum]
 [Natural -ExactNonnegativeInteger]
 [Zero (-val 0)]

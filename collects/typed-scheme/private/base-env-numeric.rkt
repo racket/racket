@@ -20,7 +20,14 @@
     (lambda (t [r t])
       (t t . -> . r)))
   (define-for-syntax rounder 
-    (cl->* (-> -ExactRational -Integer) (-> -Flonum -Flonum) (-> -Real -Real)))
+    (cl->* (-> -PositiveFixnum -PositiveFixnum)
+           (-> -NonnegativeFixnum -NonnegativeFixnum)
+           (-> -Fixnum -Fixnum)
+           (-> -Pos -Pos)
+           (-> -Nat -Nat)
+           (-> -ExactRational -Integer)
+           (-> -Flonum -Flonum)
+           (-> -Real -Real)))
   
   (define-for-syntax (unop t) (-> t t))
   
@@ -33,9 +40,11 @@
   (define-for-syntax nat-op (binop -Nat))
   
   (define-for-syntax fx-comp (binop -Integer B))
-  (define-for-syntax fx-op (cl->* nat-op int-op))
-  (define-for-syntax fx-intop int-op)
-  (define-for-syntax fx-unop (unop -Integer))
+  (define-for-syntax fx-op (cl->* (-Pos -Pos . -> . -PositiveFixnum)
+                                  (-Nat -Nat . -> . -NonnegativeFixnum)
+                                  (-Integer -Integer . -> . -Fixnum)))
+  (define-for-syntax fx-intop (-Integer -Integer . -> . -Fixnum))
+  (define-for-syntax fx-unop (-Integer . -> . -Fixnum))
 
   (define-for-syntax real-comp (->* (list R R) R B))
   )
@@ -62,7 +71,9 @@
 [odd? (-> -Integer B)]
 [even? (-> -Integer B)]
 
-[modulo (cl->* (-Nat -Nat . -> . -Nat)
+[modulo (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . -NonnegativeFixnum)
+               (-Fixnum -Fixnum . -> . -Fixnum)
+               (-Nat -Nat . -> . -Nat)
                (-Integer -Integer . -> . -Integer))]
 
 [=  (->* (list N N) N B)]
@@ -107,8 +118,16 @@
                   (list (->* (list -Real) -Real -Real))
                   (list (->* (list N) N N))))]
 
-[max (apply cl->* (->* (list -Pos) -Integer -Pos) (->* (list -Nat) -Integer -Nat) (for/list ([t all-num-types]) (->* (list t) t t)))]
-[min (apply cl->* (for/list ([t all-num-types]) (->* (list t) t t)))]
+[max (apply cl->*
+            (->* (list -PositiveFixnum) -Fixnum -PositiveFixnum)
+            (->* (list -NonnegativeFixnum) -Fixnum -NonnegativeFixnum)
+            (->* (list -Fixnum) -Fixnum -Fixnum)
+            (->* (list -Pos) -Integer -Pos)
+            (->* (list -Nat) -Integer -Nat)
+            (for/list ([t all-num-types]) (->* (list t) t t)))]
+[min (apply cl->*
+            (->* (list -Fixnum) -Fixnum -Fixnum)
+            (for/list ([t all-num-types]) (->* (list t) t t)))]
 
 
 [add1 (cl->* (-> -Pos -Pos)
@@ -126,28 +145,42 @@
              (-> -Real -Real)
              (-> N N))]
 
-[quotient (cl->* (-Nat -Nat . -> . -Nat)
+[quotient (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . -NonnegativeFixnum)
+                 (-Fixnum -Fixnum . -> . -Fixnum)
+                 (-Nat -Nat . -> . -Nat)
                  (-Integer -Integer . -> . -Integer))]
-[remainder (cl->* (-Nat -Nat . -> . -Nat)
+[remainder (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . -NonnegativeFixnum)
+                  (-Fixnum -Fixnum . -> . -Fixnum)
+                  (-Nat -Nat . -> . -Nat)
                   (-Integer -Integer . -> . -Integer))]
-[quotient/remainder (cl->* (-Nat -Nat . -> . (-values (list -Nat -Nat)))
+[quotient/remainder (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . (-values (list -NonnegativeFixnum -NonnegativeFixnum)))
+                           (-Fixnum -Fixnum . -> . (-values (list -Fixnum -Fixnum)))
+                           (-Nat -Nat . -> . (-values (list -Nat -Nat)))
                            (-Integer -Integer . -> . (-values (list -Integer -Integer))))]
 
-[arithmetic-shift (cl->* (-Nat -Nat . -> . -Nat)
+[arithmetic-shift (cl->* (-Fixnum (Un -NegativeFixnum (-val 0)) . -> . -Fixnum)
+                         (-Nat -Nat . -> . -Nat)
                          (-Integer -Integer . -> . -Integer))]
-[bitwise-and (cl->* (null -Nat . ->* . -Nat)
+[bitwise-and (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
+                    (null -Fixnum . ->* . -Fixnum)
+                    (null -Nat . ->* . -Nat)
                     (null -Integer . ->* . -Integer))]
-[bitwise-ior (cl->* (null -Nat . ->* . -Nat)
+[bitwise-ior (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
+                    (null -Fixnum . ->* . -Fixnum)
+                    (null -Nat . ->* . -Nat)
                     (null -Integer . ->* . -Integer))]
-[bitwise-not (cl->* (null -Nat . ->* . -Nat)
+[bitwise-not (cl->* (null -Fixnum . ->* . -Fixnum)
                     (null -Integer . ->* . -Integer))]
-[bitwise-xor (cl->* (null -Nat . ->* . -Nat)
+[bitwise-xor (cl->* (null -NonnegativeFixnum . ->* . -NonnegativeFixnum)
+                    (null -Fixnum . ->* . -Fixnum)
+                    (null -Nat . ->* . -Nat)
                     (null -Integer . ->* . -Integer))]
 [bitwise-bit-set? (-> -Integer -Integer B)]
 [bitwise-bit-field (-> -Integer -Integer -Integer -Integer)]
-[integer-length (-> -Integer -Nat)]
+[integer-length (-> -Integer -NonnegativeFixnum)]
 
-[abs (cl->* (-Integer . -> . -Nat)
+[abs (cl->* (-Fixnum . -> . -NonnegativeFixnum)
+            (-Integer . -> . -Nat)
             (-Real . -> . -Real))]
 
 ;; exactness
@@ -189,7 +222,7 @@
 [acos (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
 [asin (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N))]
 [atan (cl->* (-Flonum . -> . -Flonum) (-Real . -> . -Real) (N . -> . N) (-Real -Real . -> . N))]
-[gcd  (null -Integer . ->* . -Integer)]
+[gcd  (cl->* (null -Fixnum . ->* . -Fixnum) (null -Integer . ->* . -Integer))]
 [lcm  (null -Integer . ->* . -Integer)]
 
 ;; scheme/math
@@ -243,14 +276,14 @@
 [unsafe-fxquotient fx-intop]
 [unsafe-fxremainder fx-intop]
 [unsafe-fxmodulo fx-intop]
-[unsafe-fxabs (-Integer . -> . -Nat)]
+[unsafe-fxabs (-Integer . -> . (Un -PositiveFixnum (-val 0)))]
 
-[unsafe-fxand fx-intop]
-[unsafe-fxior fx-intop]
-[unsafe-fxxor fx-intop]
+[unsafe-fxand fx-op]
+[unsafe-fxior fx-op]
+[unsafe-fxxor fx-op]
 [unsafe-fxnot fx-unop]
 [unsafe-fxlshift fx-intop]
-[unsafe-fxrshift fx-intop]
+[unsafe-fxrshift (cl->* (-> -NonnegativeFixnum -NonnegativeFixnum -NonnegativeFixnum) fx-intop)]
 
 [unsafe-fx= fx-comp]
 [unsafe-fx< fx-comp]
@@ -268,14 +301,14 @@
 [fxquotient fx-intop]
 [fxremainder fx-intop]
 [fxmodulo fx-intop]
-[fxabs (-Integer . -> . -Nat)]
+[fxabs (-Integer . -> . (Un -PositiveFixnum (-val 0)))]
 
-[fxand fx-intop]
-[fxior fx-intop]
-[fxxor fx-intop]
+[fxand fx-op]
+[fxior fx-op]
+[fxxor fx-op]
 [fxnot fx-unop]
 [fxlshift fx-intop]
-[fxrshift fx-intop]
+[fxrshift (cl->* (-> -NonnegativeFixnum -NonnegativeFixnum -NonnegativeFixnum) fx-intop)]
 
 [fx= fx-comp]
 [fx< fx-comp]
@@ -320,12 +353,12 @@
 [flvector (->* (list) -Flonum -FlVector)]
 [make-flvector (cl->* (-> -Integer -FlVector)
                       (-> -Integer -Flonum -FlVector))]
-[flvector-length (-> -FlVector -Nat)]
+[flvector-length (-> -FlVector -NonnegativeFixnum)]
 [flvector-ref (-> -FlVector -Integer -Flonum)]
 [flvector-set! (-> -FlVector -Integer -Flonum -Void)]
 
 ;; unsafe flvector ops
 
-[unsafe-flvector-length (-> -FlVector -Nat)]
+[unsafe-flvector-length (-> -FlVector -NonnegativeFixnum)]
 [unsafe-flvector-ref (-> -FlVector -Integer -Flonum)]
 [unsafe-flvector-set! (-> -FlVector -Integer -Flonum -Void)]
