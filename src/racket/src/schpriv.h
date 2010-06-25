@@ -2683,7 +2683,7 @@ void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 			      int num_toplevels, int num_stxes, int num_lifts,
                               int skip_refs_check);
 void scheme_validate_boxenv(int pos, Mz_CPort *port,
-			    char *stack, int depth, int delta);
+			    char *stack, int depth, int delta, int letlimit);
 
 int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
                                     int hope,

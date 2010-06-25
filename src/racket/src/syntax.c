@@ -2728,7 +2728,7 @@ static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port,
   if (!SCHEME_PAIRP(data))
     scheme_ill_formed_code(port);
     
-  scheme_validate_boxenv(SCHEME_INT_VAL(SCHEME_CAR(data)), port, stack, depth, delta);
+  scheme_validate_boxenv(SCHEME_INT_VAL(SCHEME_CAR(data)), port, stack, depth, delta, letlimit);
 
   scheme_validate_expr(port, SCHEME_CDR(data), stack, tls, depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,

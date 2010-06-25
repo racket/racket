@@ -12566,12 +12566,12 @@ void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
                        make_clearing_stack(), 0, 0);
 }
 
-void scheme_validate_boxenv(int p, Mz_CPort *port, char *stack, int depth, int delta)
+void scheme_validate_boxenv(int p, Mz_CPort *port, char *stack, int depth, int delta, int letlimit)
 {
   if (p >= 0)
     p += delta;
 
-  if ((p < 0) || (p >= depth) || (stack[p] != VALID_VAL))
+  if ((p < 0) || (p >= letlimit) || (stack[p] != VALID_VAL))
     scheme_ill_formed_code(port);
 
   stack[p] = VALID_BOX;
