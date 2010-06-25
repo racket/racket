@@ -1,4 +1,5 @@
 #lang racket
+(require racket/runtime-path)
 
 ;; since Typed Scheme's optimizer does source to source transformations,
 ;; we compare the expansion of automatically optimized and hand optimized
@@ -20,13 +21,15 @@
         (begin (printf "~a failed\n\n" name)
                #f))))
 
+(define-runtime-path here ".")
+
 (let ((n-failures
        (if (> (vector-length (current-command-line-arguments)) 0)
            (if (test (format "generic/~a.rkt"
                              (vector-ref (current-command-line-arguments) 0)))
                0 1)
            (for/fold ((n-failures 0))
-               ((gen (in-directory "generic")))
+               ((gen (in-directory (build-path here "generic"))))
              (+ n-failures (if (test gen) 0 1))))))
   (unless (= n-failures 0)
     (error (format "~a tests failed." n-failures))))
