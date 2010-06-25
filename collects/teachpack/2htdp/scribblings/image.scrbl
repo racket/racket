@@ -251,6 +251,28 @@ other. The top and bottom pair of angles is @racket[angle] and the left and righ
  
 }
                 
+@defproc*[([(radial-star [point-count (and/c integer? (>=/c 2))]
+                         [inner-radius (and/c real? (not/c negative?))]
+                         [outer-radius (and/c real? (not/c negative?))]
+                         [mode mode?]
+                         [color image-color?])
+            image?]
+           [(radial-star [point-count (and/c integer? (>=/c 2))]
+                         [inner-radius (and/c real? (not/c negative?))]
+                         [outer-radius (and/c real? (not/c negative?))]
+                         [outline-mode (or/c 'outline "outline")]
+                         [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+                                   
+Constructs a star-like polygon where the star is specified by two radii and a number of points. 
+The first radius determines where the points begin, the second determines where they end, and
+the @scheme[point-count] argument determines how many points the star has.
+
+@image-examples[(radial-star 8 8 64 "solid" "darkslategray")
+                (radial-star 32 30 40 "outline" "black")]
+
+}
+
 @defproc*[([(polygon [vertices (listof posn?)] 
                      [mode mode?]
                      [color image-color?])

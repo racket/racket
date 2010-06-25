@@ -114,11 +114,18 @@
      (if (string? arg)
          (string->symbol arg)
          arg)]
-    [(width height radius side-length side-length1 side-length2)
+    [(width height radius radius1 radius2 side-length side-length1 side-length2)
      (check-arg fn-name
                 (and (real? arg)
                      (not (negative? arg)))
-                'non-negative-real-number
+                'non\ negative\ real\ number
+                i arg)
+     arg]
+    [(point-count)
+     (check-arg fn-name
+                (and (integer? arg)
+                     (>= arg 2))
+                'integer\ greater\ than\ 2
                 i arg)
      arg]
     [(dx dy x1 y1 x2 y2 pull1 pull2)

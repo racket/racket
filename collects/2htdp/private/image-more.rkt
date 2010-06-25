@@ -924,6 +924,32 @@
   (make-a-polygon (adjust (regular-polygon-points side-length side-count)) 
                   mode color))
 
+(define/chk (radial-star point-count radius1 radius2 mode color)
+  (make-a-polygon (star-points radius1 radius2 point-count) mode color))
+  
+(define (star-points in-small-rad in-large-rad points)
+  (let* ([small-rad (- in-small-rad 1)]
+         [large-rad (- in-large-rad 1)]
+         [roff (floor (/ large-rad 2))])
+    (let loop ([i points])
+      (cond
+        [(zero? i) '()]
+        [else 
+         (let* ([this-p (- i 1)]
+                [theta1 (* 2 pi (/ this-p points))]
+                [theta2 (* 2 pi (/ (- this-p 1/2) points))])
+           (let-values ([(x1 y1) (find-xy small-rad theta1)]
+                        [(x2 y2) (find-xy large-rad theta2)])
+             (let ([p1 (make-point (+ large-rad x1)
+                                   (+ large-rad y1))]
+                   [p2 (make-point (+ large-rad x2)
+                                   (+ large-rad y2))])
+               (list* p1 p2 (loop (- i 1))))))]))))
+
+(define (find-xy radius theta)
+  (values (* radius (cos theta))
+          (* radius (sin theta))))
+
 (define (make-a-polygon points mode color)
   (let* ([poly (make-polygon points mode color)]
          [ltrb (simple-bb poly)]
@@ -1087,6 +1113,7 @@
          right-triangle
          star
          star-polygon
+         radial-star
          
          line
          add-line

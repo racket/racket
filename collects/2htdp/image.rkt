@@ -87,6 +87,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          polygon
          star
          star-polygon
+         radial-star
          triangle
          isosceles-triangle
          right-triangle
