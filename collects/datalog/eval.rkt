@@ -19,11 +19,13 @@
    (format-literals ls)))
 
 (define (eval-program p)
-  (for-each (lambda (s)
-              (define v (eval-statement s))
-              (unless (void? v)
-                (print-literals v)))
-            p))
+  (for-each eval-top-level-statement p))
+
+(define (eval-top-level-statement s)
+  (define v (eval-statement s))
+  (unless (void? v)
+    (print-literals v)))
+
 (define (eval-statement s)
   (cond
     [(assertion? s)
@@ -53,5 +55,6 @@
 (provide/contract
  [current-theory (parameter/c mutable-theory/c)]
  [eval-program (program/c . -> . void)]
+ [eval-top-level-statement (statement/c . -> . void)]
  [eval-statement (statement/c . -> . (or/c void (listof literal?)))]
  [eval-program/fresh (program/c . -> . immutable-theory/c)])

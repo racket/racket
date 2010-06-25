@@ -16,13 +16,14 @@
     (test-equal? t
                  (filter (lambda (l)
                            (not (string=? l "")))
-                         (file->lines test-txt))
-                 (filter (lambda (l)
-                           (not (string=? l "")))
                          (with-input-from-string
                              (with-output-to-string
                                  (lambda () (dynamic-require test-rkt #f)))
-                           port->lines))))
+                           port->lines))
+                 (filter (lambda (l)
+                           (not (string=? l "")))
+                         (file->lines test-txt))
+                 ))
   
   (test-suite
    (path->string examples-dir)

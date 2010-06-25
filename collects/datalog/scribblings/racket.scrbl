@@ -175,7 +175,7 @@ This library provides the structures that represent Datalog syntax. It can be re
 }
                                         
 @defstruct[query ([srcloc srcloc/c]
-                  [clause clause?])]{
+                  [literal literal?])]{
  A Datalog query.
 }
 
