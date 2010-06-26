@@ -23,7 +23,7 @@ create a useful snip:
 
  @item{@method[snip% split] if the snip can contain more than one @techlink{item}}
 
- @item{@method[snip% size-cache-invalid] if the snip caches the result to@method[snip% get-extent]} 
+ @item{@method[snip% size-cache-invalid] if the snip caches the result to @method[snip% get-extent]} 
 
  @item{@method[snip% get-text] (not required)}
 
@@ -336,7 +336,11 @@ following symbols:
        snip; only an owning editor should set this flag}
 
  @item{@indexed-scheme['handles-events] --- this snip can handle
-       keyboard and mouse events}
+       keyboard and mouse events when it has the keyboard focus}
+
+ @item{@indexed-scheme['handles-all-mouse-events] --- this snip can handle
+       mouse events that touch the snip, even if the snip does not
+       have the keyboard focus}
 
  @item{@indexed-scheme['width-depends-on-x] --- this snip's display
        width depends on the snip's x-@techlink{location} within the

@@ -170,6 +170,8 @@
   (define sticky-styles? #t)
   (define overwrite-mode? #f)
 
+  (define prev-mouse-snip #f)
+
   (def/public (set-styles-sticky [bool? s?]) (set! sticky-styles? (and s? #t)))
   (def/public (get-styles-sticky) sticky-styles?)
 
@@ -441,18 +443,15 @@
                  (not (send event leaving?)))
         (end-streaks '(except-key-sequence cursor delayed)))
       (let-values ([(dc x y scrollx scrolly)
-                    (if (or (send event button-down?) s-caret-snip)
-                        ;; first, find clicked-on snip:
-                        (let ([x (send event get-x)]
-                              [y (send event get-y)])
-                          (let-boxes ([scrollx 0.0]
-                                      [scrolly 0.0]
-                                      [dc #f])
-                              (set-box! dc (send s-admin get-dc scrollx scrolly))
-                            ;; FIXME: old code returned if !dc
-                            (values dc (+ x scrollx) (+ y scrolly) scrollx scrolly)))
-                        (values #f 0.0 0.0 0.0 0.0))])
-        (when (send event button-down?)
+                    ;; first, find clicked-on snip:
+                    (let ([x (send event get-x)]
+                          [y (send event get-y)])
+                      (let-boxes ([scrollx 0.0]
+                                  [scrolly 0.0]
+                                  [dc #f])
+                          (set-box! dc (send s-admin get-dc scrollx scrolly))
+                        ;; FIXME: old code returned if !dc
+                        (values dc (+ x scrollx) (+ y scrolly) scrollx scrolly)))])
           (let ([snip
                  (let-boxes ([onit? #f]
                              [how-close 0.0]
@@ -476,12 +475,26 @@
                                  #f
                                  snip)))
                          #f)))])
-            (set-caret-owner snip)))
-        (if (and s-caret-snip (has-flag? (snip->flags s-caret-snip) HANDLES-EVENTS))
-            (let-boxes ([x 0.0] [y 0.0])
-                (get-snip-position-and-location s-caret-snip #f x y)
-              (send s-caret-snip on-event dc (- x scrollx) (- y scrolly) x y event))
-            (on-local-event event)))))
+            (when (send event button-down?)
+              (set-caret-owner snip))
+            (when (and prev-mouse-snip
+                       (not (eq? snip prev-mouse-snip)))
+              (let-boxes ([x 0.0] [y 0.0])
+                  (get-snip-position-and-location prev-mouse-snip #f x y)
+                (send prev-mouse-snip on-event dc (- x scrollx) (- y scrolly) x y event)))
+            (set! prev-mouse-snip #f)
+            (if (and s-caret-snip (has-flag? (snip->flags s-caret-snip) HANDLES-EVENTS))
+                (let-boxes ([x 0.0] [y 0.0])
+                    (get-snip-position-and-location s-caret-snip #f x y)
+                  (send s-caret-snip on-event dc (- x scrollx) (- y scrolly) x y event))
+                (begin
+                  (when (and snip
+                             (has-flag? (snip->flags snip) HANDLES-ALL-MOUSE-EVENTS))
+                    (let-boxes ([x 0.0] [y 0.0])
+                        (get-snip-position-and-location snip #f x y)
+                      (set! prev-mouse-snip snip)
+                      (send snip on-event dc (- x scrollx) (- y scrolly) x y event)))
+                  (on-local-event event)))))))
 
   (def/override (on-default-event [mouse-event% event])
     (when s-admin
@@ -4004,6 +4017,8 @@
           (set! snip-count (add1 snip-count)))))
   
   (define/private (delete-snip snip)
+    (when (eq? snip prev-mouse-snip)
+      (set! prev-mouse-snip #f))
     (cond
      [(snip->next snip)
       (splice-snip (snip->next snip) (snip->prev snip) (snip->next (snip->next snip)))]
