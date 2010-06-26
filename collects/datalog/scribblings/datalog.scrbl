@@ -136,9 +136,7 @@ The Datalog REPL accepts new statements that are executed as if they were in the
 
 The semantics of this language is the same as the normal Datalog language, except it uses a @secref["parenstx"].
 
-Literals are represented as S-expressions with identifiers for constant symbols, strings for constant strings, and @racket[,id] for variable symbols.
-
-@racket[unquote], top-level identifiers, and strings are not otherwise allowed in the program.
+Literals are represented as S-expressions with non-capitalized identifiers for constant symbols, strings for constant strings, and capitalized identifiers for variable symbols. Top-level identifiers and strings are not otherwise allowed in the program.
 
 The following is a program:
 @racketmod[datalog/sexp
@@ -147,12 +145,12 @@ The following is a program:
 (! (edge b c))
 (! (edge c d))
 (! (edge d a))
-(! (:- (path ,X ,Y)
-       (edge ,X ,Y)))
-(! (:- (path ,X ,Y)
-       (edge ,X ,Z)
-       (path ,Z ,Y)))
-(? (path ,X ,Y))]
+(! (:- (path X Y)
+       (edge X Y)))
+(! (:- (path X Y)
+       (edge X Z)
+       (path Z Y)))
+(? (path X Y))]
 
 The Parenthetical Datalog REPL accepts new statements that are executed as if they were in the original program text.
 
@@ -167,8 +165,6 @@ The Parenthetical Datalog REPL accepts new statements that are executed as if th
 @defform[(:- literal literal ...)]{ A conditional clause. }
 
 @defform[(= term term)]{ An equality literal. }
-
-@defform[(unquote symbol)]{ A variable symbol. }
 
 @include-section["racket.scrbl"]
 

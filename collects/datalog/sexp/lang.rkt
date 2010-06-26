@@ -9,8 +9,6 @@
 
 (define-syntax-parameter top
   (λ (stx) (raise-syntax-error '#%top "undefined identifier" stx)))
-(define-syntax-parameter unquote
-  (λ (stx) (raise-syntax-error 'unquote "only allowed inside literals" stx)))
 (define-syntax-parameter datum
   (λ (stx) (raise-syntax-error '#%datum "only allowed inside literals" stx)))
 
@@ -18,15 +16,11 @@
   (syntax-parse 
    stx
    [(_ . sym:id)
-    (quasisyntax/loc stx
-      (constant #'#,stx 'sym))]))
-
-(define-syntax (literal-unquote stx)
-  (syntax-parse 
-   stx
-   [(_ sym:id)
-    (quasisyntax/loc stx
-      (variable #'#,stx 'sym))]))
+    (if (char-upper-case? (string-ref (symbol->string (syntax->datum #'sym)) 0))
+        (quasisyntax/loc stx
+      (variable #'#,stx 'sym))
+        (quasisyntax/loc stx
+          (constant #'#,stx 'sym)))]))
 
 (define-syntax (literal-datum stx)
   (syntax-parse 
@@ -45,8 +39,7 @@
     (quasisyntax/loc stx
       (literal #'#,stx 'sym 
                (syntax-parameterize ([top (make-rename-transformer #'literal-top)]
-                                     [datum (make-rename-transformer #'literal-datum)]
-                                     [unquote (make-rename-transformer #'literal-unquote)])
+                                     [datum (make-rename-transformer #'literal-datum)])
                                     (list e ...))))]))
 
 (define-syntax (->simple-clause stx)
@@ -84,5 +77,4 @@
          #%top-interaction
          #%module-begin
          ! ~ ?
-         :- =
-         unquote)
+         :- =)

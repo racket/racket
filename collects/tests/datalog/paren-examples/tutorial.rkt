@@ -6,23 +6,23 @@
 
 (! (parent bob john))
 (! (parent ebbon bob))
-(? (parent ,A ,B))
+(? (parent A B))
 
-(? (parent john ,B))
+(? (parent john B))
 
-(? (parent ,A ,A))
+(? (parent A A))
 
-(! (:- (ancestor ,A ,B)
-       (parent ,A ,B)))
-(! (:- (ancestor ,A ,B)
-       (parent ,A ,C)
-       (ancestor ,C ,B)))
-(? (ancestor ,A ,B))
+(! (:- (ancestor A B)
+       (parent A B)))
+(! (:- (ancestor A B)
+       (parent A C)
+       (ancestor C B)))
+(? (ancestor A B))
 
-(? (ancestor ,X john))
+(? (ancestor X john))
 
 (~ (parent bob john))
 
-(? (parent ,A ,B))
+(? (parent A B))
 
-(? (ancestor ,A ,B))
+(? (ancestor A B))
