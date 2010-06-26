@@ -203,5 +203,7 @@ functions of interest for the servlet developer.
  Checks if @racket[u] is a URL that refers to a continuation, if so
  returns the instance id, continuation id, and nonce.
 }
+                                                         
+@defthing[servlet-prompt continuation-prompt-tag?]{The tag used for Web interaction continuation capture.}
 
 }
