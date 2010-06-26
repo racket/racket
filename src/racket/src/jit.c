@@ -5197,7 +5197,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           /* Maybe they're both doubles... */
           if (unsafe_fl) mz_rs_sync();
           generate_double_arith(jitter, rator, arith, cmp, reversed, 1, 0, &refd, &refdt, 
-                                for_branch, branch_short, unsafe_fl, 0, 0);
+                                for_branch, branch_short, unsafe_fl, 0, unbox);
           CHECK_LIMIT();
         }
 
@@ -5247,7 +5247,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           /* Maybe they're both doubles... */
           if (unsafe_fl) mz_rs_sync();
           generate_double_arith(jitter, rator, arith, cmp, reversed, 1, 0, &refd, &refdt, 
-                                for_branch, branch_short, unsafe_fl, 0, 0);
+                                for_branch, branch_short, unsafe_fl, 0, unbox);
           CHECK_LIMIT();
         }
 
@@ -5295,7 +5295,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
                 && ((arith != -2) || v || reversed))) {
           /* Maybe it's a double... */
           generate_double_arith(jitter, rator, arith, cmp, reversed, 0, v, &refd, &refdt, 
-                                for_branch, branch_short, unsafe_fl, 0, 0);
+                                for_branch, branch_short, unsafe_fl, 0, unbox);
           CHECK_LIMIT();
         }
 
