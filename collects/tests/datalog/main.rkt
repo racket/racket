@@ -15,8 +15,7 @@
          "private/variant.rkt"
          
          "runtime.rkt"
-         "eval.rkt"         
-         "private/compiler.rkt")
+         "eval.rkt")
 
 (run-tests
  (test-suite
@@ -35,6 +34,4 @@
   variant-tests
   
   runtime-tests
-  eval-tests
-  
-  compiler-tests))
+  eval-tests))
