@@ -17,12 +17,12 @@
        #'(#%module-begin
           (begin (print-result rs) ...)))]))
 
-#;(compile-module (syntax->datum #'(ast ...)))
-#;(compile-stmt (syntax->datum #'ast))
-
 (define-syntax (top-interaction stx)
-  (printf "~S\n" stx)
-  #'(void))
+  (syntax-case stx ()
+    [(_ . stmt)
+     (quasisyntax/loc stx
+       (print-result 
+        #,(compile-stmt (syntax->datum #'stmt))))]))
 
 (provide module-begin
          top-interaction)

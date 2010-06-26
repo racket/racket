@@ -125,7 +125,9 @@ The following is a program:
 END
 ]
 
-Currently, REPL interaction is not supported.
+The Datalog REPL accepts new statements that are executed as if they were in the original program text.
+
+@include-section["tutorial.scrbl"]
 
 @section{Parenthetical Datalog Module Language}
 @(require (for-label datalog/sexp/lang))
@@ -151,6 +153,8 @@ The following is a program:
        (edge ,X ,Z)
        (path ,Z ,Y)))
 (? (path ,X ,Y))]
+
+The Parenthetical Datalog REPL accepts new statements that are executed as if they were in the original program text.
 
 @subsection[#:tag "parenstx"]{Parenthetical Syntax}
 

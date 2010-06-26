@@ -104,6 +104,7 @@ A Datalog reader consumes a Datalog program. A program is a sequence of zero or 
 (define parse-program (mk-parser program-parser))
 
 (provide/contract
+ [current-source-name (parameter/c any/c)]
  [parse-literal (input-port? . -> . literal?)]
  [parse-clause (input-port? . -> . clause?)]
  [parse-statement (input-port? . -> . statement/c)]

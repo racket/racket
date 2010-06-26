@@ -197,6 +197,8 @@ This library provides facilities for parsing Datalog source. It can be required 
 
 @defmodule[datalog/parse]
 
+@defparam[current-source-name name any/c]{ A parameter used by the parsing functions to set the source name on the read ASTs. }
+
 @defproc[(parse-literal [ip input-port?])
          literal?]{
  Parses a @racket[literal] from @racket[ip].

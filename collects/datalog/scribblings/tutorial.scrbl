@@ -10,9 +10,11 @@
 
 @title{Tutorial}
 
-Start DrScheme and choose the @tt{Datalog} language from DrScheme's
-@tt{Language} menu under @tt{Experimental Languages}. Click @onscreen{Run}, then
-click in the REPL.
+Start DrRacket and type
+
+@racketmod[datalog]
+
+in the Definitions window. Click @onscreen{Run}, then click in the REPL.
 
 @racketinput[]
 
@@ -72,7 +74,7 @@ C is an ancestor of B, then A is an ancestor of B.
              #,(tt "  parent(A, C),")
              #,(tt "  ancestor(C, B).")]
 
-In the interpreter, DrScheme knows that the clause is not complete, so by pressing Return, it doesn't interpret the line.
+In the interpreter, DrRacket knows that the clause is not complete, so by pressing Return, it doesn't interpret the line.
 
 Rules are used to answer queries just as is done for facts.
 
