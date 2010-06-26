@@ -4,6 +4,9 @@
          "../eval.rkt"
          "../ast.rkt")
 
+(define-syntax (:- stx)
+  (raise-syntax-error ':- "only allowed inside ! and ~" stx))
+
 (define-syntax-parameter top
   (λ (stx) (raise-syntax-error '#%top "undefined identifier" stx)))
 (define-syntax-parameter unquote
@@ -48,19 +51,13 @@
 
 (define-syntax (->simple-clause stx)
   (syntax-case stx (:-)
-    [(_ (:- . r))
+    [(_ (:- head body ...))
      (quasisyntax/loc stx
-       (:- . r))]
+       (clause #'#,stx (->literal head) 
+               (list (->literal body) ...)))]
     [(_ e)
      (quasisyntax/loc stx
        (clause #'#,stx (->literal e) empty))]))
-
-(define-syntax (:- stx)
-  (syntax-case stx ()
-    [(_ head body ...)
-     (quasisyntax/loc stx
-       (clause #'#,stx (->literal head) 
-               (list (->literal body) ...)))]))
 
 (define-syntax-rule (define-paren-stx op struct)
   (define-syntax (op stx)
