@@ -5,8 +5,7 @@
          
          "private/lex.rkt"
          "tool/syntax-color.rkt"
-         "parse.rkt"
-         "sexp.rkt"
+         "parse.rkt"         
          
          "pretty.rkt"
          
@@ -26,8 +25,7 @@
   
   lex-tests
   syntax-color-tests
-  parse-tests
-  sexp-tests
+  parse-tests  
   
   pretty-tests
   

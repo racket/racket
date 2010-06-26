@@ -10,7 +10,7 @@
 
 @title{Racket Interoperability}
 
-@defmodule[datalog]
+@defmodule[datalog/main]
 
 The Datalog database can be directly used by Racket programs through this API.
 
@@ -253,39 +253,6 @@ This library provides facilities for parsing Datalog source. It can be required 
      "path(X, Y)?")))]
 }
                    
-@section{Parenthetical Datalog Parsing}
-
-This package recognizes an alternative, Scheme-like front-end syntax for Datalog. It can be required via:
-
-@defmodule[datalog/sexp]
-
-@defproc[(stx->term [stx syntax?])
-         term/c]{
- Parses @racket[stx] as a @tech{term}.
-}
-@defproc[(stx->literal [stx syntax?])
-         literal?]{
- Parses @racket[stx] as a @racket[literal].
-}
-@defproc[(stx->clause [stx syntax?])
-         clause?]{
- Parses @racket[stx] as a @racket[clause].
-}
-@defproc[(stx->statement [stx syntax?])
-         statement/c]{
- Parses @racket[stx] as a @tech{statement}.
-}
-@defproc[(stx->program [stx syntax?])
-         program/c]{
- Parses @racket[stx] as a @tech{program}.
-}
-                
-@defproc[(sexp->term [sexp sexpr?]) term/c]{@racket[stx->term] composed with @racket[datum->syntax].}
-@defproc[(sexp->literal [sexp sexpr?]) literal?]{@racket[stx->literal] composed with @racket[datum->syntax].}
-@defproc[(sexp->clause [sexp sexpr?]) clause?]{@racket[stx->clause] composed with @racket[datum->syntax].}
-@defproc[(sexp->statement [sexp sexpr?]) statement/c]{@racket[stx->statement] composed with @racket[datum->syntax].}
-@defproc[(sexp->program [sexp sexpr?]) program/c]{@racket[stx->program] composed with @racket[datum->syntax].}
-
 @section{Pretty-Printing}
 
 This library provides facilities for pretty-printing Datalog source. It can be required via:
