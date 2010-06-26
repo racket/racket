@@ -1,0 +1,2 @@
+permit(rams, store, rams_couch).
+permit(will, fetch, rams_couch).

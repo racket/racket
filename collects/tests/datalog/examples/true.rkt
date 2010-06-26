@@ -1,0 +1,3 @@
+#lang datalog
+true.
+true?
