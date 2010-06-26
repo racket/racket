@@ -24,5 +24,5 @@
        (print-result 
         #,(compile-stmt (syntax->datum #'stmt))))]))
 
-(provide module-begin
-         top-interaction)
+(provide (rename-out [module-begin #%module-begin]
+                     [top-interaction #%top-interaction]))

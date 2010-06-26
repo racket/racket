@@ -1,5 +1,5 @@
 (module reader syntax/module-reader
-  #:language 'datalog/lang/module
+  #:language 'datalog/lang/lang
   #:read 
   (lambda ([in (current-input-port)])
     (this-read-syntax #f in))
