@@ -63,7 +63,7 @@
  [download/install-pkg
   (-> string? string? natural-number/c any/c (or/c pkg? #f))]
  [install-pkg
-  (-> pkg-spec? string? natural-number/c any/c (or/c pkg? #f))]
+  (-> pkg-spec? path-string? natural-number/c any/c (or/c pkg? #f))]
  [add-hard-link 
   (-> string? string? natural-number/c natural-number/c path? void?)]
  [remove-hard-link 
