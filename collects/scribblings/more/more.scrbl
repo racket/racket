@@ -59,13 +59,13 @@ you may want to skip to @|guide|.
 
 To get into the spirit of this tutorial, we suggest that you set
 DrRacket aside for a moment, and switch to raw @exec{racket} in a
-terminal. You'll also need a text editor, such as @exec{emacs} or
-@exec{vi}, but any editor will do. Finally, you'll need a web client,
-perhaps @exec{lynx} or @exec{firefox}.
+terminal. You'll also need a text editor, such as Emacs, vi, or even
+Notepad---any editor will do, but one that supports parenthesis
+matching would be helpful. Finally, you'll need a web client, perhaps
+Lynx or Firefox.
 
-Of course, if you're already spoiled, you can keep using DrRacket.  If
-you're on Windows, this is might also make things more convenient than
-using a ``DOS box''.
+@margin-note{Of course, if you're already spoiled, you can keep using
+DrRacket.}
 
 @; ----------------------------------------------------------------------
 @section{Ready...}
@@ -84,8 +84,9 @@ on your system, and if you'd like Readline support in @exec{racket},
 then evaluate @racket[(require readline)]. If you also evaluate
 @racket[(install-readline!)], then your @filepath{~/.racketrc} is
 updated to load Readline whenever you start @exec{racket} for
-interactive evaluation.  This is not needed if you're running a shell
-inside Emacs, or if you're on Windows and use a @exec{cmd} window.
+interactive evaluation.  Readline is not needed if you're running a
+shell inside Emacs or if you're on Windows and use a @exec{cmd}
+window.
 
 @margin-note{Unfortunately, for legal reasons related to GPL vs. LGPL,
              @exec{racket} cannot provide Readline automatically.}
