@@ -44,6 +44,11 @@ of v4.x:
      > (list (b 1 2) (b 3 4))
      (list (b 1 2) (b 3 4))
 
+ * The `pretty-print' function is like `print', and so it may use the
+   printing style above. A new `pretty-write' function behaves
+   consistently like `write'. Uses of `pretty-print' that were meant
+   to as a pretty variant of `write' should change to `pretty-write'.
+
 The old PLT Scheme language is still provided by the libraries
 `scheme', `scheme/base, etc. The new Racket language is provided by
 `racket', `racket/base', etc.  The `mzscheme' executable starts
