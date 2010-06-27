@@ -2442,7 +2442,7 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
     seq->array[i] = le;
   }
   
-  return data;
+  return scheme_make_syntax_compiled(CASE_LAMBDA_EXPD, data);
 }
 
 Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int mode)
