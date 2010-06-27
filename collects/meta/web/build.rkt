@@ -74,5 +74,5 @@ exec "$exe" "$0" "$@"
     (render-all)
     (when distribute?
       (printf "Distributing...\n")
-      (distribute distributions))))
+      (distribute (distributions)))))
 (printf "Done.\n")
