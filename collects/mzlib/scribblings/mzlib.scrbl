@@ -253,7 +253,9 @@ Re-exports @schememodname[file/tar].
 
 @; ----------------------------------------------------------------------
 
-@include-section["trace.scrbl"]
+@mzlib[trace]
+
+Re-exports @schememodname[racket/trace].
 
 @; ----------------------------------------------------------------------
 

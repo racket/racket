@@ -1,11 +1,15 @@
 #lang scribble/doc
-@(require "common.rkt"
-          (for-label mzlib/trace
-                     scheme/pretty))
+@(require "mz.rkt" (for-label racket/trace)
+	  scribble/eval)
 
-@mzlib[#:mode title trace]
+@(begin (define ev (make-base-eval))
+	(ev '(require racket/trace)))
 
-The @schememodname[mzlib/trace] library mimics the tracing facility
+@title["Tracing"]
+
+@note-lib-only[racket/trace]
+
+The @schememodname[racket/trace] library mimics the tracing facility
 available in Chez Scheme.
 
 @defform[(trace id ...)]{
@@ -35,7 +39,15 @@ for an enclosing call). Otherwise, however, the body of a traced
 procedure is not evaluated in tail position with respect to a call to
 the procedure.
 
-The result of a @scheme[trace] expression is @|void-const|.}
+The result of a @scheme[trace] expression is @|void-const|.
+
+@examples[#:eval ev
+(define (f x) (if (zero? x) 0 (add1 (f (sub1 x)))))
+(trace f)
+(f 10)
+]
+
+}
 
 @defform[(untrace id ...)]{
 
