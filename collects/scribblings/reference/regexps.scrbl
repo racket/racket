@@ -741,8 +741,8 @@ before the @litchar{\}. For example, the Racket constant
 @defproc[(regexp-replace* [pattern (or/c string? bytes? regexp? byte-regexp?)]
                           [input (or/c string? bytes?)]
                           [insert (or/c string? bytes? 
-                                        (string? . -> . string?)
-                                        (bytes? . -> . bytes?))]
+                                        ((string?) () #:rest (listof string?) . ->* . string?)
+                                        ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))]
                           [input-prefix bytes? #""])
          (or/c string? bytes?)]{
 

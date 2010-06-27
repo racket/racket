@@ -1074,6 +1074,22 @@
 (test "x&cy&z" regexp-replace* #rx"a(.)" "xabcyawz" "\\&")
 (test "x\\cy\\z" regexp-replace* #rx"a(.)" "xabcyawz" "\\\\")
 
+;; Test sub-matches with procedure replace (second example by synx)
+(test "myCERVEZA myMI Mi"
+      regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
+      (lambda (all one two)
+        (string-append (string-downcase one) "y"
+                       (string-upcase two))))
+(test #"fox in socks, blue seal. trout in socks, blue fish!"
+      regexp-replace*                                     
+      #rx#"([a-z]+) ([a-z]+)"
+      #"red fox, blue seal. red trout, blue trout!"
+      (lambda (total color what)
+        (cond
+         ((equal? color #"red") (bytes-append what #" in socks"))
+         ((equal? what #"trout") (bytes-append color #" fish"))
+         (else (bytes-append color #" " what)))))
+
 ;; Test weird port offsets:
 (define (test-weird-offset regexp-match regexp-match-positions)
   (test #f regexp-match "e" (open-input-string ""))

@@ -326,8 +326,8 @@
                (if (and (not needs-string?) (string? orig-replacement))
                    (string->bytes/utf-8 orig-replacement)
                    orig-replacement))
-             (define (check proc arg)
-               (let ([v (proc arg)])
+             (define (check proc args)
+               (let ([v (apply proc args)])
                  (unless (if needs-string?
                              (string? v)
                              (bytes? v))
@@ -388,9 +388,8 @@
                  (raise-type-error 'regexp-replace* "string or byte string" string))
                (unless (or (string? replacement)
                            (bytes? replacement)
-                           (and (procedure? replacement)
-                                (procedure-arity-includes? replacement 1)))
-                 (raise-type-error 'regexp-replace* "string, byte string, or procedure (arity 1)" 
+                           (procedure? replacement))
+                 (raise-type-error 'regexp-replace* "string, byte string, or procedure" 
                                    replacement))
                (when (and needs-string? (bytes? replacement))
                  (raise-mismatch-error 'regexp-replace*
@@ -404,7 +403,8 @@
                (lambda (start mstart mend ms acc) (list* (if (procedure? replacement)
                                                              (check
                                                               replacement
-                                                              (sub buf mstart mend))
+                                                              (for/list ([m ms])
+                                                                (sub buf (car m) (cdr m))))
                                                              (replac ms replacement))
                                                          (sub buf start mstart)
                                                          acc))
