@@ -105,7 +105,7 @@
 (define (write-configuration-table new configuration-path)
   (define sexpr (configuration-table->sexpr new))
   (call-with-output-file configuration-path
-    (lambda (out) (pretty-print sexpr out))
+    (lambda (out) (pretty-write sexpr out))
     #:exists 'truncate))
 
 ; host-table->sexpr : host-table

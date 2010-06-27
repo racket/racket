@@ -56,7 +56,7 @@
 ; write-to-file : str TST -> void
 (define (write-to-file file-name x)
   (call-with-output-file file-name
-    (lambda (out) (pretty-print x out))
+    (lambda (out) (pretty-write x out))
     #:exists 'truncate))
 
 (define default-configuration-path default-configuration-table-path)
@@ -801,7 +801,7 @@
       (call-with-output-file
           file-path
         (lambda (out)
-          (pretty-print
+          (pretty-write
            `(module ,CONFIGURE-SERVLET-NAME racket
               (require (lib ,CONFIGURE-SERVLET-NAME "web-server" "private"))
               (provide (all-from (lib ,CONFIGURE-SERVLET-NAME "web-server" "private")))
