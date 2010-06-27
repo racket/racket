@@ -4142,6 +4142,18 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     }
   }
 
+  /* Ensure that the original procedure accepts `argc' arguments: */
+  a[0] = px->prev;
+  if (!scheme_check_proc_arity(NULL, argc, 0, 0, a)) {
+    /* Apply the original procedure, in case the chaperone would accept
+       `argc' arguments (in addition to the original procedure's arity)
+       in case the methodness of the original procedure is different
+       from the chaperone, or in case the procedures have different names. */
+    (void)_scheme_apply_multi(px->prev, argc, argv);
+    scheme_signal_error("internal error: unexpected success applying chaperoned procedure");
+    return NULL;
+  }
+
   v = _scheme_apply_multi(px->redirects, argc, argv);
   if (v == SCHEME_MULTIPLE_VALUES) {
     GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
