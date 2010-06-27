@@ -1,2 +1,1 @@
-
-(module echo-non-optimizing "wrap-typed-non-optimizing.ss")
+#lang s-exp "wrapper.rkt"

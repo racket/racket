@@ -56,4 +56,4 @@
               max-depth
               (check long-lived-tree)))))
 
-(command-line #:args (n) (main (assert (string->number (assert n string?)) exact-integer?)))
+(command-line #:args (#{n : String}) (main (assert (string->number n) exact-integer?)))
