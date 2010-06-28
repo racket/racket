@@ -16,7 +16,7 @@
 
 (define-struct (exn:subtype exn:fail) (s t))
 
-;; inference failure - masked before it gets to the user program
+;; subtyping failure - masked before it gets to the user program
 (define-syntax fail!
   (syntax-rules ()
     [(_ s t) (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t))]))
@@ -196,6 +196,13 @@
        [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
+(define (subtype/flds* A flds flds*)
+  (for/fold ([A A]) ([f (in-list flds)] [f* (in-list flds*)])
+    (match* (f f*)
+      [((fld: t _ #t) (fld: t* _ #t))
+       (subtype* (subtype* A t* t) t t*)]
+      [((fld: t _ #f) (fld: t* _ #f))
+       (subtype* A t t*)])))
 
 ;; the algorithm for recursive types transcribed directly from TAPL, pg 305
 ;; List[(cons Number Number)] type type -> List[(cons Number Number)]
@@ -347,12 +354,13 @@
                                    (fail! s t))]
 	      [(s (Union: es)) (or (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)
                                    (fail! s t))]
-	      ;; subtyping on immutable structs is covariant
-	      [((Struct: nm _ flds #f _ _ _ _ _) (Struct: nm _ flds* #f _ _ _ _ _))
-	       (subtypes* A0 flds flds*)]
-	      [((Struct: nm _ flds proc _ _ _ _ _) (Struct: nm _ flds* proc* _ _ _ _ _))
-	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
-              [((Struct: _ _ _ _ _ _ _ _ _) (StructTop: (? (lambda (s2) (type-equal? s2 s)))))
+	      ;; subtyping on immutable structs is covariant	      
+	      [((Struct: nm _ flds proc _ _ _ _) (Struct: nm _ flds* proc* _ _ _ _))
+               (let ([A (cond [(and proc proc*) (subtype* proc proc*)]
+                              [proc* (fail! proc proc*)]
+                              [else A0])])
+                 (subtype/flds* A flds flds*))]
+              [((Struct: _ _ _ _ _ _ _ _) (StructTop: (== s type-equal?)))
                A0]
               [((Box: _) (BoxTop:)) A0]
               [((Channel: _) (ChannelTop:)) A0]
@@ -363,11 +371,11 @@
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy
-	      [((Struct: nm (? Type? parent) flds proc _ _ _ _ _) other) 
+	      [((Struct: nm (? Type? parent) flds proc _ _ _ _) other) 
                ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
-	      [((Struct: 'Promise _ (list t) _ _ _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _ _ _)) (subtype* A0 t t*)]
+	      [((Struct: (== promise-sym) _ (list t) _ _ _ _ _) (Struct: (== promise-sym) _ (list t*) _ _ _ _ _)) (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise
 	      [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; trivial case for Result

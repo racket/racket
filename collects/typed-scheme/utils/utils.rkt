@@ -11,7 +11,7 @@ at least theoretically.
 	 scheme/pretty mzlib/pconvert syntax/parse)
 
 ;; to move to unstable
-(provide reverse-begin)
+(provide reverse-begin list-update list-set)
 
 (provide
  ;; optimization
@@ -26,6 +26,7 @@ at least theoretically.
  rep utils typecheck infer env private types)
 
 (define optimize? (make-parameter #f))
+(define-for-syntax enable-contracts? #t)
 
 ;; fancy require syntax
 (define-syntax (define-requirer stx)
@@ -159,7 +160,6 @@ at least theoretically.
 
 
 ;; turn contracts on and off - off by default for performance.
-(define-for-syntax enable-contracts? #f)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c d/c/p)
 
 (define-syntax-rule (d/c/p (name . args) c . body)
@@ -214,3 +214,13 @@ at least theoretically.
      (if enable-contracts?
          (list #'[contracted (nm cnt)])     
          (list #'nm))]))
+
+(define (list-update l i f)
+  (cond [(null? l) (error 'list-update "list not long enough" l i f)]
+        [(zero? i) (cons (f (car l)) (cdr l))]
+        [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
+
+(define (list-set l k v)
+  (if (zero? k)
+      (cons v (cdr l))
+      (cons (car l) (list-set (cdr l) (sub1 k) v))))

@@ -72,7 +72,7 @@
       
       [(define-values () (begin (quote-syntax (require/typed-internal nm ty #:struct-maker parent)) (#%plain-app values)))
        (let* ([t (parse-type #'ty)]
-              [flds (Struct-flds (lookup-type-name (Name-id t)))]
+              [flds (map fld-t (Struct-flds (lookup-type-name (Name-id t))))]
               [mk-ty (flds #f . ->* . t)])
          (register-type #'nm mk-ty)
          (list (make-def-binding #'nm mk-ty)))]

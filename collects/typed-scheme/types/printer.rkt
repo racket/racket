@@ -144,9 +144,9 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt) (fp "~a" n)]      
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: (== promise-str eq?) #f  (list fld) _    _ _ _ _ _) (fp "(Promise ~a)" fld)]
-    [(Struct: nm       par flds       proc _ _ _ _ _)
-     (fp "#(struct:~a ~a" nm flds)
+    [(Struct: (== promise-sym) #f  (list (fld: t _ _)) _    _ _ _ _) (fp "(Promise ~a)" t)]
+    [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
+     (fp "#(struct:~a ~a" nm t)
      (when proc
        (fp " ~a" proc))
      (fp ")")]
@@ -223,6 +223,7 @@
      (for ([t ts]) (fp " ~a" t))
      (fp ")")]
     [(Error:) (fp "Error")]
+    [(fld: t a m) (fp "(fld ~a)" t)]
     [else (fp "(Unknown Type: ~a)" (struct->vector c))]
     ))
 

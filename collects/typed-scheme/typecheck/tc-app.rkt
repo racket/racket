@@ -465,8 +465,11 @@
     [(#%plain-app (~and op (~or (~literal unsafe-struct-ref) (~literal unsafe-struct*-ref))) s e:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'s)
-         [(tc-result1: (and t (or (Struct: _ _ flds _ _ _ _ _ _)
-                                  (? needs-resolving? (app resolve-once (Struct: _ _ flds _ _ _ _ _ _))))))
+         [(tc-result1: 
+           (and t (or (Struct: _ _ (list (fld: flds _ muts) ...) _ _ _ _ _)
+                      (? needs-resolving? 
+                         (app resolve-once
+                              (Struct: _ _ (list (fld: flds _ muts) ...) _ _ _ _ _))))))
           (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
                           (match e-t
                             [(tc-result1: (Value: (? number? i))) i]
@@ -477,9 +480,11 @@
                        (check-below (ret (apply Un flds)) expected)
                        (ret (apply Un flds)))]
                   [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length flds))))
-                   (if expected
-                       (check-below (ret (list-ref flds ival)) expected)
-                       (ret (list-ref flds ival)))]
+                   (let ([result (if (list-ref muts ival)
+                                     (ret (list-ref flds ival))
+                                     ;; FIXME - could do something with paths here
+                                     (ret (list-ref flds ival)))])
+                     (if expected (check-below result expected) result))]
                   [(not (and (integer? ival) (exact? ival)))
                    (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for struct index, but got ~a" ival)]
                   [(< ival 0)
@@ -492,8 +497,10 @@
     [(#%plain-app (~and op (~or (~literal unsafe-struct-set!) (~literal unsafe-struct*-set!))) s e:expr val:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'s)
-         [(tc-result1: (and t (or (Struct: _ _ flds _ _ _ _ _ _)
-                                  (? needs-resolving? (app resolve-once (Struct: _ _ flds _ _ _ _ _ _))))))
+         [(tc-result1: (and t (or (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _)
+                                  (? needs-resolving? 
+                                     (app resolve-once 
+                                          (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))))
           (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
                           (match e-t
                             [(tc-result1: (Value: (? number? i))) i]
@@ -916,7 +923,7 @@
                      (lambda (dom rng rest a) (infer/vararg vars null argtys-t dom rest rng (and expected (tc-results->values expected))))
                      t argtys expected)]
     ;; procedural structs
-    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _ _ _))) _)
+    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _ _))) _)
      (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) (ret proc-ty) (cons ftype0 argtys) expected)]
     ;; parameters are functions too
     [((tc-result1: (Param: in out)) (list)) (ret out)]

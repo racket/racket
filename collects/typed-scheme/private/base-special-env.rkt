@@ -31,7 +31,7 @@
           (define-hierarchy child (spec ...) grand ...)
           ...)
        (begin
-         (d-s parent ([name : type] ...) ())
+         (d-s parent ([name : type] ...))
          (define-sub-hierarchy [child parent] (type ...) (spec ...) grand ...)
          ...)]))
 
