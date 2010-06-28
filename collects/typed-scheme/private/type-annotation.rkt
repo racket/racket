@@ -112,49 +112,41 @@
   (map (lambda (e) (get-type e #:default default)) stxs))
 
 ;; list[identifier] stx (stx -> tc-results?) (stx tc-results? -> tc-results?) -> tc-results?
+;; stxs : the identifiers, possibly with type annotations on them
+;; expr : the RHS expression
+;; tc-expr : a function like `tc-expr' from tc-expr-unit
+;; tc-expr/check : a function like `tc-expr/check' from tc-expr-unit
 (d/c (get-type/infer stxs expr tc-expr tc-expr/check)
   ((listof identifier?) syntax? (syntax? . -> . tc-results?) (syntax? tc-results? . -> . tc-results?) . -> . tc-results?)
   (match stxs
-    ['() 
-     (tc-expr/check expr (ret null))]
-    [(list stx)
-     (cond [(type-annotation stx #:infer #t)
-            => (lambda (ann)
-                 (tc-expr/check expr (ret ann)))]
-           [else (tc-expr expr)])]
     [(list stx ...)
      (let ([anns (for/list ([s stxs]) (type-annotation s #:infer #t))])
        (if (for/and ([a anns]) a)
-           (begin (tc-expr/check expr (ret anns)))
+           (tc-expr/check expr (ret anns))
            (let ([ty (tc-expr expr)])
              (match ty
-               [(tc-results: tys) 
+               [(tc-results: tys fs os) 
                 (if (not (= (length stxs) (length tys)))
                     (begin
                       (tc-error/delayed 
                                       "Expression should produce ~a values, but produces ~a values of types ~a"
                                       (length stxs) (length tys) (stringify tys))
                       (ret (map (lambda _ (Un)) stxs)))
-                    (ret 
-                     (for/list ([stx stxs] [ty tys] [a anns])
-                       (cond [a => (lambda (ann) (check-type stx ty ann) ann)]
-                             [else ty]))))]
-               [ty (tc-error/delayed 
-                    "Expression should produce ~a values, but produces one values of type ~a"
-                    (length stxs) ty)
-                   (ret (map (lambda _ (Un)) stxs))]))))]))
-
+                    (combine-results 
+                     (for/list ([stx stxs] [ty tys] [a anns] [f fs] [o os])
+                       (cond [a (check-type stx ty a) (ret a f o)]
+			     ;; mutated variables get generalized, so that we don't infer too small a type
+			     [(is-var-mutated? stx) (ret (generalize ty) f o)]
+                             [else (ret ty f o)]))))]))))]))
 
 ;; check that e-type is compatible with ty in context of stx
 ;; otherwise, error
 ;; syntax type type -> void
-
 (define (check-type stx e-type ty)
-  (let ([stx* (current-orig-stx)])
-    (parameterize ([current-orig-stx stx])
-      (unless (subtype e-type ty)
-        ;(printf "orig-stx: ~a" (syntax->datum stx*))
-        (tc-error "Body had type:~n~a~nVariable had type:~n~a~n" e-type ty)))))
+  (parameterize ([current-orig-stx stx])
+    (unless (subtype e-type ty)
+      ;(printf "orig-stx: ~a" (syntax->datum stx*))
+      (tc-error "Body had type:~n~a~nVariable had type:~n~a~n" e-type ty))))
 
 (define (dotted? stx)
   (cond [(syntax-property stx type-dotted-symbol) => syntax-e]
