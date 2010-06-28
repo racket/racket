@@ -2994,6 +2994,7 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
           || IS_NAMED_PRIM(rator, "unsafe-fl>=")
           || IS_NAMED_PRIM(rator, "unsafe-flmin")
           || IS_NAMED_PRIM(rator, "unsafe-flmax")
+          || (!rotate_mode && IS_NAMED_PRIM(rator, "unsafe-fl->fx"))
           || (rotate_mode && IS_NAMED_PRIM(rator, "unsafe-flvector-ref"))
           || (rotate_mode && IS_NAMED_PRIM(rator, "unsafe-fx->fl")))
         return 1;

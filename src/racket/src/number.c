@@ -101,6 +101,7 @@ static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *integer_to_fl (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_to_integer (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *fx_and (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_or (int argc, Scheme_Object *argv[]);
@@ -109,6 +110,7 @@ static Scheme_Object *fx_not (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_lshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_rshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_to_fx (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *fl_floor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_ceiling (int argc, Scheme_Object *argv[]);
@@ -130,6 +132,7 @@ static Scheme_Object *unsafe_fx_not (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_lshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_rshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_to_fl (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_fl_to_fx (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_set (int argc, Scheme_Object *argv[]);
 
@@ -516,22 +519,18 @@ scheme_init_number (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
   
-  p = scheme_make_folding_prim(scheme_exact_to_inexact,
-                               "exact->inexact",
-                               1, 1, 1);
+  p = scheme_make_folding_prim(scheme_exact_to_inexact, "exact->inexact", 1, 1, 1);
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   else
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
   scheme_add_global_constant("exact->inexact", p, env);
 
-  scheme_add_global_constant("inexact->exact", 
-			     scheme_make_folding_prim(scheme_inexact_to_exact,
-						      "inexact->exact",
-						      1, 1, 1),
-			     env);
-
+  p = scheme_make_folding_prim(scheme_inexact_to_exact, "inexact->exact", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("inexact->exact", p, env);
 }
+
 void scheme_init_flfxnum_number(Scheme_Env *env)
 {
   Scheme_Object *p;
@@ -578,6 +577,13 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
   scheme_add_global_constant("->fl", p, env);
 
+  p = scheme_make_folding_prim(fl_to_integer, "fl->exact-integer", 1, 1, 1);
+  if (scheme_can_inline_fp_comp())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  else
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+  scheme_add_global_constant("fl->exact-integer", p, env);
+
 
   p = scheme_make_folding_prim(fx_and, "fxand", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
@@ -609,6 +615,13 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   else
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
   scheme_add_global_constant("fx->fl", p, env);
+
+  p = scheme_make_folding_prim(fl_to_fx, "fl->fx", 1, 1, 1);
+  if (scheme_can_inline_fp_comp())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  else
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
+  scheme_add_global_constant("fl->fx", p, env);
 
 
   p = scheme_make_folding_prim(fl_truncate, "fltruncate", 1, 1, 1);
@@ -737,6 +750,11 @@ void scheme_init_unsafe_number(Scheme_Env *env)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-fx->fl", p, env);
+
+  p = scheme_make_folding_prim(unsafe_fl_to_fx, "unsafe-fl->fx", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
+  scheme_add_global_constant("unsafe-fl->fx", p, env);
 
   p = scheme_make_immed_prim(fl_ref, "unsafe-f64vector-ref",
                              2, 2);
@@ -3260,6 +3278,28 @@ static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[])
   return scheme_make_double(v);
 }
 
+static Scheme_Object *fl_to_fx (int argc, Scheme_Object *argv[])
+{
+  double d;
+  long v;
+  Scheme_Object *o;
+
+  if (!SCHEME_DBLP(argv[0])
+      || !scheme_is_integer(argv[0]))
+    scheme_wrong_type("fl->fx", "inexact-real integer", 0, argc, argv);
+
+  d = SCHEME_DBL_VAL(argv[0]);
+  v = (long)d;
+  if ((double)v == d) {
+    o = scheme_make_integer_value(v);
+    if (SCHEME_INTP(o))
+      return o;
+  }
+
+  scheme_arg_mismatch("fl->fx", "no fixnum representation: ", argv[0]);
+  return NULL;
+}
+
 #define SAFE_FL(op) \
   static Scheme_Object * fl_ ## op (int argc, Scheme_Object *argv[])    \
   {                                                                     \
@@ -3315,6 +3355,14 @@ static Scheme_Object *unsafe_fx_to_fl (int argc, Scheme_Object *argv[])
   return scheme_make_double(v);
 }
 
+static Scheme_Object *unsafe_fl_to_fx (int argc, Scheme_Object *argv[])
+{
+  long v;
+  if (scheme_current_thread->constant_folding) return scheme_inexact_to_exact(argc, argv);
+  v = (long)(SCHEME_DBL_VAL(argv[0]));
+  return scheme_make_integer(v);
+}
+
 static Scheme_Object *fl_ref (int argc, Scheme_Object *argv[])
 {
   double v;
@@ -3367,4 +3415,17 @@ static Scheme_Object *integer_to_fl (int argc, Scheme_Object *argv[])
     scheme_wrong_type("->fl", "exact integer", 0, argc, argv);
     return NULL;
   }
+}
+
+static Scheme_Object *fl_to_integer (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_DBLP(argv[0])) {
+    Scheme_Object *o;
+    o = scheme_inexact_to_exact(argc, argv);
+    if (SCHEME_INTP(o) || SCHEME_BIGNUMP(o))
+      return o;
+  }
+   
+  scheme_wrong_type("fl->exact-integer", "inexact-real integer", 0, argc, argv);
+  return NULL;
 }

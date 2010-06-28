@@ -337,6 +337,12 @@
     (un-exact 10.0 '->fl 10)
     (un-exact 10.0 'fx->fl 10)
 
+    (un-exact 11 'fl->exact-integer 11.0)
+    (un-exact -1 'fl->exact-integer -1.0)
+    (un-exact (inexact->exact 5e200) 'fl->exact-integer 5e200)
+    (un-exact 11 'fl->fx 11.0)
+    (un-exact -11 'fl->fx -11.0)
+
     (bin 11 '+ 4 7)
     (bin -3 '+ 4 -7)
     (bin (expt 2 30) '+ (expt 2 29) (expt 2 29))

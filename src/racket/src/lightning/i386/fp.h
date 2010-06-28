@@ -105,6 +105,7 @@
         : (FLDr ((s1)), FSTPr ((rd)+1)))
 
 #define jit_movr_d_rel(rd,s1) ((rd < s1) ? (FSTPr(0), FLDr(0)) : (FSTr(1)))
+#define jit_movr_d_fppush(rd,s1) (FLDr(s1))
 
 /* - loads:
 
@@ -308,6 +309,15 @@ union jit_double_imm {
         (PUSHLr(_EAX),                                 \
         jit_fxch ((rs), FISTPLm(0, _ESP, 0, 0)),       \
 	POPLr((rd)))
+#define jit_roundr_d_l(rd, rs)                         \
+        (PUSHQr(_EAX),                                 \
+        jit_fxch ((rs), FISTPQm(0, _ESP, 0, 0)),       \
+	POPQr((rd)))
+
+#define jit_roundr_d_l_fppop(rd, rs)                   \
+        (PUSHQr(_EAX),                                 \
+         FISTPQm(0, _ESP, 0, 0),                       \
+	 POPQr((rd)))
 
 #define jit_fp_test(d, s1, s2, n, _and, res)           \
        (((s1) == 0 ? FUCOMr((s2)) : (FLDr((s1)), FUCOMPr((s2) + 1))),     \
