@@ -83,12 +83,6 @@
           expected)
          (run (tc-exprs (syntax->list body)))))))
 
-(define (tc/letrec-values/check namess exprs body form expected)
-  (tc/letrec-values/internal namess exprs body form expected))
-
-(define (tc/letrec-values namess exprs body form)
-  (tc/letrec-values/internal namess exprs body form #f))
-
 (define (tc-expr/maybe-expected/t e name)
   (define expecteds
     (map (lambda (stx) (lookup-type stx (lambda () #f))) name))
@@ -102,7 +96,7 @@
      (tc-expr e)))
   tcr)
 
-(define (tc/letrec-values/internal namess exprs body form expected)
+(define (tc/letrec-values namess exprs body form [expected #f])
   (let* ([names (map syntax->list (syntax->list namess))]
          [orig-flat-names (apply append names)]
          [exprs (syntax->list exprs)]
