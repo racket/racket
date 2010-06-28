@@ -195,6 +195,7 @@
           style: '("border: 2px solid #44f; padding: 6px;"
                    " background-color: #eef;")
           onsubmit: "return CheckSubmit();"]{
+      @input[type: 'hidden name: 'cont value: thanks]
       @field['br "Your name"]{
         @input[type: 'text name: 'name value: "" size: 40]}
       @field['br "Your e-mail address"]{
@@ -230,3 +231,15 @@
          (and c @field['line @list{Please type @c}]{
                   @input[type: 'text name: 'captcha value: "" size: 10]}))
       @input[type: 'submit value: "Submit"]}})
+
+(define thanks
+  @page[#:title "Thanks!" #:extra-headers bugs-script #:referrer values]{
+    @p{@strong{Thanks!}}
+    @p{Your Racket bug report has been submitted.}
+    @p{You should receive an email confirming your report in a few minutes.
+       The confirmation will be sent to the email address you specified in
+       your report.}
+    @p{If you do not receive such confirmation, please report the problem to
+       @tt{@small{racket@"@"racket-lang.org}}
+       or to the Racket
+       @a[href: "http://lists.racket-lang.org/users/"]{mailing list}.}})
