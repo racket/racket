@@ -1,6 +1,7 @@
 #lang s-exp "type-env-lang.rkt"
 
 [Complex -Number]
+[Inexact-Complex -InexactComplex]
 [Number -Number]
 [Integer -Integer]
 [Real -Real]

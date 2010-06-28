@@ -233,10 +233,11 @@
 	      [((Union: (list)) _) A0]
 	      ;; value types              
 	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
-	      ;; now we encode the numeric hierarchy - bletch	      
+	      ;; now we encode the numeric hierarchy - bletch
 	      [((Base: 'Integer _) (Base: 'Number _)) A0]
 	      [((Base: 'Flonum _)  (== -Real =t)) A0]
 	      [((Base: 'Integer _)  (== -Real =t)) A0]
+              [((Base: 'Flonum _)  (Base: 'InexactComplex _)) A0]
 	      [((Base: 'Flonum _)  (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
 	      [((Base: 'Integer _) (Base: 'Exact-Rational _)) A0]
@@ -262,6 +263,8 @@
 	      [((== -Fixnum =t) (Base: 'Number _)) A0]
 	      [((== -Fixnum =t) (Base: 'Exact-Rational _)) A0]
 	      [((== -Fixnum =t) (Base: 'Integer _)) A0]
+
+              [((Base: 'InexactComplex _) (Base: 'Number _)) A0]
 
               
               ;; values are subtypes of their "type"

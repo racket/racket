@@ -150,6 +150,9 @@
 ;; Numeric hierarchy
 (define -Number (make-Base 'Number #'number?))
 
+;; a complex number can't have an inexact imaginary part and an exact real part
+(define -InexactComplex (make-Base 'InexactComplex #'(and/c number? (lambda (x) (inexact-real? (imag-part x))))))
+
 (define -Flonum (make-Base 'Flonum #'inexact-real?))
 
 (define -ExactRational 
