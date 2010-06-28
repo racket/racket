@@ -1,2 +1,1 @@
-
-(module nucleic3-optimizing "wrap-typed-optimizing.ss")
+#lang s-exp "wrapper.rkt"
