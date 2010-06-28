@@ -190,7 +190,7 @@
                            'must-truncate 'truncate/replace)
         #f
         -Output-Port)]
-[read (->opt [-Input-Port] (Un -Sexp (-val eof)))]
+[read (->opt [-Input-Port] Univ)]
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
 [andmap (-polydots (a c d b) (cl->*
                               ;; 1 means predicate on second argument
@@ -616,11 +616,11 @@
 [delete-file (-> -Pathlike -Void)]
 [make-namespace (->opt [(Un (-val 'empty) (-val 'initial))] -Namespace)]
 [make-base-namespace (-> -Namespace)]
-[eval (-> -Sexp Univ)]
+[eval (->opt Univ [-Namespace] Univ)]
 
 [exit (-> (Un))]
 
-[module->namespace (-> -Sexp -Namespace)]
+[module->namespace (-> (-mu x (-lst (Un -Symbol -String -Nat x (-val #f)))) -Namespace)]
 [current-namespace (-Param -Namespace -Namespace)]
 
 [getenv (-> -String (Un -String (-val #f)))]

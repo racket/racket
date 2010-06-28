@@ -148,7 +148,7 @@ Typed Racket offers abstraction over types as well as values.
 
 @subsection{Polymorphic Data Structures}
 
-Virtually every Racket program uses lists and sexpressions.  Fortunately, Typed
+Virtually every Racket program uses lists and other collections.  Fortunately, Typed
 Racket can handle these as well.  A simple list processing program can be
 written like this:
 
