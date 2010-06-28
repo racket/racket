@@ -107,7 +107,7 @@
     (send/finish access-error-page))
   request)
 
-(define web-base (directory-part default-configuration-path))7
+(define web-base (directory-part default-configuration-path))
 
 ; interact : (str -> response) -> bindings
 (define (interact page)
