@@ -22,7 +22,7 @@ on tabling intermediate results ensures that all queries terminate.
 
 @table-of-contents[]
 
-@section{Datalog Module Language}
+@section[#:tag "datalog"]{Datalog Module Language}
 
 @defmodulelang[datalog]
 

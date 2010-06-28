@@ -1,5 +1,6 @@
 (module reader syntax/module-reader
-  #:language 'datalog/sexp/lang
+  ; XXX Copied shamelessly from datalog/lang/reader (some things should be better designed to share
+  #:language 'racklog/lang/lang
   #:read (lambda ([in (current-input-port)]) (this-read-syntax #f in))
   #:read-syntax this-read-syntax
   #:whole-body-readers? #t  
@@ -14,7 +15,7 @@
               (λ () (current-read-interaction even-read))]
              [else (default key defval)]))
   (require datalog/parse
-           datalog/private/compiler)
+           racklog/lang/compiler)
   
   (define (this-read-syntax [src #f] [in (current-input-port)])
     (list
@@ -27,7 +28,7 @@
     (begin0
       (compile-statement
        (parameterize ([current-source-name src])
-        (parse-statement ip)))
+         (parse-statement ip)))
       (current-read-interaction odd-read)))
   (define (odd-read src ip)
     (current-read-interaction even-read)

@@ -538,6 +538,9 @@ This library provides facilities for evaluating Datalog. It can be required via:
  The @tech{theory} used by @racket[eval-program] and @racket[eval-stmt].
 }
 
+@defproc[(print-literals [ls (listof literal?)]) void]{
+ Pretty formats the literals for display. }
+
 @defproc[(eval-program [p program/c])
          void]{
  Evaluates @racket[p] using @racket[(current-theory)] as the @tech{theory}, printing query answers as it goes.

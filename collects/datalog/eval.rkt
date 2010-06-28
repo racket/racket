@@ -54,6 +54,7 @@
 
 (provide/contract
  [current-theory (parameter/c mutable-theory/c)]
+ [print-literals ((listof literal?) . -> . void)]
  [eval-program (program/c . -> . void)]
  [eval-top-level-statement (statement/c . -> . void)]
  [eval-statement (statement/c . -> . (or/c void (listof literal?)))]
