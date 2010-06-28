@@ -187,6 +187,11 @@
            #:with opt
            (begin (log-optimization "int to float" #'op)
                   #'(->fl n.opt)))
+  ;; we can get rid of it altogether if we're giving it an inexact number
+  (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-opt-expr)
+           #:with opt
+           (begin (log-optimization "float to float" #'op)
+                  #'f.opt))
 
   (pattern (#%plain-app op:pair-unary-op p:pair-opt-expr)
            #:with opt
