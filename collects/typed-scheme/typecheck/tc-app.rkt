@@ -608,7 +608,8 @@
     [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
      (add-typeof-expr #'arg2 (ret -PositiveFixnum))
      (match-let ([(tc-result1: t) (single-value #'v)])
-       (cond 
+       (cond
+        [(subtype t -PositiveFixnum) (ret (Un -Zero -PositiveFixnum))]
         [(subtype t (Un -Zero -PositiveFixnum)) (ret -Fixnum)]
         [(subtype t -ExactPositiveInteger) (ret -Nat)]
         [else (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)]))]
