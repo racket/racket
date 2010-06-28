@@ -74,7 +74,7 @@ typed/racket
 (define-struct: leaf ([val : Number]))
 (define-struct: node ([left : Tree] [right : Tree]))
 
-(: tree-height (Tree -> Number))
+(: tree-height (Tree -> Integer))
 (define (tree-height t)
   (cond [(leaf? t) 1]
         [else (max (+ 1 (tree-height (node-left t)))

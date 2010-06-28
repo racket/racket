@@ -120,16 +120,27 @@
                   (list (->* (list -Real) -Real -Real))
                   (list (->* (list N) N N))))]
 
-[max (apply cl->*
-            (->* (list -PositiveFixnum) -Fixnum -PositiveFixnum)
+[max (cl->* (->* (list -PositiveFixnum) -Fixnum -PositiveFixnum)
             (->* (list -NonnegativeFixnum) -Fixnum -NonnegativeFixnum)
+            (->* (list -NegativeFixnum) -NegativeFixnum -NegativeFixnum)
             (->* (list -Fixnum) -Fixnum -Fixnum)
             (->* (list -Pos) -Integer -Pos)
             (->* (list -Nat) -Integer -Nat)
-            (for/list ([t all-num-types]) (->* (list t) t t)))]
-[min (apply cl->*
+            (->* (list -Integer) -Integer -Integer)
+            (->* (list -ExactRational) -ExactRational -ExactRational)
+            (->* (list -Flonum) -Flonum -Flonum)
+            (->* (list -Real) -Real -Real))]
+[min (cl->* (->* (list -PositiveFixnum) -PositiveFixnum -PositiveFixnum)
+            (->* (list -NonnegativeFixnum) -NonnegativeFixnum -NonnegativeFixnum)
+            (->* (list -NegativeFixnum) -Fixnum -NegativeFixnum)
+            (->* (list -Fixnum) -NegativeFixnum -NegativeFixnum)
             (->* (list -Fixnum) -Fixnum -Fixnum)
-            (for/list ([t all-num-types]) (->* (list t) t t)))]
+            (->* (list -Pos) -Pos -Pos)
+            (->* (list -Nat) -Nat -Nat)
+            (->* (list -Integer) -Integer -Integer)
+            (->* (list -ExactRational) -ExactRational -ExactRational)
+            (->* (list -Flonum) -Flonum -Flonum)
+            (->* (list -Real) -Real -Real))]
 
 
 [add1 (cl->* (-> -Pos -Pos)

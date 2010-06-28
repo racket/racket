@@ -93,16 +93,16 @@
 ;; ----------------------------------------
 ;; depth
 
-(: sexp-depth (Any -> Number))
+(: sexp-depth (Any -> Integer))
 (define (sexp-depth sexp)
   (cond
     [(pair? sexp)
      (+ (max-sexp-depth sexp) 1)]
     [else 0]))
 
-(: max-sexp-depth (Any -> Number))
+(: max-sexp-depth (Any -> Integer))
 (define (max-sexp-depth losx)
-  (improper-foldr (λ: ([t : Any] [r : Number]) (max (sexp-depth t) r)) 0 losx))
+  (improper-foldr (λ: ([t : Any] [r : Integer]) (max (sexp-depth t) r)) 0 losx))
 
 (: avg-sexp-depth ((Listof Any) -> Number))
 (define (avg-sexp-depth sexps)
@@ -201,7 +201,7 @@
 ;; ----------------------------------------
 ;; expression size
 
-(: atoms (Any -> Number))
+(: atoms (Any -> Integer))
 (define (atoms sexp)
   (cond
     [(null? sexp) 0]
