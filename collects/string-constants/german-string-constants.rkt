@@ -1339,17 +1339,17 @@
   ; section header
   (test-engine-check-failures "Check-Fehler:")
   ; section header
-  (test-engine-contract-violations "Vertragsverletzungen:")
+  (test-engine-signature-violations "Vertragsverletzungen:")
 
-  ; part of one phrase "contract <at line ...> to blame: procedure <at line ...>
-  (test-engine-contract "Vertrag")
+  ; part of one phrase "signature <at line ...> to blame: procedure <at line ...>
+  (test-engine-signature "Vertrag")
   (test-engine-to-blame "verantwortlich: Prozedur")
 
-  (test-engine-no-contract-violations "Keine Vertragsverletzungen.")
-  (test-engine-1-contract-violation "1 Vertragsverletzung.")
-  (test-engine-n-contract-violations "~a Vertragsverletzungen.")
+  (test-engine-no-signature-violations "Keine Vertragsverletzungen.")
+  (test-engine-1-signature-violation "1 Vertragsverletzung.")
+  (test-engine-n-signature-violations "~a Vertragsverletzungen.")
 
-  ; as in got <value>, contract <at ...>
+  ; as in got <value>, signature <at ...>
   (test-engine-got "bekam")
 
   (profjWizward-insert-java-class "Java-Klasse einfügen")

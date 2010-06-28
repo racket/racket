@@ -2,7 +2,7 @@
 (module htdp-intermediate scheme/base
   (require "private/teach.ss"
            "private/teachprims.ss"
-	   "private/contracts/contracts-module-begin.ss"
+	   "private/teach-module-begin.ss"
 	   mzlib/etc
 	   mzlib/list
 	   syntax/docprovide
@@ -47,7 +47,7 @@
            #%top-interaction
 	   empty true false
 
-	   contract : -> mixed one-of predicate combined
+	   signature : -> mixed one-of predicate combined
 	   Number Real Rational Integer Natural Boolean True False String Symbol Char Empty-list
 	   Property 
 	   check-property for-all ==> expect expect-within expect-member-of expect-range)

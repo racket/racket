@@ -34,7 +34,7 @@ Abstraktion mit Zuweisungen} to go with the German textbook
 
 @defform[(define-record-procedures-2 t c p (field-spec ...))]{
 Die @scheme[define-record-procedures-2]-Form ist eine Definition für
-einen neuen Record-Typ. Dabei ist @scheme[t] der Name des Record-Vertrags,
+einen neuen Record-Typ. Dabei ist @scheme[t] der Name der Record-Signatur,
 @scheme[c] der Name des Konstruktors, @scheme[p] der Name des
 Prädikats. Jedes @scheme[field-spec] kann entweder der Name eines Selektors
 oder ein Paar @scheme[(id id)] aus dem Namen eines Selektors und dem Namen eines
@@ -46,7 +46,7 @@ Mutators sein.
 @defform[(define-record-procedures-parametric-2 t cc c p (field-spec1 ...))]{
 Diese Form ist wie @scheme[define-record-procedures-2], nur parametrisch 
 wie @scheme[define-record-procedures-parametric].  Außerdem
-werden die Verträge für die Feldinhalte, anders als bei
+werden die Signaturen für die Feldinhalte, anders als bei
 @scheme[define-record-procedures-parametric], sofort bei der
 Konstruktion überprüft und nicht erst beim Aufruf eines Selektors.
 }

@@ -10,8 +10,8 @@
 	 mzlib/struct
          mzlib/pconvert-prop
          mzlib/pretty
-	 deinprogramm/contract/contract
-	 deinprogramm/contract/contract-syntax)
+	 deinprogramm/signature/signature
+	 deinprogramm/signature/signature-syntax)
 
 (require (for-syntax scheme/base)
          (for-syntax deinprogramm/syntax-checkers)

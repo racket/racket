@@ -6,7 +6,7 @@
 		     (module-begin intermediate-module-begin)
 		     (module-begin advanced-module-begin)))
 
-(require lang/private/contracts/contract-syntax)
+(require lang/private/signature-syntax)
 
 (require (for-syntax scheme/base)
 	 (for-syntax mzlib/list)
@@ -38,11 +38,11 @@
 (define-syntaxes (module-begin module-continue)
   (let ()
     ;; takes a list of syntax objects (the result of syntax-e) and returns all the syntax objects that correspond to
-    ;; a contract declaration. Syntax: (: id contract)
-    (define extract-contracts
+    ;; a signature declaration. Syntax: (: id signature)
+    (define extract-signatures
       (lambda (lostx) 
 	(let* ((table (make-bound-identifier-mapping))
-	       (non-contracts
+	       (non-signatures
 		(filter (lambda (maybe)
 			  (syntax-case maybe (:)
 			    ((: ?id ?cnt)
@@ -50,37 +50,37 @@
 			     (begin
 			       (when (bound-identifier-mapping-get table #'?id (lambda () #f))
 				 (raise-syntax-error #f
-						     "Second contract declaraton for the same name."
+						     "Second signature declaraton for the same name."
 						     maybe))
 			       (bound-identifier-mapping-put! table #'?id #'?cnt)
 			       #f))
 			    ((: ?id)
-			     (raise-syntax-error 'contracts "Contract declaration is missing a contract." maybe))
+			     (raise-syntax-error 'signatures "Signature declaration is missing a signature." maybe))
 			    ((: ?id ?cnt ?stuff0 ?stuff1 ...)
-			     (raise-syntax-error 'contracts "The : form expects a name and a contract; there is more."
+			     (raise-syntax-error 'signatures "The : form expects a name and a signature; there is more."
 						 (syntax/loc #'?stuff0
 							     (?stuff0 ?stuff1 ...))))
 			    (_ #t)))
 			lostx)))
-	  (values table non-contracts))))
+	  (values table non-signatures))))
 
     (define local-expand-stop-list 
-      (append (list #': #'define-contract
+      (append (list #': #'define-signature
 		    #'#%require #'#%provide)
 	      (kernel-form-identifier-list)))
 	
-    (define (expand-contract-expressions contract-table expressions)
+    (define (expand-signature-expressions signature-table expressions)
 
       (let loop ((exprs expressions))
 
 	(cond
 	 ((null? exprs)
-	  (bound-identifier-mapping-for-each contract-table
+	  (bound-identifier-mapping-for-each signature-table
 					     (lambda (id thing)
 					       (when thing
 						 (if (identifier-binding id)
-						     (raise-syntax-error #f "Cannot declare a contract for a built-in form." id)
-						     (raise-syntax-error #f "There is no definition for this contract declaration." id)))))
+						     (raise-syntax-error #f "Cannot declare a signature for a built-in form." id)
+						     (raise-syntax-error #f "There is no definition for this signature declaration." id)))))
 	  #'(begin))
 	 (else
 	  (let ((expanded (car exprs)))
@@ -90,19 +90,19 @@
 	       (with-syntax (((?enforced ...)
 			      (map (lambda (id)
 				     (cond
-				      ((bound-identifier-mapping-get contract-table id (lambda () #f))
+				      ((bound-identifier-mapping-get signature-table id (lambda () #f))
 				       => (lambda (cnt)
-					    (bound-identifier-mapping-put! contract-table id #f) ; check for orphaned contracts
+					    (bound-identifier-mapping-put! signature-table id #f) ; check for orphaned signatures
 					    (with-syntax ((?id id)
 							  (?cnt cnt))
-					      #'(?id (contract ?cnt)))))
+					      #'(?id (signature ?cnt)))))
 				      (else
 				       id)))
 				   (syntax->list #'(?id ...))))
 			     (?rest (loop (cdr exprs))))
 		 (with-syntax ((?defn
 				(syntax-track-origin
-				 #'(define-values/contract (?enforced ...)
+				 #'(define-values/signature (?enforced ...)
 				     ?e1)
 				 (car exprs)
 				 (car (syntax-e expanded)))))
@@ -138,7 +138,7 @@
 	  ;; Local-expanded all body elements, lifted out requires, etc.
 	  ;; Now process the result.
 	  (begin
-	    ;; The expansion for contracts breaks the way that beginner-define, etc.,
+	    ;; The expansion for signatures breaks the way that beginner-define, etc.,
 	    ;;  check for duplicate definitions, so we have to re-check here.
 	    ;; A better strategy might be to turn every define into a define-syntax
 	    ;;  to redirect the binding, and then the identifier-binding check in
@@ -152,11 +152,11 @@
 			     id))
 			  (bound-identifier-mapping-put! defined-ids id #t))
 			(reverse (syntax->list #'(defined-id ...)))))
-	    ;; Now handle contracts:
+	    ;; Now handle signatures:
 	    (let ((top-level (reverse (syntax->list (syntax (e1 ...))))))
 	      (let-values (((cnt-table expr-list)
-			    (extract-contracts top-level)))
-		(expand-contract-expressions cnt-table expr-list)))))
+			    (extract-signatures top-level)))
+		(expand-signature-expressions cnt-table expr-list)))))
 	 ((frm e3s e1s def-ids)
 	  (let loop ((e3s #'e3s)
 		     (e1s #'e1s)
@@ -170,7 +170,7 @@
 		 ;;  expander:
 		 (syntax-case e2 (#%require #%provide
 				  define-syntaxes define-values-for-syntax define-values begin
-				  define-contract :)
+				  define-signature :)
 		   ((#%require . __)
 		    #`(begin #,e2 (frm e3s #,e1s #,def-ids)))
 		   ((#%provide . __)
@@ -186,7 +186,7 @@
 		     (car (syntax-e e2))))
 		   ((define-values (id ...) . _)
 		    (loop #'e3s (cons e2 e1s) (append (syntax->list #'(id ...)) def-ids)))
-		   ((define-contract id ctr)
+		   ((define-signature id ctr)
 		    (loop #'e3s (cons e2 e1s) def-ids))
 		   ((: stuff ...)
 		    (loop #'e3s (cons e2 e1s) def-ids))

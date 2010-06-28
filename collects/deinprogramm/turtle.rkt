@@ -3,7 +3,7 @@
 (require mzlib/math
          (only-in deinprogramm/image rectangle line overlay image-color? image image-color)
          (only-in lang/private/imageeq image?)
-         deinprogramm/contract/contract-syntax)
+         deinprogramm/signature/signature-syntax)
 
 (provide set-color 
          turn
@@ -24,7 +24,7 @@
    (lambda (grad)
      (* pi/180 grad)))
 
- (define turtle (contract
+ (define turtle (signature
 		 (predicate (lambda (x)
 			      (and (vector? x)
 				   (= (vector-length x) 8)
@@ -212,7 +212,7 @@
  ; functions into one new function, that do
  ; one action of the turtle, then later the rest.
  ; Define the type alias tip = turtle -> turtle.
- (define tip (contract (turtle -> turtle)))
+ (define tip (signature (turtle -> turtle)))
  (: do (tip ... -> tip))
  (define sequence (lambda l (comp_priv l)))
 

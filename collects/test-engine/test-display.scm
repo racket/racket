@@ -8,7 +8,7 @@
          "test-info.scm"
          "test-engine.scm"
 	 "print.ss"
- 	 (except-in deinprogramm/contract/contract contract-violation) ; clashes with test-engine
+ 	 (except-in deinprogramm/signature/signature signature-violation) ; clashes with test-engine
  	 deinprogramm/quickcheck/quickcheck)
 
 (define test-display%
@@ -101,7 +101,7 @@
              [failed-tests (send test-info tests-failed)]
              [total-checks (send test-info checks-run)]
              [failed-checks (send test-info checks-failed)]
-	     [violated-contracts (send test-info failed-contracts)]
+	     [violated-signatures (send test-info failed-signatures)]
 
              [check-outcomes
               (lambda (total failed zero-message ck?)
@@ -147,13 +147,13 @@
 				       failed total)])))
 		(send editor insert
 		      (cond
-		       ((null? violated-contracts)
-			(string-append (string-constant test-engine-no-contract-violations) "\n\n"))
-		       ((null? (cdr violated-contracts))
-			(string-append (string-constant test-engine-1-contract-violation) "\n\n"))
+		       ((null? violated-signatures)
+			(string-append (string-constant test-engine-no-signature-violations) "\n\n"))
+		       ((null? (cdr violated-signatures))
+			(string-append (string-constant test-engine-1-signature-violation) "\n\n"))
 		       (else
-			(format (string-append (string-constant test-engine-n-contract-violations) "\n\n")
-				(length violated-contracts)))))
+			(format (string-append (string-constant test-engine-n-signature-violations) "\n\n")
+				(length violated-signatures)))))
 		)]
 
 	     [check-outcomes/check
@@ -187,12 +187,12 @@
           [else (check-outcomes/check "")])
 
         (unless (and (zero? total-checks)
-		     (null? violated-contracts))
+		     (null? violated-signatures))
           (inner (begin
 		   (display-check-failures (send test-info failed-checks) 
 					   editor test-info src-editor)
 		   (send editor insert "\n")
-		   (display-contract-violations violated-contracts
+		   (display-signature-violations violated-signatures
 						editor test-info src-editor))
                  insert-test-results editor test-info src-editor))))
 
@@ -213,12 +213,12 @@
                        src-editor))
         (send editor insert "\n")))
 
-    (define/public (display-contract-violations violations editor test-info src-editor)
+    (define/public (display-signature-violations violations editor test-info src-editor)
       (when (pair? violations)
-	(send editor insert (string-append (string-constant test-engine-contract-violations) "\n")))
+	(send editor insert (string-append (string-constant test-engine-signature-violations) "\n")))
       (for-each (lambda (violation)
 		  (send editor insert "\t")
-		  (make-contract-link editor violation src-editor)
+		  (make-signature-link editor violation src-editor)
 		  (send editor insert "\n"))
 		violations))
 
@@ -326,19 +326,19 @@
                                   find-named-style "Standard")))
         (send text insert m)))
 
-    (define (make-contract-link text violation src-editor)
-      (let* ((contract (contract-violation-contract violation))
-	     (stx (contract-syntax contract))
-	     (srcloc (contract-violation-srcloc violation))
-	     (message (contract-violation-message violation)))
+    (define (make-signature-link text violation src-editor)
+      (let* ((signature (signature-violation-signature violation))
+	     (stx (signature-syntax signature))
+	     (srcloc (signature-violation-srcloc violation))
+	     (message (signature-violation-message violation)))
 	(cond
 	 ((string? message)
 	  (send text insert message))
-	 ((contract-got? message)
+	 ((signature-got? message)
 	  (insert-messages text (list (string-constant test-engine-got)
 				      " "
-				      ((contract-got-format message)
-				       (contract-got-value message))))))
+				      ((signature-got-format message)
+				       (signature-got-value message))))))
 	(when srcloc
 	  (send text insert " ")
 	  (let ((source (srcloc-source srcloc))
@@ -355,11 +355,11 @@
 		  #f #f)
 	    (set-clickback-style text start "blue")))
 	(send text insert ", ")
-	(send text insert (string-constant test-engine-contract))
+	(send text insert (string-constant test-engine-signature))
 	(send text insert " ")
 	(format-clickable-syntax-src text stx src-editor)
 	(cond
-	 ((contract-violation-blame violation)
+	 ((signature-violation-blame violation)
 	  => (lambda (blame)
 	       (next-line text)
 	       (send text insert (string-constant test-engine-to-blame))

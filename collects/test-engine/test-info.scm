@@ -26,9 +26,9 @@
 ;; (make-not-range src format scheme-val scheme-val scheme-val)
 (define-struct (not-range check-fail) (test min max))
 
-(define-struct contract-got (value format))
+(define-struct signature-got (value format))
 
-(define-struct contract-violation (obj contract message srcloc blame))
+(define-struct signature-violation (obj signature message srcloc blame))
 
 (define-struct (property-fail check-fail) (result))
 (define-struct (property-error check-fail) (message exn))

@@ -126,8 +126,8 @@ Ebenso wie @scheme[right-angle] können wir square leichter schreiben als:
 
 @declare-exporting[teachpack/deinprogramm/turtle]
 
-@defthing[turtle contract]{
-Dies ist der Vertrag für Turtles.
+@defthing[turtle signature]{
+Dies ist die Signatur für Turtles.
 } 
 
 @defthing[set-color (color -> (turtle -> turtle))]{ Diese Prozedur ist
@@ -175,6 +175,6 @@ der gezeichnet wird.
 
 @defthing[sequence ((turtle -> turtle) ... -> (turtle -> turtle))]{
 Diese Prozedur nimmt eine beliebige Anzahl von Turtle-Veränderungen
-(d.h. Prozeduren mit Vertrag @scheme[turtle -> turtle]) und erstellt
+(d.h. Prozeduren mit Signatur @scheme[turtle -> turtle]) und erstellt
 eine neue Prozedur, die die Veränderungen der Reihe nach von links
 nach rechts abarbeitet.}

@@ -15,7 +15,7 @@ plt/collects/tests/deinprogramm/image.ss
 	   lang/posn
            lang/private/imageeq
            htdp/error
-	   deinprogramm/contract/contract-syntax
+	   deinprogramm/signature/signature-syntax
 	   (only-in deinprogramm/DMdA integer natural))
 
 (provide ; #### -primitives doesn't work for us
@@ -857,12 +857,12 @@ converting from the computer's coordinates, we get:
 (define empty-image
   (make-simple-cache-image-snip 0 0 void void))
 
-(define octet (contract (combined natural (predicate (lambda (n) (<= n 255))))))
-(define rgb-color (contract (predicate color?)))
-(define mode (contract (one-of "solid" "outline")))
-(define image (contract (predicate image?)))
-(define image-color (contract (predicate image-color?)))
-(define h-place (contract (mixed integer (one-of "left" "right" "center"))))
-(define v-place (contract (mixed integer (one-of "top" "bottom" "center"))))
-(define h-mode (contract (one-of "left" "right" "center")))
-(define v-mode (contract (one-of "top" "bottom" "center")))
+(define octet (signature (combined natural (predicate (lambda (n) (<= n 255))))))
+(define rgb-color (signature (predicate color?)))
+(define mode (signature (one-of "solid" "outline")))
+(define image (signature (predicate image?)))
+(define image-color (signature (predicate image-color?)))
+(define h-place (signature (mixed integer (one-of "left" "right" "center"))))
+(define v-place (signature (mixed integer (one-of "top" "bottom" "center"))))
+(define h-mode (signature (one-of "left" "right" "center")))
+(define v-mode (signature (one-of "top" "bottom" "center")))

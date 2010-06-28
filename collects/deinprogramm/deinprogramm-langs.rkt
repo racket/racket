@@ -30,7 +30,7 @@
 	 (only-in test-engine/scheme-gui make-formatter)
 	 test-engine/scheme-tests
 	 (lib "test-display.scm" "test-engine")
-	 deinprogramm/contract/contract
+	 deinprogramm/signature/signature
 	 )
 
 
@@ -169,8 +169,8 @@
             (let ([drs-namespace (current-namespace)]
                   [scheme-test-module-name
                    ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)]
-                  [scheme-contract-module-name
-                   ((current-module-name-resolver) '(lib "deinprogramm/contract/contract.ss") #f #f)])
+                  [scheme-signature-module-name
+                   ((current-module-name-resolver) '(lib "deinprogramm/signature/signature.ss") #f #f)])
               (run-in-user-thread
                (lambda ()
                  (read-accept-quasiquote (get-accept-quasiquote?))
@@ -186,19 +186,19 @@
                  (namespace-attach-module drs-namespace scheme-test-module-name)
                  (namespace-require scheme-test-module-name)
 
-                 (namespace-attach-module drs-namespace scheme-contract-module-name)
-                 (namespace-require scheme-contract-module-name)
+                 (namespace-attach-module drs-namespace scheme-signature-module-name)
+                 (namespace-require scheme-signature-module-name)
 
 		 ;; hack: the test-engine code knows about the test~object name; we do, too
 		 (namespace-set-variable-value! 'test~object (build-test-engine))
 		 ;; record test-case failures with the test engine
-		 (contract-violation-proc
-		  (lambda (obj contract message blame)
+		 (signature-violation-proc
+		  (lambda (obj signature message blame)
 		    (cond
 		     ((namespace-variable-value 'test~object #f (lambda () #f))
 		      => (lambda (engine)
-			   (send (send engine get-info) contract-failed
-				 obj contract message blame))))))
+			   (send (send engine get-info) signature-failed
+				 obj signature message blame))))))
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
                  (test-execute (get-preference 'tests:enable? (lambda () #t)))
                  (test-format (make-formatter (lambda (v o)

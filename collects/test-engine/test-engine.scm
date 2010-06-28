@@ -159,7 +159,7 @@
        ((test-execute)
         (unless test-display (setup-display #f #f))
 	(send test-display install-info test-info)
-	(if (pair? (send test-info failed-contracts))
+	(if (pair? (send test-info failed-signatures))
 	    (send this display-results display-rep display-event-space)
 	    (let ((result (send test-info summarize-results)))
 	      (case result

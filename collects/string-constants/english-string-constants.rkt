@@ -1440,17 +1440,17 @@ please adhere to these guidelines:
   ; section header
   (test-engine-check-failures "Check failures:")
   ; section header
-  (test-engine-contract-violations "Contract violations:")
+  (test-engine-signature-violations "Signature violations:")
 
-  ; part of one phrase "contract <at line ...> to blame: procedure <...>
-  (test-engine-contract "contract")
+  ; part of one phrase "signature <at line ...> to blame: procedure <...>
+  (test-engine-signature "signature")
   (test-engine-to-blame "to blame: procedure")
 
-  (test-engine-no-contract-violations "No contract violations.")
-  (test-engine-1-contract-violation "1 contract violation.")
-  (test-engine-n-contract-violations "~a contract violations.")
+  (test-engine-no-signature-violations "No signature violations.")
+  (test-engine-1-signature-violation "1 signature violation.")
+  (test-engine-n-signature-violations "~a signature violations.")
 
-  ; as in got <value>, contract <at ...>
+  ; as in got <value>, signature <at ...>
   (test-engine-got "got")
 
   (profjWizward-insert-java-class "Insert Java Class")

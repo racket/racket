@@ -18,7 +18,7 @@
    #:literals (define define-record-procedures lambda cond if and or let letrec let* begin 
 		#;require lib planet
 		check-expect check-within check-error
-		contract :
+		signature :
 		predicate one-of mixed list %a %b %c
 		lit ...)
    (... [program (code:line def-or-expr ...)])
@@ -29,7 +29,7 @@
    [definition @#,scheme[(define id expr)]
      @#,scheme[(define-record-procedures id id id (id (... ...)))]
      @#,scheme[(define-record-procedures-parametric (id id (... ...)) id id (id (... ...)))]
-     @#,scheme[(: id contr)]
+     @#,scheme[(: id sig)]
      def-rule ...]
    prod ...
    [expr @#,scheme[(code:line (expr expr (... ...)) (code:comment @#,seclink["application"]{Prozedurapplikation}))]
@@ -48,19 +48,19 @@
 	 @#,scheme[(letrec ((id expr) (... ...)) expr)]
 	 @#,scheme[(let* ((id expr) (... ...)) expr) ]
 	 @#,scheme[(begin expr expr (... ...))]
-	 @#,scheme[(contract contr)]
-	 @#,scheme[(for-all ((id contr) (... ...)) expr)]
+	 @#,scheme[(signature sig)]
+	 @#,scheme[(for-all ((id sig) (... ...)) expr)]
 	 @#,scheme[(==> expr expr)]
 	 expr-rule ...]
-   [contr  id
+   [sig  id
 	      @#,scheme[(predicate expr)]
 	      @#,scheme[(one-of expr (... ...))]
-	      @#,scheme[(mixed contr (... ...))]
-	      @#,scheme[(code:line (contr (... ...) -> contr) (code:comment @#,seclink["proc-contract"]{Prozedur-Vertrag}))]
-	      @#,scheme[(list contr)]
-	      @#,scheme[(code:line %a %b %c (code:comment @#,seclink["contract-variable"]{Vertrags-Variable}))]
-	      @#,scheme[(combined contr (... ...))]
-	      @#,scheme[contract]
+	      @#,scheme[(mixed sig (... ...))]
+	      @#,scheme[(code:line (sig (... ...) -> sig) (code:comment @#,seclink["proc-signature"]{Prozedur-Signatur}))]
+	      @#,scheme[(list sig)]
+	      @#,scheme[(code:line %a %b %c (code:comment @#,seclink["signature-variable"]{Signatur-Variable}))]
+	      @#,scheme[(combined sig (... ...))]
+	      @#,scheme[signature]
    ]
    [test-case @#,scheme[(check-expect expr expr)]
               @#,scheme[(check-within expr expr expr)]

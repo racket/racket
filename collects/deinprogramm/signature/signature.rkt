@@ -1,30 +1,30 @@
 #lang scheme/base
 
-(provide contract?
-	 contract-name contract-syntax
-	 contract-arbitrary set-contract-arbitrary!
-	 contract-info-promise
-	 contract-violation
-	 contract-violation-proc call-with-contract-violation-proc
-	 make-delayed-contract
-	 make-call-contract
-	 make-property-contract
-	 make-predicate-contract
-	 make-type-variable-contract
-	 make-list-contract
-	 make-mixed-contract
-	 make-combined-contract
-	 make-case-contract
-	 make-procedure-contract
-	 contract-update-syntax contract-update-info-promise
-	 apply-contract apply-contract/blame
-	 procedure-contract-info? 
-	 procedure-contract-info-arg-contracts procedure-contract-info-return-contract
+(provide signature?
+	 signature-name signature-syntax
+	 signature-arbitrary set-signature-arbitrary!
+	 signature-info-promise
+	 signature-violation
+	 signature-violation-proc call-with-signature-violation-proc
+	 make-delayed-signature
+	 make-call-signature
+	 make-property-signature
+	 make-predicate-signature
+	 make-type-variable-signature
+	 make-list-signature
+	 make-mixed-signature
+	 make-combined-signature
+	 make-case-signature
+	 make-procedure-signature
+	 signature-update-syntax signature-update-info-promise
+	 apply-signature apply-signature/blame
+	 procedure-signature-info? 
+	 procedure-signature-info-arg-signatures procedure-signature-info-return-signature
 	 make-lazy-wrap-info lazy-wrap-info-constructor lazy-wrap-info-raw-accessors
 	 prop:lazy-wrap lazy-wrap? lazy-wrap-ref
-	 make-struct-wrap-contract
+	 make-struct-wrap-signature
 	 check-struct-wraps!
-	 contract=? contract<=?)
+	 signature=? signature<=?)
 
 (require scheme/promise
 	 mzlib/struct
@@ -33,41 +33,41 @@
 
 (require deinprogramm/quickcheck/quickcheck)
 
-(define (contract=? c1 c2)
+(define (signature=? c1 c2)
   (or (eq? c1 c2)
-      (eq? (contract-enforcer c1) (contract-enforcer c2))
-      (and (contract-=?-proc c1)
-	   ((contract-=?-proc c1)
-	    (force (contract-info-promise c1)) 
-	    (force (contract-info-promise c2))))))
+      (eq? (signature-enforcer c1) (signature-enforcer c2))
+      (and (signature-=?-proc c1)
+	   ((signature-=?-proc c1)
+	    (force (signature-info-promise c1)) 
+	    (force (signature-info-promise c2))))))
 
 ; name may be #f
-; enforcer: contract val -> val
+; enforcer: signature val -> val
 ; 
-; syntax: syntax data from where the contract was defined
+; syntax: syntax data from where the signature was defined
 
-(define-struct contract (name enforcer syntax-promise (arbitrary-promise #:mutable) info-promise <=?-proc =?-proc)
-  #:constructor-name really-make-contract
+(define-struct signature (name enforcer syntax-promise (arbitrary-promise #:mutable) info-promise <=?-proc =?-proc)
+  #:constructor-name really-make-signature
   #:property prop:equal+hash
-  (list (lambda (c1 c2 equal?) (contract=? c1 c2)) ; #### use equal?
+  (list (lambda (c1 c2 equal?) (signature=? c1 c2)) ; #### use equal?
 	(lambda (r recur)
-	  (+ (recur (contract-name r))
-	     (* 33 (recur (contract-enforcer r)))))
+	  (+ (recur (signature-name r))
+	     (* 33 (recur (signature-enforcer r)))))
 	(lambda (r recur)
-	  (+ (* 33 (recur (contract-name r)))
-	     (recur (contract-enforcer r)))))
+	  (+ (* 33 (recur (signature-name r)))
+	     (recur (signature-enforcer r)))))
   #:property prop:custom-write
   (lambda (r port write?)
     (cond
-     ((contract-name r)
+     ((signature-name r)
       => (lambda (name)
-	   (display "#<contract " port)
+	   (display "#<signature " port)
 	   (display name port)
 	   (display "#>" port)))
      (else
-      (display "#<contract>" port)))))
+      (display "#<signature>" port)))))
 
-(define (make-contract name enforcer syntax-promise
+(define (make-signature name enforcer syntax-promise
 		       #:arbitrary-promise (arbitrary-promise #f)
 		       #:info-promise (info-promise (delay #f))
 		       #:<=?-proc (<=?-proc
@@ -76,66 +76,66 @@
 		       #:=?-proc (=?-proc
 				 (lambda (this-info other-info)
 				   #f)))
-  (really-make-contract name enforcer syntax-promise arbitrary-promise info-promise <=?-proc =?-proc))
+  (really-make-signature name enforcer syntax-promise arbitrary-promise info-promise <=?-proc =?-proc))
 
-(define (contract-syntax ctr)
-  (force (contract-syntax-promise ctr)))
+(define (signature-syntax sig)
+  (force (signature-syntax-promise sig)))
 
-(define (contract-arbitrary ctr)
-  (force (contract-arbitrary-promise ctr)))
+(define (signature-arbitrary sig)
+  (force (signature-arbitrary-promise sig)))
 
-(define (set-contract-arbitrary! ctr arb)
-  (set-contract-arbitrary-promise! ctr (delay arb)))
+(define (set-signature-arbitrary! sig arb)
+  (set-signature-arbitrary-promise! sig (delay arb)))
 
-(define (contract-update-syntax ctr stx)
-  (struct-copy contract ctr (syntax-promise (delay stx))))
+(define (signature-update-syntax sig stx)
+  (struct-copy signature sig (syntax-promise (delay stx))))
 
 ;; it's a promise because of ordering constraints in the structs
-(define (contract-update-info-promise ctr inf)
-  (struct-copy contract ctr (info-promise inf)))
+(define (signature-update-info-promise sig inf)
+  (struct-copy signature sig (info-promise inf)))
 
 ; message may be #f
-(define contract-violation-proc (make-parameter (lambda (obj contract message blame)
+(define signature-violation-proc (make-parameter (lambda (obj signature message blame)
 						  (raise (make-exn:fail:contract (or message
 										     (format "got ~e" obj))
 										 (current-continuation-marks))))))
 
-(define (contract-violation obj contract msg blame)
-  ((contract-violation-proc) obj contract msg blame))
+(define (signature-violation obj signature msg blame)
+  ((signature-violation-proc) obj signature msg blame))
 
-(define (call-with-contract-violation-proc proc thunk)
-  (parameterize ((contract-violation-proc proc))
+(define (call-with-signature-violation-proc proc thunk)
+  (parameterize ((signature-violation-proc proc))
     (thunk)))
 
-(define (make-delayed-contract name promise)
-  (make-contract name
+(define (make-delayed-signature name promise)
+  (make-signature name
 		 (lambda (self obj)
-		   ((contract-enforcer (force promise)) self obj))
-		 (delay (contract-syntax (force promise)))
+		   ((signature-enforcer (force promise)) self obj))
+		 (delay (signature-syntax (force promise)))
 		 #:arbitrary-promise
 		 (delay
-		   (force (contract-arbitrary-promise (force promise))))
+		   (force (signature-arbitrary-promise (force promise))))
 		 #:info-promise
 		 (delay
-		   (force (contract-info-promise (force promise))))
+		   (force (signature-info-promise (force promise))))
 		 #:<=?-proc
 		 (lambda (this-info other-info)
-		   ((contract-<=?-proc (force promise)) this-info other-info))
+		   ((signature-<=?-proc (force promise)) this-info other-info))
 		 #:=?-proc
 		 (lambda (this-info other-info)
-		   ((contract-=?-proc (force promise)) this-info other-info))))
+		   ((signature-=?-proc (force promise)) this-info other-info))))
 
 ; specialized version of the above, supports comparison
 ; the promise must produce the result of (proc . args), but its passed separately
 ; to give us the right location on backtrace
-(define (make-call-contract name promise proc-promise args-promise syntax)
-  (make-contract name
+(define (make-call-signature name promise proc-promise args-promise syntax)
+  (make-signature name
 		 (lambda (self obj)
-		   ((contract-enforcer (force promise)) self obj))
+		   ((signature-enforcer (force promise)) self obj))
 		 (delay syntax)
 		 #:arbitrary-promise
 		 (delay
-		   (force (contract-arbitrary-promise (force promise))))
+		   (force (signature-arbitrary-promise (force promise))))
 		 #:info-promise
 		 (delay
 		   (make-call-info (force proc-promise) (force args-promise)))
@@ -147,22 +147,22 @@
 
 (define-struct call-info (proc args) #:transparent)
 
-(define (make-property-contract name access contract syntax)
-  (let ((enforce (contract-enforcer contract)))
-    (make-contract name
+(define (make-property-signature name access signature syntax)
+  (let ((enforce (signature-enforcer signature)))
+    (make-signature name
 		   (lambda (self obj)
 		     (enforce self (access obj)) ; #### problematic: enforcement doesn't stick
 		     obj)
 		   syntax)))
 
-(define (make-predicate-contract name predicate-promise syntax)
-  (make-contract
+(define (make-predicate-signature name predicate-promise syntax)
+  (make-signature
    name
-   (lambda (self obj) ; dynamic binding because of syntax remapping via `contract-update-syntax'
+   (lambda (self obj) ; dynamic binding because of syntax remapping via `signature-update-syntax'
      (if ((force predicate-promise) obj)
 	 obj
 	 (begin
-	   (contract-violation obj self #f #f)
+	   (signature-violation obj self #f #f)
 	   obj)))
    (delay syntax)
    #:info-promise
@@ -175,8 +175,8 @@
 
 (define-struct predicate-info (predicate) #:transparent)
 
-(define (make-type-variable-contract name syntax)
-  (make-contract
+(define (make-type-variable-signature name syntax)
+  (make-signature
    name
    (lambda (self obj) obj)
    (delay syntax)
@@ -188,18 +188,18 @@
 
 (define-struct type-variable-info ())
 
-; maps lists to pairs of contract, enforced value
+; maps lists to pairs of signature, enforced value
 (define lists-table (make-weak-hasheq))
 
-(define (make-list-contract name arg-contract syntax)
-  (make-contract
+(define (make-list-signature name arg-signature syntax)
+  (make-signature
    name
    (lambda (self obj)
      ;;(write (list 'list obj) (current-error-port)) (newline (current-error-port))
      (let recur ((l obj))
 
        (define (go-on)
-	 (let ((enforced (cons (apply-contract arg-contract (car l))
+	 (let ((enforced (cons (apply-signature arg-signature (car l))
 			       (recur (cdr l)))))
 	   (hash-set! lists-table l (cons self enforced))
 	   (hash-set! lists-table enforced (cons self enforced))
@@ -209,7 +209,7 @@
 	((null? l)
 	 l)
 	((not (pair? l))
-	 (contract-violation obj self #f #f)
+	 (signature-violation obj self #f #f)
 	 obj)
 	((hash-ref lists-table l #f)
 	 => (lambda (seen)
@@ -222,32 +222,32 @@
    syntax
    #:arbitrary-promise
    (delay
-     (lift->arbitrary arbitrary-list arg-contract))
+     (lift->arbitrary arbitrary-list arg-signature))
    #:info-promise
-   (delay (make-list-info arg-contract))
+   (delay (make-list-info arg-signature))
    #:=?-proc
    (lambda (this-info other-info)
      (and (list-info? other-info)
-	  (contract=? arg-contract (list-info-arg-contract other-info))))))
+	  (signature=? arg-signature (list-info-arg-signature other-info))))))
 
-(define-struct list-info (arg-contract) #:transparent)
+(define-struct list-info (arg-signature) #:transparent)
 
-(define (lift->arbitrary proc . contracts)
-  (let ((arbitraries (map force (map contract-arbitrary-promise contracts))))
+(define (lift->arbitrary proc . signatures)
+  (let ((arbitraries (map force (map signature-arbitrary-promise signatures))))
     (if (andmap values arbitraries)
 	(apply proc arbitraries)
 	#f)))
 
-(define (make-mixed-contract name alternative-contracts syntax)
-  (make-contract
+(define (make-mixed-signature name alternative-signatures syntax)
+  (make-signature
    name
    (lambda (self obj)
-     (let loop ((alternative-contracts alternative-contracts))
+     (let loop ((alternative-signatures alternative-signatures))
        (cond
-	((null? alternative-contracts)
-	 (contract-violation obj self #f #f)
+	((null? alternative-signatures)
+	 (signature-violation obj self #f #f)
 	 obj)
-	((eq? (car alternative-contracts) self)
+	((eq? (car alternative-signatures) self)
 	 (raise
 	  (make-exn:fail:contract
 	   (string->immutable-string
@@ -256,65 +256,65 @@
 		"rekursiver Vertrag"))
 	   (current-continuation-marks))))
 	(else
-	 (check-contract (car alternative-contracts)
+	 (check-signature (car alternative-signatures)
 			 obj
 			 values
-			 (lambda () (loop (cdr alternative-contracts))))))))
+			 (lambda () (loop (cdr alternative-signatures))))))))
    (delay syntax)
    #:arbitrary-promise
    (delay
-     (let ((arbitraries (map force (map contract-arbitrary-promise alternative-contracts))))
+     (let ((arbitraries (map force (map signature-arbitrary-promise alternative-signatures))))
        (if (andmap values arbitraries)
 	   (arbitrary-mixed 
-	    (map (lambda (ctr arb)
-		   (cons (contract->predicate ctr)
+	    (map (lambda (sig arb)
+		   (cons (signature->predicate sig)
 			 arb))
-		 alternative-contracts arbitraries))
+		 alternative-signatures arbitraries))
 	   #f)))))
 
-(define (check-contract ctr val success fail)
+(define (check-signature sig val success fail)
   ((let/ec exit
      (let ((enforced
-	    (call-with-contract-violation-proc
-	     (lambda (contract syntax msg blame)
+	    (call-with-signature-violation-proc
+	     (lambda (signature syntax msg blame)
 	       (exit fail))
 	     (lambda ()
-	       (apply-contract ctr val)))))
+	       (apply-signature sig val)))))
        (lambda () (success enforced))))))
 
-(define (contract->predicate ctr)
+(define (signature->predicate sig)
   (lambda (val)
-    (check-contract ctr val (lambda (_) #t) (lambda () #f))))
+    (check-signature sig val (lambda (_) #t) (lambda () #f))))
 
-(define (make-combined-contract name contracts syntax)
-  (make-contract
+(define (make-combined-signature name signatures syntax)
+  (make-signature
    name
    (lambda (self obj)
-     (let ((old-violation-proc (contract-violation-proc)))
+     (let ((old-violation-proc (signature-violation-proc)))
        ((let/ec exit
-	  (call-with-contract-violation-proc
-	   (lambda (contract syntax msg blame)
+	  (call-with-signature-violation-proc
+	   (lambda (signature syntax msg blame)
 	     (exit
 	      (lambda ()
-		(old-violation-proc contract syntax msg blame)
+		(old-violation-proc signature syntax msg blame)
 		obj)))
 	   (lambda ()
-	     (let loop ((contracts contracts)
+	     (let loop ((signatures signatures)
 			(obj obj))
-	       (if (null? contracts)
+	       (if (null? signatures)
 		   (lambda () obj)
-		   (loop (cdr contracts)
-			 (apply-contract (car contracts) obj))))))))))
+		   (loop (cdr signatures)
+			 (apply-signature (car signatures) obj))))))))))
    (delay syntax)))
 
-(define (make-case-contract name cases =? syntax)
-  (make-contract
+(define (make-case-signature name cases =? syntax)
+  (make-signature
    name
    (lambda (self obj)
      (let loop ((cases cases))
        (cond
 	((null? cases)
-	 (contract-violation obj self #f #f)
+	 (signature-violation obj self #f #f)
 	 obj)
 	((=? (car cases) obj)
 	 obj)
@@ -326,13 +326,13 @@
 
 (define-struct procedure-to-blame (proc syntax))
 
-(define contract-key (gensym 'contract-key))
+(define signature-key (gensym 'signature-key))
 
-(define-struct procedure-contract-info (arg-contracts return-contract) #:transparent)
+(define-struct procedure-signature-info (arg-signatures return-signature) #:transparent)
 
-(define (make-procedure-contract name arg-contracts return-contract syntax)
-  (let ((arg-count (length arg-contracts)))
-    (make-contract
+(define (make-procedure-signature name arg-signatures return-signature syntax)
+  (let ((arg-count (length arg-signatures)))
+    (make-signature
      name
      (lambda (self thing)
        (let-values (((proc blame-syntax)
@@ -342,52 +342,52 @@
 			 (values thing #f))))
 	 (cond
 	  ((not (procedure? proc))
-	   (contract-violation proc self #f #f))
+	   (signature-violation proc self #f #f))
 	  ((not (procedure-arity-includes? proc arg-count)) ; #### variable arity
-	   (contract-violation proc self "falsche Anzahl von Parametern" #f))
+	   (signature-violation proc self "falsche Anzahl von Parametern" #f))
 	  (else
 	   (attach-name
 	    (object-name proc)
 	    (procedure-reduce-arity
 	     (lambda args
 	       (call-with-immediate-continuation-mark
-		contract-key
+		signature-key
 		(lambda (maybe)
 		  (if (not (= (length args) arg-count))
 		      (begin
-			(contract-violation proc self "falsche Anzahl von Argumenten" #f)
-			(apply-contract return-contract (apply proc args)))
-		      (let* ((old-violation-proc (contract-violation-proc))
+			(signature-violation proc self "falsche Anzahl von Argumenten" #f)
+			(apply-signature return-signature (apply proc args)))
+		      (let* ((old-violation-proc (signature-violation-proc))
 			     (arg-violation? #f)
 			     (args
-			      (call-with-contract-violation-proc
-			       (lambda (obj contract message blame)
+			      (call-with-signature-violation-proc
+			       (lambda (obj signature message blame)
 				 (set! arg-violation? #t)
-				 (old-violation-proc obj contract message blame))
+				 (old-violation-proc obj signature message blame))
 			       (lambda ()
-				 (map apply-contract arg-contracts args)))))
-			(if (eq? maybe return-contract)
+				 (map apply-signature arg-signatures args)))))
+			(if (eq? maybe return-signature)
 			    (apply proc args)
 			    (let ((retval
 				   (with-continuation-mark 
-				    contract-key return-contract
+				    signature-key return-signature
 				    (apply proc args))))
 			      (if arg-violation?
 				  retval
-				  (call-with-contract-violation-proc
-				   (lambda (obj contract message _)
+				  (call-with-signature-violation-proc
+				   (lambda (obj signature message _)
 				     ;; blame the procedure
-				     (old-violation-proc obj contract message blame-syntax))
+				     (old-violation-proc obj signature message blame-syntax))
 				   (lambda ()
-				     (apply-contract return-contract retval)))))))))))
+				     (apply-signature return-signature retval)))))))))))
 	     (procedure-arity proc)))))))
      (delay syntax)
      #:arbitrary-promise
      (delay
-       (apply lift->arbitrary arbitrary-procedure return-contract arg-contracts))
+       (apply lift->arbitrary arbitrary-procedure return-signature arg-signatures))
      #:info-promise
      (delay
-       (make-procedure-contract-info arg-contracts return-contract)))))
+       (make-procedure-signature-info arg-signatures return-signature)))))
 
 (define (attach-name name thing)
   (if (and (procedure? thing)
@@ -395,7 +395,7 @@
       (procedure-rename thing name)
       thing))
 
-; Lazy contract checking for structs
+; Lazy signature checking for structs
 
 ;; This is attached prop:lazy-wrap property of struct types subject to
 ;; lazy checking.
@@ -403,7 +403,7 @@
   (constructor 
    raw-accessors raw-mutators
    ;; procedures for referencing or setting an additional field within the struct
-   ;; that field contains a list of lists of unchecked field contracts
+   ;; that field contains a list of lists of unchecked field signatures
    ref-proc set!-proc))
 
 ; value should be a lazy-wrap-info
@@ -413,13 +413,13 @@
 ; The field accessed by ref-proc and set!-proc contains one of these:
 
 (define-struct lazy-wrap-log
-  ;; each contains a list of lists; each element is a list of field contracts
+  ;; each contains a list of lists; each element is a list of field signatures
   (not-checked checked)
   #:transparent) 
 
-(define (make-struct-wrap-contract name type-descriptor field-contracts syntax)
+(define (make-struct-wrap-signature name type-descriptor field-signatures syntax)
   (let ((lazy-wrap-info (lazy-wrap-ref type-descriptor))
-	(struct-wrap-info (make-struct-wrap-info type-descriptor field-contracts))
+	(struct-wrap-info (make-struct-wrap-info type-descriptor field-signatures))
 	(predicate (lambda (thing)
 		     (and (struct? thing)
 			  (let-values (((thing-descriptor _) (struct-info thing)))
@@ -428,25 +428,25 @@
 	  (raw-accessors (lazy-wrap-info-raw-accessors lazy-wrap-info))
 	  (wrap-ref (lazy-wrap-info-ref-proc lazy-wrap-info))
 	  (wrap-set! (lazy-wrap-info-set!-proc lazy-wrap-info)))
-    (make-contract
+    (make-signature
      name
      (lambda (self thing)
 
        (if (not (predicate thing))
-	   (contract-violation thing self #f #f)
+	   (signature-violation thing self #f #f)
 	   (let ((log (wrap-ref thing)))
 	     (cond
 	      ((not log)
 	       (wrap-set! thing
-			  (make-lazy-wrap-log (list field-contracts) '())))
-	      ((not (let ((check (lambda (wrap-field-contracts)
-				   (andmap contract<=?
-					   wrap-field-contracts
-					   field-contracts))))
+			  (make-lazy-wrap-log (list field-signatures) '())))
+	      ((not (let ((check (lambda (wrap-field-signatures)
+				   (andmap signature<=?
+					   wrap-field-signatures
+					   field-signatures))))
 		      (or (ormap check (lazy-wrap-log-not-checked log))
 			  (ormap check (lazy-wrap-log-checked log)))))
 	       (wrap-set! thing
-			  (make-lazy-wrap-log (cons field-contracts (lazy-wrap-log-not-checked log))
+			  (make-lazy-wrap-log (cons field-signatures (lazy-wrap-log-not-checked log))
 					      (lazy-wrap-log-checked log)))))))
        
        thing)
@@ -456,21 +456,21 @@
      #:=?-proc
      (lambda (this-info other-info)
        (and (struct-wrap-info? other-info)
-	    (struct-wrap-info-field-contracts other-info)
+	    (struct-wrap-info-field-signatures other-info)
 	    (eq? type-descriptor (struct-wrap-info-descriptor other-info))
-	    (andmap contract=?
-		    field-contracts
-		    (struct-wrap-info-field-contracts other-info))))
+	    (andmap signature=?
+		    field-signatures
+		    (struct-wrap-info-field-signatures other-info))))
      #:<=?-proc
      (lambda (this-info other-info)
        (and (struct-wrap-info? other-info)
-	    (struct-wrap-info-field-contracts other-info) 
+	    (struct-wrap-info-field-signatures other-info) 
 	    (eq? type-descriptor (struct-wrap-info-descriptor other-info))
-	    (andmap contract<=?
-		    field-contracts
-		    (struct-wrap-info-field-contracts other-info))))))))
+	    (andmap signature<=?
+		    field-signatures
+		    (struct-wrap-info-field-signatures other-info))))))))
 
-(define-struct struct-wrap-info (descriptor field-contracts))
+(define-struct struct-wrap-info (descriptor field-signatures))
 
 (define (check-struct-wraps! thing)
   (let-values (((descriptor skipped?) (struct-info thing)))
@@ -487,8 +487,8 @@
 	    (let loop ((field-vals (map (lambda (raw-accessor)
 					  (raw-accessor thing))
 					raw-accessors))
-		       (field-contracts-list (lazy-wrap-log-not-checked log)))
-	      (if (null? field-contracts-list)
+		       (field-signatures-list (lazy-wrap-log-not-checked log)))
+	      (if (null? field-signatures-list)
 		  (begin
 		    (for-each (lambda (raw-mutator field-val)
 				(raw-mutator thing field-val))
@@ -497,11 +497,11 @@
 			       (make-lazy-wrap-log '()
 						   (append (lazy-wrap-log-not-checked log)
 							   (lazy-wrap-log-checked log)))))
-		  (loop (map apply-contract (car field-contracts-list) field-vals)
-			(cdr field-contracts-list))))))))))
+		  (loop (map apply-signature (car field-signatures-list) field-vals)
+			(cdr field-signatures-list))))))))))
 
-; like apply-contract, but can track more precise blame into the contract itself
-(define-syntax apply-contract/blame
+; like apply-signature, but can track more precise blame into the signature itself
+(define-syntax apply-signature/blame
   (lambda (stx)
     (syntax-case stx ()
       ((_ ?cnt-exp ?val-exp)
@@ -509,7 +509,7 @@
 	 ((lambda ?params ?body0 ?body1 ...)
 	  (stepper-syntax-property
 	   ;; remember there's an implicit #%app
-	   #'(apply-contract ?cnt-exp
+	   #'(apply-signature ?cnt-exp
 			     (make-procedure-to-blame ?val-exp
 						      #'?val-exp))
 	   'stepper-skipto/discard
@@ -517,7 +517,7 @@
 		      syntax-e cdr syntax-e cdr car)))
 	 ((#%plain-lambda ?params ?body0 ?body1 ...)
 	  (stepper-syntax-property
-	   #'(apply-contract ?cnt-exp
+	   #'(apply-signature ?cnt-exp
 			     (make-procedure-to-blame ?val-exp
 						      #'?val-exp))
 	   'stepper-skipto/discard
@@ -525,20 +525,20 @@
 		      syntax-e cdr syntax-e cdr car)))
 	 (_
 	  (stepper-syntax-property
-	   #'(apply-contract ?cnt-exp ?val-exp)
+	   #'(apply-signature ?cnt-exp ?val-exp)
 	   'stepper-skipto/discard
 	   '(syntax-e cdr syntax-e cdr cdr car))))))))
 
-(define (apply-contract contract val)
-  ((contract-enforcer contract) contract val))
+(define (apply-signature signature val)
+  ((signature-enforcer signature) signature val))
 
 ; "do the values that fulfill c1 also fulfill c2?"
-(define (contract<=? c1 c2)
-  (or (contract=? c1 c2)
-      (let ((i1 (force (contract-info-promise c1)))
-	    (i2 (force (contract-info-promise c2))))
+(define (signature<=? c1 c2)
+  (or (signature=? c1 c2)
+      (let ((i1 (force (signature-info-promise c1)))
+	    (i2 (force (signature-info-promise c2))))
 	(or (type-variable-info? i2) ; kludge, maybe dispatch should be on second arg
 	    (and i1 i2
-		 ((contract-<=?-proc c1) i1 i2))))))
+		 ((signature-<=?-proc c1) i1 i2))))))
 	     
 

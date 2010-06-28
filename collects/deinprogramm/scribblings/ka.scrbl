@@ -22,10 +22,10 @@ Macht der Abstraktion}.
     durch. Stellen Sie dabei fest, zu welcher Sorte die Daten gehören, ob
     Daten mit Fallunterscheidung vorliegen und ob zusammengesetzte
     oder gemischte Daten vorliegen.}
-  @item{@bold{Vertrag} Wählen Sie einen Namen und schreiben Sie einen Vertrag für die Prozedur.}
+  @item{@bold{Signatur} (im Buch "Vertrag") Wählen Sie einen Namen und schreiben Sie eine Signatur für die Prozedur.}
   @item{@bold{Testfälle}  Schreiben Sie einige Testfälle.}
-  @item{@bold{Gerüst} Leiten Sie direkt aus dem Vertrag das Gerüst der Prozedur her.}
-  @item{@bold{Schablone} Leiten Sie aus dem Vertrag und der Datenanalyse mit
+  @item{@bold{Gerüst} Leiten Sie direkt aus der Signatur das Gerüst der Prozedur her.}
+  @item{@bold{Schablone} Leiten Sie aus der Signatur und der Datenanalyse mit
     Hilfe der Konstruktionsanleitungen eine Schablone her.}
   @item{@bold{Rumpf} Vervollständigen Sie den Rumpf der Prozedur.}
   @item{@bold{Test} Vergewissern Sie sich, daß die Tests erfolgreich laufen.}
@@ -41,7 +41,7 @@ Die Schablone für eine Prozedur @scheme[proc], deren Argument zu einer Sorte ge
 die @italic{n} Kategorien hat, sieht folgendermaßen aus:
 
 @schemeblock[
-(: proc (ctr -> ...))
+(: proc (sig -> ...))
 (define proc
   (lambda (a)
     (cond
@@ -49,7 +49,7 @@ die @italic{n} Kategorien hat, sieht folgendermaßen aus:
       ...
       (#,(elem (scheme test) (subscript "n")) ...))))
 ]
-Dabei ist @scheme[ctr] der Vertrag, den die Elemente der Sorte erfüllen müssen. 
+Dabei ist @scheme[sig] die Signatur, den die Elemente der Sorte erfüllen müssen. 
 Die @elem[(scheme test) (subscript "i")]  müssen Tests sein, welche die einzelnen Kategorien
 erkennen.  Sie sollten alle Kategorien abdecken.
 Der letzte Zweig kann auch ein @scheme[else]-Zweig sein, falls
@@ -68,40 +68,40 @@ anfängt:
 
 @schemeblock[
 (code:comment @#,t{Ein @scheme[x] besteht aus / hat:})
-(code:comment @#,t{- @scheme[#,(elem (scheme Feld) (subscript "1"))] @scheme[(#,(elem (scheme ctr) (subscript "1")))]})
+(code:comment @#,t{- @scheme[#,(elem (scheme Feld) (subscript "1"))] @scheme[(#,(elem (scheme sig) (subscript "1")))]})
 (code:comment @#,t{...})
-(code:comment @#,t{- @scheme[#,(elem (scheme Feld) (subscript "n"))] @scheme[(#,(elem (scheme ctr) (subscript "n")))]})
+(code:comment @#,t{- @scheme[#,(elem (scheme Feld) (subscript "n"))] @scheme[(#,(elem (scheme sig) (subscript "n")))]})
 ]
 
 Dabei ist @scheme[x] ein umgangssprachlicher Name für die Sorte
 (``Schokokeks''), die @elem[(scheme Feld) (subscript "i")] sind
 umgangssprachliche Namen und kurze Beschreibungen der Komponenten 
-und die @elem[(scheme ctr) (subscript "i")] die dazugehörigen Verträge.
+und die @elem[(scheme sig) (subscript "i")] die dazugehörigen Signaturen.
 
 Übersetzen Sie die Datendefinition in eine Record-Definition, indem Sie
-auch Namen für den Record-Vertrag @scheme[ctr], Konstruktor @scheme[constr],
+auch Namen für die Record-Signatur @scheme[sig], Konstruktor @scheme[constr],
 Prädikat @scheme[pred?] und die Selektoren @elem[(scheme select) (subscript "i")]
 wählen:
 @schemeblock[
-(define-record-procedures ctr
+(define-record-procedures sig
   constr pred?
   (#,(elem (scheme select) (subscript "1")) ... #,(elem (scheme select) (subscript "n"))))
 ]
 
-Schreiben Sie außerdem einen Vertrag für den Konstruktor der
+Schreiben Sie außerdem eine Signatur für den Konstruktor der
 Form:
 
 @schemeblock[
-(: constr (#,(elem (scheme ctr) (subscript "1")) ... #,(elem (scheme ctr) (subscript "n")) -> ctr))
+(: constr (#,(elem (scheme sig) (subscript "1")) ... #,(elem (scheme sig) (subscript "n")) -> sig))
 ]
 
-Ggf. schreiben Sie außerdem Verträge für das Prädikat und die Selektoren:
+Ggf. schreiben Sie außerdem Signaturen für das Prädikat und die Selektoren:
 
 @schemeblock[
 (: pred? (%a -> boolean))
-(: #,(elem (scheme select) (subscript "1")) (ctr -> #,(elem (scheme ctr) (subscript "1"))))
+(: #,(elem (scheme select) (subscript "1")) (sig -> #,(elem (scheme sig) (subscript "1"))))
 ...
-(: #,(elem (scheme select) (subscript "n")) (ctr -> #,(elem (scheme ctr) (subscript "n"))))
+(: #,(elem (scheme select) (subscript "n")) (sig -> #,(elem (scheme sig) (subscript "n"))))
 ]
 
 @section{zusammengesetzte Daten als Argumente}
@@ -126,26 +126,26 @@ eine Datendefinition der Form:
 
 @schemeblock[
 (code:comment @#,t{Ein @scheme[x] ist eins der Folgenden:})
-(code:comment @#,t{- @elem[(scheme Sorte) (subscript "1")] (@elem[(scheme ctr) (subscript "1")])})
+(code:comment @#,t{- @elem[(scheme Sorte) (subscript "1")] (@elem[(scheme sig) (subscript "1")])})
 (code:comment @#,t{...})
-(code:comment @#,t{- @elem[(scheme Sorte) (subscript "n")] (@elem[(scheme ctr) (subscript "n")])})
-(code:comment @#,t{Name: @scheme[ctr]})
+(code:comment @#,t{- @elem[(scheme Sorte) (subscript "n")] (@elem[(scheme sig) (subscript "n")])})
+(code:comment @#,t{Name: @scheme[sig]})
 ]
 
 Dabei sind die @elem[(scheme Sorte) (subscript "i")] umgangssprachliche Namen
 für die möglichen Sorten, die ein Wert aus diesen gemischten Daten
-annehmen kann.  Die @elem[(scheme ctr) (subscript "i")] sind die zu den Sorten
-gehörenden Verträge.  Der Name @scheme[ctr] ist für die Verwendung als
-Vertrag.
+annehmen kann.  Die @elem[(scheme sig) (subscript "i")] sind die zu den Sorten
+gehörenden Signaturen.  Der Name @scheme[sig] ist für die Verwendung als
+Signatur.
 
-Aus der Datendefinition entsteht eine Vertragsdefinition folgender Form:
+Aus der Datendefinition entsteht eine Signaturdefinition folgender Form:
 
 @schemeblock[
-(define ctr
-  (contract
-    (mixed #,(elem (scheme ctr) (subscript "1"))
+(define sig
+  (signature
+    (mixed #,(elem (scheme sig) (subscript "1"))
            ...
-           #,(elem (scheme ctr) (subscript "n")))))
+           #,(elem (scheme sig) (subscript "n")))))
 ]
 
 Wenn die Prädikate für die einzelnen Sorten @elem[(scheme pred?)
@@ -154,7 +154,7 @@ Schablone für eine Prozedur, die gemischte Daten konsumiert, die
 folgende Form:
 
 @schemeblock[
-(: proc (ctr -> ...))
+(: proc (sig -> ...))
 
 (define proc
   (lambda (a)
@@ -184,9 +184,9 @@ Schablone:
        ... (proc (rest lis)) ...))))
 ]
 
-Dabei ist @scheme[elem] der Vertrag für die Elemente der Liste.  Dies
-kann eine Vertragsvariable (@scheme[%a], @scheme[%b], ...) sein, falls
-die Prozedur unabhängig vom Vertrag der Listenelemente ist.
+Dabei ist @scheme[elem] die Signatur für die Elemente der Liste.  Dies
+kann eine Signaturvariable (@scheme[%a], @scheme[%b], ...) sein, falls
+die Prozedur unabhängig von der Signatur der Listenelemente ist.
 
 Füllen Sie in der Schablone zuerst den @scheme[empty?]-Zweig aus.
 Vervollständigen Sie dann den anderen Zweig unter der Annahme, daß
@@ -251,7 +251,7 @@ folgende Schablone:
   (lambda (lis)
     (proc-helper lis z)))
 
-(: proc ((list elem) ctr -> ...))
+(: proc ((list elem) sig -> ...))
 
 (define proc-helper
   (lambda (lis acc)
@@ -264,8 +264,8 @@ folgende Schablone:
 
 Hier ist @scheme[proc] der Name der zu definierenden Prozedur und
 @scheme[proc-helper] der Name der Hilfsprozedur mit Akkumulator.  Der
-Anfangswert für den Akkumulator ist der Wert von @scheme[z].  Der Vertrag @scheme[ctr]
-ist der Vertrag für den Akkumulator.  Der
+Anfangswert für den Akkumulator ist der Wert von @scheme[z].  Die Signatur @scheme[sig]
+ist die Signatur für den Akkumulator.  Der
 Ausdruck @scheme[(... (first lis) ... acc ...)] 
 macht aus dem alten Zwischenergebnis @scheme[acc] das neue
 Zwischenergebnis.
@@ -340,7 +340,7 @@ sieht folgendermaßen aus, wobei an der Stelle @scheme[k] ein
 veränderbares Feld steht:
 
 @schemeblock[
-(define-record-procedures-2 ctr
+(define-record-procedures-2 sig
   constr pred?
   (#,(elem (scheme select) (subscript "1")) ... (#,(elem (scheme s) (subscript "k")) #,(elem (scheme mutate) (subscript "k"))) ... #,(elem (scheme s) (subscript "n"))))
 ]

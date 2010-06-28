@@ -20,12 +20,12 @@ Es enthält alle Prozeduren aus dem
 
 @declare-exporting[teachpack/deinprogramm/world #:use-sources (teachpack/deinprogramm/world)]
 
-@defthing[world contract]{
+@defthing[world signature]{
 Eine @deftech{Welt} (Name: @scheme[world]) ist die Repräsentation des Zustands,
 der durch die Animation abgebildet wird.
 }
 
-@defthing[mouse-event-kind contract]{
+@defthing[mouse-event-kind signature]{
 @scheme[(one-of "enter" "leave" "motion" "left-down" "left-up" "middle-down" "middle-up" "right-down" "right-up")]
 
 Eine @deftech{Mausereignis-Art} (Name: @scheme[mouse-event-kind])

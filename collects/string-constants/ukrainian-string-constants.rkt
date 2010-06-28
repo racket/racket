@@ -1424,17 +1424,17 @@ please adhere to these guidelines:
   ; section header
   (test-engine-check-failures "Помилки тестування:")
   ; section header
-  (test-engine-contract-violations "Порушення домовленості:")
+  (test-engine-signature-violations "Порушення домовленості:")
 
-  ; part of one phrase "contract <at line ...> to blame: procedure <...>
-  (test-engine-contract "домовленість")
+  ; part of one phrase "signature <at line ...> to blame: procedure <...>
+  (test-engine-signature "домовленість")
   (test-engine-to-blame "порушено: процедура")
 
-  (test-engine-no-contract-violations "Немає порушень домовленості.")
-  (test-engine-1-contract-violation "1 порушення домовленості.")
-  (test-engine-n-contract-violations "~a порушень домовленості.")
+  (test-engine-no-signature-violations "Немає порушень домовленості.")
+  (test-engine-1-signature-violation "1 порушення домовленості.")
+  (test-engine-n-signature-violations "~a порушень домовленості.")
 
-  ; as in got <value>, contract <at ...>
+  ; as in got <value>, signature <at ...>
   (test-engine-got "отримано")
   
   (profjWizward-insert-java-class "Вставити клас Java")

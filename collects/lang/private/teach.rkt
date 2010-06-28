@@ -42,9 +42,9 @@
            "set-result.ss"
            (only racket/base define-struct)
 	   racket/struct-info
-	   (all-except deinprogramm/contract/contract contract-violation)
-	   (all-except lang/private/contracts/contract-syntax property)
-	   (rename lang/private/contracts/contract-syntax contract:property property)
+	   (all-except deinprogramm/signature/signature signature-violation)
+	   (all-except lang/private/signature-syntax property)
+	   (rename lang/private/signature-syntax signature:property property)
 	   (all-except deinprogramm/quickcheck/quickcheck property)
 	   (rename deinprogramm/quickcheck/quickcheck quickcheck:property property)
 	   test-engine/scheme-tests
@@ -576,7 +576,7 @@
 					       (define fn
 						 #,(stepper-syntax-property
 						    (stepper-syntax-property
-						     ;; this is so contract blame can report a
+						     ;; this is so signature blame can report a
 						     ;; position for the procedure
 						     (syntax/loc stx (lambda args expr ...))
 						     'stepper-define-type
@@ -766,8 +766,8 @@
 	   (let-values ([(struct: constructor-name predicate-name getter-names setter-names)
 			 (make-struct-names name fields stx)]
 			[(field-count) (length fields)]
-			[(contract-name) (gensym (syntax->datum name))]
-			[(parametric-contract-name) 
+			[(signature-name) (gensym (syntax->datum name))]
+			[(parametric-signature-name) 
 			 (datum->syntax name
 					(string->symbol
 					 (string-append (symbol->string (syntax->datum name))
@@ -793,7 +793,7 @@
 						[(proc-name ...) proc-names]
 						[(getter-name ...) getter-names])
 				    (stepper-syntax-property 
-				     #`(define-values (#,contract-name #,parametric-contract-name def-proc-name ...)
+				     #`(define-values (#,signature-name #,parametric-signature-name def-proc-name ...)
 					 (let ()
 
 					   (define-values (type-descriptor
@@ -863,20 +863,20 @@
 					   (define #,predicate-name raw-predicate)
 					   (define #,constructor-name raw-constructor)
 
-					   (define #,contract-name (contract (predicate raw-predicate)))
+					   (define #,signature-name (signature (predicate raw-predicate)))
 
 					   #,(if setters?
-						 #`(define (#,parametric-contract-name field_ ...)
-						     (contract
+						 #`(define (#,parametric-signature-name field_ ...)
+						     (signature
 						      (combined (at name_ (predicate raw-predicate))
-								(at field_ (contract:property getter-name field_)) ...)))
-						 #`(define (#,parametric-contract-name field_ ...)
-						     (make-struct-wrap-contract 'name_
+								(at field_ (signature:property getter-name field_)) ...)))
+						 #`(define (#,parametric-signature-name field_ ...)
+						     (make-struct-wrap-signature 'name_
 										type-descriptor
 										(list field_ ...)
 										#'name_)))
 
-					   (values #,contract-name #,parametric-contract-name proc-name ...)))
+					   (values #,signature-name #,parametric-signature-name proc-name ...)))
 				     'stepper-define-struct-hint
 				     stx))))])
 		   (let ([defn
@@ -887,11 +887,11 @@
 						     (let ()
 						       (racket:define-struct info ()
 							 #:super struct:struct-info
-							 ;; support `contract'
+							 ;; support `signature'
 							 #:property 
 							 prop:procedure
 							 (lambda (_ stx)
-							   #'#,contract-name))
+							   #'#,signature-name))
 						       ;; support `shared'
 						       (make-info (lambda () compile-info))))
 						 'stepper-skip-completely
@@ -899,7 +899,7 @@
 					      #,defn0))])
 		     (check-definitions-new 'define-struct
 					    stx 
-					    (list* name parametric-contract-name to-define-names)
+					    (list* name parametric-signature-name to-define-names)
 					    defn
 					    (and setters? bind-names))))))))]
 	[(_ name_ something . rest)
@@ -2607,7 +2607,7 @@
       (syntax-case stx ()
         [(_ a b) (syntax/loc stx (the-cons a b))])))
 
-(provide contract define-contract :
+(provide signature :
 	 -> mixed one-of predicate combined)
 
 (provide Integer Number Rational Real Natural 
@@ -2615,28 +2615,28 @@
 	 String Char Symbol Empty-list
 	 Unspecific)
 
-(define Integer (contract/arbitrary arbitrary-integer (predicate integer?)))
-(define Number (contract/arbitrary arbitrary-real (predicate number?)))
-(define Rational (contract/arbitrary arbitrary-rational (predicate rational?)))
-(define Real (contract/arbitrary arbitrary-real (predicate real?)))
+(define Integer (signature/arbitrary arbitrary-integer (predicate integer?)))
+(define Number (signature/arbitrary arbitrary-real (predicate number?)))
+(define Rational (signature/arbitrary arbitrary-rational (predicate rational?)))
+(define Real (signature/arbitrary arbitrary-real (predicate real?)))
 
 (define (natural? x)
   (and (integer? x)
        (not (negative? x))))
 
-(define Natural (contract/arbitrary arbitrary-natural (predicate natural?)))
+(define Natural (signature/arbitrary arbitrary-natural (predicate natural?)))
 
-(define Boolean (contract/arbitrary arbitrary-boolean (predicate boolean?)))
+(define Boolean (signature/arbitrary arbitrary-boolean (predicate boolean?)))
 
-(define True (contract (one-of #f)))
-(define False (contract (one-of #f)))
+(define True (signature (one-of #f)))
+(define False (signature (one-of #f)))
 
-(define String (contract/arbitrary arbitrary-printable-ascii-string (predicate string?)))
-(define Char (contract/arbitrary arbitrary-printable-ascii-string (predicate char?)))
-(define Symbol (contract/arbitrary arbitrary-symbol (predicate symbol?)))
-(define Empty-list (contract (one-of empty)))
+(define String (signature/arbitrary arbitrary-printable-ascii-string (predicate string?)))
+(define Char (signature/arbitrary arbitrary-printable-ascii-string (predicate char?)))
+(define Symbol (signature/arbitrary arbitrary-symbol (predicate symbol?)))
+(define Empty-list (signature (one-of empty)))
 
-(define Unspecific (contract (predicate (lambda (_) #t))))
+(define Unspecific (signature (predicate (lambda (_) #t))))
 
 ; QuickCheck
 
@@ -2651,12 +2651,12 @@
      (with-syntax ((((?id ?arb) ...)
 		    (map (lambda (pr)
 			   (syntax-case pr ()
-			     ((?id ?contract)
+			     ((?id ?signature)
 			      (identifier? #'?id)
 			      (with-syntax ((?error-call
-					     (syntax/loc #'?contract (error "Contract does not have a generator"))))
+					     (syntax/loc #'?signature (error "Signature does not have a generator"))))
 				#'(?id
-				   (or (contract-arbitrary (contract ?contract))
+				   (or (signature-arbitrary (signature ?signature))
 				       ?error-call))))
 			     (_
 			      (raise-syntax-error #f "incorrect `for-all' clause - should have form (id contr)"
@@ -2745,7 +2745,7 @@
 				(beginner-equal? val cand))
 			      candidates)))
 
-(define Property (contract (predicate (lambda (x)
+(define Property (signature (predicate (lambda (x)
 					(or (boolean? x)
 					    (property? x))))))
 

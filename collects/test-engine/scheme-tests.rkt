@@ -341,12 +341,12 @@
 
 (define scheme-test-data (make-parameter (list #f #f #f)))
 
-(define contract-test-info%
+(define signature-test-info%
   (class* test-info-base% ()
 	 
-    (define contract-violations '())
+    (define signature-violations '())
 
-    (define/pubment (contract-failed obj contract message blame)
+    (define/pubment (signature-failed obj signature message blame)
 
       (let* ((cms
 	      (continuation-mark-set->list (current-continuation-marks)
@@ -365,14 +365,14 @@
 	       (else #f)))
 	     (message
 	      (or message
-		  (make-contract-got obj (test-format)))))
+		  (make-signature-got obj (test-format)))))
 		  
-	(set! contract-violations
-	      (cons (make-contract-violation obj contract message srcloc blame)
-		    contract-violations)))
-      (inner (void) contract-failed obj contract message))
+	(set! signature-violations
+	      (cons (make-signature-violation obj signature message srcloc blame)
+		    signature-violations)))
+      (inner (void) signature-failed obj signature message))
 
-    (define/public (failed-contracts) (reverse contract-violations))
+    (define/public (failed-signatures) (reverse signature-violations))
     
     (inherit add-check-failure)
     (define/pubment (property-failed result src-info)
@@ -392,7 +392,7 @@
     (field [tests null]
            [test-objs null])
 
-    (define/override (info-class) contract-test-info%)
+    (define/override (info-class) signature-test-info%)
 
     (define/public (add-test tst)
       (set! tests (cons tst tests)))
@@ -412,4 +412,4 @@
       (inner (void) run-test test))))
 
 (provide scheme-test-data test-format test-execute test-silence error-handler 
-	 contract-test-info% build-test-engine)
+	 signature-test-info% build-test-engine)

@@ -55,7 +55,7 @@ Zum Beispiel:
 @;-------------------------------------------------------------------------------------
 @section[#:tag "3Dvectors"]{3D-Vektoren}
 
-@defthing[vec3 contract]{
+@defthing[vec3 signature]{
  Ein @deftech{3D-Vektor} (Name: @scheme[vec3]) ist ein Record, der durch den Aufruf @scheme[make-vec3] erstellt wird.
 }
 
@@ -103,7 +103,7 @@ und @scheme[b] zurück (einen Vektor der senkrecht auf @scheme[a] und @scheme[b]
 @;-------------------------------------------------------------------------------------
 @section[#:tag "4Dvectors"]{4D-Vektoren}
 
-@defthing[vec4 contract]{
+@defthing[vec4 signature]{
  Ein @deftech{4D-Vektor} @scheme[vec4] ist ein 4D-Vektor. Folgende Prozeduren werden bereitgestellt:
 }
 
@@ -150,7 +150,7 @@ und @scheme[b] zurück (einen Vektor der senkrecht auf @scheme[a] und @scheme[b]
 @;-------------------------------------------------------------------------------------
 @section[#:tag "4x4matrix"]{4x4 Matrizen}
 
-@defthing[matrix4x4 contract]{
+@defthing[matrix4x4 signature]{
  Eine @deftech{Matrix} @scheme[matrix4x4] ist ein Record, der durch den Aufruf @scheme[make-matrix4x4] erstellt wird.
 }
 
@@ -212,7 +212,7 @@ und @scheme[b] zurück (einen Vektor der senkrecht auf @scheme[a] und @scheme[b]
 @section[#:tag "3dline"]{3d-Linien}
 
 
-@defthing[line3d contract]{
+@defthing[line3d signature]{
  Eine @deftech{3d-Linie} @scheme[line3d] ist ein Record, der durch den Aufruf @scheme[make-line3d] erstellt wird und eine farbige Linie zwischen zwei Punkten
       im 3-dimensionalen Raum darstellt.
 }

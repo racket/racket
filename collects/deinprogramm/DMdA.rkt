@@ -7,9 +7,9 @@
 	 test-engine/scheme-tests
 	 scheme/class)
 
-(require deinprogramm/contract/module-begin
-	 (except-in deinprogramm/contract/contract contract-violation)
-	 (except-in deinprogramm/contract/contract-syntax property))
+(require deinprogramm/signature/module-begin
+	 (except-in deinprogramm/signature/signature signature-violation)
+	 (except-in deinprogramm/signature/signature-syntax property))
 
 (require (for-syntax scheme/base)
 	 (for-syntax stepper/private/shared))
@@ -29,7 +29,8 @@
 
 (provide (all-from-out deinprogramm/define-record-procedures))
 (provide (all-from-out test-engine/scheme-tests))
-(provide contract define-contract :
+(provide signature define-contract :
+	 contract ; legacy
 	 -> mixed one-of predicate combined)
 
 (provide number real rational integer natural
@@ -860,18 +861,18 @@
       ""
       (string-append (car l) (strings-list->string (cdr l)))))
 
-(define integer (contract/arbitrary arbitrary-integer (predicate integer?)))
-(define number (contract/arbitrary arbitrary-real (predicate number?)))
-(define rational (contract/arbitrary arbitrary-rational (predicate rational?)))
-(define real (contract/arbitrary arbitrary-real (predicate real?)))
+(define integer (signature/arbitrary arbitrary-integer (predicate integer?)))
+(define number (signature/arbitrary arbitrary-real (predicate number?)))
+(define rational (signature/arbitrary arbitrary-rational (predicate rational?)))
+(define real (signature/arbitrary arbitrary-real (predicate real?)))
 
 (define (natural? x)
   (and (integer? x)
        (not (negative? x))))
 
-(define natural (contract/arbitrary arbitrary-natural (predicate natural?)))
+(define natural (signature/arbitrary arbitrary-natural (predicate natural?)))
 
-(define boolean (contract/arbitrary arbitrary-boolean (predicate boolean?)))
+(define boolean (signature/arbitrary arbitrary-boolean (predicate boolean?)))
 
 (define (true? x)
   (eq? x #t))
@@ -879,14 +880,14 @@
 (define (false? x)
   (eq? x #f))
 
-(define true (contract (one-of #f)))
-(define false (contract (one-of #f)))
+(define true (signature (one-of #f)))
+(define false (signature (one-of #f)))
 
-(define string (contract/arbitrary arbitrary-printable-ascii-string (predicate string?)))
-(define symbol (contract/arbitrary arbitrary-symbol (predicate symbol?)))
-(define empty-list (contract (one-of empty)))
+(define string (signature/arbitrary arbitrary-printable-ascii-string (predicate string?)))
+(define symbol (signature/arbitrary arbitrary-symbol (predicate symbol?)))
+(define empty-list (signature (one-of empty)))
 
-(define unspecific (contract (predicate (lambda (_) #t))))
+(define unspecific (signature (predicate (lambda (_) #t))))
 
 ;; aus collects/lang/private/teach.ss
 
@@ -976,12 +977,12 @@
      (with-syntax ((((?id ?arb) ...)
 		    (map (lambda (pr)
 			   (syntax-case pr ()
-			     ((?id ?contract)
+			     ((?id ?signature)
 			      (identifier? #'?id)
 			      (with-syntax ((?error-call
-					     (syntax/loc #'?contract (error "Vertrag hat keinen Generator"))))
+					     (syntax/loc #'?signature (error "Vertrag hat keinen Generator"))))
 				#'(?id
-				   (or (contract-arbitrary (contract ?contract))
+				   (or (signature-arbitrary (signature ?signature))
 				       ?error-call))))
 			     (_
 			      (raise-syntax-error #f "inkorrekte `for-all'-Klausel - sollte die Form (id contr) haben"
@@ -1070,7 +1071,7 @@
 				(beginner-equal? val cand))
 			      candidates)))
 
-(define property (contract (predicate (lambda (x)
+(define property (signature (predicate (lambda (x)
 					(or (boolean? x)
 					    (property? x))))))
 

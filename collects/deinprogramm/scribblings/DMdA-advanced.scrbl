@@ -46,10 +46,10 @@ Abstraktion - fortgeschritten} that goes with the German textbook
 Der Wert eines Quote-Literals hat die gleiche externe Repräsentation wie @scheme[quoted]. 
 }
 
-@section[#:tag "advanced-contracts"]{Verträge}
+@section[#:tag "advanced-signatures"]{Signaturen}
 
 @defidform[symbol]{
-Vertrag für Symbole.
+Signatur für Symbole.
 }
 
 @section[#:tag "advanced-prim-op"]{Primitive Operationen}

@@ -20,7 +20,7 @@ Zusätzliche Prozeduren erlauben die Komposition von Bildern.
 @;-----------------------------------------------------------------------------
 @section{Bilder}
 
-@defthing[image contract]{
+@defthing[image signature]{
 Ein @deftech{Bild} (Name: @scheme[image]) ist die Repräsentation eines Bildes.
 } 
 
@@ -33,18 +33,18 @@ Ein leeres Bild mit Breite und Höhe 0.
 @;-----------------------------------------------------------------------------
 @section[#:tag "modes-colors"]{Modi und Farben}
 
-@defthing[mode contract]{
+@defthing[mode signature]{
 @scheme[(one-of "solid" "outline")]
 
 Ein Modus (Name: @scheme[mode]) legt fest, ob die Darstellung einer Form diese füllt
 oder nur einen Umriss zeichnet.}
 
-@defthing[octet contract]{
+@defthing[octet signature]{
 @scheme[(combined natural (predicate (lambda (n) (<= n 255))))]
 
 Ein Oktet (Name: @scheme[octet]) ist eine natürliche Zahl zwischen 0 und 255.}
 
-@defthing[rgb-color contract]{
+@defthing[rgb-color signature]{
 Eine @deftech{RGB-Farbe} ist eine Farbe (Name: @scheme[color], die vom
 Record-Konstruktor @scheme[make-color] zurückgegeben wird:
 }
@@ -60,7 +60,7 @@ also z.B. @scheme[(make-color 100 200 30)].}
 @defthing[color-blue (color -> octet)]{
  liefert den Blau-Anteil einer RGB-Farbe.}
 
-@defthing[image-color contract]{
+@defthing[image-color signature]{
 @scheme[(mixed string color)] 
 
 Eine @deftech{Farbe} (Name: @scheme[image-color]) ist eine Zeichenkette aus einer Farbbezeichnung
@@ -128,7 +128,7 @@ nämlich Breite und Höhe:
 
 The nächste Gruppe von Prozeduren baut aus Bildern neue Bilder:
 
-@defthing[h-place contract]{
+@defthing[h-place signature]{
 @scheme[(mixed integer (one-of "left" "right" "center"))]
 
 Eine @deftech{horizontale Positionsangabe} (Name: @scheme[h-place])
@@ -140,7 +140,7 @@ Die drei Fälle mit Zeichenketten sagen,  daß die Bilder am linken Rand
 bzw. am rechten   Rand bündig plaziert werden,  bzw.  das zweite  Bild
 horizontal in die Mitte des ersten gesetzt wird.}
 
-@defthing[v-place contract]{
+@defthing[v-place signature]{
 @scheme[(mixed integer (one-of "top" "bottom" "center"))]
 
 Eine @deftech{vertikale Positionsangabe} (Name: @scheme[v-place]) 
@@ -153,14 +153,14 @@ bzw. am unteren Rand bündig plaziert werden, bzw. das zweite Bild
 vertikal in die Mitte des ersten gesetzt wird.
 }
 
-@defthing[h-mode contract]{
+@defthing[h-mode signature]{
 @scheme[(one-of "left" "right" "center")]
 Eine @deftech{horizontale Justierungsangabe} (Name: @scheme[h-mode]) 
 gibt an, ob zwei Bilder, die übereinander angeordnet werden, entlang der linken
 Kante, der rechten Kante oder der Mitte angeordnet werden.
 }
 
-@defthing[v-mode contract]{
+@defthing[v-mode signature]{
 @scheme[(one-of "top" "bottom" "center")]
 
 Eine @deftech{vertikale Justierungsangabe} (Name: @scheme[V-mode])

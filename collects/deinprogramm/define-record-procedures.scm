@@ -28,7 +28,7 @@
       (syntax-case x ()
 	((_ ?type-name
 	    ?mutable?
-	    ?contract-constructor-name
+	    ?signature-constructor-name
 	    ?constructor
 	    ?predicate
 	    (?field-spec ...))
@@ -154,39 +154,39 @@
 		  (accessor-defs #'(define-values (accessor ... our-accessor ...)
 				     (values accessor-proc ... accessor-proc ...)))
 		  (mutator-defs #'(define-values (mutator ...) (values mutator-proc ...)))
-		  (contract-def
+		  (signature-def
 		   (with-syntax (((?param ...) (generate-temporaries #'(?field-spec ...))))
-		     (with-syntax (((component-contract ...)
+		     (with-syntax (((component-signature ...)
 				    (map (lambda (accessor param)
 					   (with-syntax ((?accessor accessor)
 							 (?param param))
 					     #'(at ?param (property ?accessor ?param))))
 					 (syntax->list #'(our-accessor ...))
 					 (syntax->list #'(?param ...)))))
-		       (with-syntax ((base-contract
+		       (with-syntax ((base-signature
 				      (stepper-syntax-property
 				       #'(define ?type-name 
-					   (contract (predicate real-predicate)))
+					   (signature (predicate real-predicate)))
 				       'stepper-skip-completely 
 				       #t))
-				     (constructor-contract
+				     (constructor-signature
 				      (stepper-syntax-property
 				       (if (syntax->datum #'?mutable?)
-					   ;; no lazy contracts
-					   #'(define (?contract-constructor-name ?param ...)
-					       (contract
+					   ;; no lazy signatures
+					   #'(define (?signature-constructor-name ?param ...)
+					       (signature
 						(combined (at ?type-name (predicate real-predicate))
-							  component-contract ...)))
-					   ;; lazy contracts
-					   #'(define (?contract-constructor-name ?param ...)
-					       (make-struct-wrap-contract '?type-name type-descriptor (list ?param ...) #'?type-name)))
+							  component-signature ...)))
+					   ;; lazy signatures
+					   #'(define (?signature-constructor-name ?param ...)
+					       (make-struct-wrap-signature '?type-name type-descriptor (list ?param ...) #'?type-name)))
 				       'stepper-skip-completely
 				       #t)))
 			 #'(begin
-			     ;; we use real-predicate to avoid infinite recursion if a contract
+			     ;; we use real-predicate to avoid infinite recursion if a signature
 			     ;; for ?type-name using ?predicate is inadvertently defined
-			     base-contract
-			     constructor-contract))))))
+			     base-signature
+			     constructor-signature))))))
 	       ;; again, with properties
 	       (with-syntax ((struct-type-defs
 			      (stepper-syntax-property
@@ -200,11 +200,11 @@
 			     (mutator-defs
 			      (stepper-syntax-property #'mutator-defs 'stepper-skip-completely #t)))
 		 #'(begin
-		     contract-def
-		     ;; the contract might be used in the definitions, hence this ordering
+		     signature-def
+		     ;; the signature might be used in the definitions, hence this ordering
 		     struct-type-defs constructor-def predicate-def accessor-defs mutator-defs))))))
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
 	  ?constructor
 	  ?predicate
 	  rest)
@@ -212,7 +212,7 @@
 	#f 
 	"Der vierte Operand ist illegal" (syntax rest)))
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
 	  ?constructor
 	  ?predicate
 	  rest1 rest2 ... (?field-spec ...))
@@ -220,7 +220,7 @@
 	#f 
 	"Vor den Selektoren/Mutatoren steht eine Form zuviel" #'rest1))
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
 	  ?constructor
 	  ?predicate
 	  rest1 rest2 ...)
@@ -351,7 +351,7 @@ prints as:
                         (generate-temporaries (syntax (accessor ...)))))
            (syntax
             (define-record-procedures* ?type-name #f
-	      dummy-contract-constructor-name
+	      dummy-signature-constructor-name
               ?constructor
               ?predicate
               ((accessor dummy-mutator) ...))))))
@@ -387,7 +387,7 @@ prints as:
   (lambda (x)
     (syntax-case x ()
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
           ?constructor
           ?predicate
           (accessor  ...))
@@ -399,7 +399,7 @@ prints as:
 	  "Record-Name ist kein Bezeichner")
 
 	 (check-for-id!
-	  (syntax ?contract-constructor-name)
+	  (syntax ?signature-constructor-name)
 	  "Vertrags-Konstruktor-Name ist kein Bezeichner")
 
          (check-for-id!
@@ -417,13 +417,13 @@ prints as:
 	 (with-syntax (((dummy-mutator ...)
 			(generate-temporaries (syntax (accessor ...)))))
 	   (syntax
-	    (define-record-procedures* ?type-name #f ?contract-constructor-name
+	    (define-record-procedures* ?type-name #f ?signature-constructor-name
 	      ?constructor
 	      ?predicate
 	      ((accessor dummy-mutator) ...))))))
 
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
 	  ?constructor
 	  ?predicate
 	  rest)
@@ -431,7 +431,7 @@ prints as:
 	#f 
 	"Der vierte Operand ist keine Liste von Selektoren" (syntax rest)))
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
 	  ?constructor
 	  ?predicate
 	  rest1 rest2 ...)
@@ -480,7 +480,7 @@ prints as:
 		   (syntax->list (syntax (?field-spec ...))))
 
 	 #'(define-record-procedures* ?type-name #t
-	     dummy-contract-constructor-name
+	     dummy-signature-constructor-name
 	     ?constructor
 	     ?predicate
 	     (?field-spec ...))))
@@ -507,7 +507,7 @@ prints as:
   (lambda (x)
     (syntax-case x ()
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
 	  ?constructor
 	  ?predicate
 	  (?field-spec ...))
@@ -518,7 +518,7 @@ prints as:
 	  "Record-Name ist kein Bezeichner")
 
 	 (check-for-id!
-	  (syntax ?contract-constructor-name)
+	  (syntax ?signature-constructor-name)
 	  "Vertrags-Konstruktor-Name ist kein Bezeichner")
 
 	 (check-for-id!
@@ -541,12 +541,12 @@ prints as:
 				       "Selektor ist kein Bezeichner"))))
 		   (syntax->list (syntax (?field-spec ...))))
 
-	 #'(define-record-procedures* ?type-name #t ?contract-constructor-name
+	 #'(define-record-procedures* ?type-name #t ?signature-constructor-name
 	     ?constructor
 	     ?predicate
 	     (?field-spec ...))))
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
 	  ?constructor
 	  ?predicate
 	  rest)
@@ -554,7 +554,7 @@ prints as:
 	#f 
 	"Der vierte Operand ist illegal" (syntax rest)))
       ((_ ?type-name
-	  ?contract-constructor-name
+	  ?signature-constructor-name
 	  ?constructor
 	  ?predicate
 	  rest1 rest2 ...)
