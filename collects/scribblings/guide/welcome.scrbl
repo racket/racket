@@ -132,10 +132,10 @@ if it was just an example expression that you were using to explore
 area} as above, click @onscreen{Run}, and then evaluate
 @racket[(extract "the boy")] in the @tech{REPL}.
 
-With @exec{racket}, you'd save the above text in a file using your
-favorite editor. If you save it as @filepath{extract.rkt}, then after starting
-@exec{racket} in the same directory, you'd evaluate the following
-sequence:
+When using command-line @exec{racket} instead of DrRacket, you'd save
+the above text in a file using your favorite editor. If you save it as
+@filepath{extract.rkt}, then after starting @exec{racket} in the same
+directory, you'd evaluate the following sequence:
 
 @interaction[
 #:eval piece-eval
