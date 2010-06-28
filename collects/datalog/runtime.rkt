@@ -126,6 +126,7 @@
  [theory/c contract?]
  [immutable-theory/c contract?]
  [mutable-theory/c contract?]
+ [rename make-mutable-theory make-theory (-> mutable-theory/c)]
  [make-mutable-theory (-> mutable-theory/c)]
  [make-immutable-theory (-> immutable-theory/c)]
  [assume (immutable-theory/c safe-clause? . -> . immutable-theory/c)]

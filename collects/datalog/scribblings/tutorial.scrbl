@@ -24,7 +24,7 @@ this:
 
 @racketinput[#,(tt "parent(john, douglas).")]
 
-Each item in the parenthesized list following the name of the table is called a @tech{term}.
+Each item in the parenthesized list following the name of the table is called a @deftech{term}.
 A term can be either a logical @racket[variable] or a @racket[constant].
 Thus far, all the terms shown have been constant terms.
 

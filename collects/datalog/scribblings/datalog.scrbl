@@ -24,7 +24,7 @@ on tabling intermediate results ensures that all queries terminate.
 
 @section[#:tag "datalog"]{Datalog Module Language}
 
-@defmodulelang[datalog]
+@defmodulelang[@racketmodname[datalog] #:module-paths (datalog/lang/reader)]
 
 In Datalog input, whitespace characters are ignored except when they separate adjacent tokens or when they occur in strings.
 Comments are also considered to be whitespace. The character @litchar["%"] introduces a comment, which extends to the next line break.
@@ -130,11 +130,11 @@ The Datalog REPL accepts new statements that are executed as if they were in the
 @include-section["tutorial.scrbl"]
 
 @section{Parenthetical Datalog Module Language}
-@(require (for-label datalog/sexp/lang))
+@(require (for-label datalog))
 
 @defmodulelang[datalog/sexp]
 
-The semantics of this language is the same as the normal Datalog language, except it uses a @secref["parenstx"].
+The semantics of this language is the same as the normal Datalog language, except it uses a parenthetical syntax.
 
 Literals are represented as S-expressions with non-capitalized identifiers for constant symbols, strings for constant strings, and capitalized identifiers for variable symbols. Top-level identifiers and strings are not otherwise allowed in the program.
 
@@ -153,18 +153,6 @@ The following is a program:
 (? (path X Y))]
 
 The Parenthetical Datalog REPL accepts new statements that are executed as if they were in the original program text.
-
-@subsection[#:tag "parenstx"]{Parenthetical Syntax}
-
-@defmodule[datalog/sexp/lang]
-
-@defform[(! clause)]{ Asserts the clause. }
-@defform[(~ clause)]{ Retracts the literal. }
-@defform[(? literal)]{ Queries the literal and prints the result literals. }
-
-@defform[(:- literal literal ...)]{ A conditional clause. }
-
-@defform[(= term term)]{ An equality literal. }
 
 @include-section["racket.scrbl"]
 
