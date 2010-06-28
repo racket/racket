@@ -132,7 +132,7 @@
    [vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
    [unsafe-vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
    [unsafe-vector*-ref (-poly (a) ((-vec a) index-type . -> . a))]
-   [build-vector (-poly (a) (index-type (index-type . -> . a) . -> . (-vec a)))]
+   [build-vector (-poly (a) (index-type (-Nat . -> . a) . -> . (-vec a)))]
    [vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector*-set! (-poly (a) (-> (-vec a) index-type a -Void))]
