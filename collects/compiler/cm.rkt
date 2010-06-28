@@ -416,7 +416,7 @@
   
   (cond 
     [(cached?)      => (lambda (x) x)]  ; already up to date, no need to compile
-    [((manager-skip-file-handler) orig-path) => (lambda (x) (update-cache x))]
+    [((manager-skip-file-handler) orig-path) => (lambda (x) (update-cache x) x)]
     [else
       (let-values ([(path path-time path-zo-time update-cache-with-zo-time) (get-ss-rkt-resolved-path orig-path)])
         (define (path-does-not-exist) (not path-time))
@@ -463,7 +463,7 @@
                        (let ([src-sha1 (get-valid-src-sha1)])
                          (if (sha1-equivalent? src-sha1) 
                              (touch-update-cache"hash-equivalent src and deps")
-                             (compile-thunk deps path zo-name src-sha1 update-cache-with-zo-time))))))
+                             (compile-thunk deps path zo-name src-sha1 update-cache-with-zo-time zo-exists?))))))
               (cond 
                 [(newer-version?)
                     (trace-printf "newer racket bytecode version...")
@@ -477,8 +477,8 @@
 
 (define (compile-root mode raw-path up-to-date read-src-syntax)
   (let ([actual-path (actual-source-path (simple-form-path raw-path))])
-    (define (compile-it deps path zo-name src-sha1 update-cache-with-zo-time)
-      ;(when zo-exists? (delete-file zo-name))
+    (define (compile-it deps path zo-name src-sha1 update-cache-with-zo-time zo-exists?)
+      (when zo-exists? (delete-file zo-name))
       ((manager-compile-notify-handler) actual-path)
       (trace-printf "compiling: ~a" actual-path)
       (parameterize ([depth (+ (depth) 1)]
