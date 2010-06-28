@@ -8,10 +8,12 @@
 Compiled code produced by @exec{raco make} relies on Racket
 executables to provide run-time support to the compiled code. However,
 @exec{raco exe} can package code together with its run-time support to
-form an executable, and @exec{raco distribute} can packaged the
-executable into a distribution that works on other machines.
+form an executable, and @exec{raco distribute} can package the
+executable into a distribution that works on other machines. Running
+an executable produced by @exec{raco exe} will not improve performance
+over @exec{raco make}.
 
-The @exec{raco make} command embeds a module, from source or byte
+The @exec{raco exe} command embeds a module, from source or byte
 code, into a copy of the @exec{racket} executable. (Under Unix, the
 embedding executable is actually a copy of a wrapper executable.)  The
 created executable invokes the embedded module on startup. The
