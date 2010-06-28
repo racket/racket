@@ -115,6 +115,8 @@
           (append (list (->* (list -Integer) -Integer -ExactRational))
                   (for/list ([t (list -ExactRational -Flonum)])
                             (->* (list t) t t))
+                  ;; only exact 0 as first argument can cause the result of a division involving inexacts to be exact
+                  (list (->* (list -Flonum) -Real -Flonum))
                   (list (->* (list -Real) -Real -Real))
                   (list (->* (list N) N N))))]
 
