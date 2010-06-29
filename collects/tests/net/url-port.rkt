@@ -4,7 +4,7 @@
          tests/eli-tester)
 
 (define ((make-tester url->port) response)
-  (define port-no (+ 9000 (random 100)))
+  (define port-no 9001)
   (define server-cust
     (make-custodian))
   (parameterize ([current-custodian server-cust])
