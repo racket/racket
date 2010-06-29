@@ -338,9 +338,10 @@ following symbols:
  @item{@indexed-scheme['handles-events] --- this snip can handle
        keyboard and mouse events when it has the keyboard focus}
 
- @item{@indexed-scheme['handles-all-mouse-events] --- this snip can handle
-       mouse events that touch the snip, even if the snip does not
-       have the keyboard focus}
+ @item{@indexed-scheme['handles-all-mouse-events] --- this snip can
+       handle mouse events that touch the snip or that immediately
+       follow an event that touches the snip, even if the snip does
+       not have the keyboard focus}
 
  @item{@indexed-scheme['width-depends-on-x] --- this snip's display
        width depends on the snip's x-@techlink{location} within the
