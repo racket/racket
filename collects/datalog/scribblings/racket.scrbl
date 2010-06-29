@@ -8,7 +8,7 @@
                      "../main.rkt")
           "utils.rkt")
 
-@title{Racket Interoperability}
+@title[#:tag "interop"]{Racket Interoperability}
 
 @defmodule[datalog]
 
@@ -45,7 +45,10 @@ The Datalog database can be directly used by Racket programs through this API.
  
           (let ([x 'joseph2])
             (datalog family
-                     (? (parent x X))))]
+                     (? (parent x X))))
+                                       
+          (datalog family
+                   (? (add1 1 :- X)))]
 
 @defthing[mutable-theory/c contract?]{ A contract for Datalog theories. }
 
@@ -58,11 +61,18 @@ The Datalog database can be directly used by Racket programs through this API.
 @defform[(datalog! thy-expr
                   stmt ...)
          #:contracts ([thy-expr mutable-theory/c])]{ Executes the statements on the theory given by @racket[thy-expr]. Prints the answers to every query in the list of statements. Returns @racket[(void)]. }     
-                                                   
-Literals are represented as S-expressions with non-capitalized identifiers for constant symbols, strings for constant strings, and capitalized identifiers for variable symbols. Bound identifiers are treated as constants; they must evaluate to either a symbol or string. 
+              
+Statements are either assertions, retractions, or queries.
 
 @defform[(! clause)]{ Asserts the clause. }
 @defform[(~ clause)]{ Retracts the literal. }
-@defform[(? literal)]{ Queries the literal and prints the result literals. }
 
-@defform[(:- literal literal ...)]{ A conditional clause. }
+@defform[(:- literal question ...)]{ A conditional clause. }
+
+@defform[(? question)]{ Queries the literal and prints the result literals. }
+                                                   
+Questions are either literals or external queries.
+Literals are represented as @racket[identifier] or @racket[(identifier term ...)].
+Questions are represented as @racket[(identifier term ... :- term ...)], where @racket[identifier] is bound to a procedure that when given the first set of terms as arguments returns the second set of terms as values.
+A term is either a non-capitalized identifiers for a constant symbol, a Racket datum for a constant datum, or a capitalized identifier for a variable symbol. Bound identifiers in terms are treated as datums. 
+

@@ -22,22 +22,17 @@
                            port->lines))
                  (filter (lambda (l)
                            (not (string=? l "")))
-                         (file->lines test-txt))
-                 ))
+                         (file->lines test-txt))))
+  
+  (define (test-files d)
+    (for ([f (in-list (directory-list d))]
+          #:when (regexp-match #rx"rkt$" (path->bytes f)))
+      (test-example (path->string (path-replace-suffix f #"")))))
   
   (test-suite
    (path->string examples-dir)
    
-   (test-example "ancestor")
-   (test-example "bidipath")
-   (test-example "laps")
-   (test-example "long")
-   (test-example "path")
-   (test-example "pq")
-   (test-example "revpath")
-   (test-example "says")
-   (test-example "true")
-   (test-example "tutorial")))
+   (test-files examples-dir)))
 
 (define eval-tests
   (test-suite

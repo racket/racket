@@ -11,7 +11,12 @@
   (andmap (lambda (v)
             (ormap (lambda (l)
                      (ormap (lambda (t) (term-equal? t v))
-                            (literal-terms l)))
+                            (cond
+                              [(literal? l)
+                               (literal-terms l)]
+                              [(external? l)
+                               (append (external-arg-terms l)
+                                       (external-ans-terms l))])))
                    (clause-body c)))
           head-vars))
 
@@ -52,20 +57,20 @@
   (hash-ref thy (literal-key lit) empty))
 
 (define-struct subgoal 
-  (literal 
+  (question 
    [facts #:mutable]
    [waiters #:mutable]))
 
-(define (resolve c lit)
+(define (resolve c q)
   (define body (clause-body c))
   (and (not (empty? body))
        (cond
-         [(unify (first body) (rename-literal lit))
+         [(unify (first body) (rename-question q))
           => (lambda (env)
                (subst-clause env (make-clause (clause-srcloc c) (clause-head c) (rest body))))]
          [else #f])))
 
-(define (prove thy lit)
+(define (prove thy q)
   (define subgoals (make-literal-tbl))
   (define (fact! sg lit)
     (unless (mem-literal lit (subgoal-facts sg))
@@ -100,12 +105,25 @@
        (define renamed (rename-clause clause))
        (define selected (clause-head renamed))
        (cond
-         [(unify (subgoal-literal sg) selected)
+         [(unify (subgoal-question sg) selected)
           => (lambda (env)
                (add-clause! sg (subst-clause env renamed)))]))
-     (get thy (subgoal-literal sg))))
+     (get thy (subgoal-question sg))))
   (define (search! sg)
-    (match (subgoal-literal sg)
+    (match (subgoal-question sg)
+      [(external srcloc pred-sym pred args anss)
+       (and (andmap constant? args)
+            (call-with-values 
+             (λ ()
+               (apply pred (map constant-value args)))
+             (λ resolved-vals
+               (define resolved-anss
+                 (map (curry constant #f)
+                      resolved-vals))
+               (cond
+                 [(unify-terms (empty-env) anss resolved-anss)
+                  => (λ (env)
+                       (fact! sg (external srcloc pred-sym pred args (subst-terms env anss))))]))))]
       [(struct literal (srcloc '= (list a b)))
        (define (equal-test a b)
          (when (term-equal? a b)
@@ -116,8 +134,8 @@
          [else (equal-test a b)])]
       [_
        (search-theory! sg)]))
-  (define sg (make-subgoal lit empty empty))
-  (literal-tbl-replace! subgoals lit sg)
+  (define sg (make-subgoal q empty empty))
+  (literal-tbl-replace! subgoals q sg)
   (search! sg)
   (subgoal-facts sg))
 
@@ -133,4 +151,4 @@
  [retract (immutable-theory/c clause? . -> . immutable-theory/c)]
  [assume! (mutable-theory/c safe-clause? . -> . void)]
  [retract! (mutable-theory/c clause? . -> . void)]
- [prove (theory/c literal? . -> . (listof literal?))])
+ [prove (theory/c question/c . -> . (listof question/c))])

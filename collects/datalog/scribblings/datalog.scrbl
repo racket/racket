@@ -130,13 +130,14 @@ The Datalog REPL accepts new statements that are executed as if they were in the
 @include-section["tutorial.scrbl"]
 
 @section{Parenthetical Datalog Module Language}
-@(require (for-label datalog))
+@(require (for-label datalog
+                     racket))
 
 @defmodulelang[datalog/sexp]
 
-The semantics of this language is the same as the normal Datalog language, except it uses a parenthetical syntax.
+The semantics of this language is the same as the normal Datalog language, except it uses the parenthetical syntax described in @secref{interop}.
 
-Literals are represented as S-expressions with non-capitalized identifiers for constant symbols, strings for constant strings, and capitalized identifiers for variable symbols. Top-level identifiers and strings are not otherwise allowed in the program.
+All identifiers in @racketmodname[racket/base] are available for use as predicate symbols or constant values. Top-level identifiers and datums are not otherwise allowed in the program. The program may contain @racket[require] expressions.
 
 The following is a program:
 @racketmod[datalog/sexp
@@ -152,7 +153,13 @@ The following is a program:
        (path Z Y)))
 (? (path X Y))]
 
-The Parenthetical Datalog REPL accepts new statements that are executed as if they were in the original program text.
+This is also a program:
+@racketmod[datalog/sexp
+(require racket/math)
+
+(? (sqr 4 :- X))]
+
+The Parenthetical Datalog REPL accepts new statements that are executed as if they were in the original program text, except @racket[require] is not allowed.
 
 @include-section["racket.scrbl"]
 

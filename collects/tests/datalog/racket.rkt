@@ -54,4 +54,9 @@
  (list '(parent joseph2 joseph1)
        '(parent joseph2 lucy))
  
+ (datalog parent
+          (? (add1 1 :- X)))
+ =>
+ (list '(add1 1 :- 2))
+ 
  )

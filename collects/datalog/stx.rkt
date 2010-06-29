@@ -21,6 +21,10 @@
 
 (define literal->sexp
   (match-lambda
+    [(external _ pred-sym _ args anss)
+     `(,pred-sym ,@(map term->datum args)
+                 :-
+                 ,@(map term->datum anss))]
     [(literal _ pred ts)
      (list* pred (map term->datum ts))]))
 
@@ -49,57 +53,63 @@
   (syntax-parse 
    stx
    #:literals (! ~ ?)
-   [(_ (! c))
-    (quasisyntax/loc stx
-      (assertion #'#,stx (datalog-clause c)))]
-   [(_ (~ c))
-    (quasisyntax/loc stx
-      (retraction #'#,stx (datalog-clause c)))]
-   [(_ (? l))
-    (quasisyntax/loc stx
-      (query #'#,stx (datalog-literal l)))]))
+   [(_ (~and tstx (! c)))
+    (quasisyntax/loc #'tstx
+      (assertion #'#,#'tstx (datalog-clause c)))]
+   [(_ (~and tstx (~ c)))
+    (quasisyntax/loc #'tstx
+      (retraction #'#,#'tstx (datalog-clause c)))]
+   [(_ (~and tstx (? l)))
+    (quasisyntax/loc #'tstx
+      (query #'#,#'tstx (datalog-literal l)))]))
 
 (define-syntax (datalog-clause stx)
   (syntax-parse 
    stx
    #:literals (:-)
-   [(_ (:- head body ...))
-    (quasisyntax/loc stx
-      (clause #'#,stx (datalog-literal head) 
+   [(_ (~and tstx (:- head body ...)))
+    (quasisyntax/loc #'tstx
+      (clause #'#,#'tstx (datalog-literal head) 
               (list (datalog-literal body) ...)))]
    [(_ e)
-    (quasisyntax/loc stx
-      (clause #'#,stx (datalog-literal e) empty))]))
+    (quasisyntax/loc #'e
+      (clause #'#,#'e (datalog-literal e) empty))]))
 
 (define-syntax (datalog-literal stx)
   (syntax-parse 
    stx
+   #:literals (:-)
    [(_ sym:id)
-    (quasisyntax/loc stx
-      (literal #'#,stx 'sym empty))]
-   [(_ (sym:id e ...))
-    (quasisyntax/loc stx
-      (literal #'#,stx 'sym 
+    (quasisyntax/loc #'sym
+      (literal #'#,#'sym 'sym empty))]
+   [(_ (~and tstx (sym:id arg ... :- ans ...)))
+    (quasisyntax/loc #'tstx
+      (external #'#,#'tstx 'sym sym
+                (list (datalog-term arg) ...)
+                (list (datalog-term ans) ...)))]
+   [(_ (~and tstx (sym:id e ...)))
+    (quasisyntax/loc #'tstx
+      (literal #'#,#'tstx 'sym 
                (list (datalog-term e)
                      ...)))]))
 
 (define-syntax (datalog-term stx)
   (syntax-parse 
    stx
-   [(_ sym:str)
-    (quasisyntax/loc stx
-      (constant #'#,stx 'sym))]
    [(_ sym:id)
     (cond
       [(identifier-binding #'sym 0)
-       (quasisyntax/loc stx
-         (constant #'#,stx sym))]
+       (quasisyntax/loc #'sym
+         (constant #'#,#'sym sym))]
       [(char-upper-case? (string-ref (symbol->string (syntax->datum #'sym)) 0))
-       (quasisyntax/loc stx
-         (variable #'#,stx 'sym))]
+       (quasisyntax/loc #'sym
+         (variable #'#,#'sym 'sym))]
       [else
-       (quasisyntax/loc stx
-         (constant #'#,stx 'sym))])]))
+       (quasisyntax/loc #'sym
+         (constant #'#,#'sym 'sym))])]
+   [(_ sym:expr)
+    (quasisyntax/loc #'sym
+      (constant #'#,#'sym sym))]))
 
 (provide datalog datalog!
          :- ! ~ ?)
