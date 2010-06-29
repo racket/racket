@@ -97,7 +97,9 @@
                   (list (->* (list) -InexactComplex -InexactComplex))
                   (list (->* (list) N N))))]
 [+ (apply cl->*
-          (append (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum)]) (->* (list) t t))
+          (append (list (->* (list -Pos) -Nat -Pos))
+                  (list (->* (list -Nat) -Pos -Pos))
+                  (for/list ([t (list -Nat -Integer -ExactRational -Flonum)]) (->* (list) t t))
                   ;; special cases for promotion to inexact, not exhaustive
                   ;; valid for + and -, but not for * and /, since (* <float> 0) is exact 0 (i.e. not a float)
                   (list (->* (list -Flonum) -Real -Flonum))
@@ -311,7 +313,10 @@
 [unsafe-flsqrt fl-unop]
 [unsafe-fx->fl (-Integer . -> . -Flonum)]
 
-[unsafe-fx+ fx-op]
+[unsafe-fx+ (cl->* (-Pos -Nat . -> . -PositiveFixnum)
+                   (-Nat -Pos . -> . -PositiveFixnum)
+                   (-Nat -Nat . -> . -NonnegativeFixnum)
+                   (-Integer -Integer . -> . -Fixnum))]
 [unsafe-fx- fx-intop]
 [unsafe-fx* fx-op]
 [unsafe-fxquotient fx-intop]
@@ -336,7 +341,10 @@
 
 ;; scheme/fixnum
 
-[fx+ fx-op]
+[fx+ (cl->* (-Pos -Nat . -> . -PositiveFixnum)
+            (-Nat -Pos . -> . -PositiveFixnum)
+            (-Nat -Nat . -> . -NonnegativeFixnum)
+            (-Integer -Integer . -> . -Fixnum))]
 [fx- fx-intop]
 [fx* fx-op]
 [fxquotient fx-intop]
