@@ -52,9 +52,7 @@
 (provide captcha-file)
 (define captcha-file (make-parameter #f))
 
-(define query
-  @page[#:title "Query Bug Reports" #:file "query/"]{
-    @em{TODO}})
+(define query (cgi-link "gnatsweb" "query"))
 
 (define (bugs-script)
   @script/inline{
@@ -183,7 +181,7 @@
        @ul{@li{Consult the @-docs,}
            @li{@download a newer Racket version if there is one (Racket
                displays its version number on startup),}
-           @li{@query{Query existing bug reports}.}}}
+           @li{@a[href: (list query "/")]{Query existing bug reports}.}}}
     @(define (field mode title . input)
        (let ([title (b title ":")])
          (case mode
