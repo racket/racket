@@ -21,7 +21,8 @@
            (ftp-make-file-seconds ftp-date)))
         
         (ftp-download-file conn tmp-dir pth)
-        (delete-file (build-path tmp-dir pth))
-        (delete-directory/files tmp-dir)
         
-        (ftp-close-connection conn)))
+        (ftp-close-connection conn)
+        
+        (delete-file (build-path tmp-dir pth))
+        (delete-directory/files tmp-dir)))
