@@ -53,7 +53,7 @@
     [(query srcloc l)
      (define srcstx (datum->syntax #f 'x srcloc))
      (quasisyntax/loc srcstx
-       (print-literals
+       (print-questions
         (racklog-answers->literals
          #,l
          (%find-all #,(set->list (literal-variables l))
