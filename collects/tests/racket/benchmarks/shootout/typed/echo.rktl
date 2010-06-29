@@ -1,6 +1,6 @@
 (require racket/tcp)
 
-(define PORT 8888)
+(define PORT (+ 8888 (if OPTIMIZED? 1 0)))
 (define DATA "Hello there sailor\n")
 (: n Integer)
 (define n 10)

@@ -15,4 +15,6 @@
 				      name)))]
 	 [option (if opt? (list #'#:optimize) '())]
 	 [fname (format "~a.rktl" base-name)])
-    #`(ts:#%module-begin #,@option (include/reader #,fname r:read-syntax))))
+    #`(ts:#%module-begin #,@option 
+                         (define OPTIMIZED? #,opt?)
+                         (include/reader #,fname r:read-syntax))))

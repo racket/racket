@@ -1,0 +1,11 @@
+Please register which TCP ports your tests are using in this file so others don't accidentally conflict.
+
+6000 - DrDr X11 server
+....
+6100 - DrDr X11 server
+8887 - tests/racket/benchmarks/shootout/echo
+8888 - tests/racket/benchmarks/shootout/typed/echo (non-optimized)
+8889 - tests/racket/benchmarks/shootout/typed/echo (optimized)
+9000 - DrDr Web server
+9001 - tests/net
+9999 - tests/web-server
