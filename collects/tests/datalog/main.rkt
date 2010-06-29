@@ -19,6 +19,7 @@
          "eval.rkt")
 
 (define-runtime-path racket-mod "racket.rkt")
+(define stdout (current-output-port))
 
 (run-tests
  (test-suite
@@ -40,4 +41,5 @@
   eval-tests
   
   (test-case "Racket Interop"
-             (dynamic-require racket-mod #f))))
+             (parameterize ([current-output-port stdout])
+               (dynamic-require racket-mod #f)))))
