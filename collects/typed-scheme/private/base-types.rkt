@@ -7,6 +7,7 @@
 [Real -Real]
 [Exact-Rational -ExactRational]
 [Float -Flonum]
+[Nonnegative-Float -NonnegativeFlonum]
 [Exact-Positive-Integer -ExactPositiveInteger]
 [Exact-Nonnegative-Integer -ExactNonnegativeInteger]
 [Positive-Fixnum -PositiveFixnum]

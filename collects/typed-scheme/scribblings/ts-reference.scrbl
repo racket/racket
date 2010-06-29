@@ -37,6 +37,7 @@ any expression of this type will not evaluate to a value.}
 @defidform[Inexact-Complex]
 @defidform[Real]
 @defidform[Float]
+@defidform[Nonnegative-Float]
 @defidform[Exact-Rational]
 @defidform[Integer]
 @defidform[Natural]

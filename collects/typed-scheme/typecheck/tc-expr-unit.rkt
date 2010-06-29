@@ -41,6 +41,10 @@
     [(~var i (3d exact-nonnegative-integer?)) -ExactNonnegativeInteger]
     [(~var i (3d exact-integer?)) -Integer]
     [(~var i (3d (conjoin number? exact? rational?))) -ExactRational]
+    [(~var i (3d (conjoin inexact-real?
+                          (lambda (x) (or (positive? x) (zero? x)))
+                          (lambda (x) (not (eq? x -0.0))))))
+     -NonnegativeFlonum]
     [(~var i (3d inexact-real?)) -Flonum]
     [(~var i (3d real?)) -Real]
     ;; a complex number can't have an inexact imaginary part and an exact real part

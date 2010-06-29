@@ -154,6 +154,9 @@
 (define -InexactComplex (make-Base 'InexactComplex #'(and/c number? (lambda (x) (inexact-real? (imag-part x))))))
 
 (define -Flonum (make-Base 'Flonum #'inexact-real?))
+(define -NonnegativeFlonum (make-Base 'Nonnegative-Flonum #'(and/c inexact-real?
+                                                                   (or/c positive? zero?)
+                                                                   (lambda (x) (not (eq? x -0.0))))))
 
 (define -ExactRational 
   (make-Base 'Exact-Rational #'(and/c number? rational? exact?)))

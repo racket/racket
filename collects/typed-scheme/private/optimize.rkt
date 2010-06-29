@@ -6,22 +6,26 @@
          (types abbrev type-table utils subtype))
 (provide optimize)
 
+;; for use in match
+(define (subtypeof x y)
+  (subtype y x))
+
 (define-syntax-class float-opt-expr
   (pattern e:opt-expr
            #:when (match (type-of #'e)
-                    [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
+                    [(tc-result1: (== -Flonum subtypeof)) #t] [_ #f])
            #:with opt #'e.opt))
 
 (define-syntax-class int-opt-expr
   (pattern e:opt-expr
            #:when (match (type-of #'e)
-                    [(tc-result1: (== -Integer (lambda (x y) (subtype y x)))) #t] [_ #f])
+                    [(tc-result1: (== -Integer subtypeof)) #t] [_ #f])
            #:with opt #'e.opt))
 
 (define-syntax-class fixnum-opt-expr
   (pattern e:opt-expr
            #:when (match (type-of #'e)
-                    [(tc-result1: (== -Fixnum (lambda (x y) (subtype y x)))) #t] [_ #f])
+                    [(tc-result1: (== -Fixnum subtypeof)) #t] [_ #f])
            #:with opt #'e.opt))
 (define-syntax-class nonzero-fixnum-opt-expr
   (pattern e:opt-expr
@@ -154,7 +158,7 @@
   (pattern (~and res (#%plain-app (~var op (float-op binary-float-ops)) f1:float-arg-expr f2:float-arg-expr fs:float-arg-expr ...))
            #:when (match (type-of #'res)
                     ;; if the result is a float, we can coerce integers to floats and optimize
-                    [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
+                    [(tc-result1: (== -Flonum subtypeof)) #t] [_ #f])
            #:with opt
            (begin (log-optimization "binary float" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
