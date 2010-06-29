@@ -3647,23 +3647,40 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
   /* Check for things like (cXr (cons X Y)): */
   if (SCHEME_PRIMP(app->rator) 
       && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
-    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_application2_type)) {
-      Scheme_App2_Rec *app2 = (Scheme_App2_Rec *)app->rand;
+    Scheme_Object *rand, *inside = NULL, *alt = NULL;
+
+    rand = app->rand;
+
+    /* We can go inside a `let', which is useful in case the argument
+       was a function call that has been inlined. */
+    while (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_let_void_type)) {
+      Scheme_Let_Header *head = (Scheme_Let_Header *)rand;
+      int i;
+      inside = rand;
+      rand = head->body;
+      for (i = head->num_clauses; i--; ) {
+        inside = rand;
+	rand = ((Scheme_Compiled_Let_Value *)rand)->body;
+      }
+    }
+
+    if (SAME_TYPE(SCHEME_TYPE(rand), scheme_application2_type)) {
+      Scheme_App2_Rec *app2 = (Scheme_App2_Rec *)rand;
       if (SAME_OBJ(scheme_list_proc, app2->rator)) {
         if (IS_NAMED_PRIM(app->rator, "car")) {
           /* (car (list X)) */
           if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL)
               || single_valued_noncm_expression(app2->rand, 5)) {
-            return app2->rand;
+            alt = app2->rand;
           }
         } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
           /* (cdr (list X)) */
           if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL))
-            return scheme_null;
+            alt = scheme_null;
         }
       }
-    } else if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_application3_type)) {
-      Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)app->rand;
+    } else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_application3_type)) {
+      Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)rand;
       if (IS_NAMED_PRIM(app->rator, "car")) {
         if (SAME_OBJ(scheme_cons_proc, app3->rator)
             || SAME_OBJ(scheme_list_proc, app3->rator)
@@ -3672,7 +3689,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
           if ((scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)
                || single_valued_noncm_expression(app3->rand1, 5))
               && scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)) {
-            return app3->rand1;
+            alt = app3->rand1;
           }
         }
       } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
@@ -3681,7 +3698,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
           if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)
                || single_valued_noncm_expression(app3->rand2, 5))
               && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)) {
-            return app3->rand2;
+            alt = app3->rand2;
           }
         }
       } else if (IS_NAMED_PRIM(app->rator, "cadr")) {
@@ -3690,10 +3707,21 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
           if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)
                || single_valued_noncm_expression(app3->rand2, 5))
               && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)) {
-            return app3->rand2;
+            alt = app3->rand2;
           }
         }
       }
+    }
+
+    if (alt) {
+      if (inside) {
+        if (SAME_TYPE(SCHEME_TYPE(inside), scheme_compiled_let_void_type))
+          ((Scheme_Let_Header *)inside)->body = alt;
+        else
+          ((Scheme_Compiled_Let_Value *)inside)->body = alt;
+        return app->rand;
+      }
+      return alt;
     }
   }
 
