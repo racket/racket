@@ -59,4 +59,26 @@
  =>
  (list '(add1 1 :- 2))
  
+ (local [(local-require tests/datalog/examples/ancestor)]
+   (datalog theory
+            (? (ancestor A B))))
+ =>
+ '((ancestor ebbon bob)
+   (ancestor bob john)
+   (ancestor john douglas)
+   (ancestor bob douglas)
+   (ancestor ebbon john)
+   (ancestor ebbon douglas))
+ 
+  (local [(local-require tests/datalog/paren-examples/ancestor)]
+   (datalog theory
+            (? (ancestor A B))))
+ =>
+ '((ancestor ebbon bob)
+   (ancestor bob john)
+   (ancestor john douglas)
+   (ancestor bob douglas)
+   (ancestor ebbon john)
+   (ancestor ebbon douglas))
+ 
  )

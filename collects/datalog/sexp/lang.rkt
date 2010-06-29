@@ -2,10 +2,9 @@
 (require (for-syntax syntax/parse
                      racket/list
                      racket/base)
+         racket/contract
          datalog/stx
          datalog/runtime)
-
-(define lang-theory (make-theory))
 
 (define-for-syntax (partition-requires es)
   (define-values (rs stmts)
@@ -24,18 +23,24 @@
 (define-syntax (module-begin stx)
   (syntax-case stx ()
     [(_ . es)
-     (with-syntax ([((requires ...)
+     (with-syntax ([theory (datum->syntax #'es 'theory)]
+                   [((requires ...)
                      (stmt ...))
                     (partition-requires #'es)])
        (syntax/loc stx
          (#%module-begin 
           requires ...
-          (datalog! lang-theory stmt ...))))]))
+          (define theory (make-theory))
+          (datalog! theory stmt ...)
+          (provide/contract
+           [theory mutable-theory/c]))))]))
 
-(define-syntax top-interaction
-  (syntax-rules ()
+(define-syntax (top-interaction stx)
+  (syntax-case stx ()
     [(_ . stmt)
-     (datalog! lang-theory stmt)]))
+     (with-syntax ([theory (datum->syntax #'stmt 'theory)])
+       (syntax/loc stx
+         (datalog! theory stmt)))]))
 
 (provide (rename-out [top-interaction #%top-interaction]
                      [module-begin #%module-begin])

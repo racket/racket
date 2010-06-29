@@ -30,7 +30,7 @@ In Datalog input, whitespace characters are ignored except when they separate ad
 Comments are also considered to be whitespace. The character @litchar["%"] introduces a comment, which extends to the next line break.
 Comments do not occur inside strings.
 
-A variable is a sequence of Latin capital and small letters, digits, and the underscore character. A variable must begin with a Latin capital letter.
+A variable is a sequence of Unicode "Uppercase" and "Lowercase" letters, digits, and the underscore character. A variable must begin with a Unicode "Uppercase" letter.
 
 An identifier is a sequence of printing characters that does not contain any of the following characters: @litchar["("], @litchar["`"],
 @litchar["'"], @litchar[")"], @litchar["="], @litchar[":"], @litchar["."], @litchar["~"], @litchar["?"], @litchar["\""], @litchar["%"], and space.
@@ -113,6 +113,7 @@ The following BNF describes the syntax of Datalog.
 
 The effect of running a Datalog program is to modify the database as directed
 by its statements, and then to return the literals designated by the query.
+The modified database is provided as @racket[theory].
 
 The following is a program:
 
