@@ -73,6 +73,14 @@ Statements are either assertions, retractions, or queries.
                                                    
 Questions are either literals or external queries.
 Literals are represented as @racket[identifier] or @racket[(identifier term ...)].
-Questions are represented as @racket[(identifier term ... :- term ...)], where @racket[identifier] is bound to a procedure that when given the first set of terms as arguments returns the second set of terms as values.
+External queries are represented as @racket[(identifier term ... :- term ...)], where @racket[identifier] is bound to a procedure that when given the first set of terms as arguments returns the second set of terms as values.
 A term is either a non-capitalized identifiers for a constant symbol, a Racket datum for a constant datum, or a capitalized identifier for a variable symbol. Bound identifiers in terms are treated as datums. 
 
+External queries invalidate Datalog's guaranteed termination. For example, this program does not terminate:
+@racketblock[
+ (datalog (make-theory)
+          (! (:- (loop X)
+                 (add1 X :- Z)
+                 (loop Z)))
+          (? (loop 1)))
+ ]
