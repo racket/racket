@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require syntax/parse (for-template scheme/base scheme/flonum scheme/fixnum scheme/unsafe/ops)
-         "../utils/utils.rkt" unstable/match scheme/match unstable/syntax
+(require syntax/parse (for-template scheme/base scheme/flonum scheme/fixnum scheme/unsafe/ops racket/private/for)
+         "../utils/utils.rkt" "../utils/tc-utils.rkt" unstable/match scheme/match unstable/syntax
          (rep type-rep) syntax/id-table racket/dict
          (types abbrev type-table utils subtype))
 (provide optimize)
@@ -124,6 +124,15 @@
   (pattern (~literal vector-ref)  #:with unsafe #'unsafe-vector*-ref)
   (pattern (~literal vector-set!) #:with unsafe #'unsafe-vector*-set!))
 
+(define-syntax-class list-opt-expr
+  (pattern e:opt-expr
+           #:when (match (type-of #'e)
+                    [(tc-result1: (Listof: _)) #t]
+                    [(tc-result1: (List: _)) #t]
+                    [_ #f])
+           #:with opt #'e.opt))
+
+
 (define-syntax-class opt-expr
   (pattern e:opt-expr*
            #:with opt (syntax-recertify #'e.opt this-syntax (current-code-inspector) #f)))
@@ -226,6 +235,19 @@
            #:with opt
            (begin (log-optimization "vector" #'op)
                   #'(op.unsafe v.opt i.opt new.opt ...)))
+
+  ;; if we're iterating (with the for macros) over something we know is a list,
+  ;; we can generate code that would be similar to if in-list had been used
+  (pattern (#%plain-app op:id _ l)
+           #:when (id-from? #'op 'make-sequence 'racket/private/for)
+           #:with l*:list-opt-expr #'l
+           #:with opt
+           (begin (log-optimization "in-list" #'op)
+                  #'(let ((i l*.opt))
+                      (values unsafe-car unsafe-cdr i
+                              (lambda (x) (not (null? x)))
+                              (lambda (x) #t)
+                              (lambda (x y) #t)))))
 
   ;; boring cases, just recur down
   (pattern (#%plain-lambda formals e:opt-expr ...)
