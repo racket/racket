@@ -246,7 +246,7 @@
            (define travel-formlet
              (formlet
               (div
-               "Name:" ,{input-string . => . name}
+               "Name:" ,{input-string . => . name} nbsp
                (div
                 "Arrive:" ,{date-formlet . => . arrive}
                 "Depart:" ,{date-formlet . => . depart})
@@ -278,6 +278,7 @@
                                   ()
                                   "Name:"
                                   (input ((name "input_0") (type "text")))
+                                  nbsp
                                   (div
                                    ()
                                    "Arrive:"
