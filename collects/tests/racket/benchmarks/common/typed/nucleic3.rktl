@@ -46,18 +46,8 @@
 
 (define-syntax define-structure
   (syntax-rules ()
-    ((define-structure #f
-       name make make-constant (select1 ...) (set1 ...))
-     (begin (define-syntax make
-              (syntax-rules ()
-                ((make select1 ...)
-                 (vector select1 ...))))
-            (define-syntax make-constant
-              (syntax-rules ()
-                ; The vectors that are passed to make-constant aren't quoted.
-                ((make-constant . args)
-                 (constant-maker make . args))))
-            (define-selectors (select1 ...)
+    ((define-structure (select1 ...) (set1 ...))
+     (begin (define-selectors (select1 ...)
                               (0 1 2 3 4 5 6 7 8 9
                                10 11 12 13 14 15 16 17 18 19
                                20 21 22 23 24 25 26 27 28 29
@@ -65,42 +55,10 @@
                                40 41 42 43 44 45 46 47 48 49))
             (define-setters   (set1 ...)
                               (0 1 2 3 4 5 6 7 8 9
-                               10 11 12 13 14 15 16 17 18 19
-                               20 21 22 23 24 25 26 27 28 29
-                               30 31 32 33 34 35 36 37 38 39
-                               40 41 42 43 44 45 46 47 48 49))))
-    ((define-structure pred?
-       name make make-constant (select1 ...) (set1 ...))
-     (begin (define-syntax pred?
-              (syntax-rules ()
-                ((pred? v)
-                 (and (vector? v) (eq? (vector-ref v 0) 'name)))))
-            (define-syntax make
-              (syntax-rules ()
-                ((make select1 ...)
-                 (vector 'name select1 ...))))
-            (define-syntax make-constant
-              (syntax-rules ()
-                ; The vectors that are passed to make-constant aren't quoted.
-                ((make-constant . args)
-                 (constant-maker make . args))))
-            (define-selectors (select1 ...)
-                              (1 2 3 4 5 6 7 8 9
-                               10 11 12 13 14 15 16 17 18 19
-                               20 21 22 23 24 25 26 27 28 29
-                               30 31 32 33 34 35 36 37 38 39
-                               40 41 42 43 44 45 46 47 48 49))
-            (define-setters   (set1 ...)
-                              (1 2 3 4 5 6 7 8 9
                                10 11 12 13 14 15 16 17 18 19
                                20 21 22 23 24 25 26 27 28 29
                                30 31 32 33 34 35 36 37 38 39
                                40 41 42 43 44 45 46 47 48 49))))))
-(define-syntax constant-maker
-  (syntax-rules ()
-    ; The quotation marks are added here.
-    ((constant-maker make arg ...)
-     (make 'arg ...))))
 (define-syntax define-selectors
   (syntax-rules ()
     ((define-selectors (select) (i i1 ...))
@@ -124,18 +82,24 @@
                 ((set v x) (vector-set! v i x))))
             (define-setters (set1 ...) (i1 ...))))))
 
-(define-type Pt (Vectorof Float))
-(define-structure #f pt
-  make-pt make-constant-pt
+(define-type Pt (Vector Float Float Float))
+(define-structure
   (pt-x pt-y pt-z)
   (pt-x-set! pt-y-set! pt-z-set!))
+(: make-pt (Float Float Float -> Pt))
+(define (make-pt x y z) (vector x y z))
 
-(define-type TFO (Vectorof Float))
-(define-structure #f tfo
-  make-tfo make-constant-tfo
+(define-type TFO (Vector Float Float Float Float Float Float
+                         Float Float Float Float Float Float))
+(define-structure
   (tfo-a tfo-b tfo-c tfo-d tfo-e tfo-f tfo-g tfo-h tfo-i tfo-tx tfo-ty tfo-tz)
   (tfo-a-set! tfo-b-set! tfo-c-set! tfo-d-set! tfo-e-set! tfo-f-set!
    tfo-g-set! tfo-h-set! tfo-i-set! tfo-tx-set! tfo-ty-set! tfo-tz-set!))
+(: make-tfo (Float Float Float Float Float Float
+             Float Float Float Float Float Float
+                   -> TFO))
+(define (make-tfo a b c d e f g h i tx ty tz)
+  (vector a b c d e f g h i tx ty tz))
 
 (define-struct: nuc
   ([dgf-base-tfo : TFO]  ; defines the standard position for wc and wc-dumas

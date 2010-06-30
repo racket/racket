@@ -27,8 +27,9 @@ Correct output N = 1000 is
 
 (define +dt+ 0.01)
 
-(: make-body (Float * -> (Vectorof Float)))
-(define make-body vector)
+(: make-body (Float Float Float Float Float Float Float
+                    -> (Vector Float Float Float Float Float Float Float)))
+(define (make-body a b c d e f g) (vector a b c d e f g))
 (define-syntax-rule (deffield n getter setter)
   (begin (define-syntax-rule (getter b) (vector-ref b n))
          (define-syntax-rule (setter b x) (vector-set! b n x))))
