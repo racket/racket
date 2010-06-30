@@ -78,13 +78,14 @@
                         (with-syntax ([contract-id contract-id]
                                       [id id]
                                       [external-id external-id]
-                                      [pos-module-source pos-module-source])
+                                      [pos-module-source pos-module-source]
+                                      [loc-id (identifier-prune-to-source-module id)])
                           (syntax-local-introduce
                            (syntax-local-lift-expression
                             #`(contract contract-id
                                         id
                                         pos-module-source
-                                        (first-requiring-module (quote-syntax id) (quote-module-path))
+                                        (first-requiring-module (quote-syntax loc-id) (quote-module-path))
                                         'external-id
                                         (quote-srcloc id))))))])
                (when key
