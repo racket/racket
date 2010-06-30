@@ -14,7 +14,6 @@
          "interfaces.ss"
          "prefs.ss"
          "extensions.ss"
-         "warning.ss"
          "hiding-panel.ss"
          "term-record.ss"
          "step-display.ss"
@@ -103,7 +102,6 @@
     (define/public (get-controller) sbc)
     (define/public (get-view) sbview)
     (define/public (get-step-displayer) step-displayer)
-    (define/public (get-warnings-area) warnings-area)
     (define/public (get-macro-hiding-prefs) macro-hiding-prefs)
 
     (define/public (reset-primary-partition)
@@ -129,9 +127,7 @@
            (stretchable-height #f)
            (alignment '(left center))
            (style '(deleted))))
-    
-    (define warnings-area (new stepper-warnings% (parent area)))
-    
+
     (define: sbview sb:syntax-browser<%>
       (new stepper-syntax-widget% 
            (parent area)
@@ -206,7 +202,16 @@
                          (navigate-to (sub1 step))]
                         [(equal? value "end")
                          (navigate-to-end)])))))))
+
+    (define nav:step-count
+      (new message%
+           (label "")
+           (parent extra-navigator)
+           (auto-resize #t)
+           (stretchable-width #f)
+           (stretchable-height #f)))
     (send nav:text set-value "")
+
     (listen-current-step-index
      (lambda (n)
        (send nav:text set-value
@@ -388,9 +393,15 @@
 
     ;; refresh : -> void
     (define/public (refresh)
-      (send warnings-area clear)
       (when (focused-term)
         (send: (focused-term) term-record<%> on-get-focus))
+      (send nav:step-count set-label "")
+      (let ([term (focused-term)])
+        (when term
+          (let ([step-count (send: term term-record<%> get-step-count)])
+            (when step-count
+              ;; +1 for end of expansion "step"
+              (send nav:step-count set-label (format "of ~s" (add1 step-count)))))))
       (update))
 
     (define/private (foci x) (if (list? x) x (list x)))

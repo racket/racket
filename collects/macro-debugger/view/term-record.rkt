@@ -207,7 +207,11 @@
       (and (get-steps) (not (cursor:at-end? (get-steps)))))
 
     (define/public-final (get-step-index)
-      (and (get-steps) (cursor-position (get-steps))))
+      (let ([steps (get-steps)])
+        (and steps (cursor-position steps))))
+    (define/public-final (get-step-count)
+      (let ([steps (get-steps)])
+        (and steps (cursor-count steps))))
 
     (define/public-final (navigate-to-start)
       (cursor:move-to-start (get-steps))

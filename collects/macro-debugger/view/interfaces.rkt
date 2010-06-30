@@ -62,6 +62,7 @@
   (get-raw-deriv
    get-deriv-hidden?
    get-step-index
+   get-step-count
    invalidate-synth!
    invalidate-steps!
 

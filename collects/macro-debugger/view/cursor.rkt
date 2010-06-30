@@ -24,7 +24,8 @@
 
          cursor->list
          cursor:prefix->list
-         cursor:suffix->list)
+         cursor:suffix->list
+         cursor-count)
 
 (define-struct cursor (vector count position)
   #:mutable)
