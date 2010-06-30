@@ -260,7 +260,7 @@ DeclEntry =
   (define config (stxclass-lookup-config))
   (if (eq? config 'no)
       (make-dummy-stxclass id)
-      (cond [(syntax-local-value/catch id stxclass?) => values]
+      (cond [(syntax-local-value/record id stxclass?) => values]
             [(eq? config 'try)
              (make-dummy-stxclass id)]
             [else (wrong-syntax id "not defined as syntax class")])))
