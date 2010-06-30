@@ -33,6 +33,7 @@
 	[(Value: 0) -Nat]
         [(? (lambda (t) (subtype t -Nat))) -Nat]
         [(? (lambda (t) (subtype t -Integer))) -Integer]
+        [(? (lambda (t) (subtype t -Flonum))) -Flonum]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 (Value: '())) (-lst t1)]
         [(MPair: t1 (Value: '())) (-mlst t1)]
