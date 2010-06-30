@@ -20,7 +20,7 @@
 (define-syntax-rule (indexing index-type)
   (make-env
    
-   [build-list (-poly (a) (index-type (-Nat . -> . a) . -> . (-lst a)))]
+   [build-list (-poly (a) (index-type (-NonnegativeFixnum . -> . a) . -> . (-lst a)))]
    [make-list (-poly (a) (index-type a . -> . (-lst a)))]
    
    [string-ref (-> -String index-type -Char)]
@@ -132,7 +132,7 @@
    [vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
    [unsafe-vector-ref (-poly (a) ((-vec a) index-type . -> . a))]
    [unsafe-vector*-ref (-poly (a) ((-vec a) index-type . -> . a))]
-   [build-vector (-poly (a) (index-type (-Nat . -> . a) . -> . (-vec a)))]
+   [build-vector (-poly (a) (index-type (-NonnegativeFixnum . -> . a) . -> . (-vec a)))]
    [vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector*-set! (-poly (a) (-> (-vec a) index-type a -Void))]
