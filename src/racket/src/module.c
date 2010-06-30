@@ -718,7 +718,7 @@ void scheme_save_initial_module_set(Scheme_Env *env)
   }
   initial_modules_env = env;
   
-  ht = env->module_registry;
+  ht = env->module_registry->loaded;
   c = ht->size;
 
   count = 0;
@@ -775,7 +775,7 @@ void scheme_install_initial_module_set(Scheme_Env *env)
     a[2] = (Scheme_Object *)env;
 
     /* Make sure module is running: */
-    m = (Scheme_Module *)scheme_hash_get(initial_modules_env->module_registry, a[1]);
+    m = (Scheme_Module *)scheme_hash_get(initial_modules_env->module_registry->loaded, a[1]);
     start_module(m, initial_modules_env, 0, a[1], 0, 1, 0, scheme_null);
 
     namespace_attach_module(3, a);
@@ -1413,7 +1413,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	if (!menv) {
 	  /* Assert: name == argv[1] */
 	  /* Module at least declared? */
-	  if (scheme_hash_get(from_env->module_registry, name))
+	  if (scheme_hash_get(from_env->module_registry->loaded, name))
 	    scheme_arg_mismatch("namespace-attach-module",
 				"module not instantiated (in the source namespace): ",
 				name);
@@ -1435,7 +1435,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	    else
 	      m2 = NULL;
 	  } else {
-	    m2 = (Scheme_Module *)scheme_hash_get(to_env->module_registry, name);
+	    m2 = (Scheme_Module *)scheme_hash_get(to_env->module_registry->loaded, name);
 	    if (m2 && SAME_OBJ(m2, menv->module))
 	      m2 = NULL;
 	  }
@@ -1738,8 +1738,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 
           LOG_ATTACH(printf("Copying no-phase %s\n", scheme_write_to_string(name, NULL)));
           
-          m2 = (Scheme_Module *)scheme_hash_get(from_env->module_registry, name);
-          scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)m2);
+          m2 = (Scheme_Module *)scheme_hash_get(from_env->module_registry->loaded, name);
+          scheme_hash_set(to_env->module_registry->loaded, name, (Scheme_Object *)m2);
 
           menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_env->label_env->modchain), name);
           menv2 = scheme_copy_module_env(menv, to_env->label_env, to_env->label_env->modchain, menv->phase + 1);
@@ -1806,8 +1806,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
               check_phase(menv2, NULL, phase);
               scheme_hash_set(MODCHAIN_TABLE(to_modchain), name, (Scheme_Object *)menv2);
             }
-	    scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)menv->module);
-	    scheme_hash_set(to_env->export_registry, name, (Scheme_Object *)menv->module->me);
+	    scheme_hash_set(to_env->module_registry->loaded, name, (Scheme_Object *)menv->module);
+	    scheme_hash_set(to_env->module_registry->exports, name, (Scheme_Object *)menv->module->me);
 	    
 	    /* Push name onto notify list: */
 	    if (!same_namespace)
@@ -2543,7 +2543,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
               else if (SAME_OBJ(name, flfxnum_modname))
                 im = scheme_get_flfxnum_env()->module;
               else
-                im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
+                im = (Scheme_Module *)scheme_hash_get(menv->module_registry->loaded, name);
               
               add_simple_require_renames(NULL, rns, NULL, im, idx, shift, NULL, 0);
             }
@@ -2580,7 +2580,7 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
   modchain = env->modchain;
   menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(modchain), name);
   if (!menv) {
-    if (scheme_hash_get(env->module_registry, name))
+    if (scheme_hash_get(env->module_registry->loaded, name))
       scheme_arg_mismatch("module->namespace",
 			  "module not instantiated in the current namespace: ",
 			  name);
@@ -2645,7 +2645,7 @@ static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[
     m = scheme_get_flfxnum_env()->module;
   else {
     env = scheme_get_env(NULL);
-    m = (Scheme_Module *)scheme_hash_get(env->module_registry, name);
+    m = (Scheme_Module *)scheme_hash_get(env->module_registry->loaded, name);
   }
 
   if (!m)
@@ -3038,7 +3038,7 @@ static Scheme_Object *module_export_protected_p(int argc, Scheme_Object **argv)
   else if (SAME_OBJ(modname, flfxnum_modname))
     mv = (Scheme_Object *)scheme_get_flfxnum_env()->module;
   else
-    mv = scheme_hash_get(env->module_registry, modname);
+    mv = scheme_hash_get(env->module_registry->loaded, modname);
   if (!mv) {
     scheme_arg_mismatch("module-provide-protected?",
 			"unknown module (in the source namespace): ",
@@ -3335,7 +3335,7 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
   else {
     Scheme_Module *m;
 
-    m = (Scheme_Module *)scheme_hash_get(env->module_registry, name);
+    m = (Scheme_Module *)scheme_hash_get(env->module_registry->loaded, name);
 
     if (!m) {
       char *mred_note;
@@ -3812,7 +3812,7 @@ static int wait_registry(Scheme_Env *env)
   Scheme_Object *lock, *a[1];
 
   while (1) {
-    lock = scheme_hash_get(env->module_registry, scheme_false);
+    lock = scheme_hash_get(env->module_registry->loaded, scheme_false);
     if (!lock)
       return 1;
 
@@ -3830,15 +3830,15 @@ static void lock_registry(Scheme_Env *env)
   Scheme_Object *lock;
   lock = scheme_make_pair(scheme_make_sema(0),
                           (Scheme_Object *) scheme_current_thread);
-  scheme_hash_set(env->module_registry, scheme_false, lock);
+  scheme_hash_set(env->module_registry->loaded, scheme_false, lock);
 }
 
 static void unlock_registry(Scheme_Env *env)
 {
   Scheme_Object *lock;
-  lock = scheme_hash_get(env->module_registry, scheme_false);
+  lock = scheme_hash_get(env->module_registry->loaded, scheme_false);
   scheme_post_sema(SCHEME_CAR(lock));
-  scheme_hash_set(env->module_registry, scheme_false, NULL);
+  scheme_hash_set(env->module_registry->loaded, scheme_false, NULL);
 }
 
 XFORM_NONGCING static long make_key(int base_phase, int eval_exp, int eval_run)
@@ -3980,6 +3980,7 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
 {
   Scheme_Object *new_cycle_list, *midx, *l;
   Scheme_Module *im;
+  int max_template_depth = 1;
 
   new_cycle_list = scheme_make_pair(menv->module->modname, cycle_list);
   
@@ -4017,6 +4018,9 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
                    midx,
                    eval_exp, eval_run, base_phase,
                    new_cycle_list);
+
+      if ((im->template_depth + 1) > max_template_depth)
+        max_template_depth = im->template_depth + 1;
     }
   }
 
@@ -4028,6 +4032,9 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
     im = module_load(scheme_module_resolve(midx, 1), env, NULL);
 
     start_module(im, env, 0, midx, eval_exp, eval_run, base_phase, new_cycle_list);
+
+    if (im->template_depth > max_template_depth)
+      max_template_depth = im->template_depth;
   }
 
   scheme_prepare_exp_env(menv);
@@ -4042,6 +4049,9 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
       im = module_load(scheme_module_resolve(midx, 1), env, NULL);
       
       start_module(im, menv->exp_env, 0, midx, eval_exp, eval_run, base_phase, new_cycle_list);
+
+      if ((im->template_depth - 1) > max_template_depth)
+        max_template_depth = im->template_depth - 1;
     }
   }
 
@@ -4076,6 +4086,9 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
                          midx,
                          eval_exp, eval_run, base_phase,
                          new_cycle_list);
+
+            if ((im->template_depth - SCHEME_INT_VAL(phase)) > max_template_depth)
+              max_template_depth = im->template_depth - SCHEME_INT_VAL(phase);
           }
         } else {
           compute_require_names(menv, phase, env, syntax_idx);
@@ -4097,11 +4110,26 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
             im = module_load(scheme_module_resolve(midx, 1), env, NULL);
             
             start_module(im, menv2, 0, midx, eval_exp, eval_run, base_phase, new_cycle_list);
+
+            if ((im->template_depth - SCHEME_INT_VAL(phase)) > max_template_depth)
+              max_template_depth = im->template_depth - SCHEME_INT_VAL(phase);
           }
         }
       }
     }
   }
+
+  if (max_template_depth > menv->module->template_depth)
+    menv->module->template_depth = max_template_depth;
+
+  if (!env->module_registry->cycled) {
+    Scheme_Hash_Table *ht;
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    env->module_registry->cycled = ht;
+  }
+  scheme_hash_set(env->module_registry->cycled,
+                  menv->module->modname,
+                  scheme_true);
 }
 
 typedef struct Start_Module_Args {
@@ -4403,7 +4431,17 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     menv->did_starts = v;
   }
 
-  chain_start_module_w_push(menv, env, eval_exp, eval_run, base_phase, cycle_list, syntax_idx);
+  if ((env->phase > base_phase)
+      && menv->module->template_depth
+      && ((env->phase - (menv->module->template_depth - 1)) > (base_phase + 2))
+      && env->module_registry->cycled
+      && scheme_hash_get(env->module_registry->cycled,
+                         menv->module->modname)) {
+    /* Skip chain start, because we won't get back to the base phase,
+       and we've already traversed the module's imports before to load
+       any needed modules. */
+  } else
+    chain_start_module_w_push(menv, env, eval_exp, eval_run, base_phase, cycle_list, syntax_idx);
 
   if (restart) {
     if (menv->rename_set_ready) {
@@ -4746,12 +4784,12 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
     me->modsrc = src;
   }
 
-  scheme_hash_set(for_env->export_registry, m->modname, (Scheme_Object *)m->me);
+  scheme_hash_set(for_env->module_registry->exports, m->modname, (Scheme_Object *)m->me);
 
   insp = scheme_make_inspector(insp);
   env->insp = insp;
 
-  scheme_hash_set(for_env->module_registry, m->modname, (Scheme_Object *)m);
+  scheme_hash_set(for_env->module_registry->loaded, m->modname, (Scheme_Object *)m);
 
   return env;
 }
@@ -5232,8 +5270,8 @@ module_execute(Scheme_Object *data)
   }
 
   m->insp = insp;
-  scheme_hash_set(env->module_registry, m->modname, (Scheme_Object *)m);
-  scheme_hash_set(env->export_registry, m->modname, (Scheme_Object *)m->me);
+  scheme_hash_set(env->module_registry->loaded, m->modname, (Scheme_Object *)m);
+  scheme_hash_set(env->module_registry->exports, m->modname, (Scheme_Object *)m->me);
 
   /* Replacing an already-running or already-syntaxing module? */
   if (old_menv) {
@@ -6505,7 +6543,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
   /* Redefining a module? */
   redef_modname = env->genv->module->modname;
-  if (!scheme_hash_get(env->genv->module_registry, redef_modname))
+  if (!scheme_hash_get(env->genv->module_registry->loaded, redef_modname))
     redef_modname = NULL;
 
   /* Expand each expression in form up to `begin', `define-values', `define-syntax', 
@@ -9254,7 +9292,7 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
   } else {
     if (!export_registry) {
       env = scheme_get_env(scheme_current_config());
-      export_registry = env->export_registry;
+      export_registry = env->module_registry->exports;
     }
 
     me = (Scheme_Module_Exports *)scheme_hash_get(export_registry, name);

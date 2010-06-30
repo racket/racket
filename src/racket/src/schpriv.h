@@ -2764,6 +2764,14 @@ Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o);
 /*                         namespaces and modules                         */
 /*========================================================================*/
 
+typedef struct Scheme_Module_Registry {
+  Scheme_Object so; /* scheme_module_registry_type */
+  Scheme_Hash_Table *loaded; /* symbol -> module ; loaded modules,
+                                shared with modules in same space */
+  Scheme_Hash_Table *exports; /* symbol -> module-exports */
+  Scheme_Hash_Table *cycled; /* resolved module paths that have been traversed */
+} Scheme_Module_Registry;
+
 struct Scheme_Env {
   Scheme_Object so; /* scheme_namespace_type */
 
@@ -2771,9 +2779,7 @@ struct Scheme_Env {
 
   struct Scheme_Module *module; /* NULL => top-level */
 
-  Scheme_Hash_Table *module_registry; /* symbol -> module ; loaded modules,
-					 shared with modules in same space */
-  Scheme_Hash_Table *export_registry; /* symbol -> module-exports */
+  Scheme_Module_Registry *module_registry;
   Scheme_Object *insp; /* instantiation-time inspector, for granting
 			  protected access and certificates */
 
@@ -2872,6 +2878,8 @@ typedef struct Scheme_Module
   Scheme_Env *primitive;
 
   Scheme_Object *rn_stx;
+
+  long template_depth;
 } Scheme_Module;
 
 typedef struct Scheme_Module_Phase_Exports

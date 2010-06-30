@@ -834,7 +834,6 @@ namespace_val {
 
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
-  gcMARK2(e->export_registry, gc);
   gcMARK2(e->insp, gc);
 
   gcMARK2(e->rename_set, gc);
@@ -866,6 +865,16 @@ namespace_val {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
+}
+
+module_reg_val {
+ mark:
+  Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
+  gcMARK2(r->loaded, gc);
+  gcMARK2(r->exports, gc);
+  gcMARK2(r->cycled, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
 }
 
 random_state_val {

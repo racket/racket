@@ -2100,7 +2100,6 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(e->module, gc);
   gcMARK2(e->module_registry, gc);
-  gcMARK2(e->export_registry, gc);
   gcMARK2(e->insp, gc);
 
   gcMARK2(e->rename_set, gc);
@@ -2139,7 +2138,6 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(e->module, gc);
   gcFIXUP2(e->module_registry, gc);
-  gcFIXUP2(e->export_registry, gc);
   gcFIXUP2(e->insp, gc);
 
   gcFIXUP2(e->rename_set, gc);
@@ -2175,6 +2173,33 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
 
 #define namespace_val_IS_ATOMIC 0
 #define namespace_val_IS_CONST_SIZE 1
+
+
+static int module_reg_val_SIZE(void *p, struct NewGC *gc) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+}
+
+static int module_reg_val_MARK(void *p, struct NewGC *gc) {
+  Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
+  gcMARK2(r->loaded, gc);
+  gcMARK2(r->exports, gc);
+  gcMARK2(r->cycled, gc);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+}
+
+static int module_reg_val_FIXUP(void *p, struct NewGC *gc) {
+  Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
+  gcFIXUP2(r->loaded, gc);
+  gcFIXUP2(r->exports, gc);
+  gcFIXUP2(r->cycled, gc);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+}
+
+#define module_reg_val_IS_ATOMIC 0
+#define module_reg_val_IS_CONST_SIZE 1
 
 
 static int random_state_val_SIZE(void *p, struct NewGC *gc) {
