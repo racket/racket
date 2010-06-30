@@ -420,6 +420,8 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 unsigned long scheme_get_current_thread_stack_start(void);
 #endif
 
+SHARED_OK Scheme_Object *initial_cmdline_vec;
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
@@ -6570,6 +6572,13 @@ static Scheme_Object *parameter_procedure_eq(int argc, Scheme_Object **argv)
 	  : scheme_false);
 }
 
+void scheme_set_command_line_arguments(Scheme_Object *vec)
+{
+  if (!initial_cmdline_vec)
+    REGISTER_SO(initial_cmdline_vec);
+  initial_cmdline_vec = vec;
+}
+
 int scheme_new_param(void)
 {
   return max_configs++;
@@ -6746,7 +6755,10 @@ static void make_initial_config(Scheme_Thread *p)
   
   {
     Scheme_Object *zlv;
-    zlv = scheme_make_vector(0, NULL);
+    if (initial_cmdline_vec)
+      zlv = initial_cmdline_vec;
+    else
+      zlv = scheme_make_vector(0, NULL);
     init_param(cells, paramz, MZCONFIG_CMDLINE_ARGS, zlv);
   }
 

@@ -11312,8 +11312,6 @@ void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *ex
       a[0] = _scheme_apply(flcp, 2, a);
       _scheme_apply(clcp, 1, a);
     }
-
-    
   }
   p->error_buf = save;
 }

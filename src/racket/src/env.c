@@ -331,7 +331,7 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_init_true_false();
 
 #ifdef MZ_PRECISE_GC
-  scheme_register_traversers();
+  /* scheme_register_traversers(); --- already done in scheme_set_stack_base() */
   register_traversers();
   scheme_init_hash_key_procs();
 #endif
