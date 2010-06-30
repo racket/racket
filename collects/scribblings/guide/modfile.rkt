@@ -11,7 +11,9 @@
 (define-syntax (racketmodfile stx)
   (syntax-case stx ()
     [(_ file)
-     (let ([f (path->complete-path (syntax-e #'file))])
+     (let ([f (path->complete-path (syntax-e #'file)
+                                   (or (current-load-relative-directory)
+                                       (current-directory)))])
        (register-external-file f)
        (with-syntax ([(content ...)
                       (call-with-input-file* 
