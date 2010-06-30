@@ -3980,7 +3980,6 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
 {
   Scheme_Object *new_cycle_list, *midx, *l;
   Scheme_Module *im;
-  int max_template_depth = 1;
 
   new_cycle_list = scheme_make_pair(menv->module->modname, cycle_list);
   
@@ -4018,9 +4017,6 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
                    midx,
                    eval_exp, eval_run, base_phase,
                    new_cycle_list);
-
-      if ((im->template_depth + 1) > max_template_depth)
-        max_template_depth = im->template_depth + 1;
     }
   }
 
@@ -4032,9 +4028,6 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
     im = module_load(scheme_module_resolve(midx, 1), env, NULL);
 
     start_module(im, env, 0, midx, eval_exp, eval_run, base_phase, new_cycle_list);
-
-    if (im->template_depth > max_template_depth)
-      max_template_depth = im->template_depth;
   }
 
   scheme_prepare_exp_env(menv);
@@ -4049,9 +4042,6 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
       im = module_load(scheme_module_resolve(midx, 1), env, NULL);
       
       start_module(im, menv->exp_env, 0, midx, eval_exp, eval_run, base_phase, new_cycle_list);
-
-      if ((im->template_depth - 1) > max_template_depth)
-        max_template_depth = im->template_depth - 1;
     }
   }
 
@@ -4086,9 +4076,6 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
                          midx,
                          eval_exp, eval_run, base_phase,
                          new_cycle_list);
-
-            if ((im->template_depth - SCHEME_INT_VAL(phase)) > max_template_depth)
-              max_template_depth = im->template_depth - SCHEME_INT_VAL(phase);
           }
         } else {
           compute_require_names(menv, phase, env, syntax_idx);
@@ -4110,26 +4097,11 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
             im = module_load(scheme_module_resolve(midx, 1), env, NULL);
             
             start_module(im, menv2, 0, midx, eval_exp, eval_run, base_phase, new_cycle_list);
-
-            if ((im->template_depth - SCHEME_INT_VAL(phase)) > max_template_depth)
-              max_template_depth = im->template_depth - SCHEME_INT_VAL(phase);
           }
         }
       }
     }
   }
-
-  if (max_template_depth > menv->module->template_depth)
-    menv->module->template_depth = max_template_depth;
-
-  if (!env->module_registry->cycled) {
-    Scheme_Hash_Table *ht;
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    env->module_registry->cycled = ht;
-  }
-  scheme_hash_set(env->module_registry->cycled,
-                  menv->module->modname,
-                  scheme_true);
 }
 
 typedef struct Start_Module_Args {
@@ -4431,17 +4403,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     menv->did_starts = v;
   }
 
-  if ((env->phase > base_phase)
-      && menv->module->template_depth
-      && ((env->phase - (menv->module->template_depth - 1)) > (base_phase + 2))
-      && env->module_registry->cycled
-      && scheme_hash_get(env->module_registry->cycled,
-                         menv->module->modname)) {
-    /* Skip chain start, because we won't get back to the base phase,
-       and we've already traversed the module's imports before to load
-       any needed modules. */
-  } else
-    chain_start_module_w_push(menv, env, eval_exp, eval_run, base_phase, cycle_list, syntax_idx);
+  chain_start_module_w_push(menv, env, eval_exp, eval_run, base_phase, cycle_list, syntax_idx);
 
   if (restart) {
     if (menv->rename_set_ready) {

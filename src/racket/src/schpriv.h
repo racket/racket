@@ -2769,7 +2769,6 @@ typedef struct Scheme_Module_Registry {
   Scheme_Hash_Table *loaded; /* symbol -> module ; loaded modules,
                                 shared with modules in same space */
   Scheme_Hash_Table *exports; /* symbol -> module-exports */
-  Scheme_Hash_Table *cycled; /* resolved module paths that have been traversed */
 } Scheme_Module_Registry;
 
 struct Scheme_Env {
@@ -2878,8 +2877,6 @@ typedef struct Scheme_Module
   Scheme_Env *primitive;
 
   Scheme_Object *rn_stx;
-
-  long template_depth;
 } Scheme_Module;
 
 typedef struct Scheme_Module_Phase_Exports

@@ -2184,7 +2184,6 @@ static int module_reg_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
   gcMARK2(r->loaded, gc);
   gcMARK2(r->exports, gc);
-  gcMARK2(r->cycled, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
 }
@@ -2193,7 +2192,6 @@ static int module_reg_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
   gcFIXUP2(r->loaded, gc);
   gcFIXUP2(r->exports, gc);
-  gcFIXUP2(r->cycled, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
 }

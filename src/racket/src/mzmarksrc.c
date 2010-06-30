@@ -872,7 +872,6 @@ module_reg_val {
   Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
   gcMARK2(r->loaded, gc);
   gcMARK2(r->exports, gc);
-  gcMARK2(r->cycled, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
 }
