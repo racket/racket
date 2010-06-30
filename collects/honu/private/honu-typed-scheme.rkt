@@ -8,6 +8,7 @@
                      syntax/parse
                      syntax/parse/experimental/splicing
                      scheme/splicing
+                     macro-debugger/emit
                      "contexts.ss"
                      "util.ss"
                      "ops.ss"
@@ -506,10 +507,11 @@ if (foo){
 (define-honu-syntax scheme-syntax
   (lambda (body ctx)
     (syntax-parse body
-      [(_ expr . rest)
+      [(_ template . rest)
        (values
          (lambda ()
-           (apply-scheme-syntax #'#'expr))
+           (printf "Applying syntax to ~a\n" (quote-syntax template))
+           (apply-scheme-syntax #'#'template))
          #'rest)])))
 
 (define-honu-syntax honu-provide
@@ -562,6 +564,9 @@ if (foo){
   [pattern (~seq x ...) #:with result #'(honu-unparsed-begin x ...)])
 
 (define-syntax (honu-unparsed-begin stx)
+  (emit-remark "Honu unparsed begin!" stx)
+  #;
+  (emit-remark "Honu unparsed begin" stx)
   (printf "honu unparsed begin: ~a at phase ~a\n" (syntax->datum stx) (syntax-local-phase-level))
   (syntax-case stx ()
     [(_) #'(void)]

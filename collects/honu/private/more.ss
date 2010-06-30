@@ -214,6 +214,19 @@
              (with-syntax ([unparsed (make-unparsed #'(expr ...))])
                #'(fix-template unparsed))
 
+             #;
+             (datum->syntax stx
+                            (cons #'fix-template
+                                  (cons #'unparsed #'(expr (... ...))))
+                            stx stx)
+
+             #;
+             (let ([original #'(expr (... ...))])
+               (datum->syntax original
+                              (cons #'fix-template
+                                    (cons #'unparsed #'(expr (... ...))))
+                              original original))
+
              #'(fix-template (unparsed expr (... ...)))
 
              #;

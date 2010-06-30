@@ -5,6 +5,9 @@
          "parse.ss"
          "syntax.ss"
          syntax/parse
+         (for-syntax macro-debugger/emit)
+         (for-meta 2 macro-debugger/emit
+                   scheme/base)
          (for-meta -3
            (only-in "literals.rkt" (#%parens literal-parens)))
          #;
@@ -454,6 +457,7 @@
 
 (define foobar 0)
 
+
 (define-honu-syntax honu-macro
   (lambda (stx ctx)
     (define-syntax-class honu-macro3
@@ -493,6 +497,7 @@
                    (syntax/loc stx
                                (define-honu-syntax name
                                  (lambda (stx ctx)
+                                   #;
                                    (printf "Executing macro `~a' on input `~a'\n" 'name (syntax->datum stx))
                                    (syntax-parse stx
                                      #:literal-sets ([cruft #:at name])
@@ -503,9 +508,15 @@
                                         (with-syntax ([(real-out (... ...)) #'(code ...)])
                                           (let ([result (honu-unparsed-begin #'(real-out (... ...)))])
                                             (lambda () result)))
-                                        (printf "Macro transformer `~a'\n" (syntax->datum #'(code ...)))
-                                        (let ([result (honu-unparsed-begin code ...)])
-                                          (lambda () result))
+                                        (begin
+                                          #;
+                                          (emit-remark "Do macro transformer" (quote-syntax (code ...)))
+                                          #;
+                                          (printf "Macro transformer `~a'\n" (syntax->datum (quote-syntax (code ...))))
+                                          (let ([result (honu-unparsed-begin code ...)])
+                                            (lambda ()
+                                              (emit-remark "Excuting macro " (symbol->string 'name))
+                                              result)))
                                         #'(rrest (... ...)))]))))))
                  #;
                  (with-syntax ([parsed (let-values ([(out rest*)

@@ -14,6 +14,7 @@
          "private/literals.ss"
          "private/syntax.ss"
          "private/more.ss"
+         (for-template scheme/base)
          (for-template "private/literals.rkt")
          (for-syntax "private/more.ss")
          (for-syntax "private/syntax.ss")
@@ -34,7 +35,7 @@
 (define (sql5) #f)
 
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
-                     (honu-top #%top)
+                     ;; (honu-top #%top)
                      (semicolon \;
                                 )
                      (honu-+ +)
@@ -47,6 +48,8 @@
                      (honu-comma |,|)
                      (honu-. |.|)
                      )
+
+         #%top
 
          ;; sql nonsense
          (rename-out 
@@ -97,12 +100,15 @@
          display2
          newline
          with-syntax
+         honu-unparsed-begin
+         (for-template with-syntax)
          ;; stuff i done want
          define
          let
          ;; end stuff
          else
          #%app
+         (for-template #%app)
          quote
          ...
          foobar2000
