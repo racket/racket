@@ -14,19 +14,19 @@
  (datalog parent
           (? (parent X joseph2)))
  =>
- (list '(parent joseph3 joseph2))
+ (list (hasheq 'X 'joseph3))
  
  (datalog parent
           (? (parent joseph2 X)))
  =>
- (list '(parent joseph2 joseph1)
-       '(parent joseph2 lucy))
+ (list (hasheq 'X 'joseph1)
+       (hasheq 'X 'lucy))
  
  (datalog parent
           (? (parent joseph2 X))
           (? (parent X joseph2)))
  =>
- (list '(parent joseph3 joseph2))
+ (list (hasheq 'X 'joseph3))
  
  (datalog parent
           (! (:- (ancestor A B)
@@ -41,44 +41,44 @@
  (datalog parent
           (? (ancestor A B)))
  =>
- (list '(ancestor joseph3 joseph2)
-       '(ancestor joseph2 lucy)
-       '(ancestor joseph2 joseph1)
-       '(ancestor joseph3 lucy)
-       '(ancestor joseph3 joseph1))
+ (list (hasheq 'A 'joseph3 'B 'joseph2)
+       (hasheq 'A 'joseph2 'B 'lucy)
+       (hasheq 'A 'joseph2 'B 'joseph1)
+       (hasheq 'A 'joseph3 'B 'lucy)
+       (hasheq 'A 'joseph3 'B 'joseph1))
  
  (let ([x 'joseph2])
    (datalog parent
             (? (parent x X))))
  =>
- (list '(parent joseph2 joseph1)
-       '(parent joseph2 lucy))
+ (list (hasheq 'X 'joseph1)
+       (hasheq 'X 'lucy))
  
  (datalog parent
           (? (add1 1 :- X)))
  =>
- (list '(add1 1 :- 2))
+ (list (hasheq 'X 2))
  
  (local [(local-require tests/datalog/examples/ancestor)]
    (datalog theory
             (? (ancestor A B))))
  =>
- '((ancestor ebbon bob)
-   (ancestor bob john)
-   (ancestor john douglas)
-   (ancestor bob douglas)
-   (ancestor ebbon john)
-   (ancestor ebbon douglas))
+ (list (hasheq 'A 'ebbon 'B 'bob)
+       (hasheq 'A 'bob 'B 'john)
+       (hasheq 'A 'john 'B 'douglas)
+       (hasheq 'A 'bob 'B 'douglas)
+       (hasheq 'A 'ebbon 'B 'john)
+       (hasheq 'A 'ebbon 'B 'douglas))
  
   (local [(local-require tests/datalog/paren-examples/ancestor)]
    (datalog theory
             (? (ancestor A B))))
  =>
- '((ancestor ebbon bob)
-   (ancestor bob john)
-   (ancestor john douglas)
-   (ancestor bob douglas)
-   (ancestor ebbon john)
-   (ancestor ebbon douglas))
+ (list (hasheq 'A 'ebbon 'B 'bob)
+       (hasheq 'A 'bob 'B 'john)
+       (hasheq 'A 'john 'B 'douglas)
+       (hasheq 'A 'bob 'B 'douglas)
+       (hasheq 'A 'ebbon 'B 'john)
+       (hasheq 'A 'ebbon 'B 'douglas))
  
  )

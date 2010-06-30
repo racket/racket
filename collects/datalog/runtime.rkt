@@ -20,17 +20,13 @@
                    (clause-body c)))
           head-vars))
 
-(define theory/c (coerce-contract 'exec hash?))
-(define immutable-theory/c (and/c hash? immutable?))
-(define mutable-theory/c (and/c hash? (not/c immutable?)))
+(define theory/c (and/c hash? (not/c immutable?)))
 (define (literal-key l)
   (format "~a/~a" (literal-predicate l) (length (literal-terms l))))
 (define (clause-key c)
   (literal-key (clause-head c)))
 
-(define (make-immutable-theory)
-  (make-immutable-hash empty))
-(define (make-mutable-theory)
+(define (make-theory)
   (make-hash))
 
 (define ((mk-assume hash-update) thy c)
@@ -142,13 +138,7 @@
 (provide/contract
  [safe-clause? (clause? . -> . boolean?)]
  [theory/c contract?]
- [immutable-theory/c contract?]
- [mutable-theory/c contract?]
- [rename make-mutable-theory make-theory (-> mutable-theory/c)]
- [make-mutable-theory (-> mutable-theory/c)]
- [make-immutable-theory (-> immutable-theory/c)]
- [assume (immutable-theory/c safe-clause? . -> . immutable-theory/c)]
- [retract (immutable-theory/c clause? . -> . immutable-theory/c)]
- [assume! (mutable-theory/c safe-clause? . -> . void)]
- [retract! (mutable-theory/c clause? . -> . void)]
+ [make-theory (-> theory/c)]
+ [assume! (theory/c safe-clause? . -> . void)]
+ [retract! (theory/c clause? . -> . void)]
  [prove (theory/c question/c . -> . (listof question/c))])

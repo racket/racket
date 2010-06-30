@@ -33,7 +33,7 @@
           (define theory (make-theory))
           (datalog! theory stmt ...)
           (provide/contract
-           [theory mutable-theory/c]))))]))
+           [theory theory/c]))))]))
 
 (define-syntax (top-interaction stx)
   (syntax-case stx ()

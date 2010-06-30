@@ -50,17 +50,17 @@ The Datalog database can be directly used by Racket programs through this API.
           (datalog family
                    (? (add1 1 :- X)))]
 
-@defthing[mutable-theory/c contract?]{ A contract for Datalog theories. }
+@defthing[theory/c contract?]{ A contract for Datalog theories. }
 
-@defproc[(make-theory) mutable-theory/c]{ Creates a theory for use with @racket[datalog]. }
+@defproc[(make-theory) theory/c]{ Creates a theory for use with @racket[datalog]. }
 
 @defform[(datalog thy-expr
                   stmt ...)
-         #:contracts ([thy-expr mutable-theory/c])]{ Executes the statements on the theory given by @racket[thy-expr]. Returns the answers to the final query as a list of S-expressions or returns @racket[empty]. }
+         #:contracts ([thy-expr theory/c])]{ Executes the statements on the theory given by @racket[thy-expr]. Returns the answers to the final query as a list of substitution dictionaries or returns @racket[empty]. }
                                                    
 @defform[(datalog! thy-expr
                   stmt ...)
-         #:contracts ([thy-expr mutable-theory/c])]{ Executes the statements on the theory given by @racket[thy-expr]. Prints the answers to every query in the list of statements. Returns @racket[(void)]. }     
+         #:contracts ([thy-expr theory/c])]{ Executes the statements on the theory given by @racket[thy-expr]. Prints the answers to every query in the list of statements. Returns @racket[(void)]. }     
               
 Statements are either assertions, retractions, or queries.
 

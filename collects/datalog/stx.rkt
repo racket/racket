@@ -12,12 +12,9 @@
 (define-syntax (? stx)
   (raise-syntax-error '? "only allowed inside datalog" stx))
 
-(define ->answer
-  (match-lambda
-    [(? void?)
-     empty]
-    [(? list? ls)
-     (map literal->sexp ls)]))
+(define (->substitutions sel ls)
+  (if (void? ls) empty
+      (map sel ls)))
 
 (define literal->sexp
   (match-lambda
@@ -38,7 +35,9 @@
     [(_ thy-expr stmt ...)
      (syntax/loc stx
        (parameterize ([current-theory thy-expr])
-         (->answer (eval-statement (datalog-stmt stmt)))
+         (->substitutions
+          (datalog-stmt-var-selector stmt)
+          (eval-statement (datalog-stmt stmt)))
          ...))]))
 
 (define-syntax (datalog! stx)
@@ -62,6 +61,17 @@
    [(_ (~and tstx (? l)))
     (quasisyntax/loc #'tstx
       (query #'#,#'tstx (datalog-literal l)))]))
+
+(define-syntax (datalog-stmt-var-selector stx)
+  (syntax-parse 
+   stx
+   #:literals (! ~ ?)
+   [(_ (~and tstx (! c)))
+    (quasisyntax/loc #'tstx (λ (l) (hasheq)))]
+   [(_ (~and tstx (~ c)))
+    (quasisyntax/loc #'tstx (λ (l) (hasheq)))]
+   [(_ (~and tstx (? l)))
+    (quasisyntax/loc #'tstx (datalog-literal-var-selector l))]))
 
 (define-syntax (datalog-clause stx)
   (syntax-parse 
@@ -92,6 +102,34 @@
       (literal #'#,#'tstx 'sym 
                (list (datalog-term e)
                      ...)))]))
+
+(define-syntax (datalog-literal-var-selector stx)
+  (syntax-parse 
+   stx
+   #:literals (:-)
+   [(_ sym:id)
+    (quasisyntax/loc #'sym (λ (l) (hasheq)))]
+   [(_ (~and tstx (sym:id arg ... :- ans ...)))
+    (quasisyntax/loc #'tstx 
+      (match-lambda
+        [(external _srcloc _predsym _pred args anss)
+         (terms->hasheq (list (datalog-term arg) ...
+                              (datalog-term ans) ...)
+                        (append args anss))]))]
+   [(_ (~and tstx (sym:id e ...)))
+    (quasisyntax/loc #'tstx
+      (match-lambda
+        [(literal _srcloc _predsym ts)
+         (terms->hasheq (list (datalog-term e) ...)
+                        ts)]))]))
+
+(define (terms->hasheq src-ts res-ts)
+  (for/fold ([h (hasheq)])
+    ([src (in-list src-ts)]
+     [res (in-list res-ts)])
+    (if (variable? src)
+        (hash-set h (variable-sym src) (constant-value res))
+        h)))
 
 (define-syntax (datalog-term stx)
   (syntax-parse 
