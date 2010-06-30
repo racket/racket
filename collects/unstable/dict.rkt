@@ -18,6 +18,7 @@
          (dict-ref dict key (lambda () (return #f)))
          #t)))
     dict-has-key?))
+;; Ryan: Why the with-contract region? Why not provide/contract?
 
 (define dict-ref!
   (let ()

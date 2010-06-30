@@ -43,6 +43,14 @@ The last contract is the same as @racket[any/c] because
 @racket[or/c] tries flat contracts before higher-order contracts.
 }
 
+@defthing[failure-result/c contract?]{
+
+A contract that describes the failure result arguments of procedures
+such as @racket[hash-ref].
+
+Equivalent to @racket[(if/c procedure? (-> any) any/c)].
+}
+
 @defproc[(rename-contract [contract contract?]
                           [name any/c])
          contract?]{
