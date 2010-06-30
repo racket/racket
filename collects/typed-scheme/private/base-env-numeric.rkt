@@ -163,8 +163,8 @@
 [odd? (-> -Integer B : (-FS -top (-filter (-val 0) 0)))]
 [even? (-> -Integer B)]
 
-[modulo (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . -NonnegativeFixnum)
-               (-Fixnum -Fixnum . -> . -Fixnum)
+[modulo (cl->* (-Nat -NonnegativeFixnum . -> . -NonnegativeFixnum)
+               (-Integer -Fixnum . -> . -Fixnum)
                (-Nat -Nat . -> . -Nat)
                (-Integer -Integer . -> . -Integer))]
 
@@ -322,12 +322,14 @@
                  (-Fixnum -Fixnum . -> . -Fixnum)
                  (-Nat -Nat . -> . -Nat)
                  (-Integer -Integer . -> . -Integer))]
-[remainder (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . -NonnegativeFixnum)
-                  (-Fixnum -Fixnum . -> . -Fixnum)
+[remainder (cl->* (-Nat -NonnegativeFixnum . -> . -NonnegativeFixnum)
+                  (-Integer -Fixnum . -> . -Fixnum)
                   (-Nat -Nat . -> . -Nat)
                   (-Integer -Integer . -> . -Integer))]
 [quotient/remainder (cl->* (-NonnegativeFixnum -NonnegativeFixnum . -> . (-values (list -NonnegativeFixnum -NonnegativeFixnum)))
+                           (-Nat -NonnegativeFixnum . -> . (-values (list -Nat -NonnegativeFixnum)))
                            (-Fixnum -Fixnum . -> . (-values (list -Fixnum -Fixnum)))
+                           (-Integer -Fixnum . -> . (-values (list -Integer -Fixnum)))
                            (-Nat -Nat . -> . (-values (list -Nat -Nat)))
                            (-Integer -Integer . -> . (-values (list -Integer -Integer))))]
 
