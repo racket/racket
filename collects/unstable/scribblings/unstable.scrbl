@@ -113,7 +113,6 @@ Keep documentation and tests up to date.
 @include-section["generics.scrbl"]
 @include-section["markparam.scrbl"]
 @include-section["debug.scrbl"]
-@include-section["byte-counting-port.scrbl"]
 
 @;{--------}
 

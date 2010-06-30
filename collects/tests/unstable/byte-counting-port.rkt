@@ -1,9 +1,9 @@
 #lang racket
-(require unstable/byte-counting-port
+(require racket/port
          tests/eli-tester)
 
 (define name (gensym))
-(define cp (make-byte-counting-port name))
+(define cp (open-output-nowhere name))
 (define (test-cp cp)
   (for/fold ([l 0])
     ([i (in-range 100)])
@@ -15,4 +15,4 @@
 (test
  (object-name cp) => name
  (test-cp cp)
- (test-cp (make-byte-counting-port)))
+ (test-cp (open-output-nowhere)))
