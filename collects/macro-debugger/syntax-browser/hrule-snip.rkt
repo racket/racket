@@ -1,8 +1,6 @@
-
-#lang scheme/base
-
-(require scheme/class
-         scheme/gui)
+#lang racket/base
+(require racket/class
+         racket/gui)
 (provide hrule-snip%)
 
 ;; hrule-snip%
@@ -53,5 +51,5 @@
 (define snip-class (new hrule-snipclass%))
 (send snip-class set-version 1)
 (send snip-class set-classname
-      (format "~s" '(lib "hrule-snip.ss" "macro-debugger" "syntax-browser")))
+      (format "~s" '(lib "hrule-snip.rkt" "macro-debugger" "syntax-browser")))
 (send (get-the-snip-class-list) add snip-class)

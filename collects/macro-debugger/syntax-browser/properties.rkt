@@ -1,12 +1,11 @@
-#lang scheme/base
-(require scheme/class
-         scheme/gui
+#lang racket/base
+(require racket/class
+         racket/gui
          framework
-         (rename-in unstable/class-iop
-                    [send/i send:])
-         "interfaces.ss"
-         "util.ss"
-         "../util/mpi.ss"
+         unstable/class-iop
+         "interfaces.rkt"
+         "util.rkt"
+         "../util/mpi.rkt"
          "../util/stxobj.rkt")
 (provide properties-view%
          properties-snip%)
@@ -44,10 +43,10 @@
     (field (text (new color-text%)))
     (field (pdisplayer (new properties-displayer% (text text))))
 
-    (send: controller selection-manager<%> listen-selected-syntax
-           (lambda (stx)
-             (set! selected-syntax stx)
-             (refresh)))
+    (send/i controller selection-manager<%> listen-selected-syntax
+            (lambda (stx)
+              (set! selected-syntax stx)
+              (refresh)))
     (super-new)
 
     ;; get-mode : -> symbol

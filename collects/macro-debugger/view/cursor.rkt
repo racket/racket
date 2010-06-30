@@ -1,6 +1,4 @@
-
-#lang scheme/base
-(require scheme/promise)
+#lang racket/base
 (provide cursor?
          cursor-position
          cursor:new

@@ -1,6 +1,5 @@
-#lang scheme/base
-(require scheme/class
-         syntax/boundmap
+#lang racket/base
+(require racket/class
          syntax/stx
          "interfaces.rkt"
          "../util/stxobj.rkt")

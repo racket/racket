@@ -1,6 +1,5 @@
-
-#lang scheme/base
-(require (for-syntax scheme/base)
+#lang racket/base
+(require (for-syntax racket/base)
          syntax/stx)
 
 (provide (all-defined-out)

@@ -1,10 +1,9 @@
-
-#lang scheme/base
-(require scheme/promise
+#lang racket/base
+(require racket/promise
          parser-tools/lex
-         "deriv.ss"
-         "deriv-parser.ss"
-         "deriv-tokens.ss")
+         "deriv.rkt"
+         "deriv-parser.rkt"
+         "deriv-tokens.rkt")
 
 (provide trace
          trace*

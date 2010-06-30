@@ -1,12 +1,12 @@
-#lang scheme/base
-(require scheme/list
-         scheme/class
-         scheme/gui
+#lang racket/base
+(require racket/list
+         racket/class
+         racket/gui
          drracket/arrow
          framework/framework
          unstable/interval-map
          unstable/gui/notify
-         "interfaces.ss")
+         "interfaces.rkt")
 
 (provide text:hover<%>
          text:hover-drawings<%>

@@ -1,27 +1,23 @@
-#lang scheme/base
-(require scheme/class
-         (rename-in unstable/class-iop
-                    [define/i define:]
-                    [send/i send:])
-         scheme/unit
-         scheme/list
-         scheme/file
-         scheme/match
-         scheme/gui
-         framework/framework
-         syntax/boundmap
-         "interfaces.ss"
-         "stepper.ss"
-         "prefs.ss"
-         "warning.ss"
-         "hiding-panel.ss"
-         (prefix-in sb: "../syntax-browser/embed.ss")
-	 (prefix-in sb: "../syntax-browser/interfaces.ss")
-         "../model/deriv.ss"
-         "../model/deriv-util.ss"
-         "../model/trace.ss"
-         "../model/steps.ss"
-         "cursor.ss"
+#lang racket/base
+(require racket/class
+         racket/unit
+         racket/list
+         racket/file
+         racket/match
+         racket/gui
+         framework
+         unstable/class-iop
+         "interfaces.rkt"
+         "stepper.rkt"
+         "prefs.rkt"
+         "hiding-panel.rkt"
+         (prefix-in sb: "../syntax-browser/embed.rkt")
+	 (prefix-in sb: "../syntax-browser/interfaces.rkt")
+         "../model/deriv.rkt"
+         "../model/deriv-util.rkt"
+         "../model/trace.rkt"
+         "../model/steps.rkt"
+         "cursor.rkt"
          unstable/gui/notify)
 (provide macro-stepper-frame-mixin)
 
@@ -49,8 +45,8 @@
              get-help-menu)
 
     (super-new (label (make-label))
-               (width (send: config config<%> get-width))
-               (height (send: config config<%> get-height)))
+               (width (send/i config config<%> get-width))
+               (height (send/i config config<%> get-height)))
 
     (define/private (make-label)
       (if filename
@@ -65,10 +61,10 @@
     ;; to doing something. Avoid unnecessary updates.
     (define-values (w0 h0) (get-size))
     (define/override (on-size w h)
-      (send: config config<%> set-width w)
-      (send: config config<%> set-height h)
+      (send/i config config<%> set-width w)
+      (send/i config config<%> set-height h)
       (unless (and (= w0 w) (= h0 h))
-        (send: widget widget<%> update/preserve-view))
+        (send/i widget widget<%> update/preserve-view))
       (set!-values (w0 h0) (values w h)))
 
     (define warning-panel
@@ -80,13 +76,13 @@
     (define/public (get-macro-stepper-widget%)
       macro-stepper-widget%)
 
-    (define: widget widget<%>
+    (define/i widget widget<%>
       (new (get-macro-stepper-widget%)
            (parent (get-area-container))
            (director director)
            (config config)))
-    (define: controller sb:controller<%>
-      (send: widget widget<%> get-controller))
+    (define/i controller sb:controller<%>
+      (send/i widget widget<%> get-controller))
 
     (define/public (get-widget) widget)
     (define/public (get-controller) controller)
@@ -128,11 +124,11 @@
       (new (get-menu-item%)
            (label "Duplicate stepper")
            (parent file-menu)
-           (callback (lambda _ (send: widget widget<%> duplicate-stepper))))
+           (callback (lambda _ (send/i widget widget<%> duplicate-stepper))))
       (new (get-menu-item%)
            (label "Duplicate stepper (current term only)")
            (parent file-menu)
-           (callback (lambda _ (send: widget widget<%> show-in-new-frame)))))
+           (callback (lambda _ (send/i widget widget<%> show-in-new-frame)))))
 
     (menu-option/notify-box stepper-menu
                             "View syntax properties"
@@ -149,23 +145,23 @@
                               (parent id-menu)
                               (callback
                                (lambda _ 
-                                 (send: controller sb:controller<%> set-identifier=? p))))])
-                    (send: controller sb:controller<%> listen-identifier=?
+                                 (send/i controller sb:controller<%> set-identifier=? p))))])
+                    (send/i controller sb:controller<%> listen-identifier=?
                            (lambda (name+func)
                              (send this-choice check
                                    (eq? (car name+func) (car p)))))))
                 (sb:identifier=-choices)))
 
-    (let ([identifier=? (send: config config<%> get-identifier=?)])
+    (let ([identifier=? (send/i config config<%> get-identifier=?)])
       (when identifier=?
         (let ([p (assoc identifier=? (sb:identifier=-choices))])
-          (send: controller sb:controller<%> set-identifier=? p))))
+          (send/i controller sb:controller<%> set-identifier=? p))))
 
     (new (get-menu-item%)
          (label "Clear selection")
          (parent stepper-menu)
          (callback
-          (lambda _ (send: controller sb:controller<%> 
+          (lambda _ (send/i controller sb:controller<%> 
 			   set-selected-syntax #f))))
 
     (new separator-menu-item% (parent stepper-menu))
@@ -177,11 +173,11 @@
     (new (get-menu-item%)
          (label "Remove selected term")
          (parent stepper-menu)
-         (callback (lambda _ (send: widget widget<%> remove-current-term))))
+         (callback (lambda _ (send/i widget widget<%> remove-current-term))))
     (new (get-menu-item%)
          (label "Reset mark numbering")
          (parent stepper-menu)
-         (callback (lambda _ (send: widget widget<%> reset-primary-partition))))
+         (callback (lambda _ (send/i widget widget<%> reset-primary-partition))))
     (let ([extras-menu
            (new (get-menu%)
                 (label "Extra options")
@@ -191,11 +187,11 @@
            (parent extras-menu)
            (callback
             (lambda (i e)
-              (send: config config<%> set-suffix-option
+              (send/i config config<%> set-suffix-option
                      (if (send i is-checked?)
                          'always
                          'over-limit))
-              (send: widget widget<%> update/preserve-view))))
+              (send/i widget widget<%> update/preserve-view))))
       (menu-option/notify-box extras-menu
                               "Factor out common context?"
                               (get-field split-context? config))

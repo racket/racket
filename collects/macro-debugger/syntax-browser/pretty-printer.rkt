@@ -1,10 +1,10 @@
-#lang scheme/base
-(require scheme/list
-         scheme/class
-         scheme/pretty
-         scheme/gui
-         "pretty-helper.ss"
-         "interfaces.ss")
+#lang racket/base
+(require racket/list
+         racket/class
+         racket/pretty
+         racket/gui
+         "pretty-helper.rkt"
+         "interfaces.rkt")
 (provide pretty-print-syntax)
 
 ;; FIXME: Need to disable printing of structs with custom-write property

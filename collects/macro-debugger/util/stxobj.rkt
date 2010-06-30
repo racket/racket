@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require (rename-in racket/contract [-> c:->])
          ffi/unsafe)
 

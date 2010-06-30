@@ -1,10 +1,9 @@
-
-#lang scheme/base
-(require scheme/match
-         "stx-util.ss"
-         "deriv-util.ss"
-         "deriv.ss"
-         "reductions-engine.ss")
+#lang racket/base
+(require racket/match
+         "stx-util.rkt"
+         "deriv-util.rkt"
+         "deriv.rkt"
+         "reductions-engine.rkt")
 
 (provide reductions
          reductions+)

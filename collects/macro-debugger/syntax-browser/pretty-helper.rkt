@@ -1,11 +1,10 @@
-#lang scheme/base
-(require scheme/class
-         scheme/pretty
-         (rename-in unstable/class-iop
-                    [send/i send:])
+#lang racket/base
+(require racket/class
+         racket/pretty
+         unstable/class-iop
          syntax/stx
          unstable/struct
-         "interfaces.ss")
+         "interfaces.rkt")
 (provide (all-defined-out))
 
 ;; Problem: If stx1 and stx2 are two distinguishable syntax objects, it
@@ -64,12 +63,12 @@
       ((never)
        (make-id-syntax-dummy sym sym))
       ((always)
-       (let ([n (send: partition partition<%> get-partition id)])
+       (let ([n (send/i partition partition<%> get-partition id)])
          (if (zero? n)
              (make-id-syntax-dummy sym sym)
              (make-id-syntax-dummy (suffix sym n) sym))))
       ((over-limit)
-       (let ([n (send: partition partition<%> get-partition id)])
+       (let ([n (send/i partition partition<%> get-partition id)])
          (if (<= n limit)
              (make-id-syntax-dummy sym sym)
              (make-id-syntax-dummy (suffix sym n) sym))))))
@@ -82,7 +81,7 @@
                => (lambda (datum) datum)]
               [(and partition (identifier? obj))
                (when (and (eq? suffixopt 'all-if-over-limit)
-                          (> (send: partition partition<%> count) limit))
+                          (> (send/i partition partition<%> count) limit))
                  (call-with-values (lambda () (table stx partition #f 'always))
                                    escape))
                (let ([lp-datum (make-identifier-proxy obj)])
@@ -91,7 +90,7 @@
                  lp-datum)]
               [(and (syntax? obj) (check+convert-special-expression obj))
                => (lambda (newobj)
-                    (when partition (send: partition partition<%> get-partition obj))
+                    (when partition (send/i partition partition<%> get-partition obj))
                     (let* ([inner (cadr newobj)]
                            [lp-inner-datum (loop inner)]
                            [lp-datum (list (car newobj) lp-inner-datum)])
@@ -101,7 +100,7 @@
                       (hash-set! stx=>flat obj lp-datum)
                       lp-datum))]
               [(syntax? obj)
-               (when partition (send: partition partition<%> get-partition obj))
+               (when partition (send/i partition partition<%> get-partition obj))
                (let ([lp-datum (loop (syntax-e obj))])
                  (hash-set! flat=>stx lp-datum obj)
                  (hash-set! stx=>flat obj lp-datum)

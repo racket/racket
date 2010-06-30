@@ -1,16 +1,16 @@
-#lang scheme/base
-(require (for-syntax scheme/base)
-         (for-syntax syntax/parse)
-         scheme/list
-         scheme/contract
-         "deriv.ss"
-         "deriv-util.ss"
-         "stx-util.ss"
-         "context.ss"
-         "steps.ss"
-         "reductions-config.ss")
-(provide (all-from-out "steps.ss")
-         (all-from-out "reductions-config.ss")
+#lang racket/base
+(require (for-syntax racket/base
+                     syntax/parse)
+         racket/list
+         racket/contract
+         "deriv.rkt"
+         "deriv-util.rkt"
+         "stx-util.rkt"
+         "context.rkt"
+         "steps.rkt"
+         "reductions-config.rkt")
+(provide (all-from-out "steps.rkt")
+         (all-from-out "reductions-config.rkt")
          DEBUG
          R
          !)

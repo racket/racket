@@ -1,14 +1,13 @@
-#lang scheme/base
-
-(require (for-syntax scheme/base)
-         scheme/list
-         scheme/contract
-         scheme/match
-         "deriv.ss"
-         "deriv-util.ss"
-         "stx-util.ss"
-         "context.ss"
-         "steps.ss")
+#lang racket/base
+(require (for-syntax racket/base)
+         racket/list
+         racket/contract
+         racket/match
+         "deriv.rkt"
+         "deriv-util.rkt"
+         "stx-util.rkt"
+         "context.rkt"
+         "steps.rkt")
 
 (define-syntax-rule (STRICT-CHECKS form ...)
   (when #f

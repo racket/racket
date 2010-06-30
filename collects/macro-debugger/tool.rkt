@@ -1,20 +1,19 @@
-#lang scheme/base
-(require scheme/base
-         scheme/list
-         scheme/unit
-         scheme/match
-         scheme/gui
-         framework/framework
+#lang racket/base
+(require racket/list
+         racket/unit
+         racket/match
+         racket/gui
+         framework
          drscheme/tool
          mrlib/switchable-button
          string-constants
-         "model/trace.ss"
-         "model/deriv.ss"
-         "model/deriv-util.ss"
-         "view/frame.ss"
-         (only-in "view/view.ss" macro-stepper-director%)
-         "view/stepper.ss"
-         "view/prefs.ss")
+         "model/trace.rkt"
+         "model/deriv.rkt"
+         "model/deriv-util.rkt"
+         "view/frame.rkt"
+         (only-in "view/view.rkt" macro-stepper-director%)
+         "view/stepper.rkt"
+         "view/prefs.rkt")
 
 ;; Capability name: 'macro-stepper:enabled
 

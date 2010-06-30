@@ -1,5 +1,4 @@
-
-#lang scheme/base
+#lang racket/base
 (provide (all-defined-out))
 
 ;; A Node(a) is:

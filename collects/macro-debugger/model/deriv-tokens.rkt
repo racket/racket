@@ -1,7 +1,6 @@
-
-#lang scheme/base
+#lang racket/base
 (require parser-tools/lex
-         "deriv.ss")
+         "deriv.rkt")
 (provide (all-defined-out))
 
 (define-tokens basic-tokens

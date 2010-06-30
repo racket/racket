@@ -1,6 +1,6 @@
-#lang scheme/base
-(require scheme/match
-         scheme/string)
+#lang racket/base
+(require racket/match
+         racket/string)
 
 (provide mpi->list
          mpi->string
@@ -176,7 +176,7 @@
           [package (string-append (caddr m) ".plt")]
           [version (and (cadddr m) (parse-version (cadddr m)))]
           [path (list-ref m 4)])
-      `(planet ,(string-append (or path "main") ".ss")
+      `(planet ,(string-append (or path "main") ".rkt")
                (,owner ,package . ,version)))))
 
 (define (parse-version str)
@@ -186,7 +186,7 @@
 (define (split-mods* path)
   (let ([mods (split-mods path)])
     (if (and (pair? mods) (null? (cdr mods)))
-        (append mods (list "main.ss"))
+        (append mods (list "main.rkt"))
         mods)))
 
 (define (split-mods path [more null])

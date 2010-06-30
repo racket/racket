@@ -1,14 +1,11 @@
-#lang scheme/base
-(require scheme/class
-         (rename-in unstable/class-iop
-                    [send/i send:]
-                    [init-field/i init-field:])
-         scheme/gui
-         scheme/list
-         syntax/boundmap
-         "interfaces.ss"
-         "../model/hiding-policies.ss"
-         "../util/mpi.ss"
+#lang racket/base
+(require racket/class
+         racket/gui
+         racket/list
+         unstable/class-iop
+         "interfaces.rkt"
+         "../model/hiding-policies.rkt"
+         "../util/mpi.rkt"
          unstable/gui/notify)
 (provide macro-hiding-prefs-widget%)
 
@@ -30,7 +27,7 @@ TODO
 (define macro-hiding-prefs-widget%
   (class* object% (hiding-prefs<%>)
     (init parent)
-    (init-field: (stepper widget<%>))
+    (init-field/i (stepper widget<%>))
     (init-field config)
 
     (define/public (get-policy)
@@ -89,7 +86,7 @@ TODO
            (style '(deleted))))
 
     (define/private (get-mode)
-      (send: config config<%> get-macro-hiding-mode))
+      (send/i config config<%> get-macro-hiding-mode))
 
     (define/private (macro-hiding-enabled?)
       (let ([mode (get-mode)])
@@ -99,7 +96,7 @@ TODO
 
     (define/private (ensure-custom-mode)
       (unless (equal? (get-mode) mode:custom)
-        (send: config config<%> set-macro-hiding-mode mode:custom)))
+        (send/i config config<%> set-macro-hiding-mode mode:custom)))
 
     (define/private (update-visibility)
       (let ([customizing (equal? (get-mode) mode:custom)])
@@ -114,10 +111,10 @@ TODO
                             (list customize-panel)
                             null))))))
 
-    (send: config config<%> listen-macro-hiding-mode
-           (lambda (value)
-             (update-visibility)
-             (force-refresh)))
+    (send/i config config<%> listen-macro-hiding-mode
+            (lambda (value)
+              (update-visibility)
+              (force-refresh)))
 
     (define box:hiding
       (new check-box%
@@ -185,11 +182,11 @@ TODO
     ;; refresh : -> void
     (define/public (refresh)
       (when (macro-hiding-enabled?)
-        (send: stepper widget<%> refresh/resynth)))
+        (send/i stepper widget<%> refresh/resynth)))
 
     ;; force-refresh : -> void
     (define/private (force-refresh)
-      (send: stepper widget<%> refresh/resynth))
+      (send/i stepper widget<%> refresh/resynth))
 
     ;; set-syntax : syntax/#f -> void
     (define/public (set-syntax lstx)

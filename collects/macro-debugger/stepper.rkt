@@ -1,6 +1,5 @@
-
-#lang scheme/base
-(require "view/view.ss")
+#lang racket/base
+(require "view/view.rkt")
 (provide expand/step)
 
 (define (expand/step stx)

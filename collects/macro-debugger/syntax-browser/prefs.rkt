@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
-         framework/framework
-         "interfaces.ss"
+#lang racket/base
+(require racket/class
+         framework
+         "interfaces.rkt"
          unstable/gui/notify
          unstable/gui/prefs)
 (provide prefs-base%

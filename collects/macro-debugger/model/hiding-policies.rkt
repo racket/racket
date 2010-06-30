@@ -1,10 +1,8 @@
-
-#lang scheme/base
-(require (for-syntax scheme/base)
-         scheme/match
-         syntax/boundmap
-         "reductions-config.ss"
-         "../util/mpi.ss")
+#lang racket/base
+(require (for-syntax racket/base)
+         racket/match
+         "reductions-config.rkt"
+         "../util/mpi.rkt")
 (provide policy->predicate)
 
 ;; A Policy is one of

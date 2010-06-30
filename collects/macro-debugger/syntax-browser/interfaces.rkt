@@ -1,7 +1,7 @@
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          unstable/class-iop
-         (for-syntax scheme/base))
+         (for-syntax racket/base))
 (provide (all-defined-out))
 
 ;; Helpers
@@ -14,7 +14,7 @@
           [else (error '->string)]))
   (string->symbol (apply string-append (map ->string args))))
 
-;; not in notify.ss because notify depends on scheme/gui
+;; not in notify.rkt because notify depends on gui
 (define-interface-expander methods:notify
   (lambda (stx)
     (syntax-case stx ()
