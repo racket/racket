@@ -1,6 +1,6 @@
 #lang scheme/base
 (require compiler/zo-structs
-         unstable/byte-counting-port
+         scheme/port
          scheme/match
          scheme/contract
          scheme/local
@@ -68,7 +68,7 @@
                (out-data (list* max-let-depth prefix (protect-quote form)) 
                          (make-out outp (lambda (v) (hash-ref shared v #f)) wrapped))
                (values offsets post-shared (file-position outp)))
-             (define counting-p (make-byte-counting-port))
+             (define counting-p (open-output-nowhere))
              (define-values (offsets post-shared all-forms-length)
                (write-all counting-p))
              (define all-short? (post-shared . < . #xFFFF))
