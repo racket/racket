@@ -461,6 +461,16 @@
                [(tc-result1: t) 
                 (tc-error/expr #:return (or expected (ret Univ)) "expected Parameter, but got ~a" t)
                 (loop (cddr args))]))))]
+    ;; use the additional but normally ignored first argument to make-sequence to provide a better instantiation
+    [(#%plain-app (~var op (id-from 'make-sequence 'racket/private/for)) (~and quo ((~literal quote) (i:id))) arg:expr)
+     #:when (type-annotation #'i)     
+     (match (single-value #'op)
+         [(tc-result1: (and t Poly?))
+          (tc-expr/check #'quo (ret Univ))
+          (tc/funapp #'op #'(quo arg) 
+                     (ret (instantiate-poly t (list (type-annotation #'i))))
+                     (list (ret Univ) (single-value #'arg))
+                     expected)])]
     ;; unsafe struct operations
     [(#%plain-app (~and op (~or (~literal unsafe-struct-ref) (~literal unsafe-struct*-ref))) s e:expr)
      (let ([e-t (single-value #'e)])
@@ -990,7 +1000,7 @@
              (open-Result r o-a t-a)))
          (ret t-r f-r o-r)))]
     [((arr: _ _ _ drest '()) _)
-     (int-err "funapp with drest args ~a NYI" drest)]
+     (int-err "funapp with drest args ~a ~a NYI" drest argtys)]
     [((arr: _ _ _ _ kws) _)
      (int-err "funapp with keyword args ~a NYI" kws)]))
 
