@@ -9438,6 +9438,10 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
         /* Chaperone is for struct fields, not function arguments */
         obj = ((Scheme_Chaperone *)obj)->prev;
         goto apply_top;
+      } else if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj)->redirects), scheme_nack_guard_evt_type)) {
+        /* Chaperone is for evt, not function arguments */
+        obj = ((Scheme_Chaperone *)obj)->prev;
+        goto apply_top;
       } else {
         /* Chaperone is for function arguments */
         VACATE_TAIL_BUFFER_USE_RUNSTACK();

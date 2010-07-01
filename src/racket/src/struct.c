@@ -102,6 +102,7 @@ static Scheme_Object *make_struct_field_mutator(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *nack_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *handle_evt(int argc, Scheme_Object *argv[]);
+static Scheme_Object *chaperone_evt(int argc, Scheme_Object *argv[]);
 static Scheme_Object *handle_evt_p(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *struct_p(int argc, Scheme_Object *argv[]);
@@ -140,6 +141,9 @@ static int wrapped_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int nack_guard_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int nack_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int poll_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+
+static int chaperone_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static int is_chaperone_evt(Scheme_Object *o);
 
 Scheme_Object *make_special_comment(int argc, Scheme_Object **argv);
 Scheme_Object *special_comment_value(int argc, Scheme_Object **argv);
@@ -408,6 +412,14 @@ scheme_init_struct (Scheme_Env *env)
   scheme_add_evt(scheme_handle_evt_type,
 		 (Scheme_Ready_Fun)wrapped_evt_is_ready,
 		 NULL, NULL, 1);
+  scheme_add_evt(scheme_chaperone_type,
+		 (Scheme_Ready_Fun)chaperone_evt_is_ready,
+		 NULL, 
+                 is_chaperone_evt, 1);
+  scheme_add_evt(scheme_proc_chaperone_type,
+		 (Scheme_Ready_Fun)chaperone_evt_is_ready,
+		 NULL, 
+                 is_chaperone_evt, 1);
   scheme_add_evt(scheme_nack_guard_evt_type,
 		 (Scheme_Ready_Fun)nack_guard_evt_is_ready,
 		 NULL, NULL, 1);
@@ -457,6 +469,11 @@ scheme_init_struct (Scheme_Env *env)
 			     scheme_make_prim_w_arity(handle_evt,
 						      "handle-evt",
 						      2, 2),
+			     env);
+  scheme_add_global_constant("chaperone-evt",
+			     scheme_make_prim_w_arity(chaperone_evt,
+						      "chaperone-evt",
+						      2, -1),
 			     env);
   scheme_add_global_constant("nack-guard-evt",
 			     scheme_make_prim_w_arity(nack_evt,
@@ -2992,6 +3009,151 @@ Scheme_Object *handle_evt_p(int argc, Scheme_Object *argv[])
     return scheme_false;
   else
     return NULL;
+}
+
+static Scheme_Object *chaperone_result_guard_proc(void *data, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *proc = (Scheme_Object *)data, *o, *a[1];
+
+  a[0] = argv[0];
+  o = _scheme_apply(proc, 1, a);
+  
+  if (!scheme_chaperone_of(o, a[0]))
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "evt result chaperone: chaperone produced a value: %V that is not a chaperone of the original result: %V",
+                     o,
+                     a[0]);
+  
+  return o;
+}
+
+static Scheme_Object *chaperone_guard_proc(void *data, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *evt = SCHEME_CAR((Scheme_Object *)data);
+  Scheme_Object *proc = SCHEME_CDR((Scheme_Object *)data);
+  Scheme_Object *a[2], *o, **vals;
+  int cnt;
+  Scheme_Thread *p;
+
+  a[0] = evt;
+
+  o = _scheme_apply_multi(proc, 1, a);
+
+  if (SAME_OBJ(o, SCHEME_MULTIPLE_VALUES)) {
+    p = scheme_current_thread;
+    cnt = p->ku.multiple.count;
+    vals = p->ku.multiple.array;
+    p->ku.multiple.array = NULL;
+    if (SAME_OBJ(vals, p->values_buffer))
+      p->values_buffer = NULL;
+    p = NULL;
+  } else {
+    vals = NULL;
+    cnt = 1;
+  }
+
+  if (cnt != 2)
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                     "evt chaperone: %V: returned %d values, expected 2",
+                     proc,
+                     cnt);
+
+  if (!scheme_chaperone_of(vals[0], evt))
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "evt chaperone: chaperone produced a value: %V that is not a chaperone of the original event: %V",
+                     vals[0],
+                     evt);
+  if (!scheme_check_proc_arity(NULL, 1, 1, 1, vals))
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "evt chaperone: expected a value of type <procedure (arity 2)> as second chaprone result, received: %V",
+                     vals[1]);
+
+  a[0] = vals[0];
+  o = scheme_make_closed_prim_w_arity(chaperone_result_guard_proc, 
+                                      (void *)vals[1], 
+                                      "evt-result-chaperone", 
+                                      1, 1);
+  a[1] = o;
+
+  return scheme_wrap_evt(1, a);
+}
+
+static Scheme_Object *chaperone_evt(int argc, Scheme_Object *argv[])
+{
+  Scheme_Chaperone *px;
+  Scheme_Object *o, *val, *a[1];
+  Scheme_Hash_Tree *props;
+
+  val = argv[0];
+  if (SCHEME_CHAPERONEP(val))
+    val = SCHEME_CHAPERONE_VAL(val);
+
+  if (!scheme_is_evt(val))
+    scheme_wrong_type("chaperone-evt", "evt", 0, argc, argv);
+  scheme_check_proc_arity("chaperone-evt", 1, 1, argc, argv);
+
+  props = scheme_parse_chaperone_props("chaperone-evt", 2, argc, argv);
+
+  o = scheme_make_pair(argv[0], argv[1]);
+  o = scheme_make_closed_prim_w_arity(chaperone_guard_proc, 
+                                      (void *)o, 
+                                      "evt-chaperone", 
+                                      1, 1);
+  a[0] = o;
+  o = nack_evt(1, a);
+  
+  px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+  if (SCHEME_PROCP(val))
+    px->so.type = scheme_proc_chaperone_type;
+  else
+    px->so.type = scheme_chaperone_type;
+  px->val = val;
+  px->prev = argv[0];
+  px->props = props;
+  px->redirects = o;
+
+  return (Scheme_Object *)px;
+}
+
+static int chaperone_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
+{
+  Scheme_Chaperone *px;
+
+  while (SCHEME_CHAPERONEP(o)) {
+    px = (Scheme_Chaperone *)o;
+    if (SAME_TYPE(SCHEME_TYPE(px->redirects), scheme_nack_guard_evt_type)) {
+      o = px->redirects;
+      break;
+    }
+    o = px->prev;
+  }
+
+  scheme_set_sync_target(sinfo, o, NULL, NULL, 0, 1, NULL);
+  return 0;
+}
+
+static Scheme_Object *is_chaperone_evt_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
+  int c;
+
+  p->ku.k.p1 = NULL;
+
+  c = is_chaperone_evt(o);
+
+  return scheme_make_integer(c);
+}
+
+static int is_chaperone_evt(Scheme_Object *o)
+{
+#include "mzstkchk.h"
+  {
+    scheme_current_thread->ku.k.p1 = (void *)o;
+    return SCHEME_INT_VAL(scheme_handle_stack_overflow(is_chaperone_evt_k));
+  }
+
+  return scheme_is_evt(SCHEME_CHAPERONE_VAL(o));
 }
 
 static Scheme_Object *nack_evt(int argc, Scheme_Object *argv[])

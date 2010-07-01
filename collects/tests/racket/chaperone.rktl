@@ -765,4 +765,64 @@
 
 ;; ----------------------------------------
 
+;; evt chaperones
+
+(test #t evt? (chaperone-evt always-evt void))
+(test #t chaperone-of? (chaperone-evt always-evt void) always-evt)
+(test #f chaperone-of? (chaperone-evt always-evt void) (chaperone-evt always-evt void))
+(test #t chaperone-of? (chaperone-evt (chaperone-evt always-evt void) void) always-evt)
+(test always-evt sync (chaperone-evt always-evt (lambda (e) (values e values))))
+(test #f sync/timeout 0 (chaperone-evt never-evt (lambda (e) (values e (lambda (v) (error "bad"))))))
+
+(err/rt-test (chaperone-evt always-evt (lambda () 0)))
+(test #t evt? (chaperone-evt always-evt (lambda (x) x)))
+(err/rt-test (sync (chaperone-evt never-evt (lambda (x) x))))
+(err/rt-test (sync (chaperone-evt never-evt (lambda (x) (values x (lambda () 10))))))
+(test #f sync/timeout 0 (chaperone-evt never-evt (lambda (x) (values x (lambda (v) 10)))))
+(err/rt-test (sync/timeout 0 (chaperone-evt always-evt (lambda (x) (values x (lambda (v) 10))))))
+(test #t chaperone-of? 
+      (sync/timeout 0 (chaperone-evt always-evt (lambda (x) (values x (lambda (v)
+                                                                        (chaperone-evt always-evt void))))))
+      always-evt)
+
+(let ([did-0 #f]
+      [did-1 #f]
+      [did-2 #f]
+      [did-3 #f]
+      [v 0])
+  (define (val) (begin0 v (set! v (add1 v))))
+  (test always-evt sync (chaperone-evt always-evt
+                                       (lambda (e)
+                                         (set! did-0 (val))
+                                         (values
+                                          (chaperone-evt e (lambda (e)
+                                                             (set! did-1 (val))
+                                                             (values e (lambda (x)
+                                                                         (set! did-2 (val))
+                                                                         x))))
+                                          (lambda (x)
+                                            (set! did-3 (val))
+                                            x)))))
+  (test '(0 1 2 3) list did-0 did-1 did-2 did-3))
+
+(let ()
+  (define-struct e (val)
+    #:property prop:procedure (lambda (self x)
+                                (check self)
+                                (+ x x))
+    #:property prop:evt (lambda (self) 
+                          (check self)
+                          always-evt))
+  (define (check self) (unless (e? self) (error "bad self!")))
+  (define an-e (make-e 0))
+  (test always-evt sync (make-e 0))
+  (test 14 (make-e 0) 7)
+  (test #t evt? an-e)
+  (test #t evt? (chaperone-evt an-e void))
+  (test #t chaperone-of? (chaperone-evt an-e void) an-e)
+  (test 18 (chaperone-evt an-e void) 9))
+    
+
+;; ----------------------------------------
+
 (report-errs)
