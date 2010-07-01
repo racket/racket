@@ -983,7 +983,10 @@ void scheme_delay_load_closure(Scheme_Closure_Data *data)
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[3]),
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[4]),
                               SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[5]),
-                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[6]));
+                              SCHEME_INT_VAL(SCHEME_VEC_ELS(vinfo)[6]),
+                              (SCHEME_TRUEP(SCHEME_VEC_ELS(vinfo)[7])
+                               ? (Scheme_Hash_Tree *)SCHEME_VEC_ELS(vinfo)[7]
+                               : NULL));
     }
   }
 }
