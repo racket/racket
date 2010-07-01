@@ -370,6 +370,10 @@
  (negate bytecode-ok?)
  '(let-one 'w (branch 'x (boxenv 0 'y) (loc-clr 0))))
 
+(test-predicate
+ (negate bytecode-ok?)
+ '(let-one 'x (branch (loc-noclr 0) (loc-noclr 0) (loc-clr 0))))
+
 ; let-rec
 (test-predicate
  bytecode-ok?

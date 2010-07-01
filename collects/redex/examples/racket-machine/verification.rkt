@@ -33,15 +33,15 @@
    (side-condition (memq (term ṽ_n) '(box box-nc)))]
   
   [(verify (loc-noclr n) (ṽ_0 ... ṽ_n ṽ_n+1 ...) n_l #f γ η f) 
-   ((ṽ_0 ... (nc ṽ_n) ṽ_n+1 ...) γ (log-noclear n n_l η))
+   ((ṽ_0 ... (nc ṽ_n) ṽ_n+1 ...) γ (log-noclear n n_l ṽ_n η))
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(imm imm-nc)))]
   [(verify (loc-noclr n) (ṽ_0 ... ṽ_n ṽ_n+1 ...) n_l #t γ η f) 
-   ((ṽ_0 ... (nc ṽ_n) ṽ_n+1 ...) γ (log-noclear n n_l η))
+   ((ṽ_0 ... (nc ṽ_n) ṽ_n+1 ...) γ (log-noclear n n_l ṽ_n η))
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(imm imm-nc box box-nc)))]
   [(verify (loc-box-noclr n) (ṽ_0 ... ṽ_n ṽ_n+1 ...) n_l b γ η f) 
-   ((ṽ_0 ... box-nc ṽ_n+1 ...) γ (log-noclear n n_l η))
+   ((ṽ_0 ... box-nc ṽ_n+1 ...) γ (log-noclear n n_l ṽ_n η))
    (side-condition (= (length (term (ṽ_0 ...))) (term n)))
    (side-condition (memq (term ṽ_n) '(box box-nc)))]
   
@@ -272,11 +272,12 @@
   [(nc box-nc) box-nc])
 
 (define-metafunction verification
-  log-noclear : n n η -> η
-  [(log-noclear n_p n_l (n_0 ...))
+  log-noclear : n n ṽ η -> η
+  [(log-noclear n_p n_l ṽ_p (n_0 ...))
    (,(- (term n_p) (term n_l)) n_0 ...)
-   (side-condition (>= (term n_p) (term n_l)))]
-  [(log-noclear n_p n_l η) η])
+   (side-condition (>= (term n_p) (term n_l)))
+   (side-condition (memq (term ṽ_p) '(imm box)))]
+  [(log-noclear n_p n_l ṽ_p η) η])
 
 (define-metafunction verification
   undo-noclears : η s -> s
