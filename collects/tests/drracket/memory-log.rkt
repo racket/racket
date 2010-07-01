@@ -4,6 +4,10 @@
          racket/class
          framework/test)
 
+(printf "The printouts below are designed to trick drdr into graphing them;\n")
+(printf "they aren't times, but memory usage. The first is starting up DrRacket,\n")
+(printf "the second is after the documentation index has been loaded.\n")
+
 ;; mem-cnt returns the amount of memory used, iterating (collect-garbage)
 ;; until the delta is less than 10k or we've done it 20 times.
 (define (mem-cnt)
@@ -32,7 +36,6 @@
       (printf "cpu time: ~a real time: ~a gc time: ~a\n"
               n n n))))
 
-(printf "The printouts below are designed to trick drdr into graphing them;\nthey aren't times, but memory usage.\n")
 (fire-up-drscheme-and-run-tests 
  (λ ()
    (let ([drs-frame (wait-for-drscheme-frame)])
