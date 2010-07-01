@@ -202,6 +202,38 @@
             (when tlw
               (send tlw check-language)))
           (inner (void) after-set-next-settings s))
+
+        ;; Borrowed from stepper/stepper-tool
+        (define metadata-changing-now? #f)
+
+        ;; don't pay attention to changes that occur on metadata.
+        ;; this assumes that metadata changes cannot be nested.
+        (define/augment (begin-metadata-changes)
+          (set! metadata-changing-now? #t)
+          (inner (void) begin-metadata-changes))
+
+        (define/augment (end-metadata-changes)
+          (set! metadata-changing-now? #f)
+          (inner (void) end-metadata-changes))
+
+        (define/private (notify-macro-stepper-of-change)
+          (let ([win (get-top-level-window)])
+            ;; should only be #f when win is #f
+            (when (is-a? win drscheme:unit:frame<%>)
+              (let ([interactions (send win get-interactions-text)])
+                (send interactions obsolete-macro-debugger)))))
+
+        ;; Catch program changes and mark macro stepper obsolete.
+        (define/augment (on-insert x y)
+          (unless metadata-changing-now?
+            (notify-macro-stepper-of-change))
+          (inner (void) on-insert x y))
+
+        (define/augment (on-delete x y)
+          (unless metadata-changing-now?
+            (notify-macro-stepper-of-change))
+          (inner (void) on-delete x y))
+
         (super-new)))
 
     (define (macro-debugger-interactions-text-mixin %)
@@ -216,6 +248,10 @@
         
         (define/public (enable-macro-debugging ?)
           (set! debugging? ?))
+
+        (define/public (obsolete-macro-debugger)
+          (when current-stepper-director
+            (send current-stepper-director add-obsoleted-warning)))
 
         (define/override (reset-console)
           (super reset-console)
