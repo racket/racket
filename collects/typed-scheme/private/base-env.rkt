@@ -810,8 +810,8 @@
 
 ;; unsafe
 
-[unsafe-vector-length (-poly (a) ((-vec a) . -> . -NonnegativeFixnum))]
-[unsafe-vector*-length (-poly (a) ((-vec a) . -> . -NonnegativeFixnum))]
+[unsafe-vector-length ((make-VectorTop) . -> . -NonnegativeFixnum)]
+[unsafe-vector*-length ((make-VectorTop) . -> . -NonnegativeFixnum)]
 [unsafe-car (-poly (a b) 
                    (cl->*
                     (->acc (list (-pair a b)) a (list -car))
