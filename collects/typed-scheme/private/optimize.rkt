@@ -6,26 +6,24 @@
          (types abbrev type-table utils subtype))
 (provide optimize)
 
-;; for use in match
-(define (subtypeof x y)
-  (subtype y x))
+;; is the syntax object s's type a subtype of t?
+(define (subtypeof s t)
+  (match (type-of s)
+    [(tc-result1: (== t (lambda (x y) (subtype y x)))) #t] [_ #f]))
 
 (define-syntax-class float-opt-expr
   (pattern e:opt-expr
-           #:when (match (type-of #'e)
-                    [(tc-result1: (== -Flonum subtypeof)) #t] [_ #f])
+           #:when (subtypeof #'e -Flonum)
            #:with opt #'e.opt))
 
 (define-syntax-class int-opt-expr
   (pattern e:opt-expr
-           #:when (match (type-of #'e)
-                    [(tc-result1: (== -Integer subtypeof)) #t] [_ #f])
+           #:when (subtypeof #'e -Integer)
            #:with opt #'e.opt))
 
 (define-syntax-class fixnum-opt-expr
   (pattern e:opt-expr
-           #:when (match (type-of #'e)
-                    [(tc-result1: (== -Fixnum subtypeof)) #t] [_ #f])
+           #:when (subtypeof #'e -Fixnum)
            #:with opt #'e.opt))
 (define-syntax-class nonzero-fixnum-opt-expr
   (pattern e:opt-expr
@@ -151,14 +149,14 @@
   #:literal-sets (kernel-literals)
 
   ;; interesting cases, where something is optimized
-  (pattern (#%plain-app (~var op (float-op unary-float-ops)) f:float-opt-expr)
+  (pattern (~and res (#%plain-app (~var op (float-op unary-float-ops)) f:float-opt-expr))
+           #:when (subtypeof #'res -Flonum)
            #:with opt
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
   (pattern (~and res (#%plain-app (~var op (float-op binary-float-ops)) f1:float-arg-expr f2:float-arg-expr fs:float-arg-expr ...))
-           #:when (match (type-of #'res)
-                    ;; if the result is a float, we can coerce integers to floats and optimize
-                    [(tc-result1: (== -Flonum subtypeof)) #t] [_ #f])
+           ;; if the result is a float, we can coerce integers to floats and optimize
+           #:when (subtypeof #'res -Flonum)
            #:with opt
            (begin (log-optimization "binary float" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
