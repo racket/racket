@@ -165,7 +165,7 @@
     (cl->* [->opt [-Input-Port index-type] (Un -Byte (-val eof))])]
    
    ;; string.rkt
-   [real->decimal-string (N [index-type] . ->opt .  -String)]
+   [real->decimal-string (-Real [index-type] . ->opt .  -String)]
    
    [random (cl-> [(index-type) -Nat] [() -Real])]
    

@@ -4,7 +4,7 @@
          (only-in mzlib/string real->decimal-string)
          racket/flonum)
 
-(: to-str (Number -> String))
+(: to-str (Real -> String))
 (define (to-str n) (real->decimal-string n 6))
 
 (let: loop : Void
