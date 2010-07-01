@@ -274,6 +274,7 @@
 [match-equality-test (-Param (Univ Univ . -> . Univ) (Univ Univ . -> . Univ))]
 [matchable? (make-pred-ty (Un -String -Bytes))]
 [display (Univ [-Output-Port] . ->opt . -Void)]
+[displayln (Univ [-Output-Port] . ->opt . -Void)]
 [write   (Univ [-Output-Port] . ->opt . -Void)]
 [print   (Univ [-Output-Port] . ->opt . -Void)]
 [void (->* '() Univ -Void)]
