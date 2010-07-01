@@ -18,7 +18,7 @@
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
          (except-in (env type-env-structs tvar-env index-env) extend)
-         (rep type-rep filter-rep object-rep)
+         (rep type-rep filter-rep object-rep rep-utils)
          (r:infer infer)
          '#%paramz
          (for-template
@@ -593,27 +593,38 @@
           (let ([arg-tys (list v-ty e-t (single-value #'val))])
             (tc/funapp #'op #'(v e val) (single-value #'op) arg-tys expected))]))]
     [(#%plain-app (~and op (~literal vector)) args:expr ...)
-     (match expected
-       [(tc-result1: (Vector: t))
-        (for ([e (in-list (syntax->list #'(args ...)))])
-          (tc-expr/check e (ret t)))
-        expected]
-       [(tc-result1: (HeterogenousVector: ts))
-        (unless (= (length ts) (length (syntax->list #'(args ...))))
-          (tc-error/expr "expected vector with ~a elements, but got ~a" 
-                         (length ts)
-                         (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
-        (for ([e (in-list (syntax->list #'(args ...)))]
-              [t (in-list ts)])
-          (tc-expr/check e (ret t)))
-        expected]
-       [(or #f (tc-result1: _))
-        (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
-            (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))
-        #;#;
-        (tc-error/expr "expected ~a, but got ~a" t (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))
-        expected]
-       [_ (int-err "bad expected: ~a" expected)])]
+     (let loop ([expected expected])
+       (match expected
+         [(tc-result1: (Vector: t))
+          (for ([e (in-list (syntax->list #'(args ...)))])
+            (tc-expr/check e (ret t)))
+          expected]
+         [(tc-result1: (HeterogenousVector: ts))
+          (unless (= (length ts) (length (syntax->list #'(args ...))))
+            (tc-error/expr "expected vector with ~a elements, but got ~a" 
+                           (length ts)
+                           (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
+          (for ([e (in-list (syntax->list #'(args ...)))]
+                [t (in-list ts)])
+            (tc-expr/check e (ret t)))
+          expected]
+         [(tc-result1: (? needs-resolving? e) f o)
+          (loop (ret (resolve-once e) f o))]
+         [(tc-result1: (and T (Union: (app (λ (ts)
+                                             (for/list ([t ts]
+                                                        #:when (let ([k (Type-key t)])
+                                                                 (eq? 'vector k)))
+                                               t))
+                                         ts))))
+          (if (null? ts)
+            (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
+              (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))
+            (check-below (for/first ([t ts]) (loop (ret t)))
+                         expected))]
+         [(or #f (tc-result1: _))
+          (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
+            (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))]
+         [_ (int-err "bad expected: ~a" expected)]))]
     ;; special case for `-' used like `sub1'
     [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
      (add-typeof-expr #'arg2 (ret -PositiveFixnum))
