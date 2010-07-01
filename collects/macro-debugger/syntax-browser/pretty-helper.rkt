@@ -31,7 +31,7 @@
      [print-vector-length #f]
      [print-hash-table #t]
      [print-honu #f])
-    (pretty-print datum port)))
+    (pretty-write datum port)))
 
 (define-struct syntax-dummy (val))
 (define-struct (id-syntax-dummy syntax-dummy) (remap))
