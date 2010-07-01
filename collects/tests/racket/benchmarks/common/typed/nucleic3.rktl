@@ -278,7 +278,6 @@
 ;
 ; The components tx, ty, and tz are the translation vector.
 
-(: tfo-id (Vectorof Float))
 (define tfo-id  ; the identity transformation matrix
   '#(1.0 0.0 0.0
      0.0 1.0 0.0

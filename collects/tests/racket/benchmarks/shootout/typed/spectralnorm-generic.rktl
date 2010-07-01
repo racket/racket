@@ -8,8 +8,8 @@
 
 (: Approximate (Natural -> Float))
 (define (Approximate n)
-  (let: ([u : (Vectorof Float) (make-vector n 1.0)]
-         [v : (Vectorof Float) (make-vector n 0.0)])
+  (let ([u (make-vector n 1.0)]
+        [v (make-vector n 0.0)])
     ;; 20 steps of the power method
     (for: : Void ([i : Natural (in-range 10)])
       (MultiplyAtAv n u v)
@@ -51,7 +51,7 @@
 ;; multiply vector v by matrix A and then by matrix A transposed 
 (: MultiplyAtAv (Natural (Vectorof Float) (Vectorof Float) -> Void))
 (define (MultiplyAtAv n v AtAv)
-  (let: ([u : (Vectorof Float) (make-vector n 0.0)])
+  (let ([u (make-vector n 0.0)])
     (MultiplyAv n v u)
     (MultiplyAtv n u AtAv)))
 

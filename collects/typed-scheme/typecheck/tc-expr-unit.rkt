@@ -82,7 +82,7 @@
        ;; errors are handled elsewhere
        [_ (make-Vector (apply Un 
                               (for/list ([l (syntax-e #'i)])
-                                (tc-literal l #f))))])]
+                                (generalize (tc-literal l #f)))))])]
     [(~var i (3d hash?))
      (let* ([h (syntax-e #'i)]
             [ks (hash-map h (lambda (x y) (tc-literal x)))]
