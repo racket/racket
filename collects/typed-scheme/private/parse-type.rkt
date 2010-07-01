@@ -253,9 +253,8 @@
       ;; use expr to rule out keywords
       [(dom:expr ... kws:keyword-tys ... (~and kw t:->) rng)
        (add-type-name-reference #'kw)
-       (let ([doms (for/list ([d (syntax->list #'(dom ...))])
-                     (let ([dt (parse-type d)])
-                       (if (type-equal? dt Err) Univ dt)))])
+      (let ([doms (for/list ([d (syntax->list #'(dom ...))])
+                    (parse-type d))])
          (make-Function
           (list (make-arr
                  doms
