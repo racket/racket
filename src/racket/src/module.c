@@ -103,12 +103,14 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
                             char *stack, Validate_TLS tls,
                             int depth, int letlimit, int delta, 
 			    int num_toplevels, int num_stxes, int num_lifts,
-                            struct Validate_Clearing *vc, int tailpos);
+                            struct Validate_Clearing *vc, int tailpos,
+                            Scheme_Hash_Tree *procs);
 static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
                                        char *stack, Validate_TLS tls,
                                        int depth, int letlimit, int delta, 
 				       int num_toplevels, int num_stxes, int num_lifts,
-                                       struct Validate_Clearing *vc, int tailpos);
+                                       struct Validate_Clearing *vc, int tailpos,
+                                       Scheme_Hash_Tree *procs);
 
 static Scheme_Object *write_module(Scheme_Object *obj);
 static Scheme_Object *read_module(Scheme_Object *obj);
@@ -5367,7 +5369,8 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
                             char *stack, Validate_TLS tls,
 			    int depth, int letlimit, int delta, 
 			    int num_toplevels, int num_stxes, int num_lifts,
-                            struct Validate_Clearing *vc, int tailpos)
+                            struct Validate_Clearing *vc, int tailpos,
+                            Scheme_Hash_Tree *procs)
 {
   Scheme_Module *m;
   int i, cnt, let_depth;
@@ -9783,7 +9786,8 @@ static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port,
                                        char *stack, Validate_TLS tls,
 				       int depth, int letlimit, int delta, 
 				       int num_toplevels, int num_stxes, int num_lifts,
-                                       struct Validate_Clearing *vc, int tailpos)
+                                       struct Validate_Clearing *vc, int tailpos,
+                                       Scheme_Hash_Tree *procs)
 {
 }
 
