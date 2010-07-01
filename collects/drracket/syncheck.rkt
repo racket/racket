@@ -106,7 +106,15 @@ If the namespace does not, they are colored the unbound color.
     (define (printf . args) (apply fprintf o args))
     
     
-    (define xref (delay/idle (load-collections-xref)))
+    (define xref (if (getenv "PLTDRXREFDELAY")
+                     (begin
+                       (printf "PLTDRXREFDELAY: using plain delay\n")
+                       (delay (begin
+                                (printf "PLTDRXREFDELAY: loading xref\n")
+                                (begin0
+                                  (load-collections-xref)
+                                  (printf "PLTDRXREFDELAY: loaded xref\n")))))
+                     (delay/idle (load-collections-xref))))
     (define (get-xref) (force xref))
     
     
