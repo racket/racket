@@ -142,7 +142,7 @@
                       [else (fp "~a" v)])]
     [(? tuple? t)
      (fp "~a" (cons 'List (tuple-elems t)))]
-    [(Base: n cnt) (fp "~a" n)]      
+    [(Base: n cnt) (fp "~s" n)]      
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
     [(Struct: (== promise-sym) #f  (list (fld: t _ _)) _    _ _ _ _) (fp "(Promise ~a)" t)]
     [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
@@ -176,8 +176,8 @@
     [(F: nm) (fp "~a" nm)]   
     ;; FIXME
     [(Values: (list v)) (fp "~a" v)]
-    [(Values: (list v ...)) (fp "~a" (cons 'values v))]
-    [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
+    [(Values: (list v ...)) (fp "~s" (cons 'values v))]
+    [(ValuesDots: v dty dbound) (fp "~s" (cons 'values (append v (list dty '... dbound))))]
     [(Param: in out) 
      (if (equal? in out)
          (fp "(Parameterof ~a)" in)           
