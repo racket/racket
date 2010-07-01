@@ -1,5 +1,5 @@
 #;
-(exn-pred 1 ".*once in a form.*")
+(exn-pred #rx".*once in a form.*")
 #lang typed/scheme
 
 (: foo : (Integer -> Integer -> Integer))
