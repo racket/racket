@@ -623,11 +623,8 @@
                          expected))]
 	 ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
          [(or #f (tc-result1: _))
-	  (let ([arg-tys (map (lambda (x)
-                              (match (single-value x)
-                                [(tc-result1: t) (ret (generalize t))]))
-                            (syntax->list #'(args ...)))])
-            (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))]
+	  (ret (make-HeterogenousVector (map (lambda (x) (generalize (tc-expr/t x)))
+					     (syntax->list #'(args ...)))))]
          [_ (int-err "bad expected: ~a" expected)]))]
     ;; since vectors are mutable, if there is no expected type, we want to generalize the element type
     [(#%plain-app (~and op (~literal make-vector)) n elt)

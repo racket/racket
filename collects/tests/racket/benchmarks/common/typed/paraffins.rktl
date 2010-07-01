@@ -10,7 +10,7 @@
          (: rads-of-size (Integer -> (Listof Radical)))
          (define (rads-of-size n)
            (let: loop1 : (Listof Radical)
-                 ((ps : (Listof (Vectorof Integer))
+                 ((ps : (Listof (Vector Integer Integer Integer))
                       (three-partitions (- n 1)))
                   (lst : (Listof Radical)
                        '()))
@@ -48,10 +48,11 @@
                                                               lst)))
                                                  (if (null? rads3)
                                                      lst
-                                                     (cons (vector 'C
-                                                                   (car rads1)
-                                                                   (car rads2)
-                                                                   (car rads3))
+                                                     (cons (ann (vector 'C
+                                                                        (car rads1)
+                                                                        (car rads2)
+                                                                        (car rads3))
+                                                                Radical)
                                                            (loop4 (cdr rads3)
                                                                   lst))))))))))))
 
@@ -73,16 +74,17 @@
                                              lst)))
                            (if (null? rads2)
                                lst
-                               (cons (vector 'BCP
-                                             (car rads1)
-                                             (car rads2))
+                               (cons (ann (vector 'BCP
+                                                  (car rads1)
+                                                  (car rads2))
+                                          Radical)
                                      (loop2 (cdr rads2)
                                             lst))))))))
 
          (: ccp-generator (Integer -> (Listof Radical)))
          (define (ccp-generator j)
            (let: loop1 : (Listof Radical)
-                 ((ps : (Listof (Vectorof Integer))
+                 ((ps : (Listof (Vector Integer Integer Integer Integer))
                       (four-partitions (- j 1)))
                   (lst : (Listof Radical)
                        '()))
@@ -127,11 +129,12 @@
                                                              lst)))
                                            (if (null? rads4)
                                                lst
-                                               (cons (vector 'CCP
-                                                             (car rads1)
-                                                             (car rads2)
-                                                             (car rads3)
-                                                             (car rads4))
+                                               (cons (ann (vector 'CCP
+                                                                  (car rads1)
+                                                                  (car rads2)
+                                                                  (car rads3)
+                                                                  (car rads4))
+                                                          Radical)
                                                      (loop5 (cdr rads4)
                                                             lst))))))))))))))
 
@@ -143,10 +146,10 @@
                  (vector-set! radicals i (rads-of-size i))
                  (loop (+ i 1)))))))
 
-(: three-partitions (Integer -> (Listof (Vectorof Integer))))
+(: three-partitions (Integer -> (Listof (Vector Integer Integer Integer))))
 (define (three-partitions m)
-  (let: loop1 : (Listof (Vectorof Integer))
-        ((lst : (Listof (Vectorof Integer)) '())
+  (let: loop1 : (Listof (Vector Integer Integer Integer))
+        ((lst : (Listof (Vector Integer Integer Integer)) '())
          (nc1 : Integer (quotient m 3)))
         (if (< nc1 0)
             lst
@@ -155,16 +158,16 @@
               (if (< nc2 nc1)
                   (loop1 lst
                          (- nc1 1))
-                  (loop2 (cons (vector nc1
-                                       nc2
+                  (loop2 (cons (vector (ann nc1 Integer)
+                                       (ann nc2 Integer)
                                        (- m (+ nc1 nc2)))
                                lst)
                          (- nc2 1)))))))
 
-(: four-partitions (Integer -> (Listof (Vectorof Integer))))
+(: four-partitions (Integer -> (Listof (Vector Integer Integer Integer Integer))))
 (define (four-partitions m)
-  (let: loop1 : (Listof (Vectorof Integer))
-        ((lst : (Listof (Vectorof Integer)) '())
+  (let: loop1 : (Listof (Vector Integer Integer Integer Integer))
+        ((lst : (Listof (Vector Integer Integer Integer Integer)) '())
          (nc1 : Integer (quotient m 4)))
         (if (< nc1 0)
             lst
@@ -178,9 +181,9 @@
                                 (nc3 (quotient (- m (+ nc1 nc2)) 2)))
                       (if (< nc3 start)
                           (loop2 lst (- nc2 1))
-                          (loop3 (cons (vector nc1
-                                               nc2
-                                               nc3
+                          (loop3 (cons (vector (ann nc1 Integer)
+                                               (ann nc2 Integer)
+                                               (ann nc3 Integer)
                                                (- m (+ nc1 (+ nc2 nc3))))
                                        lst)
                                  (- nc3 1))))))))))
