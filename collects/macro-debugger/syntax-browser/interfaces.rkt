@@ -61,18 +61,16 @@
    ;; reset-primary-partition : -> void
    reset-primary-partition))
 
-;; secondary-partition<%>
-(define-interface secondary-partition<%> ()
-  (;; secondary-partition : notify-box of partition<%>
-   ;; identifier=? : notify-box of (cons string procedure)
-   (methods:notify secondary-partition
-                   identifier=?)))
+;; secondary-relation<%>
+(define-interface secondary-relation<%> ()
+  (;; identifier=? : notify-box of (cons string (U #f (id id -> bool)))
+   (methods:notify identifier=?)))
 
 ;; controller<%>
 (define-interface controller<%> (displays-manager<%>
                                  selection-manager<%>
                                  mark-manager<%>
-                                 secondary-partition<%>)
+                                 secondary-relation<%>)
   ())
 
 

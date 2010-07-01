@@ -111,7 +111,7 @@
         (let ([selected-syntax
                (send/i controller selection-manager<%>
                       get-selected-syntax)])
-          (apply-secondary-partition-styles selected-syntax)
+          (apply-secondary-relation-styles selected-syntax)
           (apply-selection-styles selected-syntax))
         (send* text
           (end-edit-sequence))))
@@ -199,18 +199,18 @@
           (for ([style-delta style-deltas])
             (restyle-range r style-delta)))))
 
-    ;; apply-secondary-partition-styles : selected-syntax -> void
+    ;; apply-secondary-relation-styles : selected-syntax -> void
     ;; If the selected syntax is an identifier, then styles all identifiers
-    ;; in the same partition in blue.
-    (define/private (apply-secondary-partition-styles selected-syntax)
+    ;; in the relation with it.
+    (define/private (apply-secondary-relation-styles selected-syntax)
       (when (identifier? selected-syntax)
-        (let ([partition
-               (send/i controller secondary-partition<%>
-                      get-secondary-partition)])
-          (when partition
+        (let* ([name+relation
+                (send/i controller secondary-relation<%>
+                        get-identifier=?)]
+               [relation (and name+relation (cdr name+relation))])
+          (when relation
             (for ([id (send/i range range<%> get-identifier-list)])
-              (when (send/i partition partition<%>
-                           same-partition? selected-syntax id)
+              (when (relation selected-syntax id)
                 (draw-secondary-connection id)))))))
 
     ;; apply-selection-styles : syntax -> void

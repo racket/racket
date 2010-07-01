@@ -48,26 +48,20 @@
     (define/public-final (reset-primary-partition)
       (set! primary-partition (new-bound-partition)))))
 
-;; secondary-partition-mixin
-(define secondary-partition-mixin
-  (mixin (displays-manager<%>) (secondary-partition<%>)
+;; secondary-relation-mixin
+(define secondary-relation-mixin
+  (mixin (displays-manager<%>) (secondary-relation<%>)
     (inherit-field displays)
     (define-notify identifier=? (new notify-box% (value #f)))
-    (define-notify secondary-partition (new notify-box% (value #f)))
 
     (listen-identifier=?
      (lambda (name+proc)
-       (set-secondary-partition
-        (and name+proc
-             (new partition% (relation (cdr name+proc)))))))
-    (listen-secondary-partition
-     (lambda (p)
-       (for ([d displays])
+       (for ([d (in-list displays)])
          (send/i d display<%> refresh))))
     (super-new)))
 
 (define controller%
-  (class* (secondary-partition-mixin
+  (class* (secondary-relation-mixin
            (selection-manager-mixin
             (mark-manager-mixin
              (displays-manager-mixin
