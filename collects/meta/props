@@ -1495,6 +1495,7 @@ path/s is either such a string or a list of them.
 "collects/tests/racket/benchmarks/common/typed/fft.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/graphs.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/lattice2.rktl" drdr:command-line #f
+"collects/tests/racket/benchmarks/common/typed/maze2.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/mazefun.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/nestedloop.rktl" drdr:command-line #f
 "collects/tests/racket/benchmarks/common/typed/nfa.rktl" drdr:command-line #f

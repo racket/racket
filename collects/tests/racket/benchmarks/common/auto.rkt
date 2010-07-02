@@ -425,8 +425,7 @@ exec racket -qu "$0" ${1+"$@"}
                 extract-racket-times
                 clean-up-typed
                 (append mutable-pair-progs
-                        '(dynamic2 earley maze2 nboyer nucleic2 sboyer
-                          scheme2)))
+                        '(dynamic2 earley nboyer nucleic2 sboyer scheme2)))
      (make-impl 'typed-scheme-optimizing
                 void
                 mk-typed-scheme-optimizing
@@ -435,8 +434,7 @@ exec racket -qu "$0" ${1+"$@"}
                 extract-racket-times
                 clean-up-typed
                 (append mutable-pair-progs
-                        '(dynamic2 earley maze2 nboyer nucleic2 sboyer
-                          scheme2)))
+                        '(dynamic2 earley nboyer nucleic2 sboyer scheme2)))
      (make-impl 'chicken
                 void
                 (run-mk "mk-chicken.rktl")
