@@ -539,59 +539,65 @@
     ;; vector-ref on het vectors
     [(#%plain-app (~and op (~or (~literal vector-ref) (~literal unsafe-vector-ref) (~literal unsafe-vector*-ref))) v e:expr)
      (let ([e-t (single-value #'e)])
-       (match (single-value #'v)
-         [(tc-result1: (and t (HeterogenousVector: es)))
-          (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
-                          (match e-t
-                            [(tc-result1: (Value: (? number? i))) i]
-                            [_ #f]))])
-            (cond [(not ival)
-                   (check-below e-t -Integer)
-                   (if expected 
-                       (check-below (ret (apply Un es)) expected)
-                       (ret (apply Un es)))]
-                  [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
-                   (if expected 
-                       (check-below (ret (list-ref es ival)) expected)
-                       (ret (list-ref es ival)))]
-                  [(not (and (integer? ival) (exact? ival)))
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for vector index, but got ~a" ival)]
-                  [(< ival 0)
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too small for vector ~a" ival t)]
-                  [(not (<= ival (sub1 (length es))))
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
-         [v-ty
-          (let ([arg-tys (list v-ty e-t)])
-            (tc/funapp #'op #'(v e) (single-value #'op) arg-tys expected))]))]
+       (let loop ((v-t (single-value #'v)))
+	 (match v-t
+           [(tc-result1: (and t (HeterogenousVector: es)))
+	    (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
+			    (match e-t
+			      [(tc-result1: (Value: (? number? i))) i]
+			      [_ #f]))])
+	      (cond [(not ival)
+		     (check-below e-t -Integer)
+		     (if expected 
+			 (check-below (ret (apply Un es)) expected)
+			 (ret (apply Un es)))]
+		    [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
+		     (if expected 
+			 (check-below (ret (list-ref es ival)) expected)
+			 (ret (list-ref es ival)))]
+		    [(not (and (integer? ival) (exact? ival)))
+		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for vector index, but got ~a" ival)]
+		    [(< ival 0)
+		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too small for vector ~a" ival t)]
+		    [(not (<= ival (sub1 (length es))))
+		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
+	   [(tc-result1: (? needs-resolving? e) f o)
+	    (loop (ret (resolve-once e) f o))]
+	   [v-ty
+	    (let ([arg-tys (list v-ty e-t)]) ;; TODO problem is that 2 rec types are not equal, but why?
+	      (tc/funapp #'op #'(v e) (single-value #'op) arg-tys expected))])))]
     [(#%plain-app (~and op (~or (~literal vector-set!) (~literal unsafe-vector-set!) (~literal unsafe-vector*-set!))) v e:expr val:expr)
      (let ([e-t (single-value #'e)])
-       (match (single-value #'v)
-         [(tc-result1: (and t (HeterogenousVector: es)))
-          (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
-                          (match e-t
-                            [(tc-result1: (Value: (? number? i))) i]
-                            [_ #f]))])
-            (cond [(not ival)
-                   (tc-error/expr #:stx #'e
-                                  #:return (or expected (ret -Void))
-                                  "expected statically known index for heterogenous vector, but got ~a" (match e-t [(tc-result1: t) t]))]
-                  [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
-                   (tc-expr/check #'val (ret (list-ref es ival)))
-                   (if expected 
-                       (check-below (ret -Void) expected)
-                       (ret -Void))]
-                  [(not (and (integer? ival) (exact? ival)))
-                   (single-value #'val)
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for vector index, but got ~a" ival)]
-                  [(< ival 0)
-                   (single-value #'val)
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too small for vector ~a" ival t)]
-                  [(not (<= ival (sub1 (length es))))
-                   (single-value #'val)
-                   (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
-         [v-ty
-          (let ([arg-tys (list v-ty e-t (single-value #'val))])
-            (tc/funapp #'op #'(v e val) (single-value #'op) arg-tys expected))]))]
+       (let loop ((v-t (single-value #'v)))
+	 (match v-t
+           [(tc-result1: (and t (HeterogenousVector: es)))
+	    (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
+			    (match e-t
+			      [(tc-result1: (Value: (? number? i))) i]
+			      [_ #f]))])
+	      (cond [(not ival)
+		     (tc-error/expr #:stx #'e
+				    #:return (or expected (ret -Void))
+				    "expected statically known index for heterogenous vector, but got ~a" (match e-t [(tc-result1: t) t]))]
+		    [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length es))))
+		     (tc-expr/check #'val (ret (list-ref es ival)))
+		     (if expected 
+			 (check-below (ret -Void) expected)
+			 (ret -Void))]
+		    [(not (and (integer? ival) (exact? ival)))
+		     (single-value #'val)
+		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for vector index, but got ~a" ival)]
+		    [(< ival 0)
+		     (single-value #'val)
+		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too small for vector ~a" ival t)]
+		    [(not (<= ival (sub1 (length es))))
+		     (single-value #'val)
+		     (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "index ~a too large for vector ~a" ival t)]))]
+	   [(tc-result1: (? needs-resolving? e) f o)
+	    (loop (ret (resolve-once e) f o))]
+	   [v-ty
+	    (let ([arg-tys (list v-ty e-t (single-value #'val))])
+	      (tc/funapp #'op #'(v e val) (single-value #'op) arg-tys expected))])))]
     [(#%plain-app (~and op (~literal vector)) args:expr ...)
      (let loop ([expected expected])
        (match expected
