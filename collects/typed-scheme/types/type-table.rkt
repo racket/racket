@@ -22,9 +22,14 @@
   (let ()
     (define ((mk mut?) id)
       (cond [(dict-ref struct-fn-table id #f)
-              => (match-lambda [(list pe #f) pe] [_ #f])]
+             => (match-lambda [(list pe m) (and (eq? m mut?) pe)] [_ #f])]
             [else #f]))
     (values (mk #f) (mk #t))))
+
+(define (struct-fn-idx id)
+  (match (dict-ref struct-fn-table id #f)
+    [(list (StructPE: _ idx) _) idx]
+    [_ (int-err (format "no struct fn table entry for ~a" (syntax->datum id)))]))
 
 (define (make-struct-table-code)
   (parameterize ([current-print-convert-hook converter]
@@ -43,4 +48,5 @@
      [add-struct-fn! (identifier? StructPE? boolean? . -> . any/c)]
      [struct-accessor? (identifier? . -> . (or/c #f StructPE?))]
      [struct-mutator? (identifier? . -> . (or/c #f StructPE?))]
+     [struct-fn-idx (identifier? . -> . exact-integer?)]
      [make-struct-table-code (-> syntax?)])

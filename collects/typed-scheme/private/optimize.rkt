@@ -249,6 +249,18 @@
                               (lambda (x) #t)
                               (lambda (x y) #t)))))
 
+  ;; we can always optimize struct accessors and mutators
+  ;; if they typecheck, they're safe
+  (pattern (#%plain-app op:id s:opt-expr v:opt-expr ...)
+           #:when (or (struct-accessor? #'op) (struct-mutator? #'op))
+           #:with opt
+           (let ([idx (struct-fn-idx #'op)])
+             (if (struct-accessor? #'op)
+                 (begin (log-optimization "struct ref" #'op)
+                        #`(unsafe-struct-ref  s.opt #,idx))
+                 (begin (log-optimization "struct set" #'op)
+                        #`(unsafe-struct-set! s.opt #,idx v.opt ...)))))
+
   ;; boring cases, just recur down
   (pattern (#%plain-lambda formals e:opt-expr ...)
            #:with opt #'(#%plain-lambda formals e.opt ...))
