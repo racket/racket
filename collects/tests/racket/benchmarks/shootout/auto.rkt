@@ -146,7 +146,6 @@ exec racket -qu "$0" ${1+"$@"}
       sieve
       spectralnorm
       spectralnorm-generic
-      spectralnorm-unsafe
       strcat
       sumcol
       ;; thread-ring ; calls exit, so won't display running time

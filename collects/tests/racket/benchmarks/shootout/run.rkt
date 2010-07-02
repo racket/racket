@@ -49,7 +49,6 @@
       ("spellcheck")
       ("spectralnorm" "2000")
       ("spectralnorm-generic" "2000")
-      ("spectralnorm-unsafe" "2000")
       ("strcat" "50000000")
       ("sumcol" #f ,(lambda () (mk-sumcol-input 10000)))
       ("thread-ring" "1000000") ; calls exit, so won't display running time
