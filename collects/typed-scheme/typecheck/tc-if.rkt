@@ -1,8 +1,6 @@
-#lang scheme/unit
-
-
-(require (rename-in "../utils/utils.rkt" [infer r:infer]))
-(require "signatures.rkt"
+#lang racket/unit
+(require (rename-in "../utils/utils.rkt" [infer r:infer])
+         "signatures.rkt" "check-below.rkt"
          (rep type-rep filter-rep object-rep)
          (rename-in (types convenience subtype union utils comparison remove-intersect abbrev filter-ops)
                     [remove *remove])
@@ -11,8 +9,8 @@
 	 (utils tc-utils)
          (typecheck tc-envops tc-metafunctions)
          syntax/kerncase
-         mzlib/trace unstable/debug
-         scheme/match)
+         racket/trace unstable/debug
+         racket/match)
 
 ;; if typechecking   
 (import tc-expr^)

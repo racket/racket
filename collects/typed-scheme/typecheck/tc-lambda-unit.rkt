@@ -3,7 +3,7 @@
 (require (rename-in "../utils/utils.rkt" [infer r:infer])
          "signatures.rkt"
          "tc-metafunctions.rkt"
-         "tc-subst.rkt"
+         "tc-subst.rkt" "check-below.rkt"
          mzlib/trace
          scheme/list
          syntax/private/util syntax/stx

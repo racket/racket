@@ -2,6 +2,7 @@
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer]))
 (require "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
+         "check-below.rkt"
          (types utils convenience)
          (private type-annotation parse-type)
 	 (env lexical-env type-alias-env global-env type-env-structs)
