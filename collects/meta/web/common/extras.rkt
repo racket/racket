@@ -10,9 +10,11 @@
 ;; a div that is centered, but the text is still left-justified
 (provide center-div)
 (define (center-div . text)
-  (div align: 'center
-       (div align: 'left style: "display: inline-block;"
-            text)))
+  (let-values ([(attrs body) (split-attributes+body text)])
+    (apply div align: 'center
+           (append attrs
+                   (list (div align: 'left style: "display: inline-block;"
+                              body))))))
 
 ;; a grayish tt text
 (provide TT)
