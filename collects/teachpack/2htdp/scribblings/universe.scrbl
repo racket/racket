@@ -373,11 +373,11 @@ All @tech{MouseEvent}s are represented via strings:
 
 @defform[(on-mouse mouse-expr)
          #:contracts
-	 ([clack-expr 
+	 ([mouse-expr 
            (-> (unsyntax @tech{WorldState}) 
                integer? integer? (unsyntax @tech{MouseEvent}) 
                (unsyntax @tech{WorldState}))])]{
- tell DrRacket to call @scheme[clack-expr] on the current world, the current
+ tell DrRacket to call @scheme[mouse-expr] on the current world, the current
  @scheme[x] and @scheme[y] coordinates of the mouse, and and a
  @tech{MouseEvent} for every (noticeable) action of the mouse by the
  computer user. The result of the call becomes the current world. 
@@ -701,7 +701,7 @@ As mentioned, all event handlers may return @tech{WorldState}s or
 @defform/none[#:literals (on-mouse)
               (on-mouse mouse-expr)
               #:contracts
-              ([clack-expr
+              ([mouse-expr
                 (-> (unsyntax @tech{WorldState}) 
                     integer? integer? (unsyntax @tech{MouseEvent})
                     (or/c (unsyntax @tech{WorldState}) package?))])]{
