@@ -190,6 +190,7 @@
            [(tr)   (tr (td title) (td input))]
            [else (error 'field "internal error")])))
     @form[action: bug-report-cgi method: 'post id: 'BugForm
+          ;; enctype: "multipart/form-data"
           style: '("border: 2px solid #44f; padding: 6px;"
                    " background-color: #eef;")
           onsubmit: "return CheckSubmit();"]{
@@ -224,6 +225,10 @@
                    " reproduce the problem")]{
         @textarea[name: 'how-to-repeat rows: 8 cols: 70
                   style: "font-family: monospace;"]{}}
+      @; An attachement requires a cgi script that can deal with input
+      @; that is in "multipart/form-data" format.
+      @; @field['line "Attachment"]{
+      @;   @input[type: 'file name: 'attachment size: 20]}
       @(let* ([c (captcha-file)]
               [c (and c (img src: (cgi-link c) align: "middle"))])
          (and c @field['line @list{Please type @c}]{
