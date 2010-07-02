@@ -3380,6 +3380,9 @@ Scheme_Object *scheme_vector_length(Scheme_Object *v);
 Scheme_Object *scheme_checked_flvector_ref(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_checked_flvector_set(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_flvector_length(Scheme_Object *v);
+Scheme_Object *scheme_checked_real_part (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_imag_part (int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_checked_make_rectangular (int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *obj);
 Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj);

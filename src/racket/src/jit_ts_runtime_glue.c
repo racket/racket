@@ -64,6 +64,17 @@ case SIG_ss_s:
      send_special_result(future, retval);
      break;
   }
+case SIG_tt_s:
+  {
+     prim_tt_s f = (prim_tt_s)future->prim_func;
+     Scheme_Object* retval;
+     
+     retval = 
+     f(future->arg_t0, future->arg_t1);
+     future->retval_s = retval;
+     send_special_result(future, retval);
+     break;
+  }
 case SIG_ss_m:
   {
      prim_ss_m f = (prim_ss_m)future->prim_func;

@@ -90,11 +90,12 @@
                                       (/ v 33333)))
 			      v)])
 		  (bin0 iv op (/ arg1 33333) (/ arg2 33333)))
-                (let ([iv (if (number? v) +nan.0 #f)])
-                  (bin0 iv op (exact->inexact arg1) +nan.0)
-                  (bin0 iv op +nan.0 (exact->inexact arg2))
-                  (unless (eq? op 'eq?)
-                    (bin0 iv op +nan.0 +nan.0))))]
+                (unless (eq? op 'make-rectangular)
+                  (let ([iv (if (number? v) +nan.0 #f)])
+                    (bin0 iv op (exact->inexact arg1) +nan.0)
+                    (bin0 iv op +nan.0 (exact->inexact arg2))
+                    (unless (eq? op 'eq?)
+                      (bin0 iv op +nan.0 +nan.0)))))]
 	 [tri0 (lambda (v op get-arg1 arg2 arg3 check-effect #:wrap [wrap values])
 		 ;; (printf "Trying ~a ~a ~a\n" op (get-arg1) arg2 arg3);
 		 (let ([name `(,op ,get-arg1 ,arg2, arg3)]
@@ -503,6 +504,18 @@
     (bin-exact #t 'bitwise-bit-set? (expt 2 40) 40)
     (bin-exact #f 'bitwise-bit-set? (expt 2 40) 41)
     (bin-exact #t 'bitwise-bit-set? (- (expt 2 40)) 41)
+
+    (un 1 'real-part 1+2i)
+    (un 105 'real-part 105)
+    (un 2 'imag-part 1+2i)
+    (un-exact 0 'imag-part 106)
+    (un-exact 0 'imag-part 106.0)
+
+    (bin 1+2i 'make-rectangular 1 2)
+    (bin-exact 1.0+2.0i 'make-rectangular 1 2.0)
+    (bin-exact 1.0+2.0i 'make-rectangular 1.0 2)
+    (bin-exact 1 'make-rectangular 1 0)
+    (bin-exact 1.0 'make-rectangular 1.0 0)
 
     (bin-exact #t 'char=? #\a #\a)
     (bin-exact #t 'char=? #\u1034 #\u1034)

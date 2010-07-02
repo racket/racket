@@ -147,6 +147,7 @@ SHARED_OK static void *bad_car_code, *bad_cdr_code;
 SHARED_OK static void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
 SHARED_OK static void *bad_mcar_code, *bad_mcdr_code;
 SHARED_OK static void *bad_set_mcar_code, *bad_set_mcdr_code;
+SHARED_OK static void *imag_part_code, *real_part_code, *make_rectangular_code;
 SHARED_OK static void *unbox_code, *set_box_code;
 SHARED_OK static void *bad_vector_length_code;
 SHARED_OK static void *bad_flvector_length_code;
@@ -6841,6 +6842,50 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       (void)jit_calli(syntax_e_code);
       
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "imag-part")
+               || IS_NAMED_PRIM(rator, "real-part")) {
+      GC_CAN_IGNORE jit_insn *reffail = NULL, *ref, *refdone;
+      const char *name = ((Scheme_Primitive_Proc *)rator)->name;
+
+      LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
+
+      mz_runstack_skipped(jitter, 1);
+
+      generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+
+      __START_TINY_JUMPS__(1);
+
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      reffail = _jit.x.pc;
+      __END_TINY_JUMPS__(1);
+      if (name[0] == 'i') {
+        (void)jit_calli(imag_part_code);
+      } else {
+        (void)jit_calli(real_part_code);
+      }
+      jit_retval(JIT_R0);
+      CHECK_LIMIT();
+      __START_TINY_JUMPS__(1);
+      refdone = jit_jmpi(jit_forward());
+      mz_patch_branch(ref);
+      jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+      (void)jit_bnei_i(reffail, JIT_R1, scheme_complex_type);
+      if (name[0] == 'i') {
+        (void)jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Complex *)0x0)->i);
+      } else {
+        (void)jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Complex *)0x0)->r);
+      }
+      VALIDATE_RESULT(JIT_R0);
+      mz_patch_ucbranch(refdone);
+      CHECK_LIMIT();
+      __END_TINY_JUMPS__(1);
+
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "add1")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 1, 0, 1, NULL, 1, 0, 0, NULL);
       return 1;
@@ -7985,6 +8030,78 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, NULL, NULL, app);
+    } else if (IS_NAMED_PRIM(rator, "make-rectangular")) {
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow, *refdone;
+
+      LOG_IT(("inlined make-rectangular\n"));
+
+      generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      CHECK_LIMIT();
+      mz_rs_sync();
+
+      jit_movi_i(JIT_V1, 0); /* V1 as 0 => exact first argument */
+
+      __START_SHORT_JUMPS__(1);
+      /* Check first arg: */
+      ref = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+      ref2 = jit_bgei_i(jit_forward(), JIT_R2, scheme_bignum_type);
+      /* (slow path) */
+      refslow = _jit.x.pc;
+      (void)jit_calli(make_rectangular_code);
+      jit_retval(JIT_R0);
+      CHECK_LIMIT();
+      refdone = jit_jmpi(jit_forward());
+      /* (end of slow path) */
+      mz_patch_branch(ref2);
+      (void)jit_bgei_i(refslow, JIT_R2, scheme_complex_type);
+      /* set V1 if inexact */
+      ref3 = jit_blti_i(jit_forward(), JIT_R2, scheme_float_type);
+      jit_movi_i(JIT_V1, 1);
+      mz_patch_branch(ref3);
+      mz_patch_branch(ref);
+      CHECK_LIMIT();
+
+      /* Check second arg: */
+      ref = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
+      jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
+      (void)jit_blti_i(refslow, JIT_R2, scheme_bignum_type);
+      (void)jit_bgei_i(refslow, JIT_R2, scheme_complex_type);
+      ref3 = jit_blti_i(jit_forward(), JIT_R2, scheme_float_type);
+      (void)jit_bnei_i(refslow, JIT_V1, 1); /* need to coerce other to inexact */
+      mz_patch_branch(ref3);
+      ref3 = jit_jmpi(jit_forward());
+      mz_patch_branch(ref);
+      (void)jit_bnei_i(refslow, JIT_V1, 0); /* need to coerce to inexact */
+      /* exact zero => result is real */
+      (void)jit_beqi_p(refslow, JIT_R1, scheme_make_integer(0));
+      CHECK_LIMIT();
+      mz_patch_ucbranch(ref3);
+
+      __END_SHORT_JUMPS__(1);
+
+#ifdef CAN_INLINE_ALLOC
+      /* Inlined alloc */
+      inline_alloc(jitter, sizeof(Scheme_Complex), scheme_complex_type, 0, 1, 0, 0);
+      CHECK_LIMIT();
+
+      jit_stxi_p((long)&(((Scheme_Complex *)0x0)->r) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
+      jit_stxi_p((long)&(((Scheme_Complex *)0x0)->i) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
+      jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
+#else
+      /* Non-inlined alloc */
+      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+      mz_prepare(2);
+      jit_pusharg_p(JIT_R1);
+      jit_pusharg_p(JIT_R0);
+      (void)mz_finish(ts_scheme_make_complex);
+      jit_retval(JIT_R0);
+#endif
+      CHECK_LIMIT();
+
+      mz_patch_ucbranch(refdone);
+
+      return 1;
     }
   }
 
@@ -10583,9 +10700,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   __END_SHORT_JUMPS__(1);
   mz_epilog(JIT_V1);
 
-  /* *** bad_[m]{car,cdr,...}_code *** */
-  /* Bad argument is in R0 for car/cdr, R2 otherwise */
-  for (i = 0; i < 8; i++) {
+  /* *** [bad_][m]{car,cdr,...,{imag,real}_part}_code *** */
+  /* Argument is in R0 for car/cdr, R2 otherwise */
+  for (i = 0; i < 10; i++) {
     void *code;
     
     code = jit_get_ip().ptr;
@@ -10613,6 +10730,12 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     case 7:
       bad_mcdr_code = code;
+      break;
+    case 8:
+      real_part_code = code;
+      break;
+    case 9:
+      imag_part_code = code;
       break;
     }
     mz_prolog(JIT_R1);
@@ -10654,15 +10777,33 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     case 7:
       (void)mz_finish(ts_scheme_checked_mcdr);
       break;
+    case 8:
+      (void)mz_finish(ts_scheme_checked_real_part);
+      break;
+    case 9:
+      (void)mz_finish(ts_scheme_checked_imag_part);
+      break;
     }
     CHECK_LIMIT();
+
+    switch (i) {
+    case 8:
+    case 9:
+      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+      jit_retval(JIT_R0);
+      mz_epilog(JIT_R1);
+      break;
+    default:
+      /* never returns */
+      break;
+    }
 
     register_sub_func(jitter, code, scheme_false);
   }
 
-  /* *** bad_set_{car,cdr}_code *** */
+  /* *** bad_set_{car,cdr}_code and make_rectangular_code *** */
   /* Bad argument is in R0, other is in R1 */
-  for (i = 0; i < 2; i++) {
+  for (i = 0; i < 3; i++) {
     void *code;
     code = jit_get_ip().ptr;
     switch (i) {
@@ -10671,6 +10812,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     case 1:
       bad_set_mcdr_code = code;
+      break;
+    case 2:
+      make_rectangular_code = code;
       break;
     }
     mz_prolog(JIT_R2);
@@ -10690,6 +10834,12 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     case 1:
       (void)mz_finish(ts_scheme_checked_set_mcdr);
+      break;
+    case 2:
+      (void)mz_finish(ts_scheme_checked_make_rectangular);
+      jit_retval(JIT_R0);
+      jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+      mz_epilog(JIT_R2);
       break;
     }
     CHECK_LIMIT();

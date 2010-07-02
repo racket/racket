@@ -4,6 +4,7 @@
 (define (char->type c)
   (case c
     [(#\s) "Scheme_Object*"]
+    [(#\t) "const Scheme_Object*"]
     [(#\S) "Scheme_Object**"]
     [(#\b) "Scheme_Bucket*"]
     [(#\n) "Scheme_Native_Closure_Data*"]
@@ -142,6 +143,7 @@
     n_s
     _s
     ss_s
+    tt_s
     ss_m
     Sl_s
     l_s

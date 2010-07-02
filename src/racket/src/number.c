@@ -87,9 +87,6 @@ static Scheme_Object *tan_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *asin_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *acos_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *atan_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *make_rectangular (int argc, Scheme_Object *argv[]);
-static Scheme_Object *real_part (int argc, Scheme_Object *argv[]);
-static Scheme_Object *imag_part (int argc, Scheme_Object *argv[]);
 static Scheme_Object *magnitude (int argc, Scheme_Object *argv[]);
 static Scheme_Object *angle (int argc, Scheme_Object *argv[]);
 static Scheme_Object *int_sqrt (int argc, Scheme_Object *argv[]);
@@ -488,26 +485,25 @@ scheme_init_number (Scheme_Env *env)
 						      "expt", 
 						      2, 2, 1),
 			     env);
-  scheme_add_global_constant("make-rectangular", 
-			     scheme_make_folding_prim(make_rectangular,
-						      "make-rectangular", 
-						      2, 2, 1),
-			     env);
+
+  p = scheme_make_folding_prim(scheme_checked_make_rectangular, "make-rectangular", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("make-rectangular", p, env);
+
   scheme_add_global_constant("make-polar", 
 			     scheme_make_folding_prim(scheme_make_polar,
 						      "make-polar", 
 						      2, 2, 1),
 			     env);
-  scheme_add_global_constant("real-part", 
-			     scheme_make_folding_prim(real_part,
-						      "real-part",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("imag-part", 
-			     scheme_make_folding_prim(imag_part,
-						      "imag-part",
-						      1, 1, 1),
-			     env);
+
+  p = scheme_make_folding_prim(scheme_checked_real_part, "real-part", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("real-part", p, env);
+
+  p = scheme_make_folding_prim(scheme_checked_imag_part, "imag-part", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("imag-part", p, env);
+
   scheme_add_global_constant("angle", 
 			     scheme_make_folding_prim(angle,
 						      "angle",
@@ -2470,7 +2466,7 @@ scheme_expt(int argc, Scheme_Object *argv[])
 }
 
 
-static Scheme_Object *make_rectangular (int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_checked_make_rectangular (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *a, *b;
   int af, bf;
@@ -2519,7 +2515,7 @@ Scheme_Object *scheme_make_polar (int argc, Scheme_Object *argv[])
   return scheme_make_complex(r, i);
 }
 
-static Scheme_Object *real_part (int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_checked_real_part (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 
@@ -2532,7 +2528,7 @@ static Scheme_Object *real_part (int argc, Scheme_Object *argv[])
     return argv[0];
 }
 
-static Scheme_Object *imag_part (int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_checked_imag_part (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
 

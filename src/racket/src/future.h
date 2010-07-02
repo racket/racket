@@ -64,6 +64,7 @@ typedef struct future_t {
   void *prim_func;
   int prim_protocol;
   Scheme_Object *arg_s0;
+  const Scheme_Object *arg_t0;
   Scheme_Object **arg_S0;
   Scheme_Bucket *arg_b0;
   int arg_i0;
@@ -71,6 +72,7 @@ typedef struct future_t {
   size_t arg_z0;
   Scheme_Native_Closure_Data *arg_n0;
   Scheme_Object *arg_s1;
+  const Scheme_Object *arg_t1;
   Scheme_Object **arg_S1;
   int arg_i1;
   long arg_l1;
