@@ -304,13 +304,14 @@
 	  (string-append
 	   " "
 	   (cond
-	    [(or (symbol? (src-file src))
-		 (is-a? (src-file src) editor<%>))
-	     (format (string-constant test-engine-at-line-column) line col)]
 	    [(path? (src-file src)) 
 	     (format (string-constant test-engine-in-at-line-column)
 		     (path->string (src-file src))
-		     line col)])))))
+		     line col)]
+	    [else
+             (format (string-constant test-engine-at-line-column)
+                     line
+                     col)])))))
 
     (define (highlight-check-error srcloc src-editor)
       (let* ([src-pos cadddr]
