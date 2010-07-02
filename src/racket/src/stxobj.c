@@ -21,6 +21,7 @@
 
 #include "schpriv.h"
 #include "schmach.h"
+#include "schexpobs.h"
 
 /* The implementation of syntax objects is extremely complex due to
    two levels of optimization:
@@ -8845,6 +8846,8 @@ static Scheme_Object *syntax_property_keys(int argc, Scheme_Object **argv)
 
 static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv)
 {
+  Scheme_Object *result, *observer;
+
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_type("syntax-track-origin", "syntax", 0, argc, argv);
   if (!SCHEME_STXP(argv[1]))
@@ -8852,7 +8855,10 @@ static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv)
   if (!SCHEME_STX_IDP(argv[2]))
     scheme_wrong_type("syntax-track-origin", "identifier syntax", 2, argc, argv);
   
-  return scheme_stx_track(argv[0], argv[1], argv[2]);
+  result = scheme_stx_track(argv[0], argv[1], argv[2]);
+  observer = scheme_get_expand_observe();
+  SCHEME_EXPAND_OBSERVE_TRACK_ORIGIN(observer, argv[0], result);
+  return result;
 }
 
 Scheme_Object *scheme_transfer_srcloc(Scheme_Object *to, Scheme_Object *from)

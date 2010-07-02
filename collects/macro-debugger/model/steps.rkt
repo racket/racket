@@ -92,6 +92,7 @@
     (splice-module-lifts . "Splice lifted module declarations")
 
     (remark           . "Macro made a remark")
+    (track-origin     . "Macro called syntax-track-origin")
 
     (error            . "Error")))
 

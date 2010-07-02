@@ -4661,7 +4661,7 @@ now_transforming(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int recur)
 {
-  Scheme_Object *v, *sym, *a[2];
+  Scheme_Object *v, *sym, *a[2], *observer;
   Scheme_Env *menv;
   Scheme_Comp_Env *env;
   int renamed = 0;
@@ -4673,6 +4673,9 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
                      name);
 
   sym = argv[0];
+
+  observer = scheme_get_expand_observe();
+  SCHEME_EXPAND_OBSERVE_LOCAL_VALUE(observer, sym);
 
   if (!(SCHEME_STXP(sym) && SCHEME_SYMBOLP(SCHEME_STX_VAL(sym))))
     scheme_wrong_type(name, "syntax identifier", 0, argc, argv);
@@ -4710,12 +4713,15 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
 			      scheme_current_thread->current_local_certs, 
 			      scheme_current_thread->current_local_modidx, 
 			      &menv, NULL, NULL);
-    
+
+    SCHEME_EXPAND_OBSERVE_RESOLVE(observer, sym);
+
     /* Deref globals */
     if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type))
       v = (Scheme_Object *)(SCHEME_VAR_BUCKET(v))->val;
     
     if (!v || NOT_SAME_TYPE(SCHEME_TYPE(v), scheme_macro_type)) {
+      SCHEME_EXPAND_OBSERVE_LOCAL_VALUE_RESULT(observer, scheme_false);
       if ((argc > 1) && SCHEME_TRUEP(argv[1]))
 	return _scheme_tail_apply(argv[1], 0, NULL);
       else
@@ -4735,16 +4741,20 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
       menv = NULL;
       SCHEME_USE_FUEL(1);
       if (!recur) {
+        SCHEME_EXPAND_OBSERVE_LOCAL_VALUE_RESULT(observer, scheme_true);
         a[0] = v;
         a[1] = sym;
         return scheme_values(2, a);
       }
     } else if (!recur) {
+      SCHEME_EXPAND_OBSERVE_LOCAL_VALUE_RESULT(observer, scheme_true);
       a[0] = v;
       a[1] = scheme_false;
       return scheme_values(2, a);
-    } else
+    } else {
+      SCHEME_EXPAND_OBSERVE_LOCAL_VALUE_RESULT(observer, scheme_true);
       return v;
+    }
   }
 }
 

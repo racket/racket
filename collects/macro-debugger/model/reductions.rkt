@@ -454,6 +454,15 @@
         ;; FIXME: use renames
         [#:binders names]
         [#:when bindrhs => (BindSyntaxes bindrhs)]]]
+    [(struct track-origin (before after))
+     [R [#:set-syntax before]
+        [#:pattern ?form]
+        [#:rename ?form after 'track-origin]]]
+    [(struct local-value (name ?1 resolves bound?))
+     [R [! ?1]
+        ;; [#:learn (list name)]
+        ;; Add remark step?
+        ]]
     [(struct local-remark (contents))
      (R [#:reductions (list (walk/talk 'remark contents))])]))
 
