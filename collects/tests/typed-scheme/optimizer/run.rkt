@@ -5,13 +5,17 @@
 ;; we compare the expansion of automatically optimized and hand optimized
 ;; modules
 (define (read-and-expand file)
-  (syntax->datum
-   (parameterize ([current-namespace (make-base-namespace)])
-     (with-handlers
-         ([exn:fail? (lambda (exn)
-                       (printf "~a\n" (exn-message exn))
-                       #'#f)])
-       (expand (with-input-from-file file read-syntax))))))
+  ;; drop the "module", its name and its language, so that we can write the
+  ;; 2 versions of each test in different languages (typed and untyped) if
+  ;; need be
+  (cdddr
+   (syntax->datum
+    (parameterize ([current-namespace (make-base-namespace)])
+      (with-handlers
+          ([exn:fail? (lambda (exn)
+                        (printf "~a\n" (exn-message exn))
+                        #'(#f #f #f #f))]) ; for cdddr
+        (expand (with-input-from-file file read-syntax)))))))
 
 (define (test gen)
   (let-values (((base name _) (split-path gen)))
