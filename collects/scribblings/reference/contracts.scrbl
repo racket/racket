@@ -501,6 +501,10 @@ symbols, and that return a symbol.
 
 @defform*/subs[#:literals (any values)
 [(->d (mandatory-dependent-dom ...) 
+      dependent-rest
+      pre-cond
+      dep-range)
+ (->d (mandatory-dependent-dom ...) 
       (optional-dependent-dom ...) 
       dependent-rest
       pre-cond
@@ -525,8 +529,9 @@ expressions have been added in order to express contracts
 that are not naturally tied to a particular argument or
 result.
 
-The first two subforms of a @racket[->d] contract cover the
-mandatory and optional arguments. Following that is an
+The first subforms of a @racket[->d] contract covers the
+mandatory and the second (optional) subform covers the optional
+arguments. Following that is an
 optional rest-args contract, and an optional
 pre-condition. The @racket[dep-range] non-terminal covers
 the possible post-condition contracts. If it is

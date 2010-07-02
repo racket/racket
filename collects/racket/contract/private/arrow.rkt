@@ -690,7 +690,19 @@ v4 todo:
 
 ;; parses everything after the mandatory and optional doms in a ->d contract
 (define-for-syntax (parse-leftover stx leftover)
-  (let*-values ([(id/rest-id leftover) 
+  (let*-values ([(raw-optional-doms leftover)
+                 (syntax-case leftover ()
+                   [(kwd . leftover2)
+                    (keyword? (syntax-e #'kwd))
+                    (values '() leftover)]
+                   [(dep-range)
+                    (values '() leftover)]
+                   [(dep-range #:post-cond expr)
+                    (values '() leftover)]
+                   [((opts ...) . rest)
+                    (values #'(opts ...) #'rest)]
+                   [_ (values '() leftover)])]
+                [(id/rest-id leftover) 
                  (syntax-case leftover ()
                    [(#:rest id rest-expr . leftover)
                     (and (identifier? #'id)
@@ -724,7 +736,7 @@ v4 todo:
                    [_ (values #f leftover)])])
     (syntax-case leftover ()
       [() 
-       (values id/rest-id pre-cond range post-cond)]
+       (values raw-optional-doms id/rest-id pre-cond range post-cond)]
       [_ 
        (raise-syntax-error #f "bad syntax" stx)])))
 
@@ -771,24 +783,23 @@ v4 todo:
 (define-syntax (->d stx)
   (syntax-case stx ()
     [(_ (raw-mandatory-doms ...)
-        (raw-optional-doms ...)
         .
         leftover)
-     (with-syntax ([(([mandatory-regular-id mandatory-doms] ... ) ([mandatory-kwd (mandatory-kwd-id mandatory-kwd-dom)] ...)) 
-                    (verify-->d-structure stx (split-doms stx '->d #'(raw-mandatory-doms ...)))]
-                   [(([optional-regular-id optional-doms] ... ) ([optional-kwd (optional-kwd-id optional-kwd-dom)] ...))
-                    (verify-->d-structure stx (split-doms stx '->d #'(raw-optional-doms ...)))])
-       (with-syntax ([((kwd kwd-id) ...)
-                      (sort-keywords 
-                       stx
-                       (syntax->list
-                        #'((optional-kwd optional-kwd-id) ...
-                           (mandatory-kwd mandatory-kwd-id) ...)))]
-                     [(this-parameter ...)
-                      (make-this-parameters (if (syntax? (syntax-parameter-value #'making-a-method))
-                                                (car (generate-temporaries '(this)))
-                                                (datum->syntax stx 'this #f)))])
-         (let-values ([(id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)])
+     (let-values ([(raw-optional-doms id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)])
+       (with-syntax ([(([mandatory-regular-id mandatory-doms] ... ) ([mandatory-kwd (mandatory-kwd-id mandatory-kwd-dom)] ...)) 
+                      (verify-->d-structure stx (split-doms stx '->d #'(raw-mandatory-doms ...)))]
+                     [(([optional-regular-id optional-doms] ... ) ([optional-kwd (optional-kwd-id optional-kwd-dom)] ...))
+                      (verify-->d-structure stx (split-doms stx '->d raw-optional-doms))])
+         (with-syntax ([((kwd kwd-id) ...)
+                        (sort-keywords 
+                         stx
+                         (syntax->list
+                          #'((optional-kwd optional-kwd-id) ...
+                             (mandatory-kwd mandatory-kwd-id) ...)))]
+                       [(this-parameter ...)
+                        (make-this-parameters (if (syntax? (syntax-parameter-value #'making-a-method))
+                                                  (car (generate-temporaries '(this)))
+                                                  (datum->syntax stx 'this #f)))])
            (with-syntax ([(dom-params ...)
                           #`(this-parameter ...
                              mandatory-regular-id ... 
@@ -841,47 +852,47 @@ v4 todo:
                                             (with-syntax ([param old-param])
                                               (syntax/loc stx
                                                 (syntax-parameterize
-                                                    ([param (make-this-transformer #'id)])
-                                                  body)))
+                                                 ([param (make-this-transformer #'id)])
+                                                 body)))
                                             #'body)])))])
                      (syntax-parameterize 
-                         ((making-a-method #f)) 
-                       (build-->d mtd? 
-                                  (list (λ (dom-params ...)
-                                          (parameterize-this this-parameter ... mandatory-doms)) ...)
-                                  (list (λ (dom-params ...) 
-                                          (parameterize-this this-parameter ... optional-doms)) ...)
-                                  (list (λ (dom-params ...) 
-                                          (parameterize-this this-parameter ... mandatory-kwd-dom)) ...)
-                                  (list (λ (dom-params ...) 
-                                          (parameterize-this this-parameter ... optional-kwd-dom)) ...)
-                                  #,(if id/rest 
-                                        (with-syntax ([(id rst-ctc) id/rest])
-                                          #`(λ (dom-params ...)
-                                              (parameterize-this this-parameter ... rst-ctc)))
-                                        #f)
-                                  #,(if pre-cond
-                                        #`(λ (dom-params ...)
-                                            (parameterize-this this-parameter ... #,pre-cond))
-                                        #f)
-                                  #,(syntax-case #'rng-ctcs ()
-                                      [#f #f]
-                                      [(ctc ...) 
-                                       (if rng-underscores?
-                                           #'(box (list (λ (dom-params ...) 
-                                                          (parameterize-this this-parameter ... ctc)) ...))
-                                           #'(list (λ (rng-params ... dom-params ...)
-                                                     (parameterize-this this-parameter ... ctc)) ...))])
-                                  #,(if post-cond
-                                        #`(λ (rng-params ... dom-params ...)
-                                            (parameterize-this this-parameter ... #,post-cond))
-                                        #f)
-                                  '(mandatory-kwd ...)
-                                  '(optional-kwd ...)
-                                  (λ (f) 
-                                    #,(add-name-prop
-                                       (syntax-local-infer-name stx)
-                                       #`(λ args (apply f args)))))))))))))]))
+                      ((making-a-method #f)) 
+                      (build-->d mtd? 
+                                 (list (λ (dom-params ...)
+                                         (parameterize-this this-parameter ... mandatory-doms)) ...)
+                                 (list (λ (dom-params ...) 
+                                         (parameterize-this this-parameter ... optional-doms)) ...)
+                                 (list (λ (dom-params ...) 
+                                         (parameterize-this this-parameter ... mandatory-kwd-dom)) ...)
+                                 (list (λ (dom-params ...) 
+                                         (parameterize-this this-parameter ... optional-kwd-dom)) ...)
+                                 #,(if id/rest 
+                                       (with-syntax ([(id rst-ctc) id/rest])
+                                         #`(λ (dom-params ...)
+                                             (parameterize-this this-parameter ... rst-ctc)))
+                                       #f)
+                                 #,(if pre-cond
+                                       #`(λ (dom-params ...)
+                                           (parameterize-this this-parameter ... #,pre-cond))
+                                       #f)
+                                 #,(syntax-case #'rng-ctcs ()
+                                     [#f #f]
+                                     [(ctc ...) 
+                                      (if rng-underscores?
+                                          #'(box (list (λ (dom-params ...) 
+                                                         (parameterize-this this-parameter ... ctc)) ...))
+                                          #'(list (λ (rng-params ... dom-params ...)
+                                                    (parameterize-this this-parameter ... ctc)) ...))])
+                                 #,(if post-cond
+                                       #`(λ (rng-params ... dom-params ...)
+                                           (parameterize-this this-parameter ... #,post-cond))
+                                       #f)
+                                 '(mandatory-kwd ...)
+                                 '(optional-kwd ...)
+                                 (λ (f) 
+                                   #,(add-name-prop
+                                      (syntax-local-infer-name stx)
+                                      #`(λ args (apply f args)))))))))))))]))
 
 (define ->d-tail-key (gensym '->d-tail-key))
 
