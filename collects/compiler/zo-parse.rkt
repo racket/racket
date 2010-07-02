@@ -2,6 +2,7 @@
 (require mzlib/etc 
          scheme/match
          scheme/list
+         unstable/struct
          compiler/zo-structs)
 
 (provide zo-parse)
@@ -529,7 +530,7 @@
                               (apply
                                make-prefab-struct 
                                k
-                               (map loop (cdr (vector->list (struct->vector v)))))))]
+                               (map loop (struct->list v)))))]
                        [else (add-wrap v)]))
                    ;; Decode sub-elements that have their own wraps:
                    (let-values ([(v counter) (if (exact-integer? (car v))
@@ -551,7 +552,7 @@
                      (apply
                       make-prefab-struct 
                       k
-                      (map loop (cdr (vector->list (struct->vector v)))))))]
+                      (map loop (struct->list v)))))]
               [else (add-wrap v)]))))))
 
 (define (decode-wraps cp w)
