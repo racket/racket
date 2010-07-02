@@ -6,6 +6,7 @@
 		      syntax/stx
 		      syntax/name
 		      syntax/context
+                      unstable/syntax
 		      "list.rkt"
 		      "private/unitidmap.rkt")
 
@@ -73,11 +74,8 @@
 					  (begin
 					    ;; Treat imports as internal-defn names:
 					    (syntax-local-bind-syntaxes ids #f def-ctx)
-					    (cdr (syntax->list
-						  (local-expand #`(stop #,@ids)
-								'expression
-								(list #'stop)
-								def-ctx))))
+                                            (syntax->list
+                                             (internal-definition-context-apply def-ctx ids)))
 					  ids)
 				      ;; Let later checking report an error:
 				      ids))])

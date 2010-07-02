@@ -1,6 +1,7 @@
 #lang scheme/base
 (require (for-syntax scheme/base
-                     syntax/kerncase)
+                     syntax/kerncase
+                     unstable/syntax)
          "stxparam.rkt"
          "private/stxparam.rkt"
          "private/local.rkt")
@@ -56,12 +57,7 @@
              (internal-definition-context-seal def-ctx)
              (let* ([add-context
                      (lambda (expr)
-                       (let ([q (local-expand #`(quote #,expr)
-                                              ctx
-                                              (list #'quote)
-                                              def-ctx)])
-                         (syntax-case q ()
-                           [(_ expr) #'expr])))])
+                       (internal-definition-context-apply def-ctx expr))])
                (with-syntax ([((id ...) ...)
                               (map (lambda (ids)
                                      (map add-context ids))
@@ -129,12 +125,7 @@
              (internal-definition-context-seal def-ctx)
              (let* ([add-context
                      (lambda (expr)
-                       (let ([q (local-expand #`(quote #,expr)
-                                              ctx
-                                              (list #'quote)
-                                              def-ctx)])
-                         (syntax-case q ()
-                           [(_ expr) #'expr])))]
+                       (internal-definition-context-apply def-ctx expr))]
                     [add-context-to-idss
                      (lambda (idss)
                        (map add-context idss))])

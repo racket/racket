@@ -602,6 +602,7 @@
 						 (syntax-e (stx-car (stx-cdr p)))))
 					 (cdr (stx->list 
 					       (let ([rn (car body)])
+                                                 ;; Use internal-definition-context-apply ??
 						 (local-expand rn
 							       'expression
 							       (list (stx-car rn))
