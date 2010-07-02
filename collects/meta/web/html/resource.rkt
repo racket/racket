@@ -200,7 +200,13 @@
     (add-renderer path render)
     (make-keyword-procedure
      (lambda (kws kvs . args) (keyword-apply referrer kws kvs (url) args))
-     (lambda args (apply referrer (url) args)))))
+     (case-lambda [(x) (if (eq? x get-resource-path) (url) (referrer (url) x))]
+                  [args (apply referrer (url) args)]))))
+
+;; make it possible to always get the path to a resource
+(provide get-resource-path)
+(define (get-resource-path resource)
+  (resource get-resource-path))
 
 ;; a convenient utility to create renderers from some output function (like
 ;; `output-xml' or `display') and some content

@@ -184,6 +184,9 @@
                [(head)   make-head]
                [(navbar) make-navbar]
                [(favicon-headers) favicon]
+               [(icon-path)  (lambda () (get-resource-path icon))]
+               [(logo-path)  (lambda () (get-resource-path logo))]
+               [(style-path) (lambda () (get-resource-path style))]
                [else (error 'resources "internal error")])
              more))))
 
