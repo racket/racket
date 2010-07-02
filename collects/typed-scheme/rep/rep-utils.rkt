@@ -6,7 +6,7 @@
          syntax/boundmap
          "free-variance.rkt"
          "interning.rkt"
-	 unstable/syntax unstable/match
+	 unstable/syntax unstable/match unstable/struct
          mzlib/etc
          scheme/contract         
          (for-syntax 
@@ -255,7 +255,7 @@
 (define (replace-field val new-val idx)
   (define-values (type skipped) (struct-info val))
   (define maker (struct-type-make-constructor type))
-  (define flds (cdr (vector->list (struct->vector val))))
+  (define flds (struct->list val))
   (apply maker (list-set flds idx new-val)))
 
 (define (replace-syntax rep stx)

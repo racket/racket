@@ -1,5 +1,6 @@
 (module serialize racket/base
   (require syntax/modcollapse
+           unstable/struct
            "serialize-structs.rkt")
 
   ;; This module implements the core serializer. The syntactic
@@ -212,7 +213,7 @@
 	      (for-each loop (vector->list ((serialize-info-vectorizer info) v))))]
            [(and (struct? v)
                  (prefab-struct-key v))
-            (for-each loop (cdr (vector->list (struct->vector v))))]
+            (for-each loop (struct->list v))]
 	   [(or (string? v)
 		(bytes? v)
 		(path-for-some-system? v))
@@ -229,7 +230,7 @@
 	   [(box? v)
 	    (loop (unbox v))]
 	   [(date? v)
-	    (for-each loop (cdr (vector->list (struct->vector v))))]
+	    (for-each loop (struct->list v))]
 	   [(hash? v)
 	    (hash-for-each v (lambda (k v)
                                (loop k)
@@ -282,7 +283,7 @@
              (cons 'f
                    (cons
                     k
-                    (map (serial #t) (cdr (vector->list (struct->vector v)))))))]
+                    (map (serial #t) (struct->list v)))))]
        [(or (string? v)
 	    (bytes? v))
 	(cons 'u v)]
@@ -316,7 +317,7 @@
                                      (loop v))))))]
        [(date? v)
 	(cons 'date
-	      (map (serial #t) (cdr (vector->list (struct->vector v)))))]
+	      (map (serial #t) (struct->list v)))]
        [(arity-at-least? v)
 	(cons 'arity-at-least
 	      ((serial #t) (arity-at-least-value v)))]

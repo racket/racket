@@ -1,5 +1,6 @@
 #lang scheme/base
-(require "../stx.ss")
+(require "../stx.ss"
+         unstable/struct)
 
 (provide template-map-apply)
 
@@ -82,5 +83,5 @@
             stx
             (loop (prefab-fields tmap)
                   (cdr data)
-                  (cdr (vector->list (struct->vector (syntax-e stx))))))]
+                  (struct->list (syntax-e stx))))]
      [else (error "template-map-apply fallthrough")])))

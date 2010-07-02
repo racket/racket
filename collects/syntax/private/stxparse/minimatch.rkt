@@ -73,7 +73,7 @@
                    [(p ...) (struct->list (syntax-e #'s))])
        #'(let ([xkey (prefab-struct-key x)])
            (if (equal? xkey 'key)
-               (let ([xps (cdr (vector->list (struct->vector x)))])
+               (let ([xps (struct->list x)])
                  (match-p xps (list p ...) success failure))
                failure)))]))
 

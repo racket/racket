@@ -1,5 +1,6 @@
 #lang scheme/base
 (require "stx.ss"
+         unstable/struct
          (for-template scheme/base
                        "private/template-runtime.ss"))
 
@@ -71,7 +72,7 @@
       [_ 
        (let ([k (prefab-struct-key (syntax-e tmpl))])
          (and k
-              (let ([as (loop (cdr (vector->list (struct->vector (syntax-e tmpl))) in-ellipses?))])
+              (let ([as (loop (struct->list (syntax-e tmpl)) in-ellipses?)])
                 (and (or as (not const-leaf?))
                      (make-prefab k as))
                 #f)))])))
@@ -115,7 +116,7 @@
      [(prefab? tmap)
       (cons (s->d template)
             (loop (prefab-fields tmap)
-                  (cdr (vector->list (struct->vector (syntax-e template))))))]
+                  (struct->list (syntax-e template))))]
      [else (error "template-map-collect fall-through")])))
 
 (define (group-ellipses tmap template)
@@ -164,7 +165,7 @@
         make-prefab-struct
         (prefab-key tmap)
         (loop (prefab-fields tmap)
-              (cdr (vector->list (struct->vector (syntax-e template)))))))]
+              (struct->list (syntax-e template)))))]
      [else (error "group-ellipses fall-through")])))
 
 (define (transform-template template-stx
