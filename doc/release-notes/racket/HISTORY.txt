@@ -1,3 +1,16 @@
+Version 5.0.0.5
+Added flreal-part, flimag-part, make-flrectangular, and unsafe
+ variants
+
+Version 5.0.0.4
+Added chaperone-evt
+
+Version 5.0.0.3
+identifier-prune-to-source-module
+
+Version 5.0.0.2
+Added `fl->eact-integer', `fl->fx', and `unsafe-fl->fx'
+
 Version 5.0.0.1
 Changed `apply' binding to enable lower-level optimizations
 

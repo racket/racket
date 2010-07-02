@@ -137,6 +137,10 @@ static Scheme_Object *unsafe_flvector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flvector_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flvector_set (int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *unsafe_make_flrectangular (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_flreal_part (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[]);
+
 /* globals */
 READ_ONLY double scheme_infinity_val;
 READ_ONLY double scheme_minus_infinity_val;
@@ -703,6 +707,18 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   else
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_SOMETIMES_INLINED;
   scheme_add_global_constant("flexp", p, env);
+
+  p = scheme_make_folding_prim(scheme_checked_make_rectangular, "make-flrectangular", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("make-flrectangular", p, env);
+
+  p = scheme_make_folding_prim(scheme_checked_real_part, "flreal-part", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("flreal-part", p, env);
+
+  p = scheme_make_folding_prim(scheme_checked_imag_part, "flimag-part", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("flimag-part", p, env);
 }
 
 void scheme_init_unsafe_number(Scheme_Env *env)
@@ -788,6 +804,21 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-flvector-set!", p, env);
+
+  p = scheme_make_folding_prim(unsafe_make_flrectangular, "unsafe-make-flrectangular", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-make-flrectangular", p, env);
+
+  p = scheme_make_folding_prim(unsafe_flreal_part, "unsafe-flreal-part", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-flreal-part", p, env);
+
+  p = scheme_make_folding_prim(unsafe_flimag_part, "unsafe-flimag-part", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-flimag-part", p, env);
 }
 
 
@@ -2493,6 +2524,20 @@ Scheme_Object *scheme_checked_make_rectangular (int argc, Scheme_Object *argv[])
   return scheme_make_complex(a, b);
 }
 
+Scheme_Object *scheme_checked_make_flrectangular (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a, *b;
+
+  a = argv[0];
+  b = argv[1];
+  if (!SCHEME_FLOATP(a))
+    scheme_wrong_type("make-rectangular", "inexact-real", 0, argc, argv);
+  if (!SCHEME_FLOATP(b))
+    scheme_wrong_type("make-rectangular", "inexact-real", 1, argc, argv);
+
+  return scheme_make_complex(a, b);
+}
+
 Scheme_Object *scheme_make_polar (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *a, *b, *r, *i, *v;
@@ -2539,6 +2584,28 @@ Scheme_Object *scheme_checked_imag_part (int argc, Scheme_Object *argv[])
     return scheme_complex_imaginary_part(o);
 
   return zeroi;
+}
+
+Scheme_Object *scheme_checked_flreal_part (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o = argv[0];
+
+  if (!SCHEME_COMPLEXP(o)
+      || !SCHEME_FLOATP(((Scheme_Complex *)o)->r))
+    scheme_wrong_type("flreal-part", "complex number with inexact parts", 0, argc, argv);
+
+  return _scheme_complex_real_part(o);
+}
+
+Scheme_Object *scheme_checked_flimag_part (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o = argv[0];
+
+  if (!SCHEME_COMPLEXP(o)
+      || !SCHEME_FLOATP(((Scheme_Complex *)o)->r))
+    scheme_wrong_type("flimag-part", "complex number with inexact parts", 0, argc, argv);
+
+  return scheme_complex_imaginary_part(o);
 }
 
 static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
@@ -3424,4 +3491,19 @@ static Scheme_Object *fl_to_integer (int argc, Scheme_Object *argv[])
    
   scheme_wrong_type("fl->exact-integer", "inexact-real integer", 0, argc, argv);
   return NULL;
+}
+
+static Scheme_Object *unsafe_make_flrectangular (int argc, Scheme_Object *argv[])
+{
+  return scheme_make_complex(argv[0], argv[1]);
+}
+
+static Scheme_Object *unsafe_flreal_part (int argc, Scheme_Object *argv[])
+{
+  return ((Scheme_Complex *)argv[0])->r;
+}
+
+static Scheme_Object *unsafe_flimag_part (int argc, Scheme_Object *argv[])
+{
+  return ((Scheme_Complex *)argv[0])->i;
 }

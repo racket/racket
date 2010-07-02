@@ -62,6 +62,9 @@ define_ts_iS_s(scheme_checked_set_mcdr, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_imag_part, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_real_part, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_make_rectangular, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_flimag_part, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_flreal_part, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_make_flrectangular, FSRC_MARKS)
 #ifndef CAN_INLINE_ALLOC
 define_ts_tt_s(scheme_make_complex, FSRC_OTHER)
 #endif
@@ -132,6 +135,9 @@ define_ts_siS_v(wrong_argument_count, FSRC_MARKS)
 # define ts_scheme_checked_imag_part scheme_checked_imag_part
 # define ts_scheme_checked_real_part scheme_checked_real_part
 # define ts_scheme_checked_make_rectangular scheme_checked_make_rectangular
+# define ts_scheme_checked_flimag_part scheme_checked_flimag_part
+# define ts_scheme_checked_flreal_part scheme_checked_flreal_part
+# define ts_scheme_checked_make_flrectangular scheme_checked_make_flrectangular
 # define ts_scheme_make_complex scheme_make_complex
 # define ts_scheme_unbox scheme_unbox
 # define ts_scheme_set_box scheme_set_box

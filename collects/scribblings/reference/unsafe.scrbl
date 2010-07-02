@@ -148,6 +148,18 @@ For @tech{flonums}: Unchecked (potentially) versions of
 @scheme[flsqrt]. Currently, some of these bindings are simply aliases
 for the corresponding safe bindings.}
 
+
+@deftogether[(
+@defproc[(unsafe-make-flrectangular [a inexact-real?] [b inexact-real?]) 
+         (and/c complex? inexact? (not/c real?))]
+@defproc[(unsafe-flreal-part [a (and/c complex? inexact? (not/c real?))]) inexact-real?]
+@defproc[(unsafe-flimag-part [a (and/c complex? inexact? (not/c real?))]) inexact-real?]
+)]{
+
+For @tech{flonums}: Unchecked versions of @racket[make-flrectangular],
+@racket[flreal-part], and @racket[flimag-part].}
+
+
 @deftogether[(
 @defproc[(unsafe-fx->fl [a fixnum?]) inexact-real?]
 @defproc[(unsafe-fl->fx [a inexact-real?]) fixnum?]

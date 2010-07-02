@@ -3049,7 +3049,9 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, in
     if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
       if (((argc == 1)
            && (IS_NAMED_PRIM(rator, "unsafe-flabs")
-               || IS_NAMED_PRIM(rator, "unsafe-flsqrt")))
+               || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
+               || IS_NAMED_PRIM(rator, "unsafe-flreal-part")
+               || IS_NAMED_PRIM(rator, "unsafe-flimag-part")))
           || ((argc == 2)
               && (IS_NAMED_PRIM(rator, "unsafe-fl+")
                   || IS_NAMED_PRIM(rator, "unsafe-fl-")
@@ -3083,7 +3085,9 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, in
           || IS_NAMED_PRIM(rator, "flacos")
           || IS_NAMED_PRIM(rator, "flatan")
           || IS_NAMED_PRIM(rator, "fllog")
-          || IS_NAMED_PRIM(rator, "flexp"))
+          || IS_NAMED_PRIM(rator, "flexp")
+          || IS_NAMED_PRIM(rator, "flimag-part")
+          || IS_NAMED_PRIM(rator, "flreal-part"))
         return 1;
       if (IS_NAMED_PRIM(rator, "->fl")) {
         if (non_fl_args) *non_fl_args = 1;

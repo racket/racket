@@ -1026,6 +1026,18 @@ Like @racket[inexact->exact], but constrained to consume an
 integer.}
 
 
+@deftogether[(
+@defproc[(make-flrectangular [a inexact-real?] [b inexact-real?]) 
+         (and/c complex? inexact? (not/c real?))]
+@defproc[(flreal-part [a (and/c complex? inexact? (not/c real?))]) inexact-real?]
+@defproc[(flimag-part [a (and/c complex? inexact? (not/c real?))]) inexact-real?]
+)]{
+
+Like @racket[make-rectangular], @racket[real-part], and
+@racket[imag-part], but both parts of the complex number must be
+inexact.}
+
+
 @subsection{Flonum Vectors}
 
 A @deftech{flvector} is like a @tech{vector}, but it holds only

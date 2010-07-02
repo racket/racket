@@ -184,6 +184,10 @@
   (test-bin +nan.0 'unsafe-flmax +nan.0 2.1)
   (test-bin +nan.0 'unsafe-flmax 2.1 +nan.0)
 
+  (test-bin 1.7+45.0i 'unsafe-make-flrectangular 1.7 45.0)
+  (test-un 3.5 'unsafe-flreal-part 3.5+4.6i)
+  (test-un 4.6 'unsafe-flimag-part 3.5+4.6i)
+
   ;; test unboxing:
   (test-tri 9.0 '(lambda (x y z) (unsafe-fl+ (unsafe-fl- x z) y)) 4.5 7.0 2.5)
   (test-tri 9.0 '(lambda (x y z) (unsafe-fl+ y (unsafe-fl- x z))) 4.5 7.0 2.5)

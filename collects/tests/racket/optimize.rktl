@@ -3,8 +3,8 @@
 
 (Section 'optimization)
 
-(require scheme/flonum
-         scheme/fixnum
+(require racket/flonum
+         racket/fixnum
          compiler/zo-parse)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -12,8 +12,8 @@
 ;; Check JIT inlining of primitives:
 (parameterize ([current-namespace (make-base-namespace)]
 	       [eval-jit-enabled #t])
-  (namespace-require 'scheme/flonum)
-  (namespace-require 'scheme/fixnum)
+  (namespace-require 'racket/flonum)
+  (namespace-require 'racket/fixnum)
   (let* ([check-error-message (lambda (name proc)
 				(unless (memq name '(eq? not null? pair?
 							 real? number? boolean? 
@@ -507,13 +507,17 @@
 
     (un 1 'real-part 1+2i)
     (un 105 'real-part 105)
+    (un-exact 10.0 'flreal-part 10.0+7.0i)
     (un 2 'imag-part 1+2i)
     (un-exact 0 'imag-part 106)
     (un-exact 0 'imag-part 106.0)
+    (un-exact 7.0 'flimag-part 10.0+7.0i)
 
     (bin 1+2i 'make-rectangular 1 2)
     (bin-exact 1.0+2.0i 'make-rectangular 1 2.0)
     (bin-exact 1.0+2.0i 'make-rectangular 1.0 2)
+    (bin-exact 1.0+0.5i 'make-rectangular 1.0 1/2)
+    (bin-exact 0.75+2.0i 'make-rectangular 3/4 2.0)
     (bin-exact 1 'make-rectangular 1 0)
     (bin-exact 1.0 'make-rectangular 1.0 0)
 
@@ -999,27 +1003,27 @@
                 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
 
 (let ([check (lambda (proc arities non-arities)
-               (test-comp `(module m scheme/base
+               (test-comp `(module m racket/base
                              (define f ,proc)
                              (print (procedure? f)))
-                          `(module m scheme/base
+                          `(module m racket/base
                              (define f ,proc)
                              (print #t)))
                (for-each
                 (lambda (a)
-                  (test-comp `(module m scheme/base
+                  (test-comp `(module m racket/base
                                 (define f ,proc)
                                 (print (procedure-arity-includes? f ,a)))
-                             `(module m scheme/base
+                             `(module m racket/base
                                 (define f ,proc)
                                 (print #t))))
                 arities)
                (for-each
                 (lambda (a)
-                  (test-comp `(module m scheme/base
+                  (test-comp `(module m racket/base
                                 (define f ,proc)
                                 (print (procedure-arity-includes? f ,a)))
-                             `(module m scheme/base
+                             `(module m racket/base
                                 (define f ,proc)
                                 (print #f))))
                 non-arities))])
