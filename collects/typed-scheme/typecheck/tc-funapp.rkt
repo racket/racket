@@ -4,16 +4,16 @@
          "signatures.rkt" "tc-metafunctions.rkt"
          "tc-app-helper.rkt" "find-annotation.rkt"
          "tc-subst.rkt" "check-below.rkt"
-         (prefix-in c: scheme/contract)
-         syntax/parse scheme/match mzlib/trace scheme/list 
+         (prefix-in c: racket/contract)
+         syntax/parse racket/match racket/list 
 	 unstable/sequence unstable/debug
          ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
-         scheme/bool
+         racket/bool
          racket/unsafe/ops
          (only-in racket/private/class-internal make-object do-make-object)
          (only-in '#%kernel [apply k:apply])
          ;; end fixme
-         (for-syntax syntax/parse scheme/base (utils tc-utils))
+         (for-syntax syntax/parse racket/base (utils tc-utils))
          (private type-annotation)
          (types utils abbrev union subtype resolve convenience type-table substitute)
          (utils tc-utils)
@@ -25,7 +25,7 @@
          (for-template
           racket/unsafe/ops
           (only-in '#%kernel [apply k:apply])
-          "internal-forms.rkt" scheme/base scheme/bool '#%paramz
+          "internal-forms.rkt" racket/base racket/bool '#%paramz
           (only-in racket/private/class-internal make-object do-make-object)))
 
 (provide tc/funapp)
@@ -97,10 +97,10 @@
       (list (tc-result1: argtys-t) ...))
      (handle-clauses (doms rngs rests arrs) f-stx args-stx
                      ;; only try inference if the argument lengths are appropriate
-                     (lambda (dom _ rest a) ((if rest <= =) (length dom) (length argtys)))
+                     (λ (dom _ rest a) ((if rest <= =) (length dom) (length argtys)))
                      ;; only try to infer the free vars of the rng (which includes the vars in filters/objects)
                      ;; note that we have to use argtys-t here, since argtys is a list of tc-results
-                     (lambda (dom rng rest a) (infer/vararg vars null argtys-t dom rest rng (and expected (tc-results->values expected))))
+                     (λ (dom rng rest a) (infer/vararg vars null argtys-t dom rest rng (and expected (tc-results->values expected))))
                      t argtys expected)]
     ;; procedural structs
     [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _ _))) _)
@@ -128,7 +128,6 @@
     [((tc-result1: (Error:)) _) (ret (make-Error))]
     ;; otherwise fail
     [((tc-result1: f-ty) _) 
-     ;(printf "ft: ~a argt: ~a~n" ftype0 argtys)
      (tc-error/expr #:return (ret (Un))
                     "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))
 
