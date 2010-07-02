@@ -54,7 +54,7 @@
       [(metafunc-name arg ...)
        (and (identifier? (syntax metafunc-name))
             (term-fn? (syntax-local-value (syntax metafunc-name) (λ () #f))))
-       (rewrite-application (term-fn-get-id (syntax-local-value/catch (syntax metafunc-name) (λ (x) #t)))
+       (rewrite-application (term-fn-get-id (syntax-local-value/record (syntax metafunc-name) (λ (x) #t)))
                             (syntax/loc stx (arg ...))
                             depth)]
       [f
@@ -64,7 +64,7 @@
       [x
        (and (identifier? (syntax x))
             (term-id? (syntax-local-value (syntax x) (λ () #f))))
-       (let ([id (syntax-local-value/catch (syntax x) (λ (x) #t))])
+       (let ([id (syntax-local-value/record (syntax x) (λ (x) #t))])
          (values (datum->syntax (term-id-id id) (syntax-e (term-id-id id)) (syntax x))
                  (term-id-depth id)))]
       [(unquote x)

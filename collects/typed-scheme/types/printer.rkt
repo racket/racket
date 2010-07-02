@@ -142,11 +142,11 @@
                       [else (fp "~a" v)])]
     [(? tuple? t)
      (fp "~a" (cons 'List (tuple-elems t)))]
-    [(Base: n cnt) (fp "~a" n)]      
+    [(Base: n cnt) (fp "~s" n)]      
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: (== promise-str eq?) #f  (list fld) _    _ _ _ _ _) (fp "(Promise ~a)" fld)]
-    [(Struct: nm       par flds       proc _ _ _ _ _)
-     (fp "#(struct:~a ~a" nm flds)
+    [(Struct: (== promise-sym) #f  (list (fld: t _ _)) _    _ _ _ _) (fp "(Promise ~a)" t)]
+    [(Struct: nm       par (list (fld: t _ _) ...)       proc _ _ _ _)
+     (fp "#(struct:~a ~a" nm t)
      (when proc
        (fp " ~a" proc))
      (fp ")")]
@@ -176,8 +176,8 @@
     [(F: nm) (fp "~a" nm)]   
     ;; FIXME
     [(Values: (list v)) (fp "~a" v)]
-    [(Values: (list v ...)) (fp "~a" (cons 'values v))]
-    [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
+    [(Values: (list v ...)) (fp "~s" (cons 'values v))]
+    [(ValuesDots: v dty dbound) (fp "~s" (cons 'values (append v (list dty '... dbound))))]
     [(Param: in out) 
      (if (equal? in out)
          (fp "(Parameterof ~a)" in)           
@@ -223,6 +223,7 @@
      (for ([t ts]) (fp " ~a" t))
      (fp ")")]
     [(Error:) (fp "Error")]
+    [(fld: t a m) (fp "(fld ~a)" t)]
     [else (fp "(Unknown Type: ~a)" (struct->vector c))]
     ))
 

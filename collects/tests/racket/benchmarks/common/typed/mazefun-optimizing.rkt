@@ -1,2 +1,1 @@
-
-(module mazefun-optimizing "wrap-typed-optimizing.ss")
+#lang s-exp "wrapper.rkt"

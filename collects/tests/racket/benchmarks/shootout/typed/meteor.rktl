@@ -91,7 +91,7 @@
 (define (no-islands? mask)
   (let ([zeros (zero-count mask)])
     (and (zeros . >= . 5)
-         (let loop ([mask mask] [zeros zeros])
+         (let: loop : Boolean ([mask : Integer mask] [zeros : Integer zeros])
            (if (= mask #x3FFFFFFFFFFFF)
              #t
              (let* ([p (assert (find-free-cell mask))]

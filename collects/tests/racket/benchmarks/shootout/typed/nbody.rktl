@@ -77,7 +77,8 @@ Correct output N = 1000 is
 ;; -------------------------------
 (: offset-momentum ( -> Void))
 (define (offset-momentum)
-  (let loop-i ([i *system*] [px 0.0] [py 0.0] [pz 0.0])
+  (let: loop-i : Void ([i : (Listof body) *system*]
+                       [px : Float 0.0] [py : Float 0.0] [pz : Float 0.0])
     (if (null? i)
       (begin
         (set-body-vx! (car *system*) (fl/ (fl- 0.0 px) +solar-mass+))
@@ -92,7 +93,7 @@ Correct output N = 1000 is
 ;; -------------------------------
 (: energy ( -> Float))
 (define (energy)
-  (let loop-o ([o *system*] [e 0.0])
+  (let: loop-o : Float ([o : (Listof body) *system*] [e : Float 0.0])
     (if (null? o)
       e
       (let* ([o1 (car o)]

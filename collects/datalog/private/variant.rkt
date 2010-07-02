@@ -35,13 +35,25 @@
     [_ #f]))
 
 (define (variant? l1 l2)
-  (and 
-   (datum-equal? (literal-predicate l1)
-                 (literal-predicate l2))
-   (variant-terms 
-    (empty-env) (empty-env)
-    (literal-terms l1)
-    (literal-terms l2))))
+  (or 
+   (and (literal? l1) (literal? l2)
+        (datum-equal? (literal-predicate l1)
+                      (literal-predicate l2))
+        (variant-terms 
+         (empty-env) (empty-env)
+         (literal-terms l1)
+         (literal-terms l2)))
+   (and (external? l1) (external? l2)
+        (equal? (external-predicate l1)
+                (external-predicate l2))
+        (variant-terms 
+         (empty-env) (empty-env)
+         (external-arg-terms l1)
+         (external-arg-terms l2))
+        (variant-terms 
+         (empty-env) (empty-env)
+         (external-ans-terms l1)
+         (external-ans-terms l2)))))
 
 (define (mem-literal lit ls)
   (ormap (lambda (l) (variant? lit l)) ls))
@@ -52,11 +64,21 @@
     [(variable? t)
      101]
     [(constant? t)
-     (recur-hash (constant-datum t))]))
-(define ((mk-literal-hash recur-hash) l)
-  (let loop ([code (recur-hash (literal-predicate l))]
+     (recur-hash (constant-value t))]))
+(define ((mk-literal-hash recur-hash) q)
+  (define-values
+    (code terms)
+    (match q
+      [(? literal? l)
+       (values (recur-hash (literal-predicate l))
+               (literal-terms l))]
+      [(? external? e)
+       (values (recur-hash (external-predicate e))
+               (append (external-arg-terms e)
+                       (external-ans-terms e)))]))
+  (let loop ([code code]
              [i 0]
-             [terms (literal-terms l)])
+             [terms terms])
     (if (empty? terms)
         code
         (loop (+ code (term-hash (first terms) recur-hash) (* i -7))
@@ -78,6 +100,6 @@
 (provide/contract
  [literal-tbl/c contract?]
  [make-literal-tbl (-> literal-tbl/c)]
- [literal-tbl-find (literal-tbl/c literal? . -> . (or/c false/c any/c))]
- [literal-tbl-replace! (literal-tbl/c literal? any/c . -> . void)]
- [mem-literal (literal? (listof literal?) . -> . boolean?)])
+ [literal-tbl-find (literal-tbl/c question/c . -> . (or/c false/c any/c))]
+ [literal-tbl-replace! (literal-tbl/c question/c any/c . -> . void)]
+ [mem-literal (question/c (listof question/c) . -> . boolean?)])

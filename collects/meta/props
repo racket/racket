@@ -1370,6 +1370,7 @@ path/s is either such a string or a list of them.
 "collects/tests/drracket/drracket-test-util.rkt" drdr:command-line (gracket "-t" *)
 "collects/tests/drracket/io.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/language-test.rkt" drdr:command-line (gracket *) drdr:timeout 600
+"collects/tests/drracket/memory-log.rkt" drdr:command-line (gracket *)
 "collects/tests/drracket/module-lang-test-utils.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/tests/drracket/module-lang-test.rkt" drdr:command-line (gracket *) drdr:timeout 120
 "collects/tests/drracket/randomly-click-language-dialog.rkt" drdr:command-line (mzc *)
@@ -1864,6 +1865,7 @@ path/s is either such a string or a list of them.
 "collects/tests/typed-scheme/fail/with-type3.rkt" responsible (sstrickl)
 "collects/tests/typed-scheme/nightly-run.rkt" drdr:command-line #f
 "collects/tests/typed-scheme/optimizer" responsible (stamourv)
+"collects/tests/typed-scheme/optimizer/run.rkt" drdr:timeout 600
 "collects/tests/typed-scheme/run.rkt" drdr:command-line (racket "-t" * "--" "--nightly") drdr:timeout 1200
 "collects/tests/typed-scheme/xfail" drdr:command-line #f
 "collects/tests/units" responsible (sstrickl)

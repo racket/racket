@@ -9,32 +9,52 @@
     [_
      t]))
 
+(define (subst-terms env ts)
+  (map (curry subst-term env) ts))
+
 (define (subst-literal env lit)
-  (make-literal (literal-srcloc lit)
-                (literal-predicate lit)
-                (map (lambda (t) (subst-term env t))
-                     (literal-terms lit))))
+  (struct-copy 
+   literal lit
+   [terms 
+    (subst-terms env (literal-terms lit))]))
+
+(define (subst-external env ext)
+  (struct-copy 
+   external ext
+   [arg-terms 
+    (subst-terms env (external-arg-terms ext))]
+   [ans-terms 
+    (subst-terms env (external-ans-terms ext))]))
+
+(define (subst-question env q)
+  (match q
+    [(? literal?) (subst-literal env q)]
+    [(? external?) (subst-external env q)]))
 
 (define (subst-clause env c)
-  (make-clause (clause-srcloc c)
-               (subst-literal env (clause-head c))
-               (map (lambda (l) (subst-literal env l))
-                    (clause-body c))))
+  (clause (clause-srcloc c)
+          (subst-literal env (clause-head c))
+          (map (curry subst-question env)
+               (clause-body c))))
 
-(define (shuffle env lit)
-  (match lit
-    [(struct literal (_ pred terms))
-     (let loop ([env env]
-                [terms terms])
-       (match terms
-         [(list) 
-          env]
-         [(list-rest (struct constant (_ value)) terms)
-          (loop env terms)]
-         [(list-rest (struct variable (srcloc var)) terms)
-          (if (lookup env var)
-              (loop env terms)
-              (loop (extend env var (make-variable srcloc (gensym var))) terms))]))]))
+(define (shuffle-terms env terms)
+  (match terms
+    [(list) 
+     env]
+    [(list-rest (constant _ value) terms)
+     (shuffle-terms env terms)]
+    [(list-rest (variable srcloc var) terms)
+     (if (lookup env var)
+         (shuffle-terms env terms)
+         (shuffle-terms (extend env var (make-variable srcloc (gensym var)))
+                        terms))]))
+
+(define (shuffle env q)
+  (match q
+    [(external _ _ pred arg-terms ans-terms)
+     (shuffle-terms env (append arg-terms ans-terms))]
+    [(literal _ pred terms)
+     (shuffle-terms env terms)]))
 
 (define (rename-clause c)
   (define env
@@ -44,11 +64,12 @@
            (clause-body c)))  
   (subst-clause env c))  
 
-(define (rename-literal lit)
-  (subst-literal (shuffle (empty-env) lit) lit))
+(define (rename-question q)
+  (subst-question (shuffle (empty-env) q) q))
 
 (provide/contract
+ [subst-terms (env/c (listof term/c) . -> . (listof term/c))]
  [subst-term (env/c term/c . -> . term/c)]
  [subst-clause (env/c clause? . -> . clause?)]
  [rename-clause (clause? . -> . clause?)]
- [rename-literal (literal? . -> . literal?)])
+ [rename-question (question/c . -> . question/c)])

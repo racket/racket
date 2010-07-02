@@ -1,6 +1,5 @@
-
-#lang scheme/base
-(require scheme/pretty)
+#lang racket/base
+(require racket/pretty)
 (provide write-debug-file
          load-debug-file)
 

@@ -12,7 +12,7 @@
 (define N.0 (exact->inexact N))
 (define 2/N (/ 2.0 N.0))
 (define Crs
-  (let ([v (make-vector N 0.0)])
+  (let: ([v : (Vectorof Float) (make-vector N 0.0)])
     (for ([x (in-range N)])
       (vector-set! v x (- (/ (* 2 x) N.0) 1.5)))
     v))

@@ -135,7 +135,7 @@ or override chaperone-property values of @scheme[proc].}
                                             (one-of/c struct-info))]
                            [redirect-proc procedure?] ... ...
                            [prop chaperone-property?]
-                           [val any] ... ...)
+                           [prop-val any] ... ...)
           any/c]{
 
 Returns a chaperoned value like @scheme[v], but with certain
@@ -173,7 +173,7 @@ indicate a distinct operation. If no @scheme[orig-proc]s are supplied,
 then no @scheme[prop]s must be supplied, and @scheme[v] is returned
 unchaperoned.
 
-Pairs of @scheme[prop-val] and @scheme[val] (the number of arguments
+Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[chaperone-procedure] must be even) add chaperone properties
 or override chaperone-property values of @scheme[v].}
 
@@ -181,7 +181,7 @@ or override chaperone-property values of @scheme[v].}
                            [ref-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
                            [set-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
                            [prop chaperone-property?]
-                           [val any] ... ...)
+                           [prop-val any] ... ...)
           (and/c vector? chaperone?)]{
 
 Returns a chaperoned value like @scheme[vec], but with
@@ -201,7 +201,7 @@ with @scheme[vector-set!] on the original @scheme[vec] to install the
 value. The @scheme[set-proc] will not be used if @scheme[vec] is
 immutable.
 
-Pairs of @scheme[prop-val] and @scheme[val] (the number of arguments
+Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[chaperone-vector] must be odd) add chaperone properties
 or override chaperone-property values of @scheme[vec].}
 
@@ -209,7 +209,7 @@ or override chaperone-property values of @scheme[vec].}
                         [unbox-proc (box? any/c . -> . any/c)]
                         [set-proc (box? any/c . -> . any/c)]
                         [prop chaperone-property?]
-                        [val any] ... ...)
+                        [prop-val any] ... ...)
           (and/c box? chaperone?)]{
 
 Returns a chaperoned value like @scheme[bx], but with
@@ -227,7 +227,7 @@ the value, which is used with @scheme[set-box!] on the original
 @scheme[bx] to install the value.  The @scheme[set-proc] will not be
 used if @scheme[bx] is immutable.
 
-Pairs of @scheme[prop-val] and @scheme[val] (the number of arguments
+Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[chaperone-box] must be odd) add chaperone properties
 or override chaperone-property values of @scheme[bx].}
 
@@ -240,7 +240,7 @@ or override chaperone-property values of @scheme[bx].}
                          [remove-proc (hash? any/c . -> . any/c)]
                          [key-proc (hash? any/c . -> . any/c)]
                          [prop chaperone-property?]
-                         [val any] ... ...)
+                         [prop-val any] ... ...)
           (and/c hash? chaperone?)]{
 
 Returns a chaperoned value like @scheme[hash], but with
@@ -284,7 +284,7 @@ other operations that use @scheme[hash-iterate-key] internally); it
 must produce the same key or a chaperone of the key, which is then
 reported as a key extracted from the table.
 
-Pairs of @scheme[prop-val] and @scheme[val] (the number of arguments
+Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[chaperone-hash] must be odd) add chaperone properties
 or override chaperone-property values of @scheme[hash].}
 
@@ -293,7 +293,7 @@ or override chaperone-property values of @scheme[hash].}
                                 [make-constructor-proc (procedure? . -> . procedure?)]
                                 [guard-proc procedure?]
                                 [prop chaperone-property?]
-                                [val any] ... ...)
+                                [prop-val any] ... ...)
           (and/c struct-type? chaperone?)]{
 
 Returns a chaperoned value like @scheme[struct-type], but with
@@ -322,9 +322,31 @@ each the same or a chaperone of the corresponding argument. The
 @scheme[guard-proc] is added as a constructor guard when a subtype is
 created of the chaperoned structure type.
 
-Pairs of @scheme[prop-val] and @scheme[val] (the number of arguments
+Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
 to @scheme[chaperone-struct-type] must be even) add chaperone properties
 or override chaperone-property values of @scheme[struct-type].}
+
+@defproc[(chaperone-evt [evt evt?]
+                        [proc (evt? . -> . (values evt? (any/c . -> . any/c)))]
+                        [prop chaperone-property?]
+                        [prop-val any] ... ...)
+          (and/c evt? chaperone?)]{
+
+Returns a chaperoned value like @scheme[evt], but with @scheme[proc]
+as an event generator when the result is synchronized with functions
+like @racket[sync].
+
+The @racket[proc] generator is called on synchronization, much like
+the procedure passed to @racket[guard-evt], except that @racket[proc]
+is given @scheme[evt]. The @racket[proc] must return two values: a
+@tech{synchronizable event} that is a chaperone of @racket[evt], and a
+procedure that is used to check the event's result if it is chosen in
+a selection. The latter procedure accepts the result of @racket[evt],
+and it must return a chaperone of that value.
+
+Pairs of @scheme[prop] and @scheme[prop-val] (the number of arguments
+to @scheme[chaperone-struct-type] must be even) add chaperone properties
+or override chaperone-property values of @scheme[evt].}
 
 @; ------------------------------------------------------------
 @section{Chaperone Properties}

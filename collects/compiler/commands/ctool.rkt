@@ -211,6 +211,13 @@
                   (expand-for-link-variant (current-extension-preprocess-flags))))
        ("Show C preprocess (xform) flags")]]
      [help-labels
+      "----------------------- C-embeddable module flags ---------------------------"]
+     [multi
+      [("++lib")
+       ,(lambda (f l)
+          (exe-embedded-libraries (append (exe-embedded-libraries) (list l))))
+       ("Embed <lib> in --c-mods output" "lib")]]
+     [help-labels
       "-------------------- -c/-e compiler optimization flags ----------------------"]
      [once-each
       [("--no-prop")

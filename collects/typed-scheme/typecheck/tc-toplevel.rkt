@@ -34,8 +34,6 @@
 (define unann-defs (make-free-id-table))
 
 (define (tc-toplevel/pass1 form)
-  ;(printf "form-top: ~a~n" form)
-  ;; first, find the mutated variables:
   (parameterize ([current-orig-stx form])
     (syntax-parse form
       #:literals (values define-type-alias-internal define-typed-struct-internal define-type-internal 
@@ -74,7 +72,7 @@
       
       [(define-values () (begin (quote-syntax (require/typed-internal nm ty #:struct-maker parent)) (#%plain-app values)))
        (let* ([t (parse-type #'ty)]
-              [flds (Struct-flds (lookup-type-name (Name-id t)))]
+              [flds (map fld-t (Struct-flds (lookup-type-name (Name-id t))))]
               [mk-ty (flds #f . ->* . t)])
          (register-type #'nm mk-ty)
          (list (make-def-binding #'nm mk-ty)))]
@@ -137,16 +135,14 @@
            [(andmap (lambda (s) (lookup-type s (lambda () #f))) vars)
             (for-each finish-register-type vars)
             (map (lambda (s) (make-def-binding s (lookup-type s))) vars)]
-           ;; special case to infer types for top level defines - should handle the multiple values case here
-           [(= 1 (length vars))
-            (match (tc-expr #'expr)
-              [(tc-result1: t)
-               (register-type (car vars) t)
-               (free-id-table-set! unann-defs (car vars) #t)
-               (list (make-def-binding (car vars) t))]
-              [t (int-err "~a is not a tc-result" t)])]
+           ;; special case to infer types for top level defines
            [else
-            (tc-error "Untyped definition : ~a" (map syntax-e vars))]))]
+            (match (get-type/infer vars #'expr tc-expr tc-expr/check)
+              [(tc-results: ts)
+	       (for/list ([i (in-list vars)] [t (in-list ts)])
+		 (register-type i t)
+		 (free-id-table-set! unann-defs i #t)
+		 (make-def-binding i t))])]))]
       
       ;; to handle the top-level, we have to recur into begins
       [(begin . rest)

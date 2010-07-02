@@ -22,15 +22,15 @@ on tabling intermediate results ensures that all queries terminate.
 
 @table-of-contents[]
 
-@section{Datalog Module Language}
+@section[#:tag "datalog"]{Datalog Module Language}
 
-@defmodulelang[datalog]
+@defmodulelang[@racketmodname[datalog] #:module-paths (datalog/lang/reader)]
 
 In Datalog input, whitespace characters are ignored except when they separate adjacent tokens or when they occur in strings.
 Comments are also considered to be whitespace. The character @litchar["%"] introduces a comment, which extends to the next line break.
 Comments do not occur inside strings.
 
-A variable is a sequence of Latin capital and small letters, digits, and the underscore character. A variable must begin with a Latin capital letter.
+A variable is a sequence of Unicode "Uppercase" and "Lowercase" letters, digits, and the underscore character. A variable must begin with a Unicode "Uppercase" letter.
 
 An identifier is a sequence of printing characters that does not contain any of the following characters: @litchar["("], @litchar["`"],
 @litchar["'"], @litchar[")"], @litchar["="], @litchar[":"], @litchar["."], @litchar["~"], @litchar["?"], @litchar["\""], @litchar["%"], and space.
@@ -113,6 +113,7 @@ The following BNF describes the syntax of Datalog.
 
 The effect of running a Datalog program is to modify the database as directed
 by its statements, and then to return the literals designated by the query.
+The modified database is provided as @racket[theory].
 
 The following is a program:
 
@@ -130,13 +131,14 @@ The Datalog REPL accepts new statements that are executed as if they were in the
 @include-section["tutorial.scrbl"]
 
 @section{Parenthetical Datalog Module Language}
-@(require (for-label datalog/sexp/lang))
+@(require (for-label datalog
+                     racket))
 
 @defmodulelang[datalog/sexp]
 
-The semantics of this language is the same as the normal Datalog language, except it uses a @secref["parenstx"].
+The semantics of this language is the same as the normal Datalog language, except it uses the parenthetical syntax described in @secref{interop}.
 
-Literals are represented as S-expressions with non-capitalized identifiers for constant symbols, strings for constant strings, and capitalized identifiers for variable symbols. Top-level identifiers and strings are not otherwise allowed in the program.
+All identifiers in @racketmodname[racket/base] are available for use as predicate symbols or constant values. Top-level identifiers and datums are not otherwise allowed in the program. The program may contain @racket[require] expressions.
 
 The following is a program:
 @racketmod[datalog/sexp
@@ -152,19 +154,13 @@ The following is a program:
        (path Z Y)))
 (? (path X Y))]
 
-The Parenthetical Datalog REPL accepts new statements that are executed as if they were in the original program text.
+This is also a program:
+@racketmod[datalog/sexp
+(require racket/math)
 
-@subsection[#:tag "parenstx"]{Parenthetical Syntax}
+(? (sqr 4 :- X))]
 
-@defmodule[datalog/sexp/lang]
-
-@defform[(! clause)]{ Asserts the clause. }
-@defform[(~ clause)]{ Retracts the literal. }
-@defform[(? literal)]{ Queries the literal and prints the result literals. }
-
-@defform[(:- literal literal ...)]{ A conditional clause. }
-
-@defform[(= term term)]{ An equality literal. }
+The Parenthetical Datalog REPL accepts new statements that are executed as if they were in the original program text, except @racket[require] is not allowed.
 
 @include-section["racket.scrbl"]
 

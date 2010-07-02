@@ -9,8 +9,9 @@
   @page[#:title "IRC" #:part-of 'community]{
     @iframe[src: webchat-link width: "100%" height: "400"]})
 
-(define irc-logs-symlink (symlink "/home/scheme/irc-logs/racket/"))
-(define (irc-logs text) @a[href: irc-logs-symlink]{@text})
+(define irc-logs-symlink
+  (symlink "/home/scheme/irc-logs/racket/" "irc-logs"))
+(define (irc-logs text) @a[href: (list irc-logs-symlink "/")]{@text})
 
 (define (irc-quick)
   @parlist[@strong{Discussion Channel}

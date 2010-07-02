@@ -27,6 +27,7 @@ Correct output N = 1000 is
 
 (define +dt+ 0.01)
 
+(: make-body (Float * -> (Vectorof Float)))
 (define make-body vector)
 (define-syntax-rule (deffield n getter setter)
   (begin (define-syntax-rule (getter b) (vector-ref b n))
@@ -84,7 +85,8 @@ Correct output N = 1000 is
 ;; -------------------------------
 (: offset-momentum ( -> Void))
 (define (offset-momentum)
-  (let loop-i ([i 0] [px 0.0] [py 0.0] [pz 0.0])
+  (let: loop-i : Void ([i : Natural 0]
+                       [px : Float 0.0] [py : Float 0.0] [pz : Float 0.0])
     (if (= i *system-size*)
       (begin
         (set-body-vx! (vector-ref *system* 0) (/ (- px) +solar-mass+))
@@ -99,7 +101,7 @@ Correct output N = 1000 is
 ;; -------------------------------
 (: energy ( -> Float))
 (define (energy)
-  (let loop-o ([o 0] [e 0.0])
+  (let: loop-o : Float ([o : Natural 0] [e : Float 0.0])
     (if (= o *system-size*)
       e
       (let* ([o1 (vector-ref *system* o)]

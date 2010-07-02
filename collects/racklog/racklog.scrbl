@@ -1115,6 +1115,14 @@ Racklog also provides two variants of these set predicates,
 viz., @racket[%bag-of-1] and @racket[%set-of-1].  These act like @racket[%bag-of]
 and @racket[%set-of] but fail if the resulting bag or set is empty.
 
+@section{Racklog Module Language}
+
+@defmodulelang[@racketmodname[racklog] #:module-paths (racklog/lang/lang)]
+
+This module language accepts the syntax of Datalog (except clauses need not be safe) and compiles each predicate to a relation.
+
+The accepted syntax is available in the @secref[#:doc '(lib "datalog/scribblings/datalog.scrbl")]{datalog} documentation.
+
 @section[#:tag "glossary"]{Glossary of Racklog Primitives}
 
 @(define-syntax (defpred stx)
@@ -1163,6 +1171,12 @@ The thunk @racket[%more] produces more instantiations of the
 variables in the most recent @racket[%which]-form that satisfy the
 goals in that @racket[%which]-form.  If no more solutions can
 be found, @racket[%more] returns @racket[#f].}
+
+@defform[(%find-all (V ...) G ...)
+         #:contracts ([V identifier?]
+                      [G goal/c])]{
+Like @racket[(list (%which (V ...) G ...) (%more) ...)] with as many @racket[(%more)]s as there are answers. (This will not terminate if there are an infinite number of answers.)
+}
 
 @subsection{Relations}
 

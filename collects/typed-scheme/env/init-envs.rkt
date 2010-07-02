@@ -25,11 +25,11 @@
     [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
     [(Base: n cnt) `(make-Base ',n (quote-syntax ,cnt))]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
-    [(Struct: name parent flds proc poly? pred-id cert acc-ids maker-id)
+    [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax acc) ,mut)]
+    [(Struct: name parent flds proc poly? pred-id cert maker-id)
      `(make-Struct ,(sub name) ,(sub parent) 
                    ,(sub flds) ,(sub proc) ,(sub poly?)
                    (quote-syntax ,pred-id) (syntax-local-certifier)
-                   (list ,@(for/list ([a acc-ids]) `(quote-syntax ,a)))
                    (quote-syntax ,maker-id))]
     [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx))]
     [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]

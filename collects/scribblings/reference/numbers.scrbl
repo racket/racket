@@ -1012,10 +1012,19 @@ the range @racket[-1.0] to @racket[1.0] is given to @racket[flasin] or
 @racket[flacos], or when a negative number is given to @racket[fllog]
 or @racket[flsqrt].}
 
+
 @defproc[(->fl [a exact-integer?]) inexact-real?]{
-Like @racket[exact->inexact], but constrained to consume exact integers,
-so the result is always a @tech{flonum}.
-}
+
+Like @racket[exact->inexact], but constrained to consume exact
+integers, so the result is always a @tech{flonum}.}
+
+
+@defproc[(fl->exact-integer [a inexact-real?]) exact-integer?]{
+
+Like @racket[inexact->exact], but constrained to consume an
+@tech{integer} @tech{flonum}, so the result is always an exact
+integer.}
+
 
 @subsection{Flonum Vectors}
 
@@ -1142,6 +1151,12 @@ Safe versions of @racket[unsafe-fx=], @racket[unsafe-fx<],
  @racket[unsafe-fx>], @racket[unsafe-fx<=], @racket[unsafe-fx>=],
  @racket[unsafe-fxmin], and @racket[unsafe-fxmax].}
 
+@deftogether[(
+@defproc[(fx->fl [a fixnum?]) inexact-real?]
+@defproc[(fl->fx [a inexact-real?]) fixnum?]
+)]{
+
+Safe versions of @racket[unsafe-fx->fl] and @racket[unsafe-fl->fx].}
 
 
 @; ------------------------------------------------------------------------

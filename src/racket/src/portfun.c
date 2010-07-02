@@ -157,6 +157,8 @@ READ_ONLY Scheme_Object *scheme_write_proc;
 READ_ONLY Scheme_Object *scheme_display_proc;
 READ_ONLY Scheme_Object *scheme_print_proc;
 
+SHARED_OK Scheme_Object *initial_compiled_file_paths;
+
 THREAD_LOCAL_DECL(static Scheme_Object *dummy_input_port);
 THREAD_LOCAL_DECL(static Scheme_Object *dummy_output_port);
 
@@ -331,7 +333,10 @@ void scheme_init_port_fun_config(void)
 {
   scheme_set_root_param(MZCONFIG_LOAD_DIRECTORY, scheme_false);
   scheme_set_root_param(MZCONFIG_WRITE_DIRECTORY, scheme_false);
-  scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, scheme_make_pair(scheme_make_path("compiled"), scheme_null));
+  if (initial_compiled_file_paths)
+    scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, initial_compiled_file_paths);
+  else
+    scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, scheme_make_pair(scheme_make_path("compiled"), scheme_null));
   scheme_set_root_param(MZCONFIG_USE_USER_PATHS, (scheme_ignore_user_paths ? scheme_false : scheme_true));
 
   {
@@ -350,6 +355,13 @@ void scheme_init_port_fun_config(void)
   REGISTER_SO(dummy_output_port);
   dummy_input_port = scheme_make_byte_string_input_port("");
   dummy_output_port = scheme_make_null_output_port(1);
+}
+
+void scheme_set_compiled_file_paths(Scheme_Object *list)
+{
+  if (!initial_compiled_file_paths)
+    REGISTER_SO(initial_compiled_file_paths);
+  initial_compiled_file_paths = list;
 }
 
 /*========================================================================*/

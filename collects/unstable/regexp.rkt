@@ -2,6 +2,9 @@
 
 (require racket/list racket/contract)
 
+;; Ryan: These functions should also allow regexp objects, use object-name to get strings.
+;;  And use string-join instead of add-between.
+
 ;; regexp-or : String ... -> String
 ;; Produces the regexp disjunction of several regexp-strings.
 (define (regexp-or . strings)

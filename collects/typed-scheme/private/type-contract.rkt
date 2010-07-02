@@ -30,7 +30,7 @@
   (syntax-parse stx #:literals (define-values)
     [(define-values (n) _)
      (let ([typ (if maker?
-                    ((Struct-flds (lookup-type-name (Name-id typ))) #f . t:->* . typ)
+                    ((map fld-t (Struct-flds (lookup-type-name (Name-id typ)))) #f . t:->* . typ)
                     typ)])
        (with-syntax ([cnt (type->contract 
                            typ 
@@ -165,7 +165,7 @@
            #;#'class?           
            #'(class/c (name fcn-cnt) ... (init [by-name-init by-name-cnt] ...)))]
         [(Value: '()) #'null?]
-        [(Struct: nm par flds proc poly? pred? cert acc-ids maker-id)
+        [(Struct: nm par (list (fld: flds acc-ids mut?) ...) proc poly? pred? cert maker-id)
          (cond 
            [(assf (λ (t) (type-equal? t ty)) structs-seen)
             =>

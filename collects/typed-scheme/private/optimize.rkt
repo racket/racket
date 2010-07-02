@@ -1,22 +1,40 @@
 #lang scheme/base
 
-(require syntax/parse (for-template scheme/base scheme/flonum scheme/unsafe/ops)
+(require syntax/parse (for-template scheme/base scheme/flonum scheme/fixnum scheme/unsafe/ops)
          "../utils/utils.rkt" unstable/match scheme/match unstable/syntax
          (rep type-rep) syntax/id-table racket/dict
          (types abbrev type-table utils subtype))
 (provide optimize)
 
+;; for use in match
+(define (subtypeof x y)
+  (subtype y x))
+
 (define-syntax-class float-opt-expr
   (pattern e:opt-expr
            #:when (match (type-of #'e)
-                    [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
+                    [(tc-result1: (== -Flonum subtypeof)) #t] [_ #f])
            #:with opt #'e.opt))
 
 (define-syntax-class int-opt-expr
   (pattern e:opt-expr
            #:when (match (type-of #'e)
-                    [(tc-result1: (== -Integer (lambda (x y) (subtype y x)))) #t] [_ #f])
+                    [(tc-result1: (== -Integer subtypeof)) #t] [_ #f])
            #:with opt #'e.opt))
+
+(define-syntax-class fixnum-opt-expr
+  (pattern e:opt-expr
+           #:when (match (type-of #'e)
+                    [(tc-result1: (== -Fixnum subtypeof)) #t] [_ #f])
+           #:with opt #'e.opt))
+(define-syntax-class nonzero-fixnum-opt-expr
+  (pattern e:opt-expr
+           #:when (match (type-of #'e)
+                    [(tc-result1: (== -PositiveFixnum type-equal?)) #t]
+                    [(tc-result1: (== -NegativeFixnum type-equal?)) #t]
+                    [_ #f])
+           #:with opt #'e.opt))
+
 
 ;; if the result of an operation is of type float, its non float arguments
 ;; can be promoted, and we can use unsafe float operations
@@ -28,16 +46,18 @@
   (pattern e:float-opt-expr
            #:with opt #'e.opt))
 
-(define (mk-float-tbl generic)
+(define (mk-unsafe-tbl generic safe-pattern unsafe-pattern)
   (for/fold ([h (make-immutable-free-id-table)]) ([g generic])
-    (let ([f (format-id g "fl~a" g)] [u (format-id g "unsafe-fl~a" g)])
+    (let ([f (format-id g safe-pattern g)] [u (format-id g unsafe-pattern g)])
       (dict-set (dict-set h g u) f u))))
+
+(define (mk-float-tbl generic)
+  (mk-unsafe-tbl generic "fl~a" "unsafe-fl~a"))
 
 (define binary-float-ops 
   (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max)))
 (define binary-float-comps
   (mk-float-tbl (list #'= #'<= #'< #'> #'>=)))
-
 (define unary-float-ops
   (mk-float-tbl (list #'abs #'sin #'cos #'tan #'asin #'acos #'atan #'log #'exp
                       #'sqrt #'round #'floor #'ceiling #'truncate)))
@@ -46,6 +66,42 @@
   (pattern i:id
            #:when (dict-ref tbl #'i #f)
            #:with unsafe (dict-ref tbl #'i)))
+
+
+(define (mk-fixnum-tbl generic)
+  (mk-unsafe-tbl generic "fx~a" "unsafe-fx~a"))
+
+;; due to undefined behavior when results are out of the fixnum range, only some
+;; fixnum operations can be optimized
+;; the following must be closed on fixnums
+(define binary-fixnum-ops
+  (dict-set
+   (dict-set
+    (dict-set
+     (dict-set
+      (dict-set
+       (dict-set
+        (mk-fixnum-tbl (list #'= #'<= #'< #'> #'>= #'min #'max))
+        #'bitwise-and #'unsafe-fxand)
+       #'fxand #'unsafe-fxand)
+      #'bitwise-ior #'unsafe-fxior)
+     #'fxior #'unsafe-fxior)
+    #'bitwise-xor #'unsafe-fxxor)
+   #'fxxor #'unsafe-fxxor))
+(define-syntax-class fixnum-unary-op
+  (pattern (~or (~literal bitwise-not) (~literal fxnot)) #:with unsafe #'unsafe-fxnot)
+  (pattern (~or (~literal abs)         (~literal fxabs)) #:with unsafe #'unsafe-fxabs))
+;; closed on fixnums, but 2nd argument must not be 0
+(define-syntax-class nonzero-fixnum-binary-op
+  (pattern (~or (~literal quotient)  (~literal fxquotient))  #:with unsafe #'unsafe-fxquotient)
+  (pattern (~or (~literal modulo)    (~literal fxmodulo))    #:with unsafe #'unsafe-fxmodulo)
+  (pattern (~or (~literal remainder) (~literal fxremainder)) #:with unsafe #'unsafe-fxremainder))
+
+(define-syntax-class (fixnum-op tbl)
+  (pattern i:id
+           #:when (dict-ref tbl #'i #f)
+           #:with unsafe (dict-ref tbl #'i)))
+
 
 (define-syntax-class pair-opt-expr
   (pattern e:opt-expr
@@ -85,6 +141,12 @@
               kind)
       #t))
 
+;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
+(define (n-ary->binary op arg1 arg2 rest)
+  (for/fold ([o arg1])
+      ([e (syntax->list #`(#,arg2 #,@rest))])
+    #`(#,op #,o #,e)))
+
 (define-syntax-class opt-expr*
   #:literal-sets (kernel-literals)
 
@@ -93,30 +155,47 @@
            #:with opt
            (begin (log-optimization "unary float" #'op)
                   #'(op.unsafe f.opt)))
-  ;; unlike their safe counterparts, unsafe binary operators can only take 2 arguments
   (pattern (~and res (#%plain-app (~var op (float-op binary-float-ops)) f1:float-arg-expr f2:float-arg-expr fs:float-arg-expr ...))
            #:when (match (type-of #'res)
                     ;; if the result is a float, we can coerce integers to floats and optimize
-                    [(tc-result1: (== -Flonum type-equal?)) #t] [_ #f])
+                    [(tc-result1: (== -Flonum subtypeof)) #t] [_ #f])
            #:with opt
            (begin (log-optimization "binary float" #'op)
-                  (for/fold ([o #'f1.opt])
-                      ([e (syntax->list #'(f2.opt fs.opt ...))])
-                    #`(op.unsafe #,o #,e))))
+                  (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
   (pattern (~and res (#%plain-app (~var op (float-op binary-float-comps)) f1:float-opt-expr f2:float-opt-expr fs:float-opt-expr ...))
            #:when (match (type-of #'res)
                     [(tc-result1: (== -Boolean type-equal?)) #t] [_ #f])
            #:with opt
            (begin (log-optimization "binary float comp" #'op)
-                  (for/fold ([o #'f1.opt])
-                      ([e (syntax->list #'(f2.opt fs.opt ...))])
-                    #`(op.unsafe #,o #,e))))
+                  (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
+
+  (pattern (#%plain-app op:fixnum-unary-op n:fixnum-opt-expr)
+           #:with opt
+           (begin (log-optimization "unary fixnum" #'op)
+                  #'(op.unsafe n.opt)))
+  (pattern (#%plain-app (~var op (fixnum-op binary-fixnum-ops)) n1:fixnum-opt-expr n2:fixnum-opt-expr ns:fixnum-opt-expr ...)
+           #:with opt
+           (begin (log-optimization "binary fixnum" #'op)
+                  (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...))))
+  (pattern (#%plain-app op:nonzero-fixnum-binary-op n1:fixnum-opt-expr n2:nonzero-fixnum-opt-expr)
+           #:with opt
+           (begin (log-optimization "binary nonzero fixnum" #'op)
+                  #'(op.unsafe n1.opt n2.opt)))
+  (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-opt-expr)
+           #:with opt
+           (begin (log-optimization "fixnum to float" #'op)
+                  #'(unsafe-fx->fl n.opt)))
 
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-opt-expr)
            #:with opt
            (begin (log-optimization "int to float" #'op)
                   #'(->fl n.opt)))
+  ;; we can get rid of it altogether if we're giving it an inexact number
+  (pattern (#%plain-app (~and op (~literal exact->inexact)) f:float-opt-expr)
+           #:with opt
+           (begin (log-optimization "float to float" #'op)
+                  #'f.opt))
 
   (pattern (#%plain-app op:pair-unary-op p:pair-opt-expr)
            #:with opt

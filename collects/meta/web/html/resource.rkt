@@ -43,25 +43,31 @@
 ;; 'abs is used below for roots that should always use absolute links (needed
 ;; for some skeleton pages that are used in nested subdirectories).
 (provide url-roots)
-(define url-roots
+(define url-roots (make-parameter #f))
+
+(define cached-roots '(#f . #f))
+(define (current-url-roots)
   ;; takes in a (listof (list prefix-string url-string . flags)), and produces
   ;; an alist with lists of strings for the keys; the prefix-strings are split
   ;; on "/"s, and the url-strings can be anything at all actually (they are put
   ;; as-is before the path with a "/" between them).
-  (make-parameter #f
-    (lambda (x)
-      (and (list? x) (pair? x)
-           (map (lambda (x)
-                  (list* (regexp-match* #rx"[^/]+" (car x))
-                         (regexp-replace #rx"/$" (cadr x) "")
-                         (cddr x)))
-                x)))))
+  (let ([roots (url-roots)])
+    (unless (eq? roots (car cached-roots))
+      (set! cached-roots
+            (cons roots
+                  (and (list? roots) (pair? roots)
+                       (map (lambda (root)
+                              (list* (regexp-match* #rx"[^/]+" (car root))
+                                     (regexp-replace #rx"/$" (cadr root) "")
+                                     (cddr root)))
+                            roots)))))
+    (cdr cached-roots)))
 
 ;; a utility for relative paths, taking the above `default-file' and
 ;; `url-roots' into consideration.
 (define (relativize file tgtdir curdir)
   (define file* (if (equal? file default-file) "" file))
-  (define roots (url-roots))
+  (define roots (current-url-roots))
   (define (find-root path mode)
     (ormap (lambda (root+url+flags)
              (let loop ([r (car root+url+flags)] [p path])
@@ -194,7 +200,13 @@
     (add-renderer path render)
     (make-keyword-procedure
      (lambda (kws kvs . args) (keyword-apply referrer kws kvs (url) args))
-     (lambda args (apply referrer (url) args)))))
+     (case-lambda [(x) (if (eq? x get-resource-path) (url) (referrer (url) x))]
+                  [args (apply referrer (url) args)]))))
+
+;; make it possible to always get the path to a resource
+(provide get-resource-path)
+(define (get-resource-path resource)
+  (resource get-resource-path))
 
 ;; a convenient utility to create renderers from some output function (like
 ;; `output-xml' or `display') and some content

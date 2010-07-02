@@ -1,6 +1,6 @@
-#lang scheme/base
-(require "deriv.ss"
-         "deriv-util.ss")
+#lang racket/base
+(require "deriv.rkt"
+         "deriv-util.rkt")
 (provide (struct-out protostep)
          (struct-out step)
          (struct-out misstep)

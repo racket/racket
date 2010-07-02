@@ -1,8 +1,8 @@
-#lang scheme/base
-(require scheme/class
-         framework/framework
-         "interfaces.ss"
-         "../syntax-browser/prefs.ss"
+#lang racket/base
+(require racket/class
+         framework
+         "interfaces.rkt"
+         "../syntax-browser/prefs.rkt"
          unstable/gui/notify
          unstable/gui/prefs)
 (provide pref:macro-step-limit

@@ -37,8 +37,7 @@
 
 (define-signature tc-let^
   ([cnt tc/let-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results?)) . ->* . tc-results?)]
-   [cnt tc/letrec-values (syntax? syntax? syntax? syntax? . -> . tc-results?)]
-   [cnt tc/letrec-values/check (syntax? syntax? syntax? syntax? tc-results? . -> . tc-results?)]))
+   [cnt tc/letrec-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results?)) . ->* . tc-results?)]))
 
 (define-signature tc-dots^
   ([cnt tc/dots (syntax? . -> . (values Type/c symbol?))]))

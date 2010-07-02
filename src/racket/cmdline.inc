@@ -530,7 +530,6 @@ static Scheme_Object *create_cmdline_args_vector(int argc, char *args[])
   }
   if (argc)
     SCHEME_SET_VECTOR_IMMUTABLE(v);
-  scheme_set_param(scheme_current_config(), MZCONFIG_CMDLINE_ARGS, v);
   return v;
 }
 
@@ -542,9 +541,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
   GC_CAN_IGNORE char **argv = _argv;
   Scheme_Env *global_env;
   char *prog, *sprog = NULL;
-  Scheme_Object *sch_argv,
-                *collects_path = NULL, *collects_extra = NULL,
-                *addon_dir = NULL;
+  Scheme_Object *sch_argv;
+  Scheme_Object *collects_path = NULL, *collects_extra = NULL, *addon_dir = NULL;
+#ifndef NO_FILE_SYSTEM_UTILS
+  Scheme_Object *collects_paths_l, *collects_paths_r;
+#endif
 #ifndef DONT_PARSE_COMMAND_LINE
   char **evals_and_loads, *real_switch = NULL, specific_switch[2];
   int *eval_kind, num_enl;
@@ -1119,76 +1120,69 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
   scheme_set_logging(syslog_level, stderr_level);
   
-  {
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "collects" collection directory: */
-    Scheme_Object *l, *r;
+  if (!collects_path)
+    collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
+  else
+    collects_path = scheme_path_to_complete_path(collects_path, NULL);
+  scheme_set_collects_path(collects_path);
 
-    if (!collects_path)
-      collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
-    else
-      collects_path = scheme_path_to_complete_path(collects_path, NULL);
-    scheme_set_collects_path(collects_path);
-
-    /* Make list of additional collection paths: */
-    if (collects_extra)
-      r = reverse_path_list(collects_extra, 1);
-    else
-      r = scheme_make_null();
-
-    {
-      int len, offset;
-      l = scheme_make_null();
-      offset = _coldir_offset;
-      while (1) {
-        len = strlen(_coldir XFORM_OK_PLUS offset);
-        offset += len + 1;
-        if (!_coldir[offset])
-          break;
-        l = scheme_make_pair(scheme_make_path(_coldir XFORM_OK_PLUS offset), l);
-      }
-      l = reverse_path_list(l, 0);
+  /* Make list of additional collection paths: */
+  if (collects_extra)
+    collects_paths_r = reverse_path_list(collects_extra, 1);
+  else
+    collects_paths_r = scheme_make_null();
+  
+  {
+    int len, offset;
+    collects_paths_l = scheme_make_null();
+    offset = _coldir_offset;
+    while (1) {
+      len = strlen(_coldir XFORM_OK_PLUS offset);
+      offset += len + 1;
+      if (!_coldir[offset])
+        break;
+      collects_paths_l = scheme_make_pair(scheme_make_path(_coldir XFORM_OK_PLUS offset), 
+                                          collects_paths_l);
     }
-#endif
-
-    /* Creates the main kernel environment */
-    global_env = mk_basic_env();
-
-    sch_argv = create_cmdline_args_vector(argc, argv);
-    
-    {
-      Scheme_Object *ps;
-      scheme_set_exec_cmd(prog);
-      if (!sprog)
-        sprog = prog;
-      
-      ps = scheme_set_run_cmd(sprog);
-    }
-
-#ifndef NO_FILE_SYSTEM_UTILS
-    scheme_init_collection_paths_post(global_env, l, r);
-#endif
+    collects_paths_l = reverse_path_list(collects_paths_l, 0);
   }
+#endif
 
+  sch_argv = create_cmdline_args_vector(argc, argv);
+  scheme_set_command_line_arguments(sch_argv);
+  
+  scheme_set_exec_cmd(prog);
+  if (!sprog)
+    sprog = prog;
+  
+  (void)scheme_set_run_cmd(sprog);
+  
   if (no_compiled)
-    scheme_set_param(scheme_current_config(), MZCONFIG_USE_COMPILED_KIND, scheme_make_null());
+    scheme_set_compiled_file_paths(scheme_make_null());
 
 #ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "addon" directory: */
-  {
-#ifdef GETENV_FUNCTION
-    if (!addon_dir) {
-      char *s;
-      s = getenv("PLTADDONDIR");
-      if (s) {
-        s = scheme_expand_filename(s, -1, NULL, NULL, 0);
-        if (s) addon_dir = scheme_make_path(s);
-      }
+# ifdef GETENV_FUNCTION
+  if (!addon_dir) {
+    char *s;
+    s = getenv("PLTADDONDIR");
+    if (s) {
+      s = scheme_expand_filename(s, -1, NULL, NULL, 0);
+      if (s) addon_dir = scheme_make_path(s);
     }
-#endif
-    if (addon_dir) scheme_set_addon_dir(addon_dir);
   }
+# endif
+  if (addon_dir) scheme_set_addon_dir(addon_dir);
 #endif /* NO_FILE_SYSTEM_UTILS */
+
+  /* Creates the main kernel environment */
+  global_env = mk_basic_env();
+
+#ifndef NO_FILE_SYSTEM_UTILS
+  scheme_init_collection_paths_post(global_env, collects_paths_l, collects_paths_r);
+#endif
 
   scheme_seal_parameters();
 

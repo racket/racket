@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/tcp)
 
-(define PORT 8888)
+(define PORT 8887)
 (define DATA "Hello there sailor\n")
 (define n 10)
 

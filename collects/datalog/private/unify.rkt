@@ -38,12 +38,22 @@
             [env (unify-terms env (rest ts1) (rest ts2))]))))      
 
 (define (unify l1 l2)
-  (and (datum-equal? (literal-predicate l1)
-                     (literal-predicate l2))
-       (unify-terms (empty-env)
-                    (literal-terms l1)
-                    (literal-terms l2))))
+  (or (and (literal? l1) (literal? l2)
+           (datum-equal? (literal-predicate l1)
+                         (literal-predicate l2))
+           (unify-terms (empty-env)
+                        (literal-terms l1)
+                        (literal-terms l2)))
+      (and (external? l1) (external? l2)
+           (equal? (external-predicate l1)
+                   (external-predicate l2))
+           (unify-terms (empty-env)
+                        (append (external-arg-terms l1)
+                                (external-ans-terms l1))
+                        (append (external-arg-terms l2)
+                                (external-ans-terms l2))))))
 
 (provide/contract
- [unify (literal? literal? . -> . (or/c false/c env/c))]
+ [unify (question/c question/c . -> . (or/c false/c env/c))]
+ [unify-terms (env/c (listof term/c) (listof term/c) . -> . (or/c false/c env/c))]
  [unify-term (env/c term/c term/c . -> . (or/c false/c env/c))])

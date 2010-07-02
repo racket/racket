@@ -1,21 +1,20 @@
-#lang scheme/base
-(require scheme/class
-         mred
-         framework/framework
-         scheme/list
-         scheme/match
+#lang racket/base
+(require racket/class
+         racket/gui
+         racket/list
+         racket/match
+         framework
          syntax/id-table
-         (rename-in unstable/class-iop
-                    [send/i send:])
-         "interfaces.ss"
-         "controller.ss"
-         "display.ss"
-         "keymap.ss"
-         "hrule-snip.ss"
-         "properties.ss"
-         "text.ss"
-         "util.ss"
-         "../util/mpi.ss")
+         unstable/class-iop
+         "interfaces.rkt"
+         "controller.rkt"
+         "display.rkt"
+         "keymap.rkt"
+         "hrule-snip.rkt"
+         "properties.rkt"
+         "text.rkt"
+         "util.rkt"
+         "../util/mpi.rkt")
 (provide widget%)
 
 ;; widget%
@@ -55,7 +54,7 @@
     (define/private (internal-show-props show?)
       (if show?
           (unless (send -props-panel is-shown?)
-            (let ([p (send: config config<%> get-props-percentage)])
+            (let ([p (send/i config config<%> get-props-percentage)])
               (send -split-panel add-child -props-panel)
               (update-props-percentage p))
             (send -props-panel show #t))
@@ -82,7 +81,7 @@
 
     (define/public (shutdown)
       (when (props-panel-shown?)
-        (send: config config<%> set-props-percentage
+        (send/i config config<%> set-props-percentage
                (cadr (send -split-panel get-percentages)))))
 
     ;; syntax-browser<%> Methods
@@ -115,29 +114,29 @@
                                #:substitutions [substitutions null])
       (let ([display (internal-add-syntax stx)]
             [definite-table (make-hasheq)])
-        (let ([range (send: display display<%> get-range)]
-              [offset (send: display display<%> get-start-position)])
+        (let ([range (send/i display display<%> get-range)]
+              [offset (send/i display display<%> get-start-position)])
           (for ([subst substitutions])
-            (for ([r (send: range range<%> get-ranges (car subst))])
+            (for ([r (send/i range range<%> get-ranges (car subst))])
               (with-unlock -text
                 (send -text insert (cdr subst)
                       (+ offset (car r))
                       (+ offset (cdr r))
                       #f)
                 (send -text change-style
-                      (code-style -text (send: config config<%> get-syntax-font-size))
+                      (code-style -text (send/i config config<%> get-syntax-font-size))
                       (+ offset (car r))
                       (+ offset (cdr r)))))))
         (for ([hi-stxs hi-stxss] [hi-color hi-colors])
-          (send: display display<%> highlight-syntaxes hi-stxs hi-color))
+          (send/i display display<%> highlight-syntaxes hi-stxs hi-color))
         (for ([definite definites])
           (hash-set! definite-table definite #t)
           (when shift-table
             (for ([shifted-definite (hash-ref shift-table definite null)])
               (hash-set! definite-table shifted-definite #t))))
         (let ([binder-table (make-free-id-table)])
-          (define range (send: display display<%> get-range))
-          (define start (send: display display<%> get-start-position))
+          (define range (send/i display display<%> get-range))
+          (define start (send/i display display<%> get-start-position))
           (define (get-binders id)
             (let ([binder (free-id-table-ref binder-table id #f)])
               (cond [(not binder) null]
@@ -149,17 +148,17 @@
           (for ([binder binders])
             (free-id-table-set! binder-table binder binder))
           ;; Underline binders (and shifted binders)
-          (send: display display<%> underline-syntaxes
+          (send/i display display<%> underline-syntaxes
                  (append (apply append (map get-shifted binders))
                          binders))
           ;; Make arrows (& billboards, when enabled)
-          (for ([id (send: range range<%> get-identifier-list)])
+          (for ([id (send/i range range<%> get-identifier-list)])
             (define definite? (hash-ref definite-table id #f))
             (when #f ;; DISABLED
               (add-binding-billboard start range id definite?))
             (for ([binder (get-binders id)])
-              (for ([binder-r (send: range range<%> get-ranges binder)])
-                (for ([id-r (send: range range<%> get-ranges id)])
+              (for ([binder-r (send/i range range<%> get-ranges binder)])
+                (for ([id-r (send/i range range<%> get-ranges id)])
                   (add-binding-arrow start binder-r id-r definite?))))))
         (void)))
 
@@ -187,7 +186,7 @@
                            (+ start (cdr id-r))
                            (string-append "from " (mpi->string src-mod))
                            (if definite? "blue" "purple")))
-                   (send: range range<%> get-ranges id))]
+                   (send/i range range<%> get-ranges id))]
         [_ (void)]))
 
     (define/public (add-separator)
@@ -200,7 +199,7 @@
       (with-unlock -text
         (send -text erase)
         (send -text delete-all-drawings))
-      (send: controller displays-manager<%> remove-all-syntax-displays))
+      (send/i controller displays-manager<%> remove-all-syntax-displays))
 
     (define/public (get-text) -text)
 
@@ -218,7 +217,7 @@
           display)))
 
     (define/private (calculate-columns)
-      (define style (code-style -text (send: config config<%> get-syntax-font-size)))
+      (define style (code-style -text (send/i config config<%> get-syntax-font-size)))
       (define char-width (send style get-text-width (send -ecanvas get-dc)))
       (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))
       (sub1 (inexact->exact (floor (/ canvas-w char-width)))))
@@ -227,13 +226,13 @@
     (super-new)
     (setup-keymap)
 
-    (send: config config<%> listen-props-shown?
+    (send/i config config<%> listen-props-shown?
            (lambda (show?)
              (show-props show?)))
-    (send: config config<%> listen-props-percentage
+    (send/i config config<%> listen-props-percentage
            (lambda (p)
              (update-props-percentage p)))
-    (internal-show-props (send: config config<%> get-props-shown?))))
+    (internal-show-props (send/i config config<%> get-props-shown?))))
 
 
 (define clickback-style

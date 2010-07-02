@@ -30,7 +30,7 @@
   (define-typed-struct leaf ([val : Number]))
   (define-typed-struct node ([left : (Un node leaf)] [right : (Un node leaf)]))
   
-  (define: (tree-height [t : (Un node leaf)]) : Number
+  (define: (tree-height [t : (Un node leaf)]) : Integer
     (cond [(leaf? t) 1]
           [else (max (tree-height (node-left t))
                      (tree-height (node-right t)))]))
@@ -46,7 +46,7 @@
   
   (define-type-alias tree (Un node leaf))
   
-  (define: (tree-height [t : tree]) : Number
+  (define: (tree-height [t : tree]) : Integer
     (cond [(leaf? t) 1]
           [else (max (tree-height (node-left t))
                      (tree-height (node-right t)))]))

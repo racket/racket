@@ -2117,7 +2117,8 @@ typedef void (*Scheme_Syntax_Validater)(Scheme_Object *data, Mz_CPort *port,
                                         char *stack, Validate_TLS tls,
 					int depth, int letlimit, int delta,
 					int num_toplevels, int num_stxes, int num_lifts,
-                                        struct Validate_Clearing *vc, int tailpos);
+                                        struct Validate_Clearing *vc, int tailpos,
+                                        Scheme_Hash_Tree *procs);
 
 typedef struct Scheme_Object *(*Scheme_Syntax_Executer)(struct Scheme_Object *data);
 
@@ -2676,7 +2677,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 			  int num_toplevels, int num_stxes, int num_lifts,
                           Scheme_Object *app_rator, int proc_with_refs_ok, 
                           int result_ignored, struct Validate_Clearing *vc, 
-                          int tailpos, int need_flonum);
+                          int tailpos, int need_flonum, Scheme_Hash_Tree *procs);
 void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 			      char *stack, Validate_TLS tls,
                               int depth, int delta,
@@ -2693,7 +2694,7 @@ int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
 void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr, 
                              char *new_stack, Validate_TLS tls,
                              int num_toplevels, int num_stxes, int num_lifts,
-                             int self_pos_in_closure);
+                             int self_pos_in_closure, Scheme_Hash_Tree *procs);
 
 #define TRACK_ILL_FORMED_CATCH_LINES 1
 #if TRACK_ILL_FORMED_CATCH_LINES
@@ -2764,6 +2765,13 @@ Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o);
 /*                         namespaces and modules                         */
 /*========================================================================*/
 
+typedef struct Scheme_Module_Registry {
+  Scheme_Object so; /* scheme_module_registry_type */
+  Scheme_Hash_Table *loaded; /* symbol -> module ; loaded modules,
+                                shared with modules in same space */
+  Scheme_Hash_Table *exports; /* symbol -> module-exports */
+} Scheme_Module_Registry;
+
 struct Scheme_Env {
   Scheme_Object so; /* scheme_namespace_type */
 
@@ -2771,9 +2779,7 @@ struct Scheme_Env {
 
   struct Scheme_Module *module; /* NULL => top-level */
 
-  Scheme_Hash_Table *module_registry; /* symbol -> module ; loaded modules,
-					 shared with modules in same space */
-  Scheme_Hash_Table *export_registry; /* symbol -> module-exports */
+  Scheme_Module_Registry *module_registry;
   Scheme_Object *insp; /* instantiation-time inspector, for granting
 			  protected access and certificates */
 

@@ -14,6 +14,7 @@
      (and (Type? e)
           (not (Scope? e))
           (not (arr? e))
+          (not (fld? e))
           (not (Values? e))
           (not (ValuesDots? e))
           (not (Result? e)))))
@@ -224,21 +225,27 @@
     [#:fold-rhs (*Function (map type-rec-id arities))])
 
 
+(dt fld ([t Type/c] [acc identifier?] [mutable? boolean?])
+    [#:frees (λ (f) (if mutable? (make-invariant (f t)) (f t)))]
+    [#:fold-rhs (*fld (type-rec-id t) acc mutable?)]
+    [#:intern (list t (hash-id acc) mutable?)])
+
 ;; name : symbol
 ;; parent : Struct
-;; flds : Listof[Type]
+;; flds : Listof[fld]
 ;; proc : Function Type
 ;; poly? : is this a polymorphic type?
 ;; pred-id : identifier for the predicate of the struct
 ;; cert : syntax certifier for pred-id
-(dt Struct ([name symbol?] 
-            [parent (or/c #f Struct? Name?)] 
-            [flds (listof Type/c)]
+;; acc-ids : names of the accessors
+;; maker-id : name of the constructor
+(dt Struct ([name symbol?]
+            [parent (or/c #f Struct? Name?)]
+            [flds (listof fld?)]
             [proc (or/c #f Function?)]
             [poly? (or/c #f (listof symbol?))]
             [pred-id identifier?]
             [cert procedure?]
-            [acc-ids (listof identifier?)]
             [maker-id identifier?])
     [#:intern (list name parent flds proc)]
     [#:frees (λ (f) (combine-frees (map f (append (if proc (list proc) null)
@@ -251,7 +258,6 @@
                          poly?
                          pred-id
                          cert
-                         acc-ids
                          maker-id)]
     [#:key #f])
 

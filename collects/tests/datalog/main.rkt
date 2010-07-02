@@ -1,5 +1,6 @@
 #lang racket
-(require rackunit
+(require racket/runtime-path
+         rackunit
          rackunit/text-ui
          "ast.rkt"
          
@@ -16,6 +17,9 @@
          
          "runtime.rkt"
          "eval.rkt")
+
+(define-runtime-path racket-mod "racket.rkt")
+(define stdout (current-output-port))
 
 (run-tests
  (test-suite
@@ -34,4 +38,8 @@
   variant-tests
   
   runtime-tests
-  eval-tests))
+  eval-tests
+  
+  (test-case "Racket Interop"
+             (parameterize ([current-output-port stdout])
+               (dynamic-require racket-mod #f)))))

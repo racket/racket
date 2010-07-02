@@ -168,6 +168,13 @@ A syntax object matches a @scheme[pattern] as follows:
 
 (syntax-case #'(ops 1 2 3 => +) (=>)
   [(_ x ... => op) #'(op x ...)])
+
+(syntax-case #'(let ([x 5] [y 9] [z 12])
+                 (+ x y z))
+             (let)
+  [(let ([var expr] ...) body ...)
+   (list #'(var ...)
+         #'(expr ...))])
 ]}
 
 @defform[(syntax-case* stx-expr (literal-id ...) id-compare-expr

@@ -85,14 +85,14 @@
                                          'v1))))
    
    (test-suite
-    "rename-literal"
-    (test-equal? "l" (rename-literal (make-literal #f 'lit (list (make-constant #f 'v1))))
+    "rename-question"
+    (test-equal? "l" (rename-question (make-literal #f 'lit (list (make-constant #f 'v1))))
                  (make-literal #f 'lit (list (make-constant #f 'v1))))
     (test-not-false "l"
                     (gensym-var?
                      (first
                       (literal-terms
-                       (rename-literal (make-literal #f 'lit (list (make-variable #f 'v1)))))))))
+                       (rename-question (make-literal #f 'lit (list (make-variable #f 'v1)))))))))
    
    (test-suite
     "rename-clause"

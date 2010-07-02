@@ -1,4 +1,4 @@
-#lang scheme/unit
+#lang racket/unit
 
 (require (rename-in "../utils/utils.rkt" [infer r:infer]))
 (require "signatures.rkt" "tc-metafunctions.rkt" "tc-subst.rkt"
@@ -7,12 +7,12 @@
 	 (env lexical-env type-alias-env global-env type-env-structs)
          (rep type-rep)
          syntax/free-vars
-         mzlib/trace unstable/debug
-         scheme/match (prefix-in c: scheme/contract)
-         (except-in scheme/contract -> ->* one-of/c)
+         racket/trace unstable/debug
+         racket/match (prefix-in c: racket/contract)
+         (except-in racket/contract -> ->* one-of/c)
          syntax/kerncase syntax/parse
          (for-template 
-          scheme/base
+          racket/base
           "internal-forms.rkt"))
 
 (require (only-in srfi/1/list s:member))
@@ -83,12 +83,6 @@
           expected)
          (run (tc-exprs (syntax->list body)))))))
 
-(define (tc/letrec-values/check namess exprs body form expected)
-  (tc/letrec-values/internal namess exprs body form expected))
-
-(define (tc/letrec-values namess exprs body form)
-  (tc/letrec-values/internal namess exprs body form #f))
-
 (define (tc-expr/maybe-expected/t e name)
   (define expecteds
     (map (lambda (stx) (lookup-type stx (lambda () #f))) name))
@@ -102,7 +96,7 @@
      (tc-expr e)))
   tcr)
 
-(define (tc/letrec-values/internal namess exprs body form expected)
+(define (tc/letrec-values namess exprs body form [expected #f])
   (let* ([names (map syntax->list (syntax->list namess))]
          [orig-flat-names (apply append names)]
          [exprs (syntax->list exprs)]

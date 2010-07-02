@@ -1,9 +1,7 @@
-
-#lang scheme/base
-(require (for-syntax scheme/base
-                     mzlib/etc
+#lang racket/base
+(require (for-syntax racket/base
                      unstable/syntax)
-         "yacc-ext.ss")
+         "yacc-ext.rkt")
 (provide ! ? !!
          define-production-splitter
          skipped-token-values

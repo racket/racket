@@ -1,6 +1,4 @@
-
-#lang scheme/base
-(require scheme/promise)
+#lang racket/base
 (provide cursor?
          cursor-position
          cursor:new
@@ -24,7 +22,8 @@
 
          cursor->list
          cursor:prefix->list
-         cursor:suffix->list)
+         cursor:suffix->list
+         cursor-count)
 
 (define-struct cursor (vector count position)
   #:mutable)

@@ -1,13 +1,12 @@
-
-#lang scheme/base
-(require scheme/list
-         scheme/pretty
-         "model/trace.ss"
-         "model/reductions.ss"
-         "model/reductions-config.ss"
-         "model/steps.ss"
-         "syntax-browser/partition.ss"
-         "syntax-browser/pretty-helper.ss")
+#lang racket/base
+(require racket/list
+         racket/pretty
+         "model/trace.rkt"
+         "model/reductions.rkt"
+         "model/reductions-config.rkt"
+         "model/steps.rkt"
+         "syntax-browser/partition.rkt"
+         "syntax-browser/pretty-helper.rkt")
 (provide expand/step-text
          stepper-text)
 

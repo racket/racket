@@ -1,11 +1,11 @@
-#lang scheme/base
-(require scheme/contract
-         scheme/class
-         scheme/gui
+#lang racket/base
+(require racket/contract
+         racket/class
+         racket/gui
          framework
-         "prefs.ss"
-         "controller.ss"
-         "display.ss")
+         "prefs.rkt"
+         "controller.rkt"
+         "display.rkt")
 
 #|
 

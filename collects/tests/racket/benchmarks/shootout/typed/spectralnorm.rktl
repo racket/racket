@@ -18,7 +18,7 @@
     
     ;; B=AtA         A multiplied by A transposed
     ;; v.Bv /(v.v)   eigenvalue of v
-    (let loop ([i 0][vBv 0.0][vv 0.0])
+    (let: loop : Float ([i : Natural 0][vBv : Float 0.0][vv : Float 0.0])
       (if (= i n)
           (flsqrt (fl/ vBv vv))
           (let ([vi (flvector-ref v i)])
@@ -38,8 +38,8 @@
 (define (MultiplyAv n v Av)
   (for: : Void ([i : Natural (in-range n)])
     (flvector-set! Av i 
-                   (for/fold ([r 0.0])
-                       ([j (in-range n)])
+                   (for/fold: : Float ([r : Float 0.0])
+                       ([j : Natural (in-range n)])
                      (fl+ r (fl* (A i j) (flvector-ref v j)))))))
 
 ;; multiply vector v by matrix A transposed
@@ -47,8 +47,8 @@
 (define (MultiplyAtv n v Atv)
   (for: : Void ([i : Natural (in-range n)])
     (flvector-set! Atv i
-                   (for/fold ([r 0.0])
-                       ([j (in-range n)])
+                   (for/fold: : Float ([r : Float 0.0])
+                       ([j : Natural (in-range n)])
                      (fl+ r (fl* (A j i) (flvector-ref v j)))))))
 
 ;; multiply vector v by matrix A and then by matrix A transposed

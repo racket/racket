@@ -34,8 +34,10 @@ any expression of this type will not evaluate to a value.}
 @deftogether[(
 @defidform[Number]
 @defidform[Complex]
+@defidform[Inexact-Complex]
 @defidform[Real]
 @defidform[Float]
+@defidform[Nonnegative-Float]
 @defidform[Exact-Rational]
 @defidform[Integer]
 @defidform[Natural]
@@ -177,6 +179,10 @@ corresponding to @racket[trest], where @racket[bound]
                               
 @defform[(Promise t)]{A @rtech{promise} of @racket[t].
  @ex[(delay 3)]}
+
+@defidform[Sexp]{A recursive union containing types traversed by
+@racket[datum->syntax]. Note that this is @emph{not} the type produced
+by @racket[read].} 
 
 @subsection{Other Type Constructors}
 

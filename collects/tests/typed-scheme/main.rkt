@@ -23,8 +23,9 @@
                          [(number? e)
                           (and (exn:fail:syntax? val)
                                (= e (length (exn:fail:syntax-exprs val))))]
-                         [else                          
-                          (regexp-match e (exn-message val))]))))
+                         [(or (string? e) (regexp? e))
+                          (regexp-match e (exn-message val))]
+                         [else (error 'exn-pred "bad argument" e)]))))
    args))
   
 (define (exn-pred p)
@@ -61,9 +62,8 @@
     (make-test-suite dir tests)))
 
 (define (dr p)
-  #;((compile-zos #f) (list p) 'auto)
   (parameterize ([current-namespace (make-base-empty-namespace)])    
-    (dynamic-require `(file ,(path->string p)) #f)))
+    (dynamic-require `(file ,(if (string? p) p (path->string p))) #f)))
 
 (define succ-tests (mk-tests "succeed" 
                              dr
@@ -86,16 +86,35 @@
   (test-suite "Typed Scheme Tests"
               unit-tests int-tests))
 
-(define (go [unit? #f] [int? #f]) (test/gui (cond [unit? unit-tests]
-                                                  [int? int-tests]
-                                                  [else tests])))
-(define (go/text [unit? #f] [int? #f]) (run-tests 
-                                        (cond [unit? unit-tests]
-                                              [int? int-tests]
-                                              [else tests])
-                                        'verbose))
+(provide tests int-tests unit-tests)
 
-(provide go go/text)
+(define (go tests) (test/gui tests))
+(define (go/text tests) (run-tests tests 'verbose))
+
+(define (just-one p*)
+  (define-values (path p b) (split-path p*))
+  (define f
+    (if (equal? "fail/" (path->string path))
+        (lambda (p thnk)
+          (define-values (pred info) (exn-pred p))
+          (parameterize ([error-display-handler void])
+            (with-check-info
+             (['predicates info])
+             (check-exn pred thnk))))
+        (lambda (p thnk) (check-not-exn thnk))))
+  (test-suite 
+   (path->string p)
+   (f
+    (build-path path p)
+    (lambda ()
+      (parameterize ([read-accept-reader #t]
+                     [current-load-relative-directory
+                      (path->complete-path path)]
+                     [current-directory path]
+                     [current-output-port (open-output-nowhere)])
+        (dr p))))))
+
+(provide go go/text just-one)
 
 
 

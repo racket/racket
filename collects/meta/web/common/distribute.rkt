@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/system racket/list racket/promise "../config.rkt")
+(require racket/system racket/list racket/promise)
 
 (define rsync-exe (delay (or (find-executable-path "rsync")
                              (error 'distribute "couldn't find `rsync'"))))

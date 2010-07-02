@@ -1,10 +1,8 @@
-#lang scheme/base
-(require scheme/class
-         (rename-in unstable/class-iop
-                    [send/i send:]
-                    [init-field/i init-field:])
-         "interfaces.ss"
-         "partition.ss"
+#lang racket/base
+(require racket/class
+         unstable/class-iop
+         "interfaces.rkt"
+         "partition.rkt"
          unstable/gui/notify)
 (provide controller%)
 
@@ -33,13 +31,13 @@
     (super-new)
     (listen-selected-syntax
      (lambda (new-value)
-       (for-each (lambda (display) (send: display display<%> refresh))
+       (for-each (lambda (display) (send/i display display<%> refresh))
                  displays)))))
 
 ;; mark-manager-mixin
 (define mark-manager-mixin
   (mixin () (mark-manager<%>)
-    (init-field: [primary-partition partition<%> (new-bound-partition)])
+    (init-field/i [primary-partition partition<%> (new-bound-partition)])
     (super-new)
 
     ;; get-primary-partition : -> partition
@@ -50,26 +48,20 @@
     (define/public-final (reset-primary-partition)
       (set! primary-partition (new-bound-partition)))))
 
-;; secondary-partition-mixin
-(define secondary-partition-mixin
-  (mixin (displays-manager<%>) (secondary-partition<%>)
+;; secondary-relation-mixin
+(define secondary-relation-mixin
+  (mixin (displays-manager<%>) (secondary-relation<%>)
     (inherit-field displays)
     (define-notify identifier=? (new notify-box% (value #f)))
-    (define-notify secondary-partition (new notify-box% (value #f)))
 
     (listen-identifier=?
      (lambda (name+proc)
-       (set-secondary-partition
-        (and name+proc
-             (new partition% (relation (cdr name+proc)))))))
-    (listen-secondary-partition
-     (lambda (p)
-       (for ([d displays])
-         (send: d display<%> refresh))))
+       (for ([d (in-list displays)])
+         (send/i d display<%> refresh))))
     (super-new)))
 
 (define controller%
-  (class* (secondary-partition-mixin
+  (class* (secondary-relation-mixin
            (selection-manager-mixin
             (mark-manager-mixin
              (displays-manager-mixin

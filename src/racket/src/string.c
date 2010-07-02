@@ -175,7 +175,7 @@ static char *nl_langinfo(int which)
 
   reset_locale();
   if (!current_locale_name)
-    current_locale_name_ptr ="\0\0\0\0";
+    current_locale_name_ptr = "\0\0\0\0";
 
   if ((current_locale_name[0] == 'C')
       && !current_locale_name[1])
@@ -3424,17 +3424,23 @@ static void reset_locale(void)
   Scheme_Object *v;
   const mzchar *name;
 
-  v = scheme_get_param(scheme_current_config(), MZCONFIG_LOCALE);
+  /* This function needs to work before threads are set up: */
+  if (scheme_current_thread) {
+    v = scheme_get_param(scheme_current_config(), MZCONFIG_LOCALE);
+  } else {
+    v = scheme_make_immutable_sized_utf8_string("", 0);
+  }
   locale_on = SCHEME_TRUEP(v);
 
   if (locale_on) {
     name = SCHEME_CHAR_STR_VAL(v);
 #ifndef DONT_USE_LOCALE
     if ((current_locale_name != name)
-	&& mz_char_strcmp("result-locale",
-			  current_locale_name, scheme_char_strlen(current_locale_name),
-			  name, SCHEME_CHAR_STRLEN_VAL(v),
-			  0, 1)) {
+        && (!current_locale_name
+            || mz_char_strcmp("result-locale",
+                              current_locale_name, scheme_char_strlen(current_locale_name),
+                              name, SCHEME_CHAR_STRLEN_VAL(v),
+                              0, 1))) {
       /* We only need CTYPE and COLLATE; two calls seem to be much
 	 faster than one call with ALL */
       char *n, buf[32];

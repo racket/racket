@@ -178,7 +178,7 @@ currently supported keys are as follows:
   @item{@racket['ico] (Windows) : An icon file path (suffix
         @filepath{.ico}) to use for the executable's desktop icon;
         the executable will have 16x16, 32x32, and 48x48 icons at
-        4-bit, 8-bit, and 32-bit (RBBA) depths; the icons are copied
+        4-bit, 8-bit, and 32-bit (RGBA) depths; the icons are copied
         and generated from any 16x16, 32x32, and 48x48 icons in the
         @filepath{.ico} file.}
 

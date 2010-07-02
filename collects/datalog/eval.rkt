@@ -4,7 +4,7 @@
          "pretty.rkt"
          "runtime.rkt")
 
-(define current-theory (make-parameter (make-mutable-theory)))
+(define current-theory (make-parameter (make-theory)))
 
 (define (assume-if-safe assume thy s)
   (let ([c (assertion-clause s)])
@@ -14,9 +14,9 @@
                             "Unsafe clause in assertion"
                             (datum->syntax #f (format-statement s) (assertion-srcloc s))))))
 
-(define (print-literals ls)
+(define (print-questions ls)
   (displayln 
-   (format-literals ls)))
+   (format-questions ls)))
 
 (define (eval-program p)
   (for-each eval-top-level-statement p))
@@ -24,7 +24,7 @@
 (define (eval-top-level-statement s)
   (define v (eval-statement s))
   (unless (void? v)
-    (print-literals v)))
+    (print-questions v)))
 
 (define (eval-statement s)
   (cond
@@ -33,28 +33,11 @@
     [(retraction? s)
      (retract! (current-theory) (retraction-clause s))]
     [(query? s)
-     (prove (current-theory) (query-literal s))]))
-
-(define (eval-program/fresh p)
-  (let loop ([thy (make-immutable-theory)]
-             [p p])
-    (if (empty? p)
-        thy
-        (let ([s (first p)])
-          (loop
-           (cond
-             [(assertion? s)
-              (assume-if-safe assume thy s)]
-             [(retraction? s)
-              (retract thy (retraction-clause s))]
-             [(query? s)
-              (print-literals (prove thy (query-literal s)))
-              thy])
-           (rest p))))))
+     (prove (current-theory) (query-question s))]))
 
 (provide/contract
- [current-theory (parameter/c mutable-theory/c)]
+ [current-theory (parameter/c theory/c)]
+ [print-questions ((listof question/c) . -> . void)]
  [eval-program (program/c . -> . void)]
  [eval-top-level-statement (statement/c . -> . void)]
- [eval-statement (statement/c . -> . (or/c void (listof literal?)))]
- [eval-program/fresh (program/c . -> . immutable-theory/c)])
+ [eval-statement (statement/c . -> . (or/c void (listof question/c)))])

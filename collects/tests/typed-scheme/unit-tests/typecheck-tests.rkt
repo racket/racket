@@ -38,7 +38,6 @@
 (define Sym -Symbol)
 (define -Pos -ExactPositiveInteger)
 (define R -Real)
-(define F -Flonum)
 
 (define (g) (run typecheck-tests))
 
@@ -798,7 +797,8 @@
               Univ]        
         [tc-e (floor 1/2) -Integer]
         [tc-e (ceiling 1/2) -Integer]
-        [tc-e (truncate 0.5) -Flonum]
+        [tc-e (truncate 0.5) -NonnegativeFlonum]
+        [tc-e (truncate -0.5) -Flonum]
         [tc-e/t (ann (lambda (x) (lambda (x) x))
                      (Integer -> (All (X) (X -> X))))
                 (t:-> -Integer (-poly (x) (t:-> x x)))]
@@ -838,10 +838,18 @@
    (tc-l 5 -PositiveFixnum)
    (tc-l -5 -NegativeFixnum)
    (tc-l 0 -Zero)
-   (tc-l 0.0 -Flonum)
-   (tc-l 5# -Flonum)
-   (tc-l 5.0 -Flonum)
-   (tc-l 5.1 -Flonum)
+   (tc-l 0.0 -NonnegativeFlonum)
+   (tc-l -0.0 -Flonum)
+   (tc-l 5# -NonnegativeFlonum)
+   (tc-l 5.0 -NonnegativeFlonum)
+   (tc-l 5.1 -NonnegativeFlonum)
+   (tc-l -5# -Flonum)
+   (tc-l -5.0 -Flonum)
+   (tc-l -5.1 -Flonum)
+   (tc-l 1+1i N)
+   (tc-l 1+1.0i -InexactComplex)
+   (tc-l 1.0+1i -InexactComplex)
+   (tc-l 1.0+1.1i -InexactComplex)
    (tc-l #t (-val #t))
    (tc-l "foo" -String)
    (tc-l foo (-val 'foo))

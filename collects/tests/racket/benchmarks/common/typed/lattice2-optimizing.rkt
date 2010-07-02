@@ -1,2 +1,1 @@
-
-(module lattice2-optimizing "wrap-typed-optimizing.ss")
+#lang s-exp "wrapper.rkt"

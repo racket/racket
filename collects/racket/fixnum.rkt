@@ -1,7 +1,7 @@
 #lang scheme/base
 (require '#%flfxnum)
 
-(provide fx->fl
+(provide fx->fl fl->fx
          fxabs
          fx+ fx- fx*
          fxquotient fxremainder fxmodulo 

@@ -109,12 +109,6 @@
 
 (define web-base (directory-part default-configuration-path))
 
-; more here - abstract with static pages?
-(define web-server-icon
-  `(img ([src ,(string-append "/" doc-dir "/web-server.gif")]
-         ;[width "123"] [height "115"]
-         [width "61"] [height "57"])))
-
 ; interact : (str -> response) -> bindings
 (define (interact page)
   (request-bindings (check-ip-address (send/suspend page))))
@@ -160,7 +154,6 @@
   (build-suspender
    '("Choose a Configuration File")
    `((h1 "Choose a Web Server Configuration File")
-     ,web-server-icon
      (p "Choose a Web server configuration file to edit. "
         (br)
         "This Web server uses the configuration in "
@@ -307,7 +300,6 @@
   (build-suspender
    '("Racket Web Server Configuration")
    `((h1 "Racket Web Server Configuration Management")
-     ,web-server-icon
      "copyright 2001 by Paul Graunke and PLT"
      (hr)
      (h2 "Basic Configuration")

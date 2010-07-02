@@ -45,8 +45,8 @@
 (define (MultiplyAv n v Av)
   (for ([i (in-range n)])
     (flvector-set! Av i 
-                   (for/fold ([r 0.0])
-                       ([j (in-range n)])
+                   (for/fold: : Float ([r : Float 0.0])
+                       ([j : Natural (in-range n)])
                      (fl+ r (fl* (A i j) (flvector-ref v j)))))))
 
 ;; multiply vector v by matrix A transposed
@@ -54,8 +54,8 @@
 (define (MultiplyAtv n v Atv)
   (for ([i (in-range n)])
     (flvector-set! Atv i
-                   (for/fold ([r 0.0])
-                       ([j (in-range n)])
+                   (for/fold: : Float ([r : Float 0.0])
+                       ([j : Natural (in-range n)])
                      (fl+ r (fl* (A j i) (flvector-ref v j)))))))
 
 ;; multiply vector v by matrix A and then by matrix A transposed 

@@ -13,7 +13,7 @@
 	 "signatures.rkt"                  
          scheme/match
          mzlib/etc
-         mzlib/trace racket/contract
+         racket/trace racket/contract
 	 unstable/sequence unstable/list unstable/debug unstable/hash
          scheme/list)
 
@@ -22,7 +22,7 @@
 
 (define (empty-set) '())  
 
-(define current-seen (make-parameter (empty-set) #;pair?))
+(define current-seen (make-parameter (empty-set)))
 
 (define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
 (define (remember s t A) (cons (seen-before s t) A))
@@ -259,6 +259,15 @@
               (cset-meet* (list arg-mapping darg-mapping ret-mapping)))])]
     [(_ _) (fail! s-arr t-arr)]))
 
+(define (cgen/flds V X Y flds-s flds-t)
+  (cset-meet*
+   (for/list ([s (in-list flds-s)] [t (in-list flds-t)])
+     (match* (s t)
+       ;; mutable - invariant
+       [((fld: s _ #t) (fld: t _ #t)) (cset-meet (cgen V X Y s t) (cgen V X Y t s))]
+       ;; immutable - covariant
+       [((fld: s _ #f) (fld: t _ #f)) (cgen V X Y s t)]))))
+
 ;; V : a set of variables not to mention in the constraints
 ;; X : the set of type variables to be constrained
 ;; Y : the set of index variables to be constrained
@@ -328,13 +337,13 @@
           
           ;; two structs with the same name and parent
           ;; just check pairwise on the fields
-          ;; FIXME - wrong for mutable structs!
-          [((Struct: nm p flds proc _ _ _ _ _) (Struct: nm p flds* proc* _ _ _ _ _))
-           (let-values ([(flds flds*)
-                         (cond [(and proc proc*)
-                                (values (cons proc flds) (cons proc* flds*))]
-                               [else (values flds flds*)])])
-             (cgen/list V X Y flds flds*))]
+          [((Struct: nm p flds proc _ _ _ _) (Struct: nm p flds* proc* _ _ _ _))
+           (let ([proc-c
+                  (cond [(and proc proc*)
+                         (cg proc proc*)]
+                        [proc* (fail! S T)]
+                        [else empty])])
+             (cset-meet proc-c (cgen/flds V X Y flds flds*)))]
           
           ;; two struct names, need to resolve b/c one could be a parent
           [((Name: n) (Name: n*))

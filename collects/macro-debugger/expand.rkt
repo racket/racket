@@ -1,8 +1,8 @@
-#lang scheme/base
-(require scheme/contract
-         "model/trace.ss"
-         "model/reductions-config.ss"
-         "model/reductions.ss")
+#lang racket/base
+(require racket/contract
+         "model/trace.rkt"
+         "model/reductions-config.rkt"
+         "model/reductions.rkt")
 
 (provide/contract
  [expand-only 

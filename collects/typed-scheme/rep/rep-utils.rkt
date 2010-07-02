@@ -252,17 +252,11 @@
                   [stx (or/c #f syntax?)]))
      [replace-syntax (Rep? syntax? . -> . Rep?)])
 
-
-(define (list-update l k v)
-  (if (zero? k)
-      (cons v (cdr l))
-      (cons (car l) (list-update (cdr l) (sub1 k) v))))
-
 (define (replace-field val new-val idx)
   (define-values (type skipped) (struct-info val))
   (define maker (struct-type-make-constructor type))
   (define flds (cdr (vector->list (struct->vector val))))
-  (apply maker (list-update flds idx new-val)))
+  (apply maker (list-set flds idx new-val)))
 
 (define (replace-syntax rep stx)
   (replace-field rep stx 3))

@@ -577,7 +577,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_thread_dead_type, small_object);
   GC_REG_TRAV(scheme_hash_table_type, hash_table_val);
   GC_REG_TRAV(scheme_bucket_table_type, bucket_table_val);
-  GC_REG_TRAV(scheme_module_registry_type, hash_table_val);
+  GC_REG_TRAV(scheme_module_registry_type, module_reg_val);
   GC_REG_TRAV(scheme_namespace_type, namespace_val);
   GC_REG_TRAV(scheme_random_state_type, random_state_val);
   

@@ -50,25 +50,30 @@
          [(or (list (Pair: _ _) _)
               (list _ (Pair: _ _)))
           #f]
-         [(or (list (Value: '()) (Struct: n _ flds _ _ _ _ _ _))
-              (list (Struct: n _ flds _ _ _ _ _ _) (Value: '())))
+         [(or (list (Value: '()) (Struct: n _ flds _ _ _ _ _))
+              (list (Struct: n _ flds _ _ _ _ _) (Value: '())))
           #f]
-         [(list (Struct: n _ flds _ _ _ _ _ _)
-                (Struct: n _ flds* _ _ _ _ _ _))
-          (for/and ([f flds] [f* flds*]) (overlap f f*))]
-         [(list (Struct: n #f _ _ _ _ _ _ _)
-                (StructTop: (Struct: n #f _ _ _ _ _ _ _)))
+         [(list (Struct: n _ flds _ _ _ _ _)
+                (Struct: n _ flds* _ _ _ _ _))
+          (for/and ([f flds] [f* flds*]) 
+            (match* (f f*)
+              [((fld: t _ _) (fld: t* _ _)) (overlap t t*)]))]
+         [(list (Struct: n #f _ _ _ _ _ _)
+                (StructTop: (Struct: n #f _ _ _ _ _ _)))
           #t]
          ;; n and n* must be different, so there's no overlap
-         [(list (Struct: n #f flds _ _ _ _ _ _)
-                (Struct: n* #f flds* _ _ _ _ _ _))
+         [(list (Struct: n #f flds _ _ _ _ _)
+                (Struct: n* #f flds* _ _ _ _ _))
           #f]
-         [(list (Struct: n #f flds _ _ _ _ _ _)
-                (StructTop: (Struct: n* #f flds* _ _ _ _ _ _)))
+         [(list (Struct: n #f flds _ _ _ _ _)
+                (StructTop: (Struct: n* #f flds* _ _ _ _ _)))
           #f]
-         [(list (Struct: n p flds _ _ _ _ _ _)
-                (Struct: n* p* flds* _ _ _ _ _ _))
-          (and (= (length flds) (length flds*)) (for/and ([f flds] [f* flds*]) (overlap f f*)))]
+         [(list (Struct: n p flds _ _ _ _ _)
+                (Struct: n* p* flds* _ _ _ _ _))
+          (and (= (length flds) (length flds*)) 
+               (for/and ([f flds] [f* flds*]) 
+                 (match* (f f*)
+                   [((fld: t _ _) (fld: t* _ _)) (overlap t t*)])))]
          [(list (== (-val eof))
                 (Function: _))
           #f]

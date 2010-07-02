@@ -1,20 +1,22 @@
 #lang racket
-
 (require unstable/srcloc)
 
-(define buffer (make-bytes 1024))
-
+#|
+Ryan:
+  Shouldn't this be called read-bytes/avail instead? (parallel existing names)
+  Changed to eliminate thread-unsafe buffer.
+|#
 (define (read-available-bytes [port (current-input-port)])
-  (read-available-bytes/offset port 0))
+  (read-available-bytes/offset port (make-bytes 1024) 0))
 
-(define (read-available-bytes/offset port offset)
+(define (read-available-bytes/offset port buffer offset)
   (let* ([result (read-bytes-avail!* buffer port offset)])
     (if (eof-object? result)
         (if (zero? offset) result (subbytes buffer 0 offset))
-        (let* ([new-offset (+ offset result)])
+        (let ([new-offset (+ offset result)])
           (if (= new-offset (bytes-length buffer))
-              (begin (set! buffer (bytes-append buffer buffer))
-                     (read-available-bytes/offset port new-offset))
+              (let ([new-buffer (bytes-append buffer buffer)])
+                (read-available-bytes/offset port new-buffer new-offset))
               (subbytes buffer 0 new-offset))))))
 
 (define (port->srcloc port [source (object-name port)] [span 0])

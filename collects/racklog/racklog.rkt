@@ -252,6 +252,18 @@
         ((unbox *more-fk*) 'more)
         #f)))
 
+(define-syntax %find-all
+  (syntax-rules ()
+    [(_ (v ...) g)
+     (list* (%which (v ...) g)
+            (%more-list))]))
+
+(define (%more-list)
+  (define a (%more))
+  (if a
+      (list* a (%more-list))
+      empty))
+
 (define racklog-prompt-tag (make-continuation-prompt-tag 'racklog))
 (define (abort-to-racklog-prompt a)
   (abort-current-continuation racklog-prompt-tag (λ () a)))
@@ -293,7 +305,7 @@
 
 ; XXX Add contracts in theses macro expansions
 (provide %and %assert! %assert-after! %cut-delimiter %free-vars %is %let
-         %or %rel %which !)
+         %or %rel %which %find-all !)
 (provide/contract
  [goal/c contract?]
  [logic-var? (any/c . -> . boolean?)]

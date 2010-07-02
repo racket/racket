@@ -4,36 +4,6 @@
          "private/lex.rkt"
          "ast.rkt")
 
-#|
-5.1 Literals
-
-A literal, is a predicate symbol followed by an optional parenthesized list of comma separated terms. A predicate symbol is either an identifier or a string. A term is either a variable or a constant. As with predicate symbols, a constant is either an identifier or a string. The following are literals:
-
-     parent(john, douglas)
-     zero-arity-literal
-     aBcD(-0, "\n\FF")
-     "="(3,3)
-     ""(-0-0-0,&&&,***,"\00")
-5.2 Clauses
-
-A clause is a head literal followed by an optional body. A body is a comma separated list of literals. A clause without a body is called a fact, and a rule when it has one. The punctuation `:-' separates the head of a rule from its body. A clause is safe if every variable in its head occurs in some literal in its body. The following are safe clauses:
-
-     parent(john, douglas)
-     ancestor(A, B) :-
-         parent(A, B)
-     ancestor(A, B) :-
-         parent(A, C),
-         ancestor(C, B)
-5.3 Programs
-
-A Datalog reader consumes a Datalog program. A program is a sequence of zero or more statements, followed by an optional query. A statement is an assertion or a retraction. An assertion is a clause followed by a period, and it adds the clause to the database if it is safe. A retraction is a clause followed by a tilde, and it removes the clause from the database. A query is a literal followed by a question mark. The effect of reading a Datalog program is to modify the database as directed by its statements, and then to return the literal designated as the query. If no query is specified, a reader returns a literal know to have no answers. The following is a program:
-
-     edge(a, b). edge(b, c). edge(c, d). edge(d, a).
-     path(X, Y) :- edge(X, Y).
-     path(X, Y) :- edge(X, Z), path(Z, Y).
-     path(X, Y)?
-|#
-
 (define current-source-name (make-parameter #f))
 
 (define (make-srcloc start-pos end-pos)

@@ -4,19 +4,19 @@
 
 (define (format-datum s)
   (cond
-    [(string? s)
-     (text (format "~S" s))]
     [(symbol? s)
-     (text (symbol->string s))]))
+     (text (symbol->string s))]
+    [else
+     (text (format "~S" s))]))
 (define (format-variable v)
   (format-datum (variable-sym v)))
 (define (format-constant c)
-  (format-datum (constant-datum c)))
-(define (format-term t)
-  (cond
-    [(variable? t)
+  (format-datum (constant-value c)))
+(define format-term 
+  (match-lambda
+    [(? variable? t)
      (format-variable t)]
-    [(constant? t)
+    [(? constant? t)
      (format-constant t)]))
 (define (format-literal l)
   (match l
@@ -29,10 +29,27 @@
                lparen
                (v-concat/s (apply-infix ", " (map format-term terms)))
                rparen)]))
-(define (format-literals ls)
+(define format-external
+  (match-lambda
+    [(external _ pred-sym pred args anss)
+     (h-append (format-datum pred-sym)
+               lparen
+               (v-concat/s (apply-infix ", " (map format-term args)))
+               rparen
+               (text " = ")
+               lparen
+               (v-concat/s (apply-infix ", " (map format-term anss)))
+               rparen)]))
+(define format-question
+  (match-lambda
+    [(? literal? l)
+     (format-literal l)]
+    [(? external? e)
+     (format-external e)]))
+(define (format-questions ls)
   (v-concat
    (append (map (lambda (l)
-                  (format-assertion (make-assertion #f (make-clause #f l (list)))))
+                  (h-append (format-question l) dot))
                 ls)
            (list line))))
 (define (format-clause c)
@@ -49,7 +66,7 @@
   (h-append (format-clause (retraction-clause r))
             (char #\~)))
 (define (format-query q)
-  (h-append (format-literal (query-literal q))
+  (h-append (format-question (query-question q))
             (char #\?)))
 
 (define (format-statement s)
@@ -66,7 +83,7 @@
  [format-constant (constant? . -> . doc?)]
  [format-term (term/c . -> . doc?)]
  [format-literal (literal? . -> . doc?)]
- [format-literals ((listof literal?) . -> . doc?)]
+ [format-questions ((listof question/c) . -> . doc?)]
  [format-clause (clause? . -> . doc?)]
  [format-assertion (assertion? . -> . doc?)]
  [format-retraction (retraction? . -> . doc?)]

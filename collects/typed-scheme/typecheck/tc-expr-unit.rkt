@@ -41,8 +41,15 @@
     [(~var i (3d exact-nonnegative-integer?)) -ExactNonnegativeInteger]
     [(~var i (3d exact-integer?)) -Integer]
     [(~var i (3d (conjoin number? exact? rational?))) -ExactRational]
+    [(~var i (3d (conjoin inexact-real?
+                          (lambda (x) (or (positive? x) (zero? x)))
+                          (lambda (x) (not (eq? x -0.0))))))
+     -NonnegativeFlonum]
     [(~var i (3d inexact-real?)) -Flonum]
     [(~var i (3d real?)) -Real]
+    ;; a complex number can't have an inexact imaginary part and an exact real part
+    [(~var i (3d (conjoin number? (lambda (x) (inexact-real? (imag-part x))))))
+     -InexactComplex]
     [(~var i (3d number?)) -Number]
     [i:str -String]
     [i:char -Char]
@@ -389,7 +396,7 @@
            [(tc-results: ts) 
             (tc-error/expr #:return (ret (Un)) "Expected ~a values, but got only 1" (length ts))])]
         [(letrec-values ([(name ...) expr] ...) . body)
-         (tc/letrec-values/check #'((name ...) ...) #'(expr ...) #'body form expected)]        
+         (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form expected)]        
         ;; other
         [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a~n" (syntax->datum form))]
         ))))

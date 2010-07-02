@@ -2,17 +2,15 @@
 (require racket/contract
          racket/match
          datalog/ast
-         (only-in datalog/sexp/lang
-                  ? :- ! ~))
-(require (for-template datalog/sexp/lang))
+         datalog/stx)
+(require (for-template datalog/stx))
 
 (provide/contract
- [compile-program (program/c . -> . syntax?)]
+ [compile-program (program/c . -> . (listof syntax?))]
  [compile-statement (statement/c . -> . syntax?)])
 
 (define (compile-program p)
-  (quasisyntax
-   (#%module-begin #,@(map compile-statement p))))
+  (map compile-statement p))
 
 (define compile-statement
   (match-lambda

@@ -18,6 +18,7 @@
 
 (define lists
   @page[#:title "Mailing Lists" #:file "" #:part-of 'community
+        #:referrer values
     (define (list-cells what) (map (lambda (r) (r what)) list-renderers))
     ]{
     @p{This is the Racket mailing list server.  We have three public mailing
@@ -139,7 +140,7 @@
          @div[style: "margin-left: 2em;"]{
            @description
            @br
-           [@a[href: (list name "/")]{list page},
+           [@a[href: (list lists name "/")]{list page},
             @gmane-link["dir"]{gmane mirror},
             @mail-archive-link[""]{mail-archive}@;
             @(and google-groups-url
@@ -152,4 +153,4 @@
 (define (mailing-lists-quick)
   @text{@(apply parlist @strong{Mailing Lists}
                 (map (lambda (r) (r 'quick)) list-renderers))
-        @p{See the @lists{mailing list server} for more details.}})
+        @p{See the @a[href: lists]{mailing list server} for more details.}})

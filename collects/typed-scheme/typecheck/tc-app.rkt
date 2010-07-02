@@ -18,7 +18,7 @@
          (utils tc-utils)
          (only-in srfi/1 alist-delete)
          (except-in (env type-env-structs tvar-env index-env) extend)
-         (rep type-rep filter-rep object-rep)
+         (rep type-rep filter-rep object-rep rep-utils)
          (r:infer infer)
          '#%paramz
          (for-template
@@ -237,11 +237,11 @@
        (tc/rec-lambda/check form args body lp (cons acc-ty ts) expected)
        expected)]
     ;; special case when argument needs inference
-    [(_ (body* ...) _)
+    [(_ body* _)
      (let ([ts (for/list ([ac (syntax->list actuals)]
                           [f (syntax->list args)])
                  (let* ([infer-t (or (type-annotation f #:infer #t)
-                                     (find-annotation #'(begin body* ...) f))])
+                                     (find-annotation #'(begin . body*) f))])
                    (if infer-t
                        (begin (check-below (tc-expr/t ac) infer-t)
                               infer-t)
@@ -461,12 +461,25 @@
                [(tc-result1: t) 
                 (tc-error/expr #:return (or expected (ret Univ)) "expected Parameter, but got ~a" t)
                 (loop (cddr args))]))))]
+    ;; use the additional but normally ignored first argument to make-sequence to provide a better instantiation
+    [(#%plain-app (~var op (id-from 'make-sequence 'racket/private/for)) (~and quo ((~literal quote) (i:id))) arg:expr)
+     #:when (type-annotation #'i)     
+     (match (single-value #'op)
+         [(tc-result1: (and t Poly?))
+          (tc-expr/check #'quo (ret Univ))
+          (tc/funapp #'op #'(quo arg) 
+                     (ret (instantiate-poly t (list (type-annotation #'i))))
+                     (list (ret Univ) (single-value #'arg))
+                     expected)])]
     ;; unsafe struct operations
     [(#%plain-app (~and op (~or (~literal unsafe-struct-ref) (~literal unsafe-struct*-ref))) s e:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'s)
-         [(tc-result1: (and t (or (Struct: _ _ flds _ _ _ _ _ _)
-                                  (? needs-resolving? (app resolve-once (Struct: _ _ flds _ _ _ _ _ _))))))
+         [(tc-result1: 
+           (and t (or (Struct: _ _ (list (fld: flds _ muts) ...) _ _ _ _ _)
+                      (? needs-resolving? 
+                         (app resolve-once
+                              (Struct: _ _ (list (fld: flds _ muts) ...) _ _ _ _ _))))))
           (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
                           (match e-t
                             [(tc-result1: (Value: (? number? i))) i]
@@ -477,9 +490,11 @@
                        (check-below (ret (apply Un flds)) expected)
                        (ret (apply Un flds)))]
                   [(and (integer? ival) (exact? ival) (<= 0 ival (sub1 (length flds))))
-                   (if expected
-                       (check-below (ret (list-ref flds ival)) expected)
-                       (ret (list-ref flds ival)))]
+                   (let ([result (if (list-ref muts ival)
+                                     (ret (list-ref flds ival))
+                                     ;; FIXME - could do something with paths here
+                                     (ret (list-ref flds ival)))])
+                     (if expected (check-below result expected) result))]
                   [(not (and (integer? ival) (exact? ival)))
                    (tc-error/expr #:stx #'e #:return (or expected (ret (Un))) "expected exact integer for struct index, but got ~a" ival)]
                   [(< ival 0)
@@ -492,8 +507,10 @@
     [(#%plain-app (~and op (~or (~literal unsafe-struct-set!) (~literal unsafe-struct*-set!))) s e:expr val:expr)
      (let ([e-t (single-value #'e)])
        (match (single-value #'s)
-         [(tc-result1: (and t (or (Struct: _ _ flds _ _ _ _ _ _)
-                                  (? needs-resolving? (app resolve-once (Struct: _ _ flds _ _ _ _ _ _))))))
+         [(tc-result1: (and t (or (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _)
+                                  (? needs-resolving? 
+                                     (app resolve-once 
+                                          (Struct: _ _ (list (fld: flds _ _) ...) _ _ _ _ _))))))
           (let ([ival (or (syntax-parse #'e [((~literal quote) i:number) (syntax-e #'i)] [_ #f])
                           (match e-t
                             [(tc-result1: (Value: (? number? i))) i]
@@ -576,32 +593,44 @@
           (let ([arg-tys (list v-ty e-t (single-value #'val))])
             (tc/funapp #'op #'(v e val) (single-value #'op) arg-tys expected))]))]
     [(#%plain-app (~and op (~literal vector)) args:expr ...)
-     (match expected
-       [(tc-result1: (Vector: t))
-        (for ([e (in-list (syntax->list #'(args ...)))])
-          (tc-expr/check e (ret t)))
-        expected]
-       [(tc-result1: (HeterogenousVector: ts))
-        (unless (= (length ts) (length (syntax->list #'(args ...))))
-          (tc-error/expr "expected vector with ~a elements, but got ~a" 
-                         (length ts)
-                         (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
-        (for ([e (in-list (syntax->list #'(args ...)))]
-              [t (in-list ts)])
-          (tc-expr/check e (ret t)))
-        expected]
-       [(or #f (tc-result1: _))
-        (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
-            (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))
-        #;#;
-        (tc-error/expr "expected ~a, but got ~a" t (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...)))))
-        expected]
-       [_ (int-err "bad expected: ~a" expected)])]
+     (let loop ([expected expected])
+       (match expected
+         [(tc-result1: (Vector: t))
+          (for ([e (in-list (syntax->list #'(args ...)))])
+            (tc-expr/check e (ret t)))
+          expected]
+         [(tc-result1: (HeterogenousVector: ts))
+          (unless (= (length ts) (length (syntax->list #'(args ...))))
+            (tc-error/expr "expected vector with ~a elements, but got ~a" 
+                           (length ts)
+                           (make-HeterogenousVector (map tc-expr/t (syntax->list #'(args ...))))))
+          (for ([e (in-list (syntax->list #'(args ...)))]
+                [t (in-list ts)])
+            (tc-expr/check e (ret t)))
+          expected]
+         [(tc-result1: (? needs-resolving? e) f o)
+          (loop (ret (resolve-once e) f o))]
+         [(tc-result1: (and T (Union: (app (λ (ts)
+                                             (for/list ([t ts]
+                                                        #:when (let ([k (Type-key t)])
+                                                                 (eq? 'vector k)))
+                                               t))
+                                         ts))))
+          (if (null? ts)
+            (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
+              (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))
+            (check-below (for/first ([t ts]) (loop (ret t)))
+                         expected))]
+         [(or #f (tc-result1: _))
+          (let ([arg-tys (map single-value (syntax->list #'(args ...)))])
+            (tc/funapp #'op #'(args ...) (single-value #'op) arg-tys expected))]
+         [_ (int-err "bad expected: ~a" expected)]))]
     ;; special case for `-' used like `sub1'
     [(#%plain-app (~and op (~literal -)) v (~and arg2 ((~literal quote) 1)))
      (add-typeof-expr #'arg2 (ret -PositiveFixnum))
      (match-let ([(tc-result1: t) (single-value #'v)])
-       (cond 
+       (cond
+        [(subtype t -PositiveFixnum) (ret (Un -Zero -PositiveFixnum))]
         [(subtype t (Un -Zero -PositiveFixnum)) (ret -Fixnum)]
         [(subtype t -ExactPositiveInteger) (ret -Nat)]
         [else (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)]))]
@@ -916,7 +945,7 @@
                      (lambda (dom rng rest a) (infer/vararg vars null argtys-t dom rest rng (and expected (tc-results->values expected))))
                      t argtys expected)]
     ;; procedural structs
-    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _ _ _))) _)
+    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _ _))) _)
      (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) (ret proc-ty) (cons ftype0 argtys) expected)]
     ;; parameters are functions too
     [((tc-result1: (Param: in out)) (list)) (ret out)]
@@ -982,7 +1011,7 @@
              (open-Result r o-a t-a)))
          (ret t-r f-r o-r)))]
     [((arr: _ _ _ drest '()) _)
-     (int-err "funapp with drest args ~a NYI" drest)]
+     (int-err "funapp with drest args ~a ~a NYI" drest argtys)]
     [((arr: _ _ _ _ kws) _)
      (int-err "funapp with keyword args ~a NYI" kws)]))
 

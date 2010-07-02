@@ -157,10 +157,10 @@
                      [(mthd-generic ...)
                       (map (λ (g) (datum->syntax #'mthds (syntax->datum g)))
                            specs)])
+         (syntax-property
          (syntax/loc stx
-           (let ([fake #'generics] ; This is to get the arrow to show up in DrRacket. It is ? arrow, so it isn't that nice.
-                 ; XXX this could be a signal to the guard to error early, but is seems okay to allow
-                 ;     missing methods
+           (let (; XXX this could be a signal to the guard to error early,
+                 ;     but is seems okay to allow missing methods
                  [mthd-generic #f]
                  ...)
              (syntax-parameterize
@@ -179,4 +179,6 @@
                                              stx
                                              #'method-name)]))])
                (local mthds
-                 (vector mthd-generic ...)))))))]))
+                 (vector mthd-generic ...)))))
+         'disappeared-use
+         (list #'generics))))]))

@@ -37,6 +37,15 @@
                                      "missing attribute value for `~s:'" a)]
             [else (loop (cddr xs) (cons (cons a (cadr xs)) as))]))))
 
+;; similar, but keeps the attributes as a list, useful to build new functions
+;; that accept attributes without knowing about the xml structs.
+(provide split-attributes+body)
+(define (split-attributes+body xs)
+  (let loop ([xs xs] [as '()])
+    (if (and (pair? xs) (pair? (cdr xs)) (attribute->symbol (car xs)))
+      (loop (cddr xs) (list* (cadr xs) (car xs) as))
+      (values (reverse as) xs))))
+
 ;; ----------------------------------------------------------------------------
 ;; An output that handles xml quoting, customizable
 

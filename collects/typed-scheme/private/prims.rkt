@@ -518,10 +518,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       (quasisyntax/loc stx
         (for/lists (var.ann-name ...)
           (clause.expand ... ...)
-          #,@(syntax-property
-              #'(c ...)
-              'type-ascription
-              #'ty)))
+          c ...))
       'type-ascription
       #'ty)]))
 (define-syntax (for/fold: stx)
@@ -534,10 +531,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
       (quasisyntax/loc stx
         (for/fold ((var.ann-name init) ...)
           (clause.expand ... ...)
-          #,@(syntax-property
-              #'(c ...)
-              'type-ascription
-              #'ty)))
+          c ...))
       'type-ascription
       #'ty)]))
 

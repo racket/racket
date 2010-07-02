@@ -1,12 +1,11 @@
-
-#lang scheme/base
-(require (for-syntax scheme/base)
+#lang racket/base
+(require (for-syntax racket/base)
          syntax/stx
-         "yacc-ext.ss"
-         "yacc-interrupted.ss"
-         "deriv.ss"
-         "deriv-util.ss"
-         "deriv-tokens.ss")
+         "yacc-ext.rkt"
+         "yacc-interrupted.rkt"
+         "deriv.rkt"
+         "deriv-util.rkt"
+         "deriv-tokens.rkt")
 (provide parse-derivation)
 
 (define (deriv-error ok? name value start end)

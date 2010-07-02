@@ -204,6 +204,12 @@
        (add-type-name-reference #'kw)
        (-Param (parse-type #'t1) (parse-type #'t2))]
       ;; function types
+      ;; handle this error first:
+      [((~or dom (~between (~and kw t:->) 2 +inf.0)) ...)
+       (for ([k (syntax->list #'(kw ...))]) (add-type-name-reference k))
+       (tc-error/stx (syntax->list #'(kw ...))
+                     "The -> type constructor may be used only once in a form")
+       Err]
       [(dom (~and kw t:->) rng : ~! latent:latent-filter)
        (add-type-name-reference #'kw)
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
@@ -247,11 +253,13 @@
       ;; use expr to rule out keywords
       [(dom:expr ... kws:keyword-tys ... (~and kw t:->) rng)
        (add-type-name-reference #'kw)
-       (make-Function
-        (list (make-arr
-               (map parse-type (syntax->list #'(dom ...)))
-               (parse-values-type #'rng)
-               #:kws (attribute kws.Keyword))))]
+      (let ([doms (for/list ([d (syntax->list #'(dom ...))])
+                    (parse-type d))])
+         (make-Function
+          (list (make-arr
+                 doms
+                 (parse-values-type #'rng)
+                 #:kws (attribute kws.Keyword)))))]
       
       [id:identifier
        (cond 

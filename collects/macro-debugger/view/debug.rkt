@@ -1,12 +1,11 @@
-#lang scheme/base
-(require scheme/pretty
-         scheme/class
-         (rename-in unstable/class-iop
-                    [send/i send:])
-         "interfaces.ss"
-         "debug-format.ss"
-         "prefs.ss"
-         "view.ss")
+#lang racket/base
+(require racket/pretty
+         racket/class
+         unstable/class-iop
+         "interfaces.rkt"
+         "debug-format.rkt"
+         "prefs.rkt"
+         "view.rkt")
 (provide debug-file)
 
 (define (widget-mixin %)
@@ -30,5 +29,5 @@
     (pretty-print msg)
     (pretty-print ctx)
     (let* ([w (make-stepper)])
-      (send: w widget<%> add-trace events)
+      (send/i w widget<%> add-trace events)
       w)))

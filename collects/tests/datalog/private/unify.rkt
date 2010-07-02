@@ -3,7 +3,7 @@
          datalog/ast
          datalog/private/env
          datalog/private/unify)
-(require/expose datalog/private/unify (chase unify-terms))
+(require/expose datalog/private/unify (chase))
 
 (provide unify-tests)
 

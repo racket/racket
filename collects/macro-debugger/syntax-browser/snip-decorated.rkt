@@ -1,14 +1,13 @@
-#lang scheme/base
-(require scheme/class
-         (rename-in unstable/class-iop
-                    [send/i send:])
-         mzlib/string
-         mred
-         "interfaces.ss"
-         "controller.ss"
-         "properties.ss"
-         "prefs.ss"
-         (except-in "snip.ss"
+#lang racket/base
+(require racket/class
+         racket/gui
+         (only-in mzlib/string read-from-string)
+         unstable/class-iop
+         "interfaces.rkt"
+         "controller.rkt"
+         "properties.rkt"
+         "prefs.rkt"
+         (except-in "snip.rkt"
                     snip-class))
 
 (provide decorated-syntax-snip%
@@ -145,8 +144,8 @@
     (define/public (read-special src line col pos)
       (send the-syntax-snip read-special src line col pos))
 
-    (send: config config<%> listen-props-shown?
-           (lambda (?) (refresh-contents)))
+    (send/i config config<%> listen-props-shown?
+            (lambda (?) (refresh-contents)))
 
     (super-new)
     (set-snipclass snip-class)
@@ -198,7 +197,7 @@
 
 ;; SNIPCLASS
 
-;; COPIED AND MODIFIED from mrlib/syntax-browser.ss
+;; COPIED AND MODIFIED from mrlib/syntax-browser.rkt
 (define decorated-syntax-snipclass%
   (class snip-class%
     (define/override (read stream)
@@ -210,4 +209,4 @@
 (define snip-class (make-object decorated-syntax-snipclass%))
 (send snip-class set-version 2)
 (send snip-class set-classname
-      (format "~s" '(lib "macro-debugger/syntax-browser/snip-decorated.ss")))
+      (format "~s" '(lib "macro-debugger/syntax-browser/snip-decorated.rkt")))

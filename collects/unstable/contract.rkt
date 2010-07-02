@@ -13,6 +13,18 @@
          (lambda (s) (not (zero? (string-length s))))))
 ;; Eli: If this gets in, there should also be versions for bytes, lists, and
 ;;   vectors.
+;; Ryan: How about just making these predicates? Predicates are more broadly applicable,
+;;   and when used as a contract we get the descriptive name for free.
+(define (non-empty-string? x)
+  (and (string? x) (not (zero? (string-length x)))))
+(define (non-empty-bytes? x)
+  (and (bytes? x) (not (zero? (bytes-length x)))))
+(define (non-empty-vector? x)
+  (and (vector? x) (not (zero? (vector-length x)))))
+(define (non-empty-list? x)
+  (and (list? x) (pair? x)))
+(define (singleton-list? x)
+  (and (pair? x) (null? (cdr x))))
 
 ;; ryanc added:
 
@@ -52,6 +64,15 @@
            #:first-order
            (lambda (x) (if (predicate x) (then-fo x) (else-fo x))))))))
 
+;; failure-result/c : contract
+;; Describes the optional failure argument passed to hash-ref, for example.
+;; If the argument is a procedure, it must be a thunk, and it is applied. Otherwise
+;; the argument is simply the value to return.
+(define failure-result/c
+  (if/c procedure? (-> any) any/c))
+
+;; rename-contract : contract any/c -> contract
+;; If the argument is a flat contract, so is the result.
 (define (rename-contract ctc name)
   (let ([ctc (coerce-contract 'rename-contract ctc)])
     (if (flat-contract? ctc)
@@ -343,7 +364,15 @@
  [non-empty-string/c contract?]
  [path-element? contract?]
  [port-number? contract?]
+
+ [non-empty-string? predicate/c]
+ [non-empty-bytes? predicate/c]
+ [non-empty-vector? predicate/c]
+ [non-empty-list? predicate/c]
+ [singleton-list? predicate/c]
+
  [if/c (-> procedure? contract? contract? contract?)]
+ [failure-result/c contract?]
  [rename-contract (-> contract? any/c contract?)]
 
  [nat/c flat-contract?]

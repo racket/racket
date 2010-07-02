@@ -1,10 +1,9 @@
-
-#lang scheme/base
-(require scheme/class
+#lang racket/base
+(require racket/class
          parser-tools/lex
-         "deriv-tokens.ss"
-         "deriv-parser.ss"
-         "../syntax-browser.ss")
+         "deriv-tokens.rkt"
+         "deriv-parser.rkt"
+         "../syntax-browser.rkt")
 (provide (all-defined-out))
 
 (define current-expand-observe

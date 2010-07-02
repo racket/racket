@@ -1,14 +1,17 @@
 #lang s-exp "type-env-lang.rkt"
 
 [Complex -Number]
+[Inexact-Complex -InexactComplex]
 [Number -Number]
 [Integer -Integer]
 [Real -Real]
 [Exact-Rational -ExactRational]
 [Float -Flonum]
+[Nonnegative-Float -NonnegativeFlonum]
 [Exact-Positive-Integer -ExactPositiveInteger]
 [Exact-Nonnegative-Integer -ExactNonnegativeInteger]
 [Positive-Fixnum -PositiveFixnum]
+[Nonnegative-Fixnum -NonnegativeFixnum]
 [Fixnum -Fixnum]
 [Natural -ExactNonnegativeInteger]
 [Zero (-val 0)]

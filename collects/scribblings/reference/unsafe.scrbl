@@ -90,11 +90,6 @@ For @tech{fixnums}: Like @scheme[=], @scheme[<], @scheme[>],
 constrained to consume @tech{fixnums}.}
 
 
-@defproc[(unsafe-fx->fl [a fixnum?]) inexact-real?]{
-Unchecked version of @scheme[->fl].
-}
-
-
 @deftogether[(
 @defproc[(unsafe-fl+   [a inexact-real?] [b inexact-real?]) inexact-real?]
 @defproc[(unsafe-fl-   [a inexact-real?] [b inexact-real?]) inexact-real?]
@@ -152,6 +147,15 @@ For @tech{flonums}: Unchecked (potentially) versions of
 @scheme[flacos], @scheme[flatan], @scheme[fllog], @scheme[flexp], and
 @scheme[flsqrt]. Currently, some of these bindings are simply aliases
 for the corresponding safe bindings.}
+
+@deftogether[(
+@defproc[(unsafe-fx->fl [a fixnum?]) inexact-real?]
+@defproc[(unsafe-fl->fx [a inexact-real?]) fixnum?]
+)]{
+Unchecked conversion of a fixnum to an integer flonum and vice versa.
+These are similar to the safe bindings @scheme[->fl] and @scheme[fl->exact-integer],
+but further constrained to consume or produce a fixnum.
+}
 
 
 @section{Unsafe Data Extraction}

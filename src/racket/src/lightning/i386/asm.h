@@ -1164,7 +1164,11 @@ typedef _uc		jit_insn;
 #define FLDTm(D,B,I,S)		ESCmi(D,B,I,S,035)     /* fld m80real  */
 #define FILDQm(D,B,I,S)		ESCmi(D,B,I,S,075)     /* fild m64int  */
 #define FSTPTm(D,B,I,S)		ESCmi(D,B,I,S,037)     /* fstp m80real */
-#define FISTPQm(D,B,I,S)	ESCmi(D,B,I,S,077)     /* fistp m64int */
+#ifdef JIT_X86_64
+# define FISTPQm(D,B,I,S)	ESCmi(D,B,I,S,077)     /* fistp m64int */
+#else
+# define FISTPQm(D,B,I,S)	FISTPLm(D,B,I,S)
+#endif
 
 #define FADDrr(RS,RD)		ESCrri(RS,RD,000)
 #define FMULrr(RS,RD)		ESCrri(RS,RD,001)

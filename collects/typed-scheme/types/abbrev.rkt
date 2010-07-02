@@ -86,12 +86,12 @@
 
 ;; basic types
 
-(define promise-str (string->uninterned-symbol "Promise"))
+(define promise-sym (string->uninterned-symbol "Promise"))
 
 (define make-promise-ty
-  (let ([s promise-str])
+  (let ([s promise-sym])
     (lambda (t)
-      (make-Struct s #f (list t) #f #f #'promise? values (list #'values) #'values))))
+      (make-Struct s #f (list (make-fld t #'values #f)) #f #f #'promise? values #'values))))
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
@@ -150,7 +150,13 @@
 ;; Numeric hierarchy
 (define -Number (make-Base 'Number #'number?))
 
+;; a complex number can't have an inexact imaginary part and an exact real part
+(define -InexactComplex (make-Base 'InexactComplex #'(and/c number? (lambda (x) (inexact-real? (imag-part x))))))
+
 (define -Flonum (make-Base 'Flonum #'inexact-real?))
+(define -NonnegativeFlonum (make-Base 'Nonnegative-Flonum #'(and/c inexact-real?
+                                                                   (or/c positive? zero?)
+                                                                   (lambda (x) (not (eq? x -0.0))))))
 
 (define -ExactRational 
   (make-Base 'Exact-Rational #'(and/c number? rational? exact?)))
@@ -166,6 +172,7 @@
 (define -Zero (-val 0))
 (define -Real (*Un -Flonum -ExactRational))
 (define -Fixnum (*Un -PositiveFixnum -NegativeFixnum -Zero))
+(define -NonnegativeFixnum (*Un -PositiveFixnum -Zero))
 (define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))
 (define -Nat -ExactNonnegativeInteger)
 
@@ -285,8 +292,8 @@
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))
 
-(define (-struct name parent flds accs constructor [proc #f] [poly #f] [pred #'dummy] [cert values])
-  (make-Struct name parent flds proc poly pred cert accs constructor))
+(define (-struct name parent flds constructor [proc #f] [poly #f] [pred #'dummy] [cert values])
+  (make-Struct name parent flds proc poly pred cert constructor))
 
 (d/c (-filter t i [p null])
      (c:->* (Type/c name-ref/c) ((listof PathElem?)) Filter/c)

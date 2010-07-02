@@ -172,6 +172,9 @@
   (test-un 8.0 'unsafe-fx->fl 8)
   (test-un -8.0 'unsafe-fx->fl -8)
 
+  (test-un 8 'unsafe-fl->fx 8.0)
+  (test-un -8 'unsafe-fl->fx -8.0)
+
   (test-bin 3.7 'unsafe-flmin 3.7 4.1)
   (test-bin 2.1 'unsafe-flmin 3.7 2.1)
   (test-bin +nan.0 'unsafe-flmin +nan.0 2.1)
