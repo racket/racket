@@ -1663,6 +1663,23 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
       case 'E':
 	used++;
 	break;
+      case '.':
+        switch (format[i+1]) {
+        case 'a':
+        case 'A':
+        case 's':
+        case 'S':
+        case 'v':
+        case 'V':
+          break;
+        default:
+	  scheme_wrong_type(procname, 
+                            "pattern-string (tag `~.' not followed by `a', `s', or `v')", 
+                            fpos, argc, argv);
+          break;
+        }
+        used++;
+        break;
       case 'x':
       case 'X':
       case 'o':
@@ -1689,7 +1706,7 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
       default:
 	{
 	  char buffer[64];
-	  sprintf(buffer, "pattern-string (tag ~%c not allowed)", format[i]);
+	  sprintf(buffer, "pattern-string (tag `~%c' not allowed)", format[i]);
 	  scheme_wrong_type(procname, buffer, fpos, argc, argv);
 	  return;
 	}
@@ -1793,6 +1810,32 @@ void scheme_do_format(const char *procname, Scheme_Object *port,
 	  int len;
 	  char *s;
 	  s = scheme_make_provided_string(argv[used++], 0, &len);
+	  scheme_write_byte_string(s, len, port);
+	}
+	break;
+      case '.':
+	{
+	  long len;
+	  char *s;
+          len = scheme_get_print_width();
+          i++;
+          switch (format[i]) {
+          case 'a':
+          case 'A':
+            s = scheme_display_to_string_w_max(argv[used++], &len, len);
+            break;
+          case 's':
+          case 'S':
+            s = scheme_write_to_string_w_max(argv[used++], &len, len);
+            break;
+          case 'v':
+          case 'V':
+            s = scheme_print_to_string_w_max(argv[used++], &len, len);
+            break;
+          default:
+            s = "???";
+            len = 3;
+          }
 	  scheme_write_byte_string(s, len, port);
 	}
 	break;

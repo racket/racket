@@ -1960,6 +1960,8 @@ void scheme_flush_stack_cache(void);
 struct Scheme_Load_Delay;
 Scheme_Object *scheme_load_delayed_code(int pos, struct Scheme_Load_Delay *ld);
 
+long scheme_get_print_width(void);
+
 /*========================================================================*/
 /*                          compile and link                              */
 /*========================================================================*/

@@ -1108,6 +1108,9 @@
   (test "hello---~---there" format "~a---~~---~a" "hello" 'there)
   (test "\"hello\"---~---there" format "~s---~~---~s" "hello" 'there)
   (test "\"hello\"---~---'there" format "~v---~~---~v" "hello" 'there)
+  (test "hello---~---there" format "~.a---~~---~a" "hello" 'there)
+  (test "\"hello\"---~---there" format "~.s---~~---~s" "hello" 'there)
+  (test "\"hello\"---~---'there" format "~.v---~~---~v" "hello" 'there)
   (test (string #\a #\newline #\b #\newline #\c) format "a~nb~%c")
   (let ([try-newline-stuff
 	 (lambda (newlines)
@@ -1120,6 +1123,7 @@
   (test "twenty=20..." format "twenty=~s..." 20)
   (test "twenty=20..." format "twenty=~v..." 20)
   (test "twenty=20..." format "twenty=~e..." 20)
+  (test "twenty=20..." format "twenty=~.s..." 20)
   (test "twenty=14..." format "twenty=~x..." 20)
   (test "twenty=24..." format "twenty=~o..." 20)
   (test "twenty=10100..." format "twenty=~b..." 20)
@@ -1129,6 +1133,18 @@
 	(lambda (s) (string-ref s (sub1 (string-length s))))
 	(parameterize ([error-print-width 40])
 	  (format "~e" (make-string 200 #\v))))
+  (test "(vvvvvv..."
+        '.a
+	(parameterize ([error-print-width 10])
+	  (format "~.a" (list (make-string 200 #\v)))))
+  (test "(\"vvvvv..."
+        '.v
+	(parameterize ([error-print-width 10])
+	  (format "~.s" (list (make-string 200 #\v)))))
+  (test "'(\"vvvv..."
+        '.v
+	(parameterize ([error-print-width 10])
+	  (format "~.v" (list (make-string 200 #\v)))))
   
   (let()
     (define bads
