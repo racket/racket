@@ -137,7 +137,7 @@
    [unsafe-vector-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [unsafe-vector*-set! (-poly (a) (-> (-vec a) index-type a -Void))]
    [vector-copy! (-poly (a) ((-vec a) index-type (-vec a) [index-type index-type] . ->opt . -Void))]
-   [make-vector (-poly (a) (cl-> [(index-type) (-vec (Un -NonnegativeFixnum a))]
+   [make-vector (-poly (a) (cl-> [(index-type) (-vec (Un -Nat a))]
                                  [(index-type a) (-vec a)]))]
 
    [bytes-ref (-> -Bytes index-type -NonnegativeFixnum)]
