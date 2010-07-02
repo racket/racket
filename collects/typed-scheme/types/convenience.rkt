@@ -31,6 +31,7 @@
       (match t*
         [(Value: '()) (-lst Univ)]
 	[(Value: 0) -Nat]
+        [(List: ts) (-lst (apply Un ts))]
         [(? (lambda (t) (subtype t -Nat))) -Nat]
         [(? (lambda (t) (subtype t -Integer))) -Integer]
         [(? (lambda (t) (subtype t -Flonum))) -Flonum]
