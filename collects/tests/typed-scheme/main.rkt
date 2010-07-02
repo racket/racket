@@ -5,12 +5,12 @@
 (require rackunit rackunit/text-ui
          mzlib/etc scheme/port
          compiler/compiler
-         scheme/match
+         scheme/match mzlib/compile
          "unit-tests/all-tests.ss"
          "unit-tests/test-utils.ss")
 
 (define (scheme-file? s)
-  (regexp-match ".*[.](rkt|ss|scm)" (path->string s)))
+  (regexp-match ".*[.](rkt|ss|scm)$" (path->string s)))
 
 (define-namespace-anchor a)
 
@@ -27,6 +27,9 @@
                           (regexp-match e (exn-message val))]
                          [else (error 'exn-pred "bad argument" e)]))))
    args))
+
+(define (cfile file)
+  ((compile-zos #f) (list file) 'auto))
   
 (define (exn-pred p)
   (let ([sexp (with-handlers
@@ -114,7 +117,26 @@
                      [current-output-port (open-output-nowhere)])
         (dr p))))))
 
-(provide go go/text just-one)
+(define (compile-benchmarks)
+  (define (find dir)
+    (for/list ([d (directory-list dir)]
+               #:when (scheme-file? d))
+      d))
+  (define shootout (collection-path "tests" "racket" "benchmarks" "shootout" "typed"))
+  (define common (collection-path "tests" "racket" "benchmarks" "common" "typed"))
+  (define (mk path)
+    (make-test-suite (path->string path)
+                     (for/list ([p (find path)])                       
+                       (parameterize ([current-load-relative-directory
+                                       (path->complete-path path)]
+                                      [current-directory path])
+                         (test-suite (path->string p)
+                                     (check-not-exn (λ () (cfile (build-path path p)))))))))
+  (test-suite "compiling"
+              (mk shootout)
+              (mk common)))
+
+(provide go go/text just-one compile-benchmarks)
 
 
 

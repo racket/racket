@@ -33,7 +33,7 @@
                              (vector-ref (current-command-line-arguments) 0)))
                0 1)
            (for/fold ((n-failures 0))
-               ((gen (in-directory (build-path here "generic"))))
+             ((gen (in-directory (build-path here "generic"))))
              (+ n-failures (if (test gen) 0 1))))))
   (unless (= n-failures 0)
     (error (format "~a tests failed." n-failures))))
