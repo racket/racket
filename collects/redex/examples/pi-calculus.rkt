@@ -118,7 +118,7 @@
 ;; THE REST OF THIS IS BOILERPLATE... (subst, free-vars, etc.)
 
 
-;; BOUND-BY : compute the variables bound along the sπne of a context
+;; BOUND-BY : compute the variables bound along the spine of a context
 (define-metafunction π-calculus
   bound-by : E -> (a ...)
   [(bound-by hole)     ()]
