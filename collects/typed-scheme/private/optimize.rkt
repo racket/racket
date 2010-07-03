@@ -11,34 +11,23 @@
   (match (type-of s)
     [(tc-result1: (== t (lambda (x y) (subtype y x)))) #t] [_ #f]))
 
+
 (define-syntax-class float-opt-expr
   (pattern e:opt-expr
            #:when (subtypeof #'e -Flonum)
            #:with opt #'e.opt))
-
 (define-syntax-class int-opt-expr
   (pattern e:opt-expr
            #:when (subtypeof #'e -Integer)
            #:with opt #'e.opt))
-
-(define-syntax-class fixnum-opt-expr
-  (pattern e:opt-expr
-           #:when (subtypeof #'e -Fixnum)
-           #:with opt #'e.opt))
-(define-syntax-class nonzero-fixnum-opt-expr
-  (pattern e:opt-expr
-           #:when (match (type-of #'e)
-                    [(tc-result1: (== -PositiveFixnum type-equal?)) #t]
-                    [(tc-result1: (== -NegativeFixnum type-equal?)) #t]
-                    [_ #f])
-           #:with opt #'e.opt))
-
 
 ;; if the result of an operation is of type float, its non float arguments
 ;; can be promoted, and we can use unsafe float operations
 ;; note: none of the unary operations have types where non-float arguments
 ;;  can result in float (as opposed to real) results
 (define-syntax-class float-arg-expr
+  (pattern e:fixnum-opt-expr
+           #:with opt #'(unsafe-fx->fl e.opt))
   (pattern e:int-opt-expr
            #:with opt #'(->fl e.opt))
   (pattern e:float-opt-expr
@@ -65,6 +54,18 @@
            #:when (dict-ref tbl #'i #f)
            #:with unsafe (dict-ref tbl #'i)))
 
+
+(define-syntax-class fixnum-opt-expr
+  (pattern e:opt-expr
+           #:when (subtypeof #'e -Fixnum)
+           #:with opt #'e.opt))
+(define-syntax-class nonzero-fixnum-opt-expr
+  (pattern e:opt-expr
+           #:when (match (type-of #'e)
+                    [(tc-result1: (== -PositiveFixnum type-equal?)) #t]
+                    [(tc-result1: (== -NegativeFixnum type-equal?)) #t]
+                    [_ #f])
+           #:with opt #'e.opt))
 
 (define (mk-fixnum-tbl generic)
   (mk-unsafe-tbl generic "fx~a" "unsafe-fx~a"))
@@ -192,7 +193,6 @@
            #:with opt
            (begin (log-optimization "fixnum to float" #'op)
                   #'(unsafe-fx->fl n.opt)))
-
   ;; we can optimize exact->inexact if we know we're giving it an Integer
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:int-opt-expr)
            #:with opt
