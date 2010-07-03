@@ -1112,3 +1112,5 @@ MZ_EXTERN void scheme_signal_received_at(void *);
 MZ_EXTERN void *scheme_get_signal_handle();
 
 MZ_EXTERN int scheme_char_strlen(const mzchar *s);
+
+MZ_EXTERN Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx);
