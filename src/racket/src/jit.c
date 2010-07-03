@@ -4751,7 +4751,7 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
           }
           (void)mz_tl_sti_d_fppop(tl_save_fp, JIT_FPR0, JIT_R2);
           mz_prepare(0);
-          mz_finish(f);
+          (void)mz_finish(f);
           (void)mz_tl_ldi_d_fppush(JIT_FPR0, tl_save_fp, JIT_R2);
         }
         break;
@@ -8174,7 +8174,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       allocate_rectangular(jitter);
 
+      __START_SHORT_JUMPS__(1);
       mz_patch_ucbranch(refdone);
+      __END_SHORT_JUMPS__(1);
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "make-flrectangular")) {
