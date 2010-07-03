@@ -44,7 +44,13 @@
 (define binary-float-ops 
   (mk-float-tbl (list #'+ #'- #'* #'/ #'min #'max)))
 (define binary-float-comps
-  (mk-float-tbl (list #'= #'<= #'< #'> #'>=)))
+  (dict-set
+   (dict-set
+    (mk-float-tbl (list #'= #'<= #'< #'> #'>=))
+    ;; not a comparison, but takes 2 floats and does not return a float,
+    ;; unlike binary-float-ops
+    #'make-rectangular #'unsafe-make-flrectangular)
+   #'make-flrectangular #'unsafe-make-flrectangular))
 (define unary-float-ops
   (mk-float-tbl (list #'abs #'sin #'cos #'tan #'asin #'acos #'atan #'log #'exp
                       #'sqrt #'round #'floor #'ceiling #'truncate)))
@@ -53,6 +59,18 @@
   (pattern i:id
            #:when (dict-ref tbl #'i #f)
            #:with unsafe (dict-ref tbl #'i)))
+
+(define-syntax-class inexact-complex-opt-expr
+  (pattern e:opt-expr
+           ;; can't work on inexact reals, which are a subtype of inexact
+           ;; complexes, so this has to be equality
+           #:when (match (type-of #'e)
+                    [(tc-result1: (== -InexactComplex type-equal?)) #t] [_ #f])
+           #:with opt #'e.opt))
+
+(define-syntax-class inexact-complex-unary-op
+  (pattern (~or (~literal real-part) (~literal flreal-part)) #:with unsafe #'unsafe-flreal-part)
+  (pattern (~or (~literal imag-part) (~literal flimag-part)) #:with unsafe #'unsafe-flimag-part))
 
 
 (define-syntax-class fixnum-opt-expr
@@ -171,8 +189,6 @@
            (begin (log-optimization "binary float" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
   (pattern (~and res (#%plain-app (~var op (float-op binary-float-comps)) f1:float-opt-expr f2:float-opt-expr fs:float-opt-expr ...))
-           #:when (match (type-of #'res)
-                    [(tc-result1: (== -Boolean type-equal?)) #t] [_ #f])
            #:with opt
            (begin (log-optimization "binary float comp" #'op)
                   (n-ary->binary #'op.unsafe #'f1.opt #'f2.opt #'(fs.opt ...))))
@@ -189,6 +205,12 @@
            #:with opt
            (begin (log-optimization "binary nonzero fixnum" #'op)
                   #'(op.unsafe n1.opt n2.opt)))
+
+  (pattern (#%plain-app op:inexact-complex-unary-op n:inexact-complex-opt-expr)
+           #:with opt
+           (begin (log-optimization "unary inexact complex" #'op)
+                  #'(op.unsafe n.opt)))
+
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-opt-expr)
            #:with opt
            (begin (log-optimization "fixnum to float" #'op)

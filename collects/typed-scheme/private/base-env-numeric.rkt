@@ -468,6 +468,9 @@
 [unsafe-flexp fl-rounder]
 [unsafe-flsqrt fl-rounder]
 [unsafe-fx->fl (cl->* (-Nat . -> . -NonnegativeFlonum) (-Integer . -> . -Flonum))]
+[unsafe-make-flrectangular (-Flonum -Flonum . -> . -InexactComplex)]
+[unsafe-flreal-part (-InexactComplex . -> . -Flonum)]
+[unsafe-flimag-part (-InexactComplex . -> . -Flonum)]
 
 [unsafe-fx+ fx+-type]
 [unsafe-fx- fx-intop]
@@ -545,6 +548,9 @@
 [flexp fl-unop]
 [flsqrt fl-unop]
 [->fl (-Integer . -> . -Flonum)]
+[make-flrectangular (-Flonum -Flonum . -> . -InexactComplex)]
+[flreal-part (-InexactComplex . -> . -Flonum)]
+[flimag-part (-InexactComplex . -> . -Flonum)]
 
 ;; safe flvector ops
 
