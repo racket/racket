@@ -1544,6 +1544,7 @@ mark_subprocess {
 #ifndef WINDOWS_PROCESSES
   Scheme_Subprocess *sp = (Scheme_Subprocess *)p;
   gcMARK2(sp->handle, gc);
+  gcMARK2(sp->mref, gc);
 #endif
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Subprocess));

@@ -190,6 +190,7 @@ typedef struct Scheme_Subprocess {
   short done;
   int status;
 #endif
+  Scheme_Custodian_Reference *mref;
 } Scheme_Subprocess;
 
 #ifdef USE_FD_PORTS
@@ -372,6 +373,7 @@ static Scheme_Object *subprocess_pid(int c, Scheme_Object *args[]);
 static Scheme_Object *subprocess_p(int c, Scheme_Object *args[]);
 static Scheme_Object *subprocess_wait(int c, Scheme_Object *args[]);
 static Scheme_Object *sch_shell_execute(int c, Scheme_Object *args[]);
+static Scheme_Object *current_subproc_cust_mode (int, Scheme_Object *[]);
 static void register_subprocess_wait();
 
 typedef struct Scheme_Read_Write_Evt {
@@ -568,6 +570,7 @@ scheme_init_port (Scheme_Env *env)
   scheme_add_global_constant("subprocess?", scheme_make_prim_w_arity(subprocess_p, "subprocess?", 1, 1), env);
   scheme_add_global_constant("subprocess-wait", scheme_make_prim_w_arity(subprocess_wait, "subprocess-wait", 1, 1), env);
 
+  GLOBAL_PARAMETER("current-subprocess-custodian-mode", current_subproc_cust_mode, MZCONFIG_SUBPROC_CUSTODIAN_MODE, env);
 
   register_subprocess_wait();
 
@@ -7071,6 +7074,14 @@ scheme_make_redirect_output_port(Scheme_Object *port)
 
 #if defined(UNIX_PROCESSES) || defined(WINDOWS_PROCESSES)
 
+static void child_mref_done(Scheme_Subprocess *sp)
+{
+  if (sp->mref) {
+    scheme_remove_managed(sp->mref, (Scheme_Object *)sp);
+    sp->mref = NULL;
+  }
+}
+
 static int subp_done(Scheme_Object *so)
 {
   Scheme_Subprocess *sp;
@@ -7080,10 +7091,11 @@ static int subp_done(Scheme_Object *so)
 # if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   {
     int status;
-    if(! sp->done) {
-      if(scheme_get_child_status(((Scheme_Subprocess *)sp)->pid, &status)) {
+    if (!sp->done) {
+      if (scheme_get_child_status(((Scheme_Subprocess *)sp)->pid, &status)) {
         sp->done = 1;
         sp->status = status;
+        child_mref_done(sp);
         return 1;
       }
       return 0;
@@ -7096,6 +7108,8 @@ static int subp_done(Scheme_Object *so)
     System_Child *sc;
     sc = ((System_Child *) ((Scheme_Subprocess *)sp)->handle);
     check_child_done();
+    if (sc->done)
+      child_mref_done(sp);
     return sc->done;
   }
 # endif
@@ -7149,9 +7163,10 @@ static Scheme_Object *subprocess_status(int argc, Scheme_Object **argv)
   System_Child *sc = (System_Child *)sp->handle;
   check_child_done();
 
-  if (sc->done)
+  if (sc->done) {
+    child_mref_done(sp);
     status = sc->status;
-  else
+  } else
    going = 1;
 # endif
 #else
@@ -7209,14 +7224,10 @@ static Scheme_Object *subprocess_wait(int argc, Scheme_Object **argv)
 #endif
 }
 
-static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
-{
-  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_subprocess_type))
-    scheme_wrong_type("subprocess-kill", "subprocess", 0, argc, argv);
-
 #if defined(UNIX_PROCESSES) || defined(WINDOWS_PROCESSES)
-  {
-    Scheme_Subprocess *sp = (Scheme_Subprocess *)argv[0];
+static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *killp, int can_error)
+{
+  Scheme_Subprocess *sp = (Scheme_Subprocess *)_sp;
 
 #if defined(UNIX_PROCESSES)
 # if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
@@ -7224,7 +7235,8 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
     int status;
     if (sp->done)
       return scheme_void;
-    if(scheme_get_child_status(sp->pid, &status)) {
+    if (scheme_get_child_status(sp->pid, &status)) {
+      child_mref_done(sp);
       return scheme_void;
     }
   }
@@ -7233,14 +7245,16 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
     System_Child *sc = (System_Child *)sp->handle;
 
     check_child_done();
-    if (sc->done)
+    if (sc->done) {
+      child_mref_done(sp);
       return scheme_void;
+    }
   }
 # endif
 
   while (1) {
 
-    if (!kill(sp->pid, SCHEME_TRUEP(argv[1]) ? SIGKILL : SIGINT))
+    if (!kill(sp->pid, SCHEME_TRUEP(killp) ? SIGKILL : SIGINT))
       return scheme_void;
 
     if (errno != EINTR)
@@ -7248,33 +7262,54 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
     /* Otherwise we were interrupted. Try `kill' again. */
   }
 #else
-    if (SCHEME_TRUEP(argv[1])) {
-      DWORD w;
-      int errid;
+  if (SCHEME_TRUEP(killp)) {
+    DWORD w;
+    int errid;
 
-      if (!sp->handle)
-	return scheme_void;
-
-      if (GetExitCodeProcess((HANDLE)sp->handle, &w)) {
-	if (w != STILL_ACTIVE)
-	  return scheme_void;
-	if (TerminateProcess((HANDLE)sp->handle, 1))
-	  return scheme_void;
-      }
-      errid = GetLastError();
-      errno = errid;
-    } else
+    if (!sp->handle)
       return scheme_void;
+
+    if (GetExitCodeProcess((HANDLE)sp->handle, &w)) {
+      if (w != STILL_ACTIVE)
+        return scheme_void;
+      if (TerminateProcess((HANDLE)sp->handle, 1))
+        return scheme_void;
+    }
+    errid = GetLastError();
+    errno = errid;
+  } else
+    return scheme_void;
 #endif
 
+  if (can_error)
     scheme_raise_exn(MZEXN_FAIL, "subprocess-kill: failed (%E)", errno);
 
-    return NULL;
-  }
+  return NULL;
+}
+
+static void kill_subproc(Scheme_Object *o, void *data)
+{
+  (void)do_subprocess_kill(o, scheme_true, 0);
+}
+
+static void interrupt_subproc(Scheme_Object *o, void *data)
+{
+  (void)do_subprocess_kill(o, scheme_true, 0);
+}
+#endif
+
+static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_subprocess_type))
+    scheme_wrong_type("subprocess-kill", "subprocess", 0, argc, argv);
+
+#if defined(UNIX_PROCESSES) || defined(WINDOWS_PROCESSES)
+  return do_subprocess_kill(argv[0], argv[1], 1);
 #else
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
 		   "%s: not supported on this platform",
 		   "subprocess-wait");
+  return NULL;
 #endif
 }
 
@@ -7291,6 +7326,27 @@ static Scheme_Object *subprocess_p(int argc, Scheme_Object **argv)
   return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_subprocess_type)
 	  ? scheme_true
 	  : scheme_false);
+}
+
+static Scheme_Object *subproc_cust_mode_p(int argc, Scheme_Object **argv)
+{
+  if (SCHEME_FALSEP(argv[0]))
+    return argv[0];
+  if (SCHEME_SYMBOLP(argv[0]) && !SCHEME_SYM_WEIRDP(argv[0])) {
+    if (!strcmp(SCHEME_SYM_VAL(argv[0]), "kill"))
+      return argv[0];
+    if (!strcmp(SCHEME_SYM_VAL(argv[0]), "interrupt"))
+      return argv[0];
+  }
+    
+  return NULL;
+}
+
+static Scheme_Object *current_subproc_cust_mode (int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-subprocess-custodian-mode", scheme_make_integer(MZCONFIG_SUBPROC_CUSTODIAN_MODE),
+			     argc, argv,
+			     -1, subproc_cust_mode_p, "'interrupt, 'kill, or #f", 0);
 }
 
 /*********** Windows: command-line construction *************/
@@ -7450,6 +7506,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   Scheme_Object *errport;
   Scheme_Object *a[4];
   Scheme_Subprocess *subproc;
+  Scheme_Object *cust_mode;
 #if defined(WINDOWS_PROCESSES)
   int exact_cmdline = 0;
 #endif
@@ -7589,6 +7646,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
   if (!inport || !outport || !errport)
     scheme_custodian_check_available(NULL, name, "file-stream");
+
+  cust_mode = scheme_get_param(scheme_current_config(), MZCONFIG_SUBPROC_CUSTODIAN_MODE);
 
   /*--------------------------------------*/
   /*          Create needed pipes         */
@@ -7882,6 +7941,21 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 # if defined(WINDOWS_PROCESSES)
   scheme_add_finalizer(subproc, close_subprocess_handle, NULL);
 # endif
+
+  if (SCHEME_TRUEP(cust_mode)) {
+    Scheme_Custodian_Reference *mref;
+    if (!strcmp(SCHEME_SYM_VAL(cust_mode), "kill"))
+      mref = scheme_add_managed(NULL,
+                                (Scheme_Object *)subproc,
+                                (Scheme_Close_Custodian_Client *)kill_subproc,
+                                NULL, 1);
+    else
+      mref = scheme_add_managed(NULL,
+                                (Scheme_Object *)subproc,
+                                (Scheme_Close_Custodian_Client *)interrupt_subproc,
+                                NULL, 1);
+    subproc->mref = mref;
+  }
 
 #define cons scheme_make_pair
 

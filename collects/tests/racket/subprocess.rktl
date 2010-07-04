@@ -5,7 +5,9 @@
 
 (Section 'subprocess)
 
-(define self (find-executable-path (find-system-path 'exec-file) #f))
+(define self
+  (parameterize ([current-directory (find-system-path 'orig-dir)])
+    (find-executable-path (find-system-path 'exec-file) #f)))
 (define cat (find-executable-path "cat" #f))
 (define tmpfile (build-path (find-system-path 'temp-dir) "cattmp"))
 (define tmpfile2 (build-path (find-system-path 'temp-dir) "cattmp2"))
@@ -260,5 +262,29 @@
 (close-input-port r)
 (close-input-port e)
 (close-output-port w)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; custodians
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(let ([try
+       (lambda (post-shutdown)
+         (let ([c (make-custodian)])
+           (let ([l (parameterize ([current-custodian c])
+                      (process* self
+                                "-e"
+                                "(let loop () (loop))"))])
+             (test 'running (list-ref l 4) 'status)
+             (custodian-shutdown-all c)
+             (sleep 0.1)
+             (test post-shutdown (list-ref l 4) 'status)
+             ((list-ref l 4) 'kill))))])
+  (try 'running)
+  (parameterize ([current-subprocess-custodian-mode 'kill])
+    (try 'done-error))
+  (parameterize ([current-subprocess-custodian-mode 'interrupt])
+    (try (if (eq? 'windows (system-type)) 'running 'done-error))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

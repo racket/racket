@@ -72,7 +72,7 @@ The @racket[subprocess] procedure returns four values:
 ]
 
 @bold{Important:} All ports returned from @racket[subprocess] must be
-explicitly closed with @racket[close-input-port] or
+explicitly closed, usually with @racket[close-input-port] or
 @racket[close-output-port].
 
 The returned ports are @tech{file-stream ports} (see
@@ -80,8 +80,11 @@ The returned ports are @tech{file-stream ports} (see
 the current custodian (see @secref["custodians"]).  The
 @exnraise[exn:fail] when a low-level error prevents the spawning of a
 process or the creation of operating system pipes for process
-communication.}
+communication.
 
+The @racket[current-subprocess-custodian-mode] parameter determines
+whether the subprocess itself is registered with the current
+custodian.}
 
 @defproc[(subprocess-wait [subproc subprocess?]) void?]{
 
@@ -124,6 +127,26 @@ running.}
 
 Returns @racket[#t] if @racket[v] is a subprocess value, @racket[#f]
 otherwise.}
+
+
+@defparam[current-subprocess-custodian-mode mode (or/c #f 'kill 'interrupt)]{
+
+Determines whether a subprocess (as created by @racket[subprocess] or
+wrappers like @racket[process]) is registered with the current
+@tech{custodian}. If the parameter value is @racket[#f], then the subprocess
+is not registered with the custodian---although any created ports are
+registered. If the parameter value is @racket['kill] or
+@racket['interrupt], then the subprocess is shut down through
+@racket[subprocess-kill], where @racket['kill] supplies a @racket[#t]
+value for the @racket[_force?] argument and @racket['interrupt]
+supplies a @racket[#f] value. The shutdown may occur either before or
+after ports created for the subprocess are closed.
+
+Custodian-triggered shutdown is limited by details of process handling
+in the host system. For example, @racket[process] and @racket[system]
+may create an intermediate shell process to run a program, in which
+case custodian-based termination shuts down the shell process and
+probably not the process started by the shell.}
 
 
 @defproc[(shell-execute [verb (or/c string? #f)]
