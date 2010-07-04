@@ -274,7 +274,9 @@ Like @racket[system*], but returns the exit code like
                input-port?
                ((or/c 'status 'wait 'interrupt 'kill) . -> . any))]{
 
-Executes a shell command asynchronously. The result is a list of five values:
+Executes a shell command asynchronously (using @exec{sh} under Unix
+and Mac OS X, @exec{cmd} under Windows). The result is a list of five
+values:
 
 @itemize[
 
@@ -304,7 +306,13 @@ Executes a shell command asynchronously. The result is a list of five values:
 
    @item{@racket['interrupt] sends the subprocess an interrupt signal
     under @|AllUnix|, and takes no action under Windows. The result is
-    @|void-const|.}
+    @|void-const|.
+
+     @margin-note{Under Unix and Mac OS X, if @racket[command] runs a
+     single program, then @exec{sh} typically runs the program in
+     such a way that it replaces @exec{sh} in the same process. For
+     reliable and precise control over process creation, however, use
+     @racket[process*].}}
 
    @item{@racket['kill] terminates the subprocess and returns
      @|void-const|.  Note that the immediate process created by
