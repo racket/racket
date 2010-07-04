@@ -19,37 +19,34 @@
   ;; at the end if needed.
   (let* ([def-ctx (syntax-local-make-definition-context)]
          [ctx (list (gensym 'intdef))]
-         ;[kernel-forms (kernel-form-identifier-list)]
+         ;; [kernel-forms (kernel-form-identifier-list)]
+         [stoplist (list #'begin #'define-syntaxes #'define-values)]
          [init-exprs (let ([v (syntax->list stx)])
-                       (unless v
-                         (raise-syntax-error #f "bad syntax" stx))
+                       (unless v (raise-syntax-error #f "bad syntax" stx))
                        (cdr v))]
-         [exprs (let loop ([exprs init-exprs])
-                  (apply
-                   append
-                   (map (lambda (expr)
-                          (let ([expr (local-expand expr ctx (list #'begin #'define-syntaxes #'define-values) def-ctx)])
-                            (syntax-case expr (begin define-syntaxes define-values)
-                              [(begin . rest)
-                               (loop (syntax->list #'rest))]
-                              [(define-syntaxes (id ...) rhs)
-                               (andmap identifier? (syntax->list #'(id ...)))
-                               (with-syntax ([rhs (local-transformer-expand
-                                                   #'rhs
-                                                   'expression
-                                                   null)])
-                                 (syntax-local-bind-syntaxes
-                                  (syntax->list #'(id ...))
-                                  #'rhs def-ctx)
-                                 (list #'(define-syntaxes (id ...) rhs)))]
-                              [(define-values (id ...) rhs)
-                               (andmap identifier? (syntax->list #'(id ...)))
-                               (let ([ids (syntax->list #'(id ...))])
-                                 (syntax-local-bind-syntaxes ids #f def-ctx)
-                                 (list expr))]
-                              [else
-                               (list expr)])))
-                        exprs)))])
+         [exprs
+          (let loop ([todo init-exprs] [r '()])
+            (if (null? todo)
+              (reverse r)
+              (let ([expr (local-expand (car todo) ctx stoplist def-ctx)]
+                    [todo (cdr todo)])
+                (syntax-case expr (begin define-syntaxes define-values)
+                  [(begin . rest)
+                   (loop (append (syntax->list #'rest) todo) r)]
+                  [(define-syntaxes (id ...) rhs)
+                   (andmap identifier? (syntax->list #'(id ...)))
+                   (with-syntax ([rhs (local-transformer-expand
+                                       #'rhs 'expression null)])
+                     (syntax-local-bind-syntaxes
+                      (syntax->list #'(id ...))
+                      #'rhs def-ctx)
+                     (loop todo (cons #'(define-syntaxes (id ...) rhs) r)))]
+                  [(define-values (id ...) rhs)
+                   (andmap identifier? (syntax->list #'(id ...)))
+                   (let ([ids (syntax->list #'(id ...))])
+                     (syntax-local-bind-syntaxes ids #f def-ctx)
+                     (loop todo (cons expr r)))]
+                  [else (loop todo (cons expr r))]))))])
     (internal-definition-context-seal def-ctx)
     (let loop ([exprs exprs]
                [prev-stx-defns null]
