@@ -1448,7 +1448,9 @@ static void backtrace_new_page(NewGC *gc, mpage *page)
 {
   /* This is a little wastefull for big pages, because we'll
      only use the first few words: */
-  page->backtrace = (void **)malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, MMU_ZEROED, MMU_BIGMED, MMU_NON_PROTECTABLE, &page->backtrace_page_src);
+  page->backtrace = (void **)malloc_pages(gc, APAGE_SIZE, APAGE_SIZE, 
+                                          MMU_ZEROED, MMU_BIG_MED, MMU_NON_PROTECTABLE, 
+                                          &page->backtrace_page_src);
 }
 
 # define backtrace_new_page_if_needed(gc, page) if (!page->backtrace) backtrace_new_page(gc, page)
@@ -1456,7 +1458,9 @@ static void backtrace_new_page(NewGC *gc, mpage *page)
 static void free_backtrace(mpage *page)
 {
   if (page->backtrace)
-    free_pages(GC, page->backtrace, APAGE_SIZE, MMU_BIG_MED, MMU_NON_PROTECTABLE, &page->backtrace_page_src);
+    free_pages(GC_instance, page->backtrace, APAGE_SIZE, 
+               MMU_BIG_MED, MMU_NON_PROTECTABLE, 
+               &page->backtrace_page_src);
 }
 
 static void *bt_source;
@@ -4143,7 +4147,7 @@ void GC_dump_variable_stack(void **var_stack,
   stack_get_type_name = get_type_name;
   stack_get_xtagged_name = get_xtagged_name;
   stack_print_tagged_value = print_tagged_value;
-  GC_do_dump_variable_stack(var_stack, delta, limit, stack_mem);
+  GC_do_dump_variable_stack(var_stack, delta, limit, stack_mem, GC_get_GC());
 }
 
 #endif

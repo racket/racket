@@ -50,12 +50,16 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
     if (c == SEGV_MAPERR) {
       printf("SIGSEGV MAPERR si_code %i fault on addr %p\n", c, p);
     }
-    if (c == 0 ) {
-      /* I have now idea why this happens on linux */
+    if (c == 0) {
+      /* I have no idea why this happens on linux */
       /* supposedly its coming from the user via kill */
       /* so just ignore it. */
       printf("SIGSEGV SI_USER SI_CODE %i fault on addr %p\n", c, p);
+#ifdef MZ_USE_PLACES
       printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_thread_self());
+#else
+      printf("pid %i uid %i\n", si->si_pid, si->si_uid);
+#endif      
       return;
     }
     if (c == 128 ) {

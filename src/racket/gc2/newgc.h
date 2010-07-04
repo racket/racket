@@ -37,6 +37,7 @@ typedef struct mpage {
   unsigned short live_size;
 #ifdef MZ_GC_BACKTRACE
   void **backtrace;
+  void *backtrace_page_src;
 #endif
   void *mmu_src_block;
 } mpage;
