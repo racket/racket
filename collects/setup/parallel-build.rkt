@@ -188,12 +188,13 @@ END
   (define process-worker-filename
     (path->string (build-path (collection-path "setup") "parallel-build-worker.rkt")))
 
-  (define executable (find-system-path 'exec-file))
+  (define executable (parameterize ([current-directory (find-system-path 'orig-dir)])
+                       (find-executable-path (find-system-path 'exec-file) #f)))
   (define (send/msg x ch)
     (write x ch)
     (flush-output ch))
   (define (spawn i)
-    (let-values ([(s o in e) (subprocess #f #f (current-error-port) (path->string executable) process-worker-filename)])
+    (let-values ([(s o in e) (subprocess #f #f (current-error-port) executable process-worker-filename)])
       (send/msg i in)
       (list i s o in e)))
   (define (kill-worker i nw o in)
