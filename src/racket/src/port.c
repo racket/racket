@@ -7225,7 +7225,7 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
     if (sp->done)
       return scheme_void;
     if(scheme_get_child_status(sp->pid, &status)) {
-	   return scheme_void;
+      return scheme_void;
     }
   }
 # else

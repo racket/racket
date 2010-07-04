@@ -369,6 +369,7 @@ static void exit_or_escape(Scheme_Thread *p);
 
 static int resume_suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static int cust_box_ready(Scheme_Object *o);
 
 static int can_break_param(Scheme_Thread *p);
 
@@ -559,6 +560,8 @@ void scheme_init_thread(Scheme_Env *env)
   scheme_add_evt(scheme_thread_suspend_type, (Scheme_Ready_Fun)resume_suspend_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_thread_resume_type, (Scheme_Ready_Fun)resume_suspend_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_thread_dead_type, (Scheme_Ready_Fun)dead_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_cust_box_type, cust_box_ready, NULL, NULL, 0);
+
 
   scheme_add_global_constant("make-custodian",
 			     scheme_make_prim_w_arity(make_custodian,
@@ -1872,6 +1875,12 @@ static Scheme_Object *custodian_box_p(int argc, Scheme_Object *argv[])
   else
     return scheme_false;
 }
+
+static int cust_box_ready(Scheme_Object *o)
+{
+  return ((Scheme_Custodian_Box *)o)->cust->shut_down;
+}
+
 
 #ifndef MZ_PRECISE_GC
 void scheme_clean_cust_box_list(void)

@@ -75,6 +75,7 @@
               (collect-garbage)
               (collect-garbage))]
         [b1 (make-custodian-box c 12)])
+    (test #f sync/timeout 0 b1)
     (let ([saved (map mk-finalized '(a b c d e f g h i))])
       (let loop ([m 2])
         (unless (zero? m)
@@ -94,6 +95,7 @@
       (set! removed null)
       (custodian-shutdown-all c)
       (test #f custodian-box-value b1)
+      (test b1 sync/timeout 0 b1)
       (test #f ormap values (map custodian-box-value saved))
       (gc)
       (test #t <= 5 (apply + (map (lambda (v) (if (symbol? v) 1 0)) removed))))))
@@ -132,6 +134,18 @@
       (test #t andmap (lambda (b) (number? (custodian-box-value b))) l)
       (custodian-shutdown-all c)
       (test #f ormap (lambda (b) (number? (custodian-box-value b))) l))))
+
+;; check synchronization again:
+(let ()
+  (define done #f)
+  (define c1 (make-custodian (current-custodian)))
+  (define b1 (make-custodian-box c1 #t))
+  (thread (lambda () (sync b1) (set! done #t)))
+  (sync (system-idle-evt))
+  (test #f values done)
+  (custodian-shutdown-all c1)
+  (sync (system-idle-evt))
+  (test #t values done))
 
 ;; ----------------------------------------
 

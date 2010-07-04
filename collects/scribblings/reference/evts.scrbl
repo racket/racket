@@ -2,10 +2,10 @@
 @(require scribble/struct
           "mz.ss")
 
-@(define (ResultItself x)
+@(define-syntax-rule (ResultItself x)
    (make-element #f (list "The "
                           (tech "synchronization result")
-                          " of " x " is " x " itself")))
+                          " of " @racket[x] " is " @racket[x] " itself")))
 
 @title[#:tag "sync"]{Events}
 
@@ -39,12 +39,12 @@ generate events (see @racket[prop:evt]).
 @itemize[
 
  @item{@racket[_semaphore] --- a semaphore is ready when
- @racket[semaphore-wait] would not block.  @ResultItself{semaphore}.}
+ @racket[semaphore-wait] would not block.  @ResultItself[_semaphore].}
 
  @item{@racket[_semaphore-peek] --- a semaphore-peek event returned by
  @racket[semaphore-peek-evt] applied to @racket[_semaphore] is ready
  exactly when @racket[_semaphore] is
- ready. @ResultItself{semaphore-peek}.}
+ ready. @ResultItself[_semaphore-peek].}
 
  @item{@racket[_channel] --- a channel returned by
  @racket[make-channel] is ready when @racket[channel-get] would not
@@ -54,30 +54,30 @@ generate events (see @racket[prop:evt]).
  @item{@racket[_channel-put] --- an event returned by
  @racket[channel-put-evt] applied to @racket[_channel] is ready when
  @racket[channel-put] would not block on
- @racket[_channel]. @ResultItself{channel-put}.}
+ @racket[_channel]. @ResultItself[_channel-put].}
 
  @item{@racket[_input-port] --- an input port is ready as an event when
- @racket[read-byte] would not block. @ResultItself{input-port}.}
+ @racket[read-byte] would not block. @ResultItself[_input-port].}
 
  @item{@racket[_output-port] --- an output port is ready when
  @racket[write-bytes-avail] would not block or
  when the port contains buffered characters and
  @racket[write-bytes-avail*] can flush part of the buffer (although
- @racket[write-bytes-avail] might block). @ResultItself{output-port}.}
+ @racket[write-bytes-avail] might block). @ResultItself[_output-port].}
 
  @item{@racket[_progress] --- an event produced by
  @racket[port-progress-evt] applied to @racket[_input-port] is ready after
- any subsequent read from @racket[_input-port]. @ResultItself{progress}.}
+ any subsequent read from @racket[_input-port]. @ResultItself[_progress].}
 
  @item{@racket[_tcp-listener] --- a TCP listener is ready when
- @racket[tcp-accept] would not block.  @ResultItself{listener}.}
+ @racket[tcp-accept] would not block.  @ResultItself[_listener].}
 
  @item{@racket[_thd] --- a thread is ready when @racket[thread-wait]
- would not block. @ResultItself{thread}.}
+ would not block. @ResultItself[_thread].}
 
  @item{@racket[_thread-dead] --- an event returned by
  @racket[thread-dead-evt] applied to @racket[thd] is ready when
- @racket[thd] has terminated.  @ResultItself{thread-dead}.}
+ @racket[thd] has terminated.  @ResultItself[_thread-dead].}
 
  @item{@racket[_thread-resume] --- an event returned by
  @racket[thread-resume-evt] applied to @racket[thd] is ready when
@@ -90,19 +90,22 @@ generate events (see @racket[prop:evt]).
  suspended).  The event's result is @racket[thd].}
 
  @item{@racket[_alarm] --- an event returned by @racket[alarm-evt] is
- ready after a particular date and time.  @ResultItself{alarm}.}
+ ready after a particular date and time.  @ResultItself[_alarm].}
 
  @item{@racket[_subprocess] --- a subprocess is ready when
  @racket[subprocess-wait] would not block.
- @ResultItself{subprocess}.}
+ @ResultItself[_subprocess].}
 
- @item{@racket[_will-executor] --- a will executor is ready when
+ @item{@racket[_will-executor] --- a @tech{will executor} is ready when
  @racket[will-execute] would not block.
- @ResultItself{will-executor}.}
+ @ResultItself[_will-executor].}
+
+ @item{@racket[_custodian-box] --- a @tech{custodian box} is ready when
+ its custodian is shut down. @ResultItself[_custodian-box].}
 
  @item{@racket[_udp] --- an event returned by @racket[udp-send-evt] or
  @racket[udp-receive!-evt] is ready when a send or receive on the
- original socket would block, respectively. @ResultItself{udp}.}
+ original socket would block, respectively. @ResultItself[_udp].}
 
  @item{@racket[_log-receiver] --- a @tech{log receiver} as produced by
  @racket[make-log-receiver] is ready when a logged message is
@@ -170,7 +173,7 @@ generate events (see @racket[prop:evt]).
  property.}
 
  @item{@racket[always-evt] --- a constant event that is always
- ready. @ResultItself{@racket[always-evt]}.}
+ ready. @ResultItself[always-evt].}
 
  @item{@racket[never-evt] --- a constant event that is never ready.}
 
