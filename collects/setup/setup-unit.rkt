@@ -660,7 +660,7 @@
     (setup-printf #f "--- compiling collections ---")
     (match (parallel-build)
       [#t
-        (compile-cc (ormap (lambda (x) (if (string=? (cc-name x) "racket") x #f)) ccs-to-compile) 0)
+        (compile-cc (collection->cc (list (string->path "racket"))) 0)
         (with-specified-mode
           (let ([cct (move-drscheme-to-end (sort-collections-tree (collection-tree-map top-level-plt-collects)))])
             (iterate-cct (lambda (cc)
