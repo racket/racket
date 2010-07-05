@@ -1,17 +1,17 @@
 #lang racket/base
 
 (require (for-template racket/base) racket/dict
-         racket/trace
          syntax/id-table syntax/kerncase)
 
-;; samth : this should use sets, not dicts
-;; but sets do not have extensible comparisons
-;; shouldn't be promoted until this is fixed
-
 ;; find and add to mapping all the set!'ed variables in form
-;; syntax -> table
-(define (find-mutated-vars form)
-  (let loop ([stx form] [tbl (make-immutable-free-id-table)])
+;; if the supplied mapping is mutable, mutates it
+;; default is immutability
+;; syntax [table] -> table
+(define (find-mutated-vars form [tbl (make-immutable-free-id-table)])
+  (define add (if (dict-mutable? tbl)
+                  (lambda (t i) (dict-set! t i #t) t)
+                  (lambda (t i) (dict-set t i #t))))
+  (let loop ([stx form] [tbl tbl])
     ;; syntax-list -> table
     (define (fmv/list lstx)
       (for/fold ([tbl tbl])
@@ -20,7 +20,7 @@
     (kernel-syntax-case* stx #f (#%top-interaction)
       ;; what we care about: set!
       [(set! v e)
-       (dict-set (loop #'e tbl) #'v #t)]
+       (add (loop #'e tbl) #'v)]
       ;; forms with expression subforms
       [(define-values (var ...) expr)
        (loop #'expr tbl)]
