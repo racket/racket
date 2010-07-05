@@ -661,6 +661,7 @@
     (match (parallel-build)
       [#t
         (compile-cc (collection->cc (list (string->path "racket"))) 0)
+        (managed-compile-zo (build-path main-collects-dir  "setup/parallel-build-worker.rkt"))
         (with-specified-mode
           (let ([cct (move-drscheme-to-end (sort-collections-tree (collection-tree-map top-level-plt-collects)))])
             (iterate-cct (lambda (cc)

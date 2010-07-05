@@ -1232,6 +1232,7 @@ path/s is either such a string or a list of them.
 "collects/scriblib" responsible (mflatt)
 "collects/setup" responsible (mflatt)
 "collects/setup/main.rkt" drdr:command-line #f
+"collects/setup/parallel-build-worker.rkt" drdr:command-line #f
 "collects/setup/plt-installer.rkt" drdr:command-line (gracket-text "-t" *)
 "collects/setup/setup-go.rkt" drdr:command-line #f
 "collects/setup/unixstyle-install.rkt" drdr:command-line (mzc *)

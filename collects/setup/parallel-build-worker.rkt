@@ -1,5 +1,7 @@
-#lang racket
+#lang racket/base
 (require compiler/cm)
+(require racket/match)
+
 (let ([cmc (make-caching-managed-compile-zo)]
       [worker-id (read)])
  (let loop ()
@@ -25,7 +27,7 @@
                            [current-output-port out-str-port]
                            [current-error-port err-str-port]
                            ;[manager-compile-notify-handler pp]
-)
+                          )
 
               (cmc (build-path dir file)))
             (send/resp 'DONE))))
