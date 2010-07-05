@@ -160,12 +160,22 @@ void *mzrt_thread_stub(void *data){
   mzrt_thread_stub_data *stub_data  = (mzrt_thread_stub_data*) data;
   mz_proc_thread_start start_proc     = stub_data->start_proc;
   void *start_proc_data               = stub_data->data;
+  void* res;
+
   scheme_init_os_thread();
-  proc_thread_self                    = stub_data->thread;
+
+  proc_thread_self = stub_data->thread;
 
   free(data);
 
-  return start_proc(start_proc_data);
+  res = start_proc(start_proc_data);
+
+  if (proc_thread_self->refcount)
+    free(proc_thread_self);
+
+  scheme_done_os_thread();
+
+  return res;
 }
 
 #ifdef WIN32
@@ -196,11 +206,14 @@ mz_proc_thread* mzrt_proc_first_thread_init() {
   thread->mbox      = pt_mbox_create();
   thread->threadid  = mz_proc_thread_self();
   proc_thread_self  = thread;
+  thread->refcount = 1;
   return thread;
 }
 
 mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_proc, void* data, long stacksize) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
+  mzrt_thread_stub_data *stub_data;
+
 #   ifndef WIN32
   pthread_attr_t *attr;
   pthread_attr_t attr_storage;
@@ -213,7 +226,10 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
     attr = NULL;
 #   endif
 
-  mzrt_thread_stub_data *stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
+  thread->refcount = 2;
+
+  stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
+
   thread->mbox = pt_mbox_create();
   stub_data->start_proc = start_proc;
   stub_data->data       = data;
@@ -221,7 +237,11 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
 #   ifdef WIN32
   thread->threadid = CreateThread(NULL, stacksize, mzrt_win_thread_stub, stub_data, 0, NULL);
 #   else
+#    ifdef MZ_PRECISE_GC
   pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
+#    else
+  GC_pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
+#    endif
 #   endif
 
   return thread;
@@ -240,34 +260,43 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
 }
 
 void * mz_proc_thread_wait(mz_proc_thread *thread) {
-#ifdef WIN32
-  DWORD rc;
-  WaitForSingleObject(thread->threadid,INFINITE);
-  GetExitCodeThread(thread->threadid, &rc);
-  return (void *) rc;
-#else
   void *rc;
+#ifdef WIN32
+  DWORD rcw;
+  WaitForSingleObject(thread->threadid,INFINITE);
+  GetExitCodeThread(thread->threadid, &rcw);
+  rc = (void *)rcw;
+  CloseHandle(thread->threadid);
+#else
 #   ifndef MZ_PRECISE_GC
   GC_pthread_join(thread->threadid, &rc);
 #   else
   pthread_join(thread->threadid, &rc);
 #   endif
-  return rc;
 #endif
+
+  if (!--thread->refcount)
+    free(thread);
+  
+  return rc;
 }
 
 int mz_proc_thread_detach(mz_proc_thread *thread) {
-#ifdef WIN32
-  return CloseHandle(thread->threadid);
-#else
   int rc;
+#ifdef WIN32
+  rc = CloseHandle(thread->threadid);
+#else
 #   ifndef MZ_PRECISE_GC
   rc = GC_pthread_detach(thread->threadid);
 #   else
   rc = pthread_detach(thread->threadid);
 #   endif
-  return rc;
 #endif
+
+  if (!--thread->refcount)
+    free(thread);
+
+  return rc;
 }
 
 void mz_proc_thread_exit(void *rc) {

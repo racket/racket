@@ -41,7 +41,7 @@ int designate_modified(void *p);
 # define THREAD_FLD(x) x
 #endif
 
-#if defined(MZ_USE_PLACES) && defined (MZ_PRECISE_GC)
+#if defined(MZ_USE_PLACES)
 typedef struct OSXThreadData {
   struct OSXThreadData *next;
   mach_port_t thread_port_id;
@@ -95,6 +95,25 @@ static void register_mach_thread() {
     osxthreads[index] = thread;
   }
   pthread_mutex_unlock(&osxthreadsmutex);
+}
+
+static void unregister_mach_thread() {
+  mach_port_t thread_self = mach_thread_self();
+  int index = thread_self % OSX_THREAD_TABLE_SIZE;
+  OSXThreadData * thread, *prev = NULL;
+
+  thread = osxthreads[index];
+  while (thread->thread_port_id != thread_self) {
+    prev = thread;
+    thread = thread->next;
+  }
+  if (thread) {
+    if (prev)
+      prev->next = thread->next;
+    else
+      osxthreads[index] = thread->next;
+    free(thread);
+  }
 }
 
 #endif
@@ -290,7 +309,7 @@ kern_return_t GC_catch_exception_raise(mach_port_t port,
     p = (void *)exc_state. THREAD_FLD(faultvaddr);
 #endif
 
-#if defined(MZ_USE_PLACES) && defined (MZ_PRECISE_GC)
+#if defined(MZ_USE_PLACES)
   set_thread_locals_from_mach_thread_id(thread_port);
 #endif
 
@@ -373,8 +392,15 @@ void GC_attach_current_thread_exceptions_to_handler()
     GCPRINT(GCOUTF, "Couldn't set exception ports: %s\n", mach_error_string(retval));
     abort();
   }
-#if defined(MZ_USE_PLACES) && defined (MZ_PRECISE_GC)
+#if defined(MZ_USE_PLACES)
   register_mach_thread();
+#endif
+}
+
+void GC_detach_current_thread_exceptions_from_handler()
+{
+#if defined(MZ_USE_PLACES)
+  unregister_mach_thread();
 #endif
 }
 

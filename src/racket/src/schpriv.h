@@ -313,6 +313,7 @@ void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
 
 void *scheme_get_os_thread_like();
 void scheme_init_os_thread_like(void *);
+void scheme_done_os_thread();
 
 /*========================================================================*/
 /*                                constants                               */
@@ -3449,11 +3450,18 @@ typedef struct Scheme_Symbol_Parts {
 } Scheme_Symbol_Parts;
 
 void scheme_spawn_master_place();
-void scheme_places_block_child_signal();
-int scheme_get_child_status(int pid, int *status);
-int scheme_places_register_child(int pid, void *signal_fd, int *status);
 # endif
 Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
+# ifdef UNIX_PROCESSES
+# define MZ_PLACES_WAITPID
+void scheme_places_block_child_signal();
+void scheme_places_start_child_signal_handler();
+int scheme_get_child_status(int pid, int is_group, int *status);
+int scheme_places_register_child(int pid, int is_group, void *signal_fd, int *status);
+void scheme_wait_suspend();
+void scheme_wait_resume();
+void scheme_done_with_process_id(int pid, int is_group);
+# endif
 #endif
 
 typedef struct Scheme_Place_Bi_Channel {

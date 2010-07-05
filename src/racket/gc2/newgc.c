@@ -2040,12 +2040,15 @@ static void NewGCMasterInfo_initialize() {
   mzrt_sema_create(&MASTERGCINFO->wait_sema, 0);
 }
 
+#if 0
+/* Not yet used: */
 static void NewGCMasterInfo_cleanup() {
   mzrt_rwlock_destroy(MASTERGCINFO->cangc);
   free(MASTERGCINFO->signal_fds);
   free(MASTERGCINFO);
   MASTERGCINFO = NULL;
 }
+#endif
 
 /* signals every place to do a full gc at then end of 
    garbage_collect the places will call 

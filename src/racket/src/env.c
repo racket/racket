@@ -357,9 +357,11 @@ Scheme_Env *scheme_engine_instance_init() {
 #endif
   make_kernel_env();
 
-#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
-  scheme_places_block_child_signal();
+#if defined(MZ_PLACES_WAITPID)
+  scheme_places_start_child_signal_handler();
+#endif
 
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   GC_switch_out_master_gc();
 
   scheme_spawn_master_place();

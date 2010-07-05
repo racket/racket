@@ -34,6 +34,7 @@ typedef pthread_t mzrt_thread_id;
 
 typedef struct mz_proc_thread {
   mzrt_thread_id threadid;
+  int refcount;
   struct pt_mbox *mbox;
 } mz_proc_thread;
 
