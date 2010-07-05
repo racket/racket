@@ -27,7 +27,7 @@
 
   (define setup-program-name (make-parameter "setup-plt"))
 
-  (define-flag-param parallel-build #f)
+  (define-flag-param parallel-build #t)
   (define-flag-param parallel-workers (processor-count))
   (define-flag-param verbose #f)
   (define-flag-param make-verbose #f)
