@@ -368,7 +368,7 @@ static void *mz_proc_thread_signal_worker(void *data) {
   int status;
   int pid, check_pid, is_group;
   sigset_t set;
-  Child_Status *group_status, *prev_group;
+  Child_Status *group_status, *prev_group, *next;
 
   sigemptyset(&set);
   sigaddset(&set, SIGCHLD);
@@ -423,11 +423,13 @@ static void *mz_proc_thread_signal_worker(void *data) {
       } else if (pid > 0) {
         /* printf("SIGCHILD pid %i with status %i %i\n", pid, status, WEXITSTATUS(status)); */
         if (is_group) {
-          group_status = group_status->next;
+          next = group_status->next;
           if (prev_group)
-            prev_group->next_group = group_status;
+            prev_group->next_group = next;
           else
-            child_group_statuses = group_status;
+            child_group_statuses = next;
+          free(group_status);
+          group_status = next;
         } else
           add_child_status(pid, status);
       } else {

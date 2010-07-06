@@ -6865,11 +6865,14 @@ static void check_child_done(pid_t pid)
       if (result > 0) {
         if (is_group) {
           /* done with an inaccessible group id */
-          unused = (void **)unused[1];
+          void *next;
+          next = (void **)unused[1];
           if (unused_prev)
-            unused_prev[1] = unused;
+            unused_prev[1] = unused[1];
           else
-            unused_groups = unused;
+            unused_groups = unused[1];
+          free(unused);
+          unused = (void **)next;
         }
 
         START_XFORM_SKIP;
