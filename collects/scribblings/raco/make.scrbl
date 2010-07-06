@@ -294,6 +294,17 @@ available (i.e., the suffix on @racket[p] is replaced by
 @filepath{.dep} to locate dependency information). The result is
 @racket[#f] if @racket[p] cannot be opened.}
 
+@defproc[(with-compile-output [p path-string?] [proc ([port input-port?] [tmp-path path?]  . -> . any)]) any]{
+
+Opens a temporary path for writing and calls @racket[proc] passing the 
+resulting @racket[port] and @racket[tmp-path].  Once @racket[proc]
+returns, @racket[with-compile-output] renames @racket[tmp-path] to 
+@racket[p] and arranges to delete @racket[temp-path] if there's an
+exception.  Breaks are managed so that the @racket[port] is reliably
+closed and the @racket[tmp-path] file is reliably deleted if there's a
+break. The result of @racket[proc] is the result of the
+@racket[with-compile-output] call.}
+
 @; ----------------------------------------------------------------------
 
 @section{Compilation Manager Hook for Syntax Transformers}

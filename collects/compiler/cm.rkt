@@ -19,7 +19,8 @@
          file-stamp-in-paths
          (rename-out [trace manager-trace-handler])
          get-file-sha1
-         get-compiled-file-sha1)
+         get-compiled-file-sha1
+         with-compile-output)
 
 (define manager-compile-notify-handler (make-parameter void))
 (define trace (make-parameter void))
