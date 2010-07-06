@@ -1,9 +1,10 @@
-#lang racket
+#lang racket/base
 
 ;; Implements a "cat.exe" executable under Windows for the 
 ;; "subprocess.rktl" test.
 
-(require racket/port)
+(require racket/port
+	 racket/cmdline)
 
 (define files
   (command-line

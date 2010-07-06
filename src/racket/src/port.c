@@ -273,6 +273,7 @@ typedef struct Scheme_FD {
 # ifdef WINDOWS_FILE_HANDLES
   Win_FD_Input_Thread *th;   /* input mode */
   Win_FD_Output_Thread *oth; /* output mode */
+  int unblocked; /* whether non-blocking mode is installed */
 # endif
 } Scheme_FD;
 
@@ -6127,7 +6128,7 @@ static long flush_fd(Scheme_Output_Port *op,
 	  if (nonblocking) {
 	    /* Unless we're still trying to flush old data, write to the
 	       pipe and have the other thread start flushing it. */
-	    DWORD old, nonblock = PIPE_NOWAIT;
+	    DWORD nonblock = PIPE_NOWAIT;
 	    int ok, flushed;
 
 	    if (fop->oth) {
@@ -6159,12 +6160,19 @@ static long flush_fd(Scheme_Output_Port *op,
 	         behaviors by trying to write less each iteration when the
 	         write fails. (Yuck.) */
 	      while (1) {
-		GetNamedPipeHandleState((HANDLE)fop->fd, &old, NULL, NULL, NULL, NULL, 0);
-		SetNamedPipeHandleState((HANDLE)fop->fd, &nonblock, NULL, NULL);
-		ok = WriteFile((HANDLE)fop->fd, bufstr XFORM_OK_PLUS offset, towrite, &winwrote, NULL);
-		if (!ok)
-		  errsaved = GetLastError();
-		SetNamedPipeHandleState((HANDLE)fop->fd, &old, NULL, NULL);
+		if (!fop->unblocked) {
+		  ok = SetNamedPipeHandleState((HANDLE)fop->fd, &nonblock, NULL, NULL);
+		  if (ok)
+		    fop->unblocked = 1;
+		  else
+		    errsaved = GetLastError();
+		} else
+		  ok = 1;
+		if (ok) {
+		  ok = WriteFile((HANDLE)fop->fd, bufstr XFORM_OK_PLUS offset, towrite, &winwrote, NULL);
+		  if (!ok)
+		    errsaved = GetLastError();
+		}
 
 		if ((ok && !winwrote)
 		    || (!ok && (errsaved == ERROR_NOT_ENOUGH_MEMORY))) {
