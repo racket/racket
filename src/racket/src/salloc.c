@@ -381,7 +381,9 @@ void scheme_init_os_thread() XFORM_SKIP_PROC
 
 void scheme_done_os_thread() XFORM_SKIP_PROC
 {
+#if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) || defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS)
   free(scheme_get_thread_local_variables());
+#endif
 #ifdef OS_X
 # ifdef MZ_PRECISE_GC
   GC_detach_current_thread_exceptions_from_handler();
