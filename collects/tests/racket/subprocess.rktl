@@ -8,7 +8,11 @@
 (define self
   (parameterize ([current-directory (find-system-path 'orig-dir)])
     (find-executable-path (find-system-path 'exec-file) #f)))
-(define cat (find-executable-path "cat" #f))
+(define cat (find-executable-path 
+	     (if (eq? 'windows (system-type)) 
+		 "cat.exe"
+		 "cat")
+	     #f))
 (define tmpfile (build-path (find-system-path 'temp-dir) "cattmp"))
 (define tmpfile2 (build-path (find-system-path 'temp-dir) "cattmp2"))
 

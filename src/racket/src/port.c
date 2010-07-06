@@ -7559,7 +7559,42 @@ static void close_subprocess_handle(void *sp, void *ignored)
   CloseHandle(subproc->handle);
 }
 
+static void CopyFileHandleForSubprocess(int *hs, int pos)
+{
+  HANDLE h2;
+  int alt_pos = (pos ? 0 : 1);
+
+  if (DuplicateHandle(GetCurrentProcess(),
+		      (HANDLE)hs[pos],
+		      GetCurrentProcess(),
+		      &h2,
+		      0,
+		      TRUE,
+		      DUPLICATE_SAME_ACCESS)) {
+    hs[pos] = (int)h2;
+    hs[alt_pos] = 1;
+  } else {
+    hs[alt_pos] = 0;
+  }
+}
+
+static void CloseFileHandleForSubprocess(int *hs, int pos)
+{
+  int alt_pos = (pos ? 0 : 1);
+  if (hs[alt_pos]) {
+    CloseHandle((HANDLE)hs[pos]);
+  }
+}
+
+#define mzCOPY_FILE_HANDLE(array, pos) CopyFileHandleForSubprocess(array, pos)
+#define mzCLOSE_FILE_HANDLE(array, pos) CloseFileHandleForSubprocess(array, pos)
+
 #endif /* WINDOWS_PROCESSES */
+
+#ifndef mzCOPY_FILE_HANDLE
+# define mzCOPY_FILE_HANDLE(array, pos) /* empty */
+# define mzCLOSE_FILE_HANDLE(array, pos) /* empty */
+#endif
 
 /*********** All: The main system/process/execute function *************/
 
@@ -7616,6 +7651,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       else if (SAME_OBJ(op->sub_type, fd_output_port_type))
 	from_subprocess[1] = ((Scheme_FD *)op->port_data)->fd;
 # endif
+      mzCOPY_FILE_HANDLE(from_subprocess, 1);
 #endif
     } else
       scheme_wrong_type(name, "file-stream-output-port", 0, c, args);
@@ -7639,6 +7675,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       else if (SAME_OBJ(ip->sub_type, fd_input_port_type))
 	to_subprocess[0] = ((Scheme_FD *)ip->port_data)->fd;
 # endif
+      mzCOPY_FILE_HANDLE(to_subprocess, 0);
 #endif
     } else
       scheme_wrong_type(name, "file-stream-input-port", 1, c, args);
@@ -7662,6 +7699,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       else if (SAME_OBJ(op->sub_type, fd_output_port_type))
 	err_subprocess[1] = ((Scheme_FD *)op->port_data)->fd;
 # endif
+      mzCOPY_FILE_HANDLE(err_subprocess, 1);
 #endif
     } else
       scheme_wrong_type(name, "file-stream-output-port", 2, c, args);
@@ -7736,23 +7774,33 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*          Create needed pipes         */
   /*--------------------------------------*/
 
-  if (!inport && PIPE_FUNC(to_subprocess, 1 _EXTRA_PIPE_ARGS))
+  if (!inport && PIPE_FUNC(to_subprocess, 1 _EXTRA_PIPE_ARGS)) {
+    if (outport) { mzCLOSE_FILE_HANDLE(from_subprocess, 1); }
+    if (errport) { mzCLOSE_FILE_HANDLE(err_subprocess, 1); }
     scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errno);
+  }
   if (!outport && PIPE_FUNC(from_subprocess, 0 _EXTRA_PIPE_ARGS)) {
     if (!inport) {
       MSC_IZE(close)(to_subprocess[0]);
       MSC_IZE(close)(to_subprocess[1]);
+    } else {
+      mzCLOSE_FILE_HANDLE(to_subprocess, 0);
     }
+    if (errport) { mzCLOSE_FILE_HANDLE(err_subprocess, 1); }
     scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errno);
   }
   if (!errport && PIPE_FUNC(err_subprocess, 0 _EXTRA_PIPE_ARGS)) {
     if (!inport) {
       MSC_IZE(close)(to_subprocess[0]);
       MSC_IZE(close)(to_subprocess[1]);
+    } else {
+      mzCLOSE_FILE_HANDLE(to_subprocess, 0);
     }
     if (!outport) {
       MSC_IZE(close)(from_subprocess[0]);
       MSC_IZE(close)(from_subprocess[1]);
+    } else {
+      mzCLOSE_FILE_HANDLE(from_subprocess, 1);
     }
     scheme_raise_exn(MZEXN_FAIL, "%s: pipe failed (%e)", name, errno);
   }
@@ -7892,14 +7940,20 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       if (!inport) {
 	MSC_IZE(close)(to_subprocess[0]);
 	MSC_IZE(close)(to_subprocess[1]);
+      } else {
+	mzCLOSE_FILE_HANDLE(to_subprocess, 0);
       }
       if (!outport) {
 	MSC_IZE(close)(from_subprocess[0]);
 	MSC_IZE(close)(from_subprocess[1]);
+      } else {
+	mzCLOSE_FILE_HANDLE(from_subprocess, 1);
       }
       if (!errport) {
 	MSC_IZE(close)(err_subprocess[0]);
 	MSC_IZE(close)(err_subprocess[1]);
+      } else {
+	mzCLOSE_FILE_HANDLE(err_subprocess, 1);
       }
       scheme_raise_exn(MZEXN_FAIL, "%s: fork failed (%e)", name, fork_errno);
       return scheme_false;
@@ -8003,18 +8057,24 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   if (!inport) {
     mzCLOSE_PIPE_END(to_subprocess[0]);
     out = NULL;
-  } else
+  } else {
+    mzCLOSE_FILE_HANDLE(to_subprocess, 0);
     out = scheme_false;
+  }
   if (!outport) {
     mzCLOSE_PIPE_END(from_subprocess[1]);
     in = NULL;
-  } else
+  } else {
+    mzCLOSE_FILE_HANDLE(from_subprocess, 1);
     in = scheme_false;
+  }
   if (!errport) {
     mzCLOSE_PIPE_END(err_subprocess[1]);
     err = NULL;
-  } else
+  } else {
+    mzCLOSE_FILE_HANDLE(err_subprocess, 1);
     err = scheme_false;
+  }
 
   /*--------------------------------------*/
   /*        Create new port objects       */
