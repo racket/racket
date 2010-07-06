@@ -3901,7 +3901,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
 # ifdef WINDOWS_FILE_HANDLES
   fd = CreateFileW(WIDE_PATH(filename),
 		   GENERIC_READ,
-		   FILE_SHARE_READ | FILE_SHARE_WRITE,
+		   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		   NULL,
 		   OPEN_EXISTING,
 		   0,
@@ -4144,7 +4144,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 
   fd = CreateFileW(WIDE_PATH(filename),
 		   GENERIC_WRITE | (and_read ? GENERIC_READ : 0),
-		   FILE_SHARE_READ | FILE_SHARE_WRITE,
+		   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		   NULL,
 		   hmode,
 		   FILE_FLAG_BACKUP_SEMANTICS, /* lets us detect directories in NT */
@@ -4158,7 +4158,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       if (DeleteFileW(WIDE_PATH(filename))) {
 	fd = CreateFileW(WIDE_PATH(filename),
                          GENERIC_WRITE,
-                         FILE_SHARE_READ | FILE_SHARE_WRITE,
+                         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                          NULL,
                          hmode,
                          0,
