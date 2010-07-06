@@ -39,10 +39,7 @@
                    (call-install #f)
                    (make-launchers #f)
                    (make-info-domain #f)
-                   (parallel-build #f)
                    (make-docs #f)))]
-     [("-u" "--no-parallel-build") "Do not use parallel build"
-      (add-flags '((parallel-build #f)))]
      [("-j" "--workers") workers "Use <#> parallel-workers"
       (add-flags `((parallel-workers ,(string->number workers))))]
      [("-n" "--no-zo") "Do not produce .zo files"

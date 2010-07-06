@@ -658,8 +658,8 @@
     (define (move-drscheme-to-end cct)
       (call-with-values (lambda () (partition (lambda (x) (not (string=? (cc-name (car x)) "drscheme"))) cct)) append))
     (setup-printf #f "--- compiling collections ---")
-    (match (parallel-build)
-      [#t
+    (match (parallel-workers)
+      [(? (lambda (x) (x . > . 1)))
         (compile-cc (collection->cc (list (string->path "racket"))) 0)
         (managed-compile-zo (build-path main-collects-dir  "setup/parallel-build-worker.rkt"))
         (with-specified-mode
@@ -671,7 +671,7 @@
             (parallel-compile (parallel-workers) setup-fprintf cct))
           (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
             (compile-cc cc gcs)))]
-      [#f
+      [else
         (with-specified-mode
           (for/fold ([gcs 0]) ([cc ccs-to-compile])
             (compile-cc cc gcs)))]))
