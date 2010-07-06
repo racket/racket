@@ -183,7 +183,7 @@
                (let* ([r (tc-expr/check/internal form* ann)]
                       [r* (check-below r expected)])
                  ;; add this to the *original* form, since the newer forms aren't really in the program
-                 (add-typeof-expr form expected)
+                 (add-typeof-expr form ann)
                  ;; around again in case there is an instantiation
                  ;; remove the ascription so we don't loop infinitely
                  (loop (remove-ascription form*) r* #t)))]
