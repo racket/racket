@@ -1,0 +1,23 @@
+(module inexact-complex-div typed/scheme #:optimize
+  (require racket/unsafe/ops)
+  (let ((t1 (let ((t1 1.0+2.0i)
+                  (t2 2.0+4.0i))
+              (let ((a (unsafe-flreal-part t1))
+                    (b (unsafe-flimag-part t1))
+                    (c (unsafe-flreal-part t2))
+                    (d (unsafe-flimag-part t2)))
+                (unsafe-make-flrectangular
+                 (unsafe-fl/ (unsafe-fl+ (unsafe-fl* a c) (unsafe-fl* b d))
+                             (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))
+                 (unsafe-fl/ (unsafe-fl- (unsafe-fl* b c) (unsafe-fl* a d))
+                             (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))))))
+        (t2 3.0+6.0i))
+    (let ((a (unsafe-flreal-part t1))
+          (b (unsafe-flimag-part t1))
+          (c (unsafe-flreal-part t2))
+          (d (unsafe-flimag-part t2)))
+      (unsafe-make-flrectangular
+       (unsafe-fl/ (unsafe-fl+ (unsafe-fl* a c) (unsafe-fl* b d))
+                   (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))
+       (unsafe-fl/ (unsafe-fl- (unsafe-fl* b c) (unsafe-fl* a d))
+                   (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))))))

@@ -71,7 +71,8 @@
 (define-syntax-class inexact-complex-unary-op
   (pattern (~or (~literal real-part) (~literal flreal-part)) #:with unsafe #'unsafe-flreal-part)
   (pattern (~or (~literal imag-part) (~literal flimag-part)) #:with unsafe #'unsafe-flimag-part))
-
+(define binary-inexact-complex-ops
+  (mk-float-tbl (list #'+ #'- #'* #'/)))
 
 (define-syntax-class fixnum-opt-expr
   (pattern e:opt-expr
@@ -210,7 +211,54 @@
            #:with opt
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
-
+  ;; it's faster to take apart a complex number and use unsafe operations on
+  ;; its parts than it is to use generic operations
+  (pattern (#%plain-app (~and (~var op (float-op binary-inexact-complex-ops)) (~or (~literal +) (~literal -)))
+                        c1:inexact-complex-opt-expr c2:inexact-complex-opt-expr cs:inexact-complex-opt-expr ...)
+           #:with opt
+           (begin (log-optimization "binary inexact complex" #'op)
+                  (for/fold ([o #'c1.opt])
+                      ([e (syntax->list #'(c2.opt cs.opt ...))])
+                    #`(let ((t1 #,o)
+                            (t2 #,e))
+                        (unsafe-make-flrectangular
+                         (op.unsafe (unsafe-flreal-part t1)
+                                    (unsafe-flreal-part t2))
+                         (op.unsafe (unsafe-flimag-part t1)
+                                    (unsafe-flimag-part t2)))))))
+  (pattern (#%plain-app (~and op (~literal *)) c1:inexact-complex-opt-expr c2:inexact-complex-opt-expr cs:inexact-complex-opt-expr ...)
+           #:with opt
+           (begin (log-optimization "binary inexact complex" #'op)
+                  (for/fold ([o #'c1.opt])
+                      ([e (syntax->list #'(c2.opt cs.opt ...))])
+                    #`(let ((t1 #,o)
+                            (t2 #,e))
+                        (let ((a (unsafe-flreal-part t1))
+                              (b (unsafe-flimag-part t1))
+                              (c (unsafe-flreal-part t2))
+                              (d (unsafe-flimag-part t2)))
+                          (unsafe-make-flrectangular
+                           (unsafe-fl- (unsafe-fl* a c)
+                                       (unsafe-fl* b d))
+                           (unsafe-fl+ (unsafe-fl* b c)
+                                       (unsafe-fl* a d))))))))
+  (pattern (#%plain-app (~and op (~literal /)) c1:inexact-complex-opt-expr c2:inexact-complex-opt-expr cs:inexact-complex-opt-expr ...)
+           #:with opt
+           (begin (log-optimization "binary inexact complex" #'op)
+                  (for/fold ([o #'c1.opt])
+                      ([e (syntax->list #'(c2.opt cs.opt ...))])
+                    #`(let ((t1 #,o)
+                            (t2 #,e))
+                        (let ((a (unsafe-flreal-part t1))
+                              (b (unsafe-flimag-part t1))
+                              (c (unsafe-flreal-part t2))
+                              (d (unsafe-flimag-part t2)))
+                          (unsafe-make-flrectangular
+                           (unsafe-fl/ (unsafe-fl+ (unsafe-fl* a c) (unsafe-fl* b d))
+                                       (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))
+                           (unsafe-fl/ (unsafe-fl- (unsafe-fl* b c) (unsafe-fl* a d))
+                                       (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))))))))
+  
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-opt-expr)
            #:with opt
            (begin (log-optimization "fixnum to float" #'op)
