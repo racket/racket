@@ -4155,14 +4155,14 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
     err = GetLastError();
     if ((err == ERROR_ACCESS_DENIED) && (existsok < -1)) {
       /* Delete and try again... */
-      if (DeleteFile(filename)) {
-	fd = CreateFile(filename,
-			GENERIC_WRITE,
-			FILE_SHARE_READ | FILE_SHARE_WRITE,
-			NULL,
-			hmode,
-			0,
-			NULL);
+      if (DeleteFileW(WIDE_PATH(filename))) {
+	fd = CreateFileW(WIDE_PATH(filename),
+                         GENERIC_WRITE,
+                         FILE_SHARE_READ | FILE_SHARE_WRITE,
+                         NULL,
+                         hmode,
+                         0,
+                         NULL);
 	if (fd == INVALID_HANDLE_VALUE)
 	  err = GetLastError();
       } else {
