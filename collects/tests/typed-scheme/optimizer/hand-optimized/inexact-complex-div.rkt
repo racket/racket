@@ -6,18 +6,20 @@
                     (b (unsafe-flimag-part t1))
                     (c (unsafe-flreal-part t2))
                     (d (unsafe-flimag-part t2)))
-                (unsafe-make-flrectangular
-                 (unsafe-fl/ (unsafe-fl+ (unsafe-fl* a c) (unsafe-fl* b d))
-                             (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))
-                 (unsafe-fl/ (unsafe-fl- (unsafe-fl* b c) (unsafe-fl* a d))
-                             (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))))))
+                (let ((den (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d))))
+                  (unsafe-make-flrectangular
+                   (unsafe-fl/ (unsafe-fl+ (unsafe-fl* a c) (unsafe-fl* b d))
+                               den)
+                   (unsafe-fl/ (unsafe-fl- (unsafe-fl* b c) (unsafe-fl* a d))
+                               den))))))
         (t2 3.0+6.0i))
     (let ((a (unsafe-flreal-part t1))
           (b (unsafe-flimag-part t1))
           (c (unsafe-flreal-part t2))
           (d (unsafe-flimag-part t2)))
-      (unsafe-make-flrectangular
+      (let ((den (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d))))
+              (unsafe-make-flrectangular
        (unsafe-fl/ (unsafe-fl+ (unsafe-fl* a c) (unsafe-fl* b d))
-                   (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))
+                   den)
        (unsafe-fl/ (unsafe-fl- (unsafe-fl* b c) (unsafe-fl* a d))
-                   (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))))))
+                   den))))))

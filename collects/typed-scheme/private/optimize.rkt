@@ -253,11 +253,12 @@
                               (b (unsafe-flimag-part t1))
                               (c (unsafe-flreal-part t2))
                               (d (unsafe-flimag-part t2)))
-                          (unsafe-make-flrectangular
-                           (unsafe-fl/ (unsafe-fl+ (unsafe-fl* a c) (unsafe-fl* b d))
-                                       (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))
-                           (unsafe-fl/ (unsafe-fl- (unsafe-fl* b c) (unsafe-fl* a d))
-                                       (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d)))))))))
+                          (let ((den (unsafe-fl+ (unsafe-fl* c c) (unsafe-fl* d d))))
+                            (unsafe-make-flrectangular
+                             (unsafe-fl/ (unsafe-fl+ (unsafe-fl* a c) (unsafe-fl* b d))
+                                         den)
+                             (unsafe-fl/ (unsafe-fl- (unsafe-fl* b c) (unsafe-fl* a d))
+                                         den))))))))
   
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-opt-expr)
            #:with opt
