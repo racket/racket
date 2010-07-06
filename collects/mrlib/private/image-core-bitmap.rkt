@@ -162,7 +162,7 @@ instead of this scaling code, we use the dc<%>'s scaling code.
               new-h))))
 
 (define (rotate-bytes bmbytes w h theta)
-  (let* ([theta-rotation (exp (* i theta))]
+  (let* ([theta-rotation (exp (* i theta -1))]
          [x (real-part theta-rotation)]
          [y (imag-part theta-rotation)])
     (linear-transform 

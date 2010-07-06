@@ -1216,11 +1216,11 @@
       (void))
 
 
-(define (fill-bitmap b color)
+(define (fill-bitmap b color [x 0] [y 0] [w (send b get-width)] [h (send b get-height)])
   (let ([bdc (make-object bitmap-dc% b)])
     (send bdc set-brush color 'solid)
     (send bdc set-pen color 1 'transparent)
-    (send bdc draw-rectangle 0 0 (send b get-width) (send b get-height))
+    (send bdc draw-rectangle x y w h)
     (send bdc set-bitmap #f)))
 
 (define blue-10x20-bitmap (make-object bitmap% 10 20))
@@ -1229,6 +1229,14 @@
 (fill-bitmap blue-20x10-bitmap "blue")
 (define blue-20x40-bitmap (make-object bitmap% 20 40))
 (fill-bitmap blue-20x40-bitmap "blue")
+
+(define green-blue-10x20-bitmap (make-object bitmap% 10 20))
+(fill-bitmap green-blue-10x20-bitmap "green")
+(fill-bitmap green-blue-10x20-bitmap "blue" 0 0 10 10)
+
+(define green-blue-20x10-bitmap (make-object bitmap% 20 10))
+(fill-bitmap green-blue-20x10-bitmap "green")
+(fill-bitmap green-blue-20x10-bitmap "blue" 10 0 10 10)
 
 (test (image-width (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
       => 
@@ -1246,6 +1254,10 @@
 (test (rotate 90 (make-object image-snip% blue-10x20-bitmap))
       =>
       (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
+
+(test (rotate 90 (make-object image-snip% green-blue-20x10-bitmap))
+      =>
+      (image-snip->image (make-object image-snip% green-blue-10x20-bitmap)))
 
 ;; there was a bug in the bounding box computation for scaled bitmaps that this test exposes
 (test (image-width (frame (rotate 90 (scale 1/2 (bitmap icons/plt-logo-red-diffuse.png)))))
