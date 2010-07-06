@@ -231,6 +231,16 @@
            (begin (log-optimization "unary pair" #'op)
                   #'(op.unsafe p.opt)))
 
+  ;; vector-length of a known-length vector
+  (pattern (#%plain-app (~and op (~or (~literal vector-length)
+                                      (~literal unsafe-vector-length)
+                                      (~literal unsafe-vector*-length)))
+                        v:vector-opt-expr)
+           #:with opt
+           (begin (log-optimization "known-length vector" #'op)
+                  (match (type-of #'v)
+                    [(tc-result1: (HeterogenousVector: es))
+                     #`(begin v.opt #,(length es))]))) ; v may have side effects
   ;; we can optimize vector-length on all vectors.
   ;; since the program typechecked, we know the arg is a vector.
   ;; we can optimize no matter what.
