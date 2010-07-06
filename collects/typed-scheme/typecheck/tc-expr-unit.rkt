@@ -176,23 +176,24 @@
     (unless (syntax? form) 
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (let loop ([form form] [expected expected] [checked? #f])
-      (cond [(type-ascription form) 
+    (let loop ([form* form] [expected expected] [checked? #f])
+      (cond [(type-ascription form*) 
              => 
              (lambda (ann)
-               (let* ([r (tc-expr/check/internal form ann)]
+               (let* ([r (tc-expr/check/internal form* ann)]
                       [r* (check-below r expected)])
+                 ;; add this to the *original* form, since the newer forms aren't really in the program
                  (add-typeof-expr form expected)
                  ;; around again in case there is an instantiation
                  ;; remove the ascription so we don't loop infinitely
-                 (loop (remove-ascription form) r* #t)))]
-            [(syntax-property form 'type-inst)
+                 (loop (remove-ascription form*) r* #t)))]
+            [(syntax-property form* 'type-inst)
              ;; check without property first
              ;; to get the appropriate type to instantiate
-             (match (tc-expr (syntax-property form 'type-inst #f))
+             (match (tc-expr (syntax-property form* 'type-inst #f))
                [(tc-results: ts fs os)
                 ;; do the instantiation on the old type
-                (let* ([ts* (do-inst form ts)]
+                (let* ([ts* (do-inst form* ts)]
                        [ts** (ret ts* fs os)])
                   (add-typeof-expr form ts**)
                   ;; make sure the new type is ok
@@ -201,26 +202,9 @@
                [ty (add-typeof-expr form ty) ty])]
             ;; nothing to see here
             [checked? expected]
-            [else (let ([t (tc-expr/check/internal form expected)])
+            [else (let ([t (tc-expr/check/internal form* expected)])
                     (add-typeof-expr form t)
                     t)]))))
-
-#;
-(define (tc-or e1 e2 or-part [expected #f])
-  (match (single-value e1)
-    [(tc-result1: t1 (and f1 (FilterSet: fs+ fs-)) o1)
-     (let*-values ([(flag+ flag-) (values (box #t) (box #t))])
-       (match-let* ([(tc-result1: t2 f2 o2) (with-lexical-env 
-                                             (env+ (lexical-env) fs+ flag+) 
-                                             (with-lexical-env/extend 
-                                              (list or-part) (list (restrict t1 (-val #f))) (single-value e2 expected)))]
-                    [t1* (remove t1 (-val #f))]
-                    [f1* (-FS null (list (make-Bot)))])
-         ;; if we have the same number of values in both cases
-         (let ([r (combine-filter f1 f1* f2 t1* t2 o1 o2)])
-           (if expected 
-               (check-below r expected)
-               r))))]))
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check/internal form expected)
