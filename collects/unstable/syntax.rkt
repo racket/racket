@@ -1,5 +1,5 @@
 #lang racket/base
-;; owner: ryanc (and cce, where noted)
+;; owner: ryanc (and cce and stamourv, where noted)
 (require syntax/kerncase
          syntax/stx
          unstable/struct
@@ -48,6 +48,10 @@
          head-expand
 
          syntax-list
+
+         ;; by stamourv:
+         
+         format-unique-id
 
          )
 
@@ -383,3 +387,12 @@
 
   (call-with-composable-continuation body trampoline-prompt-tag)
   (void))
+
+(define (format-unique-id lctx
+                          #:source [src #f]
+                          #:props [props #f]
+                          #:cert [cert #f]
+                          fmt . args)
+  ((make-syntax-introducer) (apply format-id
+                                   lctx #:source src #:props props #:cert cert
+                                   fmt args)))
