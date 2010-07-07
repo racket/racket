@@ -6,14 +6,15 @@
 @(define ev (make-base-eval))
 @(ev '(require racket/block))
 
-@title[#:tag "block"]{Blocks}
+@title[#:tag "block"]{Blocks: @racket[block]}
 
 @note-lib-only[racket/block]
 
 @defform[(block defn-or-expr ...)]{
 
 Supports a mixture of expressions and mutually recursive definitions,
-as in a @scheme[module] body. 
+as in a @scheme[module] body. Unlike an @tech{internal-definition
+context}, the last @racket[defn-or-expr] need not be an expression.
 
 The result of the @scheme[block] form is the result
 of the last @scheme[defn-or-expr] if it is an expression,

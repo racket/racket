@@ -614,12 +614,17 @@ recursively expands only until the form becomes one of the following:
  @item{A @racket[define-values] or @racket[define-syntaxes] form, for
        any form other than the last one: The definition form is not
        expanded further. Instead, the next form is expanded partially,
-       and so on. As soon as an expression form is found, the
-       accumulated definition forms are converted to a
+       and so on. The content of a @racket[begin] form is spliced into
+       the body-form sequence. After all forms are partially expanded,
+       the accumulated definition forms are converted to a
        @racket[letrec-values] (if no @racket[define-syntaxes] forms
        were found) or @racket[letrec-syntaxes+values] form, moving the
-       expression forms to the body to be expanded in expression
-       context.
+       expression-form tail to the body to be expanded in expression
+       context. An expression @racket[_expr] that appears before a
+       definition is converted to a @racket[letrec-values] clause
+       @racket[[() (begin _expr (values))]], so that the expression
+       can produce any number of values, and its evaluation order is
+       preserved relative to definitions.
 
        When a @racket[define-values] form is discovered, the lexical
        context of all syntax objects for the body sequence is

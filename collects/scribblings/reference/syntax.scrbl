@@ -2428,5 +2428,18 @@ provides a hook to control interactive evaluation through
 @;------------------------------------------------------------------------
 @include-section["block.scrbl"]
 
+@;------------------------------------------------------------------------
+@section[#:tag "stratified-body"]{Internal-Definition Limiting: @racket[#%stratified-body]}
+
+@defform[(#%stratified-body defn-or-expr ...)]{
+
+Like @racket[(let () defn-or-expr ...)] for an
+@tech{internal-definition context} sequence, except that an expression
+is not allowed to precede a definition.
+
+The @racket[#%stratified-body] form is useful for implementing
+syntactic forms or languages that supply a more limited kind of
+@tech{internal-definition context}.}
+
 @close-eval[require-eval]
 @close-eval[meta-in-eval]

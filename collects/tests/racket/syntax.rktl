@@ -854,7 +854,8 @@
 
 (syntax-test #'(lambda () (define x 10) (begin)))
 (syntax-test #'(lambda () (define x 10) (begin) (begin)))
-(syntax-test #'(lambda () (define x 10) (begin) (begin x) (begin)))
+(syntax-test #'(lambda () (#%stratified-syntax (define x 10) (begin) (begin x) (begin))))
+(syntax-test #'(lambda () (#%stratified-syntax (define x 10) x (define y 12) y)))
 (syntax-test #'(lambda () (define-values (x) . 10) x))
 (syntax-test #'(lambda () (define-values (x) 10) (begin 1 . 2) x))
 (syntax-test #'(lambda () (begin (define-values (x) 10) . 2) x))
@@ -862,6 +863,11 @@
 (syntax-test #'(lambda () (define-values . 10) x))
 (syntax-test #'(lambda () (define-values x 10) x))
 (syntax-test #'(lambda () (define-values (1) 10) x))
+
+(test '(10 12) apply (lambda () (define x 10) (random 3) (define y 12) (list x y)) null)
+(test 10 apply (lambda () (define x 10) (begin) (begin x) (begin)) null)
+
+(test '(11 18) apply (lambda () (define x 11) (values 1 2 3) (define y 18) (list x y)) null)
 
 (test 87 (lambda () (define x 87) (begin) (begin x)))
 

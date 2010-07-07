@@ -2494,6 +2494,8 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms, Scheme_Comp_Env *en
 			      Scheme_Compile_Info *rec, int drec);
 Scheme_Object *scheme_compile_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 			      Scheme_Compile_Info *rec, int drec);
+Scheme_Object *scheme_compile_stratified_block(Scheme_Object *forms, Scheme_Comp_Env *env,
+                                               Scheme_Compile_Info *rec, int drec);
 Scheme_Object *scheme_compile_list(Scheme_Object *form, Scheme_Comp_Env *env,
 			      Scheme_Compile_Info *rec, int drec);
 
@@ -2606,6 +2608,8 @@ Scheme_Object *scheme_expand_list(Scheme_Object *form, Scheme_Comp_Env *env,
 				  Scheme_Expand_Info *erec, int drec);
 Scheme_Object *scheme_expand_block(Scheme_Object *form, Scheme_Comp_Env *env,
 				   Scheme_Expand_Info *erec, int drec);
+Scheme_Object *scheme_expand_stratified_block(Scheme_Object *form, Scheme_Comp_Env *env,
+                                              Scheme_Expand_Info *erec, int drec);
 Scheme_Object *scheme_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
 					      Scheme_Expand_Info *erec, int drec);
 

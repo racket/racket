@@ -86,6 +86,8 @@ static Scheme_Object *begin_syntax (Scheme_Object *form, Scheme_Comp_Env *env, S
 static Scheme_Object *begin_expand (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *begin0_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *begin0_expand (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
+static Scheme_Object *stratified_body_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *stratified_body_expand (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *expression_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *expression_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 
@@ -425,6 +427,10 @@ scheme_init_syntax (Scheme_Env *env)
   
   scheme_add_global_keyword("begin", 
 			    scheme_begin_syntax, 
+			    env);
+  scheme_add_global_keyword("#%stratified-body", 
+                            scheme_make_compiled_syntax(stratified_body_syntax, 
+                                                        stratified_body_expand), 
 			    env);
 
   scheme_add_global_keyword("begin0", 
@@ -5131,6 +5137,24 @@ begin0_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *r
 }
 
 static Scheme_Object *
+stratified_body_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+{
+  Scheme_Object *body;
+
+  check_form(form, form);
+
+  body = SCHEME_STX_CDR(form);
+  body = scheme_datum_to_syntax(body, form, form, 0, 0);
+
+  body = scheme_compile_stratified_block(body, env, rec, drec);
+
+  if (SCHEME_NULLP(SCHEME_CDR(body)))
+    return SCHEME_CAR(body);
+  else
+    return scheme_make_sequence_compilation(body, 1);
+}
+
+static Scheme_Object *
 do_begin_expand(char *name,
 		Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec,
 		int zero)
@@ -5215,6 +5239,27 @@ begin0_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
 {
   SCHEME_EXPAND_OBSERVE_PRIM_BEGIN0(erec[drec].observer);
   return do_begin_expand("begin0", form, env, erec, drec, 1);
+}
+
+static Scheme_Object *
+stratified_body_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
+{
+  Scheme_Object *body;
+
+  check_form(form, form);
+
+  body = SCHEME_STX_CDR(form);
+  body = scheme_datum_to_syntax(body, form, form, 0, 0);
+  
+  body = scheme_expand_stratified_block(body, env, erec, drec);
+
+  if (SCHEME_STX_NULLP(SCHEME_STX_CDR(body)))
+    return SCHEME_STX_CAR(body);
+  else {
+    body = cons(scheme_datum_to_syntax(begin_symbol, scheme_false, scheme_sys_wraps(env), 0, 0),
+                body);
+    return scheme_datum_to_syntax(body, form, form, 0, 0);
+  }
 }
 
 /**********************************************************************/

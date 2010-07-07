@@ -38,7 +38,7 @@
  ;; 11.4.6
  let let*
  (rename-out [r6rs:letrec letrec]
-             [letrec letrec*]
+             [r6rs:letrec* letrec*]
              [r6rs:let-values let-values]
              [r6rs:let*-values let*-values])
  
@@ -458,7 +458,10 @@
 ;;   Need bindings like R5RS, but int-def body like Racket
 
 (define-syntax-rule (r6rs:letrec bindings . body)
-  (r5rs:letrec bindings (let () . body)))
+  (r5rs:letrec bindings (#%stratified-body . body)))
+
+(define-syntax-rule (r6rs:letrec* bindings . body)
+  (letrec bindings (#%stratified-body . body)))
 
 ;; ----------------------------------------
 ;; let[*]-values
@@ -508,7 +511,7 @@
                                              (values . #,ids)))])))
                               (syntax->list #'(formals ...))
                               (syntax->list #'(expr ...)))])
-            #'(dest:let-values bindings body0 body ...))]))]))
+            #'(dest:let-values bindings (#%stratified-body body0 body ...)))]))]))
 
 ;; ----------------------------------------
 ;; lambda & define
@@ -518,9 +521,9 @@
   (syntax-case stx ()
     [(_ (id ...) . body)
      (andmap identifier? (syntax->list #'(id ...)))
-     (syntax/loc stx (lambda (id ...) . body))]
+     (syntax/loc stx (lambda (id ...) (#%stratified-body . body)))]
     [(_ args . body)
-     (syntax/loc stx (r5rs:lambda args (let () . body)))]))
+     (syntax/loc stx (r5rs:lambda args (#%stratified-body . body)))]))
 
 (define-for-syntax (check-label id orig-stx def)
   ;; This test shouldn't be needed, and it interferes
@@ -543,7 +546,7 @@
     [(_ (name . args) . body)
      (check-label #'name
                   stx
-                  (syntax/loc stx (r5rs:define (name . args) (let () . body))))]
+                  (syntax/loc stx (r5rs:define (name . args) (#%stratified-body . body))))]
     [(_ . rest) #'(define . rest)]))
 
 ;; ----------------------------------------

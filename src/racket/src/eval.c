@@ -150,9 +150,6 @@
 # include "future.h"
 #endif
 
-#define EMBEDDED_DEFINES_START_ANYWHERE 0
-
-
 /* globals */
 SHARED_OK int scheme_startup_use_jit = 1;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
@@ -194,6 +191,7 @@ ROSYM static Scheme_Object *internal_define_symbol;
 ROSYM static Scheme_Object *module_symbol;
 ROSYM static Scheme_Object *module_begin_symbol;
 ROSYM static Scheme_Object *expression_symbol;
+ROSYM static Scheme_Object *values_symbol;
 ROSYM static Scheme_Object *protected_symbol;
 ROSYM Scheme_Object *scheme_stack_dump_key;
 READ_ONLY static Scheme_Object *zero_rands_ptr; /* &zero_rands_ptr is dummy rands pointer */
@@ -317,6 +315,7 @@ scheme_init_eval (Scheme_Env *env)
   REGISTER_SO(letrec_syntaxes_symbol);
   REGISTER_SO(begin_symbol);
   REGISTER_SO(let_values_symbol);
+  REGISTER_SO(values_symbol);
   
   define_values_symbol    = scheme_intern_symbol("define-values");
   letrec_values_symbol    = scheme_intern_symbol("letrec-values");
@@ -327,6 +326,7 @@ scheme_init_eval (Scheme_Env *env)
   quote_symbol            = scheme_intern_symbol("quote");
   letrec_syntaxes_symbol  = scheme_intern_symbol("letrec-syntaxes+values");
   begin_symbol            = scheme_intern_symbol("begin");
+  values_symbol           = scheme_intern_symbol("values");
   
   REGISTER_SO(module_symbol);
   REGISTER_SO(module_begin_symbol);
@@ -7720,13 +7720,14 @@ scheme_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
 
 static Scheme_Object *
 scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env, 
-			    Scheme_Compile_Expand_Info *rec, int drec)
+			    Scheme_Compile_Expand_Info *rec, int drec,
+                            int mixed)
 /* This ugly code parses a block of code, transforming embedded
    define-values and define-syntax into letrec and letrec-syntax.
    It is espcailly ugly because we have to expand macros
    before deciding what we have. */
 {
-  Scheme_Object *first, *rib, *ctx, *ectx, *orig = forms;
+  Scheme_Object *first, *rib, *ctx, *ectx, *orig = forms, *pre_exprs = scheme_null;
   void **d;
   Scheme_Comp_Env *xenv = NULL;
   Scheme_Compile_Info recs[2];
@@ -7818,13 +7819,18 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       SCHEME_EXPAND_OBSERVE_SPLICE(rec[drec].observer, forms);
 
       if (SCHEME_STX_NULLP(forms)) {
-	scheme_wrong_syntax(scheme_begin_stx_string, NULL, first, 
-			    "bad syntax (empty form)");
+        if (!SCHEME_PAIRP(pre_exprs)) {
+          scheme_wrong_syntax(scheme_begin_stx_string, NULL, first, 
+                              "bad syntax (empty form)");
+          return NULL;
+        } else {
+          /* fall through to handle expressions without definitions */
+        }
+      } else {
+        forms = scheme_datum_to_syntax(forms, orig_forms, orig_forms, 0, 0);
+        
+        goto try_again;
       }
-
-      forms = scheme_datum_to_syntax(forms, orig_forms, orig_forms, 0, 0);
-
-      goto try_again;
     } else if (SAME_OBJ(gval, scheme_define_values_syntax)
 	       || SAME_OBJ(gval, scheme_define_syntaxes_syntax)) {
       /* Turn defines into a letrec: */
@@ -7835,6 +7841,40 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
       while (1) {
 	int cnt;
+
+        if (!SCHEME_NULLP(pre_exprs)) {
+          Scheme_Object *begin_stx, *values_app_stx;
+
+          pre_exprs = scheme_reverse(pre_exprs);
+
+          begin_stx = scheme_datum_to_syntax(begin_symbol, 
+                                             scheme_false, 
+                                             scheme_sys_wraps(env), 
+                                             0, 0);
+          values_app_stx = scheme_datum_to_syntax(scheme_make_pair(values_symbol, scheme_null),
+                                                  scheme_false, 
+                                                  scheme_sys_wraps(env), 
+                                                  0, 0);
+
+          while (SCHEME_PAIRP(pre_exprs)) {
+            v = scheme_make_pair(scheme_null,
+                                 scheme_make_pair(scheme_make_pair(begin_stx,
+                                                                   scheme_make_pair(SCHEME_CAR(pre_exprs),
+                                                                                    scheme_make_pair(values_app_stx,
+                                                                                                     scheme_null))),
+                                                  scheme_null));
+            v = scheme_datum_to_syntax(v, SCHEME_CAR(pre_exprs), SCHEME_CAR(pre_exprs), 0, 0);
+          
+            link = scheme_make_pair(v, scheme_null);
+            if (!start)
+              start = link;
+            else
+              SCHEME_CDR(l) = link;
+            l = link;
+
+            pre_exprs = SCHEME_CDR(pre_exprs);
+          }
+        }
 
 	is_val = SAME_OBJ(gval, scheme_define_values_syntax);
 	
@@ -7979,7 +8019,13 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	      result = scheme_flatten_begin(first, result);
 	      SCHEME_EXPAND_OBSERVE_SPLICE(rec[drec].observer,result);
               goto define_try_again;
-	    } else {
+	    } else if (mixed) {
+              /* accumulate expr for either sequence after definitions
+                 or made-up empty bindings before the next definition */
+              pre_exprs = scheme_make_pair(first, pre_exprs);
+              result = SCHEME_STX_CDR(result);
+              goto define_try_again;
+            } else {
 	      /* Keep partially expanded `first': */
 	      result = SCHEME_STX_CDR(result);
 	      result = scheme_make_pair(first, result);
@@ -7990,15 +8036,19 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  break;
       }
 
-      if (SCHEME_STX_PAIRP(result)) {
+      if (SCHEME_STX_PAIRP(result) || SCHEME_PAIRP(pre_exprs)) {
 	if (!start)
 	  start = scheme_null;
+
+        if (SCHEME_PAIRP(pre_exprs))
+          result = scheme_reverse(pre_exprs); /* from mixed mode */
+
+        if (!mixed) {
+          result = scheme_make_pair(scheme_make_pair(scheme_intern_symbol("#%stratified-body"),
+                                                     result),
+                                    scheme_null);
+        }
         
-	/* I think the following was intended as an optimization for `expand',
-           since the syntax definition will be dropped. But it breaks
-           `local-expand':
-           if (stx_start && !(rec[drec].comp || (rec[drec].depth == -1)))
-             stx_start = scheme_null; */
 	if (stx_start) {
 	  result = scheme_make_pair(letrec_syntaxes_symbol,
                                     scheme_make_pair(stx_start,
@@ -8015,6 +8065,18 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	scheme_wrong_syntax(scheme_begin_stx_string, NULL, orig, 
 			    "no expression after a sequence of internal definitions");
       }
+    } else if (mixed) {
+      /* accumulate expr for either an expr-only sequence or made-up
+         empty bindings before a definition that appears later */
+      pre_exprs = scheme_make_pair(first, pre_exprs);
+      forms = SCHEME_STX_CDR(forms);
+      if (SCHEME_STX_NULLP(forms)) {
+        /* fall through to handle expressions without definitions */
+      } else {
+        goto try_again;
+      }
+    } else {
+      /* fall through to handle just expressions in non-mixed mode */
     }
 
     if (!more) {
@@ -8042,6 +8104,9 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
   scheme_stx_seal_rib(rib);
 
+  if (SCHEME_PAIRP(pre_exprs))
+    pre_exprs = scheme_reverse(pre_exprs);
+
   if (rec[drec].comp) {
     Scheme_Object *vname, *rest;
 
@@ -8049,47 +8114,27 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     scheme_compile_rec_done_local(rec, drec);
     scheme_init_compile_recs(rec, drec, recs, 2);
 
-    rest = SCHEME_STX_CDR(forms);
+    if (SCHEME_NULLP(pre_exprs))
+      rest = SCHEME_STX_CDR(forms);
+    else {
+      first = SCHEME_CAR(pre_exprs);
+      rest = SCHEME_CDR(pre_exprs);
+    }
+
     if (SCHEME_STX_NULLP(rest))
       recs[0].value_name = vname;
     else
       recs[1].value_name = vname;
 
-    rest = scheme_datum_to_syntax(rest, forms, forms, 0, 0);
+    rest = scheme_datum_to_syntax(rest, orig, orig, 0, 0);
 
     first = scheme_compile_expr(first, env, recs, 0);
 
-#if EMBEDDED_DEFINES_START_ANYWHERE
-    forms = scheme_compile_expand_block(rest, env, recs, 1);
-#else
     forms = scheme_compile_list(rest, env, recs, 1);
-#endif
     
     scheme_merge_compile_recs(rec, drec, recs, 2);
     return scheme_make_pair(first, forms);
   } else {
-#if EMBEDDED_DEFINES_START_ANYWHERE
-    /* Expand-observe not implemented for this case,
-       so fix that if it's ever enabled. */
-    Scheme_Object *rest, *vname;
-
-    vname = rec[drec].value_name;
-    rec[drec].value_name = scheme_false;
-    scheme_init_expand_recs(rec, drec, recs, 2);
-
-    rest = SCHEME_STX_CDR(forms);
-
-    if (SCHEME_STX_NULLP(rest))
-      recs[0].value_name = vname;
-    else
-      recs[1].value_name = vname;
-
-    first = scheme_expand_expr(first, env, recs, 0);
-
-    rest = scheme_datum_to_syntax(rest, forms, forms, 0, -1);
-    forms = scheme_compile_expand_block(rest, env, recs, 1);
-    return scheme_make_pair(first, forms);
-#else
     Scheme_Object *newforms, *vname;
 
     vname = rec[drec].value_name;
@@ -8098,9 +8143,14 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
     recs[0].value_name = vname;
 
-    newforms = SCHEME_STX_CDR(forms);
-    newforms = scheme_make_pair(first, newforms);
-    forms = scheme_datum_to_syntax(newforms, forms, forms, 0, -1);
+    if (SCHEME_PAIRP(pre_exprs))
+      newforms = pre_exprs;
+    else {
+      newforms = SCHEME_STX_CDR(forms);
+      newforms = scheme_make_pair(first, newforms);
+    }
+
+    forms = scheme_datum_to_syntax(newforms, orig, orig, 0, -1);
     
     if (scheme_stx_proper_list_length(forms) < 0)
       scheme_wrong_syntax(scheme_begin_stx_string, NULL, forms, "bad syntax");
@@ -8108,7 +8158,6 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     SCHEME_EXPAND_OBSERVE_BLOCK_TO_LIST(rec[drec].observer, forms);
     forms = scheme_expand_list(forms, env, recs, 0);
     return forms;
-#endif
   }
 }
 
@@ -8116,13 +8165,26 @@ Scheme_Object *
 scheme_compile_block(Scheme_Object *forms, Scheme_Comp_Env *env, 
 		     Scheme_Compile_Info *rec, int drec)
 {
-  return scheme_compile_expand_block(forms, env, rec, drec);
+  return scheme_compile_expand_block(forms, env, rec, drec, 1);
 }
 
 Scheme_Object *
 scheme_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  return scheme_compile_expand_block(forms, env, erec, drec);
+  return scheme_compile_expand_block(forms, env, erec, drec, 1);
+}
+
+Scheme_Object *
+scheme_compile_stratified_block(Scheme_Object *forms, Scheme_Comp_Env *env, 
+                                Scheme_Compile_Info *rec, int drec)
+{
+  return scheme_compile_expand_block(forms, env, rec, drec, 0);
+}
+
+Scheme_Object *
+scheme_expand_stratified_block(Scheme_Object *forms, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
+{
+  return scheme_compile_expand_block(forms, env, erec, drec, 0);
 }
 
 Scheme_Object *

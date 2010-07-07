@@ -23,12 +23,12 @@
                               (andmap identifier? (syntax->list #'(id ...))))
                          #`[formals 
                             (let ([rest (list->mlist rest)])
-                              body1 body ...)]]
+                              (#%stratified-body body1 body ...))]]
                         [rest
                          (identifier? #'rest)
                          #`[formals 
                             (let ([rest (list->mlist rest)])
-                              body1 body ...)]]
+                              (#%stratified-body body1 body ...))]]
                         [_
                          (raise-syntax-error
                           #f
