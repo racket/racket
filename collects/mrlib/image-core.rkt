@@ -725,9 +725,13 @@ has been moved out).
           (let ([θ (degrees->radians (text-angle np-atomic-shape))]
                 [font (send dc get-font)])
             (send dc set-font (text->font np-atomic-shape))
-            (send dc set-text-foreground 
-                  (or (send the-color-database find-color (text-color np-atomic-shape))
-                      (send the-color-database find-color "black")))
+            (let ([color (get-color-arg (text-color np-atomic-shape))])
+              (send dc set-text-foreground 
+                    (cond
+                      [(string? color)
+                       (or (send the-color-database find-color color)
+                           (send the-color-database find-color "black"))]
+                      [else color])))
             (let-values ([(w h _1 _2) (send dc get-text-extent (text-string np-atomic-shape))])
               (let ([p (- (make-rectangular dx dy)
                           (* (make-polar 1 (- θ)) (make-rectangular (/ w 2) (/ h 2))))])

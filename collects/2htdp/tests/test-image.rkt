@@ -873,6 +873,10 @@
                                             (image-height t)
                                             'solid 'black))))))
 
+(test (text "ab" 18 (make-color 0 0 255))
+      =>
+      (text "ab" 18 "blue"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; triangle
