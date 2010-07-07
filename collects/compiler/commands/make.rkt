@@ -19,7 +19,7 @@
    #:once-each
    [("--disable-inline") "Disable procedure inlining during compilation"
     (disable-inlining #t)]
-   [("--no-deps") "Compile immediate files without updating depdencies"
+   [("--no-deps") "Compile immediate files without updating dependencies"
     (disable-deps #t)]
    [("-p" "--prefix") file "Add elaboration-time prefix file for --no-deps"
     (prefixes (append (prefixes) (list file)))]
