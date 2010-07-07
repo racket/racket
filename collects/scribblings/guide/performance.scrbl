@@ -228,10 +228,11 @@ In the first case, the compiler likely does not know that
 available.
 
 This caveat about @racket[letrec] also applies to definitions of
-functions and constants within modules. A definition sequence in a
-module body is analogous to a sequence of @racket[letrec] bindings,
-and non-constant expressions in a module body can interfere with the
-optimization of references to later bindings.
+functions and constants as internal definitions or in modules. A
+definition sequence in a module body is analogous to a sequence of
+@racket[letrec] bindings, and non-constant expressions in a module
+body can interfere with the optimization of references to later
+bindings.
 
 @; ----------------------------------------------------------------------
 
