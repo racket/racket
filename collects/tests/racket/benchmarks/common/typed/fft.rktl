@@ -10,23 +10,23 @@
 ; Status:       Public Domain
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(: pi Complex)
-(define pi (atan 0 -1))
+(: pi Float)
+(define pi (assert (atan 0 -1) inexact-real?))
 
 ;;; FFT -- This is an FFT benchmark written by Harry Barrow.
 ;;; It tests a variety of floating point operations,
 ;;; including array references.
 
-(: *re* (Vectorof Complex))
+(: *re* (Vectorof Float))
 (define *re* (make-vector 1025 0.0))
 
-(: *im* (Vectorof Complex))
+(: *im* (Vectorof Float))
 (define *im* (make-vector 1025 0.0))
 
-(: fft ((Vectorof Complex) (Vectorof Complex) -> Boolean))
+(: fft ((Vectorof Float) (Vectorof Float) -> Boolean))
 (define (fft areal aimag)
-  (let: ((ar : (Vectorof Complex) (vector))
-         (ai : (Vectorof Complex) (vector))
+  (let: ((ar : (Vectorof Float) (vector))
+         (ai : (Vectorof Float) (vector))
          (i : Integer 0)
          (j : Integer 0)
          (k : Integer 0)
@@ -37,12 +37,12 @@
          (ip : Integer 0)
          (nv2 : Integer 0)
          (nm1 : Integer 0)
-         (ur : Complex 0)
-         (ui : Complex 0)
-         (wr : Complex 0)
-         (wi : Complex 0)
-         (tr : Complex 0)
-         (ti : Complex 0))
+         (ur : Float 0.0)
+         (ui : Float 0.0)
+         (wr : Float 0.0)
+         (wi : Float 0.0)
+         (tr : Float 0.0)
+         (ti : Float 0.0))
         ;; initialize
         (set! ar areal)
         (set! ai aimag)
