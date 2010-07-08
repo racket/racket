@@ -6,13 +6,8 @@
          (types abbrev type-table utils subtype)
          (optimizer utils float))
 
-(provide (all-defined-out))
+(provide inexact-complex-opt-expr)
 
-
-(define-syntax-class inexact-complex-opt-expr
-  (pattern e:expr
-           #:when (isoftype? #'e -InexactComplex)
-           #:with opt ((optimize) #'e)))
 
 ;; it's faster to take apart a complex number and use unsafe operations on
 ;; its parts than it is to use generic operations
@@ -127,8 +122,21 @@
 (define binary-inexact-complex-ops
   (mk-float-tbl (list #'+ #'- #'* #'/)))
 
+(define-syntax-class inexact-complex-expr
+  (pattern e:expr
+           #:when (isoftype? #'e -InexactComplex)
+           #:with opt ((optimize) #'e)))
 
-(define (optimize-inexact-complex-expr e)
-  (syntax-parse e #:literal-sets (kernel-literals)
-                [e:inexact-complex-opt-expr
-                 (syntax/loc stx e.opt)]))
+(define-syntax-class inexact-complex-opt-expr
+  (pattern (#%plain-app op:inexact-complex-unary-op n:inexact-complex-expr)
+           #:with opt
+           (begin (log-optimization "unary inexact complex" #'op)
+                  #'(op.unsafe n.opt)))
+  (pattern (~and exp (#%plain-app (~var op (float-op binary-inexact-complex-ops))
+                                  e:inexact-complex-expr ...))
+           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
+           #:with opt
+           (begin (log-optimization "unboxed inexact complex" #'exp)
+                  (begin (reset-unboxed-gensym)
+                         #'(let* (exp*.bindings ...)
+                             (unsafe-make-flrectangular exp*.real-part exp*.imag-part))))))

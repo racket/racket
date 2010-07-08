@@ -6,16 +6,8 @@
          (types abbrev type-table utils subtype)
          (optimizer utils))
 
-(provide (all-defined-out))
+(provide fixnum-expr fixnum-opt-expr)
 
-(define-syntax-class fixnum-opt-expr
-  (pattern e:expr
-           #:when (subtypeof? #'e -Fixnum)
-           #:with opt ((optimize) #'e)))
-(define-syntax-class nonzero-fixnum-opt-expr
-  (pattern e:expr
-           #:when (or (isoftype? #'e -PositiveFixnum) (isoftype? #'e -NegativeFixnum))
-           #:with opt ((optimize) #'e)))
 
 (define (mk-fixnum-tbl generic)
   (mk-unsafe-tbl generic "fx~a" "unsafe-fx~a"))
@@ -52,7 +44,34 @@
            #:with unsafe (dict-ref tbl #'i)))
 
 
-(define (optimize-finum-expr stx)
-  (syntax-parse stx #:literal-sets (kernel-literals)
-                [e:fixnum-opt-expr
-                 (syntax/loc stx e.opt)]))
+(define-syntax-class fixnum-expr
+  (pattern e:expr
+           #:when (subtypeof? #'e -Fixnum)
+           #:with opt ((optimize) #'e)))
+(define-syntax-class nonzero-fixnum-expr
+  (pattern e:expr
+           #:when (or (isoftype? #'e -PositiveFixnum) (isoftype? #'e -NegativeFixnum))
+           #:with opt ((optimize) #'e)))
+
+(define-syntax-class fixnum-opt-expr
+  (pattern (#%plain-app op:fixnum-unary-op n:fixnum-expr)
+           #:with opt
+           (begin (log-optimization "unary fixnum" #'op)
+                  #'(op.unsafe n.opt)))
+  (pattern (#%plain-app (~var op (fixnum-op binary-fixnum-ops))
+                        n1:fixnum-expr
+                        n2:fixnum-expr
+                        ns:fixnum-expr ...)
+           #:with opt
+           (begin (log-optimization "binary fixnum" #'op)
+                  (n-ary->binary #'op.unsafe #'n1.opt #'n2.opt #'(ns.opt ...))))
+  (pattern (#%plain-app op:nonzero-fixnum-binary-op
+                        n1:fixnum-expr
+                        n2:nonzero-fixnum-expr)
+           #:with opt
+           (begin (log-optimization "binary nonzero fixnum" #'op)
+                  #'(op.unsafe n1.opt n2.opt)))
+  (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-expr)
+           #:with opt
+           (begin (log-optimization "fixnum to float" #'op)
+                  #'(unsafe-fx->fl n.opt))))
