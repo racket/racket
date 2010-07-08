@@ -6,7 +6,7 @@
 
 (provide Covariant Contravariant Invariant Constant Dotted
          combine-frees flip-variances without-below unless-in-table
-         fix-bound make-invariant variance?)
+         fix-bound make-invariant make-constant variance?)
 
 ;; this file contains support for calculating the free variables/indexes of types
 ;; actual computation is done in rep-utils.rkt  and type-rep.rkt
@@ -60,6 +60,10 @@
 (define (make-invariant vs)
   (for/hasheq ([(k v) (in-hash vs)])
     (values k Invariant)))
+
+(define (make-constant vs)
+  (for/hasheq ([(k v) (in-hash vs)])
+    (values k Constant)))
 
 (define (without-below n frees)
   (for/hasheq ([(k v) (in-hash frees)]
