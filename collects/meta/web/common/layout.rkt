@@ -86,11 +86,14 @@
                       [else (div class: 'bodycontent
                                  style: @list{width: @|width|@";"}
                                  content)])]
-           [content (list navbar content)])
-      @xhtml{@head
+           [content @list{@navbar
+                          @content}])
+      @xhtml{@||
+             @head
              @(if body-attrs
                 (apply body `(,@body-attrs ,content))
-                (body content))}))
+                (body content))
+             @||}))
   (define this (and (not html-only?)
                     (resource (get-path 'plain id file "html" dir)
                               (file-writer output-xml page)
@@ -163,17 +166,21 @@
 
 (define (html-favicon-maker icon)
   (define headers
-    (list @link[rel: "icon" href: icon type: "image/ico"]
-          @link[rel: "shortcut icon" href: icon]))
+    @list{@link[rel: "icon" href: icon type: "image/ico"]
+          @link[rel: "shortcut icon" href: icon]})
   (lambda () headers))
 
 (define (html-head-maker style favicon)
   (define headers
-    (list @meta[name: "generator" content: "Racket"]
+    @list{@meta[name: "generator" content: "Racket"]
           @meta[http-equiv: "Content-Type" content: "text/html; charset=utf-8"]
-          favicon
-          style))
-  (lambda (title* more-headers) (head @title[title*] headers more-headers)))
+          @favicon
+          @style})
+  (lambda (title* more-headers)
+    (head "\n" (title title*)
+          "\n" headers
+          "\n" more-headers
+          (and more-headers (list "\n" more-headers)))))
 
 (define (make-resources icon logo style)
   (let* ([favicon     (html-favicon-maker icon)]
