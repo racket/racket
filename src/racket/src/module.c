@@ -10416,6 +10416,22 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   e = SCHEME_CAR(obj);
   if (!SCHEME_VECTORP(e)) return_NULL();
   m->et_body = e;
+  for (i = SCHEME_VEC_SIZE(e); i--; ) {
+    e = SCHEME_VEC_ELS(m->et_body)[i];
+    if (!SCHEME_VECTORP(e)) return_NULL();
+    /* SCHEME_VEC_ELS(e)[1] should be code */
+    if (!SCHEME_INTP(SCHEME_VEC_ELS(e)[2])) return_NULL();
+    if (!SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(e)[3]), scheme_resolve_prefix_type))
+      return_NULL();
+    e = SCHEME_VEC_ELS(e)[0];
+    if (!SCHEME_SYMBOLP(e)) {
+      while (SCHEME_PAIRP(e)) {
+        if (!SCHEME_SYMBOLP(SCHEME_CAR(e))) return_NULL();
+        e = SCHEME_CDR(e);
+      }
+      if (!SCHEME_NULLP(e)) return_NULL();
+    }
+  }
   obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
