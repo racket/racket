@@ -479,7 +479,18 @@
                         [l (cons (lookup-req 1) l)] ; et-requires
                         [l (cons (lookup-req 0) l)] ; requires
                         [l (cons (list->vector body) l)]
-                        [l (cons (list->vector syntax-body) l)]
+                        [l (cons (list->vector
+                                  (for/list ([i (in-list syntax-body)])
+                                    (define (maybe-one l) ;; a single symbol is ok
+                                      (if (and (pair? l) (null? (cdr l)))
+                                          (car l)
+                                          l))
+                                    (match i
+                                      [(struct def-syntaxes (ids rhs prefix max-let-depth))
+                                       (vector (maybe-one ids) rhs max-let-depth prefix #f)]
+                                      [(struct def-for-syntax (ids rhs prefix max-let-depth))
+                                       (vector (maybe-one ids) rhs max-let-depth prefix #t)])))
+                                 l)]
                         [l (append (apply
                                     append
                                     (map (lambda (l)
