@@ -418,6 +418,9 @@
 (test 'twox 'let*-values (let*-values ([() (values)][() (values)]) 'twox))
 (test 'threex 'letrec-values (letrec-values ([() (values)][() (values)]) 'threex))
 
+(letrec ([undef undef])
+  (test (list 1 undef undef) 'no-split-letrec (letrec-values ([(a b c) (values 1 a b)]) (list a b c))))
+
 (test '(10 11) 'letrec-values (letrec-values ([(names kps)
 					       (letrec ([oloop 10])
 						 (values oloop (add1 oloop)))])

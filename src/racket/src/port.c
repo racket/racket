@@ -7436,7 +7436,7 @@ static void unused_process_group(void *_sp, void *ignored)
 # else
   void **unused_group;
   unused_group = malloc(sizeof(void *) * 2);
-  unused_group[0] = (void *)sp->pid;
+  unused_group[0] = (void *)(long)sp->pid;
   unused_group[1] = unused_groups;
   need_to_check_children = 1;
 # endif

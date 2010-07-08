@@ -166,6 +166,7 @@ typedef struct Compile_Data {
   int *sealed; /* NULL => already sealed */
   int *use;
   Scheme_Object *lifts;
+  int min_use, any_use;
 } Compile_Data;
 
 typedef struct Scheme_Full_Comp_Env {
@@ -1500,6 +1501,8 @@ static void init_compile_data(Scheme_Comp_Env *env)
   for (i = 0; i < c; i++) {
     use[i] = 0;
   }
+
+  data->min_use = c;
 }
 
 Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags,
@@ -2015,6 +2018,9 @@ static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
   u |= (cnt << SCHEME_USE_COUNT_SHIFT);
   
   COMPILE_DATA(frame)->use[i] = u;
+  if (i < COMPILE_DATA(frame)->min_use)
+    COMPILE_DATA(frame)->min_use = i;
+  COMPILE_DATA(frame)->any_use = 1;
 
   return (Scheme_Local *)scheme_make_local(scheme_local_type, p + i, 0);
 }
@@ -3140,6 +3146,21 @@ Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o)
     return NULL;
 }
 
+int scheme_env_check_reset_any_use(Scheme_Comp_Env *frame)
+{
+  int any_use;
+
+  any_use = COMPILE_DATA(frame)->any_use;
+  COMPILE_DATA(frame)->any_use = 0;
+
+  return any_use;
+}
+
+int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos)
+{
+  return COMPILE_DATA(frame)->min_use < pos;
+}
+
 int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
 {
   int *v, i;
@@ -3258,7 +3279,10 @@ static void register_stat_dist(Optimize_Info *info, int i, int j)
       info->sd_depths[k] = 0;
     }
   }
-  
+
+  if (i >= info->new_frame)
+    scheme_signal_error("internal error: bad stat-dist index");
+
   if (info->sd_depths[i] <= j) {
     char *naya, *a;
     int k;
@@ -4046,8 +4070,12 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_O
           *_lifted = lifted;
            
            return 0;
-        } else
-          return info->new_pos[i] + offset;
+        } else {
+          pos = info->new_pos[i];
+          if (pos < 0)
+            scheme_signal_error("internal error: skipped binding is used");
+          return pos + offset;
+        }
       }
     }
 

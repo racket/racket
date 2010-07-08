@@ -1055,13 +1055,17 @@ typedef struct {
 } Scheme_Compilation_Top;
 
 typedef struct Scheme_Compiled_Let_Value {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* keyex used for set-starting */
   mzshort count;
   mzshort position;
   int *flags;
   Scheme_Object *value;
   Scheme_Object *body;
 } Scheme_Compiled_Let_Value;
+
+#define SCHEME_CLV_FLAGS(clv) MZ_OPT_HASH_KEY(&(clv)->iso)
+#define SCHEME_CLV_NO_GROUP_LATER_USES 0x1
+#define SCHEME_CLV_NO_GROUP_USES 0x2
 
 typedef struct Scheme_Let_Header {
   Scheme_Inclhash_Object iso; /* keyex used for recursive */
@@ -2554,6 +2558,8 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Inf
 #define SCHEME_SYNTAX_EXP(obj) SCHEME_PTR2_VAL(obj)
 
 int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
+int scheme_env_check_reset_any_use(Scheme_Comp_Env *frame);
+int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
 
 /* flags reported by scheme_env_get_flags */
 #define SCHEME_WAS_USED                0x1
@@ -2641,7 +2647,7 @@ int scheme_used_app_only(Scheme_Comp_Env *env, int which);
 int scheme_used_ever(Scheme_Comp_Env *env, int which);
 
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
-                          Optimize_Info *warn_info);
+                          Optimize_Info *warn_info, int deeper_than);
 
 int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 

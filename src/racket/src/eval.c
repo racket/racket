@@ -750,7 +750,7 @@ static void note_match(int actual, int expected, Optimize_Info *warn_info)
 }
 
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
-                          Optimize_Info *warn_info)
+                          Optimize_Info *warn_info, int deeper_than)
      /* Checks whether the bytecode `o' returns `vals' values with no
         side-effects and without pushing and using continuation marks. 
         -1 for vals means that any return count is ok.
@@ -768,9 +768,11 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 
   if ((vtype > _scheme_compiled_values_types_) 
       || ((vtype == scheme_local_type)
-          && !(SCHEME_GET_LOCAL_FLAGS(o) == SCHEME_LOCAL_CLEAR_ON_READ))
+          && !(SCHEME_GET_LOCAL_FLAGS(o) == SCHEME_LOCAL_CLEAR_ON_READ)
+          && (SCHEME_LOCAL_POS(o) > deeper_than))
       || ((vtype == scheme_local_unbox_type)
-          && !(SCHEME_GET_LOCAL_FLAGS(o) == SCHEME_LOCAL_CLEAR_ON_READ))
+          && !(SCHEME_GET_LOCAL_FLAGS(o) == SCHEME_LOCAL_CLEAR_ON_READ)
+          && (SCHEME_LOCAL_POS(o) > deeper_than))
       || (vtype == scheme_unclosed_procedure_type)
       || (vtype == scheme_compiled_unclosed_procedure_type)
       || (vtype == scheme_case_lambda_sequence_type)
@@ -816,9 +818,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   if ((vtype == scheme_branch_type)) {
     Scheme_Branch_Rec *b;
     b = (Scheme_Branch_Rec *)o;
-    return (scheme_omittable_expr(b->test, 1, fuel - 1, resolved, warn_info)
-	    && scheme_omittable_expr(b->tbranch, vals, fuel - 1, resolved, warn_info)
-	    && scheme_omittable_expr(b->fbranch, vals, fuel - 1, resolved, warn_info));
+    return (scheme_omittable_expr(b->test, 1, fuel - 1, resolved, warn_info, deeper_than)
+	    && scheme_omittable_expr(b->tbranch, vals, fuel - 1, resolved, warn_info, deeper_than)
+	    && scheme_omittable_expr(b->fbranch, vals, fuel - 1, resolved, warn_info, deeper_than));
   }
 
 #if 0
@@ -826,15 +828,15 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
      a let_value_type! */
   if ((vtype == scheme_let_value_type)) {
     Scheme_Let_Value *lv = (Scheme_Let_Value *)o;
-    return (scheme_omittable_expr(lv->value, lv->count, fuel - 1, resolved, warn_info)
-	    && scheme_omittable_expr(lv->body, vals, fuel - 1, resolved, warn_info));
+    return (scheme_omittable_expr(lv->value, lv->count, fuel - 1, resolved, warn_info, deeper_than)
+	    && scheme_omittable_expr(lv->body, vals, fuel - 1, resolved, warn_info, deeper_than));
   }
 #endif
 
   if ((vtype == scheme_let_one_type)) {
     Scheme_Let_One *lo = (Scheme_Let_One *)o;
-    return (scheme_omittable_expr(lo->value, 1, fuel - 1, resolved, warn_info)
-	    && scheme_omittable_expr(lo->body, vals, fuel - 1, resolved, warn_info));
+    return (scheme_omittable_expr(lo->value, 1, fuel - 1, resolved, warn_info, deeper_than + 1)
+	    && scheme_omittable_expr(lo->body, vals, fuel - 1, resolved, warn_info, deeper_than + 1));
   }
 
   if ((vtype == scheme_let_void_type)) {
@@ -844,12 +846,15 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       Scheme_Let_Value *lv2 = (Scheme_Let_Value *)lv->body;
       if ((lv2->count == 1)
           && (lv2->position == 0)
-          && scheme_omittable_expr(lv2->value, 1, fuel - 1, resolved, warn_info))
+          && scheme_omittable_expr(lv2->value, 1, fuel - 1, resolved, warn_info, 
+                                   deeper_than + 1 + lv->count)) {
         o = lv2->body;
-      else
+        deeper_than += 1;
+      } else
         o = lv->body;
     } else
       o = lv->body;
+    deeper_than += lv->count;
     goto try_again;
   }
 
@@ -859,8 +864,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     if ((lh->count == 1) && (lh->num_clauses == 1)) {
       if (SAME_TYPE(SCHEME_TYPE(lh->body), scheme_compiled_let_value_type)) {
         Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
-        if (scheme_omittable_expr(lv->value, 1, fuel - 1, resolved, warn_info)) {
+        if (scheme_omittable_expr(lv->value, 1, fuel - 1, resolved, warn_info, deeper_than + 1)) {
           o = lv->body;
+          deeper_than++;
           goto try_again;
         }
       }
@@ -880,7 +886,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         && SAME_OBJ(scheme_make_struct_type_proc, app->args[0])) {
       note_match(5, vals, warn_info);
       if ((vals == 5) || (vals < 0)) {
-      /* Look for (make-struct-type sym #f non-neg-int non-neg-int [omitable null]) */
+        /* Look for (make-struct-type sym #f non-neg-int non-neg-int [omitable null]) */
         if (SCHEME_SYMBOLP(app->args[1])
             && SCHEME_FALSEP(app->args[2])
             && SCHEME_INTP(app->args[3])
@@ -888,7 +894,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
             && SCHEME_INTP(app->args[4])
             && (SCHEME_INT_VAL(app->args[4]) >= 0)
             && ((app->num_args < 5)
-                || scheme_omittable_expr(app->args[5], 1, fuel - 1, resolved, warn_info))
+                || scheme_omittable_expr(app->args[5], 1, fuel - 1, resolved, warn_info,
+                                         deeper_than + (resolved ? app->num_args : 0)))
             && ((app->num_args < 6)
                 || SCHEME_NULLP(app->args[6]))
             && ((app->num_args < 7)
@@ -909,7 +916,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       if ((app->num_args == vals) || (vals < 0)) {
 	int i;
 	for (i = app->num_args; i--; ) {
-	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info))
+	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info, 
+                                     deeper_than + (resolved ? app->num_args : 0)))
 	    return 0;
 	}
 	return 1;
@@ -925,7 +933,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
       if ((vals == 1) || (vals < 0)) {
         int i;
 	for (i = app->num_args; i--; ) {
-	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info))
+	  if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, resolved, warn_info,
+                                     deeper_than + (resolved ? app->num_args : 0)))
 	    return 0;
 	}
 	return 1;
@@ -956,7 +965,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         || SAME_OBJ(scheme_box_proc, app->rator)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
-	if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info))
+	if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info,
+                                  deeper_than + (resolved ? 1 : 0)))
 	  return 1;
       }
     }
@@ -966,7 +976,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         && (1 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
-        if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info))
+        if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info,
+                                  deeper_than + (resolved ? 1 : 0)))
           return 1;
       }
     }
@@ -979,9 +990,11 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     if (SAME_OBJ(scheme_values_func, app->rator)) {
       note_match(2, vals, warn_info);
       if ((vals == 2) || (vals < 0)) {
-        if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info)
-            && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info))
-	  return 1;
+        if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info,
+                                  deeper_than + (resolved ? 2 : 0))
+            && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info,
+                                     deeper_than + (resolved ? 2 : 0)))
+          return 1;
       }
     }
     /* ({void,cons,list,list*,vector,vector-immutable) <omittable> <omittable>) */
@@ -994,8 +1007,10 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         || SAME_OBJ(scheme_vector_immutable_proc, app->rator)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
-	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info)
-	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info))
+	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info,
+                                  deeper_than + (resolved ? 2 : 0))
+	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info,
+                                  deeper_than + (resolved ? 2 : 0)))
 	  return 1;
       }
     }
@@ -1005,8 +1020,10 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
-	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info)
-	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info))
+	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info,
+                                  deeper_than + (resolved ? 2 : 0))
+	    && scheme_omittable_expr(app->rand2, 1, fuel - 1, resolved, warn_info,
+                                  deeper_than + (resolved ? 2 : 0)))
           return 1;
       }
     }
@@ -1677,7 +1694,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       total++;
     } else if (opt 
 	       && (((opt > 0) && !last) || ((opt < 0) && !first))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)) {
       /* A value that is not the result. We'll drop it. */
       total++;
     } else {
@@ -1705,7 +1722,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       /* can't optimize away a begin0 at read time; it's too late, since the
          return is combined with EXPD_BEGIN0 */
       addconst = 1;
-    } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL)) {
+    } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL, -1)) {
       /* We can't optimize (begin0 expr cont) to expr because
 	 exp is not in tail position in the original (so we'd mess
 	 up continuation marks). */
@@ -1737,7 +1754,7 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
     } else if (opt 
 	       && (((opt > 0) && (k < total))
 		   || ((opt < 0) && k))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL)) {
+	       && scheme_omittable_expr(v, -1, -1, 0, NULL, -1)) {
       /* Value not the result. Do nothing. */
     } else
       o->array[i++] = v;
@@ -1762,7 +1779,7 @@ static Scheme_Object *look_for_letv_change(Scheme_Sequence *s)
     v = s->array[i];
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_let_value_type)) {
       Scheme_Let_Value *lv = (Scheme_Let_Value *)v;
-      if (scheme_omittable_expr(lv->body, 1, -1, 0, NULL)) {
+      if (scheme_omittable_expr(lv->body, 1, -1, 0, NULL, -1)) {
 	int esize = s->count - (i + 1);
 	int nsize = i + 1;
 	Scheme_Object *nv, *ev;
@@ -2489,7 +2506,7 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
 
   for (i = 0; i < expected; i++) {
     lv = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
-    lv->so.type = scheme_compiled_let_value_type;
+    lv->iso.so.type = scheme_compiled_let_value_type;
     lv->count = 1;
     lv->position = i;
 
@@ -3294,7 +3311,7 @@ static Scheme_Object *check_unbox_rotation(Scheme_Object *_app, Scheme_Object *r
           head->num_clauses = 1;
         
           lv = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
-          lv->so.type = scheme_compiled_let_value_type;
+          lv->iso.so.type = scheme_compiled_let_value_type;
           lv->count = 1;
           lv->position = 0;
           new_rand = scheme_optimize_shift(rand, 1, 0);
@@ -3631,7 +3648,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   if ((SAME_OBJ(scheme_values_func, app->rator)
        || SAME_OBJ(scheme_list_star_proc, app->rator))
-      && (scheme_omittable_expr(app->rand, 1, -1, 0, info)
+      && (scheme_omittable_expr(app->rand, 1, -1, 0, info, -1)
           || single_valued_noncm_expression(app->rand, 5))) {
     info->preserves_marks = 1;
     info->single_result = 1;
@@ -3673,13 +3690,13 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       if (SAME_OBJ(scheme_list_proc, app2->rator)) {
         if (IS_NAMED_PRIM(app->rator, "car")) {
           /* (car (list X)) */
-          if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL)
+          if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL, -1)
               || single_valued_noncm_expression(app2->rand, 5)) {
             alt = app2->rand;
           }
         } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
           /* (cdr (list X)) */
-          if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL))
+          if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL, -1))
             alt = scheme_null;
         }
       }
@@ -3690,27 +3707,27 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             || SAME_OBJ(scheme_list_proc, app3->rator)
             || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
           /* (car ({cons|list|cdr} X Y)) */
-          if ((scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)
+          if ((scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL, -1)
                || single_valued_noncm_expression(app3->rand1, 5))
-              && scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)) {
+              && scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL, -1)) {
             alt = app3->rand1;
           }
         }
       } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
         /* (car (cons X Y)) */
         if (SAME_OBJ(scheme_cons_proc, app3->rator)) {
-          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)
+          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL, -1)
                || single_valued_noncm_expression(app3->rand2, 5))
-              && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)) {
+              && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL, -1)) {
             alt = app3->rand2;
           }
         }
       } else if (IS_NAMED_PRIM(app->rator, "cadr")) {
         if (SAME_OBJ(scheme_list_proc, app3->rator)) {
           /* (cadr (list X Y)) */
-          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)
+          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL, -1)
                || single_valued_noncm_expression(app3->rand2, 5))
-              && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)) {
+              && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL, -1)) {
             alt = app3->rand2;
           }
         }
@@ -4055,7 +4072,7 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
     /* Inlining and constant propagation can expose
        omittable expressions. */
     if ((i + 1 != count)
-	&& scheme_omittable_expr(le, -1, -1, 0, NULL)) {
+	&& scheme_omittable_expr(le, -1, -1, 0, NULL, -1)) {
       drop++;
       info->size = prev_size;
       s->array[i] = NULL;
@@ -4216,7 +4233,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   }
 
   /* Try optimize: (if <omitable-expr> v v) => v */
-  if (scheme_omittable_expr(t, 1, 20, 0, NULL)
+  if (scheme_omittable_expr(t, 1, 20, 0, NULL, -1)
       && equivalent_exprs(tb, fb)) {
     info->size -= 2; /* could be more precise */
     return tb;
@@ -4265,9 +4282,9 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   b = scheme_optimize_expr(wcm->body, info, scheme_optimize_tail_context(context));
 
-  if (scheme_omittable_expr(k, 1, 20, 0, info)
-      && scheme_omittable_expr(v, 1, 20, 0, info)
-      && scheme_omittable_expr(b, -1, 20, 0, info))
+  if (scheme_omittable_expr(k, 1, 20, 0, info, -1)
+      && scheme_omittable_expr(v, 1, 20, 0, info, -1)
+      && scheme_omittable_expr(b, -1, 20, 0, info, -1))
     return b;
 
   /* info->single_result is already set */
@@ -4543,7 +4560,8 @@ Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_I
 	memcpy(flags, lv->flags, sz);
 
 	lv2 = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
-	lv2->so.type = scheme_compiled_let_value_type;
+        SCHEME_CLV_FLAGS(lv2) |= (SCHEME_CLV_FLAGS(lv) & 0x1);
+	lv2->iso.so.type = scheme_compiled_let_value_type;
 	lv2->count = lv->count;
 	lv2->position = lv->position;
 	lv2->flags = flags;
@@ -5397,7 +5415,7 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
          it might not because (1) it was introduced late by inlining,
          or (2) the rhs expression doesn't always produce a single
          value. */
-      if (scheme_omittable_expr(rhs, 1, -1, 1, NULL)) {
+      if (scheme_omittable_expr(rhs, 1, -1, 1, NULL, -1)) {
         rhs = scheme_false;
       } else if ((ip < info->max_calls[pos])
                  && SAME_TYPE(SCHEME_TYPE(rhs), scheme_toplevel_type)) {
