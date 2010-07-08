@@ -3,7 +3,7 @@
 
 (require (utils tc-utils) 
 	 "rep-utils.rkt" "object-rep.rkt" "filter-rep.rkt" "free-variance.rkt"
-         mzlib/trace scheme/match
+         mzlib/trace scheme/match mzlib/etc
          scheme/contract unstable/debug
          (for-syntax scheme/base syntax/parse))
 
@@ -62,6 +62,32 @@
     [#:fold-rhs (*App (type-rec-id rator)
                       (map type-rec-id rands)
                       stx)])
+
+(define (get-variances t num-rands)
+  (match t
+    [(Name: v) (error 'fail)]
+    [(Poly: n scope)
+     (let ([t (free-idxs* scope)])
+       (for/list ([i (in-range n)])
+         (hash-ref t i)))]
+    [(PolyDots: n scope)
+     (let ([t (free-idxs* scope)]
+           [base-count (sub1 n)]
+           [extras (max 0 (- n num-rands))])
+       (append 
+        ;; variances of the fixed arguments
+        (for/list ([i (in-range base-count)])
+          (hash-ref t i))
+        ;; variance of the dotted arguments
+        (for/list ([i (in-range extras)])
+          (hash-ref t n))))]))
+
+(define (apply-variance v tbl)
+  (evcase v
+    [(Constant) (make-constant tbl)]
+    [(Covariant) tbl]
+    [(Invariant) (make-invariant tbl)]
+    [(Contravariant) (flip-variances tbl)]))
 
 ;; left and right are Types
 (dt Pair ([left Type/c] [right Type/c]) [#:key 'pair])
