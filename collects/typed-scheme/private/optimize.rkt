@@ -70,11 +70,11 @@
   (format-unique-id #'here "unboxed-gensym-~a" *unboxed-gensym-counter*))
 
 (define-syntax-class inexact-complex-opt-expr
-  (pattern e:unboxed-inexact-complex-opt-expr
-           #:with opt
-           (begin (set! *unboxed-gensym-counter* 0)
-                  #'(let* (e.bindings ...)
-                      (unsafe-make-flrectangular e.real-part e.imag-part)))))
+  (pattern e:opt-expr
+           #:when (match (type-of #'e)
+                    [(tc-result1: (== -InexactComplex type-equal?)) #t] [_ #f])
+
+           #:with opt #'e.opt))
 ;; it's faster to take apart a complex number and use unsafe operations on
 ;; its parts than it is to use generic operations
 ;; we keep the real and imaginary parts unboxed as long as we stay within
@@ -327,10 +327,12 @@
            (begin (log-optimization "unary inexact complex" #'op)
                   #'(op.unsafe n.opt)))
   (pattern (~and exp (#%plain-app (~var op (float-op binary-inexact-complex-ops)) e:inexact-complex-opt-expr ...))
-           #:with exp*:inexact-complex-opt-expr #'exp
+           #:with exp*:unboxed-inexact-complex-opt-expr #'exp
            #:with opt
            (begin (log-optimization "unboxed inexact complex" #'exp)
-                  #'exp*.opt))
+                  (begin (set! *unboxed-gensym-counter* 0)
+                         #'(let* (exp*.bindings ...)
+                             (unsafe-make-flrectangular exp*.real-part exp*.imag-part)))))
   
   (pattern (#%plain-app (~and op (~literal exact->inexact)) n:fixnum-opt-expr)
            #:with opt
