@@ -5,7 +5,8 @@
          (for-syntax 
           (except-in syntax/parse id)
           racket/match unstable/syntax racket/base unstable/match
-          (private type-contract optimize)
+          (private type-contract)
+          (optimizer optimizer)
           (types utils convenience)
 	  (typecheck typechecker provide-handling tc-toplevel)
 	  (env type-name-env type-alias-env)
