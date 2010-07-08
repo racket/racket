@@ -44,7 +44,7 @@
              [(optimized-body ...)
               ;; do we optimize?
               (if (optimize?)
-                  (begin0 (map optimize (syntax->list #'transformed-body))
+                  (begin0 (map optimize-top (syntax->list #'transformed-body))
                     (do-time "Optimized"))
                   #'transformed-body)])
             ;; reconstruct the module with the extra code
