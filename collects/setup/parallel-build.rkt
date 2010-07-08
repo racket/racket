@@ -1,94 +1,12 @@
-#lang racket
+#lang racket/base
 
-(require raco/command-name)
-(require racket/future)
-(require unstable/generics)
-(require setup/collects)
+(require racket/future
+         racket/list
+         racket/match
+         setup/collects
+         unstable/generics)
 
 (provide parallel-compile)
-
-(define-struct node (path children parents) #:mutable #:prefab)
-
-
-(define (get-dirs-files path) (partition (λ (x) (directory-exists? (build-path path x))) (directory-list path)))
-(define (get-dirs path)       (filter    (λ (x) (directory-exists? (build-path path x))) (directory-list path)))
-(define (get-files path)      (filter    (λ (x) (file-exists?      (build-path path x))) (directory-list path)))
-(define (sort-path x) (sort x (λ (a b) (string<? (path->string a) (path->string b)))))
-
-(define (find-dep-files path)
-  (define isdep? (regexp "\\.dep$"))
-  (let loop 
-    ([next (list path)] [matched null])
-    (match next
-      [(cons h t) 
-       (let*-values ([(c nc) (partition (λ (x) (string=? (path->string x) "compiled")) (get-dirs h))]
-                     [(mfiles) (if (pair? c)
-                                   (map (curry build-path h (car c)) 
-                                        (sort-path(filter (λ (x) (regexp-match isdep? (path->string x))) 
-                                                          (get-files (build-path h (car c))))))
-                                   null)])
-         (loop (append t (map (curry build-path h) (sort-path nc)))
-               (append matched mfiles)))] 
-      
-      [else matched])))
-
-(define (build-dag collects-path)
-  (define dag (make-hash))
-  (define (get-dag-node dag path) (hash-ref! dag path (λ () (make-node (string->bytes/locale path) null null))))
-  (define (dep-path->collect-path path)
-    (match (regexp-match "/collects/(.*)/compiled(.*)_(.*)\\.dep$" (path->string path))
-    [(list a b c d) (string-append b c "." d)]
-    [else (raise "BAD MATCH")]))
-  (define (get-deps path)
-    (foldl (λ (x init) 
-             (match x
-               [(list-rest 'collects rest) (cons (path->string (apply build-path (map bytes->string/locale rest))) init)]
-               [else init])) 
-           null
-           (with-input-from-file path read)))
-  (for ([file (find-dep-files collects-path)])
-    (let ([deps (get-deps file)]
-          [path (dep-path->collect-path file)])
-      (let ([node (get-dag-node dag path)])
-        (for ([dep deps])
-          (let ([dep-node (get-dag-node dag dep)])
-            (set-node-children! node (cons dep-node (node-children node)))
-            (set-node-parents! dep-node (cons node (node-parents dep-node))))))))
-  dag)
-
-(define (children-names n)
-  (map node-path (node-children n)))
-
-(define (find-initials dag) 
-  (for/fold ([ready null]) ([n (in-hash-values dag)])
-          (match n 
-            [(struct node (path '() ps)) (cons n ready)]
-            [else ready])))
-
-(define (compile-done dag node)
-    (hash-remove! dag (node-path node))
-    (let loop ([ready null]
-               [todo  (node-parents node)])
-      (match todo
-        [(list) ready]
-        [(cons depnode t)
-         (set-node-children! depnode (filter (λ (x) (not (equal? node x))) (node-children depnode)))
-         
-         (loop 
-          (if (null? (node-children depnode))
-              (cons depnode ready)
-              ready)
-          t)])))
-
-(define (sort-profit x)
-  (define (count-depend-only-on me)
-    (for/fold ([cnt 0]) ([p (node-parents me)])               
-      (if (> 2 (length (node-children p)))
-          (+ cnt 1)
-          cnt)))  
-  (sort x (λ (x y) (> (count-depend-only-on x) (count-depend-only-on y)))))
-
-(define (node-path-str x) (bytes->string/locale (node-path x)))
 
 (define-generics (jobqueue prop:jobqueue jobqueue?)
   (work-done jobqueue queue work workerid msg)
@@ -97,92 +15,6 @@
   (jobs-cnt jobqueue queue)
   (job-desc jobqueue wokr)
   (initial-queue jobqueue))
-
-(define-struct dag-queue (dag collects-dir) #:transparent
-  #:property prop:jobqueue
-  (define-methods jobqueue
-    (define (initial-queue jobqueue)
-      (sort-profit (find-initials (dag-queue-dag jobqueue))))
-    (define (work-done jobqueue queue work workerid msg)
-       (sort-profit (append queue (compile-done (dag-queue-dag jobqueue) work))))
-    (define (get-job jobqueue queue workerid)
-      (match queue
-        [(cons node rest) 
-          (values 
-            rest
-            node
-            (path->string (build-path (dag-queue-collects-dir jobqueue) (node-path-str node))))]))
-    (define (has-jobs? jobqueue queue)
-      (not (null? queue)))
-    (define (job-desc jobqueue work)
-      (node-path work))
-    (define (jobs-cnt jobqueue queue)
-      (length queue))))
-
-(define (splat txt fn)
-  (call-with-output-file fn #:exists 'replace
-      (lambda (out)
-        (fprintf out "~a" txt))))
-
-#|
-(define (places-comp jobqueue nprocs stopat)
-  (define place-worker-filename "pct1.rkt")
-  (define place-worker-src
-#<<END
- (module pct1 racket
-   (provide place-main)
-   
-   (define (place-main ch)     
-     (let ([mc ((dynamic-require 'compiler/cm 'make-caching-managed-compile-zo))])
-       (let loop ()
-         (match (place-channel-recv ch)
-           ["DIE" void]
-           [file
-            (with-handlers ([exn:fail? (lambda (x) (printf "PLACE WORKER ERROR ~a~n" x) (place-channel-send ch "ERROR"))])
-              (parameterize ([current-namespace (make-base-empty-namespace)]) 
-                (let-values ([(r t1 t2 t3) (time-apply mc (list file))])
-                  (place-channel-send ch (list "DONE" t1 t2 t3)))))
-            (loop)]))))
- )
-END
-
-  (define ps (for/list ([i (in-range nprocs)]) (place place-worker-filename 'place-main)))
-  (define (jobs? queue)
-    (has-jobs? jobqueue queue))
-  (define (empty? queue)
-    (not (has-jobs? jobqueue queue)))
-  
-  (splat place-worker-src place-worker-filename)
-  (letrec ([loop (match-lambda* 
-                   [(list queue waiters inflight (? (lambda (x) (= x stopat))))   (printf "DONE WITH LIMIT~n")]
-                   [(list (? jobs? queue-state) (cons worker wt) inflight count) 
-                              (let-values ([(queue-state job cmd-list) (get-job jobqueue queue-state 0)])
-                                (place-channel-send worker cmd-list)
-                                (loop queue-state wt (cons (list worker job) inflight) count))]
-                   [(list (? empty?) waiters (list) count) (void)]
-                   [(list queue waiters inflight count)
-                     (let ([report-done (λ (x p node msg)
-                             (list 
-                                 (work-done jobqueue queue node 0 msg)
-                                 (cons p waiters)
-                                 (remove x inflight)
-                                 (+ count 1)))])
-                       (apply loop (apply sync (map (λ (x) (match x
-                                               [(list p node) 
-                                                (handle-evt p (λ (e)
-                                                              ;(printf "RECV ~a~n")
-                                                              (match (place-channel-recv p)
-                                                                ["ERROR" (printf "ERROR ~a ~a ~a ~a ~a~n" count (length waiters) (length inflight) (jobs-cnt jobqueue) (node-path node))]
-                                                                [(list D t1 t2 t3) 
-                                                                    (when (= 0 (modulo count 100))  (printf "DONE ~a ~a ~a ~a ~a ~a ~a ~a~n" count (length waiters) (length inflight) (jobs-cnt jobqueue) (node-path node) t1 t2 t3))])
-                                                              (report-done x p node "")))]))
-                                    
-                                    inflight))))])])
-    (loop (initial-queue jobqueue) ps null 0))
-  
-  (for ([p ps]) (place-channel-send p "DIE"))
-  (for ([p ps]) (place-wait p)))
-|#
 
 (define (process-comp jobqueue nprocs stopat)
   (define process-worker-filename
@@ -348,24 +180,3 @@ END
     (setup-fprintf (current-output-port) #f "--- parallel build using ~a processor cores ---" worker-count)
     (process-comp (make-collects-queue collects (make-hash) cd setup-fprintf) worker-count 999999999)))
 
-
-(define (build-dag->file collects-dir dest-filename)
-  (with-output-to-file dest-filename #:exists 'replace (λ () (write (build-dag collects-dir)))))
-(define (file->dag dag-path)
-  (hash-copy (with-input-from-file dag-path (λ () (read)))))
-
-(define (build-dag-queue dagfile collects-dir) 
-  (let ([dag (file->dag dagfile)])
-    (make-dag-queue dag collects-dir)))
-  
-(define (absolute-collects-path)
-  (simplify-path (find-executable-path (find-system-path 'exec-file) (find-system-path 'collects-dir))))
-
-(match (current-command-name)
-  ;; called from raco
-  ["build-dag" (let ([cd (absolute-collects-path)])
-    (build-dag->file cd (build-path cd "setup/dag")))]
-  ["parallel-build" (let ([cd (absolute-collects-path)]) 
-    (printf "Using ~a processor cores~n" (processor-count))
-    (process-comp (build-dag-queue (build-path cd "setup/dag")) cd (processor-count) 999999999))]
-  [#f (void)])
