@@ -520,14 +520,19 @@
   ;; variable: Symbol - variable to use instead, if v was a temp var for idx extension
   (define (constraint->type v h #:variable [variable #f])
     (match v
-      [(struct c (S X T))
+      [(c S X T)
        (let ([var (hash-ref h (or variable X) Constant)])
          ;(printf "variance was: ~a~nR was ~a~nX was ~a~nS T ~a ~a~n" var R (or variable X) S T)
          (evcase var 
                  [Constant S]
                  [Covariant S]
                  [Contravariant T]
-                 [Invariant S]))]))
+                 [Invariant 
+                  (let ([gS (generalize S)])
+                    (printf "Inv var: ~a ~a ~a ~a\n" v S gS T)
+                    (if (subtype gS T)
+                        gS
+                        S))]))]))
   ;; Since we don't add entries to the empty cset for index variables (since there is no
   ;; widest constraint, due to dcon-exacts), we must add substitutions here if no constraint
   ;; was found.  If we're at this point and had no other constraints, then adding the
