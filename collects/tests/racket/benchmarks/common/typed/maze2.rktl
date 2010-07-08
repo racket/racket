@@ -763,7 +763,7 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time (let: loop : (Listof Char)
-              ((n : Integer 1000) (v : (Listof Char) '()))
+              ((n : Integer 25000) (v : (Listof Char) '()))
               (if (zero? n)
                   v
                   (begin
