@@ -377,7 +377,7 @@
 	   [(tc-result1: (? needs-resolving? e) f o)
 	    (loop (ret (resolve-once e) f o))]
 	   [v-ty
-	    (let ([arg-tys (list v-ty e-t)]) ;; TODO problem is that 2 rec types are not equal, but why?
+	    (let ([arg-tys (list v-ty e-t)])
 	      (tc/funapp #'op #'(v e) (single-value #'op) arg-tys expected))])))]
     [(#%plain-app (~and op (~or (~literal vector-set!) (~literal unsafe-vector-set!) (~literal unsafe-vector*-set!))) v e:expr val:expr)
      (let ([e-t (single-value #'e)])
