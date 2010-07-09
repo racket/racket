@@ -723,12 +723,11 @@
                                               (and (if (cc-root-dir cc)
                                                      (relative-path? p)
                                                      (complete-path? p))
-                                                   (file-exists?
-                                                    (build-path
-                                                     (if (cc-root-dir cc)
-                                                       (build-path (cc-root-dir cc) p)
-                                                       p)
-                                                     "info.rkt"))))))
+                                                   (let ([dir (if (cc-root-dir cc)
+                                                                  (build-path (cc-root-dir cc) p)
+                                                                  p)])
+                                                     (or (file-exists? (build-path dir "info.rkt"))
+                                                         (file-exists? (build-path dir "info.ss"))))))))
                                      a)
                                   (list (? symbol? b) ...)
                                   c
