@@ -12,7 +12,13 @@
   (when (optimize?)
     (hash-set! table e t)))
 
-(define (type-of e) (hash-ref table e (lambda () (int-err (format "no type for ~a" (syntax->datum e))))))
+(define (type-of e)
+  (hash-ref table e
+            (lambda () (int-err (format "no type for ~a at: ~a line ~a col ~a"
+                                        (syntax->datum e)
+                                        (syntax-source e)
+                                        (syntax-line e)
+                                        (syntax-column e))))))
 
 (define struct-fn-table (make-free-id-table))
 
