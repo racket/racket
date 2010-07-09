@@ -3120,7 +3120,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   is_rec = (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE);
 
   split_shift = 0;
-  if (1 && is_rec) { /* REMOVEME */
+  if (is_rec) {
     /* Check whether we should break a prefix out into its own
        letrec set. */
     body = head->body;
@@ -3218,25 +3218,23 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   }
 
   rev_bind_order = 0;
-  if (1) { /* REMOVEME */
-    if (is_rec)
-      rev_bind_order = 1;
-    else if (head->num_clauses > 1) {
-      int pos;
-      body = head->body;
+  if (is_rec)
+    rev_bind_order = 1;
+  else if (head->num_clauses > 1) {
+    int pos;
+    body = head->body;
+    pre_body = (Scheme_Compiled_Let_Value *)body;
+    pos = pre_body->position;
+    body = pre_body->body;
+    for (i = head->num_clauses - 1; i--; ) {
       pre_body = (Scheme_Compiled_Let_Value *)body;
-      pos = pre_body->position;
-      body = pre_body->body;
-      for (i = head->num_clauses - 1; i--; ) {
-        pre_body = (Scheme_Compiled_Let_Value *)body;
-        if (pre_body->position < pos) {
-          rev_bind_order = 1;
-          break;
-        } else if (pre_body->position > pos) {
-          break;
-        }
-        body = pre_body->body;
+      if (pre_body->position < pos) {
+        rev_bind_order = 1;
+        break;
+      } else if (pre_body->position > pos) {
+        break;
       }
+      body = pre_body->body;
     }
   }
 
@@ -3677,7 +3675,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     return head->body;
   }
   
-  if (1 && is_rec && !not_simply_let_star) { /* REMOVEME */
+  if (is_rec && !not_simply_let_star) {
     /* We can simplify letrec to let* */
     SCHEME_LET_FLAGS(head) -= SCHEME_LET_RECURSIVE;
     SCHEME_LET_FLAGS(head) |= SCHEME_LET_STAR;
@@ -4517,7 +4515,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   Scheme_Compiled_Let_Value *last = NULL, *lv;
   DupCheckRecord r;
   int rec_env_already = rec[drec].env_already;
-  int rev_bind_order = (1 && recursive); /* REMOVEME */
+  int rev_bind_order = recursive;
 
   i = scheme_stx_proper_list_length(form);
   if (i < 3)
