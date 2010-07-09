@@ -22,7 +22,7 @@
          (r:infer infer)
          '#%paramz
          (for-template
-          racket/unsafe/ops
+          racket/unsafe/ops racket/fixnum racket/flonum
           (only-in '#%kernel [apply k:apply])
           "internal-forms.rkt" scheme/base scheme/bool '#%paramz
           (only-in racket/private/class-internal make-object do-make-object)))
@@ -483,6 +483,13 @@
         [(subtype t -PositiveFixnum) (ret -NonnegativeFixnum)]
         [(subtype t -NonnegativeFixnum) (ret -Fixnum)]
         [(subtype t -ExactPositiveInteger) (ret -Nat)]
+        [else (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)]))]
+    ;; idem for fx-
+    [(#%plain-app (~and op (~or (~literal fx-) (~literal unsafe-fx-))) v (~and arg2 ((~literal quote) 1)))
+     (add-typeof-expr #'arg2 (ret -PositiveFixnum))
+     (match-let ([(tc-result1: t) (single-value #'v)])
+       (cond
+        [(subtype t -ExactPositiveInteger) (ret -NonnegativeFixnum)]
         [else (tc/funapp #'op #'(v arg2) (single-value #'op) (list (ret t) (single-value #'arg2)) expected)]))]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)

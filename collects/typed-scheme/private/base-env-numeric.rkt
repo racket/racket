@@ -46,7 +46,8 @@
   (define-for-syntax fx-op (cl->* (-Pos -Pos . -> . -PositiveFixnum)
                                   (-Nat -Nat . -> . -NonnegativeFixnum)
                                   (-Integer -Integer . -> . -Fixnum)))
-  (define-for-syntax fx-intop (-Integer -Integer . -> . -Fixnum))
+  (define-for-syntax fx-natop (cl->* (-Nat -Nat . -> . -NonnegativeFixnum)
+                                     (-Integer -Integer . -> . -Fixnum)))
   (define-for-syntax fx-unop (-Integer . -> . -Fixnum))
 
   (define-for-syntax real-comp (->* (list R R) R B))
@@ -57,6 +58,8 @@
            (-Nat -Pos . -> . -PositiveFixnum)
            (-Nat -Nat . -> . -NonnegativeFixnum)
            (-Integer -Integer . -> . -Fixnum)))
+  (define-for-syntax fx--type
+    (-Integer -Integer . -> . -Fixnum))
   (define-for-syntax fx=-type
     (cl->*
      (-> -Integer (-val 0) B : (-FS (-filter (-val 0) 0) -top))
@@ -473,11 +476,11 @@
 [unsafe-flimag-part (-InexactComplex . -> . -Flonum)]
 
 [unsafe-fx+ fx+-type]
-[unsafe-fx- fx-intop]
+[unsafe-fx- fx--type]
 [unsafe-fx* fx-op]
-[unsafe-fxquotient fx-intop]
-[unsafe-fxremainder fx-intop]
-[unsafe-fxmodulo fx-intop]
+[unsafe-fxquotient fx-natop]
+[unsafe-fxremainder fx-natop]
+[unsafe-fxmodulo fx-natop]
 [unsafe-fxabs (-Integer . -> . (Un -PositiveFixnum (-val 0)))]
 
 [unsafe-fxand fx-op]
@@ -498,11 +501,11 @@
 ;; scheme/fixnum
 
 [fx+ fx+-type]
-[fx- fx-intop]
+[fx- fx--type]
 [fx* fx-op]
-[fxquotient fx-intop]
-[fxremainder fx-intop]
-[fxmodulo fx-intop]
+[fxquotient fx-natop]
+[fxremainder fx-natop]
+[fxmodulo fx-natop]
 [fxabs (-Integer . -> . (Un -PositiveFixnum (-val 0)))]
 
 [fxand fx-op]
