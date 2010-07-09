@@ -44,9 +44,6 @@
  [macro-policy (parameter/c (identifier? . -> . any))]
  [subterms-table (parameter/c (or/c subterms-table/c false/c))]
  [hides-flags (list-parameter/c boolean?)]
- [block-syntax-bindings (parameter/c (listof syntaxish?))]
- [block-value-bindings (parameter/c (listof syntaxish?))]
- [block-expressions (parameter/c syntaxish?)]
 
  [learn-binders ((listof identifier?) . -> . any)]
  [learn-definites ((listof identifier?) . -> . any)]
@@ -113,13 +110,6 @@
 
 ;; hides-flags : (parameterof (listof (boxof boolean)))
 (define hides-flags (make-parameter null))
-
-;; block-syntax-bindings : (parameter/c (listof stx))
-;; block-value-bindings : (parameter/c (listof stx))
-;; block-expressions : (parameter/c (listof stx))
-(define block-value-bindings (make-parameter null))
-(define block-syntax-bindings (make-parameter null))
-(define block-expressions (make-parameter null))
 
 ;; lift params
 (define available-lift-stxs (make-parameter null))

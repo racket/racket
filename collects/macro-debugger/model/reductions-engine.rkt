@@ -46,8 +46,6 @@
 ;;   [#:let var expr]
 ;;   [#:left-foot]
 ;;   [#:walk term2 description]
-;;   [#:walk/ctx pattern term2 description]
-;;   [#:walk/foci term2 foci1 foci2 description]
 ;;   [#:rename pattern rename [description]]
 ;;   [#:rename/no-step pattern stx stx]
 ;;   [#:reductions expr]

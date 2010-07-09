@@ -462,32 +462,15 @@
   (match/count bd
     [(Wrap bderiv (es1 es2 pass1 trans pass2))
      (R [#:pattern ?block]
-        [#:parameterize ((block-syntax-bindings null)
-                         (block-value-bindings null)
-                         (block-expressions null))
-          [#:pass1]
-          [BlockPass ?block pass1]
-          [#:pass2]
-          [#:when (eq? trans 'letrec)
-                  [#:walk
-                   (let* ([pass2-stxs (wlderiv-es1 pass2)]
-                          [letrec-form (car pass2-stxs)]
-                          [letrec-kw (stx-car letrec-form)]
-                          [stx-bindings (reverse (block-syntax-bindings))]
-                          [val-bindings (reverse (block-value-bindings))]
-                          [exprs (block-expressions)]
-                          [mk-letrec-form (lambda (x) (datum->syntax #f x))])
-                     (list
-                      (mk-letrec-form
-                       `(,letrec-kw ,@(if (pair? stx-bindings)
-                                          (list stx-bindings)
-                                          null)
-                                    ,val-bindings
-                                    . ,exprs))))
-                   'block->letrec]]
-          [#:rename ?block (wlderiv-es1 pass2)]
-          [#:set-syntax (wlderiv-es1 pass2)]
-          [List ?block pass2]])]
+        [#:pass1]
+        [BlockPass ?block pass1]
+        [#:pass2]
+        [#:if (eq? trans 'letrec)
+              (;; FIXME: foci (difficult because of renaming?)
+               [#:walk (wlderiv-es1 pass2) 'block->letrec])
+              ([#:rename ?block (wlderiv-es1 pass2)]
+               [#:set-syntax (wlderiv-es1 pass2)])]
+        [List ?block pass2])]
     [#f
      (R)]))
 
@@ -524,13 +507,11 @@
         [#:pass1]
         [Expr ?first head]
         [! ?1]
-        [#:pass2]
         [#:pattern ((?define-values ?vars . ?body) . ?rest)]
         [#:rename (?vars . ?body) rename]
         [#:binders #'?vars]
         [! ?2]
-        [#:do (block-value-bindings
-               (cons (cons #'?vars #'?body) (block-value-bindings)))]
+        [#:pass2]
         [#:pattern (?first . ?rest)]
         [BlockPass ?rest rest])]
     [(cons (Wrap b:defstx (renames head ?1 rename ?2 bindrhs)) rest)
@@ -539,13 +520,11 @@
         [#:pass1]
         [Expr ?first head]
         [! ?1]
-        [#:pass2]
         [#:pattern ((?define-syntaxes ?vars . ?body) . ?rest)]
         [#:rename (?vars . ?body) rename]
         [#:binders #'?vars]
         [! ?2]
-        [#:do (block-syntax-bindings
-               (cons (cons #'?vars #'?body) (block-syntax-bindings)))]
+        [#:pass2]
         [#:pattern ((?define-syntaxes ?vars ?rhs) . ?rest)]
         [BindSyntaxes ?rhs bindrhs]
         [#:pattern (?first . ?rest)]
@@ -554,8 +533,6 @@
      (R [#:pattern (?first . ?rest)]
         [#:rename/no-step ?first (car renames) (cdr renames)]
         [Expr ?first head]
-        [#:do (block-expressions #'(?first . ?rest))]
-        ;; rest better be empty
         [BlockPass ?rest rest])]
     ))
 
