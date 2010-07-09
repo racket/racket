@@ -269,6 +269,15 @@
   (test-ser p2)
   (test-ser (cons p1 p2))
   (test-ser (cons p2 p1)))
+
+(let ()
+  (struct a ([b #:mutable] [c #:mutable]) #:prefab)
+  (struct z a ([b #:mutable] [c #:mutable]) #:prefab)
+  
+  (let ([z0 (z 1 2 3 4)])    
+    (test-ser z0)
+    (set-z-b! z0 z0)
+    (test-ser z0)))
       
 ;; ----------------------------------------
 

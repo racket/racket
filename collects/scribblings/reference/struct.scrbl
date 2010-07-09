@@ -506,7 +506,7 @@ following items:
        any).}
 
  @item{Nothing else, if the structure type has no
-       supertype. Otherwise, the rest of the list matches is the key
+       supertype. Otherwise, the rest of the list is the key
        for the supertype.}
 
 ]
@@ -537,7 +537,10 @@ supplied @racket[v]s, the @exnraise[exn:fail:contract].
 
 Returns a @tech{structure type descriptor} for the @tech{prefab}
 structure type specified by the combination of @racket[key] and
-@racket[field-count].}
+@racket[field-count].
+
+If the number of fields indicated by @racket[key] is inconsistent with
+@racket[field-count], the @exnraise[exn:fail:contract].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}
