@@ -2148,13 +2148,11 @@ If the namespace does not, they are colored the unbound color.
     ;; approximate this by just asking 'did this identifier come from the core?' (which is known
     ;; to not bind any contracts (I hope))
     (define (known-predicate? id)
-      (eq? (syntax-e id) 'integer?)
-      #;
-      (let ([src (syntax-source-module id)])
-        (and src
-             (let-values ([(base rel) (module-path-index-split src)])
-               (printf "~s => ~s\n" (syntax-e id) (list base rel))
-               (member base '(racket racket/base scheme scheme/base))))))
+      (let ([ib (identifier-binding id)])
+        (and (list? ib)
+             (let ([src (list-ref ib 0)])
+               (let-values ([(base rel) (module-path-index-split src)])
+                 (member base '('#%kernel racket racket/base scheme scheme/base)))))))
     
     (define (base-color stx polarity)
       (color stx 
