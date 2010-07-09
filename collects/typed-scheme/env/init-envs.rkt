@@ -25,7 +25,7 @@
     [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
     [(Base: n cnt) `(make-Base ',n (quote-syntax ,cnt))]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
-    [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax acc) ,mut)]
+    [(fld: t acc mut) `(make-fld ,(sub t) (quote-syntax ,acc) ,mut)]
     [(Struct: name parent flds proc poly? pred-id cert maker-id)
      `(make-Struct ,(sub name) ,(sub parent) 
                    ,(sub flds) ,(sub proc) ,(sub poly?)
