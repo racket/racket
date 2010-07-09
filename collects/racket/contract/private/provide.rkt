@@ -636,9 +636,11 @@
        ;; code-for-one-exists-id : syntax -> syntax
        (define (code-for-one-exists-id x x-gen)
          #`(define #,x-gen (new-∃/c '#,x)))
-
+       
        (define (add-exists-binders stx exists-binders)
-         #`(let #,exists-binders #,stx))
+         (if (null? exists-binders)
+             stx
+             #`(let #,exists-binders #,stx)))
        
        (define (add-a-binder id id-gen binders)
          (cons #`[#,id #,id-gen] binders))
@@ -692,25 +694,28 @@
                                          (procedure-arity-includes? id #,(length (syntax->list #'(dom ...)))))]
                                  [_ #f])])
                 (with-syntax ([code
-                               (quasisyntax/loc stx
-                                 (begin
-                                   (define pos-module-source (quote-module-path))
-                                   
-                                   #,@(if no-need-to-check-ctrct?
-                                          (list)
-                                          (list #'(define contract-id 
-                                                    (let ([ex-id ctrct]) ;; let is here to give the right name.
-                                                      (verify-contract 'provide/contract ex-id)))))
-                                   (define-syntax id-rename
-                                     (make-provide/contract-transformer (quote-syntax contract-id)
-                                                                        (quote-syntax id)
-                                                                        (quote-syntax reflect-external-name)
-                                                                        (quote-syntax pos-module-source)))
-                                   
-                                   #,@(if provide?
-                                          (list #`(provide (rename-out [id-rename external-name])))
-                                          null)))])
-                  
+                               (syntax-property
+                                (quasisyntax/loc stx
+                                  (begin
+                                    (define pos-module-source (quote-module-path))
+                                    
+                                    #,@(if no-need-to-check-ctrct?
+                                           (list)
+                                           (list #'(define contract-id 
+                                                     (let ([ex-id ctrct]) ;; let is here to give the right name.
+                                                       (verify-contract 'provide/contract ex-id)))))
+                                    (define-syntax id-rename
+                                      (make-provide/contract-transformer (quote-syntax contract-id)
+                                                                         (quote-syntax id)
+                                                                         (quote-syntax reflect-external-name)
+                                                                         (quote-syntax pos-module-source)))
+                                    
+                                    #,@(if provide?
+                                           (list #`(provide (rename-out [id-rename external-name])))
+                                           null)))
+                                'provide/contract-original-contract
+                                (vector #'external-name #'ctrct))])
+                                
                   (syntax-local-lift-module-end-declaration
                    #`(begin 
                        (unless extra-test
