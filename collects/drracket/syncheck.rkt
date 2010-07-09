@@ -2110,18 +2110,53 @@ If the namespace does not, they are colored the unbound color.
         (let sloop ([prop (syntax-property stx 'provide/contract-original-contract)])
           (cond
             [(vector? prop)
-             (let ([stx (vector-ref prop 1)])
-               (color stx 
-                      (case (random 3)
-                        [(0) my-obligation-style-name]
-                        [(1) their-obligation-style-name]
-                        [(2) unk-obligation-style-name])
-                      'contract-mode))]
+             (color-obligations (vector-ref prop 1))]
             [(pair? prop) (sloop (car prop)) 
                           (sloop (cdr prop))]))
         (syntax-case stx ()
           [(a . b) (loop #'a) (loop #'b)]
           [else (void)])))
+    
+    (define (color-obligations stx)
+      (let loop ([stx stx]
+                 [polarity #t])
+      (syntax-case stx (->)
+        [(-> a ... rng)
+         (begin
+           (base-color (car (syntax-e stx)) polarity)
+           (for-each (λ (x) (loop x (not polarity))) (syntax->list #'(a ...)))
+           (syntax-case #'rng (values any)
+             [(values b ...)
+              (for-each (λ (x) (loop x polarity)) (syntax->list #'(b ...)))]
+             [any
+              (void)]
+             [rng
+              (loop #'rng polarity)]))]
+        [id
+         (and (identifier? #'id)
+              (known-predicate? #'id))
+         (base-color stx polarity)]
+        [else
+         (color stx unk-obligation-style-name 'contract-mode)])))
+    
+    ;; returns #t if the result is known to be a predicate that shoudl correspond to a
+    ;; complete obligation for the contract. If it is some unknown variable, this variable
+    ;; may refer to some other contract with nested obligations, so we have to return #f here.
+    ;; approximate this by just asking 'did this identifier come from the core?' (which is known
+    ;; to not bind any contracts (I hope))
+    (define (known-predicate? id)
+      (eq? (syntax-e id) 'integer?)
+      #;
+      (let ([src (syntax-source-module id)])
+        (and src
+             (let-values ([(base rel) (module-path-index-split src)])
+               (printf "~s => ~s\n" (syntax-e id) (list base rel))
+               (member base '(racket racket/base scheme scheme/base))))))
+    
+    (define (base-color stx polarity)
+      (color stx 
+             (if polarity my-obligation-style-name their-obligation-style-name) 
+             'contract-mode))
         
     ;; record-renamable-var : rename-ht syntax -> void
     (define (record-renamable-var rename-ht stx)
