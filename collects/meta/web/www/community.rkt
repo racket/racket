@@ -2,7 +2,8 @@
 
 (require "people.rkt" "irc.rkt"
          "../minis/lists.rkt"
-         "../stubs/blog.rkt" "../stubs/git.rkt" "../stubs/pre.rkt")
+         "../stubs/blog.rkt" "../stubs/git.rkt"
+         (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide community)
 (define community
@@ -15,7 +16,7 @@
     @parlist[@strong{Development}
       @text{@git (also available on
             @a[href: "http://github.com/plt/racket/"]{GitHub})}
-      @text{@pre-installers and @|pre-root|.}
+      @text{@pre:installers and @|pre:index|.}
       ;;TODO: proper reference
       @a[href: "http://download.racket-lang.org/chronology/"]{
         Release Announcements}

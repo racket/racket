@@ -1,6 +1,7 @@
 #lang at-exp s-exp "shared.rkt"
 
-(require "data.rkt" "installer-pages.rkt" "../stubs/pre.rkt")
+(require "data.rkt" "installer-pages.rkt"
+         (prefix-in pre: "../stubs/pre.rkt"))
 
 (provide render-download-page)
 
@@ -20,7 +21,7 @@
       @input[type: 'submit value: "Download" onclick: "do_jump();"]
       @|br hr|
       @div[align: "center"]{
-        @small{@license @nbsp @bull @nbsp @pre-installers}}
+        @small{@license @nbsp @bull @nbsp @pre:installers}}
       @hr
       @div[id: "linux_explain"
            style: '("font-size: 75%; display: none; width: 28em;"

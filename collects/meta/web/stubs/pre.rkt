@@ -17,8 +17,8 @@
 
 (define version-hole @div[align: 'right]{@small{@i{@(hole "VERSION")}}})
 
-(provide pre-root)
-(define pre-root
+(provide index)
+(define index
   @page[#:file "" #:title "Prebuilt materials"]{
     @p{This directory contains Racket material that is built daily from the
        development repository.  See below for instructions.}
