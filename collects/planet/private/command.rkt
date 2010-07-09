@@ -75,11 +75,11 @@
   (let* ([maxlen (apply max (map (λ (p) (string-length (car p))) commands))]
          [message-lines
           `(,(format "Usage: ~a <subcommand> [option ...] <arg ...>" prog)
-            ,(format "[note: you can name a ~a subcommand by typing any unambiguous prefix of it.]" prog)
+            ,(format "  where any unambiguous prefix can be used for a subcommand")
             ""
             ,@(wrap-to-count general-description 80)
             ""
-            ,(format "For help on a particular subcommand, type '~a <subcommand> --help'" prog)
+            ,(format "For help on a particular subcommand, use '~a <subcommand> --help'" prog)
             ,@(map (λ (command) 
                      (let* ([padded-name (pad (car command) maxlen)]
                             [desc        (cadr command)]
