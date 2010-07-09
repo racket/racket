@@ -529,7 +529,7 @@
                  [Contravariant T]
                  [Invariant 
                   (let ([gS (generalize S)])
-                    (printf "Inv var: ~a ~a ~a ~a\n" v S gS T)
+                    ;(printf "Inv var: ~a ~a ~a ~a\n" v S gS T)
                     (if (subtype gS T)
                         gS
                         S))]))]))
