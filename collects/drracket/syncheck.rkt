@@ -89,7 +89,8 @@ If the namespace does not, they are colored the unbound color.
   update-button-visibility/settings
   
   set-syncheck-mode
-  get-syncheck-mode)
+  get-syncheck-mode
+  update-menu-item-label)
 
 (define tool@ 
   (unit 
@@ -1056,7 +1057,8 @@ If the namespace does not, they are colored the unbound color.
           (send report-error-text delete/io 0 (send report-error-text last-position))
           (send report-error-text lock #t)
           (when (is-current-tab?)
-            (send (get-frame) hide-error-report)))
+            (send (get-frame) hide-error-report)
+            (send (get-frame) update-menu-item-label this)))
         
         (define/public (syncheck:clear-highlighting)
           (let* ([definitions (get-defs)]
@@ -1196,15 +1198,16 @@ If the namespace does not, they are colored the unbound color.
                              (send defs set-syncheck-mode 'default-mode)
                              (update-menu-item-label (get-current-tab))])))])))
         
-        (define/private (update-menu-item-label tab)
-          (let ([mode (send (send (get-current-tab) get-defs) get-syncheck-mode)])
-            (case mode
-              [(#f) 
-               (send mode-menu-item set-label cs-mode-menu-show-contract)]
-              [(default-mode)
-               (send mode-menu-item set-label cs-mode-menu-show-contract)]
-              [(contract-mode)
-               (send mode-menu-item set-label cs-mode-menu-show-syntax)])))
+        (define/public (update-menu-item-label tab)
+          (when mode-menu-item
+            (let ([mode (send (send (get-current-tab) get-defs) get-syncheck-mode)])
+              (case mode
+                [(#f) 
+                 (send mode-menu-item set-label cs-mode-menu-show-contract)]
+                [(default-mode)
+                 (send mode-menu-item set-label cs-mode-menu-show-contract)]
+                [(contract-mode)
+                 (send mode-menu-item set-label cs-mode-menu-show-syntax)]))))
                 
         (inherit open-status-line close-status-line update-status-line ensure-rep-hidden)
         ;; syncheck:button-callback : (case-> (-> void) ((union #f syntax) -> void)
