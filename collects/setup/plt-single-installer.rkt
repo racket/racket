@@ -73,7 +73,9 @@
                       (make-launchers #f)
                       (make-info-domain #t)
                       (call-install #f)
-                      (make-docs #f)))
+                      (make-docs #f))
+
+                    (parallel-workers 1))
                   (invoke-unit
                    (compound-unit/infer
                      (import)
