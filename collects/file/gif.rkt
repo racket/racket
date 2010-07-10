@@ -111,9 +111,10 @@
 (define (WRITE g bytes)
   (write-bytes bytes (gif-stream-port g)))
 
-(provide/doc (proc-doc gif-state
-                       (([stream gif-stream?]) () . ->d . [_ symbol?])
-                       @{Returns the state of @racket[stream].}))
+(provide/doc (proc-doc/names gif-state
+                             (-> gif-stream? symbol?)
+                             (stream)
+                             @{Returns the state of @racket[stream].}))
 (define (gif-state GifFile)
   (gif-stream-FileState GifFile))
 
@@ -121,15 +122,15 @@
 ;; * This routine should be called before any other EGif calls, immediately
 ;; * follows the GIF file openning.
 ;; *****************************************************************************/
-(provide/doc (proc-doc
+(provide/doc (proc-doc/names
               gif-start
-              (([out output-port?]
-                [w dimension?]
-                [h dimension?]
-                [bg-color color?]
-                [cmap (or/c false/c gif-colormap?)])
-               ()
-               . ->d . [_ gif-stream?])
+              (-> output-port?
+                  dimension?
+                  dimension?
+                  color?
+                  (or/c gif-colormap? #f)
+                  gif-stream?)
+              (out w h bg-color cmap)
               @{Writes the start of a GIF file to the given output port, and
                 returns a GIF stream that adds to the output port.
 
@@ -190,18 +191,18 @@
 ;; * This routine should be called before any attempt to dump an image - any
 ;; * call to any of the pixel dump routines.
 ;; *****************************************************************************/
-(provide/doc (proc-doc
+(provide/doc (proc-doc/names
               gif-add-image
-              (([stream image-ready-gif-stream?]
-                [left dimension?]
-                [top dimension?]
-                [width dimension?]
-                [height dimension?]
-                [interlaced? any/c]
-                [cmap (or/c false/c gif-colormap?)]
-                [bstr bytes?])
-               ()
-               . ->d . [_ void?])
+              (-> image-ready-gif-stream?
+                  dimension?
+                  dimension?
+                  dimension?
+                  dimension?
+                  any/c
+                  (or/c gif-colormap? #f)
+                  bytes?
+                  void?)
+              (stream left top width height interlaced? cmap bstr)
               @{Writes an image to the given GIF stream. The @racket[left],
                 @racket[top], @racket[width], and @racket[height] values
                 specify the location and size of the image within the overall
@@ -294,15 +295,15 @@
 ;;/******************************************************************************
 ;; * This routine should be called to add graphic control before the next image
 ;; *****************************************************************************/
-(provide/doc (proc-doc
+(provide/doc (proc-doc/names
               gif-add-control
-              (([stream image-or-control-ready-gif-stream?]
-                [disposal (one-of/c 'any 'keep 'restore-bg 'restore-prev)]
-                [wait-for-input? any/c]
-                [delay dimension?]
-                [transparent (or/c false/c color?)])
-               ()
-               . ->d . [_ void?])
+              (-> image-or-control-ready-gif-stream?
+                  (or/c 'any 'keep 'restore-bg 'restore-prev)
+                  any/c
+                  dimension?
+                  (or/c color? #f)
+                  void?)
+              (stream disposal wait-for-input? delay transparent)
               @{Writes an image-control command to a GIF stream. Such a control
                 must appear just before an image, and it applies to the
                 following image.
@@ -367,12 +368,10 @@
 ;; * This routine should be called to add the "loop" graphic control
 ;;   before adding any images
 ;; *****************************************************************************/
-(provide/doc (proc-doc
+(provide/doc (proc-doc/names
               gif-add-loop-control
-              (([stream empty-gif-stream?]
-                [iteration dimension?])
-               ()
-               . ->d . [_ void?])
+              (-> empty-gif-stream? dimension? void?)
+              (stream iteration)
               @{Writes a control command to a GIF stream for which no images or
                 other commands have already been written. The command causes
                 the animating sequence of images in the GIF to be repeated
@@ -391,12 +390,12 @@
 ;;/******************************************************************************
 ;; * This routine should be called to add arbitrary comment text
 ;; *****************************************************************************/
-(provide/doc (proc-doc
+(provide/doc (proc-doc/names
               gif-add-comment
-              (([stream image-or-control-ready-gif-stream?]
-                [bstr bytes?])
-               ()
-               . ->d . [_ void?])
+              (-> image-or-control-ready-gif-stream?
+                  bytes?
+                  void?)
+              (stream bstr)
               @{Adds a generic comment to the GIF stream.
 
                 An exception is raised if an image-control command was just
@@ -415,11 +414,11 @@
 ;;/******************************************************************************
 ;; * This routine should be called last, to end GIF file.
 ;; *****************************************************************************/
-(provide/doc (proc-doc
+(provide/doc (proc-doc/names
               gif-end
-              (([stream image-or-control-ready-gif-stream?])
-               ()
-               . ->d . [_ void?])
+              (-> image-or-control-ready-gif-stream?
+                  void?)
+              (stream)
               @{Finishes writing a GIF file. The GIF stream's output port is
                 not automatically closed.
 
@@ -570,36 +569,35 @@
        (zero? (remainder (bytes-length b) 4))))
 
 (provide/doc
- (proc-doc quantize
-           (([bstr argb-bytes?])
-            ()
-            . ->d .
-            (values [_ bytes?] [_ gif-colormap?] [_ (or/c false/c color?)]))
-
-           @{Each image in a GIF stream is limited to 256 colors, including the
-             transparent ``color,'' if any. The @racket[quantize] function
-             converts a 24-bit image (plus alpha channel) into an
-             indexed-color image, reducing the number of colors if necessary.
-
-             Given a set of pixels expressed in ARGB format (i.e., each four
-             bytes is a set of values for one pixel: alpha, red, blue, and
-             green), @racket[quantize] produces produces
-
-             @(itemize @item{bytes for the image (i.e., a array of colors,
-                             expressed as a byte string)}
-                       @item{a colormap}
-                       @item{either @racket[#f] or a color index for the
-                             transparent ``color''})
-
-             The conversion treats alpha values less than 128 as transparent
-             pixels, and other alpha values as solid.
-
-             The quantization process uses Octrees @cite["Gervautz1990"] to construct an adaptive
-             palette for all (non-transparent) colors in the image.  This implementation is
-             based on an article by Dean Clark @cite["Clark1996"]. 
-             
-             To convert a collection of images all with the same quantization,
-             simply append them for the input of a single call of
-             @racket[quantize], and then break apart the result bytes.}))
+ (proc-doc/names
+  quantize
+  (-> argb-bytes?
+      (values bytes? gif-colormap? (or/c color? #f)))
+  (bstr)
+  @{Each image in a GIF stream is limited to 256 colors, including the
+    transparent ``color,'' if any. The @racket[quantize] function
+    converts a 24-bit image (plus alpha channel) into an
+    indexed-color image, reducing the number of colors if necessary.
+    
+    Given a set of pixels expressed in ARGB format (i.e., each four
+    bytes is a set of values for one pixel: alpha, red, blue, and
+    green), @racket[quantize] produces produces
+    
+    @(itemize @item{bytes for the image (i.e., a array of colors,
+                    expressed as a byte string)}
+              @item{a colormap}
+              @item{either @racket[#f] or a color index for the
+                           transparent ``color''})
+    
+    The conversion treats alpha values less than 128 as transparent
+    pixels, and other alpha values as solid.
+    
+    The quantization process uses Octrees @cite["Gervautz1990"] to construct an adaptive
+    palette for all (non-transparent) colors in the image.  This implementation is
+    based on an article by Dean Clark @cite["Clark1996"]. 
+    
+    To convert a collection of images all with the same quantization,
+    simply append them for the input of a single call of
+    @racket[quantize], and then break apart the result bytes.}))
 (define (quantize argb)
   (octree:quantize argb))
