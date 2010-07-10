@@ -1,10 +1,5 @@
 #lang racket/gui
 
-;; min-w, min-h : number -> contract
-;; determines if the widths and heights are suitable
-(define (min-w h) (flat-named-contract "draw-button-label-width" (lambda (w) (w . > . (- h (* 2 border-inset))))))
-(define (min-h w) (flat-named-contract "draw-button-label-height" (lambda (h) (h . > . (* 2 border-inset)))))
-
 (provide/contract
  [get-left-side-padding (-> number?)]
  [pad-xywh (-> number? number? (>=/c 0) (>=/c 0)
@@ -14,13 +9,14 @@
         [label (or/c false/c string?)]
         [x number?]
         [y number?]
-        [w (and/c number? (min-w h))]
-        [h (and/c number? (min-h w))]
+        [w number?]
+        [h (and/c number? (>=/c (* 2 border-inset)))]
         [mouse-over? boolean?]
         [grabbed? boolean?]
         [button-label-font (is-a?/c font%)]
         [bkg-color (or/c false/c (is-a?/c color%) string?)])
-       ()
+       #:pre-cond
+       (w . > . (- h (* 2 border-inset)))
        [result void?])]
  
  [calc-button-min-sizes
