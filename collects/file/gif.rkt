@@ -28,39 +28,46 @@
 (define GifVersionPrefix #"GIF89a")
 
 (provide/doc
- (proc-doc gif-stream?
-           (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @scheme[#t] if @scheme[v] is a GIF stream created by
-                     @scheme[gif-write], @scheme[#f] otherwise.})
-
- (proc-doc image-ready-gif-stream?
-           (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @racket[#t] if @racket[v] is a GIF stream that is not in
-             @racket['done] mode, @racket[#f] otherwise.})
- (proc-doc image-or-control-ready-gif-stream?
-           (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @racket[#t] if @racket[v] is a GIF stream that is in
-             @racket['init] or @racket['image-or-control] mode, @racket[#f]
-             otherwise.})
- (proc-doc empty-gif-stream?
-           (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @racket[#t] if @racket[v] is a GIF stream that in
-             @racket['init] mode, @racket[#f] otherwise.})
- (proc-doc gif-colormap?
-           (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @racket[#t] if @racket[v] represets a colormap,
-             @racket[#f] otherwise.  A colormap is a list whose size is a power
-             of @math{2} between @math{2^1} and @math{2^8}, and whose elements
-             are vectors of size 3 containing colors (i.e., exact integers
-             between @math{0} and @math{255} inclusive).})
- (proc-doc color?
-           (([v any/c]) () . ->d . [_ boolean?])
-           @{The same as @racket[byte?].})
- (proc-doc dimension?
-           (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @racket[#t] if @racket[v] is an exact integer between
-             @racket[#x0] and @scheme[#xFFFF] inclusive, @racket[#f]
-             otherwise.}))
+ (proc-doc/names gif-stream?
+                 (-> any/c boolean?)
+                 (v)
+                 @{Returns @racket[#t] if @racket[v] is a GIF stream created by
+                           @racket[gif-write], @racket[#f] otherwise.})
+ 
+ (proc-doc/names image-ready-gif-stream?
+                 (-> any/c boolean?)
+                 (v)
+                 @{Returns @racket[#t] if @racket[v] is a GIF stream that is not in
+                           @racket['done] mode, @racket[#f] otherwise.})
+ (proc-doc/names image-or-control-ready-gif-stream?
+                 (-> any/c boolean?)
+                 (v)
+                 @{Returns @racket[#t] if @racket[v] is a GIF stream that is in
+                           @racket['init] or @racket['image-or-control] mode, @racket[#f]
+                           otherwise.})
+ (proc-doc/names empty-gif-stream?
+                 (-> any/c boolean?)
+                 (v)
+                 @{Returns @racket[#t] if @racket[v] is a GIF stream that in
+                           @racket['init] mode, @racket[#f] otherwise.})
+ (proc-doc/names gif-colormap?
+                 (-> any/c boolean?)
+                 (v)
+                 @{Returns @racket[#t] if @racket[v] represets a colormap,
+                           @racket[#f] otherwise.  A colormap is a list whose size is a power
+                           of @math{2} between @math{2^1} and @math{2^8}, and whose elements
+                           are vectors of size 3 containing colors (i.e., exact integers
+                           between @math{0} and @math{255} inclusive).})
+ (proc-doc/names color?
+                 (-> any/c boolean?)
+                 (v)
+                 @{The same as @racket[byte?].})
+ (proc-doc/names dimension?
+                 (-> any/c boolean?)
+                 (v)
+                 @{Returns @racket[#t] if @racket[v] is an exact integer between
+                           @racket[#x0] and @racket[#xFFFF] inclusive, @racket[#f]
+                           otherwise.}))
 
 (define-struct gif-stream
   (port SWidth SHeight SBackGroundColor SColorMap [FileState #:mutable]))
