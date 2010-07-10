@@ -14,13 +14,13 @@
  *****************************************************************************/
 |#
 
-#lang at-exp scheme/base
+#lang at-exp racket/base
 
-(require scheme/contract
+(require racket/contract
          scribble/srcdoc
          (prefix-in octree: file/private/octree-quantize))
 
-(require/doc scheme/base
+(require/doc racket/base
              scribble/manual)
 
 (define LZ_MAX_CODE 4095)
@@ -31,34 +31,35 @@
  (proc-doc gif-stream?
            (([v any/c]) () . ->d . [_ boolean?])
            @{Returns @scheme[#t] if @scheme[v] is a GIF stream created by
-             @scheme[gif-write], @scheme[#f] otherwise.})
+                     @scheme[gif-write], @scheme[#f] otherwise.})
+
  (proc-doc image-ready-gif-stream?
            (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @scheme[#t] if @scheme[v] is a GIF stream that is not in
-             @scheme['done] mode, @scheme[#f] otherwise.})
+           @{Returns @racket[#t] if @racket[v] is a GIF stream that is not in
+             @racket['done] mode, @racket[#f] otherwise.})
  (proc-doc image-or-control-ready-gif-stream?
            (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @scheme[#t] if @scheme[v] is a GIF stream that is in
-             @scheme['init] or @scheme['image-or-control] mode, @scheme[#f]
+           @{Returns @racket[#t] if @racket[v] is a GIF stream that is in
+             @racket['init] or @racket['image-or-control] mode, @racket[#f]
              otherwise.})
  (proc-doc empty-gif-stream?
            (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @scheme[#t] if @scheme[v] is a GIF stream that in
-             @scheme['init] mode, @scheme[#f] otherwise.})
+           @{Returns @racket[#t] if @racket[v] is a GIF stream that in
+             @racket['init] mode, @racket[#f] otherwise.})
  (proc-doc gif-colormap?
            (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @scheme[#t] if @scheme[v] represets a colormap,
-             @scheme[#f] otherwise.  A colormap is a list whose size is a power
+           @{Returns @racket[#t] if @racket[v] represets a colormap,
+             @racket[#f] otherwise.  A colormap is a list whose size is a power
              of @math{2} between @math{2^1} and @math{2^8}, and whose elements
              are vectors of size 3 containing colors (i.e., exact integers
              between @math{0} and @math{255} inclusive).})
  (proc-doc color?
            (([v any/c]) () . ->d . [_ boolean?])
-           @{The same as @scheme[byte?].})
+           @{The same as @racket[byte?].})
  (proc-doc dimension?
            (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @scheme[#t] if @scheme[v] is an exact integer between
-             @scheme[#x0] and @scheme[#xFFFF] inclusive, @scheme[#f]
+           @{Returns @racket[#t] if @racket[v] is an exact integer between
+             @racket[#x0] and @scheme[#xFFFF] inclusive, @racket[#f]
              otherwise.}))
 
 (define-struct gif-stream
@@ -105,7 +106,7 @@
 
 (provide/doc (proc-doc gif-state
                        (([stream gif-stream?]) () . ->d . [_ symbol?])
-                       @{Returns the state of @scheme[stream].}))
+                       @{Returns the state of @racket[stream].}))
 (define (gif-state GifFile)
   (gif-stream-FileState GifFile))
 
@@ -194,12 +195,12 @@
                 [bstr bytes?])
                ()
                . ->d . [_ void?])
-              @{Writes an image to the given GIF stream. The @scheme[left],
-                @scheme[top], @scheme[width], and @scheme[height] values
+              @{Writes an image to the given GIF stream. The @racket[left],
+                @racket[top], @racket[width], and @racket[height] values
                 specify the location and size of the image within the overall
                 GIF image's virtual space.
 
-                If @scheme[interlaced?] is true, then @scheme[bstr] should
+                If @racket[interlaced?] is true, then @racket[bstr] should
                 provide bytes ininterlaced order instead of top-to-bottom
                 order. Interlaced order is:
 
@@ -208,23 +209,23 @@
                           @item{every 4th row, starting with 2}
                           @item{every 2nd row, starting with 1})
 
-                If a global color is provided with @scheme[gif-start], a
-                @scheme[#f] value can be provided for @scheme[cmap].
+                If a global color is provided with @racket[gif-start], a
+                @racket[#f] value can be provided for @racket[cmap].
 
-                The @scheme[bstr] argument specifies the pixel content of the
+                The @racket[bstr] argument specifies the pixel content of the
                 image.  Each byte specifies a color (i.e., an index in the
                 colormap).  Each row is provided left-to-right, and the rows
                 provided either top-to-bottom or in interlaced order (see
                 above).  If the image is prefixed with a control that specifies
-                an transparent index (see @scheme[gif-add-control]), then the
+                an transparent index (see @racket[gif-add-control]), then the
                 corresponding ``color'' doesn't draw into the overall GIF
                 image.
 
-                An exception is raised if any byte value in @scheme[bstr] is
-                larger than the colormap's length, if the @scheme[bstr] length
-                is not @scheme[width] times @scheme[height], or if the
-                @scheme[top], @scheme[left], @scheme[width], and
-                @scheme[height] dimensions specify a region beyond the overall
+                An exception is raised if any byte value in @racket[bstr] is
+                larger than the colormap's length, if the @racket[bstr] length
+                is not @racket[width] times @racket[height], or if the
+                @racket[top], @racket[left], @racket[width], and
+                @racket[height] dimensions specify a region beyond the overall
                 GIF image's virtual space.}))
 (define (gif-add-image GifFile Left Top Width Height Interlace ColorMap Line)
 
@@ -307,32 +308,32 @@
                 removed from the overall image before proceeding to the next
                 one (also for GIF animation).
 
-                The @scheme[disposal] argument specifies how to proceed:
+                The @racket[disposal] argument specifies how to proceed:
 
-                @(itemize @item{@scheme['any] : doesn't matter (perhaps because
+                @(itemize @item{@racket['any] : doesn't matter (perhaps because
                                 the next image completely overwrites the
                                 current one)}
-                          @item{@scheme['keep] : leave the image in place}
-                          @item{@scheme['restore-bg] : replace the image with
+                          @item{@racket['keep] : leave the image in place}
+                          @item{@racket['restore-bg] : replace the image with
                                 the background color}
-                          @item{@scheme['restore-prev] : restore the overall
+                          @item{@racket['restore-prev] : restore the overall
                                 image content to the content before the image
                                 is added})
 
-                If @scheme[wait-for-input?] is true, then the display program
+                If @racket[wait-for-input?] is true, then the display program
                 may wait for some cue from the user (perhaps a mouse click)
                 before adding the image.
 
-                The @scheme[delay] argument specifies a delay in 1/100s of a
+                The @racket[delay] argument specifies a delay in 1/100s of a
                 second.
 
-                If the @scheme[transparent] argument is a color, then it
+                If the @racket[transparent] argument is a color, then it
                 determines an index that is used to represent transparent
                 pixels in the follow image (as opposed to the color specified
                 by the colormap for the index).
 
                 An exception is raised if a control is already added to
-                @scheme[stream] without a corresponding image.}))
+                @racket[stream] without a corresponding image.}))
 
 (define (gif-add-control GifFile
                          Disposal
@@ -569,18 +570,18 @@
             (values [_ bytes?] [_ gif-colormap?] [_ (or/c false/c color?)]))
 
            @{Each image in a GIF stream is limited to 256 colors, including the
-             transparent ``color,'' if any. The @scheme[quantize] function
+             transparent ``color,'' if any. The @racket[quantize] function
              converts a 24-bit image (plus alpha channel) into an
              indexed-color image, reducing the number of colors if necessary.
 
              Given a set of pixels expressed in ARGB format (i.e., each four
              bytes is a set of values for one pixel: alpha, red, blue, and
-             green), @scheme[quantize] produces produces
+             green), @racket[quantize] produces produces
 
              @(itemize @item{bytes for the image (i.e., a array of colors,
                              expressed as a byte string)}
                        @item{a colormap}
-                       @item{either @scheme[#f] or a color index for the
+                       @item{either @racket[#f] or a color index for the
                              transparent ``color''})
 
              The conversion treats alpha values less than 128 as transparent
@@ -592,6 +593,6 @@
              
              To convert a collection of images all with the same quantization,
              simply append them for the input of a single call of
-             @scheme[quantize], and then break apart the result bytes.}))
+             @racket[quantize], and then break apart the result bytes.}))
 (define (quantize argb)
   (octree:quantize argb))
