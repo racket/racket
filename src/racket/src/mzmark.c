@@ -918,6 +918,8 @@ static int cont_proc_MARK(void *p, struct NewGC *gc) {
   gcMARK2(c->prompt_id, gc);
   gcMARK2(c->prompt_buf, gc);
 
+  gcMARK2(c->escape_cont, gc);
+
   gcMARK2(c->value, gc);
   gcMARK2(c->resume_to, gc);
   gcMARK2(c->use_next_cont, gc);
@@ -957,6 +959,8 @@ static int cont_proc_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(c->prompt_id, gc);
   gcFIXUP2(c->prompt_buf, gc);
+
+  gcFIXUP2(c->escape_cont, gc);
 
   gcFIXUP2(c->value, gc);
   gcFIXUP2(c->resume_to, gc);

@@ -3269,6 +3269,7 @@ static Scheme_Object *def_nested_exn_handler(int argc, Scheme_Object *argv[])
   if (scheme_current_thread->nester) {
     Scheme_Thread *p = scheme_current_thread;
     p->cjs.jumping_to_continuation = (Scheme_Object *)scheme_current_thread;
+    p->cjs.alt_full_continuation = NULL;
     p->cjs.val = argv[0];
     p->cjs.is_kill = 0;
     scheme_longjmp(*p->error_buf, 1);
@@ -3872,6 +3873,7 @@ static void exit_or_escape(Scheme_Thread *p)
     if (p->running & MZTHREAD_KILLED)
       p->running -= MZTHREAD_KILLED;
     p->cjs.jumping_to_continuation = (Scheme_Object *)p;
+    p->cjs.alt_full_continuation = NULL;
     p->cjs.is_kill = 1;
     scheme_longjmp(*p->error_buf, 1);
   }

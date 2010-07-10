@@ -158,8 +158,8 @@
 
  ;; 11.15
  (rename-out [r5rs:apply apply]
-             [r6rs:call/cc call-with-current-continuation]
-             [r6rs:call/cc call/cc])
+             [call-with-current-continuation call/cc])
+ call-with-current-continuation
  values call-with-values
  dynamic-wind
 
@@ -595,43 +595,3 @@
     [(_ ([id expr] ...) body ...)
      (syntax/loc stx
        (splicing-letrec-syntax ([id (wrap-as-needed expr)] ...) body ...))]))
-
-;; ----------------------------------------
-
-(define detect-tail-key (gensym))
-
-(define (mk-k full-k tag)
-  (lambda args 
-    (if (continuation-prompt-available? tag)
-        (abort-current-continuation
-         tag
-         (lambda () (apply values args)))
-        (apply full-k args))))
-
-(define (r6rs:call/cc f)
-  (unless (and (procedure? f)
-               (procedure-arity-includes? f 1))
-    ;; let call/cc report the error:
-    (call/cc f))
-  ;; To support call/cc-based jumps in exception
-  ;;  handlers, we both grab a continuation and set a prompt
-  (let/cc k
-    (let ([v (make-continuation-prompt-tag 'r6rs:call/cc)]
-          [orig-key (continuation-mark-set-first #f detect-tail-key)])
-      (with-continuation-mark detect-tail-key v
-        (let ([new-key (continuation-mark-set-first #f detect-tail-key)])
-          (if (not (eq? new-key orig-key))
-              ;; Old mark surived => not tail wrt old call.
-              ;; Create an escape continuation to use for
-              ;; error escapes. Of course, we rely on the fact
-              ;; that continuation marks are not visible to EoPL
-              ;; programs.
-              (call-with-continuation-prompt
-               (lambda ()
-                 (f (mk-k k new-key)))
-               new-key)
-              ;; Old mark replaced => tail wrt old call.
-              ;; To preserve tail semantics for all but the first call
-              ;; reuse `mark' instead of creating a new escape continuation:
-              (with-continuation-mark detect-tail-key orig-key
-                (f (mk-k k orig-key)))))))))

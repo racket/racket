@@ -879,6 +879,7 @@ typedef struct Scheme_Jumpup_Buf_Holder {
 
 typedef struct Scheme_Continuation_Jump_State {
   struct Scheme_Object *jumping_to_continuation;
+  struct Scheme_Object *alt_full_continuation;
   Scheme_Object *val; /* or **vals */
   mzshort num_vals;
   short is_kill, is_escape;

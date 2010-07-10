@@ -424,12 +424,14 @@ static int bad_trav_FIXUP(void *p, struct NewGC *gc)
 static void MARK_cjs(Scheme_Continuation_Jump_State *cjs, struct NewGC *gc)
 {
   gcMARK2(cjs->jumping_to_continuation, gc);
+  gcMARK2(cjs->alt_full_continuation, gc);
   gcMARK2(cjs->val, gc);
 }
 
 static void FIXUP_cjs(Scheme_Continuation_Jump_State *cjs, struct NewGC *gc)
 {
   gcFIXUP2(cjs->jumping_to_continuation, gc);
+  gcFIXUP2(cjs->alt_full_continuation, gc);
   gcFIXUP2(cjs->val, gc);
 }
 

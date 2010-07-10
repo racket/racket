@@ -656,19 +656,19 @@ the marks associated with the relevant frames are also captured.
 
 A @deftech{continuation barrier} is another kind of continuation frame
 that prohibits certain replacements of the current continuation with
-another. Specifically, while an abort is allowed to remove a portion
-of the continuation containing a prompt, the continuation can be
-replaced by another only when the replacement also includes the
-continuation barrier. Certain operations install barriers
-automatically; in particular, when an exception handler is called, a
-continuation barrier prohibits the continuation of the handler from
-capturing the continuation past the exception point.
+another. Specifically, a continuation can be replaced by another only
+when the replacement does not introduce any continuation barriers (but
+it may remove them). A continuation barrier thus prevents ``downward
+jumps'' into a continuation that is protected by a barrier. Certain operations
+install barriers automatically; in particular, when an exception
+handler is called, a continuation barrier prohibits the continuation
+of the handler from capturing the continuation past the exception
+point.
 
 A @deftech{escape continuation} is essentially a derived concept. It
 combines a prompt for escape purposes with a continuation for
 mark-gathering purposes. As the name implies, escape continuations are
-used only to abort to the point of capture, which means that
-escape-continuation aborts can cross continuation barriers.
+used only to abort to the point of capture.
 
 @;------------------------------------------------------------------------
 @section[#:tag "thread-model"]{Threads}

@@ -1693,11 +1693,18 @@
 			    (lambda () (k2 12)))))
 			(k0 13))))))
 
+
+  ;; Interaction with exceptions:
+  (test 42 test-call/cc (lambda (k)
+                          (call-with-exception-handler k (lambda () (add1 (raise 42))))))
+
   ))
 	      
 
 (test-cc-values call/cc)
 (test-cc-values call/ec)
+
+
 
 (test 'ok
       'ec-cc-exn-combo

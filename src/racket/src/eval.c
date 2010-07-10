@@ -259,6 +259,8 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
 static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context, int rator_flags);
 static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context, int rator_flags);
 
+void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object *alt_full);
+
 #define cons(x,y) scheme_make_pair(x,y)
 
 typedef void (*DW_PrePost_Proc)(void *);
@@ -8773,6 +8775,12 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
   MZ_MARK_POS_TYPE prompt_pos;
   Scheme_Prompt *prompt, *barrier_prompt;
   int common_depth;
+
+  c = (Scheme_Cont *)obj;
+  
+  if (c->escape_cont
+      && scheme_escape_continuation_ok(c->escape_cont))
+    scheme_escape_to_continuation(c->escape_cont, num_rands, rands, (Scheme_Object *)c);
       
   if (num_rands != 1) {
     GC_CAN_IGNORE Scheme_Object **vals;
@@ -8789,8 +8797,6 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
     value = (Scheme_Object *)vals;
   } else
     value = rands[0];
-      
-  c = (Scheme_Cont *)obj;
       
   DO_CHECK_FOR_BREAK(p, ;);
 
@@ -8892,6 +8898,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         }
         /* Immediate destination is in scheme_handle_stack_overflow(). */
         p->cjs.jumping_to_continuation = (Scheme_Object *)c;
+        p->cjs.alt_full_continuation = NULL;
         p->overflow = overflow;
         p->stack_start = overflow->stack_start;
         scheme_longjmpup(&overflow->jmp->cont);
@@ -8900,6 +8907,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
       /* The prompt is different than when we captured the continuation,
          so we need to compose the continuation with the current prompt. */
       p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
+      p->cjs.alt_full_continuation = NULL;
       p->cjs.num_vals = 1;
       p->cjs.val = (Scheme_Object *)c;
       p->cjs.is_escape = 1;
@@ -8963,7 +8971,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
   }
 }
 
-void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands)
+void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object *alt_full)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *value;
@@ -8994,6 +9002,7 @@ void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Obj
   
   p->cjs.val = value;
   p->cjs.jumping_to_continuation = obj;
+  p->cjs.alt_full_continuation = alt_full;
   scheme_longjmp(MZTHREADELEM(p, error_buf), 1);
 }
 
@@ -9466,7 +9475,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       v = scheme_jump_to_continuation(obj, num_rands, rands, old_runstack);
     } else if (type == scheme_escaping_cont_type) {
       UPDATE_THREAD_RSPTR();
-      scheme_escape_to_continuation(obj, num_rands, rands);
+      scheme_escape_to_continuation(obj, num_rands, rands, NULL);
       return NULL;
     } else if (type == scheme_proc_struct_type) {
       int is_method;

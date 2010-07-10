@@ -104,6 +104,7 @@ READ_ONLY static Scheme_Prompt *original_default_prompt; /* for escapes, represe
 READ_ONLY static Scheme_Object *call_with_prompt_proc;
 READ_ONLY static Scheme_Object *abort_continuation_proc;
 READ_ONLY static Scheme_Object *internal_call_cc_prim;
+READ_ONLY static Scheme_Object *finish_call_cc_prim;
 
 /* Caches need to be thread-local: */
 THREAD_LOCAL_DECL(static Scheme_Prompt *available_prompt);
@@ -132,6 +133,7 @@ static Scheme_Object *andmap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *ormap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *internal_call_cc (int argc, Scheme_Object *argv[]);
+static Scheme_Object *finish_call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_continuation_barrier (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_prompt (int argc, Scheme_Object *argv[]);
@@ -292,6 +294,11 @@ scheme_init_fun (Scheme_Env *env)
 						    "call-with-current-continuation",
 						    1, 3,
 						    0, -1);
+  REGISTER_SO(finish_call_cc_prim);
+  finish_call_cc_prim = scheme_make_prim_w_arity2(finish_call_cc,
+                                                  "finish-call-with-current-continuation",
+                                                  2, 2,
+                                                  0, -1);
 
   o = scheme_make_prim_w_arity2(call_cc,
 				"call-with-current-continuation",
@@ -4467,6 +4474,7 @@ void scheme_detach_multple_array(Scheme_Object **values)
 static void reset_cjs(Scheme_Continuation_Jump_State *a)
 {
   a->jumping_to_continuation = NULL;
+  a->alt_full_continuation = NULL;
   a->val = NULL;
   a->num_vals = 0;
   a->is_kill = 0;
@@ -4484,6 +4492,7 @@ void scheme_clear_escape(void)
 static void copy_cjs(Scheme_Continuation_Jump_State *a, Scheme_Continuation_Jump_State *b)
 {
   a->jumping_to_continuation = b->jumping_to_continuation;
+  a->alt_full_continuation = b->alt_full_continuation;
   a->val = b->val;
   a->num_vals = b->num_vals;
   a->is_kill = b->is_kill;
@@ -4491,7 +4500,7 @@ static void copy_cjs(Scheme_Continuation_Jump_State *a, Scheme_Continuation_Jump
 }
 
 Scheme_Object *
-scheme_call_ec (int argc, Scheme_Object *argv[])
+do_call_ec (int argc, Scheme_Object *argv[], Scheme_Object *_for_cc)
 {
   mz_jmp_buf newbuf;
   Scheme_Escaping_Cont * volatile cont;
@@ -4500,9 +4509,7 @@ scheme_call_ec (int argc, Scheme_Object *argv[])
   Scheme_Object *a[1];
   Scheme_Cont_Frame_Data cframe;
   Scheme_Prompt *barrier_prompt;
-
-  scheme_check_proc_arity("call-with-escape-continuation", 1,
-			  0, argc, argv);
+  Scheme_Object * volatile for_cc = _for_cc;
 
   cont = MALLOC_ONE_TAGGED(Scheme_Escaping_Cont);
   cont->so.type = scheme_escaping_cont_type;
@@ -4518,7 +4525,8 @@ scheme_call_ec (int argc, Scheme_Object *argv[])
 
   scheme_prompt_capture_count++;
 
-  scheme_push_continuation_frame(&cframe);
+  if (!for_cc)
+    scheme_push_continuation_frame(&cframe);
   scheme_set_cont_mark((Scheme_Object *)cont, scheme_true);
 
   if (scheme_setjmp(newbuf)) {
@@ -4535,6 +4543,12 @@ scheme_call_ec (int argc, Scheme_Object *argv[])
     } else {
       scheme_longjmp(*cont->saveerr, 1);
     }
+  } else if (for_cc) {
+    ((Scheme_Cont *)for_cc)->escape_cont = (Scheme_Object *)cont;
+    a[0] = (Scheme_Object *)for_cc;
+    MZ_CONT_MARK_POS -= 2;
+    v = _scheme_apply_multi(argv[0], 1, a);
+    MZ_CONT_MARK_POS += 2;
   } else {
     a[0] = (Scheme_Object *)cont;
     v = _scheme_apply_multi(argv[0], 1, a);
@@ -4543,9 +4557,19 @@ scheme_call_ec (int argc, Scheme_Object *argv[])
   p1 = scheme_current_thread;
 
   p1->error_buf = cont->saveerr;
-  scheme_pop_continuation_frame(&cframe);
+  if (!for_cc)
+    scheme_pop_continuation_frame(&cframe);
 
   return v;
+}
+
+Scheme_Object *
+scheme_call_ec (int argc, Scheme_Object *argv[])
+{
+  scheme_check_proc_arity("call-with-escape-continuation", 1,
+			  0, argc, argv);
+
+  return do_call_ec(argc, argv, NULL);
 }
 
 int scheme_escape_continuation_ok(Scheme_Object *ec)
@@ -6038,6 +6062,8 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       cont->buf.cont = sub_cont;
       sub_cont = sub_cont->buf.cont;
 
+      cont->escape_cont = sub_cont->escape_cont;
+
       /* This mark stack won't be restored, but it may be
 	 used by `continuation-marks'. */
       cont->ss.cont_mark_stack = MZ_CONT_MARK_STACK;
@@ -6161,13 +6187,27 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     scheme_check_break_now();
     
     return result;
-  } else {
+  } else if (composable) {
     Scheme_Object *argv2[1];
 
     argv2[0] = (Scheme_Object *)cont;
     ret = _scheme_tail_apply(argv[0], 1, argv2);
     return ret;
+  } else {
+    Scheme_Object *argv2[2];
+
+    argv2[0] = argv[0];
+    argv2[1] = (Scheme_Object *)cont;
+
+    ret = _scheme_tail_apply(finish_call_cc_prim, 2, argv2);
+    return ret;
   }
+}
+
+static Scheme_Object *
+finish_call_cc (int argc, Scheme_Object *argv[])
+{
+  return do_call_ec(1, argv, argv[1]);
 }
 
 static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[])
@@ -7052,6 +7092,7 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
     }
 
     p->cjs.jumping_to_continuation = cm_info; /* vector => trampoline */
+    p->cjs.alt_full_continuation = NULL;
     p->cjs.val = (Scheme_Object *)cont;
     p->cjs.num_vals = 1;
     p->cjs.is_escape = 1;
@@ -7124,6 +7165,7 @@ static Scheme_Object *abort_continuation (int argc, Scheme_Object *argv[])
     p->cjs.val = (Scheme_Object *)vals;
   }
   p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
+  p->cjs.alt_full_continuation = NULL;
 
   scheme_longjmp(*p->error_buf, 1);
 
@@ -8336,6 +8378,18 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
         p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
       } else if (SCHEME_ECONTP(p->cjs.jumping_to_continuation)) {
         if (!scheme_escape_continuation_ok(p->cjs.jumping_to_continuation)) {
+          if (p->cjs.alt_full_continuation) {
+            /* We were trying to execute a full-continuation jump through
+               an escape-continuation jump. Go back to full-jump mode. */
+            Scheme_Object *a[1], **args, *fc;
+            a[0] = p->cjs.val;
+            fc = p->cjs.alt_full_continuation;
+            args = ((p->cjs.num_vals == 1) ? a : (Scheme_Object **)p->cjs.val);
+            p->cjs.jumping_to_continuation = NULL;
+            p->cjs.alt_full_continuation = NULL;
+            p->cjs.val = NULL;
+            return scheme_jump_to_continuation(fc, p->cjs.num_vals, args, NULL);
+          }
           scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
                            "jump to escape continuation in progress,"
                            " but the target is not in the current continuation"

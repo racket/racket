@@ -2465,6 +2465,7 @@ def_error_escape_proc(int argc, Scheme_Object *argv[])
 
   if (prompt) {
     p->cjs.jumping_to_continuation = prompt;
+    p->cjs.alt_full_continuation = NULL;
     p->cjs.num_vals = 1;
     p->cjs.val = scheme_void_proc;
   }

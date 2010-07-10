@@ -1341,6 +1341,8 @@ typedef struct Scheme_Cont {
   struct Scheme_Overflow *save_overflow;
   mz_jmp_buf *savebuf; /* save old error buffer here */
 
+  Scheme_Object *escape_cont;
+
   /* Arguments passed to a continuation invocation to the continuation restorer: */
   Scheme_Object *value; /* argument(s) to continuation */
   struct Scheme_Overflow *resume_to; /* meta-continuation return */
@@ -1470,6 +1472,8 @@ Scheme_Object *scheme_all_current_continuation_marks(void);
 void scheme_about_to_move_C_stack(void);
 
 Scheme_Object *scheme_apply_multi_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state);
+
+Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object **old_runstack);
 
 /*========================================================================*/
 /*                         semaphores and locks                           */

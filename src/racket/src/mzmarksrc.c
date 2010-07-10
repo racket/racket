@@ -360,6 +360,8 @@ cont_proc {
   gcMARK2(c->prompt_id, gc);
   gcMARK2(c->prompt_buf, gc);
 
+  gcMARK2(c->escape_cont, gc);
+
   gcMARK2(c->value, gc);
   gcMARK2(c->resume_to, gc);
   gcMARK2(c->use_next_cont, gc);
