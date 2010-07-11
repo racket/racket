@@ -350,14 +350,18 @@ v4 todo:
 
 ;; ->/proc/main : syntax -> (values syntax[contract-record] syntax[args/lambda-body] syntax[names])
 (define-for-syntax (->/proc/main stx)
-  (let-values ([(dom-names rng-names kwd-names dom-ctcs rng-ctcs kwd-ctcs kwds inner-args/body use-any?) (->-helper stx)])
+  (let-values ([(dom-names rng-names kwd-names dom-ctcs rng-ctcs kwd-ctcs kwds inner-args/body use-any?) (->-helper stx)]
+               [(this->) (gensym 'this->)])
     (with-syntax ([(args body) inner-args/body])
       (with-syntax ([(dom-names ...) dom-names]
                     [(rng-names ...) rng-names]
                     [(kwd-names ...) kwd-names]
-                    [(dom-ctcs ...) dom-ctcs]
-                    [(rng-ctcs ...) rng-ctcs]
-                    [(kwd-ctcs ...) kwd-ctcs]
+                    [(dom-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->)) 
+                                         (syntax->list dom-ctcs))]
+                    [(rng-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:rng-of this->))
+                                         (syntax->list rng-ctcs))]
+                    [(kwd-ctcs ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->))
+                                         (syntax->list kwd-ctcs))]
                     [(kwds ...) kwds]
                     [inner-lambda 
                      (maybe-a-method/name
@@ -371,12 +375,15 @@ v4 todo:
                               (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
                               (make-contracted-function inner-lambda ctc)))])
           (values
-           (syntax 
-            (build--> '->
-                      (list dom-ctcs ...) '() #f
-                      (list kwd-ctcs ...) '(kwds ...) '() '()
-                      (list rng-ctcs ...) use-any?
-                      outer-lambda))
+           (syntax-property 
+            (syntax 
+             (build--> '->
+                       (list dom-ctcs ...) '() #f
+                       (list kwd-ctcs ...) '(kwds ...) '() '()
+                       (list rng-ctcs ...) use-any?
+                       outer-lambda))
+            'racket/contract:function-contract 
+            this->)
            inner-args/body
            (syntax (dom-names ... rng-names ...))))))))
   

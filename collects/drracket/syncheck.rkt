@@ -2109,6 +2109,30 @@ If the namespace does not, they are colored the unbound color.
         (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
     
     (define (annotate-contracts stx)
+      (define start-map (make-hash))
+      (define arrow-map (make-hash))
+      (define domain-map (make-hash))
+      (define range-map (make-hash))
+      (define (add-to-map stx prop map)
+        (let loop ([val (syntax-property stx prop)])
+          (cond
+            [(symbol? val)
+             (hash-set! map val (cons stx (hash-ref map val '())))]
+            [(pair? val)
+             (loop (car val))
+             (loop (cdr val))])))
+      
+      (let loop ([stx stx])
+        (add-to-map stx 'racket/contract:contract-on-boundary start-map)
+        (add-to-map stx 'racket/contract:domain-of domain-map)
+        (add-to-map stx 'racket/contract:rng-of range-map)
+        (add-to-map stx 'racket/contract:function-contract arrow-map)
+        (syntax-case stx ()
+          [(a . b) (loop #'a) (loop #'b)]
+          [else (void)])))
+    
+#|
+    (define (annotate-contracts stx)
       (let loop ([stx stx])
         (let sloop ([prop (syntax-property stx 'provide/contract-original-contract)])
           (cond
@@ -2141,7 +2165,7 @@ If the namespace does not, they are colored the unbound color.
          (base-color stx polarity)]
         [else
          (color stx unk-obligation-style-name 'contract-mode)])))
-    
+|#
     ;; returns #t if the result is known to be a predicate that shoudl correspond to a
     ;; complete obligation for the contract. If it is some unknown variable, this variable
     ;; may refer to some other contract with nested obligations, so we have to return #f here.
