@@ -432,21 +432,22 @@
 ;; optionally applying a wrapper function to modify the result primitive
 ;; (callouts) or the input procedure (callbacks).
 (define* (_cprocedure itypes otype
-                      #:abi        [abi     #f]
-                      #:wrapper    [wrapper #f]
-                      #:keep       [keep    #f]
-                      #:atomic?    [atomic? #f]
-                      #:save-errno [errno   #f])
-  (_cprocedure* itypes otype abi wrapper keep atomic? errno))
+                      #:abi         [abi     #f]
+                      #:wrapper     [wrapper #f]
+                      #:keep        [keep    #f]
+                      #:atomic?     [atomic? #f]
+                      #:async-apply [async-apply   #f]
+                      #:save-errno  [errno   #f])
+  (_cprocedure* itypes otype abi wrapper keep atomic? async-apply errno))
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper keep atomic? errno)
+(define (_cprocedure* itypes otype abi wrapper keep atomic? async-apply errno)
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
         (and x
-             (let ([cb (ffi-callback (wrap x) itypes otype abi atomic?)])
+             (let ([cb (ffi-callback (wrap x) itypes otype abi atomic? async-apply)])
                (cond [(eq? keep #t) (hash-set! held-callbacks x cb)]
                      [(box? keep)
                       (let ([x (unbox keep)])
@@ -478,7 +479,7 @@
 
 (provide _fun)
 (define-for-syntax _fun-keywords
-  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:save-errno ,#'#f]))
+  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:async-apply ,#'#f] [#:save-errno ,#'#f]))
 (define-syntax (_fun stx)
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
@@ -626,6 +627,7 @@
                              #,wrapper
                              #,(kwd-ref '#:keep)
                              #,(kwd-ref '#:atomic?)
+                             #,(kwd-ref '#:async-apply)
                              #,(kwd-ref '#:save-errno)))])
       (if (or (caddr output) input-names (ormap caddr inputs)
               (ormap (lambda (x) (not (car x))) inputs)

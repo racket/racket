@@ -4159,6 +4159,9 @@ void scheme_thread_block(float sleep_time)
 #ifdef MZ_USE_FUTURES
   scheme_check_future_work();
 #endif
+#ifdef MZ_USE_MZRT
+  scheme_check_foreign_work();
+#endif
 
   if (!do_atomic && (sleep_end >= 0.0)) {
     find_next_thread(&next);

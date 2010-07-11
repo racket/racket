@@ -469,6 +469,10 @@ void scheme_suspend_remembered_threads(void);
 void scheme_resume_remembered_threads(void);
 #endif
 
+#ifdef MZ_USE_MZRT
+extern void scheme_check_foreign_work(void);
+#endif
+
 void scheme_kickoff_green_thread_time_slice_timer(long usec);
 
 #ifdef UNIX_PROCESSES
