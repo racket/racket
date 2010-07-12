@@ -20,6 +20,7 @@
                                         (syntax-line e)
                                         (syntax-column e))))))
 
+
 (define struct-fn-table (make-free-id-table))
 
 (define (add-struct-fn! id pe mut?) (dict-set! struct-fn-table id (list pe mut?)))
@@ -48,6 +49,23 @@
                                        #,(print-convert pe)
                                        #,mut?)])))))
 
+
+;; keeps track of expressions that always evaluate to true or always evaluate
+;; to false, so that the optimizer can eliminate dead code
+(define tautology-contradiction-table (make-hasheq))
+
+(define-values (add-tautology add-contradiction)
+  (let ()
+    (define ((mk t?) e)
+      (when (optimize?)
+        (hash-set! tautology-contradiction-table e t?)))
+    (values (mk #t) (mk #f))))
+(define-values (tautology? contradiction?)
+  (let ()
+    (define ((mk t?) e)
+      (eq? t? (hash-ref tautology-contradiction-table e 'not-there)))
+    (values (mk #t) (mk #f))))
+
 (p/c [add-typeof-expr (syntax? tc-results? . -> . any/c)]
      [type-of (syntax? . -> . tc-results?)]
      [reset-type-table (-> any/c)]
@@ -55,4 +73,8 @@
      [struct-accessor? (identifier? . -> . (or/c #f StructPE?))]
      [struct-mutator? (identifier? . -> . (or/c #f StructPE?))]
      [struct-fn-idx (identifier? . -> . exact-integer?)]
-     [make-struct-table-code (-> syntax?)])
+     [make-struct-table-code (-> syntax?)]
+     [add-tautology (syntax? . -> . any/c)]
+     [add-contradiction (syntax? . -> . any/c)]
+     [tautology? (syntax? . -> . boolean?)]
+     [contradiction? (syntax? . -> . boolean?)])

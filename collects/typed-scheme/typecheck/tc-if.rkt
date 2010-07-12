@@ -8,6 +8,7 @@
          (r:infer infer)
 	 (utils tc-utils)
          (typecheck tc-envops tc-metafunctions)
+         (types type-table)
          syntax/kerncase
          racket/trace unstable/debug
          racket/match)
@@ -55,6 +56,13 @@
          ;(printf "els-props: ~a~n" (env-props env-els))
          ;(printf "new-thn-props: ~a~n" new-thn-props)
          ;(printf "new-els-props: ~a~n" new-els-props)
+
+         ;; record reachability
+         (when (not (unbox flag+))
+           (add-contradiction tst))
+         (when (not (unbox flag-))
+           (add-tautology tst))
+
          ;; if we have the same number of values in both cases
          (cond [(= (length ts) (length us))
                 (let ([r (combine-results

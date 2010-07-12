@@ -5,7 +5,7 @@
          (for-template scheme/base scheme/flonum scheme/fixnum scheme/unsafe/ops racket/private/for)
          "../utils/utils.rkt"
          (types abbrev type-table utils subtype)
-         (optimizer utils fixnum float inexact-complex vector pair list struct))
+         (optimizer utils fixnum float inexact-complex vector pair list struct dead-code))
 
 (provide optimize-top)
 
@@ -25,6 +25,7 @@
   (pattern e:pair-opt-expr            #:with opt #'e.opt)
   (pattern e:list-opt-expr            #:with opt #'e.opt)
   (pattern e:struct-opt-expr          #:with opt #'e.opt)
+  (pattern e:dead-code-opt-expr       #:with opt #'e.opt)
   
   ;; boring cases, just recur down
   (pattern (#%plain-lambda formals e:opt-expr ...)
