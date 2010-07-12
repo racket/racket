@@ -125,16 +125,10 @@ static char *get_init_filename(Scheme_Env *env)
 extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 #endif
 
-#ifndef INIT_FILENAME
-# ifdef EXPAND_FILENAME_TILDE
-#  define INIT_FILENAME "~/.racketrc"
-# else
-#  ifdef DOS_FILE_SYSTEM
-#   define INIT_FILENAME "%%HOMEDRIVE%%\\%%HOMEPATH%%\\racketrc.rktl"
-#  else
-#   define INIT_FILENAME "PREFERENCES:racketrc.rktl"
-#  endif
-# endif
+#ifndef UNIX_INIT_FILENAME
+# define UNIX_INIT_FILENAME "~/.racketrc"
+# define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\racketrc.rktd"
+# define MACOS9_INIT_FILENAME "PREFERENCES:racketrc.rktd"
 # define GET_INIT_FILENAME get_init_filename
 # define PRINTF printf
 # define PROGRAM "Racket"
@@ -142,6 +136,16 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 # define INITIAL_BIN_TYPE "zi"
 # define RACKET_CMD_LINE
 # define INITIAL_NAMESPACE_MODULE "racket/init"
+#endif
+
+#ifdef EXPAND_FILENAME_TILDE
+# define INIT_FILENAME UNIX_INIT_FILENAME
+#else
+# ifdef DOS_FILE_SYSTEM
+#  define INIT_FILENAME WINDOWS_INIT_FILENAME
+# else
+#  define INIT_FILENAME MACOS9_INIT_FILENAME
+# endif
 #endif
 
 #define CMDLINE_FFLUSH fflush

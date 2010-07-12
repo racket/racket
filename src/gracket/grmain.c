@@ -15,20 +15,13 @@ static int wx_in_terminal = 0;
 # define MZ_DEFINE_UTF8_MAIN
 #endif
 
-#ifdef wx_x
-# define INIT_FILENAME "~/.gracketrc"
-#else
-# ifdef WIN32
-#  define INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rktd"
-# else
-#  ifdef OS_X
-#   define INIT_FILENAME "~/.gracketrc"
-#  else
-#   define INIT_FILENAME "PREFERENCES:gracketrc.rktd"
-#  endif
-# endif
-#endif
-#define GET_INIT_FILENAME get_init_filename
+struct Scheme_Env;
+static char *get_gr_init_filename(struct Scheme_Env *env);
+
+#define UNIX_INIT_FILENAME "~/.gracketrc"
+#define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rktd"
+#define MACOS9_INIT_FILENAME "PREFERENCES:gracketrc.rktd"
+#define GET_INIT_FILENAME get_gr_init_filename
 #if WIN32
 # define NEED_CONSOLE_PRINTF
 # define DEFER_EXPLICIT_EXIT
@@ -47,6 +40,29 @@ static int wx_in_terminal = 0;
 static void yield_indefinitely();
 
 # include "../racket/main.c"
+
+static char *get_gr_init_filename(Scheme_Env *env)
+{
+  char *s, *s2;
+  int len, i;
+
+  s = get_init_filename(env);
+  if (s) {
+    len = strlen(s);
+    for (i = len - 8; i; i--) {
+      if (!strncmp(s XFORM_OK_PLUS i, "racketrc", 8)) {
+        s2 = (char *)malloc(len + 2);
+        memcpy(s2, s, i);
+        memcpy(s2 + i + 1, s + i, len - i + 1);
+        s2[i] = 'g';
+        s = s2;
+        break;
+      }
+    }
+  }
+
+  return s;
+}
 
 static void yield_indefinitely()
 {
