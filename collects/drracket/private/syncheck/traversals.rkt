@@ -115,7 +115,7 @@
                                              require-for-syntaxes
                                              require-for-templates
                                              require-for-labels)
-                         (annotate-contracts sexp))]
+                         (annotate-contracts sexp low-binders varrefs))]
                       [else
                        (annotate-basic sexp
                                        user-namespace user-directory jump-to-id

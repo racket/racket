@@ -382,8 +382,10 @@ v4 todo:
                        (list kwd-ctcs ...) '(kwds ...) '() '()
                        (list rng-ctcs ...) use-any?
                        outer-lambda))
-            'racket/contract:function-contract 
-            this->)
+            'racket/contract:contract 
+            (vector this-> 
+                    ;; the -> in the original input to this guy
+                    (car (syntax-e stx))))
            inner-args/body
            (syntax (dom-names ... rng-names ...))))))))
   
