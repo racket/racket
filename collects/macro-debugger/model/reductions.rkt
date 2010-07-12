@@ -235,6 +235,7 @@
         [#:pattern (?sb . ?body)]
         [Block ?body bderiv]
         [#:pass2]
+        [#:hide-check rs]
         [#:pattern ?form]
         [#:walk e2 'macro])]
 

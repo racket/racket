@@ -106,15 +106,20 @@
 (define (check-steps expected actual)
   (check-pred list? actual)
   (check-pred reduction-sequence? actual)
-  (with-check-info (['actual-sequence-raw actual]
+  (with-check-info (;;['actual-sequence-raw actual]
                     ['actual-sequence
                      (for/list ([thing actual])
-                       (if (misstep? thing)
-                           'error
-                           (list* (protostep-type thing)
-                                  (syntax->datum (step-term2 thing))
-                                  (map syntax->datum
-                                       (map bigframe-term (state-lctx (protostep-s1 thing)))))))]
+                       (cond [(misstep? thing)
+                              'error]
+                             [(remarkstep? thing)
+                              (list* 'remark
+                                     (protostep-type thing)
+                                     (map syntax->datum (filter syntax? (remarkstep-contents thing))))]
+                             [else
+                              (list* (protostep-type thing)
+                                     (syntax->datum (step-term2 thing))
+                                     (map syntax->datum
+                                          (map bigframe-term (state-lctx (protostep-s1 thing)))))]))]
                     ['expected-sequence expected])
     (compare-step-sequences actual expected)))
 
@@ -137,23 +142,29 @@
         [else 'ok]))
 
 (define (compare-steps actual expected)
-  (cond [(eq? expected 'error)
-         (check-pred misstep? actual)]
-        [else
-         (let ([e-tag (car expected)]
-               [e-form (cadr expected)]
-               [e-locals (cddr expected)]
-               [lctx-terms (map bigframe-term (state-lctx (protostep-s1 actual)))])
-           (check-pred step? actual)
-           (check-eq? (protostep-type actual) e-tag)
-           (check-equal-syntax? (syntax->datum (step-term2 actual))
-                                e-form)
-           (check-equal? (length lctx-terms) (length e-locals)
-                         "Wrong number of context frames")
-           (for ([lctx-term lctx-terms] [e-local e-locals])
-             (check-equal-syntax? (syntax->datum lctx-term)
-                                  e-local
-                                  "Context frame")))]))
+  (match expected
+    ['error
+     (check-pred misstep? actual)]
+    [(list 'remark e-tag e-forms ...)
+     (check-pred remarkstep? actual)
+     (check-eq? (protostep-type actual) e-tag "Remark step type")
+     (let ([contents (filter syntax? (remarkstep-contents actual))])
+       (check-equal? (length contents) (length e-forms)
+                     "Wrong number of syntaxes in remark")
+       (for ([astx contents] [e-form e-forms])
+         (check-equal-syntax? (syntax->datum astx) e-form "Syntax in remark")))]
+    [(list e-tag e-form e-locals ...)
+     (let ([lctx-terms (map bigframe-term (state-lctx (protostep-s1 actual)))])
+       (check-pred step? actual)
+       (check-eq? (protostep-type actual) e-tag)
+       (check-equal-syntax? (syntax->datum (step-term2 actual))
+                            e-form)
+       (check-equal? (length lctx-terms) (length e-locals)
+                     "Wrong number of context frames")
+       (for ([lctx-term lctx-terms] [e-local e-locals])
+         (check-equal-syntax? (syntax->datum lctx-term)
+                              e-local
+                              "Context frame")))]))
 
 (define-binary-check (check-equal-syntax? a e)
   (equal-syntax? a e))

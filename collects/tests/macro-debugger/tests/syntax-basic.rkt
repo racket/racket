@@ -140,28 +140,32 @@
           [#:hidden-steps (splice-block (#%stratified-body 'a 'b))])
    (testK "internal define-values"
           (#%stratified-body (define-values (x) 'a) 'b)
-          [#:steps (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
-                   (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+          [#:steps (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))
+                   (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))
+                   (macro (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
                    (macro (letrec-values ([(x) 'a]) 'b))]
-          [#:hidden-steps (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
-                          (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))])
+          [#:hidden-steps
+           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))
+           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))])
    (testK "internal define-values in begin"
           (#%stratified-body (begin (define-values (x) 'a)) 'b)
           [#:steps
            (splice-block (#%stratified-body (define-values (x) 'a) 'b))
-           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
-           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))
+           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))
+           (macro (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
            (macro (letrec-values ([(x) 'a]) 'b))]
           [#:hidden-steps
            (splice-block (#%stratified-body (define-values (x) 'a) 'b))
-           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
-           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))])
+           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))
+           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))])
    (testK "internal begin, then define-values"
           (#%stratified-body (begin) (define-values (x) 'a) 'b)
           [#:steps
            (splice-block (#%stratified-body (define-values (x) 'a) 'b))
-           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
-           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))
+           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) (#%stratified-body 'b))))
+           (macro (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
            (macro (letrec-values ([(x) 'a]) 'b))])]
 
   [#:suite
@@ -208,13 +212,15 @@
            (block->letrec (lambda () (letrec-values ([(x) 'a]) 'b)))
            (rename-letrec-values (lambda () (letrec-values ([(x) 'a]) 'b)))]
           #:same-hidden-steps)
+   #|
    (testK "define-values after expr"
           (lambda () 'a (define-values (x) 'b) 'c)
           [#:steps
            (rename-lambda (lambda () 'a (define-values (x) 'b) 'c))
            (block->letrec (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))
            (rename-letrec-values (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))]
-          #:same-hidden-steps)]
+          #:same-hidden-steps)
+   |#]
 
   [#:suite
    "Top-level begin"

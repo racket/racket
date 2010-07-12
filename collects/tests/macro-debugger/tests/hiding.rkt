@@ -58,7 +58,8 @@
         (test-trivial-hiding/id (lambda (x y) x y))
         (test-trivial-hiding (lambda (x y z) (begin x y) z)
                              (lambda (x y z) x y z))
-        (test-trivial-hiding/id (lambda (x y z) x (begin y z))) ;; expression begin!
+        (test-trivial-hiding (lambda (x y z) x (begin y z))
+                             (lambda (x y z) x y z))
         (test-trivial-hiding (lambda (x) (define-values (y) x) y)
                              (lambda (x) (letrec-values ([(y) x]) y)))
         (test-trivial-hiding (lambda (x) (begin (define-values (y) x)) y)
@@ -125,7 +126,8 @@
         (test-T-hiding/id (lambda (x y) x y))
         (test-T-hiding (lambda (x y z) (begin x y) z)
                        (lambda (x y z) x y z))
-        (test-T-hiding/id (lambda (x y z) x (begin y z))) ;; expression begin!
+        (test-T-hiding (lambda (x y z) x (begin y z))
+                       (lambda (x y z) x y z))
         (test-T-hiding (lambda (x) (define-values (y) x) y)
                        (lambda (x) (letrec-values ([(y) x]) y)))
         (test-T-hiding (lambda (x) (begin (define-values (y) x)) y)

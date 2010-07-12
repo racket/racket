@@ -216,14 +216,16 @@
              'd)
             [#:steps (block->letrec (#%stratified-body
                                      (letrec-values ([(x) 'a])
-                                       'b
-                                       (define-values (y) 'c)
-                                       'd)))
+                                       (#%stratified-body
+                                        'b
+                                        (define-values (y) 'c)
+                                        'd))))
                      (rename-letrec-values (#%stratified-body
                                             (letrec-values ([(x) 'a])
-                                              'b
-                                              (define-values (y) 'c)
-                                              'd)))
+                                              (#%stratified-body
+                                               'b
+                                               (define-values (y) 'c)
+                                               'd))))
                      error])
     (testKE (#%stratified-body (define-values (x) 'a))
             [#:steps error])]
