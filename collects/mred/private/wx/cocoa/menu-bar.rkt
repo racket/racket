@@ -5,13 +5,14 @@
          "../../syntax.rkt"
          "utils.rkt"
          "types.rkt"
-         "const.rkt")
+         "const.rkt"
+         "queue.rkt")
 (unsafe!)
 (objc-unsafe!)
 
 (provide menu-bar%)
 
-(import-class NSApplication NSMenu NSMenuItem NSProcessInfo)
+(import-class NSApplication NSMenu NSMenuItem NSProcessInfo NSScreen)
 
 (define-cf CFBundleGetMainBundle (_fun -> _pointer))
 (define-cf CFBundleGetInfoDictionary (_fun _pointer -> _id))
@@ -31,7 +32,37 @@
                       appName))))))
    "MrEd"))
 
-(define cocoa-mb (tell (tell NSMenu alloc) init))
+(define-objc-class MyBarMenu NSMenu
+  []
+  ;; Disable automatic handling of keyboard shortcuts
+  (-a _BOOL (performKeyEquivalent: [_id evt])
+      #f))
+
+(define cocoa-mb (tell (tell MyBarMenu alloc) init))
+(define current-mb #f)
+
+;; Used to detect mouse click on the menu bar:
+(define in-menu-bar-range
+  (let ([f (tell #:type _NSRect 
+                 (tell (tell NSScreen screens) objectAtIndex: #:type _NSUInteger 0)
+                 frame)])
+    (let ([x (NSPoint-x (NSRect-origin f))]
+          [w (NSSize-width (NSRect-size f))]
+          [y (+ (NSPoint-y (NSRect-origin f))
+                (NSSize-height (NSRect-size f)))])
+    (lambda (p)
+      (let ([h (tell #:type _CGFloat cocoa-mb menuBarHeight)])
+        (and (<= x (NSPoint-x p) (+ x w))
+             (<= (- y h) (NSPoint-y p) y)))))))
+
+(define suspend-menu-bar
+  (lambda (on?)
+    ;; We don't actually suspend anything, since the MrEd layer
+    ;; will drop events that shouldn't be delivered.
+    (void)))
+
+(set-menu-bar-hooks! in-menu-bar-range
+                     suspend-menu-bar)
 
 ;; Init menu bar
 (let ([app (tell NSApplication sharedApplication)]
@@ -98,7 +129,8 @@
 
   (public [append-menu append])
   (define (append-menu menu title)
-    (set! menus (append menus (list (cons menu title)))))
+    (set! menus (append menus (list (cons menu title))))
+    (send menu set-parent this))
 
   (define/public (install)
     (let loop ()
@@ -107,6 +139,19 @@
         (loop)))
     (for-each (lambda (menu)
                 (send (car menu) install cocoa-mb (cdr menu)))
-              menus))
+              menus)
+    (set! current-mb this))
+
+  (define top-wx #f)
+  (define/public (set-top-window top)
+    (set! top-wx top))
+  (define/public (get-top-window)
+    top-wx)
+
+  (define/public (do-on-menu-click)
+    (let ([es (send top-wx get-eventspace)])
+      (when es
+        (queue-event es (lambda ()
+                          (send top-wx on-menu-click))))))
 
   (super-new))

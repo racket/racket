@@ -111,7 +111,7 @@
     (set-box! xb (->long (NSSize-width (NSRect-size f))))
     (set-box! yb (->long (NSSize-height (NSRect-size f))))))
   
-(define-unimplemented bell)
+(define (bell) (void))
 (define (hide-cursor) 
   (tellv NSCursor setHiddenUntilMouseMoves: #:type _BOOL #t))
 
@@ -123,7 +123,7 @@
 (define (get-display-depth) 32)
 (define-unimplemented is-color-display?)
 (define-unimplemented file-selector)
-(define-unimplemented id-to-menu-item)
+(define (id-to-menu-item id) id)
 (define-unimplemented get-the-x-selection)
 (define-unimplemented get-the-clipboard)
 (define-unimplemented show-print-setup)

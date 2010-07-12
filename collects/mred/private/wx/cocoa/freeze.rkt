@@ -38,7 +38,8 @@
           (unless done? (loop)))
         result)
       (begin
-        (fprintf (current-error-port) "WARNING: internal error: wrong eventspace for constrained event handling\n")
+        (eprintf "WARNING: internal error: wrong eventspace for constrained event handling\n")
+        (eprintf "~s\n" (continuation-mark-set->context (current-continuation-marks)))
         default)))
 
 

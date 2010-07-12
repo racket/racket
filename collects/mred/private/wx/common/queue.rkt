@@ -3,7 +3,8 @@
          racket/draw/utils
          ffi/unsafe/atomic
          "rbtree.rkt"
-         "../../lock.rkt")
+         "../../lock.rkt"
+         "handlers.rkt")
 
 (provide queue-evt
          set-check-queue!
@@ -317,4 +318,4 @@
                                           'frame-remove)))
 
 (define (queue-quit-event)
-  (printf "quit!\n"))
+  (queue-event main-eventspace (application-quit-handler) 'med))

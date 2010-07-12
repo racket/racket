@@ -57,12 +57,16 @@
         (queue-window-event wx (lambda ()
                                  (send wx on-activate #f))))])
 
+(set-front-hook! (lambda () (values front
+                                    (and front (send front get-eventspace)))))
+
 (set-eventspace-hook! (lambda (w)
-                        (and w
-                             (if (objc-is-a? w MyWindow)
-                                 (tell #:type _scheme w getEventspace)
-                                 (and front
-                                      (send front get-eventspace))))))
+                        (or (and w
+                                 (if (objc-is-a? w MyWindow)
+                                     (tell #:type _scheme w getEventspace)
+                                     #f))
+                            (and front
+                                 (send front get-eventspace)))))
 
 (define (init-pos x y)
   (if (and (= x -11111)
@@ -194,6 +198,7 @@
     (define/public (get-menu-bar) mb)
     (define/public (set-menu-bar _mb) 
       (set! mb _mb)
+      (send mb set-top-window this)
       (when (tell #:type _BOOL cocoa isMainWindow)
         (install-mb)))
 

@@ -1,10 +1,12 @@
 #lang scheme/base
 (require scheme/class
          scheme/foreign
+         (only-in scheme/list drop take)
          ffi/objc
           "../../syntax.rkt"
           "utils.rkt"
-          "types.rkt")
+          "types.rkt"
+          "window.rkt")
 (unsafe!)
 (objc-unsafe!)
 
@@ -12,10 +14,7 @@
 
 (import-class NSMenu NSMenuItem)
 
-(define-struct mitem (item 
-                      [label #:mutable]
-                      [checked? #:mutable]
-                      [enabled? #:mutable]))
+(define-struct mitem (item))
 
 (defclass menu% object%
   (init-field label
@@ -41,19 +40,39 @@
             (as-objc-allocation
              (tell (tell NSMenu alloc)
                    initWithTitle: #:type _NSString label)))
+      (tellv cocoa-menu setAutoenablesItems: #:type _BOOL #f)
       (tellv cocoa setSubmenu: cocoa-menu)
       (for-each (lambda (item)
                   (if item
-                      (send (mitem-item item) install cocoa-menu (mitem-label item))
+                      (send (mitem-item item) install cocoa-menu)
                       (tellv cocoa-menu addItem: (tell NSMenuItem separatorItem))))
                 items))
     (tellv cocoa-parent addItem: cocoa))
 
+  (define/public (item-selected menu-item)
+    ;; called in Cocoa thread
+    (let ([top (get-top-parent)])
+      (when top
+        (queue-window-event
+         top
+         (lambda () (send top on-menu-command menu-item))))))
+
+  (define parent #f)
+  (define/public (set-parent p) (set! parent p))
+  (define/public (get-top-parent)
+    ;; called in Cocoa thread
+    (and parent
+         (if (parent . is-a? . menu%)
+             (send parent get-top-parent)
+             (send parent get-top-window))))
+
   (public [append-item append])
   (define (append-item i label help-str chckable?)
-    (set! items (append items (list (make-mitem i label #f #f))))
+    (send i set-label label)
+    (set! items (append items (list (make-mitem i))))
+    (send i set-parent this)
     (when cocoa-menu
-      (send i install cocoa-menu label)))
+      (send i install cocoa-menu)))
 
   (define/public (append-separator)
     (set! items (append items (list #f)))
@@ -87,22 +106,32 @@
             (lambda (item-cocoa)
               (tellv item-cocoa setTitle: #:type _NSString label))
             (lambda (mitem)
-              (set-mitem-label! mitem label))))
+              (send (mitem-item mitem) set-label label))))
                   
   (define/public (check item on?)
     (adjust item
             (lambda (item-cocoa)
               (tellv item-cocoa setState: #:type _int (if on? 1 0)))
             (lambda (mitem)
-              (set-mitem-checked?! mitem (and on? #t)))))
+              (send (mitem-item mitem) set-checked (and on? #t)))))
                   
   (define/public (enable item on?)
     (adjust item
             (lambda (item-cocoa)
               (tellv item-cocoa setEnabled: #:type _BOOL on?))
             (lambda (mitem)
-              (set-mitem-enabled?! mitem (and on? #t)))))
+              (send (mitem-item mitem) set-enabled-flag (and on? #t)))))
     
-  (def/public-unimplemented checked?)
+  (define/public (checked? item)
+    (send item get-checked))
+
   (def/public-unimplemented delete-by-position)
-  (def/public-unimplemented delete))
+
+  (define/public (delete item)
+    (let ([pos (find-pos item)])
+      (when pos
+        (let ([mitem (list-ref items pos)])
+          (set! items (append (take items pos)
+                              (drop items (add1 pos))))
+          (when cocoa-menu
+            (tellv cocoa-menu removeItemAtIndex: #:type _NSInteger pos)))))))

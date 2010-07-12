@@ -1,6 +1,7 @@
 #lang scheme/base
 (require ffi/objc
          scheme/foreign
+         scheme/class
          "pool.rkt"
          "utils.rkt"
          "const.rkt"
@@ -16,6 +17,8 @@
          cocoa-install-event-wakeup
          queue-event
          set-eventspace-hook!
+         set-front-hook!
+         set-menu-bar-hooks!
 
          ;; from common/queue:
          current-eventspace
@@ -31,12 +34,23 @@
   []
   [-a _BOOL (applicationShouldTerminate: [_id app])
       (queue-quit-event)
-      #t])
+      #f])
 
 (tellv app finishLaunching)
 
-(tellv app setDelegate: (tell (tell MyApplicationDelegate alloc) init))
+(define app-delegate (tell (tell MyApplicationDelegate alloc) init))
+(tellv app setDelegate: app-delegate)
 (tellv app activateIgnoringOtherApps: #:type _BOOL #t)
+
+#|
+(import-class NSNotificationCenter)
+(define-cocoa NSMenuDidBeginTrackingNotification _id)
+(tellv (tell NSNotificationCenter defaultCenter)
+       addObserver: app-delegate
+       selector: #:type _SEL (selector trackingMenuNow:)
+       name: NSMenuDidBeginTrackingNotification
+       object: #f)
+|#
 
 ;; ------------------------------------------------------------
 ;; Create an event to post when MzScheme has been sleeping but is
@@ -143,15 +157,55 @@
 (define eventspace-hook (lambda (e) #f))
 (define (set-eventspace-hook! proc) (set! eventspace-hook proc))
 
+(define front-hook (lambda () (values #f #f)))
+(define (set-front-hook! proc) (set! front-hook proc))
+
+(define in-menu-bar-range? (lambda (p) #f))
+(define suspend-menu-bar (lambda (suspend?) (void)))
+(define (set-menu-bar-hooks! r? s) 
+  (set! in-menu-bar-range? r?)
+  (set! suspend-menu-bar s))
+
+(define events-suspended? #f)
+
+(define (check-menu-bar-click evt)
+  (when (and evt 
+             (= 14 (tell #:type _NSUInteger evt type))
+             (= 7 (tell #:type _short evt subtype))
+             (not (tell evt window))
+             (in-menu-bar-range? (tell #:type _NSPoint evt locationInWindow)))
+    ;; Mouse down in the menu bar:
+    (let-values ([(f e) (front-hook)])
+      (when e
+        ;; Don't handle further events until we've made an effort
+        ;; at on-demand notifications.
+        (set! events-suspended? #t)
+        (let ([t (thread (lambda ()
+                           (sleep 2)
+                           ;; on-demand took too long, so disable the menu bar
+                           ;; until the application can catch up
+                           (suspend-menu-bar #t)
+                           (set! events-suspended? #f)))])
+          (queue-event e (lambda ()
+                           (send f on-menu-click)
+                           (set! events-suspended? #f)
+                           (kill-thread t))))))))
+
 ;; Call this function only in atomic mode:
 (define (check-one-event wait? dequeue?)
   (pre-event-sync wait?)
   (let ([pool (tell (tell NSAutoreleasePool alloc) init)])
+    (when (and events-suspended? wait?)
+      (suspend-menu-bar #t)
+      (set! events-suspended? #f))
     (begin0
-     (let ([evt (tell app nextEventMatchingMask: #:type _NSUInteger NSAnyEventMask
-                      untilDate: (if wait? distantFuture #f)
-                      inMode: NSDefaultRunLoopMode
-                      dequeue: #:type _BOOL dequeue?)])
+     (let ([evt (if events-suspended?
+                    #f
+                    (tell app nextEventMatchingMask: #:type _NSUInteger NSAnyEventMask
+                          untilDate: (if wait? distantFuture #f)
+                          inMode: NSDefaultRunLoopMode
+                          dequeue: #:type _BOOL dequeue?))])
+       (when evt (check-menu-bar-click evt))
        (and evt
             (or (not dequeue?)
                 (let ([e (eventspace-hook (tell evt window))])
