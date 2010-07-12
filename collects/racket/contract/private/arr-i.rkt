@@ -70,10 +70,11 @@
       [_ 
        (raise-syntax-error #f "bad syntax" stx)])))
 
-;; verify-->d-structure : syntax syntax -> syntax
-;; returns the second argument when it has the proper shape for the first two arguments to ->d*
+;; verify-->i-structure : syntax syntax -> syntax
+;; returns the second argument when it has the proper shape for the first two arguments to ->i
 ;; otherwise, raises a syntax error.
-(define-for-syntax (verify-->d-structure stx doms)
+;; also: drops the extra identifiers in the ->i.
+(define-for-syntax (verify-->i-structure stx doms)
   (syntax-case doms ()
     [((regular ...) (kwd ...))
      (let ([check-pair-shape
@@ -81,19 +82,27 @@
               (syntax-case reg ()
                 [(id dom)
                  (identifier? #'id)
-                 (void)]
+                 reg]
                 [(a b)
                  (raise-syntax-error #f "expected an identifier" stx #'a)]
+
+                [(id (id2 ...) dom)
+                 (and (identifier? #'id)
+                      (andmap identifier? (syntax->list #'(id2 ...))))
+                 #'(id dom)]
+                [(id ids dom)
+                 (unless (identifier? #'id)
+                   (raise-syntax-error #f "expected an identifier" stx #'id))
+                 (raise-syntax-error #f "expected an sequence of identifiers" stx #'ids)]
                 [_
                  (raise-syntax-error #f "expected an identifier and a contract-expr" stx reg)]))])
-       (for-each check-pair-shape (syntax->list #'(regular ...)))
-       (for-each
-        (λ (kwd)
-          (syntax-case kwd ()
-            [(kwd ps)
-             (check-pair-shape #'ps)]))
-        (syntax->list #'(kwd ...))))])
-  doms)
+       (list (map check-pair-shape (syntax->list #'(regular ...)))
+             (map
+              (λ (kwd)
+                (syntax-case kwd ()
+                  [(kwd ps)
+                   #`(kwd #,(check-pair-shape #'ps))]))
+              (syntax->list #'(kwd ...)))))]))
 
 (define-for-syntax (make-this-transformer this-arg)
   (with-syntax ([this-arg this-arg])
@@ -117,9 +126,9 @@
         leftover)
      (let-values ([(raw-optional-doms id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)])
        (with-syntax ([(([mandatory-regular-id mandatory-doms] ... ) ([mandatory-kwd (mandatory-kwd-id mandatory-kwd-dom)] ...)) 
-                      (verify-->d-structure stx (split-doms stx '->d #'(raw-mandatory-doms ...)))]
+                      (verify-->i-structure stx (split-doms stx '->i #'(raw-mandatory-doms ...)))]
                      [(([optional-regular-id optional-doms] ... ) ([optional-kwd (optional-kwd-id optional-kwd-dom)] ...))
-                      (verify-->d-structure stx (split-doms stx '->d raw-optional-doms))])
+                      (verify-->i-structure stx (split-doms stx '->i raw-optional-doms))])
          (with-syntax ([((kwd kwd-id) ...)
                         (sort-keywords 
                          stx
@@ -160,7 +169,7 @@
                                   (syntax->list #'(rng-params ...)))
                            =>
                            (λ (id)
-                             (raise-syntax-error '->d 
+                             (raise-syntax-error '->i 
                                                  "expected all of the identifiers to be underscores, or none of them to be"
                                                  stx
                                                  id))]
@@ -493,7 +502,7 @@
                    (begin0 
                      (string->symbol (format "~a~a" counting-id ids))
                      (set! ids (+ ids 1)))]))])
-        `(->d (,@(map (λ (x) `(,(next-id) ...)) (->d-mandatory-dom-ctcs ctc))
+        `(->i (,@(map (λ (x) `(,(next-id) ...)) (->d-mandatory-dom-ctcs ctc))
                ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (->d-mandatory-keywords ctc))))
               (,@(map (λ (x) `(,(next-id) ...)) (->d-optional-dom-ctcs ctc))
                ,@(apply append (map (λ (kwd) (list kwd `(,(next-id) ...))) (->d-optional-keywords ctc))))
