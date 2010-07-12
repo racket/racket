@@ -124,11 +124,22 @@
     [(_ (raw-mandatory-doms ...)
         .
         leftover)
-     (let-values ([(raw-optional-doms id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)])
-       (with-syntax ([(([mandatory-regular-id mandatory-doms] ... ) ([mandatory-kwd (mandatory-kwd-id mandatory-kwd-dom)] ...)) 
+     (let-values ([(raw-optional-doms id/rest pre-cond range post-cond) (parse-leftover stx #'leftover)]
+                  [(this->i) (gensym '->i)])
+       (with-syntax ([(([mandatory-regular-id mandatory-dom/no-prop] ... ) 
+                       ([mandatory-kwd (mandatory-kwd-id mandatory-kwd-dom/no-prop)] ...)) 
                       (verify-->i-structure stx (split-doms stx '->i #'(raw-mandatory-doms ...)))]
-                     [(([optional-regular-id optional-doms] ... ) ([optional-kwd (optional-kwd-id optional-kwd-dom)] ...))
+                     [(([optional-regular-id optional-dom/no-prop] ...)
+                       ([optional-kwd (optional-kwd-id optional-kwd-dom/no-prop)] ...))
                       (verify-->i-structure stx (split-doms stx '->i raw-optional-doms))])
+         (with-syntax ([(mandatory-dom ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->i)) 
+                                                 (syntax->list #'(mandatory-dom/no-prop ...)))]
+                       [(mandatory-kwd-dom ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->i)) 
+                                                     (syntax->list #'(mandatory-kwd-dom/no-prop ...)))]
+                       [(optional-dom ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->i)) 
+                                                (syntax->list #'(optional-dom/no-prop ...)))]
+                       [(optional-kwd-dom ...) (map (λ (x) (syntax-property x 'racket/contract:domain-of this->i)) 
+                                                    (syntax->list #'(optional-kwd-dom/no-prop ...)))])
          (with-syntax ([((kwd kwd-id) ...)
                         (sort-keywords 
                          stx
@@ -150,10 +161,14 @@
                              kwd-id ...)])
              (with-syntax ([((rng-params ...) rng-ctcs)
                             (syntax-case range (any values)
-                              [(values [id ctc] ...) #'((id ...) (ctc ...))]
+                              [(values [id ctc/no-prop] ...)
+                               (with-syntax ([(ctc ...) (map (λ (x) (syntax-property x 'racket/contract:rng-of this->i))
+                                                             (syntax->list #'(ctc/no-prop ...)))])
+                                 #'((id ...) (ctc ...)))]
                               [(values [id ctc] ... x . y) (raise-syntax-error #f "expected binding pair" stx #'x)]
                               [any #'(() #f)]
-                              [[id ctc] #'((id) (ctc))]
+                              [[id ctc] 
+                               #`((id) (#,(syntax-property #'ctc 'racket/contract:rng-of this->i)))]
                               [x (raise-syntax-error #f "expected binding pair or any" stx #'x)])]
                            [mtd? (and (syntax-parameter-value #'making-a-method) #t)])
                (let ([rng-underscores? 
@@ -196,42 +211,47 @@
                                             #'body)])))])
                      (syntax-parameterize 
                       ((making-a-method #f)) 
-                      (build-->d mtd? 
-                                 (list (λ (dom-params ...)
-                                         (parameterize-this this-parameter ... mandatory-doms)) ...)
-                                 (list (λ (dom-params ...) 
-                                         (parameterize-this this-parameter ... optional-doms)) ...)
-                                 (list (λ (dom-params ...) 
-                                         (parameterize-this this-parameter ... mandatory-kwd-dom)) ...)
-                                 (list (λ (dom-params ...) 
-                                         (parameterize-this this-parameter ... optional-kwd-dom)) ...)
-                                 #,(if id/rest 
-                                       (with-syntax ([(id rst-ctc) id/rest])
-                                         #`(λ (dom-params ...)
-                                             (parameterize-this this-parameter ... rst-ctc)))
-                                       #f)
-                                 #,(if pre-cond
-                                       #`(λ (dom-params ...)
-                                           (parameterize-this this-parameter ... #,pre-cond))
-                                       #f)
-                                 #,(syntax-case #'rng-ctcs ()
-                                     [#f #f]
-                                     [(ctc ...) 
-                                      (if rng-underscores?
-                                          #'(box (list (λ (dom-params ...) 
-                                                         (parameterize-this this-parameter ... ctc)) ...))
-                                          #'(list (λ (rng-params ... dom-params ...)
-                                                    (parameterize-this this-parameter ... ctc)) ...))])
-                                 #,(if post-cond
-                                       #`(λ (rng-params ... dom-params ...)
-                                           (parameterize-this this-parameter ... #,post-cond))
-                                       #f)
-                                 '(mandatory-kwd ...)
-                                 '(optional-kwd ...)
-                                 (λ (f) 
-                                   #,(add-name-prop
-                                      (syntax-local-infer-name stx)
-                                      #`(λ args (apply f args)))))))))))))]))
+                      #,(syntax-property
+                         #`(build-->d mtd? 
+                                      (list (λ (dom-params ...)
+                                              (parameterize-this this-parameter ... mandatory-dom)) ...)
+                                      (list (λ (dom-params ...) 
+                                              (parameterize-this this-parameter ... optional-dom)) ...)
+                                      (list (λ (dom-params ...) 
+                                              (parameterize-this this-parameter ... mandatory-kwd-dom)) ...)
+                                      (list (λ (dom-params ...) 
+                                              (parameterize-this this-parameter ... optional-kwd-dom)) ...)
+                                      #,(if id/rest 
+                                            (with-syntax ([(id rst-ctc) id/rest])
+                                              #`(λ (dom-params ...)
+                                                  (parameterize-this this-parameter ... rst-ctc)))
+                                            #f)
+                                      #,(if pre-cond
+                                            #`(λ (dom-params ...)
+                                                (parameterize-this this-parameter ... #,pre-cond))
+                                            #f)
+                                      #,(syntax-case #'rng-ctcs ()
+                                          [#f #f]
+                                          [(ctc ...) 
+                                           (if rng-underscores?
+                                               #'(box (list (λ (dom-params ...) 
+                                                              (parameterize-this this-parameter ... ctc)) ...))
+                                               #'(list (λ (rng-params ... dom-params ...)
+                                                         (parameterize-this this-parameter ... ctc)) ...))])
+                                      #,(if post-cond
+                                            #`(λ (rng-params ... dom-params ...)
+                                                (parameterize-this this-parameter ... #,post-cond))
+                                            #f)
+                                      '(mandatory-kwd ...)
+                                      '(optional-kwd ...)
+                                      (λ (f) 
+                                        #,(add-name-prop
+                                           (syntax-local-infer-name stx)
+                                           #`(λ args (apply f args)))))
+                         'racket/contract:contract 
+                         (vector this->i 
+                                 ;; the -> in the original input to this guy
+                                 (car (syntax-e stx)))))))))))))]))
 
 (define ->d-tail-key (gensym '->d-tail-key))
 
