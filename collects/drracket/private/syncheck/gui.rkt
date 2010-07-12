@@ -57,10 +57,10 @@ If the namespace does not, they are colored the unbound color.
 (define jump-to-binding (string-constant cs-jump-to-binding))
 (define jump-to-definition (string-constant cs-jump-to-definition))
 
-(define cs-mode-menu-show-contract "Show Contract Obligations")
-(define cs-mode-menu-show-syntax "Show Syntactic Categories")
-
-
+(define cs-check-syntax-mode (string-constant cs-check-syntax-mode))
+(define cs-mode-menu-show-my-obligations (string-constant cs-mode-menu-show-my-obligations))
+(define cs-mode-menu-show-client-obligations (string-constant cs-mode-menu-show-client-obligations))
+(define cs-mode-menu-show-syntax (string-constant cs-mode-menu-show-syntax))
 
 (define tool@ 
   (unit 
@@ -340,6 +340,9 @@ If the namespace does not, they are colored the unbound color.
               (let ([f (get-top-level-window)])
                 (when f
                   (send f open-status-line 'drracket:check-syntax:mouse-over))))
+            
+            (define/public (syncheck:arrows-visible?)
+              (or arrow-vectors cursor-location cursor-text))
             
             ;; syncheck:clear-arrows : -> void
             (define/public (syncheck:clear-arrows)
@@ -988,23 +991,25 @@ If the namespace does not, they are colored the unbound color.
           (syncheck:clear-highlighting))
         
         (define/public (syncheck:clear-error-message)
-          (set! error-report-visible? #f)
-          (send report-error-text clear-output-ports)
-          (send report-error-text lock #f)
-          (send report-error-text delete/io 0 (send report-error-text last-position))
-          (send report-error-text lock #t)
-          (when (is-current-tab?)
-            (send (get-frame) hide-error-report)
-            (send (get-frame) update-menu-item-label this)))
+          (unless error-report-visible?
+            (set! error-report-visible? #f)
+            (send report-error-text clear-output-ports)
+            (send report-error-text lock #f)
+            (send report-error-text delete/io 0 (send report-error-text last-position))
+            (send report-error-text lock #t)
+            (when (is-current-tab?)
+              (send (get-frame) hide-error-report)
+              (send (get-frame) update-menu-status this))))
         
         (define/public (syncheck:clear-highlighting)
-          (let* ([definitions (get-defs)]
-                 [locked? (send definitions is-locked?)])
-            (send definitions begin-edit-sequence #f)
-            (send definitions lock #f)
-            (send definitions syncheck:clear-arrows)
-            (send definitions lock locked?)
-            (send definitions end-edit-sequence)))
+          (let ([definitions (get-defs)])
+            (when (send definitions syncheck:arrows-visible?)
+              (let ([locked? (send definitions is-locked?)])
+                (send definitions begin-edit-sequence #f)
+                (send definitions lock #f)
+                (send definitions syncheck:clear-arrows)
+                (send definitions lock locked?)
+                (send definitions end-edit-sequence)))))
         
         (define/augment (can-close?)
           (and (send report-error-text can-close?)
@@ -1032,7 +1037,7 @@ If the namespace does not, they are colored the unbound color.
               (show-error-report)
               (hide-error-report))
           (send report-error-canvas set-editor (send new-tab get-error-report-text))
-          (update-menu-item-label new-tab)
+          (update-menu-status new-tab)
           (update-button-visibility/tab new-tab))
         
         (define/private (update-button-visibility/tab tab)
@@ -1049,11 +1054,13 @@ If the namespace does not, they are colored the unbound color.
         
         (define/augment (enable-evaluation)
           (send check-syntax-button enable #t)
-          (send mode-menu-item enable #t)
+          (send mode-menu-item1 enable #t)
+          (send mode-menu-item2 enable #t)
           (inner (void) enable-evaluation))
         
         (define/augment (disable-evaluation)
-          (send mode-menu-item enable #f)
+          (send mode-menu-item1 enable #f)
+          (send mode-menu-item2 enable #f)
           (send check-syntax-button enable #f)
           (inner (void) disable-evaluation))
         
@@ -1115,36 +1122,47 @@ If the namespace does not, they are colored the unbound color.
             (set! rest-panel r-root)
             r-root))
         
-        (define mode-menu-item #f)
+        (define mode-menu-item1 #f)
+        (define mode-menu-item2 #f)
+        (define mode-menu-item3 #f)
         
         (define/override (add-show-menu-items show-menu)
+          (define (start-checking mode)
+            (let* ([tab (get-current-tab)]
+                   [defs (send tab get-defs)])
+              (cond
+                [(send defs get-syncheck-mode)
+                 (send defs set-syncheck-mode mode)
+                 (update-menu-status tab)]
+                [else
+                 (syncheck:button-callback #f mode)])))
+          
           (super add-show-menu-items show-menu)
-          (set! mode-menu-item
-                (new menu-item% 
-                     [parent show-menu]
-                     [label ""]
-                     [callback
-                      (λ (a b)
-                        (let ([defs (send (get-current-tab) get-defs)])
-                          (case (send defs get-syncheck-mode)
-                            [(#f) (syncheck:button-callback #f 'contract-mode)]
-                            [(default-mode)
-                             (send defs set-syncheck-mode 'contract-mode)
-                             (update-menu-item-label (get-current-tab))]
-                            [else 
-                             (send defs set-syncheck-mode 'default-mode)
-                             (update-menu-item-label (get-current-tab))])))])))
+          (let ([p (new menu%
+                        [parent show-menu]
+                        [label cs-check-syntax-mode])])
+            (set! mode-menu-item1
+                  (new checkable-menu-item% 
+                       [parent p]
+                       [label cs-mode-menu-show-syntax]
+                       [callback (λ (a b) (start-checking 'default-mode))]))
+            (set! mode-menu-item2
+                  (new checkable-menu-item% 
+                       [parent p]
+                       [label cs-mode-menu-show-my-obligations]
+                       [callback (λ (a b) (start-checking 'my-obligations-mode))]))
+            (set! mode-menu-item3
+                  (new checkable-menu-item%
+                       [parent p]
+                       [label cs-mode-menu-show-client-obligations]
+                       [callback (λ (a b) (start-checking 'client-obligations-mode))]))))
         
-        (define/public (update-menu-item-label tab)
-          (when mode-menu-item
+        (define/public (update-menu-status tab)
+          (when mode-menu-item1
             (let ([mode (send (send (get-current-tab) get-defs) get-syncheck-mode)])
-              (case mode
-                [(#f) 
-                 (send mode-menu-item set-label cs-mode-menu-show-contract)]
-                [(default-mode)
-                 (send mode-menu-item set-label cs-mode-menu-show-contract)]
-                [(contract-mode)
-                 (send mode-menu-item set-label cs-mode-menu-show-syntax)]))))
+              (send mode-menu-item1 check (eq? mode 'default-mode))
+              (send mode-menu-item2 check (eq? mode 'my-obligations-mode))
+              (send mode-menu-item3 check (eq? mode 'client-obligations-mode)))))
                 
         (inherit open-status-line close-status-line update-status-line ensure-rep-hidden)
         ;; syncheck:button-callback : (case-> (-> void) ((union #f syntax) -> void)
@@ -1276,7 +1294,7 @@ If the namespace does not, they are colored the unbound color.
                                         (parameterize ([currently-processing-definitions-text definitions-text])
                                           (expansion-completed user-namespace user-directory)
                                           (send (send (get-current-tab) get-defs) set-syncheck-mode mode)
-                                          (update-menu-item-label (get-current-tab))
+                                          (update-menu-status (get-current-tab))
                                           (send definitions-text syncheck:sort-bindings-table))))
                                      (cleanup)
                                      (custodian-shutdown-all user-custodian))))]

@@ -7,6 +7,7 @@
 (define-local-member-name
   syncheck:init-arrows
   syncheck:clear-arrows
+  syncheck:arrows-visible?
   syncheck:add-menu
   syncheck:add-arrow
   syncheck:add-tail-arrow
@@ -34,12 +35,13 @@
   
   set-syncheck-mode
   get-syncheck-mode
-  update-menu-item-label)
+  update-menu-status)
 
 (define syncheck-text<%>
   (interface ()
     syncheck:init-arrows
     syncheck:clear-arrows
+    syncheck:arrows-visible?
     syncheck:add-menu
     syncheck:add-arrow
     syncheck:add-tail-arrow
@@ -74,6 +76,7 @@
          ;; methods
          syncheck:init-arrows
          syncheck:clear-arrows
+         syncheck:arrows-visible?
          syncheck:add-menu
          syncheck:add-arrow
          syncheck:add-tail-arrow
@@ -101,4 +104,4 @@
          
          set-syncheck-mode
          get-syncheck-mode
-         update-menu-item-label)
+         update-menu-status)

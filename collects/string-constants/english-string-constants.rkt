@@ -197,6 +197,12 @@ please adhere to these guidelines:
  (cs-set!d-variable "set!’d variable")
  (cs-imported-variable "imported variable")
 
+  ;; mode sub-menu in the "view" menu
+  (cs-check-syntax-mode "Check Syntax Mode")
+  (cs-mode-menu-show-my-obligations "My Contract Obligations")
+  (cs-mode-menu-show-client-obligations "Client Contract Obligations")
+  (cs-mode-menu-show-syntax "Syntactic Categories")
+  
  ;;; info bar at botttom of drscheme frame
  (collect-button-label "GC")
   (read-only "Read only")

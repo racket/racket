@@ -7,16 +7,20 @@
 (provide annotate-contracts)
 
 (define (annotate-contracts stx low-binders binding-inits)
-  (define start-map (make-hash))
+  (define boundary-start-map (make-hash))
+  (define internal-start-map (make-hash))
   (define arrow-map (make-hash))
   (define domain-map (make-hash))
   (define range-map (make-hash))
   
-  ;; coloring-plans : hash[stx -o-> (listof color)]
-  (define coloring-plans (make-hash))
+  ;; my-coloring-plans : hash[stx -o-> (listof color)]
+  (define my-coloring-plans (make-hash))
+  ;; client-coloring-plans : hash[stx -o-> (listof color)]
+  (define client-coloring-plans (make-hash))
   
   (let loop ([stx stx])
-    (add-to-map stx 'racket/contract:contract-on-boundary start-map)
+    (add-to-map stx 'racket/contract:contract-on-boundary boundary-start-map)
+    (add-to-map stx 'racket/contract:internal-contract internal-start-map)
     (add-to-map stx 'racket/contract:domain-of domain-map)
     (add-to-map stx 'racket/contract:rng-of range-map)
     (add-to-map stx 'racket/contract:function-contract arrow-map)
@@ -24,31 +28,47 @@
       [(a . b) (loop #'a) (loop #'b)]
       [else (void)]))
   
-  ;; fill in the coloring-plans table
-  (for ([(start-k start-val) (in-hash start-map)])
+  ;; fill in the coloring-plans table for boundary contracts
+  (for ([(start-k start-val) (in-hash boundary-start-map)])
     (for ([start-stx (in-list start-val)])
-      (do-contract-traversal start-stx
-                             coloring-plans
+      (do-contract-traversal start-stx #t
+                             my-coloring-plans client-coloring-plans
+                             low-binders binding-inits
+                             arrow-map domain-map range-map
+                             #t)))
+  
+  ;; fill in the coloring-plans table for internal contracts
+  (for ([(start-k start-val) (in-hash internal-start-map)])
+    (for ([start-stx (in-list start-val)])
+      (do-contract-traversal start-stx #f
+                             my-coloring-plans client-coloring-plans
                              low-binders binding-inits
                              arrow-map domain-map range-map
                              #t)))
   
   ;; enact the coloring plans
-  (for ([(stx colors) (in-hash coloring-plans)])
-    (cond
-      [(and (member my-obligation-style-name colors)
-            (member their-obligation-style-name colors))
-       (color stx both-obligation-style-name 'contract-mode)]
-      [(member my-obligation-style-name colors)
-       (color stx my-obligation-style-name 'contract-mode)]
-      [(member their-obligation-style-name colors)
-       (color stx their-obligation-style-name 'contract-mode)]
-      [(member unk-obligation-style-name colors)
-       (color stx unk-obligation-style-name 'contract-mode)])))
+  (for ((coloring-plans (in-list (list my-coloring-plans client-coloring-plans)))
+        (mode (in-list '(my-obligations-mode client-obligations-mode))))
+    (for ([(stx colors) (in-hash coloring-plans)])
+      (cond
+        [(and (member my-obligation-style-name colors)
+              (member their-obligation-style-name colors))
+         (color stx both-obligation-style-name mode)]
+        [(member my-obligation-style-name colors)
+         (color stx my-obligation-style-name mode)]
+        [(member their-obligation-style-name colors)
+         (color stx their-obligation-style-name mode)]
+        [(member unk-obligation-style-name colors)
+         (color stx unk-obligation-style-name mode)]))))
 
-(define (do-contract-traversal start-stx coloring-plans low-binders binding-inits arrow-map domain-map range-map polarity)
+(define (do-contract-traversal start-stx boundary-contract?
+                               my-coloring-plans client-coloring-plans
+                               low-binders binding-inits arrow-map domain-map range-map polarity)
   (let ploop ([stx start-stx]
               [polarity polarity])
+    
+    (define (call-give-up)
+      (give-up start-stx boundary-contract? my-coloring-plans client-coloring-plans))
     
     (let ([main-prop (syntax-property stx 'racket/contract:contract)])
       (cond
@@ -61,11 +81,15 @@
              [(vector? prop)
               (let ([id (vector-ref prop 0)]
                     [to-color (vector-ref prop 1)])
-                (base-color to-color polarity coloring-plans)
+                (base-color #'id polarity boundary-contract? my-coloring-plans client-coloring-plans)
                 (for ((stx (in-list (hash-ref domain-map id '()))))
-                  (do-contract-traversal stx coloring-plans low-binders binding-inits arrow-map domain-map range-map (not polarity)))
+                  (do-contract-traversal stx boundary-contract?
+                                         my-coloring-plans client-coloring-plans
+                                         low-binders binding-inits arrow-map domain-map range-map (not polarity)))
                 (for ((stx (in-list (hash-ref range-map id '()))))
-                  (do-contract-traversal stx coloring-plans low-binders binding-inits arrow-map domain-map range-map polarity)))]))]
+                  (do-contract-traversal stx boundary-contract?
+                                         my-coloring-plans client-coloring-plans
+                                         low-binders binding-inits arrow-map domain-map range-map polarity)))]))]
         
         [else
          ;; we didn't find a contract, but we might find one in a subexpression
@@ -74,33 +98,44 @@
            [(#%expression expr)
             (ploop #'expr polarity)]
            [(module id name-id (#%plain-module-begin mod-level-form ...))
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(begin tl-form ... last-one)
             (ploop #'last-one polarity)]
            [(#%provide pvd ...)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(define-values (id ...) expr)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(define-syntaxes (id ...) expr)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(define-values-for-syntax (id ...) expr)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(#%require rspec ...)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [id
             (identifier? #'id)
             (if (known-predicate? #'id)
-                (base-color #'id polarity coloring-plans)
+                (base-color #'id polarity boundary-contract? my-coloring-plans client-coloring-plans)
                 (let ([binders (module-identifier-mapping-get low-binders #'id (λ () #f))])
                   (if binders
-                      (for ((binder (in-list (module-identifier-mapping-get low-binders #'id))))
-                        (for ((rhs (in-list (module-identifier-mapping-get binding-inits binder))))
-                          (ploop rhs polarity)))
-                      (give-up start-stx coloring-plans))))]
+                      (begin
+                        (base-color #'id polarity boundary-contract? my-coloring-plans client-coloring-plans)
+                        (for ((binder (in-list (module-identifier-mapping-get low-binders #'id))))
+                          (base-color binder polarity boundary-contract? my-coloring-plans client-coloring-plans)
+                          (for ((rhs (in-list (module-identifier-mapping-get binding-inits binder))))
+                            (ploop rhs polarity))))
+                      (call-give-up))))]
+           [(#%plain-lambda (id) expr ...)
+            (identifier? #'id)
+            (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
+           [(#%plain-lambda id expr ...)
+            (identifier? #'id)
+            (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
            [(#%plain-lambda formals expr ...)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(case-lambda [formals expr] ...)
-            (give-up start-stx coloring-plans)]
+            ;; this should really only happen when the arity of the case-lambda includes 1
+            ;; (otherwise we should call give-up)
+            (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)]
            [(if a b c)
             ;; these calls are questionable. 
             ;; if we ultimately end up giving up in both
@@ -110,8 +145,12 @@
             ;; on the other hand, recurring like this will mean that the two
             ;; branches are considered separately and thus calling give-up
             ;; on one side will not pollute the other side.
-            (do-contract-traversal #'b coloring-plans low-binders binding-inits arrow-map domain-map range-map polarity)
-            (do-contract-traversal #'c coloring-plans low-binders binding-inits arrow-map domain-map range-map polarity)]
+            (do-contract-traversal #'b boundary-contract?
+                                   my-coloring-plans client-coloring-plans
+                                   low-binders binding-inits arrow-map domain-map range-map polarity)
+            (do-contract-traversal #'c boundary-contract?
+                                   my-coloring-plans client-coloring-plans
+                                   low-binders binding-inits arrow-map domain-map range-map polarity)]
            ;; [(begin expr ...) (void)]
            [(begin0 fst rst ...)
             (ploop #'fst polarity)]
@@ -120,19 +159,19 @@
            [(letrec-values bindings body ... last-one)
             (ploop #'last-one polarity)]
            [(set! a b)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(quote stuff)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(quote-syntax stuff)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(with-continuation-mark a b c)
             (ploop #'c polarity)]
            [(#%plain-app f args ...)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(#%top . id)
-            (give-up start-stx coloring-plans)]
+            (call-give-up)]
            [(#%variable-reference ignored ...)
-            (give-up start-stx coloring-plans)])]))))
+            (call-give-up)])]))))
 
 ;; add-to-map : syntax any hash[any -> (listof stx)]
 ;; looks at stx's property prop and updates map,
@@ -158,31 +197,39 @@
            (let-values ([(base rel) (module-path-index-split src)])
              (member base '('#%kernel racket racket/base scheme scheme/base)))))))
 
-(define (give-up stx coloring-plans) 
+(define (give-up stx boundary-contract? my-coloring-plans client-coloring-plans)
   (let loop ([stx stx])
     (when (syntax-original? stx)
-      (blank-color stx coloring-plans))
+      (blank-color stx boundary-contract? my-coloring-plans client-coloring-plans))
     
     (let oloop ([origin (syntax-property stx 'origin)])
       (cond
         [(pair? origin) (oloop (car origin)) (oloop (cdr origin))]
         [(syntax? origin) 
          (when (syntax-original? origin)
-           (blank-color origin coloring-plans))]))
+           (blank-color origin boundary-contract? my-coloring-plans client-coloring-plans))]))
     
     (syntax-case stx ()
       [(a . b) (loop #'a) (loop #'b)]
       [_ (void)])))
 
+(define (base-color stx polarity boundary-contract? my-coloring-plans client-coloring-plans)
+  (let ([style (if polarity my-obligation-style-name their-obligation-style-name)]
+        [neg-style (if polarity their-obligation-style-name my-obligation-style-name)])
+    (cond
+      [boundary-contract?
+       (make-a-coloring-plan stx style my-coloring-plans)
+       (make-a-coloring-plan stx neg-style client-coloring-plans)]
+      [else
+       (make-a-coloring-plan stx style my-coloring-plans)])))
 
-
-(define (base-color stx polarity coloring-plans)
-  (make-a-coloring-plan stx
-                        (if polarity my-obligation-style-name their-obligation-style-name)
-                        coloring-plans))
-
-(define (blank-color stx coloring-plans)
-  (make-a-coloring-plan stx unk-obligation-style-name coloring-plans))
+(define (blank-color stx boundary-contract? my-coloring-plans client-coloring-plans)
+  (cond
+    [boundary-contract?
+     (make-a-coloring-plan stx unk-obligation-style-name my-coloring-plans)
+     (make-a-coloring-plan stx unk-obligation-style-name client-coloring-plans)]
+    [else
+     (make-a-coloring-plan stx unk-obligation-style-name my-coloring-plans)]))
 
 (define (make-a-coloring-plan stx plan coloring-plans)
   (hash-set! coloring-plans
