@@ -212,6 +212,7 @@
                      (syntax-parameterize 
                       ((making-a-method #f)) 
                       #,(syntax-property
+                         (syntax-property
                          #`(build-->d mtd? 
                                       (list (λ (dom-params ...)
                                               (parameterize-this this-parameter ... mandatory-dom)) ...)
@@ -251,7 +252,9 @@
                          'racket/contract:contract 
                          (vector this->i 
                                  ;; the -> in the original input to this guy
-                                 (car (syntax-e stx)))))))))))))]))
+                                 (car (syntax-e stx))))
+                         'racket/contract:internal-contract
+                         (gensym '->i-boundary)))))))))))]))
 
 (define ->d-tail-key (gensym '->d-tail-key))
 
