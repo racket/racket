@@ -6,7 +6,7 @@
          syntax/kerncase)
 (provide annotate-contracts)
 
-(define (annotate-contracts stx low-binders varrefs)
+(define (annotate-contracts stx low-binders binding-inits)
   (define start-map (make-hash))
   (define arrow-map (make-hash))
   (define domain-map (make-hash))
@@ -28,7 +28,8 @@
   (for ([(start-k start-val) (in-hash start-map)])
     (for ([start-stx (in-list start-val)])
       (do-contract-traversal start-stx
-                             coloring-plans low-binders 
+                             coloring-plans
+                             low-binders binding-inits
                              arrow-map domain-map range-map
                              #t)))
   
@@ -45,7 +46,7 @@
       [(member unk-obligation-style-name colors)
        (color stx unk-obligation-style-name 'contract-mode)])))
 
-(define (do-contract-traversal start-stx coloring-plans low-binders arrow-map domain-map range-map polarity)
+(define (do-contract-traversal start-stx coloring-plans low-binders binding-inits arrow-map domain-map range-map polarity)
   (let ploop ([stx start-stx]
               [polarity polarity])
     
@@ -62,9 +63,9 @@
                     [to-color (vector-ref prop 1)])
                 (base-color to-color polarity coloring-plans)
                 (for ((stx (in-list (hash-ref domain-map id '()))))
-                  (do-contract-traversal stx coloring-plans low-binders arrow-map domain-map range-map (not polarity)))
+                  (do-contract-traversal stx coloring-plans low-binders binding-inits arrow-map domain-map range-map (not polarity)))
                 (for ((stx (in-list (hash-ref range-map id '()))))
-                  (do-contract-traversal stx coloring-plans low-binders arrow-map domain-map range-map polarity)))]))]
+                  (do-contract-traversal stx coloring-plans low-binders binding-inits arrow-map domain-map range-map polarity)))]))]
         
         [else
          ;; we didn't find a contract, but we might find one in a subexpression
@@ -91,7 +92,10 @@
             (if (known-predicate? #'id)
                 (base-color #'id polarity coloring-plans)
                 (begin
-                  ;(printf "mapped to ~s\n" (module-identifier-mapping-get low-binders #'id))
+                  (for ((binder (in-list (module-identifier-mapping-get low-binders #'id))))
+                    (printf "~s => ~s\n" 
+                            #'id
+                            (module-identifier-mapping-get binding-inits binder)))
                   (give-up start-stx coloring-plans)))]
            [(#%plain-lambda formals expr ...)
             (give-up start-stx coloring-plans)]
@@ -106,8 +110,8 @@
             ;; on the other hand, recurring like this will mean that the two
             ;; branches are considered separately and thus calling give-up
             ;; on one side will not pollute the other side.
-            (do-contract-traversal #'b coloring-plans low-binders arrow-map domain-map range-map polarity)
-            (do-contract-traversal #'c coloring-plans low-binders arrow-map domain-map range-map polarity)]
+            (do-contract-traversal #'b coloring-plans low-binders binding-inits arrow-map domain-map range-map polarity)
+            (do-contract-traversal #'c coloring-plans low-binders binding-inits arrow-map domain-map range-map polarity)]
            ;; [(begin expr ...) (void)]
            [(begin0 fst rst ...)
             (ploop #'fst polarity)]

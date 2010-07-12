@@ -66,6 +66,7 @@
              [tl-high-varsets (make-id-set)]
              [tl-low-tops (make-id-set)]
              [tl-high-tops (make-id-set)]
+             [tl-binding-inits (make-id-set)]
              [tl-templrefs (make-id-set)]
              [tl-requires (make-hash)]
              [tl-require-for-syntaxes (make-hash)]
@@ -87,6 +88,7 @@
                              [high-varsets (make-id-set)]
                              [low-tops (make-id-set)]
                              [high-tops (make-id-set)]
+                             [binding-inits (make-id-set)]
                              [templrefs (make-id-set)]
                              [requires (make-hash)]
                              [require-for-syntaxes (make-hash)]
@@ -98,6 +100,7 @@
                                           varrefs high-varrefs
                                           varsets high-varsets
                                           low-tops high-tops
+                                          binding-inits
                                           templrefs
                                           requires require-for-syntaxes require-for-templates require-for-labels) 
                          (annotate-variables user-namespace
@@ -115,7 +118,7 @@
                                              require-for-syntaxes
                                              require-for-templates
                                              require-for-labels)
-                         (annotate-contracts sexp low-binders varrefs))]
+                         (annotate-contracts sexp low-binders binding-inits))]
                       [else
                        (annotate-basic sexp
                                        user-namespace user-directory jump-to-id
@@ -123,6 +126,7 @@
                                        tl-low-varrefs tl-high-varrefs
                                        tl-low-varsets tl-high-varsets
                                        tl-low-tops tl-high-tops
+                                       tl-binding-inits
                                        tl-templrefs
                                        tl-requires
                                        tl-require-for-syntaxes
@@ -165,6 +169,7 @@
                             low-varrefs high-varrefs 
                             low-varsets high-varsets
                             low-tops high-tops
+                            binding-inits
                             templrefs
                             requires require-for-syntaxes require-for-templates require-for-labels)
       
@@ -204,7 +209,7 @@
                (begin
                  (annotate-raw-keyword sexp varrefs)
                  (annotate-tail-position/last sexp (syntax->list (syntax (bodies ...))) tail-ht)
-                 (add-binders (syntax args) binders)
+                 (add-binders (syntax args) binders #f #f)
                  (for-each loop (syntax->list (syntax (bodies ...)))))]
               [(case-lambda [argss bodiess ...]...)
                (begin
@@ -215,7 +220,7 @@
                            (syntax->list (syntax ((bodiess ...) ...))))
                  (for-each
                   (λ (args bodies)
-                    (add-binders args binders)
+                    (add-binders args binders #f #f)
                     (for-each loop (syntax->list bodies)))
                   (syntax->list (syntax (argss ...)))
                   (syntax->list (syntax ((bodiess ...) ...)))))]
@@ -252,8 +257,9 @@
                  (for-each collect-general-info (syntax->list (syntax (bindings ...))))
                  (annotate-tail-position/last sexp (syntax->list (syntax (bs ...))) tail-ht)
                  (with-syntax ([(((xss ...) es) ...) (syntax (bindings ...))])
-                   (for-each (λ (x) (add-binders x binders))
-                             (syntax->list (syntax ((xss ...) ...))))
+                   (for-each (λ (x es) (add-binders x binders binding-inits es))
+                             (syntax->list (syntax ((xss ...) ...)))
+                             (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (bs ...))))))]
               [(letrec-values (bindings ...) bs ...)
@@ -262,8 +268,9 @@
                  (for-each collect-general-info (syntax->list (syntax (bindings ...))))
                  (annotate-tail-position/last sexp (syntax->list (syntax (bs ...))) tail-ht)
                  (with-syntax ([(((xss ...) es) ...) (syntax (bindings ...))])
-                   (for-each (λ (x) (add-binders x binders))
-                             (syntax->list (syntax ((xss ...) ...))))
+                   (for-each (λ (x es) (add-binders x binders binding-inits es))
+                             (syntax->list (syntax ((xss ...) ...)))
+                             (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (es ...))))
                    (for-each loop (syntax->list (syntax (bs ...))))))]
               [(set! var e)
@@ -318,19 +325,19 @@
               [(define-values vars b)
                (begin
                  (annotate-raw-keyword sexp varrefs)
-                 (add-binders (syntax vars) binders)
+                 (add-binders (syntax vars) binders binding-inits #'b)
                  (maybe-jump (syntax vars))
                  (loop (syntax b)))]
               [(define-syntaxes names exp)
                (begin
                  (annotate-raw-keyword sexp varrefs)
-                 (add-binders (syntax names) binders)
+                 (add-binders (syntax names) binders binding-inits #'exp)
                  (maybe-jump (syntax names))
                  (level-loop (syntax exp) #t))]
               [(define-values-for-syntax names exp)
                (begin
                  (annotate-raw-keyword sexp varrefs)
-                 (add-binders (syntax names) high-binders)
+                 (add-binders (syntax names) high-binders binding-inits #'exp)
                  (maybe-jump (syntax names))
                  (level-loop (syntax exp) #t))]
               [(module m-name lang (#%plain-module-begin bodies ...))
@@ -1029,11 +1036,11 @@
     
     (define (symbolic-compare? x y) (eq? (syntax-e x) (syntax-e y)))
     
-    ;; add-binders : syntax id-set -> void
+    ;; add-binders : syntax id-set (or/c #f id-set) (or/c #f syntax) -> void
     ;; transforms an argument list into a bunch of symbols/symbols
     ;; and puts them into the id-set
     ;; effect: colors the identifiers
-    (define (add-binders stx id-set)
+    (define (add-binders stx id-set binding-to-init init-exp)
       (let loop ([stx stx])
         (let ([e (if (syntax? stx) (syntax-e stx) stx)])
           (cond
@@ -1043,13 +1050,17 @@
                (if (syntax? fst)
                    (begin
                      (when (syntax-original? fst)
+                       (when binding-to-init
+                         (add-init-exp binding-to-init fst init-exp))
                        (add-id id-set fst))
                      (loop rst))
                    (loop rst)))]
             [(null? e) (void)]
             [else 
              (when (syntax-original? stx)
-               (add-id id-set stx))]))))
+               (when binding-to-init
+                 (add-init-exp binding-to-init stx init-exp))
+               (add-id id-set stx))]))))    
     
     ;; annotate-raw-keyword : syntax id-map -> void
     ;; annotates keywords when they were never expanded. eg.
@@ -1429,6 +1440,12 @@
     
     ;; make-id-set : -> id-set
     (define (make-id-set) (make-module-identifier-mapping))
+    
+    ;; add-init-exp : id-set identifier stx -> void
+    (define (add-init-exp mapping id init-exp)
+      (let* ([old (module-identifier-mapping-get mapping id (λ () '()))]
+             [new (cons init-exp old)])
+        (module-identifier-mapping-put! mapping id new)))
     
     ;; add-id : id-set identifier -> void
     (define (add-id mapping id)
