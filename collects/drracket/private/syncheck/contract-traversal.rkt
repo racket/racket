@@ -91,12 +91,12 @@
             (identifier? #'id)
             (if (known-predicate? #'id)
                 (base-color #'id polarity coloring-plans)
-                (begin
-                  (for ((binder (in-list (module-identifier-mapping-get low-binders #'id))))
-                    (printf "~s => ~s\n" 
-                            #'id
-                            (module-identifier-mapping-get binding-inits binder)))
-                  (give-up start-stx coloring-plans)))]
+                (let ([binders (module-identifier-mapping-get low-binders #'id (λ () #f))])
+                  (if binders
+                      (for ((binder (in-list (module-identifier-mapping-get low-binders #'id))))
+                        (for ((rhs (in-list (module-identifier-mapping-get binding-inits binder))))
+                          (ploop rhs polarity)))
+                      (give-up start-stx coloring-plans))))]
            [(#%plain-lambda formals expr ...)
             (give-up start-stx coloring-plans)]
            [(case-lambda [formals expr] ...)
