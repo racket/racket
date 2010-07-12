@@ -2,6 +2,8 @@
 
 (require "colors.rkt"
          "intf.rkt"
+         "annotate.rkt"
+         "contract-traversal.rkt"
          string-constants
          racket/unit
          racket/contract
@@ -619,80 +621,6 @@
         (color-unused requires unused-requires)
         (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
     
-    (define (annotate-contracts stx)
-      (define start-map (make-hash))
-      (define arrow-map (make-hash))
-      (define domain-map (make-hash))
-      (define range-map (make-hash))
-      (define (add-to-map stx prop map)
-        (let loop ([val (syntax-property stx prop)])
-          (cond
-            [(symbol? val)
-             (hash-set! map val (cons stx (hash-ref map val '())))]
-            [(pair? val)
-             (loop (car val))
-             (loop (cdr val))])))
-      
-      (let loop ([stx stx])
-        (add-to-map stx 'racket/contract:contract-on-boundary start-map)
-        (add-to-map stx 'racket/contract:domain-of domain-map)
-        (add-to-map stx 'racket/contract:rng-of range-map)
-        (add-to-map stx 'racket/contract:function-contract arrow-map)
-        (syntax-case stx ()
-          [(a . b) (loop #'a) (loop #'b)]
-          [else (void)])))
-    
-#|
-    (define (annotate-contracts stx)
-      (let loop ([stx stx])
-        (let sloop ([prop (syntax-property stx 'provide/contract-original-contract)])
-          (cond
-            [(vector? prop)
-             (color-obligations (vector-ref prop 1))]
-            [(pair? prop) (sloop (car prop)) 
-                          (sloop (cdr prop))]))
-        (syntax-case stx ()
-          [(a . b) (loop #'a) (loop #'b)]
-          [else (void)])))
-    
-    (define (color-obligations stx)
-      (let loop ([stx stx]
-                 [polarity #t])
-      (syntax-case stx (->)
-        [(-> a ... rng)
-         (begin
-           (base-color (car (syntax-e stx)) polarity)
-           (for-each (λ (x) (loop x (not polarity))) (syntax->list #'(a ...)))
-           (syntax-case #'rng (values any)
-             [(values b ...)
-              (for-each (λ (x) (loop x polarity)) (syntax->list #'(b ...)))]
-             [any
-              (void)]
-             [rng
-              (loop #'rng polarity)]))]
-        [id
-         (and (identifier? #'id)
-              (known-predicate? #'id))
-         (base-color stx polarity)]
-        [else
-         (color stx unk-obligation-style-name 'contract-mode)])))
-|#
-    ;; returns #t if the result is known to be a predicate that shoudl correspond to a
-    ;; complete obligation for the contract. If it is some unknown variable, this variable
-    ;; may refer to some other contract with nested obligations, so we have to return #f here.
-    ;; approximate this by just asking 'did this identifier come from the core?' (which is known
-    ;; to not bind any contracts (I hope))
-    (define (known-predicate? id)
-      (let ([ib (identifier-binding id)])
-        (and (list? ib)
-             (let ([src (list-ref ib 0)])
-               (let-values ([(base rel) (module-path-index-split src)])
-                 (member base '('#%kernel racket racket/base scheme scheme/base)))))))
-    
-    (define (base-color stx polarity)
-      (color stx 
-             (if polarity my-obligation-style-name their-obligation-style-name) 
-             'contract-mode))
         
     ;; record-renamable-var : rename-ht syntax -> void
     (define (record-renamable-var rename-ht stx)
@@ -1176,26 +1104,7 @@
                    pos
                    span)
           (send src set-position (- pos 1) (+ pos span -1)))))
-    
-    ;; color : syntax[original] str -> void
-    ;; colors the syntax with style-name's style
-    (define (color stx style-name mode)
-      (let ([source (find-source-editor stx)])
-        (when (and (is-a? source text%)
-                   (syntax-position stx)
-                   (syntax-span stx))
-          (let ([pos (- (syntax-position stx) 1)]
-                [span (syntax-span stx)])
-            (color-range source pos (+ pos span) style-name mode)))))
-    
-    ;; color-range : text start finish style-name 
-    ;; colors a range in the text based on `style-name'
-    (define (color-range source start finish style-name mode)
-      (let ([style (send (send source get-style-list)
-                         find-named-style
-                         style-name)])
-        (apply-style/remember source start finish style mode)))
-    
+
     ;; hash-table[syntax -o> (listof syntax)] -> void
     (define (add-tail-ht-links tail-ht)
       (begin
@@ -1263,54 +1172,7 @@
                    [to-pos (syntax-position to-stx)])
                (and from-pos to-pos)))))
     
-    ;; apply-style/remember : (is-a?/c editor<%>) number number style% symbol -> void
-    (define (apply-style/remember ed start finish style mode)
-      (let ([outermost (find-outermost-editor ed)])
-        (and (is-a? outermost syncheck-text<%>)
-             (send outermost syncheck:apply-style/remember ed start finish style mode))))
-    
-    (define (find-outermost-editor ed)
-      (let loop ([ed ed])
-        (let ([admin (send ed get-admin)])
-          (if (is-a? admin editor-snip-editor-admin<%>)
-              (let* ([enclosing-snip (send admin get-snip)]
-                     [enclosing-snip-admin (send enclosing-snip get-admin)])
-                (loop (send enclosing-snip-admin get-editor)))
-              ed))))
 
-    ;; find-source-editor : stx -> editor or false
-    (define (find-source-editor stx)
-      (let ([defs-text (get-defs-text)])
-        (and defs-text 
-             (find-source-editor/defs stx defs-text))))
-    
-    ;; find-source-editor : stx text -> editor or false
-    (define (find-source-editor/defs stx defs-text)
-      (cond
-        [(not (syntax-source stx)) #f]
-        [(and (symbol? (syntax-source stx))
-              (text:lookup-port-name (syntax-source stx)))
-         => values]
-        [else
-         (let txt-loop ([text defs-text])
-           (cond
-             [(and (is-a? text fw:text:basic<%>)
-                   (send text port-name-matches? (syntax-source stx)))
-              text]
-             [else
-              (let snip-loop ([snip (send text find-first-snip)])
-                (cond
-                  [(not snip)
-                   #f]
-                  [(and (is-a? snip editor-snip%)
-                        (send snip get-editor))
-                   (or (txt-loop (send snip get-editor))
-                       (snip-loop (send snip next)))]
-                  [else 
-                   (snip-loop (send snip next))]))]))]))
-    ;; get-defs-text : -> text or false
-    (define (get-defs-text)
-      (currently-processing-definitions-text))
  
     
 ;                                                                                             

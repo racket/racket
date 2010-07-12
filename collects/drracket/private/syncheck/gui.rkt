@@ -939,7 +939,7 @@ If the namespace does not, they are colored the unbound color.
             
             (define/private (apply-syncheck-mode)
               (let ([edit-sequences '()])
-                (for ((l (in-list (reverse (hash-ref style-mapping syncheck-mode)))))
+                (for ((l (in-list (reverse (hash-ref style-mapping syncheck-mode '())))))
                   (let-values ([(txt start finish style) (apply values l)])
                     (unless (memq txt edit-sequences)
                       (send txt begin-edit-sequence #f)
