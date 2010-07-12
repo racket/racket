@@ -37,13 +37,13 @@ TODO
               [(equal? mode mode:custom) (get-custom-policy)])))
 
     (define/private (get-custom-policy)
-      (let ([hide-mzscheme? (send box:hide-mzscheme get-value)]
+      (let ([hide-racket? (send box:hide-racket get-value)]
             [hide-libs? (send box:hide-libs get-value)]
             [hide-contracts? (send box:hide-contracts get-value)]
             [hide-transformers? (send box:hide-phase1 get-value)]
             [specialized-policies (get-specialized-policies)])
         (policy->predicate
-         `(custom ,hide-mzscheme?
+         `(custom ,hide-racket?
                   ,hide-libs?
                   ,hide-contracts?
                   ,hide-transformers?
@@ -129,9 +129,9 @@ TODO
            (value #t)
            (callback (lambda (c e) (update-visibility)))))
 
-    (define box:hide-mzscheme
+    (define box:hide-racket
       (new check-box%
-           (label "Hide mzscheme syntax")
+           (label "Hide racket syntax")
            (parent left-pane)
            (value #t)
            (callback (lambda (c e) (refresh)))))

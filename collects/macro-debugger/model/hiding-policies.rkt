@@ -48,21 +48,21 @@
      (lambda (id) 'show)]
     ['standard
      (policy->function '(custom #t #t #t #t ()))]
-    [(list 'custom hide-scheme? hide-libs? hide-contracts? hide-phase1? entries)
+    [(list 'custom hide-racket? hide-libs? hide-contracts? hide-phase1? entries)
      (entries->function entries
-                        (policy-base->function hide-scheme?
+                        (policy-base->function hide-racket?
                                                hide-libs?
                                                hide-contracts?
                                                hide-phase1?))]))
 
 ;; policy-base->function : boolean boolean boolean boolean -> (id -> choice)
-(define (policy-base->function hide-scheme? hide-libs? hide-contracts? hide-phase1?)
+(define (policy-base->function hide-racket? hide-libs? hide-contracts? hide-phase1?)
   (entries->function
    `[(hide-if
       (or ,@(filter values
-                    (list (and hide-scheme?
+                    (list (and hide-racket?
                                '(or (from-kernel-module)
-                                    (from-collection ("scheme"))))
+                                    (from-collection ("racket"))))
                           (and hide-libs?
                                '(or (from-collection ())
                                     #;(from-planet-collection #f #f ())))
