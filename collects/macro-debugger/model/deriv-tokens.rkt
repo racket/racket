@@ -83,6 +83,7 @@
    prim-set!
    prim-expression
    prim-varref
+   prim-#%stratified-body
    ))
 
 ;; ** Signals to tokens
@@ -174,6 +175,7 @@
     (149 prim-varref)
     (150 lift-require            ,token-lift-require)
     (151 lift-provide            ,token-lift-provide)
+    (155 prim-#%stratified-body)
     ))
 
 (define (signal->symbol sig)

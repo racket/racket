@@ -1,6 +1,5 @@
 #lang scheme/base
-(require rackunit
-         rackunit/gui)
+(require rackunit)
 (require macro-debugger/model/debug
          scheme/path
          scheme/gui)

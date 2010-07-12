@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require "../gentest-framework.ss")
 (provide proto:kernel-forms
@@ -43,7 +42,7 @@
    (testK "require for-template"
           (#%require (for-template mzscheme))
           #:no-steps)]
-  
+
   [#:suite
    "Definitions"
    (testK "define-values"
@@ -52,7 +51,7 @@
    (testK "define-syntaxes"
           (define-syntaxes (x) 'a)
           #:no-steps)]
-  
+
   [#:suite
    "Simple expressions"
    (testK "if"
@@ -64,7 +63,7 @@
    (testK "set!"
           (set! x 'a)
           #:no-steps)]
-  
+
   [#:suite
    "Sequence-containing expressions"
    (testK "begin"
@@ -86,9 +85,9 @@
    (testK "#%app (explicit)"
           (#%app + '1 '2 '3)
           #:no-steps)]
-  
+
   [#:suite
-   "Binding forms and blocks"
+   "Binding forms"
    (testK "lambda (simple)"
           (lambda (x) x)
           [#:steps (rename-lambda (lambda (x) x))]
@@ -123,7 +122,50 @@
           #:same-hidden-steps)]
 
   [#:suite
-   "Internal definitions"
+   "Internal definitions within #%stratified-body"
+   (testK "internal begin (empty)"
+          (#%stratified-body (begin) 'a)
+          [#:steps (splice-block (#%stratified-body 'a))
+                   (macro 'a)]
+          [#:hidden-steps (splice-block (#%stratified-body 'a))])
+   (testK "internal begin (solo)"
+          (#%stratified-body (begin 'b))
+          [#:steps (splice-block (#%stratified-body 'b))
+                   (macro 'b)]
+          [#:hidden-steps (splice-block (#%stratified-body 'b))])
+   (testK "internal begin"
+          (#%stratified-body (begin 'a) 'b)
+          [#:steps (splice-block (#%stratified-body 'a 'b))
+                   (macro (begin 'a 'b))]
+          [#:hidden-steps (splice-block (#%stratified-body 'a 'b))])
+   (testK "internal define-values"
+          (#%stratified-body (define-values (x) 'a) 'b)
+          [#:steps (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+                   (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+                   (macro (letrec-values ([(x) 'a]) 'b))]
+          [#:hidden-steps (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+                          (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))])
+   (testK "internal define-values in begin"
+          (#%stratified-body (begin (define-values (x) 'a)) 'b)
+          [#:steps
+           (splice-block (#%stratified-body (define-values (x) 'a) 'b))
+           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+           (macro (letrec-values ([(x) 'a]) 'b))]
+          [#:hidden-steps
+           (splice-block (#%stratified-body (define-values (x) 'a) 'b))
+           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))])
+   (testK "internal begin, then define-values"
+          (#%stratified-body (begin) (define-values (x) 'a) 'b)
+          [#:steps
+           (splice-block (#%stratified-body (define-values (x) 'a) 'b))
+           (block->letrec (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+           (rename-letrec-values (#%stratified-body (letrec-values ([(x) 'a]) 'b)))
+           (macro (letrec-values ([(x) 'a]) 'b))])]
+
+  [#:suite
+   "Internal definitions (mixed defs and exprs)"
    (testK "internal begin (empty)"
           (lambda () (begin) 'a)
           [#:steps (rename-lambda (lambda () (begin) 'a))
@@ -165,8 +207,15 @@
            (splice-block (lambda () (define-values (x) 'a) 'b))
            (block->letrec (lambda () (letrec-values ([(x) 'a]) 'b)))
            (rename-letrec-values (lambda () (letrec-values ([(x) 'a]) 'b)))]
+          #:same-hidden-steps)
+   (testK "define-values after expr"
+          (lambda () 'a (define-values (x) 'b) 'c)
+          [#:steps
+           (rename-lambda (lambda () 'a (define-values (x) 'b) 'c))
+           (block->letrec (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))
+           (rename-letrec-values (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))]
           #:same-hidden-steps)]
-  
+
   [#:suite
    "Top-level begin"
    (testK "begin (top-level)"

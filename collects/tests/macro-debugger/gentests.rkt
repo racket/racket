@@ -41,23 +41,25 @@
 (define (checker-for-deriv label form attrs)
   (cond [(assq '#:ok-deriv? attrs)
          => (lambda (key+expect-ok?)
-              (test-case label
-                (let ([d (trace/ns form (assq '#:kernel attrs))])
-                  (check-pred deriv? d)
-                  (if (cdr key+expect-ok?)
-                      (check-pred ok-node? d)
-                      (check-pred interrupted-node? d)))))]
+              (delay-test
+               (test-case label
+                 (let ([d (trace/ns form (assq '#:kernel attrs))])
+                   (check-pred deriv? d)
+                   (if (cdr key+expect-ok?)
+                       (check-pred ok-node? d)
+                       (check-pred interrupted-node? d))))))]
         [else #f]))
 
 (define (checker-for-hidden-deriv label form attrs)
   (cond [(assq '#:ok-deriv? attrs)
          => (lambda (key+expect-ok?)
-              (test-case label
-                (let ([d (trace/ns form (assq '#:kernel attrs))]
-                      [expect-ok? (cdr key+expect-ok?)])
-                  (check-hide d hide-none-policy expect-ok?)
-                  (check-hide d hide-all-policy expect-ok?)
-                  (check-hide d T-policy expect-ok?))))]
+              (delay-test
+               (test-case label
+                 (let ([d (trace/ns form (assq '#:kernel attrs))]
+                       [expect-ok? (cdr key+expect-ok?)])
+                   (check-hide d hide-none-policy expect-ok?)
+                   (check-hide d hide-all-policy expect-ok?)
+                   (check-hide d T-policy expect-ok?)))))]
         [else #f]))
 
 (define (check-hide d policy expect-ok?)
@@ -74,28 +76,31 @@
 (define (checker-for-steps label form attrs)
   (cond [(assq '#:steps attrs)
          => (lambda (key+expected)
-              (test-case label
-                (let* ([d (trace/ns form (assq '#:kernel attrs))]
-                       [rs (reductions d)])
-                  (check-steps (cdr key+expected) rs))))]
+              (delay-test
+               (test-case label
+                 (let* ([d (trace/ns form (assq '#:kernel attrs))]
+                        [rs (reductions d)])
+                   (check-steps (cdr key+expected) rs)))))]
         [else #f]))
 
 (define (checker-for-hidden-steps label form attrs)
   (cond [(assq '#:same-hidden-steps attrs)
          (unless (assq '#:steps attrs)
            (error 'checker-for-hidden-steps "no steps given for ~s" label))
-         (test-case label
-           (let* ([d (trace/ns form (assq '#:kernel attrs))]
-                  [rs (parameterize ((macro-policy T-policy))
-                        (reductions d))])
-             (check-steps (cdr (assq '#:steps attrs)) rs)))]
+         (delay-test
+          (test-case label
+            (let* ([d (trace/ns form (assq '#:kernel attrs))]
+                   [rs (parameterize ((macro-policy T-policy))
+                         (reductions d))])
+              (check-steps (cdr (assq '#:steps attrs)) rs))))]
         [(assq '#:hidden-steps attrs)
          => (lambda (key+expected)
-              (test-case label
-                (let* ([d (trace/ns form (assq '#:kernel attrs))]
-                       [rs (parameterize ((macro-policy T-policy))
-                             (reductions d))])
-                  (check-steps (cdr (assq '#:hidden-steps attrs)) rs))))]
+              (delay-test
+               (test-case label
+                 (let* ([d (trace/ns form (assq '#:kernel attrs))]
+                        [rs (parameterize ((macro-policy T-policy))
+                              (reductions d))])
+                   (check-steps (cdr (assq '#:hidden-steps attrs)) rs)))))]
         [else #f]))
 
 (define (check-steps expected actual)

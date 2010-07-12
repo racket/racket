@@ -5473,6 +5473,8 @@ stratified_body_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_
 {
   Scheme_Object *body;
 
+  SCHEME_EXPAND_OBSERVE_PRIM_STRATIFIED(erec[drec].observer);
+
   check_form(form, form);
 
   body = SCHEME_STX_CDR(form);

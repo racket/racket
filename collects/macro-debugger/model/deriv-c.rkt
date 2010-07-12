@@ -94,6 +94,9 @@
 ;;   (make-p:require <Base> (listof LocalAction))
 (define-struct (p:require prule) (locals) #:transparent)
 
+;;   (make-p:#%stratified-body <Base> BDeriv)
+(define-struct (p:#%stratified-body prule) (bderiv) #:transparent)
+
 ;;   (make-p:stop <Base>)
 ;;   (make-p:unknown <Base>)
 ;;   (make-p:#%top <Base> Stx)

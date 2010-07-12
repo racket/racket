@@ -229,6 +229,15 @@
         [#:pattern ?form]
         [LocalActions ?form locals])]
 
+    [(Wrap p:#%stratified-body (e1 e2 rs ?1 bderiv))
+     (R [! ?1]
+        [#:pass1]
+        [#:pattern (?sb . ?body)]
+        [Block ?body bderiv]
+        [#:pass2]
+        [#:pattern ?form]
+        [#:walk e2 'macro])]
+
     [(Wrap p:stop (e1 e2 rs ?1))
      (R [! ?1])]
 

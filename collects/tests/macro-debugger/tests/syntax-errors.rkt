@@ -183,7 +183,7 @@
            #:error-step)
    (testKE (letrec-values ([(x) 1] [(x) 2]) 3)
            #:error-step)]
-  
+
   [#:suite
    "Internal definitions"
    [#:suite
@@ -206,28 +206,27 @@
               (define-values (x) 1)
               (define-values (x) 2)
               3)
-            [#:rename+error-step rename-lambda])
-    (testKE (lambda (x)
-              (define-values (x) 'a)
-              'b
-              (define-values (y) 'c)
-              'd)
-            [#:steps (rename-lambda (lambda (x)
-                                      (define-values (x) 'a)
-                                      'b
-                                      (define-values (y) 'c)
-                                      'd))
-                     (block->letrec (lambda (x)
-                                      (letrec-values ([(x) 'a])
-                                        'b
-                                        (define-values (y) 'c)
-                                        'd)))
-                     (rename-letrec-values (lambda (x)
-                                             (letrec-values ([(x) 'a])
-                                               'b
-                                               (define-values (y) 'c)
-                                               'd)))
-                     error])]
+            [#:rename+error-step rename-lambda])]
+   [#:suite
+    "#%stratified-body"
+    (testKE (#%stratified-body
+             (define-values (x) 'a)
+             'b
+             (define-values (y) 'c)
+             'd)
+            [#:steps (block->letrec (#%stratified-body
+                                     (letrec-values ([(x) 'a])
+                                       'b
+                                       (define-values (y) 'c)
+                                       'd)))
+                     (rename-letrec-values (#%stratified-body
+                                            (letrec-values ([(x) 'a])
+                                              'b
+                                              (define-values (y) 'c)
+                                              'd)))
+                     error])
+    (testKE (#%stratified-body (define-values (x) 'a))
+            [#:steps error])]
    [#:suite
     "bad internal begin"
     (testKE (lambda () (begin . 1))

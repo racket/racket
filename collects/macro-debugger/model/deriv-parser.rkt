@@ -260,7 +260,8 @@
      [((? PrimQuoteSyntax)) ($1 e1 e2 rs)]
      [((? PrimRequire)) ($1 e1 e2 rs)]
      [((? PrimProvide)) ($1 e1 e2 rs)]
-     [((? PrimVarRef)) ($1 e1 e2 rs)])
+     [((? PrimVarRef)) ($1 e1 e2 rs)]
+     [((? PrimStratifiedBody)) ($1 e1 e2 rs)])
 
     (PrimModule
      (#:args e1 e2 rs)
@@ -471,6 +472,10 @@
     (PrimVarRef
      (#:args e1 e2 rs)
      [(prim-varref !) (make p:#%variable-reference e1 e2 rs $2)])
+
+    (PrimStratifiedBody
+     (#:args e1 e2 rs)
+     [(prim-#%stratified-body ! (? EB)) (make p:#%stratified-body e1 e2 rs $2 $3)])
 
     (PrimSet
      (#:args e1 e2 rs)
