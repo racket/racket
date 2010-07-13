@@ -18,18 +18,16 @@
   @page{
     @parlist[@strong{Resources for Learning}
       (apply parlist @text{Documentation for getting started:} intros)
-      @text{@-cookbook @mdash useful recipes, many of which apply to Racket.}
-      @text{@-htdp @mdash a textbook for introductory programming, but also
-        worthwhile for experience programmers who are new to @|ldquo|functional
-        programming.@|rdquo|}
-      @text{@-plai @mdash a textbook on programming languages.}
-      @text{@-teachscheme @mdash a workshop to train teachers using @-htdp in
-        the classroom.}]
+      @text{@-cookbook — useful recipes, many of which apply to Racket.}
+      @text{@-htdp — a textbook for introductory programming, but also
+        worthwhile for experience programmers who are new to “functional
+        programming.”}
+      @text{@-plai — a textbook on programming languages.}]
     @parlist[
       @strong{Outreach}
-      @text{@-teachscheme @mdash a workshop to train teachers using @-htdp in
-            the classroom.}
-      @text{@-bootstrap @mdash a curriculum for middle-school students.}]
+      @text{@-teachscheme — a workshop to train teachers using @-htdp in the
+        classroom.}
+      @text{@-bootstrap — a curriculum for middle-school students.}]
     @parlist[@strong{Publications}
              techreports brown-pubs nwu-pubs neu-pubs utah-pubs]
     @parlist[@strong{Graduate Study}
@@ -44,44 +42,45 @@
     @h1{Graduate Study with PLT}
     @p{An open letter to graduate applicants:}
     @div[style: (box-style 3 "#ddd")]{
-      @p{Dear Prospective Graduate Student,
-         @br{}@br{}
-         Thank you for your interest in working with PLT.  We get several
-         inquiries every year from students interested in working with one or
-         more of us.  We're flattered and, of course, interested in your
-         applications.  Because you are more interested in PLT than in our
-         specific institutions, we have created the following common
-         application form.  By filling it in once, you can automatically apply
-         to all current PLT institutions.}
-      @p[style: (box-style 1 "#bbb")]{
-         Yes, we know you don't like Boston/Chicago/Providence/Provo/Salt Lake
-         City/San Luis Obispo/Worcester (circle those applicable).  But we like
-         them, or we wouldn't be living there.  Think about the message you're
-         sending by rejecting our choices.  Moreover, we think very highly of
-         our colleagues@|mdash|more highly than we think of your judgment in
-         this matter@|mdash|so for your own good, we're going to forward your
-         application to them anyway.}
-      @p{How many years have you programmed in Scheme?}
-      @p{How many years have you programmed in PLT Scheme?}
-      @p{If the two numbers above are not identical, justify.}
-      @p{How many PLT Scheme Web applications have you written?}
-      @p{What problems did you find with the PLT Scheme Web server in the
-         process?  Please list bug report numbers.}
-      @p{Which wheels did you inadvertently reinvent?}
-      @p{Do you prefer your calculi Classic or Featherweight?}
-      @p{Should types be intervals or ideals?}
-      @p{In your opinion, which Barendregt proof has the highest hours spent
-         understanding-to-symbols ratio?}
-      @p{Which is your favorite combinator?}
-      @p{Thank you for your interest.  Don't be a cat squandering the popcorn.}
-      @p[align: 'right]{@|mdash|Shriram, Outreach Coordinator, PLT}}
-    @p{Seriously, we @em{do} enjoy working with graduate students.  If you
-       are inspired by the PLT project and want to drive the next generation of
+    @p*{
+      Dear Prospective Graduate Student,
+      @|br br|
+      Thank you for your interest in working with PLT.  We get several
+      inquiries every year from students interested in working with one or more
+      of us.  We're flattered and, of course, interested in your applications.
+      Because you are more interested in PLT than in our specific institutions,
+      we have created the following common application form.  By filling it in
+      once, you can automatically apply to all current PLT institutions.
+    @~ @|style: (box-style 1 "#bbb")|@;
+      Yes, we know you don't like Boston/Chicago/Providence/Provo/Salt Lake
+      City/San Luis Obispo/Worcester (circle those applicable).  But we like
+      them, or we wouldn't be living there.  Think about the message you're
+      sending by rejecting our choices.  Moreover, we think very highly of our
+      colleagues—more highly than we think of your judgment in this matter—so
+      for your own good, we're going to forward your application to them
+      anyway.
+    @~ How many years have you programmed in Scheme?
+    @~ How many years have you programmed in PLT Scheme?
+    @~ If the two numbers above are not identical, justify.
+    @~ How many PLT Scheme Web applications have you written?
+    @~ What problems did you find with the PLT Scheme Web server in the
+       process?  Please list bug report numbers.
+    @~ Which wheels did you inadvertently reinvent?
+    @~ Do you prefer your calculi Classic or Featherweight?
+    @~ Should types be intervals or ideals?
+    @~ In your opinion, which Barendregt proof has the highest hours spent
+       understanding-to-symbols ratio?
+    @~ Which is your favorite combinator?
+    @~ Thank you for your interest.  Don't be a cat squandering the popcorn.
+    @~ @|align: 'right|
+       —Shriram, Outreach Coordinator, PLT}}
+    @p{Seriously, we @em{do} enjoy working with graduate students.  If you are
+       inspired by the PLT project and want to drive the next generation of
        innovation, you should strongly consider graduate study with us.  We
        look forward to hearing from you.  All of us, no matter where we may
        live.}
     @p[align: 'right]{
-      @|mdash|@;
+      —@;
       @a[href: "http://www.ccs.neu.edu/home/matthias/"]{Matthias},
       @a[href: "http://www.eecs.northwestern.edu/~robby/"]{Robby},
       @a[href: "http://www.cs.wpi.edu/~kfisler/"]{Kathi},

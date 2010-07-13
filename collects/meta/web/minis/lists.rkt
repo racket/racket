@@ -14,7 +14,7 @@
             @text{A low-volume, moderated list for announcements, only.})
         (ML "dev" "devel" #f
             @text{A mailing list for Racket development, for people who want to
-                  see how the sausages are made @mdash and help make them.})))
+                  see how the sausages are made — and help make them.})))
 
 (define lists
   @page[#:title "Mailing Lists" #:file "" #:part-of 'community
@@ -99,7 +99,7 @@
            @br
            @span[style: "white-space: nowrap;"]{
              Search: @input[type: 'text name: 'q value: "" size: 20].}}
-         @td{@small{@|mdash|none@mdash}})]
+         @td{@small{—none—}})]
       [(mail-archive-cell)
        @form-cell["http://www.mail-archive.com/search"]{
          @input[type: 'hidden name: 'l value: email]

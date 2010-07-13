@@ -128,7 +128,8 @@
 
 ;; xhtml strict doesn't allow lists inside <p>, so fake our own paragraphs
 ;; using divs:
-(define p* (make-separated-tag values (lambda (text) (div class: 'p text))))
+(define p*
+  (make-separated-tag values (lambda text (apply div class: 'p text))))
 
 @page[#:title "git intro" #:extra-headers style]{
 

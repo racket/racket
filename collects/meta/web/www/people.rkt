@@ -38,18 +38,17 @@
 (provide people)
 (define people
   @page[#:part-of 'community]{
-    @p{@|ldquo|PLT@|rdquo| refers to the group that is the core of the Racket
-       development team.  PLT consists of numerous people distributed across
-       several different universities in the USA: @places}
+    @p{“PLT” refers to the group that is the core of the Racket development
+       team.  PLT consists of numerous people distributed across several
+       different universities in the USA: @places}
     @h4{Affiliates}
     @p{We work with
-       @ul{@li{The crew at @a[href: "http://untyped.com"]{Untyped}}
-           @li{Dorai Sitaram, GTE Labs}
-           @li{Mike Sperber, Universität Tübingen}}
+       @ul*{@~ The crew at @a[href: "http://untyped.com"]{Untyped}
+            @~ Dorai Sitaram, GTE Labs
+            @~ Mike Sperber, Universität Tübingen}
        In particular, please check out the Racket-related work being done at
        @|-schematics|.}
     @h4{And ...}
     @p{Finally, Racket is supported by an band of volunteers who contribute not
-       only code and documentation but also infectious enthusiasm@|mdash|too
-       many to name but whose help and encouragement make this fun and
-       worthwhile.}})
+       only code and documentation but also infectious enthusiasm—too many to
+       name but whose help and encouragement make this fun and worthwhile.}})

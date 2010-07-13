@@ -16,6 +16,6 @@
 (define (irc-quick)
   @parlist[@strong{Discussion Channel}
     @text{@irc-chat{Chat on IRC} in the @TT{@big{@strong{#racket}}} channel on
-      @a[href: "http://freenode.net"]{@tt{freenode.net}} @mdash an informal
+      @a[href: "http://freenode.net"]{@tt{freenode.net}} — an informal
       discussion channel for all things related to Racket.
       @irc-logs{Browse the logs}.}])

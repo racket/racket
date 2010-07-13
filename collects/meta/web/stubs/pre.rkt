@@ -225,8 +225,8 @@
        builds (eg, after a minor version change).}
     @h3{A note about defensive scripting:}
     @p{Writing scripts that work for you is easy.  Making them robust enough to
-       be usable by others or by site-wide setups can be a delicate job @mdash
-       you have to plan for bad @tt{PATH} setting (for example, a cron job is
+       be usable by others or by site-wide setups can be a delicate job — you
+       have to plan for bad @tt{PATH} setting (for example, a cron job is
        started in a pretty much bare environment), errors that happen in one
        command etc.  The following is just like the above script, modified to
        be more robust in the following way:

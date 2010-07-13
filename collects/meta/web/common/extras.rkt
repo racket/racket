@@ -65,7 +65,7 @@
          [chunks (if (null? (car chunks)) (cdr chunks) chunks)]
          [body (for/list ([text (in-list chunks)]
                           [tag  (in-cycle (in-list tags))])
-                 (tag text))]
+                 (apply tag text))]
          [body (if nls? (add-newlines body) body)])
     (wrapper body)))
 (define p*  (make-separated-tag values p))

@@ -11,8 +11,8 @@
     @mailing-lists-quick
     @irc-quick
     @parlist[@strong{PLT Scheme Inc.}
-      @text{@blog @mdash announcements, helpful hints, and thoughtful rants.}
-      @text{@people @mdash the people behind Racket.}]
+      @text{@blog — announcements, helpful hints, and thoughtful rants.}
+      @text{@people — the people behind Racket.}]
     @parlist[@strong{Development}
       @text{@git (also available on
             @a[href: "http://github.com/plt/racket/"]{GitHub})}
