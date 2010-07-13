@@ -62,7 +62,7 @@ user to specify macros whose expansions should be hidden.
 
 Warning: because of limitations in the way macro expansion is
 selectively hidden, the resulting syntax may not evaluate to the same
-thing as the original syntax.
+result as the original syntax.
 
 @defproc[(expand-only [stx any/c] [transparent-macros (listof identifier?)])
          syntax?]{
@@ -298,24 +298,7 @@ selected term are highlighted in yellow.
 The available secondary partitionings are:
 @itemize[
 @item{@scheme[bound-identifier=?]}
-@item{@scheme[module-identifier=?]}
-@item{@scheme[module-or-top-identifier=?]}
-@item{@bold{symbolic-identifier=?}: 
-  Two identifiers are symbolic-identifier=? if discarding all lexical
-  context information yields the same symbol.
-}
-@item{@bold{same marks}: 
-  Two identifiers have the same marks if (barring nonhygienic macros)
-  they were produced by the same macro transformation step.
-}
-@item{@bold{same source module}:
-  The bindings of the two identifiers come from definitions in the
-  same module.
-}
-@item{@bold{same nominal module}:
-  The bindings of the two identifiers were imported into the current
-  context by requiring the same module.
-}
+@item{@scheme[free-identifier=?]}
 ]
 
 @subsection{Properties}
