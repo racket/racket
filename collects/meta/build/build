@@ -18,7 +18,7 @@ verbose="yes"
 scriptlog="yes"
 # should we make binaries?
 make_bins="ask_or_yes"
-# should we do a repository update (and start with an empty iplt dir)?
+# should we do a repository update?
 make_repo="ask_or_yes"
 # should we make the pdf docs directory?
 make_pdf_docs="ask_or_yes"
@@ -28,9 +28,11 @@ make_builddirs="ask_or_yes"
 make_bundles="ask_or_yes"
 # should we make platform-specific installers?
 make_installers="ask_or_yes"
-# should we make stuff available on the web page?
-# (for major distributions, it will be in html/NNN instead of html/)
+# should we build all web pages (and distribute unless it's a release)
 make_web="ask_or_yes"
+# should we make prebuilt stuff available on the web page?
+# (for major distributions, it will be in html/NNN instead of html/)
+make_pre_web="ask_or_yes"
 # should we run all test options? (multiple configurations)
 run_all_tests="no"
 
@@ -41,7 +43,7 @@ buildnotifyemail=""
 init_repo_vars() {
   # use this function to initialize these on remote builds too
   gitbranch="${RKTBRANCH:-master}"
-  svnipath="${RKTSVNIPATH:-trunk}"
+  gitibranch="${RKTIBRANCH:-master}"
 }
 init_repo_vars
 
@@ -55,7 +57,7 @@ dmgmachine="kauai"
 nsismachine="pitcairn"
 
 # list of environment variables that should be carried over to ssh jobs
-ssh_vars=(RKTBRANCH RKTSVNIPATH)
+ssh_vars=(RKTBRANCH RKTIBRANCH)
 
 # Add stuff to be msetted later (when we have the `mset' function)
 declare -a initial_msets machines
@@ -113,7 +115,7 @@ hostname="`hostname`"
 hostname="${hostname%%.*}"
 
 # web directory for pre-prelease stuff on $workmachine (relative to $maindir)
-prewebdir="html"
+prewebdir_default="html"
 # directory for installation (relative to $maindir)
 installdir="racket"
 # directory in racket for build-related scripts (includes this script)
@@ -122,7 +124,6 @@ scriptdir="collects/meta/build"
 internaldir="iplt"
 # directories for clean repository checkouts (relative to $maindir)
 cleandir="checkout"
-cleaninternaldir="icheckout"
 # directory for binaries (relative to $maindir)
 bindir="binaries"
 # directory for pre-installers (relative to $maindir)
@@ -135,6 +136,8 @@ instdir="installers"
 docdir="docs"
 # directory for web content (relative to $maindir)
 webdir="web"
+# where inside webdir do we find the pre pages template files
+pretemplatedir="stubs/pre"
 # script for patching files with current version info
 versionpatcher="$scriptdir/versionpatch"
 # DrScheme test script
@@ -142,9 +145,7 @@ drtestscript="$scriptdir/test-drracket.rkt"
 # bundling script
 bundlescript="$scriptdir/bundle"
 # web build script
-webscript="$maindir/$internaldir/web/build.ss"
-# html patching script
-htmlpatchscript="$scriptdir/patch-html"
+webscript="collects/meta/web/build.rkt"
 # sitemap materials
 sitemapdir="$scriptdir/sitemap"
 
@@ -667,27 +668,6 @@ git_get() { # inputs: git repository, git branch, path in $maindir
   _cd "$maindir"
 }
 
-svn_get() { # inputs: svn repository, svn path, path in $maindir
-  local repo="$1" path="$2" dir="$3"; shift 3
-  show "Getting $repo/$path to $maindir/$dir"
-  _cd "$maindir"
-  if [[ ! -d "$dir" ]]; then
-    _run svn checkout --depth immediates \
-         "http://svn.racket-lang.org/$repo" "$dir"
-  fi
-  _cd "$dir"
-  _run svn update --set-depth infinity "$path"
-  svn status "$path" > "$tmpdir/svn-st" \
-    || exit_error "problems running svn status"
-  if [[ -s "$tmpdir/svn-st" ]]; then
-    cat "$tmpdir/svn-st" 1>&2
-    rm -f "$tmpdir/svn-st"
-    exit_error "The clean directory is not clean (see above)"
-  fi
-  rm -f "$tmpdir/svn-st"
-  _cd "$maindir"
-}
-
 append_dots() { # inputs: width, string
   local line="............................................................"
   echo "${2}${line:0:$(( ${1} - ${#2} ))}"
@@ -876,34 +856,18 @@ version_init() { # input: plthome
 # html functions -- all write to $htmloutput
 # ($htmloutput is usually $index; also, assume that $htmloutput is in the
 # current directory -- be careful when cd-ing!)
-# stuff before html_content_begin and after html_content_end is temporary,
-# later on, patch-html will combine the contents with the skeleton files.
 html_begin() { # inputs: title [output-name]
   local htmltitle="$1"; shift
   htmloutput="$index"
   if [[ "$1" != "" ]]; then htmloutput="$1"; shift; fi
   show "Creating \"`pwd`/$htmloutput\" for \"$htmltitle\""
-  _rm "$htmloutput"
-  { echo "<html>"
-    echo "<head><title>$htmltitle</title></head>"
-    echo "<body bgcolor=\"white\">"
-    echo "<table width=\"90%\" align=\"center\" bgcolor=\"#ff9600\""
-    echo "       border=\"0\" cellpadding=\"10\"><tr>"
-    echo "  <td width=\"10\">"
-    echo "    <img src=\"http://racket-lang.org/plt-orange-med.jpg\">"
-    echo "  </td>"
-    echo "  <td align=\"left\">"
-    echo "    <div style=\"font-family: Arial, Helvetica, sans-serif\">"
-    echo "      <font size=\"+2\"><b>$htmltitle</b></font></div></td>"
-    echo "</tr></table><br>"
-    while [[ "$#" -gt "0" ]]; do
-      if [[ "$1" = "-f" ]]; then shift; cat "$1"; else echo "$1"; fi
-      shift
-    done
-  } > "$htmloutput"
+  # the *.title. file marks this for later patching through the web templates,
+  # so it should be created even if it won't get used later.
+  _rm "$htmloutput" "$htmloutput.title."
+  echo "$htmltitle" > "$htmloutput.title."
 }
-html_content_begin() {
-  echo '<!-- begin: __CONTENT__ -->' >> "$htmloutput"
+html_end() {
+  show "Finished \"`pwd`/$htmloutput\""
 }
 html_table_begin() { # inputs: [rules-attr]
   local rules="rows"
@@ -925,7 +889,8 @@ html_file_row() { # inputs: filename, explanation ...
   { echo_n "<tr><td><nobr>&bull;&nbsp;"
     echo_n "<a href=\"$fname\"><tt>$fname</tt></a></nobr>"
     if [[ -f "$fname" ]]; then
-      echo_n "&nbsp;<small>(`get_first du -h \"$fname\"`)</small>"
+      local size="`get_first du -h \"$fname\"`"
+      if [[ "$size" = *[MG] ]]; then echo_n "&nbsp;<small>($size)</small>"; fi
     fi
     echo "</td>"
     echo "<td>&nbsp;</td><td>$*</td></tr>"
@@ -933,19 +898,6 @@ html_file_row() { # inputs: filename, explanation ...
 }
 html_table_end() {
   echo "</table></blockquote>" >> "$htmloutput"
-}
-html_content_end() {
-  echo '<!-- end: __CONTENT__ -->' >> "$htmloutput"
-}
-html_end() {
-  { echo "<div align=\"right\"><i>"
-    echo '<!-- begin: __VERSION__ -->'
-    echo "(version $version, $htmltimestamp)"
-    echo '<!-- end: __VERSION__ -->'
-    echo "</i></div>"
-    echo "</body></html>"
-  } >> "$htmloutput"
-  show "Finished \"`pwd`/$htmloutput\""
 }
 
 run_part() {
@@ -1024,7 +976,7 @@ MAIN_BUILD() {
   if is_yes make_repo; then
     separator "Repository updates"
     git_get "plt" "$gitbranch" "$cleandir"
-    svn_get "iplt" "$svnipath" "$cleaninternaldir"
+    git_get "iplt" "$gitibranch" "$internaldir"
   else
     show "Skipping repository updates"
   fi
@@ -1034,13 +986,8 @@ MAIN_BUILD() {
     DO_AUTO_UPDATES
   fi
 
-  if is_yes make_repo; then
-    _cd "$maindir"
-    _rm "$internaldir"
-    _cp -r "$cleaninternaldir/$svnipath" "$internaldir"
-  fi
-
   if is_yes make_bins; then
+    _cd "$maindir"
     _rm "$repotgz"
     _cd "$maindir/$cleandir"
     show "Creating archive"
@@ -1069,7 +1016,8 @@ MAIN_BUILD() {
     show "Skipping binaries"
   fi
 
-  # build pdfs while other machines continue doing their builds
+  # build web pages and pdfs while other machines continue doing their builds
+  BUILD_WEB
   BUILD_DOCS_AND_PDFS
 
   # and now wait for all builds
@@ -1096,7 +1044,7 @@ MAIN_BUILD() {
   if is_yes make_installers; then BUILD_INSTALLERS
   else show "Skipping installers"; fi
 
-  if is_yes make_web; then BUILD_WEB; fi
+  if is_yes make_pre_web; then BUILD_PRE_WEB; fi
 
   _rm "$lockfile"
 
@@ -1253,7 +1201,7 @@ DO_BUILD() { # inputs -- releasing
       flags=""
       if [[ "${_jit}" = "no" ]]; then flags="--no-jit $flags"; fi
       dont_exit _run env HOME="$testdir" DISPLAY="" \
-        "$exe" $flags "$PLTHOME/collects/tests/run-automated-tests.ss"
+        "$exe" $flags "$PLTHOME/collects/tests/run-automated-tests.rkt"
     done
   done
   sleep 8 # time to flush stderr
@@ -1341,7 +1289,7 @@ build_w32step() { # inputs: type, name, [args...]
                   ;;
     ( "VSNET3M" ) _cd "$PLTHOME/src/worksp/$bname"
                   _run "$VSNET" "$bname.sln" /build "Release|Win32"
-                  _run "$PLTHOME/Racket.exe" "xform.ss" "$@"
+                  _run "$PLTHOME/Racket.exe" "xform.rkt" "$@"
                   _run "$VSNET" "$bname.sln" /build "3m|Win32"
                   ;;
     ( * ) exit_error "Unknown type for build_w32step: \"$btype\"" ;;
@@ -1387,7 +1335,7 @@ DO_WIN32_BUILD() {
   separator "win32: Full build"
   build_w32step VSNET "racket"
   build_w32step VSNET "gracket"
-  _cd "$PLTHOME/src/worksp/gc2"; build_w32step RKT "3M" make.ss
+  _cd "$PLTHOME/src/worksp/gc2"; build_w32step RKT "3M" make.rkt
 
   _cd "$PLTHOME"
   build_w32step VSNET "mzstart"
@@ -1433,7 +1381,6 @@ BUILD_DOCS_AND_PDFS() {
 
   _rmcd "$maindir/$docdir"
   html_begin "Documentation"
-  html_content_begin
   html_table_begin
   {
     html_file_row "html" \
@@ -1454,7 +1401,6 @@ BUILD_DOCS_AND_PDFS() {
     show "Skipping pdf build"
   fi
   html_table_end
-  html_content_end
   html_end
 
 }
@@ -1473,7 +1419,6 @@ COPY_AND_BUILD_BINARY_DIRS() {
   _rmcd "$maindir/$bindir"
 
   html_begin "Binaries"
-  html_content_begin
   html_show "Note that the binaries include the CGC versions."
   html_table_begin
 
@@ -1491,7 +1436,6 @@ COPY_AND_BUILD_BINARY_DIRS() {
       _scp "${prfx}$fulltgz" "$ftgz"
       local extratext="`extra_description_of_platform \"$mplatform\"`"
       html_begin "$mplatformname binaries ($mplatform)"
-      html_content_begin
       html_show "These are the $mplatformname binary files." $extratext
       html_table_begin
       # The following two things do not exist until the bundle script runs
@@ -1500,14 +1444,12 @@ COPY_AND_BUILD_BINARY_DIRS() {
       html_file_row "$ftgz" "An archive of the fully-built tree" \
         "<br><small>(without the \"src\" tree)</small>"
       html_table_end
-      html_content_end
       html_end
       _cd ..
     }
   done
 
   html_table_end
-  html_content_end
   html_end
 
   ## --------------------------------------------------------------------------
@@ -1887,7 +1829,6 @@ BUILD_INSTALLERS() {
   _rmd "$maindir/$instdir"
   _cd "$maindir/$preinstdir"
   html_begin "Pre-installers"
-  html_content_begin
   html_table_begin
   local tgz idx
   idx=0
@@ -1909,7 +1850,6 @@ BUILD_INSTALLERS() {
     _cd "$maindir/$preinstdir"
   done
   html_table_end
-  html_content_end
   html_end
 
   _cd "$maindir/$instdir"
@@ -1918,18 +1858,14 @@ BUILD_INSTALLERS() {
   do_installers_page_body "$tmpdir/rkt-tmp-selector" "$tmpdir/rkt-tmp-table"
   # selector page
   html_begin "Installers"
-  html_content_begin
   html_show -f "$tmpdir/rkt-tmp-selector"
-  html_content_end
   html_end
   # static table page
   html_begin "Installers (static)" "table.html"
-  html_content_begin
   html_table_begin "all"
   html_show -f "$tmpdir/rkt-tmp-table"
   _rm "$tmpdir/rkt-tmp-selector" "$tmpdir/rkt-tmp-table"
   html_table_end
-  html_content_end
   html_end
 
   local f sorted1 sorted2
@@ -1973,22 +1909,46 @@ copy_from() { # input: directory file-name
 
 BUILD_WEB() {
 
-  local w="$prewebdir"
+  # prewebdir is set to the directory where the pre pages go (used by
+  # BUILD_PRE_WEB below)
   # cases for "hidden" results: building a major version, or a non-default path
-  if [[ "$reallyreleasing" = "yes" ]]; then w="$w/$version"
-  elif [[ "$gitbranch" != "master" ]]; then w="$w/$gitbranch"
-  elif [[ "$releasing" = "yes" ]];     then w="$w/$version"
+  prewebdir="$prewebdir_default"
+  if [[ "$reallyreleasing" = "yes" ]]; then prewebdir="$prewebdir/$version"
+  elif [[ "$gitbranch" != "master" ]]; then prewebdir="$prewebdir/$gitbranch"
+  elif [[ "$releasing" = "yes" ]];     then prewebdir="$prewebdir/$version"
   fi
+
+  # should always set prewebdir above, the rest is optional
+  if ! is_yes make_web; then return; fi
 
   ## --------------------------------------------------------------------------
-  if [[ "$w" = "$prewebdir" ]]; then separator "Making external web pages"
-  else separator "Making external web pages at $w"
+  _rmcd "$maindir/$webdir"
+  local webflags=""
+  webflags="$webflags -w -f -o $maindir/$webdir"
+  webflags="$webflags -e $maindir/$internaldir/web/main.rkt"
+  # distribute only if this is a normal build
+  if [[ "$prewebdir" = "$prewebdir_default" ]]; then
+    separator "Making and distributing web content"
+    _run "$PLTHOME/$webscript" $webflags --dist
+  else
+    separator "Making web content -- not distributing"
+    _run "$PLTHOME/$webscript" $webflags
   fi
 
-  _mcd "$maindir/$w"
+}
+
+BUILD_PRE_WEB() {
+
+  ## --------------------------------------------------------------------------
+  if [[ "$prewebdir" = "$prewebdir_default" ]]; then
+    separator "Making external web pages"
+  else
+    separator "Making external web pages at $prewebdir"
+  fi
+
+  _mcd "$maindir/$prewebdir"
 
   html_begin "Racket Nightly Builds"
-  html_content_begin
   html_table_begin
   #----
   move_from_maindir "$installersdir"
@@ -2030,30 +1990,55 @@ BUILD_WEB() {
   html_file_row "$scriptlogfile" "Full build log"
   #----
   html_table_end
-  html_content_end
   html_end
 
   ## --------------------------------------------------------------------------
-  separator "Making and installing web content"
 
-  _rmcd "$maindir/$webdir"
-  # distribute only if this is a normal build
-  if [[ "$w" = "$prewebdir" ]]; then
-    _run "$webscript" --dist
-  else
-    _run "$webscript"
-  fi
+  local F F2
+
+  # copy resources built by the web script for the pre pages
+  _cd "$maindir/$webdir/$pretemplatedir"
+  find . -type f -printf '%P\n' | \
+  while read F; do
+    F2="$maindir/$prewebdir/$F"
+    if ! [[ "$F" -nt "$F2" ]]; then continue; fi
+    # skip files that will be patched below
+    if [[ -e "$F2.title." ]]; then continue; fi
+    _md "$maindir/$prewebdir/`dirname \"$F\"`"
+    _cp "$F" "$maindir/$prewebdir/$F"
+  done
+
+  # patch generated html files with their templates (or the generic one)
+  _cd "$maindir/$prewebdir"
+  find . -type f -name "*.title." -printf '%P\n' | \
+  while read F; do
+    F="${F%.title.}"
+    if [[ ! -e "$F" ]]; then continue; fi
+    show "Patching $F"
+    mv "$F" "$F.temp."
+    local htmltemplate="$maindir/$webdir/$pretemplatedir/$F"
+    if [[ ! -e "$htmltemplate" ]]; then
+      htmltemplate="$maindir/$webdir/$pretemplatedir/template.html"
+    fi
+    { if grep -q "TITLE" "$htmltemplate"; then
+        awk '/^{{{TITLE}}}$/{p=0};p;BEGIN{p=1}' "$htmltemplate"
+        cat "$F.title."
+        awk '/^{{{CONTENT}}}$/{p=0};p;/^{{{TITLE}}}$/{p=1}' "$htmltemplate"
+      else
+        awk '/^{{{CONTENT}}}$/{p=0};p;BEGIN{p=1}' "$htmltemplate"
+      fi
+      cat "$F.temp."
+      awk '/^{{{VERSION}}}$/{p=0};p;/^{{{CONTENT}}}$/{p=1}' "$htmltemplate"
+      echo "(version $version, $htmltimestamp)"
+      awk 'END{p=0};p;/^{{{VERSION}}}$/{p=1}' "$htmltemplate"
+    } > "$F"
+    rm "$F.title." "$F.temp."
+  done
 
   ## --------------------------------------------------------------------------
-  separator "Patching up pre-release web content"
-
-  _cd "$maindir/$w"
-  _run "$PLTHOME/$htmlpatchscript" "$maindir/$webdir/pre"
-
-  ## --------------------------------------------------------------------------
-  if [[ "$w" = "$prewebdir" ]]; then
+  if [[ "$prewebdir" = "$prewebdir_default" ]]; then
     separator "Creating a site-map"
-    _cd "$maindir/$w"
+    _cd "$maindir/$prewebdir"
     _run "$PLTHOME/$sitemapdir/sitemap_gen.py" \
          --config="$PLTHOME/$sitemapdir/plt-pre.xml" \
            > /dev/null

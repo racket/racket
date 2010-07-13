@@ -118,7 +118,7 @@
     }
     .the_text pre {
       margin-left: 2em;
-      padding-left: 0.6em 0 0.6em 0.6em;
+      padding: 0.6em 0 0.6em 0.6em;
     }
     .the_text ul, .the_text ol, .the_text dl,
     .the_text li, .the_text dt, .the_text dd {
