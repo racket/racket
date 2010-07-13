@@ -2,7 +2,7 @@
 
 (require syntax/parse
          "../utils/utils.rkt"
-         (for-template scheme/base scheme/flonum scheme/unsafe/ops)
+         (for-template scheme/base scheme/math scheme/flonum scheme/unsafe/ops)
          (types abbrev type-table utils subtype)
          (optimizer utils float))
 
@@ -104,6 +104,13 @@
                                                                       (unsafe-fl* #,o2 #,(car e2)))
                                                           #,(car d)))
                                            res)))))))
+  (pattern (#%plain-app (~and op (~literal conjugate)) c:unboxed-inexact-complex-opt-expr)
+           #:with real-part #'c.real-part
+           #:with imag-part (unboxed-gensym)
+           #:with (bindings ...)
+           (begin (log-optimization "unboxed unary inexact complex" #'op)
+                  #`(#,@(append (syntax->list #'(c.bindings ...))
+                                (list #'(imag-part (unsafe-fl- 0.0 c.imag-part)))))))
   (pattern e:expr
            ;; can't work on inexact reals, which are a subtype of inexact
            ;; complexes, so this has to be equality
