@@ -62,6 +62,10 @@ If the namespace does not, they are colored the unbound color.
 (define cs-mode-menu-show-client-obligations (string-constant cs-mode-menu-show-client-obligations))
 (define cs-mode-menu-show-syntax (string-constant cs-mode-menu-show-syntax))
 
+(preferences:set-default 'drracket:syncheck-mode 'default-mode
+                         (λ (x) (memq x '(default-mode 
+                                           my-obligations-mode 
+                                           client-obligations-mode))))
 (define tool@ 
   (unit 
     (import drracket:tool^)
@@ -942,27 +946,34 @@ If the namespace does not, they are colored the unbound color.
             
             (define/private (apply-syncheck-mode)
               (let ([edit-sequences '()])
+                
+                ;; we need to reset the colors in every editor we can find, not just those that have new colors
+                (for ([(k v) (in-hash style-mapping)])
+                  (for ((l (in-list v)))
+                    (let-values ([(txt start finish style) (apply values l)])
+                      (unless (memq txt edit-sequences)
+                        (send txt begin-edit-sequence #f)
+                        
+                        ;; this little dance resets the 
+                        ;; colors to their natural values
+                        (begin
+                          (cond
+                            [(send txt is-frozen?)
+                             (send txt thaw-colorer)]
+                            [else
+                             (send txt freeze-colorer)
+                             (send txt thaw-colorer)])
+                          (send txt freeze-colorer))
+                        
+                        (set! edit-sequences (cons txt edit-sequences))))))
+                
                 (for ((l (in-list (reverse (hash-ref style-mapping syncheck-mode '())))))
                   (let-values ([(txt start finish style) (apply values l)])
-                    (unless (memq txt edit-sequences)
-                      (send txt begin-edit-sequence #f)
-                      
-                      ;; this little dance resets the 
-                      ;; colors to their natural values
-                      (begin
-                        (cond
-                          [(send txt is-frozen?)
-                           (send txt thaw-colorer)]
-                          [else
-                           (send txt freeze-colorer)
-                           (send txt thaw-colorer)])
-                        (send txt freeze-colorer))
-                      
-                      (set! edit-sequences (cons txt edit-sequences)))
                     (add-to-cleanup/apply-style txt start finish style)))
+                
                 (for ((txt (in-list edit-sequences)))
                   (send txt end-edit-sequence))))
-              
+                          
             (super-new)))))
     
     (define syncheck-frame<%>
@@ -1130,6 +1141,7 @@ If the namespace does not, they are colored the unbound color.
           (define (start-checking mode)
             (let* ([tab (get-current-tab)]
                    [defs (send tab get-defs)])
+              (preferences:set 'drracket:syncheck-mode mode)
               (cond
                 [(send defs get-syncheck-mode)
                  (send defs set-syncheck-mode mode)
@@ -1170,7 +1182,7 @@ If the namespace does not, they are colored the unbound color.
         (define/public syncheck:button-callback
           (case-lambda
             [() (syncheck:button-callback #f)]
-            [(jump-to-id) (syncheck:button-callback jump-to-id 'default-mode)]
+            [(jump-to-id) (syncheck:button-callback jump-to-id  (preferences:get 'drracket:syncheck-mode))]
             [(jump-to-id mode)
              (when (send check-syntax-button is-enabled?)
                (open-status-line 'drracket:check-syntax)
