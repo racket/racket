@@ -212,15 +212,13 @@
            (block->letrec (lambda () (letrec-values ([(x) 'a]) 'b)))
            (rename-letrec-values (lambda () (letrec-values ([(x) 'a]) 'b)))]
           #:same-hidden-steps)
-   #|
    (testK "define-values after expr"
           (lambda () 'a (define-values (x) 'b) 'c)
           [#:steps
            (rename-lambda (lambda () 'a (define-values (x) 'b) 'c))
            (block->letrec (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))
            (rename-letrec-values (lambda () (letrec-values ([() (begin 'a (#%app values))] [(x) 'b]) 'c)))]
-          #:same-hidden-steps)
-   |#]
+          #:same-hidden-steps)]
 
   [#:suite
    "Top-level begin"
