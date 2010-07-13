@@ -7,7 +7,7 @@
          (types abbrev type-table utils subtype)
          (optimizer utils fixnum))
 
-(provide float-opt-expr float-op mk-float-tbl)
+(provide float-opt-expr)
 
 
 (define (mk-float-tbl generic)
