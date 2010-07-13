@@ -67,6 +67,8 @@
 (test-values '(1 2) (lambda () (with-handlers ([void void])
 				 (values 1 2))))
 
+(test 'c (#%plain-lambda () 'a (define-values (x) 'b) 'c))
+
 (test '(quote a) 'quote (quote 'a))
 (test '(quote a) 'quote ''a)
 (syntax-test #'quote)

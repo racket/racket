@@ -7851,6 +7851,8 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
         
         goto try_again;
       }
+
+      forms = scheme_datum_to_syntax(forms, orig_forms, orig_forms, 0, 0);
     } else if (SAME_OBJ(gval, scheme_define_values_syntax)
 	       || SAME_OBJ(gval, scheme_define_syntaxes_syntax)) {
       /* Turn defines into a letrec: */
@@ -8089,7 +8091,8 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       /* accumulate expr for either an expr-only sequence or made-up
          empty bindings before a definition that appears later */
       pre_exprs = scheme_make_pair(first, pre_exprs);
-      forms = SCHEME_STX_CDR(forms);
+      first = SCHEME_STX_CDR(forms);
+      forms = scheme_datum_to_syntax(first, forms, forms, 0, 0);
       if (SCHEME_STX_NULLP(forms)) {
         /* fall through to handle expressions without definitions */
       } else {
